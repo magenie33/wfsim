@@ -138,10 +138,9 @@ around (decision 2026-07-31).
   buys nothing the push already bought, and it costs: it holds the board yaml
   TRUNCATED while it runs, so the board tests go red and `site/` cannot be
   regenerated until it finishes. At the rulers' 1000 runs that is an hour of
-  blocking on work a runner was doing anyway (owner, 2026-08-11: "榜单那个你是
-  不是完完全全服务器自己跑就可以了啊…因为还有很多功能需要做"). Use it WITHOUT
-  `--write` when you want to know whether a change moved anything; let the
-  workflow write.
+  blocking on work a runner was doing anyway (owner, 2026-08-11). Use it
+  WITHOUT `--write` when you want to know whether a change moved anything;
+  let the workflow write.
 - **Optimizer verification: `cargo run --release --bin wfsim-truth -- pool=<ids>
   …`**. A search cannot vouch for itself, so it is GRADED: the tool exhausts the
   scope, evaluates every job flat, and reports where the production search
@@ -156,10 +155,10 @@ around (decision 2026-07-31).
   were ever removed: `finish()` called `proc.kill()` and `rmSync` on the next
   line, which on Windows always failed because Chrome's CHILD processes still
   held the directory — `kill()` reaches only the node that was spawned. 644
-  directories and 17 GB of C: later (owner: "我有一堆临时文件，在C盘都快满了"),
-  `finish` kills the whole tree (`taskkill /T` on win32), waits for it, and
-  retries the removal — and `sweepStaleProfiles` deletes any `wfsim-*` older
-  than an hour ON THE WAY IN, which is the only cleanup a run that throws, is
+  directories and 17 GB of C: later (owner), `finish` kills the whole tree
+  (`taskkill /T` on win32), waits for it, and retries the removal — and
+  `sweepStaleProfiles` deletes any `wfsim-*` older than an hour ON THE WAY
+  IN, which is the only cleanup a run that throws, is
   interrupted, or never calls `finish()` can still get.
 - UI verification: drive headless Chrome over CDP (Node ≥22 has a global
   WebSocket; Chrome is at the default install path). Assert real DOM
@@ -211,19 +210,18 @@ around (decision 2026-07-31).
   model is ON THE PAGE, in every family that has one — a weapon banner, an
   evolution chip, a mod line, an arcane line, an enemy caveat. The owner debugs
   by reading the card, so a gap that lives only in a yaml comment or a report
-  script is a gap nobody can act on (2026-08-08: "我需要用户也能看见，因为我也是
-  这样排查的"). Each surface has gone silent at least once: an arcane effect the
-  loader had no arm for went to `Inert`, which printed NOTHING, so both
-  Deadheads promised a recoil reduction they did not apply. It also covers the FOURTH kind of admission, which is the only one
+  script is a gap nobody can act on (2026-08-08). Each surface has gone silent
+  at least once: an arcane effect the loader had no arm for went to `Inert`,
+  which printed NOTHING, so both Deadheads promised a recoil reduction they did
+  not apply. It also covers the FOURTH kind of admission, which is the only one
   that is not a shortfall: a LIVE BUG (`live_bugs:` on an arcane) says the
   number is RIGHT, the game is wrong, and a hotfix changes it — Primary
   Debilitate's split leaks its zero-damage instance's multipliers into the DoT
   it leaves (MEASUREMENTS M37), so a player building around x441 is told what it
-  rests on (owner, 2026-08-08: "我要建立啊，但是标记可能非本意，我要忠实原本游
-  戏，如果修了那我就改"). It carries a
-  NEGATIVE CONTROL — a weapon with nothing to admit shows no banner — because a
-  check that only asserts presence passes just as well on a page that shouts
-  "not modelled" at everything, and it runs the whole pass in BOTH languages,
+  rests on (owner, 2026-08-08). It carries a NEGATIVE CONTROL — a weapon with
+  nothing to admit shows no banner — because a check that only asserts presence
+  passes just as well on a page that shouts "not modelled" at everything, and
+  it runs the whole pass in BOTH languages,
   since the banner's lines were rendered raw for a day and a Chinese page
   carried its one important paragraph in English. It also walks the BOARD,
   which is where weapons are compared and therefore the one place a weapon
@@ -236,8 +234,8 @@ around (decision 2026-07-31).
   languages under DE's OWN names (战吼, 黯然失色 — transcribed, never
   translated), that the card's value follows Ability Strength, that ticking one
   moves a real `/api/simulate` in the shipping wasm build, that two of a FAMILY
-  do not stack AND the page says which one lost (owner, 2026-08-08: "同时选了
-  roar 和 roar（helminth），那就选择生效当前最强的" — the difference between
+  do not stack AND the page says which one lost (owner, 2026-08-08 — the
+  difference between
   +50% and +80% is a number you have to be told), that the optimizer shows the
   same buffs read-only, and — the negative control — that no RULER carries one.
   `node scripts/check_pace_and_hits.mjs` is the TWENTY-FIFTH: what a ROOM-CLEAR
@@ -252,21 +250,21 @@ around (decision 2026-07-31).
   damage spread over "one in twelve hits did 40x" and "every hit did 3.3x" reads
   identically as an average and is two different weapons, only one of them a
   bug; its counts have to add up to the pellets that were fired. And every block
-  folds and REMEMBERS across a re-render and a reload (owner, 2026-08-11: "每个
-  小块都应该支持可伸缩") — a panel that re-opens everything on every Run Sim is
-  a panel you re-close on every Run Sim, so the state lives outside the markup.
-  It caught a real one on the way in: the opening window never closed on a
-  weapon that TRANSMUTES instead of reloading, because it was recorded at the
+  folds and REMEMBERS across a re-render and a reload (owner, 2026-08-11) — a
+  panel that re-opens everything on every Run Sim is a panel you re-close on
+  every Run Sim, so the state lives outside the markup. It caught a real one on
+  the way in: the opening window never closed on a weapon that TRANSMUTES
+  instead of reloading, because it was recorded at the
   reload rather than at the refill.
   `node scripts/check_hit_account.mjs` is the TWENTY-FOURTH: THE ACCOUNT OF ONE
   HIT HAS TO MULTIPLY OUT. Every other number the sim reports is an aggregate,
   and an aggregate hides an error inside an average — a factor applied twice, or
   in the wrong bracket, moves a mean by a few per cent and reads as "this build
   is good". The account is the one output that can be FALSIFIED (owner,
-  2026-08-11: "方便我可以根据数据里找出计算瑕疵"): one damage instance per attack
-  part from the median engagement, every factor listed with its value in the
-  order the engine applies them, and the product is the number that went into
-  the damage meter. The check does the arithmetic a reader would do, so a factor
+  2026-08-11): one damage instance per attack part from the median engagement,
+  every factor listed with its value in the order the engine applies them, and
+  the product is the number that went into the damage meter. The check does the
+  arithmetic a reader would do, so a factor
   applied and not listed — or listed and not applied — fails it. That is why the
   account is written at the ONE site where every factor exists at the same time
   rather than reconstructed afterwards. Verified to bite: dropping the crit line
@@ -276,11 +274,11 @@ around (decision 2026-07-31).
   is the BUFF table, read from the other side. The replay had always shown what
   the BUILD had up — live stacks, uptime, dead bands, the ramp — and said nothing
   about what was on the TARGET, which is the other half of the same fight and
-  the half that explains the number (owner, 2026-08-11: "你就和我们现在的buff列
-  表对称"). It is one component fed from both sides: `DEBUFF_ROSTER` is the
-  mirror of `buff_roster`, `Frame.debuffs` of `Frame.stacks`, and the page draws
-  the second table with the same renderer. The check asserts the SYMMETRY rather
-  than the numbers — same roster shape, one series per entry, each as long as
+  the half that explains the number (owner, 2026-08-11). It is one component
+  fed from both sides: `DEBUFF_ROSTER` is the mirror of `buff_roster`,
+  `Frame.debuffs` of `Frame.stacks`, and the page draws the second table with
+  the same renderer. The check asserts the SYMMETRY rather than the numbers —
+  same roster shape, one series per entry, each as long as
   the clock, the cursor reading its own side — plus the one thing that is not
   symmetric and has to be: A RESPAWN IS THE SAME TARGET, so its stacks drop to
   zero and climb again INSIDE one series rather than starting a new row, and
@@ -334,11 +332,11 @@ around (decision 2026-07-31).
   offers the stats that weapon's rivens actually roll, in BOTH slots. What a
   riven can roll is DE's per-weapon table, published nowhere, and the wiki's
   25%-of-a-physical-type rule disclaims itself. THE RULES DECIDE AND THE SURVEY
-  CHECKS (owner, 2026-08-08: "紫卡不应该是按照规则自动生成的吗？抓取只是来当验证
-  才对"): `rivens_data::derived_for` is the model, `data/rivens/exceptions.yaml`
-  overrides it per riven FAMILY with the evidence written into each entry, and
-  `data/rivens/pools.yaml` (from `scripts/survey_riven_pools.py`) is read by a
-  TEST and by nothing else. It was the other way round for a day and a re-run of
+  CHECKS (owner, 2026-08-08): `rivens_data::derived_for` is the model,
+  `data/rivens/exceptions.yaml` overrides it per riven FAMILY with the evidence
+  written into each entry, and `data/rivens/pools.yaml` (from
+  `scripts/survey_riven_pools.py`) is read by a TEST and by nothing else. It
+  was the other way round for a day and a re-run of
   the scrape came back "nothing rolls anything" for all 26 families, wrote itself
   to disk, and was caught by two unrelated tests — see DATA_SOURCES §"Riven
   pools" (MEASUREMENTS M35). It walks the NEGATIVE slot too, because
@@ -363,10 +361,10 @@ around (decision 2026-07-31).
   zero. "≈0%" was one string for two different findings — a mod that does
   nothing, and a mod nobody measured hard enough — and only the difference
   between them is actionable: the first says pick something else, the second
-  says raise the runs (owner, 2026-08-12: "就不要出现约等于0的情况"). Both
-  halves of the machinery behind it were wrong, and either one alone brings the
-  symptom back. The scan read `score`/`dps`, which are the MEDIAN RUN — one
-  engagement however many were paid for, moving 9.8% between seeds at 10 runs
+  says raise the runs (owner, 2026-08-12). Both halves of the machinery behind
+  it were wrong, and either one alone brings the symptom back. The scan read
+  `score`/`dps`, which are the MEDIAN RUN — one engagement however many were
+  paid for, moving 9.8% between seeds at 10 runs
   where the mean of the same runs moves 5.9%, and not even the statistic the
   optimizer ranks (`mean_kill_progress`). And it estimated its own resolution by
   running the reference a SECOND time at another seed: one sample of a spread,
@@ -422,11 +420,11 @@ around (decision 2026-07-31).
 
 ## Hard rules
 
-- **THE SIMULATOR IS THE TRUTH; THE OPTIMIZER OBEYS IT** (user, 2026-08-04:
-  "我希望 optimizer 执行的，是 simulator 的规矩"). A search's winner is replayed
-  under the simulator's fight, so any rule the optimizer applies that the
-  simulator does not — or omits that the simulator applies — scores builds
-  nobody can reproduce. The two must not be two implementations that agree;
+- **THE SIMULATOR IS THE TRUTH; THE OPTIMIZER OBEYS IT** (user, 2026-08-04).
+  A search's winner is replayed under the simulator's fight, so any rule the
+  optimizer applies that the simulator does not — or omits that the simulator
+  applies — scores builds nobody can reproduce. The two must not be two
+  implementations that agree;
   the optimizer must CALL the simulator's, and add only its own scope and
   budget.
   DONE 2026-08-04 (`parse_fight`): the fight is parsed once and the optimizer
@@ -458,11 +456,11 @@ around (decision 2026-07-31).
   `descriptions.yaml`); ids are never translated. Mod and arcane CARD TEXT
   is DE's own localized sentence per rank, never a phrase-substituted
   English line — substitution is the fallback for what DE never wrote.
-  **A STRING IS TRANSCRIBED, NEVER TRANSLATED** (user, 2026-08-03: "为啥要你
-  自己翻译啊，不是有官方文本吗"). DE's Chinese is routinely non-literal —
-  Commodore's Fortune is 准将沐福 — so a name derived from the English is
-  wrong more often than not (five Boar Prime evolution names were translated
-  this way and four were wrong). If a source cannot be reached, LEAVE IT
+  **A STRING IS TRANSCRIBED, NEVER TRANSLATED** (user, 2026-08-03). DE's
+  Chinese is routinely non-literal — Commodore's Fortune is 准将沐福 — so a name
+  derived from the English is wrong more often than not (five Boar Prime
+  evolution names were translated this way and four were wrong). If a source
+  cannot be reached, LEAVE IT
   EMPTY AND SAY SO. `python scripts/wfcd_i18n.py check` reports every
   unnamed id in every family and where its name comes from; `fill` only ever
   ADDS, so a deliberate divergence and the comment explaining it survive.
@@ -558,11 +556,11 @@ around (decision 2026-07-31).
   builder → simulator → optimizer, each reading upstream and writing nothing. Its three old collections
   (`optimizer-mods` / `-arcanes` / `-evolutions`) merged into one: they were
   split for cross-weapon reuse, which is the import's job.
-  **NOTHING CROSSES BETWEEN WEAPONS — EXCEPT THE FIGHT** (user, 2026-08-02:
-  "绝对不能串"; amended 2026-08-09). A BUILD, a SEARCH and a RIVEN are statements
-  about ONE weapon and are never born from each other: a weapon opened for the
-  first time gets a blank build, the search's `finalists`/`threads` reset, and
-  the previous weapon's optimizer RANKING is cleared rather than left on screen
+  **NOTHING CROSSES BETWEEN WEAPONS — EXCEPT THE FIGHT** (user, 2026-08-02;
+  amended 2026-08-09). A BUILD, a SEARCH and a RIVEN are statements about ONE
+  weapon and are never born from each other: a weapon opened for the first time
+  gets a blank build, the search's `finalists`/`threads` reset, and the
+  previous weapon's optimizer RANKING is cleared rather than left on screen
   under the new weapon's name.
   A SCENARIO is not a statement about a weapon, so it is SHARED across the
   roster — one list, key `wfsim-presets-simulator-scenarios` with no weapon in
@@ -574,10 +572,10 @@ around (decision 2026-07-31).
   applies to every weapon on the board, which is the point of a ruler — so a
   player wanting to measure their own roster under their OWN fight was the only
   one made to re-create it per weapon, which is the opposite of what a scenario
-  is for (owner, 2026-08-09: "要是玩家自己想批量测试白富美…现在这样子太不方便
-  了"). The one weapon-scoped knob it still holds is headshot %, handled the way
-  the rulers handle it: the SERVER forces 0 on a weapon that cannot headshot. A
-  shared bar offers no "⇤ import" — there is no other weapon to import from.
+  is for (owner, 2026-08-09). The one weapon-scoped knob it still holds is
+  headshot %, handled the way the rulers handle it: the SERVER forces 0 on a
+  weapon that cannot headshot. A shared bar offers no "⇤ import" — there is no
+  other weapon to import from.
 
   **NOTHING OUTSIDE A COLLECTION WRITES ITS STATE** (user, 2026-08-02). A build
   used to carry a `sim` snapshot that loading it then APPLIED, so picking a
@@ -642,3 +640,12 @@ around (decision 2026-07-31).
   WFSim while the zh footer says WF模拟.
 - Match the surrounding code's comment density and idiom; comments state
   constraints/sources, not narration.
+- **A COMMENT NEVER QUOTES THE OWNER** (owner, 2026-08-13). A decision is
+  recorded as the RULE plus who decided it and when — `(owner, 2026-08-11)` —
+  never as the sentence he typed, and never in Chinese. The comment has to be
+  readable by someone who was not in the conversation, and a pasted chat line
+  is not. What a quote is FOR still has a home: an in-game report is a
+  MEASUREMENT and goes verbatim into `docs/MEASUREMENTS.md`, which is the one
+  file where the original words are the record rather than a remark about it.
+  A Chinese string that survives anywhere else is a SOURCE — DE's own card
+  text, a CN wiki line, a name — and those stay, transcribed and attributed.

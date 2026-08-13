@@ -17,10 +17,9 @@ effects:
   # correct rather than convenient.
   #
   # IN GAME the bonus lands the MOMENT an empty reload BEGINS; it does not wait
-  # for the reload to finish (user, 2026-08-03: "换弹的那一刻就有了，不需要等待
-  # 换弹完成"). The wiki says the opposite — "applied after finishing a reload
-  # while the magazine is empty" — and a measurement beats the wiki here, as
-  # everywhere.
+  # for the reload to finish (user, 2026-08-03). The wiki says the opposite
+  # — "applied after finishing a reload while the magazine is empty" — and a
+  # measurement beats the wiki here, as everywhere.
   #
   # That distinction is not pedantry, it is the whole justification. Under the
   # wiki's reading the buff would be DOWN for one reload every cycle — 2.75 s

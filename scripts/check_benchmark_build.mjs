@@ -86,7 +86,7 @@ const cold = await evaluate(`(async () => {
   // A WAY OUT YOU CAN CLICK. The note used to point at a ⧉ chip elsewhere on
   // the page; a reader who wants to change something needs a button, and a
   // locked block has to say why rather than simply not reacting (owner,
-  // 2026-08-09: "我们应该有提示说可以复制，我们提示做好点").
+  // 2026-08-09).
   out.copyBtn = !!document.getElementById('build-copy');
   out.lockedTitle = ((document.getElementById('mod-block')||{}).title || '').length;
   const btn = document.getElementById('build-copy');
@@ -114,7 +114,7 @@ check("the cold and warm plans agree", cold.pols === warm.pols, `cold ${cold.pol
 // still moved — and both of its consequences were silent: `markPresetDirty`
 // refuses to write an official build and `offerBoardSubmit` refuses to send
 // one, so a base-form test ran, saved nothing and entered nothing (owner,
-// 2026-08-09: "我昨晚就用基础做了好几次测试，为啥没出现呢").
+// 2026-08-09).
 check("every part of a benchmark build is read-only, mode included",
       cold.locked.every(Boolean), JSON.stringify(cold.locked));
 // …AND THE PAGE SAYS SO. The consent panel hides itself on a board row, so

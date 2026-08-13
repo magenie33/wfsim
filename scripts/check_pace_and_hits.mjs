@@ -15,8 +15,8 @@
 // and its damage must add up to what the meter counted.
 //
 // FOLDS: every block folds and REMEMBERS, across a re-render and a reload
-// (owner: "每个小块都应该支持可伸缩"). A panel that re-opens everything on every
-// Run Sim is a panel you re-close on every Run Sim.
+// (owner). A panel that re-opens everything on every Run Sim is a
+// panel you re-close on every Run Sim.
 //
 //   node scripts/check_pace_and_hits.mjs
 //

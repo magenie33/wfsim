@@ -13,9 +13,9 @@ On Reload From Empty: Increase Base Damage by +14."
 # number the other one carries — and if DE ever splits them, the table grows a
 # real cell and the two files diverge there.
 #
-# NO OTHER VARIANT'S NUMBERS LIVE IN THIS FILE (owner, 2026-08-12: "我要求只填写
-# 自己的"). A file that states two weapons' values is a file where the reader has
-# to work out which one they are looking at, every time.
+# NO OTHER VARIANT'S NUMBERS LIVE IN THIS FILE (owner, 2026-08-12). A file
+# that states two weapons' values is a file where the reader has to work out
+# which one they are looking at, every time.
 selection: choose_one
 
 effects:
@@ -28,10 +28,9 @@ effects:
   # correct rather than convenient.
   #
   # IN GAME the bonus lands the MOMENT an empty reload BEGINS; it does not wait
-  # for the reload to finish (user, 2026-08-03: "换弹的那一刻就有了，不需要等待
-  # 换弹完成"). The wiki says the opposite — "applied after finishing a reload
-  # while the magazine is empty" — and a measurement beats the wiki here, as
-  # everywhere.
+  # for the reload to finish (user, 2026-08-03). The wiki says the opposite
+  # — "applied after finishing a reload while the magazine is empty" — and a
+  # measurement beats the wiki here, as everywhere.
   #
   # That distinction is not pedantry, it is the whole justification. Under the
   # wiki's reading the buff would be DOWN for one reload every cycle — 2.7 s

@@ -107,10 +107,10 @@
            theme button carries its own handler, so a second copy would be a
            control that looks live and is not. That is why this is a container
            swap rather than a mobile menu built from a list of links.
-           WHAT IT MUST NOT LOSE (owner, 2026-08-07: "我想不要丢失信息"): the
-           site's two destinations AND the right-hand row. Before this, a phone
-           saw neither the nav (display:none under 700px) nor the support link,
-           and the footer was the only way to either. -->
+           WHAT IT MUST NOT LOSE (owner, 2026-08-07): the site's two
+           destinations AND the right-hand row. Before this, a phone saw
+           neither the nav (display:none under 700px) nor the support link, and
+           the footer was the only way to either. -->
       <button id="menu-toggle" class="ghost-btn menu-toggle" aria-expanded="false"
               aria-controls="topmenu" aria-label="Menu" title="Menu" data-i18n-title>☰</button>
       <div id="topmenu" class="topmenu">
@@ -342,10 +342,9 @@
     <!-- Block: VALENCE — an ADVERSARY weapon's bonus element and how big it
          is. A Kuva Lich's, a Sister's or a Coda's, and a property of the COPY
          a player owns rather than of the model, which is why it is a build
-         axis beside the evolutions and not a weapon field (owner, 2026-08-13:
-         "kuva武器有个初属性。类似evo得多一块建立"). Hidden on every weapon that
-         is not one — the same "no choice, no control" rule every axis here
-         follows. -->
+         axis beside the evolutions and not a weapon field (owner,
+         2026-08-13). Hidden on every weapon that is not one — the same "no
+         choice, no control" rule every axis here follows. -->
     <section class="block" id="element-block" hidden>
       <div class="bh"><span class="n">5</span><h2 data-i18n>Valence</h2><span class="sub" id="valence-sub"></span></div>
       <div class="bb"><div id="element-cfg" class="field-grid"></div></div>
@@ -427,19 +426,19 @@
         <div id="sim-buffs"></div>
         <!-- THE FIGHT'S OWN STAT BONUSES. Everything this weapon is handed by
              something that is not its build, expressed as what it is WORTH:
-             "效果等于又塞mod，不需要单独一个增益。这些是永久的" (owner,
-             2026-08-13). No trigger, no clock, no stack count — the thing with
-             a duration is the block below, and this is the thing without one.
-             It sits BEFORE the Warframe buffs because it is the simpler claim
+             (owner, 2026-08-13). No trigger, no clock, no stack count — the
+             thing with a duration is the block below, and this is the thing
+             without one. It sits BEFORE the Warframe buffs because it is the
+             simpler claim
              and because that block is still the last input before you run. -->
         <h3 class="sim-h" data-i18n>5 · Extra stats <span class="sim-hint" data-i18n>anything this weapon is handed from outside its build — it lands in the same bucket a mod would</span></h3>
         <div id="sim-extra" class="field-grid"></div>
         <!-- WARFRAME ABILITY BUFFS — INSIDE the fight, and wrapped so it still
-             reads as its own thing (owner, 2026-08-09: "既是独立模块，也是属于
-             scenario的一部分"). It is a section of the scenario because that is
-             where it already lives — it saves with the fight, travels with the
-             fight across weapons, and the optimizer reads it off the fight —
-             and it sits last because it is the final input before you run.
+             reads as its own thing (owner, 2026-08-09). It is a section of the
+             scenario because that is where it already lives — it saves with
+             the fight, travels with the fight across weapons, and the
+             optimizer reads it off the fight — and it sits last because it is
+             the final input before you run.
              EARLY ACCESS: the strength is typed in here today and comes from
              the frame once frames land. Said on screen, not only here. -->
         <div class="sim-panel" id="wfbuff-block">
@@ -450,11 +449,10 @@
         <h3 class="sim-h" data-i18n>7 · Measure <span class="sim-hint" data-i18n>what to read off the run — the scenario's own term, so an official ruler pins it</span></h3>
         <div id="sim-run" class="field-grid"></div>
         <!-- THE RUN COUNT — ITS OWN DIV, and deliberately outside every block
-             above (owner, 2026-08-13: "模拟次数应该是一个单独的div，并且这个是全
-             局的，类似快速计算的那个次数。切换武器时不变的"). It is not part of
-             the fight, so an OFFICIAL ruler does not pin it: reading the board's
-             scenario still lets you decide how long you are willing to wait.
-             That is also why it is not in `lockOfficialScenario`'s list — the
+             above (owner, 2026-08-13). It is not part of the fight, so an
+             OFFICIAL ruler does not pin it: reading the board's scenario still
+             lets you decide how long you are willing to wait. That is also why
+             it is not in `lockOfficialScenario`'s list — the
              lock is for the fight's terms, and this is not one. -->
         <div id="sim-runs-block" class="runs-row"></div>
         <button id="run-sim" class="run-btn" data-i18n>Run Simulation</button>
@@ -604,8 +602,8 @@
   </div>
   <div id="slot-menu" class="popover menu" hidden></div>
   <!-- THE dropdown. Every choose-one control on the site opens this one node
-       (owner, 2026-08-06: "只要是下拉就一个样子"), so a dropdown cannot look
-       like a different dropdown somewhere else — there is only one. -->
+       (owner, 2026-08-06), so a dropdown cannot look like a different
+       dropdown somewhere else — there is only one. -->
   <div id="dd-popover" class="popover" hidden>
     <div class="addbar" id="dd-addbar"><input id="dd-search" type="text" placeholder="Search…" data-i18n-ph autocomplete="off" /></div>
     <div id="dd-menu" class="combo-menu"></div>

@@ -3,8 +3,8 @@
 // "≈0%" was one string for two different findings — a mod that does nothing,
 // and a mod nobody measured hard enough — and only the difference between them
 // is actionable: the first says pick something else, the second says raise the
-// runs (owner, 2026-08-12: "就不要出现约等于0的情况"). So a chip either states a
-// number it is sure of, or states the number AND its width.
+// runs (owner, 2026-08-12). So a chip either states a number it is
+// sure of, or states the number AND its width.
 //
 // It also asserts the two properties that make the width trustworthy, because
 // both were wrong at once and either one alone brings the symptom back:

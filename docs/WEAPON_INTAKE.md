@@ -68,7 +68,7 @@ A weapon carried by a Kuva Lich (Grineer, 赤毒), a Sister of Parvos (Corpus,
 Tenet) or a Coda (Infested, 终幕) is not just another entry: it comes with a
 **VALENCE BONUS**, and that is a build axis nothing else in the roster has.
 
-**Kuva Nukor is the template** (owner, 2026-08-13: "你先拿这把枪打样").
+**Kuva Nukor is the template** (owner, 2026-08-13).
 
 VERBATIM (wiki, Kuva Weapons §Elemental Bonus):
 

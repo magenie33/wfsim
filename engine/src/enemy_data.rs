@@ -199,9 +199,7 @@ pub struct EnemySpec {
     /// others renormalise onto the roll and each becomes MORE likely. A
     /// nullified effect does not: the type still takes its share of the rolls,
     /// the status is still applied and still counts as a type for Condition
-    /// Overload — only what it DOES is gone (owner, 2026-08-12: "有一种是可以正
-    /// 常触发这个状态，但是状态没有效果。还有一种是压根不可能上去…这两种算法会
-    /// 影响触发概率").
+    /// Overload — only what it DOES is gone (owner, 2026-08-12).
     ///
     /// The wiki says which is which by how it words them. A Demolisher's codex
     /// lists "Proc Immunity: Radiation" — that one cannot land. The Demolisher
@@ -213,8 +211,7 @@ pub struct EnemySpec {
     /// It cannot be FROZEN. Cold's ladder keeps climbing and never converts, so
     /// the stacks sit at their cap instead of being consumed every tenth proc —
     /// which means the Cold bonus is up for the WHOLE fight rather than in
-    /// bursts around a 3-second Frozen window (owner, 2026-08-12: "因为
-    /// demolisher没有冰冻状态，所以会一直叠冰冻…一直有10层").
+    /// bursts around a 3-second Frozen window (owner, 2026-08-12).
     ///
     /// It is the same kind of fact as `nullified_status_effects` — the proc
     /// lands, one part of what it does is missing — but Frozen is a STATE

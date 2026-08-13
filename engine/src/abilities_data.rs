@@ -6,11 +6,11 @@
 //! comparison, one of them getting it is not — and the BOARD carries none of
 //! these, which is what keeps a board row a statement about the weapon.
 //!
-//! EARLY ACCESS (owner, 2026-08-08: "注意这个部分未来会迁移，目前相当于抢先开
-//! 放"). When frames land, the Ability Strength comes from the frame and the
-//! duration from its Ability Duration; the buff DEFINITIONS here do not change,
-//! only where their two inputs come from. That is why [`resolve`] takes
-//! `strength` and a duration override as arguments rather than reading them
+//! EARLY ACCESS (owner, 2026-08-08). When frames land, the Ability Strength
+//! comes from the frame and the duration from its Ability Duration; the buff
+//! DEFINITIONS here do not change, only where their two inputs come from. That
+//! is why [`resolve`] takes `strength` and a duration override as arguments
+//! rather than reading them
 //! from anywhere: the caller that supplies them is the part that will move.
 //!
 //! Four effect kinds, and the differences between them are all measured or
@@ -25,8 +25,8 @@
 //!   dips for status effects, the one from Eclipse is applied once."
 //! - [`AbilityEffect::AddElement`] (Nourish, Shock Trooper, Fireball Frenzy,
 //!   Freeze Force, Venom Dose) adds a percentage of ModifiedBase as its
-//!   element, and DOES NOT COMBINE (owner: "注意不合成") — it lands on the
-//!   finished vector, after the elemental hierarchy has run.
+//!   element, and DOES NOT COMBINE (owner) — it lands on the finished
+//!   vector, after the elemental hierarchy has run.
 //! - [`AbilityEffect::ExtraHit`] (Xata's Whisper) is the odd one out: it does
 //!   not scale the weapon's number at all, it fires a SECOND damage instance
 //!   worth a percentage of the first (wiki `Extra_Hit`). The engine's rules
@@ -354,11 +354,11 @@ pub fn at_strength(v: f64, strength: f64) -> f64 {
 /// the frame is.
 ///
 /// THE FAMILY RULE IS APPLIED HERE, once, so no consumer can forget it: within
-/// a family only the strongest survives (owner, 2026-08-08: "同时选了 roar 和
-/// roar（helminth），那就选择生效当前最强的"). Comparing by resolved VALUE
-/// rather than by whether one is subsumed is what makes the rule survive a
-/// buffed Helminth Roar beating an unbuffed Rhino's — which is the case the
-/// wiki's "highest Ability Strength will take effect" is about.
+/// a family only the strongest survives (owner, 2026-08-08). Comparing by
+/// resolved VALUE rather than by whether one is subsumed is what makes the
+/// rule survive a buffed Helminth Roar beating an unbuffed Rhino's — which
+/// is the case the wiki's "highest Ability Strength will take effect" is
+/// about.
 ///
 /// Unknown ids are dropped rather than erroring: a stored scenario outlives the
 /// data, and a fight that refuses to run because a buff was renamed is worse
@@ -619,9 +619,9 @@ mod tests {
     /// WEAKER — Roar loses 20 points, Eclipse 170. The wiki lists no reduced
     /// ladder for this one, so the two would have been the same 26% under two
     /// names, and a family whose members are identical is one buff listed twice
-    /// (owner, 2026-08-09: "一致就保留一个"). Asserted from the other side: the
-    /// pairs that DO differ still differ, so deleting the duplicate cannot be
-    /// mistaken for a licence to collapse the rest.
+    /// (owner, 2026-08-09). Asserted from the other side: the pairs that DO
+    /// differ still differ, so deleting the duplicate cannot be mistaken for
+    /// a licence to collapse the rest.
     #[test]
     fn the_subsumed_whisper_needed_no_card_of_its_own() {
         assert!(get("xatas_whisper").is_some());
@@ -706,7 +706,7 @@ mod tests {
     /// lists no reduced ladder the ability is unchanged, and a second card
     /// carrying the same number is a choice nobody can make wrongly and nobody
     /// can make rightly: the family rule already runs whichever is stronger, so
-    /// ticking both is ticking one (owner, 2026-08-09: "一致就保留一个").
+    /// ticking both is ticking one (owner, 2026-08-09).
     #[test]
     fn no_two_abilities_of_a_family_are_the_same_buff() {
         for a in all() {

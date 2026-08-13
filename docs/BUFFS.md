@@ -186,9 +186,9 @@ TIMED one implemented — so every stacking buff decayed that way whether or not
 it was its rule. `all_drop` is the on-status arcane family (Cascadia Flare).
 
 `per_stack_expiry` became real on 2026-08-07: each stack keeps its OWN clock and
-expires on it, oldest first. Stormburst is the first perk that needed it (owner,
-observed in game: "3个层走FIFO，每个2s，上限就3层"), and at the cap a new stack
-evicts the oldest rather than being dropped.
+expires on it, oldest first. Stormburst is the first perk that needed it
+(owner, observed in game), and at the cap a new stack evicts the oldest rather
+than being dropped.
 
 **The difference is not cosmetic.** Under `lose_one_and_reset` a single hit
 inside the window refreshes the whole pile, so one hit every 2 s holds three
@@ -313,7 +313,7 @@ came to mean its own opposite — the stacks decayed anyway while the trigger wa
 skipped, so a locked buff decayed to zero and could never come back. It was
 wrong in three of the five families at once (Galvanized on-kill stacks, Lethal
 Rearmament, Overwhelming Attrition), and a player reported the worst of them
-(2026-08-03: 选无限持续后直接不生效). A duration cannot be forgotten, because
+(2026-08-03). A duration cannot be forgotten, because
 it is the thing the clocks already read.
 
 Two consequences worth knowing:
@@ -343,8 +343,8 @@ It is a buff by every test that matters (a trigger grants it, a trigger takes
 it, it has a cap), and it had no card until 2026-08-08. That was not cosmetic:
 a tendril costs a kill, so at a level where kills are slow — and against a
 target that does not die at all — **the Ocucor's only augment measured as
-nothing**, which is what a player reported (视使之触的专属卡无法选择层数，测不了
-视使的伤害). The count is rostered only when a mod READS it: the tendrils' own
+nothing** — which is exactly what a player reported: the augment's card
+offered no stack count, so its damage could not be measured at all. The count is rostered only when a mod READS it: the tendrils' own
 damage is cosmetic on the beam's target and is deliberately not modelled, so
 without Sentient Surge a card for them would move no number.
 
@@ -563,11 +563,11 @@ The first two differ by one wiki sentence and it is worth stating twice:
 Eclipse is applied once."* Getting that wrong is a factor of three on a DoT
 weapon, and `roar_is_used_twice_on_a_status_tick_and_eclipse_once` is the test.
 
-`add_element` is the one with a shape of its own. **It does not combine** (owner,
-2026-08-08: "注意不合成") — every one of the four augment pages says so — so it
-is added AFTER `elements::combine` has run: a weapon whose mods make Radiation,
-under Volt, deals Radiation *and* pure Electricity. It is still **sized** like an
-elemental mod ("additive with elemental mods"): a percentage of that attack
+`add_element` is the one with a shape of its own. **It does not combine**
+(owner, 2026-08-08) — every one of the four augment pages says so — so it is
+added AFTER `elements::combine` has run: a weapon whose mods make Radiation,
+under Volt, deals Radiation *and* pure Electricity. It is still **sized** like
+an elemental mod ("additive with elemental mods"): a percentage of that attack
 part's own ModifiedBase, which is why an explosion's share differs from the
 direct hit's, and why it also raises that element's DoT bracket.
 

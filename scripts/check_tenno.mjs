@@ -138,7 +138,7 @@ check("...and overshields pay its +74, exactly",
 // Checked on BOTH halves and on exact numbers, because this control exists to
 // make a clause reachable that the app spent a week answering "no" to — a
 // checkbox that stores a flag nobody reads looks exactly like one that works
-// (owner, 2026-08-13: "不是叫你阉割建模").
+// (owner, 2026-08-13).
 const solo = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
@@ -217,10 +217,10 @@ check("...and Deathtrap Trigger is unmoved by it — no primary to equip from",
   solo.trapSolo.base === solo.trapFull.base && solo.trapSolo.mag === solo.trapFull.mag,
   `${solo.trapFull.base}/${solo.trapFull.mag} -> ${solo.trapSolo.base}/${solo.trapSolo.mag}`);
 
-// THE FIGHT'S OWN STAT BONUSES — a panel, not a buff (owner, 2026-08-13:
-// "效果等于又塞mod，不需要单独一个增益。这些是永久的"). Three claims, and the
-// third is the one a screenshot cannot show: it is the SCENARIO's, so it saves
-// with the fight, travels to the optimizer read-only, and no ruler carries one.
+// THE FIGHT'S OWN STAT BONUSES — a panel, not a buff (owner, 2026-08-13).
+// Three claims, and the third is the one a screenshot cannot show: it is the
+// SCENARIO's, so it saves with the fight, travels to the optimizer read-only,
+// and no ruler carries one.
 const extra = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
@@ -249,7 +249,7 @@ const extra = await evaluate(`(async () => {
   // …AND IT IS PART OF THE FIGHT'S DOCUMENT. snapshotScenario() is what a
   // scenario preset stores and snapshotState() is what a build preset does,
   // so asking both is the claim itself: this saves with the fight and is not
-  // the build's (owner: 可以被一起保存到 scenario 里的).
+  // the build's (owner).
   //
   // Asserted on the DOCUMENTS rather than on a stored preset, because the
   // scenario a fresh page opens on is the OFFICIAL ruler — which is read-only

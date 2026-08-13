@@ -142,7 +142,7 @@ Implemented in `optimizer/` (`wfsim-optimizer` binary):
 
 Two preset bars, and the page is cut cleanly between them — nothing on it
 belongs to neither, which is what makes the two domains legible instead of a
-rule to remember (user: "挪到 search 这个 preset，就彻底干净了").
+rule to remember (user).
 
 ```
 preset bar: SEARCH  ─┐

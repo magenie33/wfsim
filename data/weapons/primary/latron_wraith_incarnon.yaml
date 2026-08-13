@@ -42,9 +42,7 @@ pseudo_reload:
 #
 # and the row names the Latron and the Latron Prime, not the Wraith. A shared Genesis does not make one weapon: an
 # Incarnon form is still that WEAPON's form, so a row is transcribed for the
-# entries it names and no others (owner, 2026-08-12: "同家族的灵化仍旧视为不同
-# 的武器。只要不在co表上，一律视为正常的只对direct的100%的加算…如果一个武器的
-# 普通的在表上，而prime没有，那普通特殊处理，prime正常处理，不要擅自家族推广").
+# entries it names and no others (owner, 2026-08-12).
 co_behavior: additive_with_base_damage
 
 # TWO ATTACK PARTS, and a THIRD thing this arena cannot hold. VERBATIM (wiki):

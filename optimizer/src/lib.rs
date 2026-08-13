@@ -669,7 +669,7 @@ pub struct Scenario {
     /// optimizer used to ignore. A weapon with a finite reserve (Larkspur
     /// Prime) was therefore SEARCHED running dry while the simulator replayed
     /// it resupplied, and the search reported half the number for the same
-    /// build (user, 2026-08-03: "optimizer 算出的结果又比 simulator 的要小").
+    /// build (user, 2026-08-03).
     pub infinite_ammo: bool,
     /// How conditional buffs are valued. NOT a constant: a SENTINEL weapon
     /// resolves under `BaseOnly` — this arena fires one weapon, so nothing on

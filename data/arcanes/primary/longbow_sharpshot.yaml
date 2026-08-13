@@ -1,6 +1,5 @@
 # BOWS ONLY, and that is an EQUIP rule rather than a calc-layer one (owner,
-# 2026-08-05: "只能那个武器装上的，其他的不可以"). The arsenal does not offer it
-# elsewhere, so neither do we.
+# 2026-08-05). The arsenal does not offer it elsewhere, so neither do we.
 #
 # "Cannot be equipped on crossbows such as Attica, Nagantaka (Prime), and Zhuge
 # (Prime)" needs no special case: a crossbow is its own class on the wiki

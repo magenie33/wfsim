@@ -1365,11 +1365,11 @@ pub fn meta_json() -> Value {
             // `simulate_json` / `parse_optimize`, whose own fallbacks are what
             // an API caller naming none of these gets.
             //
-            // 100 RUNS, and DECOUPLED FROM THE SCENARIO (owner, 2026-08-13:
-            // "计算次数应该是个和scenario解耦的选项…这样更干净"). It briefly
-            // matched the rulers' 1,000 so a first number would be comparable
-            // with the board — but that made one field answer two questions,
-            // and only one of them is the fight's. The RULERS still say 1,000
+            // 100 RUNS, and DECOUPLED FROM THE SCENARIO (owner, 2026-08-13).
+            // It briefly matched the rulers' 1,000 so a first number would be
+            // comparable with the board — but that made one field answer two
+            // questions, and only one of them is the fight's. The RULERS
+            // still say 1,000
             // in their own yaml and the SCORER still uses it, which is what
             // makes a board row reproducible; the page measures at whatever
             // the reader set, and the box says so.
@@ -1866,7 +1866,7 @@ fn enumerate_buffs(
     // below never saw it and the one arcane whose whole point is a stack count
     // had no card. Untimed, UNCAPPED, and consumed by a big crit — which is
     // why it starts at 0 like everything else that can be spent (user,
-    // 2026-08-03: "失活是独立的buff啊，就像配置这个buff一样配置失活buff").
+    // 2026-08-03).
     if arcane.enervate_rank.is_some() {
         push(BuffMeta {
             id: "arcane:secondary_enervate".into(),
@@ -3526,9 +3526,8 @@ fn chosen_evolutions(v: &Value, info: &WeaponInfo) -> Result<Vec<String>, String
 /// builds under a fight the replay would not run.
 ///
 /// So this is not a helper both agree to call — it is the ONE parse, and the
-/// simulator is the truth (user, 2026-08-04: "我希望 optimizer 执行的，是
-/// simulator 的规矩"). The optimizer adds only what is its own: the scope to
-/// search and the budget to spend.
+/// simulator is the truth (user, 2026-08-04). The optimizer adds only
+/// what is its own: the scope to search and the budget to spend.
 ///
 /// Measured when it was written: the two parsers read 9 of the same request
 /// fields and called 10 of the same 11 helpers. The one they did not share was
@@ -3757,8 +3756,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // This used to fall back to "base" when the tier-1 unlock was not among the
     // chosen evolutions, which made the form control lie: with no evolutions
     // picked — the state the page STARTS in — all three options produced the
-    // base form's number and nothing said why (user, 2026-08-04: "灵化循环和基
-    // 础，纯灵化好像都不起作用").
+    // base form's number and nothing said why (user, 2026-08-04).
     //
     // Implying it is the honest model, not a shortcut. Tier 1 is
     // `selection: fixed` on every Incarnon ladder: it is not a choice, it is
@@ -3885,9 +3883,9 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         return Err(err_json(format!("unknown enemy: {enemy_id}")));
     };
     // ELITE VARIANT, and it DEFAULTS ON wherever the unit has one (owner,
-    // 2026-08-05: "默认我们就选上"). The Eximus is what a Steel Path player
-    // actually meets — extra health and a pool of Overguard in front of it —
-    // so the ordinary unit is the special case to ask for, not the elite one.
+    // 2026-08-05). The Eximus is what a Steel Path player actually meets —
+    // extra health and a pool of Overguard in front of it — so the ordinary
+    // unit is the special case to ask for, not the elite one.
     //
     // The default is the UNIT's answer rather than a flat `true`, because the
     // engine REJECTS a combination that does not exist in game (a Thrax has no
@@ -4621,7 +4619,7 @@ pub struct OptimizePlan {
     /// THE VALENCE ELEMENTS this scope searches, and the roll they are all
     /// built at. A SET, because the progenitor element is a dimension like the
     /// mode: a different element is a different build, so a scope may ask which
-    /// of them wins (owner, 2026-08-13: "这个就好比是灵化的evo").
+    /// of them wins (owner, 2026-08-13).
     ///
     /// One entry is the ordinary case and reproduces exactly what a pinned
     /// element did; an empty list is a weapon with no valence at all, and the
@@ -4798,10 +4796,10 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             fixed_ids.len()
         )));
     }
-    // How FULL a build must be, as its own axis (user, 2026-08-03: "搜索器可以
-    // 有个设置，例如必须8个，<=8个，<=7个"). `build_size` is the ceiling and
-    // `build_min` the floor, so "exactly 8" is (8, 8), "up to 8" is (1, 8) and
-    // "up to 7" is (1, 7) — three settings rather than three behaviours.
+    // How FULL a build must be, as its own axis (user, 2026-08-03).
+    // `build_size` is the ceiling and `build_min` the floor, so "exactly 8" is
+    // (8, 8), "up to 8" is (1, 8) and "up to 7" is (1, 7) — three settings
+    // rather than three behaviours.
     //
     // The DERIVED floor stays a floor: pooling mods is the statement that they
     // should be used, so at least one pooled mod is in every searched build,
@@ -4948,7 +4946,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // The FIGHT's player, not a second one built the same way. Identical today
     // — same function, same request — which is exactly why it was easy to leave
     // and exactly why it should not be: two constructions of one fact is how
-    // they come to differ (user, 2026-08-04: "真相源要单一").
+    // they come to differ (user, 2026-08-04).
     let tenno = &fight.tenno;
     // ONE AXIS PER SLOT, then their CROSS PRODUCT — a weapon that seats two
     // arcanes is searched over pairs, because "the best Primary" and "the
@@ -4988,10 +4986,10 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             // An arcane slot costs nothing — no capacity, no Forma — so
             // leaving it empty can never beat filling it with something that
             // helps, and marking a candidate IS the statement that the slot
-            // should be filled (user, 2026-08-01: "没有理由放空一个"). Keeping
-            // `none` alongside doubled the space per slot and put builds with
-            // a hole in them on the results board, where they can only ever
-            // tie the same build with the arcane in it.
+            // should be filled (user, 2026-08-01). Keeping `none` alongside
+            // doubled the space per slot and put builds with a hole in them
+            // on the results board, where they can only ever tie the same
+            // build with the arcane in it.
             //
             // A slot with nothing marked still resolves to `none`, which is
             // what an empty slot IS — that case is the `else` below.
@@ -6318,8 +6316,8 @@ mod form_tests {
     ///
     /// This is the state the page STARTS in: no evolutions chosen. It used to
     /// fall back to the base form for every request, so all three options
-    /// produced one number and the control said otherwise (user, 2026-08-04:
-    /// "灵化循环和基础，纯灵化好像都不起作用"). Three options, one outcome.
+    /// produced one number and the control said otherwise (user,
+    /// 2026-08-04). Three options, one outcome.
     ///
     /// Implying it is exact rather than generous: tier 1 is `selection: fixed`
     /// on every Incarnon ladder — not a choice but what installing the Genesis

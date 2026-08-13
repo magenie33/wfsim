@@ -20,11 +20,11 @@ effects:
   # the PLAYER rather than about this weapon — so it is answered in `resolve_for`,
   # which has the Tenno, rather than in `apply`, which never sees one.
   #
-  # THE NEUTRAL PLAYER SPRINTS AT 0.9, the slowest a frame has (owner: "我们应该
-  # 假设tenno的sprint speed是0.9（最慢的）"), so this half pays NOTHING until
-  # someone says which frame is carrying the gun. That is the same rule every
-  # other Tenno field follows: with no frame chosen the wielder claims nothing.
-  # Read as always-on it was generous to exactly the builds that cannot reach
+  # THE NEUTRAL PLAYER SPRINTS AT 0.9, the slowest a frame has (owner), so this
+  # half pays NOTHING until someone says which frame is carrying the gun. That
+  # is the same rule every other Tenno field follows: with no frame chosen the
+  # wielder claims nothing. Read as always-on it was generous to exactly the
+  # builds that cannot reach
   # the threshold.
   - kind: condition_overload
     value: 0.30

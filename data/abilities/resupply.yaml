@@ -11,8 +11,9 @@
 # `Extra_Hit` page is what said it (2026-08-09), and the owner's reading of the
 # 0% case is what closed the gap between them:
 #
-#   an Extra Hit REPLACES the base its status burns off — 上一级被 resupply 替
-#   换了 — so a 0% one replaces nothing and the level above stands.
+#   an Extra Hit REPLACES the base its status burns off — the level
+#   ABOVE is what Resupply replaced — so a 0% one replaces nothing and the
+#   level above stands.
 #
 # Resupply is the direction where the replacement happens; Debilitate is the
 # direction where it does not. docs/EXTRA_HIT.md holds both.

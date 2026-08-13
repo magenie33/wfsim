@@ -13,11 +13,10 @@ mastery_rank: 13
 # is the whole reason these builds look the way they do. See docs/INVESTMENT.md.
 max_rank: 40
 
-# THE FIRST ADVERSARY WEAPON in the roster (owner, 2026-08-13: "把玄海武器加进来
-# 有赤毒 有信条 有终极…你先拿这把枪打样"). Kuva is the Grineer family; Tenet
-# (Corpus) and Coda (Infested) are the other two and share this shape, which is
-# why the VALENCE block below is a weapon field rather than something written
-# into this file's prose.
+# THE FIRST ADVERSARY WEAPON in the roster (owner, 2026-08-13). Kuva is the
+# Grineer family; Tenet (Corpus) and Coda (Infested) are the other two and
+# share this shape, which is why the VALENCE block below is a weapon field
+# rather than something written into this file's prose.
 
 accuracy: 100                 # the infobox says "Very High"; WFCD's number is 100
 disposition: 0.5

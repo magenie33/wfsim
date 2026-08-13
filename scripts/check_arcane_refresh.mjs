@@ -1,10 +1,10 @@
 // FOURTEENTH CHECK — changing an arcane reaches the panel and the buff bar.
 //
-// Reported 2026-08-05: "切换赋能不会刷新缓存，需要切换一下mod才能刷新可以正确
-// 显示". The arcane picker redrew its own slots and stopped — `refreshPanel` is
-// the funnel every build change is supposed to go through, and the arcane path
-// skipped it, so the stats and the SIM'S BUFF BAR kept showing the previous
-// arcane until an unrelated edit happened to refresh them. Toggling a mod was
+// Reported 2026-08-05. The arcane picker redrew its own slots and stopped —
+// `refreshPanel` is the funnel every build change is supposed to go through,
+// and the arcane path skipped it, so the stats and the SIM'S BUFF BAR kept
+// showing the previous arcane until an unrelated edit happened to refresh
+// them. Toggling a mod was
 // the usual accident.
 //
 // The fix put the refresh inside the mutation, so this asserts the OBSERVABLE:

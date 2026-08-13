@@ -2,8 +2,8 @@
 //
 // The optimizer used to offer only a ceiling ("max mods / build"), so
 // "search only full 8-mod builds" was not a thing you could ask for — and
-// every search paid for the sizes below it (user, 2026-08-03: "应该搜索器可以
-// 有个设置，例如必须8个，<=8个，<=7个"). The floor is its own control now.
+// every search paid for the sizes below it (user, 2026-08-03). The
+// floor is its own control now.
 //
 // Asserts what is on SCREEN and in the REQUEST, not what is in a variable:
 // the two ends push each other, the scope estimate follows the floor, the

@@ -22,9 +22,7 @@ introduced: "29.0"
 # range and on itself."
 #
 # Same shape as the Thrax's spectral form: written down, machinery ready,
-# deliberately not applied to this unit yet (owner, 2026-08-12: "我们这个模拟器
-# 的爆破者，不会驱散玩家的buff，是一个特殊的处理，正如thrax不会进入灵体形态一
-# 样，但是我们代码保留，说不定会用上").
+# deliberately not applied to this unit yet (owner, 2026-08-12).
 #
 # THE MACHINERY IS BUILT AND TESTED, so turning it on is this one line:
 #   nullifies_warframe_abilities: true

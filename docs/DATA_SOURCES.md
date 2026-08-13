@@ -827,17 +827,17 @@ The enemy modules use 18 distinct `Faction` values; the damage table publishes
 
 **That is not a gap — it is the answer.** The fifteen are the whole system, so
 a faction the table leaves out is a unit the game gives no vulnerability or
-resistance to, and it takes every damage type as written (user, 2026-08-03:
-"就只有15个，其他都理解成中性"). `factions_data::column()` returns the neutral
-column for an unlisted key rather than reporting an error, and the file holds
-exactly the fifteen — no hand-added neutral rows, with a test locking the set
-so "everything else is neutral" cannot quietly come to mean "we lost a
+resistance to, and it takes every damage type as written (user, 2026-08-03).
+`factions_data::column()` returns the neutral column for an unlisted key
+rather than reporting an error, and the file holds exactly the fifteen — no
+hand-added neutral rows, with a test locking the set so "everything else is
+neutral" cannot quietly come to mean "we lost a
 column".
 
 ## Riven pools: the rules decide, the survey checks
 
-Three files, and which one DECIDES is the whole design (owner, 2026-08-08:
-"紫卡不应该是按照规则自动生成的吗？抓取只是来当验证才对"):
+Three files, and which one DECIDES is the whole design (owner,
+2026-08-08):
 
 | file | role |
 |---|---|

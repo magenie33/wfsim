@@ -13,7 +13,7 @@
 # gun to take when you are not playing at it.
 #
 # So this is the floor: nothing is aimed, no shot finds a head, and what is
-# left is the weapon (owner, 2026-08-07: 用来模拟无脑的情况).
+# left is the weapon (owner, 2026-08-07).
 #
 # The two together are the interesting reading. A weapon that ranks high on
 # both is strong; one that ranks high here and low there is being carried by

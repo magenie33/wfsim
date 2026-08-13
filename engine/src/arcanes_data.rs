@@ -366,11 +366,11 @@ pub struct ArcaneDef {
     /// Weapon CLASSES that may equip this arcane at all. Empty = any weapon
     /// whose slot seats the arcane, which is almost all of them.
     ///
-    /// An EQUIP rule, not a calc-layer gate (owner, 2026-08-05: "只能那个武器
-    /// 装上的，其他的不可以"). `requires` is the other thing — it lets the
-    /// arcane equip and go inert, which is right for Akimbo Slip Shot and WRONG
-    /// for these two: the game does not offer them at all. A picker that offers
-    /// what the arsenal refuses is a worse way to say the same thing.
+    /// An EQUIP rule, not a calc-layer gate (owner, 2026-08-05). `requires` is
+    /// the other thing — it lets the arcane equip and go inert, which is right
+    /// for Akimbo Slip Shot and WRONG for these two: the game does not offer
+    /// them at all. A picker that offers what the arsenal refuses is a worse
+    /// way to say the same thing.
     pub equip_classes: Vec<&'static str>,
     /// Verbatim in-game text with rank-varying numbers as `X`.
     pub description: String,
@@ -379,8 +379,7 @@ pub struct ArcaneDef {
     /// A FOURTH admission, and the only one that is not a shortfall: the sim
     /// computes this, it matches the game, and it is a bug — so a hotfix
     /// changes the answer and the number a player is reading today rests on
-    /// something that can be taken away (owner, 2026-08-08: "我要建立啊，但是标
-    /// 记可能非本意，我要忠实原本游戏，如果修了那我就改").
+    /// something that can be taken away (owner, 2026-08-08).
     ///
     /// Text rather than a flag, and rendered rather than a comment, for the
     /// same reason a weapon's `unmodeled:` lines are: this is the sentence the
@@ -492,11 +491,10 @@ enum ArcEffect {
     /// look unfinished when four of the seven cases are the model's own edge.
     ///
     /// Neither carries text: the explanation belongs in a YAML comment, where a
-    /// maintainer reads it, not in a field the app renders (owner: "不要有note
-    /// 字段，所有的说明全是备注").
-    /// Primary Debilitate: on a damage instance that lands a COMBINED status
-    /// bringing the target TO [`DEBILITATE_STACKS`] of it — this stack counted,
-    /// so at nine the shot that makes it ten fires (owner-measured, M34) — a
+    /// maintainer reads it, not in a field the app renders (owner). Primary
+    /// Debilitate: on a damage instance that lands a COMBINED status bringing
+    /// the target TO [`DEBILITATE_STACKS`] of it — this stack counted, so at
+    /// nine the shot that makes it ten fires (owner-measured, M34) — a
     /// chance to also inflict one of its two component statuses, chosen 50/50,
     /// one stack, and dealt as its own damage INSTANCE (which is why the status
     /// it leaves carries the faction bonus a third time; see

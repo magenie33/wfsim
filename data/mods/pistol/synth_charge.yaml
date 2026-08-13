@@ -31,8 +31,8 @@ requires_weapon: magazine_6
 effects:
   # THE LAST ROUND ONLY, which is the whole mod. It was a plain
   # `base_damage_bonus` — +200% on EVERY shot, in the bucket Hornet Strike is in
-  # — which is wrong twice over and wrong upward both times (owner, 2026-08-13:
-  # "我怀疑建模错了").
+  # — which is wrong twice over and wrong upward both times (owner,
+  # 2026-08-13).
   #
   # VERBATIM (the card): "grants bonus damage to the final shot in the Magazine",
   # and the ladder is +50/100/150/200%.

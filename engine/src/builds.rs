@@ -98,10 +98,9 @@ pub struct ValidBuild {
     /// came out of its Lich with. Empty on every weapon that has no valence.
     ///
     /// Part of the build for the same reason an evolution is (owner,
-    /// 2026-08-13: "这个就好比是灵化的evo。这个属性的选择也是build 的一部分"):
-    /// a different element is a different weapon, not a weaker one. The
-    /// PERCENTAGE is not here — the board scores every row at the roll's
-    /// maximum, which every player can reach.
+    /// 2026-08-13): a different element is a different weapon, not a
+    /// weaker one. The PERCENTAGE is not here — the board scores every
+    /// row at the roll's maximum, which every player can reach.
     pub valence: String,
     /// Forma the cheapest legal polarity layout needs. Not a legality term —
     /// two builds that are the same FIGHT can cost different amounts to reach,
@@ -530,10 +529,10 @@ pub fn validate(
     }
 
     // EIGHT SLOTS. The exilus slot is OUT OF SCOPE for a benchmark build
-    // (user, 2026-08-04: "不考虑 exilus 槽位"), and the reason is that it does
-    // not measure anything: exilus mods are handling and mobility, with no
-    // single-target damage model — the optimizer already excludes them from
-    // its pool for exactly that reason. It also costs a separate adapter, so
+    // (user, 2026-08-04), and the reason is that it does not measure
+    // anything: exilus mods are handling and mobility, with no single-target
+    // damage model — the optimizer already excludes them from its pool for
+    // exactly that reason. It also costs a separate adapter, so
     // counting it would price a build against a resource the ranking cannot
     // see the value of.
     //
@@ -849,7 +848,7 @@ mod tests {
     ///
     /// It reached the board: the Ocucor carried two rows differing only in
     /// Frostbite and Pistol Pestilence being swapped, both scoring 6.0779
-    /// (owner, 2026-08-06 — "这在我们这里应该是实质相同的build").
+    /// (owner, 2026-08-06).
     #[test]
     fn swapping_two_elementals_inside_a_pair_is_one_build() {
         let one = validate("ocucor", &v(&["frostbite", "pistol_pestilence"]), &[], &[], "").unwrap();
@@ -920,7 +919,7 @@ mod tests {
     }
 
     /// ALL THREE AXES REACH THE BUILD — mods, evolutions AND arcanes (user,
-    /// 2026-08-04: "检查确定所有的包括 evo mod arcane 正常进入").
+    /// 2026-08-04).
     ///
     /// Asserted through the IDENTITY rather than by reading fields back,
     /// because identity is what a board row is keyed on: if an axis did not

@@ -1258,10 +1258,9 @@ pub struct WeaponBase {
     /// plain bonus rather than a timed buff.
     ///
     /// IT IS SCOPED TO THE RELOAD ACTION — it arrives when the reload starts
-    /// and is gone when the reload ends (owner, 2026-08-11: "这个buff伴随整个
-    /// 换单动作，然后立刻消失… 换弹开始的时候有个buff，然后换弹完成后这个buff
-    /// 才消失"). So it cannot lapse halfway through, and it cannot spill onto
-    /// anything that is not that reload.
+    /// and is gone when the reload ends (owner, 2026-08-11). So it cannot
+    /// lapse halfway through, and it cannot spill onto anything that is
+    /// not that reload.
     ///
     /// That is also what makes the perk loadable at all on the other eleven
     /// weapons that have it. Only the Phenmor's page publishes a window (6 s),
@@ -1535,8 +1534,7 @@ pub enum BuffDecay {
     LoseOneAndReset,
     /// Each stack carries its OWN clock and expires on it, oldest first —
     /// FIFO. Strictly harsher: holding N stacks needs N hits per window, not
-    /// one. Stormburst is the roster's first (owner, 2026-08-07: "3个层走
-    /// FIFO，每个2s，上限就3层").
+    /// one. Stormburst is the roster's first (owner, 2026-08-07).
     PerStackExpiry,
 }
 
@@ -1602,11 +1600,11 @@ pub struct StackingBuff {
     /// AN EVENT THAT TAKES THE WHOLE PILE, for a buff that has no clock.
     ///
     /// Mounting Momentum is cleared the instant the magazine reaches zero —
-    /// not when the reload finishes, and not on a timer (owner, 2026-08-08:
-    /// "不可能 0/13，这时候会立刻清除增益（而不是换弹）"). It changes what the
-    /// perk IS: firing a magazine dry and reloading it earns one magazine's
-    /// worth and no more, and the only way to the 99-stack cap is to keep
-    /// topping up a magazine that never empties.
+    /// not when the reload finishes, and not on a timer (owner,
+    /// 2026-08-08). It changes what the perk IS: firing a magazine dry and
+    /// reloading it earns one magazine's worth and no more, and the only
+    /// way to the 99-stack cap is to keep topping up a magazine that never
+    /// empties.
     pub cleared_by: ClearedBy,
 }
 
@@ -2165,8 +2163,7 @@ pub struct ResolvedPanel {
     /// Incarnon transform completing, takes it down — because all three refill
     /// the magazine. Nothing ASKS whether the moment is a reload: the value is
     /// summed into the live reload-speed total wherever that total is needed,
-    /// and only the removal events are reasoned about (owner, 2026-08-11: "最正
-    /// 确的建模就是建立一个无限时长的buff… 不应该在意此时是否换弹").
+    /// and only the removal events are reasoned about (owner, 2026-08-11).
     pub rs_on_reload: f64,
     /// Flensing Spikes' rate — see [`WeaponBase::armor_strip_per_puncture`].
     pub armor_strip_per_puncture: f64,
@@ -2760,9 +2757,8 @@ pub fn resolve_for(
     // WEAPON'S value, so a source that never passed through the mod bucket —
     // an evolution's permanent bonus, an arcane's live stacks, the weapon's own
     // Frenzy passive — is not exempt just because the loop above cannot see it
-    // (user, 2026-08-04: "应该要锁定的，好像没锁"). The out-of-bucket layers are
-    // shadowed here, and `locked` carries the fact to the SIM, which owns the
-    // live ones.
+    // (user, 2026-08-04). The out-of-bucket layers are shadowed here, and
+    // `locked` carries the fact to the SIM, which owns the live ones.
     let locked_stat = |s: &str| disabled.contains(&s);
     let evo_ms_bonus = if locked_stat("multishot") {
         0.0
@@ -3255,7 +3251,7 @@ pub fn resolve_for(
                 // fight is what earns it. An empty magazine takes the whole
                 // thing, so "how many you walk in with" is not a state the
                 // weapon has — it is a state the last few seconds decided
-                // (owner, 2026-08-08: "还是不用给初始层").
+                // (owner, 2026-08-08).
                 initial_stacks: b.initial_stacks,
                 ..*b
             })
@@ -3741,7 +3737,7 @@ mod tests {
     }
 
     /// A FIGHT BONUS IS ONE MORE MOD, and that is the whole claim (owner,
-    /// 2026-08-13: "效果等于又塞mod，不需要单独一个增益。这些是永久的").
+    /// 2026-08-13).
     ///
     /// Asserted as an EQUALITY against the real card rather than as a
     /// direction: a scenario's +165% base damage has to resolve to the same
@@ -3980,8 +3976,8 @@ mod tests {
 
     /// The sim used to satisfy `while_aiming` silently, so every aim-gated
     /// buff fired whether or not the scenario implied aiming (user,
-    /// 2026-07-30: "aim 会影响一些 buff 的触发，我们目前都让这些 buff 触发了").
-    /// `resolve_with(.., aiming)` is the knob; `resolve` keeps assuming aim.
+    /// 2026-07-30). `resolve_with(.., aiming)` is the knob; `resolve` keeps
+    /// assuming aim.
     #[test]
     fn aiming_gates_the_while_aiming_effects_and_only_those() {
         use crate::mods_data::class_pool;
@@ -4542,7 +4538,7 @@ mod tests {
     /// proportional to the amount of ammo consumed during the charge"*, and
     /// *"Charge rate consumes a set 11 ammo per second. Modding to increase
     /// magazine capacity will allow a longer total charge, and thus more
-    /// damage."* Confirmed in play (owner, 2026-08-09: 副冲可以按到底消耗全部弹药).
+    /// damage."* Confirmed in play (owner, 2026-08-09).
     ///
     /// Three things move together and this asserts all three, because any one
     /// of them alone would be a different weapon: the TIME (magazine / 11), the

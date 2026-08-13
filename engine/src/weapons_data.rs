@@ -265,7 +265,7 @@ pub struct AttackSpec {
     /// Projectile Speed stat something to act on when nothing flies — it is
     /// why a shotgun rolls it, and why the Furis does (its Incarnon form
     /// falls off from 10 m to 16 m) while the Latron does not (owner,
-    /// 2026-08-08: "会间接影响射程。很多霰弹有这个特性").
+    /// 2026-08-08).
     #[serde(default)]
     pub falloff: Option<FalloffSpec>,
     /// A radial (AoE) part fired with every projectile of this attack.
@@ -442,7 +442,7 @@ pub struct IncarnonSpec {
     /// weapon has been measured, so restating it in sixty-nine weapon files
     /// dressed a house convention as sixty-nine facts. It lives here, once,
     /// and a weapon that is ever measured to differ says so by writing the
-    /// field (owner, 2026-08-08: "要标准不是官方数据").
+    /// field (owner, 2026-08-08).
     #[serde(default = "standard_transmute_out")]
     pub transmute_out_seconds: f64,
 }
@@ -652,7 +652,7 @@ pub struct WeaponSpec {
     /// that expensive — a weapon whose base attack has parts this entry does not
     /// carry (a bow's uncharged shot, the Angstrum's explosion, the Stug's
     /// blobs) reads as a complete weapon, and its number is not the weapon's
-    /// number (owner, 2026-08-08: "没建模的要如实说，因为我自己要看，也给用户看").
+    /// number (owner, 2026-08-08).
     ///
     /// Prose, deliberately, and the ONE place in a weapon file where prose is a
     /// value rather than a comment — the same exception `enemies/` already
@@ -772,8 +772,8 @@ pub struct WeaponSpec {
     /// the two were one flag until 2026-08-04. Conflating them meant the
     /// Infinite-ammo box was ticked AND DISABLED on every weapon but one,
     /// because "cannot be resupplied" was being read as "has no reserve at
-    /// all" (owner: "只有 sentinel 是真的无限弹药"). A Torid has 60 rounds
-    /// behind its magazine; what it also has is a way to get more.
+    /// all" (owner). A Torid has 60 rounds behind its magazine;
+    /// what it also has is a way to get more.
     #[serde(default)]
     pub no_resupply: bool,
     /// A status-triggered crit-chance LOCK — Gotva Prime's passive, and the
@@ -1213,11 +1213,11 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
         });
     }
 
-    // NOT `no_resupply`. It was listed here and taken out (owner, 2026-08-05:
-    // "这个不是被动...是archgun一类的特性"): every ground Arch-Gun is removed
-    // when its reserve runs out, so it says nothing about THIS weapon. A line
-    // that is true of a whole class does not belong on the entry for one member
-    // of it — it reads as a distinguishing feature and distinguishes nothing.
+    // NOT `no_resupply`. It was listed here and taken out (owner, 2026-08-05):
+    // every ground Arch-Gun is removed when its reserve runs out, so it says
+    // nothing about THIS weapon. A line that is true of a whole class does not
+    // belong on the entry for one member of it — it reads as a distinguishing
+    // feature and distinguishes nothing.
     //
     // The rule still reaches the player where it is a decision: the scenario's
     // Infinite-ammo control is forced off for such a weapon, and says why.
@@ -1865,11 +1865,9 @@ mod tests {
     /// EVERY CO ANOMALY IN THE ROSTER IS ON THIS LIST, and the list is the
     /// catalog. Nothing else may be anything but ordinary.
     ///
-    /// The rule (owner, 2026-08-12): *"同家族的灵化仍旧视为不同的武器。只要不在
-    /// co表上，一律视为正常的只对direct的100%的加算…如果一个武器的普通的在表上，
-    /// 而prime没有，那普通特殊处理，prime正常处理，不要擅自家族推广."* Ordinary
-    /// has a definition — direct hits only, 100% of the base, added to the
-    /// base-damage bucket — and a shared Genesis does not make one weapon.
+    /// The rule (owner, 2026-08-12) Ordinary has a definition — direct
+    /// hits only, 100% of the base, added to the base-damage bucket — and
+    /// a shared Genesis does not make one weapon.
     ///
     /// A LIST rather than a count, because the failure this exists to stop is
     /// not "someone added an anomaly", it is "someone gave one to the variant
@@ -2218,9 +2216,9 @@ mod tests {
 
     /// HAVING A RESERVE AND BEING ABLE TO REFILL IT ARE TWO FACTS, and they
     /// were one field until 2026-08-04 — which is why the Infinite-ammo control
-    /// was disabled on every weapon but the Arch-Gun (owner: "只有 sentinel 是
-    /// 真的无限弹药"). `has_reserve` is derived from `ammo_max` and is what
-    /// "truly infinite" means; `no_resupply` is the Arch-Gun's own problem.
+    /// was disabled on every weapon but the Arch-Gun (owner). `has_reserve`
+    /// is derived from `ammo_max` and is what "truly infinite" means;
+    /// `no_resupply` is the Arch-Gun's own problem.
     #[test]
     fn a_reserve_and_a_resupply_are_two_different_facts() {
         use crate::loadout::WeaponBase;

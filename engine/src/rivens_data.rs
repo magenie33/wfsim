@@ -270,8 +270,7 @@ struct PoolFile {
 ///
 /// `data/rivens/pools.yaml` is NOT in that list. It is a count over live
 /// listings and it is EVIDENCE — read by `the_survey_still_agrees_with_the_
-/// rules` and by nothing in the calculation (owner, 2026-08-08: "抓取只是来当
-/// 验证才对").
+/// rules` and by nothing in the calculation (owner, 2026-08-08).
 ///
 /// 1. **Physical damage** — wiki (`Riven_Mods`, attributes-table legend),
 ///    verbatim: *"Weapons without more than 25% of a physical damage type
@@ -349,8 +348,7 @@ pub fn derived_for(weapon_id: &str) -> Vec<&'static str> {
     // So a falloff counts even with nothing in the air, which is why a shotgun
     // rolls the stat: the Boar keeps 50% past 25 m and the riven moves that
     // whole range. Reading only `shot_type` said no to every shotgun in the
-    // roster (owner, 2026-08-08, relaying a player's Furis card: "会间接影响射
-    // 程。很多霰弹有这个特性").
+    // roster (owner, 2026-08-08, relaying a player's Furis card).
     let flies = |f: &&'static crate::weapons_data::WeaponSpec| {
         f.attack.shot_type.is_some_and(|t| t.flies()) || f.attack.falloff.is_some()
     };
@@ -364,11 +362,10 @@ pub fn derived_for(weapon_id: &str) -> Vec<&'static str> {
 /// What this weapon's rivens can NOT roll: the derivation, with the
 /// hand-written per-family EXCEPTIONS applied over it.
 ///
-/// TWO LAYERS AND NOT THREE, and which two is the point (owner, 2026-08-08:
-/// "紫卡不应该是按照规则自动生成的吗？抓取只是来当验证才对"). The rules
-/// generate the pool; `data/rivens/exceptions.yaml` overrides them where
-/// somebody has looked; the SURVEY is neither of those and no longer appears
-/// here at all.
+/// TWO LAYERS AND NOT THREE, and which two is the point (owner, 2026-08-08).
+/// The rules generate the pool; `data/rivens/exceptions.yaml` overrides them
+/// where somebody has looked; the SURVEY is neither of those and no longer
+/// appears here at all.
 ///
 /// It used to. `pools.yaml` outranked the derivation, which made a scrape a
 /// silent authority over 26 weapon families — and a re-run of it came back
@@ -1164,10 +1161,10 @@ mod tests {
     /// AN EXCEPTION OVERRIDES THE RULES, and only an exception does.
     ///
     /// The survey used to sit in this path and does not any more (owner,
-    /// 2026-08-08: "紫卡不应该是按照规则自动生成的吗？抓取只是来当验证才对").
-    /// What survived the move is every answer it was giving — because each one
-    /// became an entry in `exceptions.yaml` carrying the count it came from —
-    /// so this asserts the ANSWERS, which is what a player sees, rather than
+    /// 2026-08-08). What survived the move is every answer it was giving —
+    /// because each one became an entry in `exceptions.yaml` carrying the
+    /// count it came from — so this asserts the ANSWERS, which is what a
+    /// player sees, rather than
     /// which file produced them.
     #[test]
     fn an_exception_overrides_the_derivation_and_nothing_else_does() {

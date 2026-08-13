@@ -106,11 +106,11 @@ const r = await evaluate(`(async () => {
   return out;
 })()`);
 
-// HOW HARD YOU MEASURE IS NOT PART OF THE FIGHT (owner, 2026-08-13: "计算次数应
-// 该是个和scenario解耦的选项…这样更干净"). Two claims, and the second is the one
-// that makes it true rather than merely defaulted: a scenario cannot carry a run
-// count at all, so opening an official ruler — whose yaml says 1,000 — cannot
-// silently make the page slow, and saving a fight cannot record a precision.
+// HOW HARD YOU MEASURE IS NOT PART OF THE FIGHT (owner, 2026-08-13). Two
+// claims, and the second is the one that makes it true rather than merely
+// defaulted: a scenario cannot carry a run count at all, so opening an
+// official ruler — whose yaml says 1,000 — cannot silently make the page slow,
+// and saving a fight cannot record a precision.
 check("the simulator runs at 100 by default", r.liveDefault === 100, `${r.liveDefault}`);
 check("...and a scenario cannot carry a run count at all",
   r.simDefault === undefined && r.inSnapshot === false,

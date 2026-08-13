@@ -93,7 +93,7 @@ enum EvoEffect {
     /// Flat BASE damage that an empty reload turns on and nothing turns off —
     /// Boar's Reified Bane, "On Reload From Empty: Increase Base Damage by
     /// +14". It is applied UNCONDITIONALLY, i.e. the run is modelled as
-    /// holding it from t = 0 (user, 2026-08-03: "我们也开头是1").
+    /// holding it from t = 0 (user, 2026-08-03).
     ///
     /// Held is EXACT here, not an approximation, and the timing is why: the
     /// bonus lands the moment an empty reload BEGINS and does not wait for it
@@ -127,9 +127,9 @@ enum EvoEffect {
     /// A handling / mobility / multi-target stat with no single-target damage
     /// payload — recoil, accuracy, punch through, projectile speed, holstered
     /// reload. It COUNTS: the value lands in the panel's `indirect` bucket
-    /// beside the mods' (user, 2026-08-03: "什么后坐力，精准度，我们要纳计算，
-    /// 只是目前完全不影响 dps 而已"). Mods were given this treatment on
-    /// 2026-08-01; evolutions were still dropping the number on the floor.
+    /// beside the mods' (user, 2026-08-03). Mods were given this treatment
+    /// on 2026-08-01; evolutions were still dropping the number on the
+    /// floor.
     Indirect(crate::loadout::IndirectStat, f64),
     /// Sets the ammo RESERVE outright (Mercenary Chamber: "Increase Base Ammo
     /// Capacity to 195") — a set, not an add, so it cannot ride the additive
@@ -307,11 +307,11 @@ enum EvoEffect {
     /// READY RETALIATION — reload speed, armed by STARTING a reload from empty
     /// and lasting a while after.
     ///
-    /// THE TRIGGER IS THE RELOAD ACTION, NOT ITS COMPLETION (owner, 2026-08-10:
-    /// "是在换弹开始的时候触发…等于给自己上了一张100% reload speed的mod"), so
-    /// the reload that armed it is the first thing it speeds up. That one word
-    /// is most of the perk's value: on a weapon that always reloads from empty
-    /// — which is every weapon in this sim — it behaves like a permanent reload
+    /// THE TRIGGER IS THE RELOAD ACTION, NOT ITS COMPLETION (owner,
+    /// 2026-08-10), so the reload that armed it is the first thing it speeds
+    /// up. That one word is most of the perk's value: on a weapon that always
+    /// reloads from empty — which is every weapon in this sim — it behaves
+    /// like a permanent reload
     /// mod rather than like a bonus that has to be caught in time.
     ///
     /// The window still matters for what comes AFTER the reload: a transmute,
@@ -606,10 +606,10 @@ pub struct EvoBuffCard {
     /// A third briefly existed — "one reload's worth", for Mounting Momentum —
     /// and it was wrong twice over. Nothing a player sets should depend on the
     /// weapon's stats when the ceiling is the same 99 for every weapon (owner,
-    /// 2026-08-08: "那个 buff 也不根据武器性能决定了，因为都可以 99 层的"), and
-    /// it contradicted the sim, which opens that buff at zero because an empty
-    /// magazine takes the pile. A card that defaults to six while the fight
-    /// starts at none is the plainest kind of lie a panel can tell.
+    /// 2026-08-08), and it contradicted the sim, which opens that buff at zero
+    /// because an empty magazine takes the pile. A card that defaults to six
+    /// while the fight starts at none is the plainest kind of lie a panel can
+    /// tell.
     pub opens_at: CardOpens,
 }
 
@@ -2329,7 +2329,7 @@ mod tests {
     /// through, so the guard is on the filter itself rather than on today's
     /// data — including the two write paths added on 2026-08-03
     /// (`Indirect` and `AmmoMaxSet`), which reach fields the old test never
-    /// looked at (user: "不要让 broken 的起作用").
+    /// looked at (user).
     #[test]
     fn a_broken_evolution_changes_nothing_whatever_it_grants() {
         use crate::loadout::{IndirectStat, WeaponBase};
@@ -2467,11 +2467,11 @@ use crate::loadout::WeaponBase;
             //
             // There was nothing to borrow. The buff is scoped to the RELOAD
             // ACTION — it arrives when the reload starts and is gone when it
-            // ends (owner, 2026-08-11: "这个buff伴随整个换单动作，然后立刻消
-            // 失") — so the silence was not missing data, it was the absence of
-            // a thing to say. All twelve work now, the Phenmor's 6 s is the
-            // buff icon's life rather than the bonus's, and the loader no
-            // longer demands a window it should never have wanted.)
+            // ends (owner, 2026-08-11) — so the silence was not missing data,
+            // it was the absence of a thing to say. All twelve work now, the
+            // Phenmor's 6 s is the buff icon's life rather than the bonus's,
+            // and the loader no longer demands a window it should never have
+            // wanted.)
             // ---- AMMO EFFICIENCY, and it is CONDITIONAL -----------------
             // Not an indirect stat: efficiency is real DPS the moment a
             // reserve runs dry. But one is gated on a movement state and one
@@ -2657,7 +2657,7 @@ use crate::loadout::WeaponBase;
     ///
     /// They have no single-target damage payload, which is exactly why they
     /// used to be dropped — and dropping them meant the evolution equipped and
-    /// its number vanished (user, 2026-08-03: 我们要纳计算). This asserts the
+    /// its number vanished (user, 2026-08-03). This asserts the
     /// whole path: yaml -> loader -> `WeaponBase.indirect` -> `resolve`'s
     /// bucket, in the same place a mod's would land.
     #[test]
@@ -2916,11 +2916,11 @@ mod furis_co_split_tests {
 mod headcracker_decay_tests {
     /// HEADCRACKER'S TEN STACKS EACH CARRY THEIR OWN CLOCK.
     ///
-    /// Owner observed it in game (2026-08-13: "如果叠了10层，这个10层是各自的，走
-    /// fifo的，和风雷骤起一模一样的"), which is the same rule Stormburst carries
-    /// and the same way it was found. The loader HARDCODED the Galvanized rule
-    /// here, on the reading that the card says nothing else — and the two are
-    /// not close: under Galvanized decay one headshot inside the window holds
+    /// Owner observed it in game (2026-08-13), which is the same rule
+    /// Stormburst carries and the same way it was found. The loader HARDCODED
+    /// the Galvanized rule here, on the reading that the card says nothing
+    /// else — and the two are not close: under Galvanized decay one headshot
+    /// inside the window holds
     /// all ten, under FIFO it holds exactly one.
     ///
     /// Asserted on the DECAY the buff carries rather than on a fight, because

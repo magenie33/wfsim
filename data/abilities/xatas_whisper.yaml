@@ -7,10 +7,10 @@
 # keeps a board row a statement about the weapon (2026-08-08).
 #
 # EARLY ACCESS, AND SAID SO ON THE PAGE. The owner asked for it ahead of the
-# frame layer it will eventually live in ("注意这个部分未来会迁移，目前相当于抢先
-# 开放"), so the section is deliberately small: pick the buff, set the strength,
-# set how long it lasts. When frames land, the strength comes from the frame and
-# the duration from Ability Duration, and these files stay as they are.
+# frame layer it will eventually live in, so the section is deliberately small:
+# pick the buff, set the strength, set how long it lasts. When frames land, the
+# strength comes from the frame and the duration from Ability Duration, and
+# these files stay as they are.
 
 # THE FOURTH KIND, and the first that is not a multiplier on the weapon's own
 # number: an EXTRA HIT (wiki `Extra_Hit`). The weapon deals what it deals, and
@@ -37,7 +37,7 @@
 # Void damage is based on a percentage of the total weapon damage."
 
 # THE BLAST INTERACTION, which is the reason this ability is worth implementing
-# rather than approximating (owner, 2026-08-09: "注意这个和blast的联动").
+# rather than approximating (owner, 2026-08-09).
 #
 # A Blast status detonation is a STATUS payload, and no extra hit fires off one
 # — the EN wiki files the exception under Bugs, in one line: "Only Xata's
@@ -61,10 +61,10 @@
 # adding an Electricity mod on camera and watching it move.
 
 # NO SEPARATE HELMINTH ENTRY, and that is a finding rather than an omission
-# (owner, 2026-08-09: "xata 两个版本一致吗，一致就保留一个"). Subsuming Xaku
-# offers this ability unchanged — the wiki states the subsuming and lists no
-# second set of numbers, unlike Roar (50% → 30%), Eclipse (200% → 30%) and
-# Nourish (75% → 45%), each of which prints its reduced ladder. Two cards with
+# (owner, 2026-08-09). Subsuming Xaku offers this ability unchanged — the wiki
+# states the subsuming and lists no second set of numbers, unlike Roar (50% →
+# 30%), Eclipse (200% → 30%) and Nourish (75% → 45%), each of which prints its
+# reduced ladder. Two cards with
 # one number between them is a choice a player cannot make wrongly and cannot
 # make rightly either; `no_two_abilities_of_a_family_are_the_same_buff` keeps it
 # that way.

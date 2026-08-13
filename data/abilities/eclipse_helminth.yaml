@@ -7,10 +7,10 @@
 # keeps a board row a statement about the weapon (2026-08-08).
 #
 # EARLY ACCESS, AND SAID SO ON THE PAGE. The owner asked for it ahead of the
-# frame layer it will eventually live in ("注意这个部分未来会迁移，目前相当于抢先
-# 开放"), so the section is deliberately small: pick the buff, set the strength,
-# set how long it lasts. When frames land, the strength comes from the frame and
-# the duration from Ability Duration, and these files stay as they are.
+# frame layer it will eventually live in, so the section is deliberately small:
+# pick the buff, set the strength, set how long it lasts. When frames land, the
+# strength comes from the frame and the duration from Ability Duration, and
+# these files stay as they are.
 
 # +30% subsumed against Mirage's +200% (wiki) — the widest gap of any pair
 # here, which is why offering both mattered.

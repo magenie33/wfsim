@@ -24,7 +24,7 @@
 //! space's index range. Walking it to the end visits every subset exactly once
 //! — the search IS exhaustive, provably, for any scope the budget can finish.
 //! Stopping early leaves a uniform sample WITHOUT REPLACEMENT. There is no
-//! mode to pick and no threshold to cross (user, 2026-08-03: 绝不分大小); which
+//! mode to pick and no threshold to cross (user, 2026-08-03); which
 //! one a run turned out to be is just whether it reached the end, and
 //! [`SearchStats::exhaustive`] says which.
 //!

@@ -4,12 +4,11 @@
 // main way anybody arrives at a build. What arrives has to be the build that
 // line is about — under the ruler that line is on.
 //
-// The failure it exists for (owner, 2026-08-08): "torid的无瞄准榜首我记得是带了
-// 衰弱的，但是现在跳转的那个并不是，是瞄准头的榜首。我现在读取并且计算，得到的
-// 结果也不对". The link carried the weapon and the mode and NOT the ruler, and
-// both boards call their leader "#1 · Incarnon cycle" — so the no-aim leader
-// opened the aimed board's leader, under the aimed board's fight, and re-running
-// it produced a number that matched neither line on either board.
+// The failure it exists for (owner, 2026-08-08). The link carried the weapon
+// and the mode and NOT the ruler, and both boards call their leader "#1 ·
+// Incarnon cycle" — so the no-aim leader opened the aimed board's leader,
+// under the aimed board's fight, and re-running it produced a number that
+// matched neither line on either board.
 //
 // Two halves, because a row is two things:
 //   · the BUILD — mods, arcane, evolutions, the mode it was played in

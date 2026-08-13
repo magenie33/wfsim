@@ -102,9 +102,8 @@ async function debugPort(profile) {
 /// EVERY OLD PROFILE, ON THE WAY IN — the one cleanup that cannot be skipped.
 ///
 /// `finish()` removes its own directory, and that was the whole plan until a
-/// machine turned up with 644 of them and 17 GB of C: gone (owner, 2026-08-10:
-/// "我有一堆临时文件，在C盘都快满了"). Two ways they survive and neither is
-/// exotic:
+/// machine turned up with 644 of them and 17 GB of C: gone (owner,
+/// 2026-08-10). Two ways they survive and neither is exotic:
 ///
 /// - on Windows Chrome still holds handles for a moment after `kill()`, so the
 ///   `rmSync` in `finish` throws and the comment there says "it can stay" —

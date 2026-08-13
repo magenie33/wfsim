@@ -1,9 +1,9 @@
 // THE SEVENTEENTH CHECK — there is ONE dropdown.
 //
-// Owner, 2026-08-06: "只要是下拉就一个样子". The site had eight native
-// `<select>`s beside a rich searchable picker, so the quick calc's SCENARIO —
-// a list that grows, since a scenario is a preset you make — was the plainest
-// control on the page while a mod list two blocks away searched and sorted.
+// Owner, 2026-08-06. The site had eight native `<select>`s beside a rich
+// searchable picker, so the quick calc's SCENARIO — a list that grows, since
+// a scenario is a preset you make — was the plainest control on the page
+// while a mod list two blocks away searched and sorted.
 //
 // What this asserts is the thing that decays: not that the component exists,
 // but that nothing has quietly gone back to a native select, and that the four

@@ -14,7 +14,7 @@ code, and nothing said so; two Furis rows sat 22% and 13% low until somebody
 happened to look at them. The hourly schedule would have healed it within the
 hour, but "within the hour, if you notice" is not a guarantee, and a board that
 disagrees with the engine is the one thing this project cannot ship (owner,
-2026-08-06: 一定要保证榜上的数据就是契合目前系统的).
+2026-08-06).
 
 So this is the manual path, as one command:
 

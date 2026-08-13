@@ -60,8 +60,7 @@ struct Row {
 }
 
 /// How many rows a weapon keeps per RULER and MODE. A hundred, raised from ten
-/// (owner, 2026-08-08: "我觉得10个有点少… 我们的ui也可以支撑100个benchmark每个里面
-/// 100个build容量").
+/// (owner, 2026-08-08).
 ///
 /// Ten was chosen to hold real ALTERNATIVES — a build without the arcane you
 /// lack, one that costs fewer Forma — rather than ten spellings of one answer.
@@ -262,7 +261,8 @@ fn main() {
         // builds like any other. Stripping the suffix is what lets them keep
         // competing under the id that replaced it, which is the same rule as
         // everywhere else here: a changed standard RE-SCORES rather than asking
-        // anyone to resubmit ("留在榜里，如果有其他后来居上的，就可以自然淘汰").
+        // anyone to resubmit: a row stays on the board and is overtaken by a
+        // better one rather than being retired by a rule change.
         //
         // A different ruler entirely — `group_clear` — is a different family and
         // keeps its own board.

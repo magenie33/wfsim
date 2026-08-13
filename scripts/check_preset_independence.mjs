@@ -132,10 +132,10 @@ check("...and its finalists", r.fin === 13, String(r.fin));
 check("the optimizer keeps no buff state of its own", !r.optOwnsBuffs);
 check("it shows the scenario's buff value", r.mirroredValue === "3", `${r.buffId} = ${r.mirroredValue}`);
 check("...and offers no way to change it", r.mirroredLocked === true, String(r.mirroredLocked));
-// THE FIGHT FOLLOWS YOU, and that is the point of it (owner, 2026-08-09:
-// "scenario应该可以跨武器复用了…要是玩家自己想批量测试白富美"). Measuring your
-// own roster under your own fight is the thing a per-weapon scenario made
-// impossible — you had to rebuild it on every gun.
+// THE FIGHT FOLLOWS YOU, and that is the point of it (owner, 2026-08-09).
+// Measuring your own roster under your own fight is the thing a
+// per-weapon scenario made impossible — you had to rebuild it on every
+// gun.
 check("a new weapon keeps the fight you were measuring under",
   r.bFight.dur === r.aFight.dur && r.bFight.level === r.aFight.level
     && r.bFight.name === r.aFight.name,
@@ -319,11 +319,11 @@ check("...not even into what gets written as that weapon's first build",
   ((cross.stored || {}).arcane || ["none"]).every((a) => a === "none"),
   JSON.stringify((cross.stored || {}).arcane));
 
-// THE SIMULATOR PICKS A BUILD; IT DOES NOT EDIT ONE (owner, 2026-08-07:
-// "simulater那里只可以选preset，mode要进入下面的预览"). The mode is part of the
-// build, so the builder's control for it must not be on this tab — and the
-// read-only Build card must state it instead, or the tab has simply lost a
-// field. Both halves, because hiding the control alone would lose it.
+// THE SIMULATOR PICKS A BUILD; IT DOES NOT EDIT ONE (owner, 2026-08-07).
+// The mode is part of the build, so the builder's control for it must not
+// be on this tab — and the read-only Build card must state it instead, or
+// the tab has simply lost a field. Both halves, because hiding the control
+// alone would lose it.
 const tabs = await evaluate(`(async () => {
   const s = (ms) => new Promise(r => setTimeout(r, ms));
   const shown = (sel) => {

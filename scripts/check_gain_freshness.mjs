@@ -5,8 +5,7 @@
 // cache key used to name the scenario's fields ONE BY ONE and the list had
 // drifted: `buffs` was missing, so raising a buff's starting stacks changed
 // what the scan would measure without changing the key, and a stale ranking
-// stayed on screen looking current (user, 2026-08-03: "我如果把某些buff初始调高
-// 了，没有立刻生效").
+// stayed on screen looking current (user, 2026-08-03).
 //
 // Asserts the two halves separately, because they fail separately: the key
 // must MOVE when the fight changes, and something must then RE-RUN.

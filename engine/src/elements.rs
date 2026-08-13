@@ -99,7 +99,7 @@ fn hcet(t: DamageType) -> u8 {
 /// elements always PRINTS the same way: `builds::canonical_mods` orders its
 /// element pairs by what each one makes, so Blast comes before Corrosive
 /// because the table says so and not because of who submitted first (owner,
-/// 2026-08-06: "我们参考wiki的排序").
+/// 2026-08-06).
 ///
 /// NOT `hcet`, which looks like the same question and is not: that one orders
 /// INNATE elements under rule 2 and changes what the weapon does.
@@ -218,8 +218,8 @@ mod tests {
         assert_eq!(out.get(Electricity), 0.0);
     }
 
-    /// THE WIKI'S OWN HCET TABLE, all forty-eight cells (owner, 2026-08-13:
-    /// "这里有个表格说明，你给我实现这个，确保没有实现错误哈").
+    /// THE WIKI'S OWN HCET TABLE, all forty-eight cells (owner,
+    /// 2026-08-13).
     ///
     /// VERBATIM (Kuva_Nukor, transcluded from Adversary System/Progenitor):
     /// *"Weapons with an innate primary element and a different primary element

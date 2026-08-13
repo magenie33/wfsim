@@ -17,10 +17,10 @@ transform_group: dread
 # BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
 # array, which is DE's own export and which agreed with the wiki infobox field
 # for field on every one of the eleven guns checked by hand first. The
-# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
-# wiki's table, with every clause the intake's rule engine did not recognise
-# loaded as a NAMED INERT effect that the builder and the optimizer both print
-# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# EVOLUTIONS are the rough half (owner): transcribed from the wiki's table,
+# with every clause the intake's rule engine did not recognise loaded as a
+# NAMED INERT effect that the builder and the optimizer both print as "not
+# modelled yet". Nothing is dropped in silence — some perks do nothing
 # yet and say so on their own tile.
 accuracy: 16.67
 disposition: 1.3

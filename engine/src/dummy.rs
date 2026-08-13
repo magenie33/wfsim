@@ -281,7 +281,7 @@ pub struct IncarnonCycle {
     /// It matters most where the gauge cannot be refilled: on a board with no
     /// weak-point hits, eight of the nine Incarnon forms can never charge, so
     /// a free opening magazine was the only Incarnon damage they would ever
-    /// deal and it was pure gift (owner, 2026-08-07: 初始打完就歇菜).
+    /// deal and it was pure gift (owner, 2026-08-07).
     ///
     /// True is still a real way to play — you walk into the room having charged
     /// on the last one — which is why it is a field rather than a deletion.
@@ -892,7 +892,7 @@ fn ten_stack_amp(stacks: usize) -> f64 {
 /// The mirror of [`DummyParams::buff_roster`], and deliberately the same shape:
 /// `(id, cap)` pairs whose order the frames index into. The two tables on the
 /// page are the same component fed from opposite sides of the fight (owner,
-/// 2026-08-11: "你就和我们现在的buff列表对称").
+/// 2026-08-11).
 ///
 /// It is a CONSTANT rather than a function of the build, because a debuff is
 /// the TARGET's: the roster is every status this engine models, and a run that
@@ -903,7 +903,7 @@ fn ten_stack_amp(stacks: usize) -> f64 {
 /// A DEATH IS NOT A NEW ROW. The arena replaces the body it kills, and every
 /// stack goes with it — so a respawn shows as the series dropping to zero and
 /// climbing again, and `uptime` counts that gap against you. That is the point
-/// (owner: "一个敌人死了又死的，算在一个id里").
+/// (owner).
 pub const DEBUFF_ROSTER: [(&str, u32); 14] = [
     // The 10-stack families, and the three that are not.
     ("virus", TEN_STACK_CAP as u32),
@@ -1343,7 +1343,7 @@ pub struct DummyParams {
     /// pair says it of Multishot. `resolve` handles what it can see; the live
     /// sources are HERE — an arcane's multishot stacks and the Frenzy passive's
     /// x2.5 — and a lock that stopped at the mod bucket left them paying
-    /// (user, 2026-08-04: "应该要锁定的，好像没锁").
+    /// (user, 2026-08-04).
     pub locked_stats: Vec<&'static str>,
     /// Buff-lock settings (see [`LockMode`]).
     pub locked_buffs: Vec<BuffLock>,
@@ -1680,8 +1680,7 @@ pub struct Frame {
     /// Every counter the RESULT panel reports, as it stood at `t`. A replay
     /// that only moved a cursor would be a decoration; these are what let the
     /// whole panel — KPIs, the damage meter, the curves — be re-read at any
-    /// instant of the fight (user, 2026-08-03: "点击 replay，应该可以重新把
-    /// 上面的所有复原").
+    /// instant of the fight (user, 2026-08-03).
     pub shots: u32,
     pub pellets: u32,
     pub crits: u32,
@@ -1734,7 +1733,7 @@ pub struct Replay {
 /// This is the one output that can be FALSIFIED — every line is a factor with
 /// its value, the product is the number that went into the damage meter, and
 /// anyone with the wiki and a calculator can check it by hand (owner,
-/// 2026-08-11: "方便我可以根据数据里找出计算瑕疵").
+/// 2026-08-11).
 ///
 /// It is recorded from the MEDIAN ENGAGEMENT, the same run the replay plays
 /// back, so the account and the curves are the same fight.
@@ -2142,8 +2141,8 @@ impl DummyParams {
 
     /// The finished vector with the ability elements ON TOP — never through
     /// [`crate::elements::combine`], because they do not combine (owner,
-    /// 2026-08-08: "注意不合成"). A weapon whose mods make Radiation and whose
-    /// squad has Volt deals Radiation AND pure Electricity.
+    /// 2026-08-08). A weapon whose mods make Radiation and whose squad
+    /// has Volt deals Radiation AND pure Electricity.
     ///
     /// `stage_mb` is THAT attack part's ModifiedBase: an explosion's elemental
     /// mods are a percentage of the explosion's own base (MECHANICS §7), and
@@ -2172,8 +2171,8 @@ impl DummyParams {
     /// silences an arcane's buff exactly as it silences a mod's. Three sites
     /// built params — `simulate_json`, the optimizer's scorer, the tests — and
     /// the Incarnon cycle's inner base form was assigned by none of them
-    /// (owner, 2026-08-11: "resolve_for 收赋能列表"; it landed one layer down,
-    /// where the optimizer's one-panel-many-arcanes pairing actually happens).
+    /// (owner, 2026-08-11; it landed one layer down, where the optimizer's
+    /// one-panel-many-arcanes pairing actually happens).
     pub fn from_panel(
         panel: &crate::loadout::ResolvedPanel,
         arena: &crate::arena::Arena,
@@ -2633,7 +2632,7 @@ pub struct SourceDamage {
     /// A status row is already one type — that is what a proc is. A weapon
     /// hit is not: "direct 3.1 G" hides that it was Corrosive and Magnetic in
     /// a 76/24 split, which is the part of a build a player actually tunes
-    /// (user, 2026-08-01: "直伤也是有属性的").
+    /// (user, 2026-08-01).
     pub direct_by_type: [f64; 15],
     pub radial_by_type: [f64; 15],
     pub field_by_type: [f64; 15],
@@ -3052,11 +3051,10 @@ fn push_break_proc(debuffs: &mut DebuffState, params: &DummyParams, now: f64, po
 ///
 /// Depth 3 is not a quirk to hardcode. It is arithmetic: a DoT is always one
 /// step past its source, so a DoT at ×f³ PROVES its source was already at ×f²,
-/// i.e. that an intermediate damage instance exists (owner, 2026-08-05: "吃3次
-/// 派系只有一个情况，那必然有个元素实例造成才有可能出现这个情况"). That is how
-/// Primary Debilitate's extra status is known to deal an instance and not
-/// merely add a stack — the wiki states ×f³ for it and never mentions the
-/// instance.
+/// i.e. that an intermediate damage instance exists (owner, 2026-08-05).
+/// That is how Primary Debilitate's extra status is known to deal an
+/// instance and not merely add a stack — the wiki states ×f³ for it and
+/// never mentions the instance.
 ///
 /// Writing it as a depth rather than as `fm2` and a future `fm3` is what keeps
 /// the next spreading mechanic (melee Influence, Secondary Encumber) from
@@ -3139,9 +3137,8 @@ pub const DEBILITATE_STACKS: usize = 10;
 /// - the status just applied must be a COMBINED element — a primary or a
 ///   physical proc has no components to split into
 /// - the target must be AT [`DEBILITATE_STACKS`] **counting the stack this
-///   instance is applying**. At nine, the shot that makes it ten splits; you do
-///   not reach ten and then have to shoot again (owner, 2026-08-10: "如果当前
-///   是9层，下一发是10层的话，就可以立刻触发其中一个")
+///   instance is applying**. At nine, the shot that makes it ten splits; you
+///   do not reach ten and then have to shoot again (owner, 2026-08-10)
 /// - roll `chance` (0.5 at rank 0 → 1.0 at rank 5)
 /// - pick between the two components 50/50
 ///
@@ -3153,7 +3150,7 @@ pub const DEBILITATE_STACKS: usize = 10;
 /// not a Blast rule: the tenth APPLICATION is the trigger for every
 /// combination, Blast is simply the one where the difference is the whole
 /// mechanic rather than one shot, and the owner reports it firing about as often
-/// as anything else ("并不像wiki说的那么rarely"). MEASUREMENTS M34.
+/// as anything else. MEASUREMENTS M34.
 ///
 /// Once per DAMAGE INSTANCE, which is what the wiki's own note about beams
 /// describes: "only activate once per damage instance, making it less
@@ -3240,7 +3237,7 @@ fn debilitate_split(
 ///
 /// Read literally it gives ZERO for Primary Debilitate, which the same page
 /// calls "a 0-damage Extra Hit", and that status plainly does damage. The rule
-/// that covers both (owner, 2026-08-09: "如果为0，那么就找上一级去找base"):
+/// that covers both (owner, 2026-08-09):
 ///
 /// > an Extra Hit REPLACES the base its status would have used. A 0% one
 /// > replaces nothing, so the level above stands.
@@ -3690,11 +3687,11 @@ fn settle_procs(
             if let Some(part) =
                 debilitate_split(proc, stacks_before + 1, params.arcane.debilitate_chance, rng)
             {
-                // THE SPLIT PROC IS AN ORDINARY PROC (owner, 2026-08-05: "我
-                // 倾向于类似正常触发dot的算法，而不是实例算法"). Nothing about
-                // it is special-cased: it enters the same match below, takes
-                // the same `push_dot`, and picks up its OWN element bracket —
-                // a Corrosive that splits into Toxin is scaled by the TOXIN
+                // THE SPLIT PROC IS AN ORDINARY PROC (owner, 2026-08-05).
+                // Nothing about it is special-cased: it enters the same match
+                // below, takes the same `push_dot`, and picks up its OWN
+                // element bracket — a Corrosive that splits into Toxin is
+                // scaled by the TOXIN
                 // mod bonus, and by 1.0 when the build carries no Toxin mod,
                 // which is what "otherwise you only get the base portion"
                 // means. The one thing that differs is the depth.
@@ -3718,25 +3715,24 @@ fn settle_procs(
                 // The community formula that decodes M33's 29551 is the
                 // ABILITY case — its parent is Cyte-09's Extra Hit — so it
                 // shows a Toxic-Lash-shaped chain and says nothing about a
-                // plain weapon shot (owner, 2026-08-08: "那个resupply的例子就是
-                // 说明，类似toxic lash的例子啊，不是常规武器的"). Reading the
-                // full modded hit here was shipped for one commit on that
-                // generalisation and reverted: it moved published board rows by
-                // up to +112% on an inference.
+                // plain weapon shot (owner, 2026-08-08). Reading the full
+                // modded hit here was shipped for one commit on that
+                // generalisation and reverted: it moved published board rows
+                // by up to +112% on an inference.
                 //
-                // DECIDED (owner, 2026-08-08: "a版本吧，我觉得是对的"): the
-                // weapon is the SOURCE, so the base is computed the weapon's
-                // way. That is also the only one of the three readings that is
-                // documented for a weapon-applied status, and this engine
+                // DECIDED (owner, 2026-08-08): the weapon is the SOURCE, so
+                // the base is computed the weapon's way. That is also the only
+                // one of the three readings that is documented for a
+                // weapon-applied status, and this engine
                 // matches the Toxin page's worked example to the digit.
                 //
                 // WHAT IS STILL OPEN IS THE EXPONENT, not the base — see M33.
                 // If the base is the weapon's, an ordinary weapon status
                 // double-dips faction and `f^3` looks like one layer too many
-                // (owner: "理论应该是只有2的，而不是3"). The wiki states the
-                // three outright and the source says the instance "has no
-                // damage"; those are consistent in exactly one way — the
-                // instance is real enough to add a layer and carries no damage,
+                // (owner). The wiki states the three outright and the source
+                // says the instance "has no damage"; those are consistent in
+                // exactly one way — the instance is real enough to add a layer
+                // and carries no damage,
                 // so the magnitude comes from the weapon and the layer is the
                 // only trace it leaves. Held at 3 because that is the stated
                 // number; M33 has the Bane on/off ratio that settles it.
@@ -3755,9 +3751,8 @@ fn settle_procs(
                         crit_mult,
                         part_factor,
                         // A SECOND ATTRITION ROLL, ON TOP OF THE HIT'S — and it
-                        // is a BUG of DE's, not a design (owner, 2026-08-08:
-                        // "有bug……这个+21好像还会作用在由衰弱产生的dot上面（非
-                        // 本意）").
+                        // is a BUG of DE's, not a design (owner,
+                        // 2026-08-08).
                         //
                         // MEASURED first: the DoT at the end of 直伤 -> 附加伤害
                         // -> dot eats three faction layers and "441倍强袭损耗" =
@@ -3775,9 +3770,9 @@ fn settle_procs(
                         // the story that is NOT the intuitive one. The zero
                         // instance carries no crit of its own — there is nothing
                         // to crit — so "on a hit that is not critical" is
-                        // satisfied whatever the parent did (owner: "50%概率触
-                        // 发，因为这个也没暴击"). A critting build therefore
-                        // takes 1 x 21 here rather than 441, and never 1.
+                        // satisfied whatever the parent did (owner). A
+                        // critting build therefore takes 1 x 21 here rather
+                        // than 441, and never 1.
                         //
                         // THE LITERAL `0` IS THE CLAIM, and it is the tier
                         // rather than a rounded-down roll: the split is
@@ -3869,8 +3864,7 @@ struct InstanceScale {
     /// claim: an ordinary status DoT is a tick of an effect, while the arcane's
     /// split is a damage INSTANCE the wiki names as one — so it rolls the
     /// per-instance multipliers a hit rolls, this one included. Reported from
-    /// play through the owner (2026-08-08): "衰弱触发的 dot 可以再次触发……外围
-    /// 20 倍但是网站里的计算器显示不出来". MEASUREMENTS M37.
+    /// play through the owner (2026-08-08). MEASUREMENTS M37.
     attrition: f64,
     /// The EXTRA HIT bracket of the weapon that fired this instance —
     /// `1 + Σ elemental bonuses + Σ (base-attack IPS share × that IPS bonus)`,
@@ -4452,16 +4446,14 @@ fn process_ticks(
         // "Not inheritable" is not evidence against this: it names `Heat_Inherit`
         // — the mechanic that attributes later Heat damage to whoever applied the
         // first Heat status — and says the damage bonus does not travel down THAT
-        // path (owner, 2026-08-09: "这里的继承应该是说……在warframe引擎看来，还是
-        // 这把枪造成的").
+        // path (owner, 2026-08-09).
         //
         // ONCE, NOT SQUARED. Faction damage is re-applied per derivation step
         // because DE re-applies it (`faction_at(f, depth)`); nothing says that
         // about this, and nothing here is a derivation — the tick is the same
-        // instance's payload landing later (owner: "那dot也是9倍，而不是9*9倍率
-        // 吧"). The multiplier's own VALUE is a separate open question: our data
-        // reads DE's "x8" as the total and it may be a total of x9 (MEASUREMENTS
-        // M38).
+        // instance's payload landing later (owner). The multiplier's own VALUE
+        // is a separate open question: our data reads DE's "x8" as the total
+        // and it may be a total of x9 (MEASUREMENTS M38).
         let value = value
             * if target.overguard > 0.0 {
                 params.arcane.overguard_mult
@@ -4570,11 +4562,10 @@ fn reload_span(secs: f64, bucket: f64, add: f64) -> f64 {
 /// the perk.
 ///
 /// READY RETALIATION IS A BUFF THAT IS UP OR DOWN, with no duration and no
-/// condition of its own (owner, 2026-08-11: "最正确的建模就是建立一个无限时长的
-/// buff，只是这个buff换弹完成/进入灵化的时候消失，不应该在意此时是否换弹"). So
-/// it is summed here, where the total is asked for, and NOT tested at each of
-/// the four places that ask — the events that REMOVE it are the only place it
-/// is reasoned about. Four copies of one `if` is how three of them come to
+/// condition of its own (owner, 2026-08-11). So it is summed here, where the
+/// total is asked for, and NOT tested at each of the four places that ask —
+/// the events that REMOVE it are the only place it is reasoned about. Four
+/// copies of one `if` is how three of them come to
 /// disagree with the fourth.
 fn live_reload_speed(
     params: &DummyParams,
@@ -4819,8 +4810,7 @@ pub fn run_once_traced(
     // One macro rather than the same three lines at four sites: everything that
     // a refill ends, ends here. Ready Retaliation is spent, Reaver's Rapture is
     // reset, and the burst count restarts. THE MOMENT IS THE COMPLETION — a
-    // reload that has begun has refilled nothing (owner, 2026-08-11: "时间节点
-    // 一定要处理好…不可以含糊，要准确").
+    // reload that has begun has refilled nothing (owner, 2026-08-11).
     macro_rules! magazine_refilled {
         // The default: this event is a reload as well as a refill, which three
         // of the four sites are. Swapping OUT of the Incarnon form passes
@@ -5481,10 +5471,9 @@ pub fn run_once_traced(
                 break;
             }
             // THE WINDOW OPENS WHEN THE RELOAD BEGINS — the player's reload
-            // ACTION is the trigger, not its completion (owner, 2026-08-10:
-            // "是在换弹开始的时候触发…等于给自己上了一张100% reload speed的
-            // mod"). So it is armed BEFORE the line below, and the reload that
-            // armed it is the first thing it speeds up.
+            // ACTION is the trigger, not its completion (owner, 2026-08-10).
+            // So it is armed BEFORE the line below, and the reload that armed
+            // it is the first thing it speeds up.
             //
             // Every reload this loop performs is a reload from empty — it only
             // reloads when it cannot fire — which is exactly the condition.
@@ -6343,10 +6332,10 @@ pub fn run_once_traced(
                 // Not through the elemental hierarchy — "does not combine with
                 // other elements" is stated on every one of the four augment
                 // pages, and it is the whole reason they are worth having
-                // separately from a mod (owner, 2026-08-08: "注意不合成"). Sized
-                // off THIS stage's own ModifiedBase, because "additive with
-                // elemental mods" makes them a percentage of the part's base
-                // the same way an elemental mod is (MECHANICS §7).
+                // separately from a mod (owner, 2026-08-08). Sized off THIS
+                // stage's own ModifiedBase, because "additive with elemental
+                // mods" makes them a percentage of the part's base the same
+                // way an elemental mod is (MECHANICS §7).
                 //
                 // Read at `t`: they expire, and after they do the weapon is
                 // simply the weapon again.
@@ -6924,10 +6913,10 @@ pub fn run_once_traced(
                 // so a DoT applied by a 21x hit ticks for 21x.
                 //
                 // Measured through the Debilitate chain (owner, 2026-08-08): the
-                // final DoT eats "441倍强袭损耗", i.e. 21x21. Two layers for
-                // three faction layers — the split instance rolls one, and the
-                // other can only be the applying hit's, carried here. A DoT is
-                // not a hit, so it never rolls one of its own. MEASUREMENTS M37.
+                // final DoT eats, i.e. 21x21. Two layers for three faction
+                // layers — the split instance rolls one, and the other can
+                // only be the applying hit's, carried here. A DoT is not a
+                // hit, so it never rolls one of its own. MEASUREMENTS M37.
                 InstanceScale {
                     mb_live,
                     crit_mult,
@@ -7059,8 +7048,7 @@ pub fn run_once_traced(
                 // completing shot's OWN interval and let the next shot fire at
                 // the same instant — the transform was a free extra shot
                 // (2026-08-10). The moment is the end of the shot that filled
-                // the gauge, which is the start of the next one (owner: "变身的
-                // 时机应该是在完成之后射击的末尾（也就是下次射击的开头）").
+                // the gauge, which is the start of the next one (owner).
                 //
                 // The gauge also OVERSHOOTS and that is not a rounding: a
                 // 7-pellet shot into a 30-charge gauge arrives at 35 on the
@@ -7076,12 +7064,11 @@ pub fn run_once_traced(
                     // animation is faster, so the buff was already there before
                     // any reload began (owner, 2026-08-11).
                     //
-                    // AND IT IS SPENT WHEN THE TRANSFORM COMPLETES (owner, same
-                    // day: "那个buff应该在进入灵化完成的时候就消失，如果是在打
-                    // 空的时候进入灵化的话"). Which collapses the rule to one
-                    // line rather than a list of events: SWAPPING EITHER WAY
-                    // FULLY RELOADS THE BASE FORM'S MAGAZINE (wiki), so both
-                    // transforms are reloads, and the buff is spent by whatever
+                    // AND IT IS SPENT WHEN THE TRANSFORM COMPLETES (owner,
+                    // same day). Which collapses the rule to one line rather
+                    // than a list of events: SWAPPING EITHER WAY FULLY RELOADS
+                    // THE BASE FORM'S MAGAZINE (wiki), so both transforms are
+                    // reloads, and the buff is spent by whatever
                     // refills the magazine. Nothing else has to be enumerated.
                     // WAS THE BASE MAGAZINE ACTUALLY EMPTY? Read BEFORE the
                     // refill below, because that is the question the card asks:
@@ -7116,10 +7103,7 @@ pub fn run_once_traced(
                         reload_draw(cy.base_form.magazine_size, base_mag));
                     base_mag += loaded;
                     // …AND THAT RELOAD PAYS ITS SHELLS. One as you go in, the
-                    // rest owed until you come out (owner, 2026-08-08: "假如我
-                    // 现在的shell是13，进入的时候是10/13，那么进入的时候会叠加
-                    // 1层，退出的时候会加上其余的层数（这里是2）。如果是13/13
-                    // 进入的，进入退出都不会叠层").
+                    // rest owed until you come out (owner, 2026-08-08).
                     //
                     // Counting the shells the draw ACTUALLY loaded is what
                     // makes a dry reserve behave: no shells, no stacks, and no
@@ -8139,10 +8123,9 @@ mod tests {
     ///
     /// THE EMPTY MAGAZINE ARMS IT and the next reload spends it, so that reload
     /// is already faster — the first one of the fight included (owner,
-    /// 2026-08-10: "等于给自己上了一张100% reload speed的mod"). The arming
-    /// moment is the shot that empties the magazine rather than the reload that
-    /// follows, which only matters when something else happens in between; see
-    /// the transform test beside this one.
+    /// 2026-08-10). The arming moment is the shot that empties the magazine
+    /// rather than the reload that follows, which only matters when something
+    /// else happens in between; see the transform test beside this one.
     ///
     /// The FIRST reload is the sharp case and it gets its own window here: the
     /// run is cut short so that exactly one reload is in it, and the perk is
@@ -8186,8 +8169,7 @@ mod tests {
     ///
     /// "On Full Burst Hit: +20% Damage, resets on Reload", capped at 5x. Four
     /// separate claims, and each is asserted on its own because each can be
-    /// wrong by itself (owner, 2026-08-11: "时间节点一定要处理好…不可以含糊，
-    /// 要准确"):
+    /// wrong by itself (owner, 2026-08-11):
     ///
     /// 1. ONE STACK PER BURST, not per round and not per pellet — the card's
     ///    "not affected by multishot" — so a 3-round burst weapon earns a stack
@@ -9622,9 +9604,7 @@ mod tests {
 
     /// THE EMPTY MAGAZINE ARMS IT, and the TRANSFORM is what proves that.
     ///
-    /// Owner, 2026-08-11: "这个buff应该是在空弹夹的时候就有了，因为这时候如果我
-    /// 立刻变身灵化，灵化速度也会吃到，说明这时候就是有buff的。接着退出灵化以
-    /// 后，这时候相当于reload了一次，这个buff消失了."
+    /// Owner, 2026-08-11
     ///
     /// A reload alone cannot tell the two readings apart: armed at the empty
     /// magazine and armed when the reload starts both make that reload faster.
@@ -10248,8 +10228,8 @@ mod tests {
         );
     }
 
-    /// A LOCK IS ABSOLUTE, AND THE SIM OWNS HALF OF IT (user, 2026-08-04:
-    /// "应该要锁定的，好像没锁").
+    /// A LOCK IS ABSOLUTE, AND THE SIM OWNS HALF OF IT (user,
+    /// 2026-08-04).
     ///
     /// "Equipping this mod will set weapon's Fire Rate to its default ignoring
     /// other bonuses, EVEN NEGATIVE EFFECTS" (wiki, Semi-Rifle/Shotgun/Pistol
@@ -12834,7 +12814,7 @@ mod tests {
         // the seed and its trigger was skipped while locked, so "no timeout"
         // meant "decays to zero and can never come back" — the exact opposite
         // of the label, and a player reported it as the buff not working at
-        // all (2026-08-03: 选无限持续后直接不生效).
+        // all (2026-08-03).
         let mk = |initial: u32, locked: bool, fire_rate: f64, secs: f64| {
             let mut p = DummyParams {
                 stacking_buffs: vec![crate::loadout::StackingBuff {
@@ -13475,8 +13455,7 @@ mod tests {
         // Incarnon rounds land at 3 and not at 2. The transform used to
         // `continue` past the cadence, so the completing shot was followed
         // IMMEDIATELY by an Incarnon one and every transform was worth a free
-        // shot (owner, 2026-08-10: "变身的时机应该是在完成之后射击的末尾（也就
-        // 是下次射击的开头）").
+        // shot (owner, 2026-08-10).
         //
         // The window is 12 s rather than 10 for a reason worth keeping: at 10 s
         // the two readings TIE at 600, because the primed run's free magazine is
@@ -15106,9 +15085,9 @@ mod tests {
         }
         // At it, with certainty, it always splits — and only into a COMPONENT.
         // ALL SIX combinations, not just the one the reports come in about:
-        // Blast is Cold and Heat (owner, 2026-08-08: "blast是可触发冰和火的"),
-        // and a table that answered for five of six would be wrong in exactly
-        // the way nobody checks.
+        // Blast is Cold and Heat (owner, 2026-08-08), and a table that
+        // answered for five of six would be wrong in exactly the way nobody
+        // checks.
         for combined in [
             DamageType::Corrosive,
             DamageType::Blast,
@@ -15951,10 +15930,10 @@ mod attrition_times_co_tests {
 
     /// DEVASTATING ATTRITION AND GUN CO MULTIPLY, they do not share a bracket.
     ///
-    /// MEASURED IN GAME by the owner (2026-08-08: "我已经测试过了"), which is
-    /// what makes this a fact rather than a reading. It also agrees with both
-    /// sources: the perk's own wiki note says "multiplicative to base damage
-    /// bonuses such as Hornet Strike", and the weapon sits on the CO catalog's
+    /// MEASURED IN GAME by the owner (2026-08-08), which is what makes this a
+    /// fact rather than a reading. It also agrees with both sources: the
+    /// perk's own wiki note says "multiplicative to base damage bonuses such
+    /// as Hornet Strike", and the weapon sits on the CO catalog's
     /// Multiplying row — so neither term is in the base-damage bucket and they
     /// have nothing to share.
     ///
@@ -16017,11 +15996,10 @@ mod debilitate_attrition_tests {
     use super::*;
 
     /// A DEBILITATE DoT EATS ATTRITION TWICE, and the calculator gave it zero
-    /// (player report through the owner, 2026-08-08: "衰弱触发的 dot 可以再次触
-    /// 发……外围 20 倍但是网站里的计算器显示不出来", then measured: the final DoT
-    /// eats three faction layers and "441倍强袭损耗" = 21x21). It is a BUG of
-    /// DE's — the split fires a ZERO-damage instance that still takes its own
-    /// faction bracket and its own Attrition roll, and when the DoT replaces the
+    /// (player report through the owner, 2026-08-08, then measured: the final
+    /// DoT eats three faction layers and = 21x21). It is a BUG of DE's — the
+    /// split fires a ZERO-damage instance that still takes its own faction
+    /// bracket and its own Attrition roll, and when the DoT replaces the
     /// zero with the parent hit's value those two multipliers stay behind.
     ///
     /// Three claims:
@@ -16103,9 +16081,7 @@ mod debilitate_attrition_tests {
             "the split's DoT takes the hit's roll AND its own: x{two_layers:.1},              measured 441 (one layer is x{one_layer:.2})"
         );
         // 2b. AND THE SPLIT'S ROLL IS ITS OWN — the half the forced-chance
-        //     runs above cannot see (owner, 2026-08-10: "衰弱自己再判定一次是
-        //     否触发21倍伤害（自己的）… 衰弱自己的那个0伤害extra hit要自己再判断
-        //     一次").
+        // runs above cannot see (owner, 2026-08-10).
         //
         //     At the perk's real 50% the two readings are far apart, and a mean
         //     tells them apart on its own:
@@ -16159,9 +16135,8 @@ mod debilitate_attrition_tests {
     /// A CRIT TAKES THE HIT'S COIN AWAY AND KEEPS ITS OWN MULTIPLIER — so on
     /// the Debilitate DoT, and only there, critting can be worth LESS than not.
     ///
-    /// The owner's reading (2026-08-10: "如果直击是暴击的，但是后面的衰弱 dot 还
-    /// 是可以 roll 出 21，那么此时会带着前面的各种 multiplier……因为衰弱永远不暴
-    /// 击"). Both halves are true and they pull opposite ways:
+    /// The owner's reading (2026-08-10). Both halves are true
+    /// and they pull opposite ways:
     ///
     /// - a critical hit is not eligible for Devouring Attrition, so the HIT's
     ///   coin is gone — one coin instead of two;
@@ -16401,10 +16376,10 @@ mod warframe_ability_tests {
         assert!((ecl - 3.0).abs() < 1e-6, "eclipse on a DoT: x{ecl:.4}");
     }
 
-    /// THE ADDED ELEMENT DOES NOT COMBINE (owner, 2026-08-08: "注意不合成").
-    /// A weapon whose vector is pure Heat, under Shock Trooper, deals Heat AND
-    /// Electricity — never Radiation, which is what an elemental MOD would have
-    /// made of the same two.
+    /// THE ADDED ELEMENT DOES NOT COMBINE (owner, 2026-08-08). A weapon whose
+    /// vector is pure Heat, under Shock Trooper, deals Heat AND Electricity —
+    /// never Radiation, which is what an elemental MOD would have made of the
+    /// same two.
     #[test]
     fn an_ability_element_lands_beside_the_weapons_own_instead_of_combining() {
         let mut p = params(&[("shock_trooper", None)], 1.0);
@@ -16812,9 +16787,7 @@ mod incarnon_reload_route_tests {
     ///
     /// A shotgun puts 7 pellets into a head at once and the gauge wants 30: you
     /// cannot stop at 30, you arrive at 35 on the fifth shot (owner,
-    /// 2026-08-10: "如果此时要求命中30个弹头才可以变身，但是我每次是7个弹头，那
-    /// 么我肯定要第5次射击的时候才可以变身啊。变身的时机应该是在完成之后射击的
-    /// 末尾（也就是下次射击的开头）").
+    /// 2026-08-10).
     ///
     /// Both halves are asserted because both could be wrong on their own: the
     /// COUNT (four shots must not be enough at 28 of 30) and the MOMENT (the
@@ -16897,9 +16870,7 @@ mod incarnon_reload_route_tests {
     /// ENTERING THE INCARNON FORM IS A RELOAD, and it pays a reload's stacks.
     ///
     /// The owner's own account (2026-08-08), and the transmute animation being
-    /// the weapon's reload time is how you can tell: "假如我现在的shell是13，
-    /// 进入的时候是10/13，那么进入的时候会叠加1层，退出的时候会加上其余的层数
-    /// （这里是2）。如果是13/13进入的，进入退出都不会叠层". The whole reload runs
+    /// the weapon's reload time is how you can tell. The whole reload runs
     /// across the cycle — one shell going in, the rest coming out — so nothing
     /// here is a rule about transforming: it is a rule about shells.
     ///
@@ -17024,10 +16995,10 @@ mod overguard_status_tests {
     /// A DAMAGING STATUS LANDS ON A FULL OVERGUARD BAR, and its ticks come off
     /// the Overguard rather than waiting for it.
     ///
-    /// Owner-confirmed in game (2026-08-09: "可以在敌人身上啊"). Overguard
-    /// blocks CROWD CONTROL, not damage — and the difference decides how a DoT
-    /// weapon is scored against every Eximus in the roster, because Overguard
-    /// carries no armor: while it is up, a tick lands unmitigated on a unit
+    /// Owner-confirmed in game (2026-08-09). Overguard blocks CROWD CONTROL,
+    /// not damage — and the difference decides how a DoT weapon is scored
+    /// against every Eximus in the roster, because Overguard carries no armor:
+    /// while it is up, a tick lands unmitigated on a unit
     /// whose health would keep 10% of it.
     ///
     /// It is also the mechanism behind M39 — Secondary Fortifier coming out

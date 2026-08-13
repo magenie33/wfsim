@@ -20,8 +20,7 @@ max_rank: 30
 
 # Weapon-level metadata (wiki `Module:Weapons/data/secondary`, cross-checked
 # against WFCD warframe-items — TWO disagreements, both resolved to the wiki
-# (owner, 2026-08-06: "英语wiki是第一优先级，如没有明显的错误，一律以英语wiki
-# 为主"):
+# (owner, 2026-08-06):
 #
 #  1. MASTERY. The wiki says 2, WFCD's `masteryReq` says 1. No obvious error on
 #     either side, so the wiki takes it.

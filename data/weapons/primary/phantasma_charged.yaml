@@ -62,7 +62,7 @@ attack:
   # bomb is directly proportional to the amount of ammo consumed during the
   # charge", and "Charge rate consumes a set 11 ammo per second. Modding to
   # increase magazine capacity will allow a longer total charge, and thus more
-  # damage." Confirmed in play (owner, 2026-08-09: "副冲可以按到底消耗全部弹药").
+  # damage." Confirmed in play (owner, 2026-08-09).
   #
   # WHAT THE LISTED NUMBERS ARE is the one thing the wiki never says outright,
   # and three of its own figures answer it between them: the listed charge time

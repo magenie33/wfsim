@@ -1,8 +1,7 @@
 # What is not modelled, and what would have to exist first
 
 A catalogue of the EDGES, so that "why is this perk worth nothing" is a lookup
-rather than an investigation (owner, 2026-08-09: "其他地方就先记录下来，等需要时候
-可以快速找到").
+rather than an investigation (owner, 2026-08-09).
 
 It is deliberately not a list of perks — `python scripts/intake_report.py --full`
 prints that, per weapon, derived from the data and therefore never stale. This
@@ -113,10 +112,10 @@ One weapon FIRES for the whole engagement.
 **What would have to exist first:** a loadout and a swap policy. The policy is
 the hard half — see §"Open decisions" below, it is the same problem.
 
-**THE OTHER SLOTS ARE OCCUPIED** (owner, 2026-08-12: "我们的场景是带满武器的情
-况，所以单独的那个是不生效的"). What the Tenno FIRES and what the Tenno CARRIES
-are two different facts, and only the first is "one weapon". The ruling answers
-every clause about the other slots at once, in both directions:
+**THE OTHER SLOTS ARE OCCUPIED** (owner, 2026-08-12). What the Tenno FIRES and
+what the Tenno CARRIES are two different facts, and only the first is "one
+weapon". The ruling answers every clause about the other slots at once, in both
+directions:
 
 | clause | answer | why |
 | --- | --- | --- |
@@ -127,12 +126,11 @@ every clause about the other slots at once, in both directions:
 That makes Lone Gun's condition ANSWERED rather than unreadable, which is worth
 the distinction: the sim is not declining to evaluate it, it evaluates to false.
 
-**…AND THE ANSWER IS NOW A SETTING** (owner, 2026-08-13: "我们可以在模拟里面加一
-个选项，可以模拟只装备这个武器，这样潜在的类似这样的效果就可以正确触发。不是叫你
-阉割建模"). The scenario carries `solo_weapon` — *Only this weapon* on the
-Technique block, off by default — and the table above is what OFF means. It is a
-`TennoGate` like `overshields` and `channeling`, so it is asked of the fight's
-Tenno and travels with the scenario, the panel, the optimizer and a share link
+**…AND THE ANSWER IS NOW A SETTING** (owner, 2026-08-13). The scenario carries
+`solo_weapon` — *Only this weapon* on the Technique block, off by default — and
+the table above is what OFF means. It is a `TennoGate` like `overshields` and
+`channeling`, so it is asked of the fight's Tenno and travels with the
+scenario, the panel, the optimizer and a share link
 with no code of its own anywhere.
 
 Ticking it does NOT move this section into the modelled column; it splits it:
@@ -235,8 +233,7 @@ rather than observed, because this arena fires one weapon and casts nothing:
 
 These are things the engine COULD do today and deliberately does not, because
 doing them means inventing a play pattern. The repo's rule is that a policy is
-the owner's call, not the model's (the 99-stack decision, 2026-08-08: "不要特殊化
-处理99层那个了，不现实").
+the owner's call, not the model's (the 99-stack decision, 2026-08-08).
 
 ### Dual Mode Chamber — OPEN (Felarx)
 
@@ -265,7 +262,7 @@ disagree:
 - interrupt as soon as one shell is in — fastest back to firing, and worst for
   any per-shell buff.
 
-**Never interrupt is the ruling** ("换弹用不打断"). It is the reading the weapon's
+**Never interrupt is the ruling.** It is the reading the weapon's
 own numbers describe — a listed reload is a whole reload — and it is the one that
 needs no play pattern invented for it. The alternative is not "more accurate", it
 is a different player.
@@ -289,8 +286,7 @@ of them, is the play pattern that dodges it:
 covers both — the same one as the reload above, for the same reason. It is the
 reading that needs no play pattern invented for it. Naming a burst length, or a
 pause short enough to keep a spool, would be inventing the very thing the ruling
-refuses to invent (owner, 2026-08-10: "我们这个测试就是一按到底，没有理由给这个
-特殊对待的。因为极限的话岂不是一发一发发射了？" — taken to the limit, a weapon
+refuses to invent (owner, 2026-08-10 — taken to the limit, a weapon
 exempted from its own spool is a weapon fired one round at a time).
 
 Each weapon's own card says so, which is what makes the decision reachable: the

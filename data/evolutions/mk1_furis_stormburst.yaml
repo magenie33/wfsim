@@ -11,8 +11,8 @@ description: "Increase Base Damage by +34.\nOn hitting an enemy affected by Elec
 selection: choose_one
 
 # CONDITION OVERLOAD — NOT excluded here, and this is SETTLED rather than
-# inferred (owner, 2026-08-06: "注意mk1版本没这个限制啊"). So this perk's +34
-# feeds the CO term in full: the hit lands 94 and CO computes on 94.
+# inferred (owner, 2026-08-06). So this perk's +34 feeds the CO term
+# in full: the hit lands 94 and CO computes on 94.
 #
 # The catalog agreed already, by saying nothing: its row names "Furis" and
 # carries that weapon's numbers (100 and 128, against this form's 60 and 94),

@@ -3,7 +3,7 @@
 // The replay has always shown what the BUILD had up — live stacks, uptime, dead
 // bands, the ramp. It said nothing about what was on the TARGET, which is the
 // other half of the same fight and the half that explains the number (owner,
-// 2026-08-11: "你就和我们现在的buff列表对称").
+// 2026-08-11).
 //
 // Symmetric on purpose, so this checks the symmetry rather than the numbers:
 // same rows, same uptime arithmetic, same cursor. And one thing that is NOT

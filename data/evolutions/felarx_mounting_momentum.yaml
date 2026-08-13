@@ -17,18 +17,17 @@ effects:
   # reloading, which the card's reading would make unbuildable.
   #
   # WHAT ENDS IT is an EMPTY MAGAZINE, immediately — not the reload that follows
-  # (owner, 2026-08-08: "不可能 0/13，这时候会立刻清除增益（而不是换弹）"). That
-  # is what the perk IS: firing a magazine dry and reloading it earns one
-  # magazine's worth and loses it again on the last shot, so the 99-stack cap
-  # belongs to a player who tops up a magazine that never empties. This sim
+  # (owner, 2026-08-08). That is what the perk IS: firing a magazine dry and
+  # reloading it earns one magazine's worth and loses it again on the last
+  # shot, so the 99-stack cap belongs to a player who tops up a magazine that
+  # never empties. This sim
   # fires dry, so it earns a magazine's worth.
   #
   # The count is one per SHELL, so it follows the magazine — and a magazine mod
   # therefore buys stacks and pays for them in the by-round reload it lengthens
   # (`reload_style: by_round` on the weapon). That trade is the perk.
   # IT IS THE BASE FORM'S TOO, and it was worth nothing there until 2026-08-10
-  # (owner: "这个buff在基础里面也是有的，每装上一个shell，叠加一层。并且在基础模
-  # 式弹夹为0的时候消失"). Two bugs sat on top of each other:
+  # (owner). Two bugs sat on top of each other:
   #
   #   · the ReloadComplete trigger was nested INSIDE the tendril/refill block,
   #     so it only fired on a weapon carrying one of those — which the Felarx
@@ -91,8 +90,7 @@ effects:
   # empties, which is a play PATTERN — a firing-and-reloading policy, not a
   # property of this perk — and inventing a special path to it would be putting
   # a thumb on the scale for one card. DECIDED against, twice (owner,
-  # 2026-08-08: "不要特殊化处理 99 层那个了，不现实，我们流程还是正常的", then
-  # "2 弹夹-1 那个完全不需要了"). The ordinary loop earns a magazine's worth and
+  # 2026-08-08). The ordinary loop earns a magazine's worth and
   # that is what the number reports; the edge case is not a target.
 
 source:

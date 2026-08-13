@@ -3,9 +3,9 @@
 // Every other number this sim reports is an aggregate, and an aggregate hides
 // an error inside an average: a factor applied twice, or in the wrong bracket,
 // moves a mean by a few per cent and reads as "this build is good". The account
-// is the one output that can be FALSIFIED (owner, 2026-08-11: "方便我可以根据
-// 数据里找出计算瑕疵") — and it is only falsifiable if the product of its own
-// lines is the number it claims.
+// is the one output that can be FALSIFIED (owner, 2026-08-11) — and it
+// is only falsifiable if the product of its own lines is the number it
+// claims.
 //
 // So this check does the arithmetic the reader would do. If a factor is ever
 // applied in the engine and not listed here, or listed and not applied, the

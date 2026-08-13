@@ -13,11 +13,10 @@ selection: choose_one
 effects:
   # THE TRIGGER IS THE RELOAD ACTION. Pressing reload on an empty magazine
   # opens the window, so THIS reload is already faster — not the next one
-  # (owner, 2026-08-10: "是在换弹开始的时候触发，就是玩家换弹动作开始的时候触
-  # 发，而不是结束！等于给自己上了一张100% reload speed的mod"). On a weapon that
-  # only ever reloads from empty, which is every weapon in this sim, that makes
-  # it behave like a permanent reload mod; the window is what is left over for a
-  # transmute or a second reload afterwards.
+  # (owner, 2026-08-10). On a weapon that only ever reloads from empty, which
+  # is every weapon in this sim, that makes it behave like a permanent reload
+  # mod; the window is what is left over for a transmute or a second reload
+  # afterwards.
   #
   # `duration_seconds` is what makes this loadable at all, and only THIS page
   # publishes one: the other eleven Ready Retaliations in the roster state the
@@ -41,11 +40,9 @@ effects:
     value: 1.00
     condition: reload_from_empty
     # NO `duration_seconds`, AND THE 6 s ON THIS PAGE IS A DIFFERENT BUFF
-    # (owner, 2026-08-11: "之前6s的那个是另外的buff，你不要打架啊。我这个buff是
-    # 用于reload的时候只是声明了换弹+100% 没说时长的那种"). This card states a
-    # bonus and no duration, and that is not an omission — there is nothing to
-    # time, because the buff is ARMED BY THE EMPTY MAGAZINE and SPENT BY THE
-    # NEXT RELOAD.
+    # (owner, 2026-08-11). This card states a bonus and no duration, and that
+    # is not an omission — there is nothing to time, because the buff is ARMED
+    # BY THE EMPTY MAGAZINE and SPENT BY THE NEXT RELOAD.
     #
     # The evidence is the transmute: empty the magazine and transform straight
     # away, and the TRANSFORM is faster too — which it could only be if the

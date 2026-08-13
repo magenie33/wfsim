@@ -59,9 +59,9 @@ Remaining: **16 adapters (30 weapons) + 2 naturals**.
 
 ## BULK vs HAND — what "rough" means, precisely
 
-Owner, 2026-08-08: "我想先一口气把那个列表里的武器都加进去，灵化部分可以粗略，然后
-我一把枪一把枪地核实." So from the Sybaris onward the intake runs a pipeline, and
-the two halves of a weapon are held to different standards ON PURPOSE:
+Owner, 2026-08-08 So from the Sybaris onward the intake runs a
+pipeline, and the two halves of a weapon are held to different
+standards ON PURPOSE:
 
 | | source | standard |
 | --- | --- | --- |
@@ -88,8 +88,8 @@ mined for its numbers, because reading "On Kill: +30 damage" as an unconditional
   does not do it. A Chinese session shows English perk names on a bulk weapon
   until its family is transcribed.
 - ~~**CO catalog rows.**~~ **READ AND APPLIED, 2026-08-08.** The whole catalog
-  was pulled for every weapon in the program (owner: "那个CO表，武器也进去").
-  What it changed and what it exposed:
+  was pulled for every weapon in the program (owner). What it
+  changed and what it exposed:
 
   | weapon | row | what it means here |
   | --- | --- | --- |

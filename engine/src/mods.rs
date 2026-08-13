@@ -97,10 +97,10 @@ pub struct Investment {
     /// May the planner spend an UMBRA Forma?
     ///
     /// The rule is "as little as possible, but use it rather than fail"
-    /// (owner, 2026-08-04: "尽可能不用，如果不用就非法那一定要用"), and [`fit`]
-    /// implements exactly that: it plans without, and only retries with when
-    /// without is impossible. So this flag is the FIRST attempt's answer, not a
-    /// veto — a build that genuinely needs an Umbra Forma still gets one.
+    /// (owner, 2026-08-04), and [`fit`] implements exactly that: it plans
+    /// without, and only retries with when without is impossible. So this flag
+    /// is the FIRST attempt's answer, not a veto — a build that genuinely
+    /// needs an Umbra Forma still gets one.
     pub use_umbra: bool,
 }
 
@@ -198,8 +198,8 @@ pub fn plan_forma(
 ///   except Umbra mods"). So with `use_umbra` off it is never matched, and it
 ///   pays full drain rather than blocking the build.
 /// - anything else takes a **regular** Forma, or an **Omni** one when the
-///   player has chosen Omni — the owner's rule is all-or-nothing: "如果使用
-///   omni那就所有适用槽位用omni" (2026-08-04).
+///   player has chosen Omni — the owner's rule is all-or-nothing
+///   (2026-08-04).
 pub fn plan_forma_with(
     cap: u32,
     innate_slots: &[Option<Polarity>],
@@ -216,8 +216,8 @@ pub fn plan_forma_with(
 /// full affinity takes on a rank-40 weapon whether or not the build needs them.
 /// Spending them and then not USING them was leaving capacity on the table —
 /// the same five Forma, placed on the five biggest mods instead of the two the
-/// build strictly needed, leave more room for whatever comes next. "在满段位
-/// 经验的前提下，尽可能少 forma，并留出尽可能多的剩余空间" (owner, 2026-08-04).
+/// build strictly needed, leave more room for whatever comes next.
+/// (owner, 2026-08-04).
 fn plan_forma_spending(
     cap: u32,
     innate_slots: &[Option<Polarity>],
@@ -363,10 +363,10 @@ pub fn cost_of(innate_slots: &[Option<Polarity>], slots: &[Placement]) -> (u32, 
     }
     // AN INNATE UMBRA IS NOT A PURCHASE. Some weapons are born with one, and
     // keeping it costs nothing — billing for it charged the player for a slot
-    // the game gave them (owner, 2026-08-04: "有些装备天生自带这个 umbra
-    // forma，能不覆盖就不要覆盖"). Only what is used BEYOND the innate ones is
-    // bought. Omni is netted the same way for symmetry; no weapon is born with
-    // one today, and if one ever is, this already says the right thing.
+    // the game gave them (owner, 2026-08-04). Only what is used BEYOND the
+    // innate ones is bought. Omni is netted the same way for symmetry; no
+    // weapon is born with one today, and if one ever is, this already says the
+    // right thing.
     let innate_of = |want: Polarity| {
         innate_slots.iter().flatten().filter(|&&p| p == want).count() as u32
     };
@@ -682,8 +682,8 @@ mod tests {
         assert_eq!(cost.umbra, 1);
     }
 
-    /// UMBRA IS SPENT ONLY WHEN REFUSING WOULD BE WRONG (owner, 2026-08-04:
-    /// "尽可能不用，如果不用就非法那一定要用"). Not a veto — a first answer.
+    /// UMBRA IS SPENT ONLY WHEN REFUSING WOULD BE WRONG (owner,
+    /// 2026-08-04). Not a veto — a first answer.
     #[test]
     fn umbra_forma_is_a_last_resort_rather_than_a_refusal() {
         let innate = [None; 8];

@@ -536,7 +536,7 @@ let valence = { element: "", bonus: 0 };
 // one's level, duration, Tenno and buffs, and saved them as that weapon's
 // "scenario 1". Two weapons' fights are ALLOWED to look alike; they are never
 // allowed to be the same object or to be born from each other (user,
-// 2026-08-02: "绝对不能串").
+// 2026-08-02).
 //
 // Rebuilt FIELD BY FIELD, because a field missing here is a field that
 // silently becomes `undefined` — which is how `infinite_ammo` once vanished
@@ -592,8 +592,9 @@ let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: nul
   frame: "", wf_armor: 0, wf_energy: 0, wf_sprint: 0.9,
   // NO `form`, AND NO `mode`. How the weapon is played is part of the BUILD;
   // a fight that carried it could decide how the weapon was fired, which is
-  // what let a ruler pin an Incarnon weapon at its cycle (owner, 2026-08-07:
-  // 官方的 scenario 是不带 mode 了，我们自定义的场景也不应该有).
+  // what let a ruler pin an Incarnon weapon at its cycle (owner, 2026-08-07):
+  // the official scenarios no longer carry a mode, and a custom one must not
+  // either.
   // 180 s: the same length the official rulers run, so a player's first
   // comparison against the board is not a puzzle (owner, 2026-08-10). Only the
   // DEFAULT — a saved scenario carries its own duration and keeps it.
@@ -618,7 +619,7 @@ let optSeeded = false;
 // Sort/polarity prefs for the optimizer mod list (independent of the picker's).
 let optPrefs = { sort: "name", dir: "asc", pol: null };
 // HOW THE SEARCH RUNS — `finalists` and `threads`, and both are the search's
-// (user, 2026-08-02: "挪到 search 这个 preset，就彻底干净了").
+// (user, 2026-08-02).
 //
 // The optimizer tab is TWO HALVES and the split is now total: everything from
 // its own preset bar down through the Search block is the SEARCH and is saved
@@ -726,7 +727,7 @@ function initWeaponSearch() {
   if (!host) return;
   // The topbar's language control is a dropdown like every other, so it is
   // drawn by the same component — the LAST native select on the page, and the
-  // most visible one (owner, 2026-08-06: "只要是下拉就一个样子").
+  // most visible one (owner, 2026-08-06).
   //
   // DEFERRED by a microtask, because this block runs DURING script evaluation
   // and the component it calls is declared further down: `const` and `function
@@ -1460,10 +1461,10 @@ const deployField = (w, state) => {
 // overguard is innate, not Eximus-granted), so a control here would be a
 // promise the fight cannot keep.
 //
-// DEFAULT ON wherever it exists (owner, 2026-08-05: "默认我们就选上"). The
-// Eximus is what a Steel Path player actually meets, and it is not a cosmetic
-// difference: it adds health and puts a pool of Overguard in front of it, so a
-// build measured on the ordinary unit is measured on a fight nobody has.
+// DEFAULT ON wherever it exists (owner, 2026-08-05). The Eximus is what a
+// Steel Path player actually meets, and it is not a cosmetic difference: it
+// adds health and puts a pool of Overguard in front of it, so a build measured
+// on the ordinary unit is measured on a fight nobody has.
 //
 // `sim.eximus` is NULL until you say otherwise, and null means "this unit's
 // answer" — which is what makes the default follow the TARGET rather than
@@ -2620,7 +2621,7 @@ function renderRivenTools() {
 // table: the table would have to be append-only forever, and one reordering
 // would silently reinterpret every link ever posted.
 const SHARE_PARAM = "b";
-/// SHARING IS OFF (owner, 2026-08-07: 那个分享先关了，现在不可靠).
+/// SHARING IS OFF (owner, 2026-08-07).
 ///
 /// Two people reported a shared link opening blank on the same day and neither
 /// case could be reproduced here — the live site produced a link and read it
@@ -3517,8 +3518,8 @@ const presetWeapon = () => ($("weapon") && $("weapon").value) || "";
 const CUSTOM_DOMAINS = new Set(["rivens", "enemies"]);
 const isCustomDomain = (d) => CUSTOM_DOMAINS.has(d);
 
-// …AND ONE COLLECTION THAT IS NOT A WEAPON'S: the FIGHT (owner, 2026-08-09:
-// "scenario应该可以跨武器复用了…现在scenario不需要绑定武器了").
+// …AND ONE COLLECTION THAT IS NOT A WEAPON'S: the FIGHT (owner,
+// 2026-08-09).
 //
 // It became true rather than being decided: the last weapon-shaped thing a
 // scenario carried was `mode`, and mode left the fight and joined the build on
@@ -3638,10 +3639,10 @@ const storePresetList = (d, ps, w) => {
 //
 // Presets AUTO-SAVE, which is exactly what makes a slip expensive: a cleared
 // tier, a deleted preset, a mis-aimed import is written the instant it
-// happens and there is no save button to not press (user, 2026-08-02: "我已经
-// 手滑好几次了"). Every collection — builds, scenarios, searches, rivens —
-// writes through `storePresetList`, so that one call is where a "before" can
-// be taken, and one stack covers the whole page rather than four.
+// happens and there is no save button to not press (user, 2026-08-02). Every
+// collection — builds, scenarios, searches, rivens — writes through
+// `storePresetList`, so that one call is where a "before" can be taken, and
+// one stack covers the whole page rather than four.
 //
 // What is remembered is the whole COLLECTION plus which preset was active,
 // not a field-level diff: a delete and an edit are then the same kind of
@@ -3997,10 +3998,9 @@ function restoreState(st, weapon) {
   // IT LIVES HERE because TWO callers restore a build — the build bar, and
   // `initPresets` on boot — and the plan used to live in the bar's `apply()`
   // only. So landing on a page whose active build was a benchmark build showed
-  // the wrong Forma until you clicked something (owner, 2026-08-04: "第一次的
-  // 基准配装，我刚进去那个forma配置是不对的，刷新了一下才对"). Both callers set
-  // the active preset BEFORE restoring, which is what makes the question
-  // answerable here.
+  // the wrong Forma until you clicked something (owner, 2026-08-04). Both
+  // callers set the active preset BEFORE restoring, which is what makes
+  // the question answerable here.
   //
   // Nothing of yours is at risk: a benchmark build is read-only and has no
   // hand-set polarity to overwrite.
@@ -4149,9 +4149,9 @@ function initPresets() {
     // prunes them against the new weapon's pool; an ARCANE has no such prune
     // when it fits, so a Primary Crux picked up from a board build followed you
     // onto every primary you opened afterwards, and was WRITTEN into that
-    // weapon's own "build 1" (owner, 2026-08-08: "为什么会默认装备主要准星赋能
-    // 啊，好多武器都是这样的"). Reproduced: open the Boar through a board row,
-    // switch to the Sybaris, and the Sybaris's first build has the arcane.
+    // weapon's own "build 1" (owner, 2026-08-08). Reproduced: open the
+    // Boar through a board row, switch to the Sybaris, and the Sybaris's
+    // first build has the arcane.
     //
     // Every axis a future build gains is covered by this, because the answer is
     // "the blank one" rather than "the live one minus what does not fit".
@@ -4358,11 +4358,11 @@ function renderBenchmarkBarIn(bar, cfg) {
   bar.hidden = !ps.length;
   if (!ps.length) { bar.innerHTML = ""; return; }
   const noun = cfg.noun || "preset";
-  // TWO PICKS, BECAUSE THERE ARE TWO QUESTIONS (owner, 2026-08-08: "应该有个
-  // 地方选benchmark，另外一个地方选里面的build"). A chip row was right while a
-  // weapon had ten official builds under one ruler; one dropdown holding
-  // rulers x modes x ranks was right while that was forty rows. The board is
-  // designed for a hundred rulers with a hundred rows each, and at that size a
+  // TWO PICKS, BECAUSE THERE ARE TWO QUESTIONS (owner, 2026-08-08). A chip row
+  // was right while a weapon had ten official builds under one ruler; one
+  // dropdown holding rulers x modes x ranks was right while that was forty
+  // rows. The board is designed for a hundred rulers with a hundred rows each,
+  // and at that size a
   // single list is not a list — you cannot scan it, and searching it means
   // knowing what a rank is a rank ON before you can ask.
   //
@@ -4610,9 +4610,9 @@ function blankBuildState() {
 // ---- THE OFFICIAL BUILDS ----------------------------------------------
 //
 // The board (`data/benchmarks/boards/`), as read-only chips in the BUILD bar.
-// Not a tab (user, 2026-08-04: "不需要多的 tab"): what a board row produces is
-// a BUILD, and the builder is what consumes a build — so it belongs in the
-// collection that already holds builds, marked as something you did not make.
+// Not a tab (user, 2026-08-04): what a board row produces is a BUILD, and the
+// builder is what consumes a build — so it belongs in the collection that
+// already holds builds, marked as something you did not make.
 //
 // Same three properties as the official scenario: nothing stores them, nothing
 // edits them, ⧉ copies one into an ordinary build of your own.
@@ -4784,8 +4784,8 @@ function renderPresetBar() {
   renderPresetBarIn($("preset-bar-builder-builds"), buildsCfg);
 }
 
-// A scenario is the `sim` object, BUFF CONFIG INCLUDED (user, 2026-08-01:
-// "preset 要记住所有潜在 buff 的设置情况").
+// A scenario is the `sim` object, BUFF CONFIG INCLUDED (user,
+// 2026-08-01).
 //
 // Buff ids are global — `arcane:primary_deadhead`, a mod's own buff — so a
 // setting travels, and `sim.buffs` deliberately keeps entries for buffs the
@@ -4803,11 +4803,10 @@ function renderPresetBar() {
 /// one — or a benchmark yaml — cannot reintroduce them.
 ///
 /// `runs` joined them on 2026-08-13. HOW HARD YOU MEASURE IS NOT PART OF THE
-/// FIGHT (owner: "计算次数应该是个和scenario解耦的选项。官方计算的时候的选择，和
-/// 用户本地跑几次应该分割开来…这样更干净"). The official rulers still run at
-/// 1,000 — that is the number their yaml states and the number the SCORER uses,
-/// and no local setting can move it — while the page runs at whatever you set,
-/// defaulting to 100. Two different questions that happened to share a field.
+/// FIGHT (owner). The official rulers still run at 1,000 — that is the number
+/// their yaml states and the number the SCORER uses, and no local setting can
+/// move it — while the page runs at whatever you set, defaulting to 100. Two
+/// different questions that happened to share a field.
 const DEAD_SCENARIO_FIELDS = ["form", "mode", "runs"];
 
 /// HOW MANY TIMES THE PAGE REPLAYS A FIGHT. A preference, not a scenario field:
@@ -4842,7 +4841,7 @@ function applyScenario(st) {
   // yaml mentions only what it has an opinion about. Tick Eximus on a copy of
   // the official ruler, switch back to the official, and the official fight was
   // now against an Eximus, because `single_target.yaml` never says `eximus:`
-  // (owner, 2026-08-07: 不是完美独立的吗). `invisible` did not leak in the same
+  // (owner, 2026-08-07). `invisible` did not leak in the same
   // test only because that yaml happens to state it.
   //
   // A scenario is therefore applied onto a COMPLETE fight — the server's
@@ -4958,7 +4957,7 @@ const weaponEvos = () => weaponInfo($("weapon").value).evolutions || [];
 // a tier-2 perk with no tier 1 is not a weaker build, it is not a build. The
 // builder greys the later rows out; the gain scan has to obey the same rule or
 // it measures — and recommends — evolutions nobody can select (user,
-// 2026-08-03: "快速计算是不准的，对于 evo 的部分").
+// 2026-08-03).
 const evoOpenTo = () => {
   let n = 0;
   for (const t of weaponEvos()) { if (!evoSel[t.tier]) break; n = t.tier; }
@@ -5050,7 +5049,7 @@ function applyWeaponInner(id, presetMods) {
   // Prime's Madurai, the Naramon on Torid / Cernos Prime / Dual Toxocyst /
   // Laetum — showed an unpolarized exilus slot: the mod in it paid full drain
   // instead of half, and the Forma plan charged for a polarity the weapon
-  // comes with (user, 2026-08-03: "野猪prime的exilus自带M槽位").
+  // comes with (user, 2026-08-03).
   innate = (w.innate_polarities || []).slice(0, 9);
   while (innate.length < 9) innate.push(null);
 
@@ -5099,8 +5098,7 @@ function applyWeaponInner(id, presetMods) {
   show("element-block", !!valenceSpec(w.id));
   // …AND THE NUMBERS FOLLOW THE BLOCKS THAT ARE ACTUALLY THERE. They were
   // written into the markup, so a weapon with no evolutions numbered its
-  // Valence block 5 with no 4 above it (owner, 2026-08-13: "前面的这个序号应该是
-  // 4而不是5啊，不应该写死的。应该取决于当前的武器的模块个数"). Derived from the
+  // Valence block 5 with no 4 above it (owner, 2026-08-13). Derived from the
   // DOM rather than from a table of weapons, so a block added later — or a
   // weapon built in the app one day — is numbered without anyone maintaining a
   // list.
@@ -5242,17 +5240,17 @@ function renderMods() {
 // frame's armor. The panel used to resolve against the NEUTRAL player while
 // the sim resolved against the fight's — so the panel offered a buff card the
 // sim never ran, and hid a contribution the sim was paying. One player, both
-// answers (user, 2026-08-02: "这个目标也要在场上").
-// The scenario fields that describe the PLAYER rather than the fight.
+// answers (user, 2026-08-02). The scenario fields that describe the
+// PLAYER rather than the fight.
 const TENNO_KEYS = ["aiming", "invisible", "airborne", "overshields", "channeling", "solo_weapon", "frame", "wf_armor", "wf_energy", "wf_sprint", "extra_stats"];
 
 // THE FIGHT'S OWN STAT BONUSES: what this weapon is handed by something that is
 // not its build — a squad buff, a Warframe ability, an arcane on another weapon.
 //
-// "效果等于又塞mod，不需要单独一个增益。这些是永久的" (owner, 2026-08-13). So they
-// are not buffs: no trigger, no clock, no stack count. They join the same
-// ADDITIVE buckets the mods feed, which is what makes them cheap to be right
-// about — a scenario's +60% multishot and Split Chamber's +90% sum, exactly as
+// (owner, 2026-08-13). So they are not buffs: no trigger, no clock, no stack
+// count. They join the same ADDITIVE buckets the mods feed, which is what
+// makes them cheap to be right about — a scenario's +60% multishot and Split
+// Chamber's +90% sum, exactly as
 // two multishot mods would, and every lock still wins over them.
 //
 // NO ELEMENTS. An elemental mod is position-sensitive and enters a hierarchy,
@@ -5390,11 +5388,10 @@ function renderPanel(r) {
   const passiveNote = $("stats-passive");
   if (passiveNote) {
     // WHAT THIS WEAPON'S ENTRY DOES NOT MODEL, said in words, above the numbers
-    // that omit it (owner, 2026-08-08: "没建模的要如实说，因为我自己要看，也给用
-    // 户看"). Two sources, one banner:
-    //   · the PASSIVE flag, for a weapon whose prose passive has no rule yet;
-    //   · `unmodeled`, the weapon file's own list — the bulk Incarnon intake
-    //     writes one line here per base attack part it could not carry, and a
+    // that omit it (owner, 2026-08-08). Two sources, one banner: · the
+    // PASSIVE flag, for a weapon whose prose passive has no rule yet; ·
+    // `unmodeled`, the weapon file's own list — the bulk Incarnon intake
+    // writes one line here per base attack part it could not carry, and a
     //     bow's uncharged shot or the Angstrum's explosion is exactly the kind
     //     of gap that makes a complete-looking number wrong.
     // A yaml comment is honest to whoever opens the file and invisible to
@@ -5618,10 +5615,10 @@ const notModeledLines = (o) => {
   }
   // A FOURTH ADMISSION, and the only one that is not a shortfall: this IS
   // modelled, it matches the live game, and DE did not mean it to work this way
-  // (owner, 2026-08-08: "我要建立啊，但是标记可能非本意，我要忠实原本游戏，如果
-  // 修了那我就改"). The other three say the number is lower than the card; this
-  // one says the number is right today and a hotfix takes it away, which is a
-  // different thing for a player to know before building around it.
+  // (owner, 2026-08-08). The other three say the number is lower than the
+  // card; this one says the number is right today and a hotfix takes it away,
+  // which is a different thing for a player to know before building around
+  // it.
   for (const why of o.live_bugs || []) {
     out.push(`<span class="livebug" title="${escHtml(
       tr("this matches the live game and is a bug — DE may patch it, and the number here changes when they do") + ": " + tr(why),
@@ -5713,11 +5710,10 @@ function closePopovers(keep) {
 
 // ---- THE dropdown -------------------------------------------------------
 //
-// ONE choose-one control for the whole site (owner, 2026-08-06: "只要是下拉就
-// 一个样子"). It was seven native `<select>`s and one rich picker, so the
-// quick calc's scenario — a list that GROWS, since a scenario is a preset you
-// make — was the plainest control on the page while a mod list two blocks away
-// searched and sorted.
+// ONE choose-one control for the whole site (owner, 2026-08-06). It was seven
+// native `<select>`s and one rich picker, so the quick calc's scenario — a
+// list that GROWS, since a scenario is a preset you make — was the plainest
+// control on the page while a mod list two blocks away searched and sorted.
 //
 // It is not a new component: the panel is `.popover`, the search bar is
 // `.addbar`, the rows are `.combo-menu .opt` — the same three the pickers have
@@ -6011,7 +6007,7 @@ const gainPct = (x) => (x >= 0 ? "+" : "−") + sig2(Math.abs(x) * 100) + "%";
 // There is no "current" scenario either: a scan is only worth reading against
 // something that has a name and can be returned to.
 // ON by default (user, 2026-08-01): the ranking is the reason the picker is
-// worth opening. Off, nothing simulates, no chip is drawn, and "提升" is not
+// worth opening. Off, nothing simulates, no chip is drawn, and is not
 // offered as an order — a sort key with no values behind it is a trap.
 let gainPrefs = { on: true, scenario: null, runs: GAIN_RUNS_MIN };
 try { const s = JSON.parse(localStorage.getItem("wfsim-gain")); if (s) gainPrefs = { ...gainPrefs, ...s }; } catch (_) {}
@@ -6037,7 +6033,7 @@ function gainScenario() {
   // here while your own fight has Roar running and the quick calc ranked every
   // slot under the ruler's enemy AND your Roar. A ruler is the same fight for
   // everyone or it is not a ruler. Same rule `applyScenario` already states,
-  // and the same failure the Eximus box had (owner, 2026-08-07: 不是完美独立的吗).
+  // and the same failure the Eximus box had (owner, 2026-08-07).
   //
   // The ACTIVE one still reads BOTH — `sim` for the knob you just turned, which
   // has to reach this scan before the auto-save round-trips, and its stored
@@ -6129,7 +6125,7 @@ function gainCandidates(axis) {
   if (axis.kind === "valence") {
     // THE SEVEN PROGENITOR ELEMENTS, scanned the way a tier of evolutions is —
     // all on screen at once, one swap each, everything else left alone (owner,
-    // 2026-08-13: "融合属性 这个也是要参与快速计算的，和evo是一样的").
+    // 2026-08-13).
     //
     // It is the axis a scan is worth the most on: the choice is a whole element
     // entering the hierarchy, so which one wins depends on the mods around it
@@ -6161,7 +6157,7 @@ const GAIN_REFINE_TOP = 12;
 // = 10 — so ~810 full engagements. Every one of them went down the SINGLE
 // `rpcWorker`, one after another, while the optimizer next door has run a
 // FLEET since 2026-08-03. That is why it felt like a search rather than a
-// calculation (user, 2026-08-03: "为什么现在的快速计算就很像optimizer呢").
+// calculation (user, 2026-08-03).
 //
 // It also explains why a nearly-full build is so much worse than a bare one:
 // the candidate COUNT barely moves, but each engagement does. Seven mods means
@@ -6215,7 +6211,7 @@ function gainLanes() {
 // scan ran to the end under the config you had just left, and only then did
 // the refresh notice the key had moved and start again. Every rapid edit paid
 // for a full measurement of a question nobody was asking any more (user,
-// 2026-08-03: "算不过来"). Cancelling at the next await bounds that to one sim.
+// 2026-08-03). Cancelling at the next await bounds that to one sim.
 let gainGen = 0;
 // An axis whose scan was dropped because another axis was mid-flight. One slot:
 // the newest asker wins, and it is consumed when the running scan finishes.
@@ -6335,11 +6331,11 @@ async function scanGains(axis, onTick) {
 const gainBand = (g) => (g.diverged ? g.se || 0 : 0);
 
 /// The chip. A gain the scan cannot resolve STATES ITS WIDTH rather than
-/// collapsing to "about nothing" (owner, 2026-08-12: "就不要出现约等于0的情
-/// 况"). "≈0%" was one string for two different findings — a mod that does
-/// nothing, and a mod nobody measured hard enough — and the difference between
-/// them is the only thing a reader can act on: the first says pick something
-/// else, the second says raise the runs. A band says which: `+0.1%` is
+/// collapsing to "about nothing" (owner, 2026-08-12). "≈0%" was one string for
+/// two different findings — a mod that does nothing, and a mod nobody measured
+/// hard enough — and the difference between them is the only thing a reader
+/// can act on: the first says pick something else, the second says raise the
+/// runs. A band says which: `+0.1%` is
 /// worthless, `≈+3.1% ±7.2%` is unmeasured.
 const gainChip = (g, why) => {
   const band = gainBand(g);
@@ -6377,7 +6373,7 @@ const gainChipFor = (id, where) => {
   // that lands (an unranked option sorts last, so whatever arrives first sits
   // at the top). Read mid-scan that is a ranking which keeps changing its mind,
   // and the only way to find out it was not final was to click away and back
-  // (report, 2026-08-13: "有时候我需要在两个evo之间来回点，才会显示正确的收益").
+  // (report, 2026-08-13).
   //
   // The scan already counts itself; it just said so nowhere near the list being
   // read. `gainOf` has checked the key, so this only marks rows on the axis
@@ -6699,7 +6695,7 @@ function gainSort(a, b, keys) {
   // systematically demotes whatever is merely hard to measure, and a status mod
   // is hard to measure by nature, so the list would have been telling players
   // something about the simulator rather than about their build (owner,
-  // 2026-08-13: "因为如果我们测试足够多，噪声会趋近于0").
+  // 2026-08-13).
   //
   // THIS DOES NOT MAKE THE ORDER STABLE, and it is not meant to. Two options
   // whose bands overlap are genuinely unranked, so which sits higher can move
@@ -7098,8 +7094,8 @@ const arcaneById = (id) => META.arcanes.find((x) => x.id === id);
 // Changing an arcane used to redraw the arcane slots and nothing else — the
 // panel, its stat rows and the SIM'S BUFF BAR all kept showing the previous
 // arcane until some unrelated edit happened to call `refreshPanel`. Toggling a
-// mod was the usual accident, which is exactly how it was reported (2026-08-05:
-// "切换赋能不会刷新缓存，需要切换一下mod才能刷新").
+// mod was the usual accident, which is exactly how it was reported
+// (2026-08-05).
 //
 // `refreshPanel` is the funnel — its own comment says "every build change
 // funnels through here" — so the fix is not to add the call at each picker but
@@ -7280,10 +7276,10 @@ const valenceSpec = (id) => (weaponInfo(id) || {}).valence || null;
 function defaultValence(id, st) {
   const s = valenceSpec(id);
   if (!s) return { element: "", bonus: 0 };
-  // 60% IMPACT, not "none" (owner, 2026-08-13: "默认是60的冲击"). Every copy of
-  // an adversary weapon in the game comes out of its Lich carrying a bonus, so
-  // "no element" is not a weaker build of it — it is a weapon nobody has, and
-  // the panel would print numbers no player can reproduce.
+  // 60% IMPACT, not "none" (owner, 2026-08-13). Every copy of an adversary
+  // weapon in the game comes out of its Lich carrying a bonus, so "no element"
+  // is not a weaker build of it — it is a weapon nobody has, and the panel
+  // would print numbers no player can reproduce.
   //
   // The FIRST element and the roll's CEILING: the ceiling because every player
   // can Valence-fuse to it and it is what the board scores, the first because
@@ -7445,8 +7441,7 @@ function renderEvo() {
       // perks with an unmodelled effect, and in the BUILDER every one of them
       // read exactly like its working tier-mates. The data knew
       // (`fully_unmodeled`), the optimizer said so, and the surface where the
-      // choice is actually made did not (owner, 2026-08-08: "没有实现的部分我们
-      // 就老实做好备注").
+      // choice is actually made did not (owner, 2026-08-08).
       //
       // TWO STATES, because they are different facts: a perk whose EVERY effect
       // is inert is not a weaker choice, it is not a choice; one with a live
@@ -8026,11 +8021,11 @@ function setArenaEnemy(en) {
 
 // ---- WARFRAME ABILITY BUFFS (scenario section 3) ------------------------
 //
-// EARLY ACCESS, and the block says so on screen (owner, 2026-08-08: "注意这个部
-// 分未来会迁移，目前相当于抢先开放"). Today you type an Ability Strength; when
-// frames land it comes from the frame and the duration from Ability Duration.
-// Nothing else about these buffs changes then, which is why the definitions
-// live in `data/abilities/` and only their two INPUTS are here.
+// EARLY ACCESS, and the block says so on screen (owner, 2026-08-08). Today
+// you type an Ability Strength; when frames land it comes from the frame and
+// the duration from Ability Duration. Nothing else about these buffs changes
+// then, which is why the definitions live in `data/abilities/` and only their
+// two INPUTS are here.
 //
 // It is the SCENARIO's, not the build's: a thing done TO this weapon for a
 // while. That is what puts it in section 3 beside the wielder, what carries it
@@ -8069,10 +8064,9 @@ function wfRunning() {
 }
 
 // WHAT IT IS WORTH, at the strength you set — the number, on its own, big
-// enough to read (owner, 2026-08-08: "要显示数值，就是当前的强度对应的数值").
-// A catalogue that showed only the ability's name would make you do the
-// multiply the sim is doing.
-// THE ELEMENT THIS BUFF IS ACTUALLY SET TO — the picked one where the ability
+// enough to read (owner, 2026-08-08). A catalogue that showed only the
+// ability's name would make you do the multiply the sim is doing. THE ELEMENT
+// THIS BUFF IS ACTUALLY SET TO — the picked one where the ability
 // offers a choice (Resupply's gear wheel of ten), its own otherwise.
 const wfElement = (a) => {
   const p = wfPick(a.id);
@@ -8220,10 +8214,9 @@ function renderWfBuffs(host, readonly) {
 /// THE RUN COUNT, on its own — the page's, not the fight's.
 ///
 /// It is GLOBAL and it stays put: switching weapons, switching fights, and
-/// opening an OFFICIAL ruler all leave it alone (owner, 2026-08-13: "哪怕是读官
-/// 方的scenario，模拟次数也是可以改变的…并且这个是全局的，类似快速计算的那个次数。
-/// 切换武器时不变的"). The lock that pins a board fight's terms does not reach
-/// it, because how long you are willing to wait is not one of them.
+/// opening an OFFICIAL ruler all leave it alone (owner, 2026-08-13). The
+/// lock that pins a board fight's terms does not reach it, because how
+/// long you are willing to wait is not one of them.
 ///
 /// The METRIC is the opposite and sits in the block above: KPM is a term of the
 /// scenario, so an official ruler pins it and this page may not argue.
@@ -8347,10 +8340,10 @@ function boardPayload() {
     // signature rather than anybody's choice.
     mode,
     // THE EIGHT MAIN SLOTS, and the exilus one is DROPPED here (owner,
-    // 2026-08-05: "如果带着exilus测试，我们会收入然后去掉exilus"). It has to
-    // happen on this side: the payload is a flat list with no slot positions,
-    // and an exilus-eligible mod is legal in a MAIN slot, so nothing
-    // downstream can tell which entry came out of the exilus slot. Only the
+    // 2026-08-05). It has to happen on this side: the payload is a flat list
+    // with no slot positions, and an exilus-eligible mod is legal in a MAIN
+    // slot, so nothing downstream can tell which entry came out of the exilus
+    // slot. Only the
     // page knows, because only the page has the slots.
     //
     // Sending all nine is what this did until now, which refused exactly the
@@ -8552,7 +8545,7 @@ function lockOfficialBuild() {
   // base form, wrote nothing (`markPresetDirty` refuses an official build), and
   // sent nothing (`offerBoardSubmit` refuses one too) — so a player testing the
   // base form several times saw no row appear and nothing on screen said why
-  // (owner, 2026-08-09: "我昨晚就用基础做了好几次测试，为啥没出现呢").
+  // (owner, 2026-08-09).
   ["mod-block", "arcane-block", "evo-block", "mode-block"].forEach((id) => {
     const b = $(id);
     if (!b) return;
@@ -8577,9 +8570,9 @@ function lockOfficialBuild() {
   // ACTION FIRST. This note used to open with what the build IS and mention
   // copying as a clause, pointing at a ⧉ chip somewhere else on the page — a
   // reader who wants to change something needs the VERB and a thing to click
-  // (owner, 2026-08-09: "我们应该有提示说可以复制，我们提示做好点"). So: what
-  // cannot be done here, the one action that fixes all of it, and a real button
-  // — which the scenario's own read-only note has had all along.
+  // (owner, 2026-08-09). So: what cannot be done here, the one action that
+  // fixes all of it, and a real button — which the scenario's own read-only
+  // note has had all along.
   const parts = [
     `<b>${escHtml(tr("Benchmark build — read-only"))}</b>`,
     escHtml(tr("It is already a row on the board, so nothing here can be edited and its runs are not submitted. Copy it and everything opens up — mods, arcanes, evolutions and the mode — and what you run goes to the board as your own entry.")),
@@ -8938,10 +8931,10 @@ let replayState = null; // { data, i, playing, speed, raf }
 // ---- EVERY BLOCK FOLDS -------------------------------------------------
 //
 // The result panel grew from one number to nine blocks, and not every reader
-// wants all nine every time (owner, 2026-08-11: "每个小块都应该支持可伸缩").
-// So a block is a heading you can click, and it REMEMBERS — per block, across
-// runs and reloads, because a panel that re-opens everything on every Run Sim
-// is a panel you have to re-close on every Run Sim.
+// wants all nine every time (owner, 2026-08-11). So a block is a heading you
+// can click, and it REMEMBERS — per block, across runs and reloads, because a
+// panel that re-opens everything on every Run Sim is a panel you have to
+// re-close on every Run Sim.
 //
 // The state lives outside the markup, which is what lets `renderResults`
 // rebuild the whole panel without losing what you folded.
@@ -9040,8 +9033,7 @@ function hitTableMarkup(r) {
 // moves a mean by a few per cent and reads as "this build is good". This is the
 // one output that can be FALSIFIED — each line is a factor with its value, the
 // product is the number that went into the damage meter, and anyone with the
-// wiki and a calculator can check it (owner, 2026-08-11: "方便我可以根据数据里
-// 找出计算瑕疵").
+// wiki and a calculator can check it (owner, 2026-08-11).
 //
 // It is the MEDIAN engagement's, the same run the replay plays back, so the
 // account and the curves are the same fight. A factor of exactly 1.00 is drawn
@@ -9169,10 +9161,10 @@ function replayMarkup(r) {
   }).join("");
   const rows = curveRows(rp.buffs, rp.stacks, named, "buff");
   // THE TARGET'S SIDE OF THE SAME FIGHT. Symmetric with the buff table on
-  // purpose (owner, 2026-08-11: "你就和我们现在的buff列表对称") — same rows,
-  // same uptime, same dead bands. A DEATH IS NOT A NEW SERIES: the arena
-  // replaces the body it kills and every stack goes with it, so a respawn reads
-  // as the curve dropping to zero and climbing again, and the gap counts
+  // purpose (owner, 2026-08-11) — same rows, same uptime, same dead bands. A
+  // DEATH IS NOT A NEW SERIES: the arena replaces the body it kills and every
+  // stack goes with it, so a respawn reads as the curve dropping to zero and
+  // climbing again, and the gap counts
   // against uptime. That is what makes the table worth reading — the ramp you
   // pay for on every body is the thing a single averaged number hides.
   //
@@ -9220,11 +9212,10 @@ function replayMarkup(r) {
 // Re-read the WHOLE result panel at frame `i` — KPIs, the damage meter, the
 // DPS curve, the buff curves, the target's pools.
 //
-// This is what makes it a replay rather than a cursor (user, 2026-08-03:
-// "点击 replay，应该可以重新把上面的所有复原"). The panel is rendered ONCE at
-// its final state and then re-read in place: rebuilding the markup sixty times
-// a second would drop every open sub-row, every scroll position and the
-// caret you just clicked.
+// This is what makes it a replay rather than a cursor (user, 2026-08-03). The
+// panel is rendered ONCE at its final state and then re-read in place:
+// rebuilding the markup sixty times a second would drop every open sub-row,
+// every scroll position and the caret you just clicked.
 //
 // It starts at the LAST frame, which is the finished fight — the same numbers
 // the panel would show with no replay at all. Playing rewinds to 0 and walks
@@ -9498,7 +9489,7 @@ function renderResults(r, testedAt) {
     </div>`).join("");
   }).join("");
   // WHAT THE DAMAGE WAS MADE OF — one stacked bar over the whole engagement,
-  // in DE's own colours (owner, 2026-08-06: "类型可以搞成百分比合成吗").
+  // in DE's own colours (owner, 2026-08-06).
   //
   // The meter above answers "where did it come from" — direct hits, a cloud, a
   // proc. This answers a different question a build actually turns on: what
@@ -9955,7 +9946,7 @@ function renderOptModes() {
 
 /// THE VALENCE AXIS, searched exactly like the mode: `pool` opens it, `req`
 /// pins one, and the two marks behave as one group because a weapon has ONE
-/// progenitor element (owner, 2026-08-13: "这个就好比是灵化的evo").
+/// progenitor element (owner, 2026-08-13).
 ///
 /// Never empty for a weapon that has the axis — a scope with no element is not
 /// "search them all", it is a question with no answer, and the server would

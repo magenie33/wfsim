@@ -8,8 +8,7 @@
 // firing modes in order to equip this mod" (wiki, Semi-Pistol_Cannonade). Dual
 // Toxocyst is semi-auto and transforms into a full-auto form, so the mod fits
 // while the Genesis is not installed and does not the moment tier 1 is (user,
-// 2026-08-04: "只要没点第一个 evo 就视为还是纯半自动，那就可以带，如果装上了就
-// 不可以带").
+// 2026-08-04).
 //
 // The engine decides (`pool_for_build`) and the page is TOLD the consequence
 // (`evo_forbids` in /api/meta) — this asserts the page acts on it, on SCREEN:

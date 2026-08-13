@@ -141,10 +141,10 @@ check("the header states average, uptime and the ramp",
   /[\d.]+\/40/.test(r.rows[0].stat) && /\d+%/.test(r.rows[0].stat) &&
   /[\d.]+s/.test(r.rows[0].stat), r.rows[0].stat);
 // THE METER IS COLOURED BY DAMAGE TYPE, NOT BY ROW POSITION (owner,
-// 2026-08-06: "我们颜色也用官方"). It used to take its colour from `(i % 8) + 1`,
-// so the same element was one colour under a direct hit and another under a
-// lingering field — and neither was the element's. DE publishes a colour per
-// type (`Module:DamageTypes/data`), and the point of using it is that it is
+// 2026-08-06). It used to take its colour from `(i % 8) + 1`, so the same
+// element was one colour under a direct hit and another under a lingering
+// field — and neither was the element's. DE publishes a colour per type
+// (`Module:DamageTypes/data`), and the point of using it is that it is
 // the SAME everywhere.
 //
 // Asserted on the RESOLVED colour: a `var()` that resolved to nothing would
@@ -171,11 +171,11 @@ check("the header states average, uptime and the ramp",
     JSON.stringify(Object.entries(byType).map(([k, v]) => [k, v.every((x) => x.icon)])));
 }
 
-// EXPANDING A SOURCE ACTUALLY SHOWS AND HIDES IT (owner, 2026-08-06: "直接命中
-// 和其他的收起是无效的"). The handler was always correct — it toggled the
-// attribute and flipped the caret — and nothing happened, because `.mrow` is
-// `display:grid` and an author rule beats the UA's `[hidden]{display:none}`.
-// So the rows were permanently expanded and the caret lied about it.
+// EXPANDING A SOURCE ACTUALLY SHOWS AND HIDES IT (owner, 2026-08-06). The
+// handler was always correct — it toggled the attribute and flipped the
+// caret — and nothing happened, because `.mrow` is `display:grid` and an
+// author rule beats the UA's `[hidden]{display:none}`. So the rows were
+// permanently expanded and the caret lied about it.
 //
 // Asserted on the rendered HEIGHT, not on the attribute: reading `.hidden`
 // back is what made this invisible for so long, since the attribute was right
@@ -185,9 +185,9 @@ check("a meter source expands and collapses for real",
   JSON.stringify(r.collapse));
 
 // THE COMPOSITION BAR — the same damage counted a second way (owner,
-// 2026-08-06: "类型可以搞成百分比合成吗"). The meter answers where damage came
-// FROM; this answers what it was MADE OF, and the two are the same total, so
-// the shares must come to one and cover the same types the meter listed.
+// 2026-08-06). The meter answers where damage came FROM; this answers what
+// it was MADE OF, and the two are the same total, so the shares must come to
+// one and cover the same types the meter listed.
 //
 // Aggregated in the page from the meter's own rows precisely so it cannot
 // drift; this asserts that it did not.

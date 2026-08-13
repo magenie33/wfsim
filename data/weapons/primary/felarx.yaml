@@ -16,10 +16,10 @@ transforms_to: felarx_incarnon
 # BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
 # array, which is DE's own export and which agreed with the wiki infobox field
 # for field on every one of the eleven guns checked by hand first. The
-# EVOLUTIONS are the rough half (owner: "灵化部分可以粗略"): transcribed from the
-# wiki's table, with every clause the intake's rule engine did not recognise
-# loaded as a NAMED INERT effect that the builder and the optimizer both print
-# as "not modelled yet". Nothing is dropped in silence — some perks do nothing
+# EVOLUTIONS are the rough half (owner): transcribed from the wiki's table,
+# with every clause the intake's rule engine did not recognise loaded as a
+# NAMED INERT effect that the builder and the optimizer both print as "not
+# modelled yet". Nothing is dropped in silence — some perks do nothing
 # yet and say so on their own tile.
 unmodeled:
   - "this run never INTERRUPTS a reload — in game you can fire mid-reload and keep the shells already loaded, and a player who does is trading stacks and a full magazine for uptime. Decided rather than missing (2026-08-10): a listed reload is a whole reload, and the alternative is not a more accurate model, it is a different player"
@@ -55,9 +55,9 @@ reload_per_shell_s: 0.4
 reload_end_s: 0.5
 
 # CONDITION OVERLOAD IS MULTIPLYING ON BOTH OF THIS WEAPON'S MODES (owner,
-# 2026-08-08: "felarx 两个模式都是 multi 计算的"). The wiki's CO catalog lists
-# the Felarx among the Multiplying entries and names one attack; the answer is
-# the same for the other, so this is not read off a form — it is the weapon's.
+# 2026-08-08). The wiki's CO catalog lists the Felarx among the Multiplying
+# entries and names one attack; the answer is the same for the other, so this
+# is not read off a form — it is the weapon's.
 #
 # It is not a rounding difference: a free-standing final multiplier against a
 # member of the base-damage bucket is a different number on any build carrying

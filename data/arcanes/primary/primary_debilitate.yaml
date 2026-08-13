@@ -8,8 +8,8 @@ description: "If an enemy has 10 stacks of a combined Status Effect, inflicting 
 # WHAT THIS DOES IN THE LIVE GAME THAT DE DID NOT MEAN IT TO. Rendered on the
 # card: the sim computes it, it matches the game, and a hotfix takes it away —
 # so a player reading the number is entitled to know which of those it is
-# (owner, 2026-08-08: "我要建立啊，但是标记可能非本意，我要忠实原本游戏，如果修
-# 了那我就改"). The mechanism is in MEASUREMENTS M37; this is the sentence.
+# (owner, 2026-08-08). The mechanism is in MEASUREMENTS M37; this is
+# the sentence.
 live_bugs:
   - "the split fires a damage instance of ZERO, and the zero still takes that instance's own multipliers — when the DoT replaces it with the parent hit's damage, they stay behind. Faction bonuses were meant to carry down the chain and do; a per-instance bonus like Devouring Attrition's +2000% was not, and does anyway (x21 twice = x441). Modelled as it behaves today; a fix removes it"
 
@@ -27,30 +27,27 @@ effects:
   #
   # THE CARD ABOVE IS DE'S OWN TEXT AND IT READS ONE STEP LATE — "if an enemy
   # HAS 10 stacks, inflicting the same Status Effect AGAIN". Measured otherwise
-  # (owner, 2026-08-10: "如果当前是9层，下一发是10层的话，就可以立刻触发其中一个
-  # ……全部都是这种情况的，我实际测试了"): at nine, the shot that makes it ten
-  # fires it. The description field stays verbatim, because it is DE's string
-  # and not ours to correct — the behaviour is in the engine and in
-  # MEASUREMENTS M34.
+  # (owner, 2026-08-10): at nine, the shot that makes it ten fires it. The
+  # description field stays verbatim, because it is DE's string and not ours
+  # to correct — the behaviour is in the engine and in MEASUREMENTS M34.
   #
   # It is also why the arcane works on BLAST at all, and why it is not the rare
-  # case the wiki implies ("并不像wiki说的那么rarely"): Blast detonates at ten
+  # case the wiki implies: Blast detonates at ten
   # and drains every stack, so it never HAS ten and an eleventh application does
   # not exist. Under the measured rule Blast is an ordinary member.
   #
   # IT DEALS NO DAMAGE — it applies a status, and that is all the target ever
-  # feels from it (owner, 2026-08-08: "殴打的那一下，是没有伤害的…就是直接上dot
-  # （电还是会立刻电一下）"). The Electricity tick that lands the same instant is
-  # the DoT's OWN first tick, which is delay-0 for Electricity and Gas; nothing
-  # here calls `target.apply`.
+  # feels from it (owner, 2026-08-08). The Electricity tick that lands the same
+  # instant is the DoT's OWN first tick, which is delay-0 for Electricity and
+  # Gas; nothing here calls `target.apply`.
   #
   # There IS an intermediate INSTANCE, and it is a deduction rather than a
   # reading: the wiki says the status it leaves carries the faction bonus THREE
   # times, a status always carries it one time more than whatever caused it, and
   # a hit carries it once — so three is only reachable through one more link in
-  # the chain (owner, 2026-08-05: "吃3次派系只有一个情况，那必然有个元素实例造成
-  # 才有可能出现这个情况"). That instance is a SCALE, not a damage number. The
-  # two sentences used to be one, and it read as if the arcane hit you twice.
+  # the chain (owner, 2026-08-05). That instance is a SCALE, not a damage
+  # number. The two sentences used to be one, and it read as if the arcane
+  # hit you twice.
   #
   # AND THAT INSTANCE IS PERMANENTLY NON-CRITICAL — not a zero-damage hit that
   # rolls crit against a zero. The two readings deal the same nothing and differ

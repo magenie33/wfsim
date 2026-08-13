@@ -49,11 +49,11 @@ pub struct Tenno {
     /// PLAYER stat a weapon perk reads: the Latron family's Swift Punishment is
     /// "With Sprint Speed 1.2 or Higher: +30% Direct Damage per Status Type".
     ///
-    /// The neutral player's is 0.9, the SLOWEST a frame has (owner, 2026-08-12:
-    /// "我们应该假设tenno的sprint speed是0.9（最慢的）"). Same rule as every
-    /// other field here: with no frame chosen the wielder claims nothing, so a
-    /// perk gated on speed is OFF until someone says who is carrying the gun.
-    /// A default of 1.0 would have been a frame nobody named, and it would have
+    /// The neutral player's is 0.9, the SLOWEST a frame has (owner,
+    /// 2026-08-12). Same rule as every other field here: with no frame chosen
+    /// the wielder claims nothing, so a perk gated on speed is OFF until
+    /// someone says who is carrying the gun. A default of 1.0 would have been
+    /// a frame nobody named, and it would have
     /// paid out on a build that cannot reach the threshold.
     #[serde(default = "slowest_frame")]
     pub sprint: f64,
@@ -129,10 +129,8 @@ pub struct TennoState {
     /// with it. The arena has always fired one weapon for the whole engagement,
     /// and that never answered "what else are you carrying": the standing
     /// ruling is that the Tenno walks in with a full loadout (owner,
-    /// 2026-08-12: "我们的场景是带满武器的情况，所以单独的那个是不生效的"), so
-    /// every clause about the other slots reads FALSE. This is the knob that
-    /// says otherwise (owner, 2026-08-13: "我们可以在模拟里面加一个选项，可以
-    /// 模拟只装备这个武器…不是叫你阉割建模").
+    /// 2026-08-12), so every clause about the other slots reads FALSE. This
+    /// is the knob that says otherwise (owner, 2026-08-13).
     ///
     /// Defaults FALSE, which keeps the full loadout as the fight everyone has
     /// been measuring under — every stored scenario and every board row means
@@ -159,7 +157,7 @@ fn full() -> f64 {
 }
 
 /// THE FIGHT'S OWN STAT BONUSES — "the effect equals stuffing in another mod"
-/// (owner, 2026-08-13: "效果等于又塞mod，不需要单独一个增益。这些是永久的").
+/// (owner, 2026-08-13).
 ///
 /// Everything a weapon is handed by something that is not its build: a squad
 /// buff, a Warframe ability, an arcane on another weapon, a Helminth this app

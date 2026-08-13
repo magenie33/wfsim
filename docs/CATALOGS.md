@@ -34,9 +34,11 @@ Columns, verbatim:
 
 ### THE RULE, stated once (owner, 2026-08-12)
 
-> 同家族的灵化仍旧视为不同的武器。只要不在co表上，一律视为正常的只对direct的100%
-> 的加算。就是这个核心原则，如果一个武器的普通的在表上，而prime没有，那普通特殊
-> 处理，prime正常处理，不要擅自家族推广。
+> A shared Incarnon Genesis does not make one weapon: a variant is still its
+> own entry. Anything not on the CO table is ordinary — direct hits only,
+> 100%, added. If the base variant is on the table and the Prime is not, the
+> base gets the anomaly and the Prime gets the ordinary rule. Never
+> generalise a row to a family.
 
 Four things, and the last two are the ones that keep being got wrong:
 
@@ -48,9 +50,9 @@ Four things, and the last two are the ones that keep being got wrong:
 3. **THE PAGE'S PROSE DOES NOT OVERRIDE THE TABLE.** Its Math section lists
    "Base Damage increases from Incarnon Genesis Evolutions" among the things
    Adding CO ignores, which read as a law would move 107 (entry, perk) pairs
-   here. It is not a law (owner, 2026-08-12: "这个不是通则") — see the section
-   below for why the page argues that side itself. Rule 2 already covered this;
-   it is spelled out because the prose is what tempts you to break it.
+   here. It is not a law (owner, 2026-08-12) — see the section below for why
+   the page argues that side itself. Rule 2 already covered this; it is spelled
+   out because the prose is what tempts you to break it.
 4. **A SHARED GENESIS DOES NOT MAKE ONE WEAPON.** An Incarnon form is still that
    weapon's form, so a row is transcribed for the entries it NAMES and no
    others. If the base variant is on the table and the Prime is not, the base
@@ -299,9 +301,8 @@ Read as a law, the Incarnon bullet would mean every Adding weapon with a
 flat-damage evolution excludes it — **107** (entry, perk) pairs in this roster,
 against the eleven the catalog actually names.
 
-**It is not a law** (owner, 2026-08-12: "Base Damage increases from Incarnon
-Genesis Evolutions 这个不是通则"). Same ruling as the one this file already
-states: the catalog is authoritative and absence means ORDINARY.
+**It is not a law** (owner, 2026-08-12). Same ruling as the one this file
+already states: the catalog is authoritative and absence means ORDINARY.
 
 **And the page argues the owner's side.** Two of the four bullets are hedged
 with "Some" outright, and the unhedged "Bow charging" one is enumerated by ~15

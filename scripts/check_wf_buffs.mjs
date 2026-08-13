@@ -15,11 +15,10 @@
 //   · ticking one MOVES THE SIM — asserted against a real /api/simulate in the
 //     shipping wasm build, not against the state object;
 //   · two of a FAMILY do not stack and the page SAYS which one lost. This is
-//     the rule the owner asked for by name (2026-08-08: "同时选了 roar 和
-//     roar（helminth），那就选择生效当前最强的") and it is the one a player
-//     cannot verify by eye — the difference between +50% and +80% is a number
-//     you have to be told;
-//   · the OPTIMIZER shows the same buffs, read-only, because it runs the
+// the rule the owner asked for by name (2026-08-08) and it is the one a
+// player cannot verify by eye — the difference between +50% and +80% is a
+// number you have to be told; · the OPTIMIZER shows the same buffs,
+// read-only, because it runs the
 //     simulator's fight and a search scored under a different Roar is scored
 //     under a fight nobody can reproduce;
 //   · and the BOARD carries none — the negative control, and the reason a
@@ -61,9 +60,9 @@ for (const lang of ["en", "zh"]) {
     out.values = cards().map(c => (c.querySelector('.wfb-v') || {}).textContent || '');
     out.effects = cards().map(c => (c.querySelector('.wfb-e') || {}).textContent || '');
     // A SECTION OF THE FIGHT, and WRAPPED so it still reads as its own thing
-    // (owner, 2026-08-09: "既是独立模块，也是属于scenario的一部分"). It saves
-    // with the scenario, travels with it across weapons and is what the
-    // optimizer reads off the fight, so inside is where it belongs.
+    // (owner, 2026-08-09). It saves with the scenario, travels with it
+    // across weapons and is what the optimizer reads off the fight, so
+    // inside is where it belongs.
     out.insideFight = !!document.querySelector('#sim-block #wfbuff-block #sim-wfbuffs');
     out.wrapped = !!document.querySelector('#wfbuff-block.sim-panel');
     // …and LAST, right above the run: it is the final input before you press it.
@@ -286,9 +285,9 @@ for (const lang of ["en", "zh"]) {
   check(`[${lang}] ticking a buff moves the SIM`,
     r.dpsPlain > 0 && r.dpsRoar > r.dpsPlain * 1.2,
     `${r.dpsPlain} -> ${r.dpsRoar}`);
-  // WHOLE FIGHT, ALWAYS, for now (owner, 2026-08-08: "目前就只能全程吧") —
-  // `secs: null` is that, and the engine's per-buff end time is still there
-  // under it for the day Ability Duration supplies one.
+  // WHOLE FIGHT, ALWAYS, for now (owner, 2026-08-08) — `secs: null` is
+  // that, and the engine's per-buff end time is still there under it for
+  // the day Ability Duration supplies one.
   check(`[${lang}] …sent as the fight's own field, running the whole fight`,
     Array.isArray(r.sent) && r.sent.length === 1 && r.sent[0].id === "roar"
       && r.sent[0].secs === null,

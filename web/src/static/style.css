@@ -77,18 +77,16 @@ body:not(.on-optimizer) #opt-block{display:none}
 body:not(.on-rivens) #riven-block{display:none}
 body:not(.on-enemies) #enemy-block{display:none}
 /* THE SIMULATOR'S BLOCKS, and `#wfbuff-block` is one of them: a Warframe buff
-   is not part of the weapon (owner, 2026-08-09: "builder页面不应该出现战甲增益，
-   因为不属于武器自己的一部分"). It is something done TO this weapon for a while,
-   which is the fight's business — the builder answers "what is this gun", and a
-   Roar belongs to no gun. The optimizer shows its own read-only copy inside
-   `#opt-block`, so it needs no entry here. */
+   is not part of the weapon (owner, 2026-08-09). It is something done TO this
+   weapon for a while, which is the fight's business — the builder answers
+   "what is this gun", and a Roar belongs to no gun. The optimizer shows its
+   own read-only copy inside `#opt-block`, so it needs no entry here. */
 body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body:not(.on-simulator) #sim-results-block{display:none}
-/* A SECTION OF THE FIGHT THAT STILL READS AS ITS OWN THING (owner, 2026-08-09:
-   "既是独立模块，也是属于scenario的一部分"). Wrapped rather than merely headed:
-   it saves with the scenario, travels with it across weapons and is what the
-   optimizer reads off the fight, so it belongs INSIDE — and it is a layer
-   nobody else in this panel is, so it gets an edge. It needs no hiding rule of
-   its own: `#sim-block` already carries one. */
+/* A SECTION OF THE FIGHT THAT STILL READS AS ITS OWN THING (owner,
+   2026-08-09). Wrapped rather than merely headed: it saves with the scenario,
+   travels with it across weapons and is what the optimizer reads off the
+   fight, so it belongs INSIDE — and it is a layer nobody else in this panel
+   is, so it gets an edge. It needs no hiding rule of
 .sim-panel{margin:14px 0 4px;padding:2px 12px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg-2)}
 .sim-panel .sim-h{margin-top:12px}
 .sim-h-sub{margin-left:8px;color:var(--text-2);font-size:11px;font-weight:400}
@@ -162,10 +160,10 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
    builder's editing blocks. */
 /* `#mode-block` is on this list because the MODE is part of the build, and the
    simulator does not edit builds — it picks one and measures it (owner,
-   2026-08-07: "simulater那里只可以选preset，mode要进入下面的预览"). It was the
-   one editing control left on this tab, sitting above a read-only Build card
-   that already stated the same fact; two places to read one field, one of them
-   writable, is how a build gets edited somewhere that is not the builder.
+   2026-08-07). It was the one editing control left on this tab, sitting above
+   a read-only Build card that already stated the same fact; two places to read
+   one field, one of them writable, is how a build gets edited somewhere that
+   is not the builder.
    NOT hidden on the optimizer, which still reads `mode` off this control and
    has no scope axis of its own for it yet. */
 .on-simulator #quick-calc,.on-simulator #mode-block,.on-simulator #mod-block,.on-simulator #arcane-block,.on-simulator #evo-block,.on-simulator #element-block,.on-simulator #stats-block{display:none}
@@ -855,7 +853,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 /* ---- REPLAY: the median engagement, scrubbable ------------------------
    One row per buff, deliberately short (28px of curve): five of them have to
    read as a group at a glance, which a stack of full-height charts cannot do
-   (user, 2026-08-02: "都是空间要小一点"). */
+   (user, 2026-08-02). */
 .rp-bar{display:flex;align-items:center;gap:10px;margin:6px 0 10px}
 .rp-play{min-width:64px}
 .rp-scrub{flex:1;accent-color:var(--accent)}
@@ -894,7 +892,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .rp-off{color:var(--muted)}
 /* THE AVERAGE, drawn. "avg 17.50/40" is a number you have to hold in your
    head while reading the curve; a line at that height is the same fact you
-   can see against it (user, 2026-08-03: "我想看看平均几"). */
+   can see against it (user, 2026-08-03). */
 .rp-mean{stroke:var(--accent);stroke-width:1;stroke-dasharray:4 3;opacity:.75;vector-effect:non-scaling-stroke}
 
 /* THE OFFICIAL SCENARIO. A ruler, not a preset: marked on its chip, explained
@@ -1041,8 +1039,8 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .pk-gain{display:inline-flex;gap:6px;align-items:center;margin-left:auto}
 
 /* ---- THE dropdown ---------------------------------------------------- */
-/* One trigger shape for every choose-one control (owner, 2026-08-06: "只要是
-   下拉就一个样子"). It deliberately matches the native `select` rule above —
+/* One trigger shape for every choose-one control (owner, 2026-08-06). It
+   deliberately matches the native `select` rule above —
    same border, radius, caret position — so replacing a select moves nothing
    on the page; only what OPENS from it changes. */
 .dd{display:inline-flex;align-items:center;gap:6px;background:var(--plane);color:var(--text);

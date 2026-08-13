@@ -2,9 +2,8 @@
 //
 // The owner debugs the way a player does — by reading the card — so a gap that
 // exists only in a yaml comment or a report script is a gap nobody can act on
-// (2026-08-08: "我需要用户也能看见，因为我也是这样排查的"). Five families can
-// admit something, each with its own surface, and each has gone silent at
-// least once:
+// (2026-08-08). Five families can admit something, each with its own
+// surface, and each has gone silent at least once:
 //
 //   · WEAPON      a banner over the stats panel, one line per gap
 //   · EVOLUTION   a chip on the perk tile — "not modelled yet" / "partly"

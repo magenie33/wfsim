@@ -58,11 +58,11 @@ effects:
   # /6.67 = 0.200, /5.34 = 0.250, /4.45 = 0.300. `data/weapons/` was written
   # from the weapon pages and carries exactly those four.
   #
-  # ARCANE CRIT COUNTS, AND IT COUNTS LIVE (owner, 2026-08-13: "都是加在武器自身
-  # 的暴击率，以及肯定是要改成实时的，这个是没有歧义的"). The four sources the row
-  # names — both parts of Galvanized Crosshairs, Secondary Outburst, Cascadia
-  # Overcharge, Secondary Enervate — are all live and none is on the panel, and
-  # three of them RAMP, so a number resolved once could not have been right for
+  # ARCANE CRIT COUNTS, AND IT COUNTS LIVE (owner, 2026-08-13). The four
+  # sources the row names — both parts of Galvanized Crosshairs, Secondary
+  # Outburst, Cascadia Overcharge, Secondary Enervate — are all live and none
+  # is on the panel, and three of them RAMP, so a number resolved once could
+  # not have been right for
   # more than an instant.
   #
   # So the sim recomputes it per SHOT from `effective_cc`: the same value the

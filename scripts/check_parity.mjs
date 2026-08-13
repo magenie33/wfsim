@@ -109,7 +109,7 @@ let bad = 0;
 // evolution list and not on the BUILDER's tile, so the surface where the choice
 // is actually made showed it as an ordinary pick. Invisible until the roster
 // grew: eleven Incarnon weapons landed on 2026-08-08 carrying 31 such perks
-// (owner: "没有实现的部分我们就老实做好备注").
+// (owner).
 //
 // Asserted on the SCREEN rather than on the data, because the data was right
 // the whole time — both modules read the same `unmodeled` array off `/api/meta`

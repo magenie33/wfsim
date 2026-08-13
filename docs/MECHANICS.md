@@ -2167,9 +2167,8 @@ say *"Burst firing maintains spool-up"* while the Phenmor's says the spool
 *"resets once the player stops firing"*, and it would be easy to read that as two
 mechanics needing two flags. It is not worth one: this sim holds the trigger, so
 the only pauses in it are the reloads the weapon forces, and no play pattern is
-invented by treating those the same way everywhere (owner, 2026-08-10: "我们这个
-测试就是一按到底，没有理由给这个特殊对待的。因为极限的话岂不是一发一发发射
-了？" — taken to the limit, exempting a spool means firing one round at a time).
+invented by treating those the same way everywhere (owner, 2026-08-10 — taken
+to the limit, exempting a spool means firing one round at a time).
 
 **What is not modelled is the play pattern that dodges it** — on the faller, a
 player who taps rather than holds; on the risers, one whose pauses are short

@@ -4,8 +4,8 @@
 // The TWENTY-SEVENTH check, and the first about a build axis that is a property
 // of the COPY a player owns rather than of the model. A Kuva Lich hands out
 // 25–60% of base damage as one of seven elements, so two Kuva Nukors are two
-// different weapons and neither is "the" Kuva Nukor (owner, 2026-08-13:
-// "kuva武器有个初属性。类似evo得多一块建立").
+// different weapons and neither is "the" Kuva Nukor (owner,
+// 2026-08-13).
 //
 // It is checked on the NUMBER rather than on the control, for the reason every
 // axis here is: a dropdown that stores a value nobody reads looks exactly like
@@ -106,10 +106,10 @@ check("an ordinary weapon has no such axis, and inherits no choice",
   JSON.stringify({ shown: r.otherShown, carried: r.otherValence }));
 
 // …AND THE QUICK CALC RANKS IT, the same way it ranks a tier of evolutions
-// (owner, 2026-08-13: "融合属性 这个也是要参与快速计算的，和evo是一样的"). It is
-// the axis a scan is worth the most on: a progenitor element is a whole element
-// entering the hierarchy, so which one wins depends on the mods around it and on
-// the target — not a question anyone answers by reading cards.
+// (owner, 2026-08-13). It is the axis a scan is worth the most on: a
+// progenitor element is a whole element entering the hierarchy, so which one
+// wins depends on the mods around it and on the target — not a question anyone
+// answers by reading cards.
 const gain = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
@@ -147,9 +147,9 @@ check("the quick calc ranks the valence axis",
 check("...with the gain on the pick, not in a tooltip",
   gain.picks === 8 && gain.chips === 6,
   `${gain.picks} picks, ${gain.chips} chips`);
-// THE STEP NUMBERS ARE DERIVED, not written into the markup (owner: "不应该写死
-// 的。应该取决于当前的武器的模块个数"). This weapon has no evolutions, so its
-// Valence block is step 4 — there is no 5 with nothing at 4.
+// THE STEP NUMBERS ARE DERIVED, not written into the markup (owner). This
+// weapon has no evolutions, so its Valence block is step 4 — there is no 5
+// with nothing at 4.
 check("...and the builder numbers its steps from the blocks it actually has",
   gain.steps.join(" ") === "mode-block:1 mod-block:2 arcane-block:3 element-block:4",
   gain.steps.join(" "));

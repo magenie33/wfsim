@@ -24,10 +24,9 @@ transform_group: larkspur_prime
 #   | Archwing   | 4.50 s | 0        | regenerating magazine = unlimited |
 #
 # So it is a SCENARIO axis, not an identity: one weapon, one mod pool, one
-# riven, and the environment chooses the column (user, 2026-08-01 — "mod 其实
-# 是通用的，还是一个武器，但是模拟和 optimizer 的时候不一样"). The fields on
-# this file are the ATMOSPHERE column, because the arena is ground; the block
-# below is what the other column overrides, and nothing else moves.
+# riven, and the environment chooses the column (user, 2026-08-01). The
+# fields on this file are the ATMOSPHERE column, because the arena is ground;
+# the block below is what the other column overrides, and nothing else moves.
 deployment: atmosphere
 deployments:
   archwing:

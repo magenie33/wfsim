@@ -76,11 +76,11 @@ for (const [label, w, h, mobile] of SCREENS) {
       // SEARCH — the site's own navigation — to 29px, which is what the phone
       // menu exists to fix. So this measures the two halves of that claim.
       //
-      // ONE: nothing was DELETED to make the bar fit (owner, 2026-08-07:
-      // "我想不要丢失信息"). Every destination and every control is REACHABLE
-      // at every width — on a desktop straight off the bar, on a phone after
-      // one tap on the hamburger. Reachable is measured, not asserted from a
-      // display rule: a real box on screen, inside the viewport on both sides.
+      // ONE: nothing was DELETED to make the bar fit (owner, 2026-08-07).
+      // Every destination and every control is REACHABLE at every width — on a
+      // desktop straight off the bar, on a phone after one tap on the
+      // hamburger. Reachable is measured, not asserted from a display rule: a
+      // real box on screen, inside the viewport on both sides.
       // (No backticks in here: this comment lives inside a template literal.)
       ...(() => {
         const SEL = ['.topnav .tnav[data-nav="home"]', '.topnav .tnav[data-nav="benchmark"]',

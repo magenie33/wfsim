@@ -52,7 +52,7 @@ name: "Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM"
 # a published number makes, and a reader should find the whole standard in one
 # file rather than half of it in the validator.
 #
-# The idea is the weapon at its best effort ("这个武器的最努力配置"), and
+# The idea is the weapon at its best effort, and
 # "full" is computed PER WEAPON: eight main slots for everything, but the
 # evolution tiers this weapon actually has (Laetum 5, Boar Prime 4, an ordinary
 # rifle 0) and the arcane seats it actually has (an Arch-Gun 2, a sentinel
@@ -111,7 +111,8 @@ scenario:
   # measures a different build.
   #
   # THE CASE AGAINST FIVE MINUTES is that it stops pricing the ramp and starts
-  # paying for it twice ("5分钟会让这个build过于强大而且很反直觉"). Everything
+  # paying for it twice: past a point the build stops being strong for a
+# reason a player could reproduce. Everything
   # that compounds — stacking buffs, an Incarnon cycle that has to be charged,
   # armour that is already stripped — amortises its whole setup over a window
   # long enough that the setup stops counting, and the ranking drifts away from
@@ -160,8 +161,7 @@ scenario:
   # is "removed and can only be called down again after a 5-minute cooldown"
   # once its 400 rounds are gone, and `reserve_is_infinite` reads the weapon's
   # `no_resupply` before this setting — so its 400 rounds are the whole
-  # engagement whatever this says (owner, 2026-08-04: "翠雀 Prime archgun 的
-  # benchmark 测试，全部都是要求 ammo 有限的情况的").
+  # engagement whatever this says (owner, 2026-08-04).
   #
   # Measured, unmodded, on this fight: 0.0436 with the reserve ignored against
   # 0.0139 with it — a 3.1x overstatement, which is most of what an Arch-Gun's
@@ -204,11 +204,11 @@ scenario:
   # chosen, no ability running, feet on the ground.
   #
   # THE NEUTRAL PLAYER IS THE WORST FRAME AT EVERYTHING, and that is the whole
-  # point of it (owner, 2026-08-13: "这个tenno的特点就是各种最不利的情况…因为我要
-  # 尽量排warframe本身对武器的影响"). Nobody knows which frame a reader runs, and
-  # some weapons get stronger in specific hands purely through the frame's
-  # stats — so the board measures the WEAPON by giving it the least help any
-  # frame could: 0 armor, 0 energy, the slowest sprint in the game, no
+  # point of it (owner, 2026-08-13). Nobody knows which frame a reader runs,
+  # and some weapons get stronger in specific hands purely through the
+  # frame's stats — so the board measures the WEAPON by giving it the least
+  # help any frame could: 0 armor, 0 energy, the slowest sprint in the game,
+  # no
   # overshields, nothing channeled. A row on this board is a floor no build can
   # fall below, not an average.
   #

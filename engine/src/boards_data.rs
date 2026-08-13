@@ -16,9 +16,9 @@
 //!
 //! A board entry's OUTPUT is a build, and the builder is what consumes a build
 //! — the same relationship the riven editor has with mods. So it earns a place
-//! in the build bar rather than a tab (user, 2026-08-04: "不需要多的 tab"), as
-//! a chip you can select and copy but not edit, exactly like the official
-//! scenario in the scenario bar.
+//! in the build bar rather than a tab (user, 2026-08-04), as a chip you
+//! can select and copy but not edit, exactly like the official scenario
+//! in the scenario bar.
 
 use std::sync::OnceLock;
 
