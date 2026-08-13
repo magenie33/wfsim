@@ -1361,16 +1361,18 @@ pub fn meta_json() -> Value {
             // INFINITE AMMO by default — see `simulate_json` for why.
             "infinite_ammo": true,
             // Test precision (user, 2026-08-01), and the optimizer's last
-            // round is the scenario's runs on the top 10. Kept in step with
+            // round is the run count on the top 10. Kept in step with
             // `simulate_json` / `parse_optimize`, whose own fallbacks are what
             // an API caller naming none of these gets.
             //
-            // 1000 RUNS, the same as the official rulers (owner, 2026-08-11).
-            // The default is the ruler's fight field for field, and the run
-            // count was the last field where it was not — a first number that
-            // cannot be compared with the board is the thing the 180 s change
-            // was already about. The QUICK CALC is where a cheap answer lives
-            // now, and it says its own count on every chip.
+            // 100 RUNS, and DECOUPLED FROM THE SCENARIO (owner, 2026-08-13:
+            // "计算次数应该是个和scenario解耦的选项…这样更干净"). It briefly
+            // matched the rulers' 1,000 so a first number would be comparable
+            // with the board — but that made one field answer two questions,
+            // and only one of them is the fight's. The RULERS still say 1,000
+            // in their own yaml and the SCORER still uses it, which is what
+            // makes a board row reproducible; the page measures at whatever
+            // the reader set, and the box says so.
             // WHAT THE RUN IS JUDGED BY. KPM is the default because it is
             // what a build is for; DPS is the other honest answer and some
             // targets cannot be killed at all. The scenario carries it, so
@@ -1384,7 +1386,7 @@ pub fn meta_json() -> Value {
             // alone. Only the DEFAULT moves: a saved scenario carries its own
             // duration and keeps it.
             "duration": 180.0,
-            "runs": 1000,
+            "runs": 100,
             // The final-round contract, for an API caller. The WEB does not
             // read these: `final_runs` is the scenario's `runs` and
             // `finalists` is a fixed 10, because neither is a setting the

@@ -558,7 +558,7 @@ function defaultScenario() {
     wf_sprint: d.wf_sprint || 0.9,
     infinite_ammo: d.infinite_ammo !== false, metric: d.metric || "kpm",
     // NO `form`: how the weapon is played belongs to the build.
-    duration: d.duration, runs: d.runs, buffs: {},
+    duration: d.duration, buffs: {},
     // WARFRAME ABILITY BUFFS. A fraction, not a percent — 1 is 100% Ability
     // Strength — because that is what the server multiplies by, and a scenario
     // that stored a percent would need a converter nobody would remember.
@@ -597,7 +597,7 @@ let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: nul
   // 180 s: the same length the official rulers run, so a player's first
   // comparison against the board is not a puzzle (owner, 2026-08-10). Only the
   // DEFAULT — a saved scenario carries its own duration and keeps it.
-  infinite_ammo: true, metric: "kpm", duration: 180, runs: 1000, buffs: {},
+  infinite_ammo: true, metric: "kpm", duration: 180, buffs: {},
   ability_strength: 1, abilities: [], extra_stats: {} };
 // The current build's configurable buffs (from the last /api/panel response).
 let buffList = [];
@@ -648,7 +648,7 @@ let optPrefs = { sort: "name", dir: "asc", pol: null };
 //
 // It is a SEARCH setting, not the fight's: it says how hard to search, like
 // finalists and threads, and it travels in the search preset with them.
-const finalRuns = () => optRun.runs || sim.runs;
+const finalRuns = () => optRun.runs || simRuns();
 const OPT_RUN_DEFAULTS = { finalists: 10, threads: 0, runs: 0 }; // 0 = the fight's own
 let optRun = { ...OPT_RUN_DEFAULTS };
 // One-time migration off the old machine-local key; the preset auto-save
@@ -2198,7 +2198,11 @@ const customEnemiesFor = (id) => customEnemySpecs().filter((e) => e.id === id);
 /// rather than one per endpoint — the same reason a riven rides in `rivens`.
 const fightPayload = (st) => {
   const s = st || sim;
-  return { ...s, custom_enemies: customEnemiesFor(s.enemy) };
+  // THE RUN COUNT RIDES HERE and not in the scenario, so every path that sends
+  // a fight sends the page's own count — and a caller that wants another one
+  // still overrides it after the spread, which is what the quick calc and the
+  // panel probes do.
+  return { ...s, runs: simRuns(), custom_enemies: customEnemiesFor(s.enemy) };
 };
 
 function renderEnemies() {
@@ -4795,7 +4799,31 @@ function renderPresetBar() {
 /// it back on `sim` — where the next auto-save would write it out again, and
 /// keep writing it forever. Dropped on the way in, so a custom scenario is
 /// clean the first time it is opened and stays clean.
-const DEAD_SCENARIO_FIELDS = ["form", "mode"];
+/// FIELDS A SCENARIO NO LONGER CARRIES, stripped in both directions so a stored
+/// one — or a benchmark yaml — cannot reintroduce them.
+///
+/// `runs` joined them on 2026-08-13. HOW HARD YOU MEASURE IS NOT PART OF THE
+/// FIGHT (owner: "计算次数应该是个和scenario解耦的选项。官方计算的时候的选择，和
+/// 用户本地跑几次应该分割开来…这样更干净"). The official rulers still run at
+/// 1,000 — that is the number their yaml states and the number the SCORER uses,
+/// and no local setting can move it — while the page runs at whatever you set,
+/// defaulting to 100. Two different questions that happened to share a field.
+const DEAD_SCENARIO_FIELDS = ["form", "mode", "runs"];
+
+/// HOW MANY TIMES THE PAGE REPLAYS A FIGHT. A preference, not a scenario field:
+/// it survives switching fights and switching weapons, because "how hard do I
+/// want to measure right now" is a fact about the person and not about the
+/// engagement.
+const SIM_RUNS_KEY = "wfsim-sim-runs";
+const SIM_RUNS_DEFAULT = 100;
+const simRuns = () => {
+  const v = Math.round(Number(localStorage.getItem(SIM_RUNS_KEY)));
+  return Number.isFinite(v) && v >= 1 && v <= 20000 ? v : SIM_RUNS_DEFAULT;
+};
+const setSimRuns = (n) => {
+  const v = Math.max(1, Math.min(20000, Math.round(Number(n)) || SIM_RUNS_DEFAULT));
+  localStorage.setItem(SIM_RUNS_KEY, String(v));
+};
 
 function snapshotScenario() {
   const { __weapon, ...rest } = sim;
@@ -7624,7 +7652,7 @@ function renderScenarioFields(ids, opts = {}) {
   // ---- 4. MEASUREMENT: nothing the player does in-game -----------------
   if (ids.run) {
     $(ids.run).innerHTML = `
-      <label>Runs <input type="number" data-k="runs" min="1" max="20000" value="${sim.runs}"></label>
+      <label title="${escHtml(tr("how many times to replay this fight HERE — it is not part of the scenario, so it follows you across fights and weapons. The official boards are scored at 1,000 by the server whatever this says"))}">${escHtml(tr("Runs"))} <input type="number" id="sim-runs-input" min="1" max="20000" value="${simRuns()}"></label>
       <label title="${escHtml(tr("what the run is judged by — the headline number and the picker's gain scan both follow it"))}">${escHtml(tr("Measure"))} ${
         ddButton("dd-metric", {
           value: sim.metric,
@@ -7687,6 +7715,20 @@ function renderScenarioFields(ids, opts = {}) {
         if (opts.after) opts.after();
       });
     }));
+  // THE RUN COUNT, wired on its own because it is NOT a scenario field: it
+  // writes a preference and dirties nothing, which is the whole point of
+  // decoupling it (owner, 2026-08-13). Editing it must not mark the fight
+  // changed — a scenario that auto-saved because you asked for more runs would
+  // be recording the wrong thing.
+  const runsBox = boxes.map((b) => b.querySelector("#sim-runs-input")).find(Boolean);
+  if (runsBox) {
+    runsBox.addEventListener("change", () => {
+      setSimRuns(runsBox.value);
+      runsBox.value = String(simRuns());
+      if (opts.after) opts.after();
+    });
+  }
+
   // …AND THE FIGHT'S OWN STAT BONUSES, whose own map they write into. A
   // separate attribute rather than a `data-k` per stat because they are ONE
   // scenario field: nine numbers in one object, so a blank one is absent rather
@@ -8719,7 +8761,7 @@ async function runSim() {
   const btn = $("run-sim");
   btn.disabled = true; btn.textContent = "Simulating…";
   show("sim-results-block", true);
-  $("sim-results").innerHTML = `<div class="placeholder">running ${sim.runs} simulations…</div>`;
+  $("sim-results").innerHTML = `<div class="placeholder">running ${simRuns()} simulations…</div>`;
   try {
     // Send only the buffs the current build actually has (ids in buffList).
     const buffs = {};

@@ -32,9 +32,13 @@ const r = await evaluate(`(async () => {
   history.pushState({},'','/weapons/Verglas_Prime'); route(); await sleep(3000);
   const out = {};
 
-  // ---- the SIMULATOR's default is the rulers' -------------------------
-  out.simDefault = defaultScenario().runs;
-  out.liveDefault = sim.runs;
+  // ---- the SIMULATOR's count is DECOUPLED from the fight ---------------
+  // It is a preference, not a scenario field (owner, 2026-08-13): 100 by
+  // default, and a scenario cannot carry one at all — which is what stops the
+  // rulers' 1,000 from arriving as a local setting the moment you open one.
+  out.simDefault = defaultScenario().runs;   // undefined: not a scenario field
+  out.liveDefault = simRuns();
+  out.inSnapshot = "runs" in snapshotScenario();
 
   // ---- the QUICK CALC takes its own, floored ---------------------------
   out.qcBefore = gainScenario().scenario.runs;
@@ -43,7 +47,7 @@ const r = await evaluate(`(async () => {
   out.qc250 = gainScenario().scenario.runs;
   // …and the FIGHT it measures under is untouched: a scan's precision is the
   // scan's, not an edit to the scenario.
-  out.simUntouched = sim.runs;
+  out.simUntouched = simRuns();
   // The scan's cache key is DERIVED from the fight it will run, so a count
   // change invalidates it without anything being told to.
   out.qcKeyMoved = gainKey() !== qcKeyBefore;
@@ -85,13 +89,13 @@ const r = await evaluate(`(async () => {
   // BLANK = the fight's own count, whatever it happens to be.
   out.sentBlank = (await sendOnce()).final_runs;
   // …and it FOLLOWS the fight rather than having copied it once.
-  sim.runs = 137;
+  setSimRuns(137);
   out.sentFollows = (await sendOnce()).final_runs;
-  sim.runs = out.simDefault;
+  setSimRuns(100);
   // A number of its own overrides it, and does not move the fight.
   await set('opt-runs', 60);
   out.sentOwn = (await sendOnce()).final_runs;
-  out.simStillDefault = sim.runs;
+  out.simStillDefault = simRuns();
   // It is a SEARCH setting, so it survives a preset round trip.
   const snap = snapshotOpt();
   optRun.runs = 0; applyOptState(snap); await sleep(200);
@@ -102,12 +106,19 @@ const r = await evaluate(`(async () => {
   return out;
 })()`);
 
-check("the simulator defaults to the rulers' 1000 runs", r.simDefault === 1000, `${r.simDefault}`);
-check("...and that is what a fresh fight carries", r.liveDefault === 1000, `${r.liveDefault}`);
+// HOW HARD YOU MEASURE IS NOT PART OF THE FIGHT (owner, 2026-08-13: "计算次数应
+// 该是个和scenario解耦的选项…这样更干净"). Two claims, and the second is the one
+// that makes it true rather than merely defaulted: a scenario cannot carry a run
+// count at all, so opening an official ruler — whose yaml says 1,000 — cannot
+// silently make the page slow, and saving a fight cannot record a precision.
+check("the simulator runs at 100 by default", r.liveDefault === 100, `${r.liveDefault}`);
+check("...and a scenario cannot carry a run count at all",
+  r.simDefault === undefined && r.inSnapshot === false,
+  `default ${r.simDefault}, in snapshot ${r.inSnapshot}`);
 
 check("the quick calc starts at its floor of 10", r.qcBefore === 10, `${r.qcBefore}`);
 check("...takes the count it is given", r.qc250 === 250, `${r.qc250}`);
-check("...without touching the fight", r.simUntouched === 1000, `${r.simUntouched}`);
+check("...without touching the fight", r.simUntouched === 100, `${r.simUntouched}`);
 check("...and a count change invalidates the scan's key", r.qcKeyMoved === true);
 check("...a number under the floor is raised, not obeyed", r.qcFloored === 10, `${r.qcFloored}`);
 check("the box is on screen with the floor declared", r.qcOnScreen === true);
@@ -116,11 +127,11 @@ check("...a rejected number snaps back to what was taken", r.qcSnapBack === "10"
 
 check("the optimizer offers a final-round count", r.optOnScreen === true);
 check("...blank by default, meaning the fight's", r.optBlank === "", `"${r.optBlank}"`);
-check("...and blank SENDS the fight's", r.sentBlank === 1000, `${r.sentBlank}`);
+check("...and blank SENDS the page's", r.sentBlank === 100, `${r.sentBlank}`);
 check("...following it rather than a copy of it", r.sentFollows === 137, `${r.sentFollows}`);
 check("...its own number overrides", r.sentOwn === 60, `${r.sentOwn}`);
-check("...and does not edit the fight", r.simStillDefault === 1000, `${r.simStillDefault}`);
+check("...and does not edit the page's", r.simStillDefault === 100, `${r.simStillDefault}`);
 check("...it survives a search-preset round trip", String(r.restored) === "60,60", String(r.restored));
-check("...and clearing it returns to the fight's", r.sentBackToFight === 1000, `${r.sentBackToFight}`);
+check("...and clearing it returns to the page's", r.sentBackToFight === 100, `${r.sentBackToFight}`);
 
 await app.finish("how hard you measure is a number someone can set, in all three modules");
