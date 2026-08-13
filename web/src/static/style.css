@@ -752,6 +752,16 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    wraps as one on a narrow screen. */
 .quick-calc .pc-runs{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;color:var(--muted);font-size:11px}
 .quick-calc .pc-runs input[type=number]{width:58px}
+/* THE RUN COUNT, on its own row and deliberately not in a field grid: it is
+   NOT one of the fight's fields, and looking like one is how it came to be
+   saved with the fight and pinned by an official ruler. A short input and a
+   sentence, the same shape the quick calc's own count has. */
+.runs-row{display:flex;align-items:center;gap:10px;margin:10px 0 4px}
+.runs-row label{flex-direction:row;align-items:center;gap:8px;color:var(--text)}
+.runs-row input[type=number]{width:96px}
+.runs-row .sim-hint{margin:0}
+@media(max-width:520px){.runs-row{flex-wrap:wrap;gap:6px}}
+
 /* A tier that cannot be chosen yet: the one before it is not installed. */
 .evo.locked .rank{opacity:.45}
 .evopick.tlocked{opacity:.4;cursor:not-allowed;pointer-events:none}

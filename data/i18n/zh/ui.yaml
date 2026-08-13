@@ -365,7 +365,10 @@ ui:
   # own word and its Chinese client writes 融合 for Valence Fusion, so the block
   # is named for what it IS rather than transliterated.
   "Valence": 融合属性
-  "how many times to replay this fight HERE — it is not part of the scenario, so it follows you across fights and weapons. The official boards are scored at 1,000 by the server whatever this says": 在这里把这场战斗重放多少次——它不属于场景，所以换战斗、换武器它都跟着你。官方榜单无论这里写多少，都是服务器按 1,000 次跑分的
+  "how many times to replay this fight HERE. Not part of the scenario: it follows you across fights and weapons, and an official ruler does not pin it. The boards themselves are scored at 1,000 by the server whatever this says": 在这里把这场战斗重放多少次。它不属于场景：换战斗、换武器它都跟着你，官方标尺也不会把它锁住。榜单本身无论这里写多少，都是服务器按 1,000 次跑分的
+  "yours, not the fight's — the boards score at 1,000": 这是你的设置，不属于这场战斗——榜单按 1,000 次跑分
+  "7 · Measure": 7 · 指标
+  "what to read off the run — the scenario's own term, so an official ruler pins it": 从这次运行里读什么——这是场景自己的条款，所以官方标尺会把它锁住
   "the progenitor element — pool = searched, req = pin one": 始祖元素——pool 表示纳入搜索，req 表示钉死一个
   "the bonus this copy came out of its Lich with": 这把枪从它的 Lich 那里带出来的加成
   "the progenitor element — it is added as the weapon's own BASE damage, so elemental mods and status scale with it": 始祖元素——它作为武器自身的基础伤害加上去，所以元素 mod 和异常都会跟着放大

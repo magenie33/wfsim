@@ -105,6 +105,45 @@ check("an ordinary weapon has no such axis, and inherits no choice",
   r.otherShown === false && r.otherValence.element === "",
   JSON.stringify({ shown: r.otherShown, carried: r.otherValence }));
 
+// …AND THE QUICK CALC RANKS IT, the same way it ranks a tier of evolutions
+// (owner, 2026-08-13: "融合属性 这个也是要参与快速计算的，和evo是一样的"). It is
+// the axis a scan is worth the most on: a progenitor element is a whole element
+// entering the hierarchy, so which one wins depends on the mods around it and on
+// the target — not a question anyone answers by reading cards.
+const gain = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  localStorage.clear();
+  history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(3500);
+  for (let i = 0; i < 60 && !(gainScan.axis && gainScan.axis.kind === 'valence' && !gainScan.running); i++) {
+    await sleep(500);
+  }
+  // …and the BUILDER's step numbers follow the blocks this weapon actually has.
+  // THE BUILDER's blocks only. The config page also holds the Sim, Rivens,
+  // Enemies and Optimizer tabs, which have their own numbering — a sweep over
+  // the shared class is exactly the bug this renumbering had on its first pass
+  // (it made the Rivens editor step 5 of building a gun).
+  const steps = BUILDER_BLOCKS
+    .map(id => document.getElementById(id))
+    .filter(b => b && !b.hidden)
+    .map(b => b.id + ':' + ((b.querySelector('.bh .n') || {}).textContent || ''));
+  return { kind: gainScan.axis && gainScan.axis.kind,
+           ranked: Object.keys(gainScan.by || {}).sort(),
+           cur: valence.element,
+           steps };
+})()`);
+
+// SIX, not seven: the element the build is already on is the BASE run, and a
+// candidate that is the current choice would be measuring nothing.
+check("the quick calc ranks the valence axis",
+  gain.kind === "valence" && gain.ranked.length === 6 && !gain.ranked.includes(gain.cur),
+  `${gain.kind} ranked ${gain.ranked.length}: ${gain.ranked.join(",")} (on ${gain.cur})`);
+// THE STEP NUMBERS ARE DERIVED, not written into the markup (owner: "不应该写死
+// 的。应该取决于当前的武器的模块个数"). This weapon has no evolutions, so its
+// Valence block is step 4 — there is no 5 with nothing at 4.
+check("...and the builder numbers its steps from the blocks it actually has",
+  gain.steps.join(" ") === "mode-block:1 mod-block:2 arcane-block:3 element-block:4",
+  gain.steps.join(" "));
+
 // …AND IT IS THE OPTIMIZER'S DIMENSION, the other half of "just like an evo".
 // Pinning one element brings every ranked row back in it; pooling two doubles
 // the candidate count and each row carries the element it was scored with.

@@ -5097,6 +5097,17 @@ function applyWeaponInner(id, presetMods) {
   // THE VALENCE AXIS exists only where the weapon has one — an adversary
   // weapon. Same "no choice, no control" rule every other axis follows.
   show("element-block", !!valenceSpec(w.id));
+  // …AND THE NUMBERS FOLLOW THE BLOCKS THAT ARE ACTUALLY THERE. They were
+  // written into the markup, so a weapon with no evolutions numbered its
+  // Valence block 5 with no 4 above it (owner, 2026-08-13: "前面的这个序号应该是
+  // 4而不是5啊，不应该写死的。应该取决于当前的武器的模块个数"). Derived from the
+  // DOM rather than from a table of weapons, so a block added later — or a
+  // weapon built in the app one day — is numbered without anyone maintaining a
+  // list.
+  //
+  // Non-numeric badges (Σ, ≡, ▶) are the ones that are not steps, and they keep
+  // whatever they say.
+  renumberBlocks();
   // An Arch-Gun's two slots are NOT interchangeable, so the line names the
   // pools rather than counting them: "primary + secondary", not "2 slots".
   $("arcane-sub").textContent = w.sentinel
@@ -6115,6 +6126,20 @@ function gainCandidates(axis) {
     });
     return out;
   }
+  if (axis.kind === "valence") {
+    // THE SEVEN PROGENITOR ELEMENTS, scanned the way a tier of evolutions is —
+    // all on screen at once, one swap each, everything else left alone (owner,
+    // 2026-08-13: "融合属性 这个也是要参与快速计算的，和evo是一样的").
+    //
+    // It is the axis a scan is worth the most on: the choice is a whole element
+    // entering the hierarchy, so which one wins depends on the mods around it
+    // and on the target — a question nobody can answer by reading cards.
+    const s = valenceSpec($("weapon").value);
+    if (!s) return [];
+    return s.elements
+      .filter((e) => e !== valence.element)
+      .map((e) => ({ id: e, payload: { valence_element: e, valence_bonus: valence.bonus } }));
+  }
   const cur = slots.map((s) => s.mod);
   // `buildPool()`, not the weapon's: a scan that ranks a mod this build's
   // evolutions forbid recommends something the picker will not offer.
@@ -6341,6 +6366,19 @@ const gainChip = (g, why) => {
     `${tr("this option re-rolls the fight, so its answer is only good to ±{x} — raise the run count to narrow it")
       .replace("{x}", sig2(band * 100) + "%")} · ${why}`
   )}">≈${gainPct(g.pct)} ±${sig2(band * 100)}%</span>`;
+};
+
+/// A GAIN AS PLAIN TEXT, for a control whose rows are strings rather than HTML
+/// (the Valence dropdown). Same three shapes the chip has — exact, banded, and
+/// a measured zero — so a reader sees the same finding in both places.
+const gainHint = (id) => {
+  const g = gainOf(id);
+  if (!g) {
+    return gainScan.running && gainScan.key === gainKey() ? "…" : "";
+  }
+  const band = gainBand(g);
+  if (!band) return g.pct === 0 ? tr("no effect here") : gainPct(g.pct);
+  return `≈${gainPct(g.pct)} ±${sig2(band * 100)}%`;
 };
 
 const gainChipFor = (id, where) => {
@@ -7293,12 +7331,18 @@ function renderValence() {
         // infobox wants — but it is not the DEFAULT, because no copy of this
         // weapon exists without a bonus.
         items: [{ value: "", label: tr("none — the weapon's printed panel") }].concat(
-          s.elements.map((e) => ({ value: e, label: DT(e) })),
+          // EACH ELEMENT CARRIES ITS OWN GAIN, the same chip an evolution option
+          // does — the dropdown is where the choice is made, so it is where the
+          // number belongs.
+          s.elements.map((e) => ({ value: e, label: DT(e), hint: gainHint(e) })),
         ),
         onPick: (v) => { valence.element = v; markPresetDirty(); renderValence(); refreshPanel(); },
       })}</label>` +
     `<label title="${escHtml(tr("how big the roll was, as a share of base damage — a Lich rolls it randomly and Valence Fusion raises it, capping at the number on the right"))}">${escHtml(tr("Valence bonus"))} <span class="unit">%</span> <input type="number" id="valence-bonus" min="${pct(s.min)}" max="${pct(s.max)}" step="0.5" value="${pct(valence.bonus)}"${valence.element ? "" : " disabled"}></label>` +
     `<span class="sim-hint">${escHtml(tr("rolls") + ` ${pct(s.min)}–${pct(s.max)}%`)}</span>`;
+  // …AND THE SCAN THAT FILLS THEM. Keyed like every other axis, so it runs once
+  // per (build, fight) and repaints when it lands.
+  ensureGains({ kind: "valence", idx: 0 }, () => renderValence());
   const inp = $("valence-bonus");
   if (inp) {
     inp.addEventListener("change", () => {
@@ -7652,7 +7696,6 @@ function renderScenarioFields(ids, opts = {}) {
   // ---- 4. MEASUREMENT: nothing the player does in-game -----------------
   if (ids.run) {
     $(ids.run).innerHTML = `
-      <label title="${escHtml(tr("how many times to replay this fight HERE — it is not part of the scenario, so it follows you across fights and weapons. The official boards are scored at 1,000 by the server whatever this says"))}">${escHtml(tr("Runs"))} <input type="number" id="sim-runs-input" min="1" max="20000" value="${simRuns()}"></label>
       <label title="${escHtml(tr("what the run is judged by — the headline number and the picker's gain scan both follow it"))}">${escHtml(tr("Measure"))} ${
         ddButton("dd-metric", {
           value: sim.metric,
@@ -7715,20 +7758,6 @@ function renderScenarioFields(ids, opts = {}) {
         if (opts.after) opts.after();
       });
     }));
-  // THE RUN COUNT, wired on its own because it is NOT a scenario field: it
-  // writes a preference and dirties nothing, which is the whole point of
-  // decoupling it (owner, 2026-08-13). Editing it must not mark the fight
-  // changed — a scenario that auto-saved because you asked for more runs would
-  // be recording the wrong thing.
-  const runsBox = boxes.map((b) => b.querySelector("#sim-runs-input")).find(Boolean);
-  if (runsBox) {
-    runsBox.addEventListener("change", () => {
-      setSimRuns(runsBox.value);
-      runsBox.value = String(simRuns());
-      if (opts.after) opts.after();
-    });
-  }
-
   // …AND THE FIGHT'S OWN STAT BONUSES, whose own map they write into. A
   // separate attribute rather than a `data-k` per stat because they are ONE
   // scenario field: nine numbers in one object, so a blank one is absent rather
@@ -8189,6 +8218,55 @@ function renderWfBuffs(host, readonly) {
   }));
 }
 
+/// THE RUN COUNT, on its own — the page's, not the fight's.
+///
+/// It is GLOBAL and it stays put: switching weapons, switching fights, and
+/// opening an OFFICIAL ruler all leave it alone (owner, 2026-08-13: "哪怕是读官
+/// 方的scenario，模拟次数也是可以改变的…并且这个是全局的，类似快速计算的那个次数。
+/// 切换武器时不变的"). The lock that pins a board fight's terms does not reach
+/// it, because how long you are willing to wait is not one of them.
+///
+/// The METRIC is the opposite and sits in the block above: KPM is a term of the
+/// scenario, so an official ruler pins it and this page may not argue.
+/// THE BUILDER'S STEP NUMBERS, recomputed from what is on screen.
+///
+/// A block whose axis this weapon does not have is hidden, and the visible ones
+/// are then 1..n in document order. Only badges that are already a NUMBER are
+/// touched: `Σ`, `≡` and `▶` mark panels that are not steps in the build and
+/// say so by not being counted.
+/// The BUILDER's blocks, in document order. Named rather than selected by
+/// class, because `.config-page` also holds the Sim, Rivens, Enemies and
+/// Optimizer pages — they are TABS with their own numbering, and a sweep over
+/// the class renumbered the Rivens editor as step 5 of building a gun.
+const BUILDER_BLOCKS = [
+  "mode-block", "mod-block", "arcane-block", "evo-block", "element-block",
+];
+
+function renumberBlocks() {
+  let n = 0;
+  BUILDER_BLOCKS.forEach((id) => {
+    const b = $(id);
+    if (!b || b.hidden) return;
+    const badge = b.querySelector(".bh .n");
+    if (!badge) return;
+    badge.textContent = String(++n);
+  });
+}
+
+function renderSimRuns() {
+  const box = $("sim-runs-block");
+  if (!box) return;
+  box.innerHTML =
+    `<label title="${escHtml(tr("how many times to replay this fight HERE. Not part of the scenario: it follows you across fights and weapons, and an official ruler does not pin it. The boards themselves are scored at 1,000 by the server whatever this says"))}">${
+      escHtml(tr("Runs"))} <input type="number" id="sim-runs-input" min="1" max="20000" step="10" value="${simRuns()}"></label>` +
+    `<span class="sim-hint">${escHtml(tr("yours, not the fight's — the boards score at 1,000"))}</span>`;
+  const el = $("sim-runs-input");
+  el.addEventListener("change", () => {
+    setSimRuns(el.value);
+    el.value = String(simRuns());
+  });
+}
+
 function renderSim() {
   if (!META) return;
   renderSimBuild();
@@ -8196,6 +8274,7 @@ function renderSim() {
   const en = enemies.find((e) => e.id === sim.enemy) || enemies[0];
   renderScenarioFields({ target: "sim-target", technique: "sim-technique",
     limits: "sim-limits", extra: "sim-extra", run: "sim-run" });
+  renderSimRuns();
   renderWfBuffs("sim-wfbuffs", false);
   // …AND THE OPTIMIZER'S COPY, from the same call. It shows the SIMULATOR's
   // fight, so it is repainted whenever that fight is redrawn rather than when

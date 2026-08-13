@@ -454,8 +454,16 @@
             <span class="sim-h-sub" id="wfbuff-sub"></span></h3>
           <div id="sim-wfbuffs"></div>
         </div>
-        <h3 class="sim-h" data-i18n>7 · Simulation <span class="sim-hint" data-i18n>how many times to replay it, and what to read off — the optimizer's final round uses this count unless its own says otherwise</span></h3>
+        <h3 class="sim-h" data-i18n>7 · Measure <span class="sim-hint" data-i18n>what to read off the run — the scenario's own term, so an official ruler pins it</span></h3>
         <div id="sim-run" class="field-grid"></div>
+        <!-- THE RUN COUNT — ITS OWN DIV, and deliberately outside every block
+             above (owner, 2026-08-13: "模拟次数应该是一个单独的div，并且这个是全
+             局的，类似快速计算的那个次数。切换武器时不变的"). It is not part of
+             the fight, so an OFFICIAL ruler does not pin it: reading the board's
+             scenario still lets you decide how long you are willing to wait.
+             That is also why it is not in `lockOfficialScenario`'s list — the
+             lock is for the fight's terms, and this is not one. -->
+        <div id="sim-runs-block" class="runs-row"></div>
         <button id="run-sim" class="run-btn" data-i18n>Run Simulation</button>
       </div>
     </section>
