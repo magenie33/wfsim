@@ -1476,6 +1476,11 @@ pub struct DummyParams {
     /// King's Gambit: MULTIPLIES a non-weak-point pellet's crit chance.
     /// 1.0 = ordinary; the card's x0 makes a body crit impossible.
     pub bodyshot_cc_mult: f64,
+    /// Wiseman's Regard, live: `(rate, cap, what the panel already folded in)`,
+    /// the first two in POST-MOD units. See the ResolvedPanel field.
+    pub derived_status_from_crit: Option<(f64, f64, f64)>,
+    /// The mirror (High Ground): same shape, against the live STATUS chance.
+    pub derived_crit_from_status: Option<(f64, f64, f64)>,
     /// Galvanic Reload: `(status, chance, rounds)` — a magazine restore rolled
     /// ONCE PER SHOT when the target carries that status.
     pub round_restore_on_status: Option<(DamageType, f64, f64)>,
@@ -2204,6 +2209,8 @@ impl DummyParams {
             slash_on_crit: panel.slash_on_crit,
             weakpoint_cc_rel: panel.weakpoint_cc_rel,
             bodyshot_cc_mult: panel.bodyshot_cc_mult,
+            derived_status_from_crit: panel.derived_status_from_crit,
+            derived_crit_from_status: panel.derived_crit_from_status,
             round_restore_on_status: panel.round_restore_on_status,
             instant_reload_on_kill: panel.instant_reload_on_kill,
             mag_growth_on_empty_reload: panel.mag_growth_on_empty_reload,
@@ -2446,6 +2453,8 @@ impl Default for DummyParams {
             slash_on_crit: 0.0,
             weakpoint_cc_rel: 0.0,
             bodyshot_cc_mult: 1.0,
+            derived_status_from_crit: None,
+            derived_crit_from_status: None,
             round_restore_on_status: None,
             instant_reload_on_kill: None,
             mag_growth_on_empty_reload: None,
@@ -5487,10 +5496,28 @@ pub fn run_once_traced(
         // the post-mod numbers the card's "Base" wording earns.
         let undamaged = (ap.cc_on_undamaged > 0.0 || ap.cd_on_undamaged > 0.0)
             && target_undamaged(&target, &params.target);
+        // THE ARCANE'S STATUS BONUS, hoisted to SHOT level so a derived stat can
+        // read the live status chance the same way it reads the live crit one.
+        // The pellet loop below re-reads it for its own roll; this is the same
+        // number, one scope out.
+        let sc_arc_shot = arc.total(&params.arcane.buffs, ArcGrant::StatusChance, t)
+            + params.sc_per_tendril * f64::from(tendrils);
+        // HIGH GROUND, LIVE: "+25% of CURRENT Status Chance". The panel folded
+        // in what it could see; this takes that back and pays what the shot
+        // actually has, which is the panel's status plus whatever the arcanes
+        // are adding right now.
+        let derived_cc = match ap.derived_crit_from_status {
+            Some((rate, cap, folded)) => {
+                let live_sc = ap.status_chance + ap.base_status_chance * sc_arc_shot;
+                (rate * live_sc).min(cap) - folded
+            }
+            None => 0.0,
+        };
         let effective_cc = ap.base_crit_chance
             + flat_crit
             + weakened_cc
             + ap.unmodded_crit_chance * cc_rel
+            + derived_cc
             + if undamaged { ap.cc_on_undamaged } else { 0.0 };
 
         // Live fire rate (base + Pressurized Magazine's on-reload buff, ×
@@ -6173,11 +6200,30 @@ pub fn run_once_traced(
                 // the two cannot end up multiplying each other.
                 let sc_arc = arc.total(&params.arcane.buffs, ArcGrant::StatusChance, t)
                     + params.sc_per_tendril * f64::from(tendrils);
+                // WISEMAN'S REGARD, LIVE: "30% of CURRENT Critical Chance",
+                // and current means at this shot. The row names Secondary
+                // Outburst, Cascadia Overcharge, Secondary Enervate and
+                // Galvanized Crosshairs among the sources that feed it — all
+                // live, none of them on the panel — and the owner's ruling is
+                // that anything landing on the WEAPON's own crit chance counts
+                // (2026-08-13). So the panel's static answer is taken back and
+                // `effective_cc` pays instead: the same number the crit roll is
+                // about to use, which is per SHOT and therefore excludes the
+                // weak-point bonus the card's own row also excludes.
+                //
+                // The DIRECT part only. An explosion has its own status chance
+                // and its own base, and the card is about the weapon's.
+                let derived_sc = match ap.derived_status_from_crit {
+                    Some((rate, cap, folded)) if rad.is_none() => {
+                        (rate * effective_cc).min(cap) - folded
+                    }
+                    _ => 0.0,
+                };
                 let status_chance = beam_merge
-                    * match &rad {
+                    * (match &rad {
                         None => ap.status_chance + ap.base_status_chance * sc_arc,
                         Some(r) => r.status_chance + r.base_status_chance * sc_arc,
-                    };
+                    } + derived_sc);
                 const NO_FORCED: &[DamageType] = &[];
                 let forced: &[DamageType] = if direct { &ap.forced_procs } else { NO_FORCED };
 
@@ -8605,6 +8651,64 @@ mod tests {
         let ratio = with / plain;
         assert!(ratio < 1.61,
             "additive puts the ceiling at 1.6x; multiplicative would be 2.2x — got {ratio}");
+    }
+
+    /// "CURRENT CRITICAL CHANCE" IS CURRENT AT THE SHOT, not at the arsenal.
+    ///
+    /// Wiseman's Regard reads "30% of current Critical Chance", and its row
+    /// names four LIVE sources among the things that feed it — both parts of
+    /// Galvanized Crosshairs while aiming, Secondary Outburst, Cascadia
+    /// Overcharge, Secondary Enervate — none of which is on the panel. The rule
+    /// (owner, 2026-08-13): anything landing on the WEAPON's own crit chance
+    /// counts, and it counts LIVE.
+    ///
+    /// So the panel keeps showing its static answer — that is what a panel can
+    /// say — and the sim takes that back and pays what the shot actually earns.
+    ///
+    /// Sicarus Prime, base crit 0.25, base status 0.20, no mods:
+    ///   panel                       crit 0.25   status 0.275 = 0.20 + 0.30 x 0.25
+    ///   + 100% arcane crit          crit 0.50   status 0.350 = 0.275 - 0.075 + 0.150
+    ///   + 300% (Cascadia r5)        crit 1.00   status 0.500 = the 40% cap
+    #[test]
+    fn a_derived_stat_reads_the_crit_chance_the_shot_has() {
+        let evos = ["sicarus_prime_evo1_incarnon_form", "sicarus_prime_wisemans_regard"];
+        let base = crate::loadout::WeaponBase::from_data("sicarus_prime", false, &evos);
+        let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::AssumedMax);
+        // THE PANEL IS UNCHANGED by making the sim live — a static view still
+        // answers with the crit chance it can see.
+        assert!((panel.status_chance - 0.275).abs() < 1e-9, "{}", panel.status_chance);
+        assert!((panel.crit_chance - 0.25).abs() < 1e-9, "{}", panel.crit_chance);
+
+        let arena = crate::arena::Arena::training(60.0);
+        let rate = |cc_rel: f64| {
+            let mut p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
+            p.arcane.cc_rel = cc_rel;
+            p.duration_secs = 60.0;
+            let s = monte_carlo(&p, 12, 4);
+            s.mean_procs / s.mean_pellets.max(1.0)
+        };
+        let (none, one, three) = (rate(0.0), rate(1.0), rate(3.0));
+        assert!(one > none && three > one,
+            "arcane crit must raise the status rate: {none} -> {one} -> {three}");
+
+        // THE ARITHMETIC, as a RATIO so the multi-proc bookkeeping cancels.
+        // +100% arcane crit: effective 0.50, derived 0.150, status 0.350.
+        let r1 = one / none;
+        assert!((r1 - 0.350 / 0.275).abs() < 0.05,
+            "0.275 -> 0.350 is x{:.3}; the rate moved x{r1:.3}", 0.350 / 0.275);
+
+        // THE CAP IS THE SHARP ONE, and the wiki states where it lands: "+434%
+        // (Prime) modded Critical Chance". 0.25 x 5.34 = 1.335, and 0.30 of
+        // that is 0.4005 — just over the 40% ceiling. So +434% and +900% are
+        // two very different crit chances that must produce the SAME status,
+        // which no un-capped implementation can do.
+        let (at_cap, far_past) = (rate(4.34), rate(9.0));
+        assert!((far_past - at_cap).abs() < 0.02,
+            "the wiki puts the cap at +434% on the Prime, so +900% buys nothing              more: {at_cap} vs {far_past}");
+        // …and just UNDER it still climbs, or the cap is being applied too early.
+        let under = rate(3.0);
+        assert!(at_cap > under + 0.01,
+            "+300% is below the cap (0.30 of 1.00 = 0.30 < 0.40), so +434% must              still be worth something: {under} -> {at_cap}");
     }
 
     /// VICIOUS PROMISE: the first arrow only, and OVERGUARD does not count.
@@ -16413,5 +16517,6 @@ mod overguard_status_tests {
         assert!(ticks > 5.0, "ticks came out mitigated: {:.1}", ticks);
     }
 }
+
 
 

@@ -106,6 +106,8 @@ fn dual_toxocyst_baseline() -> DummyParams {
         weakpoint_damage: 0.0,
         weakpoint_cc_rel: 0.0,
         bodyshot_cc_mult: 1.0,
+        derived_status_from_crit: None,
+        derived_crit_from_status: None,
         round_restore_on_status: None,
         instant_reload_on_kill: None,
         mag_growth_on_empty_reload: None,

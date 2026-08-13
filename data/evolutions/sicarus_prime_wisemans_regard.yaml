@@ -58,17 +58,29 @@ effects:
   # /6.67 = 0.200, /5.34 = 0.250, /4.45 = 0.300. `data/weapons/` was written
   # from the weapon pages and carries exactly those four.
   #
-  # ONE GAP, NOT CLOSED ON PURPOSE (2026-08-13). ARCANE crit does not reach it:
-  # `resolve_for` takes no arcanes — they are applied one layer down, per hit —
-  # so Secondary Outburst, Cascadia Overcharge and Secondary Enervate are named
-  # by the wiki and contribute nothing here. It is not a one-line fix either:
-  # those three RAMP (Outburst decays over 30s, Enervate climbs per hit and
-  # resets on a big crit), so "current" would have to become live rather than a
-  # number resolved once. Left for a measurement (owner testing 2026-08-13).
+  # ARCANE CRIT COUNTS, AND IT COUNTS LIVE (owner, 2026-08-13: "都是加在武器自身
+  # 的暴击率，以及肯定是要改成实时的，这个是没有歧义的"). The four sources the row
+  # names — both parts of Galvanized Crosshairs, Secondary Outburst, Cascadia
+  # Overcharge, Secondary Enervate — are all live and none is on the panel, and
+  # three of them RAMP, so a number resolved once could not have been right for
+  # more than an instant.
   #
-  # ALSO REPORTED, UNVERIFIED: a forum thread claims the conversion pays 25%
-  # rather than 30% in Incarnon Form. The thread is not readable from here
-  # (403), so it is recorded and NOT modelled.
+  # So the sim recomputes it per SHOT from `effective_cc`: the same value the
+  # crit roll is about to use, which is read per shot and therefore already
+  # excludes the weak-point bonus this card's own row excludes. `resolve` hands
+  # over `(rate, cap, what the panel folded in)` in POST-MOD units, and the sim
+  # takes the third back before paying the first two.
+  #
+  # THE PANEL STILL SHOWS THE STATIC ANSWER, which is what a panel can say and
+  # what the Arsenal shows too. Sicarus Prime, no mods:
+  #   panel                    crit 0.25  ->  status 0.2750
+  #   + 100% arcane crit       crit 0.50  ->  status 0.3500
+  #   + 434% (the wiki's own threshold for the Prime)  ->  status 0.6000, capped
+  #
+  # STILL OPEN, and NOT modelled: a forum thread reports the conversion paying
+  # 25% rather than 30% in Incarnon Form. It returns 403 from here, so it is
+  # recorded and left alone.
+  #
   # HOW THIS DIFFERS FROM THE FURIS'S PRELUDE OF MIGHT — two perks that both
   # say "Critical Chance" and read two different numbers (owner, 2026-08-13).
   #

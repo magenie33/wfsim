@@ -2007,6 +2007,20 @@ pub struct ResolvedPanel {
     /// King's Gambit's other half: a MULTIPLIER on a non-weak-point pellet's
     /// crit chance, applied after everything else. 1.0 = ordinary.
     pub bodyshot_cc_mult: f64,
+    /// WISEMAN'S REGARD, AS A LIVE SPEC: `(rate, cap, what the panel already
+    /// folded in)`, the first two ALREADY multiplied by the status-chance mods
+    /// because the card grants BASE status chance.
+    ///
+    /// "30% of CURRENT Critical Chance" is current at the moment of the shot,
+    /// not at the arsenal: the row names Secondary Outburst, Cascadia
+    /// Overcharge, Secondary Enervate and Galvanized Crosshairs among the
+    /// sources that feed it, and all four are live. The panel still shows the
+    /// static answer — that is what a panel can say — so the sim subtracts the
+    /// third number and adds what the shot actually earns.
+    pub derived_status_from_crit: Option<(f64, f64, f64)>,
+    /// The mirror (the Dera's High Ground), same shape: `(rate, cap, folded)`
+    /// with the first two multiplied by the CRIT-chance mods.
+    pub derived_crit_from_status: Option<(f64, f64, f64)>,
     /// Galvanic Reload: `(status, chance, rounds)`, rolled ONCE PER SHOT.
     pub round_restore_on_status: Option<(crate::damage::DamageType, f64, f64)>,
     /// Exact Penance: the chance a KILL — from anywhere — reloads instantly.
@@ -3111,6 +3125,15 @@ pub fn resolve_for(
         // RELATIVE; direct-head only, so the sim uses the direct base.
         weakpoint_cc_rel: wp_cc,
         bodyshot_cc_mult: base.bodyshot_cc_mult,
+        // The card's numbers converted into POST-MOD units, so the sim adds one
+        // term and never has to know about the status bucket. Same units trick
+        // `BuffGrant::FlatBaseDamage` and `BaseCritDamage` take.
+        derived_status_from_crit: base
+            .base_status_from_crit
+            .map(|(rate, cap)| (rate * (1.0 + sc), cap * (1.0 + sc), sc_from_cc * (1.0 + sc))),
+        derived_crit_from_status: base
+            .base_crit_from_status
+            .map(|(rate, cap)| (rate * (1.0 + cc), cap * (1.0 + cc), cc_from_sc * (1.0 + cc))),
         round_restore_on_status: base.round_restore_on_status,
         instant_reload_on_kill: base.instant_reload_on_kill,
         mag_growth_on_empty_reload: base.mag_growth_on_empty_reload.map(|(per, max)| {
