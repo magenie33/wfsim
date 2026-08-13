@@ -9,8 +9,18 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 6a75c8b6512b76c34a9064ad37b9946d6202bdb1
+engine: b10cf81156e4fc83f82317fb7dabe802928a33b4
 entries:
+  - weapon: akarius_prime
+    mode: base
+    score: 9.334492748418956
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+  - weapon: akarius_prime
+    mode: base
+    score: 7.701259734941084
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
   - weapon: akarius_prime
     mode: base
     score: 7
@@ -3091,6 +3101,11 @@ entries:
     score: 5.773101147998372
     mods: [galvanized_diffusion, lethal_torrent, pistol_elementalist, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
+  - weapon: ocucor
+    mode: base
+    score: 5.6826768392978
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
   - weapon: ocucor
     mode: base
     score: 5.219900354424605

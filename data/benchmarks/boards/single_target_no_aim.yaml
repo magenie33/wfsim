@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: 6a75c8b6512b76c34a9064ad37b9946d6202bdb1
+engine: b10cf81156e4fc83f82317fb7dabe802928a33b4
 entries:
   - weapon: boltor_prime
     mode: cycle
@@ -103,7 +103,7 @@ entries:
     arcanes: [secondary_encumber]
   - weapon: dual_toxocyst
     mode: cycle
-    score: 1.43413893563617
+    score: 0.9859839600612154
     mods: [hornet_strike, galvanized_shot, lethal_torrent, perpetual_agony, pistol_elementalist, synth_charge, frostbite, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_encumber]
