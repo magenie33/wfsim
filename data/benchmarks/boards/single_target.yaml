@@ -3189,6 +3189,11 @@ entries:
     arcanes: [secondary_fortifier]
   - weapon: ocucor
     mode: base
+    score: 6.134547087881414
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+  - weapon: ocucor
+    mode: base
     score: 6.084144819436953
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, pistol_elementalist, pressurized_magazine, magnetic_might, primed_heated_charge]
     arcanes: [secondary_encumber]
@@ -3201,6 +3206,16 @@ entries:
     mode: base
     score: 5.6826768392978
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+  - weapon: ocucor
+    mode: base
+    score: 5.522309594973223
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+  - weapon: ocucor
+    mode: base
+    score: 5.357420111935313
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
     arcanes: [secondary_enervate]
   - weapon: ocucor
     mode: base
