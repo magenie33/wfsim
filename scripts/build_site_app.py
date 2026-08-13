@@ -233,9 +233,9 @@ def write_board() -> None:
     # hundred engagements are summed, and summation order decides the last bit.
     # Which is exactly why an identity key is the right one — the build is what
     # a row IS, and the score is a measurement of it.
-    def _ident(benchmark, mode, mods, evos, arcs):
+    def _ident(benchmark, mode, mods, evos, arcs, valence):
         return (benchmark or "", mode or "",
-                tuple(mods or []), tuple(evos or []), tuple(arcs or []))
+                tuple(mods or []), tuple(evos or []), tuple(arcs or []), valence or "")
 
     # ...and then the score decides only whether the CARRIED figures still
     # describe this row. Equal to a part in 1e-12 is the same measurement (a
@@ -256,7 +256,8 @@ def write_board() -> None:
             for weapon, rows in json.loads(board_path.read_text(encoding="utf-8")).items():
                 for r in rows:
                     prior[(weapon, _ident(r.get("benchmark"), r.get("mode"), r.get("mods"),
-                                          r.get("evolutions"), r.get("arcanes")))] = r
+                                          r.get("evolutions"), r.get("arcanes"),
+                                          r.get("valence")))] = r
         except (ValueError, AttributeError):
             pass  # unreadable or an older shape: fall through and omit `shown`
 
@@ -279,6 +280,14 @@ def write_board() -> None:
                 "mods": e.get("mods", []),
                 "evolutions": e.get("evolutions", []),
                 "arcanes": e.get("arcanes", []),
+                # THE ELEMENT AN ADVERSARY WEAPON WAS SCORED ON, and part of
+                # the row's identity for the same reason `mode` is: two Kuva
+                # Nukors on different valences are two entrants. The scorer
+                # writes it on every row (`""` when the weapon has none), so
+                # omitting it here made a local build strip it from all 118 —
+                # this function's whole job is to be a no-op against the
+                # scorer's own output.
+                "valence": e.get("valence", ""),
             }
             # THE PRIOR ROW WINS ON BOTH FIGURES OR ON NEITHER. Carrying the
             # string while re-deriving the number from the yaml would leave the
@@ -288,7 +297,8 @@ def write_board() -> None:
             # yaml's number and drops the string, which is what sends the page
             # to its own rounding.
             keep = prior.get((e["weapon"], _ident(row["benchmark"], row["mode"], row["mods"],
-                                                  row["evolutions"], row["arcanes"])))
+                                                  row["evolutions"], row["arcanes"],
+                                                  row["valence"])))
             if keep is not None and _same_measurement(keep.get("score"), row["score"]):
                 if keep.get("score") is not None:
                     row["score"] = float(keep["score"])
