@@ -1588,6 +1588,12 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: furis
     mode: cycle
+    score: 46.446791250382944
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, pistol_elementalist, magnetic_might, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
     score: 46.35562774809816
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_prelude_of_might]
@@ -1610,6 +1616,12 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_executioners_fortune, furis_elemental_balance]
     arcanes: [secondary_deadhead]
+  - weapon: furis
+    mode: cycle
+    score: 45.87624059944074
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: furis
     mode: cycle
     score: 45.02818392625423
@@ -2919,6 +2931,12 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: latron_prime
     mode: cycle
+    score: 47.589105216824464
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, semi_rifle_cannonade, high_voltage, infected_clip, primed_cryo_rounds]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
+    arcanes: [primary_frostbite]
+  - weapon: latron_prime
+    mode: cycle
     score: 47.15322446949057
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
@@ -3176,9 +3194,19 @@ entries:
     arcanes: [primary_debilitate]
   - weapon: phantasma
     mode: base
+    score: 9.817934984420326
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, vigilante_armaments, magnetic_strafe, frigid_blast, toxic_barrage, incendiary_coat]
+    arcanes: [primary_crux]
+  - weapon: phantasma
+    mode: base
     score: 7.947231140552126
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, vigilante_armaments, magnetic_strafe, primed_chilling_grasp, contagious_spread, incendiary_coat]
     arcanes: [primary_deadhead]
+  - weapon: phantasma
+    mode: base
+    score: 7.754212086154056
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, vigilante_armaments, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
+    arcanes: [primary_crux]
   - weapon: phantasma_prime
     mode: base
     score: 15.259835924097132
