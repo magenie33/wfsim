@@ -191,6 +191,7 @@ mods:
   bane_of_orokin: RifleDamageCorrupted.jpg
   bane_of_the_murmur: WeaponFactionDamageMurmurs.jpg
   barrel_diffusion: PistolFireIterationsMod.jpg
+  bhisaj_bal: ParisPrimeStatusHealMod.jpg
   bladed_rounds: CritDamageWhileAimingMods.jpg
   blaze: ShotgunBlazeMod.jpg
   blunderbuss: ShotgunCriticalChanceMod.jpg
@@ -228,8 +229,10 @@ mods:
   critical_focus: ArchwingRifleCritChanceDamageAimingMod.jpg
   cryo_rounds: RifleFreezeDamageMod.jpg
   deadly_efficiency: ArchwingDamageAfterReloadMod.jpg
+  deadly_sequence: Grinlok.jpg
   deep_freeze: PistolFreezeDamageMod.jpg
   disruptor: ImpactDamageShotgunMod.jpg
+  dizzying_rounds: BroncoNightwaveMod.jpg
   double_barrel_drift: LessRecoilMoreAccuracyShotgunMod.jpg
   double_tap: LatronThree.jpg
   dual_rounds: ArchwingRifleFireIterationsMod.jpg
@@ -237,6 +240,7 @@ mods:
   eject_magazine: PassiveReloadPistolMod.jpg
   electrified_barrel: ArchwingWeaponElectricityDamageModRifle.jpg
   embedded_catalyzer: StatusChanceWhileAimingMods.jpg
+  eximus_advantage: NightwaveZylokAugmentMod.jpg
   expel_corpus: PistolDamageCorpus.jpg
   expel_grineer: PistolDamageGrineer.jpg
   expel_infested: PistolDamageInfested.jpg
@@ -266,6 +270,7 @@ mods:
   gun_glide: LessRecoilMoreAccuracyRifleMod.jpg
   gunslinger: PistolFireRateMod.jpg
   hammer_shot: RifleHammerSHotMod.jpg
+  hata_satya: SomaPrimeCritChanceMod.jpg
   hawk_eye: PistolZoomMod.jpg
   heated_charge: PistolFireDamageMod.jpg
   heavy_caliber: CorruptedDmgForRecoilRifleMod.jpg
@@ -307,10 +312,12 @@ mods:
   marked_target: ArchwingRifleStatusChanceAimingMod.jpg
   merciless_gunfight: CriticalDamagePunchThroughMod.jpg
   metal_auger: RiflePunctureDepthMod.jpg
+  metamorphic_magazine: NightwaveGorgonAugmentMod.jpg
   modified_munitions: ArchwingStatusChanceModRifle.jpg
   motus_setup: RaptorsAmbush.jpg
   nano_applicator: StatusChanceWhileAiming.jpg
   narrow_barrel: AccuracyWhileAiming.jpg
+  neutralizing_justice: Miter.jpg
   overview: HigherAirAimFoVRifleMod.jpg
   parallax_scope: ArchwingRifleCritChanceMod.jpg
   pathogen_rounds: PoisonDamagePistolMod.jpg
@@ -430,6 +437,7 @@ mods:
   spring_loaded_chamber: FireRateWhileAimingMods.jpg
   stabilizer: RifleRecoilReductionMod.jpg
   steady_hands: PistolRecoilReductionMod.jpg
+  stockpiled_blight: Kunai.jpg
   stormbringer: RifleElectricityDamageMod.jpg
   stunning_speed: PistolStunningSpeed.jpg
   suppress: PistolSilencerMod.jpg
@@ -447,6 +455,7 @@ mods:
   toxic_barrage: PoisonEventShotgunMod.jpg
   trick_mag: PistolAmmoMaxMod.jpg
   twitch: PvPWeaponSwapSpeedRifle.jpg
+  unseen_dread: NightwaveStalkerBowAugmentMod.jpg
   vanquished_prey: RestoreShieldsOnKillRifleMod.jpg
   venomous_clip: ArchwingWeaponToxinDamageModRifle.jpg
   vicious_spread: CorruptedDamageForSpreadShotgunMod.jpg

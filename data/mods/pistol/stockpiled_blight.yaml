@@ -1,0 +1,40 @@
+id: stockpiled_blight
+name: Stockpiled Blight
+rarity: rare
+polarity: vazarin
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Syndicate/KunaiMod
+description: "+X% Magazine Capacity\n+X Blight"
+
+# A SYNDICATE AUGMENT (Red Veil, rank Revered, 25,000 standing). "exclusive to
+# the Kunai" — one weapon, and the MK1 is not named, so it is not listed.
+exclusive_to: [kunai]
+
+#   Rank | Magazine Capacity | Blight | Cost
+#     0  |       +50%        | +0.25  |  4
+#     1  |      +100%        | +0.5   |  5
+#     2  |      +150%        | +0.75  |  6
+#     3  |      +200%        | +1     |  7
+family: stockpiled_blight
+
+effects:
+  # The ordinary relative magazine bucket, and the page checks it twice: "At max
+  # rank, this increases the magazine size of the Kunai to 30 rounds" (10 × 3),
+  # and "Can be combined with Ice Storm and Slip Magazine for a total of +270%
+  # Magazine Size, giving the Kunai a total magazine size of 37" — 10 × 3.7
+  # floored, i.e. one additive bucket, not a product.
+  - kind: magazine_capacity_bonus
+    rank0: 0.50
+    rankMax: 2.00
+
+  # THE SYNDICATE RADIAL — payload in data/syndicates/blight.yaml.
+  - kind: syndicate_radial
+    syndicate: blight
+    rank0: 0.25
+    rankMax: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Stockpiled_Blight
+  # Rank table and both magazine checks from the page; the Blight effect's own
+  # numbers from https://wiki.warframe.com/w/Blight.

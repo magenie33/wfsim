@@ -427,7 +427,16 @@ mod tests {
         /// against. Hardcoding "9s" would be wrong at every rank below max (it
         /// ramps 2 → 9). The clause is therefore off our card, and DE's 2 and 9
         /// have nowhere to match. See data/mods/assault_rifle/guided_ordnance.yaml.
-        const OMITS_A_CLAUSE: [&str; 1] = ["guided_ordnance"];
+        ///
+        /// `double_tap`: "Stacks up to 80x outside of Conclave." The ladder is
+        /// 80 / 40 / 26 / 20 and the schema stores two endpoints, so no
+        /// interpolation reaches it — it is not linear because the cap is not
+        /// what DE ranks. The CEILING is, at a flat +400%, and the cap is that
+        /// divided by a per-stack value that does rank linearly (5/10/15/20).
+        /// Two endpoints would print 60x and 40x at ranks 1 and 2 against the
+        /// real 40x and 26x, so the clause is off our card rather than wrong on
+        /// it. The number the sim runs is on the effect line either way.
+        const OMITS_A_CLAUSE: [&str; 2] = ["guided_ordnance", "double_tap"];
 
         let mut bad: Vec<String> = Vec::new();
         for (code, spec) in locales() {

@@ -668,6 +668,45 @@ Equippability beyond the pool (a mod a weapon may not take even though the
 pool offers it) is `excludes_weapon` / `requires_weapon`, and the export does
 not carry those tags — they come from the wiki page, one mod at a time.
 
+### The WEAPON-EXCLUSIVE sweep, and the two ways a mod is refused (2026-08-13)
+
+A mod that fits ONE weapon is invisible to every sweep above: the pools are
+built from what `data/mods/` holds, so a mod nobody transcribed is one the
+builder cannot offer and nothing notices. The Dread's Unseen Dread and the
+Latron's Double Tap sat missing that way until someone read a wiki page.
+
+`scripts/survey_weapon_mods.py` joins the export's `compatName` against our
+weapon names and writes `data/surveys/weapon_exclusive_mods.yaml`, read by one
+test (`the_weapon_exclusive_mods_we_still_owe_only_goes_down`) and nothing else.
+Twenty rows; the ratchet is at **zero owed**.
+
+The useful part is what the join does NOT answer. `compatName` says a mod for
+this weapon exists in the game's files; it does not say a player may equip it in
+the mission we simulate. Seven of the twenty are refused on purpose, each with
+its reason written into the survey:
+
+- **PvP (six).** Draining Gloom, Gorgon Frenzy, Grinloked, Sudden Justice,
+  Thundermiter, Triple Tap — each page's own first sentence says *"is
+  Conclave-exclusive"*, beside a `{{PvPItem}}` banner. That is a stronger
+  statement than the "Exclusive to PvP" tag in the wiki's mod TABLES, which is
+  what `only_pve_legal_conclave_mods_are_in_the_pools` already reads. **Double
+  Tap is the contrast that proves the direction is read rather than assumed**:
+  the same `/Lotus/Upgrades/Mods/PvPMods/` path, and its page says *"is a PvE
+  and Conclave Latron … mod"* — so it is carried.
+- **UNRELEASED (one).** Soaring Truth (`/Mods/Syndicate/BallisticaMod`) is in
+  the export with a full rank ladder and exists nowhere else: no wiki page, no
+  row in `Template:AugmentedMods` (which lists every released augment), no
+  mention on the Ballistica's own page, and not among warframe.market's 3,837
+  tradeable items — while its three sibling syndicate augments (Deadly Sequence,
+  Stockpiled Blight, Neutralizing Justice) are in all of those. **WFCD reads the
+  game's files, so a mod DE built and never shipped is in there beside the real
+  ones**, and a single source is not enough to put a card in front of a player
+  who cannot own it. It is recorded rather than deleted, so the next survey does
+  not re-report it as a gap.
+
+An exclusion costs a written reason, asserted by the same test — otherwise the
+cheapest way to close a ratchet is to declare everything out of scope.
+
 ## Equippability: the wiki module is the only structured source (2026-08-02)
 
 A mod's `excludes_weapon` mirrors DE's own incompatibility tags. The WFCD

@@ -1,0 +1,68 @@
+id: hata_satya
+name: Hata-Satya
+rarity: rare
+polarity: madurai
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Rifle/Event/SomaCritChanceOnHitMod
+description: "Each hit increases Critical Chance by X%. Resets upon reloading or holstering."
+
+# A WEAPON AUGMENT for the SOMA PRIME (Entrati, Rank 4 - Friend, 20,000
+# standing). One weapon — "a Weapon Augment Mod for Soma Prime" — so the base
+# Soma is not listed; the transform group carries it to the Incarnon form.
+exclusive_to: [soma_prime]
+
+# THE CAP IS FLAT AND THE RANK BUYS THE RAMP: "The critical chance bonus is
+# capped at 500% at all mod ranks."
+#
+#   Rank | Critical chance | Hits to reach 500% | Cost
+#     0  |      0.2%       |       2,500        |  2
+#     1  |      0.4%       |       1,250        |  3
+#     2  |      0.6%       |         834        |  4
+#     3  |      0.8%       |         625        |  5
+#     4  |      1%         |         500        |  6
+#     5  |      1.2%       |         417        |  7
+family: hata_satya
+
+effects:
+  # A PILE WITH NO CLOCK — what ends it is a RELOAD, which is why this is not a
+  # timed buff. The engine counts it off its own hit counter and clears it on
+  # the magazine events, the same shape the Ocucor's tendrils use.
+  #
+  # THE BUCKET is the ordinary relative one, and the wiki does the arithmetic:
+  # "Hata-Satya is additive with similar mods. For example, a max rank, max
+  # bonus Hata-Satya and Point Strike will have a 30% × (1 + 500% + 150%)
+  # critical chance."
+  #
+  # WHAT COUNTS AS A HIT: "Additional hits from Multishot and Punch Through also
+  # count towards the bonus", so a trigger pull is worth its pellets. "Bonus
+  # damage instances from Toxic Lash and Xata's Whisper count as one extra hit"
+  # — an Extra Hit (docs/EXTRA_HIT.md) counts ONCE however many instances it
+  # fires, which is not yet wired here. "Hits against invulnerable enemies …
+  # do count toward the bonus"; hits against Object-class health, barrier-like
+  # entities and converted allies do not, and this arena fields none of those.
+  #
+  # WHAT TAKES IT: "Resets upon reloading or holstering", plus "Swapping to
+  # Incarnon Form counts as reloading the Soma Prime and will therefore end the
+  # bonus" — so the transform is a second event and not a special case of the
+  # first. Holstering is a weapon swap this arena never does; "Bonus ends as
+  # soon as the reload animation begins" is a distinction with no consequence
+  # here, since nothing fires during a reload. 33.5 then made the transformed
+  # form BUILD the pile: "Soma Prime's Incarnon Form fire now triggers the
+  # 'Hata-Satya' Augment Mod's Critical Chance buff."
+  #
+  # 416 STACKS, NOT 417. The card publishes a ceiling (500%) rather than a stack
+  # count, and 416 × 1.2% = 499.2% is the last stack that fits under it — a 417th
+  # would read 500.4% and overshoot a number DE states flatly. The wiki's own
+  # "hits required to reach 500%" column rounds the other way, which is the same
+  # arithmetic asked as a question rather than as a limit.
+  - kind: crit_chance_per_hit
+    rank0: 0.002
+    rankMax: 0.012
+    max_stacks: 416
+
+source:
+  url: https://wiki.warframe.com/w/Hata-Satya
+  # Rank table, Notes and Patch History, read 2026-08-13. Polarity, drain and
+  # rank cross-checked against WFCD (/Lotus/Upgrades/Mods/Rifle/Event/
+  # SomaCritChanceOnHitMod: madurai, rare, baseDrain 2, fusionLimit 5).

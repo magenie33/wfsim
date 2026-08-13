@@ -7,23 +7,27 @@
 # built from what data/mods/ holds, so one nobody transcribed is one the
 # builder cannot offer and nothing notices.
 #
-# 4 of 20 carried, 16 still to transcribe.
+# `carried:` is the file that holds it; `~` is a gap; `excluded` is a mod we
+# refuse on purpose, and the reason rides beside it. The export answers "does
+# a mod for this weapon exist", which is not "may a player equip it here".
+#
+# 13 of 20 carried, 7 excluded on purpose, 0 still to transcribe.
 mods:
   - name: Bhisaj-Bal
     compat: Paris Prime
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Rifle/Event/ParisHealOnStatusMod
-    carried: ~
+    carried: data/mods/rifle/bhisaj_bal.yaml
   - name: Deadly Sequence
     compat: Grinlok
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Syndicate/GrinlokMod
-    carried: ~
+    carried: data/mods/rifle/deadly_sequence.yaml
   - name: Dizzying Rounds
     compat: Bronco
     kind: Secondary Mod
     internal_name: /Lotus/Upgrades/Mods/Nightwave/BroncoNightwaveMod
-    carried: ~
+    carried: data/mods/pistol/dizzying_rounds.yaml
   - name: Double Tap
     compat: Latron
     kind: Primary Mod
@@ -33,12 +37,13 @@ mods:
     compat: Despair
     kind: Secondary Mod
     internal_name: /Lotus/Upgrades/Mods/PvPMods/Pistol/DespairEnergyDrainAoE
-    carried: ~
+    carried: excluded
+    reason: "PvP: \"Draining Gloom is Conclave-exclusive Despair mod\"."
   - name: Eximus Advantage
     compat: Zylok
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Nightwave/NightwaveZylokAugmentMod
-    carried: ~
+    carried: data/mods/pistol/eximus_advantage.yaml
   - name: Gilded Truth
     compat: Burston Prime
     kind: Primary Mod
@@ -48,27 +53,29 @@ mods:
     compat: Gorgon
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/FasterRoFonKillGorgonMod
-    carried: ~
+    carried: excluded
+    reason: "PvP: \"Gorgon Frenzy is Conclave-exclusive Gorgon mod\"."
   - name: Grinloked
     compat: Grinlok
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/MoreAccuracyOnHitGrinlokMod
-    carried: ~
+    carried: excluded
+    reason: "PvP: \"Grinloked is Conclave-exclusive Grinlok mod\"."
   - name: Hata-Satya
     compat: Soma Prime
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Rifle/Event/SomaCritChanceOnHitMod
-    carried: ~
+    carried: data/mods/rifle/hata_satya.yaml
   - name: Metamorphic Magazine
     compat: Gorgon
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Nightwave/NightwaveGorgonAugmentMod
-    carried: ~
+    carried: data/mods/rifle/metamorphic_magazine.yaml
   - name: Neutralizing Justice
     compat: Miter
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Syndicate/MiterMod
-    carried: ~
+    carried: data/mods/rifle/neutralizing_justice.yaml
   - name: Sentient Surge
     compat: Ocucor
     kind: Secondary Mod
@@ -78,32 +85,36 @@ mods:
     compat: Ballistica
     kind: Secondary Mod
     internal_name: /Lotus/Upgrades/Mods/Syndicate/BallisticaMod
-    carried: ~
+    carried: excluded
+    reason: "unreleased: \"Soaring Truth\" has no wiki page, no row in Template:AugmentedMods (which lists every released augment), and is not among warframe.market's 3,837 tradeable items \u2014 while its three sibling syndicate augments are in all three. Checked 2026-08-13."
   - name: Stockpiled Blight
     compat: Kunai
     kind: Secondary Mod
     internal_name: /Lotus/Upgrades/Mods/Syndicate/KunaiMod
-    carried: ~
+    carried: data/mods/pistol/stockpiled_blight.yaml
   - name: Sudden Justice
     compat: Sybaris
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/SybarisIncreaseRoFonHit
-    carried: ~
+    carried: excluded
+    reason: "PvP: \"Sudden Justice is Conclave-exclusive Sybaris mod\"."
   - name: Thundermiter
     compat: Miter
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/ExplodingMiterBlades
-    carried: ~
+    carried: excluded
+    reason: "PvP: \"Thundermiter is Conclave-exclusive Miter mod\"."
   - name: Triple Tap
     compat: Burston
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/MoreDamageonMultiHitRifleMod
-    carried: ~
+    carried: excluded
+    reason: "PvP: \"Triple Tap is Conclave-exclusive Burston mod\"."
   - name: Unseen Dread
     compat: Dread
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Bows/Event/Nightwave/NightwaveStalkerBowAugmentMod
-    carried: ~
+    carried: data/mods/rifle/unseen_dread.yaml
   - name: Winds Of Purity
     compat: Furis
     kind: Secondary Mod

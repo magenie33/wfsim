@@ -1,0 +1,44 @@
+id: neutralizing_justice
+name: Neutralizing Justice
+rarity: rare
+polarity: vazarin
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Syndicate/MiterMod
+description: "Miter blades have a X% chance to destroy a Nullifier's shield generator.\n+X Justice"
+
+# A SYNDICATE AUGMENT (Steel Meridian, rank Protector, 25,000 standing).
+# "exclusive to the Miter" — one weapon, and the roster has it.
+exclusive_to: [miter]
+
+#   Rank | Neutralizing Chance | Justice | Cost
+#     0  |        22.5%        |  +0.25  |  4
+#     1  |        45%          |  +0.5   |  5
+#     2  |        67.5%        |  +0.75  |  6
+#     3  |        90%          |  +1     |  7
+family: neutralizing_justice
+
+effects:
+  # THE NULLIFIER HALF CANNOT PAY OUT HERE, and the page draws the boundary
+  # itself: "Only affects the Nullifier shield bubbles of the Nullifier Crewman,
+  # Corrupted Nullifier, and Corpus Target when they spawn with a Nullifier
+  # generator, and has no effect on any other enemy in Warframe." None of those
+  # three is in this roster, and a bubble is a second entity beside the target
+  # rather than a property of it — see UNMODELLED.md §one target. This is an
+  # EDGE, not a todo: on the fights the app models the mod's headline does
+  # literally nothing, which is exactly what the card should say.
+  - kind: destroys_a_nullifier_shield_generator_no_such_enemy_in_this_roster
+    rank0: 0.225
+    rankMax: 0.90
+
+  # THE SYNDICATE RADIAL — payload in data/syndicates/justice.yaml. This half is
+  # real and pays, which is the whole reason the card is worth equipping here.
+  - kind: syndicate_radial
+    syndicate: justice
+    rank0: 0.25
+    rankMax: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Neutralizing_Justice
+  # Rank table and the Notes block from the page; the Justice effect's own
+  # numbers from https://wiki.warframe.com/w/Justice.

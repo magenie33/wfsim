@@ -290,6 +290,19 @@ pub enum ModEffect {
     /// no rank of this mod raises one without the other. The magazine refill
     /// is its own column there and its own effect here.
     PerTendril { crit_chance: f64, status_chance: f64 },
+    /// HATA-SATYA: relative crit chance per HIT, and the RELOAD takes it back.
+    ///
+    /// The pile has no clock at all — "Resets upon reloading or holstering" —
+    /// which is why it is not a [`StackingBuff`] with a duration. It is the
+    /// same shape as the Ocucor's tendrils one variant up (earned on an event,
+    /// cleared by a magazine event, capped) with the event swapped: a hit
+    /// instead of a kill.
+    ///
+    /// `max_stacks` is the CEILING divided by the per-stack value, floored:
+    /// the wiki caps the bonus at "500% at all mod ranks" and ranks only the
+    /// rate, so at max rank 1.2% a stack the last stack that fits is the 416th
+    /// (499.2%) and a 417th would overshoot the published ceiling.
+    CritChancePerHit { per_stack: f64, max_stacks: u32 },
     /// ...and that refill: a fraction of the magazine back on every kill,
     /// drawn from the reserve ("This mod does not generate ammo").
     MagazineRefillOnKill(f64),
@@ -310,6 +323,20 @@ pub enum ModEffect {
     /// distinction is worth a modelled buff: at rank 10 it is +220% for 17 s,
     /// and under Emergent it used to contribute nothing at all.
     OnReloadDamage { bonus: f64, duration: f64 },
+    /// EXIMUS ADVANTAGE: a relative BASE-damage window opened by a weak-point
+    /// hit on an EXIMUS, and by nothing else.
+    ///
+    /// Two questions at once, which is what earns it a variant rather than a
+    /// `kind: buff` with an `on_headshot` trigger: that would arm on any target
+    /// and hand +600% base damage to a build the mod does nothing for. The
+    /// target-side half is read live in the sim, where `Target::eximus` is in
+    /// hand.
+    ///
+    /// The trigger is the WEAK POINT, not the head: "Despite the description
+    /// specifying headshots, the effect can be trigger on weak-point hits"
+    /// (wiki) — the same reading [`BuffTrigger::Headshot`] already carries. It
+    /// REFRESHES rather than stacking, so one window with its clock restarted.
+    OnEximusWeakpointDamage { bonus: f64, duration: f64 },
     /// Hemorrhage: each `from` status APPLIED rolls `chance` to also apply
     /// one `to` status (at most one roll per damage instance, and never
     /// alongside another `to` proc in the same instance). The chance is
@@ -589,6 +616,11 @@ impl ModEffect {
             PerTendril { crit_chance, .. } => {
                 format!("{} Crit Chance and Status Chance per active tendril", pct(crit_chance))
             }
+            CritChancePerHit { per_stack, max_stacks } => format!(
+                "On Hit: {} Crit Chance per stack ×{max_stacks} ({}), cleared by a reload",
+                pct(per_stack),
+                pct(per_stack * f64::from(max_stacks))
+            ),
             MagazineRefillOnKill(v) => format!("on kill, {} of the magazine back", pct(v)),
             SyndicateRadial { syndicate, amount } => {
                 let d = crate::syndicates_data::get(syndicate);
@@ -643,6 +675,9 @@ impl ModEffect {
             }
             OnReloadDamage { bonus, duration } => {
                 format!("On reload from empty: {} Damage, {duration}s", pct(bonus))
+            }
+            OnEximusWeakpointDamage { bonus, duration } => {
+                format!("On Eximus weak-point hit: {} Damage, {duration}s", pct(bonus))
             }
             OnReloadFireRate { bonus, duration } => {
                 format!("On Reload: {} Fire Rate, {duration}s", pct(bonus))
@@ -1948,6 +1983,11 @@ pub struct ResolvedPanel {
     pub cc_per_tendril: f64,
     /// Its status half, same bucket rule.
     pub sc_per_tendril: f64,
+    /// HATA-SATYA under Emergent: relative crit chance per hit and the cap,
+    /// spent in the sim because the pile's size is a fact about the fight.
+    /// `None` under the other policies — AssumedMax has already folded it into
+    /// `crit_chance`, and BaseOnly refuses conditionals.
+    pub cc_per_hit: Option<(f64, u32)>,
     /// Fraction of the magazine returned on each kill, from the reserve.
     pub mag_refill_on_kill: f64,
     /// The syndicate radial this build's augment grants, if any.
@@ -2066,6 +2106,11 @@ pub struct ResolvedPanel {
     /// `value` is the RELATIVE bonus, because it joins the base-damage bucket
     /// rather than replacing a rate.
     pub bd_on_reload: Option<TimedBuff>,
+    /// EXIMUS ADVANTAGE's window — see [`ModEffect::OnEximusWeakpointDamage`].
+    /// Its `value` is RELATIVE, joining the base-damage bucket beside Hornet
+    /// Strike's, which is what the card's "Stacks additively with base damage
+    /// bonuses" says it should do.
+    pub bd_on_eximus_weakpoint: Option<TimedBuff>,
     /// READY RETALIATION's window — see
     /// [`crate::evolutions_data::EvoEffect::ReloadSpeedOnEmptyReload`]. It joins
     /// the reload bucket the mods and `evo_reload_bonus` feed, but only while
@@ -2293,6 +2338,8 @@ pub fn resolve_for(
     let mut cd_on_kill: Option<TimedBuff> = None;
     let mut fr_on_reload: Option<TimedBuff> = None;
     let mut bd_on_reload: Option<TimedBuff> = None;
+    let mut bd_on_eximus_weakpoint: Option<TimedBuff> = None;
+    let mut cc_per_hit: Option<(f64, u32)> = None;
     // READY RETALIATION arrives on the BASE (an evolution wrote it there),
     // unlike the two above which arrive from mods — so the policy split is
     // here rather than in the mod loop.
@@ -2384,6 +2431,15 @@ pub fn resolve_for(
                     per_tendril_cc += crit_chance;
                     per_tendril_sc += status_chance;
                 }
+                // HATA-SATYA. Same split as the tendrils above and for the
+                // same reason — how many hits are in the pile is a fact about
+                // the fight — except that the panel HAS an honest maximum to
+                // show, because the card publishes one (500%).
+                ModEffect::CritChancePerHit { per_stack, max_stacks } => match policy {
+                    StackPolicy::AssumedMax => cc += per_stack * f64::from(max_stacks),
+                    StackPolicy::Emergent => cc_per_hit = Some((per_stack, max_stacks)),
+                    StackPolicy::BaseOnly => {} // sentinel: conditional never fires
+                },
                 ModEffect::MagazineRefillOnKill(v) => mag_refill += v,
                 // The card names one of six; the payload is the syndicate's.
                 ModEffect::SyndicateRadial { syndicate, .. } => {
@@ -2549,6 +2605,22 @@ pub fn resolve_for(
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
                 },
+                // EXIMUS ADVANTAGE, the same three-policy shape as Deadly
+                // Efficiency above: the panel folds it in at its maximum, the
+                // sim earns it. What the sim adds that the panel cannot is the
+                // TARGET's half — a fight against a non-Eximus never opens the
+                // window at all, and the panel has no target to ask.
+                ModEffect::OnEximusWeakpointDamage { bonus, duration } => match policy {
+                    StackPolicy::AssumedMax => bd += bonus,
+                    StackPolicy::Emergent => {
+                        bd_on_eximus_weakpoint = Some(TimedBuff {
+                            value: bonus,
+                            duration,
+                            initial_active: false, // no weak point has been hit yet
+                        })
+                    }
+                    StackPolicy::BaseOnly => {} // sentinel: conditional never fires
+                },
                 ModEffect::OnReloadFireRate { bonus, duration } => match policy {
                     StackPolicy::AssumedMax => fr += bonus,
                     StackPolicy::Emergent => {
@@ -2663,6 +2735,7 @@ pub fn resolve_for(
                 cc = 0.0;
                 cc_on_headshot = None;
                 cc_stack = None;
+                cc_per_hit = None;
                 wp_cc = 0.0;
             }
             "crit_damage" => {
@@ -2673,6 +2746,7 @@ pub fn resolve_for(
             "base_damage" => {
                 bd = 0.0;
                 bd_on_reload = None;
+                bd_on_eximus_weakpoint = None;
             }
             // A LOCK TAKES THE WINDOW TOO. "Set to its default ignoring other
             // bonuses" cannot mean the static half only — that was the bug the
@@ -3119,6 +3193,7 @@ pub fn resolve_for(
         forced_procs: base.forced_procs.clone(),
         tendril_max: base.tendril_max,
         cc_per_tendril: per_tendril_cc,
+        cc_per_hit,
         sc_per_tendril: per_tendril_sc,
         mag_refill_on_kill: mag_refill,
         syndicate_radial,
@@ -3184,6 +3259,7 @@ pub fn resolve_for(
         headshot_streak: base.headshot_streak,
         cd_below_status_count: base.cd_below_status_count,
         bd_on_reload,
+        bd_on_eximus_weakpoint,
         proc_conversion: proc_conv,
         // Reified Bane: the vector already carries the +14 (evolutions apply
         // before mods), so the buff opens FULL and the card scales it back.

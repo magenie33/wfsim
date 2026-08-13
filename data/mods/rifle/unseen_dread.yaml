@@ -1,0 +1,60 @@
+id: unseen_dread
+name: Unseen Dread
+rarity: rare
+polarity: madurai
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Bows/Event/Nightwave/NightwaveStalkerBowAugmentMod
+description: "Become invisible for 5 seconds when you strike 3 or more enemies with a single projectile.\nDeal X% more Critical Damage with Dread while invisible."
+
+# A WEAPON AUGMENT for the DREAD (Nightwave, Rank 25 of Nora's Mix Volume 7).
+# One weapon — "a Weapon Augment Mod for the Dread" — and the transform group
+# carries it to the uncharged and Incarnon forms.
+exclusive_to: [dread]
+
+#   Rank | Critical Damage Increase | Cost
+#     0  |          +50%            |  2
+#     1  |          +75%            |  3
+#     2  |         +100%            |  4
+#     3  |         +125%            |  5
+#     4  |         +150%            |  6
+#     5  |         +175%            |  7
+family: unseen_dread
+
+effects:
+  # THE TRIGGER CANNOT FIRE HERE — one target, so "3 or more enemies" is
+  # unreachable no matter how the build is written (UNMODELLED.md §one target).
+  #
+  # Transcribed, because the requirement is not what the card says: "The augment
+  # description is misleading - 'single projectile' means 'same shot'." Punch
+  # through hitting >2 enemies triggers it, and so does MULTISHOT hitting >2 —
+  # and 37.0.4 closed the loophole in the other direction, "Fixed Dread's Unseen
+  # Dread Augment applying its invisibility when modded with multishot but
+  # hitting only one enemy", so multishot alone against a single body does
+  # nothing.
+  - kind: invisibility_on_striking_3_enemies_with_one_shot_only_one_target_here
+
+  # …BUT THE CRITICAL DAMAGE HALF IS REAL AND PAYS, and that is the whole point
+  # of transcribing this card rather than filing it as unmodelled. VERBATIM:
+  # "Critical Damage bonus can come from any source of Invisibility, not just
+  # from this augment." So the trigger being unreachable does NOT switch the
+  # bonus off — an invisible Tenno collects it, exactly as Spectral Serration
+  # collects its +330%.
+  #
+  # `condition: while_invisible` is asked of `data/tenno/`, whose neutral entry
+  # is not invisible, so this contributes nothing until the fight's Tenno is.
+  #
+  # "Critical Damage bonus is additive with other crit damage mods (e.g. Vital
+  # Sense)" — the ordinary relative bucket. And 39.1 settled which stat it is:
+  # "Fixed the Unseen Dread augment increasing Critical Chance instead of the
+  # intended Critical Damage while invisible."
+  - kind: crit_damage_bonus
+    condition: while_invisible
+    rank0: 0.50
+    rankMax: 1.75
+
+source:
+  url: https://wiki.warframe.com/w/Unseen_Dread
+  # Rank table, Notes and Patch History, read 2026-08-13. Polarity, drain and
+  # rank cross-checked against WFCD (/Lotus/Upgrades/Mods/Bows/Event/Nightwave/
+  # NightwaveStalkerBowAugmentMod: madurai, rare, baseDrain 2, fusionLimit 5).

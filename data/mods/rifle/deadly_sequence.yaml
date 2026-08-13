@@ -1,0 +1,44 @@
+id: deadly_sequence
+name: Deadly Sequence
+rarity: rare
+polarity: madurai
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Syndicate/GrinlokMod
+description: "+X% Critical Chance\n+X Sequence"
+
+# A SYNDICATE AUGMENT (The Perrin Sequence, rank Senior Executive, 25,000
+# standing). The page names TWO weapons — "exclusive to the Grinlok and Prisma
+# Grinlok" — and this roster carries only the Prisma, so only it is listed. A
+# weapon we do not have cannot be named in an equip gate, and the day the base
+# Grinlok is added this line grows by one id.
+exclusive_to: [prisma_grinlok]
+
+#   Rank | Critical chance | Sequence | Cost
+#     0  |      +50%       |   0.25   |  4
+#     1  |     +100%       |   0.5    |  5
+#     2  |     +150%       |   0.75   |  6
+#     3  |     +200%       |   1      |  7
+family: deadly_sequence
+
+effects:
+  # THE ORDINARY RELATIVE BUCKET, and the page does the arithmetic itself:
+  # "Deadly Sequence is additive with similar mods. For example, a Grinlok with
+  # a max rank Deadly Sequence and Point Strike will have a 15% × (1 + 200% +
+  # 150%) critical chance." That is the same bracket Point Strike lands in, so
+  # nothing new is needed to hold it.
+  - kind: crit_chance_bonus
+    rank0: 0.50
+    rankMax: 2.00
+
+  # THE SYNDICATE RADIAL. The payload lives in data/syndicates/sequence.yaml —
+  # defined once, named here, exactly as Gilded Truth names Truth.
+  - kind: syndicate_radial
+    syndicate: sequence
+    rank0: 0.25
+    rankMax: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Deadly_Sequence
+  # Rank table and the exclusivity sentence from the page; the Sequence effect's
+  # own numbers from https://wiki.warframe.com/w/Sequence.

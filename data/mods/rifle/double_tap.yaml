@@ -5,7 +5,19 @@ polarity: madurai
 base_drain: 10                # max drain 13 at rank 3
 max_rank: 3
 internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/MoreDamageonTripleTapRifleMod
-description: "On Hit: +20% Bonus Damage on next Shot for 2s. Stacks up to 20x."
+# DE's own card, minus its third line — see OMITS_A_CLAUSE in i18n_data.rs.
+# VERBATIM, rank 0: "ON HIT:\n5% Bonus Damage on next Shot for 0.5s.\nStacks up
+# to 80x outside of Conclave."
+#
+# THE STACK CAP CANNOT BE WRITTEN HERE, and it is not a gap in the data: the
+# ladder is 80 / 40 / 26 / 20, which no pair of endpoints interpolates to. It is
+# not linear because it is not the quantity DE ranks — the CEILING is, at a flat
+# +400%, and the cap is what is left when that is divided by a per-stack value
+# that does rank linearly (5/10/15/20). Two endpoints would print 60x and 40x at
+# ranks 1 and 2 against the real 40x and 26x, so the clause is off our card
+# rather than wrong on it. The number the sim runs — 20 stacks at max rank, the
+# only rank it simulates — is in `max_stacks` below and on the effect line.
+description: "ON HIT:\nX% Bonus Damage on next Shot for Xs."
 
 # A CONCLAVE MOD THAT WORKS IN PvE, exclusive to the LATRON family. VERBATIM
 # (Double_Tap): "is a PvE and Conclave Latron, Latron Wraith, and Latron Prime
@@ -55,11 +67,30 @@ effects:
     rankMax: 0.20
     max_stacks: 20
     duration_seconds: 2
+    duration_rank0: 0.5       # 0.5 / 1 / 1.5 / 2 — linear, unlike the cap
 
-unmodeled:
-  - "hitting an OBJECT counts as a miss and clears the pile — Zephyr's Tornado, a Nullifier bubble, an Arctic Eximus globe. This arena has one enemy and nothing else to hit, so the reset never fires here and the stacks only ever lapse on the clock"
-  - "a bullet-attraction bubble (Magnetize, or a Void status) makes each hit count TWICE, so the pile climbs at double rate inside one — no ability is cast here and the Void proc's own attractor is not wired to this count"
-  - "the LATRON INCARNON bugs the wiki records against this mod: only the AoE benefits and not the direct damage, and switching forms snapshots the buff and restores the old value on the way back. Neither is modelled — the sim pays the direct hit, which is the mod as described rather than as it currently behaves"
+  # WHAT THIS CARD DOES THAT THE ARENA CANNOT SHOW. Declared as effect KINDS,
+  # because that is the only channel a mod has: the loader drops a kind it does
+  # not know and the kind's own words become the line on the card. A top-level
+  # `unmodeled:` list is not read by `ModFile` and would have been invisible.
+  #
+  # "Hitting objects such as Zephyr's Tornado, Nullifier Crewman's bubble, or an
+  # Arctic Eximus' globe are counted as a 'miss' and will reset the damage
+  # bonus." One enemy here and nothing else to hit, so the reset never fires and
+  # the pile only ever lapses on the clock.
+  - kind: hitting_an_object_counts_as_a_miss_and_clears_the_stacks
+
+  # "Bullet attraction bubbles such as Magnetize or Void status will cause each
+  # hit to count twice." No ability is cast here, and the Void proc's own
+  # attractor is not wired to this count.
+  - kind: a_bullet_attraction_bubble_makes_each_hit_count_twice
+
+  # The two LATRON INCARNON bugs the wiki records against this mod: "Only the
+  # AoE benefits, not the direct damage", and switching forms snapshots the buff
+  # and restores the old value on the way back. Neither is modelled — the sim
+  # pays the direct hit, i.e. the mod as DESCRIBED rather than as it currently
+  # behaves.
+  - kind: the_latron_incarnon_bugs_this_mod_only_the_aoe_benefits
 
 source:
   url: https://wiki.warframe.com/w/Double_Tap

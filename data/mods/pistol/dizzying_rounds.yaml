@@ -1,0 +1,52 @@
+id: dizzying_rounds
+name: Dizzying Rounds
+rarity: rare
+polarity: naramon
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Nightwave/BroncoNightwaveMod
+description: "Shots from less than Xm stun enemies and open them to finishers.\n+X% Status Chance"
+
+# A WEAPON AUGMENT for the BRONCO family (Nightwave Cred Offerings, 20 Creds;
+# originally Rank 20 of Nightwave Series 3). VERBATIM: "a weapon augment mod for
+# Bronco and Bronco Prime", and the Notes close the other direction — "Cannot be
+# equipped on Akbronco or Akbronco Prime". Neither Akbronco is in this roster,
+# so the gate below is the whole rule.
+exclusive_to: [bronco, bronco_prime]
+
+#   Rank | Status chance bonus | Distance | Cost
+#     0  |        +50%         |    2m    |  4
+#     1  |       +100%         |    4m    |  5
+#     2  |       +150%         |    6m    |  6
+#     3  |       +200%         |    8m    |  7
+family: dizzying_rounds
+
+effects:
+  # NO DISTANCE AND NO FINISHERS — two of UNMODELLED.md's edges at once. The
+  # arena has one target at no range, so "less than 8m" is neither true nor
+  # false here, and a finisher is a melee action this sim does not have. The
+  # stun itself is crowd control, which is worth nothing against a single
+  # target that never acts.
+  #
+  # Transcribed for the day either changes, because the rule is unusually
+  # precise: "Any damage dealt by the weapon using this mod will stun the
+  # target as long as they are within 8m when the damage is dealt. Including
+  # status effects" — and "The distance to the enemy when the status effects is
+  # applied does not matter. Only when the status effect deals damage." Also
+  # "Projectile speed does not affect the distance at which the enemies are
+  # stunned", and it "Applies to the ricochet effect of the Bronco Incarnon
+  # Genesis transformation."
+  - kind: a_stun_that_opens_finishers_no_distance_and_no_finishers_here
+    rank0: 2
+    rankMax: 8
+
+  # The ordinary relative status bucket, and the half that pays.
+  - kind: status_chance_bonus
+    rank0: 0.50
+    rankMax: 2.00
+
+source:
+  url: https://wiki.warframe.com/w/Dizzying_Rounds
+  # Rank table and the Notes block, read 2026-08-13. Polarity, drain and rank
+  # cross-checked against WFCD (/Lotus/Upgrades/Mods/Nightwave/
+  # BroncoNightwaveMod: naramon, rare, baseDrain 4, fusionLimit 3).

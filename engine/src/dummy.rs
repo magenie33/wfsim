@@ -1503,6 +1503,23 @@ pub struct DummyParams {
     /// Deadly Efficiency: a RELATIVE base-damage bonus whose window opens when
     /// the reload COMPLETES (owner, 2026-08-01), not when the magazine empties.
     pub bd_on_reload: Option<crate::loadout::TimedBuff>,
+    /// EXIMUS ADVANTAGE: a RELATIVE base-damage bonus whose window is opened
+    /// by a weak-point hit on an EXIMUS and refreshed by the next one. The
+    /// target-side half of the trigger is read HERE rather than at `resolve`,
+    /// because the panel has no target to ask — see
+    /// [`crate::loadout::ModEffect::OnEximusWeakpointDamage`].
+    pub bd_on_eximus_weakpoint: Option<crate::loadout::TimedBuff>,
+    /// HATA-SATYA: relative crit chance per HIT, and how many stacks fit. The
+    /// pile has no clock — a RELOAD is what takes it — so it is a rate and a
+    /// cap here rather than a `TimedBuff`, the same shape `cc_per_tendril`
+    /// carries one field down.
+    pub cc_per_hit: Option<(f64, u32)>,
+    /// The stacks Hata-Satya's card OPENS with, and whether an event may take
+    /// them — the same two knobs the tendrils carry, and for the same reason:
+    /// a pile that costs hits is unmeasurable against a target that dies before
+    /// it builds, so the card is where a player states what they walk in with.
+    pub cc_per_hit_initial: u32,
+    pub cc_per_hit_held: bool,
     /// READY RETALIATION's window: STARTING a reload from empty opens
     /// `duration` seconds of `value` extra reload speed, and the reload that
     /// opened it is the first thing that spends it — the trigger is the reload
@@ -1801,6 +1818,16 @@ impl DummyParams {
         if self.bd_on_reload.is_some() {
             out.push(("on_reload_bd".into(), 1));
         }
+        if self.bd_on_eximus_weakpoint.is_some() {
+            out.push(("on_eximus_weakpoint_bd".into(), 1));
+        }
+        // HATA-SATYA's pile — a buff by the same three tests the tendrils pass
+        // (gained on a trigger, lost on one, capped), with the trigger being a
+        // hit rather than a kill. Its cap is the MOD's, not the weapon's, which
+        // is why it rides the rate rather than being looked up.
+        if let Some((_, cap)) = self.cc_per_hit {
+            out.push(("crit_per_hit".into(), cap));
+        }
         if self.fr_on_reload.is_some() {
             out.push(("on_reload_fr".into(), 1));
         }
@@ -1934,6 +1961,18 @@ impl DummyParams {
         // knobs were read, drawn, and dropped.
         if let Some(b) = self.bd_on_reload.as_mut() {
             set_timed(b, cfg, "on_reload_bd");
+        }
+        if let Some(b) = self.bd_on_eximus_weakpoint.as_mut() {
+            set_timed(b, cfg, "on_eximus_weakpoint_bd");
+        }
+        // The pile's opening count, seeded like the tendrils' — `locked` cannot
+        // be a duration here either, because this buff has no clock: what ends
+        // it is the reload.
+        if let Some((_, cap)) = self.cc_per_hit {
+            if let Some(&(stacks, locked)) = cfg.get("crit_per_hit") {
+                self.cc_per_hit_initial = stacks.min(cap);
+                self.cc_per_hit_held = locked;
+            }
         }
         // Keyed off the buff's OWN arcane — not the merged set's id, because a
         // weapon may seat two (an Arch-Gun) and every buff would be renamed the
@@ -2221,6 +2260,11 @@ impl DummyParams {
             cd_on_kill: panel.cd_on_kill,
             fr_on_reload: panel.fr_on_reload,
             bd_on_reload: panel.bd_on_reload,
+            bd_on_eximus_weakpoint: panel.bd_on_eximus_weakpoint,
+            cc_per_hit: panel.cc_per_hit,
+            // A fight in contact has not built a pile; the card moves it.
+            cc_per_hit_initial: 0,
+            cc_per_hit_held: false,
             rs_on_reload: panel.rs_on_reload,
             armor_strip_per_puncture: panel.armor_strip_per_puncture,
             instant_reload: panel.instant_reload,
@@ -2466,6 +2510,10 @@ impl Default for DummyParams {
             cd_on_kill: None,
             fr_on_reload: None,
             bd_on_reload: None,
+            bd_on_eximus_weakpoint: None,
+            cc_per_hit: None,
+            cc_per_hit_initial: 0,
+            cc_per_hit_held: false,
             super_crit_on_status: None,
             beam_ramp_floor: BEAM_RAMP_FLOOR,
             syndicate_radial: None,
@@ -4512,8 +4560,10 @@ fn sample_stacks(
     ch_buff_expiry: f64,
     fr_reload_expiry: f64,
     bd_reload_expiry: f64,
+    bd_eximus_expiry: f64,
     streak_expiry: f64,
     tendrils: u32,
+    cc_hit_stacks: u32,
     bar: &BuffBar,
 ) -> Vec<u8> {
     let cap = |n: u32| n.min(u8::MAX as u32) as u8;
@@ -4547,6 +4597,10 @@ fn sample_stacks(
             "on_headshot_cc" => live(now < ch_buff_expiry),
             "on_kill_cd" => live(now < arc.cd_kill_expiry()),
             "on_reload_bd" => live(now < bd_reload_expiry),
+            "on_eximus_weakpoint_bd" => live(now < bd_eximus_expiry),
+            // Off the loop's own counter, like the tendrils: only the fight
+            // knows how many hits are in the pile.
+            "crit_per_hit" => cap(cc_hit_stacks),
             "on_reload_fr" => live(now < fr_reload_expiry),
             "evo_headshot_streak" => live(now < streak_expiry),
             // The perk keeps its stacks on the BAR, not in `arcane.buffs`.
@@ -4936,6 +4990,11 @@ pub fn run_once_traced(
     let mut bd_reload_expiry: f64 = params
         .bd_on_reload
         .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
+    // EXIMUS ADVANTAGE's window, the same clock as the one above with a
+    // different key. It never opens at all unless the target is an Eximus.
+    let mut bd_eximus_expiry: f64 = params
+        .bd_on_eximus_weakpoint
+        .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
     // Incarnon cycle state. The engagement opens in the BASE form and earns
     // its way in — see `IncarnonCycle::starts_primed` for why, and for the
     // reading that opens transformed.
@@ -4985,6 +5044,14 @@ pub fn run_once_traced(
     // accumulation, not just the firing.
     let mut syndicate_ready_at = 0.0f64;
     let mut tendril_reload_mark = 0u32;
+    // HATA-SATYA: the pellet count and the magazine events at the last clear,
+    // plus the card's opening pile. Three marks rather than one because the
+    // stacks are counted off a HIT counter and cleared by two different events.
+    let mut cc_hit_mark = 0u32;
+    let mut cc_hit_reload_mark = 0u32;
+    let mut cc_hit_transform_mark = 0u32;
+    let mut cc_hit_seed = params.cc_per_hit.map_or(0, |(_, cap)| params.cc_per_hit_initial.min(cap));
+    let mut cc_hit_stacks = cc_hit_seed;
     // The card's opening count, which the fight then treats exactly like an
     // earned one: it is spent by the magazine event that clears the rest.
     let mut tendril_seed = params.tendrils_initial.min(params.tendril_max);
@@ -5012,7 +5079,7 @@ pub fn run_once_traced(
                 let stacks = sample_stacks(
                     params, rep, next_frame, &mut arc, &mut gal, &mut buff_stacks,
                     &ch_stacks, ch_buff_expiry, fr_reload_expiry, bd_reload_expiry,
-                    streak_expiry, tendrils, &bar,
+                    bd_eximus_expiry, streak_expiry, tendrils, cc_hit_stacks, &bar,
                 );
                 rep.frames.push(Frame {
                     t: next_frame,
@@ -5181,6 +5248,33 @@ pub fn run_once_traced(
                 }
             }
             tendrils = (tendril_seed + (r.kills - tendril_kill_mark)).min(params.tendril_max);
+        }
+
+        // HATA-SATYA's pile, the same mark-and-diff one block up with the
+        // counter swapped: hits instead of kills. `r.pellets` is the count of
+        // DIRECT pellet hits, which is exactly the qualifying set — "Additional
+        // hits from Multishot and Punch Through also count towards the bonus",
+        // and both land here.
+        //
+        // Read at the START of the shot, so the hit that earns a stack does not
+        // carry it. That is the rule every other trigger in this loop follows.
+        if let Some((_, cap)) = params.cc_per_hit {
+            // WHAT TAKES THE PILE: "Resets upon reloading or holstering", and
+            // "Swapping to Incarnon Form counts as reloading the Soma Prime and
+            // will therefore end the bonus" — so the transform is the second
+            // event, not a special case of the first. Holstering is a weapon
+            // swap, which this arena never does.
+            //
+            // The seed dies with the earned stacks: it is the same buff.
+            let cleared = r.reloads != cc_hit_reload_mark
+                || r.transforms != cc_hit_transform_mark;
+            if cleared && !params.cc_per_hit_held {
+                cc_hit_reload_mark = r.reloads;
+                cc_hit_transform_mark = r.transforms;
+                cc_hit_mark = r.pellets;
+                cc_hit_seed = 0;
+            }
+            cc_hit_stacks = (cc_hit_seed + (r.pellets - cc_hit_mark)).min(cap);
         }
 
         // THE SYNDICATE GAUGE. Affinity the WEAPON earned, which is half of
@@ -5494,7 +5588,12 @@ pub fn run_once_traced(
             // SENTIENT SURGE: "Additive to other crit chance and status chance
             // mods", so it belongs in the RELATIVE bucket beside Pistol
             // Gambit's — multiplying the unmodded base, not the modded one.
-            + params.cc_per_tendril * f64::from(tendrils);
+            + params.cc_per_tendril * f64::from(tendrils)
+            // HATA-SATYA: "additive with similar mods. For example, a max rank,
+            // max bonus Hata-Satya and Point Strike will have a 30% × (1 + 500%
+            // + 150%) critical chance" — the wiki does the bracket for us, and
+            // it is the same one Point Strike is in.
+            + params.cc_per_hit.map_or(0.0, |(per, _)| per * f64::from(cc_hit_stacks));
         // VICIOUS PROMISE, both halves of it. VERBATIM (wiki, Paris Incarnon
         // Genesis): "Enemies are undamaged as long as their health and shield
         // have not been damaged. Damaging Overguard is not taken into account."
@@ -5549,6 +5648,13 @@ pub fn run_once_traced(
         // a reload has finished, and zero again when the window closes.
         let bd_reload_add = match ap.bd_on_reload {
             Some(b) if t < bd_reload_expiry => b.value,
+            _ => 0.0,
+        };
+        // …and Eximus Advantage's share of the same bucket. "Stacks additively
+        // with base damage bonuses like Hornet Strike", so it joins here rather
+        // than forming a factor of its own.
+        let bd_eximus_add = match ap.bd_on_eximus_weakpoint {
+            Some(b) if t < bd_eximus_expiry => b.value,
             _ => 0.0,
         };
 
@@ -5779,6 +5885,7 @@ pub fn run_once_traced(
             flat_crit,
             cc_rel_mods: cc_rel - params.arcane.cc_rel,
             bd_add_mods: bd_reload_add
+                + bd_eximus_add
                 + ap.compression_bd
                 + buff_total!(ap, crate::loadout::BuffGrant::BaseDamage, t)
                 + buff_total!(ap, crate::loadout::BuffGrant::FlatBaseDamage, t),
@@ -5902,6 +6009,7 @@ pub fn run_once_traced(
             // after the status roll below).
             let arc_bd = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t)
                 + bd_reload_add
+                + bd_eximus_add
                 // Primary Compression's `adds` row: the same bracket a live
                 // base-damage buff joins, so Serration dilutes it exactly as
                 // the wiki's "additive with damage bonuses" says it should.
@@ -6467,6 +6575,18 @@ pub fn run_once_traced(
                     if part.is_head {
                         if let Some(b) = params.cc_on_headshot {
                             ch_buff_expiry = t + b.duration;
+                        }
+                        // EXIMUS ADVANTAGE — the WEAK POINT is the trigger
+                        // ("Despite the description specifying headshots, the
+                        // effect can be trigger on weak-point hits"), and the
+                        // second half of it is the TARGET. Against anything
+                        // that is not an Eximus this line never runs, which is
+                        // the whole reason the mod is not a plain on-headshot
+                        // buff. It REFRESHES rather than stacking.
+                        if params.target.eximus {
+                            if let Some(b) = params.bd_on_eximus_weakpoint {
+                                bd_eximus_expiry = t + b.duration;
+                            }
                         }
                         // Lethal Rearmament: every headshot grants a stack —
                         // a LOCKED buff earns it too, it just never loses it.
@@ -11948,6 +12068,148 @@ mod tests {
         assert!(
             shallow < deep / 2.0,
             "a reload must clear the tendrils: deep magazine {deep}, one-round {shallow}"
+        );
+    }
+
+    /// HATA-SATYA: the pile is built by HITS and a RELOAD takes it back.
+    ///
+    /// The same two-magazine measurement the tendrils get one test up, with the
+    /// counter swapped — and it has to be a measurement rather than a stack
+    /// count, because the mod's whole shape is that it never reaches its own
+    /// ceiling in a short magazine. 416 stacks at max rank is a number a Soma
+    /// Prime with multishot reaches once per magazine and never again.
+    #[test]
+    fn hata_satya_builds_on_hits_and_a_reload_takes_it_back() {
+        // Base crit 0, so every crit in the result came from the pile.
+        let build = |mag: f64, per_hit: f64| DummyParams {
+            base_crit_chance: 0.0,
+            unmodded_crit_chance: 1.0, // the base a relative bonus multiplies
+            crit_multiplier: 2.0,
+            cc_per_hit: Some((per_hit, 416)),
+            magazine_size: mag,
+            reload_seconds: 0.5,
+            fire_rate: 10.0,
+            duration_secs: 60.0,
+            body_parts: mono_body(1.0),
+            target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+            ..flat_base()
+        };
+        let crit_rate = |p: &DummyParams| {
+            let r = run_once(p, &mut Rng::new(7));
+            r.crits as f64 / r.pellets.max(1) as f64
+        };
+
+        // A magazine that never runs out: the pile climbs all run.
+        let deep = crit_rate(&build(100_000.0, 0.01));
+        assert!(deep > 0.5, "the pile should be carrying the crit rate, got {deep}");
+
+        // OFF, same fixture: the zero base is all that is left.
+        let none = crit_rate(&build(100_000.0, 0.0));
+        assert!(none < 1e-9, "no per-hit bonus means no crits at all, got {none}");
+
+        // A ONE-ROUND magazine reloads after every shot, so no stack survives
+        // to the next pull — the first hit of each magazine is worth nothing
+        // (the pile is read BEFORE the shot) and the second never comes.
+        let shallow = crit_rate(&build(1.0, 0.01));
+        assert!(
+            shallow < deep / 2.0,
+            "a reload must clear the pile: deep magazine {deep}, one-round {shallow}"
+        );
+    }
+
+    /// …AND THE CAP IS THE CARD'S, not the fight's.
+    ///
+    /// 500% is published flat at every rank, so a pile deep enough to reach it
+    /// stops there — which is the difference between this and an uncapped
+    /// counter, and the reason the yaml carries 416 rather than a rate alone.
+    #[test]
+    fn hata_satyas_pile_stops_at_its_published_ceiling() {
+        let build = |cap: u32| DummyParams {
+            base_crit_chance: 0.0,
+            unmodded_crit_chance: 1.0,
+            crit_multiplier: 2.0,
+            // 1% a stack, so `cap` stacks is exactly `cap`% — and a crit rate
+            // is clamped at 1.0, so the cap has to bite BELOW that to be
+            // visible at all.
+            cc_per_hit: Some((0.01, cap)),
+            magazine_size: 100_000.0,
+            fire_rate: 10.0,
+            duration_secs: 60.0,
+            body_parts: mono_body(1.0),
+            target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+            ..flat_base()
+        };
+        let rate = |cap: u32| {
+            let r = run_once(&build(cap), &mut Rng::new(9));
+            r.crits as f64 / r.pellets.max(1) as f64
+        };
+        // 600 shots at 10/s over 60 s, so both piles fill; only the ceiling
+        // separates them.
+        let low = rate(20);
+        let high = rate(80);
+        assert!(
+            low < 0.35 && high > 0.6,
+            "the cap must bind: 20 stacks gave {low}, 80 gave {high}"
+        );
+    }
+
+    /// EXIMUS ADVANTAGE: the window is opened by a weak-point hit ON AN EXIMUS,
+    /// and by nothing else.
+    ///
+    /// The second half is the one worth pinning. Written as a plain on-headshot
+    /// buff the mod would pay +600% base damage in every fight, and the card
+    /// would look like one of the strongest in the pool against a target it
+    /// does nothing for.
+    #[test]
+    fn eximus_advantage_needs_an_eximus_and_a_weak_point() {
+        let build = |eximus: bool, head_weight: f64| {
+            let mut p = DummyParams {
+                bd_on_eximus_weakpoint: Some(crate::loadout::TimedBuff {
+                    value: 6.0,
+                    duration: 10.0,
+                    initial_active: false,
+                }),
+                magazine_size: 100_000.0,
+                fire_rate: 10.0,
+                duration_secs: 30.0,
+                // A head and a body, so "aim at the head" is a choice the
+                // fixture can make rather than the only thing it can do.
+                body_parts: vec![
+                    BodyPart {
+                        name: "head".into(),
+                        aim_weight: head_weight,
+                        multiplier: 1.0, // no head MULTIPLIER: isolate the buff
+                        is_head: true,
+                        crit_bonus: false,
+                    },
+                    BodyPart {
+                        name: "body".into(),
+                        aim_weight: 1.0 - head_weight,
+                        multiplier: 1.0,
+                        is_head: false,
+                        crit_bonus: false,
+                    },
+                ],
+                target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+                ..flat_base()
+            };
+            p.target.can_be_eximus = eximus;
+            p.target.eximus = eximus;
+            p
+        };
+        let dmg = |p: &DummyParams| run_once(p, &mut Rng::new(21)).effective_damage;
+
+        // The two halves of the trigger, each denied in turn.
+        let armed = dmg(&build(true, 1.0));
+        let not_eximus = dmg(&build(false, 1.0));
+        let not_weakpoint = dmg(&build(true, 0.0));
+        assert!(
+            armed > not_eximus * 1.5,
+            "an Eximus weak-point hit must pay: {armed} vs {not_eximus}"
+        );
+        assert!(
+            (not_weakpoint - not_eximus).abs() / not_eximus.max(1.0) < 0.05,
+            "body hits on an Eximus must pay nothing: {not_weakpoint} vs {not_eximus}"
         );
     }
 

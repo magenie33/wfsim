@@ -201,6 +201,20 @@ fn effect(v: &Value) -> Option<ModEffect> {
             max_stacks: v.get("max_stacks").and_then(|x| x.as_u64()).unwrap_or(0) as u32,
             duration: v.get("duration_seconds").and_then(|x| x.as_f64()).unwrap_or(0.0),
         },
+        // HATA-SATYA. Read together for the same reason Double Tap's pair is:
+        // the cap is what the rate is worth, not a separate fact. Here the
+        // cap is the one thing rank does NOT move — "capped at 500% at all mod
+        // ranks" — so the yaml states it and the rate ladders under it.
+        "crit_chance_per_hit" => ModEffect::CritChancePerHit {
+            per_stack: max("rankMax"),
+            max_stacks: v.get("max_stacks").and_then(|x| x.as_u64()).unwrap_or(0) as u32,
+        },
+        // EXIMUS ADVANTAGE. The duration is fixed at every rank, so it is a
+        // plain number beside the ladder.
+        "eximus_weakpoint_damage" => ModEffect::OnEximusWeakpointDamage {
+            bonus: max("rankMax"),
+            duration: v.get("duration_seconds").and_then(|x| x.as_f64()).unwrap_or(0.0),
+        },
         "fire_rate_bonus" => ModEffect::FireRate(max("rankMax")),
         "reload_speed_bonus" => ModEffect::ReloadSpeed(max("rankMax")),
         "magazine_capacity_bonus" => ModEffect::MagazineCapacity(max("rankMax")),
@@ -1902,6 +1916,35 @@ mod card_values_tests {
         assert_eq!(
             found,
             [
+                // A HEAL, and nothing damages the Tenno here — the same edge
+                // Winds of Purity's life steal sits on.
+                "bhisaj_bal :: health restore nothing damages the tenno here",
+                // TWO EDGES AT ONCE: no distance and no finishers. The stun is
+                // crowd control against a target that never acts.
+                "dizzying_rounds :: a stun that opens finishers no distance and no \
+                 finishers here",
+                // Three clauses that need a SECOND thing in the world — a
+                // bubble to hit, an ability to cast, an Incarnon bug to
+                // reproduce.
+                "double_tap :: a bullet attraction bubble makes each hit count twice",
+                "double_tap :: hitting an object counts as a miss and clears the stacks",
+                "double_tap :: the latron incarnon bugs this mod only the aoe benefits",
+                // Crowd control again, and for the same reason it is worth
+                // nothing: the target never acts, so stone changes nothing it
+                // TAKES.
+                "metamorphic_magazine :: petrify after 20 hits crowd control against a \
+                 target that never acts",
+                // The card's whole headline needs a Nullifier, and the wiki
+                // says outright it "has no effect on any other enemy in
+                // Warframe".
+                "neutralizing_justice :: destroys a nullifier shield generator no such \
+                 enemy in this roster",
+                // ONE TARGET, so "3 or more enemies with a single projectile"
+                // is unreachable — but the crit damage half is modelled and
+                // pays to an invisible Tenno, which is why only this line is
+                // here and not the whole mod.
+                "unseen_dread :: invisibility on striking 3 enemies with one shot only \
+                 one target here",
                 // Its Purity radial lands 1,000 damage a blast and its life
                 // steal heals a Tenno this arena does not have — so the
                 // disclosure has to be per effect. Flagging the whole mod
@@ -1931,13 +1974,29 @@ mod weapon_exclusive_survey {
     /// `compatName` and read by this test and nothing else. It is the FACT:
     /// what exists in game. This is the ratchet that stops the gap growing
     /// quietly, and it only ever goes down.
+    ///
+    /// Seven of the twenty rows are EXCLUDED on purpose rather than owed: six
+    /// Conclave-exclusive mods that `only_pve_legal_conclave_mods_are_in_the_pools`
+    /// forbids anyway, and Soaring Truth, which is in DE's files and in no
+    /// released game. An exclusion has to carry its reason, so refusing a mod
+    /// costs the same sentence as transcribing one and cannot be the quiet
+    /// option.
+    ///
+    /// IT IS AT ZERO (2026-08-13). The last two needed a trigger the engine did
+    /// not have — Eximus Advantage's weak-point hit on an EXIMUS, and
+    /// Hata-Satya's per-hit stack that the RELOAD clears — and neither could be
+    /// approximated: a `CondBuff` applies a buff at its assumed maximum, which
+    /// here is +600% base damage against any target and +500% critical chance
+    /// on the first shot of every run.
     #[test]
     fn the_weapon_exclusive_mods_we_still_owe_only_goes_down() {
-        const OWED: usize = 16;
+        const OWED: usize = 0;
         let text = crate::data::file("surveys/weapon_exclusive_mods.yaml")
             .expect("data/surveys/weapon_exclusive_mods.yaml — run scripts/survey_weapon_mods.py");
         let mut total = 0usize;
         let mut missing: Vec<&str> = Vec::new();
+        let mut excluded: Vec<&str> = Vec::new();
+        let mut unreasoned: Vec<&str> = Vec::new();
         let mut name = "";
         for line in text.lines() {
             let l = line.trim();
@@ -1945,23 +2004,44 @@ mod weapon_exclusive_survey {
                 name = v.trim();
                 total += 1;
             } else if let Some(v) = l.strip_prefix("carried:") {
-                if v.trim() == "~" {
-                    missing.push(name);
+                match v.trim() {
+                    "~" => missing.push(name),
+                    "excluded" => {
+                        excluded.push(name);
+                        unreasoned.push(name);
+                    }
+                    _ => {}
                 }
+            } else if l.starts_with("reason:") {
+                unreasoned.retain(|n| *n != name);
             }
         }
         assert!(total >= 20, "the survey looks empty: {total} rows");
-        assert!(
-            missing.len() <= OWED,
-            "{} weapon-exclusive mods missing, ceiling {OWED} — transcribe one or              raise this line deliberately:
-  {}",
+        // EQUALITY, not a ceiling. The ratchet used to allow drifting below and
+        // asked the ceiling to follow; at zero there is nowhere below to drift,
+        // so the two directions collapse into one assertion — a mod appearing
+        // fails it, and so would a mod being deleted without this line moving.
+        assert_eq!(
             missing.len(),
-            missing.join("
-  ")
+            OWED,
+            "{} weapon-exclusive mods missing, ceiling {OWED} — transcribe one or \
+             raise this line deliberately:\n  {}",
+            missing.len(),
+            missing.join("\n  ")
         );
-        // …and it is not allowed to drift far below without the ceiling
-        // following, or the ratchet stops ratcheting.
-        assert!(missing.len() + 6 >= OWED, "{} missing against a ceiling of {OWED}: lower it",
-            missing.len());
+        // A REFUSAL IS NOT A SHORTCUT. `excluded` takes a mod out of the gap
+        // count, so it must cost a written reason — otherwise the cheapest way
+        // to close the ratchet is to declare everything out of scope.
+        assert!(
+            unreasoned.is_empty(),
+            "excluded without a reason: {}",
+            unreasoned.join(", ")
+        );
+        // Every mod that is neither carried nor excluded is missing, so these
+        // three have to add up — a row the parser skipped would otherwise read
+        // as one nobody owes.
+        let carried = total - missing.len() - excluded.len();
+        assert!(carried >= 13, "only {carried} of {total} carried");
     }
 }
+

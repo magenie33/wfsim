@@ -57,7 +57,14 @@ exactly zero and always will be, until the sim is spatial.
 
 - punch through (innate, mod-granted, or perk-granted) — the Felarx's infinite
   body punch-through, Dual-Mode Chamber's +4 m;
-- "on punch through N enemies" triggers — Ruptured Plentitude;
+- "on punch through N enemies" triggers — Ruptured Plentitude, and **Unseen
+  Dread**, whose invisibility needs one shot to strike three enemies. Its
+  CRITICAL DAMAGE half still pays, because the wiki says the bonus takes
+  invisibility "from any source" — so the mod is partly modelled rather than
+  filed here whole;
+- a SECOND ENTITY beside the target: **Neutralizing Justice**'s Nullifier
+  generator (the wiki: it "has no effect on any other enemy in Warframe"), and
+  **Double Tap**'s object-hit reset, which needs a bubble or a tornado to hit;
 - chaining, radial spread onto others, corpse effects.
 
 **What would have to exist first:** more than one body. That is the same change
@@ -71,7 +78,9 @@ Every shot lands at point blank.
 - damage falloff (the Felarx's 14→28 m to 99%, and every shotgun's real one);
 - Projectile Speed as a DPS stat — it is modelled where it changes a *pool*
   (riven rolls) but it moves no damage number here;
-- range-gated perks.
+- range-gated perks, and **Dizzying Rounds**, whose stun applies "from less than
+  8m": with no distance the condition is neither true nor false. Its status
+  chance is the half that pays.
 
 **What would have to exist first:** a distance on the scenario. Cheap to add and
 expensive to be right about — falloff is per weapon and the data is only
@@ -142,6 +151,12 @@ break, no overguard to gain.
 
 - Secondary Fortifier (overguard per damage dealt);
 - health/shield/overguard gating on the wielder;
+- HEALING — Winds of Purity's life steal, and **Bhisaj-Bal**'s 300 health per
+  three status effects. There is no pool for it to go into;
+- CROWD CONTROL, which is the mirror of the same fact: the target never acts, so
+  stopping it acting is worth nothing. **Metamorphic Magazine**'s petrify and
+  **Dizzying Rounds**' stun are here; both cards are equipped for their other
+  half (magazine/ammo, status chance);
 - `data/tenno/default.yaml`'s `health`/`shield` are placeholders at 1 for
   exactly this reason.
 

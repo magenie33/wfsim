@@ -1,0 +1,58 @@
+id: metamorphic_magazine
+name: Metamorphic Magazine
+rarity: rare
+polarity: naramon
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Nightwave/NightwaveGorgonAugmentMod
+description: "+X% Magazine Capacity\n+X% Ammo Maximum\nInflicting 20 cumulative attacks on an enemy will petrify them for 5s."
+
+# A WEAPON AUGMENT for the GORGON family (Nightwave Cred Offerings, 20 Creds;
+# originally Rank 23 of Nora's Mix Volume 3). The page names three weapons —
+# "for Gorgon, Prisma Gorgon, and Gorgon Wraith" — and this roster carries two
+# of them. The Prisma is not here, so it is not listed.
+exclusive_to: [gorgon, gorgon_wraith]
+
+#   Rank | Magazine | Ammo Max | Required Hits | Duration | Cost
+#     0  |   +15%   |   +15%   |      20       |    5s    |  2
+#     1  |   +30%   |   +30%   |      20       |    5s    |  3
+#     2  |   +45%   |   +45%   |      20       |    5s    |  4
+#     3  |   +60%   |   +60%   |      20       |    5s    |  5
+#     4  |   +75%   |   +75%   |      20       |    5s    |  6
+#     5  |   +90%   |   +90%   |      20       |    5s    |  7
+#
+# The hit requirement and the duration do NOT move with rank — only the two
+# stats do.
+family: metamorphic_magazine
+
+effects:
+  - kind: magazine_capacity_bonus
+    rank0: 0.15
+    rankMax: 0.90
+
+  - kind: ammo_max_bonus
+    rank0: 0.15
+    rankMax: 0.90
+
+  # PETRIFY IS CROWD CONTROL, and crowd control is worth nothing against a
+  # single target that never acts — UNMODELLED.md §nobody shoots back. The
+  # stone does not change what the target TAKES, so there is no damage number
+  # to leave on the table; what is lost is the safety, which this arena does
+  # not price.
+  #
+  # Transcribed: the requirement is TWENTY CUMULATIVE HITS, not twenty trigger
+  # pulls, and multishot counts — 32.3.6 "Fixed the 'Metamorphic Magazine'
+  # Gorgon Augment Mod's petrify effect not triggering for Clients with
+  # multishot (requiring them to take 20 shots no matter how many hits per shot
+  # are generated)", and the Tips say so from the other side: "Increasing
+  # multishot as much as possible will allow the weapon to turn enemies to
+  # stone faster."
+  - kind: petrify_after_20_hits_crowd_control_against_a_target_that_never_acts
+
+source:
+  url: https://wiki.warframe.com/w/Metamorphic_Magazine
+  # Rank table, Notes, Tips and Patch History, read 2026-08-13. Polarity, drain
+  # and rank cross-checked against WFCD (/Lotus/Upgrades/Mods/Rifle/Event/
+  # Nightwave/NightwaveGorgonAugmentMod: naramon, rare, baseDrain 2,
+  # fusionLimit 5), whose rank strings carry the same three clauses in this
+  # order.

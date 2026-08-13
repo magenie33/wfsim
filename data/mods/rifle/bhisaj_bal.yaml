@@ -1,0 +1,53 @@
+id: bhisaj_bal
+name: Bhisaj-Bal
+rarity: rare
+polarity: naramon
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Rifle/Event/ParisHealOnStatusMod
+description: "Restore X Health for every 3 Status effects.\n+X% Status Chance"
+
+# A WEAPON AUGMENT for the PARIS PRIME (Entrati, Rank 4 - Friend, 20,000
+# standing). The page names one weapon — "a Weapon Augment Mod for Paris Prime"
+# — so the base Paris is not listed.
+exclusive_to: [paris_prime]
+
+# An EXILUS WEAPON MOD in game ([[Category:Exilus Weapon Mods]]). That slot is
+# out of scope here (engine::builds: eight main slots, the exilus dropped), so
+# it sits in the ordinary pool like every other exilus-eligible card and costs
+# a main slot — the same treatment Cautious Shot gets.
+#
+#   Rank | Health restored | Status chance | Cost
+#     0  |       50        |      15%      |  2
+#     1  |      100        |      30%      |  3
+#     2  |      150        |      45%      |  4
+#     3  |      200        |      60%      |  5
+#     4  |      250        |      75%      |  6
+#     5  |      300        |      90%      |  7
+family: bhisaj_bal
+
+effects:
+  # NOBODY SHOOTS BACK, so a heal is worth nothing here — UNMODELLED.md's own
+  # first edge, and an EDGE rather than a todo: the Tenno takes no damage in
+  # this arena, so there is no pool for 300 health to go into. The rank values
+  # ride along so the card still prints its real number.
+  #
+  # The counting rules are transcribed for the day the arena has a Tenno to
+  # heal: "The number of status effects accumulated is shown as a buff",
+  # "Multiple status effects from Multishot or Punch Through will count towards
+  # the buff", and "Multiple status effects in one hit, from having over 100%
+  # Status Chance, will only count as 1 effect for Bhisaj-Bal."
+  - kind: health_restore_nothing_damages_the_tenno_here
+    rank0: 50
+    rankMax: 300
+
+  # The ordinary relative status bucket, and the reason the card is equipped.
+  - kind: status_chance_bonus
+    rank0: 0.15
+    rankMax: 0.90
+
+source:
+  url: https://wiki.warframe.com/w/Bhisaj-Bal
+  # Rank table and the Notes block, read 2026-08-13. Polarity, drain and rank
+  # cross-checked against WFCD (/Lotus/Upgrades/Mods/Rifle/Event/
+  # ParisHealOnStatusMod: naramon, rare, baseDrain 2, fusionLimit 5).

@@ -29,6 +29,47 @@ EXPORT = os.path.join(ROOT, 'vendor/warframe-items/data/json/Mods.json')
 OUT = os.path.join(ROOT, 'data/surveys/weapon_exclusive_mods.yaml')
 GUN_TYPES = {'Primary Mod', 'Secondary Mod', 'Shotgun Mod'}
 
+# MODS THIS ROSTER DELIBERATELY DOES NOT CARRY, and why.
+#
+# The join is `compatName` against our weapon names, which answers "does a mod
+# for this weapon exist in the export" — and that is not the same question as
+# "may a player equip it in the mission we simulate". Two reasons it is not,
+# and both make a row here rather than a gap:
+#
+#   PvP — a Conclave-exclusive mod is a separate balance pass and cannot be
+#   equipped in PvE at all. `engine::mods_data`'s
+#   `only_pve_legal_conclave_mods_are_in_the_pools` already refuses to let one
+#   into a pool; without this table the survey would keep pointing at six mods
+#   that test forbids. The evidence is each page's own opening sentence, which
+#   says "is Conclave-exclusive" beside a {{PvPItem}} banner — the strongest
+#   form of the tag the wiki's mod tables carry. Double Tap is the contrast
+#   that proves it is read and not assumed: same `/PvPMods/` path, and its page
+#   says "is a PvE and Conclave … mod", so it IS carried.
+#
+#   UNRELEASED — a mod DE built and never shipped is in the export beside the
+#   real ones, because WFCD reads the game's files.
+#
+# Keyed by `uniqueName`, never by display name (AGENTS.md).
+EXCLUDED = {
+    '/Lotus/Upgrades/Mods/PvPMods/Pistol/DespairEnergyDrainAoE':
+        'PvP: "Draining Gloom is Conclave-exclusive Despair mod".',
+    '/Lotus/Upgrades/Mods/PvPMods/Rifle/FasterRoFonKillGorgonMod':
+        'PvP: "Gorgon Frenzy is Conclave-exclusive Gorgon mod".',
+    '/Lotus/Upgrades/Mods/PvPMods/Rifle/MoreAccuracyOnHitGrinlokMod':
+        'PvP: "Grinloked is Conclave-exclusive Grinlok mod".',
+    '/Lotus/Upgrades/Mods/PvPMods/Rifle/SybarisIncreaseRoFonHit':
+        'PvP: "Sudden Justice is Conclave-exclusive Sybaris mod".',
+    '/Lotus/Upgrades/Mods/PvPMods/Rifle/ExplodingMiterBlades':
+        'PvP: "Thundermiter is Conclave-exclusive Miter mod".',
+    '/Lotus/Upgrades/Mods/PvPMods/Rifle/MoreDamageonMultiHitRifleMod':
+        'PvP: "Triple Tap is Conclave-exclusive Burston mod".',
+    '/Lotus/Upgrades/Mods/Syndicate/BallisticaMod':
+        'unreleased: "Soaring Truth" has no wiki page, no row in '
+        'Template:AugmentedMods (which lists every released augment), and is '
+        'not among warframe.market\'s 3,837 tradeable items — while its three '
+        'sibling syndicate augments are in all three. Checked 2026-08-13.',
+}
+
 
 def carried():
     """internal_name -> the file that carries it."""
@@ -72,17 +113,20 @@ def main():
         who = fits(m.get('compatName'), names)
         if not who:
             continue
+        uniq = m.get('uniqueName', '')
         rows.append({
             'name': m['name'],
             'compat': m['compatName'],
             'kind': m['type'],
-            'internal_name': m.get('uniqueName', ''),
-            'carried': have.get(m.get('uniqueName', '')),
+            'internal_name': uniq,
+            'carried': have.get(uniq),
+            'excluded': EXCLUDED.get(uniq),
             'weapons': who,
         })
     rows.sort(key=lambda r: r['name'])
 
-    miss = [r for r in rows if not r['carried']]
+    miss = [r for r in rows if not r['carried'] and not r['excluded']]
+    excl = [r for r in rows if r['excluded']]
     lines = [
         '# EVERY WEAPON-EXCLUSIVE GUN MOD OUR ROSTER CAN EQUIP.',
         '#',
@@ -93,7 +137,12 @@ def main():
         '# built from what data/mods/ holds, so one nobody transcribed is one the',
         '# builder cannot offer and nothing notices.',
         '#',
-        '# %d of %d carried, %d still to transcribe.' % (len(rows) - len(miss), len(rows), len(miss)),
+        '# `carried:` is the file that holds it; `~` is a gap; `excluded` is a mod we',
+        '# refuse on purpose, and the reason rides beside it. The export answers "does',
+        '# a mod for this weapon exist", which is not "may a player equip it here".',
+        '#',
+        '# %d of %d carried, %d excluded on purpose, %d still to transcribe.'
+        % (len(rows) - len(miss) - len(excl), len(rows), len(excl), len(miss)),
         'mods:',
     ]
     for r in rows:
@@ -101,10 +150,17 @@ def main():
         lines.append('    compat: %s' % r['compat'])
         lines.append('    kind: %s' % r['kind'])
         lines.append('    internal_name: %s' % r['internal_name'])
-        lines.append('    carried: %s' % (r['carried'] or '~'))
+        if r['excluded']:
+            lines.append('    carried: excluded')
+            lines.append('    reason: %s' % json.dumps(r['excluded']))
+        else:
+            lines.append('    carried: %s' % (r['carried'] or '~'))
     io.open(OUT, 'w', encoding='utf-8', newline='\n').write('\n'.join(lines) + '\n')
-    print('%s: %d rows, %d carried, %d missing' % (
-        os.path.relpath(OUT, ROOT), len(rows), len(rows) - len(miss), len(miss)))
+    print('%s: %d rows, %d carried, %d excluded, %d missing' % (
+        os.path.relpath(OUT, ROOT), len(rows),
+        len(rows) - len(miss) - len(excl), len(excl), len(miss)))
+    for r in excl:
+        print('   EXCLUDED %-24s %s' % (r['name'], r['excluded'][:60]))
     for r in miss:
         print('   MISSING  %-24s (%s) -> %s' % (r['name'], r['kind'], ', '.join(r['weapons'][:3])))
 

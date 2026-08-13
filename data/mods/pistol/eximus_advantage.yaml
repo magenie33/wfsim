@@ -1,0 +1,65 @@
+id: eximus_advantage
+name: Eximus Advantage
+rarity: rare
+polarity: madurai
+base_drain: 2                 # max drain 7 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Nightwave/NightwaveZylokAugmentMod
+description: "Headshots on Eximus enemies increase Secondary Damage by +X% for 10 secs."
+
+# A WEAPON AUGMENT for the ZYLOK family (Nightwave Cred Offerings, 20 Creds;
+# originally Rank 13 of Nora's Mix Volume 3). "for Zylok or Zylok Prime" — both
+# are in this roster, and the transform group carries each to its Incarnon form.
+exclusive_to: [zylok, zylok_prime]
+
+# A PISTOL MOD, filed here rather than under rifle/ because the ZYLOK IS A
+# SECONDARY — DE's own export disagrees with itself about that (type "Primary
+# Mod", path `/Mods/Rifle/Event/…`) and the card's text settles it: it grants
+# SECONDARY Damage, on a weapon whose slot is secondary. The path is where the
+# asset lives, not where the mod goes.
+#
+#   Rank | Damage Increase | Buff Duration | Cost
+#     0  |      +100%      |      10s      |  2
+#     1  |      +200%      |      10s      |  3
+#     2  |      +300%      |      10s      |  4
+#     3  |      +400%      |      10s      |  5
+#     4  |      +500%      |      10s      |  6
+#     5  |      +600%      |      10s      |  7
+#
+# Only the damage moves with rank; the window is 10s at every rank.
+family: eximus_advantage
+
+effects:
+  # TWO QUESTIONS AT ONCE, which is what makes this its own effect rather than
+  # a plain on-headshot buff: the hit has to land on a weak point AND the target
+  # has to be an EXIMUS. Written as `on_headshot` it would arm against anything
+  # and hand +600% base damage to a fight the mod does nothing for — so the
+  # target-side half is asked inside the sim, where `Target::eximus` is in hand.
+  # Point the scenario at a non-Eximus and this card is worth exactly zero,
+  # which is the honest answer.
+  #
+  # THE TRIGGER IS THE WEAK POINT, not the head: "Despite the description
+  # specifying headshots, the effect can be trigger on weak-point hits" — the
+  # same reading the engine's `Headshot` trigger already carries.
+  #
+  # IT REFRESHES, IT DOES NOT STACK: "The effect can be refreshed with
+  # subsequent eximus headshot/weak-point hits" — one window, its clock
+  # restarted.
+  #
+  # THE BUCKET: "Stacks additively with base damage bonuses like Hornet Strike",
+  # so it joins the base-damage bucket beside Serration's rather than forming a
+  # factor of its own — and is diluted by it, exactly as that sentence implies.
+  #
+  # "Damage bonus will not be applied to Exalted Weapons like Dex Pixia or
+  # Regulators": no exalted weapon is modelled here (UNMODELLED.md), so the
+  # clause can never bite.
+  - kind: eximus_weakpoint_damage
+    rank0: 1.00
+    rankMax: 6.00
+    duration_seconds: 10
+
+source:
+  url: https://wiki.warframe.com/w/Eximus_Advantage
+  # Rank table and the Notes block, read 2026-08-13. Polarity, drain and rank
+  # cross-checked against WFCD (/Lotus/Upgrades/Mods/Rifle/Event/Nightwave/
+  # NightwaveZylokAugmentMod: madurai, rare, baseDrain 2, fusionLimit 5).

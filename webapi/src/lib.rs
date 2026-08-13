@@ -1676,6 +1676,38 @@ fn enumerate_buffs(
                     permanent: false,
                 uncapped: false,
                 }),
+                // EXIMUS ADVANTAGE. A toggle like the other windows, and the
+                // card is worth more here than for most of them: whether it can
+                // arm at all is a property of the TARGET, so a player looking at
+                // a fight against a non-Eximus can see the buff they are not
+                // getting instead of wondering where the damage went.
+                OnEximusWeakpointDamage { .. } => push(BuffMeta {
+                    id: "on_eximus_weakpoint_bd".into(),
+                    name: nm.clone(),
+                    grants: String::new(),
+                    max_stacks: 1,
+                    kind: "toggle",
+                    default_stacks: 0,
+                    default_locked: false,
+                    permanent: false,
+                    uncapped: false,
+                }),
+                // HATA-SATYA's pile. Its cap is the MOD's (500% / the rate),
+                // not the weapon's, so unlike the tendrils it needs no lookup —
+                // and the card is the whole measurement for the same reason the
+                // tendril card is: a stack costs a hit, so how deep the pile
+                // was when the fight started is a thing only the player knows.
+                CritChancePerHit { max_stacks, .. } if !locked("crit_chance") => push(BuffMeta {
+                    id: "crit_per_hit".into(),
+                    name: nm.clone(),
+                    grants: "Critical Chance".into(),
+                    max_stacks,
+                    kind: "stacking",
+                    default_stacks: 0,
+                    default_locked: false,
+                    permanent: false,
+                    uncapped: false,
+                }),
                 OnReloadDamage { .. } => push(BuffMeta {
                     id: "on_reload_bd".into(),
                     name: nm.clone(),
@@ -2280,6 +2312,36 @@ pub fn panel_json(v: &Value) -> Value {
                         "base_damage",
                         bonus,
                         Some("on reload from empty, buff assumed up".into()),
+                    ),
+                },
+                // EXIMUS ADVANTAGE. The bucket line is the same as Deadly
+                // Efficiency's, but the NOTE has to carry the target, because
+                // that is the half a panel cannot check: the same build against
+                // a non-Eximus gets none of this and the number would otherwise
+                // read as unconditional.
+                OnEximusWeakpointDamage { bonus, .. } => match policy {
+                    StackPolicy::BaseOnly => conditionals.push(json!({
+                        "mod": name, "desc": e.describe(), "active": false,
+                        "why": "it takes a weak-point hit on an EXIMUS to open the window, and a companion weapon's hits are not the Tenno's"})),
+                    _ => push(
+                        "base_damage",
+                        bonus,
+                        Some("on an Eximus weak-point hit, buff assumed up".into()),
+                    ),
+                },
+                // HATA-SATYA. Its ceiling is a number DE publishes (500%), so
+                // assumed-max has something honest to state — unlike the
+                // tendrils, whose cap comes from the weapon. What the panel
+                // cannot say is how long it takes to get there: 416 hits at max
+                // rank, and a reload puts it back to zero.
+                CritChancePerHit { per_stack, max_stacks } => match policy {
+                    StackPolicy::BaseOnly => conditionals.push(json!({
+                        "mod": name, "desc": e.describe(), "active": false,
+                        "why": "the pile is built by this weapon's own hits and cleared by its reload, and a companion weapon's hits are not the Tenno's"})),
+                    _ => push(
+                        "crit_chance",
+                        per_stack * f64::from(max_stacks),
+                        Some(format!("{max_stacks} hits assumed (the 500% cap)")),
                     ),
                 },
                 OnReloadFireRate { bonus, .. } => match policy {
