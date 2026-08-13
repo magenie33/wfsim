@@ -1564,9 +1564,21 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: furis
     mode: cycle
+    score: 49.536089984508635
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_headcracker]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
     score: 49.089298641871665
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
+    score: 48.785509916163534
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_elemental_balance]
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
@@ -1574,6 +1586,12 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_elemental_balance]
     arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
+    score: 48.542232027384934
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_elemental_balance]
+    arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
     score: 48.216556270498366
