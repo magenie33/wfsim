@@ -253,6 +253,12 @@ entries:
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
     arcanes: [primary_deadhead]
+  - weapon: latron_prime
+    mode: cycle
+    score: 0.13309195081436168
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
+    arcanes: [primary_deadhead]
   - weapon: mk1_furis
     mode: cycle
     score: 1.303215954898256
