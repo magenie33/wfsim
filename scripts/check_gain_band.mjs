@@ -142,6 +142,33 @@ check("...and the gap is exactly what the two cards differ by",
   Math.abs((1 + gain(r.ama)) / (1 + gain(r.ser)) - 2.55 / 2.65) < 0.001,
   `ratio ${((1 + gain(r.ama)) / (1 + gain(r.ser))).toFixed(4)}, cards say ${(2.55 / 2.65).toFixed(4)}`);
 
+// ---- 5. the ORDER does not claim more than the measurement ----------------
+// A player swaps to the option at the top, and the one they left then shows a
+// POSITIVE gain — "it said A, I took A, now it says B" (report, 2026-08-13).
+// That is what sorting on the CENTRE of two overlapping bands looks like from
+// the outside. The list is ranked by the LOWER bound instead: what an option is
+// worth AT LEAST, which is a proper order and cannot swap on luck.
+const ord = await app.evaluate(`(async () => {
+  const rows = [...document.querySelectorAll('#mod-menu .opt[data-id]')]
+    .map((e) => e.dataset.id)
+    .map((id) => ({ id, g: gainScan.by[id] || null }))
+    .filter((x) => x.g);
+  return rows.map((x) => ({ id: x.id, pct: x.g.pct, se: x.g.se || 0 }));
+})()`);
+const lower = (g) => g.pct - g.se;
+check("the picker ranks the options it scanned", ord.length > 3, `${ord.length} rows`);
+const outOfOrder = ord.filter((g, i) => i > 0 && lower(g) > lower(ord[i - 1]) + 1e-9);
+check("...by what each is worth AT LEAST, so a wide band cannot outrank on luck",
+  outOfOrder.length === 0,
+  outOfOrder.slice(0, 2).map((g) => `${g.id} ${g.pct}+-${g.se}`).join(", "));
+// …and the rule BITES. Asserted on numbers rather than by hunting the live scan
+// for an overlapping pair, which it may not contain on any given day.
+const exactGain = { pct: 0.10, se: 0.00 };
+const wideGain = { pct: 0.12, se: 0.05 };
+check("...which is what puts an exact +10% above a +12% +-5%",
+  lower(exactGain) > lower(wideGain), `${lower(exactGain)} vs ${lower(wideGain)}`);
+
+
 console.log(failed ? `\n${failed} failed` : "\na quick-calc chip states how well it knows its number");
 await app.finish("gain-band");
 process.exit(failed ? 1 : 0);

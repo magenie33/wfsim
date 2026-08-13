@@ -6543,7 +6543,26 @@ const optPairingNoteFor = (id) => {
 function gainSort(a, b, keys) {
   const ga = gainOf(a.id), gb = gainOf(b.id);
   if (!ga !== !gb) return ga ? -1 : 1;
-  const cmp = { gain: () => (ga && gb ? gb.pct - ga.pct : 0),
+  // A GAIN IS RANKED BY WHAT IT IS WORTH AT LEAST, not by the centre of its
+  // band.
+  //
+  // Sorting on `pct` alone ordered two options by the middle of their spreads
+  // and presented the result as a ranking, so any pair whose bands overlap
+  // swapped places between scans — and swapping one of them in flipped the
+  // verdict, which is what a player sees as "it said A, I took A, now it says
+  // B" (report, 2026-08-13).
+  //
+  // The lower bound fixes it and stays a proper order. Refusing to rank
+  // overlapping pairs does not: "A ties B, B ties C, A beats C" is not
+  // transitive, and `Array.sort` given that produces an order that depends on
+  // the input's arrangement — trading one instability for a subtler one.
+  //
+  // It also says something a player wants: an exact +11% outranks a +9% that
+  // could be 2%, and a wide band has to be genuinely large to outrank a narrow
+  // one. A candidate the scan could not resolve stops being able to sit at the
+  // top on luck alone.
+  const lower = (g) => g.pct - (g.se || 0);
+  const cmp = { gain: () => (ga && gb ? lower(gb) - lower(ga) : 0),
                 drain: () => (b.drain || 0) - (a.drain || 0),
                 name: () => String(b.name).localeCompare(String(a.name)) };
   for (const k of keys) {
