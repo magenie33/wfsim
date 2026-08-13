@@ -343,7 +343,16 @@ enum EvoEffect {
     /// Headcracker: "On Headshot: +5% Fire Rate for 2s. Stacks up to 10x",
     /// and — from the raw wikitext, which the rendered page's summary drops —
     /// "This effect has a 50% chance of activating."
-    StackingFireRateOnHeadshot { per_stack: f64, max_stacks: u32, duration: f64, chance: f64 },
+    StackingFireRateOnHeadshot {
+        per_stack: f64,
+        max_stacks: u32,
+        duration: f64,
+        chance: f64,
+        /// HEADCRACKER IS FIFO, and it is data rather than a constant because
+        /// this is the second perk to want it and neither shape is the rule.
+        /// See [`crate::loadout::BuffDecay`].
+        decay: crate::loadout::BuffDecay,
+    },
     /// Stormburst: "On hitting an enemy affected by Electricity: +0.4
     /// Multishot for 2s. Stacks up to 3x."
     /// Blazing Barrel: *"On Firing: +X Multishot. Stacks up to Nx."*
@@ -1022,7 +1031,7 @@ impl EvolutionDef {
                 EvoEffect::StackingMultishotOnStatus { status, per_stack, max_stacks, duration } => format!(
                     "+{per_stack} multishot per stack x{max_stacks} for {duration:.0}s while the                      target carries {status:?} (flat, like Final Fusillade's)"
                 ),
-                EvoEffect::StackingFireRateOnHeadshot { per_stack, max_stacks, duration, chance } => format!(
+                EvoEffect::StackingFireRateOnHeadshot { per_stack, max_stacks, duration, chance, .. } => format!(
                     "+{:.0}% fire rate per stack x{max_stacks} for {duration:.0}s on headshot, \
                      {:.0}% chance each (additive with fire-rate mods)",
                     per_stack * 100.0,
@@ -1470,6 +1479,12 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             // Default 1.0 so a perk that does NOT roll reads as certain rather
             // than as never firing.
             chance: f(v, "chance").unwrap_or(1.0),
+            // The Galvanized family unless the card says otherwise — the same
+            // default and the same word every other stacking buff here uses.
+            decay: match v.get("decay").and_then(Value::as_str) {
+                Some("per_stack_expiry") => crate::loadout::BuffDecay::PerStackExpiry,
+                _ => crate::loadout::BuffDecay::LoseOneAndReset,
+            },
         },
         "crit_multiplier_below_crit_chance" => EvoEffect::CritMultiplierBelowCritChance {
             value: f(v, "value").unwrap_or(0.0),
@@ -1864,11 +1879,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         cleared_by: crate::loadout::ClearedBy::Nothing,
                     });
                 }
-                EvoEffect::StackingFireRateOnHeadshot { per_stack, max_stacks, duration, chance } => {
+                EvoEffect::StackingFireRateOnHeadshot { per_stack, max_stacks, duration, chance, decay } => {
                     base.stacking_buffs.push(crate::loadout::StackingBuff {
                         id: "on_headshot_fire_rate",
-                        // The Galvanized family, as each perk's own wiki text says.
-                        decay: crate::loadout::BuffDecay::LoseOneAndReset,
+                        decay: *decay,
                         trigger: crate::loadout::BuffTrigger::Headshot,
                         grant: crate::loadout::BuffGrant::FireRate,
                         // A FRACTION here; `resolve` turns it into an absolute
@@ -2737,7 +2751,7 @@ mod furis_tier4_tests {
     fn headcracker_carries_its_fifty_percent_roll() {
         let e = get("furis_headcracker").expect("furis_headcracker");
         let hit = e.effects.iter().find_map(|x| match x {
-            EvoEffect::StackingFireRateOnHeadshot { per_stack, max_stacks, duration, chance } => {
+            EvoEffect::StackingFireRateOnHeadshot { per_stack, max_stacks, duration, chance, .. } => {
                 Some((*per_stack, *max_stacks, *duration, *chance))
             }
             _ => None,
@@ -2898,6 +2912,48 @@ mod furis_co_split_tests {
         );
     }
 }
+#[cfg(test)]
+mod headcracker_decay_tests {
+    /// HEADCRACKER'S TEN STACKS EACH CARRY THEIR OWN CLOCK.
+    ///
+    /// Owner observed it in game (2026-08-13: "如果叠了10层，这个10层是各自的，走
+    /// fifo的，和风雷骤起一模一样的"), which is the same rule Stormburst carries
+    /// and the same way it was found. The loader HARDCODED the Galvanized rule
+    /// here, on the reading that the card says nothing else — and the two are
+    /// not close: under Galvanized decay one headshot inside the window holds
+    /// all ten, under FIFO it holds exactly one.
+    ///
+    /// Asserted on the DECAY the buff carries rather than on a fight, because
+    /// that is the fact that was wrong; `dummy`'s `LiveStacks` already has both
+    /// families and is tested on each.
+    #[test]
+    fn every_headcracker_decays_stack_by_stack() {
+        let mut seen = 0;
+        for e in crate::evolutions_data::pool() {
+            if !e.id.ends_with("_headcracker") {
+                continue;
+            }
+            seen += 1;
+            let base = crate::loadout::WeaponBase::from_data(&e.weapon, true, &[e.id.as_str()]);
+            let b = base
+                .stacking_buffs
+                .iter()
+                .find(|b| b.id == "on_headshot_fire_rate")
+                .unwrap_or_else(|| panic!("{}: no fire-rate buff", e.id));
+            assert_eq!(
+                b.decay,
+                crate::loadout::BuffDecay::PerStackExpiry,
+                "{}: each of its {} stacks runs its own clock",
+                e.id,
+                b.max_stacks
+            );
+            assert_eq!(b.max_stacks, 10, "{}", e.id);
+            assert!((b.chance - 0.5).abs() < 1e-9, "{}: the 50% roll is in the notes cell", e.id);
+        }
+        assert_eq!(seen, 5, "the Headcracker roster moved");
+    }
+}
+
 #[cfg(test)]
 mod after_mods_layer_tests {
     use super::*;
