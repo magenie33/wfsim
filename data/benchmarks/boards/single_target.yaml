@@ -3084,6 +3084,11 @@ entries:
     arcanes: [primary_debilitate]
   - weapon: phantasma_prime
     mode: base
+    score: 15.054765514078914
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, chilling_reload, toxic_barrage, primed_charged_shell]
+    arcanes: [primary_debilitate]
+  - weapon: phantasma_prime
+    mode: base
     score: 14.555234943663883
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
@@ -3275,6 +3280,11 @@ entries:
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_survivors_edge]
     arcanes: [secondary_encumber]
+  - weapon: shedu
+    mode: base
+    score: 10.137145225020964
+    mods: [primary_acuity, serration, galvanized_aptitude, hammer_shot, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    arcanes: [primary_compression]
   - weapon: shedu
     mode: base
     score: 5.656661941466439

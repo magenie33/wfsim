@@ -463,6 +463,11 @@ entries:
     arcanes: [primary_crux]
   - weapon: shedu
     mode: base
+    score: 0.05760412490604313
+    mods: [primary_acuity, serration, galvanized_aptitude, hammer_shot, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    arcanes: [primary_compression]
+  - weapon: shedu
+    mode: base
     score: 0.055370774551321625
     mods: [primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     arcanes: [primary_crux]
