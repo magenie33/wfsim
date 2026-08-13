@@ -1511,6 +1511,8 @@ pub struct DummyParams {
     /// Double Tap: `(per stack, max stacks, seconds)`. Its OWN multiplier, and
     /// counted per TRIGGER PULL. See `ModEffect::ConsecutiveHitDamage`.
     pub consecutive_hit_damage: Option<(f64, u32, f64)>,
+    /// SYNTH CHARGE — see [`crate::loadout::ModEffect::LastRoundDamage`].
+    pub last_round_damage: f64,
     pub round_restore_on_status: Option<(DamageType, f64, f64)>,
     /// Exact Penance: the chance a KILL reloads instantly. Rolled off the kill
     /// COUNTER, so a status kill counts — which the card requires.
@@ -2281,6 +2283,7 @@ impl DummyParams {
             derived_status_from_crit: panel.derived_status_from_crit,
             derived_crit_from_status: panel.derived_crit_from_status,
             consecutive_hit_damage: panel.consecutive_hit_damage,
+            last_round_damage: panel.last_round_damage,
             round_restore_on_status: panel.round_restore_on_status,
             instant_reload_on_kill: panel.instant_reload_on_kill,
             mag_growth_on_empty_reload: panel.mag_growth_on_empty_reload,
@@ -2532,6 +2535,7 @@ impl Default for DummyParams {
             derived_status_from_crit: None,
             derived_crit_from_status: None,
             consecutive_hit_damage: None,
+            last_round_damage: 0.0,
             round_restore_on_status: None,
             instant_reload_on_kill: None,
             mag_growth_on_empty_reload: None,
@@ -5790,6 +5794,10 @@ pub fn run_once_traced(
         // Every pellet reaching the one target IS a hit here ("additional hits
         // caused by punch through or Multishot will allow each bullet to
         // trigger multiple stacks"), so the pull's hits are its pellets.
+        // SYNTH CHARGE's window, read off the SAME gate Final Fusillade uses —
+        // so a burst weapon's "last round" is its last BURST, and a cycle's
+        // window is whichever magazine is actually being fired.
+        let sc_mult = if last_round { 1.0 + ap.last_round_damage } else { 1.0 };
         let dt_mult = match ap.consecutive_hit_damage {
             Some((per_stack, max_stacks, duration)) => {
                 if t >= dt_expiry {
@@ -6441,6 +6449,13 @@ pub fn run_once_traced(
                     // with damage bonuses like Serration and Faction Damage
                     // Bonus", so it is a factor here and never a bucket term.
                     * dt_mult
+                    // SYNTH CHARGE, on the magazine's LAST round only: "Damage
+                    // stacks multiplicatively with Hornet Strike, and any area
+                    // damage the weapon may have is also affected" — so it is a
+                    // factor here, beside Double Tap's, and it reaches the
+                    // explosion because every part of the shot comes through
+                    // this line.
+                    * sc_mult
                     // ECLIPSE: "an unique multiplier", so it stands beside the
                     // others rather than joining any of them.
                     * params.ability_final_at(t)

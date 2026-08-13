@@ -151,6 +151,19 @@ pub enum ModEffect {
     /// second +100%, the third +160%". So every pellet of a pull gets the SAME
     /// bonus, computed from the running total INCLUDING that pull, less one —
     /// which is also why an unmodded weapon gets nothing on its first shot.
+    /// SYNTH CHARGE: *"bonus damage to the final shot in the Magazine"*.
+    ///
+    /// ITS OWN MULTIPLIER — "Damage stacks multiplicatively with Hornet Strike,
+    /// and any area damage the weapon may have is also affected" — so it is a
+    /// factor beside Double Tap's and never a base-damage bucket term.
+    ///
+    /// THREE THINGS SWITCH IT OFF, all three the mod's own words: it "has no
+    /// effect on Continuous Weapons even if they meet the magazine
+    /// requirements", it "does not have an effect on any Incarnon fire modes",
+    /// and it is only EQUIPPABLE where the weapon's BASE magazine is 6 or
+    /// higher. The first two are resolved against the form; the third is an
+    /// equip rule, because a magazine mod can neither buy it nor lose it.
+    LastRoundDamage(f64),
     ConsecutiveHitDamage { per_stack: f64, max_stacks: u32, duration: f64 },
     /// Additive base-damage bucket (Hornet Strike).
     BaseDamage(f64),
@@ -603,6 +616,10 @@ impl ModEffect {
         match *self {
             // The gate is stated as a suffix so the inner line reads normally.
             WhileTenno(c, ref inner) => format!("{} ({})", inner.describe(), c.label()),
+            LastRoundDamage(v) => format!(
+                "{} damage on the magazine's LAST round — its own multiplier, not the                  base-damage bucket (nothing on a continuous weapon or an Incarnon form)",
+                pct(v)
+            ),
             ConsecutiveHitDamage { per_stack, max_stacks, duration } => format!(
                 "{} damage per consecutive hit, up to {max_stacks} ({}), for {duration}s — its own multiplier, not the base-damage bucket",
                 pct(per_stack), pct(per_stack * f64::from(max_stacks))
@@ -2109,6 +2126,10 @@ pub struct ResolvedPanel {
     /// Double Tap: `(per stack, max stacks, seconds)` — its OWN multiplier,
     /// counted per trigger pull. See [`ModEffect::ConsecutiveHitDamage`].
     pub consecutive_hit_damage: Option<(f64, u32, f64)>,
+    /// SYNTH CHARGE's multiplier for the magazine's LAST round — see
+    /// [`ModEffect::LastRoundDamage`]. Zero on a continuous weapon and on an
+    /// Incarnon form, resolved here because only this layer knows the form.
+    pub last_round_damage: f64,
     pub round_restore_on_status: Option<(crate::damage::DamageType, f64, f64)>,
     /// Exact Penance: the chance a KILL — from anywhere — reloads instantly.
     pub instant_reload_on_kill: Option<f64>,
@@ -2399,6 +2420,10 @@ pub fn resolve_for(
     // …and the weak-point crit bucket starts at the EVOLUTION's, not at zero,
     // because the card says it is additive with the mods that write here.
     let mut consecutive_hit: Option<(f64, u32, f64)> = None;
+    // SYNTH CHARGE. Summed, though only one such mod exists — a bucket of one
+    // is still a bucket, and a second card would otherwise silently replace the
+    // first.
+    let mut last_round_damage = 0.0f64;
     let (mut wp_dmg, mut wp_cc) = (0.0, base.evo_weakpoint_cc_rel);
     let mut cd_on_kill: Option<TimedBuff> = None;
     let mut fr_on_reload: Option<TimedBuff> = None;
@@ -2481,6 +2506,7 @@ pub fn resolve_for(
                 // DOUBLE TAP does not join a bucket — it carries its own
                 // multiplier to the sim, which is the whole point of the card's
                 // "multiplicatively stacks with damage bonuses like Serration".
+                ModEffect::LastRoundDamage(v) => last_round_damage += v,
                 ModEffect::ConsecutiveHitDamage { per_stack, max_stacks, duration } => {
                     consecutive_hit = Some((per_stack, max_stacks, duration));
                 }
@@ -3299,6 +3325,19 @@ pub fn resolve_for(
         weakpoint_cc_rel: wp_cc,
         bodyshot_cc_mult: base.bodyshot_cc_mult,
         consecutive_hit_damage: consecutive_hit.or(base.consecutive_hit_damage),
+        // OFF ON A CONTINUOUS WEAPON AND ON AN INCARNON FORM, both the mod's
+        // own words. `base.form` is the entry being resolved, so an Incarnon
+        // half of a cycle drops it while the base half keeps it — which is
+        // exactly what "does not have an effect on any Incarnon fire modes,
+        // whether on the last shot in their magazine or if activated with one
+        // bullet left in the primary mode's magazine" describes.
+        last_round_damage: if base.continuous
+            || base.form == crate::weapons_data::FormKind::Incarnon
+        {
+            0.0
+        } else {
+            last_round_damage
+        },
         // The card's numbers converted into POST-MOD units, so the sim adds one
         // term and never has to know about the status bucket. Same units trick
         // `BuffGrant::FlatBaseDamage` and `BaseCritDamage` take.

@@ -215,6 +215,9 @@ fn effect(v: &Value) -> Option<ModEffect> {
             bonus: max("rankMax"),
             duration: v.get("duration_seconds").and_then(|x| x.as_f64()).unwrap_or(0.0),
         },
+        // SYNTH CHARGE. Its own multiplier on the magazine's last round — see
+        // `ModEffect::LastRoundDamage` for the three things that switch it off.
+        "last_round_damage" => ModEffect::LastRoundDamage(max("rankMax")),
         "fire_rate_bonus" => ModEffect::FireRate(max("rankMax")),
         "reload_speed_bonus" => ModEffect::ReloadSpeed(max("rankMax")),
         "magazine_capacity_bonus" => ModEffect::MagazineCapacity(max("rankMax")),
@@ -627,6 +630,17 @@ pub fn pool_for_build(weapon_id: &str, evolutions: &[&str]) -> Vec<ModDef> {
             None => true,
             Some("continuous") => continuous,
             Some("semi_auto") => semi_auto,
+            // SYNTH CHARGE's magazine gate, and it reads the BASE magazine
+            // rather than the modded one — the wiki says so in both directions:
+            // "If the magazine is increased above 6 on a weapon that has below
+            // 6, it will still not be usable on that gun. However, if a gun has
+            // a magazine above 6 and it is reduced below that, the mod will
+            // still function." So it is an equip rule and not a live check:
+            // no mod can buy it and no mod can lose it.
+            //
+            // `magazine` on the spec IS the base magazine — the mod layer never
+            // writes it — which is what makes this the right number to read.
+            Some("magazine_6") => spec.magazine.is_some_and(|m| m >= 6.0),
             // An unknown requirement hides the mod rather than ignoring the
             // restriction — a mod offered where it cannot go is the worse bug.
             Some(_) => false,
@@ -1943,6 +1957,13 @@ mod card_values_tests {
                 // Warframe".
                 "neutralizing_justice :: destroys a nullifier shield generator no such \
                  enemy in this roster",
+                // TWO THINGS THE PAGE STATES AND THE MODEL CANNOT. One is an
+                // open question — whether the bonus reaches a status payload —
+                // and the other is a family of alt-fire and reload mechanics
+                // that inherit the last round's bonus, of which this roster
+                // carries exactly one weapon (the Dual Toxocyst's Frenzy).
+                "synth_charge :: the alt fire and reload mechanics that inherit the last rounds bonus",
+                "synth_charge :: whether the bonus reaches a status payload is unmeasured",
                 // ONE TARGET, so "3 or more enemies with a single projectile"
                 // is unreachable — but the crit damage half is modelled and
                 // pays to an invisible Tenno, which is why only this line is
@@ -2049,3 +2070,47 @@ mod weapon_exclusive_survey {
     }
 }
 
+
+#[cfg(test)]
+mod synth_charge_tests {
+    /// SYNTH CHARGE: the LAST ROUND, its own multiplier, and three ways off.
+    ///
+    /// It shipped as a plain `base_damage_bonus` — +200% on EVERY shot, in the
+    /// bucket Hornet Strike is in — which is wrong twice and wrong upward both
+    /// times (owner, 2026-08-13: "我怀疑建模错了").
+    #[test]
+    fn synth_charge_is_the_last_round_only_and_only_where_it_can_be() {
+        use crate::loadout::{resolve, ModEffect, StackPolicy, WeaponBase};
+        let pool = crate::mods_data::class_pool("pistol");
+        let sc = pool.iter().find(|m| m.id == "synth_charge").expect("synth charge");
+        assert!(
+            sc.effects.iter().any(|e| matches!(e, ModEffect::LastRoundDamage(v) if (v - 2.0).abs() < 1e-9)),
+            "the card is +200% at max rank, on the final shot: {:?}",
+            sc.effects
+        );
+
+        // THE MAGAZINE GATE reads the BASE magazine, so it is an equip rule.
+        // The Bronco (2) and the Angstrum (1) are turned away; the Lex sits
+        // exactly on 6 and keeps it.
+        let has = |w: &str| crate::mods_data::pool_for_weapon(w).iter().any(|m| m.id == "synth_charge");
+        for w in ["lex", "vasto", "vasto_prime", "lato", "laetum"] {
+            assert!(has(w), "{w}: base magazine is 6 or more");
+        }
+        for w in ["bronco", "bronco_prime", "angstrum", "prisma_angstrum"] {
+            assert!(!has(w), "{w}: base magazine is under 6");
+        }
+
+        // …AND WHERE IT IS EQUIPPABLE IT IS STILL WORTH NOTHING on a continuous
+        // weapon or an Incarnon form, both the mod's own words. The Kuva Nukor
+        // has a 77-round magazine and is a beam: it may hold the mod and gets
+        // nothing from it.
+        let val = |w: &str| {
+            let base = WeaponBase::from_data(w, true, &[]);
+            resolve(&base, &[sc], StackPolicy::Emergent).last_round_damage
+        };
+        assert!((val("lex") - 2.0).abs() < 1e-9, "an ordinary pistol pays it");
+        assert!(has("kuva_nukor"), "77 rounds, so it EQUIPS");
+        assert_eq!(val("kuva_nukor"), 0.0, "…and a continuous weapon gets nothing");
+        assert_eq!(val("lex_incarnon"), 0.0, "…and neither does an Incarnon fire mode");
+    }
+}

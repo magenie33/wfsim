@@ -13,10 +13,64 @@ description: "+X% Bonus Damage on final shot. Requires Magazine 6 or higher."
 # structured source for what a mod REFUSES to be equipped on.
 excludes_weapon: [singleshot, power_weapon, sentinel_mod]
 
+# THE MAGAZINE GATE, and it reads the BASE magazine. VERBATIM: "Magazine
+# requirement is based on the base Magazine Capacity of a gun. If the magazine is
+# increased above 6 on a weapon that has below 6, it will still not be usable on
+# that gun. However, if a gun has a magazine above 6 and it is reduced below
+# that, the mod will still function."
+#
+# So it is an EQUIP rule and not a live check: no magazine mod can buy it and
+# none can lose it. In this roster it turns away the Bronco (2), the Bronco Prime
+# (4) and both Angstrums (1); the Lex and both Vastos sit exactly on 6 and keep
+# it.
+#
+# ("Cannot be equipped on Exalted Weapons" is the other half of the same
+# sentence, and no exalted weapon is modelled — UNMODELLED.md §7.)
+requires_weapon: magazine_6
+
 effects:
-  - kind: base_damage_bonus
+  # THE LAST ROUND ONLY, which is the whole mod. It was a plain
+  # `base_damage_bonus` — +200% on EVERY shot, in the bucket Hornet Strike is in
+  # — which is wrong twice over and wrong upward both times (owner, 2026-08-13:
+  # "我怀疑建模错了").
+  #
+  # VERBATIM (the card): "grants bonus damage to the final shot in the Magazine",
+  # and the ladder is +50/100/150/200%.
+  #
+  # ITS OWN MULTIPLIER: "Damage stacks multiplicatively with Hornet Strike, and
+  # any area damage the weapon may have is also affected." So it is a factor
+  # beside Double Tap's rather than a base-damage bucket term, and it reaches an
+  # explosion because every part of a shot goes through the same line.
+  #
+  # THE WINDOW is the engine's existing last-round gate, the one Final Fusillade
+  # reads — so on a BURST weapon it is the last BURST (a Sicarus Prime's final
+  # three rounds), and in a cycle it is whichever magazine is actually firing.
+  - kind: last_round_damage
     rank0: 0.5
     rankMax: 2.0
 
+  # WHAT THIS CARD DOES THAT THE MODEL DOES NOT. Declared as effect KINDS,
+  # because that is the only channel a mod has — a top-level `unmodeled:` list
+  # is not read by `ModFile` and would have been invisible.
+  #
+  # The page states the bonus is multiplicative with Hornet Strike, which is the
+  # bucket that scales status damage — but it does not say whether this
+  # multiplier sits inside or outside ModifiedBase. It multiplies the damage
+  # INSTANCE here, so a DoT the last round applies is unscaled. A measurement of
+  # a bleed from the final round settles it.
+  - kind: whether_the_bonus_reaches_a_status_payload_is_unmeasured
+
+  # The alt-fire and reload-mechanic exceptions the page lists. The Dual
+  # Toxocyst is the one in this roster: its Frenzy passive, triggered on the
+  # last shot, is supposed to buff every subsequent free shot until Frenzy
+  # expires — here the bonus ends with the round that earned it. The rest
+  # (Fusilai, Catabolyst, Cantare, Akmagnus Prime) are weapons this app has no
+  # entry for.
+  - kind: the_alt_fire_and_reload_mechanics_that_inherit_the_last_rounds_bonus
+
 source:
   url: https://wiki.warframe.com/w/Synth_Charge
+  # Rank table, Notes and Patch History, read 2026-08-13. The Kulstar bug
+  # ("can be equipped … despite having a magazine capacity of 3") is DE's and
+  # not reproduced: that weapon is not in this roster, and a bug that lets ONE
+  # weapon past a rule is not a reason to drop the rule.

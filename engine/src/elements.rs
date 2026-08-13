@@ -218,6 +218,95 @@ mod tests {
         assert_eq!(out.get(Electricity), 0.0);
     }
 
+    /// THE WIKI'S OWN HCET TABLE, all forty-eight cells (owner, 2026-08-13:
+    /// "这里有个表格说明，你给我实现这个，确保没有实现错误哈").
+    ///
+    /// VERBATIM (Kuva_Nukor, transcluded from Adversary System/Progenitor):
+    /// *"Weapons with an innate primary element and a different primary element
+    /// provided by the progenitor both behave as innate elements and combine
+    /// with each other. They will also recombine with modded elements in the
+    /// following order: Mod slot 1 → Mod slot 2 → … → Mod slot 8 → Innate Heat
+    /// → Innate Cold → Innate Electricity → Innate Toxin"*.
+    ///
+    /// The table beneath it enumerates every (bonus, modded) pair against each
+    /// of the four innate elements — Tenet Spirex (Heat), Tenet Envoy (Cold),
+    /// Tenet Agendus (Electricity), Coda Mire (Toxin). It is transcribed here
+    /// cell for cell rather than summarised, because the rules that produce it
+    /// are three and every one of them is load-bearing:
+    ///
+    /// * MODS FIRST, innates last (rule 2);
+    /// * a MOD OF THE SAME ELEMENT pulls that innate forward onto its slot
+    ///   (rule 3) — which is why "Bonus Heat + Modded Electricity" on an
+    ///   innate-Electricity weapon is plain Radiation and not Radiation + Heat;
+    /// * the two innates order by HCET among themselves.
+    ///
+    /// A bonus that MATCHES the weapon's own innate is one element, not two —
+    /// `apply_valence` merges it into the base vector — so those cases are the
+    /// diagonal of the table and are covered by the same rows.
+    ///
+    /// NO WEAPON IN THE ROSTER EXERCISES THIS YET: the Kuva Nukor's innate is
+    /// Radiation, which is already combined and never re-enters the hierarchy.
+    /// That is exactly when to write the table down — before the Tenet weapon
+    /// arrives that would have been silently wrong.
+    #[test]
+    fn the_progenitor_hcet_table_reproduces_cell_for_cell() {
+        // (bonus, modded) -> [innate Heat, innate Cold, innate Electricity,
+        //                     innate Toxin], each cell the SET of types the
+        //                     shot ends up dealing.
+        type Cell = &'static [DamageType];
+        let rows: &[((DamageType, DamageType), [Cell; 4])] = &[
+            ((Heat, Cold), [&[Blast], &[Blast], &[Blast, Electricity], &[Blast, Toxin]]),
+            ((Heat, Electricity),
+             [&[Radiation], &[Radiation, Cold], &[Radiation], &[Radiation, Toxin]]),
+            ((Heat, Toxin), [&[Gas], &[Gas, Cold], &[Gas, Electricity], &[Gas]]),
+            ((Cold, Heat), [&[Blast], &[Blast], &[Blast, Electricity], &[Blast, Toxin]]),
+            ((Cold, Electricity),
+             [&[Radiation, Cold], &[Magnetic], &[Magnetic], &[Magnetic, Toxin]]),
+            ((Cold, Toxin), [&[Gas, Cold], &[Viral], &[Viral, Electricity], &[Viral]]),
+            ((Electricity, Heat),
+             [&[Radiation], &[Blast, Electricity], &[Radiation], &[Radiation, Toxin]]),
+            ((Electricity, Cold),
+             [&[Blast, Electricity], &[Magnetic], &[Magnetic], &[Magnetic, Toxin]]),
+            ((Electricity, Toxin),
+             [&[Gas, Electricity], &[Viral, Electricity], &[Corrosive], &[Corrosive]]),
+            ((Toxin, Heat), [&[Gas], &[Blast, Toxin], &[Radiation, Toxin], &[Gas]]),
+            ((Toxin, Cold), [&[Blast, Toxin], &[Viral], &[Magnetic, Toxin], &[Viral]]),
+            ((Toxin, Electricity),
+             [&[Radiation, Toxin], &[Magnetic, Toxin], &[Corrosive], &[Corrosive]]),
+        ];
+        let innates = [Heat, Cold, Electricity, Toxin];
+        for &((bonus, modded), cells) in rows {
+            for (i, &want) in cells.iter().enumerate() {
+                let weapon = innates[i];
+                let mut input = ElementalInput::default();
+                // The mod slot, first in the order.
+                input.push(modded, 1.0);
+                // The weapon's own innate and the progenitor's bonus. Where
+                // they are the SAME element they are one entry, which is what
+                // `apply_valence` produces by adding into the base vector.
+                if weapon == bonus {
+                    input.innate.push((weapon, 6.0));
+                } else {
+                    input.innate.push((weapon, 2.0));
+                    input.innate.push((bonus, 4.0));
+                }
+                let out = combine(&DamageVector::new(), &input);
+                let mut got: Vec<DamageType> = out.iter_nonzero().map(|(t, _)| t).collect();
+                got.sort_by_key(|t| format!("{t:?}"));
+                let mut want_sorted = want.to_vec();
+                want_sorted.sort_by_key(|t| format!("{t:?}"));
+                assert_eq!(
+                    got, want_sorted,
+                    "bonus {bonus:?} + modded {modded:?} on innate {weapon:?}"
+                );
+                // …and the total is conserved: nothing is created or lost by
+                // combining, whichever way the pairs fall.
+                let total: f64 = out.iter_nonzero().map(|(_, v)| v).sum();
+                assert!((total - 7.0).abs() < 1e-9, "total moved: {total}");
+            }
+        }
+    }
+
     /// Rule 2's exception: a Kuva/Tenet weapon carries two innates (weapon +
     /// progenitor) and HCET (Heat > Cold > Electricity > Toxin) decides which
     /// of them sits second-to-last.

@@ -2218,6 +2218,22 @@ pub fn panel_json(v: &Value) -> Value {
                 // nothing until the hits are consecutive and it stands on its
                 // own multiplier, so folding it into base damage would both
                 // overstate a fresh magazine and put it in the wrong bracket.
+                // SYNTH CHARGE is a CONDITIONAL, not a bucket line: it is worth
+                // nothing on every round but the magazine's last, and it stands
+                // on its own multiplier — folding it into base damage would
+                // both overstate every shot and put it in the wrong bracket.
+                LastRoundDamage(x) => {
+                    conditionals.push(json!({
+                        "mod": name,
+                        "desc": e.describe(),
+                        "active": x > 0.0,
+                        "why": if x > 0.0 {
+                            "the magazine's LAST round only, and multiplicative with Hornet Strike rather than additive with it".to_string()
+                        } else {
+                            "nothing here: the mod has no effect on a continuous weapon or on an Incarnon fire mode, whatever its magazine".to_string()
+                        },
+                    }));
+                }
                 ConsecutiveHitDamage { per_stack, max_stacks, duration } => {
                     conditionals.push(json!({
                         "mod": name,
