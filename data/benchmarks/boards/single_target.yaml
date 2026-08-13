@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: a34b7d5d4f5ce6afc5790b9d83b14d463f4e5a02
+engine: d8c32523131ce0cd9e5e07ad846231e8ff42730c
 entries:
   - weapon: akarius_prime
     mode: base
@@ -1838,6 +1838,12 @@ entries:
     mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, magnetic_might, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_extended_volley, furis_prelude_of_might]
     arcanes: [secondary_deadhead]
+  - weapon: furis
+    mode: cycle
+    score: 23.62843130805773
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_headcracker]
+    arcanes: [secondary_outburst]
   - weapon: furis
     mode: cycle
     score: 23.586463044907877
