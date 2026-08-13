@@ -9104,7 +9104,16 @@ function replayMarkup(r) {
     stagger: "impact", weakened: "puncture", attractor: "void",
     bleed: "slash", poison: "toxin", ignite: "heat",
   };
-  const dbName = (id) => DT(DEBUFF_TYPE[id] || id) + (id === "frozen" ? ` (${tr("frozen")})` : "");
+  // MICROWAVE is not a damage type, so it has no `DT` name to borrow — it is
+  // the Nukor family's own status and DE's own word for it. Left in English on
+  // a Chinese page for the same reason "Overshields" is: a string is
+  // TRANSCRIBED, never translated, and DE's Chinese for this one could not be
+  // reached from here (its status has no page of its own in the CN wiki). The
+  // weapon's own name contains 微波, which is evidence and not a source.
+  const dbName = (id) =>
+    (id === "microwave"
+      ? "Microwave"
+      : DT(DEBUFF_TYPE[id] || id)) + (id === "frozen" ? ` (${tr("frozen")})` : "");
   const dRoster = rp.debuffs || [];
   const dSeries = rp.dstacks || [];
   const W = 600, H = 28;

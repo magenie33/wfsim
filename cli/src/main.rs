@@ -78,6 +78,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         infinite_reserve: true,
         ammo_cost: 1.0,
         headshot_bonus_multiplicative: false,
+        applies_microwave: false,
         bd_on_reload: None,
         bd_on_eximus_weakpoint: None,
         cc_per_hit: None,

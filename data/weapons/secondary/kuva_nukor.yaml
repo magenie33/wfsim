@@ -45,6 +45,20 @@ reload_seconds: 2
 # BEAM_DECAY_DELAY) and match this weapon exactly; only the floor differs.
 beam_ramp_floor: 0.30
 
+# MICROWAVE — this weapon's own invisible status effect, and the one thing on its
+# page that changes the SINGLE-TARGET number. VERBATIM (wiki `Microwave`): "a
+# unique Status Effect that enlarges the body parts of the enemies that was shot
+# at … not listed in the game UI, however is counted towards the damage
+# calculation bonus with Condition-Overload type equipment", which names
+# Condition Overload, Galvanized Aptitude, Galvanized Savvy, Galvanized Shot,
+# Secondary Shiver and the Cedo. Its procs have INFINITE duration (this weapon's
+# own page), so once it lands it is on until the target dies.
+#
+# So on a CO build this weapon carries one more status TYPE than its damage
+# vector can explain — and the count is the whole payload: the enlarged hitbox
+# is a hit-location mechanic this arena has no aim for.
+applies_microwave: true
+
 # No CO catalog row for this attack, so the ordinary class — absence in that
 # catalog means ORDINARY rather than unknown, since it lists the anomalies.
 co_behavior: additive_with_base_damage
@@ -95,7 +109,7 @@ attack:
 
 unmodeled:
   - "the beam CHAINS to 2 more enemies within 9 m at 50% of the main beam's damage each — one target here, so it is worth exactly nothing (UNMODELLED.md §one target). It is the largest thing this weapon does in a room and the reason it was nerfed from 4 chains to 2"
-  - "MICROWAVE, its own invisible status effect, with infinite duration. It counts as an individual status for Condition Overload, Galvanized Aptitude, Galvanized Savvy and Galvanized Shot — so on a CO build this weapon carries one more status type than its damage vector can explain, and this sim counts one fewer"
+  - "MICROWAVE's other half: it ENLARGES the body part it was shot at, which is a hit-location mechanic and worth nothing where nobody is aiming by hand. Its status COUNT is modelled (`applies_microwave`)"
   - "punch through makes the MAIN beam chain independently from every target it passes through, which the wiki says can double or triple the output in a crowd — a second-target mechanic on top of a second-target mechanic"
   - "the beam's 29 m range and its pinpoint accuracy, which this arena has no distance to spend"
 

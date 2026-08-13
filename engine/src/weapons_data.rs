@@ -675,6 +675,11 @@ pub struct WeaponSpec {
     /// [`ValenceSpec`]; absent on every weapon that is not one.
     #[serde(default)]
     pub valence: Option<ValenceSpec>,
+    /// Does this weapon apply MICROWAVE — the Nukor family's own invisible
+    /// status? See `dummy::DebuffState::microwave`. Two weapons in the game
+    /// have it and the wiki names both.
+    #[serde(default)]
+    pub applies_microwave: bool,
     /// Does this weapon's INNATE headshot bonus multiply the additive bracket
     /// instead of joining it? A PER-WEAPON anomaly, not a class rule: the wiki
     /// lists innate bonuses (Kuva Chakkhurr) among the ADDITIVE sources and
@@ -1782,6 +1787,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // is stated once rather than copied into a second file that is free
         // to drift from it.
         beam_ramp_floor: s.beam_ramp_floor.unwrap_or(crate::dummy::BEAM_RAMP_FLOOR),
+        applies_microwave: s.applies_microwave,
         battery: s.battery,
         forced_procs: s.attack.forced_procs.iter().map(|t| damage_type(t)).collect(),
         no_resupply: s.no_resupply,

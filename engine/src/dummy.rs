@@ -783,6 +783,24 @@ struct BlastStack {
 /// vector can produce (data/debuffs/*.yaml; simplifications noted inline).
 #[derive(Default)]
 struct DebuffState {
+    /// MICROWAVE — the Nukor family's own status effect, and the only one in
+    /// this file that carries no payload at all.
+    ///
+    /// VERBATIM (wiki `Microwave`): *"a unique Status Effect that enlarges the
+    /// body parts of the enemies that was shot at … not listed in the game UI,
+    /// however is counted towards the damage calculation bonus with
+    /// Condition-Overload type equipment"* — Condition Overload, Galvanized
+    /// Aptitude, Galvanized Savvy, Galvanized Shot, Secondary Shiver, the Cedo.
+    ///
+    /// A BOOL, not a stack list, because the Kuva Nukor's page says its procs
+    /// have INFINITE duration. So it is on or it is off, and the only thing
+    /// that turns it off is the target dying — which resets this whole struct.
+    ///
+    /// It is worth modelling precisely because it is invisible: on a CO build
+    /// this weapon carries one more status TYPE than its damage vector can
+    /// explain, and a sim that counted the vector alone was one type short for
+    /// the whole engagement.
+    microwave: bool,
     /// Stagger stack expiries (6 s, FIFO). No combat payload on a dummy.
     stagger: Vec<f64>,
     /// Weakened stacks (10 s): +5% flat crit chance received per stack.
@@ -886,7 +904,7 @@ fn ten_stack_amp(stacks: usize) -> f64 {
 /// stack goes with it — so a respawn shows as the series dropping to zero and
 /// climbing again, and `uptime` counts that gap against you. That is the point
 /// (owner: "一个敌人死了又死的，算在一个id里").
-pub const DEBUFF_ROSTER: [(&str, u32); 13] = [
+pub const DEBUFF_ROSTER: [(&str, u32); 14] = [
     // The 10-stack families, and the three that are not.
     ("virus", TEN_STACK_CAP as u32),
     ("corrosion", TEN_STACK_CAP as u32),
@@ -910,6 +928,10 @@ pub const DEBUFF_ROSTER: [(&str, u32); 13] = [
     ("bleed", TEN_STACK_CAP as u32),
     ("poison", TEN_STACK_CAP as u32),
     ("ignite", 1),
+    // On or off, and off only because the target died. It is drawn like every
+    // other row so the replay can show WHEN this weapon's invisible status
+    // landed — which is the only place a reader can see it at all.
+    ("microwave", 1),
 ];
 
 impl DebuffState {
@@ -940,6 +962,7 @@ impl DebuffState {
             dots_of(DamageType::Slash),
             dots_of(DamageType::Toxin),
             u8::from(self.heat.is_some()),
+            u8::from(self.microwave),
         ]
     }
 }
@@ -1197,6 +1220,8 @@ impl DebuffState {
     /// multiplier input). Assumes `prune` ran at this instant.
     fn distinct_statuses(&self) -> usize {
         let mut n = 0;
+        // MICROWAVE counts, and counting is the whole of what it does.
+        n += usize::from(self.microwave);
         n += usize::from(!self.stagger.is_empty());
         n += usize::from(!self.weakened.is_empty());
         n += usize::from(!self.freeze.is_empty());
@@ -1556,6 +1581,8 @@ pub struct DummyParams {
     /// Where a continuous weapon's damage ramp STARTS, as a fraction of full.
     /// 0.20 "for most weapons" (wiki); Phantasma Prime is 0.15.
     pub beam_ramp_floor: f64,
+    /// Does this weapon apply MICROWAVE? See [`DebuffState::microwave`].
+    pub applies_microwave: bool,
     /// The Ocucor's tendril cap (0 = no tendrils). Their own damage is not
     /// modelled and should not be — see `weapons_data::TendrilSpec`; the COUNT
     /// is what Sentient Surge reads.
@@ -2272,6 +2299,7 @@ impl DummyParams {
             cd_below_status_count: panel.cd_below_status_count,
             super_crit_on_status: panel.super_crit_on_status,
             beam_ramp_floor: panel.beam_ramp_floor,
+            applies_microwave: panel.applies_microwave,
             syndicate_radial: panel.syndicate_radial,
             forced_procs: panel.forced_procs.clone(),
             tendril_max: panel.tendril_max,
@@ -2516,6 +2544,7 @@ impl Default for DummyParams {
             cc_per_hit_held: false,
             super_crit_on_status: None,
             beam_ramp_floor: BEAM_RAMP_FLOOR,
+            applies_microwave: false,
             syndicate_radial: None,
             tendril_max: 0,
             cc_per_tendril: 0.0,
@@ -3402,6 +3431,17 @@ fn settle_procs(
             dot_cap,
         );
     };
+    // MICROWAVE, landed with this weapon's own procs and never taken off.
+    //
+    // Tied to a PROC rather than to a hit because the wiki's word is "can proc
+    // an invisible Status Effect" — so a build with no status chance gets none,
+    // which is the conservative reading. Its DURATION is infinite (Kuva Nukor
+    // page), so the only thing this choice can be wrong about is how soon after
+    // each respawn it lands: a fraction of a second out of a 180 s engagement.
+    // What it is NOT wrong about is the count, which is the whole payload.
+    if ap.applies_microwave && !procs.is_empty() {
+        debuffs.microwave = true;
+    }
     for proc in procs {
         r.procs += 1;
         // Read before the match applies it — see the Debilitate hook below.
@@ -16201,6 +16241,50 @@ mod warframe_ability_tests {
 
     fn direct(p: &DummyParams) -> f64 {
         run_once(p, &mut crate::rng::Rng::new(3)).sources.direct
+    }
+
+    /// MICROWAVE IS A STATUS TYPE AND NOTHING ELSE, which is exactly what makes
+    /// it worth modelling: it is invisible in game and invisible in a damage
+    /// vector, and the only place it shows up is the COUNT a Condition-Overload
+    /// bonus multiplies.
+    ///
+    /// VERBATIM (wiki `Microwave`): *"not listed in the game UI, however is
+    /// counted towards the damage calculation bonus with Condition-Overload
+    /// type equipment"*, naming Condition Overload, Galvanized Aptitude,
+    /// Galvanized Savvy, Galvanized Shot, Secondary Shiver and the Cedo.
+    ///
+    /// Asserted as an EXACT step of one type's worth, not as a direction: at
+    /// +50% a type, one more type is x1.5 on the CO bucket, and a fixture that
+    /// merely went up would pass with it counted twice.
+    #[test]
+    fn microwave_is_one_more_status_type_and_nothing_else() {
+        let fixture = |on: bool| {
+            let mut p = params(&[], 1.0);
+            p.applies_microwave = on;
+            // ONE status type from the vector — Toxin — plus Microwave when it
+            // is on. A forced proc so the count is not a coin flip.
+            p.damage = DamageVector::new().with(DamageType::Toxin, 100.0);
+            p.dot_modified_base = Some(100.0);
+            p.status_chance = 1.0;
+            p.co_per_type = 0.5;
+            p.co_base_fraction = 1.0;
+            p.magazine_size = 1e9;
+            p.duration_secs = 20.0;
+            run_once(&p, &mut crate::rng::Rng::new(17))
+        };
+        let off = fixture(false).sources.direct;
+        let on = fixture(true).sources.direct;
+        assert!(off > 0.0, "the fixture must deal damage");
+        // 1 type -> x1.5, 2 types -> x2.0. The RATIO of those is 4/3, and it
+        // is that rather than "more" because a double count would read 5/3.
+        let ratio = on / off;
+        assert!((ratio - 4.0 / 3.0).abs() < 0.02,
+            "one more status type at +50% each: expected x1.333, got x{ratio:.4}");
+
+        // …AND A WEAPON THAT DOES NOT APPLY IT CANNOT BE HANDED ONE. Two
+        // weapons in the game have it and the data says which.
+        assert!(crate::weapons_data::spec("kuva_nukor").is_some_and(|s| s.applies_microwave));
+        assert!(crate::weapons_data::spec("torid").is_some_and(|s| !s.applies_microwave));
     }
 
     /// ENERGIZED MUNITIONS BUYS RELOADS, not damage — the first ability buff in
