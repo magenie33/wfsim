@@ -465,17 +465,11 @@ pub fn validate_for_board(
         }
     }
 
-    // VALENCE. The same argument the evolutions make, and for the same reason
-    // it is stronger than it looks: an adversary weapon with no progenitor
-    // element is not a weaker build of that weapon, it is a weapon nobody has —
-    // every copy in the game comes out of a Lich carrying one.
-    if R::requires_full(&req.valence)
-        && crate::weapons_data::valence_of(weapon).is_some()
-        && b.valence.is_empty()
-    {
-        return Err("no Valence element, and this benchmark wants the one this copy came out of its Lich with"
-            .to_string());
-    }
+    // NO VALENCE CLAUSE HERE. It used to ask, gated on `requires_full`, and a
+    // ruler has nothing to have an opinion about: an adversary weapon with no
+    // progenitor element is not a build this board declines, it is not a build.
+    // `validate` refuses it for every caller, which is where a legality rule
+    // belongs (owner, 2026-08-14).
 
     Ok(b)
 }
@@ -604,7 +598,18 @@ pub fn validate(
     let val = match crate::weapons_data::valence_of(weapon) {
         Some(s) => {
             if valence.is_empty() {
-                String::new()
+                // AND IT IS MANDATORY (owner, 2026-08-14). Every copy of an
+                // adversary weapon comes out of a Lich carrying an element, so
+                // a build with none is not a weaker build of that weapon — it
+                // is a weapon nobody has. It used to be accepted here and
+                // refused one layer up, by the board and only when the ruler
+                // asked; there is nothing for the ruler to have an opinion
+                // about, so the rule moved down to where legality lives.
+                return Err(format!(
+                    "{} has no Valence element, and every copy of it comes out of a Lich with one ({})",
+                    spec.name,
+                    s.elements.join(", ")
+                ));
             } else if s.elements.iter().any(|e| e == valence) {
                 valence.to_string()
             } else {
@@ -744,6 +749,12 @@ mod tests {
                 continue;
             }
             let cap = cap_of(&w.id);
+            // An adversary weapon has no legal build with no element, so the
+            // sweep gives every weapon the one its own spec starts with — this
+            // test is about capacity and must not trip over legality.
+            let val = crate::weapons_data::valence_of(&w.id)
+                .and_then(|s| s.elements.first().cloned())
+                .unwrap_or_default();
             let cost: u32 = picked
                 .iter()
                 .map(|id| pool.iter().find(|m| m.id == id.as_str()).unwrap().base_drain.div_ceil(2))
@@ -751,7 +762,7 @@ mod tests {
             worst = worst.max(cost);
             // Whatever the number, the VERDICT and the cost must agree: the
             // planner is the authority, not this arithmetic.
-            let got = validate(&w.id, &picked, &[], &[], "");
+            let got = validate(&w.id, &picked, &[], &[], &val);
             match got {
                 Ok(v) => assert!(
                     cost <= cap && v.drain <= cap,
@@ -1026,6 +1037,43 @@ mod tests {
                                      &["primary_crux".to_string()], "")
             .unwrap_err();
         assert!(err.contains("evolution"), "{err}");
+    }
+
+    /// AN ADVERSARY WEAPON'S VALENCE IS MANDATORY, and it is a LEGALITY rule
+    /// rather than a board one (owner, 2026-08-14).
+    ///
+    /// Every copy in the game comes out of a Lich carrying an element, so a
+    /// build with none is not a weaker build of that weapon — it is a weapon
+    /// nobody has. It used to be accepted by `validate` and refused one layer
+    /// up, by `validate_for_board` and only when the ruler asked for it, which
+    /// left every other caller free to score a gun that does not exist.
+    ///
+    /// Both directions, because a rule that only ever refuses is a rule nobody
+    /// can satisfy: an element the weapon rolls is admitted and survives into
+    /// the identity, and one it does not roll is named in the error.
+    #[test]
+    fn an_adversary_weapon_has_no_build_without_an_element() {
+        let mods: Vec<String> = crate::mods_data::pool_for_weapon("kuva_nukor")
+            .iter()
+            .filter(|m| !m.exilus)
+            .take(2)
+            .map(|m| m.id.to_string())
+            .collect();
+
+        let e = validate("kuva_nukor", &mods, &[], &[], "").unwrap_err();
+        assert!(e.contains("Valence") && e.contains("Lich"), "{e}");
+
+        let ok = validate("kuva_nukor", &mods, &[], &[], "heat").expect("heat is one of its seven");
+        assert_eq!(ok.valence, "heat");
+        assert!(identity(&ok).ends_with("|heat"), "{}", identity(&ok));
+
+        let e = validate("kuva_nukor", &mods, &[], &[], "puncture").unwrap_err();
+        assert!(e.contains("progenitor element"), "{e}");
+
+        // ...and an ORDINARY weapon is untouched in both directions: none is
+        // the only legal answer there.
+        assert!(validate("torid", &v(&["serration"]), &[], &[], "").is_ok());
+        assert!(validate("torid", &v(&["serration"]), &[], &[], "heat").is_err());
     }
 
     /// An unknown benchmark admits nothing: a number published against a ruler

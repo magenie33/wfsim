@@ -38,9 +38,13 @@ const r = await evaluate(`(async () => {
   const opened = JSON.parse(JSON.stringify(valence));
   const openedBase = (await panel()).base;
 
-  // …and the weapon's own printed panel, which "none" is the only way to see.
-  valence.element = ''; renderValence(); refreshPanel(); await sleep(1200);
-  const bare = await panel();
+  // NO WAY TO EMPTY IT. Every copy comes out of a Lich with an element, so
+  // the pick row offers no "none" — the weapon's printed panel is the wiki
+  // infobox's figure and not a build anyone can play.
+  const offered = [...document.querySelectorAll('#element-cfg .evopick')]
+    .map(c => c.dataset.vel);
+  // …and the roll is always live, since there is always an element under it.
+  const rollDisabled = !!(document.getElementById('valence-bonus') || {}).disabled;
 
   // Pick TOXIN at the ceiling: it is not the weapon's own element, so it has to
   // arrive beside the Radiation rather than merge into it.
@@ -66,7 +70,7 @@ const r = await evaluate(`(async () => {
     && !document.getElementById('element-block').hidden;
   const otherValence = JSON.parse(JSON.stringify(valence));
 
-  return { spec, shown, opened, openedBase, bare, toxin, rad,
+  return { spec, shown, opened, openedBase, offered, rollDisabled, toxin, rad,
            savedElement: (buildDoc.valence || {}).element,
            savedBonus: (buildDoc.valence || {}).bonus,
            inFight, otherShown, otherValence };
@@ -89,12 +93,15 @@ check("it opens on 60% Impact, not on a weapon nobody has",
   r.opened.element === "impact" && r.opened.bonus === 0.6
     && Math.abs(r.openedBase - 33.6) < 1e-6,
   JSON.stringify({ ...r.opened, base: r.openedBase }));
-// 21 Radiation is the infobox's own number, and "none" is the only way to it.
-check("...and `none` still shows the weapon's printed panel",
-  Math.abs(r.bare.base - 21) < 1e-6, String(r.bare.base));
-// THE ARITHMETIC, exactly: 21 + 21 × 0.60 = 33.6, as BASE damage.
+// …AND THERE IS NO WAY BACK TO A WEAPON NOBODY HAS (owner, 2026-08-14). Seven
+// picks, all of them elements, and the roll never greys out.
+check("...and the element is mandatory: seven picks, no `none`",
+  r.offered.length === 7 && r.offered.every(Boolean) && !r.rollDisabled,
+  JSON.stringify(r.offered) + ` roll disabled: ${r.rollDisabled}`);
+// THE ARITHMETIC, exactly: 21 + 21 × 0.60 = 33.6, as BASE damage. 21 is the
+// weapon's own printed Radiation, which the infobox states.
 check("a 60% Toxin progenitor is +12.6 Toxin beside the Radiation",
-  Math.abs(r.toxin.base - 33.6) < 1e-6, `${r.bare.base} -> ${r.toxin.base}`);
+  Math.abs(r.toxin.base - 33.6) < 1e-6, `21 -> ${r.toxin.base}`);
 // …AND THE MERGE, which is the half a "new element" implementation gets wrong.
 check("...and a Radiation one merges into the 21 it already deals",
   Math.abs(r.rad.base - 33.6) < 1e-6, String(r.rad.base));
@@ -145,7 +152,7 @@ check("the quick calc ranks the valence axis",
 // THE SAME CHIP COMPONENT the mod and arcane lists use, on the pick itself —
 // eight picks (None plus the seven elements) and a chip on each ranked one.
 check("...with the gain on the pick, not in a tooltip",
-  gain.picks === 8 && gain.chips === 6,
+  gain.picks === 7 && gain.chips === 6,
   `${gain.picks} picks, ${gain.chips} chips`);
 // THE STEP NUMBERS ARE DERIVED, not written into the markup (owner). This
 // weapon has no evolutions, so its Valence block is step 4 — there is no 5

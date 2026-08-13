@@ -519,7 +519,7 @@ fn base_for(v: &Value, id: &str, evos: &[&str]) -> WeaponBase {
 /// cannot be handed one by a request.
 pub(crate) fn apply_valence_from(v: &Value, id: &str, b: &mut WeaponBase) {
     let Some(s) = wfsim_engine::weapons_data::valence_of(id) else { return };
-    let el = get_str(v, "valence_element", "");
+    let el = valence_element_of(v, id);
     if el.is_empty() {
         return;
     }
@@ -528,7 +528,36 @@ pub(crate) fn apply_valence_from(v: &Value, id: &str, b: &mut WeaponBase) {
     // hands out and not the one five fusions bought — the optimistic reading
     // belongs to the player who typed it.
     let bonus = get_f64(v, "valence_bonus", s.min);
-    wfsim_engine::weapons_data::apply_valence(b, id, el, bonus);
+    wfsim_engine::weapons_data::apply_valence(b, id, &el, bonus);
+}
+
+/// The progenitor element a request is for.
+///
+/// AN ADVERSARY WEAPON ALWAYS HAS ONE (owner, 2026-08-14). Every copy in the
+/// game comes out of a Lich carrying an element, so "no element" is not a
+/// weaker build of that weapon — it is a weapon nobody has, and the printed
+/// panel the wiki's infobox shows is a number no player can reproduce. A
+/// request naming none therefore gets the weapon's FIRST element, which is the
+/// one the page itself opens on, rather than a fight against a weapon that
+/// does not exist.
+///
+/// It also repairs an element this weapon cannot roll, which used to fall
+/// through `apply_valence`'s own rejection and silently apply nothing — the
+/// same shape of bug, reached from a stale link instead of from an omission.
+///
+/// Empty survives for exactly one case, and it is the case that means it: a
+/// weapon with no valence spec, where the axis does not exist. Two paths read
+/// this field — the panel's base and the optimizer's variant table — which is
+/// why they read it through one function.
+pub(crate) fn valence_element_of(v: &Value, id: &str) -> String {
+    let Some(s) = wfsim_engine::weapons_data::valence_of(id) else {
+        return String::new();
+    };
+    let el = get_str(v, "valence_element", "");
+    match s.elements.iter().find(|e| *e == el) {
+        Some(e) => e.clone(),
+        None => s.elements.first().cloned().unwrap_or_default(),
+    }
 }
 
 fn riven_stat_ids_ok(v: &Value, info: &WeaponInfo) -> Result<(), String> {
@@ -5054,7 +5083,9 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         } else {
             // No axis: the pinned element, or the single empty slot an ordinary
             // weapon has. A one-entry table is what every scope had before.
-            vec![get_str(v, "valence_element", "").to_string()]
+            // Through the same resolver the panel uses, so a search that names
+            // no element scores the weapon the replay will fire.
+            vec![valence_element_of(v, &info.id)]
         }
     };
     let mut arcane_sets: Vec<Vec<String>> = vec![Vec::new()];

@@ -7351,11 +7351,12 @@ function defaultValence(id, st) {
 /// THE VALENCE BLOCK. Two controls, because a Lich hands you two facts: which
 /// element, and how big the roll was.
 ///
-/// "None" IS STILL AN OPTION and it is the weapon's own printed panel — what
-/// the wiki's infobox states and what a reader comparing against it expects.
-/// It is no longer the DEFAULT: see `defaultValence`, which opens on the first
-/// element at the roll's ceiling, because a copy nobody could own is not a
-/// useful starting build.
+/// THE ELEMENT IS MANDATORY (owner, 2026-08-14). Every copy of an adversary
+/// weapon comes out of a Lich carrying one, so there is no "none" to pick and
+/// no empty state to open on: `defaultValence` starts on the first element at
+/// the roll's ceiling. The weapon's own printed panel — the wiki infobox's
+/// figure — is not a build anyone can play, and offering it as one put a
+/// number nobody can reproduce on the same row as six that they can.
 function renderValence() {
   const box = $("element-cfg");
   if (!box || !META) return;
@@ -7377,23 +7378,26 @@ function renderValence() {
     const on = valence.element === id;
     return `<span class="evopick${on ? " sel" : ""}" data-vel="${escHtml(id)}">
       <span class="einfo"><b class="en">${escHtml(label)}${
-        id ? gainChipFor(id, tr("Valence")) : ""}</b><span class="ed"><div>${escHtml(note)}</div></span></span></span>`;
+        gainChipFor(id, tr("Valence"))}</b><span class="ed"><div>${escHtml(note)}</div></span></span></span>`;
   };
-  const picks =
-    pick("", tr("None"), tr("the weapon's printed panel")) +
-    s.elements
-      .map((e) => pick(e, DT(e), tr("added as the weapon's own BASE damage — elemental mods and status scale with it")))
-      .join("");
+  // NO "NONE" OPTION (owner, 2026-08-14). Every copy of an adversary weapon
+  // comes out of a Lich carrying an element, so an empty valence is not a
+  // weaker build of this weapon — it is a weapon nobody has, and a number
+  // nobody can reproduce. It was offered here as "the weapon's printed panel",
+  // which is the wiki infobox's figure and not a build.
+  const picks = s.elements
+    .map((e) => pick(e, DT(e), tr("added as the weapon's own BASE damage — elemental mods and status scale with it")))
+    .join("");
   box.innerHTML =
     `<div class="evo"><span class="rank">${escHtml(tr("Element"))}</span><div class="picks">${picks}</div></div>` +
-    `<div class="runs-row"><label title="${escHtml(tr("how big the roll was, as a share of base damage — a Lich rolls it randomly and Valence Fusion raises it, capping at the number on the right"))}">${escHtml(tr("Valence bonus"))} <span class="unit">%</span> <input type="number" id="valence-bonus" min="${pct(s.min)}" max="${pct(s.max)}" step="0.5" value="${pct(valence.bonus)}"${valence.element ? "" : " disabled"}></label>` +
+    `<div class="runs-row"><label title="${escHtml(tr("how big the roll was, as a share of base damage — a Lich rolls it randomly and Valence Fusion raises it, capping at the number on the right"))}">${escHtml(tr("Valence bonus"))} <span class="unit">%</span> <input type="number" id="valence-bonus" min="${pct(s.min)}" max="${pct(s.max)}" step="0.5" value="${pct(valence.bonus)}"></label>` +
     `<span class="sim-hint">${escHtml(tr("rolls") + ` ${pct(s.min)}–${pct(s.max)}%`)}</span></div>`;
   // The scan that fills the chips. Keyed like every other axis, so it runs once
   // per (build, fight) and repaints when it lands.
   ensureGains({ kind: "valence", idx: 0 }, () => renderValence());
   box.querySelectorAll(".evopick").forEach((c) =>
     c.addEventListener("click", () => {
-      valence.element = c.dataset.vel || "";
+      valence.element = c.dataset.vel;
       markPresetDirty();
       renderValence();
       refreshPanel();
@@ -7601,9 +7605,8 @@ function renderSimBuild() {
   // not the same weapon.
   if (valenceSpec(w.id)) {
     parts.push(`<div class="sb-h">${tr("Valence")}</div>`);
-    parts.push(`<div class="sb-chips"><span class="sb-chip">${valence.element
-      ? `${escHtml(DT(valence.element))} +${Math.round(valence.bonus * 1000) / 10}%`
-      : escHtml(tr("None"))}</span></div>`);
+    parts.push(`<div class="sb-chips"><span class="sb-chip">${
+      escHtml(DT(valence.element))} +${Math.round(valence.bonus * 1000) / 10}%</span></div>`);
   }
   parts.push(`<div class="sb-h">${tr("Mods")} · ${modChips.length}</div>`);
   parts.push(`<div class="sb-chips">${modChips.join("") || `<span class="sb-empty">${tr("no mods equipped")}</span>`}</div>`);
@@ -10033,7 +10036,7 @@ function renderOptValence() {
   const s = valenceSpec(w.id);
   if (!s) { box.innerHTML = ""; return; }
   if (!Object.keys(opt.valence || {}).length) {
-    opt.valence = { [valence.element || s.elements[0]]: "fixed" };
+    opt.valence = { [valence.element]: "fixed" };
   }
   const marks = Object.keys(opt.valence).filter((id) => s.elements.includes(id));
   const pinned = marks.find((id) => opt.valence[id] === "fixed") || null;
