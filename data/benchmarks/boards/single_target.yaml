@@ -2449,6 +2449,11 @@ entries:
   - weapon: larkspur_prime
     mode: base
     score: 13.333333333333334
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    score: 13.333333333333334
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
@@ -2520,6 +2525,11 @@ entries:
     mode: base
     score: 10.792946457294525
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, magnetized_cycle, hypothermic_shell, venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: base
+    score: 10.782357184697476
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
   - weapon: larkspur_prime
     mode: base
@@ -2930,16 +2940,6 @@ entries:
     mode: base
     score: 1.5485096032515435
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, ammo_chain, hollowed_bullets, magnetized_cycle, primed_combustion_rounds, magma_chamber, contamination_casing]
-    arcanes: [primary_crux, secondary_enervate]
-  - weapon: larkspur_prime
-    mode: base
-    score: 0.9258949486288476
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, containment_breach, hollowed_bullets, parallax_scope, quick_reload, primed_venomous_clip]
-    arcanes: [primary_blight, secondary_enervate]
-  - weapon: larkspur_prime
-    mode: base
-    score: 0.8756701157914853
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, primed_ammo_chain, hollowed_bullets, hypothermic_shell, magma_chamber, contamination_casing]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: latron_prime
     mode: cycle
