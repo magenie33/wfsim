@@ -154,6 +154,47 @@ check("...and the builder numbers its steps from the blocks it actually has",
   gain.steps.join(" ") === "mode-block:1 mod-block:2 arcane-block:3 element-block:4",
   gain.steps.join(" "));
 
+// …AND THE RANKING DOES NOT FLIP WHEN YOU MOVE.
+//
+// Reported twice: "with Magnetic picked it says Heat is better; with Heat
+// picked it says Magnetic is better." That reading has one mathematical
+// statement — a gain measured A -> B and the gain measured B -> A must INVERT,
+// so (1 + gAB)(1 + gBA) = 1 — and nothing weaker is worth asserting: two chips
+// can both look plausible and still describe a ranking that has no order.
+//
+// Measured on the pair the report named, whose gap is far outside the noise at
+// this run count, so the check tests the arithmetic and not the dice.
+const flip = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  localStorage.clear();
+  history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(3500);
+  const scan = async (el) => {
+    valence.element = el; renderValence(); refreshPanel(); await sleep(1000);
+    for (let i = 0; i < 90; i++) {
+      await sleep(400);
+      if (gainScan.axis && gainScan.axis.kind === 'valence'
+          && !gainScan.running && gainScan.key === gainKey()) break;
+    }
+    const by = {};
+    Object.entries(gainScan.by || {}).forEach(([k, v]) => { by[k] = v.pct; });
+    return { base: gainScan.base, by };
+  };
+  const a = await scan('heat');
+  const b = await scan('magnetic');
+  return { heatBase: a.base, magBase: b.base,
+           heatToMag: a.by.magnetic, magToHeat: b.by.heat };
+})()`);
+
+const product = (1 + flip.heatToMag) * (1 + flip.magToHeat);
+check("the ranking does not flip when you move along the axis",
+  Math.abs(product - 1) < 0.02,
+  `heat->magnetic ${(flip.heatToMag * 100).toFixed(1)}%, magnetic->heat ${(flip.magToHeat * 100).toFixed(1)}% (product ${product.toFixed(4)}, 1.0 is consistent)`);
+// …and the direction is the one the BASE numbers say, so the chips agree with
+// the headline they are derived from.
+check("...and it agrees with the two builds' own scores",
+  flip.heatBase > flip.magBase && flip.heatToMag < 0 && flip.magToHeat > 0,
+  `heat ${flip.heatBase.toFixed(4)} vs magnetic ${flip.magBase.toFixed(4)}`);
+
 // …AND IT IS THE OPTIMIZER'S DIMENSION, the other half of "just like an evo".
 // Pinning one element brings every ranked row back in it; pooling two doubles
 // the candidate count and each row carries the element it was scored with.
