@@ -22,6 +22,8 @@ weapons:
   # name and the page URL stay the bare name either way.
   # WFCD gives the MK1-Braton the plain Braton's `imageName`; the wiki has a
   # file of its own, and the two guns do not look alike.
+  akarius: SapientPistol.png
+  akarius_prime: AkariusPrime.png
   angstrum: Angstrum.png
   atomos: Atomos.png
   atomos_incarnon: Atomos.png
@@ -75,6 +77,7 @@ weapons:
   karak_wraith: KarakWraith.png
   kunai: Kunai.png
   kunai_incarnon: Kunai.png
+  kuva_nukor: KuvaNukor.png
   laetum: ZarimanHeavyPistol.png
   laetum_incarnon: ZarimanHeavyPistol.png
   larkspur_prime: LarkspurPrime.png
@@ -124,8 +127,6 @@ weapons:
   shedu: Shedu.png
   sicarus: Sicarus.png
   sicarus_incarnon: Sicarus.png
-  akarius: SapientPistol.png
-  akarius_prime: AkariusPrime.png
   sicarus_prime: SicarusPrime.png
   sicarus_prime_incarnon: SicarusPrime.png
   soma: Soma.png

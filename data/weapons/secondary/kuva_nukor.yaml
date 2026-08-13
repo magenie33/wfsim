@@ -1,0 +1,108 @@
+id: kuva_nukor
+name: Kuva Nukor
+slot: secondary
+class: pistol
+form: base
+default_form: true
+mod_pools: [pistol]
+mastery_rank: 13
+# RANK 40, NOT 30 — and it is a capacity fact, not a cosmetic one. "Polarizing
+# the weapon increases its max rank by 2, capping at rank 40 after 5
+# polarizations, granting the weapon additional mod capacity." So a maxed
+# adversary weapon carries 80 capacity where an ordinary one carries 60, which
+# is the whole reason these builds look the way they do. See docs/INVESTMENT.md.
+max_rank: 40
+
+# THE FIRST ADVERSARY WEAPON in the roster (owner, 2026-08-13: "把玄海武器加进来
+# 有赤毒 有信条 有终极…你先拿这把枪打样"). Kuva is the Grineer family; Tenet
+# (Corpus) and Coda (Infested) are the other two and share this shape, which is
+# why the VALENCE block below is a weapon field rather than something written
+# into this file's prose.
+
+accuracy: 100                 # the infobox says "Very High"; WFCD's number is 100
+disposition: 0.5
+# NO INNATE POLARITIES. The infobox says "Polarities: None" — which on a weapon
+# that reaches rank 40 is not the drawback it looks like.
+polarities: []
+exilus_polarity: madurai
+riven_family: Nukor
+traits: [kuva, adversary]
+introduced: "Update 27.1"
+internal_name: /Lotus/Weapons/Grineer/KuvaLich/Secondaries/Nukor/KuvaNukor
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+# 20 PER PICKUP, an override DE added in Update 32: "The following weapons now
+# have ammo pickup overrides… 20 Ammo per Pick Up: Kuva Nukor."
+ammo_pickup: 20
+magazine: 77
+reload_seconds: 2
+
+# THE RAMP STARTS AT 30%, not the wiki's "most weapons" 20%. Verbatim: "Takes
+# 0.6 seconds of firing to ramp up the damage from 30% to 100%. After firing
+# stops for 0.8 seconds, the damage decays back to 30% over 2 seconds." The 0.6
+# and the 0.8 are the engine's own constants (BEAM_RAMP_SECONDS,
+# BEAM_DECAY_DELAY) and match this weapon exactly; only the floor differs.
+beam_ramp_floor: 0.30
+
+# No CO catalog row for this attack, so the ordinary class — absence in that
+# catalog means ORDINARY rather than unknown, since it lists the anomalies.
+co_behavior: additive_with_base_damage
+
+# THE VALENCE BONUS — what this weapon CAN have, never what a given copy does.
+#
+# VERBATIM (Kuva_Nukor): "Comes with an additional bonus Impact, Heat, Cold,
+# Electricity, Toxin, Magnetic, or Radiation damage, based on the Kuva Lich's
+# progenitor Warframe, which increases the listed base damage of the weapon by
+# 25%-60%." And the family page states what that MEANS: "This additional bonus
+# damage applies as weapon base damage, meaning elemental mods and status that
+# scale from base / modified base damage will be affected."
+#
+# So it is the weapon's own base vector and nothing downstream has to learn a
+# thing — an innate element already composes with the mod elements the way
+# MECHANICS §3 rule 2 says. On THIS weapon a Radiation progenitor merges into
+# the 21 Radiation it already deals; any other element arrives beside it.
+#
+# THE ELEMENTS ARE THE SEVEN PROGENITOR GROUPS, in the page's own order. Note
+# what is NOT here: Puncture and Slash. A Kuva bonus is never either.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 10
+  multishot: 1.0
+  # "Consumes 0.5 ammo per tick of damage" — half a round a tick, which is what
+  # makes a 77-round magazine last 15 seconds of held fire.
+  ammo_cost: 0.5
+  crit_chance: 0.07
+  # THE HIGHEST CRITICAL MULTIPLIER OF ALL WEAPONS IN THE GAME, and the reason
+  # this weapon is built the way it is: 7% crit chance is nothing on its own, so
+  # the build is about reaching the 5x rather than about the crit rate.
+  crit_multiplier: 5.0
+  status_chance: 0.50
+  punch_through_m: 0.0
+  damage: { radiation: 21 }   # total 21
+
+  # NO `beam:` BLOCK, the same call the Ocucor, the Phantasma and the Boar's
+  # Incarnon make: that block requires `damage_radius_m` and `chain`, and this
+  # beam does not splash. Its CHAIN is real and its range is 29 m, and both are
+  # recorded in the unmodelled list below rather than as zeroes that would be
+  # inventing a fact to record none.
+
+unmodeled:
+  - "the beam CHAINS to 2 more enemies within 9 m at 50% of the main beam's damage each — one target here, so it is worth exactly nothing (UNMODELLED.md §one target). It is the largest thing this weapon does in a room and the reason it was nerfed from 4 chains to 2"
+  - "MICROWAVE, its own invisible status effect, with infinite duration. It counts as an individual status for Condition Overload, Galvanized Aptitude, Galvanized Savvy and Galvanized Shot — so on a CO build this weapon carries one more status type than its damage vector can explain, and this sim counts one fewer"
+  - "punch through makes the MAIN beam chain independently from every target it passes through, which the wiki says can double or triple the output in a crowd — a second-target mechanic on top of a second-target mechanic"
+  - "the beam's 29 m range and its pinpoint accuracy, which this arena has no distance to spend"
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Nukor
+  # Stats cross-checked field for field between the rendered infobox (MR 13,
+  # magazine 77, max ammo 210, reload 2.00 s, fire rate 10.00, disposition
+  # 0.50x, Radiation 21, crit 7.00%, crit mult 5.00x, status 50.00%, punch
+  # through 0.0 m, beam range 29.0 m, polarities None) and WFCD's `attacks`
+  # array, which agrees on every one of them.

@@ -192,6 +192,7 @@ weapons:
   stug: 史特克
   stug_incarnon: 史特克 (灵化形态)
   shedu: 舍杜
+  kuva_nukor: 赤毒·努寇微波枪
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's

@@ -1119,7 +1119,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 81] = [
+        const EXPECTED: [(&str, &str, &[&str]); 82] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up.
             ("larkspur_prime", "held", &[]),
@@ -1266,6 +1266,10 @@ mod tests {
             // A BEAM pistol: held, so no Cannonade — the roster's first
             // weapon to make `continuous` and the PISTOL pool meet.
             ("ocucor", "held", &[]),
+            // THE FIRST ADVERSARY WEAPON, and a beam: Held, so no Cannonade.
+            // Its Valence bonus changes what it DEALS and not how it fires, so
+            // this row is decided by the same one word every other one is.
+            ("kuva_nukor", "held", &[]),
             // FULL-AUTO pistols, so no Cannonade — Semi-Pistol Cannonade gates
             // on the listed Semi-Auto trigger and these are Auto. They are the
             // first pair in the roster that differs only in NUMBERS: same

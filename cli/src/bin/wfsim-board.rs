@@ -287,6 +287,22 @@ fn main() {
         // Dual Toxocyst builds were turned away and the log said only that they
         // were (2026-08-05). A board that refuses in silence cannot be debugged
         // by the person whose build it refused, either.
+        // AN ADVERSARY WEAPON CANNOT BE RANKED YET, and being told so is the
+        // point. A Kuva, Tenet or Coda weapon's VALENCE BONUS is worth 25-60%
+        // of its base damage and is a property of the copy a player owns — so a
+        // row that does not state which element and how big is a row nobody can
+        // reproduce, which is the one thing every other row on this board is.
+        //
+        // Refused rather than scored at some assumed default: a default here
+        // would publish a number under a build that does not exist. The row
+        // schema gains a valence field before these weapons can be ranked.
+        if wfsim_engine::weapons_data::valence_of(&weapon).is_some() {
+            eprintln!(
+                "refused {weapon}: an adversary weapon's Valence bonus is part of the build and a board row cannot state one yet"
+            );
+            refused += 1;
+            continue;
+        }
         let v = match wfsim_engine::builds::validate_for_board(
             &bench_id, &weapon, &mods, &evos, &arcs,
         ) {

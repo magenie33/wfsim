@@ -346,10 +346,16 @@
       <div class="bb"><div id="evo-rows"></div></div>
     </section>
 
-    <!-- Block: Element (Kuva / Tenet / element-configurable weapons) -->
+    <!-- Block: VALENCE — an ADVERSARY weapon's bonus element and how big it
+         is. A Kuva Lich's, a Sister's or a Coda's, and a property of the COPY
+         a player owns rather than of the model, which is why it is a build
+         axis beside the evolutions and not a weapon field (owner, 2026-08-13:
+         "kuva武器有个初属性。类似evo得多一块建立"). Hidden on every weapon that
+         is not one — the same "no choice, no control" rule every axis here
+         follows. -->
     <section class="block" id="element-block" hidden>
-      <div class="bh"><span class="n">5</span><h2 data-i18n>Element</h2><span class="sub">configurable element</span></div>
-      <div class="bb"><div id="element-cfg"></div></div>
+      <div class="bh"><span class="n">5</span><h2 data-i18n>Valence</h2><span class="sub" id="valence-sub"></span></div>
+      <div class="bb"><div id="element-cfg" class="field-grid"></div></div>
     </section>
 
     <!-- Block: Stats — the FINAL panel: merged buckets, explained by source -->

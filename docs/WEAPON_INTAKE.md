@@ -62,6 +62,56 @@ A stat that the page later qualifies is more dangerous than a stat that is
 missing, because the missing one leaves a hole and the qualified one leaves a
 number that looks right.
 
+## ADVERSARY WEAPONS: Kuva, Tenet, Coda — and the axis they bring
+
+A weapon carried by a Kuva Lich (Grineer, 赤毒), a Sister of Parvos (Corpus,
+Tenet) or a Coda (Infested, 终幕) is not just another entry: it comes with a
+**VALENCE BONUS**, and that is a build axis nothing else in the roster has.
+
+**Kuva Nukor is the template** (owner, 2026-08-13: "你先拿这把枪打样").
+
+VERBATIM (wiki, Kuva Weapons §Elemental Bonus):
+
+> The Kuva weapons additionally have bonus damage of one damage type which can
+> either be Impact, Heat, Cold, Electricity, Toxin, Magnetic, or Radiation,
+> ranging from **25-60% of the weapon's base damage** determined randomly. …
+> This additional bonus damage **applies as weapon base damage**, meaning
+> elemental mods and status that scale from base / modified base damage will be
+> affected.
+
+Three consequences, and each is why the axis exists rather than a field:
+
+- **It is a property of the COPY, not of the model.** Two Kuva Nukors are two
+  different weapons and neither is "the" Kuva Nukor. So the choice lives in the
+  BUILD (`valence: {element, bonus}`, saved in a build preset, reset when the
+  weapon changes) while the weapon declares only what it CAN have
+  (`valence: {elements, min, max}`). Same split a riven has.
+- **Nothing downstream had to learn it.** It arrives as the weapon's own base
+  vector — merging into that element if the weapon already deals it — and an
+  innate element already composes with the mod elements the way MECHANICS §3
+  rule 2 says. `weapons_data::apply_valence` is the whole implementation, called
+  where `apply_deployment` is called, which is every path that builds a weapon
+  for a request.
+- **The BOARD cannot rank one yet, and says so.** 25% and 60% are a 35-point
+  swing in base damage, so a row that does not state the element and the roll is
+  not reproducible — which is the one thing every row on that board is. The
+  scorer REFUSES an adversary weapon by name rather than scoring it at some
+  assumed default. The row schema gains a valence field before these weapons
+  can be ranked; until then they build, simulate and optimize.
+
+**Rank 40, not 30.** "Polarizing the weapon increases its max rank by 2, capping
+at rank 40 after 5 polarizations, granting the weapon additional mod capacity" —
+so a maxed adversary weapon carries **80** capacity where an ordinary one
+carries 60, which is most of why these builds look the way they do
+(docs/INVESTMENT.md).
+
+**What the Nukor cost, and what the next one will not.** The axis is written
+once; the second Kuva weapon is an ordinary intake plus four lines of yaml. What
+each still costs is its own prose — the Nukor's Characteristics carry a beam
+ramp that starts at 30% instead of the usual 20%, a 2-target chain worth nothing
+against one enemy, and MICROWAVE, a status effect of its own that Condition
+Overload counts and this engine has no type for.
+
 ## What one weapon costs
 
 | item | where | notes |

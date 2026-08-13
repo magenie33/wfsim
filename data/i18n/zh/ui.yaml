@@ -361,6 +361,20 @@ ui:
   "element": 元素
   "this ability lets you pick the element — the gear wheel in game": 这个技能可以自选元素——游戏里那个装备轮盘
   "5 · Extra stats": 5 · 额外属性
+  # THE VALENCE BLOCK (an adversary weapon's bonus element). "Valence" is DE's
+  # own word and its Chinese client writes 融合 for Valence Fusion, so the block
+  # is named for what it IS rather than transliterated.
+  "Valence": 融合属性
+  "the bonus this copy came out of its Lich with": 这把枪从它的 Lich 那里带出来的加成
+  "the progenitor element — it is added as the weapon's own BASE damage, so elemental mods and status scale with it": 始祖元素——它作为武器自身的基础伤害加上去，所以元素 mod 和异常都会跟着放大
+  "none — the weapon's printed panel": 无——就是武器面板上印的那样
+  # "Element" is already in the roster below and "Bonus" is already there
+  # meaning 增益 (a buff), which this is not — so the control says VALENCE BONUS
+  # and gets a key of its own rather than borrowing a word that means the other
+  # thing on the same page.
+  "Valence bonus": 融合加成
+  "how big the roll was, as a share of base damage — a Lich rolls it randomly and Valence Fusion raises it, capping at the number on the right": 这次roll出来多大，按基础伤害的比例算——Lich 随机给，融合可以往上提，上限就是右边那个数
+  "rolls": 区间
   "Extra stats": 额外属性
   "anything this weapon is handed from outside its build — it lands in the same bucket a mod would": 这把武器从配装之外拿到的任何加成——它落在和对应 mod 同一个乘区里
   "read-only — the fight's own, and every candidate is scored with them": 只读——属于这场战斗，每个候选配装都带着它们计分

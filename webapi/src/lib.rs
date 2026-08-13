@@ -504,7 +504,31 @@ fn base_for(v: &Value, id: &str, evos: &[&str]) -> WeaponBase {
     if !dep.is_empty() {
         wfsim_engine::weapons_data::apply_deployment(&mut b, id, dep);
     }
+    apply_valence_from(v, id, &mut b);
     b
+}
+
+/// THE VALENCE BONUS a request asked for, applied to a base.
+///
+/// Its own function because two paths build a base for a request — this one and
+/// the optimizer's `deployed` — and a valence that reached only one of them
+/// would score a search against a weapon the replay never fires. It is the same
+/// pairing `apply_deployment` already lives in.
+///
+/// A weapon with no valence spec ignores both fields, so an ordinary weapon
+/// cannot be handed one by a request.
+pub(crate) fn apply_valence_from(v: &Value, id: &str, b: &mut WeaponBase) {
+    let Some(s) = wfsim_engine::weapons_data::valence_of(id) else { return };
+    let el = get_str(v, "valence_element", "");
+    if el.is_empty() {
+        return;
+    }
+    // NO DEFAULT PERCENTAGE. A request that names an element and no number gets
+    // the roll's FLOOR, because a valence nobody stated is the one every Lich
+    // hands out and not the one five fusions bought — the optimistic reading
+    // belongs to the player who typed it.
+    let bonus = get_f64(v, "valence_bonus", s.min);
+    wfsim_engine::weapons_data::apply_valence(b, id, el, bonus);
 }
 
 fn riven_stat_ids_ok(v: &Value, info: &WeaponInfo) -> Result<(), String> {
@@ -807,6 +831,16 @@ pub fn meta_json() -> Value {
                 // two means the axis does not exist for it and nothing should
                 // offer a choice - the same rule every other axis follows.
                 "deployments": wfsim_engine::weapons_data::deployments_of(&w.id),
+                // THE VALENCE BONUS this weapon can carry — its progenitor
+                // elements and the roll's floor and ceiling. Absent (null) on
+                // every weapon that is not an adversary weapon, which is the
+                // same "fewer than two means no axis" rule the deployments
+                // follow: the block draws only where there is a choice.
+                "valence": wfsim_engine::weapons_data::valence_of(&w.id).map(|s| json!({
+                    "elements": s.elements,
+                    "min": s.min,
+                    "max": s.max,
+                })),
                 // HOW THIS WEAPON CAN BE PLAYED, and which of those a ruler may
                 // rank. Derived from its forms and one question about the second
                 // one — does entering it cost a gauge you have to earn — so a
@@ -4566,6 +4600,14 @@ pub struct OptimizePlan {
     /// The DEPLOYMENT every candidate is built in — see `base_for`. Empty =
     /// the weapon's own column.
     deployment: String,
+    /// The VALENCE BONUS every candidate is built with, as (element, fraction).
+    /// Empty element = the weapon has none or the request named none.
+    ///
+    /// It rides the plan for the same reason the deployment does: the search
+    /// builds its bases in a worker that never sees the request, and a valence
+    /// that reached the replay and not the search would rank builds against a
+    /// weapon the replay never fires.
+    valence: (String, f64),
     scenario: Scenario,
     final_runs: u32,
     finalists: usize,
@@ -4939,6 +4981,11 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         .collect();
     // The product, in pool order: `arcane_sets[i]` names what `arcanes[i]` is.
     let deployment = get_str(v, "deployment", "").to_string();
+    let valence = {
+        let el = get_str(v, "valence_element", "").to_string();
+        let min = wfsim_engine::weapons_data::valence_of(&info.id).map_or(0.0, |s| s.min);
+        (el, get_f64(v, "valence_bonus", min))
+    };
     let mut arcane_sets: Vec<Vec<String>> = vec![Vec::new()];
     let mut arcanes: Vec<wfsim_engine::arcanes_data::ArcaneFx> =
         vec![wfsim_engine::arcanes_data::ArcaneFx::none()];
@@ -5071,6 +5118,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         arcanes,
         arcane_sets,
         deployment: deployment.clone(),
+        valence: valence.clone(),
         scenario,
         final_runs,
         finalists,
@@ -5172,6 +5220,7 @@ pub fn grade_optimize(
         final_runs,
         finalists,
         deployment,
+        valence,
         modes,
         variants,
         weapon_id,
@@ -5186,6 +5235,9 @@ pub fn grade_optimize(
         let mut b = WeaponBase::from_data(id, true, refs);
         if !deployment.is_empty() {
             wfsim_engine::weapons_data::apply_deployment(&mut b, id, &deployment);
+        }
+        if !valence.0.is_empty() {
+            wfsim_engine::weapons_data::apply_valence(&mut b, id, &valence.0, valence.1);
         }
         b
     };
@@ -5471,6 +5523,7 @@ pub fn run_optimize_resumable(
         arcanes,
         arcane_sets,
         deployment,
+        valence,
         scenario,
         final_runs,
         finalists,
@@ -5507,6 +5560,9 @@ pub fn run_optimize_resumable(
         let mut b = WeaponBase::from_data(id, true, refs);
         if !deployment.is_empty() {
             wfsim_engine::weapons_data::apply_deployment(&mut b, id, &deployment);
+        }
+        if !valence.0.is_empty() {
+            wfsim_engine::weapons_data::apply_valence(&mut b, id, &valence.0, valence.1);
         }
         b
     };

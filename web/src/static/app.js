@@ -518,6 +518,16 @@ let evoSel = { 1: null, 2: null, 3: null, 4: null };
 // switching mid-engagement for free. What it is part of is the SUBJECT of a
 // measurement, which is what a build is (owner, 2026-08-07).
 let mode = "base";
+
+/// AN ADVERSARY WEAPON'S VALENCE BONUS — the element it came out of a Lich with
+/// and how big the roll was. Part of the BUILD, because it is a property of the
+/// COPY a player owns rather than of the model: two Kuva Nukors are two
+/// different weapons and neither is "the" Kuva Nukor (owner, 2026-08-13).
+///
+/// `element: ""` means none chosen, which is what an ordinary weapon means too
+/// — the server ignores both fields on a weapon with no valence spec, so this
+/// can never hand a bonus to something that does not have one.
+let valence = { element: "", bonus: 0 };
 // A FRESH scenario, built from the server's defaults and from nothing else.
 //
 // This is what a weapon that has never been opened gets. It used to be
@@ -3915,6 +3925,9 @@ function snapshotState() {
     arcaneRank: arcaneRanks,
     slots: slots.map((s) => ({ mod: s.mod, pol: s.pol, rank: s.rank })),
     mode,
+    // The VALENCE, for the same reason `mode` is here: it is part of what this
+    // build IS, and two builds of one weapon may differ only in it.
+    valence: { ...valence },
     // NO `sim` FIELD. A build used to carry a snapshot of the fight, which
     // `restoreState` then applied — so picking a build silently rewrote the
     // scenario you were working in. The scenario is INDEPENDENT (user,
@@ -3962,6 +3975,11 @@ function restoreState(st, weapon) {
   // submission — and what keeps a builtin board build showing the mode it was
   // MEASURED in rather than the one you happened to be in.
   mode = defaultMode(w, st.mode);
+  // ONTO A DEFAULT, never onto the last build's — a valence is a statement
+  // about one weapon and nothing crosses between them. `defaultValence` also
+  // drops an element this weapon's spec does not offer, which is what a preset
+  // copied across weapons carries.
+  valence = defaultValence(w, st.valence);
   arcanes = arcanesFor(w, st.arcane);
   arcaneRanks = asArcaneList(st.arcaneRank, arcanes.length).map((x) => x ?? null);
   // The scenario is NOT restored: it belongs to `simulator-scenarios` and a
@@ -3983,7 +4001,7 @@ function restoreState(st, weapon) {
   // Nothing of yours is at risk: a benchmark build is read-only and has no
   // hand-set polarity to overwrite.
   if (officialBuildActive()) autoForma();
-  renderMods(); renderArcanes(); renderEvo(); renderMode(); renderSim(); refreshPanel();
+  renderMods(); renderArcanes(); renderEvo(); renderMode(); renderValence(); renderSim(); refreshPanel();
   renderStoredSimResult(); // the simulator shows THIS preset's last test
 }
 
@@ -4949,6 +4967,9 @@ function applyWeaponInner(id, presetMods) {
   // `defaultScenario()` rather than the last one's fight. `restoreState`
   // overwrites this immediately when a preset is being applied.
   mode = defaultMode(id, null);
+  // NOTHING CROSSES BETWEEN WEAPONS: a valence is a statement about one of
+  // them, so opening another starts with none.
+  valence = defaultValence(id, null);
   // THE FIGHT DOES NOT MOVE. A scenario is shared across the roster now
   // (`SHARED_DOMAINS`), so switching weapons keeps the fight you are measuring
   // under — which is the entire point of being able to compare two guns.
@@ -5037,7 +5058,9 @@ function applyWeaponInner(id, presetMods) {
   const AX = weaponAxes(w.id);
   show("arcane-block", AX.arcanes.length > 0);
   show("evo-block", AX.evolutions.length > 0);
-  show("element-block", !!w.element_config);
+  // THE VALENCE AXIS exists only where the weapon has one — an adversary
+  // weapon. Same "no choice, no control" rule every other axis follows.
+  show("element-block", !!valenceSpec(w.id));
   // An Arch-Gun's two slots are NOT interchangeable, so the line names the
   // pools rather than counting them: "primary + secondary", not "2 slots".
   $("arcane-sub").textContent = w.sentinel
@@ -5051,7 +5074,7 @@ function applyWeaponInner(id, presetMods) {
   (presetMods || []).filter((m) => modById(m)).slice(0, 8).forEach((m, i) => { slots[i].mod = m; slots[i].rank = modById(m).max_rank; });
   autoForma(); // sensible default: minimum-Forma polarities for the preset
 
-  renderMods(); renderArcanes(); renderEvo(); renderMode(); renderSim(); renderOpt();
+  renderMods(); renderArcanes(); renderEvo(); renderMode(); renderValence(); renderSim(); renderOpt();
 }
 
 // ---- forma / capacity plan (mirrors engine::mods::plan_forma) ----
@@ -5235,6 +5258,11 @@ function buildPayload() {
     // official ruler silently played every Incarnon weapon through its cycle
     // and "never transmuting" could not be asked for.
     mode,
+    // THE VALENCE, as two flat fields rather than an object: `base_for` reads
+    // them off the request the same way it reads the deployment, and every
+    // path that builds a weapon for a request goes through it.
+    valence_element: valence.element,
+    valence_bonus: valence.bonus,
     // A `riven:` id means nothing without the riven itself — it is the
     // visitor's item, not a pool entry, so it rides along with the request.
     rivens: rivenPayload(),
@@ -7178,6 +7206,61 @@ function modeOpts(w) {
 /// same rule the Form control carried, and the reason a single form was stated
 /// rather than hidden (user, 2026-07-31, restated 2026-08-07). Several modes
 /// is a dropdown; one is a value.
+/// THE VALENCE THIS WEAPON MAY HAVE, or null. One place asks the question, so a
+/// control, a payload and a reset cannot disagree about whether the axis exists.
+const valenceSpec = (id) => (weaponInfo(id) || {}).valence || null;
+
+/// A build's valence, cleaned against the weapon it is being opened on.
+///
+/// An element the spec does not offer is DROPPED rather than kept — a preset
+/// imported from another weapon carries one, and so does a stale one written
+/// before an element was removed. The percentage is clamped to the roll's own
+/// range for the same reason.
+function defaultValence(id, st) {
+  const s = valenceSpec(id);
+  if (!s) return { element: "", bonus: 0 };
+  const el = st && s.elements.includes(st.element) ? st.element : "";
+  const b = st && Number.isFinite(Number(st.bonus)) ? Number(st.bonus) : s.min;
+  return { element: el, bonus: Math.min(Math.max(b, s.min), s.max) };
+}
+
+/// THE VALENCE BLOCK. Two controls, because a Lich hands you two facts: which
+/// element, and how big the roll was.
+///
+/// NO DEFAULT ELEMENT. A Kuva weapon with no element picked is the weapon's own
+/// printed panel, which is what the wiki's infobox states and what a reader
+/// comparing against it expects — picking one FOR them would put a 25-60% base
+/// damage bonus into a number they never asked for.
+function renderValence() {
+  const box = $("element-cfg");
+  if (!box || !META) return;
+  const w = weaponInfo($("weapon").value) || {};
+  const s = valenceSpec(w.id);
+  const sub = $("valence-sub");
+  if (!s) { box.innerHTML = ""; if (sub) sub.textContent = ""; return; }
+  if (sub) sub.textContent = tr("the bonus this copy came out of its Lich with");
+  const pct = (x) => Math.round(x * 1000) / 10;
+  box.innerHTML =
+    `<label title="${escHtml(tr("the progenitor element — it is added as the weapon's own BASE damage, so elemental mods and status scale with it"))}">${escHtml(tr("Element"))} ${
+      ddButton("dd-valence-el", {
+        value: valence.element,
+        items: [{ value: "", label: tr("none — the weapon's printed panel") }].concat(
+          s.elements.map((e) => ({ value: e, label: DT(e) })),
+        ),
+        onPick: (v) => { valence.element = v; markPresetDirty(); renderValence(); refreshPanel(); },
+      })}</label>` +
+    `<label title="${escHtml(tr("how big the roll was, as a share of base damage — a Lich rolls it randomly and Valence Fusion raises it, capping at the number on the right"))}">${escHtml(tr("Valence bonus"))} <span class="unit">%</span> <input type="number" id="valence-bonus" min="${pct(s.min)}" max="${pct(s.max)}" step="0.5" value="${pct(valence.bonus)}"${valence.element ? "" : " disabled"}></label>` +
+    `<span class="sim-hint">${escHtml(tr("rolls") + ` ${pct(s.min)}–${pct(s.max)}%`)}</span>`;
+  const inp = $("valence-bonus");
+  if (inp) {
+    inp.addEventListener("change", () => {
+      const v = Number(inp.value) / 100;
+      valence.bonus = Math.min(Math.max(Number.isFinite(v) ? v : s.min, s.min), s.max);
+      markPresetDirty(); renderValence(); refreshPanel();
+    });
+  }
+}
+
 function renderMode() {
   const box = $("mode-row");
   if (!box || !META) return;
@@ -10341,6 +10424,11 @@ async function runOptimize() {
       // every caller written before this keeps meaning what it meant.
       modes: opt.modes,
       mode,
+      // THE VALENCE, pinned to the builder's. It is not a search axis yet —
+      // every candidate is built with the same bonus, which is the weapon the
+      // replay will fire. The day it becomes an axis it joins `modes` above.
+      valence_element: valence.element,
+      valence_bonus: valence.bonus,
       exilus: opt.exilus,
       // THE FIGHT, WHOLE AND DERIVED — never a hand-written list of its
       // fields. This was twelve of them copied out one by one, under a comment

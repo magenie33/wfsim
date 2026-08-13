@@ -29,6 +29,77 @@ pub struct DeploymentSpec {
     pub no_resupply: Option<bool>,
 }
 
+/// THE VALENCE BONUS an ADVERSARY weapon carries — a Kuva Lich's, a Sister's, a
+/// Coda's — as the weapon declares what it CAN have.
+///
+/// VERBATIM (wiki, Kuva Weapons §Elemental Bonus): *"The Kuva weapons
+/// additionally have bonus damage of one damage type which can either be
+/// Impact, Heat, Cold, Electricity, Toxin, Magnetic, or Radiation, ranging from
+/// 25-60% of the weapon's base damage determined randomly. … This additional
+/// bonus damage applies as weapon base damage, meaning elemental mods and
+/// status that scale from base / modified base damage will be affected."*
+///
+/// So it is not a bucket and not a buff: it is the WEAPON's own base vector,
+/// which is why nothing downstream needs to know it exists. An innate element
+/// already composes with the mod elements the way MECHANICS §3 rule 2 says, and
+/// this arrives as one.
+///
+/// The SPEC is what a weapon may have; the CHOICE (which element, what
+/// percentage) belongs to the build, because it is a property of the copy a
+/// player owns rather than of the model — the same shape a riven has.
+#[derive(Debug, Clone, Deserialize)]
+pub struct ValenceSpec {
+    /// The progenitor elements this weapon's bonus can be, in the wiki's order.
+    pub elements: Vec<String>,
+    /// The roll's floor and ceiling as fractions of base damage (0.25–0.60 on
+    /// every Kuva weapon). Both are stated rather than assumed: a Tenet or Coda
+    /// entry may differ and the page is the only thing that knows.
+    pub min: f64,
+    pub max: f64,
+}
+
+/// Apply a chosen VALENCE BONUS to a resolved base, in place.
+///
+/// `bonus` is a fraction of the base TOTAL, added as `element` — merged into
+/// that element if the weapon already deals it, which is what a Radiation
+/// progenitor on a Radiation weapon does. Written beside `apply_deployment`
+/// because it is the same shape of thing: a per-request choice the base cannot
+/// carry, applied once, at the one place a request builds its weapon.
+///
+/// Out of range is CLAMPED rather than refused: the roll's floor and ceiling
+/// are the game's, and a request that asks for more gets the ceiling instead of
+/// an error nobody can act on. A weapon with no spec is left alone.
+pub fn apply_valence(base: &mut WeaponBase, id: &str, element: &str, bonus: f64) {
+    let Some(s) = spec(id).and_then(|s| s.valence.as_ref()) else { return };
+    if !s.elements.iter().any(|e| e == element) {
+        return;
+    }
+    let Some(ty) = crate::damage::DamageType::from_name(element) else { return };
+    let frac = bonus.clamp(s.min, s.max);
+    let total = base.base_vector.total();
+    if total <= 0.0 || frac <= 0.0 {
+        return;
+    }
+    let add = total * frac;
+    base.base_vector = base.base_vector.with(ty, base.base_vector.get(ty) + add);
+    // THE RADIAL TOO, on a weapon that has one: the bonus is base damage, and a
+    // radial's base is base damage. None of today's adversary weapons in this
+    // roster has one, which is exactly when to write the line — before a
+    // weapon arrives that would have been silently wrong.
+    if let Some(r) = base.radial.as_mut() {
+        let rt = r.base_vector.total();
+        if rt > 0.0 {
+            let radd = rt * frac;
+            r.base_vector = r.base_vector.with(ty, r.base_vector.get(ty) + radd);
+        }
+    }
+}
+
+/// The valence spec of a weapon, if it is an adversary weapon at all.
+pub fn valence_of(id: &str) -> Option<&'static ValenceSpec> {
+    spec(id).and_then(|s| s.valence.as_ref())
+}
+
 /// Apply a DEPLOYMENT's overrides to a resolved base, in place.
 ///
 /// A no-op for the weapon's own deployment (its fields already are that
@@ -600,6 +671,10 @@ pub struct WeaponSpec {
     /// is a SCENARIO axis rather than a second weapon (user, 2026-08-01).
     #[serde(default)]
     pub deployments: BTreeMap<String, DeploymentSpec>,
+    /// An ADVERSARY weapon's valence bonus — what it CAN have. See
+    /// [`ValenceSpec`]; absent on every weapon that is not one.
+    #[serde(default)]
+    pub valence: Option<ValenceSpec>,
     /// Does this weapon's INNATE headshot bonus multiply the additive bracket
     /// instead of joining it? A PER-WEAPON anomaly, not a class rule: the wiki
     /// lists innate bonuses (Kuva Chakkhurr) among the ADDITIVE sources and
@@ -3923,6 +3998,65 @@ mod play_mode_tests {
         for id in ["phenmor", "gorgon_incarnon", "soma_incarnon", "prisma_gorgon_incarnon"] {
             assert!(spec(id).unwrap().attack.sustained_fire_rate.is_none(), "{id}");
         }
+    }
+}
+
+#[cfg(test)]
+mod valence_tests {
+    use super::*;
+    use crate::damage::DamageType;
+    use crate::loadout::WeaponBase;
+
+    /// THE VALENCE BONUS IS BASE DAMAGE, and the arithmetic is the wiki's own
+    /// sentence: *"ranging from 25-60% of the weapon's base damage … This
+    /// additional bonus damage applies as weapon base damage, meaning elemental
+    /// mods and status that scale from base / modified base damage will be
+    /// affected."*
+    ///
+    /// The Kuva Nukor's 21 Radiation is the whole fixture: a Toxin progenitor
+    /// at 60% adds 12.6 Toxin BESIDE it, and a Radiation one at 60% MERGES into
+    /// it for 33.6 — the two cases that a naive "push a new element" would get
+    /// half right.
+    #[test]
+    fn a_valence_bonus_is_base_damage_and_merges_with_the_element_it_matches() {
+        let bare = WeaponBase::from_data("kuva_nukor", true, &[]);
+        assert!((bare.base_vector.total() - 21.0).abs() < 1e-9, "the fixture moved");
+
+        let mut toxin = bare.clone();
+        apply_valence(&mut toxin, "kuva_nukor", "toxin", 0.60);
+        assert!((toxin.base_vector.get(DamageType::Radiation) - 21.0).abs() < 1e-9);
+        assert!((toxin.base_vector.get(DamageType::Toxin) - 12.6).abs() < 1e-9);
+        assert!((toxin.base_vector.total() - 33.6).abs() < 1e-9);
+
+        // …AND THE SAME ELEMENT MERGES rather than appearing twice.
+        let mut rad = bare.clone();
+        apply_valence(&mut rad, "kuva_nukor", "radiation", 0.60);
+        assert!((rad.base_vector.get(DamageType::Radiation) - 33.6).abs() < 1e-9);
+        assert!((rad.base_vector.total() - 33.6).abs() < 1e-9);
+
+        // THE ROLL'S RANGE IS THE GAME'S, so a request outside it is clamped
+        // rather than obeyed — 100% is not a bonus a Lich can hand out.
+        let mut over = bare.clone();
+        apply_valence(&mut over, "kuva_nukor", "heat", 1.0);
+        assert!((over.base_vector.get(DamageType::Heat) - 21.0 * 0.60).abs() < 1e-9);
+        let mut under = bare.clone();
+        apply_valence(&mut under, "kuva_nukor", "heat", 0.0);
+        assert!((under.base_vector.get(DamageType::Heat) - 21.0 * 0.25).abs() < 1e-9);
+
+        // AN ELEMENT THE SPEC DOES NOT OFFER IS REFUSED. A Kuva bonus is never
+        // Puncture or Slash, and a request that says so leaves the weapon
+        // alone rather than inventing a progenitor group.
+        let mut slash = bare.clone();
+        apply_valence(&mut slash, "kuva_nukor", "slash", 0.60);
+        assert!((slash.base_vector.total() - 21.0).abs() < 1e-9, "slash is not a progenitor element");
+
+        // …AND A WEAPON WITH NO SPEC CANNOT BE HANDED ONE.
+        let mut torid = WeaponBase::from_data("torid", true, &[]);
+        let before = torid.base_vector.total();
+        apply_valence(&mut torid, "torid", "heat", 0.60);
+        assert!((torid.base_vector.total() - before).abs() < 1e-9);
+        assert!(valence_of("torid").is_none());
+        assert!(valence_of("kuva_nukor").is_some());
     }
 }
 
