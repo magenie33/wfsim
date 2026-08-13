@@ -1372,6 +1372,12 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: felarx
     mode: cycle
+    score: 46.98307287061715
+    mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+  - weapon: felarx
+    mode: cycle
     score: 45.87233825691179
     mods: [galvanized_hell, magnetic_welt, galvanized_savvy, primed_tactical_pump, shotgun_barrage, primed_charged_shell, toxic_barrage, scattering_inferno]
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
@@ -4319,6 +4325,10 @@ entries:
     mode: base
     score: 0.3394371930894454
     mods: [heavy_caliber, split_chamber, serration, rifle_elementalist, vile_acceleration, primed_cryo_rounds, malignant_force, thermite_rounds]
+  - weapon: verglas_prime
+    mode: base
+    score: 0.3370256732430607
+    mods: [heavy_caliber, split_chamber, rifle_elementalist, vile_acceleration, radiated_reload, rime_rounds, malignant_force, thermite_rounds]
   - weapon: verglas_prime
     mode: base
     score: 0.3351369180547479
