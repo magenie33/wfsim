@@ -11,15 +11,24 @@ True to in-game numbers, down to the last proc. Theorycrafting, solved.
 
 [**wfsim.app**](https://wfsim.app) ·
 QQ group [995078378](https://qm.qq.com/q/uiXrMSTs8S) ·
-[Discord](https://discord.gg/5GXgbtmxY) ·
-开发日志 [#01](https://www.bilibili.com/video/BV1An326vEtR/)
+[Discord](https://discord.gg/5GXgbtmxY)
 
 [![CI](https://github.com/magenie33/wfsim/actions/workflows/ci.yml/badge.svg)](https://github.com/magenie33/wfsim/actions/workflows/ci.yml)
 
 </div>
 
-**Status:** in development. One weapon fully modeled (Dual Toxocyst, incl.
-Incarnon). Single enemy per sim; no Rivens yet.
+**Status:** in development. ~90 primary/secondary/archgun/sentinel weapons,
+most with their Incarnon adapters; mods, arcanes, evolutions, rivens, custom
+enemies and the [leaderboard](docs/BOARD.md) are live. What the sim
+deliberately does **not** model — one target, no distance or movement, no
+Warframe layer — is listed in [`docs/UNMODELLED.md`](docs/UNMODELLED.md) and
+stated on the page itself, per weapon.
+
+## Contributing
+
+The most valuable contribution here is **an in-game measurement, not code** —
+the engine is only as trustworthy as its baseline, and one maintainer cannot
+run every test in game. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Run
 

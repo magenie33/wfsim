@@ -192,8 +192,41 @@ scenario:
   # make "the same test" depend on where the defaults happened to sit.
   # These are the NEUTRAL player of data/tenno/default.yaml: aiming, no frame
   # chosen, no ability running, feet on the ground.
+  #
+  # THE NEUTRAL PLAYER IS THE WORST FRAME AT EVERYTHING, and that is the whole
+  # point of it (owner, 2026-08-13: "这个tenno的特点就是各种最不利的情况…因为我要
+  # 尽量排warframe本身对武器的影响"). Nobody knows which frame a reader runs, and
+  # some weapons get stronger in specific hands purely through the frame's
+  # stats — so the board measures the WEAPON by giving it the least help any
+  # frame could: 0 armor, 0 energy, the slowest sprint in the game, no
+  # overshields, nothing channeled. A row on this board is a floor no build can
+  # fall below, not an average.
+  #
+  # EVERY FIELD THE PARSER READS IS NAMED, including the ones whose default is
+  # already the neutral value. That is this block's own rule and it had drifted:
+  # four fields were inherited rather than stated, and `wf_sprint` is the one
+  # that would have bitten — the Latron family's Swift Punishment pays "+30%
+  # Direct Damage per Status Type" at 1.2 sprint or higher, so a default that
+  # ever moved would move the board with it. Pinning them moves no score: every
+  # value below is what the ruler was already resolving to.
   aiming: true
   invisible: false
   airborne: false
+  overshields: false
+  channeling: false
+  # THE LOADOUT (2026-08-13). False = carrying a full one, which is the fight
+  # every row on this board was scored under; the Vasto's Lone Gun is the one
+  # card that would notice.
+  solo_weapon: false
   wf_armor: 0
   wf_energy: 0
+  wf_sprint: 0.9
+  # CURRENT energy as a fraction of the pool above — and the pool is 0, so this
+  # cannot move a number either way today. It is stated because the companion
+  # ruler states it and states it DIFFERENTLY (`wf_energy_pct: 0`), which made a
+  # third unnamed difference between two boards whose whole claim is that they
+  # differ in two terms. Unifying them is a change to a ruler and therefore the
+  # owner's call, not a cleanup; until then both are written down.
+  wf_energy_pct: 1.0
+  # NO `frame`: picking one fills armor, energy and sprint together, which is
+  # exactly the influence this board exists to keep out.

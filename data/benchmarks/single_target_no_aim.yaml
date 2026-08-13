@@ -85,9 +85,28 @@ scenario:
   # companion weapon, because the stance is the player's and the companion does
   # not share it. Its two rows therefore stay identical, for the same reason
   # they do above.
+  #
+  # THE NEUTRAL PLAYER IS THE WORST FRAME AT EVERYTHING, the same rule the
+  # aimed ruler states and for the same reason (owner, 2026-08-13): nobody knows
+  # which frame a reader runs, and some weapons get stronger in specific hands
+  # purely through the frame's stats, so the board gives the weapon the least
+  # help any frame could. Every field the parser reads is named here, including
+  # the ones already sitting at that value — `wf_sprint` above all, since the
+  # Latron family's Swift Punishment pays only at 1.2 or higher.
   aiming: false
   invisible: false
   airborne: false
+  overshields: false
+  channeling: false
+  solo_weapon: false
   wf_armor: 0
   wf_energy: 0
+  wf_sprint: 0.9
+  # THE ONE FIELD THAT DIFFERS FROM THE AIMED RULER WITHOUT BEING ONE OF THE TWO
+  # DECLARED TERMS. It reaches nothing while `wf_energy` is 0 — the only reader
+  # is a `tenno_scaled` arcane, whose grant is a fraction of a pool that is
+  # empty — so no score depends on it either way today. Recorded rather than
+  # quietly unified: which of 0 and 1.0 the two boards should share is a change
+  # to a ruler's terms, and that is the owner's call.
   wf_energy_pct: 0
+  # NO `frame`, for the same reason as above.
