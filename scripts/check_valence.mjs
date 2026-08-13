@@ -32,6 +32,14 @@ const r = await evaluate(`(async () => {
     const s = await api('/api/simulate', { ...buildPayload(), ...fightPayload(sim), runs: 2 });
     return { base: (s.panel || {}).modified_base, dmg: (s.panel || {}).damage };
   };
+  // WHAT IT OPENS ON, before anything is touched: every copy of an adversary
+  // weapon comes out of its Lich carrying a bonus, so a fresh page must not
+  // show a weapon nobody has.
+  const opened = JSON.parse(JSON.stringify(valence));
+  const openedBase = (await panel()).base;
+
+  // …and the weapon's own printed panel, which "none" is the only way to see.
+  valence.element = ''; renderValence(); refreshPanel(); await sleep(1200);
   const bare = await panel();
 
   // Pick TOXIN at the ceiling: it is not the weapon's own element, so it has to
@@ -58,7 +66,7 @@ const r = await evaluate(`(async () => {
     && !document.getElementById('element-block').hidden;
   const otherValence = JSON.parse(JSON.stringify(valence));
 
-  return { spec, shown, bare, toxin, rad,
+  return { spec, shown, opened, openedBase, bare, toxin, rad,
            savedElement: (buildDoc.valence || {}).element,
            savedBonus: (buildDoc.valence || {}).bonus,
            inFight, otherShown, otherValence };
@@ -75,8 +83,14 @@ check("...the seven the wiki names, and not one more",
       .every((e) => r.spec.elements.includes(e)),
   JSON.stringify(r.spec && r.spec.elements));
 check("the block is drawn for an adversary weapon", r.shown === true, String(r.shown));
-// 21 Radiation is the infobox's own number.
-check("no element picked is the weapon's printed panel",
+// 60% IMPACT, the owner's own default: no copy of this weapon exists without a
+// bonus, so a fresh page opens on one. 21 x 1.60 = 33.6.
+check("it opens on 60% Impact, not on a weapon nobody has",
+  r.opened.element === "impact" && r.opened.bonus === 0.6
+    && Math.abs(r.openedBase - 33.6) < 1e-6,
+  JSON.stringify({ ...r.opened, base: r.openedBase }));
+// 21 Radiation is the infobox's own number, and "none" is the only way to it.
+check("...and `none` still shows the weapon's printed panel",
   Math.abs(r.bare.base - 21) < 1e-6, String(r.bare.base));
 // THE ARITHMETIC, exactly: 21 + 21 × 0.60 = 33.6, as BASE damage.
 check("a 60% Toxin progenitor is +12.6 Toxin beside the Radiation",
@@ -90,5 +104,52 @@ check("it saves with the BUILD, not the fight",
 check("an ordinary weapon has no such axis, and inherits no choice",
   r.otherShown === false && r.otherValence.element === "",
   JSON.stringify({ shown: r.otherShown, carried: r.otherValence }));
+
+// …AND IT IS THE OPTIMIZER'S DIMENSION, the other half of "just like an evo".
+// Pinning one element brings every ranked row back in it; pooling two doubles
+// the candidate count and each row carries the element it was scored with.
+const opt = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  localStorage.clear();
+  history.pushState({}, '', '/weapons/Kuva_Nukor/optimizer'); route(); await sleep(4000);
+  const sect = document.getElementById('opt-valence-sect');
+  const shown = !!sect && !sect.hidden;
+  const rows = [...document.querySelectorAll('#opt-valence .opt')].length;
+
+  const run = async (marks) => {
+    const body = {
+      weapon: 'kuva_nukor',
+      mods: { hornet_strike: 'search', barrel_diffusion: 'search', lethal_torrent: 'search',
+              primed_pistol_gambit: 'search', pathogen_rounds: 'search' },
+      build_size: 2, build_min: 2,
+      arcanes: {}, evolutions: {}, modes: {}, exilus: {},
+      valence: marks,
+      valence_element: 'impact', valence_bonus: 0.6,
+      ...fightPayload(snapshotScenario()),
+      duration: 8, runs: 2, final_runs: 2, finalists: 3, threads: 1, buffs: {},
+    };
+    const r = await postJson('/api/optimize', body);
+    let s = r;
+    for (let i = 0; i < 400 && (!s || !s.done); i++) {
+      await sleep(300);
+      s = await postJson('/api/optimize/status', {});
+    }
+    const res = (s && s.result && s.result.results) || (s && s.results) || [];
+    return { n: (s && (s.candidates || (s.result||{}).candidates)) || 0,
+             els: [...new Set(res.map(x => x.valence))] };
+  };
+  const pinned = await run({ toxin: 'fixed' });
+  const pooled = await run({ toxin: 'search', heat: 'search' });
+  return { shown, rows, pinned, pooled };
+})()`);
+
+check("the optimizer offers the same seven elements", opt.shown === true && opt.rows === 7,
+  `${opt.rows} rows, shown ${opt.shown}`);
+check("...pinning one brings every ranked row back in it",
+  opt.pinned.els.length === 1 && opt.pinned.els[0] === "toxin",
+  JSON.stringify(opt.pinned.els));
+check("...and pooling two doubles the candidate count",
+  opt.pooled.n === opt.pinned.n * 2,
+  `${opt.pinned.n} -> ${opt.pooled.n}`);
 
 await app.finish("an adversary weapon's Valence bonus reaches its damage");

@@ -4600,14 +4600,19 @@ pub struct OptimizePlan {
     /// The DEPLOYMENT every candidate is built in — see `base_for`. Empty =
     /// the weapon's own column.
     deployment: String,
-    /// The VALENCE BONUS every candidate is built with, as (element, fraction).
-    /// Empty element = the weapon has none or the request named none.
+    /// THE VALENCE ELEMENTS this scope searches, and the roll they are all
+    /// built at. A SET, because the progenitor element is a dimension like the
+    /// mode: a different element is a different build, so a scope may ask which
+    /// of them wins (owner, 2026-08-13: "这个就好比是灵化的evo").
+    ///
+    /// One entry is the ordinary case and reproduces exactly what a pinned
+    /// element did; an empty list is a weapon with no valence at all, and the
+    /// variant table still holds one slot for it.
     ///
     /// It rides the plan for the same reason the deployment does: the search
-    /// builds its bases in a worker that never sees the request, and a valence
-    /// that reached the replay and not the search would rank builds against a
-    /// weapon the replay never fires.
-    valence: (String, f64),
+    /// builds its bases in a worker that never sees the request.
+    valences: Vec<String>,
+    valence_bonus: f64,
     scenario: Scenario,
     final_runs: u32,
     finalists: usize,
@@ -4631,7 +4636,7 @@ pub struct OptimizePlan {
     /// when a variant was an evolution set, and every consumer already treats a
     /// variant as "the pair of weapon entries this candidate fires" — so the
     /// mode joins it rather than becoming a second index to thread through.
-    variants: Vec<(usize, usize)>,
+    variants: Vec<(usize, usize, usize)>,
     /// Worker-thread budget; 0 = auto (all cores minus two).
     threads: usize,
     /// Screen evaluations the SEARCH may spend before it hands its elites to
@@ -4981,10 +4986,35 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         .collect();
     // The product, in pool order: `arcane_sets[i]` names what `arcanes[i]` is.
     let deployment = get_str(v, "deployment", "").to_string();
-    let valence = {
-        let el = get_str(v, "valence_element", "").to_string();
+    // THE VALENCE AXIS. `valence` is a MARK MAP (element -> "search"), the same
+    // shape `modes` and `arcanes` use; `valence_element` is what a request with
+    // no axis pins, and what every caller written before the axis existed sends.
+    let valence_bonus = {
         let min = wfsim_engine::weapons_data::valence_of(&info.id).map_or(0.0, |s| s.min);
-        (el, get_f64(v, "valence_bonus", min))
+        get_f64(v, "valence_bonus", min)
+    };
+    let valences: Vec<String> = {
+        let spec = wfsim_engine::weapons_data::valence_of(&info.id);
+        let marked: Vec<String> = v
+            .get("valence")
+            .and_then(|x| x.as_object())
+            .map(|o| {
+                o.iter()
+                    .filter(|(_, m)| m.as_str().is_some_and(|s| s != "off"))
+                    .map(|(k, _)| k.clone())
+                    .filter(|k| spec.is_some_and(|s| s.elements.iter().any(|e| e == k)))
+                    .collect()
+            })
+            .unwrap_or_default();
+        if !marked.is_empty() {
+            let mut m = marked;
+            m.sort();
+            m
+        } else {
+            // No axis: the pinned element, or the single empty slot an ordinary
+            // weapon has. A one-entry table is what every scope had before.
+            vec![get_str(v, "valence_element", "").to_string()]
+        }
     };
     let mut arcane_sets: Vec<Vec<String>> = vec![Vec::new()];
     let mut arcanes: Vec<wfsim_engine::arcanes_data::ArcaneFx> =
@@ -5074,8 +5104,15 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     let modes: Vec<ModeForms> = mode_ids.iter().map(|id| mode_forms(info, id)).collect();
     // THE VARIANT TABLE: every (mode, evolution set) the scope holds. One mode
     // is the ordinary case and reproduces exactly what a single `fire_id` did.
-    let variants: Vec<(usize, usize)> = (0..modes.len())
-        .flat_map(|mi| (0..evo_sets.len()).map(move |ei| (mi, ei)))
+    // A VARIANT IS A (MODE, EVOLUTION SET, VALENCE) TRIPLE. Each is a fact about
+    // WHICH WEAPON a candidate fires, which is why they belong together: the
+    // enumerator asks one question — "what am I building on" — and gets one
+    // index back.
+    let n_val = valences.len().max(1);
+    let variants: Vec<(usize, usize, usize)> = (0..modes.len())
+        .flat_map(|mi| {
+            (0..evo_sets.len()).flat_map(move |ei| (0..n_val).map(move |vi| (mi, ei, vi)))
+        })
         .collect();
     // Read off the fight before the arena is moved into the scenario. These
     // are what the PLAN reports about itself, not decisions it makes.
@@ -5096,7 +5133,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         // variant its own way rather than forcing one on the other.
         incarnon_cycle: variants
             .iter()
-            .any(|&(mi, _)| modes[mi].cycle_from.is_some()),
+            .any(|&(mi, _, _)| modes[mi].cycle_from.is_some()),
         frenzy_lock: fight.cycle_frenzy_lock,
         frenzy_locks: fight.frenzy_locks,
         buff_cfg: fight.buff_cfg.unwrap_or_default(),
@@ -5118,7 +5155,8 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         arcanes,
         arcane_sets,
         deployment: deployment.clone(),
-        valence: valence.clone(),
+        valences: valences.clone(),
+        valence_bonus,
         scenario,
         final_runs,
         finalists,
@@ -5220,7 +5258,8 @@ pub fn grade_optimize(
         final_runs,
         finalists,
         deployment,
-        valence,
+        valences,
+        valence_bonus,
         modes,
         variants,
         weapon_id,
@@ -5231,13 +5270,17 @@ pub fn grade_optimize(
     let info = weapon(&weapon_id);
     let innate = wfsim_engine::weapons_data::innate_slots(&info.id);
     let exilus_refs: Vec<Option<&ModDef>> = exilus_defs.iter().map(|o| o.as_ref()).collect();
-    let deployed = |id: &str, refs: &[&str]| {
+    // THE VALENCE IS PER VARIANT, so this takes it rather than capturing one:
+    // a scope searching three progenitor elements builds three different
+    // weapons, and a closure that knew only one would score all of them as the
+    // first.
+    let deployed = |id: &str, refs: &[&str], val: &str| {
         let mut b = WeaponBase::from_data(id, true, refs);
         if !deployment.is_empty() {
             wfsim_engine::weapons_data::apply_deployment(&mut b, id, &deployment);
         }
-        if !valence.0.is_empty() {
-            wfsim_engine::weapons_data::apply_valence(&mut b, id, &valence.0, valence.1);
+        if !val.is_empty() {
+            wfsim_engine::weapons_data::apply_valence(&mut b, id, val, valence_bonus);
         }
         b
     };
@@ -5245,17 +5288,21 @@ pub fn grade_optimize(
     // ---- exhaust the scope (the same walk the search starts from) ----
     let state = FunnelState::default();
     let mut cands: Vec<Candidate> = Vec::new();
-    for (vi, &(mi, ei)) in variants.iter().enumerate() {
+    for (vi, &(mi, ei, li)) in variants.iter().enumerate() {
         let (m, set) = (&modes[mi], &evo_sets[ei]);
+        let val: &str = valences.get(li).map_or("", String::as_str);
         let refs: Vec<&str> = set.iter().map(String::as_str).collect();
         let unlocked = match m.unlock_evo.as_deref() {
             Some(u) => set.iter().any(|e| e == u),
             None => true,
         };
         let (base, base_form) = if unlocked {
-            (deployed(&m.fire_id, &refs), m.cycle_from.as_ref().map(|id| deployed(id, &refs)))
+            (
+                deployed(&m.fire_id, &refs, val),
+                m.cycle_from.as_ref().map(|id| deployed(id, &refs, val)),
+            )
         } else {
-            (deployed(&m.untransformed_id, &refs), None)
+            (deployed(&m.untransformed_id, &refs, val), None)
         };
         // What THIS variant cannot equip is a forbid like any other: a mod that
         // needs the same trigger on every firing mode is out of the sets that
@@ -5349,17 +5396,21 @@ pub fn grade_optimize(
         wfsim_optimizer::space::SubsetSpace::new(&families, &usable, &required, min_slots, build_size);
     let forms: Vec<(WeaponBase, Option<WeaponBase>)> = variants
         .iter()
-        .map(|&(mi, ei)| {
+        .map(|&(mi, ei, li)| {
             let (m, set) = (&modes[mi], &evo_sets[ei]);
+            let val: &str = valences.get(li).map_or("", String::as_str);
             let refs: Vec<&str> = set.iter().map(String::as_str).collect();
             let unlocked = match m.unlock_evo.as_deref() {
                 Some(u) => set.iter().any(|e| e == u),
                 None => true,
             };
             if unlocked {
-                (deployed(&m.fire_id, &refs), m.cycle_from.as_ref().map(|id| deployed(id, &refs)))
+                (
+                    deployed(&m.fire_id, &refs, val),
+                    m.cycle_from.as_ref().map(|id| deployed(id, &refs, val)),
+                )
             } else {
-                (deployed(&m.untransformed_id, &refs), None)
+                (deployed(&m.untransformed_id, &refs, val), None)
             }
         })
         .collect();
@@ -5523,7 +5574,8 @@ pub fn run_optimize_resumable(
         arcanes,
         arcane_sets,
         deployment,
-        valence,
+        valences,
+        valence_bonus,
         scenario,
         final_runs,
         finalists,
@@ -5556,13 +5608,17 @@ pub fn run_optimize_resumable(
     // to simulate, and the scenario says there is not.
     // Every base the worker builds sits in the run's DEPLOYMENT, so a search
     // scores the same environment the sim would replay it in.
-    let deployed = |id: &str, refs: &[&str]| {
+    // THE VALENCE IS PER VARIANT, so this takes it rather than capturing one:
+    // a scope searching three progenitor elements builds three different
+    // weapons, and a closure that knew only one would score all of them as the
+    // first.
+    let deployed = |id: &str, refs: &[&str], val: &str| {
         let mut b = WeaponBase::from_data(id, true, refs);
         if !deployment.is_empty() {
             wfsim_engine::weapons_data::apply_deployment(&mut b, id, &deployment);
         }
-        if !valence.0.is_empty() {
-            wfsim_engine::weapons_data::apply_valence(&mut b, id, &valence.0, valence.1);
+        if !val.is_empty() {
+            wfsim_engine::weapons_data::apply_valence(&mut b, id, val, valence_bonus);
         }
         b
     };
@@ -5571,6 +5627,9 @@ pub fn run_optimize_resumable(
     // can reach the second one.
     let forms_for = |vi: usize, set: &[String], refs: &[&str]| {
         let m = &modes[variants[vi].0];
+        // …and WHICH WEAPON this variant is: the progenitor element is the
+        // third leg of the triple, so a scope searching several builds several.
+        let val: &str = valences.get(variants[vi].2).map_or("", String::as_str);
         // Can THIS evolution set reach the second form? Without the unlock
         // there is nothing to transform into, so the candidate is fired in
         // the form it has and carries no second panel — which is what tells
@@ -5580,11 +5639,11 @@ pub fn run_optimize_resumable(
             None => true,
         };
         if !unlocked {
-            return (deployed(&m.untransformed_id, refs), None);
+            return (deployed(&m.untransformed_id, refs, val), None);
         }
         (
-            deployed(&m.fire_id, refs),
-            m.cycle_from.as_ref().map(|id| deployed(id, refs)),
+            deployed(&m.fire_id, refs, val),
+            m.cycle_from.as_ref().map(|id| deployed(id, refs, val)),
         )
     };
     let cancelled_json = |n_cands: usize| {
@@ -5634,6 +5693,13 @@ pub fn run_optimize_resumable(
             // build: mode is part of a build, and a search that ranged over
             // modes has no other way to say which one won.
             "mode": modes[variants[c.variant as usize].0].id,
+            // WHICH WEAPON THIS ROW IS, when the scope searched more than one:
+            // the progenitor element it was scored with, so the build a row
+            // becomes fires the weapon the row was measured on.
+            "valence": valences
+                .get(variants[c.variant as usize].2)
+                .cloned()
+                .unwrap_or_default(),
             "exilus": exilus_defs[c.exilus as usize].as_ref().map(|m| m.id).unwrap_or("none"),
             "forma": { "used": c.plan.forma_used, "total_drain": c.plan.total_drain },
         })
@@ -5684,7 +5750,7 @@ pub fn run_optimize_resumable(
     let forms: Vec<(WeaponBase, Option<WeaponBase>)> = variants
         .iter()
         .enumerate()
-        .map(|(vi, &(_, ei))| {
+        .map(|(vi, &(_, ei, _))| {
             let set = &evo_sets[ei];
             let refs: Vec<&str> = set.iter().map(String::as_str).collect();
             forms_for(vi, set, &refs)
@@ -5752,7 +5818,7 @@ pub fn run_optimize_resumable(
             // — before mode joined it, say — names variants that no longer
             // exist. Dropping those is the same answer the walk would give now;
             // if that empties the list, the error below says so.
-            let Some(&(_, ei)) = variants.get(*variant as usize) else { continue };
+            let Some(&(_, ei, _)) = variants.get(*variant as usize) else { continue };
             let set = &evo_sets[ei];
             // A checkpoint predating an equip rule can name a build this variant
             // can no longer wear.

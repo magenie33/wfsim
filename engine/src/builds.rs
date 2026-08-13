@@ -94,6 +94,15 @@ pub struct ValidBuild {
     pub evolutions: Vec<String>,
     /// Arcane ids, one per pool slot, `none` included so position is stable.
     pub arcanes: Vec<String>,
+    /// An ADVERSARY weapon's VALENCE ELEMENT — the progenitor bonus this copy
+    /// came out of its Lich with. Empty on every weapon that has no valence.
+    ///
+    /// Part of the build for the same reason an evolution is (owner,
+    /// 2026-08-13: "这个就好比是灵化的evo。这个属性的选择也是build 的一部分"):
+    /// a different element is a different weapon, not a weaker one. The
+    /// PERCENTAGE is not here — the board scores every row at the roll's
+    /// maximum, which every player can reach.
+    pub valence: String,
     /// Forma the cheapest legal polarity layout needs. Not a legality term —
     /// two builds that are the same FIGHT can cost different amounts to reach,
     /// and the board should show the cheaper one.
@@ -405,8 +414,9 @@ pub fn validate_for_board(
     mods: &[String],
     evolutions: &[String],
     arcanes: &[String],
+    valence: &str,
 ) -> Result<ValidBuild, String> {
-    let b = validate(weapon, mods, evolutions, arcanes)?;
+    let b = validate(weapon, mods, evolutions, arcanes, valence)?;
     let req = match crate::benchmarks_data::get(benchmark) {
         Some(bm) => bm.build.clone(),
         // An unknown benchmark admits nothing: scoring a build against a ruler
@@ -456,6 +466,18 @@ pub fn validate_for_board(
         }
     }
 
+    // VALENCE. The same argument the evolutions make, and for the same reason
+    // it is stronger than it looks: an adversary weapon with no progenitor
+    // element is not a weaker build of that weapon, it is a weapon nobody has —
+    // every copy in the game comes out of a Lich carrying one.
+    if R::requires_full(&req.valence)
+        && crate::weapons_data::valence_of(weapon).is_some()
+        && b.valence.is_empty()
+    {
+        return Err("no Valence element, and this benchmark wants the one this copy came out of its Lich with"
+            .to_string());
+    }
+
     Ok(b)
 }
 
@@ -470,6 +492,7 @@ pub fn validate(
     mods: &[String],
     evolutions: &[String],
     arcanes: &[String],
+    valence: &str,
 ) -> Result<ValidBuild, String> {
     let spec = crate::weapons_data::spec(weapon)
         .ok_or_else(|| format!("unknown weapon: {weapon}"))?;
@@ -575,6 +598,30 @@ pub fn validate(
         arcs.push(a.clone());
     }
 
+    // THE VALENCE ELEMENT, checked against the weapon's own spec in both
+    // directions: an adversary weapon may only take one of ITS progenitor
+    // elements, and an ordinary weapon may not take one at all. A silent drop
+    // would let a submission claim a bonus the game never hands out.
+    let val = match crate::weapons_data::valence_of(weapon) {
+        Some(s) => {
+            if valence.is_empty() {
+                String::new()
+            } else if s.elements.iter().any(|e| e == valence) {
+                valence.to_string()
+            } else {
+                return Err(format!(
+                    "{valence} is not a progenitor element of {} ({})",
+                    spec.name,
+                    s.elements.join(", ")
+                ));
+            }
+        }
+        None if valence.is_empty() => String::new(),
+        None => {
+            return Err(format!("{} has no Valence bonus to set", spec.name));
+        }
+    };
+
     Ok(ValidBuild {
         weapon: weapon.to_string(),
         mods: ms,
@@ -582,6 +629,7 @@ pub fn validate(
         arcanes: arcs,
         forma: plan.cost.total(),
         drain: plan.drain,
+        valence: val,
     })
 }
 
@@ -592,12 +640,19 @@ pub fn validate(
 /// all absent. Two submissions with the same key are one board row.
 pub fn identity(b: &ValidBuild) -> String {
     let set = |xs: &[String]| xs.iter().cloned().collect::<BTreeSet<_>>().into_iter().collect::<Vec<_>>().join(",");
+    // THE VALENCE IS PART OF THE IDENTITY, and it has to be: two Kuva Nukors
+    // differing only in progenitor element are two builds with two scores, and
+    // an identity that could not tell them apart would file the second under
+    // the first's number. Appended rather than inserted, so every identity
+    // already computed for an ordinary weapon is unchanged — it ends in `|`
+    // and nothing else moved.
     format!(
-        "{}|{}|{}|{}",
+        "{}|{}|{}|{}|{}",
         b.weapon,
         b.mods.join(","),
         set(&b.evolutions),
-        b.arcanes.join(",")
+        b.arcanes.join(","),
+        b.valence
     )
 }
 
@@ -626,8 +681,7 @@ mod tests {
             "boar_prime",
             &v(&["primed_point_blank", "hells_chamber", "blunderbuss", "primed_ravage"]),
             &[],
-            &v(&["none"]),
-        )
+            &v(&["none"]), "")
         .expect("four ordinary shotgun mods are legal");
         assert_eq!(b.mods.len(), 4);
         assert!(b.drain <= cap_of("boar_prime"));
@@ -638,9 +692,9 @@ mod tests {
     #[test]
     fn the_arsenal_rules_are_the_ones_enforced() {
         // A mod from another class.
-        assert!(validate("boar_prime", &v(&["serration"]), &[], &[]).is_err());
+        assert!(validate("boar_prime", &v(&["serration"]), &[], &[], "").is_err());
         // Two of one family.
-        let e = validate("boar_prime", &v(&["hells_chamber", "galvanized_hell"]), &[], &[])
+        let e = validate("boar_prime", &v(&["hells_chamber", "galvanized_hell"]), &[], &[], "")
             .unwrap_err();
         assert!(e.contains("family"), "{e}");
         // NINE mods — refused even though one of them is exilus-eligible,
@@ -652,10 +706,10 @@ mod tests {
         assert!(crate::mods_data::pool_for_weapon("boar_prime")
             .iter().any(|m| m.id == "lock_and_load" && m.exilus),
             "the ninth is exilus-eligible, so this tests the SLOT rule");
-        let e = validate("boar_prime", &nine, &[], &[]).unwrap_err();
+        let e = validate("boar_prime", &nine, &[], &[], "").unwrap_err();
         assert!(e.contains("8"), "{e}");
         // An arcane the weapon cannot seat.
-        assert!(validate("boar_prime", &[], &[], &v(&["secondary_enervate"])).is_err());
+        assert!(validate("boar_prime", &[], &[], &v(&["secondary_enervate"]), "").is_err());
     }
 
     /// CAPACITY IS A LIVE CONSTRAINT at eight slots — asked of the data rather
@@ -698,7 +752,7 @@ mod tests {
             worst = worst.max(cost);
             // Whatever the number, the VERDICT and the cost must agree: the
             // planner is the authority, not this arithmetic.
-            let got = validate(&w.id, &picked, &[], &[]);
+            let got = validate(&w.id, &picked, &[], &[], "");
             match got {
                 Ok(v) => assert!(
                     cost <= cap && v.drain <= cap,
@@ -770,8 +824,8 @@ mod tests {
     /// to neither.
     #[test]
     fn the_order_of_the_mods_is_part_of_the_identity() {
-        let a = validate("torid", &v(&["hellfire", "cryo_rounds", "infected_clip", "stormbringer"]), &[], &[]).unwrap();
-        let b = validate("torid", &v(&["hellfire", "infected_clip", "cryo_rounds", "stormbringer"]), &[], &[]).unwrap();
+        let a = validate("torid", &v(&["hellfire", "cryo_rounds", "infected_clip", "stormbringer"]), &[], &[], "").unwrap();
+        let b = validate("torid", &v(&["hellfire", "infected_clip", "cryo_rounds", "stormbringer"]), &[], &[], "").unwrap();
         // Normalisation orders the ELEMENTS and never re-pairs them: Cold
         // before Heat and Electricity before Toxin inside their pairs, Blast
         // before Corrosive between them — all table order — while the pairing
@@ -781,7 +835,7 @@ mod tests {
         assert_ne!(identity(&a), identity(&b), "two pairings, two rows");
 
         // ...and a different SET is still a different identity.
-        let c = validate("torid", &v(&["hellfire", "cryo_rounds"]), &[], &[]).unwrap();
+        let c = validate("torid", &v(&["hellfire", "cryo_rounds"]), &[], &[], "").unwrap();
         assert_ne!(identity(&a), identity(&c));
     }
 
@@ -798,15 +852,15 @@ mod tests {
     /// (owner, 2026-08-06 — "这在我们这里应该是实质相同的build").
     #[test]
     fn swapping_two_elementals_inside_a_pair_is_one_build() {
-        let one = validate("ocucor", &v(&["frostbite", "pistol_pestilence"]), &[], &[]).unwrap();
-        let two = validate("ocucor", &v(&["pistol_pestilence", "frostbite"]), &[], &[]).unwrap();
+        let one = validate("ocucor", &v(&["frostbite", "pistol_pestilence"]), &[], &[], "").unwrap();
+        let two = validate("ocucor", &v(&["pistol_pestilence", "frostbite"]), &[], &[], "").unwrap();
         assert_eq!(identity(&one), identity(&two), "Cold + Toxin is Viral either way");
 
         // ...and the guard against over-collapsing: with FOUR elementals, the
         // same swap ACROSS a pair boundary re-pairs everything and must stay
         // two builds. Cold+Toxin / Heat+Electricity against Cold+Heat /
         // Toxin+Electricity — Viral+Radiation against Blast+Corrosive.
-        let split = |x: &[&str]| identity(&validate("ocucor", &v(x), &[], &[]).unwrap());
+        let split = |x: &[&str]| identity(&validate("ocucor", &v(x), &[], &[], "").unwrap());
         assert_ne!(
             split(&["frostbite", "pistol_pestilence", "heated_charge", "convulsion"]),
             split(&["frostbite", "heated_charge", "pistol_pestilence", "convulsion"]),
@@ -880,7 +934,7 @@ mod tests {
         // above the first or normalisation stops at the gap.
         let evos = v(&["torid_evo1_incarnon_form", "torid_final_fusillade"]);
         let arc = v(&["primary_deadhead"]);
-        let base = validate("torid", &mods, &evos, &arc).expect("a legal torid build");
+        let base = validate("torid", &mods, &evos, &arc, "").expect("a legal torid build");
         // Everything arrived.
         assert_eq!(base.mods.len(), 3);
         assert_eq!(base.evolutions, evos, "the whole ladder prefix");
@@ -891,9 +945,9 @@ mod tests {
         let other_evos = v(&["torid_evo1_incarnon_form", "torid_plentiful_mayhem"]);
         let other_arc = v(&["primary_merciless"]);
         for (what, b) in [
-            ("mods", validate("torid", &other_mods, &evos, &arc)),
-            ("evolutions", validate("torid", &mods, &other_evos, &arc)),
-            ("arcanes", validate("torid", &mods, &evos, &other_arc)),
+            ("mods", validate("torid", &other_mods, &evos, &arc, "")),
+            ("evolutions", validate("torid", &mods, &other_evos, &arc, "")),
+            ("arcanes", validate("torid", &mods, &evos, &other_arc, "")),
         ] {
             let b = b.unwrap_or_else(|e| panic!("{what}: {e}"));
             assert_ne!(identity(&b), key, "{what} does not reach the identity");
@@ -907,7 +961,7 @@ mod tests {
     fn an_evolution_set_is_trimmed_to_its_legal_prefix_before_it_is_identified() {
         // Tier 3 with nothing below it: the ladder opens nothing, so the whole
         // set drops rather than the build being scored with a tier-3 perk.
-        let b = validate("boar_prime", &[], &v(&["boar_prime_reified_bane"]), &[]).unwrap();
+        let b = validate("boar_prime", &[], &v(&["boar_prime_reified_bane"]), &[], "").unwrap();
         assert!(
             b.evolutions.is_empty(),
             "a tier nothing unlocked is not part of the build: {:?}",
@@ -918,8 +972,7 @@ mod tests {
             "boar_prime",
             &[],
             &v(&["boar_prime_evo1_incarnon_form", "boar_prime_fortress_salvo"]),
-            &[],
-        )
+            &[], "")
         .unwrap();
         assert_eq!(full.evolutions.len(), 2, "{:?}", full.evolutions);
     }
@@ -947,18 +1000,18 @@ mod tests {
             .collect();
         assert_eq!(mods.len(), MAIN_SLOTS, "the pool can fill a build");
         let arc = vec!["primary_merciless".to_string()];
-        let ok = validate_for_board("single_target", "gotva_prime", &mods, &[], &arc);
+        let ok = validate_for_board("single_target", "gotva_prime", &mods, &[], &arc, "");
         assert!(ok.is_ok(), "a full rifle build is admitted: {ok:?}");
 
         // ...and the same build with the arcane seat empty is not.
         let none = vec!["none".to_string()];
-        let err = validate_for_board("single_target", "gotva_prime", &mods, &[], &none)
+        let err = validate_for_board("single_target", "gotva_prime", &mods, &[], &none, "")
             .unwrap_err();
         assert!(err.contains("arcane"), "the reason names the axis: {err}");
 
         // One mod short is refused on the MOD axis, not the arcane one.
         let short = &mods[..MAIN_SLOTS - 1];
-        let err = validate_for_board("single_target", "gotva_prime", short, &[], &arc)
+        let err = validate_for_board("single_target", "gotva_prime", short, &[], &arc, "")
             .unwrap_err();
         assert!(err.contains("main slots"), "{err}");
 
@@ -971,7 +1024,7 @@ mod tests {
             .map(|m| m.id.to_string())
             .collect();
         let err = validate_for_board("single_target", "boar_prime", &bp, &[],
-                                     &["primary_crux".to_string()])
+                                     &["primary_crux".to_string()], "")
             .unwrap_err();
         assert!(err.contains("evolution"), "{err}");
     }
@@ -980,7 +1033,7 @@ mod tests {
     /// that does not exist has no standard behind it.
     #[test]
     fn an_unknown_benchmark_admits_nothing() {
-        let e = validate_for_board("no_such_ruler", "gotva_prime", &[], &[], &[]).unwrap_err();
+        let e = validate_for_board("no_such_ruler", "gotva_prime", &[], &[], &[], "").unwrap_err();
         assert!(e.contains("unknown benchmark"), "{e}");
     }
 
@@ -1020,23 +1073,20 @@ mod tests {
             .collect();
         let ok = validate_for_board(
             "single_target", "dual_toxocyst", &mods("dual_toxocyst"), &evos,
-            &["secondary_deadhead".to_string()],
-        );
+            &["secondary_deadhead".to_string()], "");
         assert!(ok.is_ok(), "a secondary seats a secondary arcane: {ok:?}");
 
         // ...and it does NOT seat a primary one.
         let e = validate_for_board(
             "single_target", "dual_toxocyst", &mods("dual_toxocyst"), &evos,
-            &["primary_deadhead".to_string()],
-        )
+            &["primary_deadhead".to_string()], "")
         .unwrap_err();
         assert!(e.contains("not an arcane"), "{e}");
 
         // A sentinel weapon seats none, so any arcane at all is refused.
         let e = validate_for_board(
             "single_target", "verglas_prime", &mods("verglas_prime"), &[],
-            &["primary_crux".to_string()],
-        )
+            &["primary_crux".to_string()], "")
         .unwrap_err();
         assert!(e.contains("seats 0") || e.contains("not an arcane"), "{e}");
     }

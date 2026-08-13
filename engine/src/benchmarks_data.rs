@@ -70,6 +70,18 @@ pub struct BuildRequirement {
     /// than leaving it to be inferred from silence.
     #[serde(default)]
     pub exilus: Option<String>,
+    /// `full` = an ADVERSARY weapon must name its Valence element, and the
+    /// BONUS is the roll's maximum whatever the entrant said.
+    ///
+    /// The two halves are not the same kind of thing, which is why one value
+    /// governs both. The ELEMENT is a choice — a different element is a
+    /// different build, exactly as a different evolution is. The PERCENTAGE is
+    /// investment: every player can Valence-fuse to 60%, so a board that ranked
+    /// a 25% roll against a 60% one would be ranking how many duplicates
+    /// someone farmed, which is the same reason every row here is scored at
+    /// full Forma and every evolution tier.
+    #[serde(default)]
+    pub valence: Option<String>,
 }
 
 impl BuildRequirement {

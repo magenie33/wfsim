@@ -611,7 +611,7 @@ const simMeterOpen = new Set();
 // empty", "fixed" = pin it (max one). Plus the arcane set and per-tier
 // evolution option sets. Enemy + buffs are shared with the Sim panel
 // (`sim`). Seeded from the current build on weapon change.
-let opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, modes: {}, size: 8, min: 1 };
+let opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, modes: {}, valence: {}, size: 8, min: 1 };
 let optSeeded = false;
 // (The optimizer used to keep its own scope-wide buff list and config here.
 // It reads the SCENARIO's now — see `renderOptBuffs`.)
@@ -4682,6 +4682,14 @@ const builtinBuilds = () => {
         evoSel: (row.evolutions || []).reduce((m, id, k) => ({ ...m, [k + 1]: id }), {}),
         arcane: (row.arcanes || []).length ? row.arcanes : ["none"],
         arcaneRank: [null],
+        // THE PROGENITOR ELEMENT the row was scored with, at the roll's
+        // MAXIMUM — which is the ruler's own term, not the row's, so it is
+        // taken from the weapon's spec rather than stored per row. Without
+        // this a Kuva row opens at whatever the last build was carrying and
+        // re-running it matches no line on the board.
+        valence: row.valence
+          ? { element: row.valence, bonus: (valenceSpec(w.id) || {}).max || 0 }
+          : undefined,
       },
     };
   });
@@ -7219,8 +7227,16 @@ const valenceSpec = (id) => (weaponInfo(id) || {}).valence || null;
 function defaultValence(id, st) {
   const s = valenceSpec(id);
   if (!s) return { element: "", bonus: 0 };
-  const el = st && s.elements.includes(st.element) ? st.element : "";
-  const b = st && Number.isFinite(Number(st.bonus)) ? Number(st.bonus) : s.min;
+  // 60% IMPACT, not "none" (owner, 2026-08-13: "默认是60的冲击"). Every copy of
+  // an adversary weapon in the game comes out of its Lich carrying a bonus, so
+  // "no element" is not a weaker build of it — it is a weapon nobody has, and
+  // the panel would print numbers no player can reproduce.
+  //
+  // The FIRST element and the roll's CEILING: the ceiling because every player
+  // can Valence-fuse to it and it is what the board scores, the first because
+  // the wiki lists them in the game's own order and Impact is where it starts.
+  const el = st && s.elements.includes(st.element) ? st.element : s.elements[0];
+  const b = st && Number.isFinite(Number(st.bonus)) ? Number(st.bonus) : s.max;
   return { element: el, bonus: Math.min(Math.max(b, s.min), s.max) };
 }
 
@@ -7244,6 +7260,10 @@ function renderValence() {
     `<label title="${escHtml(tr("the progenitor element — it is added as the weapon's own BASE damage, so elemental mods and status scale with it"))}">${escHtml(tr("Element"))} ${
       ddButton("dd-valence-el", {
         value: valence.element,
+        // "None" stays available — it is the only way to see the weapon's own
+        // printed panel, which is what a reader comparing against the wiki's
+        // infobox wants — but it is not the DEFAULT, because no copy of this
+        // weapon exists without a bonus.
         items: [{ value: "", label: tr("none — the weapon's printed panel") }].concat(
           s.elements.map((e) => ({ value: e, label: DT(e) })),
         ),
@@ -8225,6 +8245,12 @@ function boardPayload() {
     mods: mainSlots().filter((s) => s.mod).map((s) => s.mod),
     evolutions: Object.values(evoSel).filter(Boolean),
     arcanes: arcanes.slice(),
+    // THE PROGENITOR ELEMENT, for an adversary weapon. The ELEMENT only: the
+    // ruler scores every row at the roll's maximum, so the percentage is not a
+    // row's to state — every player can Valence-fuse to it, which makes it
+    // investment rather than a choice (the same rule that scores every row at
+    // full Forma).
+    valence: valence.element,
   };
 }
 
@@ -9583,6 +9609,7 @@ function renderOpt() {
   // not a scope, so this section is simply absent — the same rule the exilus,
   // arcane and evolution sections follow.
   show("opt-modes-sect", modeOpts(w).length > 0);
+  show("opt-valence-sect", !!valenceSpec(w.id));
   show("opt-exilus-sect", AX.hasExilus);
   show("opt-arcanes-sect", AX.arcanes.length > 0);
   show("opt-evos-sect", AX.evolutions.length > 0);
@@ -9602,12 +9629,16 @@ function renderOpt() {
     // scope opened for the first time searches the weapon the way you are
     // holding it, not every way it can be held.
     opt.modes = modeOpts(w).length ? { [mode]: "fixed" } : {};
+    // NOTHING CROSSES BETWEEN WEAPONS: the valence axis is seeded from the
+    // build's own element, like the mode is.
+    opt.valence = valenceSpec(w.id) ? { [valence.element]: "fixed" } : {};
     optSeeded = true;
     bootstrapOptPresets();
   }
   renderOptMods();
   renderOptPresetBars();
   renderOptModes();
+  renderOptValence();
   renderOptExilus();
   renderOptArcanes();
   renderOptEvos();
@@ -9789,6 +9820,60 @@ function renderOptModes() {
       if (!Object.keys(opt.modes).length) opt.modes = { [id]: "fixed" };
       renderOptModes();
       updateOptEstimate(); // the scope's auto-save
+    })
+  );
+}
+
+/// THE VALENCE AXIS, searched exactly like the mode: `pool` opens it, `req`
+/// pins one, and the two marks behave as one group because a weapon has ONE
+/// progenitor element (owner, 2026-08-13: "这个就好比是灵化的evo").
+///
+/// Never empty for a weapon that has the axis — a scope with no element is not
+/// "search them all", it is a question with no answer, and the server would
+/// fall back to the request's single element without the screen saying so.
+function renderOptValence() {
+  const box = $("opt-valence");
+  if (!box) return;
+  const w = weaponInfo($("weapon").value) || {};
+  const s = valenceSpec(w.id);
+  if (!s) { box.innerHTML = ""; return; }
+  if (!Object.keys(opt.valence || {}).length) {
+    opt.valence = { [valence.element || s.elements[0]]: "fixed" };
+  }
+  const marks = Object.keys(opt.valence).filter((id) => s.elements.includes(id));
+  const pinned = marks.find((id) => opt.valence[id] === "fixed") || null;
+  const hasPool = marks.some((id) => opt.valence[id] === "search");
+  box.innerHTML = s.elements
+    .map((id) => {
+      const st = opt.valence[id] || "off";
+      return `<div class="opt ${st === "off" ? "" : st}">
+        <div class="info"><div class="mn">${escHtml(DT(id))}</div></div>
+        <div class="oseg">
+          <span class="seg ${st === "search" ? "on" : ""}" data-m="${escHtml(id)}" data-s="search"${
+            pinned && pinned !== id ? ` title="${escHtml(tr("pooling opens the slot — the pin gives way"))}"` : ""}>${tr("pool")}</span>
+          <span class="seg ${st === "fixed" ? "on" : ""}" data-m="${escHtml(id)}" data-s="fixed"${
+            hasPool ? ` title="${escHtml(tr("req pins the slot — the pool marks give way"))}"` : ""}>${tr("req")}</span>
+        </div>
+      </div>`;
+    })
+    .join("");
+  box.querySelectorAll(".seg").forEach((el) =>
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const id = el.dataset.m, want = el.dataset.s;
+      const was = opt.valence[id];
+      if (want === "fixed") {
+        opt.valence = { [id]: "fixed" };
+      } else if (was === "search") {
+        delete opt.valence[id];
+      } else {
+        Object.keys(opt.valence).forEach((k) => { if (opt.valence[k] === "fixed") delete opt.valence[k]; });
+        opt.valence[id] = "search";
+      }
+      if (was === "fixed" && want === "fixed") delete opt.valence[id];
+      if (!Object.keys(opt.valence).length) opt.valence = { [id]: "fixed" };
+      renderOptValence();
+      updateOptEstimate();
     })
   );
 }
@@ -10427,6 +10512,10 @@ async function runOptimize() {
       // THE VALENCE, pinned to the builder's. It is not a search axis yet —
       // every candidate is built with the same bonus, which is the weapon the
       // replay will fire. The day it becomes an axis it joins `modes` above.
+      // THE VALENCE AXIS, as marks — the same shape `modes` takes. `_element`
+      // travels too and is what a scope with no axis falls back to, so every
+      // caller written before this keeps meaning what it meant.
+      valence: opt.valence,
       valence_element: valence.element,
       valence_bonus: valence.bonus,
       exilus: opt.exilus,

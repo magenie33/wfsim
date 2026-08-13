@@ -78,6 +78,16 @@ build:
   evolutions: full    # every tier this weapon has
   arcanes: full       # every seat this weapon has
   exilus: excluded    # never counted, and stripped before it travels
+  # AN ADVERSARY WEAPON NAMES ITS PROGENITOR ELEMENT (Kuva, Tenet, Coda), and
+  # the roll is scored at its MAXIMUM whatever the entrant said.
+  #
+  # The two halves are different kinds of thing. The ELEMENT is a choice — a
+  # different one is a different build, exactly as a different evolution is, and
+  # a row that leaves it unstated is not reproducible. The PERCENTAGE is
+  # INVESTMENT: every player can Valence-fuse to 60%, so ranking a 25% roll
+  # against a 60% one would rank how many duplicates someone farmed, which is
+  # the same reason every row here is scored at full Forma and every tier.
+  valence: full
 
 scenario:
   # A single Corrupted-faction target at the top of the level range, Steel

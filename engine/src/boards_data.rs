@@ -51,6 +51,17 @@ pub struct BoardEntry {
     pub evolutions: Vec<String>,
     #[serde(default)]
     pub arcanes: Vec<String>,
+    /// An ADVERSARY weapon's VALENCE ELEMENT (Kuva, Tenet, Coda). Part of the
+    /// row because it is part of the build — a different progenitor element is
+    /// a different weapon, not a weaker one — and because 25-60% of base damage
+    /// is not a difference a row may leave unstated and still be reproducible.
+    ///
+    /// The PERCENTAGE is not here: the board scores every row at the roll's
+    /// maximum, which every player can reach by Valence Fusion, so it is
+    /// investment rather than a choice (the same rule that scores every row at
+    /// full Forma). Empty on every weapon that has no valence.
+    #[serde(default)]
+    pub valence: String,
 }
 
 /// One benchmark's board.
@@ -152,7 +163,7 @@ mod tests {
             );
             for e in &b.entries {
                 let v = crate::builds::validate_for_board(
-                    &b.benchmark, &e.weapon, &e.mods, &e.evolutions, &e.arcanes,
+                    &b.benchmark, &e.weapon, &e.mods, &e.evolutions, &e.arcanes, &e.valence,
                 )
                     .unwrap_or_else(|err| panic!("{} row on {}: {err}", e.weapon, b.benchmark));
                 // `validate` already refused anything over capacity, and the

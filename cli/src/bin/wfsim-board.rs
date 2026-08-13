@@ -53,6 +53,10 @@ struct Row {
     mods: Vec<String>,
     evolutions: Vec<String>,
     arcanes: Vec<String>,
+    /// An ADVERSARY weapon's progenitor element. Empty on every other weapon.
+    /// The BONUS is not a row field: the ruler scores every row at the roll's
+    /// maximum, which is investment rather than a choice.
+    valence: String,
 }
 
 /// How many rows a weapon keeps per RULER and MODE. A hundred, raised from ten
@@ -157,7 +161,7 @@ fn reuse_prior(
     let mut out = std::collections::HashMap::new();
     for e in &prior.entries {
         let Ok(v) = wfsim_engine::builds::validate_for_board(
-            bench_id, &e.weapon, &e.mods, &e.evolutions, &e.arcanes,
+            bench_id, &e.weapon, &e.mods, &e.evolutions, &e.arcanes, &e.valence,
         ) else {
             continue;
         };
@@ -287,24 +291,14 @@ fn main() {
         // Dual Toxocyst builds were turned away and the log said only that they
         // were (2026-08-05). A board that refuses in silence cannot be debugged
         // by the person whose build it refused, either.
-        // AN ADVERSARY WEAPON CANNOT BE RANKED YET, and being told so is the
-        // point. A Kuva, Tenet or Coda weapon's VALENCE BONUS is worth 25-60%
-        // of its base damage and is a property of the copy a player owns — so a
-        // row that does not state which element and how big is a row nobody can
-        // reproduce, which is the one thing every other row on this board is.
-        //
-        // Refused rather than scored at some assumed default: a default here
-        // would publish a number under a build that does not exist. The row
-        // schema gains a valence field before these weapons can be ranked.
-        if wfsim_engine::weapons_data::valence_of(&weapon).is_some() {
-            eprintln!(
-                "refused {weapon}: an adversary weapon's Valence bonus is part of the build and a board row cannot state one yet"
-            );
-            refused += 1;
-            continue;
-        }
+        // AN ADVERSARY WEAPON'S PROGENITOR ELEMENT is part of the submission,
+        // like its mods and its evolutions — a different element is a different
+        // build, not a weaker one. `validate_for_board` refuses one the weapon
+        // cannot have, and refuses a MISSING one on a weapon that always has
+        // one, so neither can arrive by omission.
+        let valence = s.get("valence").and_then(Value::as_str).unwrap_or("");
         let v = match wfsim_engine::builds::validate_for_board(
-            &bench_id, &weapon, &mods, &evos, &arcs,
+            &bench_id, &weapon, &mods, &evos, &arcs, valence,
         ) {
             Ok(v) => v,
             Err(e) => {
@@ -357,6 +351,17 @@ fn main() {
             o.insert("mods".into(), json!(v.mods));
             o.insert("evolutions".into(), json!(v.evolutions));
             o.insert("arcane".into(), json!(v.arcanes));
+            // THE VALENCE, at the ruler's own terms: the element the entrant
+            // named, and the roll's MAXIMUM whatever they said it was. Every
+            // player can fuse to 60%, so ranking a lower roll would be ranking
+            // how many duplicates someone farmed — the same reason every row
+            // here is scored at full Forma.
+            if !v.valence.is_empty() {
+                o.insert("valence_element".into(), json!(v.valence));
+                let max = wfsim_engine::weapons_data::valence_of(&v.weapon)
+                    .map_or(0.0, |s| s.max);
+                o.insert("valence_bonus".into(), json!(max));
+            }
             // The one place a MODE becomes a FORM.
             o.insert("form".into(), json!(played.form()));
         }
@@ -420,6 +425,7 @@ fn main() {
             mods: v.mods,
             evolutions: v.evolutions,
             arcanes: v.arcanes,
+            valence: v.valence,
         });
     }
 
@@ -529,6 +535,7 @@ fn main() {
                 "mods": r.mods,
                 "evolutions": r.evolutions,
                 "arcanes": r.arcanes,
+                "valence": r.valence,
             }));
         }
         std::fs::write(&path, serde_json::to_string(&by_weapon).expect("json"))
@@ -567,6 +574,11 @@ fn main() {
         }
         if r.arcanes.iter().any(|a| a != "none") {
             println!("    arcanes: [{}]", r.arcanes.join(", "));
+        }
+        // Written only where there is one, the same rule the two lines above
+        // follow — a board of ordinary weapons is byte-for-byte what it was.
+        if !r.valence.is_empty() {
+            println!("    valence: {}", r.valence);
         }
     }
 }

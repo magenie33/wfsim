@@ -42,6 +42,9 @@ build:
   evolutions: full
   arcanes: full
   exilus: excluded
+  # The element is the entrant's, the roll is scored at its maximum — the aimed
+  # ruler carries the argument in full.
+  valence: full
 
 scenario:
   enemy: thrax_centurion
