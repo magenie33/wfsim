@@ -1,0 +1,66 @@
+id: double_tap
+name: Double Tap
+rarity: rare
+polarity: madurai
+base_drain: 10                # max drain 13 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/MoreDamageonTripleTapRifleMod
+description: "On Hit: +20% Bonus Damage on next Shot for 2s. Stacks up to 20x."
+
+# A CONCLAVE MOD THAT WORKS IN PvE, exclusive to the LATRON family. VERBATIM
+# (Double_Tap): "is a PvE and Conclave Latron, Latron Wraith, and Latron Prime
+# mod", and the Notes repeat it — "Can also be equipped on the Latron Wraith and
+# the Latron Prime". So all three variants, and no other weapon.
+exclusive_to: [latron, latron_wraith, latron_prime]
+
+# THE RANK TABLE MOVES BOTH HALVES, in opposite directions:
+#
+#   Rank | Damage | Duration | Stacks | Cost
+#     0  |   +5%  |   0.5s   |   80x  |  10
+#     1  |  +10%  |   1s     |   40x  |  11
+#     2  |  +15%  |   1.5s   |   26x  |  12
+#     3  |  +20%  |   2s     |   20x  |  13
+#
+# 5x80, 10x40 and 20x20 are all +400%, so RANK BUYS DURATION AND NOTHING ELSE —
+# except at rank 2, where 15x26 = 390% and the ceiling is a hair lower. Every
+# mod here simulates at max rank, which is the clean 20 x 20%.
+family: double_tap
+
+effects:
+  # VERBATIM (Notes): "Consecutive hits on enemies increase the damage bonus by
+  # 20%, stacking 20 times up to a maximum of +400% bonus damage. The buff lasts
+  # for 2 seconds or if the next shot does not hit an enemy, after which all
+  # stacks are removed."
+  #
+  # ITS OWN MULTIPLIER: "Multiplicatively stacks with damage bonuses like
+  # Serration and Faction Damage Bonus". So it is NOT the base-damage bucket —
+  # it joins the chain of independent factors beside the faction bonus and
+  # Eclipse, and Serration does not dilute it.
+  #
+  # COUNTED PER TRIGGER PULL, NOT PER PELLET, and the card does the arithmetic
+  # for us: "The bonus is applied on hit to all pellets as damage * 20% *
+  # (hits - 1) … with a modded multishot of 3, the first trigger pull would do
+  # +40% bonus damage, the second +100%, the third +160%." Two things follow.
+  # The count INCLUDES this pull's own hits — 3 pellets on the first pull is
+  # 20% x (3-1) = 40% — and every pellet of the pull gets the SAME number
+  # rather than ramping within it. It is also why an unmodded weapon gets
+  # NOTHING from its first shot: 20% x (1-1) = 0.
+  #
+  # "Additional hits caused by punch through or Multishot will allow each bullet
+  # to trigger multiple stacks. When a shot hits at least one enemy it will not
+  # reset the bonus." Every pellet reaches the one target here, so a pull's hits
+  # are its pellets, and the miss-reset can never fire.
+  - kind: consecutive_hit_damage
+    rank0: 0.05
+    rankMax: 0.20
+    max_stacks: 20
+    duration_seconds: 2
+
+unmodeled:
+  - "hitting an OBJECT counts as a miss and clears the pile — Zephyr's Tornado, a Nullifier bubble, an Arctic Eximus globe. This arena has one enemy and nothing else to hit, so the reset never fires here and the stacks only ever lapse on the clock"
+  - "a bullet-attraction bubble (Magnetize, or a Void status) makes each hit count TWICE, so the pile climbs at double rate inside one — no ability is cast here and the Void proc's own attractor is not wired to this count"
+  - "the LATRON INCARNON bugs the wiki records against this mod: only the AoE benefits and not the direct damage, and switching forms snapshots the buff and restores the old value on the way back. Neither is modelled — the sim pays the direct hit, which is the mod as described rather than as it currently behaves"
+
+source:
+  url: https://wiki.warframe.com/w/Double_Tap
+  # Rank table, the Notes block and the Bugs block, read 2026-08-13.

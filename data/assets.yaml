@@ -231,6 +231,7 @@ mods:
   deep_freeze: PistolFreezeDamageMod.jpg
   disruptor: ImpactDamageShotgunMod.jpg
   double_barrel_drift: LessRecoilMoreAccuracyShotgunMod.jpg
+  double_tap: LatronThree.jpg
   dual_rounds: ArchwingRifleFireIterationsMod.jpg
   eagle_eye: RifleZoomMod.jpg
   eject_magazine: PassiveReloadPistolMod.jpg
@@ -404,7 +405,6 @@ mods:
   semi_rifle_cannonade: RifleSemiAutoFantasyMod.jpg
   semi_shotgun_cannonade: ShotgunSemiAutoFantasyMod.jpg
   sentient_surge: NightwaveOcucorAugmentMod.jpg
-  winds_of_purity: Furis.jpg
   serrated_rounds: DamageBiasSlashRifleMod.jpg
   serration: RifleDamageAmountMod.jpg
   sharpened_bullets: CritDamageWhileAimingMods.jpg
@@ -458,6 +458,7 @@ mods:
   vile_precision: CorruptedRecoilForFireRateMod.jpg
   vital_sense: RifleCritDamageMod.jpg
   wildfire: RifleWildfireMod.jpg
+  winds_of_purity: Furis.jpg
   zodiac_shred: ArchwingDualStatSlashStatusRifleMod.jpg
 
 arcanes:

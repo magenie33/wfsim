@@ -137,6 +137,21 @@ impl TennoCondition {
 /// works unchanged.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ModEffect {
+    /// DOUBLE TAP: `(per stack, max stacks, seconds)` — a damage bonus that
+    /// climbs with CONSECUTIVE HITS and stands on its own multiplier.
+    ///
+    /// "Multiplicatively stacks with damage bonuses like Serration and Faction
+    /// Damage Bonus" (wiki), so it is NOT the base-damage bucket: it joins the
+    /// chain of independent multipliers beside the faction bonus and Eclipse.
+    ///
+    /// The count is PER TRIGGER PULL, not per pellet, and the card's own
+    /// arithmetic is what pins it: "the bonus is applied on hit to all pellets
+    /// as damage * 20% * (hits - 1)", worked through as "with a modded
+    /// multishot of 3, the first trigger pull would do +40% bonus damage, the
+    /// second +100%, the third +160%". So every pellet of a pull gets the SAME
+    /// bonus, computed from the running total INCLUDING that pull, less one —
+    /// which is also why an unmodded weapon gets nothing on its first shot.
+    ConsecutiveHitDamage { per_stack: f64, max_stacks: u32, duration: f64 },
     /// Additive base-damage bucket (Hornet Strike).
     BaseDamage(f64),
     /// Additive multishot bucket (total pellets = base × (1 + Σ)).
@@ -561,6 +576,10 @@ impl ModEffect {
         match *self {
             // The gate is stated as a suffix so the inner line reads normally.
             WhileTenno(c, ref inner) => format!("{} ({})", inner.describe(), c.label()),
+            ConsecutiveHitDamage { per_stack, max_stacks, duration } => format!(
+                "{} damage per consecutive hit, up to {max_stacks} ({}), for {duration}s — its own multiplier, not the base-damage bucket",
+                pct(per_stack), pct(per_stack * f64::from(max_stacks))
+            ),
             BaseDamage(v) => format!("{} Base Damage", pct(v)),
             Multishot(v) => format!("{} Multishot", pct(v)),
             CritChance(v) => format!("{} Crit Chance", pct(v)),
@@ -1084,6 +1103,9 @@ pub struct WeaponBase {
     /// same bucket the mods write to — "Weakpoint modifier is additive with
     /// mods such as Pistol Gambit". Same shape as `evo_reload_bonus`.
     pub evo_weakpoint_cc_rel: f64,
+    /// Double Tap: `(per stack, max stacks, seconds)`. See
+    /// [`ModEffect::ConsecutiveHitDamage`].
+    pub consecutive_hit_damage: Option<(f64, u32, f64)>,
     /// Wiseman's Regard: `(rate, cap)` — "Increase Base Status Chance by 30% of
     /// current Critical Chance, up to 40%".
     ///
@@ -2022,6 +2044,9 @@ pub struct ResolvedPanel {
     /// with the first two multiplied by the CRIT-chance mods.
     pub derived_crit_from_status: Option<(f64, f64, f64)>,
     /// Galvanic Reload: `(status, chance, rounds)`, rolled ONCE PER SHOT.
+    /// Double Tap: `(per stack, max stacks, seconds)` — its OWN multiplier,
+    /// counted per trigger pull. See [`ModEffect::ConsecutiveHitDamage`].
+    pub consecutive_hit_damage: Option<(f64, u32, f64)>,
     pub round_restore_on_status: Option<(crate::damage::DamageType, f64, f64)>,
     /// Exact Penance: the chance a KILL — from anywhere — reloads instantly.
     pub instant_reload_on_kill: Option<f64>,
@@ -2263,6 +2288,7 @@ pub fn resolve_for(
     let mut cc_stack: Option<StackSpec> = None;
     // …and the weak-point crit bucket starts at the EVOLUTION's, not at zero,
     // because the card says it is additive with the mods that write here.
+    let mut consecutive_hit: Option<(f64, u32, f64)> = None;
     let (mut wp_dmg, mut wp_cc) = (0.0, base.evo_weakpoint_cc_rel);
     let mut cd_on_kill: Option<TimedBuff> = None;
     let mut fr_on_reload: Option<TimedBuff> = None;
@@ -2339,6 +2365,12 @@ pub fn resolve_for(
             match *e {
                 ModEffect::WhileTenno(..) => {
                     unreachable!("unwrapped above")
+                }
+                // DOUBLE TAP does not join a bucket — it carries its own
+                // multiplier to the sim, which is the whole point of the card's
+                // "multiplicatively stacks with damage bonuses like Serration".
+                ModEffect::ConsecutiveHitDamage { per_stack, max_stacks, duration } => {
+                    consecutive_hit = Some((per_stack, max_stacks, duration));
                 }
                 ModEffect::BaseDamage(v) => bd += v,
                 ModEffect::Multishot(v) => ms += v,
@@ -3125,6 +3157,7 @@ pub fn resolve_for(
         // RELATIVE; direct-head only, so the sim uses the direct base.
         weakpoint_cc_rel: wp_cc,
         bodyshot_cc_mult: base.bodyshot_cc_mult,
+        consecutive_hit_damage: consecutive_hit.or(base.consecutive_hit_damage),
         // The card's numbers converted into POST-MOD units, so the sim adds one
         // term and never has to know about the status bucket. Same units trick
         // `BuffGrant::FlatBaseDamage` and `BaseCritDamage` take.

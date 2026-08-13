@@ -108,6 +108,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         bodyshot_cc_mult: 1.0,
         derived_status_from_crit: None,
         derived_crit_from_status: None,
+        consecutive_hit_damage: None,
         round_restore_on_status: None,
         instant_reload_on_kill: None,
         mag_growth_on_empty_reload: None,

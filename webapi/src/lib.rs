@@ -2090,6 +2090,20 @@ pub fn panel_json(v: &Value) -> Value {
             };
             match *e {
                 WhileTenno(..) => unreachable!("unwrapped above"),
+                // DOUBLE TAP is a CONDITIONAL, not a bucket line: it is worth
+                // nothing until the hits are consecutive and it stands on its
+                // own multiplier, so folding it into base damage would both
+                // overstate a fresh magazine and put it in the wrong bracket.
+                ConsecutiveHitDamage { per_stack, max_stacks, duration } => {
+                    conditionals.push(json!({
+                        "mod": name,
+                        "desc": e.describe(),
+                        "active": true,
+                        "why": format!(
+                            "counted per TRIGGER PULL, not per pellet: every pellet of a pull gets                              {:.0}% x (hits so far including this pull - 1), capped at {max_stacks}                              stacks, and the pile lapses {duration}s after the last hit",
+                            per_stack * 100.0),
+                    }));
+                }
                 BaseDamage(x) => push("base_damage", x, None),
                 Multishot(x) => push("multishot", x, None),
                 CritChance(x) => push("crit_chance", x, None),

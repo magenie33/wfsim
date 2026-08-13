@@ -1715,6 +1715,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         innate_co_per_type: 0.0,
         gated: Vec::new(),
         cannot_zoom: s.cannot_zoom,
+        consecutive_hit_damage: None,
         bodyshot_cc_mult: 1.0,
         round_restore_on_status: None,
         instant_reload_on_kill: None,

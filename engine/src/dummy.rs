@@ -1483,6 +1483,9 @@ pub struct DummyParams {
     pub derived_crit_from_status: Option<(f64, f64, f64)>,
     /// Galvanic Reload: `(status, chance, rounds)` — a magazine restore rolled
     /// ONCE PER SHOT when the target carries that status.
+    /// Double Tap: `(per stack, max stacks, seconds)`. Its OWN multiplier, and
+    /// counted per TRIGGER PULL. See `ModEffect::ConsecutiveHitDamage`.
+    pub consecutive_hit_damage: Option<(f64, u32, f64)>,
     pub round_restore_on_status: Option<(DamageType, f64, f64)>,
     /// Exact Penance: the chance a KILL reloads instantly. Rolled off the kill
     /// COUNTER, so a status kill counts — which the card requires.
@@ -2211,6 +2214,7 @@ impl DummyParams {
             bodyshot_cc_mult: panel.bodyshot_cc_mult,
             derived_status_from_crit: panel.derived_status_from_crit,
             derived_crit_from_status: panel.derived_crit_from_status,
+            consecutive_hit_damage: panel.consecutive_hit_damage,
             round_restore_on_status: panel.round_restore_on_status,
             instant_reload_on_kill: panel.instant_reload_on_kill,
             mag_growth_on_empty_reload: panel.mag_growth_on_empty_reload,
@@ -2455,6 +2459,7 @@ impl Default for DummyParams {
             bodyshot_cc_mult: 1.0,
             derived_status_from_crit: None,
             derived_crit_from_status: None,
+            consecutive_hit_damage: None,
             round_restore_on_status: None,
             instant_reload_on_kill: None,
             mag_growth_on_empty_reload: None,
@@ -4655,6 +4660,12 @@ pub fn run_once_traced(
     let mut rounds_this_mag: u32 = 0;
     // Kills already paid to on-kill stacking buffs. See `BuffTrigger::Kill`.
     let mut kill_buff_mark: u32 = 0;
+    // DOUBLE TAP: consecutive hits, and when they lapse. Reset by the clock
+    // here and never by a miss — this arena has one target that every pellet
+    // reaches, which is the card's other reset ("if the next shot does not hit
+    // an enemy") and it cannot fire.
+    let mut dt_hits: u32 = 0;
+    let mut dt_expiry = f64::NEG_INFINITY;
     macro_rules! bump_buffs {
         ($trigger:expr, $t:expr, $rng:expr) => {
             for (i, b) in params.stacking_buffs.iter().enumerate() {
@@ -5606,6 +5617,29 @@ pub fn run_once_traced(
                         * ap.base_multishot
             };
         let rolled = ms_eff.floor() as u32 + d.spine.chance(ms_eff.fract()) as u32;
+        // DOUBLE TAP, computed ONCE for the whole pull and applied to every
+        // pellet of it. VERBATIM: "the bonus is applied on hit to all pellets as
+        // damage * 20% * (hits - 1)", worked through on the card as "with a
+        // modded multishot of 3, the first trigger pull would do +40% bonus
+        // damage, the second +100%, the third +160%" — so the count INCLUDES
+        // this pull's own hits, and one is taken off, which is why an unmodded
+        // weapon gets nothing from its first shot.
+        //
+        // Every pellet reaching the one target IS a hit here ("additional hits
+        // caused by punch through or Multishot will allow each bullet to
+        // trigger multiple stacks"), so the pull's hits are its pellets.
+        let dt_mult = match ap.consecutive_hit_damage {
+            Some((per_stack, max_stacks, duration)) => {
+                if t >= dt_expiry {
+                    dt_hits = 0;
+                }
+                let hits = dt_hits + rolled;
+                dt_hits = hits;
+                dt_expiry = t + duration;
+                1.0 + per_stack * f64::from(hits.saturating_sub(1).min(max_stacks))
+            }
+            None => 1.0,
+        };
         // CONTINUOUS weapons MERGE. VERBATIM (wiki Multishot §Continuous
         // Weapons): "additional beams that hit the same target instead merge
         // into a singular damage tick. This combined tick has damage AND Status
@@ -6239,6 +6273,10 @@ pub fn run_once_traced(
                     * params.faction_at_time(t)
                     * arc_final
                     * attrition
+                    // DOUBLE TAP stands on its own: "multiplicatively stacks
+                    // with damage bonuses like Serration and Faction Damage
+                    // Bonus", so it is a factor here and never a bucket term.
+                    * dt_mult
                     // ECLIPSE: "an unique multiplier", so it stands beside the
                     // others rather than joining any of them.
                     * params.ability_final_at(t)
@@ -8709,6 +8747,71 @@ mod tests {
         let under = rate(3.0);
         assert!(at_cap > under + 0.01,
             "+300% is below the cap (0.30 of 1.00 = 0.30 < 0.40), so +434% must              still be worth something: {under} -> {at_cap}");
+    }
+
+    /// DOUBLE TAP, against the card's own worked example.
+    ///
+    /// VERBATIM (Double_Tap, Notes): "The bonus is applied on hit to all pellets
+    /// as damage * 20% * (hits - 1), meaning without multishot, the bonus isn't
+    /// applied until the second hit. With multishot, not only does the bonus
+    /// ramp up faster, but also some of the post hit bonus is applied to the
+    /// hit. For example, with a modded multishot of 3, the first trigger pull
+    /// would do +40% bonus damage, the second +100%, the third +160%."
+    ///
+    /// Three numbers, and they pin every part of the reading at once: the count
+    /// includes THIS pull's hits (3 pellets on the first pull is 20% x (3-1) =
+    /// 40%), every pellet of a pull takes the SAME bonus rather than ramping
+    /// inside it, and a pull's hits are its pellets.
+    #[test]
+    fn double_tap_pays_the_cards_own_worked_example() {
+        let dt = crate::mods_data::class_pool("rifle")
+            .into_iter().find(|m| m.id == "double_tap").expect("double_tap in the rifle pool");
+        assert_eq!(dt.effects.len(), 1, "one effect on the card: {:?}", dt.effects);
+        let (per, cap, dur) = match dt.effects[0] {
+            crate::loadout::ModEffect::ConsecutiveHitDamage { per_stack, max_stacks, duration } =>
+                (per_stack, max_stacks, duration),
+            ref other => panic!("wrong kind: {other:?}"),
+        };
+        assert!((per - 0.20).abs() < 1e-9 && cap == 20 && (dur - 2.0).abs() < 1e-9,
+            "rank 3 is +20% a stack, 20 stacks, 2s: {per}/{cap}/{dur}");
+        // 20 x 20% = +400%, which the card states as the maximum.
+        assert!((per * f64::from(cap) - 4.0).abs() < 1e-9);
+
+        // A fixture where nothing but Double Tap moves the number: no crit, no
+        // status, one body part, and a target that cannot die.
+        let build = |ms: f64, on: bool, shots: f64| DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 100.0),
+            multishot: ms,
+            base_multishot: ms,
+            fire_rate: 1.0,
+            magazine_size: 100.0,
+            consecutive_hit_damage: if on { Some((per, cap, dur)) } else { None },
+            // The window is 2s and the cadence 1/s, so the pile never lapses.
+            duration_secs: shots - 0.5,
+            body_parts: mono_body(1.0),
+            ..flat_base()
+        };
+        let dmg = |ms: f64, on: bool, shots: f64|
+            monte_carlo(&build(ms, on, shots), 1, 3).mean_damage;
+
+        // WITHOUT MULTISHOT the first shot pays nothing — 20% x (1-1) = 0.
+        assert!((dmg(1.0, true, 1.0) - dmg(1.0, false, 1.0)).abs() < 1e-6,
+            "the first hit of an unmodded weapon earns the stack and does not use it");
+
+        // WITH MULTISHOT 3, the card's three numbers. Cumulative, because that
+        // is what a run reports: 1.4, then 1.4+2.0 = 3.4, then +2.6 = 6.0,
+        // against a flat 1, 2, 3 without the mod.
+        for (shots, want) in [(1.0, 1.4 / 1.0), (2.0, 3.4 / 2.0), (3.0, 6.0 / 3.0)] {
+            let got = dmg(3.0, true, shots) / dmg(3.0, false, shots);
+            assert!((got - want).abs() < 0.01,
+                "{shots} pulls at multishot 3: the card says x{want:.2} cumulative, got x{got:.3}");
+        }
+
+        // AND IT CAPS. 20 stacks is +400%, so a long run cannot exceed 5x, and
+        // a 30-shot run at multishot 3 is well past the ceiling.
+        let long = dmg(3.0, true, 30.0) / dmg(3.0, false, 30.0);
+        assert!(long < 5.0, "the ceiling is 5x (+400%), got x{long:.3}");
+        assert!(long > 4.0, "and a long run should be near it, got x{long:.3}");
     }
 
     /// VICIOUS PROMISE: the first arrow only, and OVERGUARD does not count.
@@ -16517,6 +16620,8 @@ mod overguard_status_tests {
         assert!(ticks > 5.0, "ticks came out mitigated: {:.1}", ticks);
     }
 }
+
+
 
 
 
