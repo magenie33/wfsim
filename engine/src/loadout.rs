@@ -938,6 +938,13 @@ pub enum TennoGate {
     /// active". A yes/no, and its definition is the card's own note: the
     /// ability must be DRAINING ENERGY over time.
     ChannelingAbility,
+    /// `solo_weapon` — the Vasto's Lone Gun: "With No Primary Equipped".
+    ///
+    /// The first gate that asks about the LOADOUT rather than about the frame
+    /// or what it is doing, and the difference matters: this arena has always
+    /// fired one weapon for a whole engagement, which says nothing about what
+    /// else is in the other two slots. See [`crate::tenno_data::TennoState`].
+    SoloWeapon,
 }
 
 impl TennoGate {
@@ -949,6 +956,7 @@ impl TennoGate {
             TennoGate::EnergyMaxOver(x) => tenno.energy > x,
             TennoGate::HasOvershields => tenno.state.overshields,
             TennoGate::ChannelingAbility => tenno.state.channeling,
+            TennoGate::SoloWeapon => tenno.state.solo_weapon,
         }
     }
 
@@ -960,6 +968,7 @@ impl TennoGate {
             TennoGate::EnergyMaxOver(x) => format!("with max energy over {x}"),
             TennoGate::HasOvershields => "with overshields".to_string(),
             TennoGate::ChannelingAbility => "with a channeled ability active".to_string(),
+            TennoGate::SoloWeapon => "with no other weapon equipped".to_string(),
         }
     }
 }
@@ -985,6 +994,15 @@ pub enum GatedGrant {
     /// implementation, so "+40 with overshields" and a plain "+40" cannot come
     /// out as different panels.
     FlatBaseDamage,
+    /// An ABSOLUTE add to the weapon's base MAGAZINE — Lone Gun's "+14 Base
+    /// Magazine Capacity" beside its "+40 Base Damage".
+    ///
+    /// Folded into `magazine_size` BEFORE the magazine mods multiply, which is
+    /// where `apply` puts the ungated spelling, so a gated +14 and a plain +14
+    /// are the same weapon down to the by-shell reload and a charged form's
+    /// ammo ratio. "Increased Base Magazine Capacity does not affect Incarnon
+    /// Form" is the same `incarnon.is_none()` guard `apply` uses.
+    FlatBaseMagazine,
 }
 
 /// A weapon's unmodded panel (fixed evolutions folded in — they alter the
@@ -2282,10 +2300,32 @@ pub fn resolve_for(
         .filter(|(c, k, _)| *k == GatedGrant::FlatBaseDamage && c.open(tenno))
         .map(|(_, _, v)| v)
         .sum();
+    // …AND THE SAME QUESTION FOR THE MAGAZINE. Folded into the BASE here rather
+    // than into the modded size below, so a gated +14 and a plain +14 are the
+    // same weapon everywhere the magazine is read — the mods multiply it, the
+    // by-shell reload counts it, and a charged form's ammo ratio has it in both
+    // halves of its fraction.
+    //
+    // "Increased Base Magazine Capacity does not affect Incarnon Form" (Lone
+    // Gun, Extended Volley): the same `incarnon.is_none()` guard `apply` puts
+    // on the ungated spelling, kept here because this add cannot happen there —
+    // `apply` never sees a Tenno.
+    let gated_mag: f64 = if base.incarnon.is_none() {
+        base.gated
+            .iter()
+            .filter(|(c, k, _)| *k == GatedGrant::FlatBaseMagazine && c.open(tenno))
+            .map(|(_, _, v)| v)
+            .sum()
+    } else {
+        0.0
+    };
     let owned;
-    let base = if gated_flat > 0.0 {
+    let base = if gated_flat > 0.0 || gated_mag > 0.0 {
         let mut b = base.clone();
-        b.add_flat_base_damage(gated_flat);
+        if gated_flat > 0.0 {
+            b.add_flat_base_damage(gated_flat);
+        }
+        b.magazine_size += gated_mag;
         owned = b;
         &owned
     } else {
@@ -3550,6 +3590,89 @@ mod tests {
             .collect();
         assert_eq!(asking.len(), roster.len(),
             "cards asking about overshields: {asking:?}");
+    }
+
+    /// LONE GUN — the first perk that asks about the LOADOUT, and the first
+    /// gated grant that is not damage.
+    ///
+    /// VERBATIM (Vasto_Incarnon_Genesis, EVO2 Perk 1):
+    ///   `* Increase Base Damage by '''+X'''.`
+    ///   `* With No Primary Equipped:`
+    ///   `** Increase Base Damage by '''+40'''`
+    ///   `** Increase Base Magazine Capacity by '''+14'''.`
+    ///   `| X = 66   | X = 24`        (Vasto | Vasto Prime)
+    ///   `* Increased Base Magazine Capacity does not affect Incarnon Form.`
+    ///
+    /// So the conditional half is NOT per variant — only X is — which is the
+    /// part a per-variant transcription gets wrong by habit.
+    ///
+    /// The clause used to be `out_of_scope`, on the ruling that the Tenno walks
+    /// in with a full loadout. That ruling is still the DEFAULT and now only the
+    /// default (owner, 2026-08-13): the scenario says which, and a shut gate
+    /// costs exactly nothing, which is what keeps every board row meaning what
+    /// it meant.
+    #[test]
+    fn lone_gun_pays_its_two_halves_only_with_no_other_weapon() {
+        let solo = tenno_who(|s| s.solo_weapon = true);
+        let neutral = crate::tenno_data::default_tenno();
+        for (weapon, evo) in [("vasto", "vasto_lone_gun"), ("vasto_prime", "vasto_prime_lone_gun")]
+        {
+            let base = WeaponBase::from_data(weapon, true, &[evo]);
+            let off = resolve_for(&base, &[], StackPolicy::AssumedMax, neutral);
+            let on = resolve_for(&base, &[], StackPolicy::AssumedMax, &solo);
+            // With no mods the damage bucket is 1, so the difference IS the
+            // card's number — the same reading the overshield roster uses.
+            let dmg = on.modified_base - off.modified_base;
+            assert!((dmg - 40.0).abs() < 1e-6, "{evo}: base damage moved by {dmg}, card says +40");
+            let mag = on.magazine_size - off.magazine_size;
+            assert!((mag - 14.0).abs() < 1e-9, "{evo}: magazine moved by {mag}, card says +14");
+
+            // A SHUT GATE COSTS NOTHING: the weapon is its plain +X and nothing
+            // else, which is the fight the board is scored under.
+            let x = crate::evolutions_data::get(evo).expect(evo).flat_base_damage();
+            let mut just_x = WeaponBase::from_data(weapon, true, &[]);
+            just_x.add_flat_base_damage(x);
+            let x_only = resolve_for(&just_x, &[], StackPolicy::AssumedMax, neutral);
+            assert!((off.modified_base - x_only.modified_base).abs() < 1e-9,
+                "{evo} shut: {} vs {}", off.modified_base, x_only.modified_base);
+            assert!((off.magazine_size - x_only.magazine_size).abs() < 1e-9,
+                "{evo} shut: magazine {} vs {}", off.magazine_size, x_only.magazine_size);
+        }
+
+        // "Increased Base Magazine Capacity does not affect Incarnon Form" —
+        // and the DAMAGE half still does, which is why this is asserted on the
+        // same panel rather than as "the perk is off in Incarnon Form".
+        for (form, evo) in
+            [("vasto_incarnon", "vasto_lone_gun"), ("vasto_prime_incarnon", "vasto_prime_lone_gun")]
+        {
+            let base = WeaponBase::from_data(form, true, &[evo]);
+            let off = resolve_for(&base, &[], StackPolicy::AssumedMax, neutral);
+            let on = resolve_for(&base, &[], StackPolicy::AssumedMax, &solo);
+            assert!((on.magazine_size - off.magazine_size).abs() < 1e-9,
+                "{form}: the Incarnon magazine must not move, it went {} -> {}",
+                off.magazine_size, on.magazine_size);
+            assert!(on.modified_base > off.modified_base,
+                "{form}: the damage half still pays in Incarnon Form");
+        }
+
+        // …and the roster is CLOSED. Exactly these two cards ask about the
+        // loadout, so a third that spells it some other way fails here rather
+        // than paying nothing in silence — the same guard the overshield roster
+        // carries, and the reason it is worth carrying: the option exists to
+        // make these clauses reachable, so one that quietly is not is the whole
+        // failure.
+        let asking: Vec<&str> = crate::evolutions_data::pool()
+            .iter()
+            .filter(|e| {
+                WeaponBase::from_data(&e.weapon, true, &[e.id.as_str()])
+                    .gated
+                    .iter()
+                    .any(|(g, _, _)| *g == TennoGate::SoloWeapon)
+            })
+            .map(|e| e.id.as_str())
+            .collect();
+        assert_eq!(asking, ["vasto_lone_gun", "vasto_prime_lone_gun"],
+            "cards asking about the loadout: {asking:?}");
     }
 
     /// WITH A CHANNELED ABILITY ACTIVE — the second player-declared state, and

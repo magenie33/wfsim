@@ -249,6 +249,12 @@ ui:
   # Same rule as the labels above: "Channeled ability" is DE's own wording and
   # is left in English until someone reads its Chinese off the game client.
   "the wielder's state: what a card means by \"With Channeled Ability active\". The ability must DRAIN ENERGY over time — Desecrate, Haven and an empty Gloom do not count": 使用者状态：卡面上说的「引导类技能生效中」指的就是这个。技能必须是持续耗能的——亵渎、庇护所、以及周围没有敌人时的阴郁都不算
+  # THE LOADOUT, and BOTH halves are translated — unlike "Overshields" and
+  # "Airborne" above, "Only this weapon" is OUR OWN wording rather than a phrase
+  # off a DE card, so there is no official Chinese to transcribe and nothing is
+  # being invented in DE's voice.
+  "Only this weapon": 仅装备这把武器
+  "the LOADOUT, not what the wielder is doing: off means a full one, which is what the board is scored under. On, this weapon is the only one carried — the Vasto's Lone Gun pays its \"With No Primary Equipped\" half, and every \"On Equip from Primary\" or \"while Holstered\" clause becomes impossible rather than merely unmodelled": 配装本身，而不是使用者在做什么：关闭时表示带着完整的一套武器，榜单也是按这个跑分的。开启后这把枪就是身上唯一的武器——瓦斯托的「孤枪」会付出它「未装备主武器时」的那一半，而所有「从主武器切换时」「收枪状态下」的词条则从「没做建模」变成「根本不可能触发」
   "3 · Buffs": 3 · 增益
   "4 · Simulation": 4 · 模拟
   "Technique": 手法

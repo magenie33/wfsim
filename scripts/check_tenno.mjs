@@ -51,7 +51,8 @@ const r = await evaluate(`(async () => {
 })()`);
 
 check("the Tenno block carries every player field",
-  ["aiming", "headshot_pct", "invisible", "airborne", "overshields", "frame", "wf_armor", "wf_energy", "wf_sprint"]
+  ["aiming", "headshot_pct", "invisible", "airborne", "overshields", "channeling", "solo_weapon",
+   "frame", "wf_armor", "wf_energy", "wf_sprint"]
     .every((k) => r.keys.includes(k)),
   r.keys.join(","));
 check("the whole Warframe roster is offered", r.nFrames >= 120, `${r.nFrames} options`);
@@ -124,6 +125,97 @@ check("the perk's unconditional half is +20 base damage",
   os.bare === 360 && os.withEvo === 380, `${os.bare} -> ${os.withEvo}`);
 check("...and overshields pay its +74, exactly",
   os.withOS === 454, `${os.withEvo} -> ${os.withOS}`);
+
+// THE LOADOUT — the fourth player state, and the first that is not about the
+// wielder's body or what it is doing but about WHAT ELSE IS ON THEIR BACK.
+//
+// VERBATIM (Vasto_Incarnon_Genesis, EVO2 Perk 1, Lone Gun):
+//   *Increase Base Damage by '''+X'''.        X = 24 on the Prime
+//   *With No Primary Equipped:
+//   **Increase Base Damage by '''+40'''
+//   **Increase Base Magazine Capacity by '''+14'''.
+//
+// Checked on BOTH halves and on exact numbers, because this control exists to
+// make a clause reachable that the app spent a week answering "no" to — a
+// checkbox that stores a flag nobody reads looks exactly like one that works
+// (owner, 2026-08-13: "不是叫你阉割建模").
+const solo = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  localStorage.clear();
+  history.pushState({}, '', '/weapons/Vasto_Prime'); route(); await sleep(3500);
+  document.querySelectorAll('.tab').forEach(t => { if (/Sim/i.test(t.textContent)) t.click(); });
+  await sleep(1200);
+  // THE BASE FORM: the card's numbers are printed against it, and the magazine
+  // half is the one clause that says "does not affect Incarnon Form".
+  mode = 'base';
+  // TWO ENDPOINTS, because the two halves of this card are reported by two
+  // different ones: base damage is the simulate call's resolved panel, and the
+  // magazine is a STATS ROW on the panel call — the number the page prints.
+  // (No backticks in here: this whole block is a template literal.)
+  const panel = async () => {
+    const body = { ...buildPayload(), ...fightPayload(sim) };
+    const s = await api('/api/simulate', { ...body, runs: 2 });
+    const p = await api('/api/panel', body);
+    const rows = (((p.forms || [])[0] || {}).stats) || [];
+    const row = rows.find(x => x.key === 'magazine') || {};
+    // …and WHO grew it. A magazine that moves with no source listed is the
+    // panel telling half a story, and the gated add reaches the number by a
+    // different route than the ungated one, so it needs its own row.
+    const src = (row.sources || []).map(x => x.mod + ' ' + x.value).join(' | ');
+    return { base: (s.panel || {}).modified_base, mag: Number(row.final), src };
+  };
+  const bare = await panel();
+  evoSel[1] = 'vasto_prime_evo1_incarnon_form';
+  evoSel[2] = 'vasto_prime_lone_gun';
+  markPresetDirty(); renderMods(); refreshPanel(); await sleep(2200);
+  const withEvo = await panel();
+
+  const box = document.getElementById('sim-technique');
+  const cb = box.querySelector('[data-k="solo_weapon"]');
+  cb.checked = true; cb.dispatchEvent(new Event('change'));
+  await sleep(2200);
+  const withSolo = await panel();
+  // Read the flag HERE, while it is on: the negative control below unticks it.
+  const sent = !!sim.solo_weapon;
+
+  // …AND THE TIER-MATE IS NOT REACHED BY IT. Deathtrap Trigger's clause is "On
+  // Equip From Primary", which with no primary is not merely unmodelled but
+  // impossible — so the same tick must move nothing.
+  evoSel[2] = 'vasto_prime_deathtrap_trigger';
+  markPresetDirty(); renderMods(); refreshPanel(); await sleep(2200);
+  const trapSolo = await panel();
+  cb.checked = false; cb.dispatchEvent(new Event('change'));
+  await sleep(2200);
+  const trapFull = await panel();
+
+  return { present: !!cb, sent, bare, withEvo, withSolo, trapSolo, trapFull };
+})()`);
+
+check("the loadout has a control", solo.present, String(solo.present));
+check("...ticking it reaches the scenario", solo.sent === true, String(solo.sent));
+// 110 is the Vasto Prime's own base (16.5 Impact + 77 Slash + 16.5 Puncture),
+// +24 is the card's X and +40 its conditional half. Exact numbers rather than a
+// direction, so the grant is shown to land on the BASE and undiluted.
+check("Lone Gun's unconditional half is +24 base damage",
+  solo.bare.base === 110 && solo.withEvo.base === 134,
+  `${solo.bare.base} -> ${solo.withEvo.base}`);
+check("...and carrying nothing else pays its +40, exactly",
+  solo.withSolo.base === 174, `${solo.withEvo.base} -> ${solo.withSolo.base}`);
+// THE SECOND HALF, which no other player state has: a gated grant that is not
+// damage. 6 rounds + 14.
+check("...and the magazine half lands too: 6 -> 20",
+  solo.withEvo.mag === 6 && solo.withSolo.mag === 20,
+  `${solo.withEvo.mag} -> ${solo.withSolo.mag}`);
+check("...and the panel says WHICH perk grew it",
+  /Lone Gun/.test(solo.withSolo.src) && /14/.test(solo.withSolo.src)
+    && !/Lone Gun/.test(solo.withEvo.src),
+  `${solo.withEvo.src || "(none)"} -> ${solo.withSolo.src || "(none)"}`);
+// THE NEGATIVE CONTROL, and the reason the option is not a blanket "turn the
+// tier-2 perks on": its sibling asks to have SWAPPED FROM a primary, which
+// carrying none makes impossible rather than possible.
+check("...and Deathtrap Trigger is unmoved by it — no primary to equip from",
+  solo.trapSolo.base === solo.trapFull.base && solo.trapSolo.mag === solo.trapFull.mag,
+  `${solo.trapFull.base}/${solo.trapFull.mag} -> ${solo.trapSolo.base}/${solo.trapSolo.mag}`);
 
 // ...AND IT TRAVELS, when there is a way to send it. Sharing can be switched
 // off (SHARE_ENABLED) and is while its reliability is being investigated; the

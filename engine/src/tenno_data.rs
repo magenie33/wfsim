@@ -116,6 +116,30 @@ pub struct TennoState {
     /// player ticks it for an ability that would not qualify.
     #[serde(default)]
     pub channeling: bool,
+    /// THIS WEAPON IS THE ONLY ONE EQUIPPED — the Vasto's Lone Gun, *"With No
+    /// Primary Equipped"*.
+    ///
+    /// It is the LOADOUT, which is a different fact from what the fight does
+    /// with it. The arena has always fired one weapon for the whole engagement,
+    /// and that never answered "what else are you carrying": the standing
+    /// ruling is that the Tenno walks in with a full loadout (owner,
+    /// 2026-08-12: "我们的场景是带满武器的情况，所以单独的那个是不生效的"), so
+    /// every clause about the other slots reads FALSE. This is the knob that
+    /// says otherwise (owner, 2026-08-13: "我们可以在模拟里面加一个选项，可以
+    /// 模拟只装备这个武器…不是叫你阉割建模").
+    ///
+    /// Defaults FALSE, which keeps the full loadout as the fight everyone has
+    /// been measuring under — every stored scenario and every board row means
+    /// exactly what it meant.
+    ///
+    /// It answers ONE clause today and closes several others HARDER. Lone Gun's
+    /// "+40 Base Damage, +14 Base Magazine Capacity" becomes reachable; the
+    /// Despair family's "With Dread and Hate Equipped" and every "while
+    /// Holstered" / "On Equip from Primary" perk go from *ruled* false to
+    /// *impossible* — there is no second weapon to swap to. Those stay
+    /// `no_holster` edges either way (UNMODELLED.md §4).
+    #[serde(default)]
+    pub solo_weapon: bool,
     /// CURRENT energy as a fraction of [`Tenno::energy`]. 1.0 = full, which is
     /// the honest default for a build calculator: you are asking what the gun
     /// does, not what it does eleven casts in. Primary Overcharge's card gates
@@ -136,6 +160,7 @@ impl Default for TennoState {
             airborne: false,
             overshields: false,
             channeling: false,
+            solo_weapon: false,
             energy_pct: 1.0,
         }
     }

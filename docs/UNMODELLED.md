@@ -126,9 +126,35 @@ every clause about the other slots at once, in both directions:
 
 That makes Lone Gun's condition ANSWERED rather than unreadable, which is worth
 the distinction: the sim is not declining to evaluate it, it evaluates to false.
-It stays an EDGE all the same — a ruling is not work someone can do — and it
-stays in this class, because "anything that assumes a loadout rather than a gun"
-is exactly what it is.
+
+**…AND THE ANSWER IS NOW A SETTING** (owner, 2026-08-13: "我们可以在模拟里面加一
+个选项，可以模拟只装备这个武器，这样潜在的类似这样的效果就可以正确触发。不是叫你
+阉割建模"). The scenario carries `solo_weapon` — *Only this weapon* on the
+Technique block, off by default — and the table above is what OFF means. It is a
+`TennoGate` like `overshields` and `channeling`, so it is asked of the fight's
+Tenno and travels with the scenario, the panel, the optimizer and a share link
+with no code of its own anywhere.
+
+Ticking it does NOT move this section into the modelled column; it splits it:
+
+| clause | full loadout (default) | only this weapon |
+| --- | --- | --- |
+| Lone Gun — *"With No Primary Equipped"* | no | **YES** — +40 base damage, +14 base magazine |
+| Stalker's Vendetta / Resentment — *"With Dread and Hate equipped"* | no (unspecified) | **no**, and now definitively |
+| Deathtrap Trigger — *"On Equip From Primary"* | no (we never swap) | **no** — there is no primary to equip from |
+| Evolved Autoloader and the *"while Holstered"* family | no (we never swap) | **no** — there is nothing to holster to |
+
+So one clause becomes reachable and four become IMPOSSIBLE rather than merely
+unmodelled, which is a better state for both: the second column has no swap
+policy left to invent (§"Open decisions"), so those rows are edges by the
+setting's own logic rather than by ours.
+
+Lone Gun is the only card in the roster the setting turns on today, and that is
+the honest scope of it — the option exists so the next one does not need a
+ruling, and
+`loadout::tests::lone_gun_pays_its_two_halves_only_with_no_other_weapon` asserts
+the list is CLOSED so a card that spells the condition some other way fails
+rather than paying nothing in silence.
 
 ### 5. AMMO IS INFINITE BY DEFAULT
 

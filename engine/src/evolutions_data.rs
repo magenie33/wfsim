@@ -528,6 +528,29 @@ impl EvolutionDef {
     }
 
     /// Σ flat BASE magazine rounds (Extended Volley).
+    /// Σ flat BASE magazine this perk grants THIS player — the gated spelling of
+    /// [`Self::flat_base_magazine`] below (Lone Gun's "+14 Base Magazine
+    /// Capacity", which the card owes only when nothing else is carried).
+    ///
+    /// It cannot be folded where the ungated one is: `apply` never sees a
+    /// Tenno, so the resolver answers the gate against `WeaponBase::gated`. The
+    /// panel needs the same number attributed to the perk that grants it —
+    /// a magazine that grew with no source listed is the panel telling half a
+    /// story — and `base.gated` has no owner to name, so it asks here.
+    pub fn gated_flat_magazine(&self, tenno: &crate::tenno_data::Tenno) -> f64 {
+        self.active_effects()
+            .filter_map(|e| match e {
+                EvoEffect::GatedByTenno { gate, grant, value }
+                    if *grant == crate::loadout::GatedGrant::FlatBaseMagazine
+                        && gate.open(tenno) =>
+                {
+                    Some(*value)
+                }
+                _ => None,
+            })
+            .sum()
+    }
+
     pub fn flat_base_magazine(&self) -> f64 {
         self.active_effects()
             .filter_map(|e| match e {
@@ -921,15 +944,41 @@ impl EvolutionDef {
                     if *from_crit { "status chance" } else { "crit chance" },
                     cap * 100.0
                 ),
-                EvoEffect::GatedByTenno { gate, grant, value } => format!(
-                    "{} {grant:?} {}",
-                    if *value >= 1.0 && matches!(grant, crate::loadout::GatedGrant::BaseCritDamage) {
-                        format!("+{value}x")
-                    } else {
-                        format!("+{:.0}%", value * 100.0)
-                    },
-                    gate.describe()
-                ),
+                // ONE ARM PER BRACKET, and each says what the UNGATED spelling
+                // of the same grant says — because the brackets do not share
+                // units and the single line that used to be here multiplied
+                // every one of them by 100 and then printed the Rust
+                // identifier. Haven Foray's "+50 base damage with overshields"
+                // read `+5000% FlatBaseDamage with overshields`, and Paladin
+                // Virtue's +0.5x crit multiplier read `+50% BaseCritDamage` —
+                // wrong on twenty cards, on the one line a player can check
+                // (2026-08-13). The `>= 1.0` special case was the shape of the
+                // bug: a unit chosen by the SIZE of the number rather than by
+                // the bracket it lands in.
+                EvoEffect::GatedByTenno { gate, grant, value } => {
+                    use crate::loadout::GatedGrant as G;
+                    let what = match grant {
+                        G::FlatBaseDamage => {
+                            format!("+{value:.0} base damage (pro-rata, before mods)")
+                        }
+                        G::FlatBaseMagazine => {
+                            format!("+{value:.0} base magazine (magazine mods multiply it)")
+                        }
+                        G::BaseCritDamage => {
+                            format!("+{value}x BASE crit damage (crit-damage mods multiply it)")
+                        }
+                        G::ConditionOverload => format!(
+                            "+{:.0}% direct damage per status type on the target",
+                            value * 100.0
+                        ),
+                        G::FireRate => format!("+{:.0}% fire rate", value * 100.0),
+                        G::Multishot => format!("+{:.0}% multishot", value * 100.0),
+                        G::ProjectileSpeed => {
+                            format!("+{:.0}% projectile speed", value * 100.0)
+                        }
+                    };
+                    format!("{what} {}", gate.describe())
+                }
                 EvoEffect::BaseDamageBelowHalfHealth { rate: v, .. } => format!(
                     "+{:.0}% damage while the target is under half health",
                     v * 100.0
@@ -1294,6 +1343,7 @@ fn effect(v: &Value) -> Option<EvoEffect> {
                 Some("base_crit_damage") => crate::loadout::GatedGrant::BaseCritDamage,
                 Some("projectile_speed") => crate::loadout::GatedGrant::ProjectileSpeed,
                 Some("flat_base_damage") => crate::loadout::GatedGrant::FlatBaseDamage,
+                Some("flat_base_magazine") => crate::loadout::GatedGrant::FlatBaseMagazine,
                 other => {
                     return Some(EvoEffect::Inert(format!(
                         "gated_by_tenno grants {}, which is not a bracket this engine has",
@@ -2027,6 +2077,12 @@ fn tenno_condition(v: &Value) -> Option<crate::loadout::TennoGate> {
     }
     if c == "channeling" {
         return Some(G::ChannelingAbility);
+    }
+    // THE LOADOUT, not the frame and not what it is doing: "With No Primary
+    // Equipped". Off by default, because the fight's Tenno walks in carrying
+    // everything unless the scenario says otherwise.
+    if c == "solo_weapon" {
+        return Some(G::SoloWeapon);
     }
     None
 }
@@ -3013,4 +3069,5 @@ mod after_mods_layer_tests {
     }
 
 }
+
 

@@ -117,7 +117,7 @@ Every row, with the perk the printed number identifies:
 | Furis | 100 or 128 (Evolution II) | Haven Foray + Stormburst | 0.7812 (catalog 78%) |
 | Lato Vandal | 152 or 174 (Evolution II **Perk 1**) | Haven Foray (+22) | 0.7755 — the ONE that does not reproduce, see that file |
 | Lex Prime | 1200 or 1220 (Evolution II) | both, each +20 | 0.9836 (catalog 98%) |
-| Vasto Prime | 420 or 564 (Evolution II **Perk 2**) | **UNRESOLVED** — the printed +144 matches neither tier-2 option (+24 each) | not flagged |
+| Vasto Prime | 420 or 564 (Evolution II **Perk 2**) | Deathtrap Trigger (+24 a pellet ×6 = the 144 printed) — see below | 0.7447 (catalog 74%) |
 | Bronco Prime | 238 or 448 (Evolution II **Perk 1**) | Speeding Bullet, +30 a pellet x7 = the 210 printed | 0.5312 (catalog 53%) |
 | Zylok Prime | 500 or 530 (Evolution II) | both, each +30 | 0.9434 (catalog 94%) |
 
@@ -255,6 +255,34 @@ full.
 
 It found the **Vasto Prime** still missing its flag (2026-08-12), which the
 earlier sweep of eight had left behind.
+
+### The Vasto Prime row: the damage column cannot pick the perk, and the row still can
+
+This one is worth writing out, because the usual check does not decide it and
+reading it as if it did is how the row was filed **UNRESOLVED** for a day.
+
+Both EVO2 options give the Vasto Prime **+24**, and — checked against the raw
+wikitext, not a summary of it — **both** carry the note *"Base Damage increase is
+applied per pellet in Incarnon Form"*. The Incarnon form has 6 base multishot,
+so either perk takes 420 to 420 + 6×24 = **564**. The damage column identifies
+neither.
+
+What identifies one is the row's own words, `(with Evolution II **Perk 2**)`, and
+the page's ORDER: `Vasto_Incarnon_Genesis` lists **Lone Gun first and Deathtrap
+Trigger second**, so Perk 2 is Deathtrap Trigger. That is the same convention the
+Despair's row uses when it names Perk 2 and spells out that the tier-mate's +50
+is *not* excluded — the catalog does distinguish tier-mates, and rows that mean
+both say `(Evolution II)` with no number (Atomos, Cestra, Lex Prime, Zylok
+Prime).
+
+**It is worth a measurement anyway**, because the consequence is visible: on the
+board's #1 Vasto Prime build (Galvanized Shot equipped) picking Lone Gun scores
+**72.5** against Deathtrap Trigger's **64.8**, and swapping Galvanized Shot out
+makes the two identical to the last digit. The whole 12% is this one flag. If a
+player measures the pair in game and they match, the row means both perks and
+`vasto_prime_lone_gun` needs the flag too — which is the negative control in
+`the_eleven_evolution_exclusion_rows_reproduce_their_own_percentages`, so the
+change is one line and a test that already names it.
 
 ---
 

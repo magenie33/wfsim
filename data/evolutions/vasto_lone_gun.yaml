@@ -12,7 +12,7 @@ effects:
   # from: "Increase Base Damage by +66"
   - kind: flat_base_damage
     value: 66.0
-  # AN EDGE, AND THE ONE WHOSE CONDITION IS ANSWERED RATHER THAN UNKNOWN.
+  # THE LOADOUT, WHICH IS NOW A KNOB ON THE FIGHT.
   #
   # VERBATIM (Vasto_Incarnon_Genesis, EVO2 Perk 1, and its notes):
   #   * Increase Base Damage by '''+X'''.
@@ -23,24 +23,44 @@ effects:
   #   * Increased Base Magazine Capacity does not affect Incarnon Form.
   #   * Base Damage increase is applied per pellet in Incarnon Form.
   #
-  # THE TENNO CARRIES A FULL LOADOUT (owner, 2026-08-12: "我们的场景是带满武器的
-  # 情况，所以单独的那个是不生效的"). So this is not a condition the sim cannot
-  # read — it reads FALSE. One weapon FIRES for the whole engagement, and that
-  # is a different fact from what the player is carrying; the ruling separates
-  # the two and answers every clause about the other slots at once:
-  #   - "With No Primary Equipped" — there IS one, so no.
-  #   - "With Dread and Hate equipped" (the Despair's) — the other slots are
-  #     full but unspecified, so no.
-  # `no_holster` is still the class it belongs to ("anything that assumes a
-  # loadout rather than a gun"), and it stays an EDGE: a ruling does not become
-  # work someone can do.
+  # The standing ruling is that the Tenno walks in with a FULL LOADOUT (owner,
+  # 2026-08-12: "我们的场景是带满武器的情况，所以单独的那个是不生效的"),
+  # so this clause reads FALSE by default and the perk is worth its +X alone.
+  # What changed is that the default is now a DEFAULT: the scenario carries
+  # `solo_weapon`, and ticking it makes the clause read TRUE (owner,
+  # 2026-08-13: "我们可以在模拟里面加一个选项，可以模拟只装备这个武器
+  # …不是叫你阉割建模").
+  #
+  # It is the FIRST gate that asks about the loadout rather than about the frame
+  # or what it is doing, and it is a different fact from the one this arena has
+  # always assumed: one weapon FIRES for the whole engagement, which says
+  # nothing about what is in the other two slots.
+  #
+  # ITS TIER-MATE IS NOT REACHED BY THE SAME KNOB. Deathtrap Trigger's "On Equip
+  # From Primary" needs a weapon SWAP, and with no primary there is nothing to
+  # swap from — so the option makes that clause impossible rather than
+  # reachable, and it stays a `no_holster` edge (UNMODELLED.md §4).
   #
   # THE ICON NAME IS NOT THE CARD. DE's art file is
   # `DamageWithNoPrimaryOrMeleeEquipped`, but the card's text says Primary only
-  # — shared art, transcribed from the words.
-  - kind: out_of_scope
-    clause: "With No Primary Equipped: Increase Base Damage by +40, Increase Base Magazine Capacity by +14"
-    reason: no_holster
+  # — shared art, transcribed from the words. The gate is named for what the
+  # scenario says (only this weapon), which satisfies the card either way.
+  #
+  # 38.0.8 is DE confirming the clause works at all: "Fixed the Lone Gun
+  # Incarnon Perk not applying to the Vasto if you do not have a Primary weapon
+  # equipped."
+  - kind: gated_by_tenno
+    condition: solo_weapon
+    grant: flat_base_damage
+    value: 40.0
+  # …and the magazine half. "Increased Base Magazine Capacity does not affect
+  # Incarnon Form", which the engine obeys from the form it is resolving rather
+  # than from a flag here — the same guard the ungated spelling (Extended
+  # Volley) already carries.
+  - kind: gated_by_tenno
+    condition: solo_weapon
+    grant: flat_base_magazine
+    value: 14.0
 
 source:
   url: https://wiki.warframe.com/w/Vasto_Incarnon_Genesis

@@ -19,9 +19,12 @@ use wfsim_engine::dummy::{
     monte_carlo, BodyPart, BuffLock, DummyParams, LockMode, LockedBuff, TargetMode,
 };
 use wfsim_engine::enemy_data::EnemySpec;
+// NO `resolve` HERE, and that is the point: it is the neutral-Tenno wrapper, and
+// the panel above was its last caller in this crate. Every endpoint now resolves
+// for the FIGHT's player, which is what "one player, both answers" means when it
+// is true rather than intended.
 use wfsim_engine::loadout::{
-    pct as fpct, resolve, resolve_for, ModDef, ModEffect, ResolvedPanel, StackPolicy,
-    WeaponBase,
+    pct as fpct, resolve_for, ModDef, ModEffect, ResolvedPanel, StackPolicy, WeaponBase,
 };
 use wfsim_engine::mods::{PlannedMod, Polarity};
 use wfsim_optimizer::{
@@ -331,6 +334,12 @@ fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
     // Daring Reverie, Hunter's Mantra: "With Channeled Ability active". The
     // card's note defines it — the ability must be DRAINING ENERGY over time.
     t.state.channeling = get_bool(v, "channeling", t.state.channeling);
+    // THE LOADOUT — the Vasto's Lone Gun, "With No Primary Equipped". FALSE by
+    // default, which is the fight every stored scenario and every board row was
+    // measured under: the Tenno walks in carrying everything. A SENTINEL weapon
+    // is not the Tenno's loadout at all, and nothing in the roster asks a
+    // companion about its other slots, so it takes the same field.
+    t.state.solo_weapon = get_bool(v, "solo_weapon", t.state.solo_weapon);
     // The WARFRAME behind the gun. Armor and energy are the two stats a weapon
     // arcane reads (Primary Bulwark, Primary Overcharge); 0 means "no frame
     // chosen", which is what the neutral Tenno says and what makes those
@@ -1266,6 +1275,9 @@ pub fn meta_json() -> Value {
             "airborne": false,
             "overshields": false,
             "channeling": false,
+            // The LOADOUT: false = a full one, which is the standing ruling and
+            // the fight the board is scored under.
+            "solo_weapon": false,
             "wf_armor": 0.0,
             "wf_energy": 0.0,
             // INFINITE AMMO by default — see `simulate_json` for why.
@@ -2405,6 +2417,10 @@ pub fn panel_json(v: &Value) -> Value {
     // report zero via the accessors, so nothing is listed for them.
     // (key, source name, PRE-FORMATTED value, note)
     let mut evo_src: Vec<(&'static str, String, String, Option<String>)> = Vec::new();
+    // THE FIGHT's PLAYER, hoisted: both the source list below and the resolved
+    // panels at the end of this function ask it, and asking twice is how they
+    // came to disagree.
+    let panel_tenno = tenno_from(v, info);
     let (mut evo_flat_bd, mut evo_flat_cc) = (0.0f64, 0.0f64);
     let (mut evo_flat_sc, mut evo_flat_mag) = (0.0f64, 0.0f64);
     if form_unlock_evo(info).is_some() {
@@ -2465,6 +2481,19 @@ pub fn panel_json(v: &Value) -> Value {
                     name.clone(),
                     format!("+{v:.0} rounds"),
                     Some("into the BASE magazine — magazine mods multiply it".into()),
+                ));
+            }
+            // …AND THE GATED SPELLING, listed exactly when it PAYS. It is NOT
+            // added to `evo_flat_mag`, which the base column subtracts: this
+            // add is not in `base.magazine_size` at all (the resolver folds it
+            // onto a clone), so subtracting it would print a base of −8.
+            let v = def.gated_flat_magazine(&panel_tenno);
+            if v > 0.0 {
+                evo_src.push((
+                    "magazine",
+                    name.clone(),
+                    format!("+{v:.0} rounds"),
+                    Some("into the BASE magazine, and only while the fight says this weapon is the only one carried".into()),
                 ));
             }
             let v = def.assumed_multishot();
@@ -3130,9 +3159,23 @@ pub fn panel_json(v: &Value) -> Value {
         })
     };
 
+    // ONE PLAYER, BOTH ANSWERS (user, 2026-08-02). These rows resolved against
+    // the NEUTRAL Tenno while the sim resolved against the fight's, so every
+    // player-gated grant in the roster was paid by the sim and absent from the
+    // panel: Haven Foray's "+50 with Overshields", Guardian's Might's +74, the
+    // channeled-ability family, every "With Sprint Speed 1.2 or Higher". The
+    // buff-card half of this endpoint was fixed then and the STATS half was
+    // not, which is why it stayed invisible — the numbers it hid were on
+    // exactly the cards nobody had a control for yet.
+    //
+    // Found by the loadout knob (2026-08-13): Lone Gun's "+14 Base Magazine
+    // Capacity" moved the sim's magazine to 20 and the Magazine row still read
+    // 6.
     let forms: Vec<Value> = forms_list
         .iter()
-        .map(|(label, meta, b)| section(label, meta, b, &resolve(b, &refs, policy)))
+        .map(|(label, meta, b)| {
+            section(label, meta, b, &resolve_for(b, &refs, policy, &panel_tenno))
+        })
         .collect();
 
     // Configurable buffs of this build (weapon-scoped) for the Sim panel —
