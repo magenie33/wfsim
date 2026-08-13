@@ -3330,6 +3330,12 @@ entries:
     arcanes: [primary_debilitate]
   - weapon: phenmor
     mode: cycle
+    score: 16.3952892686309
+    mods: [galvanized_chamber, serration, galvanized_aptitude, speed_trigger, vile_acceleration, high_voltage, infected_clip, hellfire]
+    evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
+    arcanes: [primary_debilitate]
+  - weapon: phenmor
+    mode: cycle
     score: 15.634226243279842
     mods: [galvanized_chamber, serration, galvanized_aptitude, rifle_elementalist, stormbringer, high_voltage, infected_clip, malignant_force]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_ready_retaliation, phenmor_elemental_excess, phenmor_devouring_attrition]
