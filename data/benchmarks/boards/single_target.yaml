@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 413e5cbdd895c8f9f18b48e0f66ebbdb140ec960
+engine: f1b42eaa8d4be52657b0d6867df7ff3d049c262b
 entries:
   - weapon: akarius_prime
     mode: base
@@ -1586,6 +1586,12 @@ entries:
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_chilling_grasp, blaze, primed_charged_shell, contagious_spread, toxic_barrage]
     evolutions: [felarx_evo1_incarnon_form, felarx_frictionless_flight, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_deadhead]
+  - weapon: furis
+    mode: cycle
+    score: 49.87718488549815
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_headcracker]
+    arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
     score: 49.536089984508635
