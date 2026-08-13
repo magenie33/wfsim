@@ -2811,6 +2811,18 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
   - weapon: latron_prime
     mode: cycle
+    score: 58.5547932332362
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
+    arcanes: [primary_deadhead]
+  - weapon: latron_prime
+    mode: cycle
+    score: 47.15322446949057
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
+    arcanes: [primary_deadhead]
+  - weapon: latron_prime
+    mode: cycle
     score: 16.15921145540126
     mods: [primary_acuity, galvanized_aptitude, hammer_shot, semi_rifle_cannonade, vital_sense, magnetic_capacity, hellfire, thermite_rounds]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_swift_punishment, latron_prime_extended_volley, latron_prime_deadhead]
