@@ -6091,6 +6091,9 @@ function gainLanes() {
 // for a full measurement of a question nobody was asking any more (user,
 // 2026-08-03: "算不过来"). Cancelling at the next await bounds that to one sim.
 let gainGen = 0;
+// An axis whose scan was dropped because another axis was mid-flight. One slot:
+// the newest asker wins, and it is consumed when the running scan finishes.
+let gainPending = null;
 
 async function scanGains(axis, onTick) {
   const gen = ++gainGen;
@@ -6241,7 +6244,25 @@ const gainChip = (g, why) => {
 
 const gainChipFor = (id, where) => {
   const g = gainOf(id);
-  if (!g) return "";
+  // A HALF-FILLED RANKING HAS TO LOOK LIKE ONE.
+  //
+  // An option with no answer YET rendered exactly like one that finished with
+  // nothing to say — no chip at all — while the list re-sorts on every result
+  // that lands (an unranked option sorts last, so whatever arrives first sits
+  // at the top). Read mid-scan that is a ranking which keeps changing its mind,
+  // and the only way to find out it was not final was to click away and back
+  // (report, 2026-08-13: "有时候我需要在两个evo之间来回点，才会显示正确的收益").
+  //
+  // The scan already counts itself; it just said so nowhere near the list being
+  // read. `gainOf` has checked the key, so this only marks rows on the axis
+  // actually being measured.
+  if (!g) {
+    return gainScan.running && gainScan.key === gainKey()
+      ? `<span class="gainchip pend" title="${escHtml(
+          tr("still measuring — {a} of {b} options ranked so far, and the order moves until it finishes")
+            .replace("{a}", gainScan.done).replace("{b}", gainScan.total))}">…</span>`
+      : "";
+  }
   // A ONE-RUN number is a SCREEN, not a measurement, and it has to read like
   // one. Measured across three seeds on a status mod, a single run lands
   // anywhere in a ±39-point band — wide enough to print a minus sign in front
@@ -6543,26 +6564,24 @@ const optPairingNoteFor = (id) => {
 function gainSort(a, b, keys) {
   const ga = gainOf(a.id), gb = gainOf(b.id);
   if (!ga !== !gb) return ga ? -1 : 1;
-  // A GAIN IS RANKED BY WHAT IT IS WORTH AT LEAST, not by the centre of its
-  // band.
+  // A GAIN IS RANKED BY ITS MEAN, and the band is shown beside it.
   //
-  // Sorting on `pct` alone ordered two options by the middle of their spreads
-  // and presented the result as a ranking, so any pair whose bands overlap
-  // swapped places between scans — and swapping one of them in flipped the
-  // verdict, which is what a player sees as "it said A, I took A, now it says
-  // B" (report, 2026-08-13).
+  // The mean is the unbiased estimate of what an option is worth; the spread is
+  // a property of the MEASUREMENT, not of the option — run it long enough and
+  // the spread goes to zero while the mean stays put. Ranking on a lower bound
+  // (`pct - se`) was tried and reverted for exactly that reason: it
+  // systematically demotes whatever is merely hard to measure, and a status mod
+  // is hard to measure by nature, so the list would have been telling players
+  // something about the simulator rather than about their build (owner,
+  // 2026-08-13: "因为如果我们测试足够多，噪声会趋近于0").
   //
-  // The lower bound fixes it and stays a proper order. Refusing to rank
-  // overlapping pairs does not: "A ties B, B ties C, A beats C" is not
-  // transitive, and `Array.sort` given that produces an order that depends on
-  // the input's arrangement — trading one instability for a subtler one.
-  //
-  // It also says something a player wants: an exact +11% outranks a +9% that
-  // could be 2%, and a wide band has to be genuinely large to outrank a narrow
-  // one. A candidate the scan could not resolve stops being able to sit at the
-  // top on luck alone.
-  const lower = (g) => g.pct - (g.se || 0);
-  const cmp = { gain: () => (ga && gb ? lower(gb) - lower(ga) : 0),
+  // THIS DOES NOT MAKE THE ORDER STABLE, and it is not meant to. Two options
+  // whose bands overlap are genuinely unranked, so which sits higher can move
+  // between scans — that is the measurement talking, and the chip says so with
+  // its ±. The answer to an order that moves is more runs, not a different
+  // ranking rule; hiding it behind a pessimistic sort would have made a coin
+  // flip look like a verdict.
+  const cmp = { gain: () => (ga && gb ? gb.pct - ga.pct : 0),
                 drain: () => (b.drain || 0) - (a.drain || 0),
                 name: () => String(b.name).localeCompare(String(a.name)) };
   for (const k of keys) {
@@ -6697,11 +6716,28 @@ function ensureGains(axis, repaint) {
   // ends in `renderEvo`), so "the newest request wins" makes the two cancel
   // each other on every repaint and neither ever finishes. Which axis is asking
   // is not a staleness signal; the fight moving is.
-  if (gainScan.running && JSON.stringify(gainScan.axis) !== JSON.stringify(axis)) return;
+  if (gainScan.running && JSON.stringify(gainScan.axis) !== JSON.stringify(axis)) {
+    // …BUT IT IS NOT FORGOTTEN. Dropping it silently is what made a player have
+    // to click between two evolutions until the numbers appeared (report,
+    // 2026-08-13): the evolution rows ask on EVERY refresh while a picker asks
+    // only while it is open, so with a picker open the evolution request was
+    // dropped and nothing ever re-asked — the running scan's completion
+    // repaints the caller that started it, which is the picker, not the rows.
+    gainPending = { axis, repaint };
+    return;
+  }
   let last = 0;
   scanGains(axis, (st) => {
     const now = Date.now();
     if (!st.running || now - last > 250) { last = now; renderQuickCalc(); repaint(); }
+    // …and now the one that gave way gets its turn. One slot, consumed once:
+    // it goes back through `ensureGains`, so a request whose answer is already
+    // on screen returns immediately and the two axes cannot ping-pong.
+    if (!st.running && gainPending) {
+      const p = gainPending;
+      gainPending = null;
+      ensureGains(p.axis, p.repaint);
+    }
   });
 }
 

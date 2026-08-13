@@ -142,12 +142,16 @@ check("...and the gap is exactly what the two cards differ by",
   Math.abs((1 + gain(r.ama)) / (1 + gain(r.ser)) - 2.55 / 2.65) < 0.001,
   `ratio ${((1 + gain(r.ama)) / (1 + gain(r.ser))).toFixed(4)}, cards say ${(2.55 / 2.65).toFixed(4)}`);
 
-// ---- 5. the ORDER does not claim more than the measurement ----------------
-// A player swaps to the option at the top, and the one they left then shows a
-// POSITIVE gain — "it said A, I took A, now it says B" (report, 2026-08-13).
-// That is what sorting on the CENTRE of two overlapping bands looks like from
-// the outside. The list is ranked by the LOWER bound instead: what an option is
-// worth AT LEAST, which is a proper order and cannot swap on luck.
+// ---- 5. the ORDER is the MEAN, and the band is beside it ------------------
+// The mean is the unbiased estimate of what an option is worth; the spread is a
+// property of the measurement, not of the option — run it long enough and the
+// spread goes to zero while the mean stays put. A lower-bound sort was tried
+// (2026-08-13) and reverted: it demotes whatever is merely hard to measure, and
+// a status mod is hard to measure by nature, so the list ends up describing the
+// simulator rather than the build.
+//
+// This does NOT make the order stable and is not meant to: two options whose
+// bands overlap are genuinely unranked, which the chip already says with its ±.
 const ord = await app.evaluate(`(async () => {
   const rows = [...document.querySelectorAll('#mod-menu .opt[data-id]')]
     .map((e) => e.dataset.id)
@@ -155,18 +159,52 @@ const ord = await app.evaluate(`(async () => {
     .filter((x) => x.g);
   return rows.map((x) => ({ id: x.id, pct: x.g.pct, se: x.g.se || 0 }));
 })()`);
-const lower = (g) => g.pct - g.se;
 check("the picker ranks the options it scanned", ord.length > 3, `${ord.length} rows`);
-const outOfOrder = ord.filter((g, i) => i > 0 && lower(g) > lower(ord[i - 1]) + 1e-9);
-check("...by what each is worth AT LEAST, so a wide band cannot outrank on luck",
-  outOfOrder.length === 0,
-  outOfOrder.slice(0, 2).map((g) => `${g.id} ${g.pct}+-${g.se}`).join(", "));
-// …and the rule BITES. Asserted on numbers rather than by hunting the live scan
-// for an overlapping pair, which it may not contain on any given day.
-const exactGain = { pct: 0.10, se: 0.00 };
-const wideGain = { pct: 0.12, se: 0.05 };
-check("...which is what puts an exact +10% above a +12% +-5%",
-  lower(exactGain) > lower(wideGain), `${lower(exactGain)} vs ${lower(wideGain)}`);
+const outOfOrder = ord.filter((g, i) => i > 0 && g.pct > ord[i - 1].pct + 1e-9);
+check("...by the MEAN, descending", outOfOrder.length === 0,
+  outOfOrder.slice(0, 2).map((g) => `${g.id} ${g.pct}`).join(", "));
+// …and a WIDE band does not cost an option its place, which is the half the
+// lower-bound sort got wrong. Asserted on numbers so it holds on any day.
+const wide = { pct: 0.95, se: 0.50 };
+const narrow = { pct: 0.90, se: 0.02 };
+check("...so a +95% ±50% still outranks a +90% ±2%",
+  wide.pct > narrow.pct, `${wide.pct} vs ${narrow.pct}`);
+
+// ---- 6. a half-filled ranking looks like one -----------------------------
+// An option the scan had not reached rendered exactly like one that finished
+// with nothing to say — no chip — while the list re-sorts on every result that
+// lands. Read mid-scan that is a ranking that keeps changing its mind, and the
+// only way to learn it was not final was to click away and back (report,
+// 2026-08-13).
+//
+// Driven as four STATES rather than by racing a live scan, which is the part
+// that cannot be timed reliably.
+const states = await app.evaluate(`(async () => {
+  const id = 'sicarus_prime_wisemans_regard';
+  const saveScan = gainScan, saveAxis = gainAxis;
+  const out = {};
+  gainScan = { key: null, axis: null, running: false, by: {}, done: 0, total: 0 };
+  out.idle = gainChipFor(id, 'EVO IV');
+  gainAxis = { kind: 'evo', idx: 0 };
+  gainScan = { key: gainKey(), axis: gainAxis, running: true, by: {}, done: 7, total: 12 };
+  out.pending = gainChipFor(id, 'EVO IV');
+  gainScan = { key: 'another-axis', axis: { kind: 'mods', idx: 0 }, running: true, by: {}, done: 3, total: 9 };
+  out.otherAxis = gainChipFor(id, 'EVO IV');
+  gainAxis = { kind: 'evo', idx: 0 };
+  gainScan = { key: gainKey(), axis: gainAxis, running: false, done: 12, total: 12,
+               by: { [id]: { pct: 0.4123, se: 0.0169, runs: 10, diverged: true } } };
+  out.done = gainChipFor(id, 'EVO IV');
+  gainScan = saveScan; gainAxis = saveAxis;
+  return out;
+})()`);
+check("an option the scan has not reached says so", /class="gainchip pend"/.test(states.pending),
+  states.pending.slice(0, 60));
+check("...and says how far along it is", /7/.test(states.pending) && /12/.test(states.pending),
+  states.pending.slice(0, 90));
+check("...but never on an axis nobody is measuring", states.otherAxis === "", states.otherAxis);
+check("...nor when nothing is running at all", states.idle === "", states.idle);
+check("a finished option shows its NUMBER, never the marker",
+  /\+41\.23%/.test(states.done) && !/pend/.test(states.done), states.done.slice(0, 60));
 
 
 console.log(failed ? `\n${failed} failed` : "\na quick-calc chip states how well it knows its number");

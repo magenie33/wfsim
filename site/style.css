@@ -1245,3 +1245,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .hits td.z{color:var(--muted)}
 .hits .ct{display:block;font-size:10px;color:var(--muted)}
 .kpi .ksub{font-size:10px;color:var(--muted)}
+
+/* An option the scan has not reached yet. Muted and non-committal on purpose:
+   it is the one state that must not read as a number. */
+.gainchip.pend { opacity: .45; letter-spacing: .1em; }

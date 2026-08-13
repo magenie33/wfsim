@@ -6,6 +6,7 @@
 # localized strings in descriptions.yaml, whole sentences at a time.
 
 ui:
+  "still measuring — {a} of {b} options ranked so far, and the order moves until it finishes": 还在测量——已排完 {a}/{b} 个选项，排序在结束前会一直变动
   "the Incarnon form's route to stacks is not modelled — entering grants 1 and leaving grants one per shell that was missing, on top of a free magazine refill, and played to the edge that is 2 x magazine - 1 stacks in one cycle": 灵化形态那条攒层路线尚未建模 —— 进形态给 1 层，出形态按进去时缺的每一发再给 1 层，还外送一次装满弹匣；打到极限是一个循环 2×弹匣−1 层
   "the by-round reload is now modelled — what is NOT is the INTERRUPTION: in game you can fire mid-reload and keep the shells you have loaded, and here a reload runs to the end": 逐发装填已经建模 —— 还没建模的是「打断」：游戏里可以装到一半开火、已经上膛的那几发算数，这里一次装填会走完
   "the by-round reload is not modelled — 0.8 s to start, 0.4 s a shell, 0.5 s to finish, interruptible at any point, and the sim reloads the whole magazine in one 3.7 s block": 逐发装填尚未建模 —— 起手 0.8 秒、每发 0.4 秒、收尾 0.5 秒，中途随时可打断，而模拟把整个弹匣算成一次 3.7 秒的装填
