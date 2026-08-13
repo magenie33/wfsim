@@ -371,8 +371,8 @@ ui:
   "what to read off the run — the scenario's own term, so an official ruler pins it": 从这次运行里读什么——这是场景自己的条款，所以官方标尺会把它锁住
   "the progenitor element — pool = searched, req = pin one": 始祖元素——pool 表示纳入搜索，req 表示钉死一个
   "the bonus this copy came out of its Lich with": 这把枪从它的 Lich 那里带出来的加成
-  "the progenitor element — it is added as the weapon's own BASE damage, so elemental mods and status scale with it": 始祖元素——它作为武器自身的基础伤害加上去，所以元素 mod 和异常都会跟着放大
-  "none — the weapon's printed panel": 无——就是武器面板上印的那样
+  "added as the weapon's own BASE damage — elemental mods and status scale with it": 作为武器自身的基础伤害加上去——元素 mod 和异常都会跟着放大
+  "the weapon's printed panel": 就是武器面板上印的那样
   # "Element" is already in the roster below and "Bonus" is already there
   # meaning 增益 (a buff), which this is not — so the control says VALENCE BONUS
   # and gets a key of its own rather than borrowing a word that means the other

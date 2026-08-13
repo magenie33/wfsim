@@ -126,9 +126,14 @@ const gain = await evaluate(`(async () => {
     .map(id => document.getElementById(id))
     .filter(b => b && !b.hidden)
     .map(b => b.id + ':' + ((b.querySelector('.bh .n') || {}).textContent || ''));
+  // …and the chips are ON SCREEN, in the same component every other ranked
+  // axis uses. A scan whose answers never reach a pick is a scan nobody reads.
+  const chips = [...document.querySelectorAll('#element-cfg .evopick .gainchip')].length;
+  const picks = [...document.querySelectorAll('#element-cfg .evopick')].length;
   return { kind: gainScan.axis && gainScan.axis.kind,
            ranked: Object.keys(gainScan.by || {}).sort(),
            cur: valence.element,
+           chips, picks,
            steps };
 })()`);
 
@@ -137,6 +142,11 @@ const gain = await evaluate(`(async () => {
 check("the quick calc ranks the valence axis",
   gain.kind === "valence" && gain.ranked.length === 6 && !gain.ranked.includes(gain.cur),
   `${gain.kind} ranked ${gain.ranked.length}: ${gain.ranked.join(",")} (on ${gain.cur})`);
+// THE SAME CHIP COMPONENT the mod and arcane lists use, on the pick itself —
+// eight picks (None plus the seven elements) and a chip on each ranked one.
+check("...with the gain on the pick, not in a tooltip",
+  gain.picks === 8 && gain.chips === 6,
+  `${gain.picks} picks, ${gain.chips} chips`);
 // THE STEP NUMBERS ARE DERIVED, not written into the markup (owner: "不应该写死
 // 的。应该取决于当前的武器的模块个数"). This weapon has no evolutions, so its
 // Valence block is step 4 — there is no 5 with nothing at 4.

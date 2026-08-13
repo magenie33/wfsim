@@ -6368,19 +6368,6 @@ const gainChip = (g, why) => {
   )}">≈${gainPct(g.pct)} ±${sig2(band * 100)}%</span>`;
 };
 
-/// A GAIN AS PLAIN TEXT, for a control whose rows are strings rather than HTML
-/// (the Valence dropdown). Same three shapes the chip has — exact, banded, and
-/// a measured zero — so a reader sees the same finding in both places.
-const gainHint = (id) => {
-  const g = gainOf(id);
-  if (!g) {
-    return gainScan.running && gainScan.key === gainKey() ? "…" : "";
-  }
-  const band = gainBand(g);
-  if (!band) return g.pct === 0 ? tr("no effect here") : gainPct(g.pct);
-  return `≈${gainPct(g.pct)} ±${sig2(band * 100)}%`;
-};
-
 const gainChipFor = (id, where) => {
   const g = gainOf(id);
   // A HALF-FILLED RANKING HAS TO LOOK LIKE ONE.
@@ -7322,27 +7309,39 @@ function renderValence() {
   if (!s) { box.innerHTML = ""; if (sub) sub.textContent = ""; return; }
   if (sub) sub.textContent = tr("the bonus this copy came out of its Lich with");
   const pct = (x) => Math.round(x * 1000) / 10;
+  // A PICK ROW, not a dropdown — the same shape an evolution tier has, and for
+  // the same reason: every option carries its own quick-calc gain, and a chip
+  // is the one place a reader can compare seven of them at a glance. Any factor
+  // that moves the headline number is ranked with this same UI.
+  //
+  // Which element wins is the question a scan is worth the most on here: a
+  // progenitor element is a whole element entering the hierarchy, so the answer
+  // depends on the mods around it and on the target, and no card states it.
+  const pick = (id, label, note) => {
+    const on = valence.element === id;
+    return `<span class="evopick${on ? " sel" : ""}" data-vel="${escHtml(id)}">
+      <span class="einfo"><b class="en">${escHtml(label)}${
+        id ? gainChipFor(id, tr("Valence")) : ""}</b><span class="ed"><div>${escHtml(note)}</div></span></span></span>`;
+  };
+  const picks =
+    pick("", tr("None"), tr("the weapon's printed panel")) +
+    s.elements
+      .map((e) => pick(e, DT(e), tr("added as the weapon's own BASE damage — elemental mods and status scale with it")))
+      .join("");
   box.innerHTML =
-    `<label title="${escHtml(tr("the progenitor element — it is added as the weapon's own BASE damage, so elemental mods and status scale with it"))}">${escHtml(tr("Element"))} ${
-      ddButton("dd-valence-el", {
-        value: valence.element,
-        // "None" stays available — it is the only way to see the weapon's own
-        // printed panel, which is what a reader comparing against the wiki's
-        // infobox wants — but it is not the DEFAULT, because no copy of this
-        // weapon exists without a bonus.
-        items: [{ value: "", label: tr("none — the weapon's printed panel") }].concat(
-          // EACH ELEMENT CARRIES ITS OWN GAIN, the same chip an evolution option
-          // does — the dropdown is where the choice is made, so it is where the
-          // number belongs.
-          s.elements.map((e) => ({ value: e, label: DT(e), hint: gainHint(e) })),
-        ),
-        onPick: (v) => { valence.element = v; markPresetDirty(); renderValence(); refreshPanel(); },
-      })}</label>` +
-    `<label title="${escHtml(tr("how big the roll was, as a share of base damage — a Lich rolls it randomly and Valence Fusion raises it, capping at the number on the right"))}">${escHtml(tr("Valence bonus"))} <span class="unit">%</span> <input type="number" id="valence-bonus" min="${pct(s.min)}" max="${pct(s.max)}" step="0.5" value="${pct(valence.bonus)}"${valence.element ? "" : " disabled"}></label>` +
-    `<span class="sim-hint">${escHtml(tr("rolls") + ` ${pct(s.min)}–${pct(s.max)}%`)}</span>`;
-  // …AND THE SCAN THAT FILLS THEM. Keyed like every other axis, so it runs once
+    `<div class="evo"><span class="rank">${escHtml(tr("Element"))}</span><div class="picks">${picks}</div></div>` +
+    `<div class="runs-row"><label title="${escHtml(tr("how big the roll was, as a share of base damage — a Lich rolls it randomly and Valence Fusion raises it, capping at the number on the right"))}">${escHtml(tr("Valence bonus"))} <span class="unit">%</span> <input type="number" id="valence-bonus" min="${pct(s.min)}" max="${pct(s.max)}" step="0.5" value="${pct(valence.bonus)}"${valence.element ? "" : " disabled"}></label>` +
+    `<span class="sim-hint">${escHtml(tr("rolls") + ` ${pct(s.min)}–${pct(s.max)}%`)}</span></div>`;
+  // The scan that fills the chips. Keyed like every other axis, so it runs once
   // per (build, fight) and repaints when it lands.
   ensureGains({ kind: "valence", idx: 0 }, () => renderValence());
+  box.querySelectorAll(".evopick").forEach((c) =>
+    c.addEventListener("click", () => {
+      valence.element = c.dataset.vel || "";
+      markPresetDirty();
+      renderValence();
+      refreshPanel();
+    }));
   const inp = $("valence-bonus");
   if (inp) {
     inp.addEventListener("change", () => {
