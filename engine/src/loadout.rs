@@ -3720,8 +3720,9 @@ mod tests {
         let with_mod = |id: &str| {
             resolve_for(&base, &[by(id)], StackPolicy::Emergent, neutral)
         };
-        // (the mod, its rankMax, the bucket setter, and what to read off)
-        let cases: &[(&str, fn(&mut crate::tenno_data::StatBonuses), fn(&ResolvedPanel) -> f64)] = &[
+        // (the mod, the bucket setter, and what to read off it)
+        type Case = (&'static str, fn(&mut crate::tenno_data::StatBonuses), fn(&ResolvedPanel) -> f64);
+        let cases: &[Case] = &[
             ("serration", |b| b.base_damage = 1.65, |p| p.modified_base),
             ("split_chamber", |b| b.multishot = 0.90, |p| p.multishot),
             ("point_strike", |b| b.crit_chance = 1.50, |p| p.crit_chance),
