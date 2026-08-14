@@ -410,6 +410,59 @@ check("a build the board would take still reaches the store",
 // THE ONE THAT COST THREE SUBMISSIONS: refused, and it never leaves.
 check("...and one it would refuse never leaves the page",
   door.bad.hitStore === false, `store called: ${door.bad.hitStore}`);
+// …AND NOBODY IS REFUSED FOR NOT HAVING POLARIZED YET.
+//
+// A submission carries NO polarities — the server plans the cheapest layout
+// itself — so the page's capacity floor is measured FULLY FORMA'D. Judging the
+// live layout instead would refuse exactly the people who had not got round to
+// it, which is the shape of every bug on this path (owner, 2026-08-14).
+const forma = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  localStorage.clear();
+  history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(3500);
+  const sc = builtinScenarios().find(s => s.builtin === 'single_target');
+  pickPreset(scenarioBarCfg(), presetId(sc)); await sleep(1000);
+  const eight = ['hornet_strike', 'barrel_diffusion', 'lethal_torrent',
+                 'primed_pistol_gambit', 'primed_target_cracker',
+                 'pathogen_rounds', 'primed_heated_charge', 'galvanized_shot'];
+  eight.forEach((m, i) => { slots[i].mod = m; slots[i].rank = modById(m).max_rank; });
+  arcanes = [(arcanePool(0) || [{ id: 'none' }])[0].id];
+  // NOT A POLARITY IN SIGHT, which is where a player starts.
+  slots.forEach(s => { s.pol = null; });
+  renderMods(); renderArcanes(); await sleep(400);
+  const bare = { raw: capacityUsed(), short: buildShortfalls() };
+  autoForma(); renderMods(); await sleep(400);
+  const planned = { raw: capacityUsed(), short: buildShortfalls() };
+
+  // …and the positive control: eight mods that cannot fit however much Forma
+  // you own. The Burston Prime's priciest eight are 64 against a 60 cap, which
+  // is one of the rows sitting refused on the live board.
+  history.pushState({}, '', '/weapons/Burston_Prime'); route(); await sleep(2500);
+  pickPreset(scenarioBarCfg(), presetId(sc)); await sleep(1000);
+  const fams = [];
+  const heavy = currentPool.filter(m => !m.exilus).sort((a, b) => b.drain - a.drain)
+    .filter(m => { if (!m.family) return true;
+                   if (fams.indexOf(m.family) >= 0) return false;
+                   fams.push(m.family); return true; })
+    .slice(0, 8);
+  heavy.forEach((m, i) => { slots[i].mod = m.id; slots[i].rank = m.max_rank; });
+  arcanes = [(arcanePool(0) || [{ id: 'none' }])[0].id];
+  autoForma(); renderMods(); renderArcanes(); await sleep(400);
+  return { bare, planned, over: buildShortfalls(), cap: capOf('burston_prime') };
+})()`);
+
+// The raw layout is far over 80 and the floor is not: the page must read the
+// floor, or a player who has not polarized is turned away for it.
+check("an unpolarized build is not refused for capacity",
+  forma.bare.raw > 80 && forma.bare.short.length === 0,
+  `raw ${forma.bare.raw}, shortfalls ${JSON.stringify(forma.bare.short)}`);
+check("...and the auto plan does not change that answer",
+  forma.planned.short.length === 0, JSON.stringify(forma.planned.short));
+// …and a build that genuinely cannot exist IS named, in the engine's own terms.
+check("a build over capacity even fully forma'd is named before the run",
+  forma.over.some((s) => /capacity|容量/.test(s)),
+  `cap ${forma.cap} · ${JSON.stringify(forma.over)}`);
+
 check("...with the reason ON SCREEN rather than in a workflow log",
   /Valence/.test(door.bad.panel) && /榜单不会收|would not take/.test(door.bad.panel),
   door.bad.panel.replace(/\s+/g, " ").slice(0, 160));

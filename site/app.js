@@ -5179,7 +5179,7 @@ function modDrain(m, rank) {
 // TOLD WHICH SLOTS, because two questions are asked of it: the panel counts
 // every slot the weapon has, and the BOARD counts the eight it judges — a
 // benchmark build drops the exilus one, so measuring a submission against all
-// nine would refuse a player for a slot the board never reads.
+// nine would ask about a slot the board never reads.
 const drainOver = (ss) => ss.reduce(
   (sum, s) => { const m = modById(s.mod); return m ? sum + slotDrain(modDrain(m, s.rank), m.polarity, s.pol) : sum; }, 0);
 function capacityUsed() {
@@ -8583,13 +8583,30 @@ function buildShortfalls() {
   // stored, and refused on every scoring run since, while this panel counted
   // only how many slots were full (owner, 2026-08-14).
   //
-  // MEASURED ON THE MAIN SLOTS, which is what the board judges: the exilus mod
-  // is dropped from the payload, so counting it here would name a shortfall the
-  // board does not have.
+  // MEASURED FULLY FORMA'D, never on the polarities you happen to have set.
+  // A submission carries NO polarities — the server plans the cheapest layout
+  // itself — so nobody is ever refused for not having polarized yet, and a page
+  // that judged the live layout would refuse exactly the people who had not got
+  // round to it (owner, 2026-08-14). The floor is every slot matched, which is
+  // the best any layout can reach and what `mods::fit` concludes; a build over
+  // THAT cannot exist however much Forma you own.
+  //
+  // ON THE MAIN SLOTS, which is what the board judges: the exilus mod is
+  // dropped from the payload, so counting it would name a shortfall the board
+  // does not have.
+  //
+  // OPTIMISTIC ON PURPOSE — it assumes even an Umbra mod gets its Forma, which
+  // `fit` allows on its retry. Erring this way means the page never blocks a
+  // build the board would take; the door catches anything this floor misses,
+  // and being told late beats being told wrongly.
   const cap = capOf(w.id);
-  const used = drainOver(mainSlots());
-  if (used > cap) {
-    out.push(tr("{n} of {m} capacity").replace("{n}", used).replace("{m}", cap));
+  const floor = mainSlots().reduce((sum, s) => {
+    const m = modById(s.mod);
+    return m ? sum + Math.ceil(modDrain(m, s.rank) / 2) : sum;
+  }, 0);
+  if (floor > cap) {
+    out.push(tr("{n} of {m} capacity even fully forma'd")
+      .replace("{n}", floor).replace("{m}", cap));
   }
   return out;
 }
