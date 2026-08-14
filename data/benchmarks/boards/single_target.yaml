@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: f74d431d4d199ec1c38c45890684ae5a4549866a
+engine: 9ec9e50c39ddd643a4c48dfa06e4667481f2c75b
 entries:
   - weapon: akarius_prime
     mode: base
@@ -3793,7 +3793,7 @@ entries:
     arcanes: [secondary_encumber]
   - weapon: scourge_prime
     mode: alternate
-    score: 6.874101093640503
+    score: 3.290535997659911
     mods: [primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, rime_rounds, high_voltage, hellfire]
     arcanes: [primary_compression]
   - weapon: scourge_prime
@@ -4387,6 +4387,12 @@ entries:
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
+    score: 12.383710701644915
+    mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vile_acceleration, vital_sense, thermite_rounds, malignant_force]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
     score: 12.35481611114498
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -4537,6 +4543,12 @@ entries:
     arcanes: [primary_merciless]
   - weapon: torid
     mode: cycle
+    score: 7.668756265496692
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
     score: 7.648140417312367
     mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, rifle_elementalist, vital_sense, infected_clip, malignant_force]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
@@ -4583,18 +4595,6 @@ entries:
     mods: [amalgam_serration, galvanized_chamber, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_merciless]
-  - weapon: torid
-    mode: cycle
-    score: 7.097636141734657
-    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, rime_rounds, malignant_force, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_swift_deliverance, torid_survivors_edge]
-    arcanes: [primary_merciless]
-  - weapon: torid
-    mode: cycle
-    score: 6.953530942064756
-    mods: [amalgam_serration, galvanized_chamber, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
-    arcanes: [primary_frostbite]
   - weapon: torid
     mode: base
     score: 1.1005765369904874
