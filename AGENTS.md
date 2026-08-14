@@ -409,6 +409,21 @@ around (decision 2026-07-31).
   strength and run count. The 3.8% gap between them is far inside the ±13% raw
   spread at 10 runs, so that ordering survives ONLY because the two are paired
   against the same luck, which is the thing that must not silently regress.
+  `node scripts/check_board_submit.mjs` is the TWENTY-SEVENTH, and the only one
+  that tests the WORKER: a build reaches the board through the page, the worker
+  and the scorer, and the middle hop had no test at all — which is where builds
+  were being lost, TWICE, the same way. `mode` was sent and never written down,
+  so every Incarnon weapon's row said `cycle` (2026-08-09); then `valence`, and
+  seven Kuva Nukor submissions were refused on every scoring run since they
+  arrived while the panel had told each submitter "sent" (owner, 2026-08-14).
+  The second one is the sharper case: `/api/board/check` had already approved a
+  payload CARRYING the element, and the field was dropped after the verdict, in
+  the one hop neither the engine nor the page can inspect. So the check asserts
+  the PROPERTY rather than the two fields — every key the page sends survives
+  into storage, and two builds differing in any one axis are two records rather
+  than a silent overwrite. It runs in plain node against a KV stub, so it costs
+  no browser. Verified to bite: dropping either half reports `lost: valence` and
+  collapses two elements onto one key.
   `node scripts/check_gain_freshness.mjs` is the ninth: a
   scenario edit reaches the quick calc immediately, including a field nobody
   has invented yet — the scan's cache key is DERIVED from the fight it will

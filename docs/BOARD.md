@@ -24,6 +24,19 @@ number**. Everything else follows from it:
 | the submissions | a Cloudflare KV namespace (binding `SUBMISSIONS`) | written by the endpoint |
 | the deploy | `wrangler.jsonc` | `npx wrangler deploy`, from a git push |
 | the endpoint | `worker/index.js` | the Cloudflare Worker, same origin |
+
+**THE ENDPOINT STORES THE WHOLE BUILD, and it has failed to twice.** `mode` was
+sent by the page and never written down (2026-08-09); `valence` was, and seven
+Kuva Nukor submissions were refused on every scoring run since they arrived —
+"Kuva Nukor has no Valence element" — while the panel had told each submitter
+"sent" (owner, 2026-08-14). `/api/board/check` cannot catch this one: it
+validates the payload the page is about to send, which DID carry the element,
+and the field was lost afterwards. Both times the identity hash was wrong the
+same way too, so two builds differing only in the dropped axis collapsed onto
+one key and the second overwrote the first. `scripts/check_board_submit.mjs`
+now asserts both properties against every axis, derived from a real payload
+rather than listed — the stranded records themselves are unrecoverable, since
+what they are missing was never stored.
 | the scorer | `cli/src/bin/wfsim-board.rs` | the scheduled job |
 | the automation | `.github/workflows/board.yml` | GitHub Actions |
 

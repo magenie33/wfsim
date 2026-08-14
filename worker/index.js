@@ -59,9 +59,17 @@ const bad = (msg, status = 400) =>
 /// whichever pairing the sort produced.
 ///
 /// Evolutions ARE a set: one per tier, and the tier decides where each sits.
+///
+/// AND THE VALENCE, for the same reason as the mode and with the same history.
+/// Two Kuva Nukors differing only in progenitor element are two builds with two
+/// scores; without it here they hashed to ONE key and each new element replaced
+/// the last. `engine::builds::identity` has carried it since the day the field
+/// existed — this line is the copy that did not, which is exactly the shape the
+/// paragraph above is about. Appended, so an ordinary weapon's key is the old
+/// one with a trailing empty field.
 const identity = (b) =>
   [b.benchmark, b.weapon, b.mode || "", b.mods.join(","),
-   [...b.evolutions].sort().join(","), b.arcanes.join(",")].join("|");
+   [...b.evolutions].sort().join(","), b.arcanes.join(","), b.valence || ""].join("|");
 
 async function submit(request, env) {
   if (!env.SUBMISSIONS) return bad("submission storage is not configured", 503);
@@ -96,6 +104,12 @@ async function submit(request, env) {
   // `alternate` mode"). Optional, because records written before this exist and
   // the scorer's fallback is what reads them.
   if (b.mode !== undefined && !ID.test(b.mode || "")) return bad("bad mode");
+  // THE PROGENITOR ELEMENT of an adversary weapon. Shape only, like the rest:
+  // WHICH elements a weapon rolls is game data this worker does not have, and
+  // `validate_for_board` refuses a wrong one by name. EMPTY IS LEGAL and is
+  // what every ordinary weapon sends, so this tests the value rather than its
+  // presence — a `!== undefined` guard here would reject the whole roster.
+  if (b.valence && !ID.test(b.valence)) return bad("bad valence");
   if (!list(b.mods) || b.mods.length > MAX_MODS) return bad("bad mods");
   if (!list(b.evolutions) || b.evolutions.length > 8) return bad("bad evolutions");
   if (!list(b.arcanes) || b.arcanes.length > 4) return bad("bad arcanes");
@@ -110,6 +124,18 @@ async function submit(request, env) {
     // HALF THE ENTRANT'S IDENTITY, and it used to be dropped on this line — the
     // page has sent it since 2026-08-07 and nothing here ever wrote it down.
     ...(b.mode ? { mode: b.mode } : {}),
+    // THE OTHER HALF THAT WAS DROPPED ON THIS LINE. The page has sent
+    // `valence` since 2026-08-13 and nothing here ever wrote it down, so every
+    // Kuva Nukor submission reached the scorer without one and was refused on
+    // every run since — "Kuva Nukor has no Valence element", seven of them,
+    // while the panel had told each submitter "sent" (owner, 2026-08-14).
+    //
+    // `/api/board/check` closed the half of this that the PAGE could see: it
+    // asks the scorer's own validator before sending, so a build with no
+    // element is refused on screen. It could not see this one — the payload it
+    // validated DID carry the element, and the field was lost after the
+    // verdict, in the one hop neither the engine nor the page can inspect.
+    ...(b.valence ? { valence: b.valence } : {}),
     // As submitted. The order IS the build (see `identity`).
     mods: b.mods,
     evolutions: b.evolutions,
