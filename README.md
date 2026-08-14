@@ -36,6 +36,9 @@ run every test in game. See [CONTRIBUTING.md](CONTRIBUTING.md).
 mise install             # pinned Rust toolchain
 cargo test --workspace
 cargo run -p wfsim-web   # web UI → http://localhost:8787
+
+cargo run --release --bin one_fight -- save   # engine cost, before a change
+cargo run --release --bin one_fight           # …and after: delta + did the answer move
 ```
 
 ## Docs

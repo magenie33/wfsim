@@ -87,6 +87,41 @@ so rebuild `wfsim-web` after any JS/CSS/HTML change.
 
 This is the area where the pace warning above bites hardest. Issue first.
 
+### 6. Engine performance (`engine/`, Rust — measurable, low review risk)
+
+The one area where a contribution can be judged by a number rather than by
+taste, and where you do not need to know the game to help.
+
+```sh
+cargo run --release --bin one_fight -- save    # baseline, on YOUR machine
+#   …change the engine…
+cargo run --release --bin one_fight            # cost delta, and did the answer move
+```
+
+**The answer must not move.** The tool compares both means exactly against your
+baseline and exits non-zero if either changed — an optimisation that changes a
+number is a bug, and this is the one thing it will not let you miss. It catches
+a change of one part in 10¹².
+
+**Read its table across, not down.** The default is three weapon shapes,
+because a change to the inner loop rarely moves them together: `-C
+target-cpu=native` measured −23% / −36% / **+31%** across them.
+
+Before you start, [`docs/DEVELOPMENT.md` §5](docs/DEVELOPMENT.md) lists what has
+already been tried and what each was worth — LTO, dropping a hot-path
+allocation, auto-vectorisation, removing every status proc — so you do not
+spend a day rediscovering that three of them are noise. It also has the one
+that worked, as a worked example: the win came from reading the per-instance
+path for ALLOCATIONS, not from guessing at arithmetic.
+
+Two things worth knowing before you aim:
+
+- **`one_fight` measures one simulation.** The optimizer's cost is
+  `sims × ms/run`, and the `sims` half belongs to `wfsim-truth`. Neither tool
+  alone is a performance claim about the search.
+- **It measures native; the product ships as wasm.** Good for ranking two
+  versions of the same code, not for predicting a phone.
+
 ## What gets acted on
 
 - **A reproduction** — a share link plus the number you got in game. This is
