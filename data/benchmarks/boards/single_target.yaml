@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 085eb8713fb1f0e4b7b7b930862537f386ba25b6
+engine: 1c84d7a212e4cb5466bae223ff173313b90da557
 entries:
   - weapon: akarius_prime
     mode: base
@@ -225,6 +225,12 @@ entries:
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage, incendiary_coat]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
     arcanes: [shotgun_vendetta]
+  - weapon: boar_prime
+    mode: base
+    score: 31.01147573331961
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_frostbite]
   - weapon: boar_prime
     mode: base
     score: 30.64063442078382
@@ -4810,31 +4816,31 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: vectis_prime
     mode: base
-    score: 13.1417286508915
+    score: 24
     mods: [primary_acuity, galvanized_aptitude, critical_delay, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_crux]
   - weapon: vectis_prime
     mode: base
-    score: 12.538740112145138
+    score: 23.333333333333332
     mods: [primary_acuity, serration, critical_delay, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_crux]
   - weapon: vectis_prime
-    mode: cycle
-    score: 10.566295033902954
-    mods: [primary_acuity, serration, hunter_munitions, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, infected_clip, thermite_rounds]
-    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
-    arcanes: [primary_deadhead]
-  - weapon: vectis_prime
     mode: base
-    score: 9.756327361269893
+    score: 18.244719544907067
     mods: [primary_acuity, serration, hunter_munitions, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, infected_clip, thermite_rounds]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_deadhead]
   - weapon: vectis_prime
     mode: cycle
-    score: 7.695683514476215
+    score: 10.720846525872544
+    mods: [primary_acuity, serration, hunter_munitions, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, infected_clip, thermite_rounds]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: vectis_prime
+    mode: cycle
+    score: 7.860319573810538
     mods: [heavy_caliber, primary_acuity, galvanized_aptitude, cautious_shot, vile_acceleration, vital_sense, radiated_reload, infected_clip]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_deadhead]
