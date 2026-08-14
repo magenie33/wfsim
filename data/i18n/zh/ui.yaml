@@ -55,9 +55,16 @@ ui:
   "the by-round reload is not modelled — this weapon refills a shell at a time and the reload can be interrupted, and the sim reloads the whole magazine": 逐发装填尚未建模 —— 这把枪一次装一发、装填过程可被打断，而模拟一次装满整个弹匣
   "the duplex trigger is not modelled — one pull fires TWO rounds in game and this entry paces one per pull": 双发扳机尚未建模 —— 游戏里扣一次扳机打出两发，这个条目按一次一发计算射速
   "the held beam's charge ramp is not modelled — in game its damage climbs to 2.5x the longer the trigger is held": 持续光束的蓄力爬升尚未建模 —— 游戏里按住越久伤害越高，最高 2.5 倍
-  "the sniper combo counter is not modelled — a scoped sniper's damage climbs with consecutive hits in game and stays flat here": 狙击连击计数尚未建模 —— 游戏里连续命中会让伤害逐级提升，这里始终是平的
+  "Shot Combo Counter": 射击连击计数
+  "Damage ×1.5 at 1 hit, +0.5 every ×3": 连击 1 时伤害 ×1.5，之后每翻三倍再 +0.5
+  "Damage ×1.5 at 5 hits, +0.5 every ×3": 连击 5 时伤害 ×1.5，之后每翻三倍再 +0.5
+  "Scoped in, consecutive hits build a Shot Combo Counter: 1 landing hit multiply damage by 1.5x, and every threefold count past that adds another 0.5x. It drops by one for every 2 s without a hit, and it pays nothing at all from the hip.": 瞄准状态下连续命中会累积射击连击：命中 1 次即让伤害 ×1.5，此后每当连击数翻到三倍就再 +0.5。每 2 秒没有命中就掉 1 层，腰射则完全不生效。
+  "Scoped in, consecutive hits build a Shot Combo Counter: 5 landing hits multiply damage by 1.5x, and every threefold count past that adds another 0.5x. It drops by one for every 2 s without a hit, and it pays nothing at all from the hip.": 瞄准状态下连续命中会累积射击连击：命中 5 次即让伤害 ×1.5，此后每当连击数翻到三倍就再 +0.5。每 2 秒没有命中就掉 1 层，腰射则完全不生效。
+  "Its scope's top zoom (4.5x) grants +50% headshot damage while aiming, additive with headshot mods. This arena has no field of view to trade for magnification, so the scope is always at that level.": 它瞄准镜的最高倍率（4.5x）在瞄准时提供 +50% 爆头伤害，与爆头 MOD 加算。这个战场没有视野概念，倍率不需要用视野去换，所以瞄准镜始终停在这一档。
+  "Its scope's top zoom (6.0x) grants +60% headshot damage while aiming, additive with headshot mods. This arena has no field of view to trade for magnification, so the scope is always at that level.": 它瞄准镜的最高倍率（6.0x）在瞄准时提供 +60% 爆头伤害，与爆头 MOD 加算。这个战场没有视野概念，倍率不需要用视野去换，所以瞄准镜始终停在这一档。
+  "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its 2 s timer, which runs slightly generous": 打空一枪会掉一层连击，这一点尚未建模 —— 这个战场没有距离概念，每一发都必中，所以连击只会因为 2 秒计时而衰减，比实战略微宽松
+  "the sniper combo counter and the scope's headshot bonus are not modelled in this form — both are modelled on the base form, and no source states whether either survives the transform (the wiki notes only that you must UNZOOM to enter it)": 这个形态下的狙击连击计数与瞄准镜爆头加成都尚未建模 —— 两者在基础形态里都已建模，但没有任何资料说明它们能否在变形后保留（wiki 只提到必须先退出瞄准才能进入灵化形态）
   "the spool-up is not modelled — this entry fires at the fully spooled rate from the first round": 预热尚未建模 —— 这个条目从第一发就按预热完成后的射速开火
-  "the stepped zoom is not modelled, and neither is the scope's own headshot bonus": 分级瞄准镜尚未建模，瞄准镜自带的爆头加成也没有
   "this weapon's passive is not modelled yet": 这把武器的被动尚未建模
   # THE PRODUCT NAME. The wordmark stays WFSim everywhere (logo, <title>, the
   # topbar) — it is a mark, not a word. Chinese PROSE calls it WF模拟

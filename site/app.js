@@ -121,6 +121,12 @@ const dtIcon = (ty) => {
 let EFFECT_RES = null;
 const tf = (x) => {
   if (!I18N || typeof x !== "string") return x;
+  // AN EXACT TRANSLATION BEATS A SUBSTITUTION. The phrase table is the
+  // FALLBACK — it exists for the sentences DE never wrote — so a string the
+  // overlay states in full is taken whole rather than word by word. Without
+  // this, "Damage x1.5 at 5 hits, +0.5 every x3" came out as one Chinese word
+  // followed by the English it was embedded in.
+  if (I18N.ui && I18N.ui[x]) return I18N.ui[x];
   if (!EFFECT_RES) {
     EFFECT_RES = (I18N.effect_phrases || []).flatMap(([pat, cn, flags]) => {
       try { return [[new RegExp(pat, flags || "gi"), cn]]; } catch (_) { return []; }
@@ -8917,7 +8923,13 @@ function buffCardName(name) {
   const owner = [...(META.mods || []), ...(META.arcanes || []), ...evos,
     ...Object.values(META.mod_pools || {}).flat()]
     .find((x) => (x.name_en || x.name) === head);
-  const label = owner ? owner.name : head;
+  // NO OWNER MEANS THE NAME IS OURS. Every card here used to be a mod's, an
+  // arcane's or an evolution's, so a head with no owner could only be a
+  // lookup that had gone stale — and falling through to the English was the
+  // right way to notice. A WEAPON PASSIVE has no owner by construction (the
+  // sniper's Shot Combo Counter is the weapon's, not a mod's), so its name is
+  // an ordinary UI string and belongs in the overlay like every other one.
+  const label = owner ? owner.name : tr(head);
   return tail ? `${label} (${tr(tail.replace(/\)$/, ""))})` : label;
 }
 

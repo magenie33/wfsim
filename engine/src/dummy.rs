@@ -938,13 +938,13 @@ impl DebuffState {
     /// The roster's live counts at `now`, positionally matching
     /// [`DEBUFF_ROSTER`]. Expired entries are excluded rather than pruned —
     /// sampling must not change the fight it is sampling.
-    fn sample(&self, now: f64) -> Vec<u8> {
-        let live = |v: &Vec<f64>| v.iter().filter(|&&e| e > now).count() as u8;
+    fn sample(&self, now: f64) -> Vec<u16> {
+        let live = |v: &Vec<f64>| v.iter().filter(|&&e| e > now).count() as u16;
         let dots_of = |t: DamageType| {
             self.dots
                 .iter()
                 .filter(|d| d.dtype == t && d.ticks_left > 0)
-                .count() as u8
+                .count() as u16
         };
         vec![
             live(&self.virus),
@@ -953,16 +953,16 @@ impl DebuffState {
             live(&self.confusion),
             // A Blast stack is a FUSE rather than an expiry: it is waiting to go
             // off, not waiting to wear off.
-            self.blast.iter().filter(|b| b.fuse > now).count() as u8,
+            self.blast.iter().filter(|b| b.fuse > now).count() as u16,
             live(&self.freeze),
-            u8::from(self.frozen_until.is_some_and(|e| e > now)),
+            u16::from(self.frozen_until.is_some_and(|e| e > now)),
             live(&self.stagger),
             live(&self.weakened),
             live(&self.attractor),
             dots_of(DamageType::Slash),
             dots_of(DamageType::Toxin),
-            u8::from(self.heat.is_some()),
-            u8::from(self.microwave),
+            u16::from(self.heat.is_some()),
+            u16::from(self.microwave),
         ]
     }
 }
@@ -1596,6 +1596,16 @@ pub struct DummyParams {
     pub beam_ramp_floor: f64,
     /// Does this weapon apply MICROWAVE? See [`DebuffState::microwave`].
     pub applies_microwave: bool,
+    /// THE SHOT COMBO COUNTER, or `None` — which is what a sniper fired from
+    /// the hip already resolved to, so nothing here asks about aiming.
+    pub sniper_combo: Option<crate::weapons_data::SniperCombo>,
+    /// The counter the run OPENS with. Seeded like every other stack count,
+    /// and it matters more than most: the counter costs LANDING HITS and a
+    /// sniper fires slowly, so a fight short enough to be worth measuring can
+    /// end before the multiplier a player actually plays at ever appears.
+    pub combo_initial: u32,
+    /// ...and the card's "no timeout": the counter never decays.
+    pub combo_held: bool,
     /// The Ocucor's tendril cap (0 = no tendrils). Their own damage is not
     /// modelled and should not be — see `weapons_data::TendrilSpec`; the COUNT
     /// is what Sentient Surge reads.
@@ -1705,11 +1715,11 @@ pub struct Frame {
     /// Effective damage by source, cumulative — the damage meter's own shape.
     pub sources: SourceDamage,
     /// Live stacks per buff, positionally matching [`Replay::buffs`].
-    pub stacks: Vec<u8>,
+    pub stacks: Vec<u16>,
     /// …and the same for the TARGET, positionally matching [`DEBUFF_ROSTER`].
     /// The mirror of the line above, because the page draws one table from each
     /// and the two are the same component (owner, 2026-08-11).
-    pub debuffs: Vec<u8>,
+    pub debuffs: Vec<u16>,
 }
 
 /// A replay of one engagement: the buff roster it was fought with, and a frame
@@ -1833,6 +1843,26 @@ impl DummyParams {
         }
         if let Some(s) = &self.cc_stack {
             out.push(("on_headshot_kill_cc".into(), s.max_stacks));
+        }
+        // THE SHOT COMBO COUNTER — a buff by the same three tests: it is
+        // gained on a trigger (a landing hit), it is lost on one (two seconds
+        // without), and its count is a number a player can read off their own
+        // reticle. UNCAPPED (0), because the tiers keep climbing and the wiki
+        // gives no ceiling — the eighth is 11025 hits, which no fight reaches
+        // and which is not a reason to invent a maximum.
+        //
+        // It is rostered only when the fight can BUILD one, and `resolve` has
+        // already emptied it for a hip-fired scenario — so the no-aim ruler
+        // shows a sniper no card, which is correct and is the only place in
+        // the app where that ruler changes what a weapon HAS.
+        // BOTH FORMS ARE ASKED. In an Incarnon cycle the OUTER params are the
+        // Incarnon panel's — `incarnon_cycle_from_panels` builds it that way —
+        // so a counter declared on the base form is invisible from here, and
+        // the Vectis Prime's card was missing for exactly that reason.
+        if self.sniper_combo.is_some()
+            || self.cycle.as_ref().is_some_and(|c| c.base_form.sniper_combo.is_some())
+        {
+            out.push(("sniper_combo".into(), 0));
         }
         // TENDRILS — the Ocucor's passive, and a buff by every test that
         // matters: it is gained on a trigger (a kill), it is lost on one (a
@@ -1968,6 +1998,13 @@ impl DummyParams {
         }
         if let Some(s) = self.cc_stack.as_mut() {
             set_stack(s, cfg, "on_headshot_kill_cc");
+        }
+        // The combo the run opens with. `locked` is the same reading the
+        // tendrils give it: not a duration, but the statement that the thing
+        // which ENDS this buff no longer does — here, the decay.
+        if let Some(&(stacks, locked)) = cfg.get("sniper_combo") {
+            self.combo_initial = stacks;
+            self.combo_held = locked;
         }
         // The tendril count, seeded like any stack count. `locked` cannot be a
         // duration here — a tendril has no clock, it is cleared by a magazine
@@ -2316,6 +2353,11 @@ impl DummyParams {
             syndicate_radial: panel.syndicate_radial,
             forced_procs: panel.forced_procs.clone(),
             attractor_seconds: panel.attractor_seconds,
+            sniper_combo: panel.sniper_combo,
+            // NOTHING IN HAND. A fight starts with the counter at zero for the
+            // same reason it starts with no tendrils up — the card moves it.
+            combo_initial: 0,
+            combo_held: false,
             tendril_max: panel.tendril_max,
             cc_per_tendril: panel.cc_per_tendril,
             sc_per_tendril: panel.sc_per_tendril,
@@ -2562,6 +2604,9 @@ impl Default for DummyParams {
             beam_ramp_floor: BEAM_RAMP_FLOOR,
             applies_microwave: false,
             syndicate_radial: None,
+            sniper_combo: None,
+            combo_initial: 0,
+            combo_held: false,
             tendril_max: 0,
             cc_per_tendril: 0.0,
             sc_per_tendril: 0.0,
@@ -4627,9 +4672,12 @@ fn sample_stacks(
     tendrils: u32,
     cc_hit_stacks: u32,
     bar: &BuffBar,
-) -> Vec<u8> {
-    let cap = |n: u32| n.min(u8::MAX as u32) as u8;
-    let live = |on: bool| u8::from(on);
+    combo: u32,
+) -> Vec<u16> {
+    // u16, not u8: the Shot Combo Counter runs into the hundreds and a
+    // capped curve would be a chart that lies about the fight it draws.
+    let cap = |n: u32| n.min(u32::from(u16::MAX)) as u16;
+    let live = |on: bool| u16::from(on);
     rep.buffs
         .iter()
         .map(|(id, _max)| match id.as_str() {
@@ -4656,6 +4704,9 @@ fn sample_stacks(
             // Read off the loop's own counter rather than re-derived: the
             // fight is the only thing that knows how many are up.
             "tendrils" => cap(tendrils),
+            // ...and the same for the combo, which is why the frame series is
+            // u16: this is the first buff whose honest count runs past 255.
+            "sniper_combo" => cap(combo),
             "on_headshot_cc" => live(now < ch_buff_expiry),
             "on_kill_cd" => live(now < arc.cd_kill_expiry()),
             "on_reload_bd" => live(now < bd_reload_expiry),
@@ -4677,6 +4728,177 @@ fn sample_stacks(
             },
         })
         .collect()
+}
+
+#[cfg(test)]
+mod sniper_combo_fight {
+    use super::*;
+
+    fn vectis_prime(duration: f64) -> DummyParams {
+        let base = crate::loadout::WeaponBase::from_data("vectis_prime", false, &[]);
+        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let panel =
+            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        DummyParams::from_panel(
+            &panel,
+            &crate::arena::Arena::training(duration),
+            &crate::arcanes_data::ArcaneFx::none(),
+        )
+    }
+
+    /// THE COUNTER BUILDS ITSELF. A fight long enough to fire past the Vectis
+    /// Prime's five-hit minimum does more damage than the same fight cut off
+    /// before it, and a run that walks in holding a high count does more than
+    /// either — which is the whole reason the card exists.
+    #[test]
+    fn the_combo_multiplies_the_fight() {
+        let cold = vectis_prime(60.0);
+        assert!(cold.sniper_combo.is_some(), "the panel carried it into the fight");
+
+        let mut held = cold.clone();
+        held.combo_initial = 405;
+        held.combo_held = true;
+
+        let a = monte_carlo(&cold, 40, 7);
+        let b = monte_carlo(&held, 40, 7);
+        // Held at 405 the multiplier is 3.5x for the whole run; earned from
+        // scratch it climbs through 1.0/1.5/2.0/2.5 and ends around 3.0 for a
+        // fight this length, so the held run is ahead but not by 3.5x.
+        assert!(
+            b.mean_damage > a.mean_damage * 1.2,
+            "a held combo is worth more than an earned one: {} vs {}",
+            b.mean_damage,
+            a.mean_damage
+        );
+        // ...and a weapon with no combo is untouched by either knob, which is
+        // what keeps this mechanic from leaking into the rest of the roster.
+        let mut none = cold.clone();
+        none.sniper_combo = None;
+        let mut none_held = none.clone();
+        none_held.combo_initial = 405;
+        none_held.combo_held = true;
+        assert!(
+            (monte_carlo(&none, 20, 7).mean_damage
+                - monte_carlo(&none_held, 20, 7).mean_damage)
+                .abs()
+                < 1e-9,
+            "no combo, no difference"
+        );
+    }
+
+    /// AN INCARNON CYCLE'S COMBO IS THE BASE FORM'S, and it took a measurement
+    /// through the real endpoint to notice: the Vectis Prime's panel carried a
+    /// counter, every unit test above passed, and `/api/simulate` reported the
+    /// same damage whether the card said 0 or 405. `incarnon_cycle_from_panels`
+    /// builds the outer `DummyParams` from the INCARNON panel and hangs the
+    /// base form off `cycle.base_form` — so `params.sniper_combo` was the
+    /// Incarnon form's `None` and the base form's counter was never read.
+    ///
+    /// The cycle is how this weapon is actually played, so a mechanic that
+    /// works everywhere except there works nowhere that matters.
+    #[test]
+    fn a_cycle_pays_the_base_forms_combo() {
+        let base = crate::loadout::WeaponBase::from_data("vectis_prime", false, &[]);
+        let inc = crate::loadout::WeaponBase::from_data("vectis_prime_incarnon", false, &[]);
+        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let pol = crate::loadout::StackPolicy::Emergent;
+        let arena = crate::arena::Arena::training(60.0);
+        let cycle = |initial: u32, held: bool| {
+            let mut p = DummyParams::incarnon_cycle_from_panels(
+                &crate::loadout::resolve(&inc, &refs, pol),
+                &crate::loadout::resolve(&base, &refs, pol),
+                false,
+                LockMode::Initial(0),
+                &arena,
+                &crate::arcanes_data::ArcaneFx::none(),
+            );
+            p.combo_initial = initial;
+            p.combo_held = held;
+            p
+        };
+        // The card exists on a cycle at all — this is the assertion that was
+        // false, and `replay.buffs` came back empty because of it.
+        assert!(
+            cycle(0, false).buff_roster().iter().any(|(id, _)| id == "sniper_combo"),
+            "the cycle offers the counter its base form has"
+        );
+        let cold = monte_carlo(&cycle(0, false), 40, 3);
+        let hot = monte_carlo(&cycle(405, true), 40, 3);
+        assert!(
+            hot.mean_damage > cold.mean_damage * 1.1,
+            "the card moves a cycle's number: {} vs {}",
+            hot.mean_damage,
+            cold.mean_damage
+        );
+    }
+
+    /// DECAY IS BY ONE, NOT A RESET — *"reduced by 1 after a short period of
+    /// time that no successful hits have been made"* — so a sniper interrupted
+    /// for a second keeps almost all of it, and one interrupted for a minute
+    /// keeps thirty fewer.
+    #[test]
+    fn the_counter_decays_one_at_a_time() {
+        let c = crate::weapons_data::SniperCombo { min: 5, seconds: 2.0 };
+        assert_eq!(combo_at(Some(c), false, 100, 0.0, 1.9), 100);
+        assert_eq!(combo_at(Some(c), false, 100, 0.0, 2.0), 99);
+        assert_eq!(combo_at(Some(c), false, 100, 0.0, 60.0), 70);
+        // Past the bottom it stops rather than wrapping.
+        assert_eq!(combo_at(Some(c), false, 3, 0.0, 600.0), 0);
+        // LOCKED means the thing that ends this buff no longer does.
+        assert_eq!(combo_at(Some(c), true, 100, 0.0, 600.0), 100);
+        // A weapon without one has no counter to read.
+        assert_eq!(combo_at(None, false, 100, 0.0, 1.0), 0);
+    }
+
+    /// It is a rostered buff, so it gets a card and a replay curve — and the
+    /// curve is the reason `Frame::stacks` is u16: a sniper past its fourth
+    /// tier has been counting for longer than a u8 can hold.
+    #[test]
+    fn the_counter_is_on_the_roster_and_in_the_replay() {
+        let p = vectis_prime(60.0);
+        let roster = p.buff_roster();
+        let at = roster
+            .iter()
+            .position(|(id, _)| id == "sniper_combo")
+            .expect("the combo is a rostered buff");
+        assert_eq!(roster[at].1, 0, "uncapped: the tiers do not stop");
+
+        let rep = replay(&p, 12345, 60);
+        let peak = rep.frames.iter().map(|f| f.stacks[at]).max().unwrap_or(0);
+        assert!(peak >= 5, "the curve shows the counter climbing past the minimum: {peak}");
+    }
+}
+
+/// THE SHOT COMBO COUNTER as it stands at `t`, given the count as of the last
+/// landing hit. Decay is computed rather than ticked because this loop has no
+/// clock of its own: it advances shot to shot, and a counter that lost one per
+/// elapsed period is exactly what *"reduced by 1 after a short period of time
+/// that no successful hits have been made"* describes.
+///
+/// A MISS never happens here. The wiki's other decay trigger — *"or if the
+/// player misses a shot"* — needs an accuracy model this arena does not have
+/// (docs/UNMODELLED.md: no distance), so every shot lands and the counter only
+/// ever decays through time. It is recorded on the weapon's card as the one
+/// way this runs generous.
+fn combo_at(
+    spec: Option<crate::weapons_data::SniperCombo>,
+    held: bool,
+    count: u32,
+    last_hit: f64,
+    t: f64,
+) -> u32 {
+    let Some(c) = spec else { return 0 };
+    if held || c.seconds <= 0.0 {
+        return count;
+    }
+    let lost = ((t - last_hit) / c.seconds).floor();
+    if lost <= 0.0 {
+        count
+    } else if lost >= f64::from(u32::MAX) {
+        0
+    } else {
+        count.saturating_sub(lost as u32)
+    }
 }
 
 /// A stacking spec's decay period, or 0 when the spec is absent.
@@ -5113,6 +5335,24 @@ pub fn run_once_traced(
     let mut cc_hit_transform_mark = 0u32;
     let mut cc_hit_seed = params.cc_per_hit.map_or(0, |(_, cap)| params.cc_per_hit_initial.min(cap));
     let mut cc_hit_stacks = cc_hit_seed;
+    // THE SHOT COMBO COUNTER: the count as of the last landing hit, and when
+    // that was. `combo_at` turns the pair into the count at any later moment.
+    // The seed is in hand at t = 0, so the clock starts there rather than at
+    // minus infinity — otherwise the card's count would decay away before the
+    // first shot.
+    let mut combo_count = params.combo_initial;
+    let mut combo_last_hit = 0.0f64;
+    // THE COUNTER IS THE WEAPON'S, NOT THE FORM'S. Its spec — the minimum and
+    // the decay period — comes from whichever form declares one, so a cycle
+    // that spends half the engagement in a form with no combo does not lose
+    // the count it built. What the form DOES decide is whether a hit in it
+    // counts and whether it pays, which is read off `ap` at the hit itself:
+    // the Incarnon forms declare no combo (nothing published says whether it
+    // survives the transform — see their `unmodeled:`), so their hits do
+    // neither while the two-second clock keeps running.
+    let combo_spec = params
+        .sniper_combo
+        .or_else(|| params.cycle.as_ref().and_then(|c| c.base_form.sniper_combo));
     // The card's opening count, which the fight then treats exactly like an
     // earned one: it is spent by the magazine event that clears the rest.
     let mut tendril_seed = params.tendrils_initial.min(params.tendril_max);
@@ -5141,6 +5381,8 @@ pub fn run_once_traced(
                     params, rep, next_frame, &mut arc, &mut gal, &mut buff_stacks,
                     &ch_stacks, ch_buff_expiry, fr_reload_expiry, bd_reload_expiry,
                     bd_eximus_expiry, streak_expiry, tendrils, cc_hit_stacks, &bar,
+                    combo_at(combo_spec, params.combo_held, combo_count,
+                        combo_last_hit, next_frame),
                 );
                 rep.frames.push(Frame {
                     t: next_frame,
@@ -6453,6 +6695,20 @@ pub fn run_once_traced(
                 // damage bonuses such as Hornet Strike"; "affects both
                 // forms", the explosions included).
                 let attrition = noncrit_mult(ap.noncrit_bonus, tier, &mut d.spine);
+                // THE SHOT COMBO COUNTER, as the counter stood when this shot
+                // was fired. Read BEFORE the hit is counted, because that is
+                // the multiplier the player saw under the reticle when they
+                // pulled — the hit that reaches Minimum Combo is the one that
+                // ARMS it, not the one that spends it.
+                //
+                // It multiplies the whole shot, direct and radial alike: the
+                // wiki calls it "a bonus to their total damage". Only the
+                // DIRECT hit builds it — *"Area-of-effect and damage over time
+                // do not affect the Shot Combo Counter"* — which is counted
+                // below.
+                let combo_now =
+                    combo_at(combo_spec, params.combo_held, combo_count, combo_last_hit, t);
+                let combo_mult = ap.sniper_combo.map_or(1.0, |c| c.multiplier(combo_now));
                 let raw = qtotal
                     * part_factor
                     * crit_mult
@@ -6475,6 +6731,7 @@ pub fn run_once_traced(
                     // others rather than joining any of them.
                     * params.ability_final_at(t)
                     * beam_ramp
+                    * combo_mult
                     * pm_mult;
                 let head_direct = direct && part.is_head;
                 let col = target.incoming_column(&params.target);
@@ -6526,6 +6783,14 @@ pub fn run_once_traced(
                                 ("attrition", attrition),
                                 ("Warframe ability", params.ability_final_at(t)),
                                 ("beam ramp", beam_ramp),
+                                // DOUBLE TAP and SYNTH CHARGE were applied and
+                                // never listed, which is the exact failure
+                                // `check_hit_account` exists to catch — it only
+                                // slipped because both are 1.0 in every build
+                                // the check had run.
+                                ("Double Tap", dt_mult),
+                                ("Synth Charge", sc_mult),
+                                ("sniper combo", combo_mult),
                                 ("multishot-generated", pm_mult),
                             ],
                             raw,
@@ -6534,6 +6799,16 @@ pub fn run_once_traced(
                     }
                 }
                 if direct {
+                    // ONE PER LANDING PELLET. *"Weapons with Multishot will
+                    // count each successful hit from the same shot as multiple
+                    // shot instances"* — and per enemy under Punch Through,
+                    // which this arena has only one of. Counted here so the
+                    // NEXT instance sees it, which is the order the previous
+                    // paragraph reads it in.
+                    if ap.sniper_combo.is_some() {
+                        combo_count = combo_now + 1;
+                        combo_last_hit = t;
+                    }
                     r.sources.direct += effective;
                     add_by_type(&mut r.sources.direct_by_type, &qvec, effective, &col);
                 } else {
@@ -8316,7 +8591,7 @@ mod tests {
             .iter()
             .position(|(id, _)| id == "full_burst_damage")
             .expect("the buff is on the roster");
-        let series: Vec<u8> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+        let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
         assert!(series.contains(&5), "it reaches the cap: {series:?}");
         assert!(series.iter().all(|&v| v <= 5), "and never passes it: {series:?}");
         // RESET: the pile comes back DOWN to zero, which only the refill can do
@@ -8411,7 +8686,7 @@ mod tests {
         let trace = replay(&p, Rng::new(7).state(), 600);
         let i = trace.buffs.iter().position(|(id, _)| id == "on_empty_reload_damage")
             .expect("on the roster");
-        let series: Vec<u8> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+        let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
         assert_eq!(series[0], 0, "it opens empty — the fight earns it");
         assert!(series.contains(&2), "two reloads reach the cap: {series:?}");
         assert!(series.iter().all(|&v| v <= 2), "and never pass it");
@@ -8705,7 +8980,7 @@ mod tests {
         let trace = replay(&p, Rng::new(4).state(), 600);
         let i = trace.buffs.iter().position(|(id, _)| id == "on_kill_damage")
             .expect("on the roster");
-        let series: Vec<u8> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+        let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
         assert_eq!(series[0], 0, "it opens empty — the fight earns it");
         assert!(series.contains(&4), "four kills reach the cap: {series:?}");
         assert!(series.iter().all(|&v| v <= 4), "and never pass it");
@@ -8910,7 +9185,7 @@ mod tests {
         let i = trace.buffs.iter()
             .position(|(id, _)| id == "on_weakpoint_streak_headshot_damage")
             .expect("on the roster");
-        let series: Vec<u8> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+        let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
         assert_eq!(series[0], 0, "it opens empty");
         assert!(series.contains(&4), "four weak-point hits reach the cap: {series:?}");
         assert!(series.iter().all(|&v| v <= 4), "and never pass it");
@@ -8930,7 +9205,7 @@ mod tests {
         let mtrace = replay(&mixed, Rng::new(5).state(), 300);
         let j = mtrace.buffs.iter()
             .position(|(id, _)| id == "on_weakpoint_streak_headshot_damage").expect("roster");
-        let mseries: Vec<u8> = mtrace.frames.iter().map(|f| f.stacks[j]).collect();
+        let mseries: Vec<u16> = mtrace.frames.iter().map(|f| f.stacks[j]).collect();
         assert!(mseries.iter().any(|&v| v > 0), "it still climbs sometimes: {mseries:?}");
         assert!(mseries.windows(2).any(|w| w[0] > 1 && w[1] == 0),
             "a body shot takes the WHOLE pile, not one stack: {mseries:?}");

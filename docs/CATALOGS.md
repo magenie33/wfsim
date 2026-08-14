@@ -577,6 +577,42 @@ What is still NOT modelled, and neither changes a number here:
 
 ---
 
+## 3. Sniper Rifle — Minimum Combo and the zoom buffs
+
+**Page:** [`Sniper Rifle`](https://wiki.warframe.com/w/Sniper_Rifle)
+§"Zoom and Minimum Combo Stats". Cached as `vendor/wiki/sniper_rifle.wiki`.
+**Fields:** `sniper_combo.min`, `sniper_combo.seconds`, `scope.magnification`,
+`scope.headshot_damage`. The mechanic itself is MECHANICS §7 §"THE SNIPER
+RIFLE"; this is the row.
+
+A catalog by the same test the other two pass: the rule is one formula and the
+numbers it needs exist nowhere in the weapon's own stats. Absence means the
+weapon is **not a sniper rifle** rather than a sniper with default values —
+there is no default Minimum Combo, and a gun with no scope has no zoom buff.
+
+**The columns, verbatim:** Sniper Rifle | Zoom Level | Buff | Minimum Combo.
+One weapon spans several Zoom Level rows and states Minimum Combo once.
+
+**The rows the roster holds:**
+
+| weapon | zoom levels and buffs | Minimum Combo |
+|--------|-----------------------|---------------|
+| Vectis | 3x +30% Headshot Damage · 4.5x +50% | 1 shot |
+| Vectis Prime | 3.5x +40% Headshot Damage · 6x +60% | 5 shots |
+
+Only the TOP level is declared (`ScopeSpec`): this arena has no field of view,
+so nothing is traded for magnification and the highest level is free.
+
+**What is NOT in the roster yet, and what it will need.** Three of the buff
+kinds have no field. The table grants critical chance (Lanka 3x/5x/6x:
++20/+30/+40%) and critical multiplier as well as headshot damage, and the
+mechanic page calls the Lanka's and the Komorex's out as exceptions to the
+"additive with similar buffs from mods" rule. The Lanka also carries the only
+non-2-second combo duration (6 s), which is why `sniper_combo.seconds` is a
+field with a default rather than a constant. The Komorex's second zoom is not
+a buff at all but a stat trade (+100% Damage, +3 m Explosion Radius, −75% Fire
+Rate) — that one is not a `ScopeSpec` and should not be forced into it.
+
 ## Adding a catalog
 
 A new one earns a section here when it has the same shape: a published table,

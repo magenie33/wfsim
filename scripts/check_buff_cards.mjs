@@ -94,7 +94,61 @@ const r = await evaluate(`(async () => {
     name: e.querySelector('.rp-name').textContent.trim(),
     now: e.querySelector('.rp-now').textContent.trim(),
   }));
-  return { cards, rows, atZero, un, tend, tendRows, lang: LANG };
+  // THE SHOT COMBO COUNTER — the second weapon-passive card, and the one the
+  // gating matters on. It is UNCAPPED (the tiers keep climbing), it belongs to
+  // the BASE form of an Incarnon cycle, and it exists only while the fight is
+  // scoped in — so this walks all three: the card is there aiming, it is GONE
+  // from the hip, and setting it moves the number.
+  history.pushState({},'','/weapons/Vectis_Prime'); route(); await sleep(3000);
+  slots.forEach(s => { s.mod = null; s.rank = null; });
+  ['serration','split_chamber','point_strike','vital_sense'].forEach((id,i) => {
+    slots[i] = { mod:id, pol:slots[i].pol, rank:null };
+  });
+  markPresetDirty(); renderMods(); refreshPanel(); await sleep(2500);
+  document.querySelectorAll('.tab').forEach(x=>{ if(/Sim|模拟/i.test(x.textContent)) x.click(); });
+  await sleep(1500);
+  const card = () => [...document.querySelectorAll('#sim-buffs .buff-card')].map(e=>({
+    name: e.querySelector('.bn').textContent.trim(),
+    id: e.querySelector('input[data-f="stacks"]').dataset.b,
+    stacks: e.querySelector('input[data-f="stacks"]').value,
+    cap: e.querySelector('.bmax').textContent.trim(),
+    hasMax: e.querySelector('input[data-f="stacks"]').hasAttribute('max'),
+  })).find(c => c.id === 'sniper_combo');
+  sim.level = 9999; sim.steel_path = true; sim.duration = 30; sim.runs = 6;
+  sim.headshot_pct = 100; markScenarioDirty(); await sleep(600);
+  const combo = card();
+  const setC = (f, v) => {
+    const el = document.querySelector('#sim-buffs input[data-b="sniper_combo"][data-f="'+f+'"]');
+    if (el.type === 'checkbox') el.checked = v; else el.value = v;
+    el.dispatchEvent(new Event('change'));
+  };
+  // The answer is taken off the WIRE rather than off the page: a DPS read from
+  // a formatted cell is a test of the formatter.
+  let shot = null;
+  const realApi = window.api;
+  window.api = async (path, body) => {
+    const res = await realApi(path, body);
+    if (path === '/api/simulate') shot = res;
+    return res;
+  };
+  const runDps = async () => {
+    shot = null;
+    document.getElementById('run-sim').click();
+    for (let k=0;k<60 && !shot; k++) await sleep(1000);
+    return shot && shot.dps_mean;
+  };
+  const dpsCold = await runDps();
+  setC('stacks', 405); setC('locked', true); await sleep(800);
+  const dpsHeld = await runDps();
+  const comboRows = [...document.querySelectorAll('.rp-row')].map(e=>e.querySelector('.rp-name').textContent.trim());
+  // ...AND FROM THE HIP IT IS NOT THERE. The mechanic's own condition is
+  // "requires being scoped in", answered once in resolve() — so this is the
+  // assertion that the card follows the FIGHT rather than the weapon.
+  sim.aiming = false; markScenarioDirty(); refreshPanel(); await sleep(2000);
+  const hipCombo = card();
+  sim.aiming = true; markScenarioDirty(); await sleep(300);
+  return { cards, rows, atZero, un, tend, tendRows, lang: LANG,
+           combo, hipCombo, comboRows, dpsCold, dpsHeld };
 })()`);
 
 console.log("lang:", r.lang);
@@ -130,4 +184,29 @@ check("...capped at the WEAPON's tendril limit, and earned from zero",
   td && td.cap === "/ 4" && td.stacks === "0", JSON.stringify(td));
 check("...and the count reaches the fight",
   (r.tendRows || []).some((x) => x.now === "4/4"), JSON.stringify(r.tendRows));
+console.log("combo:", JSON.stringify(r.combo), "hip:", JSON.stringify(r.hipCombo),
+  "dps", r.dpsCold, "->", r.dpsHeld);
+check("the sniper's Shot Combo Counter has a card", !!r.combo, JSON.stringify(r.combo));
+// THE NAME ITSELF, not the grants line under it. A weapon passive has no mod
+// to borrow a localized name from, which is exactly how this card shipped
+// reading "Shot Combo Counter" over a Chinese subtitle and passed a laxer
+// assertion.
+check("...named in Chinese", r.combo && /^[一-鿿]/.test(r.combo.name), r.combo && r.combo.name);
+check("...and what a stack buys is Chinese too, whole rather than half",
+  r.combo && !/(hits?|every|Damage)/.test(r.combo.name), r.combo && r.combo.name);
+// UNCAPPED, and for a stated reason: the wiki's tiers keep climbing (the
+// eighth is 11025 hits), so any ceiling here would be invented.
+check("...uncapped, with no invented maximum",
+  r.combo && /∞/.test(r.combo.cap) && !r.combo.hasMax, JSON.stringify(r.combo));
+check("...earned from zero", r.combo && r.combo.stacks === "0", r.combo && r.combo.stacks);
+check("...and it is drawn as a curve in the replay",
+  (r.comboRows || []).some((n) => /连击|Combo/i.test(n)), JSON.stringify(r.comboRows));
+// The card has to MOVE THE NUMBER. A control that draws and does nothing is
+// the failure this whole file exists for.
+check("...holding it at 405 multiplies the fight",
+  r.dpsHeld > r.dpsCold * 1.1, `${r.dpsCold} -> ${r.dpsHeld}`);
+// THE GATE. "Building combo and benefiting from its multiplier requires being
+// scoped in" — a hip-fired fight has no counter, so it must offer no card.
+check("a sniper fired from the HIP is offered no counter at all",
+  !r.hipCombo, JSON.stringify(r.hipCombo));
 await app.finish("the buff cards read right in Chinese");

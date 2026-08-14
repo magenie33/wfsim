@@ -817,6 +817,15 @@ pub struct WeaponSpec {
     /// The Ocucor's tendrils — see [`TendrilSpec`].
     #[serde(default)]
     pub tendrils: Option<TendrilSpec>,
+    /// The sniper's Shot Combo Counter — see [`SniperCombo`]. `None` on every
+    /// weapon that is not a sniper rifle, which is what the mechanic is keyed
+    /// on in game: it is not a class-wide rule the engine could infer from
+    /// `class: sniper`, because the Minimum Combo is per weapon.
+    #[serde(default)]
+    pub sniper_combo: Option<SniperCombo>,
+    /// ...and its scope's own buff — see [`ScopeSpec`].
+    #[serde(default)]
+    pub scope: Option<ScopeSpec>,
     /// Where this CONTINUOUS weapon's damage ramp starts, as a fraction of
     /// full damage. Omitted means the wiki's "for most weapons" 20%; state it
     /// only for a weapon whose page gives a different number.
@@ -1221,6 +1230,26 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
         ));
     }
 
+    // THE SHOT COMBO COUNTER and THE SCOPE, both stated because both are
+    // silent otherwise: neither is a stat on the panel and neither is a mod, so
+    // a player reading a sniper's damage has no way to see that two of its
+    // factors are the weapon's own.
+    if let Some(c) = s.sniper_combo {
+        out.push(format!(
+            "Scoped in, consecutive hits build a Shot Combo Counter: {} landing {} multiply damage by 1.5x, and every threefold count past that adds another 0.5x. It drops by one for every {:.0} s without a hit, and it pays nothing at all from the hip.",
+            c.min,
+            if c.min == 1 { "hit" } else { "hits" },
+            c.seconds
+        ));
+    }
+    if let Some(z) = s.scope {
+        out.push(format!(
+            "Its scope's top zoom ({:.1}x) grants +{:.0}% headshot damage while aiming, additive with headshot mods. This arena has no field of view to trade for magnification, so the scope is always at that level.",
+            z.magnification,
+            z.headshot_damage * 100.0
+        ));
+    }
+
     // THE SPOOL, which is the one passive that makes the stat above it WRONG
     // rather than incomplete: the panel prints one fire rate and the weapon
     // never fires at it for long. A reader who sees only the printed rate has
@@ -1492,6 +1521,85 @@ pub struct BurstSpec {
 pub struct TendrilSpec {
     /// The cap. Four on the Ocucor.
     pub max: u32,
+}
+
+/// THE SHOT COMBO COUNTER — a sniper rifle's own damage multiplier, and the one
+/// mechanic in the game that is a WEAPON's and not a build's.
+///
+/// VERBATIM (wiki `Sniper Rifle` §Shot Combo Counter): *"Each Sniper Rifle
+/// requires a minimum number of shots, referred to as Minimum Combo, before the
+/// Shot Combo Counter activates, starting with a damage bonus of 1.5x. Another
+/// 0.5x damage is added to the counter each time the Shot Combo Counter reaches
+/// a number of hits three times the amount needed for the previous damage bonus
+/// milestone"* — so the thresholds are `min * 3^k` and the multiplier
+/// `1.5 + 0.5k`, which [`SniperCombo::multiplier`] walks rather than computing
+/// through a logarithm: `log3` of an exact power of three is not exactly an
+/// integer in binary, and the floor of it is off by one wherever it lands
+/// short.
+///
+/// *"The Shot Combo Counter will be reduced by 1 after a short period of time
+/// that no successful hits have been made, or if the player misses a shot. All
+/// sniper rifles have a 2 second combo duration, with the exception of the
+/// Lanka, which has a 6 second combo duration."* It DECAYS one at a time; it
+/// does not reset, which is why a sniper that keeps firing never loses it and
+/// one interrupted for a second still has most of it.
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+pub struct SniperCombo {
+    /// "Minimum Combo": landing hits before the counter pays anything at all.
+    /// 1 on the Vectis, 5 on the Vectis Prime — the wiki's own table.
+    pub min: u32,
+    /// Seconds without a landing hit before the counter drops by ONE.
+    #[serde(default = "combo_seconds_default")]
+    pub seconds: f64,
+}
+
+fn combo_seconds_default() -> f64 {
+    // "All sniper rifles have a 2 second combo duration, with the exception of
+    // the Lanka" — so 2 is the rule and the Lanka states its own.
+    2.0
+}
+
+impl SniperCombo {
+    /// The damage multiplier at `hits`. 1.0 below Minimum Combo — the counter
+    /// exists there and pays nothing.
+    pub fn multiplier(self, hits: u32) -> f64 {
+        if self.min == 0 || hits < self.min {
+            return 1.0;
+        }
+        let mut threshold = u64::from(self.min);
+        let mut mult = 1.5;
+        while u64::from(hits) >= threshold * 3 {
+            threshold *= 3;
+            mult += 0.5;
+        }
+        mult
+    }
+}
+
+/// THE SCOPE, as the only part of zoom that is a damage number.
+///
+/// A sniper's zoom levels each carry a buff (wiki `Sniper Rifle` §Zoom Buffs),
+/// and the arena models the BUFF while modelling none of the optics: it has no
+/// distance and no field of view (docs/UNMODELLED.md), so nothing here is
+/// traded for the magnification and the highest level is not a choice — it is
+/// strictly better and free. The scope therefore sits at its top level
+/// whenever the Tenno is aiming, and that is stated on the weapon's card.
+///
+/// Only the headshot-damage kind is declared, because it is the only kind the
+/// roster's snipers grant. The Lanka's and Komorex's are called out by the same
+/// section as exceptions to the additive rule, so a weapon that grants crit
+/// chance or a critical multiplier gets its own field when one is added rather
+/// than this one reinterpreted.
+///
+/// *"These zoom buffs, which are intrinsic to the weapon and cannot be
+/// modified, generally stack additively with similar buffs from mods"* — so it
+/// joins the headshot bracket rather than multiplying it.
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+pub struct ScopeSpec {
+    /// The top zoom level's magnification, carried for the card's sentence.
+    pub magnification: f64,
+    /// ...and its headshot-damage bonus at that level, as a fraction.
+    pub headshot_damage: f64,
 }
 
 /// The arcane pools this weapon SEATS, in slot order.
@@ -1820,6 +1928,11 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         has_reserve: s.ammo_max.is_some_and(|a| a > 0.0),
         super_crit_on_status: s.super_crit_on_status,
         tendril_max: s.tendrils.map_or(0, |t| t.max),
+        sniper_combo: s.sniper_combo,
+        // The scope's bonus rides HERE unconditionally and is spent by
+        // `resolve`, which is the only layer that knows whether the Tenno is
+        // aiming — and the only one that knows a form cannot zoom.
+        scope_headshot_damage: s.scope.map_or(0.0, |z| z.headshot_damage),
         // The DEFAULT lives with the ramp it belongs to, so "most weapons"
         // is stated once rather than copied into a second file that is free
         // to drift from it.
@@ -1894,6 +2007,82 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // the module's `ExtraHeadshotDmg`.
         headshot_damage_bonus: s.headshot_damage_bonus.unwrap_or(0.0),
         noncrit_bonus: None,
+    }
+}
+
+#[cfg(test)]
+mod sniper_tests {
+    use super::*;
+
+    /// THE WIKI'S OWN TABLE, transcribed off the Vectis Prime page:
+    ///
+    /// | tier | multiplier | hits |
+    /// |------|-----------|------|
+    /// | 1 | 1.5x | 5    |
+    /// | 2 | 2.0x | 15   |
+    /// | 3 | 2.5x | 45   |
+    /// | 4 | 3.0x | 135  |
+    /// | 5 | 3.5x | 405  |
+    /// | 6 | 4.0x | 1215 |
+    ///
+    /// Its last two rows are 3675 and 11025, which are NOT `5 * 3^k` (3645 and
+    /// 10935) — the page's table disagrees with the page's own formula from
+    /// tier 7 up. The formula is implemented, because it is the rule and the
+    /// table looks like an arithmetic slip; the divergence is recorded here
+    /// rather than in a comment nobody runs, and it is unreachable either way
+    /// (3645 landing hits is over half an hour of a two-round magazine).
+    #[test]
+    fn the_combo_ladder_is_the_wikis() {
+        let vp = SniperCombo { min: 5, seconds: 2.0 };
+        for (hits, want) in [
+            (0u32, 1.0),
+            (4, 1.0),
+            (5, 1.5),
+            (14, 1.5),
+            (15, 2.0),
+            (44, 2.0),
+            (45, 2.5),
+            (135, 3.0),
+            (405, 3.5),
+            (1215, 4.0),
+        ] {
+            assert!(
+                (vp.multiplier(hits) - want).abs() < 1e-12,
+                "{hits} hits: {}, want {want}",
+                vp.multiplier(hits)
+            );
+        }
+        // The Vectis pays from the FIRST hit — the smallest minimum in the
+        // game, and the reason the ordinary gun is not simply the worse one.
+        let v = SniperCombo { min: 1, seconds: 2.0 };
+        assert_eq!(v.multiplier(0), 1.0);
+        assert!((v.multiplier(1) - 1.5).abs() < 1e-12);
+        assert!((v.multiplier(3) - 2.0).abs() < 1e-12);
+        assert!((v.multiplier(9) - 2.5).abs() < 1e-12);
+        // A power of three is the case a `log3` implementation gets wrong: the
+        // floor lands one short wherever the division rounds down.
+        // 3^10, and 1.5 + 0.5*10 = 6.5.
+        assert!((v.multiplier(59_049) - 6.5).abs() < 1e-12);
+    }
+
+    /// The roster's snipers carry both mechanics, with the wiki's numbers, and
+    /// nothing else in the roster carries either — a mechanic keyed on a class
+    /// the engine does not know is a mechanic that leaks.
+    #[test]
+    fn the_roster_declares_them_where_the_wiki_does() {
+        let combo = |id: &str| spec(id).and_then(|w| w.sniper_combo);
+        assert_eq!(combo("vectis").map(|c| c.min), Some(1));
+        assert_eq!(combo("vectis_prime").map(|c| c.min), Some(5));
+        // 2 s unless the weapon says otherwise (the Lanka, which is not here).
+        assert_eq!(combo("vectis_prime").map(|c| c.seconds), Some(2.0));
+        let scope = |id: &str| spec(id).and_then(|w| w.scope);
+        assert_eq!(scope("vectis").map(|z| z.headshot_damage), Some(0.5));
+        assert_eq!(scope("vectis_prime").map(|z| z.headshot_damage), Some(0.6));
+        for w in all() {
+            if w.sniper_combo.is_some() || w.scope.is_some() {
+                assert_eq!(w.class, "sniper", "{} is not a sniper rifle", w.id);
+            }
+        }
     }
 }
 

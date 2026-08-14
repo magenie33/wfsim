@@ -31,9 +31,17 @@ const CACHE = path.join(process.cwd(), "vendor", "wiki");
 const FORCE = process.argv.includes("--force");
 
 // The catalogs, by the name docs/CATALOGS.md gives them.
+//
+// …plus the MECHANIC pages that carry a per-weapon table of their own without
+// being catalogs in that document's sense. `Sniper Rifle` is one: the rule is
+// prose, and the Minimum Combo and the zoom buffs are a table with one row per
+// sniper (MECHANICS §7 §"THE SNIPER RIFLE"). Same reason to cache it — every
+// sniper intake has to read that row, and a network round trip is how a row
+// goes unread.
 const PAGES = {
   condition_overload: "Condition_Overload_(Mechanic)",
   primary_compression: "Primary_Compression",
+  sniper_rifle: "Sniper_Rifle",
 };
 
 fs.mkdirSync(CACHE, { recursive: true });

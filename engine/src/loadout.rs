@@ -1117,6 +1117,12 @@ pub struct WeaponBase {
     /// `weapons_data::TendrilSpec` for why the COUNT is modelled and the
     /// tendrils' own damage is not.
     pub tendril_max: u32,
+    /// The sniper's Shot Combo Counter, before `resolve` asks whether the
+    /// Tenno is aiming — see `weapons_data::SniperCombo`.
+    pub sniper_combo: Option<crate::weapons_data::SniperCombo>,
+    /// ...and the scope's headshot bonus at its top zoom level, likewise
+    /// unspent until `resolve` (0.0 = no scope).
+    pub scope_headshot_damage: f64,
     /// ...and can it NOT be refilled mid-fight? See `WeaponSpec::no_resupply`.
     /// Separate from the above on purpose — most weapons have a reserve AND a
     /// way to top it up.
@@ -2023,6 +2029,13 @@ pub struct ResolvedPanel {
     pub attractor_seconds: Option<f64>,
     /// Untouched by mods: the tendril cap is the weapon's.
     pub tendril_max: u32,
+    /// THE SHOT COMBO COUNTER, or `None` — and `None` is what a sniper fired
+    /// from the hip resolves to, because *"building combo and benefiting from
+    /// its multiplier requires being scoped in"* (wiki `Sniper Rifle`). That is
+    /// the whole gate: it is answered once, here, so the simulator, the
+    /// optimizer and the board's no-aim ruler all get the same answer without
+    /// any of them knowing what a sniper is.
+    pub sniper_combo: Option<crate::weapons_data::SniperCombo>,
     /// Sentient Surge: crit chance added PER ACTIVE TENDRIL, relative to the
     /// unmodded base — "Additive to other crit chance and status chance mods"
     /// (wiki), so it joins the same bucket Pistol Gambit does rather than
@@ -3204,7 +3217,14 @@ pub fn resolve_for(
             count: b.count,
             delay_seconds: b.delay_seconds / (1.0 + fr + evo_fr_bonus).max(1.0),
         }),
-        headshot_damage_bonus: base.headshot_damage_bonus,
+        // THE SCOPE'S OWN HEADSHOT BONUS joins this bracket rather than
+        // multiplying it — *"These zoom buffs ... generally stack additively
+        // with similar buffs from mods"* (wiki `Sniper Rifle` §Zoom Buffs) —
+        // and it is paid only while aiming, for the same reason the combo is.
+        // `tenno` here is already the aim-corrected one, so an Incarnon form
+        // that cannot zoom pays nothing without knowing why.
+        headshot_damage_bonus: base.headshot_damage_bonus
+            + if tenno.state.aiming { base.scope_headshot_damage } else { 0.0 },
         noncrit_bonus: base.noncrit_bonus,
         stacking_buffs: base
             .stacking_buffs
@@ -3292,6 +3312,7 @@ pub fn resolve_for(
         forced_procs: base.forced_procs.clone(),
         attractor_seconds: base.attractor_seconds,
         tendril_max: base.tendril_max,
+        sniper_combo: if tenno.state.aiming { base.sniper_combo } else { None },
         cc_per_tendril: per_tendril_cc,
         cc_per_hit,
         sc_per_tendril: per_tendril_sc,
@@ -3920,6 +3941,34 @@ mod tests {
             .filter(|w| w.cannot_zoom).map(|w| w.id.as_str()).collect();
         assert_eq!(flagged, vec!["vasto_incarnon", "vasto_prime_incarnon"], "{flagged:?}");
     }
+
+    /// BOTH SNIPER MECHANICS ARE THE SCOPE'S. *"Building combo and benefiting
+    /// from its multiplier requires being scoped in"* (wiki `Sniper Rifle`),
+    /// and the zoom buff is a property of a zoom level — so a hip-fired
+    /// scenario gets neither, and it is `resolve` that says so, once, for the
+    /// simulator and the optimizer and the board's no-aim ruler alike.
+    #[test]
+    fn a_sniper_fired_from_the_hip_has_no_combo_and_no_scope() {
+        let base = WeaponBase::from_data("vectis_prime", false, &[]);
+        let refs: Vec<&ModDef> = Vec::new();
+        let mut hip = crate::tenno_data::default_tenno().clone();
+        hip.state.aiming = false;
+
+        let aimed = resolve(&base, &refs, StackPolicy::Emergent);
+        let from_hip = resolve_for(&base, &refs, StackPolicy::Emergent, &hip);
+
+        assert_eq!(aimed.sniper_combo.map(|c| c.min), Some(5), "scoped in, it has one");
+        assert!(from_hip.sniper_combo.is_none(), "from the hip it has none");
+        // ...and the scope's headshot bonus travels with it, in the additive
+        // bracket the wiki puts it in.
+        assert!(
+            (aimed.headshot_damage_bonus - from_hip.headshot_damage_bonus - 0.6).abs() < 1e-12,
+            "the scope is worth +60% headshot damage and only while aiming: {} vs {}",
+            aimed.headshot_damage_bonus,
+            from_hip.headshot_damage_bonus
+        );
+    }
+
 
     /// A DERIVED STAT READS THE FORM IT IS ON — which is the in-mission
     /// behaviour, and NOT the one the Arsenal shows.

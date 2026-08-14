@@ -1789,6 +1789,40 @@ fn enumerate_buffs(
             uncapped: false,
         });
     }
+    // THE SHOT COMBO COUNTER, the second weapon passive with a card — and the
+    // one that needs it most. A stack costs a LANDING HIT and a sniper fires
+    // once or twice a magazine, so a 60 s engagement ends around the third
+    // tier while the player walked in at the fourth. Without a knob the app
+    // would report every sniper at a multiplier nobody plays at.
+    //
+    // Gated on AIMING, which is the mechanic's own condition ("building combo
+    // and benefiting from its multiplier requires being scoped in") and which
+    // `resolve` answers the same way for the fight itself — so a hip-fired
+    // scenario shows no card AND scores no combo, rather than showing a
+    // control that moves nothing.
+    if tenno.state.aiming {
+        if let Some(c) = wfsim_engine::weapons_data::spec(&info.id).and_then(|w| w.sniper_combo) {
+            push(BuffMeta {
+                id: "sniper_combo".into(),
+                name: "Shot Combo Counter".into(),
+                // The count alone would not say what it buys, and the tiers
+                // are not linear — so the card states the first one and the
+                // rule that generates the rest.
+                grants: format!("Damage ×1.5 at {} hits, +0.5 every ×3", c.min),
+                max_stacks: 0,
+                kind: "stacking",
+                // NOTHING IN HAND, like every other earned buff. A sniper
+                // walking into a room has whatever the last room left them,
+                // and this app does not get to assume it was a good one.
+                default_stacks: 0,
+                default_locked: false,
+                permanent: false,
+                // No ceiling: the wiki's tiers keep climbing (the eighth is
+                // 11025 hits) and inventing a maximum would be inventing data.
+                uncapped: true,
+            });
+        }
+    }
     // Mod-granted buffs.
     for m in refs {
         let nm = m.name.to_string();

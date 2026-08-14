@@ -22,9 +22,19 @@ transforms_to: vectis_incarnon
 # modelled yet". Nothing is dropped in silence — some perks do nothing
 # yet and say so on their own tile.
 unmodeled:
-  - "the sniper combo counter is not modelled — a scoped sniper's damage climbs with consecutive hits in game and stays flat here"
-  - "the stepped zoom is not modelled, and neither is the scope's own headshot bonus"
+  - "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its 2 s timer, which runs slightly generous"
   - "damage falloff from 400 m to 600 m (down to 50% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+# THE TWO SNIPER MECHANICS. Both are the WEAPON's rather than the build's, both
+# are paid only while scoped in, and neither is a stat on the panel — see
+# `weapons_data::SniperCombo` and `ScopeSpec` for the rules and their sources.
+#
+# The Vectis has the SMALLEST minimum combo in the game: one hit arms 1.5x.
+sniper_combo:
+  min: 1
+scope:
+  magnification: 4.5
+  headshot_damage: 0.5
+
 accuracy: 13.33
 disposition: 1.15
 polarities: [madurai]

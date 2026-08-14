@@ -22,9 +22,20 @@ transforms_to: vectis_prime_incarnon
 # modelled yet". Nothing is dropped in silence — some perks do nothing
 # yet and say so on their own tile.
 unmodeled:
-  - "the sniper combo counter is not modelled — a scoped sniper's damage climbs with consecutive hits in game and stays flat here"
-  - "the stepped zoom is not modelled, and neither is the scope's own headshot bonus"
+  - "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its 2 s timer, which runs slightly generous"
   - "damage falloff from 400 m to 600 m (down to 50% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+# THE TWO SNIPER MECHANICS — see `weapons_data::SniperCombo` and `ScopeSpec`.
+#
+# "The Vectis Prime has the largest shot combo requirement of the sniper
+# rifles, needing 5 shots to initiate the 1.5x damage multiplier" (wiki) — so
+# the Prime is not strictly the better gun here: it pays five hits for what the
+# ordinary Vectis gets for one, which at a 2-round magazine is two reloads.
+sniper_combo:
+  min: 5
+scope:
+  magnification: 6.0
+  headshot_damage: 0.6
+
 accuracy: 13.33
 disposition: 1
 polarities: [madurai, naramon]

@@ -1463,6 +1463,88 @@ the page does not state (the base-form gate, and the cloud inheriting the
 bonus). **Status:** implemented and unit-tested; the ammo-surcharge basis and
 the status-payload exclusion are recorded modeling choices.
 
+### THE SNIPER RIFLE — a combo counter and a scope
+
+**Reference:** [`Sniper Rifle`](https://wiki.warframe.com/w/Sniper_Rifle)
+(§Shot Combo Counter, §Zoom Buffs), cached at `vendor/wiki/sniper_rifle.wiki`.
+Both mechanics belong to the WEAPON rather than the build, both are paid only
+while scoped in, and neither is a stat on the panel — which is why they are
+stated on the weapon's card.
+
+**The Shot Combo Counter.** Every sniper rifle has a *Minimum Combo*, the number
+of landing hits before the counter pays anything:
+
+> "Each Sniper Rifle requires a minimum number of shots, referred to as
+> *Minimum Combo*, before the Shot Combo Counter activates, starting with a
+> damage bonus of 1.5x. Another 0.5x damage is added to the counter each time
+> the Shot Combo Counter reaches a number of hits three times the amount needed
+> for the previous damage bonus milestone."
+
+    threshold(k) = min x 3^k        multiplier(k) = 1.5 + 0.5k        (k >= 0)
+
+Below `min` the multiplier is 1.0. `SniperCombo::multiplier` WALKS that ladder
+rather than evaluating `1.5 + 0.5*floor(log3(hits/min))`: `log3` of an exact
+power of three is not exactly an integer in binary, and the floor lands one
+short wherever the division rounds down — which is every tier boundary, the
+only place the answer changes.
+
+The Vectis Prime page's own table diverges from the page's own formula at tier
+7 (it prints 3675 and 11025 where `5 x 3^k` gives 3645 and 10935). The formula
+is implemented; the divergence is recorded in
+`weapons_data::sniper_tests::the_combo_ladder_is_the_wikis` and is unreachable
+in any fight this sim runs.
+
+**What builds it.** One per LANDING hit — *"weapons with Multishot will count
+each successful hit from the same shot as multiple shot instances"*, and per
+enemy under Punch Through or ricochet. *"Area-of-effect and damage over time do
+not affect the Shot Combo Counter"*, so only the direct part of a shot counts,
+while the multiplier applies to the whole shot (the wiki calls it a bonus to
+"total damage"; the Vectis Prime page's column header calls it a "Total Base
+Damage Multiplier"). It is read BEFORE the hit is counted — the multiplier a
+shot pays is the one that was under the reticle when it was fired.
+
+**What takes it.** *"Reduced by 1 after a short period of time that no
+successful hits have been made, or if the player misses a shot. All sniper
+rifles have a 2 second combo duration, with the exception of the Lanka, which
+has a 6 second combo duration."* Decay is by ONE and never a reset, which is
+why a sniper that keeps firing never loses it. The MISS half cannot be modelled
+here — this arena has no distance and every shot lands (docs/UNMODELLED.md) —
+so the counter runs slightly generous, and each sniper says so on its card.
+
+**Where the gate is.** *"Building combo and benefiting from its multiplier
+requires being scoped in."* `loadout::resolve` empties `sniper_combo` when the
+Tenno is not aiming, and it is the only place that decides — so the simulator,
+the optimizer and the board's no-aim ruler all agree without any of them
+knowing what a sniper is. It is also the one mechanic where that ruler changes
+what a weapon HAS rather than what it hits.
+
+**In an Incarnon cycle** the counter is the base form's. `DummyParams` for a
+cycle is built from the INCARNON panel with the base form hung off
+`cycle.base_form`, so the loop reads the SPEC from whichever form declares one
+(the count survives the transform) and reads whether a hit counts and pays off
+the ACTIVE form. The Vectis Incarnon forms declare no combo: nothing published
+says whether it survives, and the page's only remark on zoom in that form is
+that you must unzoom to enter it. That is on their cards.
+
+**The scope.** Each zoom level carries a buff — crit chance, critical
+multiplier or headshot damage depending on the weapon — and *"these zoom buffs,
+which are intrinsic to the weapon and cannot be modified, generally stack
+additively with similar buffs from mods"*. The Vectis Incarnon Genesis table
+confirms the bracket from the other side, calling Sharpshooter's +25% headshot
+damage "additive with Target Acquired, Vectis's Scope bonus, and similar
+bonuses". Only the headshot kind is declared (`ScopeSpec`), because it is the
+only kind the roster's snipers grant; the Lanka's and Komorex's are named by
+the same section as exceptions and get their own field when either arrives.
+
+The arena has no field of view and no distance, so nothing is traded for
+magnification and the top zoom level is not a choice — the scope always sits
+there while aiming, which is on the card.
+
+**Roster:** Vectis (min 1, 4.5x / +50%), Vectis Prime (min 5, 6.0x / +60%).
+
+**Status:** implemented and unit-tested against the wiki. NOT yet confirmed by
+an in-game measurement — see docs/MEASUREMENTS.md.
+
 ### EXTRA HITS — a second instance, not a multiplier
 
 **Reference:** [`Extra_Hit`](https://wiki.warframe.com/w/Extra_Hit). Read that
