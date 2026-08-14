@@ -37,3 +37,11 @@ jobs:
         # `CI` is set by Actions; the script reads it to drop Chrome's sandbox,
         # which a runner has no user namespace for.
         run: node scripts/check_parity.mjs
+      # THE SUBMISSION ENDPOINT, in the same job because it costs nothing: no
+      # browser, no engine, no network — it imports `worker/index.js` and runs
+      # it against a KV stub. It is here rather than on demand because the two
+      # bugs it exists for were both invisible for weeks: a dropped field does
+      # not throw, it produces a record the scorer quietly refuses, and the
+      # submitter is told "sent". See docs/BOARD.md.
+      - name: The board's submission endpoint keeps the whole build
+        run: node scripts/check_board_submit.mjs

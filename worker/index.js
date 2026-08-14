@@ -32,44 +32,88 @@ const MAX_BYTES = 4096;        // a build is a few hundred bytes; this is slack
 const MAX_MODS = 9;            // an OUTER BOUND, not the rule — see below
 const ID = /^[a-z0-9_]{1,64}$/;
 
+/// WHAT A BUILD IS, declared ONCE.
+///
+/// Three things are derived from this table — the shape check, the stored
+/// record, and the identity key — and they used to be three hand-written lists.
+/// That is the defect generator: adding an axis meant remembering all three,
+/// and TWICE an axis was added to some of them and not the others. `mode` was
+/// validated and neither stored nor keyed, so the scorer took its migration
+/// fallback and every Incarnon weapon's row said `cycle` (2026-08-09). Then
+/// `valence` was neither stored nor keyed, so seven Kuva Nukor submissions were
+/// refused on every scoring run — "has no Valence element" — while the panel
+/// had told each submitter "sent" (owner, 2026-08-14).
+///
+/// Neither was a hard bug to fix and both were invisible for weeks, because a
+/// dropped field does not throw: it produces a record that is merely INCOMPLETE
+/// and a scorer that quietly refuses it. So the answer is not to be more
+/// careful with three lists, it is to have one.
+///
+/// `kind`:
+///   - `id`  — a single slug. `required` ones must be present and non-empty;
+///             the rest may be empty, which is what an ordinary weapon sends
+///             for `valence` and what a weapon with one mode sends for `mode`.
+///             An EMPTY optional axis is not written to the record at all.
+///   - `ids` — a list of slugs, always written even when empty.
+/// `set`: the ORDER does not matter for this axis, so the key sorts it.
+/// Evolutions are a set (one per tier, the tier decides where each sits). Mods
+/// are NOT: they combine elements in the order they are listed, and on the
+/// Torid Heat/Cold/Toxin/Electric against Heat/Toxin/Cold/Electric is 12,424
+/// DPS against 46,583 (measured 2026-08-04).
+///
+/// SHAPE ONLY, throughout. Whether these ids exist, whether the mods are
+/// compatible, whether the build fits 60 capacity and whether THIS weapon has
+/// the mode or the element named are questions for the engine, and the engine
+/// is not here — `engine::builds::validate_for_board` answers them in the
+/// scoring job, where the whole data set is available. Anything that fails
+/// there is never scored and never reaches the board. The cost is a little junk
+/// in KV; the alternative is two rules that drift, and a worker confidently
+/// rejecting builds a benchmark would have accepted.
+// EXPORTED for `scripts/check_board_submit.mjs`, which asserts this table
+// against the keys the PAGE actually sends. That assertion is the one that
+// would have caught both losses on the day they happened — a name added to
+// `boardPayload()` and not to this table fails it immediately, without anyone
+// having to notice a board row that never appeared.
+export const AXES = [
+  { key: "benchmark", kind: "id", required: true },
+  { key: "weapon", kind: "id", required: true },
+  // HOW IT WAS PLAYED — half the entrant's identity. Optional because records
+  // written before the dimension existed are still in KV, and the scorer's
+  // migration fallback is what reads those.
+  { key: "mode", kind: "id" },
+  // THE PROGENITOR ELEMENT of an adversary weapon. The ELEMENT only: the ruler
+  // scores every row at the roll's maximum, so the percentage is not a row's to
+  // state. Empty on everything that is not out of a Lich.
+  { key: "valence", kind: "id" },
+  // An OUTER BOUND, not the rule. Admission became the BENCHMARK's business on
+  // 2026-08-05 — "full" means every evolution tier and arcane seat THIS weapon
+  // has — and this worker has no game data: it cannot know that a Laetum has
+  // five tiers and a rifle none. It briefly hardcoded "exactly 8", which was
+  // right for one benchmark and would silently be wrong for the second.
+  { key: "mods", kind: "ids", max: MAX_MODS },
+  { key: "evolutions", kind: "ids", max: 8, set: true },
+  { key: "arcanes", kind: "ids", max: 4 },
+];
+
 const bad = (msg, status = 400) =>
   new Response(JSON.stringify({ ok: false, error: msg }), {
     status, headers: { "content-type": "application/json" },
   });
 
-/// The FIGHT this build is, as one stable key — the same shape
-/// `engine::builds::identity` produces, plus the MODE, which is how the scoring
-/// job keys its own rows (`identity(build)#mode`).
+/// The BUILD this is, as one stable key — every axis of it, in `AXES` order.
 ///
-/// THE MODE HAS TO BE IN HERE, and leaving it out is what made the board look
-/// the way it did: a base-form Torid and a cycled one are the same weapon, the
-/// same mods and the same evolutions, so they hashed to ONE key and the second
-/// write replaced the first. Worse, `mode` was not even stored — so the scorer
-/// saw a submission with no mode, took its migration fallback ("the cycle where
-/// there is one"), and every Incarnon weapon on the board said `cycle` whatever
-/// its submitter had chosen. 306 cycle rows, 158 base ones, and not one weapon
-/// with both: that shape was this line, not anybody's playstyle (2026-08-09).
-///
-/// MODS ARE NOT SORTED. They combine ELEMENTS in the order they are listed, so
-/// the same four elementals in two orders are two different weapons: on the
-/// Torid, Heat/Cold/Toxin/Electric pairs to Blast + Corrosive and Heat/Toxin/
-/// Cold/Electric to Gas + Magnetic — 12,424 DPS against 46,583 (measured
-/// 2026-08-04). This sorted for a day on the strength of one measurement that
-/// happened to reorder mods whose pairing did not change, and the board scored
-/// whichever pairing the sort produced.
-///
-/// Evolutions ARE a set: one per tier, and the tier decides where each sits.
-///
-/// AND THE VALENCE, for the same reason as the mode and with the same history.
-/// Two Kuva Nukors differing only in progenitor element are two builds with two
-/// scores; without it here they hashed to ONE key and each new element replaced
-/// the last. `engine::builds::identity` has carried it since the day the field
-/// existed — this line is the copy that did not, which is exactly the shape the
-/// paragraph above is about. Appended, so an ordinary weapon's key is the old
-/// one with a trailing empty field.
+/// EVERY axis, which is the whole point of deriving it: a key that cannot tell
+/// two builds apart files the second under the first's number, silently, and
+/// the build that loses is the one submitted second. It has happened twice, and
+/// both times the missing axis was also the one that was not being stored —
+/// see the note on `AXES`. Writes stay idempotent because the same build always
+/// produces the same key.
 const identity = (b) =>
-  [b.benchmark, b.weapon, b.mode || "", b.mods.join(","),
-   [...b.evolutions].sort().join(","), b.arcanes.join(","), b.valence || ""].join("|");
+  AXES.map((a) => {
+    const v = b[a.key];
+    if (a.kind === "id") return v || "";
+    return (a.set ? [...v].sort() : v).join(",");
+  }).join("|");
 
 async function submit(request, env) {
   if (!env.SUBMISSIONS) return bad("submission storage is not configured", 503);
@@ -81,67 +125,33 @@ async function submit(request, env) {
   let b;
   try { b = JSON.parse(raw); } catch { return bad("not json"); }
 
-  // SHAPE ONLY. Whether these ids exist, whether the mods are compatible and
-  // whether the build fits 60 capacity are questions for the engine, and the
-  // engine is not here — `engine::builds::validate` answers them in the
-  // scoring job, where the whole data set is available. Anything that fails
-  // there is simply never scored and never reaches the board.
-  const list = (x) => Array.isArray(x) && x.every((s) => typeof s === "string" && ID.test(s));
-  if (!ID.test(b.benchmark || "") || !ID.test(b.weapon || "")) return bad("bad ids");
-  // AN OUTER BOUND, NOT THE RULE. Admission became the BENCHMARK's business on
-  // 2026-08-05 — "full" now means every evolution tier and arcane seat THIS
-  // WEAPON has, and this worker has no game data: it cannot know that a Laetum
-  // has five tiers and a rifle none. It briefly hardcoded "exactly 8", which
-  // was right for one benchmark and would silently be wrong for the second.
+  // ONE PASS OVER `AXES` for both jobs — check the shape, and copy what
+  // survives it. There is no second list to fall out of step with, which is
+  // the only reason this endpoint can be trusted to store a build it was never
+  // taught about by name.
   //
-  // So the engine is the only place that decides, and this only keeps the
-  // obviously malformed out of storage. The cost is a little junk in KV that
-  // the scorer then refuses; the alternative is two rules that drift, and a
-  // worker confidently rejecting builds a benchmark would have accepted.
-  // HOW IT WAS PLAYED. Shape only, like everything else here — whether THIS
-  // weapon has a `base` or an `alternate` is a question for the engine, and the
-  // scorer refuses a mode a weapon does not have ("refused torid: it has no
-  // `alternate` mode"). Optional, because records written before this exist and
-  // the scorer's fallback is what reads them.
-  if (b.mode !== undefined && !ID.test(b.mode || "")) return bad("bad mode");
-  // THE PROGENITOR ELEMENT of an adversary weapon. Shape only, like the rest:
-  // WHICH elements a weapon rolls is game data this worker does not have, and
-  // `validate_for_board` refuses a wrong one by name. EMPTY IS LEGAL and is
-  // what every ordinary weapon sends, so this tests the value rather than its
-  // presence — a `!== undefined` guard here would reject the whole roster.
-  if (b.valence && !ID.test(b.valence)) return bad("bad valence");
-  if (!list(b.mods) || b.mods.length > MAX_MODS) return bad("bad mods");
-  if (!list(b.evolutions) || b.evolutions.length > 8) return bad("bad evolutions");
-  if (!list(b.arcanes) || b.arcanes.length > 4) return bad("bad arcanes");
-
   // NOTHING ABOUT THE SUBMITTER IS STORED. Not the IP, not a token, not a
   // timestamp that could order one person's submissions against another's. The
   // record is the build and the key it hashes to; `at` is the day, which is
   // coarse enough to expire old entries and too coarse to identify anyone.
-  const rec = {
-    benchmark: b.benchmark,
-    weapon: b.weapon,
-    // HALF THE ENTRANT'S IDENTITY, and it used to be dropped on this line — the
-    // page has sent it since 2026-08-07 and nothing here ever wrote it down.
-    ...(b.mode ? { mode: b.mode } : {}),
-    // THE OTHER HALF THAT WAS DROPPED ON THIS LINE. The page has sent
-    // `valence` since 2026-08-13 and nothing here ever wrote it down, so every
-    // Kuva Nukor submission reached the scorer without one and was refused on
-    // every run since — "Kuva Nukor has no Valence element", seven of them,
-    // while the panel had told each submitter "sent" (owner, 2026-08-14).
-    //
-    // `/api/board/check` closed the half of this that the PAGE could see: it
-    // asks the scorer's own validator before sending, so a build with no
-    // element is refused on screen. It could not see this one — the payload it
-    // validated DID carry the element, and the field was lost after the
-    // verdict, in the one hop neither the engine nor the page can inspect.
-    ...(b.valence ? { valence: b.valence } : {}),
-    // As submitted. The order IS the build (see `identity`).
-    mods: b.mods,
-    evolutions: b.evolutions,
-    arcanes: b.arcanes,
-    at: new Date().toISOString().slice(0, 10),
-  };
+  const rec = { at: new Date().toISOString().slice(0, 10) };
+  for (const a of AXES) {
+    const v = b[a.key];
+    if (a.kind === "id") {
+      if (v !== undefined && typeof v !== "string") return bad(`bad ${a.key}`);
+      const s = v || "";
+      if (a.required ? !ID.test(s) : s && !ID.test(s)) return bad(`bad ${a.key}`);
+      // An empty optional axis is absent rather than empty — an ordinary
+      // weapon's record has no `valence` key, exactly as before this table.
+      if (s) rec[a.key] = s;
+    } else {
+      if (!Array.isArray(v) || v.length > a.max) return bad(`bad ${a.key}`);
+      if (!v.every((s) => typeof s === "string" && ID.test(s))) return bad(`bad ${a.key}`);
+      // As submitted, never sorted here: sorting would store a build the
+      // player never made. The KEY sorts the axes that are sets.
+      rec[a.key] = v;
+    }
+  }
   await env.SUBMISSIONS.put(identity(rec), JSON.stringify(rec), {
     // A build nobody has submitted in a year is not a live answer any more, and
     // the scoring job re-lists everything each run — so expiry is the only

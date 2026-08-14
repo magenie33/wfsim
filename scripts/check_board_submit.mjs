@@ -22,7 +22,8 @@
 // this without anyone remembering to come back.
 //
 //   node scripts/check_board_submit.mjs
-import worker from "../worker/index.js";
+import worker, { AXES } from "../worker/index.js";
+import fs from "node:fs";
 
 let failures = 0;
 const check = (what, ok, detail = "") => {
@@ -63,6 +64,33 @@ const PAYLOAD = {
 };
 
 console.log("the board's submission endpoint\n");
+
+// ---- 0. THE WORKER KNOWS EVERY AXIS THE PAGE SENDS ------------------------
+//
+// THE ASSERTION THAT WOULD HAVE CAUGHT BOTH LOSSES ON THE DAY THEY HAPPENED.
+// Everything below tests the worker against a payload written HERE, which is
+// only ever as current as this file — and this file did not exist when either
+// axis was added. So the first thing checked is the two lists against each
+// other: `boardPayload()` in the page is the definition of what a submission
+// is, `AXES` is what the endpoint knows how to keep, and a name in one and not
+// the other is the bug, before any request is made.
+{
+  const src = fs.readFileSync("web/src/static/app.js", "utf8");
+  const body = src.slice(src.indexOf("function boardPayload()"));
+  const ret = body.slice(body.indexOf("return {"), body.indexOf("\n  };"));
+  // Keys of the returned literal sit at four spaces, as `name:` or bare
+  // `name,`. Anything deeper belongs to a value expression, and a `//` line is
+  // a comment — this file has more comment than code.
+  const sent = [...ret.matchAll(/^ {4}([A-Za-z_$][\w$]*)\s*[:,]/gm)].map((m) => m[1]);
+  const known = AXES.map((a) => a.key);
+  const missing = sent.filter((k) => !known.includes(k));
+  const extra = known.filter((k) => !sent.includes(k));
+  check("the page sends a payload this file could read at all", sent.length > 3, sent.join(","));
+  check("every axis the PAGE sends is an axis the WORKER knows",
+    missing.length === 0, `worker has no: ${missing.join(", ")}   (page sends ${sent.join(", ")})`);
+  check("...and the worker knows no axis the page never sends",
+    extra.length === 0, `page never sends: ${extra.join(", ")}`);
+}
 
 // ---- 1. EVERY KEY SURVIVES ------------------------------------------------
 {

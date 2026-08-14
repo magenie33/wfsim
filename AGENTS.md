@@ -422,8 +422,15 @@ around (decision 2026-07-31).
   the PROPERTY rather than the two fields — every key the page sends survives
   into storage, and two builds differing in any one axis are two records rather
   than a silent overwrite. It runs in plain node against a KV stub, so it costs
-  no browser. Verified to bite: dropping either half reports `lost: valence` and
-  collapses two elements onto one key.
+  no browser — which is why it is the second check in CI beside the parity one,
+  rather than something to remember to run. Its FIRST assertion is a CROSS-FILE
+  one and is what would have caught both losses on the day they happened: the
+  axes `boardPayload()` actually emits, read out of `app.js`, must be exactly
+  the axes the worker's own `AXES` table knows how to keep. That table is the
+  other half — validation, storage and the identity key are all DERIVED from it
+  now, so an axis can no longer be added to two of the three, which is what
+  happened both times. Verified to bite: removing `valence` from the table
+  fails four assertions, naming the axis.
   `node scripts/check_gain_freshness.mjs` is the ninth: a
   scenario edit reaches the quick calc immediately, including a field nobody
   has invented yet — the scan's cache key is DERIVED from the fight it will
