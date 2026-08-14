@@ -1133,7 +1133,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 102] = [
+        const EXPECTED: [(&str, &str, &[&str]); 116] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up. That
             // is what makes this whole class one line each — including the
@@ -1313,6 +1313,31 @@ mod tests {
             ("furis", "auto", &[]),
             ("mk1_furis", "auto", &[]),
             ("verglas_prime", "held", &[]),                    // continuous sentinel weapon
+            // THE SENTINEL WEAPONS, and the POOL is the axis these rows exist
+            // to pin (owner flagged it, 2026-08-15). It is per weapon and it is
+            // not the same for all of them: the Burst Laser family draws PISTOL
+            // mods, the Sweeper pair SHOTGUN mods, everything else RIFLE.
+            //
+            // A Cannonade then follows from the pool AND the trigger, and the
+            // answer here surprised the intake: Semi-Rifle Cannonade lives in
+            // the RIFLE pool rather than the `primary` one, so a semi-auto
+            // sentinel weapon really does wear it. The Stinger and the Cryotra
+            // are the two, and they are the only Cannonade-eligible entries in
+            // this whole class.
+            ("artax", "held", &[]),
+            ("burst_laser", "burst", &[]),
+            ("burst_laser_prime", "burst", &[]),
+            ("prisma_burst_laser", "burst", &[]),
+            ("cryotra", "semi_auto", &["semi_rifle_cannonade"]),
+            ("deth_machine_rifle", "auto", &[]),
+            ("deth_machine_rifle_prime", "auto", &[]),
+            ("laser_rifle", "auto", &[]),
+            ("prime_laser_rifle", "auto", &[]),
+            ("stinger", "semi_auto", &["semi_rifle_cannonade"]),
+            ("sweeper", "auto", &[]),
+            ("sweeper_prime", "auto", &[]),
+            ("verglas", "held", &[]),
+            ("vulklok", "auto", &[]),
             // AN AUTO RIFLE, so no Cannonade — the Semi-* mods gate on the
             // listed trigger and the Shedu's is Auto. Its explosion changes
             // nothing about that: a Cannonade reads the TRIGGER, not what the

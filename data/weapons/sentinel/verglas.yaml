@@ -1,0 +1,59 @@
+id: verglas
+name: Verglas
+# SENTINEL WEAPON — its own equipment slot: it is not a Primary, it sits on the
+# companion. NO exilus slot and NO arcane; both follow from `class` containing
+# "sentinel", so their absence here is a fact rather than an omission.
+slot: sentinel
+class: sentinel_weapon
+form: base
+default_form: true
+
+# RIFLE MODS. The pool is PER WEAPON on this class and it is the field most
+# worth getting right: a sentinel weapon is not a Primary, DE's compat tag is
+# SentinelWeapons rather than LongGuns, and the page's own "Mod Pool" row is
+# what decides. This one says Rifle. The `primary` pool (Hunter Munitions,
+# Vigilante) is NOT claimed — unsourced either way, and omitting compatibility
+# we cannot cite beats inventing it (the rule verglas_prime.yaml set).
+mod_pools: [rifle]
+mastery_rank: 0
+max_rank: 30
+
+accuracy: 100.0
+disposition: 1.3
+polarities: []
+riven_family: Verglas
+internal_name: /Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle
+noise: alarming
+magazine: 80
+reload_seconds: 2.2
+# Sentinel weapons draw from an INFINITE reserve — there is no ammo pickup
+# economy to model, so no `ammo_max`. The magazine and reload are real.
+
+# No Condition Overload row for this weapon, so the ordinary class — the
+# catalog "lists only discrepant attacks. Anything not listed should be assumed
+# to be Additive with +100% bonus" (re-read 2026-08-15; no sentinel weapon
+# appears in it at all).
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12.0
+  multishot: 1.0
+  # ONE per shot on this one — the page states an ammo cost of 1 rather than
+  # the beam family's usual 0.5, and its Prime is read the same way.
+  ammo_cost: 1
+  crit_chance: 0.08
+  crit_multiplier: 2.0
+  status_chance: 0.34
+  punch_through_m: 0.0
+  damage: { cold: 26.0 }
+unmodeled:
+  - "the 24 m range is not modelled — this arena has no distance, so every tick lands"
+  - "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
+
+source:
+  url: https://wiki.warframe.com/w/Verglas
+  # Every stat is the wiki page's infobox, including the Mod Pool row. WFCD
+  # `warframe-items` supplied `internal_name` and was cross-checked on the
+  # rest; where the two disagreed the wiki won (docs/DATA_SOURCES.md).

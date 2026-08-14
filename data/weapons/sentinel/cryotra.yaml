@@ -1,0 +1,63 @@
+id: cryotra
+name: Cryotra
+# SENTINEL WEAPON — its own equipment slot: it is not a Primary, it sits on the
+# companion. NO exilus slot and NO arcane; both follow from `class` containing
+# "sentinel", so their absence here is a fact rather than an omission.
+slot: sentinel
+class: sentinel_weapon
+form: base
+default_form: true
+
+# RIFLE MODS. The pool is PER WEAPON on this class and it is the field most
+# worth getting right: a sentinel weapon is not a Primary, DE's compat tag is
+# SentinelWeapons rather than LongGuns, and the page's own "Mod Pool" row is
+# what decides. This one says Rifle. The `primary` pool (Hunter Munitions,
+# Vigilante) is NOT claimed — unsourced either way, and omitting compatibility
+# we cannot cite beats inventing it (the rule verglas_prime.yaml set).
+mod_pools: [rifle]
+mastery_rank: 0
+max_rank: 30
+
+accuracy: 100.0
+disposition: 1.0
+polarities: [madurai]
+riven_family: Cryotra
+internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon
+noise: alarming
+magazine: 3
+reload_seconds: 5.0
+# Sentinel weapons draw from an INFINITE reserve — there is no ammo pickup
+# economy to model, so no `ammo_max`. The magazine and reload are real.
+
+# No Condition Overload row for this weapon, so the ordinary class — the
+# catalog "lists only discrepant attacks. Anything not listed should be assumed
+# to be Additive with +100% bonus" (re-read 2026-08-15; no sentinel weapon
+# appears in it at all).
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: semi_auto
+  shot_type: projectile
+  fire_rate: 0.67
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.10
+  crit_multiplier: 1.75
+  status_chance: 0.10
+  punch_through_m: 0.0
+  # THE GRENADE ONLY. The COLD FIELD it leaves is the rest of this weapon —
+  # 20 Cold a tick at 1/s in a 1.5 m radius with its own 30% status chance —
+  # and it is NOT carried, because the page gives no DURATION for it and a
+  # lingering field without one cannot be written down without inventing the
+  # number that decides its whole contribution. Left out and stated, which is
+  # the rule for a source that cannot be reached.
+  damage: { impact: 10.0 }
+unmodeled:
+  - "the COLD FIELD is not modelled at all, and it is most of this weapon — each grenade leaves a 1.5 m field dealing 20 Cold a second with a 30% status chance, and the page prints no DURATION for it, so carrying it would mean inventing the number that decides how much it is worth. Only the grenade's 10 Impact is counted here, which makes this entry a FLOOR rather than the weapon"
+  - "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
+
+source:
+  url: https://wiki.warframe.com/w/Cryotra
+  # Every stat is the wiki page's infobox, including the Mod Pool row. WFCD
+  # `warframe-items` supplied `internal_name` and was cross-checked on the
+  # rest; where the two disagreed the wiki won (docs/DATA_SOURCES.md).

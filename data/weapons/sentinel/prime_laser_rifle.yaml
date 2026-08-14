@@ -1,0 +1,58 @@
+id: prime_laser_rifle
+name: Prime Laser Rifle
+# SENTINEL WEAPON — its own equipment slot: it is not a Primary, it sits on the
+# companion. NO exilus slot and NO arcane; both follow from `class` containing
+# "sentinel", so their absence here is a fact rather than an omission.
+slot: sentinel
+class: sentinel_weapon
+form: base
+default_form: true
+
+# RIFLE MODS. The pool is PER WEAPON on this class and it is the field most
+# worth getting right: a sentinel weapon is not a Primary, DE's compat tag is
+# SentinelWeapons rather than LongGuns, and the page's own "Mod Pool" row is
+# what decides. This one says Rifle. The `primary` pool (Hunter Munitions,
+# Vigilante) is NOT claimed — unsourced either way, and omitting compatibility
+# we cannot cite beats inventing it (the rule verglas_prime.yaml set).
+mod_pools: [rifle]
+mastery_rank: 0
+max_rank: 30
+
+accuracy: 100.0
+disposition: 1.21
+polarities: []
+riven_family: Laser Rifle
+traits: [prime]
+internal_name: /Lotus/Types/Sentinels/SentinelWeapons/PrimeLaserRifle
+noise: alarming
+magazine: 20
+reload_seconds: 1.2
+# Sentinel weapons draw from an INFINITE reserve — there is no ammo pickup
+# economy to model, so no `ammo_max`. The magazine and reload are real.
+
+# No Condition Overload row for this weapon, so the ordinary class — the
+# catalog "lists only discrepant attacks. Anything not listed should be assumed
+# to be Additive with +100% bonus" (re-read 2026-08-15; no sentinel weapon
+# appears in it at all).
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: auto
+  shot_type: projectile
+  fire_rate: 5.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.20
+  crit_multiplier: 2.0
+  status_chance: 0.10
+  punch_through_m: 0.0
+  # The page's own words for this weapon: it "accepts Rifle Mods".
+  damage: { impact: 5.5, puncture: 38.5, slash: 11.0 }   # 55 total
+unmodeled:
+  - "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
+
+source:
+  url: https://wiki.warframe.com/w/Prime_Laser_Rifle
+  # Every stat is the wiki page's infobox, including the Mod Pool row. WFCD
+  # `warframe-items` supplied `internal_name` and was cross-checked on the
+  # rest; where the two disagreed the wiki won (docs/DATA_SOURCES.md).

@@ -1,0 +1,56 @@
+id: sweeper
+name: Sweeper
+# SENTINEL WEAPON — its own equipment slot: it is not a Primary, it sits on the
+# companion. NO exilus slot and NO arcane; both follow from `class` containing
+# "sentinel", so their absence here is a fact rather than an omission.
+slot: sentinel
+class: sentinel_weapon
+form: base
+default_form: true
+
+# SHOTGUN MODS, not rifle. The Sweeper pair is the other exception in this
+# class — the page's "Mod Pool" row says Shotgun and DE's internal name is
+# `SentShotgun`. It is a shotgun in every sense that matters here: six pellets
+# a shell, and Hell's Chamber rather than Split Chamber.
+mod_pools: [shotgun]
+mastery_rank: 0
+max_rank: 30
+
+accuracy: 3.33
+disposition: 1.0
+polarities: [madurai, madurai]
+riven_family: Sweeper
+internal_name: /Lotus/Types/Sentinels/SentinelWeapons/SentShotgun
+noise: alarming
+magazine: 10
+reload_seconds: 2.3
+# Sentinel weapons draw from an INFINITE reserve — there is no ammo pickup
+# economy to model, so no `ammo_max`. The magazine and reload are real.
+
+# No Condition Overload row for this weapon, so the ordinary class — the
+# catalog "lists only discrepant attacks. Anything not listed should be assumed
+# to be Additive with +100% bonus" (re-read 2026-08-15; no sentinel weapon
+# appears in it at all).
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 1.0
+  # SIX PELLETS. The damage below is ONE of them (35); the shell is 210.
+  multishot: 6.0
+  ammo_cost: 1
+  crit_chance: 0.10
+  crit_multiplier: 1.75
+  status_chance: 0.045
+  punch_through_m: 0.0
+  damage: { impact: 29.75, puncture: 1.75, slash: 3.5 }   # 35 each, 210 a shell
+unmodeled:
+  - "the 20-40 degree spread is not modelled — this arena has one target at zero distance, so all six pellets always land on it"
+  - "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
+
+source:
+  url: https://wiki.warframe.com/w/Sweeper
+  # Every stat is the wiki page's infobox, including the Mod Pool row. WFCD
+  # `warframe-items` supplied `internal_name` and was cross-checked on the
+  # rest; where the two disagreed the wiki won (docs/DATA_SOURCES.md).

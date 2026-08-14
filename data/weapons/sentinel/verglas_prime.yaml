@@ -65,5 +65,14 @@ attack:
   punch_through_m: 0.0
   damage: { cold: 32.0 }
 
+# THE SAME ADMISSIONS AS THE ORDINARY VERGLAS. This entry carried none at all
+# until the ordinary one joined the roster and the board check noticed the two
+# halves of one weapon admitting different things (2026-08-15) — a companion
+# firing its own weapon and a beam range this arena has no distance for are
+# properties of the WEAPON and were always missing here.
+unmodeled:
+  - "the 24 m range is not modelled — this arena has no distance, so every tick lands"
+  - "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
+
 source:
   url: https://wiki.warframe.com/w/Verglas_Prime

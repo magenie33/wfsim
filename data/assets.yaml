@@ -99,6 +99,24 @@ weapons:
   morgha_alt: ThanoTechGrenadeLauncher.png
   velocitus: Velocitus.png
   velocitus_uncharged: Velocitus.png
+  artax: Artax.png
+  burst_laser: BurstLaser.png
+  # WFCD gives this weapon `PrimeLaserRifle.png`, which is the PRIME LASER
+  # RIFLE's picture — a different sentinel weapon entirely. The CDN has no
+  # file for the Burst Laser Prime under any spelling tried, so it comes
+  # from the wiki. Caught by `no_two_weapons_share_an_image` (2026-08-15).
+  burst_laser_prime: wiki:BurstLaserPrime.png
+  cryotra: Cryotra.png
+  deth_machine_rifle: DethMachineRifle.png
+  deth_machine_rifle_prime: DethMachineRiflePrime.png
+  laser_rifle: LaserRifle.png
+  prime_laser_rifle: PrimeLaserRifle.png
+  prisma_burst_laser: PrismaBurstLaser.png
+  stinger: Stinger.png
+  sweeper: Sweeper.png
+  sweeper_prime: SweeperPrime.png
+  verglas: SentinelFreezeRayRifle.png
+  vulklok: Vulklok.png
   cyngas: Cyngas.png
   dual_decurion: DualDecurion.png
   fluctus: Fluctus.png

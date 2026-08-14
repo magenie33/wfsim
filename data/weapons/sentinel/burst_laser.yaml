@@ -1,0 +1,57 @@
+id: burst_laser
+name: Burst Laser
+# SENTINEL WEAPON — its own equipment slot: it is not a Primary, it sits on the
+# companion. NO exilus slot and NO arcane; both follow from `class` containing
+# "sentinel", so their absence here is a fact rather than an omission.
+slot: sentinel
+class: sentinel_weapon
+form: base
+default_form: true
+
+# PISTOL MODS, not rifle. The Burst Laser family is one of the two exceptions
+# in this class — its page's "Mod Pool" row says Pistol, and DE's own internal
+# name for it ends in `BurstLaserPistol`. Modding it as a rifle would offer a
+# pool it cannot wear and hide the one it can.
+mod_pools: [pistol]
+mastery_rank: 0
+max_rank: 30
+
+accuracy: 100.0
+disposition: 1.45
+polarities: []
+riven_family: Burst Laser
+internal_name: /Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol
+noise: alarming
+magazine: 15
+reload_seconds: 0.01
+# Sentinel weapons draw from an INFINITE reserve — there is no ammo pickup
+# economy to model, so no `ammo_max`. The magazine and reload are real.
+
+# No Condition Overload row for this weapon, so the ordinary class — the
+# catalog "lists only discrepant attacks. Anything not listed should be assumed
+# to be Additive with +100% bonus" (re-read 2026-08-15; no sentinel weapon
+# appears in it at all).
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: burst
+  burst:
+    count: 3
+    delay_seconds: 0.4
+  shot_type: projectile
+  fire_rate: 1.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.15
+  crit_multiplier: 2.0
+  status_chance: 0.10
+  punch_through_m: 0.0
+  damage: { impact: 2.0, puncture: 17.0, slash: 1.0 }   # 20 total
+unmodeled:
+  - "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
+
+source:
+  url: https://wiki.warframe.com/w/Burst_Laser
+  # Every stat is the wiki page's infobox, including the Mod Pool row. WFCD
+  # `warframe-items` supplied `internal_name` and was cross-checked on the
+  # rest; where the two disagreed the wiki won (docs/DATA_SOURCES.md).

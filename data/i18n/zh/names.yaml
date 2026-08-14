@@ -223,6 +223,20 @@ weapons:
   morgha_alt: 置灵者
   velocitus: 极速电磁步枪
   velocitus_uncharged: 极速电磁步枪
+  artax: 阿塔克斯
+  burst_laser: 激光点发
+  burst_laser_prime: 激光点发 Prime
+  cryotra: 急冻喷枪
+  deth_machine_rifle: 死亡机枪
+  deth_machine_rifle_prime: 死亡机枪 Prime
+  laser_rifle: 激光步枪
+  prime_laser_rifle: 激光步枪 Prime
+  prisma_burst_laser: 棱晶 激光点发
+  stinger: 毒刺
+  sweeper: 扫除者
+  sweeper_prime: 扫除者 Prime
+  verglas: 冰凇
+  vulklok: 金工火枪
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's
