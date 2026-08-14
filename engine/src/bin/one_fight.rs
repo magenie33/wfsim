@@ -126,10 +126,35 @@ struct Cfg<'a> {
 /// A saved row: the shape's name, its two costs, and its two answers.
 type BaseRow = (String, f64, f64, f64, f64);
 
+/// THE FIGHT, built once. `measure` and `ablate` both need it, and when they
+/// each built their own one of them was against a training dummy while the
+/// other was against the ruler's Thrax — a profile and a cost table describing
+/// two different fights, printed as if they described one.
+///
+/// `enemy=training` is the bare dummy, kept because it isolates the weapon's
+/// own arithmetic from every mitigation layer: the right fixture for "what did
+/// I do to the damage pipeline", the wrong one for "what does a search pay".
+fn arena_for(c: &Cfg) -> Arena {
+    if c.enemy == "training" {
+        return Arena::training(c.duration);
+    }
+    let e = wfsim_engine::enemy_data::all()
+        .into_iter()
+        .find(|e| e.id == c.enemy)
+        .unwrap_or_else(|| panic!("unknown enemy: {}", c.enemy));
+    Arena {
+        tenno: wfsim_engine::tenno_data::default_tenno().clone(),
+        target: e
+            .target_params(c.level, c.steel_path, e.can_be_eximus, TargetMode::InstantRespawn)
+            .expect("the target this fight names"),
+        body_parts: e.aim_parts(&[("body", 1.0)]).expect("a body to hit"),
+        duration_secs: c.duration,
+        abilities: Vec::new(),
+    }
+}
+
 fn measure(weapon: &str, c: &Cfg) -> Shape {
-    let Cfg {
-        mod_ids, runs, duration, seed, repeats, enemy, level, steel_path, verbose,
-    } = *c;
+    let Cfg { mod_ids, runs, seed, repeats, verbose, .. } = *c;
     let base = WeaponBase::from_data(weapon, true, &[]);
     let pool = wfsim_engine::mods_data::pool_for_weapon(weapon);
     let mut refs = Vec::new();
@@ -143,23 +168,7 @@ fn measure(weapon: &str, c: &Cfg) -> Shape {
         }
     }
     let panel = resolve(&base, &refs, StackPolicy::Emergent);
-    let arena = if enemy == "training" {
-        Arena::training(duration)
-    } else {
-        let e = wfsim_engine::enemy_data::all()
-            .into_iter()
-            .find(|e| e.id == enemy)
-            .unwrap_or_else(|| panic!("unknown enemy: {enemy}"));
-        Arena {
-            tenno: wfsim_engine::tenno_data::default_tenno().clone(),
-            target: e
-                .target_params(level, steel_path, e.can_be_eximus, TargetMode::InstantRespawn)
-                .expect("the target this fight names"),
-            body_parts: e.aim_parts(&[("body", 1.0)]).expect("a body to hit"),
-            duration_secs: duration,
-            abilities: Vec::new(),
-        }
-    };
+    let arena = arena_for(c);
     let params = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
 
     // Warm: the first call pays for whatever the allocator and the branch
@@ -190,6 +199,125 @@ fn measure(weapon: &str, c: &Cfg) -> Shape {
         kill_progress: s.mean_kill_progress,
         damage: s.mean_effective_damage,
     }
+}
+
+/// WHERE THE TIME GOES, measured by TAKING WORK AWAY.
+///
+/// The harness validates a candidate; it could not help you find one, and
+/// "read the code and guess" is not a method you can hand to somebody else. A
+/// sampling profiler is the proper tool and is platform-specific — `perf` on
+/// Linux, dtrace on macOS, and on Windows neither is installed by default —
+/// so this is the one that works on every contributor's machine and needs
+/// nothing but the repo.
+///
+/// It answers a coarser question than a profiler, and the right one to start
+/// from: which SUBSYSTEM is worth attacking. Each row disables one and reports
+/// what the fight then costs; the share it names is an upper bound on what
+/// optimising that subsystem can ever return.
+///
+/// THE NUMBERS IT PRINTS ARE NOT SIMULATIONS OF ANYTHING. A fight with its
+/// status turned off is not a fight anyone plays — it is this fight minus one
+/// subsystem, which is exactly what a profile is.
+fn ablate(weapon: &str, c: &Cfg) {
+    let base = WeaponBase::from_data(weapon, true, &[]);
+    let pool = wfsim_engine::mods_data::pool_for_weapon(weapon);
+    let refs: Vec<_> = c
+        .mod_ids
+        .iter()
+        .filter_map(|id| pool.iter().find(|m| m.id == *id))
+        .collect();
+    let panel = resolve(&base, &refs, StackPolicy::Emergent);
+    // A FIXED-LENGTH FIGHT, always — `Arena::training` has infinite health, so
+    // no variant can kill faster and change how much work there is to do.
+    //
+    // That is the methodological problem with ablation in a simulation whose
+    // LENGTH depends on its damage, and it is not hypothetical: against the
+    // ruler's Thrax, truncating the body-part list reported **−71.8%**. Removing
+    // work made the fight SLOWER, because a build that stops headshotting takes
+    // longer to kill and therefore does more. It profiled nothing.
+    let full = DummyParams::from_panel(&panel, &Arena::training(c.duration), &ArcaneFx::none());
+
+    // …and a fixed length is necessary, not sufficient: the SHOT COUNT has to
+    // come out identical too, or the variant changed the fight rather than
+    // removing work from it.
+    let time = |p: &DummyParams| -> (f64, f64) {
+        monte_carlo(p, 20.min(c.runs), c.seed);
+        let (mut best, mut shots) = (f64::INFINITY, 0.0);
+        for _ in 0..c.repeats.max(1) {
+            let t0 = Instant::now();
+            let s = monte_carlo(p, c.runs, c.seed);
+            best = best.min(t0.elapsed().as_secs_f64());
+            shots = s.mean_shots;
+        }
+        (best / f64::from(c.runs) * 1e3, shots)
+    };
+
+    // Each entry removes ONE thing. They are not additive — turning off status
+    // also removes the DoTs it would have started — so the shares overlap and
+    // the table is read as "at most this much", never summed.
+    let (whole, whole_shots) = time(&full);
+    let mut no_status = full.clone();
+    no_status.status_chance = 0.0;
+    no_status.base_status_chance = 0.0;
+    no_status.forced_procs.clear();
+    let mut no_crit = full.clone();
+    no_crit.base_crit_chance = 0.0;
+    let mut no_radial = full.clone();
+    no_radial.radial = None;
+    // NOT "one body part": truncating the list does not REMOVE work, it makes
+    // every hit a headshot, which adds it — it reported −77% with an identical
+    // shot count, which is the shape of a variant that is doing MORE. An
+    // ablation axis has to take something away.
+    let mut no_buffs = full.clone();
+    no_buffs.stacking_buffs.clear();
+    // THE LINGERING FIELD (the Torid'''s cloud). Its own axis because it is the
+    // Torid'''s dominant cost and no other axis touches it: turning STATUS off
+    // leaves the field ticking, which is why the status row reads ~0% there
+    // while the fight is plainly doing something.
+    let mut no_field = full.clone();
+    no_field.lingering = None;
+
+    println!(
+        "{weapon} · {:.0} s · {} runs · fixed-length fight — where the time goes",
+        c.duration, c.runs
+    );
+    println!("  whole fight                        {whole:>8.3} ms/run");
+    for (name, p) in [
+        ("status and everything it starts", &no_status),
+        ("critical hits", &no_crit),
+        ("the explosion", &no_radial),
+        ("the stacking buffs", &no_buffs),
+        ("the lingering field", &no_field),
+    ] {
+        let (t, shots) = time(p);
+        let share = (whole - t) / whole * 100.0;
+        // TWO WAYS A ROW IS NOT AN ABLATION, and both have happened here.
+        //
+        // A different SHOT COUNT means the variant is a different fight, and
+        // the time difference is the two mixed together. A NEGATIVE share means
+        // the variant costs more — so it did not remove work, it changed which
+        // work happens (truncating the body-part list made every hit a
+        // headshot: −77%, with the shot count unmoved). Neither is a profile,
+        // and printing a percentage for either would be worse than printing
+        // nothing.
+        if (shots - whole_shots).abs() > 1e-9 {
+            println!(
+                "  without {name:<32} — not an ablation: {shots:.0} shots against {whole_shots:.0}"
+            );
+        } else if share < -1.0 {
+            println!("  without {name:<32} — not an ablation: it costs MORE ({t:.3} ms/run)");
+        } else {
+            println!(
+                "  without {name:<32} {t:>8.3}   at most {share:>5.1}% is here{}",
+                if share < 1.0 { "  (nothing to win)" } else { "" }
+            );
+        }
+    }
+    println!(
+        "\n  Shares OVERLAP — removing status also removes the DoTs it starts — so\n\
+        \x20 read each as a ceiling on what optimising that part can return, and\n\
+        \x20 never add them up. A row near 0% is a part this fight does not use.\n"
+    );
 }
 
 /// A baseline is a CONFIG line and then four numbers a shape: the two costs
@@ -256,12 +384,14 @@ fn main() -> std::process::ExitCode {
              \x20 runs=1000  duration=180  seed=24301  repeats=3\n\
              \x20 enemy=thrax_centurion  level=9999  steel_path=1\n\
              \x20 enemy=training        no mitigation — the weapon's own arithmetic\n\
-             \x20 -v                    print every repeat\n\n\
+             \x20 -v                    print every repeat\n\
+             \x20 ablate                where the time goes, by subsystem\n\n\
              Exit code is non-zero when an ANSWER moved: that is not a speed-up."
         );
         return std::process::ExitCode::SUCCESS;
     }
     let save = args.iter().any(|a| a == "save");
+    let ablate_mode = args.iter().any(|a| a == "ablate");
     let verbose = args.iter().any(|a| a == "-v");
     let mod_ids: Vec<&str> = arg(&args, "mods").unwrap_or(DEFAULT_MODS).split(',').collect();
     let runs: u32 = arg(&args, "runs").and_then(|s| s.parse().ok()).unwrap_or(1000);
@@ -287,9 +417,16 @@ fn main() -> std::process::ExitCode {
     println!("{cfg}
 ");
 
-    let cfg_v = Cfg {
+    let cfg_v0 = Cfg {
         mod_ids: &mod_ids, runs, duration, seed, repeats, enemy, level, steel_path, verbose,
     };
+    if ablate_mode {
+        for (w, _) in &shapes {
+            ablate(w, &cfg_v0);
+        }
+        return std::process::ExitCode::SUCCESS;
+    }
+    let cfg_v = cfg_v0;
     let measured: Vec<Shape> = shapes
         .iter()
         .map(|(w, note)| {

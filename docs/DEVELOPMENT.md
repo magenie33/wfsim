@@ -214,8 +214,49 @@ per-shot and per-tick work, which is what a tight inner loop looks like. The
 room is in **how many runs get spent**, not in what one costs — see
 docs/OPTIMIZER.md.
 
-It measures NATIVE, and the product ships as wasm. Good for ranking two versions
-of the same code; not for predicting a phone.
+### …and the two tools that close its gaps
+
+**`node scripts/one_fight_wasm.mjs` — the cost in the thing that ships.**
+`one_fight` measures native Rust, which is a proxy: a change can be faster there
+and slower in the browser and the native number would never say so. This runs
+the identical fight through the shipping wasm build in a real browser and
+prints the RATIO against your native baseline, which is what makes a native
+measurement mean anything for a player. Measured here: **wasm is 1.3–1.8×
+native**, and not a constant — so the proxy needs calibrating per shape, which
+is the reason this exists. Regenerate `site/` first or you are timing
+yesterday's engine. It refuses to print a ratio when the two tools ran
+different fights, which is the mistake it made on its first run.
+
+**`cargo run --release --bin one_fight -- ablate` — WHERE the time goes.**
+The harness above validates a candidate; this one helps you find one, without a
+platform profiler (`perf` is Linux, dtrace is macOS, and Windows has neither by
+default). Each row disables one subsystem and reports what the fight then
+costs, so the share it names is a CEILING on what optimising that subsystem can
+return.
+
+```text
+torid · 180 s · fixed-length fight — where the time goes
+  whole fight                           0.898 ms/run
+  without status and everything it starts     0.900   at most  -0.2% is here
+  without the lingering field                 0.101   at most  88.8% is here
+```
+
+That Torid line is the tool doing its job: the weapon's entire cost is its
+lingering field, and the status axis — the obvious suspect, and 12.5% on the
+Gotva Prime — sees none of it.
+
+**Read it with its two refusals in mind**, both of which it learned the hard
+way. A row whose SHOT COUNT moved is not an ablation, it is a different fight.
+A row whose share is NEGATIVE is not an ablation either — it did not remove
+work, it changed which work happens: truncating the body-part list reported
+−77% because every hit became a headshot. The fight is fixed-length
+(`Arena::training`) for the same reason, since against a killable target
+removing work also removes damage and the two cannot be separated.
+
+Shares OVERLAP and must never be summed.
+
+It measures NATIVE, and the product ships as wasm — use `one_fight_wasm.mjs`
+for the number a player waits for.
 
 ## 6. Repo layout at a glance
 
