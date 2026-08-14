@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 6a38184317db31f0f2029f93301c609aea8c4067
+engine: cae646a730409d91f55ee455a9843130de64c95e
 entries:
   - weapon: akarius_prime
     mode: base
@@ -857,6 +857,12 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
+    score: 48.92160158771281
+    mods: [heavy_caliber, primary_acuity, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
     score: 48.51393550599395
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, hammer_shot, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -1103,9 +1109,21 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
+    score: 22.881592908075877
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, cryo_rounds, malignant_force, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
     score: 22.87617708835605
     mods: [amalgam_serration, galvanized_chamber, galvanized_scope, critical_delay, vital_sense, gilded_truth, stormbringer, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 21.711951968404435
+    mods: [galvanized_chamber, serration, vital_sense, gilded_truth, magnetic_capacity, cryo_rounds, malignant_force, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
@@ -1117,6 +1135,12 @@ entries:
     mode: cycle
     score: 21.205308660020584
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vital_sense, gilded_truth, cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 19.8210761893022
+    mods: [galvanized_chamber, serration, critical_delay, vigilante_armaments, vital_sense, gilded_truth, cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
@@ -2481,6 +2505,12 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: laetum
     mode: cycle
+    score: 39.99329370697028
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+  - weapon: laetum
+    mode: cycle
     score: 39.57007026137038
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_overwhelming_attrition]
@@ -2587,6 +2617,12 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, accelerated_isotope, magnetic_might, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_marksmans_hand, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
+  - weapon: laetum
+    mode: cycle
+    score: 31.271476426236667
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
   - weapon: laetum
     mode: cycle
     score: 30.422722644711612
@@ -2937,6 +2973,11 @@ entries:
     arcanes: [primary_overcharge, cascadia_flare]
   - weapon: larkspur_prime
     mode: base
+    score: 7.667368303712187
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_overcharge, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
     score: 7.666666666666667
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, sabot_rounds, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
@@ -3225,11 +3266,6 @@ entries:
     score: 1.6666666666666667
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, containment_breach, hollowed_bullets, parallax_scope, primed_combustion_rounds, primed_venomous_clip]
     arcanes: [primary_debilitate, secondary_enervate]
-  - weapon: larkspur_prime
-    mode: base
-    score: 1.6666666666666667
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, parallax_scope, primed_electrified_barrel, primed_venomous_clip, primed_combustion_rounds]
-    arcanes: [primary_debilitate, secondary_enervate]
   - weapon: latron_prime
     mode: cycle
     score: 58.5547932332362
@@ -3499,6 +3535,11 @@ entries:
     mode: base
     score: 0.4444049672246071
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, creeping_bullseye, sentient_surge, deep_freeze, pathogen_rounds, primed_heated_charge]
+    arcanes: [secondary_enervate]
+  - weapon: ocucor
+    mode: base
+    score: 0.2372727626120028
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, sentient_surge, pathogen_rounds, pistol_pestilence]
     arcanes: [secondary_enervate]
   - weapon: paris_prime
     mode: cycle
