@@ -603,6 +603,12 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, primed_chilling_grasp, scattering_inferno, toxic_barrage]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
     arcanes: [shotgun_vendetta]
+  - weapon: boar_prime
+    mode: cycle
+    score: 0.17130257265872215
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, atomic_fallout, primed_charged_shell, shell_shock, scattering_inferno]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_fortress_salvo, boar_prime_practiced_grip, boar_prime_elemental_balance]
+    arcanes: [primary_bulwark]
   - weapon: boltor_prime
     mode: cycle
     score: 33.45160156336571
@@ -986,6 +992,12 @@ entries:
     score: 24.6032362428001
     mods: [galvanized_chamber, serration, galvanized_aptitude, galvanized_scope, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_extended_volley, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 24.094669478111943
+    mods: [amalgam_serration, galvanized_chamber, critical_delay, vigilante_armaments, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
