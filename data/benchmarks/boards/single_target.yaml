@@ -4327,6 +4327,12 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: torid
     mode: cycle
+    score: 14.774521257974698
+    mods: [galvanized_chamber, serration, galvanized_scope, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_deadhead]
+  - weapon: torid
+    mode: cycle
     score: 14.69010124941727
     mods: [amalgam_serration, galvanized_chamber, critical_delay, vile_acceleration, vital_sense, cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
@@ -4379,6 +4385,12 @@ entries:
     mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
+    score: 12.35481611114498
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_deadhead]
   - weapon: torid
     mode: cycle
     score: 12.0000655070239
@@ -4581,18 +4593,6 @@ entries:
     mode: cycle
     score: 6.953530942064756
     mods: [amalgam_serration, galvanized_chamber, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
-    arcanes: [primary_frostbite]
-  - weapon: torid
-    mode: cycle
-    score: 6.8868629860769
-    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, rime_rounds, malignant_force, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
-    arcanes: [primary_merciless]
-  - weapon: torid
-    mode: cycle
-    score: 6.875817384158567
-    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, high_voltage, infected_clip, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_frostbite]
   - weapon: torid
