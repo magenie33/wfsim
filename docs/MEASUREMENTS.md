@@ -2587,3 +2587,137 @@ from the row that names it, never derived from a weapon being hitscan.
 - [`Opticor`](https://wiki.warframe.com/w/Opticor) — "Explosion isn't affected by
   multishot" (**Bugs**)
 - the owner's run above
+
+---
+
+## M42 — the Scourge's field dies when the NEXT THROW STARTS, not when it lands (owner, 2026-08-14)
+
+**Question.** The wiki states the exclusivity and not its timing: *"Only one
+field can be deployed at a time. Throwing the spear will remove existing
+fields."* Removal at the new spear's IMPACT and removal at the throw's
+initiation look identical on a single throw and are opposite mechanics on a
+build that throws continuously — the first hands a spam build ~100% uptime, the
+second hands it the least uptime of any way to play the weapon.
+
+**Reported, verbatim:**
+
+> 然后我测试发现，之前投掷过留下的东西，会在我投掷发起的那一刻消失
+
+(*"then I tested it and found that what a previous throw left behind disappears
+the instant I initiate a throw"* — the removal is keyed to the throw ACTION.)
+
+**What it settles.** The field's own clocks are ceilings a throw build never
+reaches. *"The field lasts for 20 seconds"* and *"pulses immediately on impact
+then once every 5 seconds"*, so a build that throws every second gets **the
+impact pulse and nothing else** — the every-5-s pulses require not throwing for
+5 seconds, and the 20 s duration requires not throwing for 20. And because the
+old field goes at the throw's START rather than at the new one's impact, there
+is a DEAD BAND on every throw — the whole travel time, plus whatever the throw
+animation costs before release — where no field exists at all.
+
+So the FIELD ENTITY is worth least to the build that throws most, and the way
+to hold one for its full 20 s is to throw ONCE and then fire the primary.
+
+**Then the second half, which reverses that for the part that matters** (owner,
+same day, answering the question this measurement had left open):
+
+> 消失的只是立场，消失前被附加的立场是不影响的，这个立场效果就是虚空的特效
+
+(*only the FIELD disappears; what it had already applied is unaffected — and the
+field effect IS the Void effect.*)
+
+Two things at once. The debuff on an enemy is **not** taken back with the field
+that applied it, so a build throwing every 1.6 s re-applies a 4.7 s attractor on
+every impact and the TARGET carries one continuously — the opposite conclusion
+from the field entity's, and the one that decides whether a spam build has
+attractor at all. And it is the Void Bullet Attractor, i.e. `DebuffState::
+attractor` — the debuff the engine already had, reachable until now only from
+Xata's Whisper.
+
+**What it does NOT settle.** The headshot rate the field is worth: unchanged and
+still the blocker (docs/UNMODELLED.md §Bullet Attractor). This pair of reports
+settles the field's UPTIME and its identity; neither says what easier aiming is
+worth, and the wiki refuses to ("does not guarantee a headshot").
+
+**Status: WIRED, for exactly what it is worth here** (`attractor_seconds: 4.7`
+on both thrown entries). One line in the Condition Overload counter and nothing
+else, which is all `DebuffState::attractor` has ever been worth in this arena.
+Three consequences fall out of the two clocks rather than being modelled:
+
+- 4.7 s against a ≤1.6 s cycle means it is simply UP from the second throw on;
+- the field is planted AFTER the throw's own pellets land, so a throw never
+  counts the field its own impact planted — the ordering that claims least;
+- the field's every-5-s pulses can never fire in a throw-only fight (the cycle
+  is shorter than the interval), so omitting them is exact here, not an
+  approximation.
+
+Pinned by `a_thrown_speargun_plants_a_bullet_attractor_that_counts`, which
+measures it through the CO count — a build with a CO bracket must beat the same
+build that cannot see the field — and carries the negative control that the two
+thrown entries are the only planters in the roster. Verified to bite: dropping
+the plant makes the two builds identical to the last point.
+
+### Sources
+
+- [`Scourge Prime`](https://wiki.warframe.com/w/Scourge_Prime) — Characteristics:
+  the 2 m field on heads within 14 m, 4.7 s on an enemy, a pulse every 5 s, 20 s
+  of field, one field at a time
+- the owner's test above
+
+---
+
+## M43 — a throw pays for its own reload, so the listed rate is HALF the cycle ✅ (owner, 2026-08-14)
+
+**Question.** The wiki gives the spear throw a fire rate and, separately, the
+sentence *"Throwing the spear consumes 1 ammo, then reloads the weapon."* The
+entry read the first as a cadence and the second as a note, so the sim threw 40
+times between reloads — the primary fire's magazine, on the attack that does not
+spend it. The two readings are 1 % apart on a bare build and 60 % apart on a
+fire-rate one, because a reload that never happens is a floor that never bites.
+
+**Reported, verbatim:**
+
+> throw的流程是这样的，当按下投掷的时候，先有一个蓄力的时间，然后投掷出去，接着换弹。蓄力的时间和射速有关。默认的蓄力时间是1s。
+
+(*press → a WIND-UP, whose length is set by fire rate and is 1 s at base →
+release → RELOAD.*)
+
+**What it settles.** The reload is unconditional, not a magazine running dry, so
+the cycle is `wind-up + reload` = 1.0 + 0.6 = **1.6 s** and the throw rate is
+0.625/s, not 1/s. That is a `magazine: 1` weapon — the same shape a bow's nock
+already has here (`cernos_prime.yaml`, and dummy.rs' "the cycle is charge +
+reload however the two are ordered"), so the fix was the magazine and nothing
+else. The wind-up being `1 / fire_rate` also makes the second clause fall out for
+free: a fire-rate bonus shortens the wind-up and cannot touch the reload.
+
+Scourge Prime, thrown, 180 s against a level-9999 Steel Path Thrax Centurion, no
+headshots, finite ammo:
+
+| build | before | after | |
+| --- | --- | --- | --- |
+| bare | 178 throws, 303 dps | **113 throws, 191 dps** | −37% |
+| +Shred | 231 throws, 397 dps | 132 throws, 224 dps | −44% |
+| +Primed Shred +Vile Acceleration +Speed Trigger | 400 throws, 596 dps | 194 throws, 281 dps | −53% |
+| +Primed Fast Hands | 179 throws, 305 dps | 130 throws, 222 dps | reload went from +0.7% to **+16%** |
+
+The last two rows are the point. Under the old magazine a fire-rate stack bought
+its full multiplier and the mode's ceiling was set by fire rate alone; under the
+real cycle the reload is a floor, so fire rate buys only the wind-up's share of
+1.6 s and RELOAD SPEED becomes a real mod on this weapon — which is the opposite
+of what the pre-fix build search would have told a player.
+
+Magazine mods stay inert by construction and correctly so: a reload draws
+`floor(capacity − current)` whole rounds, so a 1.66-round capacity still loads
+one.
+
+**Pinned by** `a_thrown_speargun_paces_on_wind_up_plus_reload`, which asserts
+the cycle against the sim's own shot count and states the fire-rate half as an
+inequality (throughput rises by strictly less than the fire rate did). Verified
+to bite: restoring `magazine: 40` reproduces the old number exactly — *"178
+throws in 180s, but a 1.600s cycle fits 113"*.
+
+### Sources
+
+- [`Scourge Prime`](https://wiki.warframe.com/w/Scourge_Prime) — "Throwing the
+  spear consumes 1 ammo, then reloads the weapon"
+- the owner's sequence above

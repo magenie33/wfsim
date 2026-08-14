@@ -78,6 +78,7 @@ in yaml comments instead. That is how five of them came to be wrong.
 
 | weapon | attack | relative | type | our entry |
 | --- | --- | --- | --- | --- |
+| Akarius Prime | Rocket Impact | 100% | Multiplying | `akarius_prime` → `independent` — the base Akarius has NO row |
 | Angstrum / Prisma Angstrum | **Incarnon Mode** | 100% | Multiplying | the `_incarnon` entries → `independent` |
 | Ballistica | Charged Shot | **25%** | Adding | `co_base_fraction: 0.25` |
 | Ballistica Prime | Charged Shot | **50%** | Adding | `co_base_fraction: 0.50` |
@@ -94,6 +95,9 @@ in yaml comments instead. That is how five of them came to be wrong.
 | Felarx | Normal + Incarnon Mode | 100% | Multiplying | both `independent` |
 | Kunai | Normal Attack | 100% | Adding | ordinary |
 | Kunai / Mk1-Kunai | Incarnon Mode | 100% | Multiplying | `independent` — see the two notes below |
+| Larkspur Prime | **Alt-fire** | 100% | Multiplying | `larkspur_prime_charged` → `independent` — the normal fire has NO row |
+| Scourge | **Throw** (unmodded 150) | 100% | Multiplying | `scourge_thrown` → `independent` |
+| Scourge Prime | **Throw** (unmodded 200) | 100% | Multiplying | `scourge_prime_thrown` → `independent` |
 | Cernos Prime | Charged Attack | 50% | Adding | `co_base_fraction: 0.5` |
 | Stug | **Blob Impact** | 0% | Does not apply | `co_behavior: inert` |
 | Zylok / Zylok Prime | Incarnon Form Radial | 90% | Adding | derived per variant; the row MIXES them — see below |
@@ -166,6 +170,13 @@ per-variant evolution table is the more specific source. Pinned by
 everywhere else, which is why the engine's radial path refuses it by default and
 the Torid's cloud is the declared exception. The Shedu's explosion has NO row,
 so it takes none.
+
+**The Attack Name cell scopes the row to ONE firing mode.** The spearguns' rows
+read `Throw`, so they belong to the alt-fire entries and the primary-fire ones
+have no row at all — and the Unmodded Damage cell is what tells the throw from
+the explosion beside it (150 = 105 + 22.5 + 22.5, 200 = 140 + 30 + 30, neither
+of them the 55 blast). Same shape as the Larkspur Prime's `Alt-fire` row. Absence
+is still ordinary: `scourge` and `scourge_prime` are `additive_with_base_damage`.
 
 **A weapon's two FORMS can differ.** The Torid's Incarnon form is `Adding` where
 its base form is `Multiplying`, which is exactly the shape a refactor flattens —
@@ -514,7 +525,18 @@ Only ours, so this stays diffable. The full table lives on the wiki.
 | Strun / Prime / Wraith — Incarnon | 100% | 4.0 m | +320% | Multiplies | "Shotguns cannot equip" |
 | Phantasma / Prime — Alt-Fire | 100% | 4.8 m | +384% | Multiplies | "Shotguns cannot equip"; bomblets do not benefit |
 | Vectis / Prime — Incarnon | **4%** | 0.1 m | +8% | N/A | uses the embed radial, not the headshot explosion |
+| Scourge (Prime) — Primary Fire + AoE | 100% | 1.7 m | +136% | Multiplies | Speargun |
+| Scourge (Prime) — **Throw + AoE** | 100% | 7.0 m | +560% | Multiplies | Speargun; the biggest radius the pair has |
 | Larkspur Prime | Untested / 0% | 9.6 m | — | — | "Archguns cannot equip" |
+
+**The spearguns are TWO ROWS FOR ONE WEAPON**, split by firing mode the way §1's
+CO rows are, and the Weapon cell reads `Scourge (Scourge Prime)` — one row that
+names both variants, which is the opposite of the CO rule's usual bite and only
+safe because the cell says so. Ordinary in every column, so the whole finding is
+the pair of radii: 1.7 m on the primary fire against 7.0 m on the throw makes the
+arcane worth **four times as much** on the alt-fire, on a weapon where both modes
+are one build. The Primed Firestorm column is the same arithmetic at ×1.44
+(2.448 m → +195.84%, 10.08 m → +806.4%), which is a second check on the radii.
 
 **General exclusion, verbatim:** *"Does not work on Continuous Weapons or beam
 attacks with an AoE component. For example, Ignis or Torid Incarnon Genesis."*
@@ -539,7 +561,7 @@ bracket. They meet in one place and it is not the one you would guess:
   difference rather than either number on its own.
 
 `the_roster_reproduces_primary_compressions_published_column` re-derives the
-table's **Max Damage Bonus @ Base Radius** for all 22 rows from our own weapon
+table's **Max Damage Bonus @ Base Radius** for all 26 rows from our own weapon
 data. That column is not transcribed anywhere — it falls out of the radius, the
 row and the rank ramp — so it is a cross-check: a radius typed wrong, an
 effectiveness misread or an override invented breaks it.

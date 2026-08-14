@@ -26,8 +26,11 @@ noise: silent               # the throw is SILENT where the primary fire is ALAR
 ammo_type: primary
 ammo_max: 200
 ammo_pickup: 60
-magazine: 40
-reload_seconds: 0.6         # "Throwing the spear consumes 1 ammo, then reloads the weapon"
+# ONE THROW IS ONE MAGAZINE — see scourge_prime_thrown.yaml for the cycle. The
+# throw is WIND-UP → release → RELOAD every time, so the magazine is 1 and the
+# 40 rounds belong to the primary-fire entry (owner, 2026-08-14).
+magazine: 1
+reload_seconds: 0.6
 
 # CONDITION OVERLOAD — MULTIPLYING, and this entry is the one the catalog
 # names. Verbatim, both rows of the pair:
@@ -44,15 +47,11 @@ reload_seconds: 0.6         # "Throwing the spear consumes 1 ammo, then reloads 
 # what makes it the throw's row and not the explosion's.
 co_behavior: independent
 
-# WHAT THIS ENTRY DOES NOT MODEL, and the first line is the point of the
-# weapon: the Bullet Attractor field is what a Scourge is FOR, and this arena
-# cannot pay for it. The engine has an `attractor` debuff — it arrives from
-# Xata's Whisper's Void instance — but it is worth one line in the Condition
-# Overload counter and nothing else, because "bullets are drawn to the head"
-# only matters where the player's aim decides the body part, and here the
-# headshot rate is a number the scenario sets.
+# WHAT THIS ENTRY DOES NOT MODEL — see scourge_prime_thrown.yaml. The field is
+# applied and counted; the easier headshots it buys are the part that still
+# wants a measured rate.
 unmodeled:
-  - "the Bullet Attractor field the throw plants (2 m on the heads of enemies within 14 m, pulsing every 5 s for 20 s) — it counts as one Condition Overload status and nothing more. What the field is WORTH is a headshot rate, and the wiki says it does not guarantee a headshot, so the number has to be MEASURED before it can be modelled: docs/UNMODELLED.md §Open decisions"
+  - "what the Bullet Attractor field is WORTH as an aiming aid — the throw plants it and the 4.7 s it puts on the target IS counted (one Condition Overload status), but the easier headshots are not: the wiki says the field does not guarantee a headshot, so the rate has to be MEASURED before this arena's headshot % can be moved by it. docs/UNMODELLED.md §Open decisions"
   - "the innate reload while holstered or deployed (33% of the magazine per second) — this arena never holsters the weapon"
 
 attack:
@@ -67,6 +66,11 @@ attack:
   status_chance: 0.30
   punch_through_m: 0.0
   damage: { impact: 105, puncture: 22.5, slash: 22.5 }   # total 150
+
+  # The Bullet Attractor the throw plants — 4.7 s on the enemy, one line in the
+  # Condition Overload counter. See scourge_prime_thrown.yaml for why the
+  # field's 5 s pulses never reach this arena.
+  attractor_seconds: 4.7
 
   # PRIMARY COMPRESSION's row, by column (docs/CATALOGS.md §2):
   #   Attack Name   Throw + AoE            Base Radius   7.0 m

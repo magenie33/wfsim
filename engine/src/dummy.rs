@@ -1300,6 +1300,10 @@ pub struct DummyParams {
     pub base_status_chance: f64,
     /// Forced procs on every hit (weapon data, per attack part).
     pub forced_procs: Vec<DamageType>,
+    /// Seconds of Bullet Attractor this attack PLANTS on the target — see
+    /// `weapons_data::AttackSpec::attractor_seconds`. `None` for every weapon
+    /// but the thrown spearguns.
+    pub attractor_seconds: Option<f64>,
     /// Status duration multiplier (1.0 = unmodded).
     pub status_duration_mult: f64,
     /// Base fire rate; multiplied live by BuffBar fire-rate multipliers
@@ -2304,6 +2308,7 @@ impl DummyParams {
             applies_microwave: panel.applies_microwave,
             syndicate_radial: panel.syndicate_radial,
             forced_procs: panel.forced_procs.clone(),
+            attractor_seconds: panel.attractor_seconds,
             tendril_max: panel.tendril_max,
             cc_per_tendril: panel.cc_per_tendril,
             sc_per_tendril: panel.sc_per_tendril,
@@ -2486,6 +2491,7 @@ impl Default for DummyParams {
             status_chance: 0.37,
             base_status_chance: 0.37,
             forced_procs: Vec::new(),
+            attractor_seconds: None,
             status_duration_mult: 1.0,
             fire_rate: 1.0,
             charge_seconds: None,
@@ -6952,6 +6958,24 @@ pub fn run_once_traced(
                 DEPTH_PROC,
             );
             }
+        }
+
+        // THE SPEAR PLANTS ITS FIELD, and the shot that planted it does not
+        // benefit from it — hence here, after every pellet of this throw has
+        // landed. The next one is 1.6 s away against a 4.7 s field, so from
+        // the second throw on it is simply up; only the opening throw is
+        // affected by the ordering, and this is the ordering that claims the
+        // least (the wiki has the field pulse ON impact, not before it).
+        //
+        // ONE FIELD, replaced rather than stacked, which is already what
+        // `push_capped(.., 1, ..)` does — and it is the right shape for a
+        // second reason the owner measured (2026-08-14): a new throw destroys
+        // the OLD FIELD at the moment it starts, but what that field already
+        // applied to an enemy runs its own clock. A field the sim never
+        // re-pulses and a debuff that survives its field are the same thing
+        // from the target's side, which is the only side this arena has.
+        if let Some(secs) = ap.attractor_seconds {
+            DebuffState::push_capped(&mut debuffs.attractor, t + secs, 1, t);
         }
 
         // REAVER'S RAPTURE: THE ROUND THAT COMPLETED A BURST, counted here —

@@ -241,11 +241,16 @@ the owner's call, not the model's (the 99-stack decision, 2026-08-08).
 on the heads of enemies within 14 meters of the impact point, allowing easier
 headshots."*
 
-The engine HAS the debuff — `DebuffState::attractor`, which arrives today from
-Xata's Whisper's Void instance — and it is worth exactly one line in the
-Condition Overload counter. What the field is actually worth is a HEADSHOT
-RATE, and this arena has one: `headshot_pct` on the fight. So the machinery is
-there and the wiring is three lines.
+**The CO half is DONE (M42): the throw plants the debuff.** `attractor_seconds:
+4.7` on both thrown entries, feeding `DebuffState::attractor` — the same debuff
+Xata's Whisper's Void instance lands, which is not an analogy but the same
+effect (owner, 2026-08-14). It is worth exactly one line in the Condition
+Overload counter, and 4.7 s against a ≤1.6 s throw cycle means it is up
+continuously.
+
+**What stays open is the other half**: what the field is worth as an AIMING
+AID. This arena has a headshot rate — `headshot_pct` on the fight — so the
+wiring is again three lines.
 
 **What is missing is the number, and the wiki says so itself:** *"Bullets and
 projectiles fired at enemies will be drawn to the head. However, this does not
@@ -258,6 +263,15 @@ It is filed here rather than in the list above because nothing about the arena
 prevents it: no distance is involved (the field is on the target), no play
 pattern has to be invented (you throw, then you fire), and one weapon in the
 roster plants one on itself.
+
+**The UPTIME is measured too (M42), and the two clocks pull opposite ways.** The
+old FIELD dies when the next throw STARTS, not when the new spear lands, so its
+20 s life and every-5-s pulses are ceilings a throw build never reaches — one
+field there never lives long enough to pulse twice. But what a field already
+applied is NOT taken back with it, and 4.7 s on the target outlasts the 1.6 s
+cycle, so the debuff is continuous exactly where the field is shortest. When the
+headshot half is finally wired, it is the TARGET's clock it should read, not the
+field's.
 
 ### Dual Mode Chamber — OPEN (Felarx)
 

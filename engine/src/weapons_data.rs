@@ -247,6 +247,18 @@ pub struct AttackSpec {
     /// direct hit forces Impact and its radial does not.
     #[serde(default)]
     pub forced_procs: Vec<String>,
+    /// Seconds of BULLET ATTRACTOR this attack plants on what it hits — the
+    /// spearguns' throw, and the one attack in the roster that applies the
+    /// Void field without dealing Void (owner, 2026-08-14: the field IS the
+    /// Void effect, and only the FIELD dies when the next throw starts —
+    /// what it already applied runs its own clock on the enemy).
+    ///
+    /// Worth exactly one line in the Condition Overload counter, which is all
+    /// `DebuffState::attractor` has ever been worth here. What the field is
+    /// worth as a HEADSHOT aid is still unmodelled and still wants a measured
+    /// rate — docs/UNMODELLED.md §Bullet Attractor.
+    #[serde(default)]
+    pub attractor_seconds: Option<f64>,
     #[serde(default)]
     pub ricochet: Option<RicochetSpec>,
     /// DAMAGE FALLOFF on the direct hit — the shotgun's, and the one the
@@ -1815,6 +1827,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         applies_microwave: s.applies_microwave,
         battery: s.battery,
         forced_procs: s.attack.forced_procs.iter().map(|t| damage_type(t)).collect(),
+        attractor_seconds: s.attack.attractor_seconds,
         no_resupply: s.no_resupply,
         base_reload,
         by_round_reload,
@@ -3893,6 +3906,124 @@ mod play_mode_tests {
             assert!(table.iter().any(|(t, _)| t == id), "{id} has a row and no expected bonus");
         }
         assert_eq!(carried.len(), table.len());
+    }
+
+    /// A THROW PAYS FOR ITS OWN RELOAD, so the wind-up is not the cycle.
+    ///
+    /// The spearguns' alt-fire is wind-up → release → reload, every throw
+    /// (owner, 2026-08-14) — the reload is unconditional rather than a magazine
+    /// running dry. That is a `magazine: 1` weapon, the same shape as a bow's
+    /// nock, and it is worth pinning because the entry carried the PRIMARY
+    /// FIRE's 40 rounds for two days: the sim then threw 40 times between
+    /// reloads and the mode read 59% faster than it is.
+    ///
+    /// The sharp half is the second assertion. With one magazine per throw the
+    /// reload is a FLOOR the wind-up cannot cross, so a fire-rate bonus buys
+    /// only the wind-up's share of the cycle — under a 40-round magazine it
+    /// bought the whole thing, which is what made a fire-rate build the
+    /// obvious one on a weapon where it is not.
+    #[test]
+    fn a_thrown_speargun_paces_on_wind_up_plus_reload() {
+        use crate::dummy::{monte_carlo, DummyParams};
+        const DURATION: f64 = 180.0;
+        // Both entries: the Prime is not a different mechanic.
+        for id in ["scourge_thrown", "scourge_prime_thrown"] {
+            assert_eq!(
+                spec(id).unwrap().magazine,
+                Some(1.0),
+                "{id}: one throw is one magazine — the 40 rounds are the primary fire's"
+            );
+            let run = |mods: &[&crate::loadout::ModDef]| {
+                let b = crate::loadout::WeaponBase::from_data(id, true, &[]);
+                let p = crate::loadout::resolve(&b, mods, crate::loadout::StackPolicy::Emergent);
+                let params = DummyParams::from_panel(
+                    &p,
+                    &crate::arena::Arena::training(DURATION),
+                    &crate::arcanes_data::ArcaneFx::none(),
+                );
+                // The cycle the data describes, against the one the sim ran:
+                // the first throw costs no wind-up, so the count is one more
+                // than the cycles that fit.
+                let cycle = 1.0 / params.fire_rate + params.reload_seconds;
+                let shots = monte_carlo(&params, 8, 5).mean_shots;
+                let want = (DURATION / cycle).floor() + 1.0;
+                assert!(
+                    (shots - want).abs() < 1e-9,
+                    "{id}: {shots} throws in {DURATION}s, but a {cycle:.3}s cycle fits {want}"
+                );
+                (params.fire_rate, shots)
+            };
+            // Bare: 1.0 s of wind-up + 0.6 s of reload.
+            let (rate, shots) = run(&[]);
+            assert!((rate - 1.0).abs() < 1e-9, "{id}: the wind-up is 1 / {rate}");
+
+            // …AND A FIRE-RATE MOD CANNOT BUY THE RELOAD. Stated as the
+            // inequality rather than as a figure, so it holds whatever the
+            // card is worth: throughput rises, and by strictly less than the
+            // fire rate did.
+            let vile = crate::mods_data::class_pool("rifle")
+                .into_iter()
+                .find(|m| m.id == "vile_acceleration")
+                .expect("vile acceleration is in the rifle pool");
+            let (fast_rate, fast_shots) = run(&[&vile]);
+            assert!(fast_rate > rate, "{id}: the mod must raise the rate");
+            assert!(
+                fast_shots > shots && fast_shots / shots < fast_rate / rate - 1e-9,
+                "{id}: x{:.3} fire rate bought x{:.3} throws — the reload is a floor",
+                fast_rate / rate,
+                fast_shots / shots
+            );
+        }
+    }
+
+    /// THE THROW PLANTS A FIELD, and the field outlives the throw after it.
+    ///
+    /// The Bullet Attractor is the Void effect (owner, 2026-08-14), so it is
+    /// worth one line in the Condition Overload counter and nothing else here.
+    /// What makes it worth a test is the ARITHMETIC of the two clocks: 4.7 s
+    /// on the target against a 1.6 s throw cycle, so from the second throw on
+    /// it is simply up — and a new throw destroying the OLD FIELD does not
+    /// take back what that field already applied.
+    ///
+    /// Measured through the CO count rather than through the debuff, because
+    /// the count is the only thing the field is worth: a build with a CO mod
+    /// must be worth more on the throw than the same build is without the
+    /// field, and the gap must be exactly one status type's share.
+    #[test]
+    fn a_thrown_speargun_plants_a_bullet_attractor_that_counts() {
+        use crate::dummy::{monte_carlo, DummyParams};
+        for id in ["scourge_thrown", "scourge_prime_thrown"] {
+            let b = crate::loadout::WeaponBase::from_data(id, true, &[]);
+            assert_eq!(b.attractor_seconds, Some(4.7), "{id}: the wiki's 4.7 s");
+            let p = crate::loadout::resolve(&b, &[], crate::loadout::StackPolicy::Emergent);
+            let mut params = DummyParams::from_panel(
+                &p,
+                &crate::arena::Arena::training(60.0),
+                &crate::arcanes_data::ArcaneFx::none(),
+            );
+            assert_eq!(params.attractor_seconds, Some(4.7), "{id}: through the panel");
+            // The whole claim, stated as damage: a Condition Overload build
+            // that counts the field beats the same build that cannot see it.
+            params.co_per_type = 0.8;
+            params.co_behavior = crate::loadout::CoBehavior::Independent;
+            let with = monte_carlo(&params, 24, 7).mean_effective_damage;
+            let without = DummyParams { attractor_seconds: None, ..params.clone() };
+            let without = monte_carlo(&without, 24, 7).mean_effective_damage;
+            assert!(
+                with > without * 1.02,
+                "{id}: the field must reach the CO count — {without:.0} -> {with:.0}"
+            );
+        }
+        // NEGATIVE CONTROL: nobody else plants one. The debuff has exactly two
+        // sources — this attack and Xata's Whisper's Void instance — and a
+        // field granted to a weapon that has none would be invisible in every
+        // other test here.
+        let planters: Vec<&str> = all()
+            .iter()
+            .filter(|w| w.attack.attractor_seconds.is_some())
+            .map(|w| w.id.as_str())
+            .collect();
+        assert_eq!(planters, vec!["scourge_prime_thrown", "scourge_thrown"]);
     }
 
     /// AIMING IS THE WHOLE CONDITION — *"On aim: x0.2 explosion radius"*.

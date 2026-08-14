@@ -1111,6 +1111,8 @@ pub struct WeaponBase {
     /// Damage types forced on every DIRECT hit — see
     /// `weapons_data::AttackSpec::forced_procs`.
     pub forced_procs: Vec<DamageType>,
+    /// See `weapons_data::AttackSpec::attractor_seconds`.
+    pub attractor_seconds: Option<f64>,
     /// How many tendrils this weapon can hold up (0 = it has none). See
     /// `weapons_data::TendrilSpec` for why the COUNT is modelled and the
     /// tendrils' own damage is not.
@@ -2016,6 +2018,9 @@ pub struct ResolvedPanel {
     pub applies_microwave: bool,
     /// Forced procs, carried through unmodded — no mod grants or removes one.
     pub forced_procs: Vec<DamageType>,
+    /// The field the attack plants, unmodded for the same reason: no mod in
+    /// the roster lengthens it. See `weapons_data::AttackSpec`.
+    pub attractor_seconds: Option<f64>,
     /// Untouched by mods: the tendril cap is the weapon's.
     pub tendril_max: u32,
     /// Sentient Surge: crit chance added PER ACTIVE TENDRIL, relative to the
@@ -3285,6 +3290,7 @@ pub fn resolve_for(
         beam_ramp_floor: base.beam_ramp_floor,
         applies_microwave: base.applies_microwave,
         forced_procs: base.forced_procs.clone(),
+        attractor_seconds: base.attractor_seconds,
         tendril_max: base.tendril_max,
         cc_per_tendril: per_tendril_cc,
         cc_per_hit,
