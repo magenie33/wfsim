@@ -268,14 +268,37 @@ The reference's own #1 is Viral+Heat (`cryo_rounds, malignant_force, hellfire`
 under MECHANICS §3 rule 3 — the innate is pulled forward onto the Cold mod's
 position, leaving Heat unpaired.
 
-## The RANKING statistic needs its own σ (2026-08-03)
+## The RANKING statistic needs its own σ (2026-08-03, finished 2026-08-14)
 
 The funnel ranks by `mean_kill_progress` but took its spread from `std_kills` —
 a different statistic that merely looks like it. Whole kills have no partial
 credit, so a build that never finishes its second kill has `std_kills` 0 and a
 kill progress that moves all run long; the amnesty band at a cut line and the
-3σ racing cull were both sized from the wrong number. `Summary` now carries
-`std_kill_progress`.
+3σ racing cull were both sized from the wrong number.
+
+**HALF THIS FIX SHIPPED AND THE PARAGRAPH READ AS IF ALL OF IT HAD.** `Summary`
+gained `std_kill_progress` on the day above and the two call sites kept reading
+`std_kills` for eleven days — the field was never used by anything. It is the
+worst shape a half-fix takes: the doc says it is done, the field exists to
+prove it, and the code is unchanged.
+
+**What it was worth, graded** (`wfsim-truth`, Torid, 12-mod pool, size 6, 1638
+jobs, reference 400 runs each, identical seeds and scope on both sides):
+
+| | rank | regret | within noise | top-10 recall | sims |
+| --- | --- | --- | --- | --- | --- |
+| `std_kills` | 2 | 0.012% | yes | **90%** | 5558 |
+| `std_kill_progress` | 2 | 0.012% | yes | **100%** | 5558 |
+
+Identical cost, one more of the true top ten recovered: the racing cull had
+been dropping a genuine contender because it judged it with the wrong σ. The
+winner did not move — a build good enough to lead is not the one a mis-sized
+band eliminates — which is why this survived eleven days and why RECALL is the
+column that catches it.
+
+The rule generalises past this one field: **every statistical decision is sized
+by the spread of the statistic it decides about.** A σ that merely looks like
+the right one is not a cheaper approximation, it is a different question.
 
 ## Exhaustive enumeration does not survive a real scope (2026-08-03)
 

@@ -1361,9 +1361,19 @@ pub fn run_funnel(
             let cap = (planned * 2).min(scored.len());
             let cut_score = scored[planned - 1].1.mean_kill_progress;
             let tol = if runs >= 2 {
+                // THE SPREAD OF THE STATISTIC BEING RANKED. This pooled σ came
+                // off `std_kills` — whole kills, no partial credit — while the
+                // line it is a tolerance for is a KILL PROGRESS. They are two
+                // statistics that merely look alike, and the gap is not
+                // academic: a build that never finishes its second kill has
+                // `std_kills` 0 and a kill progress that moves all run long, so
+                // it was handed a zero-width band and admitted or dropped on
+                // whichever side of the line noise had left it (owner,
+                // 2026-08-14: kill progress is the whole KPM logic and every
+                // kill figure has to come off it).
                 let pooled = (scored
                     .iter()
-                    .map(|(_, s)| s.std_kills * s.std_kills)
+                    .map(|(_, s)| s.std_kill_progress * s.std_kill_progress)
                     .sum::<f64>()
                     / scored.len() as f64)
                     .sqrt();
@@ -1387,7 +1397,9 @@ pub fn run_funnel(
         // (4× more expensive) round. Needs runs ≥ 4 for a usable per-job σ;
         // the final round's field is untouchable.
         if round + 1 < rounds.len() && runs >= 4 && scored.len() > floor {
-            let se3 = |s: &Summary| 3.0 * s.std_kills / f64::from(runs).sqrt();
+            // …and the same statistic here, for the same reason: the bound is
+            // compared against `mean_kill_progress` on both sides of it.
+            let se3 = |s: &Summary| 3.0 * s.std_kill_progress / f64::from(runs).sqrt();
             let cut = {
                 let b = &scored[floor - 1].1;
                 b.mean_kill_progress - se3(b)
