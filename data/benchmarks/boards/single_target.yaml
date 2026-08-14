@@ -2251,6 +2251,12 @@ entries:
     score: 0.6006187454499217
     mods: [galvanized_chamber, serration, galvanized_aptitude, point_strike, vital_sense, high_voltage, malignant_force, thermite_rounds]
     arcanes: [primary_deadhead]
+  - weapon: kuva_nukor
+    mode: base
+    score: 25.592337160303877
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
   - weapon: laetum
     mode: cycle
     score: 64.29575755324629
