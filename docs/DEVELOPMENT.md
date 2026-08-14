@@ -118,7 +118,53 @@ offering Exilus and Arcane scopes on a sentinel weapon, an exilus slot on the
 Larkspur with no mod that could enter it, and the two modules computing the
 exilus pool from different sources — agreeing only by coincidence.
 
-## 5. Repo layout at a glance
+## 5. Making the engine FASTER, without making it wrong
+
+`one_fight` is the harness for it. It exists because the repo could already
+grade the search's ACCURACY (`wfsim-truth`) and had no way to state its COST —
+and "it feels faster" and "it got dumber" are indistinguishable without both
+(community request, 2026-08-14).
+
+```bash
+cargo run --release --bin one_fight -- save    # remember where you started
+#   …edit the engine…
+cargo run --release --bin one_fight            # what it cost, and what it changed
+```
+
+The second command prints a delta against your baseline **and whether the
+answer moved**. A moved answer exits non-zero: an optimisation that changes a
+number is not an optimisation, it is a bug, and that is the one thing this must
+never let you scroll past. It catches a change of one part in 10¹².
+
+Every knob is a `key=value` argument — `weapon=`, `mods=`, `runs=`,
+`duration=`, `enemy=`, `level=`, `steel_path=`, `seed=`, `repeats=`, and `-v`.
+`--help` lists them.
+
+**Read the table across, not down.** The default is three shapes that stress
+different parts of the engine, because a change to the inner loop rarely moves
+them together: `-C target-cpu=native` measured −23% on the Torid, −36% on the
+Scourge and **+31% on the Gotva Prime**. One weapon would have said "ship it"
+and one "revert", both truthfully.
+
+**What has already been tried, so nobody spends a day on it twice** (this
+machine, 2026-08-14; per-run cost 0.4–1.2 ms for a 180 s fight, repeat spread
+~2%):
+
+| tried | result |
+| --- | --- |
+| `lto = "fat"` + `codegen-units = 1` | ~2% — inside the noise |
+| dropping the per-call `Vec` in `monte_carlo` | 2–4% |
+| `-C target-cpu=native` (auto-vectorisation) | −23% / −36% / **+31%** — a lottery |
+| removing ALL 943 status procs from a run | 13% |
+
+There is no hot spot to take: the cost is spread across the per-shot and
+per-tick work, which is what a tight inner loop looks like. The room is in **how
+many runs get spent**, not in what one costs — see docs/OPTIMIZER.md.
+
+It measures NATIVE, and the product ships as wasm. Good for ranking two versions
+of the same code; not for predicting a phone.
+
+## 6. Repo layout at a glance
 
 See [`CORE.md`](CORE.md) §4 for the full architecture. In short:
 
@@ -133,7 +179,7 @@ See [`CORE.md`](CORE.md) §4 for the full architecture. In short:
 - `tests/golden/` — golden tests calibrated against in-game measurements.
 - `AGENTS.md` (repo root) — the condensed rulebook for AI coding agents.
 
-## 6. Docker (deferred)
+## 7. Docker (deferred)
 
 Intentionally **not** used during development. We will revisit containerized
 builds/packaging only once the simulator is feature-complete. Until then, mise

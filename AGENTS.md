@@ -141,6 +141,15 @@ around (decision 2026-07-31).
   blocking on work a runner was doing anyway (owner, 2026-08-11). Use it
   WITHOUT `--write` when you want to know whether a change moved anything;
   let the workflow write.
+- **Engine COST: `cargo run --release --bin one_fight`**, and `-- save` first.
+  The accuracy half is graded (`wfsim-truth` below); this is the other half, and
+  without both "it feels faster" and "it got dumber" are the same sentence. It
+  diffs a saved baseline and says whether the ANSWER moved — a moved answer is a
+  non-zero exit, because an optimisation that changes a number is a bug. Read
+  its table ACROSS: the default is three shapes, and a change to the inner loop
+  rarely moves them together (`target-cpu=native` is −23% / −36% / **+31%**
+  across them). docs/DEVELOPMENT.md §5 lists what has already been tried and
+  what it was worth, so nobody spends a day on it twice.
 - **Optimizer verification: `cargo run --release --bin wfsim-truth -- pool=<ids>
   …`**. A search cannot vouch for itself, so it is GRADED: the tool exhausts the
   scope, evaluates every job flat, and reports where the production search
