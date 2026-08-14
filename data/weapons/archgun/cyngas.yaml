@@ -1,0 +1,85 @@
+id: cyngas
+name: Cyngas
+# ARCH-GUN — its own equipment slot, and not a Primary or a Secondary: the wiki
+# is explicit that Archguns "are not considered either primary or secondary
+# weapons", which is also why they seat two arcanes rather than one.
+slot: archgun
+class: archgun
+form: base
+default_form: true
+
+# TWO COLUMNS, and the fields below are the ATMOSPHERE one because this arena is
+# the ground. See docs/WEAPON_INTAKE.md §1: the page's infobox has an `Archwing`
+# tab and an `Atmosphere` tab, WFCD carries only the Archwing one, and the two
+# differ in damage, reserve, reload and shot type while agreeing on crit,
+# multiplier, status, fire rate and magazine.
+#
+#   |            | damage | reload | Ammo Max | shot type        |
+#   | Atmosphere |    240 | 1.20 s |      480 | hit-scan         |
+#   | Archwing   |    120 | 1.25 s |        0 | projectile       |
+#
+# The TOTAL doubles and the SPLIT does not. Archwing is 39.6/39.6/40.8 for
+# 120; the ground column is an exactly even 80/80/80 for 240, so Slash goes
+# x1.961 while the other two go x2.020. A single multiplier cannot express
+# this weapon at all, which is why neither column is derived.
+#
+# THE TRIGGER ALSO CHANGES: "Despite having an Auto Burst trigger in Archwing
+# mode, in Atmosphere mode the weapon switches to a regular Burst-fire
+# trigger" (wiki). The entry carries the ground one.
+#
+deployment: atmosphere
+deployments:
+  archwing:
+    reload_seconds: 1.25
+    no_resupply: false      # a regenerating magazine, so no reserve to dry
+    # THE OTHER TAB, transcribed rather than derived — both columns are written
+    # down so either can be checked against the page without arithmetic.
+    damage: { impact: 39.6, puncture: 39.6, slash: 40.8 }   # 120 total
+mod_pools: [archgun]
+mastery_rank: 4
+max_rank: 30
+
+accuracy: 25.0
+disposition: 1.3
+polarities: []
+riven_family: Cyngas
+internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/ArchBurstGun/ArchBurstGun
+noise: alarming
+magazine: 30
+# The Atmosphere column. Archwing reloads in 1.25 s instead.
+reload_seconds: 1.2
+
+ammo_type: archgun
+ammo_max: 480
+# A GROUND ARCH-GUN CANNOT BE RESUPPLIED — "once all of an Archgun's ammunition
+# is used up, the weapon is removed and can only be called down again after a
+# 5-minute cooldown period" (wiki Arch-Gun). 30 in the magazine and
+# 480 behind it is the whole engagement.
+no_resupply: true
+
+# No Condition Overload row, so the ordinary class (absence means ORDINARY).
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: burst
+  burst:
+    count: 3
+    delay_seconds: 0.06
+  shot_type: hit_scan
+  fire_rate: 6.67
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.20
+  crit_multiplier: 2.2
+  status_chance: 0.30
+  punch_through_m: 1.5
+  damage: { impact: 80.0, puncture: 80.0, slash: 80.0 }   # 240 total
+unmodeled:
+  - "the innate 1.5 m punch-through is not modelled — this arena has one target, so it changes no number"
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+
+source:
+  url: https://wiki.warframe.com/w/Cyngas
+  # Every stat is the wiki page's Atmosphere tab. WFCD `warframe-items` was
+  # read for `internal_name` only: its Arch-Gun entries are the ARCHWING
+  # column, which is the wrong one here (docs/DATA_SOURCES.md).

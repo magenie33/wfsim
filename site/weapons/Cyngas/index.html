@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cyngas — Warframe build, damage &amp; DPS | WFSim</title>
+  <meta name="description" content="Cyngas (合成燃气炮) — Archgun · Archgun · Mastery Rank 4. 240 base damage (impact 80, puncture 80, slash 80), 20% crit chance, 2.2x crit multiplier, 30% status chance. Build it, simulate the fight, and optimize the mods — true to in-game numbers." />
+  <!-- Link previews: what a QQ group, a forum post or a chat app renders when
+       the URL is pasted. Site-wide defaults — `scripts/build_site_app.py`
+       OVERRIDES these per weapon on the prerendered pages, which is the only
+       reason a shared weapon link shows that weapon rather than the site. -->
+  <meta property="og:type" content="website" />
+  <link rel="canonical" href="https://wfsim.app/weapons/Cyngas" />
+  <meta property="og:site_name" content="WFSim" />
+  <meta property="og:title" content="Cyngas — Warframe build, damage &amp; DPS | WFSim" />
+  <meta property="og:description" content="Cyngas (合成燃气炮) — Archgun · Archgun · Mastery Rank 4. 240 base damage (impact 80, puncture 80, slash 80), 20% crit chance, 2.2x crit multiplier, 30% status chance. Build it, simulate the fight, and optimize the mods — true to in-game numbers." />
+  <meta property="og:url" content="https://wfsim.app/weapons/Cyngas" />
+  <meta property="og:image" content="https://wfsim.app/og/Cyngas.png" />
+  <meta name="twitter:card" content="summary" />
+  <!-- Absolute asset paths: with real-path routing the document can sit at
+       /weapons/<Wiki_Name>, so relative URLs would resolve wrong. -->
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+  <!-- A BLANK PAGE MUST NEVER BE SILENT.
+       Everything below the topbar is hidden until `init()` finishes, so until
+       the wasm has loaded and answered there is nothing on screen — and if
+       anything at all goes wrong, there is nothing on screen FOREVER: the only
+       error handler wrote into `.config-page`, which is hidden on the home
+       page. Two people reported "opening the link is blank" on 2026-08-07 and
+       neither could be reproduced here, which is exactly what a silent failure
+       looks like from the outside.
+       This script runs BEFORE app.js, so it also catches an app.js that fails
+       to PARSE — a browser too old for something in it never reaches any
+       handler that app.js installs, and that is the likeliest way a page is
+       blank on a device we do not have. -->
+  <script>
+    // NO BACKSLASH ESCAPES IN HERE, deliberately. This block is written and
+    // rewritten by tooling that passes it through several quoting layers, and a
+    // newline escape that does not survive one of them lands inside a string
+    // literal and stops the whole guard from parsing — which is exactly what
+    // happened the first time it was added, leaving the silent blank page it
+    // exists to prevent. NL is built from its code point instead.
+    (function () {
+      var NL = String.fromCharCode(10);
+      var shown = false;
+      function say(kind, detail) {
+        if (shown) return;
+        shown = true;
+        var el = document.createElement("div");
+        el.id = "boot-note";
+        el.setAttribute("style",
+          "position:fixed;left:0;right:0;top:0;z-index:9999;padding:14px 16px;" +
+          "font:14px/1.6 system-ui,sans-serif;background:#2a1416;color:#f3d9d9;" +
+          "border-bottom:1px solid #6b2b2b;white-space:pre-wrap;word-break:break-word");
+        el.textContent = kind + NL + NL + detail + NL + NL + navigator.userAgent;
+        function put() { document.body.appendChild(el); }
+        if (document.body) put();
+        else document.addEventListener("DOMContentLoaded", put);
+      }
+      window.__wfsimBootFailed = say;
+      window.addEventListener("error", function (e) {
+        var where = (e && e.filename) ? NL + e.filename + ":" + e.lineno : "";
+        say("WFSim could not start on this browser. / 这个浏览器打不开 WFSim。",
+            String((e && (e.message || (e.error && e.error.message))) || "script error") + where);
+      });
+      window.addEventListener("unhandledrejection", function (e) {
+        var r = e && e.reason;
+        say("WFSim failed while loading. / WFSim 加载时出错。",
+            String((r && (r.stack || r.message)) || r || "unknown"));
+      });
+      // ...and the case with no error at all: the app never finishes starting.
+      // Silence for twenty seconds is a failure whatever caused it, and a
+      // reader who can see this line can tell us what their network did.
+      setTimeout(function () {
+        if (window.__wfsimReady) return;
+        say("WFSim is still loading. / WFSim 还在加载。",
+            "It has not finished starting after 20 seconds — usually a slow or blocked network." +
+            NL + "启动超过 20 秒还没完成，通常是网络慢或被拦截。");
+      }, 20000);
+    })();
+  </script>
+</head>
+<body>
+  <div id="seo-fallback">
+    <h1>Cyngas / 合成燃气炮 — Warframe</h1>
+    <p>Archgun · Archgun · Mastery Rank 4</p>
+    <p>240 base damage (impact 80, puncture 80, slash 80), 20% crit chance, 2.2x crit multiplier, 30% status chance.</p>
+    <p>Build, simulate and optimize this weapon at <a href="https://wfsim.app/">wfsim.app</a>.</p>
+  </div>
+  <script>document.getElementById('seo-fallback').remove()</script>
+  <!-- The first paint. Removed by `init()`; if it is still here, the app never
+       started and the banner above says why. -->
+  <div id="booting" class="booting">WFSim<span class="bdot">·</span><span class="bdot">·</span><span class="bdot">·</span></div>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/">WF<span>Sim</span></a>
+      <!-- Global weapon search (filter + sort). The hidden #weapon select
+           stays as the router's internal source of truth. -->
+      <div class="wsearch">
+        <input id="wsearch-input" type="text" autocomplete="off" />
+        <div id="wsearch-panel" class="wsearch-panel" hidden>
+          <div id="wsearch-tools" class="picker-tools"></div>
+          <div id="wsearch-list" class="combo-menu"></div>
+        </div>
+      </div>
+      <select id="weapon" hidden></select>
+      <!-- THE PHONE'S MENU. Everything after this line is ONE element on a
+           phone and eight on a desktop, and it is the same eight either way:
+           `.topmenu`/`.tblinks` are `display:contents` above 700px, so their
+           children are direct flex items of the bar and the desktop row is
+           byte-for-byte the row that was here before. Below it they become a
+           real box and this button opens it.
+           ONE COPY OF EACH CONTROL, never a phone list beside a desktop list:
+           the language dropdown is drawn by JS into `#lang-select` and the
+           theme button carries its own handler, so a second copy would be a
+           control that looks live and is not. That is why this is a container
+           swap rather than a mobile menu built from a list of links.
+           WHAT IT MUST NOT LOSE (owner, 2026-08-07): the site's two
+           destinations AND the right-hand row. Before this, a phone saw
+           neither the nav (display:none under 700px) nor the support link, and
+           the footer was the only way to either. -->
+      <button id="menu-toggle" class="ghost-btn menu-toggle" aria-expanded="false"
+              aria-controls="topmenu" aria-label="Menu" title="Menu" data-i18n-title>☰</button>
+      <div id="topmenu" class="topmenu">
+        <!-- WHERE THE SITE GOES, as against what it links to. The row after
+             this one is "this project, elsewhere" (GitHub, QQ, Discord,
+             Support); these two are the site's own pages, so on a desktop they
+             sit against the wordmark and are styled as navigation rather than
+             as ghost buttons. The brand used to be the only way back to the
+             roster, which is a thing you have to know rather than see. -->
+        <nav class="topnav">
+          <a class="tnav" data-nav="home" href="/" data-i18n>Weapons</a>
+          <a class="tnav" data-nav="benchmark" href="/benchmark" data-i18n>Benchmark</a>
+        </nav>
+        <div class="tblinks">
+      <span id="lang-select"></span>
+      <button id="theme-toggle" class="ghost-btn" title="Toggle light / dark" data-i18n-title aria-label="Toggle theme">◐</button>
+      <a class="gh-link ghost-btn" href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub">
+        <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      </a>
+      <!-- Official QQ community group — the qm.qq.com join link deep-links
+           into the QQ app (Discord-invite style). The mark is the penguin
+           (user, 2026-07-31), drawn inline in currentColor: an icon reads at
+           topbar size where two letters did not, it needs no asset, and a
+           monochrome silhouette sits with the other ghost buttons instead of
+           dropping a brand block into them. -->
+      <a class="qq-link ghost-btn" href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener" title="Join the QQ group — 995078378" data-i18n-title aria-label="QQ group"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M12 1.8c-2.9 0-5.2 2.3-5.2 5.2v1.1c0 .9-.35 1.75-.98 2.4C4.35 12 3.7 13.8 3.7 15.3c0 .85.5 1.45 1.25 1.45.5 0 .95-.25 1.25-.7.2.5.48.95.83 1.35-.95.35-1.55 1-1.55 1.75 0 1.1 1.3 1.85 2.9 1.85.95 0 1.8-.3 2.35-.75.42.06.85.09 1.27.09s.85-.03 1.27-.09c.55.45 1.4.75 2.35.75 1.6 0 2.9-.75 2.9-1.85 0-.75-.6-1.4-1.55-1.75.35-.4.63-.85.83-1.35.3.45.75.7 1.25.7.75 0 1.25-.6 1.25-1.45 0-1.5-.65-3.3-2.12-4.8-.63-.65-.98-1.5-.98-2.4V7c0-2.9-2.3-5.2-5.2-5.2zM9.05 6.35a1.15 1.55 0 1 0 2.3 0a1.15 1.55 0 1 0-2.3 0zM12.65 6.35a1.15 1.55 0 1 0 2.3 0a1.15 1.55 0 1 0-2.3 0z"/></svg></a>
+      <!-- Official Discord, after the QQ group: the community is a QQ group
+           first and the order says so. The INVITE is the only thing here —
+           unlike a QQ group number, which is how you find the group by hand
+           when the deep link fails, a Discord server id joins nothing, so
+           there is no reason to put one on the page. -->
+      <a class="dc-link ghost-btn" href="https://discord.gg/5GXgbtmxY" target="_blank" rel="noopener" title="Join the Discord" data-i18n-title aria-label="Discord"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false"><path fill="currentColor" d="M19.54 4.94A16.3 16.3 0 0 0 15.5 3.7a.06.06 0 0 0-.06.03c-.17.31-.37.72-.5 1.03a15.1 15.1 0 0 0-4.5 0 10.4 10.4 0 0 0-.51-1.03.06.06 0 0 0-.06-.03A16.26 16.26 0 0 0 5.83 4.94a.06.06 0 0 0-.03.02C3.24 8.77 2.54 12.48 2.89 16.14a.07.07 0 0 0 .03.05 16.4 16.4 0 0 0 4.94 2.5.06.06 0 0 0 .07-.02c.38-.52.72-1.07 1.01-1.64a.06.06 0 0 0-.03-.09c-.54-.2-1.05-.45-1.54-.73a.06.06 0 0 1 0-.11l.3-.24a.06.06 0 0 1 .07 0 11.7 11.7 0 0 0 9.94 0 .06.06 0 0 1 .07 0l.3.24a.06.06 0 0 1 0 .11c-.5.29-1 .53-1.55.73a.06.06 0 0 0-.03.09c.3.57.63 1.12 1 1.64a.06.06 0 0 0 .08.02 16.35 16.35 0 0 0 4.95-2.5.06.06 0 0 0 .02-.05c.42-4.23-.67-7.9-2.85-11.18a.05.05 0 0 0-.03-.02zM9.68 13.91c-.97 0-1.78-.9-1.78-2s.79-2 1.78-2c1 0 1.8.91 1.78 2 0 1.1-.79 2-1.78 2zm6.57 0c-.98 0-1.78-.9-1.78-2s.78-2 1.78-2c1 0 1.8.91 1.78 2 0 1.1-.78 2-1.78 2z"/></svg></a>
+      <!-- SUPPORT, and it belongs HERE for one reason: GitHub, the QQ group and
+           the Discord above it are all "this project, elsewhere", and so is
+           this. Leaving it in the footer alone put a SMALLER ask (star the
+           repo) in a better place than the larger one, which is not a decision
+           anybody made — it is what happens when a page is added late.
+           The rule it does NOT break is the one that matters: the topbar is
+           chrome, never the path of a calculation. No modal, no banner, no
+           thank-you box after a run.
+           LAST in the row, after the community links, because it is the ask.
+           It used to be HIDDEN under 700px, because the bar wrapped to two rows
+           on a phone and squeezed the weapon search — the site's own navigation
+           — to 29px at 360px. The menu is what bought that room back: the bar
+           now carries the wordmark, the search and one button at every width,
+           and this link is in the menu with everything else. -->
+      <a class="sup-link ghost-btn" href="/support" title="Support WFSim — what it costs to run" data-i18n-title aria-label="Support"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 20.35l-1.32-1.2C6.03 14.92 3 12.17 3 8.79 3 6.03 5.16 3.87 7.92 3.87c1.56 0 3.06.72 4.04 1.86l.04.05.04-.05c.98-1.14 2.48-1.86 4.04-1.86C18.84 3.87 21 6.03 21 8.79c0 3.38-3.03 6.13-7.68 10.37l-1.32 1.19z"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Home: the weapon list. Click a card → that weapon's config page. -->
+  <main id="home-page" class="home-page" hidden>
+    <!-- ONE i18n key for the whole sentence; the gold on "Prime" is applied
+         after translation (applyI18n), because those four letters are the
+         same in every language. Splitting it into two keys is what made the
+         old "The Simulacrum. / The Primed One." pair awkward to translate. -->
+    <h1 class="hero-h" data-i18n-gold="Prime">The real Simulacrum Prime.</h1>
+    <p class="hero-sub" data-i18n>WFSim is the ultimate Warframe calculator — builder, simulator, optimizer. True to in-game numbers, down to the last proc. Theorycrafting, solved.</p>
+    <h2 class="home-h" data-i18n>Weapons</h2>
+    <div id="weapon-grid"></div>
+  </main>
+
+  <!-- THE BOARD — what is strong under a given ruler, and what nobody has
+       measured yet. A page of the SHELL like /support: it belongs to no weapon,
+       so it sits beside the home grid rather than under /weapons/<name>.
+       One row per weapon showing its BEST build; the rest of a weapon's rows
+       live on that weapon's own page, which is also where the deeper ranks are
+       computed on demand. -->
+  <main id="bench-page" class="home-page" hidden>
+    <h1 class="home-h" data-i18n>Benchmark</h1>
+    <p class="bench-sub" data-i18n>One ruler, every weapon. A score is a build measured by this engine under the benchmark's own pinned terms — nobody submits a number. An empty row is a weapon nobody has measured yet.</p>
+    <div id="bench-picker"></div>
+    <div id="bench-rules"></div>
+    <div id="bench-board"></div>
+  </main>
+
+  <!-- Support: what WFSim costs to run, and where to chip in. NOT a module and
+       not an editor — a page of the SHELL, like the home grid, reached from the
+       footer and from nowhere else. It never interrupts a calculation: no
+       modal, no banner, no thank-you box after a run. A calculator that
+       interrupts the calculation has stopped being a tool.
+
+       NOTHING HERE IS SOLD, and the page says so where a visitor reads it
+       rather than in a footnote. DE's Content Policy permits fan use of
+       Warframe assets only NON-COMMERCIALLY and forbids charging for access to
+       what you make with them — so a donation buys no feature, no tier and no
+       badge, and every promise below is a constraint on the product, not copy.
+
+       There is NO SUGGESTED-AMOUNT LADDER here, and that is a decision rather
+       than an omission (owner, 2026-08-06): $5 to start, anything after that.
+       The cost list below states what the bill IS, which is the same
+       information without ever reading as a price list — the one shape DE's
+       rule does not allow. Ko-fi carries the amounts itself: a $5 price per
+       coffee gives its own x1/x3/x5 plus a free field, so a ladder on this page
+       would only be a second, staler copy of one. -->
+  <main id="support-page" class="support-page" hidden>
+    <h1 class="hero-h" data-i18n>Support WFSim</h1>
+    <!-- What this promise does NOT say is anything about accounts: one may yet
+         exist (owner, 2026-08-06). The promise is about the PAYWALL, which is
+         the part that has to hold whatever else the site grows. -->
+    <p class="hero-sub" data-i18n>WFSim is free and open source. No ads, and no feature will ever be locked behind a payment — that part is not going to change. It does cost money and time to run, so if it saved you a Forma, you can chip in.</p>
+
+    <div id="support-channels" class="sup-channels"></div>
+
+    <section class="block">
+      <div class="bh"><h2 data-i18n>Where it goes</h2></div>
+      <div class="bb">
+        <ul class="sup-costs">
+          <li data-i18n>The wfsim.app domain, and its renewal.</li>
+          <li data-i18n>Cloudflare — the bandwidth and build minutes that serve the app and its art from one origin.</li>
+          <li data-i18n>Time: new weapons, new mechanics, and the in-game measurements every golden test is calibrated against.</li>
+        </ul>
+        <p class="sup-note" data-i18n>$5 to start, and after that whatever you think it is worth. There is no tier and no target — this is what the bill is, not a price list.</p>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="bh"><h2 data-i18n>What a donation never buys</h2></div>
+      <div class="bb">
+        <ul class="sup-costs">
+          <li data-i18n>No paid features and no paywall. Every build, simulation and search stays the same for everyone.</li>
+          <li data-i18n>No tiers, no perks, no supporter badge. A donation is a thank-you, not a purchase.</li>
+          <li data-i18n>No ads, and no tracking beyond what Cloudflare counts to serve the page.</li>
+          <li data-i18n>No influence on the numbers. An in-game measurement is the only thing that changes what the engine does.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="bh"><h2 data-i18n>Free, and worth more</h2></div>
+      <div class="bb">
+        <ul class="sup-costs">
+          <li><span data-i18n>Report a number that disagrees with your own in-game measurement. That is the one contribution nothing else can replace — every formula here is calibrated against a real run, and a discrepancy is a bug report on reality.</span> <a href="https://github.com/magenie33/wfsim/issues" target="_blank" rel="noopener">GitHub Issues</a> · <a href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener" data-i18n>QQ group</a> · <a href="https://discord.gg/5GXgbtmxY" target="_blank" rel="noopener">Discord</a></li>
+          <li><span data-i18n>Star the repository, or send a build link to someone who is still doing this by hand.</span> <a href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener">github.com/magenie33/wfsim</a></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Only the DONATION-specific clause: the shell's footer sits directly
+         below with the unofficial-fan-project disclaimer, and printing it
+         twice on one screen reads as boilerplate rather than as a statement. -->
+    <p class="sup-fine" data-i18n>A donation supports this site's running costs and nothing else — it is not a purchase, and nothing on this site is for sale.</p>
+  </main>
+
+  <main class="config-page" hidden>
+    <div class="wstrip">
+      <img id="w-img" alt="" />
+      <div>
+        <h1 id="w-name">—</h1>
+        <div id="w-tags" class="tags"></div>
+        <!-- WHAT THIS WEAPON DOES THAT ITS STATS DO NOT SAY. Generated by the
+             engine from the data that implements it; empty for most weapons.
+             It sits in the weapon strip because it is part of the weapon's
+             IDENTITY, not a detail of the current build. -->
+        <div id="w-passives" class="wpassives" hidden></div>
+      </div>
+    </div>
+
+    <!-- Module tabs: Builder | Simulator | Optimizer — one view per
+         module (/weapons/<name>[/simulator|/optimizer]). Rendered by
+         route(); body.on-* classes swap the visible sections. -->
+    <nav class="module-tabs" id="module-tabs"></nav>
+
+    <!-- Preset bar: click a chip to load; the active chip carries save /
+         rename / delete; "+ new" stores the current build. Unlimited —
+         past 10 the bar grows a name filter. -->
+    <!-- BENCHMARK BUILDS: the board's rows, in a bar of their own. Read-only
+         and not yours, which is why they are not chips in the bar below —
+         see renderBenchmarkBarIn. Hidden when the weapon has no rows. -->
+    <div class="preset-bar bench-bar" id="bench-bar-builder-builds" hidden></div>
+    <div class="preset-bar" id="preset-bar-builder-builds"></div>
+
+    <!-- QUICK CALC settings: what every "what would this slot be worth as X"
+         answer below is measured with. Page level, above the mods, because it
+         is one configuration for all of them — not a tool inside one slot's
+         picker (user, 2026-08-01). -->
+    <div class="quick-calc" id="quick-calc"></div>
+
+    <!-- Block: Mods -->
+    <!-- Shown only while an OFFICIAL build is open: what it scored, what it
+         costs to own, and how to get an editable copy. -->
+    <div id="build-official" class="official-note" hidden></div>
+    <!-- Block: Mode — HOW this build is played. Its own block, above the mods,
+         because it is the first thing true about a build: "Torid, played
+         through its cycle" is what a board ranks, and the mods hang off that.
+         ALWAYS DRAWN. A weapon with one way to be fired is still being fired
+         in it, and the panel should say so rather than stay silent — the same
+         rule the Form control carried before this replaced it (user,
+         2026-07-31, restated 2026-08-07). One mode is stated, not offered. -->
+    <section class="block" id="mode-block">
+      <div class="bh"><span class="n">1</span><h2 data-i18n>Mode</h2><span class="sub" id="mode-sub"></span></div>
+      <div class="bb"><div id="mode-row" class="field-grid"></div></div>
+    </section>
+
+    <section class="block" id="mod-block">
+      <div class="bh"><span class="n">2</span><h2 id="mod-block-h" data-i18n>Mods</h2>
+        <span class="sub">
+          <span class="cap" id="capacity">0 / 0</span>
+          <span class="forma" id="forma">0 Forma</span>
+          <button id="auto-forma" class="ghost-btn small" title="auto-assign polarities for minimum Forma" data-i18n-title>auto</button>
+          <button id="clear-mods" class="ghost-btn small">clear</button>
+        </span>
+      </div>
+      <div class="bb">
+        <div id="mod-slots" class="slots"></div>
+        <!-- One block, label included: a weapon that has no exilus slot shows
+             NOTHING here, rather than a slot-shaped apology. -->
+        <div id="exilus-block">
+          <div class="exlabel" data-i18n>Exilus</div>
+          <div id="exilus" class="slots"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Block: Arcane -->
+    <section class="block" id="arcane-block">
+      <div class="bh"><span class="n">3</span><h2 data-i18n>Arcane</h2><span class="sub" id="arcane-sub"></span></div>
+      <div class="bb"><div id="arcane-slots" class="slots one"></div></div>
+    </section>
+
+    <!-- Block: Evolution (Incarnon weapons) -->
+    <section class="block" id="evo-block">
+      <div class="bh"><span class="n">4</span><h2 data-i18n>Evolution</h2><span class="sub" data-i18n>Incarnon Genesis</span></div>
+      <div class="bb"><div id="evo-rows"></div></div>
+    </section>
+
+    <!-- Block: VALENCE — an ADVERSARY weapon's bonus element and how big it
+         is. A Kuva Lich's, a Sister's or a Coda's, and a property of the COPY
+         a player owns rather than of the model, which is why it is a build
+         axis beside the evolutions and not a weapon field (owner,
+         2026-08-13). Hidden on every weapon that is not one — the same "no
+         choice, no control" rule every axis here follows. -->
+    <section class="block" id="element-block" hidden>
+      <div class="bh"><span class="n">5</span><h2 data-i18n>Valence</h2><span class="sub" id="valence-sub"></span></div>
+      <div class="bb"><div id="element-cfg" class="field-grid"></div></div>
+    </section>
+
+    <!-- Block: Stats — the FINAL panel: merged buckets, explained by source -->
+    <section class="block" id="stats-block">
+      <div class="bh"><span class="n">Σ</span><h2 data-i18n>Stats</h2><span class="sub" id="stats-sub"></span></div>
+      <div class="bb">
+        <!-- Shown only for a weapon whose PASSIVE the sim does not model: the
+             numbers below are then a floor, which nothing else on the page
+             could tell you. -->
+        <div id="stats-passive" class="unmodeled-banner" hidden></div>
+        <div id="stats-rows"></div>
+        <div id="stats-damage"></div>
+        <div id="stats-conditionals"></div>
+      </div>
+    </section>
+
+    <!-- Block: Build (SIMULATOR tab) — a read-only summary of what is
+         under test: the ACTIVE preset's mods / arcane / evolutions, with
+         a jump to the Builder to change it. -->
+    <section class="block" id="sim-build-block">
+      <div class="bh"><span class="n">≡</span><h2 data-i18n>Build</h2><span class="sub" id="sim-build-sub"></span></div>
+      <div class="bb"><div id="sim-build-info"></div></div>
+    </section>
+
+    <!-- Block: Sim — the SIMULATOR tab's view (2D arena + scenario/buff
+         settings); Run simulates the current build against the enemy and
+         shows a summary + scene replay. -->
+    <section class="block" id="sim-block">
+      <div class="bh"><span class="n">▶</span><h2 data-i18n>Sim</h2><span class="sub" id="sim-sub"></span></div>
+      <div class="bb">
+        <div id="sim-arena" class="arena">
+          <div class="arena-actor tenno" id="arena-tenno"><span class="dot"></span><span class="lbl">Tenno</span></div>
+          <div class="arena-lane"><div class="tracer" id="arena-tracer"></div></div>
+          <div class="arena-actor enemy" id="arena-enemy">
+            <!-- The portrait when the unit has one, the dot when it does not:
+                 both are the same marker, and `defeated` grays out whichever
+                 is showing. -->
+            <img class="portrait" id="arena-eimg" alt="" hidden />
+            <span class="dot" id="arena-edot"></span>
+            <span class="lbl" id="arena-ename">Enemy</span>
+            <div class="arena-bars" id="arena-bars"></div>
+            <div class="arena-status" id="arena-status"></div>
+          </div>
+        </div>
+        <!-- The SCENARIO as a saved thing: enemy, technique and measurement
+             together, because "the fight I test against" is one decision and
+             a build is compared across several of them. -->
+        <!-- BENCHMARK SCENARIOS: the official rulers, same treatment. -->
+        <div class="preset-bar bench-bar" id="bench-bar-simulator-scenarios"></div>
+        <div class="preset-bar" id="preset-bar-simulator-scenarios"></div>
+        <!-- Shown only while an OFFICIAL scenario is open: it says why the
+             controls below are inert and where the editable copy comes from. -->
+        <div id="sim-official" class="official-note" hidden></div>
+        <!-- The board's consent line. Shown only under the OFFICIAL scenario,
+             because that is the only fight whose results can reach a board. -->
+        <div id="board-consent" class="official-note" hidden></div>
+        <h3 class="sim-h" data-i18n>1 · The fight <span class="sim-hint" data-i18n>who you are shooting at, where, and for how long</span></h3>
+        <div id="sim-target" class="sub-block"></div>
+<!-- Block 1 is the other actor; this is YOU. What the player is doing
+             and what frame is behind the gun, which is one answer to "who is
+             shooting". It comes before Buffs because it GATES them: aiming
+             decides whether the while-aiming mods pay out at all. -->
+        <h3 class="sim-h" data-i18n>2 · The wielder <span class="sim-hint" data-i18n>whoever is holding the weapon and what they are doing — this gates the buffs below</span></h3>
+        <div id="sim-technique" class="field-grid"></div>
+        <!-- NOT a technique: nobody plays "infinite ammo". These say what the
+             run does not model, which is a different kind of claim. -->
+        <h3 class="sim-h" data-i18n>3 · Limits <span class="sim-hint" data-i18n>what this run is allowed to assume</span></h3>
+        <div id="sim-limits" class="field-grid"></div>
+        <!-- What this block sets is the START of the run, not the buff's
+             worth: the fight goes on to grant and decay these on their own
+             triggers. The old hint said "locked = 100% uptime", which reads as
+             "this box decides how much of the buff you get" — the opposite of
+             what the sim does (user, 2026-08-03). -->
+        <h3 class="sim-h" data-i18n>4 · Buffs <span class="sim-hint" data-i18n>the stacks the run STARTS with — the fight still grants and decays them on their own triggers</span>
+          <button id="sim-buffs-all" class="ghost-btn small"></button></h3>
+        <div id="sim-buffs"></div>
+        <!-- THE FIGHT'S OWN STAT BONUSES. Everything this weapon is handed by
+             something that is not its build, expressed as what it is WORTH:
+             (owner, 2026-08-13). No trigger, no clock, no stack count — the
+             thing with a duration is the block below, and this is the thing
+             without one. It sits BEFORE the Warframe buffs because it is the
+             simpler claim
+             and because that block is still the last input before you run. -->
+        <h3 class="sim-h" data-i18n>5 · Extra stats <span class="sim-hint" data-i18n>anything this weapon is handed from outside its build — it lands in the same bucket a mod would</span></h3>
+        <div id="sim-extra" class="field-grid"></div>
+        <!-- WARFRAME ABILITY BUFFS — INSIDE the fight, and wrapped so it still
+             reads as its own thing (owner, 2026-08-09). It is a section of the
+             scenario because that is where it already lives — it saves with
+             the fight, travels with the fight across weapons, and the
+             optimizer reads it off the fight — and it sits last because it is
+             the final input before you run.
+             EARLY ACCESS: the strength is typed in here today and comes from
+             the frame once frames land. Said on screen, not only here. -->
+        <div class="sim-panel" id="wfbuff-block">
+          <h3 class="sim-h" data-i18n>6 · Warframe buffs <span class="sim-hint" data-i18n>abilities cast on this weapon — set your Ability Strength and the values follow</span>
+            <span class="sim-h-sub" id="wfbuff-sub"></span></h3>
+          <div id="sim-wfbuffs"></div>
+        </div>
+        <h3 class="sim-h" data-i18n>7 · Measure <span class="sim-hint" data-i18n>what to read off the run — the scenario's own term, so an official ruler pins it</span></h3>
+        <div id="sim-run" class="field-grid"></div>
+        <!-- THE RUN COUNT — ITS OWN DIV, and deliberately outside every block
+             above (owner, 2026-08-13). It is not part of the fight, so an
+             OFFICIAL ruler does not pin it: reading the board's scenario still
+             lets you decide how long you are willing to wait. That is also why
+             it is not in `lockOfficialScenario`'s list — the
+             lock is for the fight's terms, and this is not one. -->
+        <div id="sim-runs-block" class="runs-row"></div>
+        <button id="run-sim" class="run-btn" data-i18n>Run Simulation</button>
+      </div>
+    </section>
+
+    <!-- Block: Result (SIMULATOR tab) — its own container, separate from
+         the settings above; hidden until the active preset has a result. -->
+    <section class="block" id="sim-results-block" hidden>
+      <div class="bh"><span class="n">Σ</span><h2 data-i18n>Result</h2><span class="sub" id="sim-results-sub"></span></div>
+      <div class="bb"><div id="sim-results"></div></div>
+    </section>
+
+    <!-- Block: Rivens (RIVENS tab) — a CONSTRUCTOR, not a roller. Every
+         control is bounded by the formula, so the only rivens it can express
+         are legal ones, including the corner where every roll is maximal. -->
+    <section class="block" id="riven-block">
+      <div class="bh"><span class="n">4</span><h2 data-i18n>Rivens</h2><span class="sub" id="riven-sub"></span></div>
+      <div class="bb">
+        <!-- A CUSTOM, not a preset: a riven is a thing you made, which the
+             other modules then consume as a mod. It reads as a file — a list
+             you pick from, one open at a time, none open being a real state. -->
+        <div class="cu-tools" id="riven-tools"></div>
+        <div id="riven-shape" class="rv-shape"></div>
+        <div id="riven-stats"></div>
+        <div id="riven-foot" class="rv-foot"></div>
+        <div id="riven-card" class="rv-card"></div>
+        <h3 class="sim-h" id="riven-all-h" data-i18n>All rivens <span class="sim-hint" data-i18n>every riven you have made for this weapon, with what it actually rolls</span></h3>
+        <div id="riven-all"></div>
+      </div>
+    </section>
+
+    <!-- Block: Enemies (ENEMIES tab) — an EDITOR whose output the SCENARIO
+         consumes, the way the riven editor's output is consumed as a mod. A
+         target you made is a CUSTOM: it is not weapon-scoped (a fight is not a
+         statement about a weapon), so this collection is shared across the
+         roster like the scenarios themselves. -->
+    <section class="block" id="enemy-block">
+      <div class="bh"><span class="n">5</span><h2 data-i18n>Enemies</h2><span class="sub" id="enemy-sub"></span></div>
+      <div class="bb">
+        <div class="cu-tools" id="enemy-tools"></div>
+        <div id="enemy-form"></div>
+        <h3 class="sim-h" id="enemy-all-h" data-i18n>All targets <span class="sim-hint" data-i18n>every enemy you have made — pick one in the simulator's target list like any other</span></h3>
+        <div id="enemy-all"></div>
+      </div>
+    </section>
+
+    <!-- Block: Optimizer — scope (mods/arcanes/evolutions) + the Sim panel's
+         enemy & buff settings → top-10 ranked builds, each loadable. -->
+    <section class="block" id="opt-block">
+      <div class="bh"><span class="n">⚙</span><h2 data-i18n>Optimize</h2><span class="sub" id="opt-sub">what to search, and how hard — the fight is the simulator's</span></div>
+      <div class="bb">
+        <!-- ONE preset per weapon: the whole search (scope + final round).
+             Not the scenario — the optimizer runs the simulator's. -->
+        <div class="preset-bar" id="preset-bar-optimizer"></div>
+        <h3 class="sim-h" data-i18n>Mods <span class="sim-hint" data-i18n>search by name or effect; mark each as pool (search) or required</span></h3>
+        <div class="opt-mods-head">
+          <input id="opt-mod-filter" type="text" placeholder="search mods by name or effect…" data-i18n-ph autocomplete="off">
+          <label class="opt-size" data-i18n>Mods / build <input id="opt-min" type="number" min="1" max="8" value="1" title="the fewest a searched build may carry — set both ends to 8 to search only full builds" data-i18n-title> – <input id="opt-size" type="number" min="1" max="8" value="8" title="the most a searched build may carry" data-i18n-title></label>
+        </div>
+        <div id="opt-picker-tools" class="picker-tools"></div>
+        <!-- ELEMENT PAIRINGS. Three elemental mods are not one build but
+             three, and the spread between them is larger than any single
+             mod's — so it is stated above the list the numbers appear in,
+             never inside a row. -->
+        <div id="opt-pairings"></div>
+        <div id="opt-mods-sel"></div>
+        <div id="opt-mods" class="combo-menu opt-modlist"></div>
+        <!-- Each scope is an AXIS of the search, and a weapon that has no
+             such axis shows nothing here — heading included. The builder
+             already hid the three matching BLOCKS; these are the same three
+             facts, asked in the module that searches them. -->
+        <div id="opt-modes-sect">
+          <h3 class="sim-h" data-i18n>Mode <span class="sim-hint" data-i18n>how it is played — pool = searched, req = pin one</span></h3>
+          <div id="opt-modes" class="combo-menu opt-modlist"></div>
+        </div>
+        <!-- THE VALENCE AXIS — an adversary weapon's progenitor element, searched
+             the way the mode is. Hidden on every weapon that has none. -->
+        <div id="opt-valence-sect">
+          <h3 class="sim-h" data-i18n>Valence <span class="sim-hint" data-i18n>the progenitor element — pool = searched, req = pin one</span></h3>
+          <div id="opt-valence" class="combo-menu opt-modlist"></div>
+        </div>
+        <div id="opt-exilus-sect">
+          <h3 class="sim-h" data-i18n>Exilus slot <span class="sim-hint" data-i18n>the +1 slot — pool = slot options, req = pin one; nothing marked = the slot stays empty</span></h3>
+          <div id="opt-exilus" class="combo-menu opt-modlist"></div>
+        </div>
+        <div id="opt-arcanes-sect">
+          <h3 class="sim-h" data-i18n>Arcanes <span class="sim-hint" data-i18n>pool = searched options, req = pin the slot</span></h3>
+          <input id="opt-arc-filter" type="text" placeholder="search arcanes by name or effect…" data-i18n-ph autocomplete="off">
+          <div id="opt-arcanes" class="combo-menu opt-modlist"></div>
+        </div>
+        <div id="opt-evos-sect">
+          <h3 class="sim-h" data-i18n>Evolutions <span class="sim-hint" data-i18n>per tier: pool = searched options, req = pin</span></h3>
+          <div id="opt-evos"></div>
+        </div>
+        <!-- HOW to search, closing the scope. The page is two halves and this
+             is the end of the first: everything from the optimizer's preset
+             bar down to here belongs to the SEARCH and is saved in the search
+             preset; everything below the fight's own bar belongs to the
+             SIMULATOR and is shown read-only (user, 2026-08-02).
+             RUNS ARE HERE (owner, 2026-08-11), and they are the search's:
+             blank = the fight's own count, which is what the replay uses; a
+             number = measure the last round this hard instead, and re-measure
+             the winner in the simulator. -->
+        <h3 class="sim-h" data-i18n>Search <span class="sim-hint" data-i18n>how many winners to keep, how hard to measure them, and how much of the machine to spend</span></h3>
+        <div id="opt-search" class="field-grid">
+          <label data-i18n>Finalists <input id="opt-finalists" type="number" min="1" max="100" value="10"></label>
+          <label data-i18n>Final-round runs <input id="opt-runs" type="number" min="0" max="20000"></label>
+          <label data-i18n>CPU threads <input id="opt-threads" type="number" min="0" max="128" placeholder="auto"></label>
+        </div>
+        <!-- The SCENARIO is the simulator's; the optimizer points at it
+             rather than keeping a second one, so the winner is scored under
+             the fight the replay will run. -->
+        <h3 class="sim-h" data-i18n>The fight <span class="sim-hint" data-i18n>read-only — it belongs to the simulator, which is where it is edited</span></h3>
+        <div class="preset-bar" id="opt-scenario-ref"></div>
+        <div id="opt-target" class="sub-block"></div>
+        <h3 class="sim-h" data-i18n>The Tenno <span class="sim-hint" data-i18n>must match how you intend to play it — the winner is scored under this player</span></h3>
+        <div id="opt-technique" class="field-grid"></div>
+        <h3 class="sim-h" data-i18n>Warframe buffs <span class="sim-hint" data-i18n>read-only — the fight's own, and every candidate is scored under them</span></h3>
+        <div id="opt-wfbuffs"></div>
+        <h3 class="sim-h" data-i18n>Extra stats <span class="sim-hint" data-i18n>read-only — the fight's own, and every candidate is scored with them</span></h3>
+        <div id="opt-extra" class="field-grid"></div>
+        <h3 class="sim-h" data-i18n>Limits <span class="sim-hint" data-i18n>what the search is allowed to assume</span></h3>
+        <div id="opt-limits" class="field-grid"></div>
+        <h3 class="sim-h" data-i18n>Buffs <span class="sim-hint" data-i18n>read-only — the fight's own, applied to every candidate; a buff nobody set starts where it would in a fight</span></h3>
+        <div id="opt-buffs"></div>
+        <div id="opt-estimate" class="opt-est"></div>
+        <button id="run-opt" class="run-btn" data-i18n>Run Optimizer</button>
+        <div id="opt-results"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- floating popovers (positioned at the active slot) -->
+  <div id="mod-popover" class="popover" hidden>
+    <div class="addbar"><input id="mod-search" type="text" placeholder="Search a mod…" data-i18n-ph autocomplete="off" /></div>
+    <div id="picker-tools" class="picker-tools"></div>
+    <div id="mod-menu" class="combo-menu"></div>
+  </div>
+  <!-- The riven stat picker has its OWN popover. It borrowed the mod
+       picker's nodes at first, and the mod picker's sort header came with
+       them — clicking it rendered the MOD list into the riven menu. Two
+       features sharing one element is not a picker, it is a collision. -->
+  <div id="riven-popover" class="popover" hidden>
+    <div class="addbar"><input id="riven-search" type="text" placeholder="Search a riven stat…" data-i18n-ph autocomplete="off" /></div>
+    <div id="riven-menu" class="combo-menu"></div>
+  </div>
+  <div id="slot-menu" class="popover menu" hidden></div>
+  <!-- THE dropdown. Every choose-one control on the site opens this one node
+       (owner, 2026-08-06), so a dropdown cannot look like a different
+       dropdown somewhere else — there is only one. -->
+  <div id="dd-popover" class="popover" hidden>
+    <div class="addbar" id="dd-addbar"><input id="dd-search" type="text" placeholder="Search…" data-i18n-ph autocomplete="off" /></div>
+    <div id="dd-menu" class="combo-menu"></div>
+  </div>
+  <div id="enemy-popover" class="popover" hidden>
+    <div class="addbar"><input id="enemy-search" type="text" placeholder="Search a target…" data-i18n-ph autocomplete="off" /></div>
+    <div id="enemy-menu" class="combo-menu"></div>
+  </div>
+  <div id="arcane-popover" class="popover" hidden>
+    <div class="addbar"><input id="arcane-search" type="text" placeholder="Search arcane / effect…" data-i18n-ph autocomplete="off" /></div>
+    <div id="arcane-menu" class="combo-menu"></div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <span data-i18n>WFSim is an unofficial fan project, not affiliated with or endorsed by Digital Extremes. Warframe is a trademark of Digital Extremes Ltd.</span>
+    <span data-i18n>Game data derived from the community</span>
+    <a href="https://wiki.warframe.com/" target="_blank" rel="noopener">Warframe Wiki</a> (CC BY-SA) ·
+    <a href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener">github.com/magenie33/wfsim</a> · AGPL-3.0 ·
+    <a href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener" title="join via QQ" data-i18n-title><span data-i18n>QQ group</span> 995078378</a><button id="qq-copy-foot" class="qq-copy-btn" title="copy the group number" data-i18n-title>⧉</button> ·
+    <a href="https://discord.gg/5GXgbtmxY" target="_blank" rel="noopener" title="join the Discord" data-i18n-title>Discord</a> ·
+    <!-- The ONLY entry to /support. It stays a footer link at footer weight:
+         the ask belongs where someone who already wants to give will look for
+         it, not in the path of someone doing a calculation. -->
+    <a href="/support" title="what WFSim costs to run" data-i18n-title data-i18n>Support</a>
+    </div>
+  </footer>
+
+  <script>window.WFSIM_WASM = true;</script>
+
+  <script src="/app.js"></script>
+</body>
+</html>

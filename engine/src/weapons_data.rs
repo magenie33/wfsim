@@ -2152,28 +2152,40 @@ mod deployment_tests {
         }
     }
 
-    /// WHICH WEAPONS ACTUALLY FOLLOW THE DOUBLING, as an observation rather
-    /// than a rule. The wiki says "MOST Heavy Weapons … have had their damage
-    /// doubled", so a weapon that does not is data and not a bug — this names
-    /// the exceptions instead of letting a ratio be computed with.
+    /// THE DOUBLING IS NOT A RULE, so this does not assert it.
+    ///
+    /// The wiki says *"MOST Heavy Weapons … have had their damage doubled"*, and
+    /// the roster proves "most" is doing real work: the Phaedra is x2.071, the
+    /// Dual Decurion x1.727, and the Cyngas doubles its TOTAL while changing its
+    /// split (39.6/39.6/40.8 becomes an even 80/80/80, so Slash goes x1.961 and
+    /// the other two x2.020). The Prisma Dual Decurions is exactly x2 off the
+    /// SAME Archwing vector its ordinary is x1.727 off. No single multiplier
+    /// expresses this class, which is why both columns are transcribed per
+    /// entry (owner, 2026-08-14).
+    ///
+    /// What IS worth asserting is that a transcription slip cannot pass. A
+    /// dropped digit, a factor of ten, a column pasted into the wrong file: all
+    /// of those land far outside the band the game's own numbers occupy, and a
+    /// ground column that came out SMALLER than its Archwing one would be the
+    /// original bug with the two tabs swapped.
     #[test]
-    fn the_doubling_is_most_and_the_exceptions_are_named() {
-        let mut ratios: Vec<(String, f64)> = Vec::new();
+    fn every_stated_column_is_in_the_band_the_game_uses() {
+        let mut seen = 0;
         for w in all() {
             let Some(d) = w.deployments.get("archwing") else { continue };
             let Some(m) = d.damage.as_ref() else { continue };
             let space: f64 = m.values().sum();
             let ground: f64 = w.attack.damage.values().sum();
             assert!(space > 0.0, "{}: a stated column with no damage in it", w.id);
-            ratios.push((w.id.clone(), ground / space));
+            let r = ground / space;
+            assert!(
+                (1.5..=2.5).contains(&r),
+                "{}: ground is x{r:.3} of Archwing ({ground} against {space}).                  The game's range is 1.727 to 2.071 — this is a transcription slip,                  or a genuinely new value that belongs in this comment.",
+                w.id
+            );
+            seen += 1;
         }
-        assert!(!ratios.is_empty(), "the roster has at least one Arch-Gun");
-        let exceptions: Vec<&(String, f64)> =
-            ratios.iter().filter(|(_, r)| (r - 2.0).abs() > 1e-9).collect();
-        assert!(
-            exceptions.is_empty(),
-            "these ground columns are not double their Archwing one — if that is what              the page says, add the weapon here with its reason: {exceptions:?}"
-        );
+        assert!(seen >= 8, "every Arch-Gun states both columns: only {seen} did");
     }
 }
 

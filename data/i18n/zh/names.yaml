@@ -197,6 +197,13 @@ weapons:
   scourge_prime: 祸根 Prime
   scourge_prime_thrown: 祸根 Prime
   scourge_thrown: 祸根
+  cyngas: 合成燃气炮
+  dual_decurion: 什长双枪
+  fluctus: 巨浪
+  imperator: 凯旋将军
+  imperator_vandal: 凯旋将军·破坏者
+  phaedra: 菲德菈
+  prisma_dual_decurions: 棱晶·什长双枪
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's

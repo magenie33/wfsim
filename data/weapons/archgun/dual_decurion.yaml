@@ -1,0 +1,78 @@
+id: dual_decurion
+name: Dual Decurion
+# ARCH-GUN — its own equipment slot, and not a Primary or a Secondary: the wiki
+# is explicit that Archguns "are not considered either primary or secondary
+# weapons", which is also why they seat two arcanes rather than one.
+slot: archgun
+class: archgun
+form: base
+default_form: true
+
+# TWO COLUMNS, and the fields below are the ATMOSPHERE one because this arena is
+# the ground. See docs/WEAPON_INTAKE.md §1: the page's infobox has an `Archwing`
+# tab and an `Atmosphere` tab, WFCD carries only the Archwing one, and the two
+# differ in damage, reserve, reload and shot type while agreeing on crit,
+# multiplier, status, fire rate and magazine.
+#
+#   |            | damage | reload | Ammo Max | shot type        |
+#   | Atmosphere |    190 | 1.40 s |      512 | hit-scan         |
+#   | Archwing   |    110 | 1.53 s |        0 | projectile       |
+#
+# NOT DOUBLE, and the furthest from it in the roster: 190 against 110 is
+# x1.727. Every damage type follows that same ratio. See the Phaedra for the
+# other exception, and docs/DATA_SOURCES.md for why both columns are written
+# down rather than one being derived from the other.
+#
+deployment: atmosphere
+deployments:
+  archwing:
+    reload_seconds: 1.53
+    no_resupply: false      # a regenerating magazine, so no reserve to dry
+    # THE OTHER TAB, transcribed rather than derived — both columns are written
+    # down so either can be checked against the page without arithmetic.
+    damage: { impact: 49.5, puncture: 30.25, slash: 30.25 }   # 110 total
+mod_pools: [archgun]
+mastery_rank: 1
+max_rank: 30
+
+accuracy: 12.5
+disposition: 1.3
+polarities: []
+riven_family: Dual Decurion
+internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/ArchwingHeavyPistols/ArchHeavyPistols
+noise: alarming
+magazine: 64
+# The Atmosphere column. Archwing reloads in 1.53 s instead.
+reload_seconds: 1.4
+
+ammo_type: archgun
+ammo_max: 512
+# A GROUND ARCH-GUN CANNOT BE RESUPPLIED — "once all of an Archgun's ammunition
+# is used up, the weapon is removed and can only be called down again after a
+# 5-minute cooldown period" (wiki Arch-Gun). 64 in the magazine and
+# 512 behind it is the whole engagement.
+no_resupply: true
+
+# No Condition Overload row, so the ordinary class (absence means ORDINARY).
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 10.42
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.28
+  crit_multiplier: 2.2
+  status_chance: 0.14
+  punch_through_m: 1.2
+  damage: { impact: 85.5, puncture: 52.25, slash: 52.25 }   # 190 total
+unmodeled:
+  - "the innate 1.2 m punch-through is not modelled — this arena has one target, so it changes no number"
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Decurion
+  # Every stat is the wiki page's Atmosphere tab. WFCD `warframe-items` was
+  # read for `internal_name` only: its Arch-Gun entries are the ARCHWING
+  # column, which is the wrong one here (docs/DATA_SOURCES.md).

@@ -1,0 +1,79 @@
+id: prisma_dual_decurions
+name: Prisma Dual Decurions
+# ARCH-GUN — its own equipment slot, and not a Primary or a Secondary: the wiki
+# is explicit that Archguns "are not considered either primary or secondary
+# weapons", which is also why they seat two arcanes rather than one.
+slot: archgun
+class: archgun
+form: base
+default_form: true
+
+# TWO COLUMNS, and the fields below are the ATMOSPHERE one because this arena is
+# the ground. See docs/WEAPON_INTAKE.md §1: the page's infobox has an `Archwing`
+# tab and an `Atmosphere` tab, WFCD carries only the Archwing one, and the two
+# differ in damage, reserve, reload and shot type while agreeing on crit,
+# multiplier, status, fire rate and magazine.
+#
+#   |            | damage | reload | Ammo Max | shot type        |
+#   | Atmosphere |    220 | 1.40 s |      512 | hit-scan         |
+#   | Archwing   |    110 | 1.53 s |        0 | projectile       |
+#
+# EXACTLY DOUBLE — and the ordinary Dual Decurion it is the Prisma of is
+# x1.727, off the SAME Archwing vector. Two weapons that share a space column
+# do not share a ground one, which is the sharpest reason in the roster for
+# transcribing both tabs per entry rather than deriving one.
+#
+deployment: atmosphere
+deployments:
+  archwing:
+    reload_seconds: 1.53
+    no_resupply: false      # a regenerating magazine, so no reserve to dry
+    # THE OTHER TAB, transcribed rather than derived — both columns are written
+    # down so either can be checked against the page without arithmetic.
+    damage: { impact: 49.5, puncture: 30.25, slash: 30.25 }   # 110 total
+mod_pools: [archgun]
+mastery_rank: 1
+max_rank: 30
+
+accuracy: 16.0
+disposition: 1.25
+polarities: [madurai, madurai]
+riven_family: Dual Decurion
+traits: [prisma]
+internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/ArchwingHeavyPistols/Prisma/PrismaArchHeavyPistols
+noise: alarming
+magazine: 64
+# The Atmosphere column. Archwing reloads in 1.53 s instead.
+reload_seconds: 1.4
+
+ammo_type: archgun
+ammo_max: 512
+# A GROUND ARCH-GUN CANNOT BE RESUPPLIED — "once all of an Archgun's ammunition
+# is used up, the weapon is removed and can only be called down again after a
+# 5-minute cooldown period" (wiki Arch-Gun). 64 in the magazine and
+# 512 behind it is the whole engagement.
+no_resupply: true
+
+# No Condition Overload row, so the ordinary class (absence means ORDINARY).
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 12.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.30
+  crit_multiplier: 2.2
+  status_chance: 0.24
+  punch_through_m: 1.2
+  damage: { impact: 99.0, puncture: 60.5, slash: 60.5 }   # 220 total
+unmodeled:
+  - "the innate 1.2 m punch-through is not modelled — this arena has one target, so it changes no number"
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+
+source:
+  url: https://wiki.warframe.com/w/Prisma_Dual_Decurions
+  # Every stat is the wiki page's Atmosphere tab. WFCD `warframe-items` was
+  # read for `internal_name` only: its Arch-Gun entries are the ARCHWING
+  # column, which is the wrong one here (docs/DATA_SOURCES.md).
