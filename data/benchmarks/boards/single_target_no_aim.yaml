@@ -166,6 +166,24 @@ entries:
     score: 0.3402276243918234
     mods: [heavy_caliber, galvanized_aptitude, speed_trigger, vigilante_armaments, vigilante_supplies, vital_sense, wildfire, thermite_rounds]
     arcanes: [primary_merciless]
+  - weapon: kuva_nukor
+    mode: base
+    score: 4.14309948338098
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence]
+    arcanes: [secondary_enervate]
+    valence: heat
+  - weapon: kuva_nukor
+    mode: base
+    score: 1.695797900884204
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence]
+    arcanes: [cascadia_empowered]
+    valence: heat
+  - weapon: kuva_nukor
+    mode: base
+    score: 1.1837833827022168
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence]
+    arcanes: [cascadia_empowered]
+    valence: heat
   - weapon: laetum
     mode: cycle
     score: 4.239757591781465
