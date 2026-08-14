@@ -293,9 +293,11 @@ fn main() {
         // by the person whose build it refused, either.
         // AN ADVERSARY WEAPON'S PROGENITOR ELEMENT is part of the submission,
         // like its mods and its evolutions — a different element is a different
-        // build, not a weaker one. `validate_for_board` refuses one the weapon
-        // cannot have, and refuses a MISSING one on a weapon that always has
-        // one, so neither can arrive by omission.
+        // build, not a weaker one. `builds::validate` refuses one the weapon
+        // cannot have and refuses a MISSING one on a weapon that always has
+        // one, so neither can arrive by omission — a legality rule rather than
+        // a ruler's, since a build without an element is not a build a ruler
+        // declines, it is not a build.
         let valence = s.get("valence").and_then(Value::as_str).unwrap_or("");
         let v = match wfsim_engine::builds::validate_for_board(
             &bench_id, &weapon, &mods, &evos, &arcs, valence,

@@ -92,12 +92,22 @@ Three consequences, and each is why the axis exists rather than a field:
   rule 2 says. `weapons_data::apply_valence` is the whole implementation, called
   where `apply_deployment` is called, which is every path that builds a weapon
   for a request.
-- **The BOARD cannot rank one yet, and says so.** 25% and 60% are a 35-point
-  swing in base damage, so a row that does not state the element and the roll is
-  not reproducible — which is the one thing every row on that board is. The
-  scorer REFUSES an adversary weapon by name rather than scoring it at some
-  assumed default. The row schema gains a valence field before these weapons
-  can be ranked; until then they build, simulate and optimize.
+- **The BOARD ranks one, and the row states its element.** 25% and 60% are a
+  35-point swing in base damage, so a row that does not say which element is not
+  reproducible — which is the one thing every row on that board is. A board row
+  therefore carries `valence`, the ruler scores every row at the roll's MAXIMUM
+  (which every player can reach by Valence Fusion, so it is a term of the
+  standard rather than a property of somebody's copy), and the element is part
+  of `builds::identity` — two elements are two entrants, exactly as two modes
+  are. A build with NO element is refused by `builds::validate`, which is
+  legality rather than a ruler's opinion.
+
+  **A weapon with no row is not blocked, it is unsubmitted.** The board is fed
+  by submissions and the builder's official builds ARE its rows, so a weapon
+  nobody has run under the official ruler has neither — 101 of 159 entries are
+  in that state today, the Kuva Nukor among them. Verified end to end
+  (2026-08-14): under the official ruler a full eight-mod, arcane-seated Kuva
+  Nukor passes every submission gate and its payload carries the element.
 
 **Rank 40, not 30.** "Polarizing the weapon increases its max rank by 2, capping
 at rank 40 after 5 polarizations, granting the weapon additional mod capacity" —
