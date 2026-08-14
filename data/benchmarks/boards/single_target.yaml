@@ -3803,8 +3803,18 @@ entries:
     arcanes: [primary_crux]
   - weapon: scourge_prime
     mode: base
+    score: 2.2784055517454957
+    mods: [amalgam_serration, primary_acuity, primed_firestorm, vile_acceleration, vital_sense, magnetic_capacity, hellfire, thermite_rounds]
+    arcanes: [primary_crux]
+  - weapon: scourge_prime
+    mode: base
     score: 1.7180704568600116
     mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, rime_rounds, malignant_force, hellfire]
+    arcanes: [primary_crux]
+  - weapon: scourge_prime
+    mode: base
+    score: 1.675024265581306
+    mods: [amalgam_serration, primary_acuity, primed_firestorm, vile_acceleration, vital_sense, rime_rounds, high_voltage, hellfire]
     arcanes: [primary_crux]
   - weapon: shedu
     mode: base
