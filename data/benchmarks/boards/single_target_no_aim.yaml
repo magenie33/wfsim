@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: 5d5c976a1ee36f3d177a29a628581ee0a6ca486c
+engine: 362c08da02c405dd88f877d3b47c28102e70482c
 entries:
   - weapon: boar_prime
     mode: cycle
@@ -212,6 +212,11 @@ entries:
     score: 2.9766898316658317
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, ammo_chain, magnetized_cycle, polar_magazine, venomous_clip, magma_chamber]
     arcanes: [primary_debilitate, secondary_fortifier]
+  - weapon: larkspur_prime
+    mode: base
+    score: 2.7854999818488086
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
     score: 2.6666666666666665
