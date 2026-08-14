@@ -4,6 +4,34 @@ How to get game data efficiently instead of transcribing pages by hand. The
 official wiki is backed by **structured Lua data modules**, and they are the
 authoritative datamined values (the same source WFCD tooling uses).
 
+## THE WIKI WINS (owner, 2026-08-14)
+
+Use the wiki wherever it can answer. WFCD's `warframe-items` export is the
+CROSS-CHECK and the fallback — it is no longer a peer source, and it stopped
+being one on evidence rather than on preference.
+
+**What demoted it.** Its Arch-Gun entries carry the ARCHWING column of a
+two-column infobox. Every Arch-Gun page has an `Archwing` tab and an
+`Atmosphere` tab; the ground column doubles the damage, carries a finite ammo
+pool instead of a regenerating magazine, has a real reload, and drops the
+falloff. The export models none of that — it has one number per field and no
+idea a second column exists. It then AGREED with the wiki on crit chance, crit
+multiplier, status chance, fire rate, magazine, polarities, disposition,
+mastery and internal name, which is every field a cross-check would look at.
+So the cross-check passed, and the Larkspur Prime posted 112 board rows at half
+its ground damage.
+
+The lesson generalises past Arch-Guns: **an export cannot tell you that a
+question has two answers.** A page can, because a human wrote the tab.
+
+**The one standing exception** is `base_drain` / `max_rank` on MODS, where the
+wiki is wrong for about twenty of them and WFCD is right. It is an exception
+held up by its own evidence, and it does not license a second one by analogy.
+
+**Still cross-check**, and still join by `internal_name` == `uniqueName` and
+never by name — WFCD carries stale duplicates that share a display name. A
+disagreement is now the wiki's to win unless the field is the exception above.
+
 ## Primary source: wiki Lua data modules (`?action=raw`)
 
 The wiki stores stats in `Module:*/data*` pages. Append `?action=raw` to fetch

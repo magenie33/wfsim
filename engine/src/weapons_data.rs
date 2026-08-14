@@ -27,27 +27,41 @@ pub struct DeploymentSpec {
     pub ammo_max: Option<f64>,
     #[serde(default)]
     pub no_resupply: Option<bool>,
-    /// WHAT THIS COLUMN DOES TO THE DAMAGE, as a multiplier on the entry's own.
+    /// THIS COLUMN'S DAMAGE, transcribed from the infobox tab rather than
+    /// derived from the entry's.
     ///
     /// VERBATIM (wiki `Archgun`): *"most Heavy Weapons (a.k.a. Archguns when
     /// used via the Archgun Deployer) have had their damage doubled"* — so a
     /// ground Arch-Gun hits for twice what the same weapon does in an Archwing
-    /// mission, and the two columns of its infobox say so field for field.
+    /// mission, and the two tabs of its infobox say so field for field.
     ///
     /// THIS FIELD EXISTS BECAUSE ITS ABSENCE WAS A WRONG NUMBER ON THE BOARD.
     /// The deployment axis was built as a SUSTAIN axis — reload, magazine,
     /// reserve, resupply — on a reading of the two-column table that said "same
-    /// damage, same crit, same status, only the sustain differs". Crit and
-    /// status are indeed identical; the damage is not, and the Larkspur Prime
-    /// was scored on the board at half its ground damage from the day it was
-    /// added until 2026-08-14.
+    /// damage, same crit, same status, only the sustain differs". Crit,
+    /// multiplier, status, fire rate and magazine ARE identical; the damage is
+    /// not, and the Larkspur Prime was scored on the board at half its ground
+    /// damage from the day it was added until 2026-08-14.
     ///
-    /// "MOST", not all, so it is DECLARED per weapon and never inferred from
-    /// the class. It scales the direct vector, the radial and the lingering
-    /// field alike: the infobox doubles every attack part, so a rule that
-    /// reached only the bullet would leave an explosion at half.
+    /// BOTH COLUMNS ARE WRITTEN DOWN, and that is the point of stating a vector
+    /// here instead of the `x0.5` that would produce the same numbers (owner,
+    /// 2026-08-14). A multiplier is DERIVED: a reader of this file cannot see
+    /// what the other tab says and cannot check it against the page, which is
+    /// the one thing that would have caught the original error. The doubling is
+    /// "most", not all, so the ratio is an observation about a weapon and never
+    /// a rule to compute with — `deployment_tests` asserts which weapons
+    /// actually follow it and NAMES the ones that do not.
     #[serde(default)]
-    pub damage_multiplier: Option<f64>,
+    pub damage: Option<BTreeMap<String, f64>>,
+    /// ...and the same tab's RADIAL, when the attack has one. Required
+    /// alongside `damage` by `validate` rather than optional in practice: an
+    /// explosion left on the other column is exactly the half-applied
+    /// deployment this whole field exists to prevent.
+    #[serde(default)]
+    pub radial_damage: Option<BTreeMap<String, f64>>,
+    /// ...and its lingering FIELD, under the same rule.
+    #[serde(default)]
+    pub lingering_damage: Option<BTreeMap<String, f64>>,
 }
 
 /// THE VALENCE BONUS an ADVERSARY weapon carries — a Kuva Lich's, a Sister's, a
@@ -144,16 +158,27 @@ pub fn apply_deployment(base: &mut WeaponBase, id: &str, deployment: &str) {
     if let Some(v) = d.no_resupply {
         base.no_resupply = v;
     }
-    // EVERY ATTACK PART, because the infobox doubles every attack part. The
-    // direct vector alone would leave an Arch-Gun's explosion at half of what
-    // its own page prints beside it.
-    if let Some(k) = d.damage_multiplier {
-        base.base_vector = base.base_vector.scale(k);
-        if let Some(r) = base.radial.as_mut() {
-            r.base_vector = r.base_vector.scale(k);
+    // EVERY ATTACK PART, because the infobox states every attack part. The
+    // direct vector alone would leave an Arch-Gun's explosion on the other
+    // column — which is the half-applied deployment `validate` refuses.
+    let vector_of = |m: &std::collections::BTreeMap<String, f64>| {
+        let mut v = crate::damage::DamageVector::new();
+        for (name, amount) in m {
+            v.add(damage_type(name), *amount);
         }
+        v
+    };
+    if let Some(m) = d.damage.as_ref() {
+        base.base_vector = vector_of(m);
+    }
+    if let Some(m) = d.radial_damage.as_ref() {
+        if let Some(r) = base.radial.as_mut() {
+            r.base_vector = vector_of(m);
+        }
+    }
+    if let Some(m) = d.lingering_damage.as_ref() {
         if let Some(l) = base.lingering.as_mut() {
-            l.base_vector = l.base_vector.scale(k);
+            l.base_vector = vector_of(m);
         }
     }
 }
@@ -2094,6 +2119,61 @@ mod deployment_tests {
         let before = torid.base_vector.total();
         apply_deployment(&mut torid, "torid", "archwing");
         assert_eq!(torid.base_vector.total(), before);
+    }
+
+    /// NO HALF-APPLIED COLUMN. A deployment that restates the direct damage
+    /// must restate every OTHER attack part the entry has, or the explosion is
+    /// left on the tab the bullet just left — which is the same shape of error
+    /// as the one that started this, one level down.
+    ///
+    /// Checked over the whole roster rather than on the two entries that have
+    /// a deployment today, because the next Arch-Gun with an explosion is the
+    /// one that would get it wrong.
+    #[test]
+    fn a_deployment_restates_every_attack_part_or_none() {
+        for w in all() {
+            for (name, d) in &w.deployments {
+                if d.damage.is_none() {
+                    continue;
+                }
+                assert_eq!(
+                    w.attack.radial.is_some(),
+                    d.radial_damage.is_some(),
+                    "{}/{name}: the entry has a radial and this column does not restate it",
+                    w.id
+                );
+                assert_eq!(
+                    w.attack.lingering.is_some(),
+                    d.lingering_damage.is_some(),
+                    "{}/{name}: the entry has a lingering field and this column does not restate it",
+                    w.id
+                );
+            }
+        }
+    }
+
+    /// WHICH WEAPONS ACTUALLY FOLLOW THE DOUBLING, as an observation rather
+    /// than a rule. The wiki says "MOST Heavy Weapons … have had their damage
+    /// doubled", so a weapon that does not is data and not a bug — this names
+    /// the exceptions instead of letting a ratio be computed with.
+    #[test]
+    fn the_doubling_is_most_and_the_exceptions_are_named() {
+        let mut ratios: Vec<(String, f64)> = Vec::new();
+        for w in all() {
+            let Some(d) = w.deployments.get("archwing") else { continue };
+            let Some(m) = d.damage.as_ref() else { continue };
+            let space: f64 = m.values().sum();
+            let ground: f64 = w.attack.damage.values().sum();
+            assert!(space > 0.0, "{}: a stated column with no damage in it", w.id);
+            ratios.push((w.id.clone(), ground / space));
+        }
+        assert!(!ratios.is_empty(), "the roster has at least one Arch-Gun");
+        let exceptions: Vec<&(String, f64)> =
+            ratios.iter().filter(|(_, r)| (r - 2.0).abs() > 1e-9).collect();
+        assert!(
+            exceptions.is_empty(),
+            "these ground columns are not double their Archwing one — if that is what              the page says, add the weapon here with its reason: {exceptions:?}"
+        );
     }
 }
 

@@ -138,10 +138,14 @@ Prime's. Add both, or neither.
 
 ### 1. The sources, and which one wins
 
+**THE WIKI WINS, wherever it can answer** (owner, 2026-08-14). WFCD is the
+cross-check and the fallback, not a peer — see AGENTS.md for the evidence that
+demoted it, which came out of this very class.
+
 | what | source | rule |
 | --- | --- | --- |
-| every stat | the RENDERED weapon page's infobox | `?action=raw` gives you `{{WeaponInfoboxAutomatic}}` and nothing else; `Module:Weapons/data/*` truncates alphabetically and a reader invents past the cut |
-| the same stats again | WFCD `warframe-items` `attacks` array | joined by `internal_name` == `uniqueName`, NEVER by name |
+| every stat | the RENDERED weapon page's infobox | the source of record. `?action=raw` gives you `{{WeaponInfoboxAutomatic}}` and nothing else; `Module:Weapons/data/*` truncates alphabetically and a reader invents past the cut |
+| a second opinion on those stats | WFCD `warframe-items` `attacks` array | joined by `internal_name` == `uniqueName`, NEVER by name. A DISAGREEMENT IS THE WIKI'S TO WIN, and a silent agreement proves nothing about a field the export does not model at all — it has no idea an Arch-Gun has two columns |
 | what the numbers MEAN | the page's Characteristics, Notes, Tips | the structured fields describe the weapon; the prose says which of them are lies |
 | `base_drain` / `max_rank` | WFCD only | the wiki is wrong for ~20 mods |
 

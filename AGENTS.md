@@ -32,11 +32,20 @@ around (decision 2026-07-31).
 - `wasm/` + `site/` — the static deployment. `site/` is **generated** by
   `scripts/build_site_app.py` — never hand-edit it.
 - `data/` — versioned game data. `data/README.md` explains the reference
-  graph; `docs/DATA_SOURCES.md` the sourcing rules. **Two sources, always
-  cross-checked**: the wiki Lua modules and WFCD's export (`vendor/`). The wiki
-  is NOT authoritative for `base_drain`/`max_rank` — it is wrong for ~20 mods.
-  Join the two by `internal_name` == `uniqueName`, **never by name** (WFCD has
-  stale duplicates sharing a display name).
+  graph; `docs/DATA_SOURCES.md` the sourcing rules. **THE WIKI WINS. Use it
+  wherever it can answer** (owner, 2026-08-14) — WFCD's export (`vendor/`) is
+  the CROSS-CHECK and the fallback, not a peer. It stopped being a peer on
+  evidence: its Arch-Gun entries carry the ARCHWING column of a two-column
+  infobox, which is the wrong column for an arena on the ground, and it agrees
+  with the wiki on every OTHER field of those weapons — so a cross-check that
+  did not name the damage row passed, and the Larkspur Prime posted 112 board
+  rows at half its damage. An export cannot say "there are two of these and you
+  want the other one"; a page can, and does.
+  **The ONE standing exception is `base_drain`/`max_rank` on MODS**, where the
+  wiki is wrong for ~20 of them and WFCD is right — an exception held up by its
+  own evidence, not by symmetry.
+  Still cross-check, and still join the two by `internal_name` == `uniqueName`,
+  **never by name** (WFCD has stale duplicates sharing a display name).
 - `data/abilities/` — WARFRAME ABILITY BUFFS, and the one data family that
   describes neither a weapon nor a build: a thing done TO this weapon for a
   while. It rides on the `Arena`, so `parse_fight` alone carries it into both

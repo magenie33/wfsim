@@ -24,10 +24,11 @@ deployments:
   archwing:
     reload_seconds: 4.5
     no_resupply: false
-    # The undoubled column — see the base form's entry for the rule and for
-    # what its absence cost. One line reaches this form's impact AND its
-    # explosion, which is why it is a multiplier and not a second vector.
-    damage_multiplier: 0.5
+    # THE OTHER TAB, both parts of it — see the base form's entry. An
+    # explosion left on the wrong column is the half-applied deployment that
+    # `validate` now refuses outright.
+    damage: { impact: 140.0, blast: 180.0, radiation: 100.0 }   # 420 on impact
+    radial_damage: { blast: 400.0, radiation: 400.0 }           # 800 at the centre
 
 mod_pools: [archgun]
 mastery_rank: 8

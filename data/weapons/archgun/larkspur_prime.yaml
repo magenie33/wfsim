@@ -41,10 +41,12 @@ deployments:
   archwing:
     reload_seconds: 4.5
     no_resupply: false      # a regenerating magazine, so no reserve to dry
-    # ...and back to the undoubled numbers. Stated as the halving rather than
-    # as a second damage vector so it reaches the alt-fire's impact AND its
-    # explosion from one line — see `weapons_data::DeploymentSpec`.
-    damage_multiplier: 0.5
+    # THE OTHER TAB'S DAMAGE, transcribed rather than halved. Both columns are
+    # written down so either can be checked against the page without doing
+    # arithmetic — which is the one thing that would have caught this file
+    # carrying the Archwing numbers under `deployment: atmosphere` (owner,
+    # 2026-08-14).
+    damage: { impact: 10.0, radiation: 80.0 }   # 90 total
 mod_pools: [archgun]
 mastery_rank: 8
 max_rank: 30
