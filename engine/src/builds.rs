@@ -1076,6 +1076,54 @@ mod tests {
         assert!(validate("torid", &v(&["serration"]), &[], &[], "heat").is_err());
     }
 
+    /// ...AND A FULL ONE IS ADMISSIBLE TO THE BOARD, which is the half a
+    /// legality rule can quietly take away.
+    ///
+    /// The ruler asks for `valence: full` and used to be the only thing that
+    /// asked; the clause moved into `validate` (above), so the requirement is
+    /// now met by a build being legal at all. That is a strictly stronger rule
+    /// and it would be worth nothing if the wrapper had stopped accepting the
+    /// builds it now guarantees — the Kuva Nukor is the roster's first
+    /// adversary weapon, so nothing else would notice.
+    #[test]
+    fn a_full_adversary_build_is_admissible() {
+        // Eight mods from eight different families — two of one family is its
+        // own refusal, and this test is not about that one.
+        let mut fams: Vec<&str> = Vec::new();
+        let mods: Vec<String> = crate::mods_data::pool_for_weapon("kuva_nukor")
+            .iter()
+            .filter(|m| !m.exilus)
+            .filter(|m| match m.family {
+                Some(f) if fams.contains(&f) => false,
+                Some(f) => {
+                    fams.push(f);
+                    true
+                }
+                None => true,
+            })
+            .take(MAIN_SLOTS)
+            .map(|m| m.id.to_string())
+            .collect();
+        assert_eq!(mods.len(), MAIN_SLOTS, "the pool can fill a build");
+        // Its own slot's arcane, and every seat filled — the ruler asks for both.
+        let arc: Vec<String> = crate::weapons_data::arcane_pools("kuva_nukor")
+            .iter()
+            .map(|slot| {
+                crate::arcanes_data::pool_for_weapon("kuva_nukor", slot)
+                    .first()
+                    .map_or("none".to_string(), |a| a.id.to_string())
+            })
+            .collect();
+        let ok = validate_for_board("single_target", "kuva_nukor", &mods, &[], &arc, "heat");
+        assert!(ok.is_ok(), "a full adversary build is admitted: {ok:?}");
+        assert_eq!(ok.unwrap().valence, "heat");
+
+        // ...and the ruler's own `valence: full` still bites, now from one
+        // layer down: the same build with no element is refused.
+        let e = validate_for_board("single_target", "kuva_nukor", &mods, &[], &arc, "").unwrap_err();
+        assert!(e.contains("Valence"), "{e}");
+    }
+
     /// An unknown benchmark admits nothing: a number published against a ruler
     /// that does not exist has no standard behind it.
     #[test]
