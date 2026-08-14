@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: 9e99efaa8ec6085bd70f0ce2a9f6222eb3a27544
+engine: 54bf8199653b7fdcb3e201350ec59dc0be5f5c0a
 entries:
   - weapon: boar_prime
     mode: cycle
@@ -251,6 +251,16 @@ entries:
     score: 3.4698983352413233
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, polar_magazine, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    score: 3
+    mods: [primed_rubedo_lined_barrel, dual_rounds, ammo_chain, magnetized_cycle, hypothermic_shell, contamination_casing, combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: base
+    score: 2.4880037587360917
+    mods: [primed_rubedo_lined_barrel, dual_rounds, ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, combustion_rounds]
+    arcanes: [primary_merciless, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
     score: 2.385780353594211
@@ -894,6 +904,12 @@ entries:
     score: 0.7921971113585101
     mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: cycle
+    score: 0.5831193812046912
+    mods: [heavy_caliber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, rime_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_frostbite]
   - weapon: torid
     mode: cycle
