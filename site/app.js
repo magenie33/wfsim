@@ -6487,8 +6487,13 @@ const gainTied = (g) => {
   const all = Object.values(gainScan.by || {});
   if (all.length < 2) return false;
   const best = all.reduce((a, b) => (b.pct > a.pct ? b : a));
-  if (best === g || best.pct === g.pct) return true;
-  return best.pct - g.pct < Math.hypot(best.se || 0, g.se || 0);
+  const near = (x, y) => x.pct - y.pct < Math.hypot(x.se || 0, y.se || 0);
+  // THE LEADER IS ONLY TIED IF SOMETHING ELSE IS TIED WITH IT. Marking it
+  // unconditionally put "tied" on the first row of every ranking, including the
+  // ones with a clear winner — a caveat printed where there is nothing to
+  // caveat, which is noise on every list (owner, 2026-08-14).
+  if (best === g) return all.some((x) => x !== g && near(g, x));
+  return near(best, g);
 };
 
 const gainChipFor = (id, where) => {

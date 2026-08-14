@@ -262,6 +262,11 @@ const ties = await app.evaluate(`(async () => {
 })()`);
 check("an option clear of the leader is not marked tied",
   !/gtie/.test(ties.clear.other), ties.clear.other.slice(0, 90));
+// …NOR IS THE LEADER ITSELF, which shipped marked on every ranking there is:
+// "tied" printed on the first row of a list with a clear winner is a caveat
+// where there is nothing to caveat (owner, 2026-08-14).
+check("...and neither is the leader, when nothing is near it",
+  !/gtie/.test(ties.clear.lead), ties.clear.lead.slice(0, 90));
 check("...and one inside its width is",
   /gtie/.test(ties.tied.other), ties.tied.other.slice(0, 120));
 // The LEADER carries it too, or the marker reads as "this one is worse".

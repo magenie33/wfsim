@@ -54,8 +54,7 @@ co_behavior: independent
 # only matters where the player's aim decides the body part, and here the
 # headshot rate is a number the scenario sets.
 unmodeled:
-  - "the Bullet Attractor field the throw plants (2 m on the heads of enemies within 14 m, 4.7 s a pulse, every 5 s for 20 s) — it counts as one Condition Overload status and nothing more, because the headshot rate is the scenario's own setting rather than something aim can move"
-  - "the spear explosion's guaranteed Impact proc — the engine forces procs on DIRECT hits only, which is the rule everywhere else, and this is the first explosion to carry one"
+  - "the Bullet Attractor field the throw plants (2 m on the heads of enemies within 14 m, 4.7 s a pulse, every 5 s for 20 s) — it counts as one Condition Overload status and nothing more. What the field is WORTH is a headshot rate, and the wiki says it does not guarantee a headshot, so the number has to be MEASURED before it can be modelled: docs/UNMODELLED.md §Open decisions"
   - "the innate reload while holstered or deployed (33% of the magazine per second) — this arena never holsters the weapon"
 
 attack:
@@ -84,15 +83,15 @@ attack:
     stacking: multiplies
     radius_calculation: snapshot
 
-  # THE SPEAR'S EXPLOSION.
+  # THE SPEAR'S EXPLOSION, with a GUARANTEED IMPACT PROC — "Guaranteed Impact
+  # proc" is the Characteristics' own sentence and it is said of the EXPLOSION,
+  # not of the throw.
   #
-  # ITS GUARANTEED IMPACT PROC IS NOT HERE, and that is a gap rather than a
-  # choice: `forced_procs` is the ATTACK's and the engine applies it to DIRECT
-  # hits only (`if direct { &ap.forced_procs }`), which is the wiki's own rule
-  # everywhere it has been checked — the Astilla's direct hit forces Impact and
-  # its radial does not. The Scourge is the first entry to want it on the
-  # explosion instead, so it is declared unmodelled above rather than moved to
-  # the direct hit, where it would force a proc the game does not.
+  # It is the first radial in the roster to carry one, and it is why
+  # `forced_procs` became the radial's own rather than the attack's alone: the
+  # Astilla forces Impact on its DIRECT hit and not on its radial, this weapon
+  # is the other way round, and one shared list can only be wrong for one of
+  # them.
   #
   # FIRESTORM DOES NOT REACH THE FIELD, only this blast: "Firestorm does not
   # affect the size of the Bullet Attractor field, nor does it increase the
@@ -104,6 +103,7 @@ attack:
     radius_m: 7.0
     falloff_start_m: 0.0
     falloff_reduction: 0.6    # WFCD `{start 0, end 7, reduction 0.6}`: 100% -> 40%
+    forced_procs: [impact]
     crit_chance: 0.10
     crit_multiplier: 2.0
     status_chance: 0.30

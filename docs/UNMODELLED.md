@@ -235,6 +235,30 @@ These are things the engine COULD do today and deliberately does not, because
 doing them means inventing a play pattern. The repo's rule is that a policy is
 the owner's call, not the model's (the 99-stack decision, 2026-08-08).
 
+### Bullet Attractor — OPEN, and it wants a MEASUREMENT (Scourge, Scourge Prime)
+
+*"Alternate Fire throws the Scourge … causing a 2 meter Bullet Attractor field
+on the heads of enemies within 14 meters of the impact point, allowing easier
+headshots."*
+
+The engine HAS the debuff — `DebuffState::attractor`, which arrives today from
+Xata's Whisper's Void instance — and it is worth exactly one line in the
+Condition Overload counter. What the field is actually worth is a HEADSHOT
+RATE, and this arena has one: `headshot_pct` on the fight. So the machinery is
+there and the wiring is three lines.
+
+**What is missing is the number, and the wiki says so itself:** *"Bullets and
+projectiles fired at enemies will be drawn to the head. However, this does not
+guarantee a headshot."* Setting the rate to 100% would be inventing the figure
+the page refuses to give; leaving it at the scenario's own is what happens
+today. Either is a decision, and only a measurement settles it — fire a known
+number of shots into a field and count the heads (docs/MEASUREMENTS.md).
+
+It is filed here rather than in the list above because nothing about the arena
+prevents it: no distance is involved (the field is on the target), no play
+pattern has to be invented (you throw, then you fire), and one weapon in the
+roster plants one on itself.
+
 ### Dual Mode Chamber — OPEN (Felarx)
 
 *"Reload toggles the weapon between +100% Projectile Speed and +4m Punch

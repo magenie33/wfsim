@@ -36,6 +36,38 @@ pub enum DamageType {
     Cinematic,
 }
 
+/// A SET of damage types held in one word — an attack part's FORCED procs.
+///
+/// A mask rather than a `Vec` because [`crate::loadout::ResolvedRadial`] is
+/// `Copy` and the sim copies one per pellet; walking 17 bits costs nothing
+/// beside a heap allocation in that loop.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct ForcedProcs(u32);
+
+impl ForcedProcs {
+    pub fn from_types(ts: impl IntoIterator<Item = DamageType>) -> Self {
+        Self(ts.into_iter().fold(0, |m, t| m | (1 << t as u32)))
+    }
+
+    pub fn is_empty(self) -> bool {
+        self.0 == 0
+    }
+
+    /// Write the set into `buf` in declaration order and return how many. The
+    /// caller keeps the slice interface every consumer already takes, without
+    /// this type owning any memory.
+    pub fn fill(self, buf: &mut [DamageType; DamageType::ALL.len()]) -> usize {
+        let mut n = 0;
+        for t in DamageType::ALL {
+            if self.0 & (1 << t as u32) != 0 {
+                buf[n] = t;
+                n += 1;
+            }
+        }
+        n
+    }
+}
+
 impl DamageType {
     /// Every damage type, in declaration order (indexes match `as usize`).
     pub const ALL: [DamageType; 17] = [

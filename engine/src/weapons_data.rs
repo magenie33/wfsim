@@ -406,6 +406,16 @@ pub struct RadialSpec {
     /// Fraction of damage REMOVED at maximum distance (Laetum: 0.2 → 80%).
     #[serde(default)]
     pub falloff_reduction: Option<f64>,
+    /// Damage types this EXPLOSION applies on every hit regardless of status
+    /// chance — its OWN, not the direct part's.
+    ///
+    /// The two are different questions and the roster has both answers: the
+    /// Astilla's direct hit forces Impact and its radial does not, while the
+    /// Scourge pair's page says "Guaranteed Impact proc" of the SPEAR EXPLOSION
+    /// and nothing of the throw. One shared list would have made the Scourge
+    /// force a proc on a hit the game does not force one on.
+    #[serde(default)]
+    pub forced_procs: Vec<String>,
     /// Does this explosion take Condition Overload? Default NO — the mods say
     /// direct hits only, so an AoE part receiving it is a per-entry exception
     /// the CO catalog lists (the Zylok's Incarnon radial has such a row).
@@ -1670,6 +1680,9 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
             takes_blast_radius_mods: r.takes_blast_radius_mods,
             falloff_start_m: r.falloff_start_m.unwrap_or(0.0),
             falloff_reduction: r.falloff_reduction.unwrap_or(0.0),
+            forced_procs: crate::damage::ForcedProcs::from_types(
+                r.forced_procs.iter().map(|t| damage_type(t)),
+            ),
             takes_condition_overload: r.takes_condition_overload,
             takes_multishot: r.takes_multishot,
             // 1.0 until an evolution raises the explosion's base without
@@ -2527,6 +2540,53 @@ mod tests {
             WeaponBase::from_data("phantasma_prime", false, &[]).forced_procs.is_empty(),
             "the beam has no guaranteed proc; only the charged bomb does"
         );
+    }
+
+    /// AN EXPLOSION'S FORCED PROC IS ITS OWN, and the Scourge pair is why the
+    /// field stopped being the attack's alone.
+    ///
+    /// The two are different questions and the roster holds both answers. The
+    /// Astilla's DIRECT hit forces Impact and its radial does not; the Scourge
+    /// pair's page says "Guaranteed Impact proc" of the SPEAR EXPLOSION and
+    /// nothing of the throw. One shared list can only be right for one of them,
+    /// and putting the Scourge's on the attack would have forced a proc on a
+    /// hit the game does not force one on.
+    ///
+    /// Asserted in BOTH directions on the same weapon, because either alone
+    /// passes on a flag that is simply always set.
+    #[test]
+    fn an_explosions_forced_proc_is_its_own_and_not_the_direct_hits() {
+        use crate::damage::DamageType;
+        let mut buf = [DamageType::Impact; DamageType::ALL.len()];
+
+        for id in ["scourge_thrown", "scourge_prime_thrown"] {
+            let base = WeaponBase::from_data(id, false, &[]);
+            assert!(
+                base.forced_procs.is_empty(),
+                "{id}: the THROW forces nothing — the page says it of the explosion"
+            );
+            let r = base.radial.as_ref().expect("the spear explodes");
+            let n = r.forced_procs.fill(&mut buf);
+            assert_eq!(&buf[..n], &[DamageType::Impact], "{id}: the EXPLOSION forces Impact");
+
+            // …and it survives the mod layer, which is where the attack's own
+            // list was silently dropped before anything filled it.
+            let panel = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::AssumedMax);
+            let rr = panel.radial.as_ref().expect("resolved");
+            let n = rr.forced_procs.fill(&mut buf);
+            assert_eq!(&buf[..n], &[DamageType::Impact], "{id}: still Impact after resolution");
+        }
+
+        // THE OTHER DIRECTION, on the primary fire of the same weapons: an
+        // explosion that forces nothing must still force nothing.
+        for id in ["scourge", "scourge_prime"] {
+            let base = WeaponBase::from_data(id, false, &[]);
+            let r = base.radial.as_ref().expect("the plasma shot explodes");
+            assert!(
+                r.forced_procs.is_empty(),
+                "{id}: no guaranteed proc is claimed of the primary fire's explosion"
+            );
+        }
     }
 
     /// The Cernos Prime is the first CHARGE-trigger weapon, so this pins the

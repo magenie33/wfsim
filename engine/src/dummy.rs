@@ -6419,8 +6419,21 @@ pub fn run_once_traced(
                         None => ap.status_chance + ap.base_status_chance * sc_arc,
                         Some(r) => r.status_chance + r.base_status_chance * sc_arc,
                     } + derived_sc);
+                // EACH PART'S OWN. The direct hit reads the attack's list; an
+                // EXPLOSION reads its own, because "Guaranteed Impact proc" is
+                // said of one and not the other on the same weapon (the Scourge
+                // pair says it of the spear explosion; the Astilla says it of
+                // the direct hit and not of its radial).
                 const NO_FORCED: &[DamageType] = &[];
-                let forced: &[DamageType] = if direct { &ap.forced_procs } else { NO_FORCED };
+                let mut forced_buf = [DamageType::Impact; DamageType::ALL.len()];
+                let forced: &[DamageType] = match (&rad, direct) {
+                    (None, true) => &ap.forced_procs,
+                    (Some(r), _) => {
+                        let n = r.forced_procs.fill(&mut forced_buf);
+                        &forced_buf[..n]
+                    }
+                    _ => NO_FORCED,
+                };
 
                 // Devouring Attrition: an INDEPENDENT multiplier rolled per
                 // INSTANCE that did not crit (wiki: "multiplicative to base
@@ -10636,6 +10649,7 @@ mod tests {
             radius_m: 2.0,
             falloff_start_m: 0.0,
             falloff_reduction: 0.0,
+            forced_procs: Default::default(),
             takes_condition_overload: takes,
             takes_multishot: true,
             co_base_fraction: 1.0,
@@ -11732,6 +11746,7 @@ mod tests {
             radius_m: 2.0,
             falloff_start_m: 0.0,
             falloff_reduction: 0.0,
+            forced_procs: Default::default(),
             takes_condition_overload: false,
             takes_multishot: true,
             co_base_fraction: 1.0,
@@ -12567,6 +12582,7 @@ mod tests {
             radius_m: 2.0,
             falloff_start_m: 0.0,
             falloff_reduction: 0.2,
+            forced_procs: Default::default(),
             takes_condition_overload: false,
             takes_multishot: true,
             co_base_fraction: 1.0, // the default: an explosion gets no CO
@@ -12591,6 +12607,46 @@ mod tests {
             "the explosion's Heat procs must burn on their own"
         );
         assert_eq!(quiet.shots, loud.shots, "status does not change the cadence");
+    }
+
+    /// AN EXPLOSION FORCES ITS OWN PROCS, at 0% status chance everywhere.
+    ///
+    /// The Scourge pair is the roster's first: "Guaranteed Impact proc" is said
+    /// of the SPEAR EXPLOSION and of nothing else on that weapon, where the
+    /// Astilla says it of the direct hit and not of its radial. The engine read
+    /// the ATTACK's list and applied it to direct hits only, so this half was
+    /// unreachable — the fixture below has 0% status on both parts, so any proc
+    /// at all can only be the forced one.
+    #[test]
+    fn an_explosion_forces_its_own_procs_with_no_status_chance_anywhere() {
+        let mut r = radial_of(0.0, 0.0);
+        let quiet = run_once(&radial_only(r), &mut Rng::new(11));
+        assert_eq!(quiet.procs, 0, "nothing forced and 0% SC = no procs at all");
+
+        r.forced_procs = crate::damage::ForcedProcs::from_types([DamageType::Impact]);
+        let forced = run_once(&radial_only(r), &mut Rng::new(11));
+        assert_eq!(
+            forced.procs, forced.shots,
+            "one forced Impact per landed explosion, however low the status chance"
+        );
+        assert_eq!(quiet.shots, forced.shots, "a forced proc does not move the cadence");
+    }
+
+    /// …AND IT IS NOT THE DIRECT HIT'S. The same weapon says one and not the
+    /// other, so a shared list would be wrong for whichever it was not written
+    /// for.
+    #[test]
+    fn a_radials_forced_proc_does_not_reach_the_direct_hit() {
+        let mut p = radial_only(radial_of(0.0, 0.0));
+        p.radial.as_mut().unwrap().forced_procs =
+            crate::damage::ForcedProcs::from_types([DamageType::Impact]);
+        // The direct part has 0% status and forces nothing, so a proc from IT
+        // would show as more procs than there are explosions.
+        let r = run_once(&p, &mut Rng::new(11));
+        assert_eq!(
+            r.procs, r.shots,
+            "exactly one per explosion — the direct hit contributed none"
+        );
     }
 
     #[test]
@@ -12646,6 +12702,7 @@ mod tests {
                 radius_m: 2.0,
                 falloff_start_m: 0.0,
                 falloff_reduction: 0.0,
+                forced_procs: Default::default(),
                 takes_condition_overload: false,
                 takes_multishot: true,
                 co_base_fraction: 1.0, // the default: an explosion gets no CO
@@ -12713,6 +12770,7 @@ mod tests {
                 radius_m: 2.0,
                 falloff_start_m: 0.0,
                 falloff_reduction: 0.0,
+                forced_procs: Default::default(),
                 takes_condition_overload: false,
                 takes_multishot: true,
                 co_base_fraction: 1.0, // the default: an explosion gets no CO

@@ -1729,6 +1729,9 @@ pub struct RadialBase {
     /// Only bites once the sim has targets away from the epicentre.
     pub falloff_start_m: f64,
     pub falloff_reduction: f64,
+    /// See [`crate::weapons_data::RadialSpec::forced_procs`] — the EXPLOSION's
+    /// own, which is not the direct part's.
+    pub forced_procs: crate::damage::ForcedProcs,
     /// Does this explosion take Condition Overload? **Default NO** — the mods
     /// say CO boosts DIRECT hits, so an AoE part is not supposed to receive it
     /// at all. Some entries do anyway, and the CO catalog lists them one at a
@@ -1772,6 +1775,8 @@ pub struct ResolvedRadial {
     pub radius_m: f64,
     pub falloff_start_m: f64,
     pub falloff_reduction: f64,
+    /// See [`RadialBase::forced_procs`].
+    pub forced_procs: crate::damage::ForcedProcs,
     /// See [`RadialBase::takes_condition_overload`] — CO on an explosion is the
     /// exception, not the default.
     pub takes_condition_overload: bool,
@@ -3029,6 +3034,7 @@ pub fn resolve_for(
             status_chance: (r.base_status_chance * (1.0 + sc) + base.post_mod_status_chance)
                 .max(0.0),
             base_status_chance: r.base_status_chance,
+            forced_procs: r.forced_procs,
             // Blast RANGE mods scale the radius; the falloff FLOOR is
             // unchanged ("Only mods that increase the explosion radius change
             // how far the falloff reaches; they do not change the floor").

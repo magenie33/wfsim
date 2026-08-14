@@ -52,7 +52,6 @@ co_behavior: additive_with_base_damage
 # is declared there.
 unmodeled:
   - "the innate reload while holstered or deployed (33% of the magazine per second) — this arena never holsters the weapon"
-  - "its missing Harrow signature bonus is DE's, not a gap here: 'Currently, Scourge Prime lacks a Signature Weapon bonus with Harrow/Harrow Prime'"
 
 attack:
   trigger: auto
