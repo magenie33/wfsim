@@ -3932,6 +3932,16 @@ entries:
     score: 3.079128237777369
     mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, hellfire]
     arcanes: [primary_crux]
+  - weapon: shedu
+    mode: base
+    score: 0.3520300262266525
+    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, hunter_munitions, vital_sense, primed_cryo_rounds, infected_clip]
+    arcanes: [primary_merciless]
+  - weapon: shedu
+    mode: base
+    score: 0.11540874368151316
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, critical_delay, hunter_munitions, vital_sense, primed_cryo_rounds, infected_clip]
+    arcanes: [primary_merciless]
   - weapon: sicarus_prime
     mode: cycle
     score: 46.251765111071734
@@ -4858,14 +4868,38 @@ entries:
     arcanes: [primary_crux]
   - weapon: vectis_prime
     mode: base
+    score: 38.299707196174595
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, stormbringer, malignant_force]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_crux]
+  - weapon: vectis_prime
+    mode: base
     score: 33.22471523015734
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, wildfire]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_crux]
   - weapon: vectis_prime
     mode: base
+    score: 30.205612185590613
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, magnetic_capacity, hellfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_crux]
+  - weapon: vectis_prime
+    mode: base
+    score: 25.87207344547847
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_crux]
+  - weapon: vectis_prime
+    mode: base
     score: 24
     mods: [primary_acuity, galvanized_aptitude, critical_delay, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_crux]
+  - weapon: vectis_prime
+    mode: base
+    score: 23.74750524499986
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, bladed_rounds, semi_rifle_cannonade, vital_sense, hellfire, thermite_rounds]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_crux]
   - weapon: vectis_prime
