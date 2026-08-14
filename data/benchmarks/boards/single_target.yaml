@@ -3003,6 +3003,11 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
+    score: 12.230093230474894
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, marked_target, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
     score: 12.221277703673657
     mods: [primed_rubedo_lined_barrel, dual_rounds, ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
@@ -3321,11 +3326,6 @@ entries:
     score: 3.3333333333333335
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, hollowed_bullets, primed_electrified_barrel, primed_venomous_clip, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_merciless, secondary_enervate]
-  - weapon: larkspur_prime
-    mode: base
-    score: 3.106439288292201
-    mods: [primed_rubedo_lined_barrel, primed_deadly_efficiency, dual_rounds, hollowed_bullets, parallax_scope, charged_bullets, venomous_clip, polar_magazine]
-    arcanes: [primary_frostbite, secondary_enervate]
   - weapon: latron_prime
     mode: cycle
     score: 58.5547932332362
@@ -4850,6 +4850,18 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_lone_gun, vasto_prime_extended_volley, vasto_prime_survivors_edge]
     arcanes: [secondary_deadhead]
+  - weapon: vectis_prime
+    mode: base
+    score: 40.33858579954675
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_crux]
+  - weapon: vectis_prime
+    mode: base
+    score: 33.22471523015734
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, wildfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_crux]
   - weapon: vectis_prime
     mode: base
     score: 24
