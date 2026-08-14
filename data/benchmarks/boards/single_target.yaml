@@ -38,6 +38,11 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: akarius_prime
     mode: base
+    score: 2.3337482170793153
+    mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_pistol_gambit, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
+  - weapon: akarius_prime
+    mode: base
     score: 2.1730085985574292
     mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, ice_storm, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
