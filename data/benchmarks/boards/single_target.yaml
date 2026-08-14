@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: e7d9c8385f4cb5a8b68fb62918c49f3d8d21f7c0
+engine: 2a62e7c1a19bf9937a90ce41bfa43aa1ac88d3d4
 entries:
   - weapon: akarius_prime
     mode: base
@@ -638,6 +638,12 @@ entries:
     score: 14.57222414160322
     mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, stormbringer, infected_clip, primed_cryo_rounds]
     evolutions: [boltor_prime_evo1_incarnon_form, boltor_prime_hunters_mantra, boltor_prime_rapid_reinforcement, boltor_prime_commodores_fortune]
+    arcanes: [primary_deadhead]
+  - weapon: boltor_prime
+    mode: cycle
+    score: 9.93514816217406
+    mods: [galvanized_chamber, heavy_caliber, galvanized_aptitude, hammer_shot, point_strike, vital_sense, magnetic_capacity, thermite_rounds]
+    evolutions: [boltor_prime_evo1_incarnon_form, boltor_prime_hunters_mantra, boltor_prime_rapid_reinforcement, boltor_prime_survivors_edge]
     arcanes: [primary_deadhead]
   - weapon: boltor_prime
     mode: cycle
