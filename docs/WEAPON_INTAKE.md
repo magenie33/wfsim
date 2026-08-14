@@ -148,6 +148,27 @@ Prime's. Add both, or neither.
 Disagreements are not rounding. Record which source you took and why, in the
 file — every existing weapon does.
 
+**AN ARCH-GUN HAS TWO COLUMNS AND WFCD ONLY HAS ONE** (2026-08-14). Its page's
+infobox has an `Archwing` tab and an `Atmosphere` tab, and `warframe-items`
+carries the ARCHWING one — so the export is the wrong column for this repo,
+whose arena is the ground. What differs is not only the sustain:
+
+| | Archwing | Atmosphere |
+| --- | --- | --- |
+| damage | base | **DOUBLE** — *"most Heavy Weapons … have had their damage doubled"* (wiki `Archgun`) |
+| Ammo Max | 0 | a finite pool, and no way to refill it |
+| reload | the regenerating magazine's | a real reload |
+| shot type | projectile, with falloff | *"lack damage falloff and most of them are hit-scan"* |
+| crit, multiplier, status, fire rate, magazine | identical | identical |
+
+The damage row is the one that has already cost something. The axis was built
+as a SUSTAIN axis and the Larkspur Prime carried the Archwing damage under
+`deployment: atmosphere`, so 112 board rows were scored at half. Three of the
+four headline stats really are identical in both columns, which is exactly why
+the wrong reading survived a review — **check the damage row specifically, on
+the rendered page, for every Arch-Gun.** "Most", not all, so it is declared per
+weapon (`deployments.<name>.damage_multiplier`) and never inferred.
+
 ### 2. The per-weapon CATALOGS, before writing a line of yaml
 
 Both are a formula plus a table with ONE ROW PER WEAPON, both are

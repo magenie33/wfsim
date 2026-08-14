@@ -15,13 +15,22 @@ default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 transform_group: larkspur_prime
 
 # WHERE IT IS FIRED changes the weapon, and the wiki gives it as ONE table
-# with two columns rather than two weapons — same damage, same crit, same
-# status, same mods, same riven. Only the sustain differs:
+# with two columns rather than two weapons — same crit, same multiplier, same
+# status, same fire rate, same mods, same riven:
 #
-#   |            | reload | Ammo Max | resupply                          |
-#   | Atmosphere | 2.50 s | 400      | none — the weapon is REMOVED when |
-#   |            |        |          | empty, five-minute cooldown       |
-#   | Archwing   | 4.50 s | 0        | regenerating magazine = unlimited |
+#   |            | damage | reload | Ammo Max | resupply                    |
+#   | Atmosphere |  180   | 2.50 s | 400      | none — the weapon is REMOVED|
+#   |            |        |        |          | when empty, 5 min cooldown  |
+#   | Archwing   |   90   | 4.50 s | 0        | regenerating = unlimited    |
+#
+# THE DAMAGE COLUMN WAS READ AS "SAME" AND IT IS DOUBLE (2026-08-14). VERBATIM
+# (wiki `Archgun`): "most Heavy Weapons (a.k.a. Archguns when used via the
+# Archgun Deployer) have had their damage doubled". This file has said
+# `deployment: atmosphere` since it was written and carried the ARCHWING
+# numbers, so every score this weapon has ever posted to the board — 112 rows —
+# was half of what a ground Larkspur Prime does. Crit, multiplier and status
+# really are identical in both columns, which is what made the wrong reading
+# survive: three of the four stats checked out.
 #
 # So it is a SCENARIO axis, not an identity: one weapon, one mod pool, one
 # riven, and the environment chooses the column (user, 2026-08-01). The
@@ -32,6 +41,10 @@ deployments:
   archwing:
     reload_seconds: 4.5
     no_resupply: false      # a regenerating magazine, so no reserve to dry
+    # ...and back to the undoubled numbers. Stated as the halving rather than
+    # as a second damage vector so it reaches the alt-fire's impact AND its
+    # explosion from one line — see `weapons_data::DeploymentSpec`.
+    damage_multiplier: 0.5
 mod_pools: [archgun]
 mastery_rank: 8
 max_rank: 30
@@ -91,7 +104,10 @@ attack:
   crit_multiplier: 1.6
   status_chance: 0.50
   punch_through_m: 0.0
-  damage: { impact: 10.0, radiation: 80.0 }
+  # THE ATMOSPHERE COLUMN: 20 Impact + 160 Radiation = 180, against the
+  # Archwing column's 10 + 80 = 90. Still 89% Radiation, so nothing about the
+  # element hierarchy below changes.
+  damage: { impact: 20.0, radiation: 160.0 }
 
 source:
   url: https://wiki.warframe.com/w/Larkspur_Prime

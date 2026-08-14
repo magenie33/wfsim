@@ -24,6 +24,10 @@ deployments:
   archwing:
     reload_seconds: 4.5
     no_resupply: false
+    # The undoubled column — see the base form's entry for the rule and for
+    # what its absence cost. One line reaches this form's impact AND its
+    # explosion, which is why it is a multiplier and not a second vector.
+    damage_multiplier: 0.5
 
 mod_pools: [archgun]
 mastery_rank: 8
@@ -72,13 +76,15 @@ attack:
   crit_multiplier: 2.2
   status_chance: 0.38
   punch_through_m: 0.0
-  damage: { impact: 140.0, blast: 180.0, radiation: 100.0 }   # 420 on impact
+  # THE ATMOSPHERE COLUMN, like the base form's — the Archwing column is
+  # 140/180/100 for 420. Every attack part doubles, impact and explosion alike.
+  damage: { impact: 280.0, blast: 360.0, radiation: 200.0 }  # 840 on impact
   # The radial (AoE) part — rules in MECHANICS §7: own crit/status stats,
   # 1x body-part multiplier (an explosion never headshots and never charges a
   # weakpoint gauge), no Condition Overload, linear falloff to
   # (1 - reduction) at the radius edge. Self-stagger only, never self-damage.
   radial:
-    damage: { blast: 400.0, radiation: 400.0 }   # 800 at the centre
+    damage: { blast: 800.0, radiation: 800.0 }   # 1600 at the centre (Atmosphere)
     radius_m: 9.6
     falloff_start_m: 0.0
     falloff_reduction: 0.6      # 800 at the centre -> 320 (40%) at 9.6 m

@@ -27,6 +27,27 @@ pub struct DeploymentSpec {
     pub ammo_max: Option<f64>,
     #[serde(default)]
     pub no_resupply: Option<bool>,
+    /// WHAT THIS COLUMN DOES TO THE DAMAGE, as a multiplier on the entry's own.
+    ///
+    /// VERBATIM (wiki `Archgun`): *"most Heavy Weapons (a.k.a. Archguns when
+    /// used via the Archgun Deployer) have had their damage doubled"* — so a
+    /// ground Arch-Gun hits for twice what the same weapon does in an Archwing
+    /// mission, and the two columns of its infobox say so field for field.
+    ///
+    /// THIS FIELD EXISTS BECAUSE ITS ABSENCE WAS A WRONG NUMBER ON THE BOARD.
+    /// The deployment axis was built as a SUSTAIN axis — reload, magazine,
+    /// reserve, resupply — on a reading of the two-column table that said "same
+    /// damage, same crit, same status, only the sustain differs". Crit and
+    /// status are indeed identical; the damage is not, and the Larkspur Prime
+    /// was scored on the board at half its ground damage from the day it was
+    /// added until 2026-08-14.
+    ///
+    /// "MOST", not all, so it is DECLARED per weapon and never inferred from
+    /// the class. It scales the direct vector, the radial and the lingering
+    /// field alike: the infobox doubles every attack part, so a rule that
+    /// reached only the bullet would leave an explosion at half.
+    #[serde(default)]
+    pub damage_multiplier: Option<f64>,
 }
 
 /// THE VALENCE BONUS an ADVERSARY weapon carries — a Kuva Lich's, a Sister's, a
@@ -122,6 +143,18 @@ pub fn apply_deployment(base: &mut WeaponBase, id: &str, deployment: &str) {
     }
     if let Some(v) = d.no_resupply {
         base.no_resupply = v;
+    }
+    // EVERY ATTACK PART, because the infobox doubles every attack part. The
+    // direct vector alone would leave an Arch-Gun's explosion at half of what
+    // its own page prints beside it.
+    if let Some(k) = d.damage_multiplier {
+        base.base_vector = base.base_vector.scale(k);
+        if let Some(r) = base.radial.as_mut() {
+            r.base_vector = r.base_vector.scale(k);
+        }
+        if let Some(l) = base.lingering.as_mut() {
+            l.base_vector = l.base_vector.scale(k);
+        }
     }
 }
 
@@ -2007,6 +2040,60 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // the module's `ExtraHeadshotDmg`.
         headshot_damage_bonus: s.headshot_damage_bonus.unwrap_or(0.0),
         noncrit_bonus: None,
+    }
+}
+
+#[cfg(test)]
+mod deployment_tests {
+    use super::*;
+
+    /// A DEPLOYMENT CHANGES THE DAMAGE. VERBATIM (wiki `Archgun`): *"most Heavy
+    /// Weapons (a.k.a. Archguns when used via the Archgun Deployer) have had
+    /// their damage doubled"*.
+    ///
+    /// The axis was built as a SUSTAIN axis on a reading of the two-column
+    /// infobox that said "same damage, same crit, same status — only the
+    /// sustain differs". Crit, multiplier and status ARE identical in both
+    /// columns, which is why the wrong half went unnoticed: three of the four
+    /// stats checked out, and the Larkspur Prime posted 112 board rows at half
+    /// its ground damage (2026-08-14).
+    #[test]
+    fn a_deployment_moves_the_damage_and_the_sustain() {
+        let ground = |id: &str| crate::loadout::WeaponBase::from_data(id, false, &[]);
+        let space = |id: &str| {
+            let mut b = ground(id);
+            apply_deployment(&mut b, id, "archwing");
+            b
+        };
+        // The entry's own column is Atmosphere, so the ground build is the file
+        // and the Archwing one is the override.
+        let (g, s) = (ground("larkspur_prime"), space("larkspur_prime"));
+        assert_eq!(g.base_vector.total(), 180.0, "the ground column is 20 + 160");
+        assert_eq!(s.base_vector.total(), 90.0, "and Archwing is half of it");
+        // The sustain half, which was right all along.
+        assert_eq!(g.base_reload, 2.5);
+        assert_eq!(s.base_reload, 4.5);
+        assert!(g.no_resupply && !s.no_resupply, "a ground Arch-Gun cannot be resupplied");
+        // What DOES NOT move — and the reason the wrong reading survived.
+        assert_eq!(g.base_crit_chance, s.base_crit_chance);
+        assert_eq!(g.base_status_chance, s.base_status_chance);
+
+        // EVERY ATTACK PART. The alt-fire form doubles its impact AND its
+        // explosion; a multiplier that reached only the bullet would leave the
+        // explosion at half of what the same infobox prints beside it.
+        let (gc, sc) = (ground("larkspur_prime_charged"), space("larkspur_prime_charged"));
+        assert_eq!(gc.base_vector.total(), 840.0);
+        assert_eq!(sc.base_vector.total(), 420.0);
+        let rad = |b: &crate::loadout::WeaponBase| b.radial.as_ref().expect("it explodes").base_vector.total();
+        assert_eq!(rad(&gc), 1600.0);
+        assert_eq!(rad(&sc), 800.0);
+
+        // ...and a weapon with one deployment is untouched by the axis, which
+        // is what keeps this off the rest of the roster.
+        let mut torid = ground("torid");
+        let before = torid.base_vector.total();
+        apply_deployment(&mut torid, "torid", "archwing");
+        assert_eq!(torid.base_vector.total(), before);
     }
 }
 
