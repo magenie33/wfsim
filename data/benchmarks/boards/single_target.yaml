@@ -1067,6 +1067,12 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
+    score: 24.989680242712115
+    mods: [galvanized_chamber, primary_acuity, serration, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_merciless]
+  - weapon: burston_prime
+    mode: cycle
     score: 24.91020075819796
     mods: [amalgam_serration, galvanized_chamber, critical_delay, hammer_shot, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -4046,6 +4052,24 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, lethal_torrent, anemic_agility, frostbite, primed_convulsion]
     evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
     arcanes: [secondary_fortifier]
+  - weapon: sybaris_prime
+    mode: cycle
+    score: 20.07263444070841
+    mods: [primary_acuity, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [sybaris_prime_evo1_incarnon_form, sybaris_prime_well_rehearsed, sybaris_prime_marksmans_hand, sybaris_prime_survivors_edge]
+    arcanes: [primary_deadhead]
+  - weapon: sybaris_prime
+    mode: cycle
+    score: 17.269467916254243
+    mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
+    evolutions: [sybaris_prime_evo1_incarnon_form, sybaris_prime_well_rehearsed, sybaris_prime_marksmans_hand, sybaris_prime_survivors_edge]
+    arcanes: [primary_deadhead]
+  - weapon: sybaris_prime
+    mode: cycle
+    score: 13.85171573032622
+    mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, stormbringer, infected_clip, primed_cryo_rounds]
+    evolutions: [sybaris_prime_evo1_incarnon_form, sybaris_prime_well_rehearsed, sybaris_prime_marksmans_hand, sybaris_prime_survivors_edge]
+    arcanes: [primary_deadhead]
   - weapon: torid
     mode: cycle
     score: 28.44229348067104
