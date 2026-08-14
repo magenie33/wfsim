@@ -122,6 +122,95 @@ ramp that starts at 30% instead of the usual 20%, a 2-target chain worth nothing
 against one enemy, and MICROWAVE, a status effect of its own that Condition
 Overload counts and this engine has no type for.
 
+## THE ROUTINE — what a first pass has to touch to be right
+
+Written after the Kuva Nukor, whose element reached the builder and not the
+submission, and after the Boar Prime, whose CO row was read as a family rule.
+Every line below is a mistake somebody already made. Work it in order; each step
+names where the answer lives, so "I did not know where to look" is not one of
+the ways this goes wrong.
+
+**A PRIME AND ITS ORDINARY ARE ONE INTAKE** (owner, 2026-08-14). They share a
+riven family, a CO row, a Primary Compression row, a mod pool, an art path and
+every sentence of prose — so doing them apart pays for the reading twice and
+gets one of them wrong, which is exactly how the Boar's row became the Boar
+Prime's. Add both, or neither.
+
+### 1. The sources, and which one wins
+
+| what | source | rule |
+| --- | --- | --- |
+| every stat | the RENDERED weapon page's infobox | `?action=raw` gives you `{{WeaponInfoboxAutomatic}}` and nothing else; `Module:Weapons/data/*` truncates alphabetically and a reader invents past the cut |
+| the same stats again | WFCD `warframe-items` `attacks` array | joined by `internal_name` == `uniqueName`, NEVER by name |
+| what the numbers MEAN | the page's Characteristics, Notes, Tips | the structured fields describe the weapon; the prose says which of them are lies |
+| `base_drain` / `max_rank` | WFCD only | the wiki is wrong for ~20 mods |
+
+Disagreements are not rounding. Record which source you took and why, in the
+file — every existing weapon does.
+
+### 2. The per-weapon CATALOGS, before writing a line of yaml
+
+Both are a formula plus a table with ONE ROW PER WEAPON, both are
+authoritative, and in both **absence means ORDINARY, not unknown**
+(docs/CATALOGS.md).
+
+**They are cached locally**: `node scripts/fetch_catalogs.mjs` puts both pages'
+wikitext under `vendor/wiki/`, so a row is `grep`-able and re-reading a catalog
+costs nothing. It goes through the repo's headless Chrome because the wiki
+answers `curl` with a 403 and its API with a bot challenge. Run it with
+`--force` before an intake: it says when a catalog MOVED, which is the one
+event that invalidates every row this repo has transcribed.
+
+- **Condition Overload** — find the row by the entry's own name AND its Attack
+  Name cell. A row for `Throw` says nothing about Primary Fire, and a row for
+  the ordinary variant says nothing about the Prime. Transcribe the columns
+  verbatim into the file, including the ones you are not acting on.
+- **Primary Compression** — the same, for every AoE the weapon has. Its
+  `Compression Effectiveness` column is about WHICH RADIUS the arcane reads,
+  not how much of the bonus is paid.
+
+An AoE part takes no CO unless its own row says so. Do not generalise a row to
+a class, a form, or a family.
+
+### 3. Its ATTACKS, and how many entries they need
+
+One weapon ENTRY carries one attack. A weapon with a second attack you can
+choose at the trigger — a charged shot, an alt-fire — is TWO entries in one
+`transform_group`, and the alternate one gets its own `form:` kind. Reach for a
+kind that reads true: borrowing `charged` for a thrown spear puts a wrong word
+in a saved preset and in every share link. Adding a `FormKind` is three lines.
+
+A part that is not a separate trigger is not an entry: an explosion on impact
+is a `radial:` on the attack it belongs to, with its own crit, status, element,
+radius and falloff.
+
+### 4. What the engine CANNOT do with it
+
+Write the list before writing the numbers, in the weapon's own `unmodeled:` —
+the page shows it, and a gap that lives only in your head ships as a promise.
+`docs/UNMODELLED.md` names the six standing reasons (one target, no distance,
+no movement, no holster, infinite ammo, nobody shoots back). A weapon usually
+adds nothing new; when it does, that is the interesting half of the intake.
+
+### 5. The rest of the checklist
+
+| item | where | fails how, if skipped |
+| --- | --- | --- |
+| art | `data/assets.yaml`, then `scripts/fetch_images.py` | `build_site_app.py` FAILS on a missing file |
+| Chinese name | `data/i18n/zh/names.yaml` via `scripts/wfcd_i18n.py` | **transcribed from DE, never translated**; unreachable ⇒ leave empty and say so |
+| riven family | `riven_family:` | the editor offers the wrong stat pool |
+| innate polarities | `polarities:`, `exilus_polarity:` | every Forma plan is wrong |
+| disposition | the infobox | every riven is wrong |
+| `internal_name` | WFCD `uniqueName` | the join key for every future cross-check |
+| tests | `cargo test --workspace` | a data file that does not parse fails the build, not the test |
+| checks | `check_parity`, `check_equip_rules`, `check_disclosure` | per-weapon by construction; run the ones the weapon can reach |
+
+### 6. Last, the question that is not about this weapon
+
+Does it exercise a mechanic nothing else does? Then it needs a MEASUREMENT
+(docs/MEASUREMENTS.md) before its number means anything — and a golden test, or
+the number is a faithful-looking implementation with nothing behind it.
+
 ## What one weapon costs
 
 | item | where | notes |

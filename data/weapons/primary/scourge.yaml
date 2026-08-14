@@ -1,0 +1,103 @@
+id: scourge
+name: Scourge
+slot: primary
+class: rifle
+form: base
+default_form: true
+mod_pools: [primary, rifle]
+mastery_rank: 6
+max_rank: 30
+
+# TWO WEAPONS MODEL. The Scourge has a SECOND TRIGGER — it throws itself — and
+# that attack has its own damage, its own element split, its own crit and its
+# own explosion, so it is its own entry (`scourge_thrown`) in this transform
+# group. Reached for free, no gauge and no transmute animation: the alt-fire
+# button, which is why `form: alt_fire` and not `incarnon`.
+transform_group: scourge
+transforms_to: scourge_thrown
+
+# STATS CROSS-CHECKED, both sources agreeing field for field (2026-08-14):
+# the rendered wiki infobox against WFCD `warframe-items`' `attacks` array,
+# joined on `internal_name` == `uniqueName`. Four attacks there — Projectile
+# Impact, Explosion, Spear Throw Impact, Spear Throw Explosion — and the first
+# two are this entry.
+accuracy: 100
+disposition: 1.20            # WFCD `omegaAttenuation`; its `disposition: 4` is the DOT count
+polarities: [naramon, madurai]
+exilus_polarity: madurai
+riven_family: Scourge
+internal_name: /Lotus/Weapons/Tenno/LongGuns/TnPriestSpear/TnPriestSpearGun
+introduced: "Update 21.0"
+noise: alarming
+ammo_type: primary
+ammo_max: 200
+ammo_pickup: 60
+magazine: 40
+reload_seconds: 2.5
+
+# CONDITION OVERLOAD — ORDINARY HERE, and the catalog says so by naming the
+# other attack. Its rows for this pair are:
+#
+#   Scourge       | Throw | Projectile | 150 | 150 | 100% | Multiplying
+#   Scourge Prime | Throw | Projectile | 200 | 200 | 100% | Multiplying
+#
+# The Attack Name cell reads `Throw` on both, so Multiplying belongs to
+# `scourge_thrown` and this entry has no row at all — and absence means
+# ORDINARY, never unknown (docs/CATALOGS.md). Direct hits only, 100%, added
+# into the base-damage bucket.
+co_behavior: additive_with_base_damage
+
+# WHAT THIS ENTRY DOES NOT MODEL. The reload pulse is the standing "no
+# holster" edge (docs/UNMODELLED.md); the rest belongs to the thrown entry and
+# is declared there.
+unmodeled:
+  - "the innate reload while holstered or deployed (33% of the magazine per second) — this arena never holsters the weapon"
+
+attack:
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 40
+  fire_rate: 2.6666667
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.02
+  crit_multiplier: 1.5
+  status_chance: 0.30
+  punch_through_m: 0.0
+  damage: { corrosive: 70 }
+
+  # PRIMARY COMPRESSION's row, by column (docs/CATALOGS.md §2):
+  #   Attack Name   Primary Fire + AoE     Base Radius   1.7 m
+  #   Effectiveness 100%                   Max @ base    +136%
+  #   Stacking      Multiplies             w/ Primed Firestorm  +195.84%
+  #   Radius calc   Snapshot               Class         Speargun
+  #
+  # Every column is the ORDINARY value, which is the whole finding: the arcane
+  # reads the radius this weapon actually has and pays the whole bonus for it.
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
+
+  # THE EXPLOSION, on every shot. "Primary Fire shoots plasma projectiles in an
+  # automatic fashion, causing a small 1.7 meter explosion on impact with a
+  # surface or enemy. Initial hit and explosion apply status separately" — two
+  # status rolls, which is exactly what a `radial` is (MECHANICS §7).
+  #
+  # It takes blast-radius mods: "Can benefit from Firestorm (Primed) and
+  # Cautious Shot", and the Notes measure it — "it will only increase by ~1
+  # meter".
+  radial:
+    damage: { corrosive: 55 }
+    radius_m: 1.7
+    falloff_start_m: 0.0
+    falloff_reduction: 0.3    # WFCD `{start 0, end 1.7, reduction 0.3}`: 100% -> 70%
+    crit_chance: 0.02
+    crit_multiplier: 1.5
+    status_chance: 0.30
+
+source:
+  url: https://wiki.warframe.com/w/Scourge
+  # Infobox and Characteristics read 2026-08-14; every attack figure agrees
+  # with WFCD's `attacks` array. `totalDamage: 125` there is 70 + 55, the
+  # direct hit plus this explosion.

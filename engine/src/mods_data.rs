@@ -1133,7 +1133,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 82] = [
+        const EXPECTED: [(&str, &str, &[&str]); 84] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up.
             ("larkspur_prime", "held", &[]),
@@ -1297,6 +1297,14 @@ mod tests {
             // nothing about that: a Cannonade reads the TRIGGER, not what the
             // shot does when it lands.
             ("shedu", "auto", &[]),
+            // THE SPEARGUNS, and the pair where "asked of EVERY firing mode"
+            // decides it in the other direction than the Phenmor's. The listed
+            // trigger is Auto and the ALT-FIRE is Semi — so the mod is refused
+            // by the mode this row names, and would still be refused if the
+            // roster listed the throw instead, because the primary fire is Auto.
+            // Neither half is semi-auto on its own terms.
+            ("scourge", "auto", &[]),
+            ("scourge_prime", "auto", &[]),
         ];
         let roster: Vec<&str> =
             crate::weapons_data::roster().map(|s| s.id.as_str()).collect();

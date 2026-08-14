@@ -1,0 +1,112 @@
+id: scourge_thrown
+name: Scourge
+slot: primary
+class: rifle
+# THE ALT-FIRE — the weapon itself, thrown. "Alternate Fire throws the Scourge,
+# dealing damage and causing a 2 meter Bullet Attractor field on the heads of
+# enemies within 14 meters of the impact point." Its own entry because its
+# damage, its element split, its crit and its explosion are all its own, and
+# `alt_fire` because it is reached with a button and costs no gauge — the kind
+# was added the day this weapon needed it (weapons_data::FormKind).
+form: alt_fire
+transform_group: scourge
+
+# Same weapon, so everything below the attack profile matches scourge.yaml.
+mod_pools: [primary, rifle]
+mastery_rank: 6
+max_rank: 30
+accuracy: 100
+disposition: 1.20
+polarities: [naramon, madurai]
+exilus_polarity: madurai
+riven_family: Scourge
+internal_name: /Lotus/Weapons/Tenno/LongGuns/TnPriestSpear/TnPriestSpearGun
+introduced: "Update 21.0"
+noise: silent               # the throw is SILENT where the primary fire is ALARMING
+ammo_type: primary
+ammo_max: 200
+ammo_pickup: 60
+magazine: 40
+reload_seconds: 0.6         # "Throwing the spear consumes 1 ammo, then reloads the weapon"
+
+# CONDITION OVERLOAD — MULTIPLYING, and this entry is the one the catalog
+# names. Verbatim, both rows of the pair:
+#
+#   Weapon        | Attack Name | Projectile Type | Attack Unmodded Damage
+#                 | Actual CO Damage Bonus at +100% | CO Damage Bonus Relative
+#                 To Base Damage | Math/Behavior Type
+#   Scourge       | Throw       | Projectile      | 150 | 150 | 100% | Multiplying
+#   Scourge Prime | Throw       | Projectile      | 200 | 200 | 100% | Multiplying
+#
+# `Multiplying` is the free-standing bracket — × (1 + co × types) — rather than
+# a term in the base-damage bucket, so Serration does not dilute it. The
+# Unmodded Damage cell is this entry's own 150 (105 + 22.5 + 22.5), which is
+# what makes it the throw's row and not the explosion's.
+co_behavior: independent
+
+# WHAT THIS ENTRY DOES NOT MODEL, and the first line is the point of the
+# weapon: the Bullet Attractor field is what a Scourge is FOR, and this arena
+# cannot pay for it. The engine has an `attractor` debuff — it arrives from
+# Xata's Whisper's Void instance — but it is worth one line in the Condition
+# Overload counter and nothing else, because "bullets are drawn to the head"
+# only matters where the player's aim decides the body part, and here the
+# headshot rate is a number the scenario sets.
+unmodeled:
+  - "the Bullet Attractor field the throw plants (2 m on the heads of enemies within 14 m, pulsing every 5 s for 20 s) — it counts as one Condition Overload status and nothing more, because the headshot rate is the scenario's own setting rather than something aim can move"
+  - "the spear explosion's guaranteed Impact proc — the engine forces procs on DIRECT hits only, which is the rule everywhere else, and this is the first explosion to carry one"
+  - "the innate reload while holstered or deployed (33% of the magazine per second) — this arena never holsters the weapon"
+
+attack:
+  trigger: semi
+  shot_type: projectile
+  projectile_speed_mps: 150
+  fire_rate: 1.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.04
+  crit_multiplier: 2.0
+  status_chance: 0.30
+  punch_through_m: 0.0
+  damage: { impact: 105, puncture: 22.5, slash: 22.5 }   # total 150
+
+  # PRIMARY COMPRESSION's row, by column (docs/CATALOGS.md §2):
+  #   Attack Name   Throw + AoE            Base Radius   7.0 m
+  #   Effectiveness 100%                   Max @ base    +560%
+  #   Stacking      Multiplies             w/ Primed Firestorm  +806.4%
+  #   Radius calc   Snapshot               Class         Speargun
+  #
+  # Ordinary in every column, on the biggest radius this pair has — which is
+  # why the arcane is worth four times as much here as on the primary fire.
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
+
+  # THE SPEAR'S EXPLOSION.
+  #
+  # ITS GUARANTEED IMPACT PROC IS NOT HERE, and that is a gap rather than a
+  # choice: `forced_procs` is the ATTACK's and the engine applies it to DIRECT
+  # hits only (`if direct { &ap.forced_procs }`), which is the wiki's own rule
+  # everywhere it has been checked — the Astilla's direct hit forces Impact and
+  # its radial does not. The Scourge is the first entry to want it on the
+  # explosion instead, so it is declared unmodelled above rather than moved to
+  # the direct hit, where it would force a proc the game does not.
+  #
+  # FIRESTORM DOES NOT REACH THE FIELD, only this blast: "Firestorm does not
+  # affect the size of the Bullet Attractor field, nor does it increase the
+  # range a thrown Scourge will apply its effect to enemies." The two radii are
+  # different things — 7 m of damage, 14 m of attractor — and only the first is
+  # here.
+  radial:
+    damage: { corrosive: 55 }
+    radius_m: 7.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.6    # WFCD `{start 0, end 7, reduction 0.6}`: 100% -> 40%
+    crit_chance: 0.04
+    crit_multiplier: 2.0
+    status_chance: 0.30
+
+source:
+  url: https://wiki.warframe.com/w/Scourge
+  # Infobox and Characteristics read 2026-08-14; WFCD names these two attacks
+  # "Spear Throw Impact" and "Spear Throw Explosion" and agrees field for field.

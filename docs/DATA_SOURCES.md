@@ -244,7 +244,40 @@ unchanged. It is a list of instruments, and its place in this repo is that
 `docs/MEASUREMENTS.md` designs protocols and this is what they can be built out
 of.
 
-### The MECHANICS pages, which are not the same as the item pages
+### THE PER-WEAPON CATALOGS ARE CACHED LOCALLY (2026-08-14)
+
+`node scripts/fetch_catalogs.mjs` writes both catalog pages' WIKITEXT to
+`vendor/wiki/`:
+
+| file | page |
+| --- | --- |
+| `condition_overload.wiki` | [Condition Overload (Mechanic)](https://wiki.warframe.com/w/Condition_Overload_(Mechanic)) |
+| `primary_compression.wiki` | [Primary Compression](https://wiki.warframe.com/w/Primary_Compression) |
+
+**Why cached at all.** These are the two tables with one ROW PER WEAPON
+(docs/CATALOGS.md), so every intake reads them, and reading them over the
+network is how a weapon gets added with its row unchecked — which is how the
+Boar's CO row became the Boar Prime's. `grep -i scourge
+vendor/wiki/condition_overload.wiki` is the whole lookup.
+
+**Why through a BROWSER.** The wiki answers `curl -A …` with **403** and its
+`api.php` with a "Please wait" bot-challenge page, both of which are 200-shaped
+strings a naive fetcher would cache as a catalog. The script drives the repo's
+own headless Chrome (`cdp.mjs`) — the same machinery the UI checks use — and
+refuses to write anything with no wiki table in it.
+
+**Why WIKITEXT, not HTML.** A row is a `|`-separated line, so a weapon is one
+`grep`, and a diff between two fetches is a diff of the CATALOG rather than of
+the site's markup. `--force` re-fetches and says **MOVED** when the page
+changed, which is the one event that invalidates every row this repo has
+transcribed.
+
+`vendor/` is gitignored: these are somebody else's pages and this script is the
+tracked half. A row that DECIDES something is transcribed into the weapon's own
+yaml and into docs/CATALOGS.md — the cache is where you go to find it, never
+where the answer lives.
+
+## The MECHANICS pages, which are not the same as the item pages
 
 An item page states what a thing does; a MECHANIC page states the formula every
 item of that kind obeys, and it is usually the only place the general rule is

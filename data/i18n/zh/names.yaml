@@ -193,6 +193,10 @@ weapons:
   stug_incarnon: 史特克 (灵化形态)
   shedu: 舍杜
   kuva_nukor: 赤毒·努寇微波枪
+  scourge: 祸根
+  scourge_prime: 祸根 Prime
+  scourge_prime_thrown: 祸根 Prime
+  scourge_thrown: 祸根
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's

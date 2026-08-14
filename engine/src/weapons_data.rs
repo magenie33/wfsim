@@ -551,9 +551,9 @@ pub struct InjectedElementSpec {
 /// not know: an unknown string is a hard error, not a silent fallback.
 ///
 /// Adding a kind is one arm here plus one in [`FormKind::parse`] — that is the
-/// whole extension point. `alt_fire` is the obvious next one; it is NOT
-/// declared until a weapon in `data/` needs it, because a kind nothing
-/// registers is a kind nothing tests.
+/// whole extension point, and `alt_fire` went in the day the Scourge pair
+/// needed it rather than in advance, because a kind nothing registers is a kind
+/// nothing tests.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FormKind {
     /// The ordinary attack — what almost every weapon has, and by definition
@@ -566,6 +566,15 @@ pub enum FormKind {
     Charged,
     /// The gauge-backed transformed form (Incarnon Genesis).
     Incarnon,
+    /// A SECOND TRIGGER, chosen freely and costing no meter — the Scourge pair
+    /// throws the weapon itself, and its numbers, its element split and its
+    /// explosion are all its own.
+    ///
+    /// Its own kind rather than [`FormKind::Charged`], which was the only
+    /// non-gauge alternate the vocabulary had: a thrown spear is not a drawn
+    /// bow, the id is what a saved preset and a share link carry, and a wrong
+    /// word there is wrong forever (owner, 2026-08-14).
+    AltFire,
 }
 
 impl FormKind {
@@ -576,6 +585,7 @@ impl FormKind {
             FormKind::Base => "base",
             FormKind::Charged => "charged",
             FormKind::Incarnon => "incarnon",
+            FormKind::AltFire => "alt_fire",
         }
     }
 
@@ -585,6 +595,7 @@ impl FormKind {
             FormKind::Base => "Base Form",
             FormKind::Charged => "Charged Shot",
             FormKind::Incarnon => "Incarnon Form",
+            FormKind::AltFire => "Alternate Fire",
         }
     }
 
@@ -605,6 +616,7 @@ impl FormKind {
             "base" => FormKind::Base,
             "charged" => FormKind::Charged,
             "incarnon" => FormKind::Incarnon,
+            "alt_fire" => FormKind::AltFire,
             other => panic!("unknown form kind in weapon data: {other}"),
         }
     }
@@ -1910,6 +1922,13 @@ mod tests {
             // names the BASE form (the Incarnon deals 50).
             ("stug", "inert", 1.0),
             ("torid", "independent", 1.0),
+            // THE SPEARGUNS' THROW, and the row's Attack Name cell is what
+            // scopes it: `Throw` on both, so the PRIMARY FIRE entries have no
+            // row and stay ordinary. The Unmodded Damage cells are each throw's
+            // own total — 150 and 200 — which is what tells the row apart from
+            // the explosion beside it.
+            ("scourge_thrown", "independent", 1.0),
+            ("scourge_prime_thrown", "independent", 1.0),
         ];
 
         let mut unexpected = Vec::new();
@@ -3777,6 +3796,14 @@ mod play_mode_tests {
             // THE ONE OVERRIDE: 0.8 x 0.1 m, not 0.8 x 6.7 m x 4%.
             ("vectis_incarnon", 0.08),
             ("vectis_prime_incarnon", 0.08),
+            // THE SPEARGUNS, whose two rows are the same weapon read twice —
+            // 1.7 m on the primary fire and 7.0 m on the throw, ordinary in
+            // every column. The Prime shares both rows: the catalog's Weapon
+            // cell is literally "Scourge (Scourge Prime)".
+            ("scourge", 1.36),
+            ("scourge_prime", 1.36),
+            ("scourge_thrown", 5.60),
+            ("scourge_prime_thrown", 5.60),
         ];
         // At rank 5 a metre is worth +100%, so the bonus IS the metres lost.
         let fx = crate::arcanes_data::for_slot("primary", "primary_compression")
