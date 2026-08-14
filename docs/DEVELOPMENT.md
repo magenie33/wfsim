@@ -140,6 +140,39 @@ Every knob is a `key=value` argument — `weapon=`, `mods=`, `runs=`,
 `duration=`, `enemy=`, `level=`, `steel_path=`, `seed=`, `repeats=`, and `-v`.
 `--help` lists them.
 
+### Which module does this measure?
+
+All three, because all three run the same primitive — `monte_carlo(params,
+runs, seed)` — and two measurements say the per-run number transfers between
+them unchanged:
+
+- **per-run cost is flat from `runs=1` to `runs=1000`** (0.92 → 0.98 ms on the
+  Gotva Prime), so the optimizer's first round at one or two runs a candidate
+  pays the same unit price as the simulator's thousand;
+- **the setup the optimizer pays per candidate** — `resolve` + `from_panel` —
+  is **0.0007 ms**, a thousandth of one run.
+
+So one number multiplies out:
+
+| module | cost |
+| --- | --- |
+| Simulator | `runs × ms/run` |
+| Board / benchmark | `runs × ms/run`, on a runner |
+| Optimizer | **`sims × ms/run`**, and `sims` is what `wfsim-truth` reports |
+
+That last row is the split worth remembering. `one_fight` answers **what one
+simulation costs**; it cannot see the funnel — enumeration, culling, sharding —
+and does not try. `wfsim-truth` answers **how many simulations the search
+spends and what accuracy that buys** ("5558 sims, 0.8% of the reference").
+Multiply the two and you have the optimizer. Neither tool alone is a
+performance claim about it.
+
+**Which SCENARIO** is a `key=value` away, and the default is the ruler's fight
+(Thrax Centurion 9999 Steel Path, 180 s) for one reason: it is the only fight
+in the product that is the same for everyone. The optimizer runs the
+*simulator's* scenario, whatever the reader set, so there is no "the optimizer's
+scenario" to benchmark — pass your own with `enemy=` `level=` `duration=`.
+
 **Read the table across, not down.** The default is three shapes that stress
 different parts of the engine, because a change to the inner loop rarely moves
 them together: `-C target-cpu=native` measured −23% on the Torid, −36% on the
@@ -157,9 +190,29 @@ machine, 2026-08-14; per-run cost 0.4–1.2 ms for a 180 s fight, repeat spread
 | `-C target-cpu=native` (auto-vectorisation) | −23% / −36% / **+31%** — a lottery |
 | removing ALL 943 status procs from a run | 13% |
 
-There is no hot spot to take: the cost is spread across the per-shot and
-per-tick work, which is what a tight inner loop looks like. The room is in **how
-many runs get spent**, not in what one costs — see docs/OPTIMIZER.md.
+**What DID work, as a worked example of the loop** (2026-08-14):
+`DebuffState::distinct_statuses` — Condition Overload's input, asked once per
+damage INSTANCE — built a `Vec<DamageType>` and scanned it linearly per entry:
+a heap allocation and an O(n²) pass, thousands of times a run on a launcher.
+Seventeen damage types fit in a `u32`, so the set became one word and the count
+became `count_ones`. Identical by construction, and the harness said so:
+
+```text
+shape             ms/run    ns/shot   vs base  answer
+torid              0.888       4936     -5.1%  same
+gotva_prime        0.975        530     -8.0%  same
+scourge            0.423       1022     -3.3%  same
+```
+
+Found by reading the per-instance path for ALLOCATIONS rather than by guessing
+at arithmetic — which is the shape of the remaining wins if there are any. The
+per-shot loop is otherwise allocation-free (the one `vec!` in it is behind the
+replay's `trace` guard).
+
+Beyond that there is no hot spot to take: the cost is spread across the
+per-shot and per-tick work, which is what a tight inner loop looks like. The
+room is in **how many runs get spent**, not in what one costs — see
+docs/OPTIMIZER.md.
 
 It measures NATIVE, and the product ships as wasm. Good for ranking two versions
 of the same code; not for predicting a phone.

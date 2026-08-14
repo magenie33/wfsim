@@ -1238,13 +1238,20 @@ impl DebuffState {
         n += usize::from(!self.blast.is_empty());
         n += usize::from(self.heat.is_some());
         n += usize::from(self.frozen_until.is_some());
-        let mut seen: Vec<DamageType> = Vec::new();
+        // THE LIVE DoT TYPES, as a bitmask. This was a `Vec<DamageType>` with a
+        // linear `contains` per entry — a heap allocation and an O(n²) scan on
+        // a function Condition Overload asks per damage INSTANCE, which on a
+        // launcher is a few thousand times a run. Seventeen damage types fit in
+        // a `u32`, so the same set is one word and `count_ones` is the answer.
+        //
+        // Identical by construction: a set of at most 17 things, counted.
+        let mut seen: u32 = 0;
         for d in &self.dots {
-            if d.ticks_left > 0 && !seen.contains(&d.dtype) {
-                seen.push(d.dtype);
+            if d.ticks_left > 0 {
+                seen |= 1 << d.dtype as u32;
             }
         }
-        n + seen.len()
+        n + seen.count_ones() as usize
     }
 }
 
