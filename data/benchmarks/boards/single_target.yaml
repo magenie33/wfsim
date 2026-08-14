@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 212f7606103d6310e5b5c024a52e80e1f350e109
+engine: 085eb8713fb1f0e4b7b7b930862537f386ba25b6
 entries:
   - weapon: akarius_prime
     mode: base
@@ -1251,6 +1251,12 @@ entries:
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 12.91210352502972
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, magnetic_capacity, rime_rounds, malignant_force, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
+    arcanes: [primary_merciless]
   - weapon: burston_prime
     mode: cycle
     score: 10.902058829825226

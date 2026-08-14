@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: 212f7606103d6310e5b5c024a52e80e1f350e109
+engine: 085eb8713fb1f0e4b7b7b930862537f386ba25b6
 entries:
   - weapon: boar_prime
     mode: cycle
@@ -23,6 +23,12 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [boltor_prime_evo1_incarnon_form, boltor_prime_hunters_mantra, boltor_prime_rapid_reinforcement, boltor_prime_survivors_edge]
     arcanes: [primary_debilitate]
+  - weapon: burston_prime
+    mode: cycle
+    score: 1.4734426933736346
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, magnetic_capacity, rime_rounds, malignant_force, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
+    arcanes: [primary_merciless]
   - weapon: burston_prime
     mode: cycle
     score: 1.0685460846743402
