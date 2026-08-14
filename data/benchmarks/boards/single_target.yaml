@@ -4060,6 +4060,12 @@ entries:
     arcanes: [primary_crux]
   - weapon: strun_prime
     mode: cycle
+    score: 7.555583852538922
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_elementalist, frigid_blast, toxic_barrage, primed_charged_shell]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
+    arcanes: [primary_crux]
+  - weapon: strun_prime
+    mode: cycle
     score: 7.313180855982963
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_elementalist, vigilante_armaments, blaze, scattering_inferno]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
