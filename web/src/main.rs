@@ -18,7 +18,8 @@ use std::sync::{Arc, Mutex, OnceLock};
 use serde_json::{json, Value};
 use wfsim_optimizer::FunnelState;
 use wfsim_webapi::{
-    err_json, i18n_json, meta_json, opt_buffs_json, pairings_json, panel_json, parse_optimize, riven_json,
+    board_check_json, err_json, i18n_json, meta_json, opt_buffs_json, pairings_json, panel_json,
+    parse_optimize, riven_json,
     run_optimize,
     targets_json,
     simulate_json,
@@ -245,6 +246,13 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
         ("POST", "/api/targets") => {
             let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
             respond_json(&mut stream, &targets_json(&value))
+        }
+        // THE BOARD'S OWN DOOR, asked before knocking. The submission itself
+        // goes to a service this server is not; this only answers whether it
+        // would be accepted, which is the engine's question.
+        ("POST", "/api/board/check") => {
+            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
+            respond_json(&mut stream, &board_check_json(&value))
         }
         ("POST", "/api/panel") => {
             let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);

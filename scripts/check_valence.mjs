@@ -342,4 +342,76 @@ check("...and a mode the recipient cannot derive would travel with it",
   build.back && build.back.mode === undefined,
   String(build.back && build.back.mode));
 
+// …AND THE BOARD'S DOOR IS ASKED BEFORE IT IS KNOCKED ON.
+//
+// A submission is written to a store that accepts anything and judged an HOUR
+// later by the scoring job, which prints its reason into a workflow log. So a
+// build the board will never take looked exactly like one it took — forever.
+// Three Kuva Nukor submissions sat there carrying no progenitor element,
+// refused on every run since they arrived, while the page said "sent" (owner,
+// 2026-08-14: he had tested several on his phone and none appeared).
+//
+// The endpoint is `validate_for_board` ITSELF, so this asserts the app gets the
+// board's answer rather than a second opinion that agrees today.
+const door = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  localStorage.clear();
+  history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(3500);
+  const eight = ['hornet_strike', 'barrel_diffusion', 'lethal_torrent',
+                 'primed_pistol_gambit', 'primed_target_cracker',
+                 'pathogen_rounds', 'primed_heated_charge', 'galvanized_shot'];
+  // Its own slot's pool, through the app's own helper — an arcane list filtered
+  // by hand is a second copy of a rule this page already owns.
+  const arc = (arcanePool(0) || [])[0];
+  const body = (valence) => ({ benchmark: 'single_target', weapon: 'kuva_nukor',
+    mode: 'base', mods: eight, evolutions: [], arcanes: [arc ? arc.id : 'none'], valence });
+  const withEl = await api('/api/board/check', body('impact'));
+  const without = await api('/api/board/check', body(''));
+  const short = await api('/api/board/check',
+    { ...body('impact'), mods: eight.slice(0, 6) });
+  // …and the panel, driven through the real submit path with the store made
+  // unreachable: a refusal must never reach the fetch at all.
+  const sent = [];
+  const realFetch = window.fetch;
+  window.fetch = (u, o) => { sent.push(String(u)); return realFetch(u, o); };
+  setBoardConsent('yes');
+  const sc = builtinScenarios().find(s => s.builtin === 'single_target');
+  pickPreset(scenarioBarCfg(), presetId(sc)); await sleep(1200);
+  eight.forEach((m, i) => { slots[i].mod = m; slots[i].rank = modById(m).max_rank; });
+  arcanes = [arc ? arc.id : 'none'];
+  autoForma(); renderMods(); renderArcanes(); await sleep(600);
+  // A build the board WILL take, with the store answering nothing useful.
+  sent.length = 0;
+  await offerBoardSubmit();
+  const good = { hitStore: sent.some(u => u.indexOf('board/submit') >= 0),
+                 panel: (document.getElementById('board-consent') || {}).textContent || '' };
+  // …and one it will not: the element is gone, which is the case that stranded.
+  valence.element = '';
+  sent.length = 0;
+  await offerBoardSubmit();
+  const bad = { hitStore: sent.some(u => u.indexOf('board/submit') >= 0),
+                panel: (document.getElementById('board-consent') || {}).textContent || '' };
+  window.fetch = realFetch;
+  return { withEl, without, short, good, bad };
+})()`);
+
+check("the app can ask whether the board would take a build",
+  door.withEl && door.withEl.ok === true && door.withEl.accepted === true,
+  JSON.stringify(door.withEl));
+check("...and it is refused for the reason the SCORER gives",
+  door.without && door.without.accepted === false && /Valence/.test(door.without.reason || ""),
+  JSON.stringify(door.without));
+// A second rule, so the endpoint is the whole door rather than one clause.
+check("...for every rule of the ruler's, not only that one",
+  door.short && door.short.accepted === false && /main slots|8/.test(door.short.reason || ""),
+  JSON.stringify(door.short));
+check("a build the board would take still reaches the store",
+  door.good.hitStore === true, JSON.stringify(door.good.panel.slice(0, 80)));
+// THE ONE THAT COST THREE SUBMISSIONS: refused, and it never leaves.
+check("...and one it would refuse never leaves the page",
+  door.bad.hitStore === false, `store called: ${door.bad.hitStore}`);
+check("...with the reason ON SCREEN rather than in a workflow log",
+  /Valence/.test(door.bad.panel) && /榜单不会收|would not take/.test(door.bad.panel),
+  door.bad.panel.replace(/\s+/g, " ").slice(0, 160));
+
 await app.finish("an adversary weapon's Valence bonus reaches its damage");

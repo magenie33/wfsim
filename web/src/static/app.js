@@ -8466,6 +8466,10 @@ const boardConsent = () => {
 const boardConsentChosen = () => {
   try { return localStorage.getItem(BOARD_CONSENT) !== null; } catch (_) { return false; }
 };
+// WHY the board turned this build away, in its own words. Kept beside
+// `boardState` rather than inside it: the state is what happened, this is what
+// was said, and only one of the states has anything to say.
+let boardRefusal = "";
 const setBoardConsent = (v) => {
   try { localStorage.setItem(BOARD_CONSENT, v); } catch (_) { /* private mode */ }
   renderBoardConsent();
@@ -8587,6 +8591,23 @@ async function offerBoardSubmit() {
   if (!buildIsComplete()) { renderBoardConsent(); return; }
   const body = boardPayload();
   if (!body) return;
+  // THE BOARD'S OWN DOOR, ASKED BEFORE KNOCKING. The store accepts anything;
+  // the SCORER decides, an hour later, in a workflow log — so a build the board
+  // will never take looked exactly like one it took, forever. Three Kuva Nukor
+  // submissions sat there carrying no progenitor element, refused on every run
+  // since they arrived, while this panel said "sent" (owner, 2026-08-14).
+  //
+  // `/api/board/check` is `validate_for_board` itself, the same call the scorer
+  // makes — not a copy of its rules, because a second implementation is a
+  // second answer and the player has to be given the board's.
+  const verdict = await api("/api/board/check", body);
+  if (verdict && verdict.ok && verdict.accepted === false) {
+    boardState = "refused";
+    boardRefusal = verdict.reason || "";
+    renderBoardConsent();
+    return;
+  }
+  boardRefusal = "";
   try {
     // A REAL fetch, not `api()`. Every other endpoint is answered by the engine
     // — locally by the dev server, in the browser by the wasm worker — and the
@@ -8668,7 +8689,9 @@ function renderBoardConsent() {
   // slips about fifteen minutes whatever minute is named, so the honest bound
   // is "usually 20, sometimes 40".
   const state = c === "yes"
-    ? (boardState === "failed"
+    ? (boardState === "refused"
+        ? `${tr("the board would not take this build, so nothing was sent")}: ${boardRefusal}`
+        : boardState === "failed"
         ? tr("could not reach the board — nothing was sent")
         : boardState === "sent"
           ? tr("sent — the board re-scores every 20 minutes, so it appears there within about 20, at most 40")

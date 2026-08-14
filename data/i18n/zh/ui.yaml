@@ -132,6 +132,10 @@ ui:
   "sent — the board re-scores every 20 minutes, so it appears there within about 20, at most 40": 已上传——榜单每 20 分钟重算一次，所以大约 20 分钟内会出现，最多 40 分钟
   "builds you run here are submitted — the board re-scores every 20 minutes, so a run appears there within about 20, at most 40": 你在这里跑的配装会上传——榜单每 20 分钟重算一次，所以一次跑分大约 20 分钟内会出现在榜上，最多 40 分钟
   "nothing is sent from here": 这里不会发送任何内容
+  # THE BOARD'S OWN REFUSAL, on screen. The reason itself is the scorer's
+  # English sentence and is not translated here — it names ids and rules, and
+  # a half-translated reason is worse than a whole one in one language.
+  "the board would not take this build, so nothing was sent": 榜单不会收这套配装，所以没有提交
   "could not reach the board — nothing was sent": 联系不上榜单 —— 什么都没有发出
   "stop submitting": 停止提交
   "start submitting": 开始提交

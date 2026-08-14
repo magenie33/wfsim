@@ -1452,6 +1452,48 @@ pub fn meta_json() -> Value {
     })
 }
 
+/// WOULD THE BOARD TAKE THIS BUILD? The scorer's own door, asked before
+/// knocking on it.
+///
+/// A submission is written to a store and validated an HOUR LATER by the
+/// scoring job, which prints its reason to a workflow log. The player is told
+/// "sent" by the only thing that answered them — the store — so a build the
+/// board will never accept looks exactly like one it took, forever. Three Kuva
+/// Nukor submissions sat in that state carrying no progenitor element, refused
+/// on every run since they arrived, while the page that sent them said nothing
+/// (owner, 2026-08-14: he had tested several and none appeared).
+///
+/// It is the SAME function the scorer calls, not a copy of its rules: a second
+/// implementation of "is this admissible" is a second answer, and the one the
+/// player gets has to be the one the board will give. Everything the app
+/// already knows how to check itself — eight mods, every seat filled — it still
+/// checks, because a reason on screen beats a round trip; this is the backstop
+/// for the rest, including every rule added after this comment.
+pub fn board_check_json(v: &Value) -> Value {
+    let bench = get_str(v, "benchmark", "");
+    let weapon = get_str(v, "weapon", "");
+    let list = |k: &str| -> Vec<String> {
+        v.get(k)
+            .and_then(Value::as_array)
+            .map(|a| a.iter().filter_map(Value::as_str).map(String::from).collect())
+            .unwrap_or_default()
+    };
+    let valence = get_str(v, "valence", "");
+    match wfsim_engine::builds::validate_for_board(
+        bench,
+        weapon,
+        &list("mods"),
+        &list("evolutions"),
+        &list("arcanes"),
+        valence,
+    ) {
+        // A REFUSAL IS A RESULT, not a transport error: `ok` says the question
+        // was answered, `accepted` says what the answer was.
+        Ok(b) => json!({ "ok": true, "accepted": true, "forma": b.forma, "drain": b.drain }),
+        Err(e) => json!({ "ok": true, "accepted": false, "reason": e }),
+    }
+}
+
 /// Resolve a riven SPEC against a weapon: the values it shows, its generated
 /// name, its drain, and every reason it could not exist.
 ///
