@@ -5175,8 +5175,15 @@ function modDrain(m, rank) {
 }
 
 // Capacity = Σ effective drain over slots holding a mod (at its rank).
+//
+// TOLD WHICH SLOTS, because two questions are asked of it: the panel counts
+// every slot the weapon has, and the BOARD counts the eight it judges — a
+// benchmark build drops the exilus one, so measuring a submission against all
+// nine would refuse a player for a slot the board never reads.
+const drainOver = (ss) => ss.reduce(
+  (sum, s) => { const m = modById(s.mod); return m ? sum + slotDrain(modDrain(m, s.rank), m.polarity, s.pol) : sum; }, 0);
 function capacityUsed() {
-  return slots.reduce((sum, s) => { const m = modById(s.mod); return m ? sum + slotDrain(modDrain(m, s.rank), m.polarity, s.pol) : sum; }, 0);
+  return drainOver(slots);
 }
 
 // Forma cost, broken down by TYPE (regular / Omni / Umbra cost different items).
@@ -8568,6 +8575,21 @@ function buildShortfalls() {
     if (have !== want) {
       out.push(tr("{n} of {m} arcanes").replace("{n}", have).replace("{m}", want));
     }
+  }
+  // …AND IT HAS TO FIT. Not a benchmark's term but the game's: `validate` plans
+  // the cheapest legal layout and refuses a build that cannot exist however
+  // much Forma you own. Two rows on the live board were exactly that — a
+  // Burston Prime needing 64 of 60 and a Soma Prime needing 62 — submitted,
+  // stored, and refused on every scoring run since, while this panel counted
+  // only how many slots were full (owner, 2026-08-14).
+  //
+  // MEASURED ON THE MAIN SLOTS, which is what the board judges: the exilus mod
+  // is dropped from the payload, so counting it here would name a shortfall the
+  // board does not have.
+  const cap = capOf(w.id);
+  const used = drainOver(mainSlots());
+  if (used > cap) {
+    out.push(tr("{n} of {m} capacity").replace("{n}", used).replace("{m}", cap));
   }
   return out;
 }

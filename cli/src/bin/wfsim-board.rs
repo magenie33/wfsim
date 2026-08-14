@@ -304,7 +304,21 @@ fn main() {
         ) {
             Ok(v) => v,
             Err(e) => {
-                eprintln!("refused {weapon}: {e}");
+                // THE BUILD, not just the weapon. "refused burston_prime:
+                // needs 64 of 60" says a build was turned away and leaves
+                // "which one, and was it really impossible?" unanswerable —
+                // which is the question asked of this log the first time
+                // somebody's submission went missing (owner, 2026-08-14). The
+                // whole row is what makes a refusal checkable by hand.
+                eprintln!(
+                    "refused {weapon}: {e}
+  mode={} mods=[{}] evolutions=[{}] arcanes=[{}] valence={}",
+                    s.get("mode").and_then(Value::as_str).unwrap_or("—"),
+                    mods.join(", "),
+                    evos.join(", "),
+                    arcs.join(", "),
+                    if valence.is_empty() { "—" } else { valence },
+                );
                 refused += 1;
                 continue;
             }

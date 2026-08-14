@@ -432,6 +432,7 @@ ui:
   "{n} of {m} mods": "{n}/{m} 个 mod"
   "{n} of {m} evolutions": "{n}/{m} 层进化"
   "{n} of {m} arcanes": "{n}/{m} 个赋能"
+  "{n} of {m} capacity": 容量 {n}/{m}
   ", ": "、"
   "your exilus mod is not part of a benchmark build — it is left out of what is sent, so the board's number will differ from this one": 你的 exilus mod 不属于基准配装 —— 它不会被提交，所以榜单上的数字会和这里不同
   "the official test scenario — the same fight on every weapon, so results compare": 官方测试场景 —— 每把武器都是同一场战斗，结果之间可以比较

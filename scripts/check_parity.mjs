@@ -136,6 +136,61 @@ const VIS = await app.evaluate(`(async () => {
 app.check(`every unmodelled evolution is marked on the BUILDER's tile too (${VIS.checked} of them)`,
   VIS.missing.length === 0, VIS.missing.slice(0, 8).join(", "));
 
+// ---- …AND EVERY AXIS THE BUILD HAS REACHES THE BOARD --------------------
+//
+// The third place the same axis has to exist. An axis that reaches the BUILDER
+// and not the SUBMISSION is the failure this file is about, one surface over:
+// the page offers a choice, the player makes it, and the board never hears it.
+//
+// It cost three submissions. The Kuva Nukor's progenitor element reached the
+// builder at 19:13 on 2026-08-13 and `boardPayload` at 22:25 — three hours in
+// which wfsim.app let you pick an element and dropped it on the way out, so
+// every Nukor build tested in that window is stored with no element and refused
+// on every scoring run since (owner, 2026-08-14: "我都选了元素的").
+//
+// DERIVED FROM THE BUILD, not from a list of axes somebody remembered to
+// update: `snapshotState()` IS the build, so every key in it must either travel
+// or be named here as something a board row is not. That list is short and
+// stating it is the point — a row carries the build, not the layout you reached
+// it through.
+// WHERE EACH ONE GOES. A map rather than a name match, because the payload is a
+// PROJECTION of the build and not a copy of it — `slots` becomes `mods` with
+// the exilus one dropped, `evoSel` becomes a list. Adding an axis therefore has
+// to say where it travels, which is the whole point: the Nukor's element was
+// added to the build and to nothing else.
+const TRAVELS_AS = {
+  weapon: "weapon",
+  mode: "mode",
+  slots: "mods",
+  evoSel: "evolutions",
+  arcane: "arcanes",
+  valence: "valence",
+};
+// …and what a board row deliberately is NOT. Short, and stating it is the
+// point: a row carries the build, never the layout you reached it through.
+const NOT_A_ROW = [
+  "arcaneRank",   // every arcane scores at max rank
+];
+const AXES = await app.evaluate(`(async () => {
+  const s = (ms) => new Promise(r => setTimeout(r, ms));
+  // A weapon that HAS every axis, so nothing is missing for want of a subject.
+  history.pushState({}, '', weaponPath('kuva_nukor')); route(); await s(2500);
+  const sc = builtinScenarios().find(x => x.builtin === 'single_target');
+  pickPreset(scenarioBarCfg(), presetId(sc)); await s(900);
+  return { build: Object.keys(snapshotState()), payload: Object.keys(boardPayload() || {}) };
+})()`);
+const missing = AXES.build.filter((k) =>
+  !NOT_A_ROW.includes(k) && !AXES.payload.includes(TRAVELS_AS[k]));
+app.check("every axis a build has reaches the board's submission",
+  missing.length === 0,
+  missing.length ? `dropped on the way out: ${missing.join(", ")}`
+    : `${AXES.build.length} axes, ${AXES.payload.length} fields`);
+// …and neither list is a way to SILENCE this: every name in both must still be
+// a thing the build has.
+const stale = [...Object.keys(TRAVELS_AS), ...NOT_A_ROW].filter((k) => !AXES.build.includes(k));
+app.check("...and nothing is named here that the build no longer has",
+  stale.length === 0, stale.join(", "));
+
 // The table above already names each mismatch; `finish` only has to carry the
 // verdict and the exit code.
 app.failures += bad;
