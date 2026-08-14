@@ -1,0 +1,85 @@
+id: mausolon
+name: Mausolon
+slot: archgun
+class: archgun
+# THE AUTO FIRE is the arsenal's form; `mausolon_charged` is the alt-fire,
+# reached for free by holding the other button.
+form: base
+default_form: true
+transform_group: mausolon
+
+# TWO COLUMNS, x1.5 on every part.
+#   |            | auto | its radial | reload | Ammo Max | radial rim |
+#   | Atmosphere | 180  |     72     | 2.00 s |   900    |    80%     |
+#   | Archwing   | 120  |     48     | 5.50 s |     0    |    90%     |
+# Identical in both: crit 30% / 2.20x, status 26%, fire rate 8.33, magazine 300,
+# and the 1.8 m radius. Only the rim fraction of the falloff differs, which
+# changes no number against one target at the centre.
+deployment: atmosphere
+deployments:
+  archwing:
+    reload_seconds: 5.5
+    no_resupply: false
+    damage: { impact: 24.0, puncture: 46.0, heat: 50.0 }   # 120
+    radial_damage: { heat: 48.0 }
+mod_pools: [archgun]
+mastery_rank: 14
+max_rank: 30
+
+accuracy: 100.0              # "Very High"
+disposition: 0.50
+polarities: [madurai]
+riven_family: Mausolon
+internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechArchLongGun/ThanoTechLongGun
+noise: alarming
+magazine: 300
+reload_seconds: 2.0
+
+ammo_type: archgun
+ammo_max: 900
+no_resupply: true
+
+# No Condition Overload row for either Mausolon form's DIRECT hit — the catalog
+# names only its two RADIALS, which take no CO in any case. Ordinary.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 8.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.30
+  crit_multiplier: 2.2
+  status_chance: 0.26
+  punch_through_m: 0.0
+  # PRIMARY COMPRESSION, transcribed verbatim from that catalog:
+  #   Mausolon | Main-fire Radial Attack | AoE | 100% / 444% (aiming during
+  #            | alt-fire) | Adds | Stolen
+  # The 444% is a SECOND number for a state this arena cannot be in (aiming
+  # while the alt-fire is charging), so the ordinary 100% is what is carried and
+  # the other is named in `unmodeled:`. "Adds" is the bracket; "Stolen" is the
+  # radius calculation, both columns as printed.
+  compression:
+    effectiveness: 1.00
+    stacking: adds
+    radius_calculation: stolen
+  damage: { impact: 35.0, puncture: 70.0, heat: 75.0 }   # 180 (Archwing: 120)
+  # A SMALL radial on every bullet — 1.8 m, which is why its falloff barely
+  # matters and why Primary Compression has a row for it at all.
+  radial:
+    damage: { heat: 72.0 }          # Archwing: 48
+    radius_m: 1.8
+    falloff_start_m: 0.0
+    falloff_reduction: 0.2          # 100% at the centre -> 80% at 1.8 m
+    crit_chance: 0.30
+    crit_multiplier: 2.2
+    status_chance: 0.26
+
+unmodeled:
+  - "Primary Compression's 444% case is not modelled — the catalog gives this weapon a second effectiveness for aiming DURING the alt-fire, and this arena has no such state; the ordinary 100% is what is applied"
+  - "the radial's falloff is not modelled — this arena has one target at the centre, so it always takes the full 72 and never the 58 at the rim"
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+
+source:
+  url: https://wiki.warframe.com/w/Mausolon

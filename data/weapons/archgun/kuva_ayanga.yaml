@@ -1,0 +1,89 @@
+id: kuva_ayanga
+name: Kuva Ayanga
+slot: archgun
+class: archgun
+form: base
+default_form: true
+
+# TWO COLUMNS, and this weapon changes MORE than its numbers between them: the
+# blast radius is 9.0 m in space and 6.0 m on the ground, its falloff keeps 70%
+# at the rim in space and 50% on the ground, and the grenade flies at 300 m/s
+# against 55. None of those three moves a number in an arena with one target
+# and no distance, so they are recorded here and named in `unmodeled:` rather
+# than carried as fields that would move nothing.
+#
+#   |            | impact | explosion | radius | rim  | speed   | reload | Ammo |
+#   | Atmosphere |  130   |    280    | 6.0 m  | 50%  |  55 m/s | 3.00 s | 165  |
+#   | Archwing   |   87   |    187    | 9.0 m  | 70%  | 300 m/s | 1.20 s |   0  |
+#
+# x1.494 and x1.497. Note the reload goes the OTHER way from every other
+# Arch-Gun here: 1.20 s in space, 3.00 s on the ground.
+deployment: atmosphere
+deployments:
+  archwing:
+    reload_seconds: 1.2
+    no_resupply: false
+    damage: { impact: 87.0 }
+    radial_damage: { blast: 187.0 }
+mod_pools: [archgun]
+mastery_rank: 13
+max_rank: 40
+
+accuracy: 25.0               # "Medium"
+disposition: 0.95
+polarities: [naramon]
+riven_family: Ayanga
+traits: [kuva, adversary]
+internal_name: /Lotus/Weapons/Grineer/HeavyWeapons/GrnHeavyGrenadeLauncher
+noise: alarming
+magazine: 33
+reload_seconds: 3.0
+
+ammo_type: archgun
+ammo_max: 165
+no_resupply: true
+
+# No Condition Overload row, so the ordinary class (absence means ORDINARY).
+co_behavior: additive_with_base_damage
+
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 55
+  fire_rate: 4.58
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.35
+  crit_multiplier: 2.0
+  status_chance: 0.20
+  punch_through_m: 0.0
+  # PRIMARY COMPRESSION, transcribed verbatim from that catalog:
+  #   Kuva Ayanga | Primary Fire + AoE | 0% | Doesn't Work | N/A
+  # The row EXISTS and says zero, which is a different statement from an absent
+  # row: the arcane is TESTED as worthless here rather than assumed ordinary.
+  compression:
+    effectiveness: 0.00
+    stacking: multiplies
+    radius_calculation: doesnt_work
+  damage: { impact: 130.0 }         # Archwing: 87
+  radial:
+    damage: { blast: 280.0 }        # Archwing: 187
+    radius_m: 6.0                   # Archwing: 9.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.5          # 100% at the centre -> 50% at 6.0 m
+    crit_chance: 0.35
+    crit_multiplier: 2.0
+    status_chance: 0.20
+
+unmodeled:
+  - "the explosion's falloff is not modelled — this arena has one target at the centre, so it always takes the full 280 and never the 140 at the rim"
+  - "the self-stagger on its own explosion is not modelled — the grenade staggers the firer at close range and deals them no damage, and nothing in this arena can be inconvenienced"
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Ayanga

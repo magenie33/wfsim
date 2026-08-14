@@ -204,6 +204,25 @@ weapons:
   imperator_vandal: 凯旋将军·破坏者
   phaedra: 菲德菈
   prisma_dual_decurions: 棱晶·什长双枪
+  cortege: 送葬者
+  cortege_alt: 送葬者
+  corvas: 黑鸦
+  corvas_prime: 黑鸦 Prime
+  corvas_prime_uncharged: 黑鸦 Prime
+  corvas_uncharged: 黑鸦
+  grattler: 葛拉特勒
+  kuva_ayanga: 赤毒·怒雷
+  kuva_grattler: 赤毒·葛拉特勒
+  larkspur: 翠雀
+  larkspur_charged: 翠雀
+  mandonel: 辐光弩炮
+  mandonel_uncharged: 辐光弩炮
+  mausolon: 惩戒者
+  mausolon_charged: 惩戒者
+  morgha: 置灵者
+  morgha_alt: 置灵者
+  velocitus: 极速电磁步枪
+  velocitus_uncharged: 极速电磁步枪
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's

@@ -80,6 +80,25 @@ weapons:
   kuva_nukor: KuvaNukor.png
   laetum: ZarimanHeavyPistol.png
   laetum_incarnon: ZarimanHeavyPistol.png
+  cortege: ThanotechArchGun.png
+  cortege_alt: ThanotechArchGun.png
+  corvas: Corvas.png
+  corvas_prime: CorvasPrime.png
+  corvas_prime_uncharged: CorvasPrime.png
+  corvas_uncharged: Corvas.png
+  grattler: Grattler.png
+  kuva_ayanga: GrnHeavyGrenadeLauncher.png
+  kuva_grattler: KuvaGrattler.png
+  larkspur: ShieldFrameArchGun.png
+  larkspur_charged: ShieldFrameArchGun.png
+  mandonel: TnConcreteArchgun.png
+  mandonel_uncharged: TnConcreteArchgun.png
+  mausolon: ThanotechLongGun.png
+  mausolon_charged: ThanotechLongGun.png
+  morgha: ThanoTechGrenadeLauncher.png
+  morgha_alt: ThanoTechGrenadeLauncher.png
+  velocitus: Velocitus.png
+  velocitus_uncharged: Velocitus.png
   cyngas: Cyngas.png
   dual_decurion: DualDecurion.png
   fluctus: Fluctus.png

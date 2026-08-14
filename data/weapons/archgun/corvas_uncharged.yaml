@@ -1,0 +1,66 @@
+id: corvas_uncharged
+name: Corvas
+slot: archgun
+class: archgun
+form: base
+transform_group: corvas
+
+# THE ONE ARCH-GUN WHOSE TWO TABS ARE TWO DIFFERENT WEAPONS, and the reason
+# this entry offers no Archwing column at all.
+#
+#   |            | shot type | multishot | damage           | status |
+#   | Atmosphere | hit-scan  |    11     | 80 per pellet    |  1.3%  |
+#   | Archwing   | projectile|     1     | 440 in one shot  | 13.0%  |
+#
+# On the ground it is a SHOTGUN: eleven pellets of Impact/Puncture/Slash with a
+# 1.3% status chance and an 11-degree spread. In space it is a single Impact +
+# Heat projectile with ten times the status chance. That is not a column
+# override — it is a different damage vector, a different pellet count, a
+# different status chance, a different crit multiplier and a different shot
+# type, and `DeploymentSpec` exists to restate a tab, not to replace a weapon.
+#
+# So the ATMOSPHERE column is the weapon here (the arena is the ground), the
+# Archwing column is written down above, and no deployment choice is offered
+# for it — a control that silently mis-stated half the weapon would be worse
+# than not having one. Stated in `unmodeled:` so the page says so too.
+deployment: atmosphere
+mod_pools: [archgun]
+mastery_rank: 1
+max_rank: 30
+
+accuracy: 25.0
+disposition: 1.20
+polarities: [naramon]
+riven_family: Corvas
+internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/LaunchGrenade/ArchCannon
+noise: alarming
+magazine: 25
+reload_seconds: 2.0
+
+ammo_type: archgun
+ammo_max: 100
+no_resupply: true
+
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: semi_auto
+  charge_seconds: 0.0
+  shot_type: hit_scan
+  fire_rate: 2.0
+  # Eleven pellets of 80 — 880 a shell.
+  multishot: 11.0
+  ammo_cost: 1
+  crit_chance: 0.40
+  crit_multiplier: 3.0
+  status_chance: 0.013
+  punch_through_m: 0.0
+  damage: { impact: 64.0, puncture: 8.0, slash: 8.0 }   # 80 each, 880 a shell
+
+unmodeled:
+  - "the ARCHWING column of this weapon is not offered — in space it is a single 440-damage Impact/Heat projectile with a 13% status chance instead of eleven hit-scan pellets at 1.3%, which is a different weapon rather than a restated one"
+  - "the 11-degree spread is not modelled — this arena has one target at zero distance, so all eleven pellets always land on it"
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+
+source:
+  url: https://wiki.warframe.com/w/Corvas

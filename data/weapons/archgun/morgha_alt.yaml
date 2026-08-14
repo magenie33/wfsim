@@ -1,0 +1,73 @@
+id: morgha_alt
+name: Morgha
+slot: archgun
+class: archgun
+# THE ALT-FIRE, and `alt_fire` rather than `charged` even though the page calls
+# it a "Charged Shot": it has a Semi-Auto trigger and no charge time, so nothing
+# about it is a DRAW. A charge trigger IS the charged form and nothing else is
+# (WEAPON_INTAKE §3) — borrowing the word here would put a lie in every saved
+# preset and share link.
+#
+# Its explosion is the whole weapon: 200 on the body and 7200 in the blast,
+# which is the widest direct-to-radial gap in the roster.
+form: alt_fire
+transform_group: morgha
+
+# The RADIUS also halves between the tabs — 20.0 m in space, 12.0 m on the
+# ground — which changes no number against one target at the centre and is
+# named in `unmodeled:`.
+deployment: atmosphere
+deployments:
+  archwing:
+    no_resupply: false
+    ammo_max: 0
+    damage: { impact: 100.0 }
+    radial_damage: { impact: 600.0, puncture: 800.0, slash: 1000.0, blast: 1200.0 }  # 3600
+mod_pools: [archgun]
+mastery_rank: 15
+max_rank: 30
+
+accuracy: 100.0              # "Very High"
+disposition: 1.00
+polarities: [madurai]
+riven_family: Morgha
+internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechGrenadeLaunch/ThanoTechGrenadeLauncher
+noise: alarming
+magazine: 100
+reload_seconds: 3.0
+
+ammo_type: archgun
+ammo_max: 160
+no_resupply: true
+
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: semi_auto
+  charge_seconds: 0.0
+  shot_type: projectile
+  projectile_speed_mps: 60
+  fire_rate: 0.83
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.40
+  crit_multiplier: 3.0
+  status_chance: 0.50
+  punch_through_m: 0.0
+  damage: { impact: 200.0 }        # Archwing: 100
+  radial:
+    damage: { impact: 1200.0, puncture: 1600.0, slash: 2000.0, blast: 2400.0 }  # 7200
+    radius_m: 12.0                 # Archwing: 20.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.6         # 100% at the centre -> 40% at 12.0 m
+    crit_chance: 0.40
+    crit_multiplier: 3.0
+    status_chance: 0.50
+
+unmodeled:
+  - "the explosion's falloff is not modelled — this arena has one target at the centre, so it always takes the full 7200 and never the 2880 at the rim"
+  - "the CHARGE this form is named for is not modelled as a charge — the page calls it a Charged Shot and then gives it a Semi-Auto trigger with no charge time, so it is paced as a slow semi-auto shot and filed as an alt-fire"
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+
+source:
+  url: https://wiki.warframe.com/w/Morgha

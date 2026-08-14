@@ -93,6 +93,16 @@ attack:
     crit_multiplier: 2.2
     status_chance: 0.38
 
+# THE SAME ADMISSIONS AS THE ORDINARY LARKSPUR. This pair carried none at
+# all until the ordinary one joined the roster and the board check noticed
+# that the two halves of one weapon were admitting different things
+# (2026-08-15) — the Deployer cooldown, the ground range and Hildryn's
+# reserve bonus are properties of the WEAPON and were always missing here.
+unmodeled:
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+  - "the explosion's falloff is not modelled — this arena has one target at the centre, so it always takes the full 1600 and never the 640 at the rim"
+  - "Hildryn's signature bonus is not modelled — carried by her it holds 300 more reserve ammo, 700 instead of 400, and this arena has no Warframe holding it"
+
 source:
   url: https://wiki.warframe.com/w/Larkspur_Prime
   # note: WFCD lists the two parts separately as "Alt-Fire Projectile Impact"

@@ -1133,7 +1133,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 91] = [
+        const EXPECTED: [(&str, &str, &[&str]); 102] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up. That
             // is what makes this whole class one line each — including the
@@ -1147,6 +1147,17 @@ mod tests {
             ("prisma_dual_decurions", "auto", &[]),
             ("cyngas", "burst", &[]),
             ("fluctus", "semi_auto", &[]),
+            ("larkspur", "held", &[]),
+            ("grattler", "auto", &[]),
+            ("kuva_grattler", "auto", &[]),
+            ("kuva_ayanga", "auto", &[]),
+            ("velocitus", "charge", &[]),
+            ("mandonel", "charge", &[]),
+            ("corvas", "charge", &[]),
+            ("corvas_prime", "charge", &[]),
+            ("mausolon", "auto", &[]),
+            ("morgha", "burst", &[]),
+            ("cortege", "held", &[]),
             ("boar", "auto", &[]),                             // full-auto shotgun
             ("boar_prime", "auto", &[]),                       // ...and its Prime
             ("cernos_prime", "charge", &[]),                   // a bow is not semi-auto

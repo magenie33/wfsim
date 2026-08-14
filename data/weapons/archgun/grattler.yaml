@@ -1,0 +1,78 @@
+id: grattler
+name: Grattler
+slot: archgun
+class: archgun
+form: base
+default_form: true
+
+# TWO COLUMNS. This one is x1.5 rather than x2 — the impact goes 150 -> 225 and
+# the explosion 205 -> 310, which is x1.512 and NOT the same ratio as its own
+# direct part. Two attack parts of one weapon scaling by two different numbers
+# is the clearest case in the roster for transcribing both tabs.
+#
+#   |            | impact | explosion | reload | Ammo Max |
+#   | Atmosphere |  225   |    310    | 2.00 s |   180    |
+#   | Archwing   |  150   |    205    | 4.00 s |     0    |
+#
+# Identical in both: crit 25% / 2.00x, status 25%, fire rate 6.25, magazine 30,
+# blast radius 9.0 m and its falloff, projectile speed 250 m/s.
+deployment: atmosphere
+deployments:
+  archwing:
+    reload_seconds: 4.0
+    no_resupply: false
+    damage: { impact: 15.0, puncture: 120.0, slash: 15.0 }   # 150 total
+    radial_damage: { blast: 205.0 }
+mod_pools: [archgun]
+mastery_rank: 4
+max_rank: 30
+
+accuracy: 25.0               # the page prints "Medium"
+disposition: 1.10
+polarities: [madurai]
+riven_family: Grattler
+internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/RepurposedGrineerAntiAircraftGun/ArchGRNAAGun
+noise: alarming
+magazine: 30
+reload_seconds: 2.0
+
+ammo_type: archgun
+ammo_max: 180
+no_resupply: true
+
+# CONDITION OVERLOAD, transcribed verbatim from the catalog:
+#   Grattler | Normal attack | Projectile | 100% | Multiplying
+# So the DIRECT hit takes the multiplying class. The row names "Normal attack"
+# and says nothing about the explosion, and an AoE part takes no CO unless its
+# own row says so (docs/CATALOGS.md) — so the explosion takes none.
+co_behavior: independent
+
+attack:
+  trigger: auto
+  # AUTO-SPOOL in both tabs. The ramp is not modelled — see `unmodeled:`.
+  shot_type: projectile
+  projectile_speed_mps: 250
+  fire_rate: 6.25
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.25
+  crit_multiplier: 2.0
+  status_chance: 0.25
+  punch_through_m: 0.0
+  damage: { impact: 22.5, puncture: 180.0, slash: 22.5 }   # 225 (Archwing: 150)
+  radial:
+    damage: { blast: 310.0 }         # Archwing: 205
+    radius_m: 9.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.7           # 100% at the centre -> 30% at 9.0 m
+    crit_chance: 0.25
+    crit_multiplier: 2.0
+    status_chance: 0.25
+
+unmodeled:
+  - "the AUTO-SPOOL ramp is not modelled — the page gives this trigger as Auto-Spool and the fire rate here is the spooled-up 6.25/s from the first shot, so a short burst is faster in this sim than in game"
+  - "the explosion's falloff is not modelled — this arena has one target at the centre, so it always takes the full 310 and never the 93 at the rim"
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+
+source:
+  url: https://wiki.warframe.com/w/Grattler

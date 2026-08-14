@@ -1,0 +1,70 @@
+id: morgha
+name: Morgha
+slot: archgun
+class: archgun
+form: base
+default_form: true
+transform_group: morgha
+
+# TWO COLUMNS, exactly double on every part.
+#   |            | burst shot | its explosion | Ammo Max | speed   |
+#   | Atmosphere |     64     |      328      |   160    |  60 m/s |
+#   | Archwing   |     32     |      164      |     0    | 160 m/s |
+# Identical in both: crit 30% / 2.20x, status 28%, fire rate 3.00, burst of 2,
+# magazine 100, reload 3.00 s, and the 3 m radius with its 70% rim.
+deployment: atmosphere
+deployments:
+  archwing:
+    no_resupply: false
+    ammo_max: 0
+    damage: { impact: 32.0 }
+    radial_damage: { blast: 164.0 }
+mod_pools: [archgun]
+mastery_rank: 15
+max_rank: 30
+
+accuracy: 12.5               # "Low"
+disposition: 1.00
+polarities: [madurai]
+riven_family: Morgha
+internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechGrenadeLaunch/ThanoTechGrenadeLauncher
+noise: alarming
+magazine: 100
+reload_seconds: 3.0
+
+ammo_type: archgun
+ammo_max: 160
+no_resupply: true
+
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: burst
+  burst:
+    count: 2
+    delay_seconds: 0.0
+  shot_type: projectile
+  projectile_speed_mps: 60
+  fire_rate: 3.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.30
+  crit_multiplier: 2.2
+  status_chance: 0.28
+  punch_through_m: 0.0
+  damage: { impact: 64.0 }         # Archwing: 32
+  radial:
+    damage: { blast: 328.0 }       # Archwing: 164
+    radius_m: 3.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.3         # 100% at the centre -> 70% at 3.0 m
+    crit_chance: 0.30
+    crit_multiplier: 2.2
+    status_chance: 0.28
+
+unmodeled:
+  - "the explosion's falloff is not modelled — this arena has one target at the centre, so it always takes the full 328 and never the 230 at the rim"
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+
+source:
+  url: https://wiki.warframe.com/w/Morgha

@@ -1,0 +1,71 @@
+id: mausolon_charged
+name: Mausolon
+slot: archgun
+class: archgun
+# THE ALT-FIRE — a 0.8 s charge that fires a laser with a large explosion. It
+# COSTS NO AMMO (the page gives its ammo cost as 0), which is the one thing
+# about this form that changes how the engagement is paced.
+form: charged
+transform_group: mausolon
+
+deployment: atmosphere
+deployments:
+  archwing:
+    reload_seconds: 5.5
+    no_resupply: false
+    damage: { impact: 100.0, puncture: 400.0, heat: 500.0 }   # 1000
+    radial_damage: { heat: 3000.0 }
+mod_pools: [archgun]
+mastery_rank: 14
+max_rank: 30
+
+accuracy: 100.0
+disposition: 0.50
+polarities: [madurai]
+riven_family: Mausolon
+internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechArchLongGun/ThanoTechLongGun
+noise: alarming
+magazine: 300
+reload_seconds: 2.0
+
+ammo_type: archgun
+ammo_max: 900
+no_resupply: true
+
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: charge
+  charge_seconds: 0.8
+  shot_type: hit_scan
+  fire_rate: 0.5
+  multishot: 1.0
+  # ZERO. "Ammo Cost: 0" on the page — the alt-fire spends none, so this form
+  # never empties the magazine and never touches the finite ground reserve.
+  ammo_cost: 0
+  crit_chance: 0.50
+  crit_multiplier: 3.5
+  status_chance: 0.50
+  punch_through_m: 0.0
+  # PRIMARY COMPRESSION, verbatim:
+  #   Mausolon | Alt-fire Radial Attack | AoE | 100% | Adds | Snapshot
+  compression:
+    effectiveness: 1.00
+    stacking: adds
+    radius_calculation: snapshot
+  damage: { impact: 150.0, puncture: 600.0, heat: 750.0 }   # 1500 (Archwing: 1000)
+  radial:
+    damage: { heat: 4500.0 }        # Archwing: 3000
+    radius_m: 8.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.4          # 100% at the centre -> 60% at 8.0 m
+    crit_chance: 0.50
+    crit_multiplier: 3.5
+    status_chance: 0.50
+
+unmodeled:
+  - "the explosion's falloff is not modelled — this arena has one target at the centre, so it always takes the full 4500 and never the 2700 at the rim"
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+
+source:
+  url: https://wiki.warframe.com/w/Mausolon

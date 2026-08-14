@@ -21,6 +21,9 @@
   <url><loc>https://wfsim.app/weapons/Burston_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Cernos_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Cestra</loc></url>
+  <url><loc>https://wfsim.app/weapons/Cortege</loc></url>
+  <url><loc>https://wfsim.app/weapons/Corvas</loc></url>
+  <url><loc>https://wfsim.app/weapons/Corvas_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Cyngas</loc></url>
   <url><loc>https://wfsim.app/weapons/Dera</loc></url>
   <url><loc>https://wfsim.app/weapons/Dera_Vandal</loc></url>
@@ -36,12 +39,16 @@
   <url><loc>https://wfsim.app/weapons/Gorgon</loc></url>
   <url><loc>https://wfsim.app/weapons/Gorgon_Wraith</loc></url>
   <url><loc>https://wfsim.app/weapons/Gotva_Prime</loc></url>
+  <url><loc>https://wfsim.app/weapons/Grattler</loc></url>
   <url><loc>https://wfsim.app/weapons/Imperator</loc></url>
   <url><loc>https://wfsim.app/weapons/Imperator_Vandal</loc></url>
   <url><loc>https://wfsim.app/weapons/Karak_Wraith</loc></url>
   <url><loc>https://wfsim.app/weapons/Kunai</loc></url>
+  <url><loc>https://wfsim.app/weapons/Kuva_Ayanga</loc></url>
+  <url><loc>https://wfsim.app/weapons/Kuva_Grattler</loc></url>
   <url><loc>https://wfsim.app/weapons/Kuva_Nukor</loc></url>
   <url><loc>https://wfsim.app/weapons/Laetum</loc></url>
+  <url><loc>https://wfsim.app/weapons/Larkspur</loc></url>
   <url><loc>https://wfsim.app/weapons/Larkspur_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Lato</loc></url>
   <url><loc>https://wfsim.app/weapons/Lato_Prime</loc></url>
@@ -56,7 +63,10 @@
   <url><loc>https://wfsim.app/weapons/MK1-Kunai</loc></url>
   <url><loc>https://wfsim.app/weapons/MK1-Paris</loc></url>
   <url><loc>https://wfsim.app/weapons/MK1-Strun</loc></url>
+  <url><loc>https://wfsim.app/weapons/Mandonel</loc></url>
+  <url><loc>https://wfsim.app/weapons/Mausolon</loc></url>
   <url><loc>https://wfsim.app/weapons/Miter</loc></url>
+  <url><loc>https://wfsim.app/weapons/Morgha</loc></url>
   <url><loc>https://wfsim.app/weapons/Ocucor</loc></url>
   <url><loc>https://wfsim.app/weapons/Onos</loc></url>
   <url><loc>https://wfsim.app/weapons/Paris</loc></url>
@@ -90,6 +100,7 @@
   <url><loc>https://wfsim.app/weapons/Vasto_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Vectis</loc></url>
   <url><loc>https://wfsim.app/weapons/Vectis_Prime</loc></url>
+  <url><loc>https://wfsim.app/weapons/Velocitus</loc></url>
   <url><loc>https://wfsim.app/weapons/Verglas_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Zylok</loc></url>
   <url><loc>https://wfsim.app/weapons/Zylok_Prime</loc></url>

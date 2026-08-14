@@ -1,0 +1,74 @@
+id: larkspur_charged
+name: Larkspur
+# THE ALT-FIRE — a half-second charge that throws an explosive projectile
+# instead of the hit-scan chainfire, reached from the normal fire for FREE (no
+# gauge, no transmute): a form of the same weapon, not a transformation of it,
+# which is why there is no `transforms_from`. See larkspur_prime_charged.yaml.
+slot: archgun
+class: archgun
+form: charged
+transform_group: larkspur
+
+deployment: atmosphere
+deployments:
+  archwing:
+    reload_seconds: 4.5
+    no_resupply: false
+    damage: { impact: 140.0, blast: 180.0, radiation: 100.0 }   # 420 on impact
+    radial_damage: { blast: 400.0, radiation: 400.0 }           # 800 at the centre
+mod_pools: [archgun]
+mastery_rank: 8
+max_rank: 30
+
+accuracy: 8.33
+disposition: 1.05
+polarities: [madurai]
+riven_family: Larkspur
+internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/TnShieldframeArchGun/TnShieldFrameArchGun
+noise: alarming
+magazine: 100
+reload_seconds: 2.5
+
+ammo_type: archgun
+ammo_max: 400
+no_resupply: true
+
+# THE CATALOG NAMES THE PRIME AND NOT THIS ONE. "Larkspur Prime | Alt-fire |
+# Projectile | 100% | Multiplying" is a row for the Prime's alt-fire; the
+# ordinary Larkspur's alt-fire has no row at all. Absence means ORDINARY, and a
+# row is transcribed for the entry it names rather than generalised to a family
+# — which is the exact mistake docs/CATALOGS.md was written about. So the Prime
+# is `independent` here and the ordinary is additive, and that asymmetry is
+# DATA, not an oversight.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: charge
+  charge_seconds: 0.5
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 1.0
+  multishot: 1.0
+  # Ten ammo a shot, like the Prime's — a 100-round magazine is 10 alt-fires.
+  ammo_cost: 10
+  crit_chance: 0.26
+  crit_multiplier: 2.2
+  status_chance: 0.34
+  punch_through_m: 0.0
+  damage: { impact: 280.0, blast: 360.0, radiation: 200.0 }  # 840 (Archwing: 420)
+  radial:
+    damage: { blast: 800.0, radiation: 800.0 }   # 1600 at the centre (Archwing: 800)
+    radius_m: 9.6
+    falloff_start_m: 0.0
+    falloff_reduction: 0.6      # 100% at the centre -> 40% at 9.6 m
+    crit_chance: 0.26
+    crit_multiplier: 2.2
+    status_chance: 0.34
+
+unmodeled:
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+  - "the explosion's falloff is not modelled — this arena has one target at the centre, so it always takes the full 1600 and never the 640 at the rim"
+  - "Hildryn's signature bonus is not modelled — carried by her it holds 300 more reserve ammo, 700 instead of 400, and this arena has no Warframe holding it"
+
+source:
+  url: https://wiki.warframe.com/w/Larkspur

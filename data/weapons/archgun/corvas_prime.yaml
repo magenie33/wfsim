@@ -1,0 +1,65 @@
+id: corvas_prime
+name: Corvas Prime
+slot: archgun
+class: archgun
+form: charged
+default_form: true
+transform_group: corvas_prime
+
+# TWO COLUMNS THAT ARE THE SAME COLUMN. This weapon's damage does NOT double on
+# the ground: 960 charged and 560 uncharged in both tabs, and crit, multiplier,
+# status, fire rate, magazine and reload are identical too. The wiki's "MOST
+# Heavy Weapons ... have had their damage doubled" excludes this one entirely.
+#
+# Only the reserve changes (0 -> 120), plus a projectile speed and a range that
+# change no number here. So the deployment block states the reserve and nothing
+# else — a `damage:` restatement of an unchanged vector would be noise, and the
+# `a_deployment_restates_every_attack_part_or_none` guard only fires when a
+# column restates damage at all.
+deployment: atmosphere
+deployments:
+  archwing:
+    no_resupply: false
+    ammo_max: 0
+mod_pools: [archgun]
+mastery_rank: 14
+max_rank: 30
+
+accuracy: 100.0              # "Very High"
+disposition: 0.95
+polarities: [madurai, madurai, naramon]
+riven_family: Corvas
+traits: [prime]
+internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/PrimeCorvas/PrimeCorvasWeapon
+noise: alarming
+magazine: 20
+reload_seconds: 2.0
+
+ammo_type: archgun
+ammo_max: 120
+no_resupply: true
+
+# CONDITION OVERLOAD, transcribed verbatim:
+#   Corvas Prime | Charged Attack | Projectile | 100% | Multiplying
+co_behavior: independent
+
+attack:
+  trigger: charge
+  charge_seconds: 0.5
+  shot_type: projectile
+  projectile_speed_mps: 140
+  fire_rate: 2.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.56
+  crit_multiplier: 3.0
+  status_chance: 0.20
+  punch_through_m: 1.4
+  damage: { impact: 430.0, heat: 530.0 }   # 960, and the same in Archwing
+
+unmodeled:
+  - "the innate 1.4 m punch-through is not modelled — this arena has one target, so it changes no number"
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+
+source:
+  url: https://wiki.warframe.com/w/Corvas_Prime

@@ -1,0 +1,68 @@
+id: velocitus
+name: Velocitus
+slot: archgun
+class: archgun
+# THE CHARGED SHOT is the form the arsenal shows and the one this weapon is
+# built for; `velocitus_uncharged` is the sibling. Same convention as the
+# Cernos Prime's pair.
+form: charged
+default_form: true
+transform_group: velocitus
+
+# TWO COLUMNS, exactly double on both forms.
+#   |            | charged | reload | Ammo Max | speed    | punch through |
+#   | Atmosphere |  3200   | 2.00 s |    60    | 125 m/s  |     5.0 m     |
+#   | Archwing   |  1600   | 1.40 s |     0    | 500 m/s  |     5.0 m     |
+# Identical in both: crit 60% / 3.60x, status 25%, fire rate 5.00, magazine 10.
+deployment: atmosphere
+deployments:
+  archwing:
+    reload_seconds: 1.4
+    no_resupply: false
+    damage: { impact: 400.0, puncture: 400.0, slash: 400.0, magnetic: 400.0 }  # 1600
+mod_pools: [archgun]
+mastery_rank: 0
+max_rank: 30
+
+accuracy: 100.0              # "Very High"
+disposition: 1.10
+polarities: []
+riven_family: Velocitus
+internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/Railgun/ArchRailgun
+noise: alarming
+magazine: 10
+reload_seconds: 2.0
+
+ammo_type: archgun
+ammo_max: 60
+no_resupply: true
+
+# CONDITION OVERLOAD, transcribed verbatim:
+#   Velocitus | Charged attack | Projectile | 100% | Multiplying
+# The catalog carries a row for EACH form of this weapon and they agree; the
+# uncharged sibling carries its own row rather than inheriting this one.
+co_behavior: independent
+
+attack:
+  trigger: charge
+  charge_seconds: 1.0
+  shot_type: projectile
+  projectile_speed_mps: 125
+  fire_rate: 5.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.60
+  crit_multiplier: 3.6
+  status_chance: 0.25
+  punch_through_m: 5.0
+  # FORCED IMPACT on the ground column — a type that always lands is also a
+  # permanent +1 to Condition Overload's count.
+  forced_procs: [impact]
+  damage: { impact: 800.0, puncture: 800.0, slash: 800.0, magnetic: 800.0 }  # 3200
+
+unmodeled:
+  - "the innate 5 m punch-through is not modelled — this arena has one target, so it changes no number"
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+
+source:
+  url: https://wiki.warframe.com/w/Velocitus

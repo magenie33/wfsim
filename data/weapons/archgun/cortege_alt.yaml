@@ -1,0 +1,78 @@
+id: cortege_alt
+name: Cortege
+slot: archgun
+class: archgun
+# THE ALT-FIRE, AND IT IS EARNED. "Getting 5 kills with the Cortege's primary
+# fire will unlock an Alternate Fire that releases a trio of grenades" (wiki).
+# That gate is NOT modelled — see `unmodeled:` — so this entry is the alt-fire
+# as if it were always available, which is what a player who has already fed it
+# five kills is holding.
+#
+# `alt_fire` rather than `charged`: nothing about it is a draw, it is the other
+# button, and borrowing `charged` would put a wrong word in every saved preset
+# and share link (docs/WEAPON_INTAKE.md §3).
+form: alt_fire
+transform_group: cortege
+
+deployment: atmosphere
+deployments:
+  archwing:
+    reload_seconds: 3.0
+    no_resupply: false
+    damage: { impact: 10.0 }
+    radial_damage: { blast: 1000.0 }
+mod_pools: [archgun]
+mastery_rank: 14
+max_rank: 30
+
+accuracy: 12.5
+disposition: 1.00
+polarities: []
+riven_family: Cortege
+internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechArchGun/ThanoTechArchGun
+noise: alarming
+magazine: 100
+reload_seconds: 2.5
+
+ammo_type: archgun
+ammo_max: 300
+no_resupply: true
+
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: semi_auto
+  shot_type: projectile
+  fire_rate: 0.25
+  # A TRIO OF GRENADES. The damage below is ONE of them; the page's totals (60
+  # impact and 6000 blast) are the three together.
+  multishot: 3.0
+  ammo_cost: 1
+  crit_chance: 0.30
+  crit_multiplier: 2.4
+  status_chance: 0.167
+  punch_through_m: 0.0
+  # PRIMARY COMPRESSION, verbatim:
+  #   Cortege | Alt-Fire + AoE | 0% | Doesn't Work | N/A
+  compression:
+    effectiveness: 0.00
+    stacking: multiplies
+    radius_calculation: doesnt_work
+  damage: { impact: 20.0 }         # per grenade; Archwing: 10
+  radial:
+    damage: { blast: 2000.0 }      # per grenade; Archwing: 1000
+    radius_m: 4.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.3         # 100% at the centre -> 70% at 4.0 m
+    crit_chance: 0.30
+    crit_multiplier: 2.4
+    status_chance: 0.167
+
+unmodeled:
+  - "the FIVE-KILL GATE is not modelled — in game this alt-fire has to be earned with five kills from the primary fire before it can be used at all, and this entry fires it from the first second"
+  - "the LINGERING FLAMES the grenades leave are not modelled — the page gives them 11 seconds of continuous damage and no per-tick number this intake could find, so the ground fire contributes nothing here and this weapon reads low"
+  - "the explosion's falloff is not modelled — this arena has one target at the centre, so it always takes the full 2000 a grenade and never the 1400 at the rim"
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+
+source:
+  url: https://wiki.warframe.com/w/Cortege

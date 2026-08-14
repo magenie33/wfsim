@@ -1,0 +1,66 @@
+id: cortege
+name: Cortege
+slot: archgun
+class: archgun
+# THE PRIMARY FIRE — a held Heat beam. Its alt-fire is `cortege_alt`, and that
+# one is NOT free: it has to be earned. See that entry.
+form: base
+default_form: true
+transform_group: cortege
+
+# TWO COLUMNS, exactly double on every part.
+#   |            | beam | reload | Ammo Max |
+#   | Atmosphere | 180  | 2.50 s |   300    |
+#   | Archwing   |  90  | 3.00 s |     0    |
+# Identical in both: crit 20% / 1.90x, status 40%, fire rate 12, magazine 100.
+deployment: atmosphere
+deployments:
+  archwing:
+    reload_seconds: 3.0
+    no_resupply: false
+    damage: { heat: 90.0 }
+mod_pools: [archgun]
+mastery_rank: 14
+max_rank: 30
+
+accuracy: 12.5               # "Low" on the ground; "Very High" in Archwing
+disposition: 1.00
+polarities: []
+riven_family: Cortege
+internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechArchGun/ThanoTechArchGun
+noise: alarming
+magazine: 100
+reload_seconds: 2.5
+
+ammo_type: archgun
+ammo_max: 300
+no_resupply: true
+
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12.0
+  multishot: 1.0
+  # 0.5 a tick, the beam rule.
+  ammo_cost: 0.5
+  crit_chance: 0.20
+  crit_multiplier: 1.9
+  status_chance: 0.40
+  punch_through_m: 0.0
+  # PRIMARY COMPRESSION, verbatim:
+  #   Cortege | Primary Fire + AoE | 0% | Doesn't Work | N/A
+  # The row exists and says zero, which is a stronger statement than an absent
+  # row: the arcane is TESTED as worthless here.
+  compression:
+    effectiveness: 0.00
+    stacking: multiplies
+    radius_calculation: doesnt_work
+  damage: { heat: 180.0 }          # Archwing: 90
+
+unmodeled:
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+
+source:
+  url: https://wiki.warframe.com/w/Cortege

@@ -1,0 +1,86 @@
+id: kuva_grattler
+name: Kuva Grattler
+slot: archgun
+class: archgun
+form: base
+default_form: true
+
+# TWO COLUMNS, AND A STAT OTHER THAN DAMAGE MOVES. The critical multiplier is
+# 2.10x in Archwing and 2.00x on the ground — the first field outside damage,
+# reload and reserve that any Arch-Gun's two tabs disagree on, and the reason
+# `DeploymentSpec` carries crit and status at all.
+#
+#   |            | impact | explosion | crit mult | reload | Ammo Max |
+#   | Atmosphere |  140   |    235    |   2.00x   | 2.50 s |   320    |
+#   | Archwing   |   94   |    155    |   2.10x   | 4.00 s |     0    |
+#
+# x1.489 and x1.516 — two parts, two ratios, and neither is 2.
+deployment: atmosphere
+deployments:
+  archwing:
+    reload_seconds: 4.0
+    no_resupply: false
+    damage: { impact: 9.4, puncture: 75.2, slash: 9.4 }   # 94 total
+    radial_damage: { blast: 155.0 }
+    crit_multiplier: 2.1
+mod_pools: [archgun]
+mastery_rank: 15
+# ADVERSARY: a Kuva weapon ranks to 40, not 30 — five Forma and 80 capacity.
+max_rank: 40
+
+accuracy: 25.0               # "Medium"
+disposition: 0.70
+polarities: [madurai, madurai, madurai]
+riven_family: Grattler
+traits: [kuva, adversary]
+internal_name: /Lotus/Weapons/Grineer/KuvaLich/HeavyWeapons/Grattler/KuvaGrattler
+noise: alarming
+magazine: 60
+reload_seconds: 2.5
+
+ammo_type: archgun
+ammo_max: 320
+no_resupply: true
+
+# THE PROGENITOR ELEMENT — MANDATORY on an adversary weapon: every copy comes
+# out of a Lich with one, so there is no "none" to pick. It is part of the
+# BUILD and travels with it (owner, 2026-08-13). The board scores every row at
+# the roll's maximum, which is why the percentage is not a row's to state.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+# No Condition Overload row for the Kuva Grattler. The catalog lists the
+# ORDINARY Grattler ("Normal attack | Projectile | 100% | Multiplying") and a
+# row is transcribed for the entry it names — a shared Genesis does not make a
+# family one weapon (docs/CATALOGS.md). So this takes the ordinary class.
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 250
+  fire_rate: 5.55
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.27
+  crit_multiplier: 2.0
+  status_chance: 0.27
+  punch_through_m: 0.0
+  damage: { impact: 14.0, puncture: 112.0, slash: 14.0 }   # 140 (Archwing: 94)
+  radial:
+    damage: { blast: 235.0 }         # Archwing: 155
+    radius_m: 9.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.7           # 100% at the centre -> 30% at 9.0 m
+    crit_chance: 0.27
+    crit_multiplier: 2.0
+    status_chance: 0.27
+
+unmodeled:
+  - "the explosion's falloff is not modelled — this arena has one target at the centre, so it always takes the full 235 and never the 70 at the rim"
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Grattler

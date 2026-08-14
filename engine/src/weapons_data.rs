@@ -62,6 +62,24 @@ pub struct DeploymentSpec {
     /// ...and its lingering FIELD, under the same rule.
     #[serde(default)]
     pub lingering_damage: Option<BTreeMap<String, f64>>,
+    /// THE STATS THAT ALSO MOVE. Damage is the field that cost something, but
+    /// it is not the only one a tab can change: the Kuva Grattler's critical
+    /// multiplier is 2.10x in Archwing and 2.00x on the ground, and nothing
+    /// about "a deployment is a sustain axis" would have predicted that either.
+    ///
+    /// Only the three that reach a number are here. Blast RADIUS, projectile
+    /// SPEED and falloff differ too on several Arch-Guns (the Kuva Ayanga's
+    /// explosion is 9.0 m in space and 6.0 m on the ground, its grenade 300 m/s
+    /// against 55) and none of them changes a number in an arena with one
+    /// target and no distance — so those are transcribed into each weapon's
+    /// comments and named in its `unmodeled:`, rather than carried as fields
+    /// that would move nothing.
+    #[serde(default)]
+    pub crit_chance: Option<f64>,
+    #[serde(default)]
+    pub crit_multiplier: Option<f64>,
+    #[serde(default)]
+    pub status_chance: Option<f64>,
 }
 
 /// THE VALENCE BONUS an ADVERSARY weapon carries — a Kuva Lich's, a Sister's, a
@@ -180,6 +198,18 @@ pub fn apply_deployment(base: &mut WeaponBase, id: &str, deployment: &str) {
         if let Some(l) = base.lingering.as_mut() {
             l.base_vector = vector_of(m);
         }
+    }
+    // The radial inherits the direct part's crit and status unless it states
+    // its own (RadialSpec), so a column that moves them moves both — which is
+    // what the Kuva Grattler's two tabs actually do.
+    if let Some(v) = d.crit_chance {
+        base.base_crit_chance = v;
+    }
+    if let Some(v) = d.crit_multiplier {
+        base.base_crit_damage = v;
+    }
+    if let Some(v) = d.status_chance {
+        base.base_status_chance = v;
     }
 }
 
@@ -2178,9 +2208,15 @@ mod deployment_tests {
             let ground: f64 = w.attack.damage.values().sum();
             assert!(space > 0.0, "{}: a stated column with no damage in it", w.id);
             let r = ground / space;
+            // THE OBSERVED RANGE, after reading all twenty pages: 1.000 (Corvas
+            // Prime, whose two tabs are identical) through 1.489 (Kuva
+            // Grattler) and 1.5 (Grattler, Mausolon) up to 2.071 (Phaedra).
+            // The invariant worth asserting is only the DIRECTION — a ground
+            // column is never weaker than its Archwing one — plus a ceiling
+            // that a dropped digit or a factor of ten cannot pass.
             assert!(
-                (1.5..=2.5).contains(&r),
-                "{}: ground is x{r:.3} of Archwing ({ground} against {space}).                  The game's range is 1.727 to 2.071 — this is a transcription slip,                  or a genuinely new value that belongs in this comment.",
+                (1.0..=2.5).contains(&r),
+                "{}: ground is x{r:.3} of Archwing ({ground} against {space}).                  Under 1.0 means the two tabs are swapped; over 2.5 is a                  transcription slip. The game's observed range is 1.000-2.071.",
                 w.id
             );
             seen += 1;
@@ -2323,6 +2359,34 @@ mod tests {
             // the explosion beside it.
             ("scourge_thrown", "independent", 1.0),
             ("scourge_prime_thrown", "independent", 1.0),
+            // THE ARCH-GUNS. Four rows in the catalog reach the roster, and
+            // three of the four are about telling near-identical entries apart:
+            //   Grattler       | Normal attack | Projectile | 100% | Multiplying
+            //   Larkspur Prime | Alt-fire      | Projectile | 100% | Multiplying
+            // The Grattler's row names the ORDINARY weapon, so the Kuva
+            // Grattler has none and stays additive — a shared Genesis does not
+            // make a family one weapon. The Larkspur Prime's row names its
+            // ALT-FIRE, so the Prime's normal fire has none, and the ordinary
+            // Larkspur has none on EITHER form. Both asymmetries are data.
+            ("grattler", "independent", 1.0),
+            ("larkspur_prime_charged", "independent", 1.0),
+            // THE CHARGE ARCH-GUNS. The catalog carries a row per FORM here,
+            // which is what makes the Mandonel the sharpest entry in it:
+            //   Velocitus    | Uncharged attack | Projectile | 100% | Multiplying
+            //   Velocitus    | Charged attack   | Projectile | 100% | Multiplying
+            //   Corvas Prime | Uncharged Attack | Projectile | 100% | Multiplying
+            //   Corvas Prime | Charged Attack   | Projectile | 100% | Multiplying
+            //   Mandonel     | Uncharged Attack | Projectile | 100% | Multiplying
+            //   Mandonel     | Charged attack   | Hitscan    | 100% | ADDING
+            // One weapon, two rows, two answers — so the Mandonel's charged
+            // form is ordinary and does not appear here, while its uncharged
+            // one does. The ORDINARY Corvas is named on neither row and is
+            // ordinary on both forms.
+            ("velocitus", "independent", 1.0),
+            ("velocitus_uncharged", "independent", 1.0),
+            ("corvas_prime", "independent", 1.0),
+            ("corvas_prime_uncharged", "independent", 1.0),
+            ("mandonel_uncharged", "independent", 1.0),
         ];
 
         let mut unexpected = Vec::new();
@@ -3746,7 +3810,13 @@ mod burston_incarnon_radial_tests {
         for s in all() {
             if let Some(b) = s.attack.burst {
                 assert!(b.count >= 2, "{}: a burst of {} is not a burst", s.id, b.count);
-                assert!(b.delay_seconds > 0.0, "{}: a burst needs a delay between rounds", s.id);
+                // A ZERO DELAY IS A REAL VALUE, and the Morgha is why this is
+                // `>= 0.0` instead of `> 0.0`: its page gives Burst Count 2 and
+                // Burst Delay 0.0 s, which means both rounds leave together.
+                // It is still a BURST and not multishot — a burst of two spends
+                // two rounds, and on an Arch-Gun's finite ground reserve that
+                // is the difference between 160 shots and 320.
+                assert!(b.delay_seconds >= 0.0, "{}: a negative burst delay", s.id);
             }
         }
     }
@@ -4245,6 +4315,19 @@ mod play_mode_tests {
             ("scourge_prime", 1.36),
             ("scourge_thrown", 5.60),
             ("scourge_prime_thrown", 5.60),
+            // THE ARCH-GUNS. Four rows reach the roster and two of them are a
+            // tested ZERO — "Doesn't Work" is a stronger statement than an
+            // absent row, so it is carried rather than left to be inferred.
+            //   Mausolon | Main-fire Radial | 100% | Adds | Stolen   1.8 m
+            //   Mausolon | Alt-fire Radial  | 100% | Adds | Snapshot 8.0 m
+            //   Cortege  | Primary Fire+AoE |   0% | Doesn't Work
+            //   Cortege  | Alt-Fire + AoE   |   0% | Doesn't Work
+            //   Kuva Ayanga | Primary+AoE   |   0% | Doesn't Work
+            ("mausolon", 1.44),
+            ("mausolon_charged", 6.40),
+            ("cortege", 0.0),
+            ("cortege_alt", 0.0),
+            ("kuva_ayanga", 0.0),
         ];
         // At rank 5 a metre is worth +100%, so the bonus IS the metres lost.
         let fx = crate::arcanes_data::for_slot("primary", "primary_compression")
@@ -4460,7 +4543,12 @@ mod play_mode_tests {
         assert!(rows >= 20, "only {rows} rows transcribed");
         // THE MINORITY IS REAL, and it is the half of the table most likely to
         // be flattened by a copy: every Braton and Burston Incarnon ADDS.
-        assert_eq!(adds, 6, "the Braton four and the Burston two add, and nothing else here does");
+        // The Braton four, the Burston two, and BOTH Mausolon radials — its two
+        // rows are the only Arch-Gun ones in the table and both print "Adds".
+        assert_eq!(
+            adds, 8,
+            "the Braton four, the Burston two and the Mausolon two add, and nothing else here does"
+        );
         // …and a tested ZERO is not the same as an absent row. The Torid's
         // Incarnon form has one, and its base form is 100% — one arcane, two
         // answers, inside one weapon's cycle.

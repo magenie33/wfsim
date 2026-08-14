@@ -246,6 +246,40 @@ the number is a faithful-looking implementation with nothing behind it.
 | checks | `check_parity`, `check_equip_rules`, `check_enemies` … | re-run; they are per-weapon by construction |
 | a measurement | docs/MEASUREMENTS.md | **only if the weapon exercises something not already pinned** |
 
+## THE ARCH-GUN CLASS — done, except one (2026-08-15)
+
+Nineteen of the twenty Arch-Guns are in, as 28 entries. What the class taught is
+in §1 above (two columns, and WFCD carries the wrong one). What it still owes is
+one weapon.
+
+**ARBUCEP IS NOT IN, and it needs engine work rather than typing.** It fires SIX
+homing missiles at once, each carrying a DIFFERENT combined element — Blast,
+Corrosive, Gas, Magnetic, Radiation, Viral — and each with its own radial. An
+`attack` here has one damage vector and one radial, and none of the three ways
+to force it through is honest:
+
+- **one instance carrying all six types** gets the damage right and the STATUS
+  wrong by six times, because a proc is drawn once per instance and this weapon
+  draws six. At 34.9% status that is not a rounding error;
+- **`multishot: 6` with a six-type vector** multiplies the damage by six;
+- **`multishot: 6` with a one-type vector** is five-sixths the wrong element,
+  and this weapon is nothing but its elements.
+
+It also states a mechanic nothing else in the roster has: *"Multishot increases
+weapon damage instead of creating additional projectiles. Damage bonus is
+multiplicative to other sources of damage."* Every multishot mod in the pool
+means something different on it.
+
+So it needs per-pellet element cycling in the loop, and a multishot rule of its
+own. Adding it with any of the three approximations above would put a number on
+the board that no measurement could ever reproduce, which is the one thing this
+repo does not do.
+
+Its CO row is transcribed and waiting: `Arbucep | Direct Hit | Projectile |
+100% | Multiplying`, with the note *"Consistent on all 6 projectiles. Deals 130
+instead of 32. Does not apply to the 228 damage AoE"* — which incidentally
+confirms the six are simultaneous rather than a cycle.
+
 ## The batches
 
 ### Batch A — RIFLES. The only batch that buys mod coverage.

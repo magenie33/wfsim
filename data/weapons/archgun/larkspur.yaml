@@ -1,0 +1,75 @@
+id: larkspur
+name: Larkspur
+# ARCH-GUN — see larkspur_prime.yaml for the class's rules; this is the
+# ordinary weapon that one is the Prime of, and the routine's "a Prime and its
+# ordinary are ONE intake" is why it is here.
+slot: archgun
+class: archgun
+form: base
+default_form: true
+transform_group: larkspur
+
+# TWO COLUMNS, and these fields are the ATMOSPHERE one (docs/WEAPON_INTAKE.md
+# §1). Identical in both tabs: crit chance, crit multiplier, status chance,
+# fire rate, magazine.
+#
+#   |            | damage | reload | Ammo Max | range   |
+#   | Atmosphere |  180   | 2.50 s | 400      |  40.0 m |
+#   | Archwing   |   90   | 4.50 s | 0        | 160.0 m |
+#
+# Exactly the Prime's two columns, and exactly the Prime's doubling — the
+# ordinary and the Prime differ in crit (10% / 1.40x against 14% / 1.60x) and
+# in nothing else on this attack.
+deployment: atmosphere
+deployments:
+  archwing:
+    reload_seconds: 4.5
+    no_resupply: false      # a regenerating magazine, so no reserve to dry
+    damage: { impact: 10.0, radiation: 80.0 }   # 90 total
+mod_pools: [archgun]
+mastery_rank: 8
+max_rank: 30
+
+accuracy: 8.33               # the page prints "Low" for this number
+disposition: 1.05
+polarities: [madurai]
+riven_family: Larkspur
+internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/TnShieldframeArchGun/TnShieldFrameArchGun
+noise: alarming
+magazine: 100
+reload_seconds: 2.5
+
+ammo_type: archgun
+ammo_max: 400
+# A ground Arch-Gun cannot be resupplied — see larkspur_prime.yaml.
+no_resupply: true
+
+# No Condition Overload row for the NORMAL fire of either Larkspur. The catalog
+# lists only "Larkspur Prime | Alt-fire", which is a different entry and a
+# different weapon, so this takes the ordinary class (absence means ORDINARY,
+# and a row is never generalised across a Prime boundary).
+co_behavior: additive_with_base_damage
+
+# THE NORMAL FIRE — hit-scan and held, 89% RADIATION (160 of 180). Radiation is
+# a COMBINED element, so it cannot be consumed by a mod pairing and enters the
+# hierarchy last (MECHANICS §3 rule 2).
+attack:
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12.0
+  multishot: 1.0
+  # 0.5 per tick, the beam rule the Prime's page states for this weapon too.
+  ammo_cost: 0.5
+  crit_chance: 0.10
+  crit_multiplier: 1.4
+  status_chance: 0.50
+  punch_through_m: 0.0
+  damage: { impact: 20.0, radiation: 160.0 }   # 180 total (Archwing: 90)
+
+unmodeled:
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+  - "the beam's 40 m ground range is not modelled — this arena has no distance, so every tick lands"
+  - "Hildryn's signature bonus is not modelled — carried by her it holds 300 more reserve ammo, 700 instead of 400, and this arena has no Warframe holding it"
+
+source:
+  url: https://wiki.warframe.com/w/Larkspur
