@@ -47,6 +47,11 @@ pseudo_reload:
 co_behavior: additive_with_base_damage
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 5
+    max_deg: 15
   # Read the same way as the Furis's — see that file for why `held` rather
   # than per-pull, and for what changes if that is wrong.
   trigger: held
@@ -89,5 +94,3 @@ source:
   # Form" on /Lotus/Weapons/MK1Series/MK1Furis): speed 12, crit 20%, 3.0x,
   # status 8%, Heat 60 — all agree except the falloff.
 
-unmodeled:
-  - reason: spread_not_transcribed

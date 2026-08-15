@@ -58,6 +58,11 @@ no_resupply: true
 co_behavior: additive_with_base_damage
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.5
+    max_deg: 12
   trigger: auto
   shot_type: hit_scan
   fire_rate: 12.5
@@ -72,7 +77,6 @@ unmodeled:
   - reason: innate_punch_through
     m: 1.2
   - reason: arch_gun_deployer_cooldown
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Prisma_Dual_Decurions

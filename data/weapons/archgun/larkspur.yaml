@@ -54,6 +54,11 @@ co_behavior: additive_with_base_damage
 # a COMBINED element, so it cannot be consumed by a mod pairing and enters the
 # hierarchy last (MECHANICS §3 rule 2).
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 10
+    max_deg: 14
   trigger: held
   shot_type: hit_scan
   fire_rate: 12.0
@@ -71,7 +76,6 @@ unmodeled:
   - reason: beam_range
     m: 40
   - "Hildryn's signature bonus is not modelled — carried by her it holds 300 more reserve ammo, 700 instead of 400, and this arena has no Warframe holding it"
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Larkspur

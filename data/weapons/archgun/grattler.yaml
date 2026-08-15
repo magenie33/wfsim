@@ -48,6 +48,11 @@ no_resupply: true
 co_behavior: independent
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 5
+    max_deg: 7
   trigger: auto
   # AUTO-SPOOL in both tabs. The ramp is not modelled — see `unmodeled:`.
   shot_type: projectile
@@ -73,7 +78,6 @@ unmodeled:
   - reason: auto_spool_ramp
     rate: 6.25
   - reason: arch_gun_deployer_cooldown
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Grattler

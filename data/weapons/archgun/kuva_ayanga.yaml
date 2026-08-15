@@ -52,6 +52,11 @@ valence:
   max: 0.60
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 4
+    max_deg: 4
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 55
@@ -83,7 +88,6 @@ attack:
 unmodeled:
   - "the self-stagger on its own explosion is not modelled — the grenade staggers the firer at close range and deals them no damage, and nothing in this arena can be inconvenienced"
   - reason: arch_gun_deployer_cooldown
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Ayanga

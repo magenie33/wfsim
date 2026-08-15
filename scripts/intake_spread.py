@@ -86,23 +86,72 @@ def close(a, b, tol=0.02):
     return abs(float(a) - float(b)) <= tol * max(1.0, abs(float(b)))
 
 
+def spread_attacks(wiki):
+    """Every attack of this weapon that carries a cone."""
+    return [a for a in (wiki.get("Attacks", []) or [])
+            if a.get("MinSpread") is not None or a.get("MaxSpread") is not None]
+
+
+def pair(at):
+    return (at.get("MinSpread") or 0.0, at.get("MaxSpread") or 0.0)
+
+
+# WHICH FORM an attack NAME describes. `charge` has to survive "UNcharged
+# Shot", which is the Miter's base attack and would otherwise be read as its
+# charged one — the single case that decides whether this rule is safe.
+ALT = re.compile(r"alt-fire|(?<!un)charge", re.I)
+INCARNON = re.compile(r"incarnon", re.I)
+
+
+def form_class(name):
+    if INCARNON.search(name or ""):
+        return "incarnon"
+    return "alt" if ALT.search(name or "") else "base"
+
+
 def match_attack(entry, wiki):
-    """The module attack this entry IS, or None when it is not unambiguous."""
-    hits = []
-    for at in wiki.get("Attacks", []) or []:
-        if at.get("MinSpread") is None and at.get("MaxSpread") is None:
-            continue
-        ok = (close(entry["fire_rate"], at.get("FireRate"))
-              and close(entry["crit_chance"], at.get("CritChance"))
-              and close(entry["crit_mult"], at.get("CritMultiplier"))
-              and close(entry["status_chance"], at.get("StatusChance")))
-        if not ok:
-            continue
-        dmg = at.get("Damage") or {}
-        if not close(entry["damage"], round(sum(dmg.values()), 3)):
-            continue
-        hits.append(at)
-    return hits[0] if len(hits) == 1 else None
+    """The module attack this entry IS, or None when it is not unambiguous.
+
+    Three rules, tried in order, and every one of them refuses rather than
+    picks when it cannot tell. A spread on the wrong form is the failure this
+    repo already has on the record (AGENTS.md: the Larkspur's alt-fire carried
+    its base form's accuracy and nothing could catch it), and the Larkspur is
+    the weapon rule C exists for.
+    """
+    cand = spread_attacks(wiki)
+    if not cand:
+        return None
+
+    # A. THE ATTACK IS IDENTIFIED BY ITS OWN NUMBERS. Strongest, and the only
+    #    one that needs no naming convention to hold.
+    hits = [at for at in cand
+            if close(entry["fire_rate"], at.get("FireRate"))
+            and close(entry["crit_chance"], at.get("CritChance"))
+            and close(entry["crit_mult"], at.get("CritMultiplier"))
+            and close(entry["status_chance"], at.get("StatusChance"))
+            and close(entry["damage"], round(sum((at.get("Damage") or {}).values()), 3))]
+    if len(hits) == 1:
+        return hits[0]
+
+    # B. THE WEAPON HAS ONE CONE. When every spread-bearing attack agrees there
+    #    is nothing to choose between, so identifying the attack is moot — and
+    #    this is what carries the Arch-Guns, whose module record is the ARCHWING
+    #    column and therefore never matches our atmosphere damage by rule A.
+    if len({pair(a) for a in cand}) == 1:
+        return cand[0]
+
+    # C. THE FORM SAYS WHICH. Our entry declares `form:` and the module names
+    #    its attacks; take the match only when the class picks out exactly one.
+    #    The Miter is the negative case that keeps this honest: it is a charged
+    #    entry whose weapon offers only "Uncharged Shot" and "Incarnon Form", so
+    #    no attack is in its class and it stays unmatched.
+    want = {"base": "base", "charged": "alt", "alt_fire": "alt",
+            "incarnon": "incarnon"}.get(entry["form"])
+    if want:
+        same = [a for a in cand if form_class(a.get("AttackName")) == want]
+        if len({pair(a) for a in same}) == 1:
+            return same[0]
+    return None
 
 
 def main():
@@ -128,7 +177,13 @@ def main():
         pname = field(by_id.get(parent, (None, None, text))[2] or text, "name")
         if not pname:
             pname = field(text, "name")
-        rec = mods.get(SLOTS.get(slot), {}).get(pname)
+        table = mods.get(SLOTS.get(slot), {})
+        # CASE-INSENSITIVE, because the module spells the starter weapons
+        # `Mk1-Braton` and our data (like the wiki's own page titles) spells
+        # them `MK1-Braton`. Eleven entries turned on that one letter.
+        rec = table.get(pname)
+        if rec is None and pname:
+            rec = next((v for k, v in table.items() if k.lower() == pname.lower()), None)
         if rec is None:
             misses.append((wid, f"no module record for {pname!r}"))
             skipped += 1
@@ -139,6 +194,7 @@ def main():
             "crit_mult": field(text, "crit_multiplier", "attack"),
             "status_chance": field(text, "status_chance", "attack"),
             "damage": damage_total(text),
+            "form": field(text, "form"),
         }
         at = match_attack(entry, rec)
         if at is None:

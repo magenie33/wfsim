@@ -26,6 +26,11 @@ accuracy: 100                # "Very High" for the alt-fire, like the Prime's
 co_behavior: additive_with_base_damage
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
   trigger: charge
   charge_seconds: 0.5
   shot_type: projectile
@@ -51,7 +56,6 @@ attack:
 unmodeled:
   - reason: arch_gun_deployer_cooldown
   - "Hildryn's signature bonus is not modelled — carried by her it holds 300 more reserve ammo, 700 instead of 400, and this arena has no Warframe holding it"
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Larkspur

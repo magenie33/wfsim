@@ -23,6 +23,11 @@ accuracy: 12.5               # "Very Low" — it is a spread
 co_behavior: independent
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 60
+    max_deg: 80
   trigger: semi_auto
   # NO CHARGE. An uncharged shot has no draw at all, and `charge_seconds: 0.0`
   # is refused outright — "a 0.0 charge outside a bow is just a fire rate".
@@ -44,7 +49,6 @@ attack:
 unmodeled:
   - "the horizontal SPREAD is not modelled — the eight projectiles go out in a wide line and this arena has one target at zero distance, so all eight always land on it"
   - reason: arch_gun_deployer_cooldown
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Mandonel

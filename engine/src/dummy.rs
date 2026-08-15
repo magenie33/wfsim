@@ -5001,6 +5001,31 @@ mod every_form_runs {
         );
     }
 
+    /// THE LARKSPUR PAIR IS THE ONE THIS REPO HAS ALREADY GOT WRONG.
+    ///
+    /// AGENTS.md §"A FORM INHERITS ITS WEAPON" records it: the ordinary
+    /// Larkspur's alt-fire carried its BASE form's accuracy while its Prime's
+    /// carried the alt-fire's, and nothing could catch it because nothing knew
+    /// the entries were one gun. It is exactly the shape the spread intake can
+    /// fail in, so it is pinned rather than trusted — the module gives "Normal
+    /// Attack" 10/14 and "Alt-Fire Projectile Impact" 0/0, and each of the four
+    /// entries has to hold the one that is its own.
+    #[test]
+    fn the_larkspur_family_each_carries_its_own_cone() {
+        let cone = |id: &str| {
+            let s = crate::loadout::WeaponBase::from_data(id, false, &[])
+                .spread
+                .unwrap_or_else(|| panic!("{id} has no spread"));
+            (s.min_deg, s.max_deg)
+        };
+        assert_eq!(cone("larkspur"), (10.0, 14.0));
+        assert_eq!(cone("larkspur_prime"), (10.0, 14.0));
+        // The alt-fire is a PROJECTILE and it is pinpoint — the half that was
+        // once written onto the wrong member of this family.
+        assert_eq!(cone("larkspur_charged"), (0.0, 0.0));
+        assert_eq!(cone("larkspur_prime_charged"), (0.0, 0.0));
+    }
+
     /// EVERY ENTRY ANSWERS THE QUESTION — with a cone, or with an admission.
     ///
     /// The third state is the one that must not exist: an entry that silently
@@ -5024,8 +5049,8 @@ mod every_form_runs {
                 w.id
             );
         }
-        assert!(with >= 162, "only {with} entries carry a spread");
-        assert!(without <= 62, "the gap grew to {without}; it is only allowed to shrink");
+        assert!(with >= 207, "only {with} entries carry a spread");
+        assert!(without <= 17, "the gap grew to {without}; it is only allowed to shrink");
     }
 
     /// ...and every DEPLOYMENT of every entry, for the same reason: the

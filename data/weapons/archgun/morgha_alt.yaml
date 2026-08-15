@@ -27,6 +27,11 @@ accuracy: 100.0              # "Very High"
 co_behavior: additive_with_base_damage
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
   trigger: semi_auto
   # NO CHARGE. An uncharged shot has no draw at all, and `charge_seconds: 0.0`
   # is refused outright — "a 0.0 charge outside a bow is just a fire rate".
@@ -54,7 +59,6 @@ attack:
 unmodeled:
   - "the CHARGE this form is named for is not modelled as a charge — the page calls it a Charged Shot and then gives it a Semi-Auto trigger with no charge time, so it is paced as a slow semi-auto shot and filed as an alt-fire"
   - reason: arch_gun_deployer_cooldown
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Morgha

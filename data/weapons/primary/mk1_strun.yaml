@@ -23,7 +23,6 @@ transforms_to: mk1_strun_incarnon
 # yet and say so on their own tile.
 unmodeled:
   - reason: reload_never_interrupted
-  - reason: spread_not_transcribed
 accuracy: 4
 disposition: 1.45
 polarities: [naramon]
@@ -61,6 +60,11 @@ reload_end_s: 0.25
 co_behavior: additive_with_base_damage
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 15
+    max_deg: 35
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 2.08

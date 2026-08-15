@@ -79,6 +79,11 @@ co_base_fraction: 0.5
 # carries (184 per arrow). Attacks[1], the tapped shot at exactly half the
 # damage, is the sibling entry.
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 12
   trigger: charge
   # The draw. It — not `fire_rate` — is this weapon's cadence: wiki Fire Rate
   # gives bows their own formula, "Effective Fire Rate = 1 / (Modded Charge
@@ -125,5 +130,3 @@ source:
   # attacks, the polarities, the exilus, disposition, mastery, magazine and
   # reload; the CO row is from Condition_Overload_(Mechanic).
 
-unmodeled:
-  - reason: spread_not_transcribed

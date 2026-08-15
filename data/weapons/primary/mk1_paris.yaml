@@ -45,6 +45,11 @@ co_behavior: additive_with_base_damage
 co_base_fraction: 0.5
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 12
   trigger: charge
   shot_type: projectile
   projectile_speed_mps: 85
@@ -64,5 +69,3 @@ attack:
 source:
   url: https://wiki.warframe.com/w/MK1-Paris
 
-unmodeled:
-  - reason: spread_not_transcribed

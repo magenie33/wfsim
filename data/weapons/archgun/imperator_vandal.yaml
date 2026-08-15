@@ -57,6 +57,11 @@ no_resupply: true
 co_behavior: additive_with_base_damage
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 1
+    max_deg: 3
   # AUTO-SPOOL, which the page states and WFCD flattens to "Auto". The fire
   # rate below is the spooled-up one; the ramp itself is not modelled, so a
   # short burst is faster here than in game — stated in `unmodeled:`.
@@ -76,7 +81,6 @@ unmodeled:
   - reason: innate_punch_through
     m: 1.2
   - reason: arch_gun_deployer_cooldown
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Imperator_Vandal

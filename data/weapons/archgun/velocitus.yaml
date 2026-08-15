@@ -44,6 +44,11 @@ no_resupply: true
 co_behavior: independent
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 7
   trigger: charge
   charge_seconds: 1.0
   shot_type: projectile
@@ -64,7 +69,6 @@ unmodeled:
   - reason: innate_punch_through
     m: 5
   - reason: arch_gun_deployer_cooldown
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Velocitus

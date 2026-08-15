@@ -56,6 +56,11 @@ no_resupply: true
 co_behavior: additive_with_base_damage
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 1
+    max_deg: 3
   trigger: auto
   # THE GROUND COLUMN IS HIT-SCAN. In Archwing it is a projectile with falloff
   # from 1500 m to 3000 m; on the ground the wiki gives "Hit-Scan", 1.2 m innate
@@ -73,7 +78,6 @@ unmodeled:
   - reason: innate_punch_through
     m: 1.2
   - reason: arch_gun_deployer_cooldown
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Imperator

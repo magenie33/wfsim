@@ -43,6 +43,11 @@ scope:
   magnification: 8.0
   crit_chance_post_mod: 0.5
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
   trigger: charge
   # A full draw. The partial-charge shot is the sibling entry.
   charge_seconds: 1.0
@@ -65,7 +70,6 @@ unmodeled:
     m: 5.0
   - reason: zoom_steps
   - "the PARTIAL CHARGE is a separate entry (`lanka_uncharged`) — in game the two are the same trigger released at different moments, and picking between them here is a form choice rather than something the fight decides"
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Lanka
