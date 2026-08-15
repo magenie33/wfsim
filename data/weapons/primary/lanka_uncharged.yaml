@@ -1,0 +1,55 @@
+id: lanka_uncharged
+name: Lanka
+slot: primary
+class: sniper
+form: base
+transform_group: lanka
+mod_pools: [primary, rifle]
+mastery_rank: 10
+max_rank: 30
+
+accuracy: 100.0
+disposition: 1.05
+polarities: []
+exilus_polarity: madurai
+riven_family: Lanka
+internal_name: /Lotus/Weapons/ClanTech/Energy/Railgun
+noise: alarming
+magazine: 10
+reload_seconds: 2.0
+ammo_type: primary
+ammo_max: 72
+ammo_pickup: 15
+
+# No CO catalog row, so the ordinary class (absence means ORDINARY).
+co_behavior: additive_with_base_damage
+
+sniper_combo:
+  min: 2
+  seconds: 6.0
+scope:
+  magnification: 8.0
+  crit_chance_post_mod: 0.5
+attack:
+  trigger: semi_auto
+  # A THIRD-SECOND DRAW for 200 instead of 525 — worth it only when the target
+  # dies to 200, which against this roster's targets it does not.
+  charge_seconds: 0.33
+  shot_type: projectile
+  projectile_speed_mps: 200
+  fire_rate: 1.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.25
+  crit_multiplier: 2.0
+  status_chance: 0.25
+  punch_through_m: 1.5
+  damage: { electricity: 200.0 }
+unmodeled:
+  - "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its 6 s timer, which runs slightly generous"
+  - "the innate 1.5 m punch-through is not modelled — this arena has one target, so it changes no number"
+  - "damage falloff from 400 m to 600 m (down to 50% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+  - "the LOWER zoom levels are not modelled — this arena has no field of view to trade for magnification, so the scope always sits at its top level and its best buff"
+
+source:
+  url: https://wiki.warframe.com/w/Lanka

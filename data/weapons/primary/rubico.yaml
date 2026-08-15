@@ -1,0 +1,57 @@
+id: rubico
+name: Rubico
+slot: primary
+class: sniper
+form: base
+default_form: true
+mod_pools: [primary, rifle]
+mastery_rank: 6
+max_rank: 30
+
+accuracy: 100.0
+disposition: 0.95
+polarities: []
+exilus_polarity: madurai
+riven_family: Rubico
+internal_name: /Lotus/Weapons/Tenno/LongGuns/FiveShotSniper/FiveShotSniper
+noise: alarming
+magazine: 5
+reload_seconds: 2.4
+ammo_type: primary
+ammo_max: 72
+ammo_pickup: 15
+
+# No CO catalog row, so the ordinary class (absence means ORDINARY).
+co_behavior: additive_with_base_damage
+
+# THE TWO SNIPER MECHANICS — see MECHANICS §7 §"THE SNIPER RIFLE".
+#
+# MINIMUM COMBO 1: the first landing hit already pays 1.5x, which is why this
+# weapon is built around the counter rather than in spite of it.
+sniper_combo:
+  min: 1
+# ITS SCOPE GRANTS A CRITICAL MULTIPLIER, not headshot damage — +35% at 3.5x
+# and +50% at 6x. On a weapon whose base multiplier is 3.0x that is the whole
+# reason it is a Rubico.
+scope:
+  magnification: 6.0
+  crit_multiplier: 0.5
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 2.67
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.30
+  crit_multiplier: 3.0
+  status_chance: 0.12
+  punch_through_m: 1.0
+  damage: { impact: 144.0, puncture: 27.0, slash: 9.0 }   # 180 total
+unmodeled:
+  - "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its 2 s timer, which runs slightly generous"
+  - "the innate 1.0 m punch-through is not modelled — this arena has one target, so it changes no number"
+  - "damage falloff from 400 m to 600 m (down to 50% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+  - "the LOWER zoom levels are not modelled — this arena has no field of view to trade for magnification, so the scope always sits at its top level and its best buff"
+
+source:
+  url: https://wiki.warframe.com/w/Rubico

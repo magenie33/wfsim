@@ -1,0 +1,51 @@
+id: vulkar
+name: Vulkar
+slot: primary
+class: sniper
+form: base
+default_form: true
+mod_pools: [primary, rifle]
+mastery_rank: 3
+max_rank: 30
+
+accuracy: 100.0
+disposition: 1.45
+polarities: []
+exilus_polarity: madurai
+riven_family: Vulkar
+internal_name: /Lotus/Weapons/Grineer/LongGuns/GrineerSniperRifle/GrnSniperRifle
+noise: alarming
+magazine: 6
+reload_seconds: 3.0
+ammo_type: primary
+ammo_max: 72
+ammo_pickup: 15
+
+# No CO catalog row, so the ordinary class (absence means ORDINARY).
+co_behavior: additive_with_base_damage
+
+# MINIMUM COMBO 2, and a THREE-LEVEL scope: 2.5x/+35%, 4x/+55%, 8x/+70%
+# headshot damage. Only the top level is carried — see `unmodeled:`.
+sniper_combo:
+  min: 2
+scope:
+  magnification: 8.0
+  headshot_damage: 0.7
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 1.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.20
+  crit_multiplier: 2.0
+  status_chance: 0.25
+  punch_through_m: 1.0
+  damage: { impact: 180.0, puncture: 33.8, slash: 11.2 }   # 225 total
+unmodeled:
+  - "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its 2 s timer, which runs slightly generous"
+  - "the innate 1.0 m punch-through is not modelled — this arena has one target, so it changes no number"
+  - "the LOWER zoom levels are not modelled — this arena has no field of view to trade for magnification, so the scope always sits at its top level and its best buff"
+
+source:
+  url: https://wiki.warframe.com/w/Vulkar

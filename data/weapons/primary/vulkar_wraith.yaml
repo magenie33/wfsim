@@ -1,0 +1,55 @@
+id: vulkar_wraith
+name: Vulkar Wraith
+slot: primary
+class: sniper
+form: base
+default_form: true
+mod_pools: [primary, rifle]
+mastery_rank: 7
+max_rank: 30
+
+accuracy: 100.0
+disposition: 1.4
+polarities: [madurai]
+exilus_polarity: madurai
+riven_family: Vulkar
+traits: [wraith]
+internal_name: /Lotus/Weapons/Grineer/LongGuns/GrineerSniperRifle/VulkarWraith
+noise: alarming
+magazine: 8
+reload_seconds: 3.0
+ammo_type: primary
+ammo_max: 72
+ammo_pickup: 15
+
+# No CO catalog row, so the ordinary class (absence means ORDINARY).
+co_behavior: additive_with_base_damage
+
+# The ordinary Vulkar's combo and the ordinary Vulkar's scope — this pair
+# shares both rows of the published table, which is what the catalog's
+# "Vulkar / Vulkar Wraith" cell means.
+sniper_combo:
+  min: 2
+scope:
+  magnification: 8.0
+  headshot_damage: 0.7
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 2.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.20
+  crit_multiplier: 2.0
+  status_chance: 0.25
+  punch_through_m: 1.0
+  # NO SLASH at all, unlike the ordinary Vulkar's 80/15/5 — this is 90/10.
+  damage: { impact: 245.7, puncture: 27.3 }   # 273 total
+unmodeled:
+  - "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its 2 s timer, which runs slightly generous"
+  - "the innate 1.0 m punch-through is not modelled — this arena has one target, so it changes no number"
+  - "damage falloff from 400 m to 600 m (down to 50% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+  - "the LOWER zoom levels are not modelled — this arena has no field of view to trade for magnification, so the scope always sits at its top level and its best buff"
+
+source:
+  url: https://wiki.warframe.com/w/Vulkar_Wraith

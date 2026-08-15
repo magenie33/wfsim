@@ -1,0 +1,56 @@
+id: vadarya_prime
+name: Vadarya Prime
+slot: primary
+class: sniper
+# A CHARGE TRIGGER IS THE CHARGED FORM, and nothing else is. This weapon has
+# only the one — "Auto Charge" is how it always fires.
+form: charged
+default_form: true
+mod_pools: [primary, rifle]
+mastery_rank: 15
+max_rank: 30
+
+accuracy: 100.0
+disposition: 0.75
+polarities: [madurai, naramon]
+exilus_polarity: naramon
+riven_family: Vadarya
+traits: [prime]
+internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeLightningGun/PrimeLightningGun
+noise: alarming
+magazine: 16
+reload_seconds: 2.6
+ammo_type: primary
+ammo_max: 72
+ammo_pickup: 15
+
+# No CO catalog row, so the ordinary class (absence means ORDINARY).
+co_behavior: additive_with_base_damage
+
+sniper_combo:
+  min: 3
+# ITS SCOPED zoom is the 8x one; the FIRST is ordinary aim-down-sights and the
+# page says it does not build combo at all. Only the scoped level is carried,
+# which is also the only one that pays.
+scope:
+  magnification: 8.0
+  crit_multiplier: 0.5
+attack:
+  trigger: charge
+  # "Auto Charge" — a 0.75 s draw, then the listed rate.
+  charge_seconds: 0.75
+  shot_type: hit_scan
+  fire_rate: 2.8
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.40
+  crit_multiplier: 2.8
+  status_chance: 0.18
+  punch_through_m: 0.0
+  damage: { electricity: 400.0 }
+unmodeled:
+  - "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its 2 s timer, which runs slightly generous"
+  - "the LOWER zoom levels are not modelled — this arena has no field of view to trade for magnification, so the scope always sits at its top level and its best buff"
+  - "the CHAIN LIGHTNING is not modelled, and it is a third of what this weapon does — every hit rolls 0/1/2/3 extra strikes (30/35/17.5/17.5%), guaranteed after three failures, chaining twice within 10 m and scaling off the same mods. This arena has one target for them to chain between"
+source:
+  url: https://wiki.warframe.com/w/Vadarya_Prime

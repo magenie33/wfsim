@@ -1,0 +1,69 @@
+id: lanka
+name: Lanka
+slot: primary
+class: sniper
+# THE FULL DRAW is the form this weapon is played as;
+# `lanka_uncharged` is the partial one — the Cernos Prime
+# pair set this convention.
+form: charged
+default_form: true
+transform_group: lanka
+mod_pools: [primary, rifle]
+mastery_rank: 10
+max_rank: 30
+
+accuracy: 100.0
+disposition: 1.05
+polarities: []
+exilus_polarity: madurai
+riven_family: Lanka
+internal_name: /Lotus/Weapons/ClanTech/Energy/Railgun
+noise: alarming
+magazine: 10
+reload_seconds: 2.0
+ammo_type: primary
+ammo_max: 72
+ammo_pickup: 15
+
+# No CO catalog row, so the ordinary class (absence means ORDINARY).
+co_behavior: additive_with_base_damage
+
+# THE ONE SNIPER WITH A SIX-SECOND COMBO. Every other sniper's counter drops
+# one per 2 s without a hit; the Lanka's takes 6, which is the whole reason
+# `SniperCombo::seconds` is a field with a default rather than a constant.
+sniper_combo:
+  min: 2
+  seconds: 6.0
+# ...AND THE SCOPE BONUS THE MECHANIC PAGE CALLS AN EXCEPTION. VERBATIM (wiki
+# `Lanka`): "The zoom bonus adds a flat +20/30/50 critical chance, applied
+# after mods." So it is NOT a bucket term — a relative +50% would be half of
+# this weapon's 25% base, five points; this is fifty. It lands on the post-mod
+# layer, which is a different arithmetic and a different field.
+scope:
+  magnification: 8.0
+  crit_chance_post_mod: 0.5
+attack:
+  trigger: charge
+  # A full draw. The partial-charge shot is the sibling entry.
+  charge_seconds: 1.0
+  shot_type: projectile
+  projectile_speed_mps: 250
+  # The page prints "inf attacks/sec": the draw IS the cadence here, so the
+  # listed rate says nothing and `charge_seconds` is what paces it.
+  fire_rate: 1.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.25
+  crit_multiplier: 2.0
+  status_chance: 0.25
+  punch_through_m: 5.0
+  damage: { electricity: 525.0 }
+unmodeled:
+  - "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its 6 s timer, which runs slightly generous"
+  - "the innate 5.0 m punch-through is not modelled — this arena has one target, so it changes no number"
+  - "damage falloff from 400 m to 600 m (down to 50% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+  - "the LOWER zoom levels are not modelled — this arena has no field of view to trade for magnification, so the scope always sits at its top level and its best buff"
+  - "the PARTIAL CHARGE is a separate entry (`lanka_uncharged`) — in game the two are the same trigger released at different moments, and picking between them here is a form choice rather than something the fight decides"
+
+source:
+  url: https://wiki.warframe.com/w/Lanka

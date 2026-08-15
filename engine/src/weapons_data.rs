@@ -1686,8 +1686,33 @@ impl SniperCombo {
 pub struct ScopeSpec {
     /// The top zoom level's magnification, carried for the card's sentence.
     pub magnification: f64,
-    /// ...and its headshot-damage bonus at that level, as a fraction.
+    /// ...and its headshot-damage bonus at that level, as a fraction. The
+    /// Vectis family's kind.
+    #[serde(default)]
     pub headshot_damage: f64,
+    /// ...or a CRITICAL CHANCE bonus, which is what the Lanka's scope grants
+    /// (+20/+30/+50% across its three levels). Relative to the unmodded base,
+    /// like every other crit-chance bucket entry.
+    #[serde(default)]
+    pub crit_chance: f64,
+    /// ...or a CRITICAL MULTIPLIER bonus — the Rubico family's kind, and the
+    /// Perigale's (+35/+50% and +20/+40%).
+    ///
+    /// A scope grants exactly ONE of these three in the published table, so the
+    /// two it does not grant stay zero. They are separate fields rather than a
+    /// kind + value because each lands in a DIFFERENT bucket, and a single
+    /// value with a tag would just move the match somewhere less obvious.
+    #[serde(default)]
+    pub crit_multiplier: f64,
+    /// ...or a FLAT critical chance applied AFTER mods, which is the Lanka's
+    /// and the reason the mechanic page calls its zoom bonus an exception:
+    /// *"The zoom bonus adds a flat +20/30/50 critical chance, applied after
+    /// mods"* (wiki `Lanka`). That is a different layer from `crit_chance`
+    /// above — a relative bucket term is multiplied by the weapon's base, and
+    /// this is added to the finished number — so it needs its own field or the
+    /// Lanka's +50% would be worth 50% of 25% instead of 50 points.
+    #[serde(default)]
+    pub crit_chance_post_mod: f64,
 }
 
 /// The arcane pools this weapon SEATS, in slot order.
@@ -2021,6 +2046,9 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // `resolve`, which is the only layer that knows whether the Tenno is
         // aiming — and the only one that knows a form cannot zoom.
         scope_headshot_damage: s.scope.map_or(0.0, |z| z.headshot_damage),
+        scope_crit_chance: s.scope.map_or(0.0, |z| z.crit_chance),
+        scope_crit_multiplier: s.scope.map_or(0.0, |z| z.crit_multiplier),
+        scope_crit_chance_post_mod: s.scope.map_or(0.0, |z| z.crit_chance_post_mod),
         // The DEFAULT lives with the ramp it belongs to, so "most weapons"
         // is stated once rather than copied into a second file that is free
         // to drift from it.

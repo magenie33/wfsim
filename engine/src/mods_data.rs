@@ -1133,7 +1133,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 122] = [
+        const EXPECTED: [(&str, &str, &[&str]); 135] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up. That
             // is what makes this whole class one line each — including the
@@ -1200,6 +1200,24 @@ mod tests {
             ("zylok_prime", "duplex", &[]),
             ("vectis", "semi_auto", &["semi_rifle_cannonade"]),
             ("vectis_prime", "semi_auto", &["semi_rifle_cannonade"]),
+            // THE REST OF THE SNIPERS. Four semi-autos in the rifle pool, so
+            // four Semi-Rifle Cannonades — and the Lanka, whose CHARGE trigger
+            // is what keeps it out rather than anything about its class.
+            ("rubico", "semi_auto", &["semi_rifle_cannonade"]),
+            ("rubico_prime", "semi_auto", &["semi_rifle_cannonade"]),
+            ("vulkar", "semi_auto", &["semi_rifle_cannonade"]),
+            ("vulkar_wraith", "semi_auto", &["semi_rifle_cannonade"]),
+            ("lanka", "charge", &[]),
+            ("snipetron", "semi_auto", &["semi_rifle_cannonade"]),
+            ("snipetron_vandal", "semi_auto", &["semi_rifle_cannonade"]),
+            ("sporothrix", "semi_auto", &["semi_rifle_cannonade"]),
+            ("coda_sporothrix", "semi_auto", &["semi_rifle_cannonade"]),
+            ("komorex", "semi_auto", &["semi_rifle_cannonade"]),
+            // BURSTS and a CHARGE, so no Cannonade on these three — the mod
+            // gates on a listed Semi-Auto trigger and none of them has one.
+            ("perigale", "burst", &[]),
+            ("perigale_prime", "burst", &[]),
+            ("vadarya_prime", "charge", &[]),
             // Batch 6 — the SPOOL weapons. Both families are ordinary autos
             // as far as the trigger vocabulary is concerned; the spool is a
             // ramp on the rate, not a trigger family.

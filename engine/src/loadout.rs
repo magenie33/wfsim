@@ -1123,6 +1123,13 @@ pub struct WeaponBase {
     /// ...and the scope's headshot bonus at its top zoom level, likewise
     /// unspent until `resolve` (0.0 = no scope).
     pub scope_headshot_damage: f64,
+    /// ...or the scope's CRIT bonuses, for the weapons whose zoom grants those
+    /// instead. Spent by `resolve`, like the headshot one, and only while
+    /// aiming. See `weapons_data::ScopeSpec`.
+    pub scope_crit_chance: f64,
+    pub scope_crit_multiplier: f64,
+    /// The Lanka's kind — see `weapons_data::ScopeSpec::crit_chance_post_mod`.
+    pub scope_crit_chance_post_mod: f64,
     /// ...and can it NOT be refilled mid-fight? See `WeaponSpec::no_resupply`.
     /// Separate from the above on purpose — most weapons have a reserve AND a
     /// way to top it up.
@@ -2399,6 +2406,23 @@ pub fn resolve_for(
         fb.fire_rate,
         fb.status_damage,
     );
+    // THE SCOPE'S OWN CRIT, and it joins the ordinary buckets. Most snipers'
+    // zoom grants a critical CHANCE or MULTIPLIER rather than headshot damage
+    // (the Lanka +50% chance at 8x, the Rubico family +50% multiplier), and
+    // "these zoom buffs ... generally stack additively with similar buffs from
+    // mods" (wiki `Sniper Rifle`) — so they are bucket terms, not their own
+    // factor. Added HERE, above the lock site, so a mod that pins crit chance
+    // wipes this too: "set to its default ignoring other bonuses" does not make
+    // an exception for where the bonus came from.
+    if tenno.state.aiming {
+        cc += base.scope_crit_chance;
+        cd += base.scope_crit_multiplier;
+    }
+    // …and the Lanka's, which is NOT a bucket term. Its bonus is "a flat
+    // +20/30/50 critical chance, applied after mods", so it lands on the
+    // post-mod layer beside the other flat grants rather than being multiplied
+    // by the weapon's unmodded 25%.
+    let scope_post_cc = if tenno.state.aiming { base.scope_crit_chance_post_mod } else { 0.0 };
     // RELOAD STARTS AT THE EVOLUTION'S BONUS, not at zero. Rapid Reinforcement
     // and its family feed the SAME additive bucket the mods do — one bucket, so
     // an evolution's +60% and Primed Fast Hands' +55% sum rather than
@@ -2816,7 +2840,7 @@ pub fn resolve_for(
     // modded values. No weapon carries both — the Dera has one and the
     // Cestra/Sicarus/Vectis the other — so the order cannot matter, and
     // computing them this way means it never will.
-    let modded_cc_pre = (base.base_crit_chance * (1.0 + cc) + base.post_mod_crit_chance).max(0.0);
+    let modded_cc_pre = (base.base_crit_chance * (1.0 + cc) + (base.post_mod_crit_chance + scope_post_cc)).max(0.0);
     let modded_sc_pre =
         (base.base_status_chance * (1.0 + sc) + base.post_mod_status_chance).max(0.0);
     let derived = |spec: Option<(f64, f64)>, from: f64| -> f64 {
@@ -2826,7 +2850,7 @@ pub fn resolve_for(
     let sc_from_cc = derived(base.base_status_from_crit, modded_cc_pre);
 
     let resolved_cc =
-        ((base.base_crit_chance + cc_from_sc) * (1.0 + cc) + base.post_mod_crit_chance).max(0.0);
+        ((base.base_crit_chance + cc_from_sc) * (1.0 + cc) + (base.post_mod_crit_chance + scope_post_cc)).max(0.0);
     let prelude_cd = match base.crit_mult_below_cc {
         Some((bonus, below)) if resolved_cc < below => bonus,
         _ => 0.0,
@@ -3045,7 +3069,7 @@ pub fn resolve_for(
             modified_base: rmb,
             // The post-mod flat layer (Elemental Excess) is a WEAPON stat
             // change, so the explosion takes it too.
-            crit_chance: (r.base_crit_chance * (1.0 + cc) + base.post_mod_crit_chance).max(0.0),
+            crit_chance: (r.base_crit_chance * (1.0 + cc) + (base.post_mod_crit_chance + scope_post_cc)).max(0.0),
             crit_damage: r.base_crit_damage * (1.0 + cd),
             base_crit_chance: r.base_crit_chance,
             base_crit_damage: r.base_crit_damage,
@@ -3083,7 +3107,7 @@ pub fn resolve_for(
         ResolvedLingering {
             damage: fd,
             modified_base: fmb,
-            crit_chance: (f.base_crit_chance * (1.0 + cc) + base.post_mod_crit_chance).max(0.0),
+            crit_chance: (f.base_crit_chance * (1.0 + cc) + (base.post_mod_crit_chance + scope_post_cc)).max(0.0),
             crit_damage: f.base_crit_damage * (1.0 + cd),
             status_chance: (f.base_status_chance * (1.0 + sc) + base.post_mod_status_chance)
                 .max(0.0),
@@ -3940,6 +3964,51 @@ mod tests {
         let flagged: Vec<&str> = crate::weapons_data::all().iter()
             .filter(|w| w.cannot_zoom).map(|w| w.id.as_str()).collect();
         assert_eq!(flagged, vec!["vasto_incarnon", "vasto_prime_incarnon"], "{flagged:?}");
+    }
+
+    /// A SCOPE GRANTS ONE OF THREE THINGS, AND THEY LAND IN THREE PLACES.
+    ///
+    /// The Vectis family's zoom gives headshot damage, the Rubico's a critical
+    /// MULTIPLIER, the Lanka's a critical CHANCE — and the Lanka's is the one
+    /// the mechanic page calls an exception: *"The zoom bonus adds a flat
+    /// +20/30/50 critical chance, applied after mods"*. That is a different
+    /// layer from the other two. A relative +50% on the Lanka's 25% base is
+    /// five points; the flat one is fifty, and putting it in the ordinary
+    /// bucket would have understated the weapon by an order of magnitude.
+    #[test]
+    fn a_scopes_three_kinds_land_in_three_buckets() {
+        let refs: Vec<&ModDef> = Vec::new();
+        let mut hip = crate::tenno_data::default_tenno().clone();
+        hip.state.aiming = false;
+        let pair = |id: &str| {
+            let b = WeaponBase::from_data(id, false, &[]);
+            (
+                resolve(&b, &refs, StackPolicy::Emergent),
+                resolve_for(&b, &refs, StackPolicy::Emergent, &hip),
+            )
+        };
+
+        // THE RUBICO: +50% critical multiplier, relative, so 3.0x -> 4.5x.
+        let (aim, no) = pair("rubico");
+        assert!((no.crit_damage - 3.0).abs() < 1e-9, "hip: {}", no.crit_damage);
+        assert!((aim.crit_damage - 4.5).abs() < 1e-9, "scoped: {}", aim.crit_damage);
+
+        // THE LANKA: fifty POINTS of crit chance, not half of its 25%.
+        let (aim, no) = pair("lanka");
+        assert!((no.crit_chance - 0.25).abs() < 1e-9, "hip: {}", no.crit_chance);
+        assert!(
+            (aim.crit_chance - 0.75).abs() < 1e-9,
+            "the Lanka's scope is a FLAT +50 applied after mods, so 25% becomes 75%              and not 37.5%: {}",
+            aim.crit_chance
+        );
+
+        // THE VULKAR: +70% headshot damage, the Vectis family's kind.
+        let (aim, no) = pair("vulkar");
+        assert!((aim.headshot_damage_bonus - no.headshot_damage_bonus - 0.7).abs() < 1e-9);
+        // ...and none of the three touches a weapon without a scope.
+        let (aim, no) = pair("torid");
+        assert!((aim.crit_chance - no.crit_chance).abs() < 1e-9);
+        assert!((aim.crit_damage - no.crit_damage).abs() < 1e-9);
     }
 
     /// BOTH SNIPER MECHANICS ARE THE SCOPE'S. *"Building combo and benefiting

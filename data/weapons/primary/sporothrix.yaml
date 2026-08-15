@@ -1,0 +1,62 @@
+id: sporothrix
+name: Sporothrix
+slot: primary
+class: sniper
+form: base
+default_form: true
+mod_pools: [primary, rifle]
+mastery_rank: 13
+max_rank: 30
+
+accuracy: 100.0
+disposition: 1.3
+polarities: [vazarin]
+exilus_polarity: madurai
+riven_family: Sporothrix
+internal_name: /Lotus/Weapons/Infested/LongGuns/InfSniperRifle/InfSniperRifle
+noise: alarming
+magazine: 9
+reload_seconds: 2.7
+ammo_type: primary
+ammo_max: 45
+ammo_pickup: 15
+
+# No CO catalog row, so the ordinary class (absence means ORDINARY).
+co_behavior: additive_with_base_damage
+
+# ONE HIT ARMS THE COUNTER, which suits a weapon this slow.
+sniper_combo:
+  min: 1
+scope:
+  magnification: 2.7
+  headshot_damage: 0.5
+attack:
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 270
+  fire_rate: 1.83
+  multishot: 1.0
+  ammo_cost: 1
+  # ONE PER CENT crit, against a 53% status chance — this weapon is a status
+  # weapon wearing a sniper's body.
+  crit_chance: 0.01
+  crit_multiplier: 3.0
+  status_chance: 0.53
+  punch_through_m: 0.0
+  damage: { impact: 100.17, puncture: 115.01, slash: 155.82 }   # 371 total
+  # THE BARB ERUPTS. A 1.7 m explosion 0.9 s after the hit — the delay is not
+  # modelled (see `unmodeled:`), so the two arrive together here.
+  radial:
+    damage: { slash: 22.0, viral: 19.0 }   # 41 at the centre
+    radius_m: 1.7
+    falloff_start_m: 0.0
+    falloff_reduction: 0.0
+    crit_chance: 0.01
+    crit_multiplier: 3.0
+    status_chance: 0.53
+unmodeled:
+  - "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its 2 s timer, which runs slightly generous"
+  - "the LOWER zoom levels are not modelled — this arena has no field of view to trade for magnification, so the scope always sits at its top level and its best buff"
+  - "the barb's 0.9 s ERUPTION DELAY is not modelled — in game the explosion lands nearly a second after the shot, and here the two arrive together, so a short engagement gets its damage sooner than it should"
+source:
+  url: https://wiki.warframe.com/w/Sporothrix

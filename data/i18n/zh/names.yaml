@@ -243,6 +243,20 @@ weapons:
   vulcax: 金工火舌
   deconstructor: 分离
   deconstructor_prime: 分离 Prime
+  lanka: 兰卡
+  lanka_uncharged: 兰卡
+  rubico: 绝路
+  rubico_prime: 绝路 Prime
+  vulkar: 金工火神
+  vulkar_wraith: 金工火神·亡魂
+  coda_sporothrix: 终幕·孢丝感染枪
+  komorex: 猛毒
+  perigale: 月面狂风
+  perigale_prime: 月面狂风 Prime
+  snipetron: 狙击特昂
+  snipetron_vandal: 狙击特昂·破坏者
+  sporothrix: 孢丝感染枪
+  vadarya_prime: 瓦德雅 Prime
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's

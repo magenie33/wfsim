@@ -1,0 +1,65 @@
+id: coda_sporothrix
+name: Coda Sporothrix
+slot: primary
+class: sniper
+form: base
+default_form: true
+mod_pools: [primary, rifle]
+mastery_rank: 17
+max_rank: 40
+
+accuracy: 100.0
+disposition: 0.95
+polarities: [vazarin]
+exilus_polarity: madurai
+riven_family: Sporothrix
+traits: [coda, adversary]
+internal_name: /Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaSporothrix
+noise: alarming
+magazine: 11
+reload_seconds: 2.5
+ammo_type: primary
+ammo_max: 45
+ammo_pickup: 15
+
+# No CO catalog row, so the ordinary class (absence means ORDINARY).
+co_behavior: additive_with_base_damage
+
+sniper_combo:
+  min: 1
+scope:
+  magnification: 2.7
+  headshot_damage: 0.5
+
+# THE PROGENITOR ELEMENT — mandatory on an adversary weapon: every copy comes
+# out of a Lich with one, so there is no "none" to pick.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+attack:
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 270
+  fire_rate: 1.83
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.05
+  crit_multiplier: 3.0
+  status_chance: 0.55
+  punch_through_m: 0.0
+  damage: { impact: 101.52, puncture: 116.56, slash: 157.92 }   # 376 total
+  radial:
+    damage: { slash: 25.0, viral: 23.0 }   # 48 at the centre
+    radius_m: 2.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.0
+    crit_chance: 0.05
+    crit_multiplier: 3.0
+    status_chance: 0.55
+unmodeled:
+  - "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its 2 s timer, which runs slightly generous"
+  - "the LOWER zoom levels are not modelled — this arena has no field of view to trade for magnification, so the scope always sits at its top level and its best buff"
+  - "the barb's 0.9 s ERUPTION DELAY is not modelled — in game the explosion lands nearly a second after the shot, and here the two arrive together, so a short engagement gets its damage sooner than it should"
+source:
+  url: https://wiki.warframe.com/w/Coda_Sporothrix

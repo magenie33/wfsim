@@ -1,0 +1,68 @@
+id: komorex
+name: Komorex
+slot: primary
+class: sniper
+form: base
+default_form: true
+mod_pools: [primary, rifle]
+mastery_rank: 8
+max_rank: 30
+
+accuracy: 100.0
+disposition: 1.15
+polarities: []
+exilus_polarity: naramon
+riven_family: Komorex
+internal_name: /Lotus/Weapons/Corpus/LongGuns/CrpSentAmlgSniper/CrpSentAmlgSniper
+noise: alarming
+magazine: 20
+reload_seconds: 3.0
+ammo_type: primary
+ammo_max: 40
+ammo_pickup: 15
+
+# No CO catalog row, so the ordinary class (absence means ORDINARY).
+co_behavior: additive_with_base_damage
+
+# MINIMUM COMBO 5 — tied with the Vectis Prime for the largest in the game.
+sniper_combo:
+  min: 5
+
+# NO `scope:` BLOCK, AND THAT IS THE POINT. This weapon's zoom levels are not
+# BUFFS, they are a stat TRADE, and docs/CATALOGS.md §3 says outright that one
+# does not belong in `ScopeSpec`:
+#
+#   2.0x  -50% Recoil, +2 m Punch Through
+#   3.5x  +100% Damage, +3 m Explosion Radius, -75% FIRE RATE
+#
+# The second level doubles the damage and quarters the rate, which is HALF the
+# DPS for a bigger single hit — a mode a player chooses, not a bonus they
+# collect. So the entry carries the FIRST level's numbers (neither of whose
+# effects this arena reads) and states the second as unmodelled.
+attack:
+  trigger: semi_auto
+  shot_type: projectile
+  fire_rate: 5.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.16
+  crit_multiplier: 2.1
+  status_chance: 0.35
+  punch_through_m: 0.0
+  damage: { impact: 9.7, puncture: 40.74, slash: 46.56 }   # 97 total
+  # A VIRAL explosion on every shot, 53 at the first zoom level and 106 at the
+  # second — the second is not carried, see above.
+  radial:
+    damage: { viral: 53.0 }
+    radius_m: 3.5
+    falloff_start_m: 0.0
+    falloff_reduction: 0.0
+    crit_chance: 0.16
+    crit_multiplier: 2.1
+    status_chance: 0.34
+unmodeled:
+  - "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its 2 s timer, which runs slightly generous"
+  - "the SECOND ZOOM LEVEL is not modelled, and on this weapon it is a stat TRADE rather than a buff — 3.5x gives +100% damage, +3 m explosion radius and -75% fire rate, which is half the sustained DPS for a much bigger single hit. Choosing it is a mode, and this entry is the first level"
+  - "the first zoom's own effects are worth nothing here — -50% recoil and +2 m punch-through, neither of which this arena reads"
+source:
+  url: https://wiki.warframe.com/w/Komorex

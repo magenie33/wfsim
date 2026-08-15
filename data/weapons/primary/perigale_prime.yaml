@@ -1,0 +1,53 @@
+id: perigale_prime
+name: Perigale Prime
+slot: primary
+class: sniper
+form: base
+default_form: true
+mod_pools: [primary, rifle]
+mastery_rank: 14
+max_rank: 30
+
+accuracy: 100.0
+disposition: 0.65
+polarities: [madurai, madurai, madurai]
+exilus_polarity: madurai
+riven_family: Perigale
+traits: [prime]
+internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimePerigale/PrimePerigaleSniper
+noise: alarming
+magazine: 16
+reload_seconds: 3.0
+ammo_type: primary
+ammo_max: 32
+ammo_pickup: 15
+
+# No CO catalog row, so the ordinary class (absence means ORDINARY).
+co_behavior: additive_with_base_damage
+
+sniper_combo:
+  min: 1
+scope:
+  magnification: 4.0
+  crit_multiplier: 0.4
+attack:
+  trigger: burst
+  burst:
+    count: 4
+    delay_seconds: 0.04
+  shot_type: hit_scan
+  fire_rate: 2.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.32
+  crit_multiplier: 2.6
+  status_chance: 0.20
+  punch_through_m: 1.0
+  damage: { impact: 22.08, puncture: 103.04, slash: 58.88 }   # 184 total
+unmodeled:
+  - "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its 2 s timer, which runs slightly generous"
+  - "the innate 1.0 m punch-through is not modelled — this arena has one target, so it changes no number"
+  - "the LOWER zoom levels are not modelled — this arena has no field of view to trade for magnification, so the scope always sits at its top level and its best buff"
+  - "Voruna's signature bonus is not modelled — carried by her the ammo pool grows to 56, and this arena has no Warframe holding it"
+source:
+  url: https://wiki.warframe.com/w/Perigale_Prime
