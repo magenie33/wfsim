@@ -152,6 +152,27 @@ demoted it, which came out of this very class.
 Disagreements are not rounding. Record which source you took and why, in the
 file — every existing weapon does.
 
+**THE INFOBOX AGREEING IS NOT THE INTAKE BEING DONE** (2026-08-15). The row
+above is not advice; it is the step that gets skipped, because a weapon whose
+every infobox field matches LOOKS finished. The Mausolon's did — both columns,
+both attacks, field for field — and its Characteristics carried the mechanic
+the weapon is actually built around:
+
+> `**Damaging {{D|Lifted}} enemies causes up to 13 additional instances of
+> direct hit damage.`
+
+paired with its alt-fire's `**Guaranteed {{D|Lifted}} proc.` — i.e. the two
+forms feed each other, and nothing in the infobox hints at it. The same pass
+missed the Cortege's beam cone and its innate body punch through. So read the
+bullets and write one `unmodeled:` line per claim you cannot model; a claim you
+never read is the only kind you cannot admit to.
+
+Read them from `?action=raw`, and read them as a TREE: the indentation says
+which attack a bullet belongs to, and the rendered page flattens it. The Lifted
+line sits under *primary fire* and the guaranteed proc under *Alternate Fire* —
+one indent level apart, and swapping them would have modelled the synergy
+backwards.
+
 **AN ARCH-GUN HAS TWO COLUMNS AND WFCD ONLY HAS ONE** (2026-08-14). Its page's
 infobox has an `Archwing` tab and an `Atmosphere` tab, and `warframe-items`
 carries the ARCHWING one — so the export is the wrong column for this repo,
