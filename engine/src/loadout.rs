@@ -1111,6 +1111,12 @@ pub struct WeaponBase {
     /// Damage types forced on every DIRECT hit — see
     /// `weapons_data::AttackSpec::forced_procs`.
     pub forced_procs: Vec<DamageType>,
+    /// ONE PULL, ONE ELEMENT EACH — see
+    /// `weapons_data::AttackSpec::pellet_elements`. Empty on every weapon
+    /// whose projectiles share an element, which is all but one of them.
+    pub pellet_elements: Vec<DamageType>,
+    /// See `weapons_data::AttackSpec::multishot_adds_damage`.
+    pub multishot_adds_damage: bool,
     /// See `weapons_data::AttackSpec::attractor_seconds`.
     pub attractor_seconds: Option<f64>,
     /// How many tendrils this weapon can hold up (0 = it has none). See
@@ -2031,6 +2037,18 @@ pub struct ResolvedPanel {
     pub applies_microwave: bool,
     /// Forced procs, carried through unmodded — no mod grants or removes one.
     pub forced_procs: Vec<DamageType>,
+    /// ONE RESOLVED VECTOR PER PROJECTILE, in firing order — `(direct, radial)`
+    /// — for a weapon whose missiles carry different innate elements. EMPTY on
+    /// every other weapon, and the fight reads `damage` as it always did.
+    ///
+    /// Resolved by running the whole panel once per element rather than by
+    /// retyping a finished vector, because an innate element enters the
+    /// elemental hierarchy and a finished vector has already forgotten where
+    /// its Blast came from. It costs six resolves at BUILD time and nothing in
+    /// the fight.
+    pub pellet_damage: Vec<(DamageVector, DamageVector)>,
+    /// See `weapons_data::AttackSpec::multishot_adds_damage`.
+    pub multishot_adds_damage: bool,
     /// The field the attack plants, unmodded for the same reason: no mod in
     /// the roster lengthens it. See `weapons_data::AttackSpec`.
     pub attractor_seconds: Option<f64>,
@@ -3334,6 +3352,32 @@ pub fn resolve_for(
         beam_ramp_floor: base.beam_ramp_floor,
         applies_microwave: base.applies_microwave,
         forced_procs: base.forced_procs.clone(),
+        multishot_adds_damage: base.multishot_adds_damage,
+        // ONE RESOLVE PER ELEMENT. The recursion terminates because the clone
+        // clears `pellet_elements` — and it has to be a re-resolve rather than
+        // a retyped result, because an innate element enters the elemental
+        // HIERARCHY (MECHANICS §3 rule 2) and a finished vector cannot say
+        // which of its Blast the mods put there.
+        //
+        // The whole base vector becomes `total` of the named element, which is
+        // what "each projectile deals one of six elements" means: the missile
+        // is that element, not a blend with it.
+        pellet_damage: base
+            .pellet_elements
+            .iter()
+            .map(|e| {
+                let mut one = base.clone();
+                one.pellet_elements = Vec::new();
+                one.base_vector = crate::damage::DamageVector::new()
+                    .with(*e, base.base_vector.total());
+                if let Some(r) = one.radial.as_mut() {
+                    r.base_vector =
+                        crate::damage::DamageVector::new().with(*e, r.base_vector.total());
+                }
+                let p = resolve_for(&one, mods, policy, tenno);
+                (p.damage, p.radial.map_or_else(DamageVector::new, |r| r.damage))
+            })
+            .collect(),
         attractor_seconds: base.attractor_seconds,
         tendril_max: base.tendril_max,
         sniper_combo: if tenno.state.aiming { base.sniper_combo } else { None },

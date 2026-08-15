@@ -1596,6 +1596,12 @@ pub struct DummyParams {
     pub beam_ramp_floor: f64,
     /// Does this weapon apply MICROWAVE? See [`DebuffState::microwave`].
     pub applies_microwave: bool,
+    /// ONE RESOLVED VECTOR PER PROJECTILE, `(direct, radial)`, for a weapon
+    /// whose missiles carry different innate elements. EMPTY on every other
+    /// weapon, and then the loop reads `damage` as it always did.
+    pub pellet_damage: Vec<(crate::damage::DamageVector, crate::damage::DamageVector)>,
+    /// See `weapons_data::AttackSpec::multishot_adds_damage`.
+    pub multishot_adds_damage: bool,
     /// THE SHOT COMBO COUNTER, or `None` — which is what a sniper fired from
     /// the hip already resolved to, so nothing here asks about aiming.
     pub sniper_combo: Option<crate::weapons_data::SniperCombo>,
@@ -2353,6 +2359,8 @@ impl DummyParams {
             syndicate_radial: panel.syndicate_radial,
             forced_procs: panel.forced_procs.clone(),
             attractor_seconds: panel.attractor_seconds,
+            pellet_damage: panel.pellet_damage.clone(),
+            multishot_adds_damage: panel.multishot_adds_damage,
             sniper_combo: panel.sniper_combo,
             // NOTHING IN HAND. A fight starts with the counter at zero for the
             // same reason it starts with no tendrils up — the card moves it.
@@ -2604,6 +2612,8 @@ impl Default for DummyParams {
             beam_ramp_floor: BEAM_RAMP_FLOOR,
             applies_microwave: false,
             syndicate_radial: None,
+            pellet_damage: Vec::new(),
+            multishot_adds_damage: false,
             sniper_combo: None,
             combo_initial: 0,
             combo_held: false,
@@ -4731,6 +4741,103 @@ fn sample_stacks(
 }
 
 #[cfg(test)]
+mod pellet_volley {
+    use super::*;
+
+    fn arbucep(mods: &[&str]) -> DummyParams {
+        let base = crate::loadout::WeaponBase::from_data("arbucep", false, &[]);
+        let pool = crate::mods_data::pool_for_weapon("arbucep");
+        let refs: Vec<&crate::loadout::ModDef> =
+            mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
+        assert_eq!(refs.len(), mods.len(), "every named mod is in this weapon's pool");
+        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        DummyParams::from_panel(
+            &panel,
+            &crate::arena::Arena::training(30.0),
+            &crate::arcanes_data::ArcaneFx::none(),
+        )
+    }
+
+    /// MULTISHOT PAYS IN DAMAGE HERE, NOT IN PROJECTILES. VERBATIM (wiki
+    /// `Arbucep`): *"Multishot increases weapon damage instead of creating
+    /// additional projectiles. Damage bonus is multiplicative to other sources
+    /// of damage."*
+    ///
+    /// Both halves are asserted because each alone would look right: a run
+    /// that gained damage AND projectiles would pass a damage-only check, and
+    /// one that gained neither would pass a pellet-only check.
+    #[test]
+    fn multishot_buys_damage_and_not_a_seventh_missile() {
+        let plain = monte_carlo(&arbucep(&[]), 30, 5);
+        // Dual Rounds is +60% multishot: six missiles would become 9.6 on an
+        // ordinary weapon, and here they stay six and hit 1.6x as hard.
+        let split = monte_carlo(&arbucep(&["dual_rounds"]), 30, 5);
+
+        assert!(
+            (split.mean_pellets - plain.mean_pellets).abs() < 1e-9,
+            "the volley is still six: {} against {}",
+            split.mean_pellets, plain.mean_pellets
+        );
+        // THE HITS SCALE BY EXACTLY THE BONUS. `mean_damage` includes the DoTs
+        // the volley leaves, and a DoT's payload is computed from ModifiedBase
+        // rather than from the finished instance — so a FINAL multiplier does
+        // not reach it, here or for Double Tap or Eclipse. Taking the DoT out
+        // is what makes the assertion exact rather than approximately right.
+        // THE FACTOR ITSELF, read off the hit account rather than inferred from
+        // an aggregate. The account lists every factor the instance paid, in
+        // the order the engine applies them, and its product IS the number
+        // that reached the meter — so this asserts the mechanic rather than a
+        // consequence of it that a dozen other things also move.
+        let factor = |mods: &[&str]| {
+            let rep = replay(&arbucep(mods), 12345, 20);
+            let a = rep.accounts.iter().find(|a| a.source == "direct").expect("a direct hit");
+            a.steps
+                .iter()
+                .find(|(n, _)| *n == "multishot-as-damage")
+                .map(|(_, v)| *v)
+                .expect("the factor is listed")
+        };
+        assert!((factor(&[]) - 1.0).abs() < 1e-9, "unmodded pays nothing: {}", factor(&[]));
+        assert!(
+            (factor(&["dual_rounds"]) - 1.6).abs() < 1e-9,
+            "+60% multishot is exactly +60% on the instance: {}",
+            factor(&["dual_rounds"])
+        );
+        // …and the run as a whole moves too, by less, because a FINAL
+        // multiplier does not reach a DoT payload (which is computed from
+        // ModifiedBase) — here, for Double Tap, and for Eclipse alike.
+        assert!(
+            (split.mean_dot_damage - plain.mean_dot_damage).abs() < 1e-9,
+            "the DoTs are untouched: {} against {}",
+            split.mean_dot_damage, plain.mean_dot_damage
+        );
+        let whole = split.mean_damage / plain.mean_damage;
+        assert!(whole > 1.4 && whole < 1.6, "the DoTs dilute it to x{whole:.3}");
+    }
+
+    /// SIX MISSILES ARE SIX INSTANCES, which is the whole reason the elements
+    /// are not blended into one vector: a proc is drawn once per instance.
+    ///
+    /// The volley carries six DIFFERENT combined elements, so a run has to show
+    /// procs of several of them — a blended instance would draw one proc from
+    /// a six-way weighted mix and could not.
+    #[test]
+    fn the_volley_is_six_instances_and_six_elements() {
+        let p = arbucep(&[]);
+        assert_eq!(p.pellet_damage.len(), 6);
+        assert!(p.multishot_adds_damage);
+        let s = monte_carlo(&p, 40, 9);
+        // Six a pull, and a pull is one round.
+        assert!(
+            (s.mean_pellets / s.mean_shots - 6.0).abs() < 1e-9,
+            "six missiles a pull: {} pellets over {} shots",
+            s.mean_pellets, s.mean_shots
+        );
+        assert!(s.mean_procs > 0.0, "a 34.9% status volley procs");
+    }
+}
+
+#[cfg(test)]
 mod sniper_combo_fight {
     use super::*;
 
@@ -5204,8 +5311,30 @@ pub fn run_once_traced(
         let mb = p.dot_modified_base.unwrap_or_else(|| p.damage.total());
         (qvec, qtotal, mb)
     };
+    // ...and one per PROJECTILE, for a weapon whose missiles differ. Built
+    // here for the same reason the single one is: the vector is static for the
+    // whole fight, and quantizing it six times a shot would be six times the
+    // work for the same answer.
+    let variant_pre = |p: &DummyParams| -> Vec<(crate::damage::DamageVector, f64, f64)> {
+        p.pellet_damage
+            .iter()
+            .map(|(d, _)| {
+                let q = d.quantized();
+                let tot = q.total();
+                (q, tot, p.dot_modified_base.unwrap_or_else(|| d.total()))
+            })
+            .collect()
+    };
+    let variant_rad = |p: &DummyParams| -> Vec<crate::damage::DamageVector> {
+        p.pellet_damage.iter().map(|(_, r)| r.quantized()).collect()
+    };
+    let main_variants = variant_pre(params);
+    let main_variant_rad = variant_rad(params);
     let main_pre = precompute(params);
     let base_pre = params.cycle.as_ref().map(|c| precompute(&c.base_form));
+    let base_variants = params.cycle.as_ref().map_or_else(Vec::new, |c| variant_pre(&c.base_form));
+    let base_variant_rad =
+        params.cycle.as_ref().map_or_else(Vec::new, |c| variant_rad(&c.base_form));
     let sd = params.status_duration_mult;
     // The per-unit status stack caps (Acolytes: any 4, Impact 3) and the
     // status-payload scaling now live in `settle_procs`, which every instance
@@ -5781,6 +5910,17 @@ pub fn run_once_traced(
         } else {
             (&main_pre.0, main_pre.2)
         };
+        // The per-projectile vectors belong to the FORM that is firing, like
+        // everything else at this scope. A cycle whose base form has them and
+        // whose Incarnon form does not simply reads an empty slice there.
+        let (variants, variant_rad): (&[_], &[_]) = if in_base_form {
+            match params.cycle.as_ref() {
+                Some(_) => (&base_variants, &base_variant_rad),
+                None => (&main_variants, &main_variant_rad),
+            }
+        } else {
+            (&main_variants, &main_variant_rad)
+        };
 
         // Status events scheduled before this shot land first.
         process_ticks(
@@ -6085,8 +6225,26 @@ pub fn run_once_traced(
         } else {
             rolled.max(1) as f64
         };
+        // MULTISHOT THAT IS NOT MORE PROJECTILES. VERBATIM (wiki `Arbucep`):
+        // "Multishot increases weapon damage instead of creating additional
+        // projectiles. Damage bonus is multiplicative to other sources of
+        // damage." So the COUNT stays the weapon's own — which is what keeps
+        // its six elements six — and the bucket becomes a factor instead.
+        //
+        // The factor is the rolled count over the weapon's own, so an unmodded
+        // weapon pays 1.0 and every multishot source scales it from there. It
+        // is applied as its own multiplier and never joins a bucket, which is
+        // what "multiplicative to other sources of damage" says.
+        let own_pellets = ap.base_multishot.max(1.0);
+        let ms_damage = if ap.multishot_adds_damage {
+            (ms_eff / own_pellets).max(1.0)
+        } else {
+            1.0
+        };
         let (n_pellets, mut beam_merge) = if ap.continuous {
             (1, merge_bonus)
+        } else if ap.multishot_adds_damage {
+            (own_pellets.round() as u32, 1.0)
         } else {
             (rolled, 1.0)
         };
@@ -6556,8 +6714,17 @@ pub fn run_once_traced(
                 // absolute ones add flat. Under AssumedMax those same bonuses
                 // arrive through the mod bucket in `r.crit_chance`, so this is
                 // what makes the two policies agree about one mod.
+                // THIS PROJECTILE'S OWN VECTOR, when the weapon has one per
+                // projectile. `pellet_idx` wraps, so a multishot source that
+                // did add projectiles would cycle the elements again rather
+                // than run off the end of the list.
+                let own = if variants.is_empty() {
+                    None
+                } else {
+                    Some(pellet_idx as usize % variants.len())
+                };
                 let (qvec, tier) = match &rad {
-                    None => (*qvec, tier),
+                    None => (own.map_or(*qvec, |i| variants[i].0), tier),
                     Some(r) => {
                         // NO `weakened_cc` here. Puncture's Weakened is a flat
                         // crit-chance buff on the VICTIM, and the wiki states
@@ -6579,7 +6746,7 @@ pub fn run_once_traced(
                             ap.crit_tier_upgrade_chance,
                             &mut d.spine,
                         );
-                        (r.damage.quantized(), t2)
+                        (own.map_or_else(|| r.damage.quantized(), |i| variant_rad[i]), t2)
                     }
                 };
                 // WARFRAME ABILITY ELEMENTS, added to the FINISHED vector.
@@ -6732,6 +6899,10 @@ pub fn run_once_traced(
                     * params.ability_final_at(t)
                     * beam_ramp
                     * combo_mult
+                    // Multishot paid in DAMAGE, for the weapon that works that
+                    // way — "multiplicative to other sources of damage", so it
+                    // stands here beside Double Tap rather than in a bucket.
+                    * ms_damage
                     * pm_mult;
                 let head_direct = direct && part.is_head;
                 let col = target.incoming_column(&params.target);
@@ -6791,6 +6962,7 @@ pub fn run_once_traced(
                                 ("Double Tap", dt_mult),
                                 ("Synth Charge", sc_mult),
                                 ("sniper combo", combo_mult),
+                                ("multishot-as-damage", ms_damage),
                                 ("multishot-generated", pm_mult),
                             ],
                             raw,

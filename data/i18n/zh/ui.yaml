@@ -135,6 +135,8 @@ ui:
   "Voruna's signature bonus is not modelled — carried by her the ammo pool doubles to 48, and this arena has no Warframe holding it": Voruna 的专属加成尚未建模 —— 由她携带时备弹翻倍到 48，而这个战场里没有战甲持有它
   "Voruna's signature bonus is not modelled — carried by her the ammo pool grows to 56, and this arena has no Warframe holding it": Voruna 的专属加成尚未建模 —— 由她携带时备弹增至 56，而这个战场里没有战甲持有它
   "the CHAIN LIGHTNING is not modelled, and it is a third of what this weapon does — every hit rolls 0/1/2/3 extra strikes (30/35/17.5/17.5%), guaranteed after three failures, chaining twice within 10 m and scaling off the same mods. This arena has one target for them to chain between": 连锁闪电尚未建模，而它占这把武器作用的三分之一 —— 每次命中掷出 0/1/2/3 道额外闪电（30/35/17.5/17.5%），连续三次落空后必定触发，在 10 米内最多连锁两次，并且吃与主射击相同的 mod。这个战场只有一个目标可供它们连锁
+  "the 8-degree spread is not modelled — this arena has one target at zero distance, so all six missiles always land on it": 8 度的散布尚未建模 —— 这个战场只有一个零距离的目标，所以六枚导弹永远全部命中
+  "the explosion's falloff is not stated by the page and is therefore not modelled — the target stands at the centre and takes the full 228 either way": 页面没有给出这个爆炸的距离衰减，所以这里也没有建模 —— 目标站在中心，无论如何都吃满 228
   "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its 6 s timer, which runs slightly generous": 打空一枪会掉一层连击，这一点尚未建模 —— 这个战场没有距离概念，每一发都必中，所以连击只会因为 6 秒计时而衰减，比实战略微宽松
   "the LOWER zoom levels are not modelled — this arena has no field of view to trade for magnification, so the scope always sits at its top level and its best buff": 较低的变焦档位尚未建模 —— 这个战场没有视野可以用来换倍率，所以瞄准镜永远停在最高档、吃它最好的加成
   "the innate 1.0 m punch-through is not modelled — this arena has one target, so it changes no number": 自带的 1.0 米穿透尚未建模 —— 这个战场只有一个目标，所以它不改变任何数字

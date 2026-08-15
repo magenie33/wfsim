@@ -1133,13 +1133,14 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 135] = [
+        const EXPECTED: [(&str, &str, &[&str]); 136] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up. That
             // is what makes this whole class one line each — including the
             // FLUCTUS, which IS semi-auto and still takes none, because a
             // Cannonade reads the pool before it reads the trigger.
             ("larkspur_prime", "held", &[]),
+            ("arbucep", "auto", &[]),
             ("imperator", "auto", &[]),
             ("imperator_vandal", "auto", &[]),
             ("phaedra", "auto", &[]),

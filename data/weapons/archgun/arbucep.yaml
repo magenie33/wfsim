@@ -1,0 +1,98 @@
+id: arbucep
+name: Arbucep
+# NOKKO'S SIGNATURE ARCH-GUN, and the weapon this roster's per-projectile
+# element support was built for. It was held out of the class intake on
+# 2026-08-15 because none of the three approximations available then was
+# honest; the engine grew the two mechanics instead (owner: 引擎支持做好).
+slot: archgun
+class: archgun
+form: base
+default_form: true
+
+# TWO COLUMNS, exactly double on both parts.
+#   |            | per missile | its explosion | reload | Ammo Max |
+#   | Atmosphere |     32      |      228      | 2.00 s |   540    |
+#   | Archwing   |     16      |      114      | 1.72 s |     0    |
+#
+# Identical in both: crit 10% / 2.90x, status 34.9%, fire rate 1.50, magazine
+# 36, the 4 m radial range and the 8-degree spread.
+deployment: atmosphere
+deployments:
+  archwing:
+    reload_seconds: 1.72
+    no_resupply: false
+    damage: { blast: 16.0 }
+    radial_damage: { blast: 114.0 }
+mod_pools: [archgun]
+mastery_rank: 0
+max_rank: 30
+
+accuracy: 12.5               # "Low"
+disposition: 0.70
+polarities: [madurai, naramon]
+riven_family: Arbucep
+internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/NokkoArchGun/NokkoArchGun
+noise: alarming
+magazine: 36
+reload_seconds: 2.0
+
+ammo_type: archgun
+ammo_max: 540
+no_resupply: true
+
+# CONDITION OVERLOAD, transcribed verbatim from the catalog:
+#   Arbucep | Direct Hit | Projectile | 100% | Multiplying
+#   note: "Consistent on all 6 projectiles. Deals 130 instead of 32. Does not
+#          apply to the 228 damage AoE"
+# The note's second half is the engine's standing rule anyway — an AoE part
+# takes no CO unless its own row says so — and its first half is what tells
+# you the six missiles are SIMULTANEOUS rather than a cycle across pulls.
+co_behavior: independent
+
+attack:
+  trigger: auto
+  shot_type: projectile
+  fire_rate: 1.5
+  # SIX MISSILES, ONE ELEMENT EACH, fired together. `multishot` is the count
+  # and `pellet_elements` is what each one carries; the two must agree in
+  # length, which `validate` checks.
+  multishot: 6.0
+  # ...AND MULTISHOT MODS DO NOT ADD A SEVENTH. VERBATIM (wiki): "Multishot
+  # increases weapon damage instead of creating additional projectiles. Damage
+  # bonus is multiplicative to other sources of damage." So Split Chamber is
+  # an independent damage multiplier on this weapon and nothing else.
+  multishot_adds_damage: true
+  pellet_elements: [blast, corrosive, gas, magnetic, radiation, viral]
+  ammo_cost: 1
+  crit_chance: 0.10
+  crit_multiplier: 2.9
+  status_chance: 0.349
+  punch_through_m: 0.0
+  # PER MISSILE. The element below is only the FIRST one's — the other five
+  # come from `pellet_elements` above, each resolved through the elemental
+  # hierarchy in its own right.
+  damage: { blast: 32.0 }
+  # PRIMARY COMPRESSION, verbatim from that catalog:
+  #   Arbucep / Arbucep (Atmosphere) | Primary Fire + AoE | 0% | Doesn't Work
+  compression:
+    effectiveness: 0.00
+    stacking: multiplies
+    radius_calculation: doesnt_work
+  radial:
+    damage: { blast: 228.0 }   # per missile; Archwing: 114
+    radius_m: 4.0
+    falloff_start_m: 0.0
+    # The page prints no falloff for this explosion, so none is invented.
+    falloff_reduction: 0.0
+    crit_chance: 0.10
+    crit_multiplier: 2.9
+    status_chance: 0.349
+
+unmodeled:
+  - "the missiles HOME, and homing is not modelled — this arena has one target at zero distance, so a guided missile and a straight one land the same"
+  - "the 8-degree spread is not modelled — this arena has one target at zero distance, so all six missiles always land on it"
+  - "the explosion's falloff is not stated by the page and is therefore not modelled — the target stands at the centre and takes the full 228 either way"
+  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+
+source:
+  url: https://wiki.warframe.com/w/Arbucep

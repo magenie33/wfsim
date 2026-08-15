@@ -36,6 +36,8 @@ fn dual_toxocyst_baseline() -> DummyParams {
         burst: None,
         beam_ramp_floor: 0.20,
         syndicate_radial: None,
+        pellet_damage: Vec::new(),
+        multishot_adds_damage: false,
         sniper_combo: None,
         combo_initial: 0,
         combo_held: false,

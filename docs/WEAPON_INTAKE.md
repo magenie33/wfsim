@@ -246,39 +246,36 @@ the number is a faithful-looking implementation with nothing behind it.
 | checks | `check_parity`, `check_equip_rules`, `check_enemies` … | re-run; they are per-weapon by construction |
 | a measurement | docs/MEASUREMENTS.md | **only if the weapon exercises something not already pinned** |
 
-## THE ARCH-GUN CLASS — done, except one (2026-08-15)
+## THE ARCH-GUN CLASS — done (2026-08-15)
 
-Nineteen of the twenty Arch-Guns are in, as 28 entries. What the class taught is
-in §1 above (two columns, and WFCD carries the wrong one). What it still owes is
-one weapon.
+All twenty, as 29 entries. What the class taught is in §1 above (two columns,
+and WFCD carries the wrong one).
 
-**ARBUCEP IS NOT IN, and it needs engine work rather than typing.** It fires SIX
-homing missiles at once, each carrying a DIFFERENT combined element — Blast,
-Corrosive, Gas, Magnetic, Radiation, Viral — and each with its own radial. An
-`attack` here has one damage vector and one radial, and none of the three ways
-to force it through is honest:
+**THE ARBUCEP WAS THE LAST ONE, and it needed engine work rather than typing.**
+It was held back for a day with the reasoning written out here, because none of
+the three approximations available then was honest: one blended six-element
+vector gets the damage right and the STATUS wrong by six times (a proc is drawn
+once per instance); `multishot: 6` with that vector multiplies the damage by
+six; `multishot: 6` with one element is five-sixths the wrong element.
 
-- **one instance carrying all six types** gets the damage right and the STATUS
-  wrong by six times, because a proc is drawn once per instance and this weapon
-  draws six. At 34.9% status that is not a rounding error;
-- **`multishot: 6` with a six-type vector** multiplies the damage by six;
-- **`multishot: 6` with a one-type vector** is five-sixths the wrong element,
-  and this weapon is nothing but its elements.
+The engine grew the two mechanics instead:
 
-It also states a mechanic nothing else in the roster has: *"Multishot increases
-weapon damage instead of creating additional projectiles. Damage bonus is
-multiplicative to other sources of damage."* Every multishot mod in the pool
-means something different on it.
+- **`pellet_elements:`** — the innate element of every projectile a pull fires,
+  in firing order. The panel RESOLVES ONCE PER ELEMENT (`resolve` recurses with
+  the element swapped and the list cleared) and the fight picks by pellet index.
+  It is a re-resolve rather than a retyped result because an innate element
+  enters the elemental hierarchy, and a finished vector has forgotten which of
+  its Blast the mods put there. Six resolves at build time, none in the fight.
+- **`multishot_adds_damage:`** — *"Multishot increases weapon damage instead of
+  creating additional projectiles. Damage bonus is multiplicative to other
+  sources of damage"*. The count stays the weapon's own, which is what keeps
+  six elements six, and the bucket becomes an independent factor.
 
-So it needs per-pellet element cycling in the loop, and a multishot rule of its
-own. Adding it with any of the three approximations above would put a number on
-the board that no measurement could ever reproduce, which is the one thing this
-repo does not do.
-
-Its CO row is transcribed and waiting: `Arbucep | Direct Hit | Projectile |
-100% | Multiplying`, with the note *"Consistent on all 6 projectiles. Deals 130
-instead of 32. Does not apply to the 228 damage AoE"* — which incidentally
-confirms the six are simultaneous rather than a cycle.
+Both are pinned by tests that assert the mechanic rather than a consequence:
+the six vectors are checked element by element, and the multishot factor is
+read OFF THE HIT ACCOUNT (exactly 1.000 unmodded, 1.600 with a +60% mod)
+rather than inferred from a damage total — because a total also moves when the
+DoTs do, and a final multiplier never reaches a DoT payload.
 
 ## The batches
 
