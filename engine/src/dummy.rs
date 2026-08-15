@@ -5001,6 +5001,54 @@ mod every_form_runs {
         );
     }
 
+    /// POINT BLANK IS THE FIGHT THIS ENGINE HAS ALWAYS RUN, and the 2D layer
+    /// has to leave it BYTE-IDENTICAL rather than merely close.
+    ///
+    /// That is the whole contract of the refactor (owner, 2026-08-15: the
+    /// current work is the 2D structure, and every case is point blank). It is
+    /// asserted as a PROPERTY rather than trusted: the same build at range 0
+    /// with its real cone and with no cone at all must produce the same run,
+    /// field for field — same shots, same pellets, same crits, same procs, same
+    /// damage to the last bit.
+    ///
+    /// WHAT IT ACTUALLY CATCHES, established by breaking it rather than by
+    /// arguing about it (2026-08-15):
+    ///
+    /// - removing the `range > 0.0` GATE does NOT fail this test, and that is
+    ///   worth knowing: the offset is `range * tan(theta)`, so at range 0 it is
+    ///   zero whether the angle was drawn or not. The gate saves a draw and
+    ///   protects a future second consumer of `d.aim`; it is not what makes
+    ///   point blank safe.
+    /// - dropping the `range *` from the offset — the ordinary "forgot to scale
+    ///   by distance" bug — DOES fail it, loudly: the Strun lands 105 pellets
+    ///   against 144. That is the regression this exists for, and it is the one
+    ///   that would otherwise move every board row while every test that looks
+    ///   at averages still passed.
+    ///
+    /// `one_fight` makes the same claim across three whole builds at 1000 runs;
+    /// this one makes it cheap enough to run on every commit.
+    #[test]
+    fn at_point_blank_a_cone_changes_nothing_at_all() {
+        for id in ["boar", "braton", "strun", "torid", "vectis"] {
+            let arena = crate::arena::Arena::training(10.0);
+            let base = crate::loadout::WeaponBase::from_data(id, false, &[]);
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let with = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            assert!(with.spread.is_some(), "{id} has no cone to switch off");
+            let without = DummyParams { spread: None, ..with.clone() };
+            let a = run_once(&with, &mut Rng::new(0x5EED));
+            let b = run_once(&without, &mut Rng::new(0x5EED));
+            assert_eq!(a.shots, b.shots, "{id}: shots");
+            assert_eq!(a.pellets, b.pellets, "{id}: pellets");
+            assert_eq!(a.crits, b.crits, "{id}: crits");
+            assert_eq!(a.procs, b.procs, "{id}: procs");
+            assert_eq!(a.kills, b.kills, "{id}: kills");
+            assert_eq!(a.total_damage.to_bits(), b.total_damage.to_bits(), "{id}: damage");
+        }
+    }
+
     /// THE LARKSPUR PAIR IS THE ONE THIS REPO HAS ALREADY GOT WRONG.
     ///
     /// AGENTS.md §"A FORM INHERITS ITS WEAPON" records it: the ordinary
