@@ -1,7 +1,9 @@
 id: phantasma_prime_charged
 name: Phantasma Prime
-slot: primary
-class: shotgun
+# A FORM OF ITS WEAPON: everything below that describes the WEAPON
+# rather than this shot is inherited from `phantasma_prime`, and only what
+# DIFFERS is written here. See `weapons_data::INHERITED`.
+inherits: phantasma_prime
 # THE ALT-FIRE — a one-second charge that throws a plasma bomb instead of the
 # six beams. `charged` is the kind for a shot whose DRAW replaces the fire-rate
 # cadence (docs/GLOSSARY.md "FORMS"), and it is reached from the beam for FREE:
@@ -11,25 +13,7 @@ class: shotgun
 form: charged
 transform_group: phantasma_prime
 
-# Same weapon, so everything below the attack profile matches
-# phantasma_prime.yaml.
-mod_pools: [primary, shotgun]
 grip_type: ""
-mastery_rank: 14
-max_rank: 30
-accuracy: 100
-disposition: 0.8
-polarities: [madurai, madurai, naramon]
-exilus_polarity: madurai
-riven_family: Phantasma
-traits: [prime, sentient]
-internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimePhantasma/PhantasmaPrimeShotgun
-noise: alarming
-ammo_type: primary
-ammo_max: 330
-ammo_pickup: 15
-magazine: 11
-reload_seconds: 0.5
 
 # CONDITION OVERLOAD — the bomb is ordinary, and the wiki's catalog row is
 # about the part this entry does NOT model:

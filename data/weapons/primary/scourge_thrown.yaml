@@ -1,7 +1,9 @@
 id: scourge_thrown
 name: Scourge
-slot: primary
-class: rifle
+# A FORM OF ITS WEAPON: everything below that describes the WEAPON
+# rather than this shot is inherited from `scourge`, and only what
+# DIFFERS is written here. See `weapons_data::INHERITED`.
+inherits: scourge
 # THE ALT-FIRE — the weapon itself, thrown. "Alternate Fire throws the Scourge,
 # dealing damage and causing a 2 meter Bullet Attractor field on the heads of
 # enemies within 14 meters of the impact point." Its own entry because its
@@ -11,21 +13,8 @@ class: rifle
 form: alt_fire
 transform_group: scourge
 
-# Same weapon, so everything below the attack profile matches scourge.yaml.
-mod_pools: [primary, rifle]
-mastery_rank: 6
-max_rank: 30
-accuracy: 100
-disposition: 1.20
-polarities: [naramon, madurai]
-exilus_polarity: madurai
-riven_family: Scourge
-internal_name: /Lotus/Weapons/Tenno/LongGuns/TnPriestSpear/TnPriestSpearGun
 introduced: "Update 21.0"
 noise: silent               # the throw is SILENT where the primary fire is ALARMING
-ammo_type: primary
-ammo_max: 200
-ammo_pickup: 60
 # ONE THROW IS ONE MAGAZINE — see scourge_prime_thrown.yaml for the cycle. The
 # throw is WIND-UP → release → RELOAD every time, so the magazine is 1 and the
 # 40 rounds belong to the primary-fire entry (owner, 2026-08-14).

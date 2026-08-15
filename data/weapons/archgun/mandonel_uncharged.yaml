@@ -1,35 +1,22 @@
 id: mandonel_uncharged
 name: Mandonel
-slot: archgun
-class: archgun
+# A FORM OF ITS WEAPON: everything below that describes the WEAPON
+# rather than this shot is inherited from `mandonel`, and only what
+# DIFFERS is written here. See `weapons_data::INHERITED`.
+inherits: mandonel
 # THE HORIZONTAL SPREAD — the uncharged shot, and a different weapon in shape:
 # EIGHT projectiles in a wide horizontal line rather than one hit-scan lance.
 form: base
 transform_group: mandonel
 
-deployment: atmosphere
 deployments:
   archwing:
     reload_seconds: 3.0
     no_resupply: false
     # PER PROJECTILE, like the ground column below — 90 each, 720 for the volley.
     damage: { impact: 25.0, puncture: 15.0, slash: 10.0, radiation: 40.0 }
-mod_pools: [archgun]
-mastery_rank: 10
-max_rank: 30
 
 accuracy: 12.5               # "Very Low" — it is a spread
-disposition: 1.10
-polarities: [madurai]
-riven_family: Mandonel
-internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/TnConcreteArchgun/TnConcreteArchgunWeapon
-noise: alarming
-magazine: 30
-reload_seconds: 2.0
-
-ammo_type: archgun
-ammo_max: 300
-no_resupply: true
 
 # CONDITION OVERLOAD, its own row and NOT the charged form's:
 #   Mandonel | Uncharged Attack | Projectile | 100% | Multiplying

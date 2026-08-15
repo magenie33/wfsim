@@ -199,6 +199,16 @@ a class, a form, or a family.
 
 ### 3. Its ATTACKS, and how many entries they need
 
+**A SECOND ENTRY INHERITS THE FIRST.** Write `inherits: <parent_id>` under its
+name and then state only the ATTACK and whatever genuinely differs — the
+Scourge's throw really does hold one round against the primary fire's forty,
+and stating that override is the whole point. Do NOT copy the mastery rank, the
+disposition, the polarities, the riven family, the internal name or the ammo
+block: a guard rejects any value identical to the weapon's, because a
+restatement carries no information and is the only way the two entries can
+drift apart. `weapons_data::INHERITED` is the list.
+
+
 One weapon ENTRY carries one attack. A weapon with a second attack you can
 choose at the trigger — a charged shot, an alt-fire — is TWO entries in one
 `transform_group`, and the alternate one gets its own `form:` kind. Reach for a

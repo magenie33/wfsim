@@ -1,7 +1,9 @@
 id: burston_prime_incarnon
 name: Burston Prime (Incarnon Form)
-slot: primary
-class: rifle
+# A FORM OF ITS WEAPON: everything below that describes the WEAPON
+# rather than this shot is inherited from `burston_prime`, and only what
+# DIFFERS is written here. See `weapons_data::INHERITED`.
+inherits: burston_prime
 # Gauge-switched: entering it costs a charge meter and a transmute animation,
 # which is what gives the sim a two-form CYCLE to run.
 form: incarnon
@@ -11,22 +13,7 @@ form: incarnon
 transform_group: burston_prime
 transforms_from: burston_prime
 
-mod_pools: [primary, rifle, assault_rifle]
-mastery_rank: 12
-max_rank: 30
 accuracy: 28.57              # module Accuracy for attack 2 (the base form's is 25)
-disposition: 1.35
-polarities: [madurai]
-exilus_polarity: naramon
-riven_family: Burston
-traits: [prime, never_vaulted]
-internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeBurston/PrimeBurston
-noise: alarming
-ammo_type: primary
-ammo_max: 540
-ammo_pickup: 80
-magazine: 45
-reload_seconds: 2.0
 
 # The Incarnon transformation economy (wiki Burston Incarnon Genesis).
 #

@@ -1,7 +1,9 @@
 id: cortege_alt
 name: Cortege
-slot: archgun
-class: archgun
+# A FORM OF ITS WEAPON: everything below that describes the WEAPON
+# rather than this shot is inherited from `cortege`, and only what
+# DIFFERS is written here. See `weapons_data::INHERITED`.
+inherits: cortege
 # THE ALT-FIRE, AND IT IS EARNED. "Getting 5 kills with the Cortege's primary
 # fire will unlock an Alternate Fire that releases a trio of grenades" (wiki).
 # That gate is NOT modelled — see `unmodeled:` — so this entry is the alt-fire
@@ -14,29 +16,12 @@ class: archgun
 form: alt_fire
 transform_group: cortege
 
-deployment: atmosphere
 deployments:
   archwing:
     reload_seconds: 3.0
     no_resupply: false
     damage: { impact: 10.0 }
     radial_damage: { blast: 1000.0 }
-mod_pools: [archgun]
-mastery_rank: 14
-max_rank: 30
-
-accuracy: 12.5
-disposition: 1.00
-polarities: []
-riven_family: Cortege
-internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechArchGun/ThanoTechArchGun
-noise: alarming
-magazine: 100
-reload_seconds: 2.5
-
-ammo_type: archgun
-ammo_max: 300
-no_resupply: true
 
 co_behavior: additive_with_base_damage
 

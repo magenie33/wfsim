@@ -773,6 +773,28 @@ pub struct FormRef {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct WeaponSpec {
+    /// A FORM INHERITS ITS WEAPON. The id of the entry this one is a form of —
+    /// every WEAPON-LEVEL field this entry does not state is filled in from
+    /// there, and only what actually DIFFERS is written down here.
+    ///
+    /// WHY IT EXISTS. 88 of the roster's entries are form siblings rather than
+    /// weapons, and before this they each restated their weapon's mastery
+    /// rank, disposition, polarities, riven family, internal name, magazine,
+    /// reload and the rest. An audit on 2026-08-15 counted 313 identical values
+    /// written twice and 1,004 (group, field) pairs where some siblings carried
+    /// a field and others did not — and it found a real error inside that
+    /// noise: the ordinary Larkspur's alt-fire carried its BASE form's
+    /// accuracy while its Prime's carried the alt-fire's. Nothing could catch
+    /// it, because nothing knew the two entries were the same weapon.
+    ///
+    /// With this, a difference is the only thing on the page.
+    ///
+    /// Applies to [`INHERITED`] and to nothing else: the ATTACK is never
+    /// inherited (it is the entire reason a form is a separate entry), and
+    /// neither is `co_behavior`, which the catalog gives PER ATTACK — the
+    /// Mandonel's two forms take different classes from two different rows.
+    #[serde(default)]
+    pub inherits: Option<String>,
     pub id: String,
     pub name: String,
     /// THIS ENTRY CANNOT AIM DOWN SIGHTS, so nothing gated on aiming pays.
@@ -993,14 +1015,83 @@ fn one() -> f64 {
     1.0
 }
 
+/// WHAT A FORM INHERITS FROM ITS WEAPON — the fields that describe the
+/// WEAPON rather than the shot.
+///
+/// The line is drawn at "would the arsenal print this once for the gun, or
+/// once per firing mode". Mastery, disposition, polarities and the riven
+/// family are the gun's. Magazine and reload are the gun's TOO, even though a
+/// form may override them: the Scourge's throw really does hold one round
+/// against the primary fire's forty, and stating that override is exactly what
+/// this mechanism makes visible.
+///
+/// NOT HERE, deliberately:
+///   - everything under `attack:` — a form IS its attack;
+///   - `co_behavior`, which the Condition Overload catalog gives per ATTACK
+///     (the Mandonel's uncharged shot is Multiplying and its charged one
+///     Adding, from two different rows);
+///   - `form`, `default_form`, `transform_group`, `transforms_to/from`,
+///     `incarnon`, `id`, `name` — the entry's own identity;
+///   - `source`, because a form that shares a page still says so itself.
+const INHERITED: [&str; 20] = [
+    "slot", "class", "mod_pools", "mastery_rank", "max_rank", "accuracy",
+    "disposition", "polarities", "exilus_polarity", "riven_family",
+    "internal_name", "noise", "magazine", "reload_seconds", "ammo_type",
+    "ammo_max", "ammo_pickup", "traits", "deployment", "no_resupply",
+];
+
+/// ...and `deployments` and `valence`, which are MAPS and would need a deep
+/// merge to inherit partially. They are all-or-nothing: a form that states
+/// neither takes its weapon's whole block.
+const INHERITED_BLOCKS: [&str; 4] = ["deployments", "valence", "sniper_combo", "scope"];
+
 /// Every weapon entry in `data/weapons/` (embedded), parsed once.
 pub fn all() -> &'static [WeaponSpec] {
     static SPECS: OnceLock<Vec<WeaponSpec>> = OnceLock::new();
     SPECS.get_or_init(|| {
-        crate::data::files_under("weapons/")
+        // TWO PASSES, and the merge happens on the YAML rather than on the
+        // struct: `WeaponSpec`'s fields have defaults, so once it is
+        // deserialized "absent" and "stated at the default" are the same
+        // thing, and a form could not inherit a `false` or a `0`.
+        use serde_norway::Value;
+        let raw: Vec<(&str, Value)> = crate::data::files_under("weapons/")
             .filter(|(p, _)| p.ends_with(".yaml"))
             .map(|(p, text)| {
-                serde_norway::from_str::<WeaponSpec>(text)
+                (p, serde_norway::from_str::<Value>(text)
+                    .unwrap_or_else(|e| panic!("parse {p}: {e}")))
+            })
+            .collect();
+        let by_id: std::collections::HashMap<String, Value> = raw
+            .iter()
+            .filter_map(|(_, v)| {
+                v.get("id").and_then(Value::as_str).map(|i| (i.to_string(), v.clone()))
+            })
+            .collect();
+        raw.into_iter()
+            .map(|(p, mut v)| {
+                if let Some(parent) = v.get("inherits").and_then(Value::as_str) {
+                    let up = by_id
+                        .get(parent)
+                        .unwrap_or_else(|| panic!("{p}: inherits unknown id `{parent}`"));
+                    let m = v.as_mapping_mut().unwrap_or_else(|| panic!("{p}: not a mapping"));
+                    for k in INHERITED.iter().chain(INHERITED_BLOCKS.iter()) {
+                        let key = Value::String((*k).to_string());
+                        if !m.contains_key(&key) {
+                            if let Some(val) = up.get(*k) {
+                                m.insert(key, val.clone());
+                            }
+                        }
+                    }
+                    // ADMISSIONS ARE NOT INHERITED, and that is deliberate.
+                    // A form's `unmodeled:` is about THAT form — the Lanka's
+                    // full draw says "the partial charge is a separate entry",
+                    // which is nonsense printed on the partial charge. The
+                    // shared lines are the class's rather than the weapon's
+                    // anyway (every Arch-Gun repeats the Deployer cooldown),
+                    // and de-duplicating THOSE is a different job: they want a
+                    // reason id and a template, not a parent.
+                }
+                serde_norway::from_value::<WeaponSpec>(v)
                     .unwrap_or_else(|e| panic!("parse {p}: {e}"))
             })
             .collect()
@@ -2152,6 +2243,108 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // the module's `ExtraHeadshotDmg`.
         headshot_damage_bonus: s.headshot_damage_bonus.unwrap_or(0.0),
         noncrit_bonus: None,
+    }
+}
+
+#[cfg(test)]
+mod inheritance_tests {
+    use super::*;
+
+    /// A FORM NEVER RESTATES ITS WEAPON. This is the guard the Larkspur bug
+    /// needed and did not have.
+    ///
+    /// Its alt-fire carried its BASE form's accuracy while its Prime's alt-fire
+    /// carried the alt-fire's — one weapon, two entries, two answers, and no
+    /// way to notice because nothing knew the two were the same gun. An audit
+    /// found it (2026-08-15) among 313 identical values written twice.
+    ///
+    /// The rule that closes it is not "inherit everything", which would be
+    /// wrong — a form legitimately overrides its magazine (the Scourge's throw
+    /// holds one round against forty) and its accuracy (a scoped alt-fire is
+    /// not a hip-fired beam). The rule is that a form may not state a value
+    /// IDENTICAL to its weapon's: a restatement carries no information and is
+    /// the only way the two can drift apart.
+    #[test]
+    fn a_form_states_only_what_differs_from_its_weapon() {
+        use serde_norway::Value;
+        // Read the FILES rather than the merged specs — after the merge the
+        // inherited value and a restated one are the same thing, which is
+        // exactly the distinction this asserts.
+        let raw: Vec<(&str, Value)> = crate::data::files_under("weapons/")
+            .filter(|(p, _)| p.ends_with(".yaml"))
+            .map(|(p, text)| (p, serde_norway::from_str::<Value>(text).expect(p)))
+            .collect();
+        let by_id: std::collections::HashMap<&str, &Value> = raw
+            .iter()
+            .filter_map(|(_, v)| v.get("id").and_then(Value::as_str).map(|i| (i, v)))
+            .collect();
+
+        let mut echoed: Vec<String> = Vec::new();
+        for (p, v) in &raw {
+            let Some(parent) = v.get("inherits").and_then(Value::as_str) else { continue };
+            let up = by_id[parent];
+            for k in INHERITED.iter().chain(INHERITED_BLOCKS.iter()) {
+                if let (Some(mine), Some(theirs)) = (v.get(*k), up.get(*k)) {
+                    if mine == theirs {
+                        echoed.push(format!("{p}: `{k}` is its weapon's own value"));
+                    }
+                }
+            }
+        }
+        assert!(
+            echoed.is_empty(),
+            "a form restated a value it already inherits — drop the line, and if it              is meant to DIFFER, the value is what is wrong:
+  {}",
+            echoed.join("
+  ")
+        );
+    }
+
+    /// ...and every form sibling that CAN inherit, does. A weapon whose form
+    /// carries a full copy of its metadata is the state this was written to
+    /// leave, so a new one is a regression rather than a style choice.
+    #[test]
+    fn a_form_that_copies_its_weapon_declares_the_inheritance() {
+        use serde_norway::Value;
+        let raw: Vec<(&str, Value)> = crate::data::files_under("weapons/")
+            .filter(|(p, _)| p.ends_with(".yaml"))
+            .map(|(p, text)| (p, serde_norway::from_str::<Value>(text).expect(p)))
+            .collect();
+        // group -> the entry that is the arsenal's form
+        let mut head: std::collections::HashMap<&str, &Value> = std::collections::HashMap::new();
+        for (_, v) in &raw {
+            if v.get("default_form").and_then(Value::as_bool) == Some(true) {
+                if let Some(g) = v.get("transform_group").and_then(Value::as_str) {
+                    head.insert(g, v);
+                }
+            }
+        }
+        let mut copiers: Vec<String> = Vec::new();
+        for (p, v) in &raw {
+            if v.get("inherits").is_some()
+                || v.get("default_form").and_then(Value::as_bool) == Some(true)
+            {
+                continue;
+            }
+            let Some(g) = v.get("transform_group").and_then(Value::as_str) else { continue };
+            let Some(up) = head.get(g) else { continue };
+            let same = INHERITED
+                .iter()
+                .filter(|k| v.get(**k).is_some() && v.get(**k) == up.get(**k))
+                .count();
+            // A handful of shared fields is a form describing itself; a dozen
+            // is a copy of the weapon.
+            if same >= 6 {
+                copiers.push(format!("{p}: {same} fields identical to `{g}`"));
+            }
+        }
+        assert!(
+            copiers.is_empty(),
+            "these forms copy their weapon instead of inheriting it — add              `inherits:` and delete the copies:
+  {}",
+            copiers.join("
+  ")
+        );
     }
 }
 

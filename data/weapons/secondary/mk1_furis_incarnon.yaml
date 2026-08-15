@@ -1,7 +1,9 @@
 id: mk1_furis_incarnon
 name: MK1-Furis (Incarnon Form)
-slot: secondary
-class: pistol
+# A FORM OF ITS WEAPON: everything below that describes the WEAPON
+# rather than this shot is inherited from `mk1_furis`, and only what
+# DIFFERS is written here. See `weapons_data::INHERITED`.
+inherits: mk1_furis
 form: incarnon
 
 # TWO WEAPONS MODEL: second entry of the transform group — see
@@ -9,25 +11,8 @@ form: incarnon
 transform_group: mk1_furis
 transforms_from: mk1_furis
 
-mod_pools: [pistol]
-mastery_rank: 0
-max_rank: 30
 unmodeled:
   - "damage falloff from 10 m to 16 m (down to 22% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
-
-accuracy: 22.22
-disposition: 1.40
-polarities: [naramon]
-exilus_polarity: naramon
-riven_family: Furis
-traits: [tenno]
-internal_name: /Lotus/Weapons/MK1Series/MK1Furis
-noise: alarming
-ammo_type: secondary
-ammo_max: 210
-ammo_pickup: 40
-magazine: 35
-reload_seconds: 1.4
 
 # THE SAME ECONOMY AS THE FURIS — one Genesis, one gauge. Every number in this
 # block is copied from that page rather than from a second one, because there

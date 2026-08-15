@@ -1,7 +1,9 @@
 id: morgha_alt
 name: Morgha
-slot: archgun
-class: archgun
+# A FORM OF ITS WEAPON: everything below that describes the WEAPON
+# rather than this shot is inherited from `morgha`, and only what
+# DIFFERS is written here. See `weapons_data::INHERITED`.
+inherits: morgha
 # THE ALT-FIRE, and `alt_fire` rather than `charged` even though the page calls
 # it a "Charged Shot": it has a Semi-Auto trigger and no charge time, so nothing
 # about it is a DRAW. A charge trigger IS the charged form and nothing else is
@@ -13,32 +15,14 @@ class: archgun
 form: alt_fire
 transform_group: morgha
 
-# The RADIUS also halves between the tabs — 20.0 m in space, 12.0 m on the
-# ground — which changes no number against one target at the centre and is
-# named in `unmodeled:`.
-deployment: atmosphere
 deployments:
   archwing:
     no_resupply: false
     ammo_max: 0
     damage: { impact: 100.0 }
     radial_damage: { impact: 600.0, puncture: 800.0, slash: 1000.0, blast: 1200.0 }  # 3600
-mod_pools: [archgun]
-mastery_rank: 15
-max_rank: 30
 
 accuracy: 100.0              # "Very High"
-disposition: 1.00
-polarities: [madurai]
-riven_family: Morgha
-internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechGrenadeLaunch/ThanoTechGrenadeLauncher
-noise: alarming
-magazine: 100
-reload_seconds: 3.0
-
-ammo_type: archgun
-ammo_max: 160
-no_resupply: true
 
 co_behavior: additive_with_base_damage
 

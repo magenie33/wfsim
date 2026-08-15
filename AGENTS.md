@@ -500,6 +500,21 @@ around (decision 2026-07-31).
 - **Golden values only change with an in-game measurement** justifying
   it. New mechanics need golden tests; a faithful-looking implementation
   without a measurement is not correct.
+- **A FORM INHERITS ITS WEAPON** (2026-08-15). 88 of the roster's entries are
+  form siblings rather than weapons, and a form states its ATTACK plus only the
+  weapon-level fields that actually DIFFER — `inherits: <parent_id>` fills in
+  the rest (`weapons_data::INHERITED`). It is not tidiness: before it, 313
+  identical values were written twice and a real error was hiding in the noise
+  — the ordinary Larkspur's alt-fire carried its BASE form's accuracy while its
+  Prime's carried the alt-fire's, and nothing could catch it because nothing
+  knew the two entries were one gun. Two guards hold it: a form may not restate
+  a value identical to its weapon's (a restatement carries no information and is
+  the only way the two can drift), and a form that copies six or more of its
+  weapon's fields must declare the inheritance instead. The ATTACK is never
+  inherited, and neither is `co_behavior` (the catalog gives it per ATTACK — the
+  Mandonel's two forms take different classes from two different rows) or
+  `unmodeled:` (a form's gaps are its own; the Lanka's "the partial charge is a
+  separate entry" is nonsense printed on the partial charge).
 - **Data discipline** (`data/`): define once, reference by `id` (stable
   English slugs, never translated). YAML fields are consumed data;
   narrative/prose belongs in comments. Perks: define-once /

@@ -1,7 +1,9 @@
 id: cernos_prime_uncharged
 name: Cernos Prime
-slot: primary
-class: bow
+# A FORM OF ITS WEAPON: everything below that describes the WEAPON
+# rather than this shot is inherited from `cernos_prime`, and only what
+# DIFFERS is written here. See `weapons_data::INHERITED`.
+inherits: cernos_prime
 # THE TAPPED SHOT — the other way a bow is actually played: click instead of
 # hold, half the damage per arrow, but the draw is skipped. `base` is the
 # uncharged form by definition (docs/GLOSSARY.md "FORMS"), and it is reached
@@ -15,25 +17,9 @@ form: base
 # differs — this is the module's Attacks[1], "Uncharged Horizontal/Vertical
 # Shot", against the charged Attacks[2] the default entry carries.
 transform_group: cernos_prime
-mod_pools: [primary, rifle, bow]
 grip_type: BOW
-mastery_rank: 12
-max_rank: 30
 
-accuracy: 16.7
-disposition: 1.25
-polarities: [madurai, madurai]
-exilus_polarity: naramon
-riven_family: Cernos
-traits: [prime, never_vaulted]
 introduced: "19.0.7"
-internal_name: /Lotus/Weapons/Tenno/Bows/PrimeCernos/PrimeCernos
-noise: silent
-ammo_type: primary
-ammo_max: 72
-ammo_pickup: 15
-magazine: 1
-reload_seconds: 0.65
 
 # `ExtraHeadshotDmg = 0.5` is on BOTH attacks in the module — the innate
 # headshot bonus is the weapon's, not the charged shot's.

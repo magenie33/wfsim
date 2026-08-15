@@ -1,35 +1,15 @@
 id: lanka_uncharged
 name: Lanka
-slot: primary
-class: sniper
+# A FORM OF ITS WEAPON: everything below that describes the WEAPON
+# rather than this shot is inherited from `lanka`, and only what
+# DIFFERS is written here. See `weapons_data::INHERITED`.
+inherits: lanka
 form: base
 transform_group: lanka
-mod_pools: [primary, rifle]
-mastery_rank: 10
-max_rank: 30
-
-accuracy: 100.0
-disposition: 1.05
-polarities: []
-exilus_polarity: madurai
-riven_family: Lanka
-internal_name: /Lotus/Weapons/ClanTech/Energy/Railgun
-noise: alarming
-magazine: 10
-reload_seconds: 2.0
-ammo_type: primary
-ammo_max: 72
-ammo_pickup: 15
 
 # No CO catalog row, so the ordinary class (absence means ORDINARY).
 co_behavior: additive_with_base_damage
 
-sniper_combo:
-  min: 2
-  seconds: 6.0
-scope:
-  magnification: 8.0
-  crit_chance_post_mod: 0.5
 attack:
   trigger: semi_auto
   # A THIRD-SECOND DRAW for 200 instead of 525 — worth it only when the target

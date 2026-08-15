@@ -1,7 +1,9 @@
 id: boar_prime_incarnon
 name: Boar Prime (Incarnon Form)
-slot: primary
-class: shotgun
+# A FORM OF ITS WEAPON: everything below that describes the WEAPON
+# rather than this shot is inherited from `boar_prime`, and only what
+# DIFFERS is written here. See `weapons_data::INHERITED`.
+inherits: boar_prime
 # Gauge-switched: entering it costs a charge meter and a transmute animation,
 # which is what gives the sim a two-form CYCLE to run.
 form: incarnon
@@ -11,27 +13,7 @@ form: incarnon
 transform_group: boar_prime
 transforms_from: boar_prime
 
-# The same mod pools as the base form: the Genesis changes what the weapon
-# does, not what it is. (Sinister Reach is the one real exclusion and it is a
-# rifle mod this shotgun never had — wiki: "While Sinister Reach cannot be
-# equipped on Boar or its variants, Galvanized Acceleration can be used to
-# increase the maximum range of the main beams.")
-mod_pools: [primary, shotgun]
-mastery_rank: 11
-max_rank: 30
 accuracy: 100                # module Accuracy for attack 2 (the base form's is 5)
-disposition: 1.34
-polarities: []
-exilus_polarity: madurai
-riven_family: Boar
-traits: [prime, vaulted]
-internal_name: /Lotus/Weapons/Tenno/Shotgun/PrimeBoar
-noise: alarming
-ammo_type: primary
-ammo_max: 120
-ammo_pickup: 40
-magazine: 20
-reload_seconds: 2.75
 
 # The Incarnon transformation economy (wiki Boar Incarnon Genesis).
 #

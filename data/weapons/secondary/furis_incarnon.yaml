@@ -1,7 +1,9 @@
 id: furis_incarnon
 name: Furis (Incarnon Form)
-slot: secondary
-class: pistol
+# A FORM OF ITS WEAPON: everything below that describes the WEAPON
+# rather than this shot is inherited from `furis`, and only what
+# DIFFERS is written here. See `weapons_data::INHERITED`.
+inherits: furis
 # Gauge-switched: entering it costs a charge meter and a transmute animation,
 # which is what gives the sim a two-form CYCLE to run.
 form: incarnon
@@ -11,25 +13,8 @@ form: incarnon
 transform_group: furis
 transforms_from: furis
 
-mod_pools: [pistol]
-mastery_rank: 2
-max_rank: 30
 unmodeled:
   - "damage falloff from 10 m to 16 m (down to 48% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
-
-accuracy: 22.22
-disposition: 1.35
-polarities: [naramon]
-exilus_polarity: madurai
-riven_family: Furis
-traits: [tenno]
-internal_name: /Lotus/Weapons/Tenno/Pistol/AutoPistol
-noise: alarming
-ammo_type: secondary
-ammo_max: 210
-ammo_pickup: 40
-magazine: 35
-reload_seconds: 1.4
 
 # The Incarnon transformation economy (wiki Furis Incarnon Genesis).
 #
