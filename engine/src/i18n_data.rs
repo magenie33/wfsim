@@ -165,6 +165,44 @@ pub fn locales() -> &'static [(String, LocaleSpec)] {
 mod tests {
     use super::*;
 
+    /// EVERY ADMISSION IS TRANSLATED, in every locale.
+    ///
+    /// A weapon's `unmodeled:` lines are the one family of prose that is BOTH
+    /// written by us and shown on the page, so they are the family that
+    /// silently accumulates an English backlog: nothing fails when a new one
+    /// is added without its overlay entry, the check_disclosure pass still
+    /// goes green (it walks a fixed set of weapons), and a Chinese reader gets
+    /// the English paragraph. Sixteen of them had built up that way across the
+    /// Akarius, Kuva Nukor, Phantasma, Shedu and Strun entries before anybody
+    /// counted (2026-08-15).
+    ///
+    /// This is the counter. It is derived from the roster rather than listed,
+    /// so a weapon added tomorrow with an untranslated admission fails here
+    /// rather than in front of a player.
+    #[test]
+    fn every_unmodelled_line_is_in_every_overlay() {
+        let mut missing: Vec<String> = Vec::new();
+        for (code, spec) in locales() {
+            for w in crate::weapons_data::all() {
+                for line in &w.unmodeled {
+                    if !spec.ui.contains_key(line) {
+                        missing.push(format!("[{code}] {}: {}", w.id, &line[..line.len().min(70)]));
+                    }
+                }
+            }
+        }
+        missing.sort();
+        missing.dedup();
+        assert!(
+            missing.is_empty(),
+            "{} admission(s) would render in English on a localized page — add them to              data/i18n/<locale>/ui.yaml:
+  {}",
+            missing.len(),
+            missing.join("
+  ")
+        );
+    }
+
     /// 赋能 IS ARCANE AND 灵化 IS INCARNON — two of DE's own terms that collide
     /// in one compound, and the collision has shipped once.
     ///
