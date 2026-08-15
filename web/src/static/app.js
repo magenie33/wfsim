@@ -7949,7 +7949,7 @@ function renderScenarioFields(ids, opts = {}) {
         <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
         ${eximusField(en)}
         ${deployField(w, sim)}
-        <label title="${escHtml(tr("how far away the target stands. Only a weapon that LISTS a damage falloff notices it — its direct hit decays across the published window and is flat past the end. 0 is point blank, which is where both official boards are scored"))}">${escHtml(tr("Distance (m)"))} <input type="number" data-k="distance" min="0" max="300" step="1" value="${sim.distance || 0}"></label>
+        <label title="${escHtml(tr("how far away the target stands. Past point blank a shot can MISS: every pellet draws inside the weapon's own aimed cone (the wiki's per-attack spread) against a target modelled as a 0.2 m circle, and a weapon that lists a damage falloff loses damage across its published window on top. The 0.2 m is a GUESS nobody has measured yet, so treat a hit rate here as the shape rather than the number. 0 m is point blank — nothing misses, nothing falls off, and it is where both official boards are scored"))}">${escHtml(tr("Distance (m)"))} <input type="number" data-k="distance" min="0" max="300" step="1" value="${sim.distance || 0}"></label>
         <label>${escHtml(tr("Duration (s)"))} <input type="number" data-k="duration" min="1" max="3600" value="${sim.duration}"></label>
       </div>`;
     const pick = $(`${ids.target}-pick`);

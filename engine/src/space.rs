@@ -39,9 +39,30 @@ impl Vec2 {
     }
 }
 
-/// The radius of a body on the floor, in metres — every actor is a circle.
+/// The radius of a body, in metres — every actor is a circle, and that is the
+/// WHOLE model of how big a body is.
 ///
-/// **A GUESS, AND SAID SO** (owner, 2026-08-15). DE publishes no enemy hitbox
+/// **THE PLANE IS THE MODEL, NOT AN APPROXIMATION OF A SOLID** (owner,
+/// 2026-08-15). This number was briefly split in two: a footprint for spacing
+/// and a bigger "effective" radius for the hit test, on the reasoning that a
+/// real spread cone spends half its deviation vertically where a humanoid is
+/// three times its own width, and a plane has nowhere to put that. The split
+/// was wrong, and the reason is a division of labour that already exists:
+///
+///   · the GEOMETRY answers "did this pellet reach the target at all";
+///   · `headshot_pct` answers "and given that it did, where did it land" — a
+///     pinned per-pellet aim weight, which is exactly the vertical question.
+///
+/// So folding a body's height into the hit radius asks the second question
+/// twice and the first one wrong. One circle, one number, and it is the same
+/// number for the hit test and for how much floor a body occupies when there
+/// is more than one of them.
+///
+/// **AND IT IS ONE NUMBER TO CHANGE.** Nothing multiplies it, nothing derives
+/// from it, and no data file restates it — a measurement replaces this line and
+/// the whole model moves with it.
+///
+/// **STILL A GUESS, AND SAID SO.** DE publishes no enemy hitbox
 /// size: the wiki's `Area of Effect` gives the zone shapes and the falloff and
 /// never says whether the radius is measured to a body's centre or to its
 /// surface, `Hit Mechanic` describes only the player's side, and `Line of
@@ -52,53 +73,25 @@ impl Vec2 {
 /// tooltip and then does not use it: its blast test is centre-to-centre
 /// against the published radius, and the radius only ever draws the circle.
 ///
-/// So this number is load-bearing for NOTHING today, deliberately. It is not in
-/// the blast test (an explosion is measured to the target's centre against the
-/// weapon's published radius, which is what the published radius was calibrated
-/// against), and it is not in a hit test, because there is no hit test — every
-/// shot lands, exactly as before. What it is here for is to have ONE place to
-/// correct when it is measured, instead of a constant appearing in three.
+/// It is NOT in the blast test, which stays centre-to-centre against the
+/// weapon's published radius — that radius is what DE calibrated against
+/// whatever the game does, so adding a body's own to it would count the same
+/// thing twice.
 ///
-/// **Why it must not quietly become load-bearing**: the moment spread decides
-/// hit or miss, this radius decides every low-accuracy weapon. The wiki's own
-/// formula is `Accuracy = 100 / (average spread in degrees)`, and the roster
-/// carries the stat already — `accuracy: 12.5` is 8°, which at 20 m is a 2.8 m
-/// lateral offset against a 0.2 m circle, i.e. a weapon that misses almost
-/// always and does not in game. Wiring accuracy to this radius therefore needs
-/// the measurement first (docs/MEASUREMENTS.md), not a plausible number.
+/// **IN THE HIT TEST IT IS LOAD-BEARING, DELIBERATELY.** Every miss in this engine is decided
+/// against this radius, so it sets how harshly range costs a weapon: a 2 degree
+/// aimed cone (the Braton's, from the wiki's own weapon module) puts a pellet
+/// inside 0.2 m out to about 6 m and outside it past that. Whether that is the
+/// game is exactly what the measurement below answers, and until it is
+/// answered a fight at a range says so on the page.
+///
+/// **THE MEASUREMENT THAT SETTLES IT** is one afternoon in the Simulacrum, and
+/// it settles the whole model because this is its only free parameter: stand a
+/// known distance from one stationary enemy, fire a counted number of pellets
+/// from a weapon of known spread, and count what lands. Two ranges and two
+/// spreads over-determine it (docs/MEASUREMENTS.md).
 pub const BODY_RADIUS_M: f64 = 0.2;
 
-/// The radius a SPREAD CONE has to land inside to count as a hit, in metres.
-///
-/// A DIFFERENT QUESTION FROM [`BODY_RADIUS_M`], and keeping them one number was
-/// measurably wrong (2026-08-15). The body radius is how much FLOOR a body
-/// occupies — what decides whether two enemies can stand there, which is what
-/// it is for. This is how big a body looks to a bullet, and in a plane with no
-/// vertical axis those are not the same number at all.
-///
-/// WHY IT IS BIGGER. Real spread is a CONE, so half of every deviation goes
-/// vertical — and a humanoid is about 0.6 m wide and 1.8 m tall, so vertical
-/// deviation is very largely forgiven and horizontal deviation is not. A flat
-/// model has nowhere to put that, so the silhouette has to come back as an
-/// effective radius: the circle of the same AREA as a 0.6 x 1.8 m silhouette is
-/// `sqrt(0.6 * 1.8 / PI)` = 0.586 m.
-///
-/// **THIS IS A DERIVATION, NOT A MEASUREMENT**, and the difference matters
-/// enough to say twice. What it rests on is two silhouette dimensions nobody
-/// published either. It is here rather than 0.2 m because 0.2 m is refutable
-/// from the game as it ships — the wiki's own conversion makes a Braton a 3.5
-/// degree cone, and against a 0.2 m circle that is a weapon which misses two
-/// shots in three at FIVE METRES, which is not the Braton anyone has fired.
-/// 0.586 makes the same weapon land 95% of them there. Both numbers are
-/// unverified; only one of them is unverified and also absurd.
-///
-/// THE MEASUREMENT THAT SETTLES IT is one afternoon in the Simulacrum and it
-/// settles the whole model, because this is the model's only free parameter:
-/// stand a known distance from one stationary enemy, fire a counted number of
-/// pellets from a weapon of known accuracy, and count what lands. Two ranges
-/// and two accuracies over-determine it. Until then every fight at a range
-/// says so on the page (docs/MEASUREMENTS.md).
-pub const AIM_TARGET_RADIUS_M: f64 = 0.586;
 
 #[cfg(test)]
 mod tests {

@@ -7051,14 +7051,13 @@ pub fn run_once_traced(
                 }
                 _ => 0.0,
             };
-            // …AND THIS IS HOW BIG THE TARGET LOOKS TO IT. Not the body's
-            // FOOTPRINT (`BODY_RADIUS_M`, which is what decides where two of
-            // them can stand): a spread cone spends half its deviation
-            // vertically, where a humanoid is three times the size it is
-            // horizontally, and a plane has nowhere to put that. It is the
-            // model's one free parameter and it is derived rather than
-            // measured — see `space::AIM_TARGET_RADIUS_M`.
-            let pellet_lands = aim_offset <= crate::space::AIM_TARGET_RADIUS_M;
+            // …AND A BODY IS A CIRCLE OF ONE RADIUS. The plane IS the model:
+            // this asks only whether the pellet reached the target, and where
+            // on it a landed pellet went is `headshot_pct`'s question, already
+            // pinned per pellet. Folding a silhouette's height in here would
+            // ask that one twice — see `space::BODY_RADIUS_M`, which is the
+            // model's one free parameter and the one line a measurement moves.
+            let pellet_lands = aim_offset <= crate::space::BODY_RADIUS_M;
             if pellet_lands {
                 landed_this_shot = true;
             }

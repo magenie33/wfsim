@@ -99,11 +99,13 @@ What is still open here:
   trigger is therefore more accurate here than in game, most visibly on the
   widest windows — every sniper is `0 / 15`. Inventing a bloom rate for 224
   entries is exactly the kind of thing this file exists to refuse;
-- **the hit test's one free parameter**, `space::AIM_TARGET_RADIUS_M`. It is
-  DERIVED (the circle of the same area as a 0.6 x 1.8 m silhouette) rather than
-  measured, because a flat model has nowhere to put the vertical half of a cone
-  and a body is three times taller than it is wide. One Simulacrum measurement
-  settles it: a counted number of pellets, a known range, count what lands;
+- **the model's one free parameter**, `space::BODY_RADIUS_M` — 0.2 m, a guess
+  and stated as one. THE PLANE IS THE MODEL rather than an approximation of a
+  solid to be corrected (owner, 2026-08-15): the geometry answers only "did the
+  pellet reach the target", and where a landed pellet went is `headshot_pct`'s
+  question, already pinned per pellet. So there is one circle and one number,
+  and one Simulacrum measurement settles it — a counted number of pellets, a
+  known range, a weapon of known spread, count what lands;
 - **62 entries have no transcribed spread** — the intake refuses any attack it
   cannot identify by an exact multi-field match, so those cannot miss and each
   says so (`spread_not_transcribed`). Re-running `scripts/intake_spread.py`
