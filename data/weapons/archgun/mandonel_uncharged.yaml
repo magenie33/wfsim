@@ -24,7 +24,10 @@ co_behavior: independent
 
 attack:
   trigger: semi_auto
-  charge_seconds: 0.0
+  # NO CHARGE. An uncharged shot has no draw at all, and `charge_seconds: 0.0`
+  # is refused outright — "a 0.0 charge outside a bow is just a fire rate".
+  # Omitting it is the spelling that means "no draw"; a bow may state a zero
+  # because there the draw IS the cycle and the magazine is one arrow.
   shot_type: projectile
   projectile_speed_mps: 125
   fire_rate: 3.0

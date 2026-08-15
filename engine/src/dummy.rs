@@ -4741,6 +4741,76 @@ fn sample_stacks(
 }
 
 #[cfg(test)]
+mod every_form_runs {
+    use super::*;
+
+    /// EVERY FORM OF EVERY WEAPON ACTUALLY FIRES.
+    ///
+    /// The roster has 224 entries and only 136 of them are the arsenal's form.
+    /// The other 88 are reachable — a FORM IS PART OF A BUILD (2026-08-07),
+    /// picked as the fight's `mode` and saved in a build preset — and until
+    /// this test nothing ever built one. Every guard, every intake check and
+    /// every UI pass walked `roster()`, which is the DEFAULT forms only.
+    ///
+    /// What that hid: five entries carried `charge_seconds: 0.0` on a
+    /// non-bow, which `base_panel` refuses outright ("a 0.0 charge outside a
+    /// bow is just a fire rate"). They parsed, they passed every test, they
+    /// shipped — and the server PANICKED the first time anybody asked for
+    /// `mode: alternate` on a Velocitus (2026-08-15).
+    ///
+    /// So this builds and briefly runs EVERY entry, not every weapon. It is
+    /// cheap — two seconds for the roster — and it is the only test that would
+    /// have caught that class of failure.
+    #[test]
+    fn every_entry_builds_and_fires() {
+        let arena = crate::arena::Arena::training(3.0);
+        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let mut ran = 0;
+        for w in crate::weapons_data::all() {
+            let base = crate::loadout::WeaponBase::from_data(&w.id, false, &[]);
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            let s = monte_carlo(&p, 2, 3);
+            assert!(
+                s.mean_damage > 0.0,
+                "{}: a form that fires nothing is a form nobody can play",
+                w.id
+            );
+            ran += 1;
+        }
+        assert!(ran > 200, "only {ran} entries built");
+    }
+
+    /// ...and every DEPLOYMENT of every entry, for the same reason: the
+    /// Archwing column is a choice a player can make, and nothing else builds
+    /// it either.
+    #[test]
+    fn every_deployment_builds_and_fires() {
+        let arena = crate::arena::Arena::training(3.0);
+        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let mut ran = 0;
+        for w in crate::weapons_data::all() {
+            for dep in crate::weapons_data::deployments_of(&w.id) {
+                let mut base = crate::loadout::WeaponBase::from_data(&w.id, false, &[]);
+                crate::weapons_data::apply_deployment(&mut base, &w.id, &dep);
+                let panel =
+                    crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+                let p =
+                    DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+                assert!(
+                    monte_carlo(&p, 2, 3).mean_damage > 0.0,
+                    "{} in {dep}: fires nothing",
+                    w.id
+                );
+                ran += 1;
+            }
+        }
+        assert!(ran > 50, "only {ran} (entry, deployment) pairs built");
+    }
+}
+
+#[cfg(test)]
 mod pellet_volley {
     use super::*;
 
