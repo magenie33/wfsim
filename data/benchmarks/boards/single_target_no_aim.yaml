@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: f2ee99f488bee3c7062b507469e1d0da4e016482
+engine: d9fcca0d41eab344db0c2922f84e974b6916a1b1
 entries:
   - weapon: boar_prime
     mode: cycle
@@ -180,6 +180,12 @@ entries:
     valence: heat
   - weapon: kuva_nukor
     mode: base
+    score: 2.420681511165802
+    mods: [pistol_acuity, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: heat
+  - weapon: kuva_nukor
+    mode: base
     score: 1.695797900884204
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence]
     arcanes: [cascadia_empowered]
@@ -189,6 +195,12 @@ entries:
     score: 1.1837833827022168
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence]
     arcanes: [cascadia_empowered]
+    valence: heat
+  - weapon: kuva_nukor
+    mode: base
+    score: 1.0951949576082645
+    mods: [pistol_acuity, merciless_gunfight, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
+    arcanes: [secondary_enervate]
     valence: heat
   - weapon: laetum
     mode: cycle
