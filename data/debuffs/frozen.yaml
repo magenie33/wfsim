@@ -29,33 +29,37 @@ effects:
     value: 1.00                # +1.0x flat, supersedes Freeze's table value
     condition: weapon_direct_damage_only
 
-# Interaction with Freeze while active (user-observed 2026-07-24: the
-# Freeze display stays pinned at 10 stacks throughout Frozen):
-# freeze_interaction:
-# model: >-
-# MUTUALLY EXCLUSIVE STATES (user model, 2026-07-24): the 10th proc
-# does not add a stack - it CONSUMES the 9 Freeze stacks and converts
-# the target into Frozen. During Frozen there IS no Freeze entity (the
-# "10 stacks" display is Frozen's own cosmetic), so timer-suspension
-# questions do not arise. All incoming Cold procs are inert.
-# during: >-
-# Cold procs: no effect whatsoever (wiki: "Frozen enemies cannot
-# receive additional Cold stacks").
-# on_expiry: >-
-# MEASURED (2026-07-24, user): hard reset - Freeze is SET to exactly
-# 3 stacks with FRESH 6 s timers; the pre-Frozen stacks and their
-# timers are irrelevant. (This also makes the question of stack decay
-# during Frozen moot: whatever happens to old timers, exit is a reset.)
-
+# INTERACTION WITH THE CHILL LADDER (owner, 2026-08-16).
+#
+# COEXISTENT, not mutually exclusive: the 10th chill stack is BOTH the tenth
+# stack and the trigger for this state. The ladder stays at 10 for the whole 3
+# seconds — which is what the game displays, and it is a display of something
+# real rather than this state's cosmetic.
+#
+#   · CONDITION OVERLOAD: Frozen counts for NOTHING. Cold is one status and
+#     its stacks are the ladder's, already counted there. Counting both would
+#     have made a frozen target read as two types.
+#   · CRIT DAMAGE RECEIVED: this state's +1.0x REPLACES the ladder's +0.50x
+#     rather than adding to it — wiki, of the +1.0x: "doubled from the
+#     per-stack bonus".
+#   · INCOMING COLD PROCS: inert. Wiki: "Frozen enemies cannot receive
+#     additional Cold stacks". This is what pins the ladder at 10.
+#   · ON EXPIRY: the ladder is SET to exactly 3 stacks with fresh 6 s timers
+#     from the trigger's context (M6/M7; wiki: "Upon thaw: 3 Cold stacks will
+#     remain"). MEASURED, not derived — replacing ten pinned stacks with three
+#     does not follow from anything above, and the model this replaced did not
+#     derive it either.
+#
+# WHAT CANNOT FREEZE NEEDS NO RULE OF ITS OWN. A chill cap below 10 makes the
+# trigger unreachable by arithmetic — an Overguard holder's 4, an Acolyte's 4 —
+# and a unit that is simply immune says so once. The wiki derives it the same
+# way: "can receive a maximum of 4 Cold stacks", "preventing Frozen status
+# entirely".
+#
 # open_questions:
 # - Frozen's own internal name / whether anything can refresh it.
-# - Does Frozen re-trigger immediately if 7 more stacks arrive right
-# after thaw (expected yes - no known lockout beyond the 3-stack reset).
-# - RESOLVED (M7, 2026-07-24, user): the 3 fresh post-thaw stacks belong
-# to the FROZEN TRIGGER - the source of the 10th stack (the 9->10
-# proc); their timers are 6 s x (1 + that source's status duration).
-# Implementation: the Frozen entity stores its trigger's context and
-# issues the reset stacks from it on expiry.
+# - Does Frozen re-trigger immediately if 7 more stacks arrive right after
+#   thaw (expected yes - no known lockout beyond the 3-stack reset).
 
 source:
   url: https://wiki.warframe.com/w/Damage/Cold_Damage

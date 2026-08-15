@@ -18,12 +18,33 @@ applied_by:
 duration_seconds: 6
 refreshable: false
 stacking: true
-max_stacks: 10                 # stack 10 = the Frozen state (below)
+max_stacks: 10                 # and the 10th ALSO trips Frozen (frozen.yaml)
 per_stack_duration: true
 stack_overflow: none
 
-# Non-uniform stack tables (index = stacks - 1, stacks 1..9; the 10th
-# stack transitions into the Frozen state instead).
+# COLD IS ONE STATUS (owner, 2026-08-16). This ladder is its stacks and it is
+# what Condition Overload counts; Frozen is a STATE the tenth stack trips, it
+# is counted for nothing, and the two are LIVE AT THE SAME TIME — the chill
+# stays, pinned at ten, which is what the game displays.
+#
+# The model this replaced had the tenth proc CONSUME the nine stacks, so no
+# chill existed while Frozen and the game's own "10 stacks" had to be called
+# Frozen's cosmetic. What refuted it is a target that CANNOT be frozen: its
+# chill really does reach ten and really does cycle FIFO there, so ten chill
+# stacks are a state the game has. The wiki describes it the same way —
+# "Maximum stacks: 10 total", of which "the 10th stack" IS the Frozen state.
+#
+# IT ALSO REMOVES THREE SPECIAL CASES. An Overguard holder's cap of 4, an
+# Acolyte's cap of 4 and an outright immunity all used to be their own branch;
+# now a cap below ten makes the Frozen trigger unreachable by arithmetic,
+# which is how the wiki itself puts it ("can receive a maximum of 4 Cold
+# stacks", "preventing Frozen status entirely").
+#
+# Non-uniform stack tables (index = stacks - 1, stacks 1..9). The 10th is one
+# past the published table — the page stops at nine because on everything it
+# describes the tenth stack is Frozen, whose own value replaces this one
+# anyway; the engine continues the formula for the targets that reach ten
+# without freezing, and says so.
 stack_value_tables:
   # Movement speed, fire rate, and attack speed reduction.
   action_speed_reduction: [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90]

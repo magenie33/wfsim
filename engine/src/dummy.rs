@@ -879,7 +879,6 @@ const TEN_STACK_CAP: usize = 10;
 const BLAST_COEFFICIENT: f64 = 0.3;
 const BLAST_FUSE: f64 = 1.5;
 const FREEZE_CAP_UNDER_OVERGUARD: usize = 4;
-const FREEZE_STACKS_BEFORE_FROZEN: usize = 9; // the 10th proc converts
 const FROZEN_DURATION: f64 = 3.0;
 const FROZEN_CRIT_DAMAGE_RECEIVED: f64 = 1.00;
 const FROZEN_RESET_STACKS: usize = 3;
@@ -928,9 +927,11 @@ pub const DEBUFF_ROSTER: [(&str, u32); 15] = [
     ("disrupt", TEN_STACK_CAP as u32),
     ("confusion", TEN_STACK_CAP as u32),
     ("blast", TEN_STACK_CAP as u32),
-    // Cold's two states are two rows because they are mutually exclusive: the
-    // tenth proc consumes the nine stacks and enters Frozen, so one series
-    // falling to zero as the other rises is the mechanic, not a glitch.
+    // Cold is ONE STATUS in two rows: `freeze` is the stack ladder and counts
+    // for Condition Overload, `frozen` is the STATE its tenth stack trips and
+    // counts for nothing. They are LIVE AT THE SAME TIME — the chill stays,
+    // pinned at ten, which is what the game shows — so the two series rising
+    // together is the mechanic (owner, 2026-08-16).
     ("freeze", TEN_STACK_CAP as u32),
     ("frozen", 1),
     ("stagger", STAGGER_CAP as u32),
@@ -1071,8 +1072,17 @@ impl DebuffState {
         self.attractor.retain(|&e| e > now);
         if let Some(f) = self.frozen_until {
             if f <= now {
-                // Thaw: Freeze is SET to exactly 3 stacks with FRESH 6 s
-                // timers issued from the trigger's context (M6/M7).
+                // THAW: chill is SET to exactly 3 stacks with FRESH 6 s timers
+                // issued from the trigger's context (M6/M7, and the wiki says
+                // the same: "Upon thaw: 3 Cold stacks will remain").
+                //
+                // MEASURED, NOT DERIVED, and it stays that way under this
+                // model: the ten pinned stacks are REPLACED by three, which no
+                // amount of reasoning about a stack list produces on its own.
+                // The model it replaced did not derive it either — it had the
+                // pile consumed at the tenth proc and three issued on the way
+                // out — so this is a rule either way and is written down as
+                // one rather than made to look like a consequence.
                 self.frozen_until = None;
                 self.freeze = vec![f + STATUS_DURATION * sd; FROZEN_RESET_STACKS];
                 self.freeze.retain(|&e| e > now); // long-idle prune
@@ -1111,16 +1121,37 @@ impl DebuffState {
         self.freeze.len() as u32
     }
 
-    /// Cold's flat crit-damage-received bonus, added into cd_total BEFORE
-    /// the tier formula: +0.10 first stack, +0.05 each further; +1.00
-    /// while Frozen (supersedes the table).
-    fn cold_cd_bonus(&self, now: f64) -> f64 {
-        if self.frozen_until.is_some_and(|f| f > now) {
-            return FROZEN_CRIT_DAMAGE_RECEIVED;
-        }
+    /// The CHILL LADDER's own crit-damage-received bonus. Wiki
+    /// (`Damage/Cold_Damage`), verbatim: *"+0.1x increased Critical Damage
+    /// multiplier with 1 stack, and +0.05x per subsequent stack, adding up to
+    /// +0.50x at 9 stacks"*.
+    ///
+    /// TEN IS ONE PAST THE PUBLISHED TABLE, and it is reachable only on a
+    /// target that stacks to ten without freezing — the page stops at nine
+    /// because on everything it describes the tenth stack IS Frozen. The
+    /// formula is continued rather than capped, which is an extrapolation and
+    /// is said to be one; it is also what this engine already did.
+    fn chill_cd_bonus(&self) -> f64 {
         match self.freeze.len() {
             0 => 0.0,
             n => 0.10 + 0.05 * (n as f64 - 1.0),
+        }
+    }
+
+    /// What the target's COLD STATE adds to crit damage received, into
+    /// `cd_total` BEFORE the tier formula.
+    ///
+    /// FROZEN REPLACES THE LADDER, it does not add to it — wiki, of the +1.0x:
+    /// *"doubled from the per-stack bonus"*, i.e. it stands in for the +0.50x
+    /// rather than stacking on top. Written as a REPLACEMENT here rather than
+    /// as an early return, because the two are live at the same time now
+    /// (owner, 2026-08-16): the chill is still there, pinned at ten, and this
+    /// is the one place that has to say which of the two the target feels.
+    fn cold_cd_bonus(&self, now: f64) -> f64 {
+        if self.frozen_until.is_some_and(|f| f > now) {
+            FROZEN_CRIT_DAMAGE_RECEIVED
+        } else {
+            self.chill_cd_bonus()
         }
     }
 
@@ -1147,28 +1178,35 @@ impl DebuffState {
             return false; // inert
         }
         self.freeze.retain(|&e| e > t);
-        if under_overguard {
-            let cap = caps.map_or(FREEZE_CAP_UNDER_OVERGUARD, |c| {
-                FREEZE_CAP_UNDER_OVERGUARD.min(c.general)
-            });
-            DebuffState::push_capped(&mut self.freeze, t + STATUS_DURATION * sd, cap, t);
-            return true;
-        }
-        if let Some(c) = caps {
-            // A per-unit cap below 10 also means Frozen is unreachable.
-            DebuffState::push_capped(&mut self.freeze, t + STATUS_DURATION * sd, c.general, t);
-            return true;
-        }
-        if no_frozen {
-            // NEVER CONVERTS. The tenth proc is an ordinary stack here, so the
-            // ladder sits at its cap and the Cold bonus is up all fight rather
-            // than being spent on a 3-second Frozen window every ten procs.
-            DebuffState::push_capped(&mut self.freeze, t + STATUS_DURATION * sd, TEN_STACK_CAP, t);
-        } else if self.freeze.len() >= FREEZE_STACKS_BEFORE_FROZEN {
-            self.freeze.clear();
+        // ONE PUSH PATH, ALWAYS FIFO (owner, 2026-08-16). Chill is an ordinary
+        // capped stack list on every target there is; what differs between
+        // targets is only whether reaching the top ALSO trips a state.
+        //
+        // It replaces a model in which the tenth proc CONSUMED the nine stacks
+        // and there was no chill entity while Frozen — which needed the game's
+        // own "10 stacks" display to be called Frozen's cosmetic, and needed
+        // three separate push paths (an overguard cap, a per-unit cap, and a
+        // target that cannot freeze at all). The evidence against it is a
+        // target that cannot be frozen: its chill really does reach ten and
+        // really does cycle FIFO there, so ten chill stacks are a state the
+        // game has, not a label on a different one.
+        let cap = match (under_overguard, caps) {
+            (true, Some(c)) => FREEZE_CAP_UNDER_OVERGUARD.min(c.general),
+            (true, None) => FREEZE_CAP_UNDER_OVERGUARD,
+            (false, Some(c)) => c.general,
+            (false, None) => TEN_STACK_CAP,
+        };
+        DebuffState::push_capped(&mut self.freeze, t + STATUS_DURATION * sd, cap, t);
+        // FROZEN IS A STATE, NOT A STACK. It is tripped by the tenth chill and
+        // it suppresses further chill for its 3 s (the early return above);
+        // the chill itself stays, pinned at ten, which is what the game shows.
+        //
+        // EVERY TARGET THAT CANNOT FREEZE NOW FALLS OUT OF ONE CONDITION
+        // rather than having a branch: a cap below ten — an Overguard holder's
+        // four, an Acolyte's four — makes `len() >= TEN_STACK_CAP` unreachable
+        // by arithmetic, and a unit that is simply immune says so once.
+        if !no_frozen && self.freeze.len() >= TEN_STACK_CAP {
             self.frozen_until = Some(t + FROZEN_DURATION * sd);
-        } else {
-            self.freeze.push(t + STATUS_DURATION * sd);
         }
         true
     }
@@ -1263,7 +1301,19 @@ impl DebuffState {
         n += usize::from(!self.attractor.is_empty());
         n += usize::from(!self.blast.is_empty());
         n += usize::from(self.heat.is_some());
-        n += usize::from(self.frozen_until.is_some());
+        // NO `frozen` LINE. COLD IS ONE STATUS (owner, 2026-08-16) and its
+        // stacks are `freeze`, counted above; Frozen is a STATE the tenth of
+        // them trips, with its own crowd control and its own crit-damage
+        // bonus, and it is not a second type on the target.
+        //
+        // It used to be counted here as well, which was harmless only because
+        // the old model made the two mutually exclusive — exactly one of them
+        // was ever live, so Cold contributed one either way. Under a model
+        // where the chill STAYS while Frozen, the same two lines would have
+        // counted Cold twice and inflated every Condition Overload bracket on
+        // a frozen target. `has_status` had the other reading of the same
+        // question all along and is left as it is: that one answers "is this
+        // target cold-statused" for a perk, not "how many TYPES are on it".
         // THE LIVE DoT TYPES, as a bitmask. This was a `Vec<DamageType>` with a
         // linear `contains` per entry — a heap allocation and an O(n²) scan on
         // a function Condition Overload asks per damage INSTANCE, which on a
@@ -8715,6 +8765,103 @@ fn monte_carlo_inner(params: &DummyParams, runs: u32, seed: u64, keep: bool) -> 
 mod tests {
     use super::*;
 
+    /// Ten Cold procs, at one-second spacing, on a target described by `caps`
+    /// and `no_frozen`. Returns the state they left behind.
+    #[cfg(test)]
+    fn chill(n: usize, caps: Option<StackCaps>, no_frozen: bool, overguard: bool) -> DebuffState {
+        let mut d = DebuffState::default();
+        for i in 0..n {
+            d.apply_cold_proc(i as f64 * 0.1, 1.0, overguard, caps, no_frozen);
+        }
+        d
+    }
+
+    /// THE TENTH CHILL STACK **IS** THE FROZEN TRIGGER, and both are live.
+    ///
+    /// The model this replaced had the tenth proc CONSUME the nine stacks, so
+    /// the ladder read zero for the three seconds the game displays it at ten.
+    /// Cold is ONE status whose stacks are the ladder; Frozen is a STATE the
+    /// tenth of them trips (owner, 2026-08-16), and the wiki describes it the
+    /// same way — "Maximum stacks: 10 total", of which "the 10th stack" is the
+    /// Frozen state.
+    #[test]
+    fn the_tenth_chill_stack_freezes_and_stays() {
+        let nine = chill(9, None, false, false);
+        assert_eq!(nine.freeze.len(), 9, "nine procs, nine stacks");
+        assert!(nine.frozen_until.is_none(), "nine does not freeze");
+
+        let ten = chill(10, None, false, false);
+        assert_eq!(ten.freeze.len(), 10, "the ladder keeps its tenth stack");
+        assert!(ten.frozen_until.is_some(), "…and the tenth trips Frozen");
+    }
+
+    /// …AND FURTHER PROCS ARE INERT while it holds — which is what PINS the
+    /// ladder at ten rather than a rule of its own. Wiki: "Frozen enemies
+    /// cannot receive additional Cold stacks".
+    #[test]
+    fn a_frozen_target_takes_no_more_chill() {
+        let mut d = chill(10, None, false, false);
+        assert!(!d.apply_cold_proc(1.0, 1.0, false, None, false), "inert while Frozen");
+        assert_eq!(d.freeze.len(), 10, "pinned, not climbing");
+    }
+
+    /// COLD COUNTS ONCE FOR CONDITION OVERLOAD, frozen or not.
+    ///
+    /// THE SENTINEL FOR THE TRAP THIS REFACTOR WALKED INTO. `distinct_statuses`
+    /// used to count `freeze` and `frozen` on separate lines, which was
+    /// harmless only because the old model made them mutually exclusive —
+    /// exactly one was ever live. Letting the chill STAY while Frozen would
+    /// have counted Cold twice and inflated every CO bracket on a frozen
+    /// target, with nothing else in the suite noticing.
+    #[test]
+    fn cold_is_one_status_type_whether_or_not_the_target_is_frozen() {
+        assert_eq!(chill(1, None, false, false).distinct_statuses(), 1, "chilled");
+        assert_eq!(chill(9, None, false, false).distinct_statuses(), 1, "nine stacks");
+        assert_eq!(chill(10, None, false, false).distinct_statuses(), 1, "frozen");
+    }
+
+    /// WHAT CANNOT FREEZE NEEDS NO RULE OF ITS OWN — the reason to prefer this
+    /// model, and the evidence that produced it.
+    ///
+    /// A target that cannot be frozen stacks to ten and cycles FIFO there,
+    /// which is what showed that ten chill stacks are a state the game has. A
+    /// CAP does it by arithmetic and needs no flag at all: an Overguard
+    /// holder's four and an Acolyte's four make the trigger unreachable, which
+    /// is how the wiki derives it ("a maximum of 4 Cold stacks", "preventing
+    /// Frozen status entirely").
+    #[test]
+    fn a_target_that_cannot_freeze_just_never_trips_the_trigger() {
+        let immune = chill(14, None, true, false);
+        assert_eq!(immune.freeze.len(), 10, "the ladder still fills and cycles");
+        assert!(immune.frozen_until.is_none(), "and never freezes");
+        // …and it keeps the ladder's own bonus all fight, rather than spending
+        // it on a 3 s window every ten procs.
+        assert!((immune.chill_cd_bonus() - 0.55).abs() < 1e-9);
+
+        let og = chill(14, None, false, true);
+        assert_eq!(og.freeze.len(), FREEZE_CAP_UNDER_OVERGUARD, "Overguard caps at four");
+        assert!(og.frozen_until.is_none(), "so ten is unreachable — no flag needed");
+
+        let capped = chill(14, Some(StackCaps { general: 4, impact: 4 }), false, false);
+        assert_eq!(capped.freeze.len(), 4, "an Acolyte caps at four");
+        assert!(capped.frozen_until.is_none(), "…and cannot freeze, by arithmetic");
+    }
+
+    /// FROZEN REPLACES THE LADDER'S BONUS, it does not add to it. Wiki, of the
+    /// +1.0x: "doubled from the per-stack bonus" — it stands in for the +0.50x.
+    /// Now that both are live at once this is a real choice rather than a
+    /// consequence of the ladder being empty.
+    #[test]
+    fn frozen_replaces_the_chill_bonus_rather_than_adding_to_it() {
+        let nine = chill(9, None, false, false);
+        assert!((nine.cold_cd_bonus(1.0) - 0.50).abs() < 1e-9, "the published +0.50x at nine");
+        let ten = chill(10, None, false, false);
+        assert!((ten.cold_cd_bonus(1.0) - FROZEN_CRIT_DAMAGE_RECEIVED).abs() < 1e-9);
+        // The ladder is still there and still says its own number — this is the
+        // one place that decides which of the two the target feels.
+        assert!((ten.chill_cd_bonus() - 0.55).abs() < 1e-9);
+    }
+
     /// Default params with status disabled — for hand-computed expectations
     /// that predate the status sim.
     pub(super) fn no_status() -> DummyParams {
@@ -15697,14 +15844,19 @@ mod tests {
         }
         assert_eq!(d.freeze.len(), 9);
         assert!((d.cold_cd_bonus(0.9) - 0.50).abs() < 1e-9); // 0.10+0.05×8
-                                                             // The 10th proc CONSUMES the stacks and enters Frozen (3 s).
+        // THE 10TH PROC IS BOTH the tenth stack and the Frozen trigger — the
+        // ladder KEEPS it (owner, 2026-08-16). This assertion read
+        // `d.freeze.is_empty()` under the model where the tenth proc consumed
+        // the pile, which made the game's own "10 stacks" display Frozen's
+        // cosmetic; a target that cannot freeze reaches ten and cycles there,
+        // so the ten are real.
         d.apply_cold_proc(1.0, 1.0, false, None, false);
-        assert!(d.freeze.is_empty());
+        assert_eq!(d.freeze.len(), 10);
         assert_eq!(d.frozen_until, Some(4.0));
-        assert!((d.cold_cd_bonus(1.5) - 1.00).abs() < 1e-9); // supersedes
-                                                             // Cold procs are inert while Frozen.
+        assert!((d.cold_cd_bonus(1.5) - 1.00).abs() < 1e-9); // REPLACES the ladder
+        // Cold procs are inert while Frozen, which is what pins the ten.
         d.apply_cold_proc(2.0, 1.0, false, None, false);
-        assert!(d.freeze.is_empty());
+        assert_eq!(d.freeze.len(), 10);
         // Thaw: hard reset to exactly 3 stacks with FRESH 6 s timers
         // anchored at the thaw instant (expire at 4 + 6 = 10 s).
         d.prune(4.5, 1.0);
