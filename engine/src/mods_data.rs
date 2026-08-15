@@ -1133,7 +1133,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 120] = [
+        const EXPECTED: [(&str, &str, &[&str]); 122] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up. That
             // is what makes this whole class one line each — including the
@@ -1349,6 +1349,12 @@ mod tests {
             // `["semi_rifle_cannonade"]`, which is the app offering a mod the
             // game refuses. The trigger is what legality reads.
             ("vulcax", "charge", &[]),
+            // THE DECONSTRUCTOR PAIR — a melee weapon in a gun roster, and the
+            // only entries with NO mod pool at all (it takes melee and thrown
+            // melee mods, which this app does not model). No pool, no
+            // Cannonade, and the trigger never comes into it.
+            ("deconstructor", "auto", &[]),
+            ("deconstructor_prime", "auto", &[]),
             // AN AUTO RIFLE, so no Cannonade — the Semi-* mods gate on the
             // listed trigger and the Shedu's is Auto. Its explosion changes
             // nothing about that: a Cannonade reads the TRIGGER, not what the

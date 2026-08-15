@@ -1,0 +1,78 @@
+id: deconstructor_prime
+name: Deconstructor Prime
+# HELIOS'S WEAPON, and the first MELEE weapon in a roster that models guns. It
+# is here because it is not swung: the sentinel THROWS it and the projectiles
+# "bounce off walls like a normally thrown glaive" (wiki). A thrown melee
+# weapon is a ranged attack with a fire rate, a magazine and a reload, which is
+# a shape this engine already has — so it is recorded rather than left out,
+# with the two things it cannot do stated below (owner, 2026-08-15).
+slot: sentinel
+class: sentinel_weapon
+form: base
+default_form: true
+
+# NO MOD POOL, and this is the honest answer rather than a placeholder. The
+# page says it "uses melee and thrown melee mods" — Pressure Point, Fury,
+# Whirlwind, Power Throw — and this app has no melee pool at all: it models
+# guns, and its four pools are rifle, shotgun, pistol and archgun. Putting it
+# in ANY of them would offer mods the game refuses and hide every mod it takes.
+#
+# So the entry ships unmoddable and says so. Its base numbers are real and its
+# page is a real page; what it cannot do yet is be BUILT.
+mod_pools: []
+mastery_rank: 0
+max_rank: 30
+
+accuracy: 100.0
+disposition: 1.25
+polarities: []
+riven_family: Deconstructor
+traits: [prime]
+internal_name: /Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon
+noise: alarming
+magazine: 6
+reload_seconds: 3.0
+
+# No Condition Overload row (absence means ORDINARY) — and CO would find
+# little here anyway: this weapon never crits.
+co_behavior: additive_with_base_damage
+
+# THE DAMAGE CYCLES, AND THIS ENTRY AVERAGES IT. The weapon fires 160
+# damage of ONE type at a time, rotating Impact -> Puncture -> Slash, so a
+# three-shot cycle deals 160 of each. Carried here as an equal three-way
+# split of the same 160, which is the simple modelling the owner asked for
+# and is exact on two of the three things that matter:
+#
+#   TOTAL DAMAGE      exact — 160 a throw either way
+#   STATUS MIX        exact — the engine draws one proc type weighted by share,
+#                     so equal thirds produce the same Impact/Puncture/Slash
+#                     distribution the rotation does
+#   MITIGATION        APPROXIMATE, and this is the cost. Armour treats the
+#                     three types differently (Puncture is good against it,
+#                     Impact poor), and a blended instance is not the average
+#                     of three pure ones because mitigation is applied per
+#                     instance. Against an unarmoured target the two are the
+#                     same number.
+attack:
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 40
+  fire_rate: 1.33
+  multishot: 1.0
+  ammo_cost: 1
+  # IT NEVER CRITS. 0.00% and 1.00x, both printed on the page — not an
+  # omission, and the reason a crit build does nothing for it.
+  crit_chance: 0.0
+  crit_multiplier: 1.0
+  status_chance: 0.25
+  punch_through_m: 0.0
+  damage: { impact: 53.333333, puncture: 53.333333, slash: 53.333333 }   # 160 a throw
+
+unmodeled:
+  - "this weapon CANNOT BE MODDED here — it uses melee and thrown melee mods (Pressure Point, Fury, Whirlwind, Power Throw) and this app models guns, so it has no pool to draw from. Its base numbers are real; a build is not"
+  - "the damage TYPE ROTATION is averaged — the weapon throws 160 of one type at a time, cycling Impact then Puncture then Slash, and this entry carries an equal three-way split instead. Total damage and status mix come out exact; ARMOUR does not, because mitigation is applied per instance and a blended hit is not the average of three pure ones"
+  - "the projectiles BOUNCE OFF WALLS like a thrown glaive, and this arena has no walls to bounce off"
+  - "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
+
+source:
+  url: https://wiki.warframe.com/w/Deconstructor_Prime

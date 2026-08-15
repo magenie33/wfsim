@@ -6239,10 +6239,26 @@ mod asset_tests {
     /// editor renders a riven with NOTHING to roll, which is how the Larkspur
     /// Prime shipped until `data/rivens/archgun.yaml` existed (user,
     /// 2026-08-01). The next class added lands here instead of in the UI.
+    ///
+    /// EXCEPT A WEAPON THIS APP CANNOT MOD AT ALL. The Deconstructor pair takes
+    /// MELEE and thrown-melee mods, and a melee riven rolls melee stats — so a
+    /// weapon with no mod pool here has no riven pool here either, and both
+    /// absences are the same fact rather than two bugs. The exemption is keyed
+    /// on the empty pool rather than on the two ids, so it covers the next
+    /// melee weapon and stops covering these two the day a melee pool exists
+    /// (2026-08-15).
     #[test]
     fn every_weapon_reaches_a_riven_stat_pool() {
         let mut orphans: Vec<String> = Vec::new();
         for w in weapons() {
+            // The ENTRY's own `mod_pools`, not `WeaponInfo`'s — that one is
+            // derived and carries the SLOT ("sentinel"), so it is never empty
+            // and this skip would never fire off it.
+            let unmoddable = wfsim_engine::weapons_data::spec(&w.id)
+                .is_some_and(|s| s.mod_pools.is_empty());
+            if unmoddable {
+                continue;
+            }
             let class = riven_class(w);
             let n = wfsim_engine::rivens_data::pool(&class).len();
             // What is left after the weapon's own exclusions is what the
@@ -6255,6 +6271,22 @@ mod asset_tests {
             }
         }
         assert!(orphans.is_empty(), "weapons with no riven stats: {orphans:#?}");
+
+        // …and the exemption stays SMALL and deliberate. An empty mod pool is
+        // the strongest statement a weapon entry can make — nothing can be
+        // built on it — so it is never the quiet default for a weapon whose
+        // pool somebody forgot to fill in.
+        let unmoddable: Vec<&str> = weapons()
+            .iter()
+            .filter(|w| wfsim_engine::weapons_data::spec(&w.id)
+                .is_some_and(|s| s.mod_pools.is_empty()))
+            .map(|w| w.id.as_str())
+            .collect();
+        assert_eq!(
+            unmoddable,
+            ["deconstructor", "deconstructor_prime"],
+            "a weapon with NO mod pool is a weapon this app cannot build at all —              if that is intended, add it here with its reason"
+        );
     }
 
     #[test]

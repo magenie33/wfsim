@@ -241,6 +241,8 @@ weapons:
   multron: 多连穿甲枪
   tazicor: 泰瑟步枪
   vulcax: 金工火舌
+  deconstructor: 分离
+  deconstructor_prime: 分离 Prime
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's
