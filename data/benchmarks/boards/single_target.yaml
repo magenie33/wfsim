@@ -13,6 +13,11 @@ engine: 623356f18d087004560c63992de86140a5ef3745
 entries:
   - weapon: akarius_prime
     mode: base
+    score: 10.890644352905635
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, pistol_elementalist, magnetic_might, ice_storm, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_fortifier]
+  - weapon: akarius_prime
+    mode: base
     score: 9.334492748418956
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
@@ -4214,6 +4219,12 @@ entries:
     mods: [galvanized_chamber, primed_shred, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
     evolutions: [sybaris_prime_evo1_incarnon_form, sybaris_prime_well_rehearsed, sybaris_prime_marksmans_hand, sybaris_prime_survivors_edge]
     arcanes: [primary_deadhead]
+  - weapon: synoid_gammacor
+    mode: cycle
+    score: 4.850891307514422
+    mods: [galvanized_diffusion, hornet_strike, primed_pistol_gambit, lethal_torrent, pistol_elementalist, deep_freeze, pistol_pestilence, primed_heated_charge]
+    evolutions: [synoid_gammacor_evo1_incarnon_form, synoid_gammacor_sages_resolve, synoid_gammacor_extended_volley, synoid_gammacor_critical_parallel]
+    arcanes: [cascadia_flare]
   - weapon: torid
     mode: cycle
     score: 28.44229348067104
