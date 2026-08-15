@@ -2838,3 +2838,70 @@ is a floor rather than an estimate.
 Wiki `Mausolon` §Characteristics (raw wikitext, transcribed above), and its
 infobox — both columns of which were re-verified field by field on 2026-08-15
 and agree with `data/weapons/archgun/mausolon*.yaml` exactly.
+
+---
+
+## M46 — Cold's tenth stack: the count reaches ten, the VALUE ladder stops at nine (2026-08-16)
+
+**Status: RESOLVED FROM THE WIKI, one reading left to confirm in game.**
+
+The model changed on 2026-08-16 (owner): Cold is ONE status with a stack LADDER
+and a STATE. The tenth chill stack and Frozen are live at the same time — the
+ladder sits at ten for the three seconds Frozen holds, which is what the game
+displays — instead of the tenth proc consuming the pile. What forced it is a
+target that cannot be frozen: its chill really does reach ten and cycles FIFO
+there, so ten stacks are a state the game has.
+
+That left one number with no source: **what is the ladder worth at ten**, on a
+target that gets there without freezing?
+
+**The wiki answers it, about that exact target.** `Demolisher`, verbatim:
+
+> "Demolishers will not freeze at 10 procs, instead their movement will be
+> Slowed by 90%."
+
+**90% is the NINTH rung.** The slow table is *"50% at 1 stack, and subsequent
+stacks until the 9th add an additional 5% reduction (90% at 9 stacks)"* — a
+tenth rung would read 95%, and the page says 90%. So the stack COUNT goes to
+ten and the VALUE tables have nine rungs; the tenth stack carries the Frozen
+state, not another step.
+
+The crit-damage-received ladder is read the same way and tops out at **+0.50x**,
+on a Demolisher as on anything else. The engine returned **+0.55x** until this
+entry — an extrapolation of `0.10 + 0.05×(n−1)` to n=10 that nobody had a
+source for, present in BOTH the old consume-the-pile model and the ladder-plus-
+state one, and refuted by a source about precisely the case it applied to.
+`CHILL_VALUE_RUNGS` is the cap now.
+
+**WHAT IS STILL WORTH CONFIRMING IN GAME**, cheapest first:
+
+1. **Count the stacks on a Demolisher.** Does the chill counter show **10**, or
+   does it hold at 9? This is the one readout that is an integer and cannot be
+   misread. Everything else follows from where the ladder tops out. The owner
+   is confident it is 10 (2026-08-16); the wiki's "not freeze at 10 procs"
+   agrees, but "procs" is not quite "stacks".
+2. **The slow at that point** — 90% (ninth rung, as the page says) or 95%.
+3. **The crit damage received** at 9 stacks versus 10. Hardest to read: with a
+   2.0x base and no crit-damage mods the multiplier is 2.50 versus 2.55, a 2%
+   difference, so use a LOW base crit damage to make the flat +0.05 a larger
+   share.
+
+Reading 1 settles the model; 2 and 3 only confirm it.
+
+**WHO CANNOT BE FROZEN** (searched 2026-08-16). Two mechanisms, and only one of
+them needs a flag:
+
+- **By a stack cap, which needs nothing.** A cap below ten makes the trigger
+  unreachable by arithmetic — Overguard holders and bosses cap at 4 (Cold page:
+  "can receive a maximum of 4 Cold stacks", "preventing Frozen status
+  entirely"), and the Acolytes carry a per-unit cap of 4 in `data/enemies/`.
+  This is how the wiki derives it too, and the engine now does the same.
+- **By the state being absent while the ladder fills normally**, which is
+  `cannot_be_frozen` on the enemy. **Demolishers and their Amalgam variants the
+  Demolysts are the only units found with this property.** They are separately
+  immune to Confusion, Knockdown, Lifted, Stagger and Stun, and to finishers —
+  Cold's slow still applies to them, which is the point of the sentence quoted
+  above. `data/enemies/demolisher_devourer.yaml` is the roster's one carrier.
+
+No unit was found that resists Cold STACKS while remaining freezable, so the
+two mechanisms above are believed to be the whole set.

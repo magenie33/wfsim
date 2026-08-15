@@ -879,6 +879,11 @@ const TEN_STACK_CAP: usize = 10;
 const BLAST_COEFFICIENT: f64 = 0.3;
 const BLAST_FUSE: f64 = 1.5;
 const FREEZE_CAP_UNDER_OVERGUARD: usize = 4;
+/// How many rungs the chill VALUE tables have — nine, while the stack COUNT
+/// goes to ten. The tenth stack carries the Frozen state instead of a step,
+/// which is why a Demolisher at ten procs is slowed 90% (the ninth rung) and
+/// not 95%. See [`DebuffState::chill_cd_bonus`].
+const CHILL_VALUE_RUNGS: usize = 9;
 const FROZEN_DURATION: f64 = 3.0;
 const FROZEN_CRIT_DAMAGE_RECEIVED: f64 = 1.00;
 const FROZEN_RESET_STACKS: usize = 3;
@@ -1126,13 +1131,26 @@ impl DebuffState {
     /// multiplier with 1 stack, and +0.05x per subsequent stack, adding up to
     /// +0.50x at 9 stacks"*.
     ///
-    /// TEN IS ONE PAST THE PUBLISHED TABLE, and it is reachable only on a
-    /// target that stacks to ten without freezing — the page stops at nine
-    /// because on everything it describes the tenth stack IS Frozen. The
-    /// formula is continued rather than capped, which is an extrapolation and
-    /// is said to be one; it is also what this engine already did.
+    /// THE LADDER HAS NINE RUNGS AND THE TENTH STACK IS NOT ONE OF THEM. The
+    /// stack COUNT goes to ten — the wiki's "Maximum stacks: 10 total" — but
+    /// what the tenth carries is the Frozen STATE, not another step of value.
+    ///
+    /// The evidence is the wiki's own sentence about the one target where the
+    /// two can be told apart, because it stacks to ten without freezing
+    /// (`Demolisher`, verbatim): *"Demolishers will not freeze at 10 procs,
+    /// instead their movement will be Slowed by 90%."* Ninety per cent is the
+    /// NINTH rung — the slow table is "50% at 1 stack, and subsequent stacks
+    /// until the 9th add an additional 5% reduction (90% at 9 stacks)". A tenth
+    /// rung would make it 95%, and the page says 90%.
+    ///
+    /// So the count is capped at nine for the VALUE and the crit bonus tops out
+    /// at +0.50x, on a Demolisher as on anything else. Continuing the formula
+    /// to +0.55x is what this engine did before 2026-08-16, in both the old
+    /// consume-the-pile model and the ladder-plus-state one that replaced it —
+    /// an extrapolation nobody had a source for, refuted by a source about
+    /// exactly the case it applied to.
     fn chill_cd_bonus(&self) -> f64 {
-        match self.freeze.len() {
+        match self.freeze.len().min(CHILL_VALUE_RUNGS) {
             0 => 0.0,
             n => 0.10 + 0.05 * (n as f64 - 1.0),
         }
@@ -8834,9 +8852,12 @@ mod tests {
         let immune = chill(14, None, true, false);
         assert_eq!(immune.freeze.len(), 10, "the ladder still fills and cycles");
         assert!(immune.frozen_until.is_none(), "and never freezes");
-        // …and it keeps the ladder's own bonus all fight, rather than spending
-        // it on a 3 s window every ten procs.
-        assert!((immune.chill_cd_bonus() - 0.55).abs() < 1e-9);
+        // …and it keeps the ladder's TOP bonus all fight, rather than spending
+        // it on a 3 s window every ten procs. +0.50x and not +0.55x: the tenth
+        // stack is the Frozen trigger, not a tenth rung, which the wiki says of
+        // this exact target — "Demolishers will not freeze at 10 procs, instead
+        // their movement will be Slowed by 90%", and 90% is the NINTH rung.
+        assert!((immune.chill_cd_bonus() - 0.50).abs() < 1e-9);
 
         let og = chill(14, None, false, true);
         assert_eq!(og.freeze.len(), FREEZE_CAP_UNDER_OVERGUARD, "Overguard caps at four");
@@ -8858,8 +8879,9 @@ mod tests {
         let ten = chill(10, None, false, false);
         assert!((ten.cold_cd_bonus(1.0) - FROZEN_CRIT_DAMAGE_RECEIVED).abs() < 1e-9);
         // The ladder is still there and still says its own number — this is the
-        // one place that decides which of the two the target feels.
-        assert!((ten.chill_cd_bonus() - 0.55).abs() < 1e-9);
+        // one place that decides which of the two the target feels. Its number
+        // is the ninth rung's, because there is no tenth rung.
+        assert!((ten.chill_cd_bonus() - 0.50).abs() < 1e-9);
     }
 
     /// Default params with status disabled — for hand-computed expectations
@@ -10671,12 +10693,18 @@ mod tests {
         );
 
         // THE DEMOLISHER DID NOT. Ten stacks, no Frozen, and the bonus is the
-        // table's top row rather than the window's.
+        // ladder's top RUNG rather than the window's.
         assert!(never.frozen_until.is_none(), "nothing converts");
         assert_eq!(never.freeze.len(), 10, "it climbs to the ten-stack cap and stops");
+        // +0.50x, NOT +0.55x (corrected 2026-08-16). The stack count reaches
+        // ten and the VALUE ladder has nine rungs — the wiki says so of this
+        // exact target: "Demolishers will not freeze at 10 procs, instead their
+        // movement will be Slowed by 90%", and 90% is the ninth rung of the
+        // slow table ("subsequent stacks until the 9th"). A tenth rung would
+        // read 95%.
         assert!(
-            (never.cold_cd_bonus(at) - 0.55).abs() < 1e-9,
-            "0.10 + 0.05 x 9 = 0.55, held all fight: {}",
+            (never.cold_cd_bonus(at) - 0.50).abs() < 1e-9,
+            "the ladder's ninth and last rung, held all fight: {}",
             never.cold_cd_bonus(at)
         );
 
