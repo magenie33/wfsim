@@ -115,8 +115,28 @@ What is still open here:
   so (`spread_not_transcribed`); re-running `scripts/intake_spread.py` only
   ever lowers the count and a test holds the ceiling;
 - **beam RANGE** — a beam still reaches whatever it is aimed at;
-- range-gated perks, and **Dizzying Rounds**, whose stun applies "from less than
-  8m". The distance exists now; the clause still needs wiring.
+- **Dizzying Rounds**' stun, which applies "from less than 8m" — the distance
+  half is answerable now and the STUN half is not: it opens a finisher, and
+  nothing here takes one. Filed under `nobody_shoots_back`'s neighbourhood
+  rather than here. Its status chance is the half that pays.
+
+**AND FIVE CLAUSES STOPPED BEING EDGES** the day the range landed, which is the
+worse half of adding a mechanic: an `out_of_scope` declaration that is no longer
+true tells a player to distrust a number that is now right. All five were
+rewritten as real effects the same day:
+
+| clause | was | is |
+| --- | --- | --- |
+| Lone Enforcer (Vectis, Vectis Prime) — *"+25% Multishot if no enemies are within 5m"* | `no_distance` | `multishot_beyond_range`, settled against the arena in `DummyParams::from_panel` |
+| Hunter's Mantra (Boltor, Boltor Prime, Telos Boltor) — *"With Channeled Ability active: +40% Accuracy"* | `no_distance` | `GatedGrant::Accuracy` — a narrower cone, so more pellets land |
+
+Both are worth exactly zero at point blank, which is why no board row moved.
+The OTHER half of Hunter's Mantra (Punch Through +4) is still an edge and still
+says so: it needs a second body.
+
+The three `no_distance` clauses left are all the same one — Moonrise Velocity's
+*"Increase Range by +7/+8"* on the Atomos and the two Gammacors — and they are
+waiting on beam range, above.
 
 ### 3. NO MOVEMENT, NO STANCE
 

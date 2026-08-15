@@ -12,12 +12,14 @@ effects:
   # from: "Increase Base Damage by +75"
   - kind: flat_base_damage
     value: 75.0
-  # AN EDGE, NOT A GAP — see docs/UNMODELLED.md. The clause is understood;
-  # this simulator cannot pay it out, and the reason will not change with
-  # any amount of work on evolutions.
-  - kind: out_of_scope
-    clause: "+25% Multishot if no enemies are within 5m"
-    reason: no_distance
+  # IT PAYS NOW (2026-08-15). It was filed as an EDGE — a clause nothing about
+  # this engine would ever close — and the arena gaining a range closed it: with
+  # one enemy, "no enemies within 5m" is exactly "the target is standing further
+  # away than 5 m", which the fight can now answer. Worth nothing at point
+  # blank, which is where both official boards are scored.
+  - kind: multishot_beyond_range
+    value: 0.25
+    metres: 5.0
 
 source:
   url: https://wiki.warframe.com/w/Vectis_Incarnon_Genesis

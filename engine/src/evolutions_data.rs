@@ -144,6 +144,16 @@ enum EvoEffect {
     /// duration of the NEXT shot's lingering field. ✅ measured (M13): x2, so
     /// that field ticks 20 times instead of 10.
     FieldDurationOnEmptyReload(f64),
+    /// A multishot bonus that pays only PAST a distance — Lone Enforcer's
+    /// "+25% Multishot if no enemies are within 5m", as `(fraction, metres)`.
+    ///
+    /// It cannot be a [`GatedGrant`] like the rest: those are opened by the
+    /// TENNO's state and `resolve` never sees the arena, while this asks where
+    /// the two of them are standing. So it rides the panel and is settled in
+    /// `DummyParams::from_panel`, which is the one place the build and the
+    /// fight are both in scope — the same seam Primary Compression already
+    /// uses (the panel brings the metres, the arena brings the answer).
+    MultishotBeyondRange { value: f64, metres: f64 },
     /// Final Fusillade: a FLAT multishot add on the last round of the magazine,
     /// BASE FORM ONLY (user, 2026-07-30) — a charge-backed Incarnon magazine
     /// has no "last shot in magazine" to gate on, so `apply` drops it there.
@@ -738,6 +748,7 @@ impl EvolutionDef {
                 | EvoEffect::FlatBaseStatusChance(_)
                 | EvoEffect::FlatBaseMagazine(_)
                 | EvoEffect::FieldDurationOnEmptyReload(_)
+                | EvoEffect::MultishotBeyondRange { .. }
                 | EvoEffect::MultishotOnLastRound { .. }
                 | EvoEffect::BaseDamagePerFullBurst { .. }
                 | EvoEffect::ArmorStripPerPunctureStatus(_)
@@ -893,6 +904,10 @@ impl EvolutionDef {
                 EvoEffect::FlatBaseMagazine(v) => {
                     format!("+{v:.0} base magazine (magazine mods multiply it)")
                 }
+                EvoEffect::MultishotBeyondRange { value, metres } => format!(
+                    "+{:.0}% multishot with no enemy inside {metres:.0} m — worth nothing at point blank, which is where both boards are scored",
+                    value * 100.0
+                ),
                 EvoEffect::FieldDurationOnEmptyReload(v) => format!(
                     "On reload from empty: x{v:.0} lingering-field duration on the next shot"
                 ),
@@ -982,6 +997,15 @@ impl EvolutionDef {
                         ),
                         G::FireRate => format!("+{:.0}% fire rate", value * 100.0),
                         G::Multishot => format!("+{:.0}% multishot", value * 100.0),
+                        // ACCURACY narrows the cone a pellet draws inside, so
+                        // the card is stated as what it does rather than as the
+                        // stat's name: at point blank it is worth nothing and
+                        // at a range it is the difference between landing and
+                        // not (`space`, `loadout::Spread`).
+                        G::Accuracy => format!(
+                            "+{:.0}% accuracy — a tighter cone, so more pellets land at a distance",
+                            value * 100.0
+                        ),
                         G::ProjectileSpeed => {
                             format!("+{:.0}% projectile speed", value * 100.0)
                         }
@@ -1179,6 +1203,10 @@ fn effect(v: &Value) -> Option<EvoEffect> {
             crate::loadout::IndirectStat::HolsteredReload,
             f(v, "value").unwrap_or(0.0),
         ),
+        "multishot_beyond_range" => EvoEffect::MultishotBeyondRange {
+            value: f(v, "value").unwrap_or(0.0),
+            metres: f(v, "metres").unwrap_or(0.0),
+        },
         "ammo_reserve_set" => EvoEffect::AmmoMaxSet(f(v, "value").unwrap_or(0.0)),
         "flat_base_magazine" => EvoEffect::FlatBaseMagazine(f(v, "value").unwrap_or(0.0)),
         "field_duration_on_empty_reload" => {
@@ -1351,6 +1379,7 @@ fn effect(v: &Value) -> Option<EvoEffect> {
                 Some("multishot") => crate::loadout::GatedGrant::Multishot,
                 Some("base_crit_damage") => crate::loadout::GatedGrant::BaseCritDamage,
                 Some("projectile_speed") => crate::loadout::GatedGrant::ProjectileSpeed,
+                Some("accuracy_bonus") => crate::loadout::GatedGrant::Accuracy,
                 Some("flat_base_damage") => crate::loadout::GatedGrant::FlatBaseDamage,
                 Some("flat_base_magazine") => crate::loadout::GatedGrant::FlatBaseMagazine,
                 other => {
@@ -1675,6 +1704,9 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 }
                 EvoEffect::FieldDurationOnEmptyReload(v) => {
                     base.field_duration_on_empty_reload = *v;
+                }
+                EvoEffect::MultishotBeyondRange { value, metres } => {
+                    base.multishot_beyond_range = Some((*value, *metres));
                 }
                 // BASE FORM ONLY: `incarnon.is_some()` marks the charge-backed
                 // form, whose magazine is the gauge's round pool rather than a

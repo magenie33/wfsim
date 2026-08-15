@@ -2324,6 +2324,28 @@ impl DummyParams {
             player_at,
             target_at,
         } = arena.clone();
+        // LONE ENFORCER: "+25% Multishot if no enemies are within 5m".
+        //
+        // HERE, and not in `resolve`, because this is the first clause in the
+        // roster that asks about the FIGHT's geometry rather than the player's
+        // state — `resolve` is handed a Tenno and never an arena, so a
+        // `GatedGrant` could not answer it. This is the seam Primary
+        // Compression already uses: the panel brings what the card says, the
+        // arena brings whether it is true.
+        //
+        // ONE ENEMY, so "no enemies within 5m" is exactly "the target is
+        // further away than 5m" — decidable now, and it was filed as an edge
+        // (`no_distance`) until the arena had a range (2026-08-15).
+        //
+        // A FRACTION OF BASE MULTISHOT, into the same bucket the mods feed —
+        // the reading `GatedGrant::Multishot` already carries for every other
+        // conditional multishot grant, so a gated +25% and a plain +25% cannot
+        // come out as different panels. False at point blank, which is where
+        // both boards are scored, so no row moves.
+        let lone_bonus = match panel.multishot_beyond_range {
+            Some((v, m)) if player_at.distance(target_at) > m => v * panel.base_multishot,
+            _ => 0.0,
+        };
         // Resolve the faction bucket against THIS target's faction (additive
         // within the matching faction; 1.0 vs a non-match / Unknown).
         let faction_mult = 1.0
@@ -2387,7 +2409,7 @@ impl DummyParams {
             // Nothing caught it because every test here builds `DummyParams`
             // by hand, where the field defaults to `true` (2026-08-01).
             ammo_efficiency_applies: panel.gauge_form.is_none(),
-            multishot: panel.multishot,
+            multishot: panel.multishot + lone_bonus,
             base_multishot: panel.base_multishot,
             evo_ms: panel.evo_ms,
             evo_bd: panel.evo_bd,
@@ -4998,6 +5020,84 @@ mod every_form_runs {
                 .iter()
                 .any(|u| u.reason.as_deref() == Some("spread_not_transcribed")),
             "{id}: cannot miss for a DATA reason and does not say so"
+        );
+    }
+
+    /// THE TWO CLAUSES A RANGE TURNED ON, and both of them are worth zero at
+    /// point blank — which is why neither moves a board row.
+    ///
+    /// They were both filed as EDGES (`reason: no_distance`, "nothing about
+    /// this engine will ever close it") and the arena gaining a range closed
+    /// them, so the declarations were false until 2026-08-15. That is a worse
+    /// state than an open gap: an admission that outlives the gap it names
+    /// tells a player to distrust a number that is now right.
+    ///
+    /// - LONE ENFORCER (Vectis): "+25% Multishot if no enemies are within 5m".
+    ///   With one enemy that is exactly "the target stands past 5 m".
+    /// - HUNTER'S MANTRA (Boltor): "With Channeled Ability active: +40%
+    ///   Accuracy" — a narrower cone, so more pellets land at a distance. Its
+    ///   OTHER half (Punch Through +4) is still an edge and still says so: it
+    ///   needs a second body, which this arena does not have.
+    #[test]
+    fn a_range_gated_clause_pays_past_its_range_and_nothing_at_point_blank() {
+        let multishot_at = |range: f64| {
+            let mut arena = crate::arena::Arena::training(10.0);
+            arena.target_at = crate::space::Vec2::new(0.0, range);
+            let base = crate::loadout::WeaponBase::from_data(
+                "vectis",
+                false,
+                &["vectis_lone_enforcer"],
+            );
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none()).multishot
+        };
+        let base = multishot_at(0.0);
+        assert!(base > 0.0, "the fixture has no multishot");
+        assert_eq!(multishot_at(4.9), base, "inside 5 m it pays nothing");
+        // …and past it, exactly a quarter of the weapon's BASE multishot, in
+        // the same bucket every other conditional multishot grant feeds.
+        assert!(
+            (multishot_at(5.1) - base * 1.25).abs() < 1e-9,
+            "past 5 m: {} against {}",
+            multishot_at(5.1),
+            base * 1.25
+        );
+    }
+
+    /// …AND ACCURACY IS A REAL STAT NOW, so a card that grants it narrows the
+    /// cone. Asserted on the CONE rather than on a hit rate: the payload is
+    /// "the spread is smaller", and a rate would fold in the geometry as well.
+    #[test]
+    fn a_card_that_grants_accuracy_narrows_the_cone() {
+        let cone = |channeling: bool| {
+            let mut tenno = crate::tenno_data::default_tenno().clone();
+            tenno.state.channeling = channeling;
+            let base = crate::loadout::WeaponBase::from_data(
+                "boltor",
+                false,
+                &["boltor_hunters_mantra"],
+            );
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            crate::loadout::resolve_for(
+                &base,
+                &refs,
+                crate::loadout::StackPolicy::Emergent,
+                &tenno,
+            )
+            .spread
+            .expect("the Boltor has a transcribed cone")
+        };
+        let (off, on) = (cone(false), cone(true));
+        assert!(off.min_deg > 0.0, "the fixture has no cone to narrow");
+        // +40% accuracy divides the angle by 1.4 — the wiki's own direction
+        // ("bonuses that increase accuracy decrease the deviation").
+        assert!(
+            (on.min_deg - off.min_deg / 1.4).abs() < 1e-9,
+            "{} against {}",
+            on.min_deg,
+            off.min_deg / 1.4
         );
     }
 

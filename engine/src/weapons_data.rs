@@ -2465,6 +2465,8 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         gauge_form,
         radial,
         spread: s.attack.spread,
+        // Only an EVOLUTION grants one (Lone Enforcer); no weapon declares it.
+        multishot_beyond_range: None,
         falloff: s.attack.falloff.clone(),
         compression: s.attack.compression.clone(),
         lingering,

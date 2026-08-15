@@ -28,11 +28,16 @@ effects:
   - kind: out_of_scope
     clause: "With Channeled Ability active: Punch Through +4"
     reason: one_target
-  # …and the other half of the same bullet, which has its own reason: accuracy
-  # only pays where a shot can miss, and nothing here spreads or travels.
-  - kind: out_of_scope
-    clause: "With Channeled Ability active: +40% Accuracy"
-    reason: no_distance
+  # …and the other half of the same bullet, WHICH NOW PAYS (2026-08-15). It was
+  # filed `no_distance` on the reasoning that accuracy only matters where a shot
+  # can miss and nothing here spread or travelled — both halves of which stopped
+  # being true when the arena got a range: a pellet draws inside this weapon's
+  # own cone and +40% accuracy narrows it. Worth nothing at point blank, which
+  # is where both boards are scored, and real at any distance.
+  - kind: gated_by_tenno
+    condition: channeling
+    grant: accuracy_bonus
+    value: 0.40
 
 source:
   url: https://wiki.warframe.com/w/Boltor_Incarnon_Genesis

@@ -1006,6 +1006,11 @@ pub enum GatedGrant {
     BaseCritDamage,
     /// A fraction, into the projectile-speed indirect bucket.
     ProjectileSpeed,
+    /// A fraction, into the ACCURACY indirect bucket — which narrows the cone
+    /// a pellet draws inside (`spread`). It was worth nothing until the arena
+    /// had a distance, which is why the three Hunter's Mantra cards that grant
+    /// it were declared out of scope until 2026-08-15.
+    Accuracy,
     /// An ABSOLUTE add to the weapon's base damage, folded exactly as an
     /// ungated one is — [`WeaponBase::add_flat_base_damage`] is the one
     /// implementation, so "+40 with overshields" and a plain "+40" cannot come
@@ -1358,6 +1363,10 @@ pub struct WeaponBase {
     /// Renewed Horror: the multiplier a reload-from-EMPTY applies to the next
     /// shot's field duration (1.0 = the evolution is not installed).
     pub field_duration_on_empty_reload: f64,
+    /// Lone Enforcer: `(fraction of base multishot, metres)`, paid only when
+    /// the target is standing further away than that. Settled against the arena
+    /// in `DummyParams::from_panel` — see [`EvoEffect::MultishotBeyondRange`].
+    pub multishot_beyond_range: Option<(f64, f64)>,
     /// Continuous-beam geometry, when this form is one.
     pub beam: Option<BeamGeometry>,
     /// Final Fusillade: a FLAT multishot add on the LAST round of the magazine
@@ -2077,6 +2086,10 @@ pub struct ResolvedPanel {
     /// Renewed Horror's field-duration multiplier on the shot after an empty
     /// reload (1.0 = none).
     pub field_duration_on_empty_reload: f64,
+    /// Lone Enforcer, carried rather than folded: `(fraction of base multishot,
+    /// metres)`. `resolve` cannot settle it because it never sees the arena —
+    /// `DummyParams::from_panel` does, and that is where it is paid.
+    pub multishot_beyond_range: Option<(f64, f64)>,
     /// Final Fusillade's flat multishot add on the magazine's last round
     /// (0.0 = none). NOT folded into `multishot`: it is conditional on the
     /// magazine position, which only the sim can evaluate.
@@ -2663,6 +2676,13 @@ pub fn resolve_for(
             match indirect.iter_mut().find(|(s, _)| *s == IndirectStat::ProjectileSpeed) {
                 Some((_, v)) => *v += ps,
                 None => indirect.push((IndirectStat::ProjectileSpeed, ps)),
+            }
+        }
+        let acc = gate(GatedGrant::Accuracy);
+        if acc != 0.0 {
+            match indirect.iter_mut().find(|(s, _)| *s == IndirectStat::Accuracy) {
+                Some((_, v)) => *v += acc,
+                None => indirect.push((IndirectStat::Accuracy, acc)),
             }
         }
     }
@@ -3333,6 +3353,7 @@ pub fn resolve_for(
         crit_tier_upgrade_chance,
         continuous: base.continuous,
         field_duration_on_empty_reload: base.field_duration_on_empty_reload,
+        multishot_beyond_range: base.multishot_beyond_range,
         multishot_on_last_round: ms_last_round,
         // Locked the same way: an Acuity says "set to its default ignoring
         // other bonuses", and a bigger base for one burst is a bonus.
