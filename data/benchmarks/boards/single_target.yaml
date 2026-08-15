@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: b874f7df65e704e916ddb155b63241b69ff3af75
+engine: 335c4018010cf3ce58605bdba77c290f95936bc7
 entries:
   - weapon: akarius_prime
     mode: base
@@ -2209,6 +2209,12 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_prelude_of_might]
     arcanes: [secondary_encumber]
+  - weapon: gorgon_wraith
+    mode: cycle
+    score: 2.9907454076315707
+    mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [gorgon_wraith_evo1_incarnon_form, gorgon_wraith_hoplite_virtue, gorgon_wraith_voids_guidance, gorgon_wraith_absolute_valor]
+    arcanes: [primary_compression]
   - weapon: gotva_prime
     mode: base
     score: 10.781923080340697
