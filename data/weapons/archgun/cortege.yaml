@@ -62,6 +62,13 @@ attack:
   damage: { heat: 180.0 }          # Archwing: 90
 
 unmodeled:
+  # THE BEAM'S OWN AoE. The characteristics say "Beam deals radial damage
+  # varying from of 1 to 4 meters in a cone shape" and the infobox publishes NO
+  # radial row for the primary — its only one belongs to the grenades. So the
+  # shape is stated and the number is not, and inventing one would put damage on
+  # the board that nobody can check.
+  - "the BEAM'S CONE is not modelled — the wiki says the primary fire `deals radial damage varying from of 1 to 4 meters in a cone shape`, and publishes no damage figure for it anywhere; only the direct beam damage is applied here, so this weapon reads low against anything the cone would have caught"
+  - "the atmospheric beam's INNATE INFINITE BODY PUNCH THROUGH is not modelled — it passes through a body to reach whatever is behind it, and this arena has one target with nothing behind it"
   - reason: arch_gun_deployer_cooldown
 
 source:

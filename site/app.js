@@ -109,6 +109,12 @@ const trGap = (g) => {
   }
   return tr((g && g.text) || "");
 };
+/// Translate a template and fill its `{named}` holes — the same contract
+/// `trGap` uses for an unmodelled reason, hoisted out so anything else that
+/// needs a sentence with numbers in it costs ONE translated string rather than
+/// one per set of numbers.
+const trF = (template, params) => Object.entries(params || {}).reduce(
+  (s, [k, v]) => s.split(`{${k}}`).join(v), tr(template));
 const LN = (table, id, en) => (I18N && I18N[table] && I18N[table][id]) || en;
 // A damage type's NAME. The English fallback is CAPITALISED rather than echoed:
 // callers arrive with either spelling — the server sends "Void" in a damage
@@ -1195,9 +1201,23 @@ const benchCurrent = () =>
 /// `base` mode is its CHARGED shot, because that is what the arsenal hands
 /// you, and calling it "base form" would be true of the id and false of the
 /// weapon. The mode ids are roles; the labels are the weapon's own words.
+/// THE FORM A CYCLE SPENDS — the gauge-fed one, which is the only thing that
+/// tells a cycle apart from a free alternate.
+const earnedForm = (w) =>
+  ((w || {}).forms || []).find((x) => !x.is_default && x.gauge_switched) || null;
+
 const modeLabel = (w, id) => {
   const forms = (w || {}).forms || [];
-  if (id === "cycle") return tr("Incarnon cycle");
+  // NAMED AFTER THE FORM IT SPENDS, not after a product. This was a hardcoded
+  // "Incarnon cycle" and it was right for sixty-nine weapons and wrong for the
+  // first one that earns a form without an adapter: the Mausolon buys its
+  // charged shot with five kills and has no Genesis anywhere (owner,
+  // 2026-08-15). Same fix as the engine's, one layer up — the label is derived
+  // from what the weapon HAS.
+  if (id === "cycle") {
+    const f = earnedForm(w);
+    return f ? trF("{form} cycle", { form: tr(f.name) }) : tr("cycle");
+  }
   // A WEAPON CAN HAVE MORE THAN ONE ALTERNATE, so "the non-default form" is
   // not an answer: a bow with an adapter has a tapped shot AND an Incarnon
   // form, and picking whichever came first labelled one of them with the
@@ -7416,6 +7436,82 @@ const ROMAN = (n) => {
 /// option is not. Asking for a cycle implies its unlock, and installing that
 /// unlock takes a Cannonade off the weapon — so a build wearing one has no
 /// cycle to run and the sim refuses it.
+/// HOW A FORM IS FIRED, in one word. The trigger is weapon data; this is the
+/// English for it, and a trigger with no entry simply contributes nothing
+/// rather than printing its yaml token at a reader.
+const TRIGGER_WORD = {
+  auto: "fully automatic", semi_auto: "semi-auto", burst: "burst",
+  charge: "charged", held: "held", projectile: "projectile",
+};
+/// WHAT FILLS A GAUGE, in words. Mirrors `loadout::ChargeOn` — a member the
+/// page has no word for falls back to the id, which reads as obviously missing
+/// rather than as a silently empty sentence.
+const CHARGE_WORD = {
+  weakpoint_hits: "weakpoint hits", direct_hits: "direct hits", kills: "kills",
+};
+
+/// WHAT A MODE ACTUALLY IS, in sentences, derived from the weapon's own forms.
+///
+/// A mode was a NAME in a dropdown and nothing else, which is fine while every
+/// weapon's second mode is the same mechanic — and stopped being fine the day
+/// two weapons earned a form by killing rather than by hitting (owner,
+/// 2026-08-15). "Cycle" does not say what fills the gauge, how much of it there
+/// is, or what the earned form gets to fire, and those are precisely the
+/// numbers that decide whether the mode is worth picking.
+///
+/// DERIVED, never written per weapon: the forms carry their trigger and their
+/// gauge economy (`/api/meta`), so a weapon that arrives tomorrow explains
+/// itself. Each sentence is ONE translated template with `{named}` holes, so a
+/// weapon with different numbers costs no translation at all.
+function modeExplain(w, id) {
+  const forms = (w || {}).forms || [];
+  const def = forms.find((x) => x.is_default) || forms[0] || {};
+  const earned = earnedForm(w);
+  const alt = forms.find((x) => !x.is_default && !x.gauge_switched);
+  const fired = (f) => {
+    const word = f && TRIGGER_WORD[f.trigger];
+    const nm = tr((f || {}).name || "");
+    if (!word) return nm;
+    return f.charge_seconds
+      ? trF("{form} ({secs}s charge)", { form: nm, secs: (+f.charge_seconds).toFixed(2) })
+      : trF("{form} ({how})", { form: nm, how: tr(word) });
+  };
+  const out = [];
+  if (id === "base") {
+    out.push(trF("Fired in its {form} for the whole engagement — it never transforms.",
+      { form: fired(def) }));
+  } else if (id === "alternate") {
+    out.push(trF("Fired in its {form} for the whole engagement.", { form: fired(alt) }));
+    out.push(tr("Nothing is spent to be in it, so it can be held forever — a ruler ranks it."));
+  } else if (id === "transformed") {
+    out.push(trF("Its {form} alone, from the first second.", { form: fired(earned) }));
+    out.push(tr("It is NOT a way to play a whole engagement — the form has to be bought and runs out, so no ruler ranks it. It is here so you can read the form's own numbers."));
+  } else if (id === "cycle" && earned) {
+    const g = earned.gauge || {};
+    out.push(trF(
+      "Fire {base} until the gauge fills, spend it in {other}, come back — and again.",
+      { base: fired(def), other: fired(earned) }));
+    out.push(trF("{n} {what} fill it, and the earned form fires {rounds} before it ends.", {
+      n: g.charges_to_fill, rounds: g.max_rounds,
+      what: tr(CHARGE_WORD[g.charge_on] || g.charge_on || ""),
+    }));
+    // THE TRANSITIONS, and the ZERO CASE IS A FACT. An Incarnon plays an
+    // animation in each direction; a form you simply hold the other button for
+    // does not, and saying nothing there would read as "unknown" rather than
+    // as "none".
+    out.push(g.transmute_in > 0 || g.transmute_out > 0
+      ? trF("Each way costs an animation — {in}s in, {out}s out, both scaled by reload speed.",
+        { in: (+g.transmute_in).toFixed(2), out: (+g.transmute_out).toFixed(2) })
+      : tr("There is no transition animation either way."));
+    // WHY A KILL-FED GAUGE IS DIFFERENT, said once and only where it applies:
+    // it is the only source that the TARGET can refuse.
+    if (g.charge_on === "kills") {
+      out.push(tr("A gauge bought with kills is worth what the fight lets you earn: against something that will not die, this mode is the base one."));
+    }
+  }
+  return out;
+}
+
 function modeOpts(w) {
   const ids = (w.modes || []);
   if (ids.length < 2) return [];
@@ -7537,13 +7633,37 @@ function renderMode() {
   const w = weaponInfo($("weapon").value) || {};
   const opts = modeOpts(w);
   const sub = $("mode-sub");
+  // WHAT EACH MODE IS, spelled out — every mode this weapon has, not only the
+  // one that is picked (owner, 2026-08-15). A dropdown names the choices and
+  // says nothing about them, and the numbers that decide between them (what
+  // fills the gauge, how much of it there is, what the earned form gets to
+  // fire) were on no screen at all. It FOLDS, and remembers, because a reader
+  // who has learned this weapon does not need it again.
+  const explain = (ids) => {
+    const rows = ids.map((id) => {
+      const lines = modeExplain(w, id);
+      if (!lines.length) return "";
+      return `<div class="modedef${id === mode ? " on" : ""}">
+        <div class="modedef-n">${escHtml(modeLabel(w, id))}${
+          id === mode ? ` <span class="modedef-on">${escHtml(tr("picked"))}</span>` : ""}</div>
+        ${lines.map((s) => `<div class="modedef-l">${escHtml(s)}</div>`).join("")}
+      </div>`;
+    }).join("");
+    return rows
+      ? foldBlock("mode-def", tr("What each mode is"), "", rows)
+      : "";
+  };
+
   if (!opts.length) {
     // ONE WAY TO FIRE IT. Named from the weapon's own form, so it reads as a
-    // fact about the weapon rather than as a control somebody disabled.
+    // fact about the weapon rather than as a control somebody disabled — and
+    // it still gets its sentence: "base" is a claim (it never transforms) and
+    // not merely the absence of a choice.
     const only = (w.modes || ["base"])[0];
     box.innerHTML = `<label>${escHtml(tr("Mode"))} <span class="fixed-val">${
-      escHtml(modeLabel(w, only))}</span></label>`;
+      escHtml(modeLabel(w, only))}</span></label>${explain([only])}`;
     if (sub) sub.textContent = tr("one firing mode");
+    wireFolds(box);
     return;
   }
   // A build naming a mode this weapon does not offer falls back to how the
@@ -7568,7 +7688,9 @@ function renderMode() {
       }
       markPresetDirty(); renderMode(); refreshPanel();
     },
-  })}</label>${why ? `<span class="warn">⊘ ${escHtml(why)}</span>` : ""}`;
+  })}</label>${why ? `<span class="warn">⊘ ${escHtml(why)}</span>` : ""}${
+    explain(opts.map(([id]) => id))}`;
+  wireFolds(box);
 }
 
 function renderEvo() {

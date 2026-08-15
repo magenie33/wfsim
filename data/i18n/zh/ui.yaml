@@ -72,6 +72,9 @@ ui:
   "Hildryn's signature bonus is not modelled — carried by her it holds 300 more reserve ammo, 700 instead of 400, and this arena has no Warframe holding it": Hildryn 的专属加成尚未建模 —— 由她携带时备弹上限多 300（700 而不是 400），而这个战场里没有战甲持有它
   "the horizontal SPREAD is not modelled — the eight projectiles go out in a wide line and this arena has one target at zero distance, so all eight always land on it": 横向散射尚未建模 —— 八发弹丸呈一条宽线射出，而这个战场只有一个零距离的目标，所以八发永远全部命中
   "Primary Compression's 444% case is not modelled — the catalog gives this weapon a second effectiveness for aiming DURING the alt-fire, and this arena has no such state; the ordinary 100% is what is applied": 主武器压缩的 444% 情形尚未建模 —— 目录给这把武器额外写了一个「副射击蓄力期间瞄准」的效力值，而这个战场没有那种状态；这里应用的是常规的 100%
+  "the LIFTED SYNERGY is not modelled — the wiki gives this weapon `up to 13 additional instances of direct hit damage` against a Lifted enemy, and its own alt-fire is a guaranteed Lifted proc, so a real engagement alternates between lifting and cashing in; the sim applies the Lifted status (Condition Overload counts it) and none of the extra instances, which makes the primary read LOW for as long as the target is lifted": Lifted 联动尚未建模 —— wiki 写明这把武器打浮空目标时会造成「最多 13 次额外的直击伤害」，而它自己的副射击必定触发浮空，所以实战里是「浮空 → 兑现」来回循环；模拟只应用了浮空状态本身（异常状态过载会计入），额外的伤害实例一次都没有算，所以只要目标处于浮空，主射击的数字就偏低
+  "the BEAM'S CONE is not modelled — the wiki says the primary fire `deals radial damage varying from of 1 to 4 meters in a cone shape`, and publishes no damage figure for it anywhere; only the direct beam damage is applied here, so this weapon reads low against anything the cone would have caught": 光束的锥形范围伤害尚未建模 —— wiki 写明主射击「造成 1 到 4 米不等的锥形范围伤害」，但任何地方都没有公布它的伤害数值；这里只应用了光束的直接伤害，所以面对本会被锥形覆盖到的目标时，这把武器的数字偏低
+  "the atmospheric beam's INNATE INFINITE BODY PUNCH THROUGH is not modelled — it passes through a body to reach whatever is behind it, and this arena has one target with nothing behind it": 大气形态光束自带的无限躯体穿透尚未建模 —— 它会穿过一个身体打到后面的目标，而这个战场只有一个目标，后面什么都没有
   "LIFTED's crowd control is not modelled — the explosion suspends what it hits, and this arena has no movement to interrupt; what IS modelled is the 1 s status itself, which Condition Overload counts like any other": Lifted 的控制效果尚未建模 —— 爆炸会把命中的目标浮空，而这个战场没有可以被打断的移动；已经建模的是那 1 秒的状态本身，异常状态过载会像统计其他状态一样把它算进去
   "the radial's falloff is not modelled — this arena has one target at the centre, so it always takes the full 72 and never the 58 at the rim": 范围伤害的距离衰减尚未建模 —— 这个战场只有一个位于中心的目标，所以它永远吃满 72，而不会是边缘的 58
   "the CHARGE this form is named for is not modelled as a charge — the page calls it a Charged Shot and then gives it a Semi-Auto trigger with no charge time, so it is paced as a slow semi-auto shot and filed as an alt-fire": 这个形态名字里的「蓄力」没有按蓄力建模 —— 页面把它叫做 Charged Shot，却又给它半自动触发且没有蓄力时间，所以这里按一发慢速半自动射击计算，并归类为副射击
@@ -391,6 +394,33 @@ ui:
   "Read it against the aimed board rather than alone. A weapon high on both is strong; one high there and low here is being carried by precision, and the gap between its two positions is how much of it is your aim.": 请和瞄准榜对照着看，不要单独看。两个榜都靠前的是真强；那边高、这边低的，是被你的准头抬着的——两个名次之间的差距，就是这把武器有多少是你的瞄准。
   "A sentinel weapon scores the same on both boards. Its companion picks its own targets and never aims for a head, so neither term is the player's to set — and none of that weapon is your aim.": 守护型武器在两个榜上分数完全相同。它的守护自己选目标、从不瞄头，所以这两个条件都不归玩家管——这把武器里没有一分是你的瞄准。
   "Incarnon cycle": 灵化循环
+  # WHAT EACH MODE IS — the builder's mode block (2026-08-15). Templates with
+  # {named} holes, so a weapon with different numbers costs no translation.
+  "{form} cycle": "{form}循环"
+  "cycle": 循环
+  "What each mode is": 每种输出方式分别是什么
+  "picked": 当前选择
+  "{form} ({secs}s charge)": "{form}（蓄力 {secs} 秒）"
+  "{form} ({how})": "{form}（{how}）"
+  "fully automatic": 全自动
+  "semi-auto": 半自动
+  "burst": 点射
+  "charged": 蓄力
+  "held": 持续
+  "projectile": 抛射物
+  "weakpoint hits": 弱点命中
+  "direct hits": 直接命中
+  "kills": 击杀
+  "Fired in its {form} for the whole engagement — it never transforms.": 整场交战都用{form}射击 —— 它从不变身。
+  "Fired in its {form} for the whole engagement.": 整场交战都用{form}射击。
+  "Nothing is spent to be in it, so it can be held forever — a ruler ranks it.": 待在这个形态不需要付出任何代价，所以可以一直保持 —— 官方标尺会给它排名。
+  "Its {form} alone, from the first second.": 从第一秒起就只用{form}。
+  "It is NOT a way to play a whole engagement — the form has to be bought and runs out, so no ruler ranks it. It is here so you can read the form's own numbers.": 这并不是一种能打满整场交战的玩法 —— 这个形态要花代价换取，而且会耗尽，所以没有标尺给它排名。它在这里是为了让你看到这个形态自己的数值。
+  "Fire {base} until the gauge fills, spend it in {other}, come back — and again.": 用{base}打到充能条满，切到{other}把它花掉，再切回来 —— 如此往复。
+  "{n} {what} fill it, and the earned form fires {rounds} before it ends.": 需要 {n} 次{what}才能填满，换来的形态能打 {rounds} 发然后结束。
+  "Each way costs an animation — {in}s in, {out}s out, both scaled by reload speed.": 两个方向各有一段动作 —— 进入 {in} 秒、退出 {out} 秒，都会被装填速度缩放。
+  "There is no transition animation either way.": 两个方向都没有切换动作。
+  "A gauge bought with kills is worth what the fight lets you earn: against something that will not die, this mode is the base one.": 用击杀换来的充能条，值多少取决于这场战斗让你赚到多少 —— 面对一个打不死的目标，这个模式就等于基础模式。
   "Alt fire": 次要开火
   "not measured": 尚未测量
   "not modelled yet": 尚未建模

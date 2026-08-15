@@ -1247,6 +1247,18 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .fold>.fold-h .fold-c{display:inline-block;transition:transform .12s;color:var(--muted);font-size:11px}
 .fold.shut>.fold-h .fold-c{transform:rotate(-90deg)}
 .fold.shut>.fold-b{display:none}
+/* WHAT EACH MODE IS. A definition list under the Mode control: one entry per
+   mode this weapon has, the picked one marked. It sits inside the builder's
+   own block, so it takes the block's width and wraps rather than pushing the
+   mod grid sideways — a phone reads this too (check_mobile). */
+.fold[data-fold="mode-def"]{margin-top:6px}
+.fold[data-fold="mode-def"]>.fold-h{font-size:11px;font-weight:600;color:var(--text-2);margin:0}
+.modedef{padding:4px 0;border-top:1px solid var(--line)}
+.modedef:first-child{border-top:0}
+.modedef-n{font-size:11px;font-weight:600;color:var(--text)}
+.modedef.on .modedef-n{color:var(--gold)}
+.modedef-on{font-size:10px;font-weight:400;color:var(--muted)}
+.modedef-l{font-size:11px;line-height:1.45;color:var(--text-2);max-width:60ch}
 /* EVERY HIT, SORTED. Tabular figures, because the whole point is comparing a
    column down its length. */
 .hits{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}

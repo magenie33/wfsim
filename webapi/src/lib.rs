@@ -1035,19 +1035,38 @@ pub fn meta_json() -> Value {
                     .map(|p| p.map(|x| format!("{x:?}")))
                     .collect::<Vec<_>>(),
                 "forms": w.forms.iter()
-                    .map(|(id, name, def)| json!({
+                    .map(|(id, name, def)| {
+                        // THE ENTRY BEHIND THIS FORM, once. Everything below is
+                        // read off it rather than re-derived per field.
+                        let s = wfsim_engine::weapons_data::forms_of(&w.id)
+                            .iter()
+                            .find(|f| f.kind.id() == *id)
+                            .and_then(|f| wfsim_engine::weapons_data::spec(f.weapon_id));
+                        json!({
                         "id": id, "name": name, "is_default": def,
                         // Is this the form the GAUGE switches into? Then it
                         // exists only while its unlock is installed — and a mod
                         // that cannot be worn beside that unlock (`evo_forbids`)
                         // says the weapon does not have one, so the option goes
                         // with it rather than the sim refusing the build later.
-                        "gauge_switched": wfsim_engine::weapons_data::forms_of(&w.id)
-                            .iter()
-                            .filter(|f| f.kind.id() == *id)
-                            .any(|f| wfsim_engine::weapons_data::spec(f.weapon_id)
-                                .is_some_and(wfsim_engine::weapons_data::WeaponSpec::has_gauge)),
-                    }))
+                        "gauge_switched": s.is_some_and(wfsim_engine::weapons_data::WeaponSpec::has_gauge),
+                        // HOW THIS FORM IS FIRED, and what a gauge costs to
+                        // reach it. Sent so the builder can STATE what a mode
+                        // is instead of naming it and leaving the reader to
+                        // guess (owner, 2026-08-15) — and sent as the DATA
+                        // rather than as a sentence, because the sentence has
+                        // to be written once per language and not once per
+                        // weapon.
+                        "trigger": s.map(|x| x.attack.trigger.clone()),
+                        "charge_seconds": s.and_then(|x| x.attack.charge_seconds),
+                        "gauge": s.and_then(|x| x.gauge_form.as_ref()).map(|g| json!({
+                            "charge_on": g.gauge.charge_on,
+                            "charges_to_fill": g.gauge.charges_to_fill,
+                            "max_rounds": g.gauge.max_rounds,
+                            "transmute_in": g.transmute_in_seconds,
+                            "transmute_out": g.transmute_out_seconds,
+                        })),
+                    })})
                     .collect::<Vec<_>>(),
                 // Is there a form to TRANSFORM into? Then the sim can run the
                 // real two-form loop as a MODE over the forms above; without

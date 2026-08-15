@@ -440,6 +440,24 @@ around (decision 2026-07-31).
   now, so an axis can no longer be added to two of the three, which is what
   happened both times. Verified to bite: removing `valence` from the table
   fails four assertions, naming the axis.
+  `node scripts/check_mode_def.mjs` is the TWENTY-EIGHTH: a MODE is EXPLAINED,
+  not just named, and its name is DERIVED. The Mode control was a dropdown of
+  names, which is enough while every weapon's second mode is the same mechanic
+  and stopped being enough the day two weapons earned a form by KILLING rather
+  than by hitting (owner, 2026-08-15) — "cycle" does not say what fills the
+  gauge, how many it takes, or what the earned form gets to fire, and those are
+  the numbers that decide whether to pick it: a Torid pays 5 direct hits for 170
+  rounds, a Mausolon pays 5 KILLS for one. Each sentence is a TEMPLATE with
+  `{named}` holes filled from `/api/meta`'s forms, so a weapon that arrives
+  tomorrow explains itself and costs no translation. The other half is the NAME,
+  and the check carries a MATCHED PAIR because neither direction passes alone:
+  the Mausolon and the Cortege must not be told they have an Incarnon anything,
+  and the Torid and the Lex, which do, must still say so — a check asserting
+  only the first passes just as well on a page that dropped the word entirely.
+  It runs in BOTH languages, since a hole filled into an untranslated template
+  is invisible in English and is half an English sentence on a Chinese page.
+  Verified to bite: restoring the hardcoded `tr("Incarnon cycle")` fails four
+  assertions, naming the weapon and the language.
   `node scripts/check_gain_freshness.mjs` is the ninth: a
   scenario edit reaches the quick calc immediately, including a field nobody
   has invented yet — the scan's cache key is DERIVED from the fight it will

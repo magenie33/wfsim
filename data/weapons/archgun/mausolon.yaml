@@ -81,6 +81,13 @@ attack:
     status_chance: 0.26
 
 unmodeled:
+  # THE WEAPON'S OWN LOOP, and the biggest thing missing from its number. The
+  # alt-fire lifts and the primary cashes it in — the two forms feed each other,
+  # which is exactly what a cycle is for. What cannot be written down is HOW
+  # MANY: "up to 13" has no floor published and the count plainly depends on
+  # where the body is while it floats, which this arena does not model. A
+  # measurement decides it (docs/MEASUREMENTS.md), not a guess.
+  - "the LIFTED SYNERGY is not modelled — the wiki gives this weapon `up to 13 additional instances of direct hit damage` against a Lifted enemy, and its own alt-fire is a guaranteed Lifted proc, so a real engagement alternates between lifting and cashing in; the sim applies the Lifted status (Condition Overload counts it) and none of the extra instances, which makes the primary read LOW for as long as the target is lifted"
   - "Primary Compression's 444% case is not modelled — the catalog gives this weapon a second effectiveness for aiming DURING the alt-fire, and this arena has no such state; the ordinary 100% is what is applied"
   - "the radial's falloff is not modelled — this arena has one target at the centre, so it always takes the full 72 and never the 58 at the rim"
   - reason: arch_gun_deployer_cooldown
