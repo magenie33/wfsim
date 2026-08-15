@@ -11,11 +11,6 @@ form: incarnon
 transform_group: mk1_furis
 transforms_from: mk1_furis
 
-unmodeled:
-  - reason: damage_falloff
-    end: 16
-    keep: 22
-    start: 10
 
 # THE SAME ECONOMY AS THE FURIS — one Genesis, one gauge. Every number in this
 # block is copied from that page rather than from a second one, because there
@@ -93,3 +88,6 @@ source:
   # Attack stats cross-checked against WFCD warframe-items (attack "Incarnon
   # Form" on /Lotus/Weapons/MK1Series/MK1Furis): speed 12, crit 20%, 3.0x,
   # status 8%, Heat 60 — all agree except the falloff.
+
+unmodeled:
+  - reason: spread_not_transcribed

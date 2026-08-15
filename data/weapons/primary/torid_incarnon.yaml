@@ -88,6 +88,11 @@ co_behavior: additive_with_base_damage
 # a child of attack 1 (AttackParentIndex 1, the grenade), and the Incarnon
 # attack has no field of its own.
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 1
+    max_deg: 1.5
   trigger: held                 # continuous: `fire_rate` is TICKS per second
   shot_type: beam
   fire_rate: 8.0
@@ -187,3 +192,4 @@ source:
   # note: stats cross-checked wiki Module:Weapons/data/primary (attack 3,
   # "Incarnon Form", Trigger "Held") == WFCD warframe-items. Both give
   # 51 Toxin / 29% / 3.1x / 39% at 8 ticks per second.
+

@@ -18,11 +18,6 @@ max_rank: 30
 
 # Weapon-level metadata (wiki `Module:Weapons/data/primary` cross-checked
 # against the committed WFCD export, joined on internal name).
-unmodeled:
-  - reason: damage_falloff
-    end: 25
-    keep: 70
-    start: 18
 
 accuracy: 5                  # the page prints "Very Low" for this number
 disposition: 1.34            # riven disposition (●●●●●) — both sources agree
@@ -55,6 +50,11 @@ co_behavior: additive_with_base_damage
 # ONE attack part. The Incarnon form is its own weapon entry
 # (boar_prime_incarnon.yaml), the way the Torid and the Laetum carry theirs.
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 10
+    max_deg: 30
   trigger: auto
   shot_type: hit_scan
   fire_rate: 4.67

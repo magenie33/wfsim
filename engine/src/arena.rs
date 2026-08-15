@@ -15,15 +15,29 @@
 //! two lookalike shapes is how they drift a field at a time (user, 2026-08-02).
 
 use crate::dummy::{BodyPart, TargetParams};
+use crate::space::Vec2;
 use crate::tenno_data::Tenno;
 
-/// One engagement: who shoots, who is shot, for how long.
+/// One engagement: who shoots, who is shot, from where, for how long.
 #[derive(Debug, Clone)]
 pub struct Arena {
     /// The player. What they ARE (a Warframe's stat block, read by the arcanes
     /// that scale off armor or energy) and what they are DOING (the state every
     /// `condition:` on a mod card asks about).
     pub tenno: Tenno,
+    /// Where the player stands, and where the target stands — the fight's 2D
+    /// layer (`crate::space`).
+    ///
+    /// Two POINTS rather than one distance, because the distance is what a
+    /// second body cannot be described by. They belong to the arena rather than
+    /// to the Tenno or the target for the same reason `duration_secs` does: a
+    /// position is a fact about this engagement, not about who is in it, and
+    /// the same Tenno stands somewhere else in the next fight.
+    ///
+    /// When there is more than one target this becomes a position per target
+    /// and `target_at` is the one being aimed at; nothing else here changes.
+    pub player_at: Vec2,
+    pub target_at: Vec2,
     /// The enemy: its level, its pools, its faction, its scaling curves.
     pub target: TargetParams,
     /// The target's hitboxes — where a pellet can land and what each spot
@@ -49,6 +63,11 @@ pub struct Arena {
 }
 
 impl Arena {
+    /// How far the shot has to travel — metres from the player to the target.
+    pub fn engagement_range(&self) -> f64 {
+        self.player_at.distance(self.target_at)
+    }
+
     /// The engine's own fixture: the neutral Tenno against a training dummy
     /// for 10 s. Production code never uses it — a real fight names its
     /// target — but every test that only cares about weapon numbers wants
@@ -58,6 +77,12 @@ impl Arena {
             tenno: crate::tenno_data::default_tenno().clone(),
             target: TargetParams::training_dummy(),
             body_parts: crate::dummy::DummyParams::humanoid_parts(),
+            // POINT BLANK, which is where every fight in this engine happened
+            // before there was anywhere else to stand. The fixture measures
+            // weapon numbers, and a range would put a falloff weapon's
+            // golden value at the mercy of a distance nobody asked for.
+            player_at: Vec2::ORIGIN,
+            target_at: Vec2::ORIGIN,
             duration_secs,
             // The fixture is the NEUTRAL player, and no frame is running
             // anything for them.
@@ -81,5 +106,26 @@ mod tests {
         assert_eq!(a.tenno.armor, 0.0);
         assert_eq!(a.target.base_armor, 0.0);
         assert_eq!(a.duration_secs, 10.0);
+    }
+
+    /// …AND IT STANDS ON THE TARGET. Every golden value in this engine was
+    /// measured at point blank, so the fixture's range is 0 and a falloff
+    /// weapon's fixture number cannot move when a distance is set elsewhere.
+    #[test]
+    fn the_training_arena_is_fought_at_point_blank() {
+        assert_eq!(Arena::training(10.0).engagement_range(), 0.0);
+    }
+
+    /// A RANGE IS TWO POINTS, and either of them may move. The web api puts the
+    /// player on the origin and the target up the y axis, but nothing in the
+    /// engine may depend on that — the moment there are two targets, one of
+    /// them is not on an axis.
+    #[test]
+    fn engagement_range_is_the_distance_between_the_two_of_them() {
+        let mut a = Arena::training(10.0);
+        a.target_at = Vec2::new(0.0, 30.0);
+        assert_eq!(a.engagement_range(), 30.0);
+        a.player_at = Vec2::new(6.0, 22.0);
+        assert_eq!(a.engagement_range(), 10.0);
     }
 }

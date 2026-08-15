@@ -44,6 +44,7 @@ attack:
 unmodeled:
   - "the horizontal SPREAD is not modelled — the eight projectiles go out in a wide line and this arena has one target at zero distance, so all eight always land on it"
   - reason: arch_gun_deployer_cooldown
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Mandonel

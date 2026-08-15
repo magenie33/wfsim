@@ -34,6 +34,11 @@ scope:
   magnification: 5.0
   crit_multiplier: 0.5
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 15
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 3.67
@@ -49,10 +54,6 @@ unmodeled:
     seconds: 2
   - reason: innate_punch_through
     m: 1.0
-  - reason: damage_falloff
-    end: 600
-    keep: 50
-    start: 400
   - reason: zoom_steps
 
 source:

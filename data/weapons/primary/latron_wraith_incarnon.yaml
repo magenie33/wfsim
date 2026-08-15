@@ -58,6 +58,11 @@ co_behavior: additive_with_base_damage
 # SINGLE-TARGET number and the weapon is worth more against a crowd, which is
 # true of it in game too.
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 7
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 120
@@ -94,3 +99,4 @@ source:
   url: https://wiki.warframe.com/w/Latron_Incarnon_Genesis
   # Attack stats from the wiki infobox and WFCD's `attacks` array ("Incarnon
   # Form" and "Incarnon Form AoE"), which agree on every field.
+

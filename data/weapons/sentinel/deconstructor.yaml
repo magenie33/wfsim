@@ -72,6 +72,7 @@ unmodeled:
   - "the damage TYPE ROTATION is averaged — the weapon throws 130 of one type at a time, cycling Impact then Puncture then Slash, and this entry carries an equal three-way split instead. Total damage and status mix come out exact; ARMOUR does not, because mitigation is applied per instance and a blended hit is not the average of three pure ones"
   - "the projectiles BOUNCE OFF WALLS like a thrown glaive, and this arena has no walls to bounce off"
   - reason: companion_fires_it
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Deconstructor

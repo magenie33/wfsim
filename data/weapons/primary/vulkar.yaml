@@ -32,6 +32,11 @@ scope:
   magnification: 8.0
   headshot_damage: 0.7
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 15
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 1.5

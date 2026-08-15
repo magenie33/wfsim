@@ -72,10 +72,8 @@ attack:
 unmodeled:
   - reason: auto_spool_ramp
     rate: 6.25
-  - reason: radial_falloff
-    full: 310
-    rim: 93
   - reason: arch_gun_deployer_cooldown
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Grattler

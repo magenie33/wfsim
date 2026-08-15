@@ -73,6 +73,7 @@ unmodeled:
   - reason: innate_punch_through
     m: 1.2
   - reason: arch_gun_deployer_cooldown
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Imperator

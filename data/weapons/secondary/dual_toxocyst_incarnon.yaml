@@ -69,6 +69,11 @@ pseudo_reload:
 co_behavior: additive_with_base_damage
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.5
+    max_deg: 12
   trigger: auto
   # DISPUTED (2026-07-24): the wiki data module and the Ricochet page
   # (ricochet = hitscan-only, DT listed) imply hitscan, but the CO
@@ -117,3 +122,4 @@ source:
   url: https://wiki.warframe.com/w/Module:Weapons/data/secondary
   # note: Stats from the wiki's structured Lua data module; economy from the
   # Incarnon Genesis page.
+

@@ -602,6 +602,9 @@ function defaultScenario() {
     // carrying a decision made about a different enemy.
     eximus: d.eximus ?? null,
     headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
+    // HOW FAR AWAY THE TARGET STANDS, metres. 0 = point blank, the fight every
+    // stored scenario was written under.
+    distance: d.distance || 0,
     invisible: !!d.invisible, airborne: !!d.airborne, overshields: !!d.overshields,
     channeling: !!d.channeling, solo_weapon: !!d.solo_weapon,
     frame: d.frame || "", wf_armor: d.wf_armor || 0, wf_energy: d.wf_energy || 0,
@@ -634,6 +637,11 @@ function defaultScenario() {
 // `aiming` defaults TRUE because that is what the sim silently assumed before
 // the knob existed, so no stored preset changes meaning.
 let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: null, headshot_pct: 100, aiming: true,
+  // THE FIGHT'S GEOMETRY, such as it is: how far away the target stands, in
+  // metres. Point blank by default — the fight this sim has always run, and
+  // the one both official rulers pin — so no stored scenario changes meaning.
+  // Only a weapon that LISTS a damage falloff notices it at all.
+  distance: 0,
   invisible: false, airborne: false, overshields: false, channeling: false,
   // THE LOADOUT, not what the wielder is doing: false = carrying a full one,
   // which is the fight the board is scored under and what every clause about
@@ -3528,6 +3536,10 @@ async function drawShareCard(canvas, url) {
       `Lv ${sim.level}${sim.steel_path ? " SP" : ""}`,
       `${sim.duration}s`,
       formLabel,
+      // Only when it is not point blank: 0 m is the fight this card has always
+      // described, so printing it on every share would be noise rather than a
+      // term of the claim.
+      ...(sim.distance > 0 ? [`${sim.distance} m`] : []),
       `${sim.headshot_pct}% ${tr("headshots")}`,
       (w.sentinel || sim.aiming) ? tr("Aiming") : tr("hip-fire"),
       ...(sim.invisible ? [tr("Invisible")] : []),
@@ -7937,6 +7949,7 @@ function renderScenarioFields(ids, opts = {}) {
         <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
         ${eximusField(en)}
         ${deployField(w, sim)}
+        <label title="${escHtml(tr("how far away the target stands. Only a weapon that LISTS a damage falloff notices it — its direct hit decays across the published window and is flat past the end. 0 is point blank, which is where both official boards are scored"))}">${escHtml(tr("Distance (m)"))} <input type="number" data-k="distance" min="0" max="300" step="1" value="${sim.distance || 0}"></label>
         <label>${escHtml(tr("Duration (s)"))} <input type="number" data-k="duration" min="1" max="3600" value="${sim.duration}"></label>
       </div>`;
     const pick = $(`${ids.target}-pick`);
@@ -10937,7 +10950,7 @@ function updateOptEstimate() {
     const measured = sim.metric === "dps"
       ? ` · <span class="warn">${escHtml(tr("the search ranks by kills — the scenario's DPS measure applies to the simulator"))}</span>`
       : "";
-    scenario = `<div class="opt-scn">each build vs <b>${en.name || sim.enemy}</b> Lv ${sim.level}${sim.steel_path ? " (SP)" : ""} · ${sim.headshot_pct}% headshots${sim.aiming ? "" : " · hip-fire"} · ${sim.duration} s engagements · planned funnel (builds×runs): ${parts.join(" → ")} → ${F} finalists at ${FR.toLocaleString()} runs (racing cuts deeper, tie-amnesty keeps up to 2×)${measured}</div>`;
+    scenario = `<div class="opt-scn">each build vs <b>${en.name || sim.enemy}</b> Lv ${sim.level}${sim.steel_path ? " (SP)" : ""}${sim.distance > 0 ? ` · ${sim.distance} m` : ""} · ${sim.headshot_pct}% headshots${sim.aiming ? "" : " · hip-fire"} · ${sim.duration} s engagements · planned funnel (builds×runs): ${parts.join(" → ")} → ${F} finalists at ${FR.toLocaleString()} runs (racing cuts deeper, tie-amnesty keeps up to 2×)${measured}</div>`;
   }
   // ONE total, no decomposition — "×N arcanes" leaked a search-internal
   // dimension into the summary line (user, 2026-07-29).

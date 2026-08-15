@@ -78,10 +78,8 @@ attack:
 # reserve bonus are properties of the WEAPON and were always missing here.
 unmodeled:
   - reason: arch_gun_deployer_cooldown
-  - reason: radial_falloff
-    full: 1600
-    rim: 640
   - "Hildryn's signature bonus is not modelled — carried by her it holds 300 more reserve ammo, 700 instead of 400, and this arena has no Warframe holding it"
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Larkspur_Prime

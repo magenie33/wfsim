@@ -1398,6 +1398,18 @@ pub struct DummyParams {
     /// vector. Those procs land on the same target and therefore DO feed
     /// Condition Overload on subsequent direct hits.
     pub radial: Option<crate::loadout::ResolvedRadial>,
+    /// DIRECT-hit damage falloff, when this attack lists one. Read against the
+    /// distance the shot travelled; `None` = full damage wherever it lands.
+    ///
+    /// The DIRECT part only. The explosion has a falloff of its own and it is
+    /// measured from the EPICENTRE, which — for a projectile that hit the
+    /// target — is on the target, so the radial keeps taking full damage and
+    /// its `unmodeled:` line still says so.
+    pub falloff: Option<crate::loadout::Falloff>,
+    /// THE CONE this attack fires into, accuracy mods applied — what decides
+    /// whether a pellet lands on the target or beside it. `None` = this entry's
+    /// spread is not transcribed, so nothing of it may miss.
+    pub spread: Option<crate::loadout::Spread>,
     /// The LINGERING FIELD every landed projectile leaves (Torid's Toxin
     /// cloud). A third kind of attack part: it persists and TICKS instead of
     /// landing once, and each tick is a full damage instance — own crit roll,
@@ -1714,6 +1726,13 @@ pub struct DummyParams {
     /// fight can be replayed, reported and shared as what it was: somebody,
     /// shooting somebody (user, 2026-08-02).
     pub tenno: crate::tenno_data::Tenno,
+    /// WHERE THE TWO OF THEM STAND — straight off the arena, in metres
+    /// (`crate::space`). Points rather than the distance between them, so that
+    /// the thing a damage instance asks — "how far did this travel to get where
+    /// it went off" — keeps the same shape when the answer is no longer always
+    /// the target's position (an explosion's epicentre, a second body).
+    pub player_at: crate::space::Vec2,
+    pub target_at: crate::space::Vec2,
     pub duration_secs: f64,
 }
 
@@ -2256,6 +2275,22 @@ impl DummyParams {
     /// the Incarnon cycle's inner base form was assigned by none of them
     /// (owner, 2026-08-11; it landed one layer down, where the optimizer's
     /// one-panel-many-arcanes pairing actually happens).
+    /// Metres from the muzzle to a point on the floor.
+    ///
+    /// THE SEAM (owner, 2026-08-15). Every distance a damage instance needs is
+    /// asked this way — "how far to where this went off" — rather than read off
+    /// a scenario field, because the point stops being the target's the moment
+    /// a projectile has a flight time or an explosion has an epicentre of its
+    /// own. Those are the next change; this is the call site they inherit.
+    pub fn range_to(&self, p: crate::space::Vec2) -> f64 {
+        self.player_at.distance(p)
+    }
+
+    /// The range of a shot aimed at the target — today, every shot.
+    pub fn shot_range(&self) -> f64 {
+        self.range_to(self.target_at)
+    }
+
     pub fn from_panel(
         panel: &crate::loadout::ResolvedPanel,
         arena: &crate::arena::Arena,
@@ -2280,8 +2315,15 @@ impl DummyParams {
                 .map_or(0.0, |c| arcane.compression_eff_per_m * c.radius_lost);
             fx
         };
-        let crate::arena::Arena { tenno, target, body_parts, duration_secs, abilities } =
-            arena.clone();
+        let crate::arena::Arena {
+            tenno,
+            target,
+            body_parts,
+            duration_secs,
+            abilities,
+            player_at,
+            target_at,
+        } = arena.clone();
         // Resolve the faction bucket against THIS target's faction (additive
         // within the matching faction; 1.0 vs a non-match / Unknown).
         let faction_mult = 1.0
@@ -2297,6 +2339,11 @@ impl DummyParams {
             abilities: abilities.clone(),
             damage: panel.damage,
             radial: panel.radial,
+            falloff: panel.falloff,
+            spread: panel.spread,
+            // Straight off the ARENA, like `abilities` and `duration_secs`.
+            player_at,
+            target_at,
             lingering: panel.lingering,
             continuous: panel.continuous,
             field_duration_on_empty_reload: panel.field_duration_on_empty_reload,
@@ -2555,6 +2602,15 @@ impl Default for DummyParams {
             enervate_stacks: 0,
             damage: Self::dual_toxocyst_base_vector(),
             radial: None,
+            // POINT BLANK, and no falloff to notice it with — every golden
+            // value in this file was measured with the two of them standing on
+            // the same spot, so the fixture keeps them there.
+            falloff: None,
+            // …and nothing may miss: a fixture that dropped shots would put
+            // every golden value in this file at the mercy of an aim roll.
+            spread: None,
+            player_at: crate::space::Vec2::ORIGIN,
+            target_at: crate::space::Vec2::ORIGIN,
             lingering: None,
             continuous: false,
             field_duration_on_empty_reload: 1.0,
@@ -4813,6 +4869,165 @@ mod every_form_runs {
         assert!(ran > 200, "only {ran} entries built");
     }
 
+    /// DAMAGE FALLOFF IS WIRED, and the Boar's own published window is the
+    /// ruler: full damage to 15 m, decaying linearly to 50% of it at 25 m and
+    /// flat past there (`data/weapons/primary/boar.yaml`, from the wiki).
+    ///
+    /// THE RATIO IS EXACT, and that is the point of asserting it this way. The
+    /// falloff draws no random number, so the same seed fires the same pellets
+    /// into the same body parts with the same crit tiers at every range — two
+    /// runs that differ only in where the shooter stood, with one constant
+    /// between their direct-damage totals. An approximate assertion here would
+    /// pass on a factor applied in the wrong bracket.
+    #[test]
+    fn a_shotgun_loses_exactly_its_published_share_over_its_published_window() {
+        let direct_at = |range: f64| {
+            let mut arena = crate::arena::Arena::training(10.0);
+            arena.target_at = crate::space::Vec2::new(0.0, range);
+            let base = crate::loadout::WeaponBase::from_data("boar", false, &[]);
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let mut p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            // ONE MECHANIC PER TEST. The aim model is switched off here so the
+            // only thing that can move between these ranges is the falloff: the
+            // Boar's 12.5 accuracy is an 8-degree cone and it drops most of its
+            // pellets well inside this window, which is the aim model's own
+            // business and is measured by its own tests.
+            p.spread = None;
+            run_once(&p, &mut Rng::new(0x5EED)).sources.direct
+        };
+        let full = direct_at(0.0);
+        assert!(full > 0.0, "the fixture fired nothing");
+        // Inside the window: nothing is lost yet.
+        assert_eq!(direct_at(15.0), full, "full damage out to the start");
+        // Half way across it: half the loss.
+        assert!((direct_at(20.0) / full - 0.75).abs() < 1e-12, "linear across the window");
+        // At the end, and flat beyond it — a floor, not a slope that continues.
+        assert!((direct_at(25.0) / full - 0.5).abs() < 1e-12, "the published floor");
+        assert!((direct_at(120.0) / full - 0.5).abs() < 1e-12, "flat past the end");
+    }
+
+    /// …AND A WEAPON THAT LISTS NO FALLOFF NOTICES NO RANGE. Absence is not
+    /// "unknown, so guess a curve": the wiki states it from the other side —
+    /// *"Hitscan weapons that do not list Damage Falloff values in their UI are
+    /// completely unaffected"* — and the roster carries a window on nineteen
+    /// entries out of two hundred and change.
+    #[test]
+    fn a_weapon_without_a_published_falloff_is_the_same_at_any_range() {
+        let direct_at = |range: f64| {
+            let mut arena = crate::arena::Arena::training(10.0);
+            arena.target_at = crate::space::Vec2::new(0.0, range);
+            let base = crate::loadout::WeaponBase::from_data("latron", false, &[]);
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let mut p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            p.spread = None; // the aim model has its own tests
+            run_once(&p, &mut Rng::new(0x5EED)).sources.direct
+        };
+        let full = direct_at(0.0);
+        assert!(full > 0.0, "the fixture fired nothing");
+        assert_eq!(direct_at(80.0), full);
+    }
+
+    /// How many pellets of `weapon` LANDED over one engagement at `range`.
+    #[cfg(test)]
+    fn landed(weapon: &str, range: f64) -> u32 {
+        let mut arena = crate::arena::Arena::training(10.0);
+        arena.target_at = crate::space::Vec2::new(0.0, range);
+        let base = crate::loadout::WeaponBase::from_data(weapon, false, &[]);
+        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+        run_once(&p, &mut Rng::new(0x5EED)).pellets
+    }
+
+    /// A PINPOINT ATTACK NEVER MISSES, at any range. The Torid's grenade is
+    /// `0 / 0` in the wiki's own weapon module and its page says the same thing
+    /// in words ("Pinpoint accuracy"), which is a property to transcribe rather
+    /// than a cone to derive from a rounded Accuracy scalar.
+    #[test]
+    fn a_pinpoint_attack_never_misses_however_far_away() {
+        let close = landed("torid", 0.0);
+        assert!(close > 0, "the fixture fired nothing");
+        assert_eq!(landed("torid", 40.0), close);
+        assert_eq!(landed("torid", 300.0), close);
+        let s = crate::loadout::WeaponBase::from_data("torid", false, &[]).spread.unwrap();
+        assert_eq!((s.min_deg, s.max_deg), (0.0, 0.0));
+    }
+
+    /// …AND SPREAD COSTS MORE THE FURTHER AWAY THE TARGET IS, because spread is
+    /// an ANGLE from the reticle: the same cone that cannot miss at point blank
+    /// is metres across a room. The Braton's aimed cone is 2 degrees
+    /// (`Module:Weapons/data`, MinSpread 2 / MaxSpread 5).
+    ///
+    /// POINT BLANK IS THE ONE RANGE THAT CANNOT MISS, and that is the property
+    /// every golden value and every board row in this repo rests on — the aim
+    /// roll is not even drawn there.
+    #[test]
+    fn spread_costs_more_the_further_away_the_target_stands() {
+        let (near, mid, far) = (landed("braton", 0.0), landed("braton", 20.0), landed("braton", 60.0));
+        assert!(near > 0, "the fixture fired nothing");
+        assert!(mid < near, "20 m landed {mid} of {near} — spread cost nothing");
+        assert!(far < mid, "60 m landed {far}, 20 m landed {mid} — no range dependence");
+        assert!(far > 0, "a 2 degree cone should still land something at 60 m");
+    }
+
+    /// AN ENTRY WHOSE SPREAD NOBODY TRANSCRIBED CANNOT MISS, and says so.
+    ///
+    /// Absence is NOT "pinpoint" and it is NOT the base form's cone either —
+    /// taking one silently is the mistake this repo already caught once
+    /// (AGENTS.md §"A FORM INHERITS ITS WEAPON": the ordinary Larkspur's
+    /// alt-fire carried its BASE form's accuracy and nothing could see it). The
+    /// intake refuses any attack it cannot identify uniquely, so the shot lands
+    /// and the entry carries the admission.
+    #[test]
+    fn an_entry_with_no_transcribed_spread_lands_everything_and_admits_it() {
+        let id = crate::weapons_data::all()
+            .iter()
+            .map(|w| w.id.clone())
+            .find(|id| crate::loadout::WeaponBase::from_data(id, false, &[]).spread.is_none())
+            .expect("the roster still has entries waiting on the spread intake");
+        let close = landed(&id, 0.0);
+        assert!(close > 0, "{id}: the fixture fired nothing");
+        assert_eq!(landed(&id, 60.0), close, "{id} must not miss");
+        let spec = crate::weapons_data::spec(&id).unwrap();
+        assert!(
+            spec.unmodeled_parts
+                .iter()
+                .any(|u| u.reason.as_deref() == Some("spread_not_transcribed")),
+            "{id}: cannot miss for a DATA reason and does not say so"
+        );
+    }
+
+    /// EVERY ENTRY ANSWERS THE QUESTION — with a cone, or with an admission.
+    ///
+    /// The third state is the one that must not exist: an entry that silently
+    /// cannot miss and never says why. The ceiling is a RATCHET — re-running
+    /// `scripts/intake_spread.py` after teaching it another attack shape is
+    /// only ever allowed to lower it.
+    #[test]
+    fn every_entry_either_has_a_spread_or_admits_it_has_none() {
+        let (mut with, mut without) = (0, 0);
+        for w in crate::weapons_data::all() {
+            if crate::loadout::WeaponBase::from_data(&w.id, false, &[]).spread.is_some() {
+                with += 1;
+                continue;
+            }
+            without += 1;
+            assert!(
+                w.unmodeled_parts
+                    .iter()
+                    .any(|u| u.reason.as_deref() == Some("spread_not_transcribed")),
+                "{}: no spread and no admission — it cannot miss and nobody is told",
+                w.id
+            );
+        }
+        assert!(with >= 162, "only {with} entries carry a spread");
+        assert!(without <= 62, "the gap grew to {without}; it is only allowed to shrink");
+    }
+
     /// ...and every DEPLOYMENT of every entry, for the same reason: the
     /// Archwing column is a choice a player can make, and nothing else builds
     /// it either.
@@ -6482,6 +6697,11 @@ pub fn run_once_traced(
         // pull is ONE damage instance, pellets and radial included.
         arc.next_instance();
 
+        // DID THIS SHOT HIT ANYTHING AT ALL — the question the SHOT COMBO
+        // COUNTER asks, and it is the shot's rather than the pellet's: a
+        // multishot pull that puts one pellet of six on the target is a hit.
+        let mut landed_this_shot = false;
+
         for pellet_idx in 0..n_pellets {
             // PLENTIFUL MAYHEM, discrete branch: "Damage bonus from multishot
             // consuming ammo only applies to projectiles GENERATED BY
@@ -6806,6 +7026,42 @@ pub fn run_once_traced(
             // pellet only is exactly that.
             // FROM THE ACTIVE FORM, for the same reason as `co_mult_radial`
             // above — this is the line that fired it (M32).
+            // ---- WHERE THIS PELLET WENT ------------------------------
+            // Spread is an ANGLE, so what it costs is a function of range: the
+            // same cone that cannot miss at point blank is metres wide across a
+            // room. The offset is how far from the target's centre this pellet
+            // crossed its plane.
+            //
+            // THE ANGLE IS DRAWN UNIFORM OVER [0, 2 x spread], which has mean
+            // `spread` — the stat is DEFINED as an average ("Average Spread =
+            // (Minimum + Maximum) / 2", wiki `Accuracy`), and one number cannot
+            // say more than its own mean. The direction around the axis is not
+            // drawn at all: the target is a circle, so only the magnitude of
+            // the deviation decides anything.
+            //
+            // NOT DRAWN AT ALL unless a miss is possible — no transcribed
+            // accuracy, a weapon that lands on the reticle, or a fight at point
+            // blank all skip it. That is what keeps `d.aim` untouched in every
+            // fight this engine ran before it had a range, and therefore keeps
+            // every golden value and every board row exactly where it was.
+            let range = params.range_to(params.target_at);
+            let aim_offset = match ap.spread {
+                Some(s) if !s.is_pinpoint() && range > 0.0 => {
+                    range * s.draw(d.aim.next_f64()).to_radians().tan()
+                }
+                _ => 0.0,
+            };
+            // …AND THIS IS HOW BIG THE TARGET LOOKS TO IT. Not the body's
+            // FOOTPRINT (`BODY_RADIUS_M`, which is what decides where two of
+            // them can stand): a spread cone spends half its deviation
+            // vertically, where a humanoid is three times the size it is
+            // horizontally, and a plane has nowhere to put that. It is the
+            // model's one free parameter and it is derived rather than
+            // measured — see `space::AIM_TARGET_RADIUS_M`.
+            let pellet_lands = aim_offset <= crate::space::AIM_TARGET_RADIUS_M;
+            if pellet_lands {
+                landed_this_shot = true;
+            }
             let radial_stage = match ap.radial {
                 Some(r) if !r.takes_multishot && pellet_idx > 0 => None,
                 other => other,
@@ -6813,6 +7069,25 @@ pub fn run_once_traced(
             for stage in 0..(1 + radial_stage.is_some() as usize) {
                 let rad = if stage == 1 { radial_stage } else { None };
                 let direct = rad.is_none();
+                // A MISSED PELLET DEALS NOTHING AND DOES NOTHING. Skipping the
+                // stage rather than zeroing its damage is the whole point: the
+                // status draw, the gauge charge, the on-hit buffs and the combo
+                // count all live inside it, and a hit that dealt zero is not
+                // what a miss is.
+                if direct && !pellet_lands {
+                    continue;
+                }
+                // …AND THE EXPLOSION STILL GOES OFF. A missed grenade lands
+                // beside the target rather than vanishing, so the radial is
+                // resolved from where the pellet actually crossed — which is
+                // the first thing in this engine that ever gave the explosion's
+                // own falloff a distance to read (2026-08-15). Past the blast
+                // radius there is no explosion to resolve at all.
+                if let Some(r) = rad {
+                    if r.falloff_at(aim_offset) <= 0.0 {
+                        continue;
+                    }
+                }
                 // Instance values — the shadowing happens here. The explosion
                 // rolls its own crit tier off its own crit chance, and the live
                 // crit buffs reach it: the relative ones scale ITS base, the
@@ -6981,6 +7256,28 @@ pub fn run_once_traced(
                 let combo_now =
                     combo_at(combo_spec, params.combo_held, combo_count, combo_last_hit, t);
                 let combo_mult = ap.sniper_combo.map_or(1.0, |c| c.multiplier(combo_now));
+                // DAMAGE FALLOFF over the distance this instance travelled.
+                //
+                // THE DIRECT PART ONLY, and the range is asked of the POINT it
+                // went off at rather than of the fight — see
+                // `DummyParams::range_to`. The explosion's own falloff is
+                // measured from its epicentre, which sits on the target it just
+                // hit, so a radial takes full damage here whatever the
+                // engagement range is; that is the same thing its `unmodeled:`
+                // line has always said and it stays true.
+                //
+                // 1.0 at point blank and for every weapon that lists no
+                // falloff, which is the whole roster minus nineteen entries —
+                // so this factor moves no number the engine reported before the
+                // arena had a distance in it (owner, 2026-08-15).
+                let falloff = match (rad, ap.falloff) {
+                    // THE EXPLOSION reads the distance from its EPICENTRE,
+                    // which is where this pellet landed — zero when it hit.
+                    (Some(r), _) => r.falloff_at(aim_offset),
+                    // THE DIRECT HIT reads the distance it TRAVELLED.
+                    (None, Some(f)) => f.factor(range),
+                    (None, None) => 1.0,
+                };
                 let raw = qtotal
                     * part_factor
                     * crit_mult
@@ -7008,7 +7305,8 @@ pub fn run_once_traced(
                     // way — "multiplicative to other sources of damage", so it
                     // stands here beside Double Tap rather than in a bucket.
                     * ms_damage
-                    * pm_mult;
+                    * pm_mult
+                    * falloff;
                 let head_direct = direct && part.is_head;
                 let col = target.incoming_column(&params.target);
                 let (effective, killed, broke) = target.apply(
@@ -7069,6 +7367,12 @@ pub fn run_once_traced(
                                 ("sniper combo", combo_mult),
                                 ("multishot-as-damage", ms_damage),
                                 ("multishot-generated", pm_mult),
+                                // DISTANCE. Listed even when it is 1.0 — this
+                                // ledger keeps a factor of exactly 1.0 rather
+                                // than dropping it, because "falloff ×1.00" is
+                                // the answer to "why does range not hurt me"
+                                // and a missing line is not.
+                                ("damage falloff", falloff),
                             ],
                             raw,
                             effective,
@@ -7533,6 +7837,21 @@ pub fn run_once_traced(
                 DEPTH_PROC,
             );
             }
+        }
+
+        // A SHOT THAT HIT NOTHING DROPS THE SHOT COMBO COUNTER.
+        //
+        // The counter used to decay only through its own timer, because nothing
+        // in this arena could miss — the sniper entries said so in `unmodeled:`
+        // and the number ran slightly generous. It can miss now, so the other
+        // half of the mechanic is here.
+        //
+        // PER SHOT, not per pellet: the counter counts trigger pulls that
+        // connected, and a multishot pull that lands one pellet connected.
+        // Nothing happens on a weapon with no combo, and nothing happens at
+        // point blank — `landed_this_shot` cannot be false there.
+        if ap.sniper_combo.is_some() && !landed_this_shot {
+            combo_count = 0;
         }
 
         // THE SPEAR PLANTS ITS FIELD, and the shot that planted it does not

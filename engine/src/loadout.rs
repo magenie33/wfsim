@@ -1335,6 +1335,13 @@ pub struct WeaponBase {
     /// crit and status stats; the directly-hit enemy takes both parts.
     /// See MECHANICS §7 "Radial (AoE) attack parts" for the rule set.
     pub radial: Option<RadialBase>,
+    /// THE CONE this attack fires into, as the data states it and before
+    /// accuracy mods — see [`crate::weapons_data::SpreadSpec`]. `None` = not
+    /// transcribed, and the entry admits it.
+    pub spread: Option<crate::weapons_data::SpreadSpec>,
+    /// DIRECT-hit damage falloff as the weapon data states it, unscaled — see
+    /// [`Falloff`], which is this after Projectile Speed has moved the window.
+    pub falloff: Option<crate::weapons_data::FalloffSpec>,
     /// This attack's row in Primary Compression's per-weapon table — see
     /// [`crate::weapons_data::CompressionSpec`] and docs/CATALOGS.md §2. `None`
     /// means the weapon has no AoE for the arcane to compress, so it is worth
@@ -1810,6 +1817,115 @@ pub struct ResolvedRadial {
     pub co_base_fraction: f64,
 }
 
+impl ResolvedRadial {
+    /// What a body `d` metres from the EPICENTRE takes, as a fraction.
+    ///
+    /// Full inside `falloff_start_m`, decaying linearly to
+    /// `1 − falloff_reduction` at the rim, and NOTHING past the radius — the
+    /// blast radius IS the falloff's end distance, so the two are one number.
+    ///
+    /// `falloff_reduction` is the amount REMOVED (the Laetum's 0.2 leaves 80%
+    /// at the rim), which reads the opposite way to [`Falloff::keep`]; both are
+    /// kept as their sources state them rather than normalised into a spelling
+    /// that would make one of them a lie about its source.
+    pub fn falloff_at(&self, d: f64) -> f64 {
+        if d >= self.radius_m {
+            return 0.0;
+        }
+        if d <= self.falloff_start_m {
+            return 1.0;
+        }
+        let span = self.radius_m - self.falloff_start_m;
+        if span <= 0.0 {
+            return 1.0 - self.falloff_reduction;
+        }
+        1.0 - self.falloff_reduction * ((d - self.falloff_start_m) / span)
+    }
+}
+
+/// THE CONE, resolved: degrees from the reticle, accuracy mods applied.
+///
+/// `min` is the first shot's and `max` is where sustained fire takes it — see
+/// [`crate::weapons_data::SpreadSpec`], which is also where the bloom between
+/// them is written down as unmodelled.
+#[derive(Debug, Clone, Copy)]
+pub struct Spread {
+    pub min_deg: f64,
+    pub max_deg: f64,
+}
+
+impl Spread {
+    /// Can this attack miss at all? A weapon whose AIMED cone is zero cannot —
+    /// the Torid's grenade is `0 / 0` and its page says "Pinpoint accuracy" in
+    /// words, and every sniper in the roster is `0 / 15`: the first shot goes
+    /// exactly where the reticle is, which is what a sniper IS.
+    pub fn is_pinpoint(&self) -> bool {
+        self.min_deg <= 0.0
+    }
+
+    /// The deviation ONE pellet drew, in degrees, from a uniform `u` in [0,1).
+    ///
+    /// UNIFORM INSIDE THE AIMED CONE, i.e. `[0, min_deg)`. Two readings of the
+    /// wiki decide that and both are quoted at [`crate::weapons_data::
+    /// SpreadSpec`]: spread is *"an angle in degrees from the reticle"*, so the
+    /// stat is the cone's RADIUS and a shot lands somewhere inside it rather
+    /// than on its rim; and `min` is named *"Deviation With Aim"*, which is the
+    /// state this arena is permanently in (the rulers pin `aiming: true`).
+    ///
+    /// SO `max_deg` IS CARRIED AND NOT CONSUMED. It is where SUSTAINED FIRE
+    /// takes the cone — *"the faster a weapon fires, the larger the size of the
+    /// 'cone'"* — and the ramp between the two is published nowhere, so
+    /// modelling it would mean inventing a bloom rate for 224 entries. What
+    /// that costs is stated rather than hidden: a weapon held on the trigger
+    /// is more accurate here than in game, most visibly on the ones whose
+    /// window is widest (every sniper is `0 / 15`). docs/UNMODELLED.md §2.
+    ///
+    /// Drawing across `[min, max]` instead was tried first and is refutable
+    /// from the data: it makes a Rubico — pinpoint on its first shot, in a
+    /// weapon class defined by that — miss about half of them (2026-08-15).
+    pub fn draw(&self, u: f64) -> f64 {
+        self.min_deg * u
+    }
+}
+
+/// DIRECT-hit damage falloff, resolved: full damage inside `start_m`, decaying
+/// linearly to `keep` of it at `end_m` and flat beyond.
+///
+/// `keep` is DE's own `reduction` and it is the fraction KEPT — the Boar keeps
+/// 0.5 past 25 m. It reads the opposite way to [`RadialBase::falloff_reduction`]
+/// (the amount REMOVED), and both are kept as their sources state them; see
+/// [`crate::weapons_data::FalloffSpec`].
+///
+/// THE WINDOW IS SCALED BY PROJECTILE SPEED, which is the first thing that
+/// bucket has ever been worth. Wiki (`Projectile Speed`), verbatim: *"Mods
+/// including Rivens that have positive or negative Projectile speeds will
+/// affect a weapon's entire Damage Falloff range accordingly"* — and, from the
+/// other side, *"Hitscan weapons that do not list Damage Falloff values in
+/// their UI are completely unaffected by Projectile Speed modifications"*. So a
+/// weapon without a falloff takes nothing from the stat, which is exactly this
+/// struct being `None`.
+#[derive(Debug, Clone, Copy)]
+pub struct Falloff {
+    pub start_m: f64,
+    pub end_m: f64,
+    /// Fraction of damage KEPT at `end_m` and beyond.
+    pub keep: f64,
+}
+
+impl Falloff {
+    /// The multiplier on a direct hit that travelled `d` metres.
+    pub fn factor(&self, d: f64) -> f64 {
+        if d <= self.start_m {
+            return 1.0;
+        }
+        if d >= self.end_m || self.end_m <= self.start_m {
+            return self.keep;
+        }
+        let t = (d - self.start_m) / (self.end_m - self.start_m);
+        1.0 - (1.0 - self.keep) * t
+    }
+}
+
 /// A continuous beam's GEOMETRY — shape, not a damage part. Carried so
 /// Firestorm has a radius to scale and the multi-target model has its inputs;
 /// the single-target arena reads none of it.
@@ -1947,6 +2063,13 @@ pub struct ResolvedPanel {
     pub damage: DamageVector,
     /// The resolved radial (AoE) part, when the weapon has one.
     pub radial: Option<ResolvedRadial>,
+    /// THE CONE, accuracy mods applied. A zero-width one lands on the reticle;
+    /// `None` = this entry's spread is not transcribed, so no shot of it is
+    /// allowed to miss and the entry admits that.
+    pub spread: Option<Spread>,
+    /// DIRECT-hit damage falloff, when this attack lists one — the shotgun's,
+    /// and the range the Arsenal prints. `None` = full damage at any distance.
+    pub falloff: Option<Falloff>,
     /// The resolved lingering FIELD, when the weapon leaves one.
     pub lingering: Option<ResolvedLingering>,
     /// CONTINUOUS (beam) weapon — see [`WeaponBase::continuous`].
@@ -3169,10 +3292,42 @@ pub fn resolve_for(
         .map(|s| s.per_mod)
         .sum();
 
+    // DAMAGE FALLOFF, with Projectile Speed moving the whole window — see
+    // [`Falloff`] for the two wiki lines that make this the one bucket
+    // Projectile Speed pays into. A negative roll can only shorten the window,
+    // never invert it, so the scale is floored at zero.
+    // THE CONE, with the accuracy mods narrowing it. Wiki (`Accuracy`),
+    // verbatim: *"Bonuses that increase accuracy decrease the deviation
+    // (spread) of a shot"* — and accuracy is `100 / spread`, so a +30% accuracy
+    // card divides the angle by 1.3 rather than subtracting from it.
+    //
+    // A NEGATIVE roll widens the cone and cannot invert it: the divisor is
+    // floored just above zero, and a pinpoint attack (0 / 0) stays pinpoint
+    // under any bonus, which is the arithmetic agreeing with the weapon.
+    let spread = base.spread.map(|s| {
+        let bonus = indirect
+            .iter()
+            .find(|(st, _)| *st == IndirectStat::Accuracy)
+            .map_or(0.0, |(_, v)| *v);
+        let k = (1.0 + bonus).max(0.05);
+        Spread { min_deg: s.min_deg / k, max_deg: s.max_deg / k }
+    });
+
+    let falloff = base.falloff.as_ref().map(|f| {
+        let ps = 1.0
+            + indirect
+                .iter()
+                .find(|(s, _)| *s == IndirectStat::ProjectileSpeed)
+                .map_or(0.0, |(_, v)| *v);
+        let ps = ps.max(0.0);
+        Falloff { start_m: f.start_m * ps, end_m: f.end_m * ps, keep: f.reduction }
+    });
 
     ResolvedPanel {
         damage,
         radial,
+        spread,
+        falloff,
         lingering,
         slash_on_crit,
         crit_tier_upgrade_chance,

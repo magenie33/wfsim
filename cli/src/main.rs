@@ -24,6 +24,13 @@ fn dual_toxocyst_baseline() -> DummyParams {
         super_crit_on_status: None,
         enervate_stacks: 0,
         tenno: wfsim_engine::tenno_data::default_tenno().clone(),
+        // The historical calibration profile is a point-blank fight, and this
+        // weapon lists no falloff to notice a range with anyway.
+        falloff: None,
+        // …and nothing misses: the calibration profile is a fixed reference.
+        spread: None,
+        player_at: wfsim_engine::space::Vec2::ORIGIN,
+        target_at: wfsim_engine::space::Vec2::ORIGIN,
         // Not a charge weapon: inert without charge_seconds.
         charge_cadence: wfsim_engine::weapons_data::ChargeCadence::DrawThenRate,
         sustained_fire_rate: None,

@@ -50,6 +50,11 @@ scenario:
   enemy: thrax_centurion
   level: 9999
   steel_path: true
+
+  # POINT BLANK, and the SAME value as the aimed board's — see
+  # `single_target.yaml` for the argument. These two boards differ in two terms
+  # and a third unnamed difference between them would be a bug, not a ruler.
+  distance: 0
   duration: 180
   runs: 1000
   seed: 12648430

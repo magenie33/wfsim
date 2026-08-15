@@ -49,6 +49,10 @@ fn scenario(duration: f64, level: u32) -> Scenario {
         arena: Arena {
             abilities: Vec::new(),
             tenno: wfsim_engine::tenno_data::default_tenno().clone(),
+            // Point blank: this test grades the SEARCH against an exhaustive
+            // reference, so the fight has to be the plainest one there is.
+            player_at: wfsim_engine::space::Vec2::ORIGIN,
+            target_at: wfsim_engine::space::Vec2::ORIGIN,
             target: spec
                 .target_params(level, true, false, TargetMode::InstantRespawn)
                 .expect("target"),

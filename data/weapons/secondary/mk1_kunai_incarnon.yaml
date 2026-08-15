@@ -63,3 +63,6 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Kunai_Incarnon_Genesis
   # WFCD `attacks`: "Incarnon Form"
+
+unmodeled:
+  - reason: spread_not_transcribed

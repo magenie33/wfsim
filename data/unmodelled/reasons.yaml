@@ -29,18 +29,27 @@ reasons:
     text: "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
   zoom_steps:
     text: "the LOWER zoom levels are not modelled — this arena has no field of view to trade for magnification, so the scope always sits at its top level and its best buff"
-  damage_falloff:
-    text: "damage falloff from {start} m to {end} m (down to {keep}% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+  # NO `damage_falloff` — IT IS MODELLED (2026-08-15). The arena has a range
+  # now (`engine::space`), the direct hit takes its published window, and the
+  # twenty-three weapons that carried this line say nothing because there is
+  # nothing left to admit. Kept as a note rather than silently deleted: this
+  # file is where a reader looks to find out whether a gap is still a gap.
+  spread_not_transcribed:
+    text: "this attack's SPREAD is not in the data, so none of its shots can miss — the wiki's weapon module publishes a cone for it and the intake could not identify which of that weapon's attacks this entry is, so it took nothing rather than the wrong one. At a range every pellet lands here, which is the ceiling; at point blank it costs nothing, because nothing misses there anyway"
   innate_punch_through:
     text: "the innate {m} m punch-through is not modelled — this arena has one target, so it changes no number"
   sniper_combo_miss:
-    text: "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its {seconds} s timer, which runs slightly generous"
-  radial_falloff:
-    text: "the explosion's falloff is not modelled — this arena has one target at the centre, so it always takes the full {full} and never the {rim} at the rim"
+    text: "a MISSED shot drops the combo counter and this entry cannot miss — the only thing that misses here is SPREAD, and this one lands on the reticle, so nothing but its {seconds} s timer ever takes a stack off. A player who pulls the shot loses the combo and this sim never pulls one"
+  # NO `radial_falloff` — IT IS MODELLED (2026-08-15). The explosion reads the
+  # distance from its own epicentre, which is where the projectile actually
+  # landed, so a pellet that missed detonates beside the target and the target
+  # takes the rim. An entry that cannot miss (accuracy 100, or an accuracy
+  # nobody has transcribed) still sits at the epicentre, which is the weapon
+  # being accurate rather than the model being short.
   auto_spool_ramp:
     text: "the AUTO-SPOOL ramp is not modelled — the page gives this trigger as Auto-Spool and the fire rate here is the spooled-up {rate}/s from the first shot, so a short burst is faster in this sim than in game"
   beam_range:
-    text: "the {m} m range is not modelled — this arena has no distance, so every tick lands"
+    text: "the {m} m range is not modelled — the fight has a distance now, but a beam still reaches whatever it is aimed at, so a target standing past the beam's end takes damage here that it would not take in game"
   reload_never_interrupted:
     text: "this run never INTERRUPTS a reload — in game you can fire mid-reload and keep the shells already loaded, and a player who does is trading stacks and a full magazine for uptime. Decided rather than missing (2026-08-10): a listed reload is a whole reload, and the alternative is not a more accurate model, it is a different player"
   spool_rebuilds_after_reload:

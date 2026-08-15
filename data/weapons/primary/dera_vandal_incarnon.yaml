@@ -41,6 +41,11 @@ pseudo_reload:
 co_behavior: additive_with_base_damage
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.8
+    max_deg: 1
   trigger: auto
   shot_type: hit_scan
   fire_rate: 2
@@ -57,3 +62,4 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Dera_Incarnon_Genesis
   # WFCD `attacks`: "Incarnon Form"
+

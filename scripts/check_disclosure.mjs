@@ -171,10 +171,20 @@ for (const lang of ["en", "zh"]) {
     out.zoomFalsePositives = [...document.querySelectorAll('#stats-conditionals .scond')]
         .filter(e => /aim down sights/.test(e.textContent)).length;
 
-    // 8. NEGATIVE CONTROL. The Torid is hand-written: no gaps, no inert perks.
-    //    Opened EXPLICITLY, because this used to read whatever page the block
-    //    above happened to leave behind — which was the Torid only by accident
-    //    of ordering, and stopped being so the moment a step was inserted.
+    // 8. NEGATIVE CONTROL: a weapon with nothing to admit, ANYWHERE in its
+    //    transform group. Opened EXPLICITLY, because this used to read whatever
+    //    page the block above happened to leave behind — which was the right
+    //    page only by accident of ordering, and stopped being so the moment a
+    //    step was inserted.
+    //
+    //    THE TORID, and it is hand-written: no gaps, no inert perks, and both
+    //    of its forms carry a transcribed SPREAD (0/0 on the grenade, which is
+    //    the "Pinpoint accuracy" its page states in words, and 1/1.5 on the
+    //    Incarnon beam). It briefly stopped being clean while the aim model
+    //    read the weapon-level Accuracy stat, which no Incarnon form has —
+    //    fixed by reading the per-ATTACK spread the wiki module publishes
+    //    instead (2026-08-15), which is the primary value anyway.
+    //    (No backticks in here: this block lives inside a template literal.)
     history.pushState({}, '', '/weapons/Torid'); route(); await sleep(3200);
     out.cleanBanner = document.querySelector('.unmod-h') ? 'shown' : 'absent';
     out.cleanEvoChips = document.querySelectorAll('.evopick .exchip.unmod').length;

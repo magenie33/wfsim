@@ -71,6 +71,7 @@ unmodeled:
   - reason: beam_range
     m: 40
   - "Hildryn's signature bonus is not modelled — carried by her it holds 300 more reserve ammo, 700 instead of 400, and this arena has no Warframe holding it"
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Larkspur

@@ -31,6 +31,11 @@ scope:
   magnification: 4.0
   crit_multiplier: 0.4
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.1
+    max_deg: 0.14
   trigger: burst
   burst:
     count: 4

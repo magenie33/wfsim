@@ -13,11 +13,6 @@ form: incarnon
 transform_group: furis
 transforms_from: furis
 
-unmodeled:
-  - reason: damage_falloff
-    end: 16
-    keep: 48
-    start: 10
 
 # The Incarnon transformation economy (wiki Furis Incarnon Genesis).
 #
@@ -78,6 +73,11 @@ pseudo_reload:
 co_behavior: additive_with_base_damage
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 5
+    max_deg: 15
   # A CONTINUOUS BEAM, and the page does not say so in those words — it says
   # "fire a wide Heat Damage beam" and gives it a 16 m maximum range, while
   # WFCD gives the attack `speed: 12` and shot type Hit-Scan. That is exactly

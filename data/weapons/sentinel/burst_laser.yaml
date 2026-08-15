@@ -49,6 +49,7 @@ attack:
   damage: { impact: 2.0, puncture: 17.0, slash: 1.0 }   # 20 total
 unmodeled:
   - reason: companion_fires_it
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Burst_Laser

@@ -91,10 +91,8 @@ unmodeled:
   # PROSE, not a reason: one weapon has it, and the file's own rule is that a
   # reason earns its place by repeating.
   - "LIFTED's crowd control is not modelled — the explosion suspends what it hits, and this arena has no movement to interrupt; what IS modelled is the 1 s status itself, which Condition Overload counts like any other"
-  - reason: radial_falloff
-    full: 4500
-    rim: 2700
   - reason: arch_gun_deployer_cooldown
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Mausolon

@@ -65,6 +65,7 @@ unmodeled:
   - "the ARCHWING column of this weapon is not offered — in space it is a single 440-damage Impact/Heat projectile with a 13% status chance instead of eleven hit-scan pellets at 1.3%, which is a different weapon rather than a restated one"
   - "the 11-degree spread is not modelled — this arena has one target at zero distance, so all eleven pellets always land on it"
   - reason: arch_gun_deployer_cooldown
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Corvas

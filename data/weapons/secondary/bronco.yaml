@@ -21,11 +21,6 @@ transforms_to: bronco_incarnon
 # NAMED INERT effect that the builder and the optimizer both print as "not
 # modelled yet". Nothing is dropped in silence — some perks do nothing
 # yet and say so on their own tile.
-unmodeled:
-  - reason: damage_falloff
-    end: 14
-    keep: 75
-    start: 7
 
 accuracy: 3.7
 disposition: 1.45
@@ -47,6 +42,11 @@ reload_seconds: 1.05
 co_behavior: additive_with_base_damage
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 18
+    max_deg: 36
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 4

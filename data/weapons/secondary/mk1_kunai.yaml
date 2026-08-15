@@ -57,3 +57,6 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/MK1-Kunai
+
+unmodeled:
+  - reason: spread_not_transcribed

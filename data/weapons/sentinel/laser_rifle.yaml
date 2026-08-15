@@ -48,6 +48,7 @@ attack:
   damage: { impact: 4.5, puncture: 36.0, slash: 4.5 }   # 45 total
 unmodeled:
   - reason: companion_fires_it
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Laser_Rifle

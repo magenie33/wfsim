@@ -38,6 +38,11 @@ co_behavior: additive_with_base_damage
 # ONE ATTACK PART: a semi-auto hit-scan marksman rifle, mostly Puncture. The
 # projectile, the ricochet and the explosion all belong to the Incarnon form.
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 7
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 4.17

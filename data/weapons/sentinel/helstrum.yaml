@@ -63,6 +63,7 @@ unmodeled:
   - "the missiles HOME, and homing is not modelled — this arena has one target at zero distance, so a guided missile and a straight one land the same"
   - "the explosion's falloff is not stated by the page and is therefore not modelled — the target stands at the centre and takes the full 30 either way"
   - reason: companion_fires_it
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Helstrum

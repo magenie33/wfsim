@@ -24,10 +24,6 @@ transforms_to: vectis_prime_incarnon
 unmodeled:
   - reason: sniper_combo_miss
     seconds: 2
-  - reason: damage_falloff
-    end: 600
-    keep: 50
-    start: 400
 # THE TWO SNIPER MECHANICS — see `weapons_data::SniperCombo` and `ScopeSpec`.
 #
 # "The Vectis Prime has the largest shot combo requirement of the sniper
@@ -60,6 +56,11 @@ reload_seconds: 0.85
 co_behavior: additive_with_base_damage
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 15
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 2.67

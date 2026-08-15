@@ -51,6 +51,11 @@ pseudo_reload:
 co_behavior: additive_with_base_damage
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
   trigger: charge
   shot_type: hit_scan
   fire_rate: 1
@@ -101,3 +106,4 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Zylok_Incarnon_Genesis
   # WFCD `attacks`: "Incarnon Form" and "Incarnon Form Radial Attack"
+

@@ -56,10 +56,8 @@ attack:
     status_chance: 0.22
 unmodeled:
   - "the dart's 1.5 s EXPLOSION DELAY is not modelled — in game the blast lands a second and a half after the dart does, and here the two arrive together, so a short engagement gets damage sooner than it should"
-  - reason: radial_falloff
-    full: 100
-    rim: 50
   - reason: companion_fires_it
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Multron

@@ -41,6 +41,7 @@ pub mod rivens_data;
 pub mod rng;
 pub mod scaling;
 pub mod sim;
+pub mod space;
 pub mod status;
 pub mod syndicates_data;
 pub mod tenno_data;

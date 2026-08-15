@@ -69,3 +69,6 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Strun_Incarnon_Genesis
   # WFCD `attacks`: "Incarnon Form" and "Incarnon Form AoE"
+
+unmodeled:
+  - reason: spread_not_transcribed

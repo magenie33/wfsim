@@ -36,6 +36,11 @@ scope:
   magnification: 8.0
   crit_multiplier: 0.5
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
   trigger: charge
   # "Auto Charge" — a 0.75 s draw, then the listed rate.
   charge_seconds: 0.75

@@ -50,6 +50,7 @@ attack:
   damage: { electricity: 175.0 }
 unmodeled:
   - reason: companion_fires_it
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Vulklok

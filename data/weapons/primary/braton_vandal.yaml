@@ -44,6 +44,11 @@ co_behavior: additive_with_base_damage
 
 # ONE ATTACK PART. The radial belongs to the Incarnon form (braton_vandal_incarnon).
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 1.5
+    max_deg: 4.5
   trigger: auto
   shot_type: hit_scan
   fire_rate: 7.5

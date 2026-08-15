@@ -81,11 +81,9 @@ attack:
     status_chance: 0.20
 
 unmodeled:
-  - reason: radial_falloff
-    full: 280
-    rim: 140
   - "the self-stagger on its own explosion is not modelled — the grenade staggers the firer at close range and deals them no damage, and nothing in this arena can be inconvenienced"
   - reason: arch_gun_deployer_cooldown
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Ayanga

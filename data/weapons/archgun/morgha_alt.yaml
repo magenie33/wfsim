@@ -52,11 +52,9 @@ attack:
     status_chance: 0.50
 
 unmodeled:
-  - reason: radial_falloff
-    full: 7200
-    rim: 2880
   - "the CHARGE this form is named for is not modelled as a charge — the page calls it a Charged Shot and then gives it a Semi-Auto trigger with no charge time, so it is paced as a slow semi-auto shot and filed as an alt-fire"
   - reason: arch_gun_deployer_cooldown
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Morgha

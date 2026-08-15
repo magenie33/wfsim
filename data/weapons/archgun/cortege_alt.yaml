@@ -74,6 +74,7 @@ unmodeled:
   # every translation of the template.
   - "the explosion's falloff is not modelled — this arena has one target at the centre, so it always takes the full 2000 a grenade and never the 1400 at the rim"
   - reason: arch_gun_deployer_cooldown
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Cortege

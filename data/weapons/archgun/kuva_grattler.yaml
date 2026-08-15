@@ -79,10 +79,8 @@ attack:
     status_chance: 0.27
 
 unmodeled:
-  - reason: radial_falloff
-    full: 235
-    rim: 70
   - reason: arch_gun_deployer_cooldown
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Grattler

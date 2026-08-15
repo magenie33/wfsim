@@ -33,6 +33,11 @@ unmodeled:
   - "the escalating ammo cost the wiki files under Bugs (2/2/2/3/3/4/6 through a magazine, and -1 damage per extra ammo): a bug is not a rule, and this one takes AWAY what the charge is supposed to buy"
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
   trigger: charge
   # The charge IS this form's cadence, not `fire_rate`. The listed 2.00
   # attacks/sec is kept as the STAT (it is what the panel prints and what

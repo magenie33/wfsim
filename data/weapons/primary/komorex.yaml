@@ -40,6 +40,11 @@ sniper_combo:
 # collect. So the entry carries the FIRST level's numbers (neither of whose
 # effects this arena reads) and states the second as unmodelled.
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 10
   trigger: semi_auto
   shot_type: projectile
   fire_rate: 5.0

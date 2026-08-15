@@ -42,3 +42,6 @@ attack:
 source:
   url: https://wiki.warframe.com/w/MK1-Paris
   # WFCD `attacks`: "Uncharged Shot"
+
+unmodeled:
+  - reason: spread_not_transcribed

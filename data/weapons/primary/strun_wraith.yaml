@@ -23,10 +23,6 @@ transforms_to: strun_wraith_incarnon
 # yet and say so on their own tile.
 unmodeled:
   - reason: reload_never_interrupted
-  - reason: damage_falloff
-    end: 30
-    keep: 50
-    start: 15
 accuracy: 6.67
 disposition: 1.35
 polarities: [naramon]
@@ -61,6 +57,11 @@ reload_end_s: 0.25
 co_behavior: additive_with_base_damage
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 10
+    max_deg: 20
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 2.5

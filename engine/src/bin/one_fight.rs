@@ -148,6 +148,12 @@ fn arena_for(c: &Cfg) -> Arena {
             .target_params(c.level, c.steel_path, e.can_be_eximus, TargetMode::InstantRespawn)
             .expect("the target this fight names"),
         body_parts: e.aim_parts(&[("body", 1.0)]).expect("a body to hit"),
+        // POINT BLANK. This harness measures the COST of the engine and asserts
+        // the ANSWER did not move, so its fight has to be the one every saved
+        // baseline was taken under — a range would move a falloff weapon's
+        // number and report an optimisation as a bug.
+        player_at: wfsim_engine::space::Vec2::ORIGIN,
+        target_at: wfsim_engine::space::Vec2::ORIGIN,
         duration_secs: c.duration,
         abilities: Vec::new(),
     }

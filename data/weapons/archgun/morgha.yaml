@@ -63,10 +63,8 @@ attack:
     status_chance: 0.28
 
 unmodeled:
-  - reason: radial_falloff
-    full: 328
-    rim: 230
   - reason: arch_gun_deployer_cooldown
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Morgha

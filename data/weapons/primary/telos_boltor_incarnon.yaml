@@ -48,6 +48,11 @@ co_behavior: additive_with_base_damage
 # STATUS CHANCE IS PER PROJECTILE TOO, which is why it reads lower than the base
 # form's: three chances at 0.1067 against one at 0.16.
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 8
+    max_deg: 12
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 85
@@ -69,3 +74,4 @@ source:
   # Attack stats from the wiki infobox and WFCD's `attacks` array, which agree
   # on every field; the 3x multishot is the page's own sentence, since WFCD's
   # summary `multishot` reports the BASE form's 1 for both.
+

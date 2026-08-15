@@ -1432,6 +1432,12 @@ pub fn meta_json() -> Value {
             // otherwise.
             "eximus": Value::Null,
             "headshot_pct": 100.0,
+            // HOW FAR AWAY THE TARGET STANDS, in metres — the fight's 2D layer
+            // (`engine::space`). 0 is point blank, which is the fight every
+            // number this engine has ever reported was measured under, so a
+            // scenario saved before this field existed opens as the same fight
+            // it was and a board row does not move.
+            "distance": 0.0,
             // ---- the TENNO, the fight's other actor. Every field here is
             // `data/tenno/default.yaml`'s: the NEUTRAL player, aiming, no
             // frame chosen, no ability running. Aiming is true because that is
@@ -4011,6 +4017,18 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // reload cadence — and `ammo_cost` — still bite.
     let infinite_ammo = get_bool(v, "infinite_ammo", true);
     let duration = get_f64(v, "duration", 180.0).clamp(1.0, 3600.0);
+    // HOW FAR AWAY THE TARGET STANDS, in metres. A property of the FIGHT, so it
+    // is parsed here and the optimizer scores under it with no code of its own.
+    //
+    // 0 BY DEFAULT, which is point blank and is the fight every number this
+    // engine has ever reported was measured under — a golden value, a board row,
+    // a saved scenario that predates this field. Only a weapon that LISTS a
+    // damage falloff notices a range at all (nineteen entries).
+    //
+    // Capped at 300 m rather than at nothing: past the longest falloff window
+    // in the roster every extra metre is the same answer, and a fight at 10 km
+    // is a typo rather than a scenario.
+    let distance_m = get_f64(v, "distance", 0.0).clamp(0.0, 300.0);
     let runs = get_u32(v, "runs", 100).clamp(1, 20_000);
     let seed = v.get("seed").and_then(|x| x.as_u64()).unwrap_or(0xC0FFEE);
 
@@ -4090,6 +4108,12 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         tenno: tenno.clone(),
         target,
         body_parts,
+        // THE 2D LAYER. The player is the origin and the target stands `distance`
+        // metres up the y axis — which is the whole geometry a fight with one
+        // enemy has. It is stored as two POINTS because the next enemy cannot be
+        // described by a distance (`engine::space`).
+        player_at: wfsim_engine::space::Vec2::ORIGIN,
+        target_at: wfsim_engine::space::Vec2::new(0.0, distance_m),
         duration_secs: duration,
         // WARFRAME ABILITY BUFFS — parsed HERE, in `parse_fight`, which is what
         // makes the optimizer score under them without a line of optimizer code

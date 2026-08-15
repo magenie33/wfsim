@@ -53,6 +53,7 @@ attack:
 unmodeled:
   - "the TOXIN EMBED is not modelled — the page gives this weapon a second attack that deals its damage over 3 seconds on top of the hit, and this entry carries only the hit"
   - reason: companion_fires_it
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Stinger

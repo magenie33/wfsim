@@ -124,3 +124,6 @@ source:
   # WFCD warframe-items (joined on internal name). They agree exactly on both
   # attacks, the polarities, the exilus, disposition, mastery, magazine and
   # reload; the CO row is from Condition_Overload_(Mechanic).
+
+unmodeled:
+  - reason: spread_not_transcribed

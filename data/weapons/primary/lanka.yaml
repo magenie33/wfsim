@@ -63,12 +63,9 @@ unmodeled:
     seconds: 6
   - reason: innate_punch_through
     m: 5.0
-  - reason: damage_falloff
-    end: 600
-    keep: 50
-    start: 400
   - reason: zoom_steps
   - "the PARTIAL CHARGE is a separate entry (`lanka_uncharged`) — in game the two are the same trigger released at different moments, and picking between them here is a form choice rather than something the fight decides"
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Lanka

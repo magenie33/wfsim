@@ -73,6 +73,11 @@ co_behavior: additive_with_base_damage
 # which is unusual — most Incarnon forms buy crit — and is why this weapon's
 # case is its fire rate rather than its per-shot numbers.
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 6
+    max_deg: 8
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 80

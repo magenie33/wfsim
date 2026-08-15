@@ -82,3 +82,6 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/MK1-Furis
+
+unmodeled:
+  - reason: spread_not_transcribed

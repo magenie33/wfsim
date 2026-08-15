@@ -53,6 +53,11 @@ co_behavior: additive_with_base_damage
 beam_ramp_floor: 0.15
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
   trigger: held                # continuous: `fire_rate` is TICKS per second
   shot_type: hit_scan
   fire_rate: 12.0              # tied for the highest fire rate of all shotguns

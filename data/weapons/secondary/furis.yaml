@@ -70,6 +70,11 @@ reload_seconds: 1.4
 co_behavior: additive_with_base_damage
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 1
+    max_deg: 8
   trigger: auto
   shot_type: hit_scan
   fire_rate: 10.0

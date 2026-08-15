@@ -68,6 +68,11 @@ co_behavior: additive_with_base_damage
 # hits, and Radiation damage in a 2 meter radius." The directly-hit enemy
 # takes BOTH. "Initial hit and explosion apply status separately."
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 50
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 40
@@ -108,3 +113,4 @@ source:
   # note: Stats from the wiki page and the WFCD warframe-items dataset
   # (which lists the explosion as a separate "Auto Radial Attack" with
   # falloff {start 0, end 2, reduction 0.2}).
+

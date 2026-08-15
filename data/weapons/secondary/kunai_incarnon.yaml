@@ -46,6 +46,11 @@ pseudo_reload:
 co_behavior: independent
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 5
+    max_deg: 15
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 70
@@ -63,3 +68,4 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Kunai_Incarnon_Genesis
   # WFCD `attacks`: "Incarnon Form"
+

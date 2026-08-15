@@ -74,6 +74,7 @@ unmodeled:
   - reason: beam_range
     m: 24
   - reason: companion_fires_it
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Verglas_Prime

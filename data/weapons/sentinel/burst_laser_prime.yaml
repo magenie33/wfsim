@@ -52,6 +52,7 @@ attack:
   damage: { impact: 2.5, puncture: 21.25, slash: 1.25 }   # 25 total
 unmodeled:
   - reason: companion_fires_it
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Burst_Laser_Prime

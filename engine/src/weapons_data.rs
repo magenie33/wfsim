@@ -395,6 +395,10 @@ pub struct AttackSpec {
     /// 2026-08-08).
     #[serde(default)]
     pub falloff: Option<FalloffSpec>,
+    /// THE CONE THIS ATTACK FIRES INTO — see [`SpreadSpec`]. `None` = not
+    /// transcribed, and the entry says so in `unmodeled:`.
+    #[serde(default)]
+    pub spread: Option<SpreadSpec>,
     /// A radial (AoE) part fired with every projectile of this attack.
     #[serde(default)]
     pub radial: Option<RadialSpec>,
@@ -428,6 +432,40 @@ pub struct FalloffSpec {
     pub end_m: f64,
     /// Fraction of damage KEPT at `end_m` and beyond.
     pub reduction: f64,
+}
+
+/// THE CONE AN ATTACK FIRES INTO — degrees from the reticle, per ATTACK.
+///
+/// **THE PRIMARY VALUE, and `accuracy` is the derived one** (owner,
+/// 2026-08-15). The Arsenal prints an Accuracy that the wiki's own page defines
+/// as `100 / average spread in degrees` and then shows as a CATEGORY beside it
+/// ("Very High"); the thing the game has is this cone. Wiki `Accuracy` §Spread,
+/// verbatim: *"spread is internally represented as an angle in degrees from the
+/// reticle"*, with *"each weapon having a defined minimum (first-shot) and
+/// maximum spread. Minimum spread is represented by the **Deviation With Aim**
+/// stat while maximum spread is represented by the **Max Deviation** stat."*
+///
+/// Deriving the cone back out of the scalar loses two things that matter: the
+/// min/max, and the FORM — `Module:Weapons/data` carries these per ATTACK, so
+/// the Torid's grenade is `0 / 0` (pinpoint, and its page says so in words)
+/// while its Incarnon beam is `1.0 / 1.5`. One accuracy number per weapon
+/// cannot say that, which is why 63 form entries had no accuracy at all.
+///
+/// Transcribed by `scripts/intake_spread.py`, which refuses any attack it
+/// cannot identify by an exact multi-field match.
+///
+/// **WHAT IS NOT MODELLED IS THE BLOOM.** The min is the FIRST SHOT and the max
+/// is where sustained fire takes it — *"the faster a weapon fires, the larger
+/// the size of the 'cone'"* — and the ramp between them is published nowhere.
+/// A pellet here draws uniformly across the window instead, which has the
+/// published average (`(min + max) / 2`, the wiki's own definition of the
+/// number Accuracy is computed from) and does not invent a rate.
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct SpreadSpec {
+    /// Deviation With Aim — the first shot's cone.
+    pub min_deg: f64,
+    /// Max Deviation — where sustained fire takes it.
+    pub max_deg: f64,
 }
 
 /// A lingering damage FIELD — MECHANICS §7 "Lingering damage FIELDS". Unlike
@@ -841,6 +879,21 @@ pub struct WeaponSpec {
     /// carries, for the same reason: it is shown to a reader verbatim.
     #[serde(default)]
     pub unmodeled: Vec<String>,
+    /// DE's ACCURACY stat, as the Arsenal prints it. REFERENCE ONLY — the
+    /// model reads [`AttackSpec::spread`], which is the primary value.
+    ///
+    /// The yaml has carried this on 144 entries since the intake and NOTHING
+    /// deserialized it, so serde dropped every one of them: a number in the
+    /// repo that no code could see (2026-08-15).
+    ///
+    /// It is DERIVED and it is fuzzy (owner, 2026-08-15): the wiki defines it
+    /// as `100 / (average spread in degrees)` and prints it as a CATEGORY
+    /// ("Very High"), so it is one rounded scalar standing in for a window —
+    /// and it is a WEAPON-level field, which cannot describe a form at all.
+    /// The engine therefore does not read it; `AttackSpec::spread` is what the
+    /// aim model uses and it comes per attack from the same wiki module.
+    #[serde(default)]
+    pub accuracy: Option<f64>,
     pub slot: String,
     pub class: String,
     /// Which DEPLOYMENT the fields on this entry describe (Arch-Guns:
@@ -2411,6 +2464,8 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         traits: traits_for(s),
         gauge_form,
         radial,
+        spread: s.attack.spread,
+        falloff: s.attack.falloff.clone(),
         compression: s.attack.compression.clone(),
         lingering,
         // The data module's Trigger for a beam. Not cosmetic: it decides
@@ -4799,10 +4854,22 @@ mod play_mode_tests {
             // `reduction` is the fraction KEPT, so a weapon that keeps all of
             // its damage has no falloff and should not be carrying the field.
             assert!(f.reduction < 1.0 && f.reduction > 0.0, "{}: keeps {}", w.id, f.reduction);
+            // …AND IT NO LONGER ADMITS ANYTHING (2026-08-15). This assertion
+            // used to read the other way round — every falloff weapon had to
+            // SAY it was not modelled — and the direction flipped with the
+            // arena's 2D layer. An admission that outlives the gap it names is
+            // worse than none: it tells a player to distrust a number that is
+            // now right, and the page is where they would read it.
+            //
+            // The RADIAL's own falloff is a different gap and still open, so a
+            // weapon may still carry `radial_falloff` — this only forbids the
+            // direct-hit line.
             assert!(
-                w.unmodeled.iter().any(|u| u.contains("falloff")),
-                "{} falls off from {} m and its `unmodeled:` never mentions it",
-                w.id, f.start_m
+                !w.unmodeled_parts
+                    .iter()
+                    .any(|u| u.reason.as_deref() == Some("damage_falloff")),
+                "{} still admits a direct-hit falloff the engine now models",
+                w.id
             );
         }
         // The Boar is the shape this exists for: hit-scan, and its damage is

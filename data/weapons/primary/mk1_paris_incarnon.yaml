@@ -65,3 +65,6 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Paris_Incarnon_Genesis
   # WFCD `attacks`: "Incarnon Form Charged Shot"
+
+unmodeled:
+  - reason: spread_not_transcribed

@@ -70,6 +70,7 @@ unmodeled:
   - "the BEAM'S CONE is not modelled — the wiki says the primary fire `deals radial damage varying from of 1 to 4 meters in a cone shape`, and publishes no damage figure for it anywhere; only the direct beam damage is applied here, so this weapon reads low against anything the cone would have caught"
   - "the atmospheric beam's INNATE INFINITE BODY PUNCH THROUGH is not modelled — it passes through a body to reach whatever is behind it, and this arena has one target with nothing behind it"
   - reason: arch_gun_deployer_cooldown
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Cortege

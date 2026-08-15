@@ -70,20 +70,47 @@ exactly zero and always will be, until the sim is spatial.
 AoE geometry needs (see `docs/CORE.md` and the AoE reference in memory), and it
 is the single biggest structural gap in the model.
 
-### 2. NO DISTANCE
+### 2. DISTANCE — MOSTLY MODELLED SINCE 2026-08-15
 
-Every shot lands at point blank.
+The fight has a range. The arena carries two POINTS rather than a distance
+(`engine::space`), the scenario's *Distance (m)* sets it, and **both official
+rulers pin it at 0**, which is the fight every board row and every golden value
+was measured under — so nothing moved when this landed.
 
-- damage falloff (the Felarx's 14→28 m to 99%, and every shotgun's real one);
-- Projectile Speed as a DPS stat — it is modelled where it changes a *pool*
-  (riven rolls) but it moves no damage number here;
+What it turned on:
+
+- **damage falloff** on the direct hit — the published window per weapon, with
+  Projectile Speed scaling the window (the first thing that stat has ever been
+  worth here). 23 admissions closed;
+- **spread**, so a shot can MISS. The cone comes per ATTACK from the wiki's own
+  weapon module (`MinSpread`/`MaxSpread`, degrees from the reticle) rather than
+  from the Arsenal's derived `Accuracy` scalar, which is one rounded number per
+  WEAPON and therefore cannot describe a form at all;
+- **radial falloff**, because a missed projectile detonates beside the target
+  and the explosion finally has an epicentre distance to read. 10 admissions;
+- **the shot combo counter dropping on a miss**, which is the other half of a
+  mechanic that previously only decayed on its timer.
+
+What is still open here:
+
+- **THE BLOOM.** `min` is *"Deviation With Aim"* and `max` is where sustained
+  fire takes the cone; the ramp between them is published nowhere, so a pellet
+  draws inside the AIMED cone and `max` is carried unused. A weapon held on the
+  trigger is therefore more accurate here than in game, most visibly on the
+  widest windows — every sniper is `0 / 15`. Inventing a bloom rate for 224
+  entries is exactly the kind of thing this file exists to refuse;
+- **the hit test's one free parameter**, `space::AIM_TARGET_RADIUS_M`. It is
+  DERIVED (the circle of the same area as a 0.6 x 1.8 m silhouette) rather than
+  measured, because a flat model has nowhere to put the vertical half of a cone
+  and a body is three times taller than it is wide. One Simulacrum measurement
+  settles it: a counted number of pellets, a known range, count what lands;
+- **62 entries have no transcribed spread** — the intake refuses any attack it
+  cannot identify by an exact multi-field match, so those cannot miss and each
+  says so (`spread_not_transcribed`). Re-running `scripts/intake_spread.py`
+  only ever lowers that count, and a test holds the ceiling;
+- **beam RANGE** — a beam still reaches whatever it is aimed at;
 - range-gated perks, and **Dizzying Rounds**, whose stun applies "from less than
-  8m": with no distance the condition is neither true nor false. Its status
-  chance is the half that pays.
-
-**What would have to exist first:** a distance on the scenario. Cheap to add and
-expensive to be right about — falloff is per weapon and the data is only
-partly transcribed (`FalloffSpec` exists; most weapons do not carry one).
+  8m". The distance exists now; the clause still needs wiring.
 
 ### 3. NO MOVEMENT, NO STANCE
 

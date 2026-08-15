@@ -30,11 +30,8 @@ unmodeled:
     seconds: 6
   - reason: innate_punch_through
     m: 1.5
-  - reason: damage_falloff
-    end: 600
-    keep: 50
-    start: 400
   - reason: zoom_steps
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Lanka

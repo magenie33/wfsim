@@ -90,3 +90,6 @@ source:
   url: https://wiki.warframe.com/w/Braton_Incarnon_Genesis
   # Attack stats from the wiki infobox and WFCD's `attacks` array ("Incarnon
   # Form" and "Incarnon Form AoE"), which agree on every field.
+
+unmodeled:
+  - reason: spread_not_transcribed

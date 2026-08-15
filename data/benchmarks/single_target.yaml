@@ -99,6 +99,22 @@ scenario:
   level: 9999
   steel_path: true
 
+  # POINT BLANK, STATED (owner, 2026-08-15). The arena gained a range on
+  # 2026-08-15 and the direct hit now takes its published damage falloff, so
+  # "how far away the target stands" became a term of this claim — and this
+  # board's answer is 0, which is the distance every row on it was ever scored
+  # at. Written down rather than left to the default for the same reason the
+  # Tenno block states fields whose default is already the neutral value: a
+  # ruler names what it has an opinion about, and a default that moves later
+  # would move the board with it.
+  #
+  # It is not a hidden favour to the nineteen weapons that list a falloff. A
+  # board row is the weapon at its best effort — every Forma, every tier, every
+  # arcane seat — and the range a shotgun is best at is the one it was designed
+  # for. A GROUP-CLEAR ruler is where a distance belongs, beside the enemy
+  # count it comes with.
+  distance: 0
+
   # 180 SECONDS (owner, 2026-08-10, down from 300). Load-bearing rather than a
   # round number, and the argument cuts BOTH ways — which is why it moved rather
   # than being picked once and left.

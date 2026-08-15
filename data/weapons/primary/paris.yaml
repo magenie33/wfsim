@@ -63,3 +63,6 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Paris
+
+unmodeled:
+  - reason: spread_not_transcribed

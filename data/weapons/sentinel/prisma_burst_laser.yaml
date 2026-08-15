@@ -51,6 +51,7 @@ attack:
   damage: { impact: 2.2, puncture: 18.7, slash: 1.1 }   # 22 total
 unmodeled:
   - reason: companion_fires_it
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Prisma_Burst_Laser

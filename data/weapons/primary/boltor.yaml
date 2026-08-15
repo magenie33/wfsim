@@ -39,6 +39,11 @@ co_behavior: additive_with_base_damage
 # travel, which is why `projectile_speed_mps` is set and matters to a perk in
 # tier 3 (Swift Deliverance) that has nothing to do on a hit-scan weapon.
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 2
+    max_deg: 6
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 85

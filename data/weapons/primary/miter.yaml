@@ -28,6 +28,7 @@ transforms_to: miter_incarnon
 # for the part named in `attack:` below and NOT for the whole weapon.
 unmodeled:
   - "the Uncharged Shot is not modelled — this entry carries only the Charged Shot"
+  - reason: spread_not_transcribed
 accuracy: 100
 disposition: 1.5
 polarities: [naramon]

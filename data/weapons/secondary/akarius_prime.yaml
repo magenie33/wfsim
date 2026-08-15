@@ -47,6 +47,11 @@ reload_seconds: 2.4
 co_behavior: independent
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 2.5
+    max_deg: 5
   trigger: burst
   # TWO ROCKETS A PULL, and the listed `fire_rate` counts PULLS. The wiki's
   # Notes name the count outright — "the guaranteed 2-round burst" — and the

@@ -61,6 +61,7 @@ unmodeled:
   - reason: innate_punch_through
     m: 1.4
   - reason: arch_gun_deployer_cooldown
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Corvas_Prime

@@ -85,6 +85,15 @@ pub struct Draws {
     pub spine: Rng,
     pub status: Rng,
     pub extra: Rng,
+    /// WHERE THE PELLET WENT — the spread roll, on a stream of its own.
+    ///
+    /// Same reason the other three are split: a build that changes only its
+    /// accuracy must not re-roll this engagement's crits, and a fight moved
+    /// from 0 m to 30 m must not either. It is drawn from ONLY when a shot can
+    /// actually miss (a transcribed accuracy, a spread above zero, and a range
+    /// above zero), so a point-blank fight advances it never and every number
+    /// this engine reported before the arena had a distance is byte-identical.
+    pub aim: Rng,
 }
 
 impl Draws {
@@ -109,7 +118,7 @@ impl Draws {
             z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
             Rng::new(z ^ (z >> 31))
         };
-        Self { spine: at(1), status: at(2), extra: at(3) }
+        Self { spine: at(1), status: at(2), extra: at(3), aim: at(4) }
     }
 }
 

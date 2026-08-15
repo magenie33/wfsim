@@ -93,6 +93,7 @@ unmodeled:
   - "the 8-degree spread is not modelled — this arena has one target at zero distance, so all six missiles always land on it"
   - "the explosion's falloff is not stated by the page and is therefore not modelled — the target stands at the centre and takes the full 228 either way"
   - reason: arch_gun_deployer_cooldown
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Arbucep

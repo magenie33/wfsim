@@ -52,6 +52,7 @@ unmodeled:
   - reason: auto_spool_ramp
     rate: 8.33
   - reason: companion_fires_it
+  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Deth_Machine_Rifle

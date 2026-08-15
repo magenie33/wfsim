@@ -40,11 +40,6 @@ pseudo_reload:
 # catalog means ORDINARY rather than unknown, since it lists the anomalies.
 co_behavior: additive_with_base_damage
 
-unmodeled:
-  - reason: damage_falloff
-    end: 32
-    keep: 99
-    start: 16
 
 # CANNOT AIM DOWN SIGHTS, so nothing gated on aiming pays in this form.
 #
@@ -74,6 +69,11 @@ unmodeled:
 cannot_zoom: true
 
 attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 15
+    max_deg: 35
   trigger: burst
   # THE BURST. The listed `fire_rate` counts PULLS, not rounds — so reading it
   # as rounds per second understates this weapon by its burst count. Both
@@ -104,3 +104,4 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Vasto_Incarnon_Genesis
   # WFCD `attacks`: "Incarnon Form"
+
