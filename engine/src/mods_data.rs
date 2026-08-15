@@ -1120,297 +1120,91 @@ mod tests {
         assert!(!gilded("burston"), "and the wiki says the base variant cannot take it");
     }
 
-    /// THE WHOLE ROSTER, SPELLED OUT — which weapon is offered which Cannonade
-    /// (user, 2026-08-04).
+    /// AN EQUIP RULE THE MOD DECLARES DECIDES EVERY POOL — derived, both ways.
     ///
-    /// Written as an explicit table rather than re-derived from the trigger,
-    /// because a check that recomputes the rule agrees with a wrong rule. Every
-    /// entry is the wiki's own answer: the mod is a Rifle / Pistol / Shotgun mod
-    /// AND the weapon's listed trigger is Semi-Auto. A new weapon fails this
-    /// until someone writes down which of the three it takes.
+    /// This was a 136-row table, one line per weapon, and its stated reason was
+    /// good: "a check that recomputes the rule agrees with a wrong rule". What
+    /// changed is where the rule LIVES. It is not in this file and never was —
+    /// the mod's own yaml says `requires_weapon: semi_auto`, and
+    /// `every_cannonade_states_both_of_its_rules` pins that value against the
+    /// card. So this does not recompute anything: it asks the MOD what it
+    /// requires, asks the WEAPON what it is, and checks the pool agreed.
+    ///
+    /// The table cost one edit per weapon — `mods_data.rs` was touched in six
+    /// of six weapon-intake commits on 2026-08-15, and only ever for this — and
+    /// an audit found it reproduced by the rule 136 times out of 136, with no
+    /// exception in it at all. A snapshot with no surprises in it is a snapshot
+    /// of a rule.
+    ///
+    /// BOTH DIRECTIONS, because each alone passes on a different bug: "offered
+    /// ⇒ eligible" alone passes on a filter that offers nothing, and "eligible
+    /// ⇒ offered" alone passes on one that offers everything.
+    ///
+    /// It is written over EVERY mod that declares a trigger requirement rather
+    /// than over the three Cannonades, so the next such mod is covered by
+    /// arriving.
     #[test]
-    fn every_weapon_in_the_roster_gets_the_right_cannonade() {
-        const CANNONADES: [&str; 3] =
-            ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
-        // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 136] = [
-            // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
-            // Arch-Gun draws neither pool, so the trigger never comes up. That
-            // is what makes this whole class one line each — including the
-            // FLUCTUS, which IS semi-auto and still takes none, because a
-            // Cannonade reads the pool before it reads the trigger.
-            ("larkspur_prime", "held", &[]),
-            ("arbucep", "auto", &[]),
-            ("imperator", "auto", &[]),
-            ("imperator_vandal", "auto", &[]),
-            ("phaedra", "auto", &[]),
-            ("dual_decurion", "auto", &[]),
-            ("prisma_dual_decurions", "auto", &[]),
-            ("cyngas", "burst", &[]),
-            ("fluctus", "semi_auto", &[]),
-            ("larkspur", "held", &[]),
-            ("grattler", "auto", &[]),
-            ("kuva_grattler", "auto", &[]),
-            ("kuva_ayanga", "auto", &[]),
-            ("velocitus", "charge", &[]),
-            ("mandonel", "charge", &[]),
-            ("corvas", "charge", &[]),
-            ("corvas_prime", "charge", &[]),
-            ("mausolon", "auto", &[]),
-            ("morgha", "burst", &[]),
-            ("cortege", "held", &[]),
-            ("boar", "auto", &[]),                             // full-auto shotgun
-            ("boar_prime", "auto", &[]),                       // ...and its Prime
-            ("cernos_prime", "charge", &[]),                   // a bow is not semi-auto
-            // THE BULK INTAKE (2026-08-08), batch 1. Every answer here is the
-            // weapon's LISTED trigger and nothing subtler: Burst and Auto take
-            // no Cannonade, Semi-Auto rifles take the rifle one and semi-auto
-            // pistols the pistol one.
-            ("sybaris", "burst", &[]),
-            ("dex_sybaris", "burst", &[]),
-            ("sybaris_prime", "burst", &[]),
-            ("dera", "auto", &[]),
-            ("dera_vandal", "auto", &[]),
-            ("lato", "semi_auto", &["semi_pistol_cannonade"]),
-            ("lato_vandal", "semi_auto", &["semi_pistol_cannonade"]),
-            ("lato_prime", "semi_auto", &["semi_pistol_cannonade"]),
-            ("lex", "semi_auto", &["semi_pistol_cannonade"]),
-            ("lex_prime", "semi_auto", &["semi_pistol_cannonade"]),
-            // Batch 2. The Bronco is a shotgun SIDEARM and still draws the
-            // pistol pool, so Semi-Pistol Cannonade is the one it sees — the
-            // trigger decides, not the shot pattern. The Kunai is thrown and
-            // listed Auto, so no Cannonade at all.
-            ("vasto", "semi_auto", &["semi_pistol_cannonade"]),
-            ("vasto_prime", "semi_auto", &["semi_pistol_cannonade"]),
-            ("bronco", "semi_auto", &["semi_pistol_cannonade"]),
-            ("bronco_prime", "semi_auto", &["semi_pistol_cannonade"]),
-            // Batch 8 — the last three. All auto, so no Semi-* Cannonade:
-            // the Felarx is an auto shotgun and the other two auto pistols.
-            ("felarx", "auto", &[]),
-            ("onos", "auto", &[]),
-            ("stug", "auto", &[]),
-            // Batch 7. The Strun family is a semi-auto SHOTGUN, so it takes
-            // the shotgun Cannonade; the Vectis is a semi-auto rifle-pool
-            // sniper and takes the rifle one. DUPLEX is its own trigger family
-            // like burst — one pull, two rounds — so the Zylok takes neither.
-            ("strun", "semi_auto", &["semi_shotgun_cannonade"]),
-            ("mk1_strun", "semi_auto", &["semi_shotgun_cannonade"]),
-            ("strun_wraith", "semi_auto", &["semi_shotgun_cannonade"]),
-            ("strun_prime", "semi_auto", &["semi_shotgun_cannonade"]),
-            ("zylok", "duplex", &[]),
-            ("zylok_prime", "duplex", &[]),
-            ("vectis", "semi_auto", &["semi_rifle_cannonade"]),
-            ("vectis_prime", "semi_auto", &["semi_rifle_cannonade"]),
-            // THE REST OF THE SNIPERS. Four semi-autos in the rifle pool, so
-            // four Semi-Rifle Cannonades — and the Lanka, whose CHARGE trigger
-            // is what keeps it out rather than anything about its class.
-            ("rubico", "semi_auto", &["semi_rifle_cannonade"]),
-            ("rubico_prime", "semi_auto", &["semi_rifle_cannonade"]),
-            ("vulkar", "semi_auto", &["semi_rifle_cannonade"]),
-            ("vulkar_wraith", "semi_auto", &["semi_rifle_cannonade"]),
-            ("lanka", "charge", &[]),
-            ("snipetron", "semi_auto", &["semi_rifle_cannonade"]),
-            ("snipetron_vandal", "semi_auto", &["semi_rifle_cannonade"]),
-            ("sporothrix", "semi_auto", &["semi_rifle_cannonade"]),
-            ("coda_sporothrix", "semi_auto", &["semi_rifle_cannonade"]),
-            ("komorex", "semi_auto", &["semi_rifle_cannonade"]),
-            // BURSTS and a CHARGE, so no Cannonade on these three — the mod
-            // gates on a listed Semi-Auto trigger and none of them has one.
-            ("perigale", "burst", &[]),
-            ("perigale_prime", "burst", &[]),
-            ("vadarya_prime", "charge", &[]),
-            // Batch 6 — the SPOOL weapons. Both families are ordinary autos
-            // as far as the trigger vocabulary is concerned; the spool is a
-            // ramp on the rate, not a trigger family.
-            ("soma", "auto", &[]),
-            ("soma_prime", "auto", &[]),
-            ("gorgon", "auto", &[]),
-            ("gorgon_wraith", "auto", &[]),
-            ("prisma_gorgon", "auto", &[]),
-            // Batch 5 — the bows. A drawn shot takes no Cannonade either;
-            // the tapped entries are not roster rows, so they are not listed.
-            ("paris", "charge", &[]),
-            ("mk1_paris", "charge", &[]),
-            ("paris_prime", "charge", &[]),
-            ("dread", "charge", &[]),
-            // Batch 4 — the first CHARGE weapons in the intake. A drawn shot
-            // is its own trigger family and takes no Cannonade, the same
-            // answer the Cernos Prime gets. The Gammacor is a beam and reads
-            // Held.
-            ("ballistica", "charge", &[]),
-            ("rakta_ballistica", "charge", &[]),
-            ("ballistica_prime", "charge", &[]),
-            ("angstrum", "charge", &[]),
-            ("prisma_angstrum", "charge", &[]),
-            ("miter", "charge", &[]),
-            ("gammacor", "held", &[]),
-            ("synoid_gammacor", "held", &[]),
-            // Batch 3. The Sicarus family is BURST — its own trigger family, so
-            // no Cannonade, the same answer the Burston gets. The Atomos is a
-            // chaining BEAM and reads Held.
-            // A DUAL ROCKET LAUNCHER on a BURST trigger, so it takes the burst
-            // Cannonade like any other — the mod reads the trigger, not what
-            // the shot does when it lands.
-            ("akarius", "burst", &[]),
-            ("akarius_prime", "burst", &[]),
-            ("sicarus", "burst", &[]),
-            ("sicarus_prime", "burst", &[]),
-            ("cestra", "auto", &[]),
-            ("despair", "auto", &[]),
-            ("atomos", "held", &[]),
-            ("kunai", "auto", &[]),
-            ("mk1_kunai", "auto", &[]),
-            ("torid", "semi_auto", &["semi_rifle_cannonade"]), // semi-auto launcher, rifle pool
-            // THE ASSAULT RIFLES (2026-08-05). Semi-Pistol/Shotgun Cannonade
-            // are pistol and shotgun mods, so a rifle never sees them; the
-            // RIFLE one turns on the listed trigger, which is the whole point
-            // of having both an auto and a semi-auto rifle in the batch.
-            ("gotva_prime", "auto", &[]),                      // full-auto rifle
-            // THE BRATON FAMILY (2026-08-08). Full-auto in both forms, so no
-            // Cannonade fits any of the four — and that is the point of listing
-            // them: one adapter, four weapons, and the trigger answer is the
-            // weapon's rather than the adapter's.
-            // THE BOLTOR FAMILY (2026-08-08). Full-auto nail guns, so no Cannonade
-            // — and the Incarnon form is a pseudo-shotgun, which changes the
-            // multishot and not the trigger.
-            ("boltor", "auto", &[]),
-            ("telos_boltor", "auto", &[]),
-            ("boltor_prime", "auto", &[]),
-            ("braton", "auto", &[]),
-            ("mk1_braton", "auto", &[]),
-            ("braton_vandal", "auto", &[]),
-            ("braton_prime", "auto", &[]),
-            ("karak_wraith", "auto", &[]),                     // full-auto rifle
-            ("prisma_grinlok", "semi_auto", &["semi_rifle_cannonade"]),
-            // THE LATRON FAMILY (2026-08-08). Semi-auto marksman rifles, and
-            // they STAY semi-auto through the transformation — the Incarnon
-            // form trades hit-scan for a ricochet projectile at a lower rate,
-            // not for a different trigger. So the mod fits and keeps fitting,
-            // which is the opposite of the Phenmor's answer and the reason both
-            // are listed.
-            ("latron", "semi_auto", &["semi_rifle_cannonade"]),
-            ("latron_wraith", "semi_auto", &["semi_rifle_cannonade"]),
-            ("latron_prime", "semi_auto", &["semi_rifle_cannonade"]),
-            // A BEAM shotgun, and its alt-fire does not change the answer: a
-            // CHARGED form is not a second firing mode (`is_gauge_switched`
-            // draws that line), so the weapon's listed trigger is Held and no
-            // Cannonade fits.
-            // A BEAM shotgun, in both flavours: held, so no Cannonade. Its ALT
-            // fire is a charge, and a Cannonade gates on every firing mode a
-            // weapon has — which is why the pair is listed by the base form's
-            // trigger and the charged form is not a roster entry of its own.
-            ("phantasma", "held", &[]),
-            ("phantasma_prime", "held", &[]),
-            // A NATURAL Incarnon whose two forms disagree about the trigger:
-            // Semi in the hand, Auto once transmuted. The listed trigger is
-            // the base form's, so the mod FITS — and installing tier 1 takes
-            // it off again, because the rule is asked of every firing mode and
-            // the Incarnon form is one. Exactly the Dual Toxocyst's shape, on
-            // the rifle side of the pool for the first time.
-            ("phenmor", "semi_auto", &["semi_rifle_cannonade"]),
-            // BURST is its own trigger family, and this is where that claim
-            // is cashed: the Semi-* mods gate on the LISTED trigger, the wiki
-            // lists the Burston as "Burst", so it takes no Cannonade at all —
-            // not even the rifle one, which every other rifle here argues
-            // about. Firing three rounds a pull is not being semi-auto.
-            ("burston", "burst", &[]),
-            ("burston_prime", "burst", &[]),
-            ("dual_toxocyst", "semi_auto", &["semi_pistol_cannonade"]),
-            ("laetum", "semi_auto", &["semi_pistol_cannonade"]),
-            // A BEAM pistol: held, so no Cannonade — the roster's first
-            // weapon to make `continuous` and the PISTOL pool meet.
-            ("ocucor", "held", &[]),
-            // THE FIRST ADVERSARY WEAPON, and a beam: Held, so no Cannonade.
-            // Its Valence bonus changes what it DEALS and not how it fires, so
-            // this row is decided by the same one word every other one is.
-            ("kuva_nukor", "held", &[]),
-            // FULL-AUTO pistols, so no Cannonade — Semi-Pistol Cannonade gates
-            // on the listed Semi-Auto trigger and these are Auto. They are the
-            // first pair in the roster that differs only in NUMBERS: same
-            // magazine, reserve, reload, accuracy and crit, and a status
-            // chance of 12% against 1%.
-            ("furis", "auto", &[]),
-            ("mk1_furis", "auto", &[]),
-            ("verglas_prime", "held", &[]),                    // continuous sentinel weapon
-            // THE SENTINEL WEAPONS, and the POOL is the axis these rows exist
-            // to pin (owner flagged it, 2026-08-15). It is per weapon and it is
-            // not the same for all of them: the Burst Laser family draws PISTOL
-            // mods, the Sweeper pair SHOTGUN mods, everything else RIFLE.
-            //
-            // A Cannonade then follows from the pool AND the trigger, and the
-            // answer here surprised the intake: Semi-Rifle Cannonade lives in
-            // the RIFLE pool rather than the `primary` one, so a semi-auto
-            // sentinel weapon really does wear it. The Stinger and the Cryotra
-            // are the two, and they are the only Cannonade-eligible entries in
-            // this whole class.
-            ("artax", "held", &[]),
-            ("burst_laser", "burst", &[]),
-            ("burst_laser_prime", "burst", &[]),
-            ("prisma_burst_laser", "burst", &[]),
-            ("cryotra", "semi_auto", &["semi_rifle_cannonade"]),
-            ("deth_machine_rifle", "auto", &[]),
-            ("deth_machine_rifle_prime", "auto", &[]),
-            ("laser_rifle", "auto", &[]),
-            ("prime_laser_rifle", "auto", &[]),
-            ("stinger", "semi_auto", &["semi_rifle_cannonade"]),
-            ("sweeper", "auto", &[]),
-            ("sweeper_prime", "auto", &[]),
-            ("verglas", "held", &[]),
-            ("vulklok", "auto", &[]),
-            // The four MOA weapons. Rifle mods like most of the class, and
-            // none is semi-auto, so none takes a Cannonade.
-            ("helstrum", "burst", &[]),
-            ("multron", "burst", &[]),
-            ("tazicor", "held", &[]),
-            // CHARGE, which is also why it wears no Cannonade — those gate on a
-            // listed Semi-Auto trigger. Filing it as semi-auto (to dodge a draw
-            // the page never publishes) made this row come back
-            // `["semi_rifle_cannonade"]`, which is the app offering a mod the
-            // game refuses. The trigger is what legality reads.
-            ("vulcax", "charge", &[]),
-            // THE DECONSTRUCTOR PAIR — a melee weapon in a gun roster, and the
-            // only entries with NO mod pool at all (it takes melee and thrown
-            // melee mods, which this app does not model). No pool, no
-            // Cannonade, and the trigger never comes into it.
-            ("deconstructor", "auto", &[]),
-            ("deconstructor_prime", "auto", &[]),
-            // AN AUTO RIFLE, so no Cannonade — the Semi-* mods gate on the
-            // listed trigger and the Shedu's is Auto. Its explosion changes
-            // nothing about that: a Cannonade reads the TRIGGER, not what the
-            // shot does when it lands.
-            ("shedu", "auto", &[]),
-            // THE SPEARGUNS, and the pair where "asked of EVERY firing mode"
-            // decides it in the other direction than the Phenmor's. The listed
-            // trigger is Auto and the ALT-FIRE is Semi — so the mod is refused
-            // by the mode this row names, and would still be refused if the
-            // roster listed the throw instead, because the primary fire is Auto.
-            // Neither half is semi-auto on its own terms.
-            ("scourge", "auto", &[]),
-            ("scourge_prime", "auto", &[]),
-        ];
-        let roster: Vec<&str> =
-            crate::weapons_data::roster().map(|s| s.id.as_str()).collect();
-        assert_eq!(
-            roster.len(),
-            EXPECTED.len(),
-            "a weapon joined the roster and nobody said which Cannonade it takes: {roster:?}"
-        );
-        for (id, trigger, want) in EXPECTED {
-            assert!(roster.contains(&id), "{id} is in the roster");
-            // The trigger is half the claim, so it is pinned too — the table
-            // would otherwise pass by agreeing with changed data.
-            assert_eq!(
-                crate::weapons_data::spec(id).unwrap().attack.trigger,
-                trigger,
-                "{id}'s listed trigger"
-            );
-            let got: Vec<&str> = pool_for_weapon(id)
-                .iter()
-                .map(|m| m.id)
-                .filter(|m| CANNONADES.contains(m))
-                .collect();
-            assert_eq!(got, want, "{id}");
+    fn a_declared_trigger_rule_decides_every_pool() {
+        // Every trigger a weapon in the roster actually lists — so a
+        // requirement naming a trigger nothing has is caught as a typo rather
+        // than passing vacuously.
+        let triggers: std::collections::BTreeSet<&str> = crate::weapons_data::roster()
+            .map(|s| s.attack.trigger.as_str())
+            .collect();
+        let gated: Vec<ModDef> = pool_union(&["rifle", "pistol", "shotgun", "archgun"]
+            .iter().map(|s| s.to_string()).collect::<Vec<_>>())
+            .into_iter()
+            .filter(|m| m.requires_weapon.is_some_and(|r| triggers.contains(r)))
+            .collect();
+        assert!(gated.len() >= 3, "the three Cannonades at least: {}", gated.len());
+
+        let mut wrong: Vec<String> = Vec::new();
+        for m in &gated {
+            let want = m.requires_weapon.expect("filtered on it");
+            for w in crate::weapons_data::roster() {
+                let offered = pool_for_weapon(&w.id).iter().any(|x| x.id == m.id);
+                // ELIGIBLE means the weapon lists that trigger AND draws the
+                // pool the mod lives in. The second half is what makes the
+                // Fluctus interesting: it is semi-auto and takes none, because
+                // an Arch-Gun draws neither the rifle nor the pistol pool.
+                let draws = pool_for_weapon(&w.id).iter().any(|x| x.id == m.id)
+                    || pool_union(&w.mod_pools).iter().any(|x| x.id == m.id);
+                let eligible = w.attack.trigger == want && draws;
+                if offered != eligible {
+                    wrong.push(format!(
+                        "{}: {} offered={offered} but trigger={} draws={draws}",
+                        w.id, m.id, w.attack.trigger
+                    ));
+                }
+            }
         }
+        assert!(
+            wrong.is_empty(),
+            "a pool disagreed with a rule the mod DECLARES:\n  {}",
+            wrong.join("\n  ")
+        );
+    }
+
+    /// ...and the answers a reader would get wrong, written down. Not a
+    /// roster: three cases, each because something other than the trigger
+    /// decides it.
+    #[test]
+    fn the_cannonade_answers_worth_reading() {
+        let has = |w: &str, m: &str| pool_for_weapon(w).iter().any(|x| x.id == m);
+        // THE POOL BEATS THE TRIGGER. The Fluctus is semi-auto and takes none:
+        // an Arch-Gun draws the archgun pool and the Cannonades are rifle,
+        // pistol and shotgun mods.
+        assert_eq!(crate::weapons_data::spec("fluctus").unwrap().attack.trigger, "semi_auto");
+        assert!(!has("fluctus", "semi_rifle_cannonade"));
+        // A SENTINEL WEAPON DOES TAKE ONE, which surprised the 2026-08-15
+        // intake: Semi-Rifle Cannonade lives in the RIFLE pool rather than the
+        // `primary` one, and a semi-auto companion weapon draws rifle mods.
+        assert!(has("stinger", "semi_rifle_cannonade"));
+        assert!(has("cryotra", "semi_rifle_cannonade"));
+        // AND THE PISTOL ONE IS NOT THE RIFLE ONE. A weapon takes the Cannonade
+        // of its own pool and no other.
+        assert!(has("lex", "semi_pistol_cannonade"));
+        assert!(!has("lex", "semi_rifle_cannonade"));
     }
 
     /// ...AND THE LOCK BITES, on every weapon that can equip one and in every
