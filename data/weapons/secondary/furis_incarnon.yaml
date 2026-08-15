@@ -25,7 +25,7 @@ unmodeled:
 # THINNEST of the three this roster carries: 20 weakpoint hits fill the gauge
 # (the Burston's count) but each charge is worth only 14 rounds against 30, so
 # the pool is 280 against 600.
-incarnon:
+gauge_form:
   gauge:
     charge_on: weakpoint_hits
     # VERBATIM: "20 weakpoints hits will completely fill the gauge."

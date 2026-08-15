@@ -12,7 +12,7 @@ transforms_from: latron_wraith
 # The Incarnon transformation economy (wiki Latron Incarnon Genesis), shared by
 # all three Latrons. The SMALLEST pool in the roster so far — 40 rounds — which
 # is what makes this weapon's cycle a burst rather than a window.
-incarnon:
+gauge_form:
   gauge:
     charge_on: weakpoint_hits
     charges_to_fill: 8

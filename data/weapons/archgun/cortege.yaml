@@ -7,6 +7,8 @@ class: archgun
 form: base
 default_form: true
 transform_group: cortege
+# The form five kills buy — see `cortege_alt`.
+transforms_to: cortege_alt
 
 # TWO COLUMNS, exactly double on every part.
 #   |            | beam | reload | Ammo Max |

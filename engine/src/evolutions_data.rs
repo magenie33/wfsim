@@ -83,7 +83,7 @@ enum EvoEffect {
     /// Elemental Balance reads "+12% per projectile" and "+96% for Incarnon
     /// Form" as two separate statements, not as a sum — a shotgun's pellet
     /// carries a twelfth of the status a beam tick does, so one number cannot
-    /// serve both. Picked by `base.incarnon.is_some()`, the same gate
+    /// serve both. Picked by `base.gauge_form.is_some()`, the same gate
     /// `FlatBaseMagazine` uses.
     FlatBaseStatusChanceByForm { base: f64, incarnon: f64 },
     /// Adds into the BASE crit MULTIPLIER (Boar's Critical Parallel: "+0.5x").
@@ -1644,7 +1644,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     // The Incarnon entry is the one carrying the `incarnon:`
                     // block — the same gate `FlatBaseMagazine` uses to keep a
                     // magazine evolution off the charge pool.
-                    let v = if base.incarnon.is_some() { *incarnon } else { *b };
+                    let v = if base.gauge_form.is_some() { *incarnon } else { *b };
                     base.base_status_chance += v;
                     if let Some(r) = base.radial.as_mut() {
                         r.base_status_chance += v;
@@ -1669,7 +1669,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // Form's Magazine" (wiki), and that magazine is outside the
                 // ammo system entirely (user, 2026-07-30: it uses max charges).
                 EvoEffect::FlatBaseMagazine(v) => {
-                    if base.incarnon.is_none() {
+                    if base.gauge_form.is_none() {
                         base.magazine_size += v;
                     }
                 }
@@ -1711,7 +1711,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     });
                 }
                 EvoEffect::MultishotOnLastRound { value, base: is_base } => {
-                    if base.incarnon.is_none() {
+                    if base.gauge_form.is_none() {
                         if *is_base {
                             base.base_multishot_on_last_round = *value;
                         } else {
@@ -1905,7 +1905,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     base.noncrit_bonus = Some((*chance, *value));
                 }
                 EvoEffect::IncarnonChargeRate(v) => {
-                    if let Some(i) = base.incarnon.as_mut() {
+                    if let Some(i) = base.gauge_form.as_mut() {
                         i.charge_rate += v;
                     }
                 }
@@ -2256,7 +2256,7 @@ mod tests {
     fn no_evolution_resizes_an_incarnon_charge_pool() {
         let mut checked = 0;
         for spec in crate::weapons_data::all() {
-            if spec.incarnon.is_none() {
+            if spec.gauge_form.is_none() {
                 continue;
             }
             // The whole ladder at once, one option per tier — the widest set a

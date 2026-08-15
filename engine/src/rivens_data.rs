@@ -307,7 +307,7 @@ pub fn derived_for(weapon_id: &str) -> Vec<&'static str> {
     let Some(s) = crate::weapons_data::spec(weapon_id) else { return Vec::new() };
     let forms: Vec<_> = crate::weapons_data::forms_of(weapon_id)
         .into_iter()
-        .filter(|f| !f.kind.is_gauge_switched())
+        .filter(|f| !f.kind.is_adapter_form())
         .filter_map(|f| crate::weapons_data::spec(f.weapon_id))
         .collect();
     let mut out: Vec<&'static str> = Vec::new();

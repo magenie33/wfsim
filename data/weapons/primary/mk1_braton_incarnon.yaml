@@ -11,7 +11,7 @@ transforms_from: mk1_braton
 
 # The Incarnon transformation economy (wiki Braton Incarnon Genesis), and it is
 # the FAMILY's: all four Bratons share this gauge.
-incarnon:
+gauge_form:
   gauge:
     charge_on: weakpoint_hits
     charges_to_fill: 20

@@ -21,7 +21,7 @@ accuracy: 100                # module Accuracy for attack 2 (the base form's is 
 # both weapons and the page describes one economy, so the gauge, the round
 # pool and the transmute costs do not vary by variant — only the attack stats
 # below do. That is the whole difference between the two entries.
-incarnon:
+gauge_form:
   gauge:
     # WEAKPOINT hits — the ordinary rule. (The Torid is the exception that
     # charges on direct hits, which is why this field exists at all.)

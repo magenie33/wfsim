@@ -19,7 +19,7 @@ unmodeled:
   - "the Incarnon Form Embed AoE is not modelled — this form has more parts than this entry carries"
   - "the sniper combo counter and the scope's headshot bonus are not modelled in this form — both are modelled on the base form, and no source states whether either survives the transform (the wiki notes only that you must UNZOOM to enter it)"
 
-incarnon:
+gauge_form:
   gauge:
     charge_on: weakpoint_hits
     charges_to_fill: 5

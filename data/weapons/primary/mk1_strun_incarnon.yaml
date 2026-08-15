@@ -16,7 +16,7 @@ transforms_from: mk1_strun
 # modelled yet". Nothing is dropped in silence — some perks do nothing
 # yet and say so on their own tile.
 
-incarnon:
+gauge_form:
   gauge:
     charge_on: weakpoint_hits
     charges_to_fill: 40

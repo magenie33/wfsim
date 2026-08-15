@@ -9359,10 +9359,14 @@ function replayMarkup(r) {
   // TRANSCRIBED, never translated, and DE's Chinese for this one could not be
   // reached from here (its status has no page of its own in the CN wiki). The
   // weapon's own name contains 微波, which is evidence and not a source.
+  // LIFTED is the second of those and gets the same treatment: DE's own word,
+  // left in English because its Chinese could not be reached from here. The CN
+  // wiki has no page for the status, and deriving one from the English is
+  // exactly what the transcribe-never-translate rule forbids.
+  const DB_OWN_NAME = { microwave: "Microwave", lifted: "Lifted" };
   const dbName = (id) =>
-    (id === "microwave"
-      ? "Microwave"
-      : DT(DEBUFF_TYPE[id] || id)) + (id === "frozen" ? ` (${tr("frozen")})` : "");
+    (DB_OWN_NAME[id] || DT(DEBUFF_TYPE[id] || id)) +
+    (id === "frozen" ? ` (${tr("frozen")})` : "");
   const dRoster = rp.debuffs || [];
   const dSeries = rp.dstacks || [];
   const W = 600, H = 28;

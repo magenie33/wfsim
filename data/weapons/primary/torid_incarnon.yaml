@@ -12,7 +12,7 @@ transform_group: torid
 transforms_from: torid
 
 # The Incarnon transformation economy (wiki Torid Incarnon Genesis).
-incarnon:
+gauge_form:
   gauge:
     # DIRECT hits, not weakpoint hits — this is the field that used to be
     # documentation-only, and getting it wrong silently gave the Torid the

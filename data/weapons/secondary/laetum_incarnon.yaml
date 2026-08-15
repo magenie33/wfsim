@@ -11,7 +11,7 @@ transforms_from: laetum
 
 # The Incarnon transformation economy (wiki Laetum). Zariman weapons carry
 # the Genesis innately, so there is no install cost.
-incarnon:
+gauge_form:
   gauge:
     charge_on: weakpoint_hits
     charges_to_fill: 12

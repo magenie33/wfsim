@@ -21,7 +21,7 @@ accuracy: 100                # module Accuracy for attack 2 (the base form's is 
 # Boar Prime — so the page is `Boar_Incarnon_Genesis`, not
 # `Boar_Prime_Incarnon_Genesis` (that one 404s; DATA_SOURCES.md §"Incarnon
 # evolutions: which page documents them" is about exactly this trap).
-incarnon:
+gauge_form:
   gauge:
     # WEAKPOINT hits — the ordinary rule. (The Torid is the exception that
     # charges on direct hits, which is why this field exists at all.)

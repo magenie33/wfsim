@@ -1108,6 +1108,9 @@ pub struct WeaponBase {
     pub beam_ramp_floor: f64,
     /// Does this weapon apply MICROWAVE? See `dummy::DebuffState::microwave`.
     pub applies_microwave: bool,
+    /// See `weapons_data::WeaponSpec::independent_procs`. No mod adds or
+    /// removes one — it is what the weapon DOES, not what the build asks for.
+    pub independent_procs: &'static [&'static str],
     /// Damage types forced on every DIRECT hit — see
     /// `weapons_data::AttackSpec::forced_procs`.
     pub forced_procs: Vec<DamageType>,
@@ -1266,7 +1269,7 @@ pub struct WeaponBase {
     /// out = the officially-unnamed revert), each scaled by the reload
     /// formula `base / (1 + reload bonus)`. `magazine_size` / `base_reload`
     /// still carry the pseudo-reload (270 / 3.35) the plain sim consumes.
-    pub incarnon: Option<IncarnonForm>,
+    pub gauge_form: Option<GaugeForm>,
     /// Evolution-granted additive fire rate (Rapid Wrath) — joins the
     /// fire-rate-mod bucket.
     pub evo_fire_rate_bonus: f64,
@@ -1830,7 +1833,7 @@ pub struct BeamGeometry {
 /// The Incarnon form's charge economy, for the panel's stat display (see
 /// [`WeaponBase::incarnon`]). All times are UNMODDED bases.
 #[derive(Debug, Clone, Copy)]
-pub struct IncarnonForm {
+pub struct GaugeForm {
     /// Fixed charge capacity ("Max Charges") — magazine mods are inert.
     pub max_charges: f64,
     /// WHAT fills the gauge. Not cosmetic: the Zariman pistols count weak-point
@@ -1865,6 +1868,16 @@ pub enum ChargeOn {
     /// poison cloud does not build charges") and a 37.0 patch note fixed the
     /// case where it did.
     DirectHits,
+    /// Kills, not hits — the Mausolon and the Cortege, whose alt-fire is a
+    /// thing you EARN rather than hold: "Getting 5 kills with the Mausolon's
+    /// primary fire will unlock an Alternate Fire", and after firing it
+    /// "additional kills are needed to recharge the laser" (wiki Mausolon;
+    /// the Cortege page carries the same sentence).
+    ///
+    /// This is the first gauge whose source is not a hit, and it is why the
+    /// count is a MARK rather than a per-shot delta: a hit lands inside the
+    /// shot that caused it, a kill can land on a status tick between two.
+    Kills,
 }
 
 /// The Evolution II choice — a SEARCH DIMENSION (user, 2026-07-25). A
@@ -1958,7 +1971,7 @@ pub struct ResolvedPanel {
     /// The Incarnon transformation economy of THIS form, carried through
     /// so the cycle model reads it from data instead of hardcoding one
     /// weapon's numbers.
-    pub incarnon: Option<IncarnonForm>,
+    pub gauge_form: Option<GaugeForm>,
     /// Beam geometry with `damage_radius_m` already scaled by Blast Range mods.
     /// Firestorm (Primed) enlarges the impact sphere — the one thing a
     /// single-target panel can honestly report about it, since the sphere adds
@@ -2035,6 +2048,8 @@ pub struct ResolvedPanel {
     pub beam_ramp_floor: f64,
     /// Does this weapon apply MICROWAVE? See `dummy::DebuffState::microwave`.
     pub applies_microwave: bool,
+    /// See `weapons_data::WeaponSpec::independent_procs`.
+    pub independent_procs: &'static [&'static str],
     /// Forced procs, carried through unmodded — no mod grants or removes one.
     pub forced_procs: Vec<DamageType>,
     /// ONE RESOLVED VECTOR PER PROJECTILE, in firing order — `(direct, radial)`
@@ -2380,7 +2395,7 @@ pub fn resolve_for(
     // Gun, Extended Volley): the same `incarnon.is_none()` guard `apply` puts
     // on the ungated spelling, kept here because this add cannot happen there —
     // `apply` never sees a Tenno.
-    let gated_mag: f64 = if base.incarnon.is_none() {
+    let gated_mag: f64 = if base.gauge_form.is_none() {
         base.gated
             .iter()
             .filter(|(c, k, _)| *k == GatedGrant::FlatBaseMagazine && c.open(tenno))
@@ -2928,7 +2943,7 @@ pub fn resolve_for(
     // THE MODDED MAGAZINE, computed HERE because on one weapon it is a damage
     // stat and the damage is built below. A charge-backed Incarnon magazine is
     // a fixed resource outside the ammo system, so magazine mods never scale it.
-    let mag_size = if base.incarnon.is_some() {
+    let mag_size = if base.gauge_form.is_some() {
         base.magazine_size
     } else {
         (base.magazine_size * (1.0 + mag)).floor()
@@ -3172,7 +3187,7 @@ pub fn resolve_for(
             base.base_multishot_on_last_round
         },
         multishot_ammo_bonus: base.multishot_ammo_bonus,
-        incarnon: base.incarnon,
+        gauge_form: base.gauge_form,
         // Blast Range reaches the beam's sphere too — wiki: "The 2.3 meter
         // damage radius from the point of impact CAN benefit from Firestorm
         // (Primed)." Same `br` bucket the radial and the field use.
@@ -3351,6 +3366,7 @@ pub fn resolve_for(
         super_crit_on_status: base.super_crit_on_status,
         beam_ramp_floor: base.beam_ramp_floor,
         applies_microwave: base.applies_microwave,
+        independent_procs: base.independent_procs,
         forced_procs: base.forced_procs.clone(),
         multishot_adds_damage: base.multishot_adds_damage,
         // ONE RESOLVE PER ELEMENT. The recursion terminates because the clone
@@ -3450,7 +3466,7 @@ pub fn resolve_for(
             // A charge-backed Incarnon magazine is outside the ammo system and
             // the mods never scale it — the same exception `mag_size` makes two
             // hundred lines up, so the grant follows the magazine it grows.
-            let scaled = if base.incarnon.is_some() { per } else { per * (1.0 + mag) };
+            let scaled = if base.gauge_form.is_some() { per } else { per * (1.0 + mag) };
             (scaled, max)
         }),
         cd_on_kill,

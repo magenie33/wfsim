@@ -801,6 +801,19 @@ struct DebuffState {
     /// explain, and a sim that counted the vector alone was one type short for
     /// the whole engagement.
     microwave: bool,
+    /// LIFTED expiry — a crowd-control state, and the second status in this
+    /// struct whose whole payload is that it COUNTS.
+    ///
+    /// The wiki files it under `Status_Effect` §"Independent from Damage": it
+    /// comes from a specific weapon rather than from the type draw, so it never
+    /// competes for the roll and never renormalises anyone else's. Its
+    /// combat effect is to suspend the target, which this arena has no concept
+    /// of (docs/UNMODELLED.md §"no movement") — what it does have is Condition
+    /// Overload, which counts Lifted (MECHANICS §"Condition Overload").
+    ///
+    /// ONE EXPIRY, not a stack list: it is a STATE, so a second application
+    /// refreshes it rather than adding to it. 1 s (owner, 2026-08-15).
+    lifted: Option<f64>,
     /// Stagger stack expiries (6 s, FIFO). No combat payload on a dummy.
     stagger: Vec<f64>,
     /// Weakened stacks (10 s): +5% flat crit chance received per stack.
@@ -853,6 +866,10 @@ const BLEED_DELAY: f64 = 1.0;
 const BLEED_TICKS: u32 = 6;
 const DOT_COEFFICIENT: f64 = 0.5; // Toxin/Electricity/Heat/Gas ticks
 const STATUS_DURATION: f64 = 6.0; // the standard proc duration
+/// LIFTED's duration (owner, 2026-08-15). Not the standard 6 s: an independent
+/// proc is its own effect with its own timer, and DE publishes none for this
+/// one. See [`DebuffState::lifted`].
+const LIFTED_SECONDS: f64 = 1.0;
 const CORROSION_DURATION: f64 = 8.0;
 /// Bullet Attractor (Void): "a small 2.5 metre radius field ... for 3 seconds"
 /// (wiki Damage/Void_Damage). Shorter than the standard 6 s, which is why it is
@@ -904,7 +921,7 @@ fn ten_stack_amp(stacks: usize) -> f64 {
 /// stack goes with it — so a respawn shows as the series dropping to zero and
 /// climbing again, and `uptime` counts that gap against you. That is the point
 /// (owner).
-pub const DEBUFF_ROSTER: [(&str, u32); 14] = [
+pub const DEBUFF_ROSTER: [(&str, u32); 15] = [
     // The 10-stack families, and the three that are not.
     ("virus", TEN_STACK_CAP as u32),
     ("corrosion", TEN_STACK_CAP as u32),
@@ -932,6 +949,11 @@ pub const DEBUFF_ROSTER: [(&str, u32); 14] = [
     // other row so the replay can show WHEN this weapon's invisible status
     // landed — which is the only place a reader can see it at all.
     ("microwave", 1),
+    // ...and the other invisible one, which unlike Microwave ENDS. A row of
+    // its own for the same reason: it is a status the target is carrying that
+    // no damage type explains, so a reader comparing a Condition Overload
+    // number against the vector has to be able to see it.
+    ("lifted", 1),
 ];
 
 impl DebuffState {
@@ -963,6 +985,7 @@ impl DebuffState {
             dots_of(DamageType::Toxin),
             u16::from(self.heat.is_some()),
             u16::from(self.microwave),
+            u16::from(self.lifted.is_some_and(|e| e > now)),
         ]
     }
 }
@@ -1037,6 +1060,7 @@ impl DebuffState {
     }
 
     fn prune(&mut self, now: f64, sd: f64) {
+        self.lifted = self.lifted.filter(|&e| e > now);
         self.stagger.retain(|&e| e > now);
         self.weakened.retain(|&e| e > now);
         self.freeze.retain(|&e| e > now);
@@ -1222,6 +1246,8 @@ impl DebuffState {
         let mut n = 0;
         // MICROWAVE counts, and counting is the whole of what it does.
         n += usize::from(self.microwave);
+        // ...and so does LIFTED, for the same reason and with an end.
+        n += usize::from(self.lifted.is_some());
         n += usize::from(!self.stagger.is_empty());
         n += usize::from(!self.weakened.is_empty());
         n += usize::from(!self.freeze.is_empty());
@@ -1596,6 +1622,9 @@ pub struct DummyParams {
     pub beam_ramp_floor: f64,
     /// Does this weapon apply MICROWAVE? See [`DebuffState::microwave`].
     pub applies_microwave: bool,
+    /// See `weapons_data::WeaponSpec::independent_procs` — status effects this
+    /// attack lands on its own, outside the damage-type draw.
+    pub independent_procs: &'static [&'static str],
     /// ONE RESOLVED VECTOR PER PROJECTILE, `(direct, radial)`, for a weapon
     /// whose missiles carry different innate elements. EMPTY on every other
     /// weapon, and then the loop reads `damage` as it always did.
@@ -2310,7 +2339,7 @@ impl DummyParams {
             // nothing, and neither did Frenzy's or a Deadly-Efficiency build.
             // Nothing caught it because every test here builds `DummyParams`
             // by hand, where the field defaults to `true` (2026-08-01).
-            ammo_efficiency_applies: panel.incarnon.is_none(),
+            ammo_efficiency_applies: panel.gauge_form.is_none(),
             multishot: panel.multishot,
             base_multishot: panel.base_multishot,
             evo_ms: panel.evo_ms,
@@ -2356,6 +2385,7 @@ impl DummyParams {
             super_crit_on_status: panel.super_crit_on_status,
             beam_ramp_floor: panel.beam_ramp_floor,
             applies_microwave: panel.applies_microwave,
+            independent_procs: panel.independent_procs,
             syndicate_radial: panel.syndicate_radial,
             forced_procs: panel.forced_procs.clone(),
             attractor_seconds: panel.attractor_seconds,
@@ -2420,7 +2450,7 @@ impl DummyParams {
         arcane: &ArcaneFx,
     ) -> Self {
         let rl = 1.0 + incarnon.reload_bonus;
-        let inc_form = incarnon.incarnon;
+        let inc_form = incarnon.gauge_form;
         let base_form = DummyParams {
             frenzy,
             // No ammo-efficiency override here any more: `from_panel` derives
@@ -2611,6 +2641,7 @@ impl Default for DummyParams {
             super_crit_on_status: None,
             beam_ramp_floor: BEAM_RAMP_FLOOR,
             applies_microwave: false,
+            independent_procs: &[],
             syndicate_radial: None,
             pellet_damage: Vec::new(),
             multishot_adds_damage: false,
@@ -5519,6 +5550,10 @@ pub fn run_once_traced(
     // A SYNDICATE RADIAL's gauge, in affinity, and the same derived-from-kills
     // trick the tendrils use: `r.kills` is maintained at six sites already.
     let mut syndicate_kill_mark = 0u32;
+    // ...and the FORM gauge fed by kills rather than by hits (ChargeOn::Kills),
+    // which needs its own because it advances in both forms while the others
+    // only pay out in one.
+    let mut gauge_kill_mark = 0u32;
     let mut syndicate_points = 0.0f64;
     // When the weapon may convert affinity again. During the cooldown it
     // converts NOTHING — "the weapon will not convert any affinity into
@@ -7446,6 +7481,22 @@ pub fn run_once_traced(
             for _ in 0..procs.len() {
                 bump_buffs!(crate::loadout::BuffTrigger::StatusApplied, t, d.extra);
             }
+            // INDEPENDENT PROCS land on the HIT, not on the roll — that is what
+            // "independent from damage" means, and it is why this is here
+            // rather than inside `settle_procs`: a weapon that lifts lifts with
+            // no status chance at all, and a field tick or an Extra Hit that
+            // borrows this weapon's vector does NOT lift, because it is not
+            // this attack landing.
+            //
+            // Against one target at the centre the direct and the radial of the
+            // Mausolon's laser always arrive together, so no distinction is
+            // drawn between which of the two lifts.
+            if ap.independent_procs.contains(&"lifted") {
+                // A STATE, so it REFRESHES: the later expiry wins rather than
+                // the count going up.
+                let until = t + LIFTED_SECONDS * params.status_duration_mult;
+                debuffs.lifted = Some(debuffs.lifted.map_or(until, |e| e.max(until)));
+            }
             settle_procs(
                 procs,
                 t,
@@ -7596,13 +7647,26 @@ pub fn run_once_traced(
         // Gauge charging (base phase): every weakpoint PELLET builds one
         // charge (charge_rules); a full gauge transmutes back immediately.
         if let Some(cy) = &params.cycle {
+            // KILLS ADVANCE THEIR MARK IN EITHER FORM, and the two halves are
+            // separate on purpose. A hit is bounded by the shot that caused it,
+            // so `_before` is exact for one; a kill is not — a status tick
+            // between two shots kills, and a delta taken at the top of the next
+            // shot has already missed it. And the mark advances even while
+            // TRANSFORMED, so a kill made with the earned form can never pay
+            // for the next one: it is kills with the PRIMARY fire that recharge
+            // the Mausolon's laser (wiki), not kills of any kind.
+            let fresh_kills = r.kills - gauge_kill_mark;
+            gauge_kill_mark = r.kills;
             if in_base_form {
                 // Per PELLET, and per the WEAPON's rule: weak-point hits for
-                // the Zariman pistols, any direct hit for the Torid. A field
-                // or radial instance is neither, so neither can charge it.
+                // the Zariman pistols, any direct hit for the Torid, kills for
+                // the Mausolon. A field or radial instance is neither of the
+                // first two, so neither can charge those — but it CAN kill,
+                // which is the whole difference the third one makes.
                 charges += match cy.charge_on {
                     crate::loadout::ChargeOn::WeakpointHits => r.headshots - headshots_before,
                     crate::loadout::ChargeOn::DirectHits => r.pellets - pellets_before,
+                    crate::loadout::ChargeOn::Kills => fresh_kills,
                 };
                 // A FULL GAUGE ARMS THE TRANSFORM; the cadence below still
                 // runs. This block used to `continue`, which skipped the

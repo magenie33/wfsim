@@ -11,7 +11,7 @@ use serde::Deserialize;
 
 use crate::damage::{DamageType, DamageVector};
 use crate::loadout::{
-    ChargeOn, CoBehavior, FieldStacking, IncarnonForm, LingeringBase, RadialBase, WeaponBase,
+    ChargeOn, CoBehavior, FieldStacking, GaugeForm, LingeringBase, RadialBase, WeaponBase,
 };
 use crate::mods::Polarity;
 
@@ -565,7 +565,7 @@ pub struct RicochetSpec {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct IncarnonSpec {
+pub struct GaugeFormSpec {
     pub gauge: GaugeSpec,
     /// The transition INTO the form, unmodded. Per weapon: it is that
     /// weapon's reload time, which the page states outright ("an animation
@@ -584,7 +584,7 @@ pub struct IncarnonSpec {
     pub transmute_out_seconds: f64,
 }
 
-/// See [`IncarnonSpec::transmute_out_seconds`]. Changing this changes every
+/// See [`GaugeFormSpec::transmute_out_seconds`]. Changing this changes every
 /// Incarnon cycle in the roster, which is the point of it being one number.
 fn standard_transmute_out() -> f64 {
     1.0
@@ -736,15 +736,19 @@ impl FormKind {
         }
     }
 
-    /// Does ENTERING this form cost a gated transition — a resource meter to
-    /// fill and an animation to play — rather than being a per-shot choice?
+    /// Does this form exist only because an ADAPTER was installed?
     ///
-    /// This is what separates the two ways a weapon switches form, and it is a
-    /// property of the KIND, not of the weapon: an Incarnon form is always
-    /// paid for with a gauge and two transmute animations, while charged vs
-    /// uncharged is chosen freely on every trigger pull. Only a gauge-switched
-    /// form gives the sim a CYCLE to run.
-    pub fn is_gauge_switched(self) -> bool {
+    /// A property of the KIND, and only the Incarnon form has it: the form is
+    /// not in the arsenal until a Genesis is fitted and a tier-1 evolution
+    /// chosen, which is why a riven pool skips it and why the form list hides
+    /// it until the unlock is in the build.
+    ///
+    /// IT IS NOT THE GAUGE QUESTION. Those were one method until the Mausolon
+    /// arrived (owner, 2026-08-15): its alt-fire is bought with five kills and
+    /// is a gauge-fed form of an ordinary Arch-Gun, with no adapter anywhere.
+    /// "Does entering this cost a meter" is [`WeaponSpec::has_gauge`], which
+    /// reads what the weapon DECLARES instead of inferring it from a name.
+    pub fn is_adapter_form(self) -> bool {
         matches!(self, FormKind::Incarnon)
     }
 
@@ -858,6 +862,23 @@ pub struct WeaponSpec {
     /// have it and the wiki names both.
     #[serde(default)]
     pub applies_microwave: bool,
+    /// INDEPENDENT PROCS this attack lands — status effects that come from a
+    /// specific weapon rather than from the damage-type draw
+    /// (`data/debuffs/independent_procs.yaml`).
+    ///
+    /// A LIST OF IDS, not a flag per effect. `applies_microwave` above is the
+    /// older shape and the reason this one is not: an effect that arrives with
+    /// the next weapon should cost a row in a table, not a field on every
+    /// weapon in the roster (owner, 2026-08-15). The engine implements the ids
+    /// it knows and panics on one it does not, which is the same contract
+    /// `charge_on` has.
+    ///
+    /// The only member so far is `lifted` — the Mausolon's alt-fire explosion.
+    /// It carries no damage; what it carries is a status TYPE, and Condition
+    /// Overload counts it (`Status_Effect` §Independent from Damage, and
+    /// MECHANICS §"Condition Overload").
+    #[serde(default)]
+    pub independent_procs: Vec<String>,
     /// Does this weapon's INNATE headshot bonus multiply the additive bracket
     /// instead of joining it? A PER-WEAPON anomaly, not a class rule: the wiki
     /// lists innate bonuses (Kuva Chakkhurr) among the ADDITIVE sources and
@@ -1004,7 +1025,7 @@ pub struct WeaponSpec {
     pub transforms_to: Option<String>,
     pub attack: AttackSpec,
     #[serde(default)]
-    pub incarnon: Option<IncarnonSpec>,
+    pub gauge_form: Option<GaugeFormSpec>,
     #[serde(default)]
     pub pseudo_reload: Option<PseudoReloadSpec>,
     /// The weapon's perks: id references into `data/perks/` or inline
@@ -1227,6 +1248,18 @@ fn render_admissions(v: &mut serde_norway::Value, path: &str) {
     m.insert(Value::String("unmodeled_parts".into()), Value::Sequence(parts));
 }
 
+impl WeaponSpec {
+    /// Does entering this form cost a METER the fight has to fill?
+    ///
+    /// The one question `has_gauge_switched_form` and the sim's cycle both ask,
+    /// and it is answered by what the entry DECLARES — never by its form kind.
+    /// An Incarnon adapter is one way to get here; five kills with a Mausolon
+    /// is another.
+    pub fn has_gauge(&self) -> bool {
+        self.gauge_form.is_some()
+    }
+}
+
 pub fn spec(id: &str) -> Option<&'static WeaponSpec> {
     all().iter().find(|s| s.id == id)
 }
@@ -1399,14 +1432,20 @@ impl WeaponPlayMode {
     /// The `form` a fight request must carry to be played this way.
     ///
     /// The fight parser's vocabulary is form KINDS plus the one policy word:
-    /// `incarnon_cycle` runs the cycle, and anything else names a single form
+    /// `gauge_cycle` runs the cycle, and anything else names a single form
     /// to fire. So a mode is translated at that boundary and nowhere else —
     /// which is what lets "played without ever transmuting" be ASKED FOR at
     /// all, where `form: default` could only ever mean "however it is normally
     /// played" and resolved to the cycle behind your back.
     pub fn form(&self) -> &'static str {
         match self.mode {
-            PlayMode::Cycle => "incarnon_cycle",
+            // NOT `incarnon_cycle`: the policy is "fill a gauge in one form,
+            // spend it in the other, come back", and an Incarnon adapter is
+            // one thing that produces it. The Mausolon earns its alt-fire with
+            // KILLS and has no adapter (owner, 2026-08-15). The old spelling is
+            // still ACCEPTED by the parser — it never reached a saved build or
+            // a board row, but it costs one `||` to be sure.
+            PlayMode::Cycle => "gauge_cycle",
             // The single form this mode fires, named by its KIND — the Cernos
             // Prime's `base` mode is its CHARGED form, because that is the one
             // the arsenal gives you.
@@ -1430,7 +1469,7 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
     for alt in forms.iter().filter(|f| f.weapon_id != default.weapon_id) {
         // The GAUGE, not the kind: "does entering this cost a meter you must
         // earn" is the question, and the answer lives on the entry.
-        let gauged = spec(alt.weapon_id).is_some_and(|s| s.incarnon.is_some());
+        let gauged = spec(alt.weapon_id).is_some_and(|s| s.gauge_form.is_some());
         if gauged {
             out.push(WeaponPlayMode {
                 id: PlayMode::Cycle.id(),
@@ -1458,11 +1497,17 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
     out
 }
 
-/// Does this weapon have a form you TRANSFORM into (a gauge and two transmute
-/// animations)? Only such a weapon has a cycle to simulate — anything else is
-/// fired in one form at a time, whatever forms it registers.
+/// Does this weapon have a form you TRANSFORM into? Only such a weapon has a
+/// cycle to simulate — anything else is fired in one form at a time, whatever
+/// forms it registers.
+///
+/// DECLARED, NOT INFERRED. This used to ask the form's KIND, which made "has a
+/// gauge" and "is the Incarnon form" the same sentence; the Mausolon's
+/// kill-fed alt-fire is the counter-example, and it is a `charged` form.
 pub fn has_gauge_switched_form(weapon_id: &str) -> bool {
-    forms_of(weapon_id).iter().any(|f| f.kind.is_gauge_switched())
+    forms_of(weapon_id)
+        .iter()
+        .any(|f| spec(f.weapon_id).is_some_and(WeaponSpec::has_gauge))
 }
 
 pub(crate) fn damage_type(name: &str) -> DamageType {
@@ -2021,6 +2066,36 @@ pub fn exilus_polarity(id: &str) -> Option<Polarity> {
 /// The trigger comes from the BASE entry of a transform group (an Incarnon form
 /// does not get its own), while the class is the weapon's own — the two halves
 /// of one weapon share a class by construction.
+/// The `independent_procs:` ids this entry declares, as a static slice.
+///
+/// Leaked through a cache exactly like [`traits_for`], and for the same reason:
+/// a `WeaponBase` is built per request and the ids come from a yaml the loader
+/// owns for the life of the process. The set of legal ids is validated HERE, so
+/// a typo fails at load with the whole roster's names rather than silently
+/// applying nothing in a fight.
+fn independent_procs_for(s: &WeaponSpec) -> &'static [&'static str] {
+    static CACHE: OnceLock<Mutex<BTreeMap<String, &'static [&'static str]>>> = OnceLock::new();
+    let cache = CACHE.get_or_init(|| Mutex::new(BTreeMap::new()));
+    let mut g = cache.lock().expect("independent proc cache");
+    if let Some(t) = g.get(&s.id) {
+        return t;
+    }
+    let out: Vec<&'static str> = s
+        .independent_procs
+        .iter()
+        .map(|p| match p.as_str() {
+            "lifted" => "lifted",
+            other => panic!(
+                "{}: unknown independent proc `{other}` — the engine implements `lifted`;                  add the effect to dummy::DebuffState before declaring it",
+                s.id
+            ),
+        })
+        .collect();
+    let leaked: &'static [&'static str] = Box::leak(out.into_boxed_slice());
+    g.insert(s.id.clone(), leaked);
+    leaked
+}
+
 fn traits_for(s: &WeaponSpec) -> &'static [&'static str] {
     static CACHE: OnceLock<Mutex<BTreeMap<String, &'static [&'static str]>>> = OnceLock::new();
     let cache = CACHE.get_or_init(|| Mutex::new(BTreeMap::new()));
@@ -2131,12 +2206,13 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
             (start, per, end)
         });
 
-    let incarnon = s.incarnon.as_ref().map(|inc| IncarnonForm {
+    let gauge_form = s.gauge_form.as_ref().map(|inc| GaugeForm {
         max_charges: inc.gauge.max_rounds,
         charge_on: match inc.gauge.charge_on.as_str() {
             "weakpoint_hits" => ChargeOn::WeakpointHits,
             "direct_hits" => ChargeOn::DirectHits,
-            other => panic!("{id}: unknown incarnon charge_on: {other}"),
+            "kills" => ChargeOn::Kills,
+            other => panic!("{id}: unknown gauge charge_on: {other}"),
         },
         charges_to_fill: inc.gauge.charges_to_fill,
         transmute_in: inc.transmute_in_seconds,
@@ -2275,6 +2351,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // weapon CLASS, not on a per-weapon flag: the cards say "for Bows",
         // and the wiki's rank tables carry a whole "Fire Rate (Bows)" column
         // at exactly twice the rifle one.
+        independent_procs: independent_procs_for(s),
         fire_rate_mod_multiplier: if s.class == "bow" { 2.0 } else { 1.0 },
         base_multishot: s.attack.multishot,
         buff_multishot_bonus: 0.0,
@@ -2332,7 +2409,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         co_base_fraction: s.co_base_fraction.unwrap_or(1.0),
         injected_elements,
         traits: traits_for(s),
-        incarnon,
+        gauge_form,
         radial,
         compression: s.attack.compression.clone(),
         lingering,
@@ -3275,7 +3352,7 @@ mod tests {
         assert!((i.base_fire_rate - 8.0).abs() < 1e-9, "ticks per second");
         assert!(i.radial.is_none(), "the damage radius is not its own instance");
         assert!(i.lingering.is_none(), "no cloud in Incarnon form");
-        let g = i.incarnon.as_ref().expect("torid_incarnon has a gauge");
+        let g = i.gauge_form.as_ref().expect("torid_incarnon has a gauge");
         assert_eq!(g.charge_on, ChargeOn::DirectHits);
         assert!((g.charges_to_fill - 5.0).abs() < 1e-9);
         assert!((g.max_charges - 170.0).abs() < 1e-9);
@@ -3321,30 +3398,38 @@ mod tests {
         for s in all() {
             let kind = s.form_kind(); // panics on a name outside the vocabulary
             let charge_trigger = s.attack.trigger == "charge";
-            // A GAUGE-SWITCHED FORM IS EXEMPT, and only that. It carries its
-            // own kind — the form vocabulary answers "which form of this
-            // weapon", and `incarnon` already answers it — so a form that
-            // happens to draw is not thereby the charged form. The Dread's
-            // Incarnon form draws for 0.6 s and is not what the arsenal means
-            // by "charged Dread". Everything else still has to agree: a
-            // `charge` trigger filed as `base` is a data error.
+            // AN ADAPTER FORM IS EXEMPT, and only that. It carries its own
+            // kind — the form vocabulary answers "which form of this weapon",
+            // and `incarnon` already answers it — so a form that happens to
+            // draw is not thereby the charged form. The Dread's Incarnon form
+            // draws for 0.6 s and is not what the arsenal means by "charged
+            // Dread". Everything else still has to agree: a `charge` trigger
+            // filed as `base` is a data error. NOT the gauge: the Mausolon's
+            // alt-fire has one and IS the charged form, because a charge is
+            // exactly how it is fired.
             assert_eq!(
-                charge_trigger && !kind.is_gauge_switched(),
+                charge_trigger && !kind.is_adapter_form(),
                 kind == FormKind::Charged,
                 "{}: a charge trigger IS the charged form, and nothing else is",
                 s.id
             );
-            // A gauge-switched form is the one that carries the gauge economy.
-            assert_eq!(
-                s.incarnon.is_some(),
-                kind.is_gauge_switched(),
-                "{}: the gauge and the incarnon form are the same claim",
+            // AN IMPLICATION, NOT AN EQUIVALENCE. An adapter form is always
+            // bought with a gauge, so one without the economy is a half-written
+            // entry — but the converse stopped holding when the Mausolon landed
+            // a gauge on a `charged` form (owner, 2026-08-15), and asserting it
+            // both ways is what made a real weapon look like a data error.
+            assert!(
+                !kind.is_adapter_form() || s.gauge_form.is_some(),
+                "{}: an Incarnon form is entered by filling a gauge, so it has to declare one",
                 s.id
             );
             // The entry reached BY a transform is never the default form.
+            // THE GAUGE AGAIN, not the adapter: a form you transform INTO is
+            // exactly a form you must pay a meter to reach, and naming where
+            // it comes from is how the cycle finds its other end.
             assert_eq!(
                 s.transforms_from.is_some(),
-                kind.is_gauge_switched(),
+                s.has_gauge(),
                 "{}: only a transformed-into form has a form to come from",
                 s.id
             );
@@ -3754,13 +3839,13 @@ mod tests {
         // `requires: dual_pistols` gate satisfiable at all — without it Akimbo
         // Slip Shot equipped and did nothing, on every dual pistol.
         assert_eq!(b.traits, &["semi_auto", "dual_pistols"]);
-        assert!(b.incarnon.is_none());
+        assert!(b.gauge_form.is_none());
 
         let i = base_panel("dual_toxocyst_incarnon", false);
         assert!((i.base_crit_damage - 3.0).abs() < 1e-9);
         assert!((i.magazine_size - 270.0).abs() < 1e-9);
         assert!((i.base_reload - 3.35).abs() < 1e-9);
-        let inc = i.incarnon.expect("incarnon block");
+        let inc = i.gauge_form.expect("incarnon block");
         assert!((inc.max_charges - 270.0).abs() < 1e-9);
         assert!((inc.transmute_in - 2.35).abs() < 1e-9);
         assert!((inc.transmute_out - 1.0).abs() < 1e-9);
@@ -3930,7 +4015,7 @@ mod laetum_tests {
     #[test]
     fn the_cycle_reads_its_economy_from_the_weapon_data() {
         let b = WeaponBase::from_data("laetum_incarnon", true, &[]);
-        let f = b.incarnon.expect("incarnon economy");
+        let f = b.gauge_form.expect("incarnon economy");
         assert_eq!(f.charges_to_fill, 12.0);
         assert_eq!(f.max_charges, 216.0);
         assert_eq!(f.transmute_in, 2.0);
@@ -3939,14 +4024,14 @@ mod laetum_tests {
         assert_eq!(f.charge_rate, 0.0);
 
         let eff = WeaponBase::from_data("laetum_incarnon", true, &["laetum_incarnon_efficiency"]);
-        let g = eff.incarnon.expect("incarnon economy");
+        let g = eff.gauge_form.expect("incarnon economy");
         assert_eq!(g.charge_rate, 0.5);
         // 12 / 1.5 = 8 hits (wiki).
         assert_eq!((g.charges_to_fill / (1.0 + g.charge_rate)).ceil() as u32, 8);
 
         // Dual Toxocyst keeps its own numbers.
         let dt = WeaponBase::from_data("dual_toxocyst_incarnon", true, &[]);
-        let d = dt.incarnon.expect("incarnon economy");
+        let d = dt.gauge_form.expect("incarnon economy");
         assert_eq!(d.charges_to_fill, 9.0);
         assert_eq!(d.transmute_in, 2.35);
     }
@@ -4556,7 +4641,7 @@ mod play_mode_tests {
             // more than one: a bow with an adapter has a tapped shot and an
             // Incarnon form.
             let alts: Vec<_> = forms.iter().filter(|f| !f.is_default).collect();
-            let gauged = |f: &FormRef| spec(f.weapon_id).is_some_and(|s| s.incarnon.is_some());
+            let gauged = |f: &FormRef| spec(f.weapon_id).is_some_and(|s| s.gauge_form.is_some());
             let any_gauged = alts.iter().any(|f| gauged(f));
             let has = |m: PlayMode| ms.iter().any(|x| x.mode == m);
             let rankable = |m: PlayMode| ms.iter().any(|x| x.mode == m && x.sustainable);
@@ -4596,7 +4681,7 @@ mod play_mode_tests {
         };
         // The gauge weapon: never transmute, or run the cycle.
         assert_eq!(f("torid", PlayMode::Base), Some("base"));
-        assert_eq!(f("torid", PlayMode::Cycle), Some("incarnon_cycle"));
+        assert_eq!(f("torid", PlayMode::Cycle), Some("gauge_cycle"));
         // TRANSFORMED, not Alternate: being in the Incarnon form for a
         // whole engagement is a thing the builder can show and not a
         // thing a ruler ranks.
@@ -4606,7 +4691,7 @@ mod play_mode_tests {
         assert_eq!(f("paris", PlayMode::Base), Some("charged"));
         assert_eq!(f("paris", PlayMode::Alternate), Some("base"), "the tapped shot");
         assert_eq!(f("paris", PlayMode::Transformed), Some("incarnon"));
-        assert_eq!(f("paris", PlayMode::Cycle), Some("incarnon_cycle"));
+        assert_eq!(f("paris", PlayMode::Cycle), Some("gauge_cycle"));
         // The free one, where `base` mode is the CHARGED form because that is
         // what the arsenal hands you — the mode is named for its role, not for
         // the form's own name.
@@ -4628,6 +4713,56 @@ mod play_mode_tests {
         assert_eq!(on("cernos_prime"), vec!["base", "alternate"]);
         // ...and a weapon with one form offers one.
         assert_eq!(on("ocucor"), vec!["base"]);
+    }
+
+    /// A GAUGE WITHOUT AN ADAPTER — the Mausolon, and the case that used to be
+    /// unrepresentable.
+    ///
+    /// Its alt-fire is bought with five kills ("Getting 5 kills with the
+    /// Mausolon's primary fire will unlock an Alternate Fire", wiki), so it is
+    /// the same POLICY as a Zariman weapon's and none of the same hardware:
+    /// no Genesis, no tier-1 unlock, and a `charged` form rather than an
+    /// `incarnon` one. Every one of those three used to be how the roster
+    /// recognised a gauge (owner, 2026-08-15).
+    ///
+    /// Three claims, and each fails on a different half of that:
+    ///   * the cycle EXISTS, and is sustainable — kills keep coming;
+    ///   * the alt-fire alone is NOT, because five kills buy one laser;
+    ///   * the form needs no adapter, so it is not hidden behind an evolution.
+    #[test]
+    fn the_mausolon_earns_its_alt_fire_without_an_adapter() {
+        let all: Vec<&'static str> = play_modes("mausolon").iter().map(|m| m.id).collect();
+        assert_eq!(all, vec!["base", "cycle", "transformed"]);
+        let on: Vec<&'static str> = play_modes("mausolon")
+            .into_iter()
+            .filter(|m| m.sustainable)
+            .map(|m| m.mode.id())
+            .collect();
+        assert_eq!(on, vec!["base", "cycle"]);
+
+        let c = play_modes("mausolon")
+            .into_iter()
+            .find(|m| m.mode == PlayMode::Cycle)
+            .expect("five kills is a gauge");
+        assert_eq!(c.weapon_id, "mausolon");
+        assert_eq!(c.other_id, Some("mausolon_charged"));
+
+        let alt = spec("mausolon_charged").expect("the alt-fire is a form entry");
+        assert!(alt.has_gauge());
+        // THE GAUGE IS DECLARED AND THE ADAPTER IS NOT INFERRED FROM IT. This
+        // is the pair that was one method until this weapon arrived.
+        assert!(!alt.form_kind().is_adapter_form());
+        assert_eq!(alt.form_kind(), FormKind::Charged);
+        assert!(has_gauge_switched_form("mausolon"));
+
+        let g = alt.gauge_form.as_ref().expect("checked above");
+        assert_eq!(g.gauge.charge_on, "kills");
+        assert!((g.gauge.charges_to_fill - 5.0).abs() < 1e-9);
+        // ONE LASER PER FILL, and no transition either way — the charge IS the
+        // shot, so a house-standard 1 s transmute would invent downtime.
+        assert!((g.gauge.max_rounds - 1.0).abs() < 1e-9);
+        assert!((g.transmute_in_seconds).abs() < 1e-9);
+        assert!((g.transmute_out_seconds).abs() < 1e-9);
     }
 
     /// A cycle names BOTH ends, because it is the only mode that is about two

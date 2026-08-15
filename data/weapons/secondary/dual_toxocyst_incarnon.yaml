@@ -11,7 +11,7 @@ transforms_from: dual_toxocyst
 
 # The Incarnon transformation economy (wiki Dual_Toxocyst_Incarnon_Genesis).
 # The presence of this block is what identifies an Incarnon weapon.
-incarnon:
+gauge_form:
   install_cost: { pathos_clamps: 20, yao_shrubs: 70, eevani: 80 }
   gauge:
     charge_on: weakpoint_hits

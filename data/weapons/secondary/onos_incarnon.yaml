@@ -19,7 +19,7 @@ unmodeled:
   - "the Incarnon Form Charge Attack is not modelled — this form has more parts than this entry carries"
   - "the Incarnon Form Charge Radial Attack is not modelled — this form has more parts than this entry carries"
 
-incarnon:
+gauge_form:
   gauge:
     charge_on: weakpoint_hits
     charges_to_fill: 12

@@ -105,11 +105,14 @@ const r = await evaluate(`(async () => {
 })()`);
 
 check("the run produced a replay", r.hasReplay === true);
-// FOURTEEN since Microwave joined (2026-08-13) — the Nukor family's invisible
-// status, which is a row here for the same reason it is modelled at all: it is
-// counted by every Condition-Overload bonus and shows up nowhere else, so the
-// replay is the only place a reader can see it land.
-check("it carries a debuff roster", r.rosterLen === 14, `${r.rosterLen} entries`);
+// A FLOOR, NOT A COUNT. This was `=== 14`, and then Microwave made it 14 and
+// Lifted made it 15 — a number that has to be edited every time the engine
+// models one more status is a snapshot of a constant, and it fails on the
+// change that PROVES the mechanic works. What this check is about is the
+// symmetry with the buff table (AGENTS.md), which the next three lines assert
+// against `r.rosterLen` itself. The floor is here so a roster that arrives
+// EMPTY still fails.
+check("it carries a debuff roster", r.rosterLen >= 14, `${r.rosterLen} entries`);
 check("...one series per entry", r.seriesLen === r.rosterLen, `${r.seriesLen} vs ${r.rosterLen}`);
 check("...each as long as the clock", r.sameFrames === true);
 check("...in the SAME shape as the buff roster", r.rosterShape === r.buffShape,
@@ -119,7 +122,7 @@ check("the Torid poisons its target", r.poisonPeak > 0, `peak ${r.poisonPeak}`);
 check("...for most of the engagement", r.poisonUptime > 0.5, `${(r.poisonUptime * 100).toFixed(1)}%`);
 check("the fight kills several bodies", r.kills > 1, `${r.kills} kills`);
 check("...and one series covers them all — a respawn is a dip, not a new row",
-  r.dips >= 1 && r.seriesLen === 14, `${r.dips} dips`);
+  r.dips >= 1 && r.seriesLen === r.rosterLen, `${r.dips} dips`);
 
 check("the table is on the page", r.hasHeading === true);
 check("...drawn by the same row component", r.drawn > 0, `${r.drawn} rows`);

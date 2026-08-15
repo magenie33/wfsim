@@ -9,7 +9,7 @@ form: incarnon
 transform_group: telos_boltor
 transforms_from: telos_boltor
 
-incarnon:
+gauge_form:
   gauge:
     charge_on: weakpoint_hits
     charges_to_fill: 20

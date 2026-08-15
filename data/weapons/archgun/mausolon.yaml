@@ -7,6 +7,10 @@ class: archgun
 form: base
 default_form: true
 transform_group: mausolon
+# THE FORM THIS ONE FEEDS. Named for the same reason every gauge-fed pair
+# names it — the cycle is about two entries and a group alone does not say
+# which of them is earned.
+transforms_to: mausolon_charged
 
 # TWO COLUMNS, x1.5 on every part.
 #   |            | auto | its radial | reload | Ammo Max | radial rim |

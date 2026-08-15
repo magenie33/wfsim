@@ -5,16 +5,30 @@ name: Cortege
 # DIFFERS is written here. See `weapons_data::INHERITED`.
 inherits: cortege
 # THE ALT-FIRE, AND IT IS EARNED. "Getting 5 kills with the Cortege's primary
-# fire will unlock an Alternate Fire that releases a trio of grenades" (wiki).
-# That gate is NOT modelled — see `unmodeled:` — so this entry is the alt-fire
-# as if it were always available, which is what a player who has already fed it
-# five kills is holding.
+# fire will unlock an Alternate Fire that releases a trio of grenades" (wiki),
+# and the gate is MODELLED as of 2026-08-15: the trio costs five kills with the
+# primary, and against a target that will not die it never arrives.
 #
 # `alt_fire` rather than `charged`: nothing about it is a draw, it is the other
 # button, and borrowing `charged` would put a wrong word in every saved preset
-# and share link (docs/WEAPON_INTAKE.md §3).
+# and share link (docs/WEAPON_INTAKE.md §3). The gauge does not change that —
+# it is declared below, and the form KIND stays what the player presses.
 form: alt_fire
 transform_group: cortege
+transforms_from: cortege
+
+# FIVE KILLS, ONE TRIO. Same mechanic as the Mausolon's laser and the same
+# published sentence; see `mausolon_charged` for why the transitions are zero.
+gauge_form:
+  gauge:
+    charge_on: kills
+    charges_to_fill: 5
+    max_rounds: 1
+  transmute_in_seconds: 0.0
+  transmute_out_seconds: 0.0
+
+# The gauge, not the 100-round belt — see `mausolon_charged`.
+magazine: 1
 
 deployments:
   archwing:
@@ -54,7 +68,6 @@ attack:
     status_chance: 0.167
 
 unmodeled:
-  - "the FIVE-KILL GATE is not modelled — in game this alt-fire has to be earned with five kills from the primary fire before it can be used at all, and this entry fires it from the first second"
   - "the LINGERING FLAMES the grenades leave are not modelled — the page gives them 11 seconds of continuous damage and no per-tick number this intake could find, so the ground fire contributes nothing here and this weapon reads low"
   # PROSE, not a reason: this one says "a grenade" in the middle of the
   # sentence, and a free-text parameter would carry that English word into

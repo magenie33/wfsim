@@ -510,6 +510,56 @@ faster), on-headshot buffs trigger from any one pellet of a pull, and the
 reported headshot rate is pellets/pellets. Mean headshot rate is identical
 under either model; the per-pellet roll gives lower variance.
 
+### A gauge is not an adapter
+
+A **gauge-switched form** is one you pay a meter to enter: fill it in the base
+form, spend it in the other, come back. Three weapons' worth of vocabulary used
+to say "Incarnon" for that, because every example was one — the data key was
+`incarnon:`, the request token was `incarnon_cycle`, and the engine decided
+"does this have a gauge" by asking whether the form was *named* `incarnon`.
+
+The **Mausolon** is the counter-example (owner, 2026-08-15). Its alt-fire is
+bought with kills — *"Getting 5 kills with the Mausolon's primary fire will
+unlock an Alternate Fire that discharges a powerful laser that explodes on
+impact"*, and once spent *"additional kills are needed to recharge the laser"*
+(wiki) — and it is an ordinary Arch-Gun with no adapter, no Genesis and no
+tier-1 unlock. The **Cortege** carries the identical sentence for its trio of
+grenades. So the two questions were split:
+
+- **`WeaponSpec::has_gauge`** — declared by the entry (`gauge_form:`). This is
+  what makes a cycle, and it is the only thing that does.
+- **`FormKind::is_adapter_form`** — still only the Incarnon form. This is what
+  hides a form until its unlock is chosen and what keeps it out of a riven pool.
+
+`ChargeOn` therefore has three members: `weakpoint_hits` (the Zariman pistols),
+`direct_hits` (the Torid) and `kills`. The third is counted off a **mark**
+rather than a per-shot delta, because a kill can land on a status tick between
+two shots — and the mark advances in **both** forms, so a kill made with the
+earned form never pays for the next one.
+
+A kill-fed gauge is also the first mechanic here that can be *reached* and
+still not *pay*: an unmodded Mausolon in a 30 s engagement earns its fifth kill
+late enough that it transmutes and the fight ends before the 0.8 s charge
+completes.
+
+### Independent procs
+
+Status effects that come from a specific weapon rather than from the damage-type
+draw (`data/debuffs/independent_procs.yaml`, wiki `Status_Effect` §"Independent
+from Damage"). They never compete for the roll and never renormalise anyone
+else's — and the ones flagged `counts_for_condition_overload` add a status
+**type** while they hold.
+
+A weapon declares them by id (`independent_procs: [lifted]`); the engine owns
+the duration, the same way it owns every other proc's. Implemented so far:
+
+- **Lifted**, 1 s (owner, 2026-08-15) — the Mausolon alt-fire's explosion. Its
+  crowd control (the target is suspended) is not modelled and cannot be: this
+  arena has no movement. What is modelled is the count.
+
+**Microwave** predates the list and still has its own flag
+(`applies_microwave`); it is the same class of effect with an infinite duration.
+
 Melee **combo** raises effective crit chance/damage; interaction with tiers is a
 high-risk area.
 

@@ -20,7 +20,7 @@ unmodeled:
 # THE SAME ECONOMY AS THE FURIS — one Genesis, one gauge. Every number in this
 # block is copied from that page rather than from a second one, because there
 # is no second one: the adapter upgrades either weapon.
-incarnon:
+gauge_form:
   gauge:
     charge_on: weakpoint_hits
     charges_to_fill: 20

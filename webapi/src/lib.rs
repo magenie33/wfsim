@@ -1044,7 +1044,9 @@ pub fn meta_json() -> Value {
                         // with it rather than the sim refusing the build later.
                         "gauge_switched": wfsim_engine::weapons_data::forms_of(&w.id)
                             .iter()
-                            .any(|f| f.kind.id() == *id && f.kind.is_gauge_switched()),
+                            .filter(|f| f.kind.id() == *id)
+                            .any(|f| wfsim_engine::weapons_data::spec(f.weapon_id)
+                                .is_some_and(wfsim_engine::weapons_data::WeaponSpec::has_gauge)),
                     }))
                     .collect::<Vec<_>>(),
                 // Is there a form to TRANSFORM into? Then the sim can run the
@@ -2328,7 +2330,9 @@ pub fn panel_json(v: &Value) -> Value {
     let mut forms_list: Vec<(&'static str, String, WeaponBase)> = Vec::new();
     for f in wfsim_engine::weapons_data::forms_of(&info.id) {
         // A gauge-switched form exists only while its tier-1 unlock is chosen.
-        if f.kind.is_gauge_switched()
+        // THE ADAPTER, not the gauge: this hides a form until its unlock is in
+        // the build, and a form that needs no adapter is never hidden.
+        if f.kind.is_adapter_form()
             && !form_unlock_evo(info).is_some_and(|u| evo_refs.contains(&u))
         {
             continue;
@@ -2939,7 +2943,7 @@ pub fn panel_json(v: &Value) -> Value {
         // Incarnon form: the magazine is a charge-backed resource (Max Charges,
         // inert to magazine mods) and there is no reload — instead two transition
         // times, each scaled by the reload formula base/(1 + reload bonus).
-        if let Some(inc) = base.incarnon {
+        if let Some(inc) = base.gauge_form {
             let rl = panel.reload_bonus;
             stats.push(json!({ "key": "magazine", "label": "Max Charges",
             "base": num(inc.max_charges), "final": num(inc.max_charges),
@@ -2960,6 +2964,10 @@ pub fn panel_json(v: &Value) -> Value {
                 wfsim_engine::loadout::ChargeOn::DirectHits => (
                     "direct hits",
                     "ANY direct hit, so the form does not depend on the headshot rate (wiki Incarnon: \"Angstrum Incarnon Genesis and Torid Incarnon Genesis are instead charged through direct hits\"). A lingering field is not a direct hit and does not charge it",
+                ),
+                wfsim_engine::loadout::ChargeOn::Kills => (
+                    "kills",
+                    "KILLS, not hits — so this form is worth what the fight lets you earn, and against a single target that does not die it never arrives at all. A radial, a field tick or a status proc all count: the kill is what is asked for, not the instance that landed it. Kills made with the earned form itself do not pay for the next one",
                 ),
             };
             stats.push(json!({ "key": "gauge", "label": "Gauge Fills On",
@@ -3934,12 +3942,17 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // `default` = however THIS weapon is played: the cycle where there is one
     // to run, its own default form where there is not. A weapon that
     // transforms is played transforming (user, 2026-07-31).
-    let form = if form == "default" && info.has_cycle { "incarnon_cycle" } else { form };
+    let form = if form == "default" && info.has_cycle { "gauge_cycle" } else { form };
     // Otherwise the cycle is asked for BY NAME. It used to be "any form
     // string this weapon does not register", which made it the destination of
     // every typo as well — a stale preset naming another weapon's form now
     // falls back to a real form instead of transforming.
-    let run_cycle = form == "incarnon_cycle" && info.has_cycle && incarnon_id(info).is_some();
+    // BOTH SPELLINGS. `incarnon_cycle` was the token until 2026-08-15 and was
+    // never persisted anywhere, so this is belt-and-braces rather than a
+    // migration — but a request is a request and refusing one costs a fight.
+    let run_cycle = (form == "gauge_cycle" || form == "incarnon_cycle")
+        && info.has_cycle
+        && incarnon_id(info).is_some();
     // The single form to fire: the requested kind if this weapon registers it,
     // else its default (which is what an unknown or stale preset value gets).
     let single_form = registered
@@ -6512,6 +6525,99 @@ mod form_tests {
             "enemy": "thrax_centurion", "duration": 30.0, "runs": 8,
             "headshot_pct": 100.0, "seed": 7,
         }))
+    }
+
+    /// A GAUGE FED BY KILLS IS WORTH WHAT THE FIGHT LETS YOU EARN.
+    ///
+    /// The Mausolon's alt-fire costs five kills with the primary (wiki), which
+    /// is the first gauge in the roster that a HIT cannot fill. That makes it
+    /// the one cycle whose availability is a property of the TARGET rather
+    /// than of the build, and this is the assertion the machinery could not
+    /// make before: same weapon, same mods, same seed, two enemy levels, and
+    /// the cycle appears in one and is unreachable in the other.
+    ///
+    /// The negative half is the real one. A weakpoint- or hit-fed gauge fills
+    /// against anything you can shoot, so every existing cycle test passes at
+    /// any level; if the Mausolon's charged off hits too, the level-9999 case
+    /// would transform just as happily and the run below would be identical to
+    /// the base one. It is not.
+    #[test]
+    fn a_kill_fed_gauge_is_unreachable_against_a_target_that_does_not_die() {
+        let run = |form: &str, level: u32| {
+            simulate_json(&json!({
+                "weapon": "mausolon", "form": form, "mods": [], "arcane": "none",
+                "enemy": "thrax_centurion", "level": level, "duration": 30.0,
+                "runs": 8, "headshot_pct": 0.0, "seed": 7,
+            }))
+        };
+        let n = |v: &Value, k: &str| v.get(k).and_then(Value::as_f64).unwrap_or(0.0);
+
+        // KILLABLE: the laser arrives, repeatedly.
+        let easy = run("gauge_cycle", 1);
+        assert!(n(&easy, "transforms") > 0.0, "no laser at level 1: {}", n(&easy, "transforms"));
+        // ...and it is worth something — the cycle is not the base fight.
+        let easy_base = run("base", 1);
+        assert!(
+            (n(&easy, "dps") - n(&easy_base, "dps")).abs() > 1e-6,
+            "the cycle changed nothing: {} vs {}",
+            n(&easy, "dps"),
+            n(&easy_base, "dps")
+        );
+
+        // UNKILLABLE IN PRACTICE: nothing dies inside the engagement, so the
+        // gauge never fills and the cycle degenerates to the base form. Not an
+        // approximation — the same number, because it is the same fight.
+        let hard = run("gauge_cycle", 9999);
+        let hard_base = run("base", 9999);
+        assert_eq!(n(&hard, "transforms"), 0.0, "a laser nobody paid for");
+
+        // AND THE LASER LIFTS. An independent proc leaves no trace in the
+        // damage — its whole payload is that Condition Overload counts it — so
+        // the replay's debuff table is the one place it can be falsified: the
+        // row must move in the run that fires a laser and stay flat in the run
+        // that never earns one. Same weapon, same seed; the only difference is
+        // whether the gauge filled.
+        let lifted_row = |v: &Value| -> u64 {
+            let rep = &v["replay"];
+            let i = rep["debuffs"]
+                .as_array()
+                .expect("the roster is always sent")
+                .iter()
+                .position(|d| d["id"] == "lifted")
+                .expect("lifted has a row of its own");
+            rep["dstacks"][i]
+                .as_array()
+                .expect("one series per row")
+                .iter()
+                .filter(|x| x.as_u64().unwrap_or(0) > 0)
+                .count() as u64
+        };
+        let replayed = |form: &str, duration: f64| {
+            simulate_json(&json!({
+                "weapon": "mausolon", "form": form, "mods": [], "arcane": "none",
+                "enemy": "thrax_centurion", "level": 1, "duration": duration,
+                "runs": 8, "headshot_pct": 0.0, "seed": 7, "replay": true,
+            }))
+        };
+        // SIXTY SECONDS, and the reason is worth writing down: at thirty this
+        // unmodded weapon earns its fifth kill so late that it transmutes and
+        // the engagement ends before the 0.8 s charge completes — `transforms`
+        // reads 1 and no laser was ever fired. A gauge bought with kills is
+        // the first mechanic here that can be REACHED and still not PAY, which
+        // is exactly what a player at low build strength experiences.
+        assert!(lifted_row(&replayed("gauge_cycle", 60.0)) > 0, "the laser did not lift");
+        // THE NEGATIVE CONTROL IS THE AUTO FIRE, not the level: only the
+        // alt-fire's explosion declares `independent_procs: [lifted]`, so a
+        // weapon firing its belt all engagement must never light this row —
+        // which is what proves the proc is tied to the ATTACK that declares it
+        // and not to the weapon.
+        assert_eq!(lifted_row(&replayed("base", 60.0)), 0, "the auto fire lifted");
+        assert!(
+            (n(&hard, "dps") - n(&hard_base, "dps")).abs() < 1e-9,
+            "an unfilled gauge is the base fight: {} vs {}",
+            n(&hard, "dps"),
+            n(&hard_base, "dps")
+        );
     }
 
     /// ASKING FOR A FORM IS ENOUGH — the evolution that IS that form is

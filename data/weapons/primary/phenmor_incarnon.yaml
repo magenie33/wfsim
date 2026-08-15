@@ -11,7 +11,7 @@ transforms_from: phenmor
 
 # The Incarnon transformation economy (wiki Phenmor). Zariman weapons carry the
 # Genesis innately, so there is no install cost and no adapter.
-incarnon:
+gauge_form:
   gauge:
     charge_on: weakpoint_hits
     charges_to_fill: 12

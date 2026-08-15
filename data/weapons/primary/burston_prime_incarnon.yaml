@@ -21,7 +21,7 @@ accuracy: 28.57              # module Accuracy for attack 2 (the base form's is 
 # It is a far RICHER one than the Boar's: 20 weakpoint hits fill the gauge
 # against 50, and each charge is worth 30 rounds against 3. A Burston player
 # spends a fifth of the weakpoints for four times the form.
-incarnon:
+gauge_form:
   gauge:
     # VERBATIM: "Incarnon Form is charged by filling the Incarnon Transmutation
     # gauge that appears under the reticle by achieving weakpoint hits and then

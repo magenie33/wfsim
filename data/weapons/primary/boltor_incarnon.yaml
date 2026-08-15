@@ -9,7 +9,7 @@ form: incarnon
 transform_group: boltor
 transforms_from: boltor
 
-incarnon:
+gauge_form:
   gauge:
     charge_on: weakpoint_hits
     charges_to_fill: 20

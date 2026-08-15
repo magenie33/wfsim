@@ -559,7 +559,7 @@ pub fn pool_for_weapon(weapon_id: &str) -> Vec<ModDef> {
 /// A CHARGED form is NOT a second firing mode: charged vs uncharged is chosen
 /// freely on every trigger pull and the weapon comparison lists ONE trigger for
 /// such a weapon (Cernos Prime is "Charge", Larkspur Prime "Held"). That is
-/// exactly the line [`FormKind::is_gauge_switched`] already draws, and it is why
+/// exactly the line [`FormKind::is_adapter_form`] already draws, and it is why
 /// only a form an EVOLUTION unlocks joins this list — the arsenal gains a second
 /// trigger when the Genesis goes in, not when you hold the button down.
 fn triggers_of(weapon_id: &str, evolutions: &[&str]) -> Vec<&'static str> {

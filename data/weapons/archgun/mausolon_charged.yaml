@@ -4,11 +4,35 @@ name: Mausolon
 # rather than this shot is inherited from `mausolon`, and only what
 # DIFFERS is written here. See `weapons_data::INHERITED`.
 inherits: mausolon
-# THE ALT-FIRE — a 0.8 s charge that fires a laser with a large explosion. It
-# COSTS NO AMMO (the page gives its ammo cost as 0), which is the one thing
-# about this form that changes how the engagement is paced.
+# THE ALT-FIRE — a 0.8 s charge that fires a laser with a large explosion, and
+# a form you EARN rather than one you can simply hold: "Getting 5 kills with
+# the Mausolon's primary fire will unlock an Alternate Fire that discharges a
+# powerful laser that explodes on impact", and once it is spent "additional
+# kills are needed to recharge the laser" (wiki Mausolon).
 form: charged
 transform_group: mausolon
+transforms_from: mausolon
+
+# THE GAUGE, and the first one in the roster that is not an Incarnon adapter —
+# which is why the block is `gauge_form:` and the mode it produces is
+# `gauge_cycle` rather than anything named after Zariman hardware. The policy
+# is the same shape ("fill it in one form, spend it in the other, come back")
+# and the WAY it fills is not: kills, not hits.
+#
+# THE TWO ZEROES ARE FACTS, NOT PLACEHOLDERS. An Incarnon transmutes with an
+# animation in each direction and this weapon has neither — you hold the alt
+# button, the 0.8 s charge below runs, the laser fires and you are back on the
+# trigger. Writing the house 1 s standard here would invent a second of
+# downtime per laser that the weapon does not pay.
+gauge_form:
+  gauge:
+    charge_on: kills
+    charges_to_fill: 5
+    # ONE LASER PER FILL. `magazine` below is this pool, not the weapon's
+    # 300-round belt — see `ammo_cost`.
+    max_rounds: 1
+  transmute_in_seconds: 0.0
+  transmute_out_seconds: 0.0
 
 deployments:
   archwing:
@@ -19,15 +43,30 @@ deployments:
 
 co_behavior: additive_with_base_damage
 
+# THE EXPLOSION LIFTS. An independent proc — it carries no damage and does not
+# compete in the type draw, so its whole payload is that Condition Overload
+# counts it for as long as it holds (data/debuffs/independent_procs.yaml).
+# 1 s, per the owner's own reading of the effect (2026-08-15); the engine owns
+# the number, the same way it owns every other proc's duration.
+independent_procs: [lifted]
+
+# THE CHARGE POOL, not the belt. The 300-round magazine inherited from
+# `mausolon` is the AUTO fire's; this form's magazine is the gauge's
+# `max_rounds`, which is the convention every gauge-fed form in the roster
+# already follows (Torid Incarnon: `magazine: 170` against `max_rounds: 170`).
+magazine: 1
+
 attack:
   trigger: charge
   charge_seconds: 0.8
   shot_type: hit_scan
   fire_rate: 0.5
   multishot: 1.0
-  # ZERO. "Ammo Cost: 0" on the page — the alt-fire spends none, so this form
-  # never empties the magazine and never touches the finite ground reserve.
-  ammo_cost: 0
+  # ONE CHARGE, and the page's "Ammo Cost: 0" is not contradicted: the two are
+  # DIFFERENT RESOURCES. The laser draws nothing from the 900-round ground
+  # reserve — that is what DE's zero says — and it spends the one charge five
+  # kills bought, which is what makes the form end.
+  ammo_cost: 1
   crit_chance: 0.50
   crit_multiplier: 3.5
   status_chance: 0.50
@@ -49,6 +88,9 @@ attack:
     status_chance: 0.50
 
 unmodeled:
+  # PROSE, not a reason: one weapon has it, and the file's own rule is that a
+  # reason earns its place by repeating.
+  - "LIFTED's crowd control is not modelled — the explosion suspends what it hits, and this arena has no movement to interrupt; what IS modelled is the 1 s status itself, which Condition Overload counts like any other"
   - reason: radial_falloff
     full: 4500
     rim: 2700
