@@ -1,0 +1,74 @@
+id: vulcax
+name: Vulcax
+# ROBOTIC COMPANION WEAPON — a MOA's, not a Sentinel's, but the same equipment
+# slot and the same rules here: no exilus, no arcane, an infinite reserve, and
+# a mod pool that is the weapon's own rather than the class's.
+slot: sentinel
+class: sentinel_weapon
+# A CHARGE TRIGGER IS THE CHARGED FORM, and nothing else is (the engine's own
+# form guard). This weapon has only the one.
+form: charged
+default_form: true
+
+# RIFLE MODS, and this one is quoted rather than read off a row: the page's own
+# opening sentence says "This weapon accepts [[Rifle Mods]]". The four MOA
+# weapons were held back a night because the infobox row would not extract and
+# guessing a mod pool is the one thing this class must not do (2026-08-15).
+mod_pools: [rifle]
+mastery_rank: 14
+max_rank: 30
+
+accuracy: 100.0
+disposition: 1.0
+polarities: []
+riven_family: Vulcax
+internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon
+noise: alarming
+magazine: 1
+reload_seconds: 3.0
+# An infinite reserve, like every other companion weapon — no `ammo_max`.
+
+# No Condition Overload row, so the ordinary class (absence means ORDINARY).
+co_behavior: additive_with_base_damage
+
+attack:
+  # CHARGE, because that is what the page lists and because the TRIGGER is what
+  # mod eligibility reads — filing it as semi-auto to dodge the missing draw
+  # made the app offer Semi-Rifle Cannonade on a weapon the game would refuse
+  # it on, which is a modelling choice leaking into a legality answer.
+  #
+  # `charge_seconds` is OMITTED rather than set to zero: the page publishes no
+  # draw for this weapon, an explicit 0.0 is refused ("a 0.0 charge outside a
+  # bow is just a fire rate"), and omitting it is the one spelling that means
+  # "unknown" instead of "instant". The shot then paces on the listed 1.00/s
+  # alone, which is stated below.
+  trigger: charge
+  shot_type: hit_scan
+  fire_rate: 1.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.20
+  crit_multiplier: 2.5
+  status_chance: 0.10
+  punch_through_m: 2.0
+  damage: { heat: 500.0 }
+  radial:
+    damage: { blast: 100.0 }
+    radius_m: 5.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.5     # 100% at the centre -> 50% at 5.0 m
+    crit_chance: 0.20
+    crit_multiplier: 2.5
+    # THE RADIAL'S STATUS IS ITS OWN and it is DOUBLE the direct hit's: 20%
+    # against 10%. A radial inherits the direct part's stats when it states
+    # none, so this one has to be written down or the explosion would proc at
+    # half the rate the page gives it.
+    status_chance: 0.20
+unmodeled:
+  - "the CHARGE TIME is not modelled because the page publishes none — the weapon is a charge weapon here and mods treat it as one, but its draw adds nothing to the cycle, so it fires on the listed 1.00/s alone and this entry is a CEILING on its rate: a real draw can only make it slower"
+  - "the innate 2 m punch-through is not modelled — this arena has one target, so it changes no number"
+  - "the explosion's falloff is not modelled — this arena has one target at the centre, so it always takes the full 100 and never the 50 at the rim"
+  - "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
+
+source:
+  url: https://wiki.warframe.com/w/Vulcax

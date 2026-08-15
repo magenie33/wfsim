@@ -1133,7 +1133,7 @@ mod tests {
         const CANNONADES: [&str; 3] =
             ["semi_rifle_cannonade", "semi_pistol_cannonade", "semi_shotgun_cannonade"];
         // (weapon, listed trigger, the Cannonades it may equip bare)
-        const EXPECTED: [(&str, &str, &[&str]); 116] = [
+        const EXPECTED: [(&str, &str, &[&str]); 120] = [
             // Arch-Gun: the Cannonades are rifle/pistol/shotgun mods and an
             // Arch-Gun draws neither pool, so the trigger never comes up. That
             // is what makes this whole class one line each — including the
@@ -1338,6 +1338,17 @@ mod tests {
             ("sweeper_prime", "auto", &[]),
             ("verglas", "held", &[]),
             ("vulklok", "auto", &[]),
+            // The four MOA weapons. Rifle mods like most of the class, and
+            // none is semi-auto, so none takes a Cannonade.
+            ("helstrum", "burst", &[]),
+            ("multron", "burst", &[]),
+            ("tazicor", "held", &[]),
+            // CHARGE, which is also why it wears no Cannonade — those gate on a
+            // listed Semi-Auto trigger. Filing it as semi-auto (to dodge a draw
+            // the page never publishes) made this row come back
+            // `["semi_rifle_cannonade"]`, which is the app offering a mod the
+            // game refuses. The trigger is what legality reads.
+            ("vulcax", "charge", &[]),
             // AN AUTO RIFLE, so no Cannonade — the Semi-* mods gate on the
             // listed trigger and the Shedu's is Auto. Its explosion changes
             // nothing about that: a Cannonade reads the TRIGGER, not what the

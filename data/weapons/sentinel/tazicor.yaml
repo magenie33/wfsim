@@ -1,0 +1,50 @@
+id: tazicor
+name: Tazicor
+# ROBOTIC COMPANION WEAPON — a MOA's, not a Sentinel's, but the same equipment
+# slot and the same rules here: no exilus, no arcane, an infinite reserve, and
+# a mod pool that is the weapon's own rather than the class's.
+slot: sentinel
+class: sentinel_weapon
+form: base
+default_form: true
+
+# RIFLE MODS, and this one is quoted rather than read off a row: the page's own
+# opening sentence says "This weapon accepts [[Rifle Mods]]". The four MOA
+# weapons were held back a night because the infobox row would not extract and
+# guessing a mod pool is the one thing this class must not do (2026-08-15).
+mod_pools: [rifle]
+mastery_rank: 3
+max_rank: 30
+
+accuracy: 100.0
+disposition: 1.0
+polarities: []
+riven_family: Tazicor
+internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon
+noise: alarming
+magazine: 40
+reload_seconds: 2.0
+# An infinite reserve, like every other companion weapon — no `ammo_max`.
+
+# No Condition Overload row, so the ordinary class (absence means ORDINARY).
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12.0
+  multishot: 1.0
+  # 0.5 a tick, the beam rule.
+  ammo_cost: 0.5
+  crit_chance: 0.05
+  crit_multiplier: 1.5
+  status_chance: 0.25
+  punch_through_m: 0.0
+  damage: { electricity: 5.0 }
+unmodeled:
+  - "the CHAINING is not modelled, and it is what this weapon is for — the beam jumps to up to 3 nearby enemies within 5 metres of each other, and this arena has one target for it to jump between"
+  - "the 20 m range is not modelled — this arena has no distance, so every tick lands"
+  - "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
+
+source:
+  url: https://wiki.warframe.com/w/Tazicor

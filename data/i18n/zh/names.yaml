@@ -237,6 +237,10 @@ weapons:
   sweeper_prime: 扫除者 Prime
   verglas: 冰凇
   vulklok: 金工火枪
+  helstrum: 赫尔斯壮
+  multron: 多连穿甲枪
+  tazicor: 泰瑟步枪
+  vulcax: 金工火舌
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's

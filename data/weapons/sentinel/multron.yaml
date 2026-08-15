@@ -1,0 +1,63 @@
+id: multron
+name: Multron
+# ROBOTIC COMPANION WEAPON — a MOA's, not a Sentinel's, but the same equipment
+# slot and the same rules here: no exilus, no arcane, an infinite reserve, and
+# a mod pool that is the weapon's own rather than the class's.
+slot: sentinel
+class: sentinel_weapon
+form: base
+default_form: true
+
+# RIFLE MODS, and this one is quoted rather than read off a row: the page's own
+# opening sentence says "This weapon accepts [[Rifle Mods]]". The four MOA
+# weapons were held back a night because the infobox row would not extract and
+# guessing a mod pool is the one thing this class must not do (2026-08-15).
+mod_pools: [rifle]
+mastery_rank: 3
+max_rank: 30
+
+accuracy: 100.0
+disposition: 1.0
+polarities: [madurai]
+riven_family: Multron
+internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon
+noise: alarming
+magazine: 3
+reload_seconds: 3.0
+# An infinite reserve, like every other companion weapon — no `ammo_max`.
+
+# No Condition Overload row, so the ordinary class (absence means ORDINARY).
+co_behavior: additive_with_base_damage
+
+attack:
+  trigger: burst
+  burst:
+    count: 3
+    delay_seconds: 0.4
+  shot_type: projectile
+  projectile_speed_mps: 40
+  fire_rate: 2.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.15
+  crit_multiplier: 2.0
+  status_chance: 0.22
+  punch_through_m: 0.0
+  # A dart that STICKS and then goes off — ten on the body, a hundred in the
+  # blast a second and a half later.
+  damage: { puncture: 10.0 }
+  radial:
+    damage: { blast: 100.0 }
+    radius_m: 3.5
+    falloff_start_m: 0.0
+    falloff_reduction: 0.5     # 100% at the centre -> 50% at 3.5 m
+    crit_chance: 0.15
+    crit_multiplier: 2.0
+    status_chance: 0.22
+unmodeled:
+  - "the dart's 1.5 s EXPLOSION DELAY is not modelled — in game the blast lands a second and a half after the dart does, and here the two arrive together, so a short engagement gets damage sooner than it should"
+  - "the explosion's falloff is not modelled — this arena has one target at the centre, so it always takes the full 100 and never the 50 at the rim"
+  - "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
+
+source:
+  url: https://wiki.warframe.com/w/Multron

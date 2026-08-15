@@ -1,0 +1,68 @@
+id: helstrum
+name: Helstrum
+# ROBOTIC COMPANION WEAPON — a MOA's, not a Sentinel's, but the same equipment
+# slot and the same rules here: no exilus, no arcane, an infinite reserve, and
+# a mod pool that is the weapon's own rather than the class's.
+slot: sentinel
+class: sentinel_weapon
+form: base
+default_form: true
+
+# RIFLE MODS, and this one is quoted rather than read off a row: the page's own
+# opening sentence says "This weapon accepts [[Rifle Mods]]". The four MOA
+# weapons were held back a night because the infobox row would not extract and
+# guessing a mod pool is the one thing this class must not do (2026-08-15).
+mod_pools: [rifle]
+mastery_rank: 0
+max_rank: 30
+
+accuracy: 100.0
+disposition: 1.0
+polarities: [madurai]
+riven_family: Helstrum
+internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon
+noise: alarming
+magazine: 80
+reload_seconds: 2.0
+# An infinite reserve, like every other companion weapon — no `ammo_max`.
+
+# No Condition Overload row, so the ordinary class (absence means ORDINARY).
+co_behavior: additive_with_base_damage
+
+attack:
+  # FOUR HOMING MISSILES a pull, and the burst is what the weapon IS — its
+  # listed 0.25/s is pulls, so the rate below is understated by four without
+  # the block beside it.
+  trigger: burst
+  burst:
+    count: 4
+    delay_seconds: 0.1
+  shot_type: projectile
+  projectile_speed_mps: 10
+  fire_rate: 0.25
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.05
+  crit_multiplier: 1.5
+  status_chance: 0.30
+  punch_through_m: 0.0
+  # The missile's own hit is almost nothing; the explosion is the weapon.
+  damage: { impact: 4.95, puncture: 4.05 }   # 9 total
+  radial:
+    damage: { impact: 6.0, heat: 24.0 }      # 30 at the centre
+    radius_m: 3.0
+    falloff_start_m: 0.0
+    # THE PAGE PRINTS NO FALLOFF for this explosion, so none is invented — 0.0
+    # is "no reduction stated" and not a measurement. Against one target at the
+    # centre it is the same number either way.
+    falloff_reduction: 0.0
+    crit_chance: 0.05
+    crit_multiplier: 1.5
+    status_chance: 0.30
+unmodeled:
+  - "the missiles HOME, and homing is not modelled — this arena has one target at zero distance, so a guided missile and a straight one land the same"
+  - "the explosion's falloff is not stated by the page and is therefore not modelled — the target stands at the centre and takes the full 30 either way"
+  - "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
+
+source:
+  url: https://wiki.warframe.com/w/Helstrum
