@@ -3694,6 +3694,12 @@ entries:
     mods: [amalgam_serration, primary_acuity, galvanized_aptitude, point_strike, vital_sense, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
     arcanes: [primary_deadhead]
+  - weapon: paris_prime
+    mode: cycle
+    score: 3.965084284244488
+    mods: [amalgam_serration, galvanized_chamber, critical_delay, vital_sense, radiated_reload, rime_rounds, malignant_force, thermite_rounds]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [longbow_sharpshot]
   - weapon: phaedra
     mode: base
     score: 16.312618677323403
