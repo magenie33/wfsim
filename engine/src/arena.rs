@@ -77,12 +77,15 @@ impl Arena {
             tenno: crate::tenno_data::default_tenno().clone(),
             target: TargetParams::training_dummy(),
             body_parts: crate::dummy::DummyParams::humanoid_parts(),
-            // POINT BLANK, which is where every fight in this engine happened
-            // before there was anywhere else to stand. The fixture measures
-            // weapon numbers, and a range would put a falloff weapon's
-            // golden value at the mercy of a distance nobody asked for.
+            // CONTACT — as close as two bodies can stand (`space`), which is
+            // what point blank means once they have a size at all. The fixture
+            // measures weapon numbers, and any more range than this would put a
+            // falloff weapon's golden value at the mercy of a distance nobody
+            // asked for. Moving it here from a literal zero changed no golden
+            // value: only a cone wider than 26.6 degrees can miss at 0.5 m, and
+            // two entries in the roster have one.
             player_at: Vec2::ORIGIN,
-            target_at: Vec2::ORIGIN,
+            target_at: Vec2::new(0.0, crate::space::CONTACT_RANGE_M),
             duration_secs,
             // The fixture is the NEUTRAL player, and no frame is running
             // anything for them.
@@ -112,8 +115,11 @@ mod tests {
     /// measured at point blank, so the fixture's range is 0 and a falloff
     /// weapon's fixture number cannot move when a distance is set elsewhere.
     #[test]
-    fn the_training_arena_is_fought_at_point_blank() {
-        assert_eq!(Arena::training(10.0).engagement_range(), 0.0);
+    fn the_training_arena_is_fought_at_contact() {
+        assert_eq!(
+            Arena::training(10.0).engagement_range(),
+            crate::space::CONTACT_RANGE_M
+        );
     }
 
     /// A RANGE IS TWO POINTS, and either of them may move. The web api puts the

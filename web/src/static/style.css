@@ -152,6 +152,21 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 .en-mods{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px}
 .en-mods label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
 .en-mods input[type=number]{width:62px;font:inherit;font-size:12px}
+/* THE ARENA, seen from above — two bodies on a floor, dragged with a finger.
+   Drawn at the real 0.25 m body radius, so "as close as they go" is something
+   you can see rather than a rule you are told. */
+.arena{margin:6px 0;border:1px solid var(--line);border-radius:8px;background:var(--panel2);overflow:hidden;touch-action:none}
+.arena .ar-svg{display:block;width:100%;height:auto}
+.ar-grid{stroke:var(--line);stroke-width:1;opacity:.45}
+.ar-link{stroke:var(--muted);stroke-width:1.5;stroke-dasharray:4 3;opacity:.8}
+.ar-body{cursor:grab;stroke-width:2}
+.arena.ar-ro .ar-body{cursor:default}
+.ar-body:active{cursor:grabbing}
+.ar-you{fill:var(--gold);fill-opacity:.35;stroke:var(--gold)}
+.ar-foe{fill:#e2564d;fill-opacity:.3;stroke:#e2564d}
+.ar-tag{font-size:10px;fill:var(--muted);text-anchor:middle;pointer-events:none}
+.ar-dist{font-size:12px;font-weight:600;fill:var(--fg);text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:var(--panel2);stroke-width:3px}
+.ar-scale{font-size:9px;fill:var(--muted);pointer-events:none}
 .en-row{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer}
 .en-row .nm{font-weight:600}
 .en-row .sm{color:var(--muted);font-size:11px}

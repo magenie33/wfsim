@@ -602,9 +602,10 @@ function defaultScenario() {
     // carrying a decision made about a different enemy.
     eximus: d.eximus ?? null,
     headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
-    // HOW FAR AWAY THE TARGET STANDS, metres. 0 = point blank, the fight every
-    // stored scenario was written under.
-    distance: d.distance || 0,
+    // WHERE THE TWO OF THEM STAND, metres. Contact by default — as close as
+    // two bodies can be, which is what point blank means once they have a size.
+    player_at: [...(d.player_at || [0, 0])],
+    target_at: [...(d.target_at || [0, CONTACT_M])],
     invisible: !!d.invisible, airborne: !!d.airborne, overshields: !!d.overshields,
     channeling: !!d.channeling, solo_weapon: !!d.solo_weapon,
     frame: d.frame || "", wf_armor: d.wf_armor || 0, wf_energy: d.wf_energy || 0,
@@ -637,11 +638,12 @@ function defaultScenario() {
 // `aiming` defaults TRUE because that is what the sim silently assumed before
 // the knob existed, so no stored preset changes meaning.
 let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: null, headshot_pct: 100, aiming: true,
-  // THE FIGHT'S GEOMETRY, such as it is: how far away the target stands, in
-  // metres. Point blank by default — the fight this sim has always run, and
-  // the one both official rulers pin — so no stored scenario changes meaning.
-  // Only a weapon that LISTS a damage falloff notices it at all.
-  distance: 0,
+  // THE FIGHT'S GEOMETRY: where the two of them stand, in metres. CONTACT by
+  // default (0.5 m, twice a body's radius) — the closest they can be, which is
+  // what point blank means once a body has a size, and what both official
+  // rulers pin. Dragged on the arena scene; see `mountArena`.
+  player_at: [0, 0.5 - 0.5],
+  target_at: [0, 0.5],
   invisible: false, airborne: false, overshields: false, channeling: false,
   // THE LOADOUT, not what the wielder is doing: false = carrying a full one,
   // which is the fight the board is scored under and what every clause about
@@ -2269,6 +2271,139 @@ const customEnemiesFor = (id) => customEnemySpecs().filter((e) => e.id === id);
 /// THE FIGHT AS A REQUEST BODY. Every path that sends a scenario goes through
 /// here, so "a custom target travels with the fight that names it" is one rule
 /// rather than one per endpoint — the same reason a riven rides in `rivens`.
+// ---- THE ARENA, seen from above -------------------------------------------
+//
+// A fight is two bodies on a floor, so it is DRAWN as two bodies on a floor and
+// you move them with your finger (owner, 2026-08-15). The picture is not a
+// decoration: what it shows is the scenario, and what you drag IS the distance
+// the simulation runs at.
+//
+// It draws the bodies at their REAL radius (`space::BODY_RADIUS_M`, 0.25 m), so
+// "as close as they go" is something you can see rather than a rule you are
+// told: the two circles touch at 0.5 m and will not pass through each other.
+//
+// METRES ARE THE UNIT and the view fits itself to them, with a floor on the
+// span so a contact-range fight does not zoom to two enormous discs.
+const BODY_R_M = 0.25;
+const CONTACT_M = 2 * BODY_R_M;
+// A FIXED INTERNAL COORDINATE SPACE, and the CSS stretches it. The scene used
+// to be laid out in whatever pixel width the host happened to have, which is
+// ZERO while the panel is on another tab — so the geometry came out NaN and a
+// drag wrote `[null, null]` into the fight. A viewBox has no such moment.
+const ARENA_VW = 320;
+const ARENA_VH = 176;
+
+/// Metres <-> pixels for the current pair of positions.
+function arenaGeom(w, h, p, t) {
+  const pad = 1.2;                       // metres of air around the two of them
+  const floor = 5;                       // never zoom closer than a 5 m view
+  const spanX = Math.max(Math.abs(p[0] - t[0]) + 2 * pad, floor);
+  const spanY = Math.max(Math.abs(p[1] - t[1]) + 2 * pad, (floor * h) / w);
+  const s = Math.min(w / spanX, h / spanY);
+  const cx = (p[0] + t[0]) / 2, cy = (p[1] + t[1]) / 2;
+  return {
+    s,
+    // y grows AWAY from the viewer, so "further up the screen" is "further off"
+    px: (m) => [w / 2 + (m[0] - cx) * s, h / 2 - (m[1] - cy) * s],
+    m: (x, y) => [cx + (x - w / 2) / s, cy - (y - h / 2) / s],
+  };
+}
+
+/// Push `b` out of `a` so two bodies never overlap — along the line between
+/// them, so a drag that overshoots SLIDES rather than snapping to an axis.
+function keepApart(a, b) {
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  const d = Math.hypot(dx, dy);
+  if (d >= CONTACT_M) return b;
+  if (d < 1e-9) return [a[0], a[1] + CONTACT_M];
+  const k = CONTACT_M / d;
+  return [a[0] + dx * k, a[1] + dy * k];
+}
+
+const arenaDistance = (s) =>
+  Math.hypot(s.target_at[0] - s.player_at[0], s.target_at[1] - s.player_at[1]);
+
+function arenaSvg(s, en) {
+  const w = ARENA_VW, h = ARENA_VH;
+  const g = arenaGeom(w, h, s.player_at, s.target_at);
+  const [px, py] = g.px(s.player_at);
+  const [tx, ty] = g.px(s.target_at);
+  const r = Math.max(3, BODY_R_M * g.s);
+  // A GRID THAT STAYS READABLE: the step grows with the zoom so the lines
+  // never crowd, and it is labelled, because a scale nobody can read is a
+  // picture rather than a measurement.
+  const step = [0.5, 1, 2, 5, 10, 20, 50, 100].find((k) => k * g.s >= 26) || 200;
+  const lines = [];
+  const [x0, y1] = g.m(0, 0), [x1, y0] = g.m(w, h);
+  for (let x = Math.ceil(x0 / step) * step; x <= x1; x += step) {
+    lines.push(`<line class="ar-grid" x1="${g.px([x, 0])[0].toFixed(1)}" y1="0" x2="${g.px([x, 0])[0].toFixed(1)}" y2="${h}"/>`);
+  }
+  for (let y = Math.ceil(y0 / step) * step; y <= y1; y += step) {
+    const yy = g.px([0, y])[1].toFixed(1);
+    lines.push(`<line class="ar-grid" x1="0" y1="${yy}" x2="${w}" y2="${yy}"/>`);
+  }
+  const d = arenaDistance(s);
+  return `<svg class="ar-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">
+    ${lines.join("")}
+    <line class="ar-link" x1="${px.toFixed(1)}" y1="${py.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${ty.toFixed(1)}"/>
+    <circle class="ar-body ar-foe" data-drag="target_at" cx="${tx.toFixed(1)}" cy="${ty.toFixed(1)}" r="${r.toFixed(1)}"/>
+    <circle class="ar-body ar-you" data-drag="player_at" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}"/>
+    <text class="ar-tag ar-tag-you" x="${px.toFixed(1)}" y="${(py + r + 13).toFixed(1)}">${escHtml(tr("You"))}</text>
+    <text class="ar-tag ar-tag-foe" x="${tx.toFixed(1)}" y="${(ty - r - 6).toFixed(1)}">${escHtml((en && en.name) || tr("Enemy"))}</text>
+    <text class="ar-dist" x="${((px + tx) / 2).toFixed(1)}" y="${((py + ty) / 2 - 8).toFixed(1)}">${d.toFixed(2)} m</text>
+    <text class="ar-scale" x="6" y="${h - 6}">${step} m ${escHtml(tr("grid"))}</text>
+  </svg>`;
+}
+
+/// Draw the scene into `host` and let the two bodies be dragged.
+///
+/// The drag writes the LIVE scenario and repaints the SVG on every move — the
+/// whole panel is not re-rendered until the finger comes up, because the panel
+/// contains the thing being dragged and rebuilding it mid-gesture drops the
+/// pointer capture.
+function mountArena(host, s, en, opts) {
+  if (!host) return;
+  const paint = () => { host.innerHTML = arenaSvg(s, en); };
+  paint();
+  if (opts.readonly) {
+    host.classList.add("ar-ro");
+    return;
+  }
+  // DELEGATED, because `paint` replaces the markup on every move: listeners
+  // bound to the circles die with the first repaint, which left the scene
+  // draggable exactly once (2026-08-15).
+  host.addEventListener("pointerdown", (e) => {
+    const el = e.target.closest && e.target.closest("[data-drag]");
+    if (!el) return;
+    e.preventDefault();
+    const which = el.dataset.drag;
+    const box = host.querySelector(".ar-svg").getBoundingClientRect();
+    if (!box.width || !box.height) return;   // not on screen: nothing to drag
+    const g = arenaGeom(ARENA_VW, ARENA_VH, s.player_at, s.target_at);
+    // CLIENT PIXELS -> the viewBox's own units, which is the one conversion
+    // the fixed coordinate space costs and the reason it is worth it.
+    const kx = ARENA_VW / box.width, ky = ARENA_VH / box.height;
+    const move = (ev) => {
+      const at = g.m((ev.clientX - box.left) * kx, (ev.clientY - box.top) * ky);
+      if (which === "player_at") {
+        s.player_at = at;
+        s.target_at = keepApart(at, s.target_at);
+      } else {
+        s.target_at = keepApart(s.player_at, at);
+      }
+      paint();
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      markScenarioDirty();
+      if (opts.after) opts.after();
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  });
+}
+
 const fightPayload = (st) => {
   const s = st || sim;
   // THE RUN COUNT RIDES HERE and not in the scenario, so every path that sends
@@ -7944,17 +8079,20 @@ function renderScenarioFields(ids, opts = {}) {
          </button>
          ${wiki}
        </div>` +
+      `<div class="arena" id="${ids.target}-arena"></div>` +
       `<div class="field-grid">
         <label>${escHtml(tr("Level"))} <input type="number" data-k="level" min="1" max="9999" value="${sim.level}"></label>
         <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
         ${eximusField(en)}
         ${deployField(w, sim)}
-        <label title="${escHtml(tr("how far away the target stands. Past point blank a shot can MISS: every pellet draws inside the weapon's own aimed cone (the wiki's per-attack spread) against a target modelled as a 0.2 m circle, and a weapon that lists a damage falloff loses damage across its published window on top. The 0.2 m is a GUESS nobody has measured yet, so treat a hit rate here as the shape rather than the number. 0 m is point blank — nothing misses, nothing falls off, and it is where both official boards are scored"))}">${escHtml(tr("Distance (m)"))} <input type="number" data-k="distance" min="0" max="300" step="1" value="${sim.distance || 0}"></label>
+        <label title="${escHtml(tr("how far apart the two of them stand — drag them on the arena above, or type it here. Past contact a shot can MISS: every pellet draws inside the weapon's own aimed cone (the wiki's per-attack spread) against a body modelled as a 0.25 m circle, and a weapon that lists a damage falloff loses damage across its published window on top. That 0.25 m is a GUESS nobody has measured yet, so read a hit rate here as the shape rather than the number. 0.5 m is CONTACT — the closest two bodies go, nothing misses there, and it is where both official boards are scored"))}">${escHtml(tr("Distance (m)"))} <input type="number" data-k="arena_distance" min="0.5" max="300" step="0.5" value="${arenaDistance(sim).toFixed(2)}"></label>
         <label>${escHtml(tr("Duration (s)"))} <input type="number" data-k="duration" min="1" max="3600" value="${sim.duration}"></label>
       </div>`;
     const pick = $(`${ids.target}-pick`);
     if (pick && !opts.readonly) pick.onclick = (e) => { e.stopPropagation(); openEnemyPicker(pick); };
     if (pick && opts.readonly) pick.disabled = true;
+    // THE ARENA, drawn last so it can measure the width it was given.
+    mountArena($(`${ids.target}-arena`), sim, en, opts);
   }
 
   // ---- 2. THE WIELDER: whoever is holding the weapon, and what they do ---
@@ -8057,6 +8195,21 @@ function renderScenarioFields(ids, opts = {}) {
         if (el.type === "checkbox") sim[k] = el.checked;
         else if (el.type === "number") sim[k] = Number(el.value);
         else sim[k] = el.value;
+        // TYPING A DISTANCE MOVES THE TARGET ALONG THE LINE they already stand
+        // on, rather than snapping it to an axis — the typed box and the drag
+        // are two ways to set the same one thing, so neither may undo the
+        // other's other axis. It is not a scenario field of its own: the
+        // scenario holds the two POINTS, which is what the engine takes.
+        if (k === "arena_distance") {
+          delete sim.arena_distance;
+          const want = Math.max(CONTACT_M, Number(el.value) || CONTACT_M);
+          const [ax, ay] = sim.player_at;
+          let dx = sim.target_at[0] - ax, dy = sim.target_at[1] - ay;
+          const d = Math.hypot(dx, dy);
+          if (d < 1e-9) { dx = 0; dy = 1; }
+          const u = d < 1e-9 ? 1 : d;
+          sim.target_at = [ax + (dx / u) * want, ay + (dy / u) * want];
+        }
         // PICKING A FRAME FILLS ITS THREE NUMBERS. They stay editable after —
         // the roster is unmodded, so a built frame carries more armor and more
         // energy than any entry here, and one gate ("With Energy Max Over 700")

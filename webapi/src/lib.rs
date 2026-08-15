@@ -4017,18 +4017,55 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // reload cadence — and `ammo_cost` — still bite.
     let infinite_ammo = get_bool(v, "infinite_ammo", true);
     let duration = get_f64(v, "duration", 180.0).clamp(1.0, 3600.0);
-    // HOW FAR AWAY THE TARGET STANDS, in metres. A property of the FIGHT, so it
-    // is parsed here and the optimizer scores under it with no code of its own.
+    // WHERE THE TWO OF THEM STAND, in metres — the fight's 2D layer. Two
+    // POINTS, which is what the engine takes and what a dragged scene produces;
+    // `distance` is still accepted and read as "the target, that far up the y
+    // axis", so a scenario or a link written before the scene existed opens as
+    // the same fight.
     //
-    // 0 BY DEFAULT, which is point blank and is the fight every number this
-    // engine has ever reported was measured under — a golden value, a board row,
-    // a saved scenario that predates this field. Only a weapon that LISTS a
-    // damage falloff notices a range at all (nineteen entries).
+    // THE FLOOR IS CONTACT, not zero (`space::CONTACT_RANGE_M`): two bodies of
+    // 0.25 m cannot stand closer than 0.5 m apart, and a zero would put them in
+    // the same place. Anything nearer is pushed out along the line between
+    // them, which is what a drag does on screen and what a stale `distance: 0`
+    // resolves to.
     //
     // Capped at 300 m rather than at nothing: past the longest falloff window
-    // in the roster every extra metre is the same answer, and a fight at 10 km
-    // is a typo rather than a scenario.
-    let distance_m = get_f64(v, "distance", 0.0).clamp(0.0, 300.0);
+    // and the widest cone in the roster every extra metre is the same answer,
+    // and a fight at 10 km is a typo rather than a scenario.
+    let point = |k: &str, dflt: wfsim_engine::space::Vec2| match v.get(k).and_then(|p| p.as_array()) {
+        Some(a) if a.len() == 2 => wfsim_engine::space::Vec2::new(
+            a[0].as_f64().unwrap_or(0.0).clamp(-300.0, 300.0),
+            a[1].as_f64().unwrap_or(0.0).clamp(-300.0, 300.0),
+        ),
+        _ => dflt,
+    };
+    let player_at = point("player_at", wfsim_engine::space::Vec2::ORIGIN);
+    let target_at = point(
+        "target_at",
+        wfsim_engine::space::Vec2::new(
+            0.0,
+            get_f64(v, "distance", wfsim_engine::space::CONTACT_RANGE_M).clamp(0.0, 300.0),
+        ),
+    );
+    // …and the bodies are pushed apart if the request put them through each
+    // other. Along the line between them, so a drag that overshoots slides
+    // rather than snapping to an axis; straight up the y axis when they are on
+    // the same spot and there is no line to speak of.
+    let target_at = {
+        let d = player_at.distance(target_at);
+        let floor = wfsim_engine::space::CONTACT_RANGE_M;
+        if d >= floor {
+            target_at
+        } else if d <= 0.0 {
+            wfsim_engine::space::Vec2::new(player_at.x, player_at.y + floor)
+        } else {
+            let k = floor / d;
+            wfsim_engine::space::Vec2::new(
+                player_at.x + (target_at.x - player_at.x) * k,
+                player_at.y + (target_at.y - player_at.y) * k,
+            )
+        }
+    };
     let runs = get_u32(v, "runs", 100).clamp(1, 20_000);
     let seed = v.get("seed").and_then(|x| x.as_u64()).unwrap_or(0xC0FFEE);
 
@@ -4108,12 +4145,11 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         tenno: tenno.clone(),
         target,
         body_parts,
-        // THE 2D LAYER. The player is the origin and the target stands `distance`
-        // metres up the y axis — which is the whole geometry a fight with one
-        // enemy has. It is stored as two POINTS because the next enemy cannot be
-        // described by a distance (`engine::space`).
-        player_at: wfsim_engine::space::Vec2::ORIGIN,
-        target_at: wfsim_engine::space::Vec2::new(0.0, distance_m),
+        // THE 2D LAYER, as two POINTS — what the scene drags and what the next
+        // enemy will need, since a second body cannot be described by a
+        // distance (`engine::space`).
+        player_at,
+        target_at,
         duration_secs: duration,
         // WARFRAME ABILITY BUFFS — parsed HERE, in `parse_fight`, which is what
         // makes the optimizer score under them without a line of optimizer code

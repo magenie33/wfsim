@@ -346,6 +346,25 @@ around (decision 2026-07-31).
   and sends 0. It asserts blank FOLLOWS the fight rather than having copied it
   once, that a count of its own does not edit the fight, and that clearing it
   goes back.
+  `node scripts/check_arena.mjs` is the TWENTY-EIGHTH: THE ARENA IS A PLACE YOU
+  CAN DRAG, and what you drag is what gets simulated. A fight is two bodies on a
+  floor, so the panel draws two bodies on a floor and you move them with your
+  finger (owner, 2026-08-15) — and the picture is not a decoration, which is the
+  whole reason the check exists: a scene that looked right and did not reach
+  `/api/simulate` would be the most convincing wrong thing on the page. The
+  bodies are drawn at their REAL radius (`space::BODY_RADIUS_M`, 0.25 m), so
+  "as close as they go" is visible rather than a rule you are told: they touch
+  at CONTACT (0.5 m) and will not pass through each other, which the engine
+  clamps to as well. It caught two real faults on the way in, both invisible to
+  a reader: the scene laid itself out in the host's pixel width, which is ZERO
+  while the panel is on another tab, so one drag wrote `[null, null]` into the
+  fight (fixed with a viewBox — a fixed coordinate space has no such moment);
+  and `paint()` replaces the markup on every move, so listeners bound to the
+  circles died with the first repaint and the scene was draggable exactly once.
+  The typed box and the drag are ONE thing — typing a distance moves the target
+  ALONG the line it already stands on rather than snapping it to an axis — and
+  the OPTIMIZER draws the same scene read-only, because a fight is edited in one
+  place.
   `node scripts/check_riven_pool.mjs` is the SEVENTEENTH: the riven editor
   offers the stats that weapon's rivens actually roll, in BOTH slots. What a
   riven can roll is DE's per-weapon table, published nowhere, and the wiki's

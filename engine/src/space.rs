@@ -78,19 +78,36 @@ impl Vec2 {
 /// whatever the game does, so adding a body's own to it would count the same
 /// thing twice.
 ///
-/// **IN THE HIT TEST IT IS LOAD-BEARING, DELIBERATELY.** Every miss in this engine is decided
-/// against this radius, so it sets how harshly range costs a weapon: a 2 degree
-/// aimed cone (the Braton's, from the wiki's own weapon module) puts a pellet
-/// inside 0.2 m out to about 6 m and outside it past that. Whether that is the
-/// game is exactly what the measurement below answers, and until it is
-/// answered a fight at a range says so on the page.
+/// **IN THE HIT TEST IT IS LOAD-BEARING, DELIBERATELY.** Every miss in this
+/// engine is decided against this radius, so it sets how harshly range costs a
+/// weapon: a 2 degree aimed cone (the Braton's, from the wiki's own weapon
+/// module) puts a pellet inside 0.25 m out to about 7 m and outside it past
+/// that. Whether that is the game is exactly what the measurement below
+/// answers, and until it is answered a fight at a range says so on the page.
+///
+/// At CONTACT — the 0.5 m two bodies can actually reach — only two entries in
+/// the roster have a cone wide enough to miss at all: the Mandonel's uncharged
+/// "Horizontal Spread" at 60 degrees and the Cryotra at 40. A weapon that
+/// sprays that widely losing pellets on a single target is the mechanic, not a
+/// modelling artefact.
 ///
 /// **THE MEASUREMENT THAT SETTLES IT** is one afternoon in the Simulacrum, and
 /// it settles the whole model because this is its only free parameter: stand a
 /// known distance from one stationary enemy, fire a counted number of pellets
 /// from a weapon of known spread, and count what lands. Two ranges and two
 /// spreads over-determine it (docs/MEASUREMENTS.md).
-pub const BODY_RADIUS_M: f64 = 0.2;
+pub const BODY_RADIUS_M: f64 = 0.25;
+
+/// THE CLOSEST TWO BODIES CAN STAND — twice a radius, because circles do not
+/// overlap (owner, 2026-08-15).
+///
+/// So the fight's floor is 0.5 m rather than 0, and "point blank" stops being a
+/// distance of zero: a zero would put the two of them in the same place, which
+/// is the one arrangement the plane cannot hold. It is also the floor a
+/// DRAGGED scene needs — you cannot push the two dots through each other — and
+/// the same number will be the minimum spacing between two ENEMIES when there
+/// is more than one of them.
+pub const CONTACT_RANGE_M: f64 = 2.0 * BODY_RADIUS_M;
 
 
 #[cfg(test)]

@@ -113,7 +113,15 @@ scenario:
   # arcane seat — and the range a shotgun is best at is the one it was designed
   # for. A GROUP-CLEAR ruler is where a distance belongs, beside the enemy
   # count it comes with.
-  distance: 0
+  # 0.5 m = CONTACT, twice a body radius (`engine::space`). It was 0 for the
+  # few hours the arena had a range and no bodies; a zero puts the two of
+  # them in the same place, which is the one arrangement the plane cannot
+  # hold. Only two entries in the roster have a cone wide enough to miss at
+  # contact (the Mandonel uncharged at 60 degrees, the Cryotra at 40), and a
+  # weapon that sprays that widely losing pellets on a single target is the
+  # mechanic rather than an artefact.
+  player_at: [0, 0]
+  target_at: [0, 0.5]
 
   # 180 SECONDS (owner, 2026-08-10, down from 300). Load-bearing rather than a
   # round number, and the argument cuts BOTH ways — which is why it moved rather

@@ -93,7 +93,7 @@ fn main() {
             // fight the CLI has no way to state, and 0 is the fight every
             // number this engine has reported was measured under.
             player_at: wfsim_engine::space::Vec2::ORIGIN,
-            target_at: wfsim_engine::space::Vec2::ORIGIN,
+            target_at: wfsim_engine::space::Vec2::new(0.0, wfsim_engine::space::CONTACT_RANGE_M),
             duration_secs,
             // …and nothing is being cast on them either. A CLI search is a
             // statement about the WEAPON.

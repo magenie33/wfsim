@@ -30,7 +30,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         // …and nothing misses: the calibration profile is a fixed reference.
         spread: None,
         player_at: wfsim_engine::space::Vec2::ORIGIN,
-        target_at: wfsim_engine::space::Vec2::ORIGIN,
+        target_at: wfsim_engine::space::Vec2::new(0.0, wfsim_engine::space::CONTACT_RANGE_M),
         // Not a charge weapon: inert without charge_seconds.
         charge_cadence: wfsim_engine::weapons_data::ChargeCadence::DrawThenRate,
         sustained_fire_rate: None,

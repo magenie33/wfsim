@@ -153,7 +153,7 @@ fn arena_for(c: &Cfg) -> Arena {
         // baseline was taken under — a range would move a falloff weapon's
         // number and report an optimisation as a bug.
         player_at: wfsim_engine::space::Vec2::ORIGIN,
-        target_at: wfsim_engine::space::Vec2::ORIGIN,
+        target_at: wfsim_engine::space::Vec2::new(0.0, wfsim_engine::space::CONTACT_RANGE_M),
         duration_secs: c.duration,
         abilities: Vec::new(),
     }
