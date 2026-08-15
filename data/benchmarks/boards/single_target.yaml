@@ -2315,6 +2315,12 @@ entries:
     score: 0.6006187454499217
     mods: [galvanized_chamber, serration, galvanized_aptitude, point_strike, vital_sense, high_voltage, malignant_force, thermite_rounds]
     arcanes: [primary_deadhead]
+  - weapon: kuva_grattler
+    mode: base
+    score: 8.94137693891826
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, critical_focus, containment_breach, hollowed_bullets, parallax_scope, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    valence: magnetic
   - weapon: kuva_nukor
     mode: base
     score: 25.592337160303877
