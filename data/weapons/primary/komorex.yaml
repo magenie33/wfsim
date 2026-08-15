@@ -61,7 +61,8 @@ attack:
     crit_multiplier: 2.1
     status_chance: 0.34
 unmodeled:
-  - "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its 2 s timer, which runs slightly generous"
+  - reason: sniper_combo_miss
+    seconds: 2
   - "the SECOND ZOOM LEVEL is not modelled, and on this weapon it is a stat TRADE rather than a buff — 3.5x gives +100% damage, +3 m explosion radius and -75% fire rate, which is half the sustained DPS for a much bigger single hit. Choosing it is a mode, and this entry is the first level"
   - "the first zoom's own effects are worth nothing here — -50% recoil and +2 m punch-through, neither of which this arena reads"
 source:

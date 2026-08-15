@@ -944,6 +944,26 @@ pub fn meta_json() -> Value {
                 // way the enemy files already do. A reader is owed the gap in
                 // words, not only the number that omits it.
                 "unmodeled": w.unmodeled.clone(),
+                // THE SAME ADMISSIONS, STRUCTURED. `unmodeled` above is the
+                // finished English and stays for everything that just prints
+                // it; this carries the reason's TEMPLATE and its parameters, so
+                // a localized page translates the template once instead of once
+                // per set of numbers (data/unmodelled/reasons.yaml).
+                // EVERY FORM'S, exactly like `unmodeled` above — the banner
+                // shows one weapon and both halves are the reader's to know
+                // about. Taking only the base entry's made the two lists
+                // different lengths and the banner drew three lines for four
+                // gaps (caught by check_disclosure, 2026-08-15).
+                "unmodeled_parts": wfsim_engine::weapons_data::forms_of(&w.id)
+                    .iter()
+                    .filter_map(|f| wfsim_engine::weapons_data::spec(f.weapon_id))
+                    .flat_map(|s| s.unmodeled_parts.iter())
+                    .map(|u| json!({
+                    "text": u.text,
+                    "reason": u.reason,
+                    "template": u.template,
+                    "params": u.params,
+                })).collect::<Vec<_>>(),
                 // The mods this weapon can actually EQUIP, by id. The client
                 // used to union the class tables and re-apply the rules in JS,
                 // which is one fact stated twice — and the copy went stale the

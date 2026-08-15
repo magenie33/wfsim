@@ -55,8 +55,9 @@ attack:
     crit_multiplier: 3.0
     status_chance: 0.53
 unmodeled:
-  - "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its 2 s timer, which runs slightly generous"
-  - "the LOWER zoom levels are not modelled — this arena has no field of view to trade for magnification, so the scope always sits at its top level and its best buff"
+  - reason: sniper_combo_miss
+    seconds: 2
+  - reason: zoom_steps
   - "the barb's 0.9 s ERUPTION DELAY is not modelled — in game the explosion lands nearly a second after the shot, and here the two arrive together, so a short engagement gets its damage sooner than it should"
 source:
   url: https://wiki.warframe.com/w/Sporothrix

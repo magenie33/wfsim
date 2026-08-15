@@ -76,7 +76,7 @@ attack:
 unmodeled:
   - "the innate INFINITE punch-through is not modelled — this arena has one target, and a wave that passes through a corridor of enemies is most of what this weapon is"
   - "the wave's vertical hitbox is not modelled — it is a wide flat projectile rather than a point, which this arena has no geometry to express"
-  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+  - reason: arch_gun_deployer_cooldown
 
 source:
   url: https://wiki.warframe.com/w/Fluctus

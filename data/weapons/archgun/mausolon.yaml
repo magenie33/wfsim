@@ -79,7 +79,7 @@ attack:
 unmodeled:
   - "Primary Compression's 444% case is not modelled — the catalog gives this weapon a second effectiveness for aiming DURING the alt-fire, and this arena has no such state; the ordinary 100% is what is applied"
   - "the radial's falloff is not modelled — this arena has one target at the centre, so it always takes the full 72 and never the 58 at the rim"
-  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+  - reason: arch_gun_deployer_cooldown
 
 source:
   url: https://wiki.warframe.com/w/Mausolon

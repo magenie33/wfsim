@@ -22,9 +22,12 @@ transforms_to: felarx_incarnon
 # modelled yet". Nothing is dropped in silence — some perks do nothing
 # yet and say so on their own tile.
 unmodeled:
-  - "this run never INTERRUPTS a reload — in game you can fire mid-reload and keep the shells already loaded, and a player who does is trading stacks and a full magazine for uptime. Decided rather than missing (2026-08-10): a listed reload is a whole reload, and the alternative is not a more accurate model, it is a different player"
+  - reason: reload_never_interrupted
   - "the innate infinite body punch-through is not modelled — this arena has one target, so it changes no number, and it is why Dual-Mode Chamber's +4 m adds nothing either"
-  - "damage falloff from 14 m to 28 m (down to 99% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+  - reason: damage_falloff
+    end: 28
+    keep: 99
+    start: 14
 accuracy: 7.69
 disposition: 0.6
 polarities: [madurai]

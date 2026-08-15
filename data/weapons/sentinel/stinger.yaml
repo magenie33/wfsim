@@ -52,7 +52,7 @@ attack:
   damage: { toxin: 15.0 }
 unmodeled:
   - "the TOXIN EMBED is not modelled — the page gives this weapon a second attack that deals its damage over 3 seconds on top of the hit, and this entry carries only the hit"
-  - "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
+  - reason: companion_fires_it
 
 source:
   url: https://wiki.warframe.com/w/Stinger

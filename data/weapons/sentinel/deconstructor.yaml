@@ -71,7 +71,7 @@ unmodeled:
   - "this weapon CANNOT BE MODDED here — it uses melee and thrown melee mods (Pressure Point, Fury, Whirlwind, Power Throw) and this app models guns, so it has no pool to draw from. Its base numbers are real; a build is not"
   - "the damage TYPE ROTATION is averaged — the weapon throws 130 of one type at a time, cycling Impact then Puncture then Slash, and this entry carries an equal three-way split instead. Total damage and status mix come out exact; ARMOUR does not, because mitigation is applied per instance and a blended hit is not the average of three pure ones"
   - "the projectiles BOUNCE OFF WALLS like a thrown glaive, and this arena has no walls to bounce off"
-  - "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
+  - reason: companion_fires_it
 
 source:
   url: https://wiki.warframe.com/w/Deconstructor

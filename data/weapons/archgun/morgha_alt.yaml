@@ -52,9 +52,11 @@ attack:
     status_chance: 0.50
 
 unmodeled:
-  - "the explosion's falloff is not modelled — this arena has one target at the centre, so it always takes the full 7200 and never the 2880 at the rim"
+  - reason: radial_falloff
+    full: 7200
+    rim: 2880
   - "the CHARGE this form is named for is not modelled as a charge — the page calls it a Charged Shot and then gives it a Semi-Auto trigger with no charge time, so it is paced as a slow semi-auto shot and filed as an alt-fire"
-  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+  - reason: arch_gun_deployer_cooldown
 
 source:
   url: https://wiki.warframe.com/w/Morgha

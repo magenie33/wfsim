@@ -12,7 +12,10 @@ transform_group: mk1_furis
 transforms_from: mk1_furis
 
 unmodeled:
-  - "damage falloff from 10 m to 16 m (down to 22% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+  - reason: damage_falloff
+    end: 16
+    keep: 22
+    start: 10
 
 # THE SAME ECONOMY AS THE FURIS — one Genesis, one gauge. Every number in this
 # block is copied from that page rather than from a second one, because there

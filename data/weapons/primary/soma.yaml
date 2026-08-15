@@ -22,7 +22,7 @@ transforms_to: soma_incarnon
 # modelled yet". Nothing is dropped in silence — some perks do nothing
 # yet and say so on their own tile.
 unmodeled:
-  - "the spool rebuilds after every reload: the page says burst firing MAINTAINS it, so a player whose pauses are short enough keeps more of the listed rate than this sim does — here the only pauses are the reloads the weapon forces. The spool itself IS modelled"
+  - reason: spool_rebuilds_after_reload
 accuracy: 28.57
 disposition: 1.15
 polarities: [madurai, madurai]

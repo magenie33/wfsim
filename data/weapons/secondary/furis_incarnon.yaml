@@ -14,7 +14,10 @@ transform_group: furis
 transforms_from: furis
 
 unmodeled:
-  - "damage falloff from 10 m to 16 m (down to 48% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+  - reason: damage_falloff
+    end: 16
+    keep: 48
+    start: 10
 
 # The Incarnon transformation economy (wiki Furis Incarnon Genesis).
 #

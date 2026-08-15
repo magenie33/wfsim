@@ -66,9 +66,12 @@ attack:
     status_chance: 0.20
 unmodeled:
   - "the CHARGE TIME is not modelled because the page publishes none — the weapon is a charge weapon here and mods treat it as one, but its draw adds nothing to the cycle, so it fires on the listed 1.00/s alone and this entry is a CEILING on its rate: a real draw can only make it slower"
-  - "the innate 2 m punch-through is not modelled — this arena has one target, so it changes no number"
-  - "the explosion's falloff is not modelled — this arena has one target at the centre, so it always takes the full 100 and never the 50 at the rim"
-  - "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
+  - reason: innate_punch_through
+    m: 2
+  - reason: radial_falloff
+    full: 100
+    rim: 50
+  - reason: companion_fires_it
 
 source:
   url: https://wiki.warframe.com/w/Vulcax

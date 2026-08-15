@@ -43,7 +43,7 @@ attack:
 
 unmodeled:
   - "the horizontal SPREAD is not modelled — the eight projectiles go out in a wide line and this arena has one target at zero distance, so all eight always land on it"
-  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+  - reason: arch_gun_deployer_cooldown
 
 source:
   url: https://wiki.warframe.com/w/Mandonel

@@ -41,7 +41,10 @@ pseudo_reload:
 co_behavior: additive_with_base_damage
 
 unmodeled:
-  - "damage falloff from 18 m to 36 m (down to 56% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+  - reason: damage_falloff
+    end: 36
+    keep: 56
+    start: 18
 
 attack:
   trigger: semi_auto

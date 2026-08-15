@@ -48,8 +48,9 @@ attack:
   punch_through_m: 0.0
   damage: { impact: 2.0, puncture: 1.0, slash: 17.0 }   # 20 total
 unmodeled:
-  - "the AUTO-SPOOL ramp is not modelled — the page gives this trigger as Auto-Spool and the fire rate here is the spooled-up 10/s from the first shot, so a short burst is faster in this sim than in game"
-  - "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
+  - reason: auto_spool_ramp
+    rate: 10
+  - reason: companion_fires_it
 
 source:
   url: https://wiki.warframe.com/w/Deth_Machine_Rifle_Prime

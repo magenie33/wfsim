@@ -22,8 +22,11 @@ transforms_to: strun_prime_incarnon
 # modelled yet". Nothing is dropped in silence — some perks do nothing
 # yet and say so on their own tile.
 unmodeled:
-  - "this run never INTERRUPTS a reload — in game you can fire mid-reload and keep the shells already loaded, and a player who does is trading stacks and a full magazine for uptime. Decided rather than missing (2026-08-10): a listed reload is a whole reload, and the alternative is not a more accurate model, it is a different player"
-  - "damage falloff from 26 m to 52 m (down to 78% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+  - reason: reload_never_interrupted
+  - reason: damage_falloff
+    end: 52
+    keep: 78
+    start: 26
 accuracy: 9.09
 disposition: 1.2
 polarities: [naramon, madurai, madurai]

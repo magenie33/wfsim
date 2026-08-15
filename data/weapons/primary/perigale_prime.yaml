@@ -45,9 +45,11 @@ attack:
   punch_through_m: 1.0
   damage: { impact: 22.08, puncture: 103.04, slash: 58.88 }   # 184 total
 unmodeled:
-  - "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its 2 s timer, which runs slightly generous"
-  - "the innate 1.0 m punch-through is not modelled — this arena has one target, so it changes no number"
-  - "the LOWER zoom levels are not modelled — this arena has no field of view to trade for magnification, so the scope always sits at its top level and its best buff"
+  - reason: sniper_combo_miss
+    seconds: 2
+  - reason: innate_punch_through
+    m: 1.0
+  - reason: zoom_steps
   - "Voruna's signature bonus is not modelled — carried by her the ammo pool grows to 56, and this arena has no Warframe holding it"
 source:
   url: https://wiki.warframe.com/w/Perigale_Prime

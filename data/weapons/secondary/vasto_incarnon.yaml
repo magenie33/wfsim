@@ -41,7 +41,10 @@ pseudo_reload:
 co_behavior: additive_with_base_damage
 
 unmodeled:
-  - "damage falloff from 16 m to 32 m (down to 97% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+  - reason: damage_falloff
+    end: 32
+    keep: 97
+    start: 16
 
 # CANNOT AIM DOWN SIGHTS, so nothing gated on aiming pays in this form.
 #

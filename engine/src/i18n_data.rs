@@ -165,29 +165,45 @@ pub fn locales() -> &'static [(String, LocaleSpec)] {
 mod tests {
     use super::*;
 
-    /// EVERY ADMISSION IS TRANSLATED, in every locale.
+    /// EVERY ADMISSION IS TRANSLATED, in every locale — and a REASON is
+    /// translated ONCE rather than once per set of numbers.
     ///
     /// A weapon's `unmodeled:` lines are the one family of prose that is BOTH
     /// written by us and shown on the page, so they are the family that
     /// silently accumulates an English backlog: nothing fails when a new one
     /// is added without its overlay entry, the check_disclosure pass still
     /// goes green (it walks a fixed set of weapons), and a Chinese reader gets
-    /// the English paragraph. Sixteen of them had built up that way across the
-    /// Akarius, Kuva Nukor, Phantasma, Shedu and Strun entries before anybody
+    /// the English paragraph. Sixteen had built up that way before anybody
     /// counted (2026-08-15).
     ///
-    /// This is the counter. It is derived from the roster rather than listed,
-    /// so a weapon added tomorrow with an untranslated admission fails here
-    /// rather than in front of a player.
+    /// WHAT CHANGED THE SAME DAY: an audit found 116 distinct sentences over
+    /// 248 uses, thirteen families of near-duplicates inside them — sixteen
+    /// spellings of the damage-falloff line differing only in three numbers.
+    /// So the repeating ones became REASONS with parameters
+    /// (`data/unmodelled/reasons.yaml`), and this asks for the TEMPLATE. A
+    /// weapon whose falloff starts at a new distance now costs zero
+    /// translation; before, it cost one.
     #[test]
     fn every_unmodelled_line_is_in_every_overlay() {
         let mut missing: Vec<String> = Vec::new();
         for (code, spec) in locales() {
+            let mut want: std::collections::BTreeSet<(&str, String)> =
+                std::collections::BTreeSet::new();
             for w in crate::weapons_data::all() {
-                for line in &w.unmodeled {
-                    if !spec.ui.contains_key(line) {
-                        missing.push(format!("[{code}] {}: {}", w.id, &line[..line.len().min(70)]));
-                    }
+                for part in &w.unmodeled_parts {
+                    // A REASON wants its template; prose wants itself.
+                    match part.template.as_deref() {
+                        Some(tpl) => want.insert((w.id.as_str(), tpl.to_string())),
+                        None => want.insert((w.id.as_str(), part.text.clone())),
+                    };
+                }
+            }
+            for (wid, line) in want {
+                if !spec.ui.contains_key(&line) {
+                    missing.push(format!(
+                        "[{code}] {wid}: {}",
+                        &line[..line.len().min(70)]
+                    ));
                 }
             }
         }
@@ -195,7 +211,7 @@ mod tests {
         missing.dedup();
         assert!(
             missing.is_empty(),
-            "{} admission(s) would render in English on a localized page — add them to              data/i18n/<locale>/ui.yaml:
+            "{} admission(s) would render in English on a localized page. A REASON is              translated once — add its template from data/unmodelled/reasons.yaml to              data/i18n/<locale>/ui.yaml:
   {}",
             missing.len(),
             missing.join("

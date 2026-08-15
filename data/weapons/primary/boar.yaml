@@ -16,7 +16,10 @@ max_rank: 30
 # Weapon-level metadata (wiki `Module:Weapons/data/primary` cross-checked
 # against the committed WFCD export, joined on internal name).
 unmodeled:
-  - "damage falloff from 15 m to 25 m (down to 50% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+  - reason: damage_falloff
+    end: 25
+    keep: 50
+    start: 15
 
 accuracy: 5                  # the page prints "Very Low" for this number
 disposition: 1.45            # riven disposition (●●●●●) — HIGHER than the

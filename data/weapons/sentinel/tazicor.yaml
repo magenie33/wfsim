@@ -43,8 +43,9 @@ attack:
   damage: { electricity: 5.0 }
 unmodeled:
   - "the CHAINING is not modelled, and it is what this weapon is for — the beam jumps to up to 3 nearby enemies within 5 metres of each other, and this arena has one target for it to jump between"
-  - "the 20 m range is not modelled — this arena has no distance, so every tick lands"
-  - "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
+  - reason: beam_range
+    m: 20
+  - reason: companion_fires_it
 
 source:
   url: https://wiki.warframe.com/w/Tazicor

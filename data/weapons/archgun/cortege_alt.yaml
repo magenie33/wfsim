@@ -56,8 +56,11 @@ attack:
 unmodeled:
   - "the FIVE-KILL GATE is not modelled — in game this alt-fire has to be earned with five kills from the primary fire before it can be used at all, and this entry fires it from the first second"
   - "the LINGERING FLAMES the grenades leave are not modelled — the page gives them 11 seconds of continuous damage and no per-tick number this intake could find, so the ground fire contributes nothing here and this weapon reads low"
+  # PROSE, not a reason: this one says "a grenade" in the middle of the
+  # sentence, and a free-text parameter would carry that English word into
+  # every translation of the template.
   - "the explosion's falloff is not modelled — this arena has one target at the centre, so it always takes the full 2000 a grenade and never the 1400 at the rim"
-  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+  - reason: arch_gun_deployer_cooldown
 
 source:
   url: https://wiki.warframe.com/w/Cortege

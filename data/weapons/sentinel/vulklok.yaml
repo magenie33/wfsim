@@ -49,7 +49,7 @@ attack:
   punch_through_m: 0.0
   damage: { electricity: 175.0 }
 unmodeled:
-  - "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
+  - reason: companion_fires_it
 
 source:
   url: https://wiki.warframe.com/w/Vulklok

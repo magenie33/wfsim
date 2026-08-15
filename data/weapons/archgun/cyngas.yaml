@@ -75,8 +75,9 @@ attack:
   punch_through_m: 1.5
   damage: { impact: 80.0, puncture: 80.0, slash: 80.0 }   # 240 total
 unmodeled:
-  - "the innate 1.5 m punch-through is not modelled — this arena has one target, so it changes no number"
-  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+  - reason: innate_punch_through
+    m: 1.5
+  - reason: arch_gun_deployer_cooldown
 
 source:
   url: https://wiki.warframe.com/w/Cyngas

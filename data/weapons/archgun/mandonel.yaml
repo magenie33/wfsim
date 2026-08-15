@@ -57,8 +57,9 @@ attack:
   damage: { puncture: 400.0, heat: 600.0, radiation: 800.0 }   # 1800
 
 unmodeled:
-  - "the innate 2.4 m punch-through is not modelled — this arena has one target, so it changes no number"
-  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+  - reason: innate_punch_through
+    m: 2.4
+  - reason: arch_gun_deployer_cooldown
 
 source:
   url: https://wiki.warframe.com/w/Mandonel

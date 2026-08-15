@@ -795,6 +795,13 @@ pub struct WeaponSpec {
     /// Mandonel's two forms take different classes from two different rows.
     #[serde(default)]
     pub inherits: Option<String>,
+    /// EVERY ADMISSION, STRUCTURED — filled in at load time beside the rendered
+    /// `unmodeled:` strings, so a localized page can re-render one instead of
+    /// looking up the whole English sentence.
+    ///
+    /// A weapon never writes this; it writes `unmodeled:` and this is derived.
+    #[serde(default)]
+    pub unmodeled_parts: Vec<UnmodelledPart>,
     pub id: String,
     pub name: String,
     /// THIS ENTRY CANNOT AIM DOWN SIGHTS, so nothing gated on aiming pays.
@@ -1015,6 +1022,62 @@ fn one() -> f64 {
     1.0
 }
 
+/// ONE ADMISSION, as the page needs it.
+///
+/// `text` is the finished English. `template` and `params` are present when the
+/// admission named a REASON, and they are what lets a locale translate the
+/// sentence once rather than once per set of numbers.
+#[derive(Debug, Clone, Deserialize)]
+pub struct UnmodelledPart {
+    pub text: String,
+    #[serde(default)]
+    pub reason: Option<String>,
+    #[serde(default)]
+    pub template: Option<String>,
+    #[serde(default)]
+    pub params: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct ReasonDef {
+    text: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct ReasonFile {
+    reasons: BTreeMap<String, ReasonDef>,
+}
+
+/// The reason table — `data/unmodelled/reasons.yaml`, parsed once.
+fn reasons() -> &'static BTreeMap<String, String> {
+    static R: OnceLock<BTreeMap<String, String>> = OnceLock::new();
+    R.get_or_init(|| {
+        let mut out = BTreeMap::new();
+        for (p, text) in crate::data::files_under("unmodelled/") {
+            if !p.ends_with(".yaml") {
+                continue;
+            }
+            let f = serde_norway::from_str::<ReasonFile>(text)
+                .unwrap_or_else(|e| panic!("parse {p}: {e}"));
+            for (k, v) in f.reasons {
+                out.insert(k, v.text);
+            }
+        }
+        out
+    })
+}
+
+/// Substitute `{named}` holes. Anything the params do not name is LEFT ALONE
+/// rather than blanked — a template with a hole nobody filled should read as
+/// obviously broken on the page, not as a sentence with a gap in it.
+pub fn fill_template(tpl: &str, params: &BTreeMap<String, String>) -> String {
+    let mut out = tpl.to_string();
+    for (k, v) in params {
+        out = out.replace(&format!("{{{k}}}"), v);
+    }
+    out
+}
+
 /// WHAT A FORM INHERITS FROM ITS WEAPON — the fields that describe the
 /// WEAPON rather than the shot.
 ///
@@ -1091,11 +1154,77 @@ pub fn all() -> &'static [WeaponSpec] {
                     // and de-duplicating THOSE is a different job: they want a
                     // reason id and a template, not a parent.
                 }
+                render_admissions(&mut v, p);
                 serde_norway::from_value::<WeaponSpec>(v)
                     .unwrap_or_else(|e| panic!("parse {p}: {e}"))
             })
             .collect()
     })
+}
+
+/// Turn `unmodeled:` into finished English AND a structured list, in place.
+///
+/// An entry is either a STRING — prose, for a gap that happens once — or a
+/// mapping naming a `reason:` from `data/unmodelled/reasons.yaml` with its
+/// parameters. Both end as a sentence in `unmodeled`; only the second can be
+/// re-rendered in another language, which is the whole point.
+fn render_admissions(v: &mut serde_norway::Value, path: &str) {
+    use serde_norway::Value;
+    let Some(m) = v.as_mapping_mut() else { return };
+    let key = Value::String("unmodeled".to_string());
+    let Some(list) = m.get(&key).and_then(Value::as_sequence).cloned() else { return };
+    let mut text: Vec<Value> = Vec::with_capacity(list.len());
+    let mut parts: Vec<Value> = Vec::with_capacity(list.len());
+    for one in list {
+        let mut part = serde_norway::Mapping::new();
+        match &one {
+            Value::String(s) => {
+                text.push(Value::String(s.clone()));
+                part.insert(Value::String("text".into()), Value::String(s.clone()));
+            }
+            Value::Mapping(mm) => {
+                let rid = mm
+                    .get(Value::String("reason".into()))
+                    .and_then(Value::as_str)
+                    .unwrap_or_else(|| panic!("{path}: an admission mapping needs `reason:`"))
+                    .to_string();
+                let tpl = reasons().get(&rid).unwrap_or_else(|| {
+                    panic!("{path}: unknown unmodelled reason `{rid}` — add it to data/unmodelled/reasons.yaml")
+                });
+                let params: BTreeMap<String, String> = mm
+                    .iter()
+                    .filter(|(k, _)| k.as_str() != Some("reason"))
+                    .map(|(k, val)| {
+                        let ks = k.as_str().unwrap_or_default().to_string();
+                        let vs = match val {
+                            Value::String(s) => s.clone(),
+                            other => serde_norway::to_string(other)
+                                .unwrap_or_default()
+                                .trim()
+                                .trim_start_matches("---")
+                                .trim()
+                                .to_string(),
+                        };
+                        (ks, vs)
+                    })
+                    .collect();
+                let rendered = fill_template(tpl, &params);
+                text.push(Value::String(rendered.clone()));
+                part.insert(Value::String("text".into()), Value::String(rendered));
+                part.insert(Value::String("reason".into()), Value::String(rid));
+                part.insert(Value::String("template".into()), Value::String(tpl.clone()));
+                let pm: serde_norway::Mapping = params
+                    .into_iter()
+                    .map(|(k, val)| (Value::String(k), Value::String(val)))
+                    .collect();
+                part.insert(Value::String("params".into()), Value::Mapping(pm));
+            }
+            other => panic!("{path}: an admission is a string or a mapping, got {other:?}"),
+        }
+        parts.push(Value::Mapping(part));
+    }
+    m.insert(key, Value::Sequence(text));
+    m.insert(Value::String("unmodeled_parts".into()), Value::Sequence(parts));
 }
 
 pub fn spec(id: &str) -> Option<&'static WeaponSpec> {

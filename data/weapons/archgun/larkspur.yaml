@@ -67,8 +67,9 @@ attack:
   damage: { impact: 20.0, radiation: 160.0 }   # 180 total (Archwing: 90)
 
 unmodeled:
-  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
-  - "the beam's 40 m ground range is not modelled — this arena has no distance, so every tick lands"
+  - reason: arch_gun_deployer_cooldown
+  - reason: beam_range
+    m: 40
   - "Hildryn's signature bonus is not modelled — carried by her it holds 300 more reserve ammo, 700 instead of 400, and this arena has no Warframe holding it"
 
 source:

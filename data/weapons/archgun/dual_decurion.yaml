@@ -68,8 +68,9 @@ attack:
   punch_through_m: 1.2
   damage: { impact: 85.5, puncture: 52.25, slash: 52.25 }   # 190 total
 unmodeled:
-  - "the innate 1.2 m punch-through is not modelled — this arena has one target, so it changes no number"
-  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+  - reason: innate_punch_through
+    m: 1.2
+  - reason: arch_gun_deployer_cooldown
 
 source:
   url: https://wiki.warframe.com/w/Dual_Decurion

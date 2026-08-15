@@ -82,6 +82,33 @@ let ALT_NAMES = null;
 // /api/i18n) — nothing hardcoded here. English needs no catalog: the source
 // string is the fallback.
 const tr = (s) => (I18N && I18N.ui && I18N.ui[s]) || s;
+/// ONE ADMISSION, in the display language.
+///
+/// A gap that repeats is a REASON with parameters rather than a sentence
+/// (data/unmodelled/reasons.yaml), so the overlay carries its TEMPLATE and this
+/// fills the same {named} holes. A weapon whose falloff starts at a new
+/// distance then costs no translation at all — before this, every new number
+/// was a new string somebody had to translate.
+///
+/// Falls back the way everything else here does: the template if the overlay
+/// has it, else the finished English through the ordinary lookup.
+/// A weapon's admissions, preferring the STRUCTURED form. `unmodeled` is the
+/// finished English and is still what an older payload carries, so this is the
+/// one place that knows the difference.
+const gapsOf = (w) => (w && w.unmodeled_parts && w.unmodeled_parts.length)
+  ? w.unmodeled_parts
+  : ((w && w.unmodeled) || []);
+const trGap = (g) => {
+  if (typeof g === "string") return tr(g);
+  if (g && g.template) {
+    const t = tr(g.template);
+    if (t !== g.template) {
+      return Object.entries(g.params || {}).reduce(
+        (s, [k, v]) => s.split(`{${k}}`).join(v), t);
+    }
+  }
+  return tr((g && g.text) || "");
+};
 const LN = (table, id, en) => (I18N && I18N[table] && I18N[table][id]) || en;
 // A damage type's NAME. The English fallback is CAPITALISED rather than echoed:
 // callers arrive with either spelling — the server sends "Void" in a damage
@@ -1271,7 +1298,7 @@ function renderBenchBoard() {
           (w.unmodeled || []).length
             ? ` <span class="bgap" title="${escHtml(
                 tr("not modelled on this weapon — the numbers below are a floor, not its full output")
-                + ": " + (w.unmodeled || []).map((g) => tr(g)).join(" · "))}">◈</span>`
+                + ": " + gapsOf(w).map(trGap).join(" · "))}">◈</span>`
             : ""}</span>
         <span class="bscore">${row
           ? escHtml(row.shown != null ? String(row.shown) : row.score.toFixed(4))
@@ -5468,7 +5495,7 @@ function renderPanel(r) {
     //     of gap that makes a complete-looking number wrong.
     // A yaml comment is honest to whoever opens the file and invisible to
     // everyone else, which is not the same as honest.
-    const gaps = (wInfo.unmodeled || []).slice();
+    const gaps = gapsOf(wInfo).slice();
     if (wInfo.passive_unmodeled) {
       gaps.unshift(tr("this weapon's passive is not modelled yet"));
     }
@@ -5481,7 +5508,10 @@ function renderPanel(r) {
         // which is the overlay's whole contract. Rendering them raw left a
         // Chinese page with the one paragraph that matters in English
         // (2026-08-08).
-        + gaps.map((g) => `<div class="unmod-l">${escHtml(tr(g))}</div>`).join("")
+        // Through `trGap`, which knows a REASON from a sentence: a repeating
+        // gap carries its template and parameters, so the overlay translates
+        // the template once instead of once per set of numbers.
+        + gaps.map((g) => `<div class="unmod-l">${escHtml(trGap(g))}</div>`).join("")
       : "";
   }
   // A source the row's LOCK is ignoring still lists, struck through and said

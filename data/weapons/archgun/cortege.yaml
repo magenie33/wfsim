@@ -60,7 +60,7 @@ attack:
   damage: { heat: 180.0 }          # Archwing: 90
 
 unmodeled:
-  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+  - reason: arch_gun_deployer_cooldown
 
 source:
   url: https://wiki.warframe.com/w/Cortege

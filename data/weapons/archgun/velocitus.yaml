@@ -61,8 +61,9 @@ attack:
   damage: { impact: 800.0, puncture: 800.0, slash: 800.0, magnetic: 800.0 }  # 3200
 
 unmodeled:
-  - "the innate 5 m punch-through is not modelled — this arena has one target, so it changes no number"
-  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+  - reason: innate_punch_through
+    m: 5
+  - reason: arch_gun_deployer_cooldown
 
 source:
   url: https://wiki.warframe.com/w/Velocitus

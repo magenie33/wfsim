@@ -22,7 +22,10 @@ transforms_to: bronco_incarnon
 # modelled yet". Nothing is dropped in silence — some perks do nothing
 # yet and say so on their own tile.
 unmodeled:
-  - "damage falloff from 7 m to 14 m (down to 75% of full damage) is not modelled — this arena has no distance, so every shot lands at point blank"
+  - reason: damage_falloff
+    end: 14
+    keep: 75
+    start: 7
 
 accuracy: 3.7
 disposition: 1.45

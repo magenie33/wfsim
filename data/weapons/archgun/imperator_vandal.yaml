@@ -71,9 +71,11 @@ attack:
   punch_through_m: 1.2
   damage: { impact: 40.0, puncture: 35.0, slash: 25.0 }   # 100 total
 unmodeled:
-  - "the AUTO-SPOOL ramp is not modelled — the page gives this trigger as Auto-Spool and the fire rate here is the spooled-up 25/s from the first shot, so a short burst is faster in this sim than in game"
-  - "the innate 1.2 m punch-through is not modelled — this arena has one target, so it changes no number"
-  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+  - reason: auto_spool_ramp
+    rate: 25
+  - reason: innate_punch_through
+    m: 1.2
+  - reason: arch_gun_deployer_cooldown
 
 source:
   url: https://wiki.warframe.com/w/Imperator_Vandal

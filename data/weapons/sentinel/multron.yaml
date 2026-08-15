@@ -56,8 +56,10 @@ attack:
     status_chance: 0.22
 unmodeled:
   - "the dart's 1.5 s EXPLOSION DELAY is not modelled — in game the blast lands a second and a half after the dart does, and here the two arrive together, so a short engagement gets damage sooner than it should"
-  - "the explosion's falloff is not modelled — this arena has one target at the centre, so it always takes the full 100 and never the 50 at the rim"
-  - "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
+  - reason: radial_falloff
+    full: 100
+    rim: 50
+  - reason: companion_fires_it
 
 source:
   url: https://wiki.warframe.com/w/Multron

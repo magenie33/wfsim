@@ -49,8 +49,10 @@ attack:
     status_chance: 0.50
 
 unmodeled:
-  - "the explosion's falloff is not modelled — this arena has one target at the centre, so it always takes the full 4500 and never the 2700 at the rim"
-  - "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing"
+  - reason: radial_falloff
+    full: 4500
+    rim: 2700
+  - reason: arch_gun_deployer_cooldown
 
 source:
   url: https://wiki.warframe.com/w/Mausolon

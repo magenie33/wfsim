@@ -49,8 +49,9 @@ attack:
   punch_through_m: 0.0
   damage: { electricity: 400.0 }
 unmodeled:
-  - "a MISSED shot does not drop the combo counter here — this arena has no distance and every shot lands, so the counter only ever decays through its 2 s timer, which runs slightly generous"
-  - "the LOWER zoom levels are not modelled — this arena has no field of view to trade for magnification, so the scope always sits at its top level and its best buff"
+  - reason: sniper_combo_miss
+    seconds: 2
+  - reason: zoom_steps
   - "the CHAIN LIGHTNING is not modelled, and it is a third of what this weapon does — every hit rolls 0/1/2/3 extra strikes (30/35/17.5/17.5%), guaranteed after three failures, chaining twice within 10 m and scaling off the same mods. This arena has one target for them to chain between"
 source:
   url: https://wiki.warframe.com/w/Vadarya_Prime

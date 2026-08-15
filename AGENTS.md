@@ -500,6 +500,22 @@ around (decision 2026-07-31).
 - **Golden values only change with an in-game measurement** justifying
   it. New mechanics need golden tests; a faithful-looking implementation
   without a measurement is not correct.
+- **A GAP THAT REPEATS IS A REASON, NOT A SENTENCE** (2026-08-15).
+  `data/unmodelled/reasons.yaml` holds each one once, with `{named}` holes, and
+  a weapon references it: `- reason: innate_punch_through` / `m: 1.2`. The
+  audit that produced this counted 116 distinct admission sentences over 248
+  uses with thirteen families of near-duplicates inside — SIXTEEN spellings of
+  the damage-falloff line differing only in three numbers, ten of the
+  punch-through line differing in one. The cost was not the bytes: every new
+  spelling was a new string somebody had to translate, so the zh overlay grew
+  with the ROSTER rather than with the ideas in it. Eleven reasons now cover
+  155 of the 248 uses; a weapon whose falloff starts at a new distance costs
+  ZERO translation. PROSE IS STILL RIGHT for a gap that happens once and needs
+  a paragraph — 61 of them still are — and a free-text parameter is not allowed
+  (it would carry English into every translation; the Cortege's "a grenade"
+  line stayed prose for exactly that reason). The i18n counter asks for the
+  TEMPLATE, and `trGap` in the page fills the same holes into whichever
+  language the reader is in.
 - **A FORM INHERITS ITS WEAPON** (2026-08-15). 88 of the roster's entries are
   form siblings rather than weapons, and a form states its ATTACK plus only the
   weapon-level fields that actually DIFFER — `inherits: <parent_id>` fills in
