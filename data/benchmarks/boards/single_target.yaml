@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: dda13132bf2fd0ae2ecd4cf9e0cf99aeeba97cf9
+engine: f2ee99f488bee3c7062b507469e1d0da4e016482
 entries:
   - weapon: akarius_prime
     mode: base
@@ -2303,6 +2303,12 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    score: 11.492499289182105
+    mods: [hornet_strike, barrel_diffusion, lethal_torrent, pistol_elementalist, target_cracker, magnetic_might, frostbite, pistol_pestilence]
+    arcanes: [secondary_enervate]
+    valence: heat
   - weapon: laetum
     mode: cycle
     score: 64.29575755324629
@@ -3431,6 +3437,11 @@ entries:
     score: 15.220131811185816
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, critical_focus, hollowed_bullets, magnetized_cycle, parallax_scope, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_encumber]
+  - weapon: mausolon
+    mode: alternate
+    score: 15.205406778811804
+    mods: [primed_dual_rounds, automatic_trigger, critical_focus, hollowed_bullets, magnetized_cycle, parallax_scope, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_compression, secondary_deadhead]
   - weapon: miter
     mode: cycle
     score: 10.243002987427616

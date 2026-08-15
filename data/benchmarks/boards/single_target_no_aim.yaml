@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: dda13132bf2fd0ae2ecd4cf9e0cf99aeeba97cf9
+engine: f2ee99f488bee3c7062b507469e1d0da4e016482
 entries:
   - weapon: boar_prime
     mode: cycle
@@ -170,6 +170,12 @@ entries:
     mode: base
     score: 4.14309948338098
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence]
+    arcanes: [secondary_enervate]
+    valence: heat
+  - weapon: kuva_nukor
+    mode: base
+    score: 3.485522429234575
+    mods: [hornet_strike, barrel_diffusion, lethal_torrent, pistol_elementalist, target_cracker, magnetic_might, frostbite, pistol_pestilence]
     arcanes: [secondary_enervate]
     valence: heat
   - weapon: kuva_nukor
