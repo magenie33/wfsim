@@ -2967,6 +2967,20 @@ target.
 | 2 | 1 | **196** | **65** |
 | 2 | 2 | **227** | **76** |
 
+…and one on the **BASE form**, which is the independent confirmation — another
+attack, another crit multiplier (1.8), another fraction (46/88 = 0.523 against
+the Incarnon's 0.236):
+
+| stacks | status types | direct (crit) |
+| --- | --- | --- |
+| 2 | 4 | **423** |
+
+`1.8 x (88 + 0.4 x 2 x 4 x 46) = 423.4`. It was reported as THREE status types
+and only four fits — 357 at three, 423 at four, 489 at five, 66 apart. The
+likely miscount is the weapon's own IPS: the base form deals Impact, Puncture
+and Slash and each is a CO type, where the Incarnon form is pure Heat and its
+counts of one and two were exact.
+
 The Incarnon form is 13 base + the perk's 42 = **55**, and a crit is x3.0, so
 the direct hit before CO is 165. Solving each reading for the fraction of that
 base the CO term reads:
@@ -2981,7 +2995,14 @@ weapon. The radial confirms it independently and without a crit:
 
 Two axes are exercised (the arcane's stacks and the status TYPE count) and the
 fraction is constant across both, which is what makes it a fraction rather than
-a coincidence.
+a coincidence. The base-form reading adds a third: the FORM, whose fraction is
+a different number entirely.
+
+Written the way the mechanic actually works, the whole thing collapses to
+
+    damage = crit x (evolved_base + rate x ORIGINAL_base)
+
+— the perk's +42 is added AFTER the CO term and is never multiplied by it.
 
 ### What was wrong
 

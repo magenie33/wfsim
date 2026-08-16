@@ -8877,11 +8877,16 @@ mod tests {
     /// Galvanized Aptitude and nothing else, torso, unarmoured target, ONE
     /// status type on it:
     ///
-    /// | stacks | status types | direct crit | radial |
-    /// |---|---|---|---|
-    /// | 1 | 1 | 181 | — |
-    /// | 2 | 1 | 196 | 65 |
-    /// | 2 | 2 | 227 | 76 |
+    /// | form | stacks | status types | direct crit | radial |
+    /// |---|---|---|---|---|
+    /// | Incarnon | 1 | 1 | 181 | — |
+    /// | Incarnon | 2 | 1 | 196 | 65 |
+    /// | Incarnon | 2 | 2 | 227 | 76 |
+    /// | **base** | 2 | 4 | **423** | — |
+    ///
+    /// The BASE form is the independent one: a different attack, a different
+    /// crit multiplier (1.8) and a different fraction (46/88 = 0.523 against
+    /// the Incarnon's 13/55 = 0.236), and the same rule lands it on 423.4.
     ///
     /// The form is 13 base + the perk's 42 = 55, and a crit is x3.0, so the
     /// direct hit before CO is 165. Solving each reading for the fraction CO
@@ -8915,6 +8920,7 @@ mod tests {
         for (stacks, types, direct, radial) in
             [(1.0, 1.0, 181.0, None), (2.0, 1.0, 196.0, Some(65.0)), (2.0, 2.0, 227.0, Some(76.0))]
         {
+            // (the base form is checked below, on its own numbers)
             let d = 55.0 * 3.0 * co(stacks, types);
             assert!((d - direct).abs() < 1.0, "{stacks}x{types}: direct {d} vs {direct}");
             if let Some(r) = radial {
@@ -8922,6 +8928,21 @@ mod tests {
                 assert!((got - r).abs() < 1.0, "{stacks}x{types}: radial {got} vs {r}");
             }
         }
+
+        // THE BASE FORM, which is the independent confirmation: another
+        // attack, another crit multiplier, another fraction — and the same
+        // rule. 46 base + the same 42 = 88, so CO reads 46/88, and the
+        // expression collapses to `crit x (evolved + rate x original)`, which
+        // is the mechanic said plainly: the perk's +42 is added AFTER CO and
+        // never multiplied by it.
+        let bf = crate::loadout::WeaponBase::from_data(
+            "burston_prime",
+            false,
+            &["burston_prime_forceful_finality"],
+        );
+        assert!((bf.co_base_fraction - 46.0 / 88.0).abs() < 1e-9, "{}", bf.co_base_fraction);
+        let base_hit = 1.8 * (88.0 + 0.4 * 2.0 * 4.0 * 46.0);
+        assert!((base_hit - 423.0_f64).abs() < 1.0, "base form 2x4: {base_hit}");
 
         // THE TWIN AT THE SAME TIER carries the same flag: it adds the same
         // +42, so a build taking it computes CO on the same base.
