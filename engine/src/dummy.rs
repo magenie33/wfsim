@@ -9082,6 +9082,102 @@ mod tests {
         }
     }
 
+    /// THE TORID'S INCARNON FORM COMPUTES CO ON 51 OF ITS 102 (MEASUREMENTS
+    /// M50, owner 2026-08-16) — the second weapon where the catalog's
+    /// ABSENCE-MEANS-ORDINARY rule was measured and was wrong, and the
+    /// most-played Incarnon in the game.
+    ///
+    /// THE FORM IS IDENTIFIED BY THE CRIT, not by the report. A bare crit of
+    /// 316 against a panel of 102 is x3.098, which is the Incarnon form's 3.1;
+    /// the base form's is 2.0 and would have read 302 off its own 151 panel.
+    /// That is what makes the reading unambiguous without a second run.
+    ///
+    /// WHAT THE CATALOG SAYS ABOUT THIS FORM: nothing. Its two Torid rows are
+    /// the base form's main-fire and cloud, both "100 | 100% | Multiplying",
+    /// and neither carries the "or 151" variant the Dual Toxocyst's row does.
+    /// The silence was read as "the evolution feeds in full" and means "the
+    /// table never measured the evolved weapon" — see docs/CATALOGS.md, where
+    /// the default is now 0 for 2 on the weapons anyone has checked.
+    #[test]
+    fn the_torid_incarnons_co_reads_half_its_evolved_base() {
+        let inc = crate::loadout::WeaponBase::from_data(
+            "torid_incarnon",
+            false,
+            &["torid_final_fusillade"],
+        );
+        assert!(
+            (inc.base_vector.total() - 102.0).abs() < 1e-9,
+            "panel {} against a measured 102",
+            inc.base_vector.total()
+        );
+        assert!(
+            (inc.co_base_fraction - 51.0 / 102.0).abs() < 1e-9,
+            "CO fraction {} against a measured 51/102",
+            inc.co_base_fraction
+        );
+
+        // THE READING, solved the way M48 taught: a RATIO to the bare crit,
+        // which cancels the target's damage-type column. Both numbers are the
+        // game's rounded display, so the solve is a BAND rather than a point —
+        // and 0.5 sits in it while 1.0 is nowhere near.
+        let (bare, hit) = (316.0_f64, 380.0_f64);
+        let solved = |b: f64, h: f64| (h / b - 1.0) / 0.4;
+        let (lo, hi) = (solved(bare + 0.5, hit - 0.5), solved(bare - 0.5, hit + 0.5));
+        assert!(lo < 0.5 && 0.5 < hi, "0.5 outside the display band [{lo}, {hi}]");
+        assert!(hi < 1.0, "the band must exclude a CO fed by the +51: [{lo}, {hi}]");
+        // …and the engine's own fraction lands in the same band.
+        assert!(lo < inc.co_base_fraction && inc.co_base_fraction < hi);
+
+        // THE TIER-MATE, measured on its own numbers — flagged by inference
+        // from this one first and confirmed within the hour.
+        let mate = crate::loadout::WeaponBase::from_data(
+            "torid_incarnon",
+            false,
+            &["torid_plentiful_mayhem"],
+        );
+        assert!((mate.base_vector.total() - 82.0).abs() < 1e-9);
+        assert!((mate.co_base_fraction - 51.0 / 82.0).abs() < 1e-9);
+
+        // AND THE DECISIVE FORM OF THE FINDING, which is not either fraction:
+        // THE CO BASE IS A CONSTANT. Solved as an ABSOLUTE rather than as a
+        // ratio, every reading across both perks lands on the unevolved 51 —
+        // while the panels they were read off are 102 and 82. A term that fed
+        // on the evolution would solve to those two numbers instead and would
+        // not agree with itself across the pair. This is what a ratio alone
+        // cannot say, and it is why the second perk was worth measuring.
+        for (panel, bare, stacks, hit) in [
+            (102.0_f64, 316.0_f64, 1.0_f64, 380.0_f64),
+            (82.0, 254.0, 1.0, 318.0),
+            (82.0, 254.0, 2.0, 381.0),
+        ] {
+            let co_base = (hit / bare - 1.0) / (0.4 * stacks) * panel;
+            assert!(
+                (co_base - 51.0).abs() < 1.0,
+                "solved a CO base of {co_base} off a {panel} panel, against 51"
+            );
+        }
+
+        // AND THE BASE FORM IS UNTOUCHED, which is the deliberate half. It is
+        // `Multiplying` where the form measured above is `Adding`, and nothing
+        // has ever measured a Multiplying entry's evolved CO base — so the
+        // class default leaves it reading its full evolved 151 and this test
+        // pins that, rather than letting an inference ride in on the back of a
+        // measurement (owner, 2026-08-16). It is the cheapest open experiment
+        // there is: 393 if fed against 311 if not, 26% apart.
+        let base = crate::loadout::WeaponBase::from_data(
+            "torid",
+            false,
+            &["torid_final_fusillade"],
+        );
+        assert!((base.base_vector.total() - 151.0).abs() < 1e-9);
+        assert_eq!(base.co_behavior, crate::loadout::CoBehavior::Independent);
+        assert!(
+            (base.co_base_fraction - 1.0).abs() < 1e-9,
+            "the Multiplying half is UNMEASURED and must stay at 1.0, got {}",
+            base.co_base_fraction
+        );
+    }
+
     /// A CONE IS SPELLED ONE WAY. Ten entries carried BOTH a parsed
     /// `spread: {min_deg, max_deg}` and a flat `spread_min_deg`/`spread_max_deg`
     /// that no code read — the second spelling arrived with the intake on

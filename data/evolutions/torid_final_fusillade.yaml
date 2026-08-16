@@ -6,6 +6,24 @@ icon: DamageXMultishotOnLastShotInMag(xWhite).png
 description: "Increase Base Damage by +51.\n+3 Multishot on last shot in magazine."
 selection: choose_one
 
+# MEASURED ON THE INCARNON FORM (owner, 2026-08-16; MEASUREMENTS M50): this
+# perk's flat base damage does NOT feed the GunCO term.
+#
+#   1 stack, 1 status .... 380   (bare crit 316 = 102 x 3.1)
+#
+# Solved as an ABSOLUTE across both tier-2 perks, every reading gives a CO base
+# of ~51 — the unevolved value — off panels of 102 and 82. A term that fed on
+# the evolution would have solved to those two numbers instead.
+#
+# AND IT DECLARES NOTHING, deliberately. A declaration is the PERK's and reaches
+# both forms of the transform group, and only ONE side was measured: the
+# Incarnon form is `Adding` and the base form is `Multiplying`, which nobody has
+# measured (owner, 2026-08-16 — he stopped the flip that would have covered it).
+# So the class default answers each form on its own evidence, and this file does
+# not assert the half it does not know. `evolutions_data::excludes_co_base`.
+co_base_excludes_this_evolution: true
+co_base_excludes_only_form: incarnon
+
 effects:
   # +51 on a 140 base is a big pro-rata scale-up, and it lowers the CO base
   # fraction the same way Ripper Rounds does on the Dual Toxocyst (the GunCO

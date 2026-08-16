@@ -127,20 +127,53 @@ Every row, with the perk the printed number identifies:
 | Bronco Prime | 238 or 448 (Evolution II **Perk 1**) | Speeding Bullet, +30 a pellet x7 = the 210 printed | 0.5312 (catalog 53%) |
 | Zylok Prime | 500 or 530 (Evolution II) | both, each +30 | 0.9434 (catalog 94%) |
 
-**THE ONE MEASURED COUNTEREXAMPLE** (owner, 2026-08-16; MEASUREMENTS M49). The
-Dual Toxocyst's row names Evolution II **Perk 1** (Carnage Reign) and not Perk 2
-(Fevered Frenzy), so by the rule below Perk 2's +50 fed the CO term in full. It
-does not: at the 125 panel Perk 2 produces, Galvanized Shot at 3 stacks against
-2 status types reads **305**, where a CO term on the full 125 would read 425.
-Both of this weapon's tier-2 options compute CO on the unevolved 75.
+**EXCLUDING AN EVOLUTION'S FLAT DAMAGE IS NOW THE DEFAULT** (owner, 2026-08-16;
+MEASUREMENTS M49 and M50). This section used to say the opposite, and the
+paragraph below is what it said. The reason it turned around is in the table's
+own columns rather than in any one measurement:
 
-It does not repeal the rule — the rule holds on every other row that has been
-checked, and five of them are asserted as negative controls in
-`the_eleven_evolution_exclusion_rows_reproduce_their_own_percentages`. It
-downgrades it from a LAW to a DEFAULT: absence still means ordinary until
-somebody measures otherwise, and now one weapon has. The flag stays per PERK
-rather than moving to the weapon, because the Despair needs that granularity —
-its row says one of its two tier-2 options is excluded and the other is not.
+**THE ELEVEN ROWS ABOVE ARE THE ONLY ONES THAT MEASURED AN EVOLVED WEAPON.**
+They are the rows whose damage column prints a DOUBLE value — "100 or 124 (with
+Evolution II)". Every other row prints one number, and that number is the
+UNEVOLVED base, so a row reading `Torid | Main-fire | 100 | 100%` says the CO
+bonus equals the base of a Torid with no evolution installed. That is true by
+construction. It is not a statement that an evolution would feed the term, and
+this repo read it as one.
+
+On the question actually asked the score is **15 to 0**:
+
+| | count | verdict |
+|---|---|---|
+| catalog rows that measured the evolved weapon | 11 | all EXCLUDED |
+| owner measurements (Dual Toxocyst x2, Torid x2) | 4 | all EXCLUDED |
+| anything, anywhere, measuring an evolved weapon and finding it INCLUDED | **0** | — |
+
+Three of the four owner measurements are on perks the catalog does not list, so
+its silence has been tested three times and meant "unmeasured" every time.
+
+**SO THE DEFAULT FLIPPED — FOR `Adding` ENTRIES ONLY** (owner, 2026-08-16). An
+undeclared perk on an Adding entry keeps its flat damage out of the CO term. 238
+weapon+perk pairs moved, by 37% on average at two Galvanized stacks against two
+status types.
+
+**`Multiplying` IS UNTOUCHED**, all 24 pairs, because nothing has measured one:
+every reading in the tally is an Adding entry. The owner drew that line himself
+on the version of this change that covered both. The rule may well be the same
+on both sides — which base the term reads sits upstream of how it combines — but
+that is an argument, and the Torid's base form is one reading away from settling
+it (MEASUREMENTS M50 §Still open).
+
+**A DECLARATION STAYS THE PERK'S, AND IS SCOPED TO THE FORM IT WAS MEASURED ON.**
+The catalog names perks, and a perk reaches both forms of its transform group —
+whose CO classes can differ, the Torid's base form being `Multiplying` where its
+Incarnon form is `Adding`. `co_base_excludes_only_form` is how a reading off one
+entry is recorded without asserting the other.
+
+**WHAT WOULD REVERSE IT** is one measurement finding an evolution that DOES feed
+the term. `the_eleven_evolution_exclusion_rows_reproduce_their_own_percentages`
+holds five unlisted perks asserting the new default, and that is the loop such a
+measurement would edit. Until then the old paragraph stands as the record of
+what was believed and why:
 
 **INCLUDING an evolution's flat damage is the DEFAULT** (owner, 2026-07-30);
 the exclusion is opt-in per perk.

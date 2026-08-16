@@ -3761,24 +3761,38 @@ mod tests {
     /// table, so it feeds CO in full — which is why the flag lives on the perk
     /// rather than on the weapon or on the Adding behaviour class.
     #[test]
-    fn only_dual_toxocyst_excludes_its_evolution_damage_from_the_co_term() {
+    fn an_evolutions_flat_damage_stays_out_of_the_co_term_by_default() {
         use crate::loadout::WeaponBase;
-        // Torid + Final Fusillade (+51 on a 140 base): the base scales, the CO
-        // fraction does NOT.
+        // THE TORID IS WHERE THIS TEST TURNED AROUND. It asserted 1.0 on both
+        // tier-2 perks, on the reading that the weapon's catalog rows say
+        // "100 | 100%" — until the owner measured the Incarnon form and every
+        // reading off BOTH perks solved to a CO base of ~51, the unevolved
+        // value, off panels of 102 and 82 (MEASUREMENTS M50). The rows say
+        // 100% of an UNEVOLVED 100, which is true by construction.
         let bare = WeaponBase::from_data("torid", false, &[]);
         let evolved = WeaponBase::from_data("torid", false, &["torid_final_fusillade"]);
         assert!(
             (evolved.base_vector.total() - (bare.base_vector.total() + 51.0)).abs() < 1e-9,
             "the evolution still scales the base"
         );
+        // …ON THE FORM THAT WAS MEASURED, which is the Incarnon one. The base
+        // form is `Multiplying` and stays at 1.0 until somebody measures a
+        // Multiplying entry — see `EvolutionDef::excludes_co_base`.
         assert!(
             (evolved.co_base_fraction - 1.0).abs() < 1e-9,
-            "the Torid's catalog rows stay 100%, got {}",
+            "the Multiplying base form is unmeasured, got {}",
             evolved.co_base_fraction
         );
-        // Plentiful Mayhem (+31) likewise.
-        let pm = WeaponBase::from_data("torid", false, &["torid_plentiful_mayhem"]);
-        assert!((pm.co_base_fraction - 1.0).abs() < 1e-9);
+        for (perk, panel) in [("torid_final_fusillade", 102.0), ("torid_plentiful_mayhem", 82.0)] {
+            let inc = WeaponBase::from_data("torid_incarnon", false, &[perk]);
+            assert!((inc.base_vector.total() - panel).abs() < 1e-9);
+            // ONE CO BASE, TWO PANELS — the shape the measurement turned on.
+            assert!(
+                (inc.co_base_fraction * panel - 51.0).abs() < 1e-9,
+                "{perk}: solves to a CO base of {}",
+                inc.co_base_fraction * panel
+            );
+        }
 
         // Dual Toxocyst + Carnage Reign (Perk 1, +60 on a 75 base) = the
         // catalog's "100% or 56%" row: a +100% CO adds 75, never 135.
@@ -5588,23 +5602,40 @@ mod condition_overload_catalog_tests {
         // other (50%, 40%, 38%, 57%, 65%, 25%) and contains outright
         // counter-examples — the Cinta and Nataruk are charged bows at 100%
         // Multiplying and the Balefire Charger is 0%. See docs/CATALOGS.md.
-        // The Dual Toxocyst's Fevered Frenzy WAS in this list and is not any
-        // more: it is the one entry whose absence from the catalog was measured
-        // and turned out not to mean ordinary (MEASUREMENTS M49). The other
-        // five stay, and they are the point — one counterexample does not repeal
-        // a rule that still holds everywhere it has been checked, it just means
-        // the rule is a default rather than a law.
+        // THIS LOOP TURNED AROUND, and the comment is the record of it.
+        //
+        // Every entry here is an ADDING perk the catalog does not list, and
+        // each was asserted to compute CO on its FULL evolved base because the
+        // table "lists only discrepant attacks". Four perks were measured on
+        // 2026-08-16 and all four came back excluded — the Dual Toxocyst's two
+        // (M49) and the Torid Incarnon's two (M50) — and the reading of the
+        // table that produced this loop did not survive it: its eleven
+        // double-valued rows are the only ones that ever measured an evolved
+        // weapon, all eleven exclude, and the "100%" rows print an UNEVOLVED
+        // base in their own damage column, which is true by construction and
+        // answers a different question. 15 to 0.
+        //
+        // THE FLIP IS ADDING-ONLY (owner, 2026-08-16). Nothing has measured a
+        // Multiplying entry's evolved CO base, so those are untouched and the
+        // Torid's base form is the open experiment — its own test pins it at
+        // 1.0. These five are kept, pointing the other way, because they are
+        // still the set that distinguishes the two defaults: a measurement
+        // finding an INCLUDED Adding perk is what would edit this loop.
         for (entry, perk) in [
             ("vasto_prime_incarnon", "vasto_prime_lone_gun"),
             ("bronco_prime_incarnon", "bronco_prime_infused_shots"),
             ("despair_incarnon", "despair_fatal_affliction"),
             ("lato_vandal_incarnon", "lato_vandal_reified_bane"),
-            // …and the whole non-Prime Vasto, which has no row at all.
             ("vasto_incarnon", "vasto_deathtrap_trigger"),
         ] {
             let b = crate::loadout::WeaponBase::from_data(entry, false, &[perk]);
-            assert!((b.co_base_fraction - 1.0).abs() < 1e-9,
-                "{entry} + {perk} is not on the catalog, so CO computes on the FULL                  evolved base — got {:.4}", b.co_base_fraction);
+            let bare = crate::loadout::WeaponBase::from_data(entry, false, &[]);
+            let f = bare.base_vector.total() / b.base_vector.total();
+            assert!(f < 0.999, "{entry} + {perk} raises no base damage");
+            assert_eq!(b.co_behavior, crate::loadout::CoBehavior::AdditiveWithBaseDamage);
+            assert!((b.co_base_fraction - f).abs() < 1e-9,
+                "{entry} + {perk}: an Adding entry computes CO on the UNEVOLVED base \
+                 by default — expected {f:.4}, got {:.4}", b.co_base_fraction);
         }
     }
 

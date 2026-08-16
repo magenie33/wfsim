@@ -34,10 +34,56 @@ struct EvoFile {
     #[serde(default)]
     currently_broken: bool,
     /// Does THIS evolution's flat base damage stay out of the weapon's GunCO
-    /// term? The CO catalog names the offending perk explicitly, so the flag
-    /// belongs to the perk, not to the weapon and not to the CO class.
+    /// term? **DEFAULT YES** since 2026-08-16 — an omitted field means
+    /// EXCLUDED, and `false` is the explicit opt-out nothing uses yet.
+    ///
+    /// IT USED TO DEFAULT NO, on the reading that the CO catalog "lists only
+    /// discrepant attacks" so an unlisted perk feeds the term in full. The
+    /// evidence went 15 to 0 against that:
+    ///
+    ///   · ELEVEN catalog rows print a DOUBLE value ("100 or 124") — the only
+    ///     rows where anyone measured the weapon with its evolution installed.
+    ///     All eleven came back excluded.
+    ///   · ZERO rows anywhere measured the evolved case and found it included.
+    ///     The "100%" rows print the UNEVOLVED base in their own damage column,
+    ///     so they say the CO base equals the base of a weapon with no
+    ///     evolution on it, which is true by construction and says nothing
+    ///     about this question.
+    ///   · FOUR perks across two weapons were measured by the owner, and all
+    ///     four are excluded — the Dual Toxocyst's two (M49) and the Torid
+    ///     Incarnon's two (M50). One of those four WAS on the catalog and three
+    ///     were not, so the catalog's silence has now been tested three times
+    ///     and meant "unmeasured" every time.
+    ///
+    /// The Torid's is the decisive shape: its two tier-2 perks give panels of
+    /// 102 and 82, and every reading off BOTH solves to a CO base of ~51 — the
+    /// unevolved value, constant across the pair. A term that fed on the
+    /// evolution would have solved to 102 and 82 and would not have agreed
+    /// with itself.
+    ///
+    /// AND THE ERROR IS ASYMMETRIC. The old default OVERSTATES, which for a
+    /// calculator whose promise is matching in-game measurements is the worse
+    /// direction: it ranks weapons on damage the game does not deal. 186
+    /// weapon+perk pairs moved when this flipped, by 37% on average at two
+    /// Galvanized stacks against two status types.
+    ///
+    /// THE FLAG IS STILL THE PERK's, not the weapon's and not the CO class's,
+    /// because the catalog names perks and a perk reaches both forms of its
+    /// transform group — the Torid's base form is `Multiplying` where its
+    /// Incarnon form is `Adding`, so a class-scoped rule could not even be
+    /// expressed. `false` on a perk is how a measured exception gets recorded.
     #[serde(default)]
-    co_base_excludes_this_evolution: bool,
+    co_base_excludes_this_evolution: Option<bool>,
+    /// …and on WHICH FORM it was measured, when the reading covers one of them.
+    /// `base` or `incarnon`; omitted means the perk's whole transform group.
+    ///
+    /// A perk belongs to a GROUP and a reading comes off an ENTRY. Usually that
+    /// gap does not matter, because the catalog rows name a weapon and both its
+    /// forms behave alike. The Torid is where it does: its Incarnon form was
+    /// measured and its base form was not, and the two are different CO classes
+    /// (MEASUREMENTS M50).
+    #[serde(default)]
+    co_base_excludes_only_form: Option<String>,
     /// *"Does not affect Incarnon Form"* — the whole perk is the BASE form's.
     ///
     /// It is the EVOLUTION's flag and not an effect's because that is how the
@@ -516,13 +562,13 @@ pub struct EvolutionDef {
     /// Verbatim effect text — what the cards display (like mods/arcanes).
     pub description: String,
     pub currently_broken: bool,
-    /// This evolution's flat base damage does NOT feed the weapon's GunCO
-    /// term. Dual Toxocyst's Carnage Reign is the only one: its catalog row
-    /// reads "75 or 135 (with Evolution II Perk 1)" against a CO base of a
-    /// flat 75. The wiki lists ONLY discrepant cases, so an evolution without
-    /// this flag — including Dual Toxocyst's OTHER Evolution II option — feeds
-    /// the CO term in full.
-    pub co_base_excludes_this_evolution: bool,
+    /// What this perk DECLARES about feeding the weapon's GunCO term, or
+    /// `None` for "nobody has said" — which is the common case and means the
+    /// term IS fed. See [`Self::excludes_co_base`].
+    pub co_base_excludes_this_evolution: Option<bool>,
+    /// The FORM a declaration was measured on, when it covers only one — see
+    /// the loader field of the same name.
+    pub co_base_excludes_only_form: Option<crate::weapons_data::FormKind>,
     /// Everything this evolution grants applies to the BASE form only — see
     /// the loader field of the same name.
     pub base_form_only: bool,
@@ -857,6 +903,56 @@ impl EvolutionDef {
                 _ => None,
             })
             .collect()
+    }
+
+    /// DOES THIS PERK'S FLAT BASE DAMAGE STAY OUT OF THE GunCO TERM, on an
+    /// entry of this form and this CO class?
+    ///
+    /// **A DECLARATION WINS, AND IT IS SCOPED TO WHAT WAS MEASURED.**
+    /// `only_form` exists because a perk reaches BOTH entries of its transform
+    /// group while a reading comes off ONE of them: the Torid's Incarnon form
+    /// was measured (M50) and its base form was not, and they are not even the
+    /// same CO class. A declaration that does not reach this form falls through
+    /// to the default below rather than answering for it.
+    ///
+    /// **AN UNDECLARED PERK IS ANSWERED BY THE ENTRY'S CO CLASS**, and the two
+    /// halves have very different amounts of evidence behind them (owner,
+    /// 2026-08-16 — he drew the line here himself, twice):
+    ///
+    ///   · `Adding` — EXCLUDED. Fifteen to zero. Eleven catalog rows print a
+    ///     DOUBLE damage value ("100 or 124 (with Evolution II)") and are the
+    ///     only rows where anyone measured a weapon with its evolution
+    ///     installed; all eleven exclude. Four owner measurements agree — the
+    ///     Dual Toxocyst's two tier-2 perks (M49) and the Torid Incarnon's two
+    ///     (M50). Against that, NOTHING anywhere has measured an evolved weapon
+    ///     and found its evolution fed the term: every other catalog row prints
+    ///     a single number that is the UNEVOLVED base, so it says the CO bonus
+    ///     equals the base of a weapon with no evolution on it, which is true
+    ///     by construction. Three of the four measurements are on perks the
+    ///     catalog does not list, so its silence has been tested three times
+    ///     and meant "unmeasured" every time.
+    ///   · `Multiplying` — INCLUDED, which is to say UNCHANGED, because
+    ///     NOTHING HAS MEASURED ONE. Every reading above is an Adding entry.
+    ///     The rule may well be the same on both sides — which base the term
+    ///     reads sits upstream of how it combines — but "may well be" is not
+    ///     the standard, and the owner stopped a flip that would have moved 24
+    ///     pairs on an inference.
+    ///
+    /// THE CHEAP EXPERIMENT that settles the second half is the Torid's BASE
+    /// form: `Multiplying` where its Incarnon form is `Adding`, the same two
+    /// perks already measured on the other side (MEASUREMENTS M50 §Still open).
+    ///
+    /// `Inert` gets the Adding answer and never reads it — it computes no CO
+    /// term at all.
+    pub fn excludes_co_base(
+        &self,
+        form: crate::weapons_data::FormKind,
+        behavior: crate::loadout::CoBehavior,
+    ) -> bool {
+        match self.co_base_excludes_this_evolution {
+            Some(v) if self.co_base_excludes_only_form.is_none_or(|f| f == form) => v,
+            _ => behavior != crate::loadout::CoBehavior::Independent,
+        }
     }
 
     /// WHAT THE GAME ITSELF DOES NOT DO — the clauses measured to pay nothing,
@@ -2067,9 +2163,11 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
         // chances to be right about the vector and wrong about the explosion.
         // See `WeaponBase::add_flat_base_damage` for what it does and why.
         base.add_flat_base_damage(flat);
+        // THE ENTRY'S OWN FORM decides whether a form-scoped declaration
+        // reaches it — see `EvolutionDef::excludes_co_base`.
         if evos
             .iter()
-            .any(|e| !e.currently_broken && e.co_base_excludes_this_evolution)
+            .any(|e| !e.currently_broken && e.excludes_co_base(base.form, base.co_behavior))
         {
             base.co_base_fraction = original_total / evolved;
         }
@@ -2273,6 +2371,13 @@ pub fn pool() -> &'static Vec<EvolutionDef> {
                 description: ef.description.unwrap_or_default(),
                 currently_broken: ef.currently_broken,
                 co_base_excludes_this_evolution: ef.co_base_excludes_this_evolution,
+                co_base_excludes_only_form: ef.co_base_excludes_only_form.as_deref().map(|s| {
+                    match s {
+                        "base" => crate::weapons_data::FormKind::Base,
+                        "incarnon" => crate::weapons_data::FormKind::Incarnon,
+                        other => panic!("co_base_excludes_only_form: unknown form {other:?}"),
+                    }
+                }),
                 base_form_only: ef.base_form_only,
                 effects,
             });
@@ -2444,7 +2549,8 @@ mod tests {
             icon: None,
             description: String::new(),
             currently_broken: broken,
-            co_base_excludes_this_evolution: false,
+            co_base_excludes_this_evolution: None,
+            co_base_excludes_only_form: None,
             base_form_only: false,
             effects: vec![
                 EvoEffect::FlatBaseDamage(100.0),
@@ -2883,7 +2989,12 @@ mod furis_co_split_tests {
     use super::*;
 
     fn excludes(id: &str) -> bool {
-        get(id).unwrap_or_else(|| panic!("{id}")).co_base_excludes_this_evolution
+        get(id)
+            .unwrap_or_else(|| panic!("{id}"))
+            .excludes_co_base(
+                crate::weapons_data::FormKind::Incarnon,
+                crate::loadout::CoBehavior::AdditiveWithBaseDamage,
+            )
     }
 
     #[test]
@@ -2895,10 +3006,45 @@ mod furis_co_split_tests {
         assert!(excludes("furis_stormburst"));
     }
 
+    /// …AND SO DOES THE MK1's, by the DEFAULT rather than by a row.
+    ///
+    /// It read `!excludes(...)` and was the tidiest illustration of the old
+    /// default: same Genesis, same two perk NAMES, and the catalog has a Furis
+    /// row and no MK1 Furis row — so the pair differed on nothing but whether
+    /// somebody had written them down. That is a description of a survey's
+    /// coverage, not of a game mechanic, and an Adding entry no longer reads it
+    /// as one (2026-08-16). MULTIPLYING entries still do, and deliberately: see
+    /// `excludes_co_base`.
     #[test]
-    fn the_mk1_tier2_pair_does_not() {
-        assert!(!excludes("mk1_furis_haven_foray"));
-        assert!(!excludes("mk1_furis_stormburst"));
+    fn the_mk1_tier2_pair_excludes_it_too() {
+        assert!(excludes("mk1_furis_haven_foray"));
+        assert!(excludes("mk1_furis_stormburst"));
+    }
+
+    /// AN EXPLICIT `false` IS STILL HONOURED, so a measured exception has
+    /// somewhere to go. Nothing in `data/` uses it — asserted here so that
+    /// stays a fact about the roster rather than an assumption, and so the
+    /// opt-out is known to work on the day something needs it.
+    #[test]
+    fn the_opt_out_exists_and_nothing_uses_it() {
+        let opted_out: Vec<&str> = pool()
+            .iter()
+            .filter(|d| d.co_base_excludes_this_evolution == Some(false))
+            .map(|d| d.id.as_str())
+            .collect();
+        // …and a FORM-SCOPED declaration is the other half of the machinery:
+        // the Torid's pair, measured on the Incarnon form and silent about the
+        // base one (M50).
+        let scoped: Vec<&str> = pool()
+            .iter()
+            .filter(|d| d.co_base_excludes_only_form.is_some())
+            .map(|d| d.id.as_str())
+            .collect();
+        assert_eq!(scoped, ["torid_final_fusillade", "torid_plentiful_mayhem"], "{scoped:?}");
+        assert!(
+            opted_out.is_empty(),
+            "these declare `co_base_excludes_this_evolution: false` — each needs a              measurement in docs/MEASUREMENTS.md: {opted_out:?}"
+        );
     }
 
     /// A QUALIFIER NEVER STANDS ALONE, which is the whole reason it is not

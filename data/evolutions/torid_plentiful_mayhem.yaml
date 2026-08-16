@@ -7,6 +7,24 @@ description: "Increase Base Damage by +31.
 Multishot consumes ammo directly from Capacity and increases Damage by +60%."
 selection: choose_one
 
+# MEASURED ON THE INCARNON FORM (owner, 2026-08-16; MEASUREMENTS M50): this
+# perk's flat base damage does NOT feed the GunCO term.
+#
+#   1 stack .. 318   2 stacks .. 381   (bare crit 254 = 82 x 3.1)
+#
+# Solved as an ABSOLUTE across both tier-2 perks, every reading gives a CO base
+# of ~51 — the unevolved value — off panels of 102 and 82. A term that fed on
+# the evolution would have solved to those two numbers instead.
+#
+# AND IT DECLARES NOTHING, deliberately. A declaration is the PERK's and reaches
+# both forms of the transform group, and only ONE side was measured: the
+# Incarnon form is `Adding` and the base form is `Multiplying`, which nobody has
+# measured (owner, 2026-08-16 — he stopped the flip that would have covered it).
+# So the class default answers each form on its own evidence, and this file does
+# not assert the half it does not know. `evolutions_data::excludes_co_base`.
+co_base_excludes_this_evolution: true
+co_base_excludes_only_form: incarnon
+
 effects:
   - kind: flat_base_damage
     value: 31.0
