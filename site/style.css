@@ -155,6 +155,11 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 /* THE ARENA, seen from above — two bodies on a floor, dragged with a finger.
    Drawn at the real 0.25 m body radius, so "as close as they go" is something
    you can see rather than a rule you are told. */
+/* A RULE, in fixed slots — behaviour, the base it reads, which parts take it.
+   Monospaced so two weapons line up column for column when you flick between
+   them; the prose beside it (.srownote) is only for what the slots cannot say. */
+.srowrule{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;
+  color:var(--fg);opacity:.85;margin:2px 0 0 2px;letter-spacing:-.2px}
 .arena{margin:6px 0;border:1px solid var(--line);border-radius:8px;background:var(--panel2);overflow:hidden;touch-action:none}
 .arena .ar-svg{display:block;width:100%;height:auto}
 .ar-grid{stroke:var(--line);stroke-width:1;opacity:.45}

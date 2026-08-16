@@ -3085,47 +3085,70 @@ pub fn panel_json(v: &Value) -> Value {
         // Incarnon makes false: its explosion takes CO.
         let radial_co = base.radial.as_ref().is_some_and(|r| r.takes_condition_overload);
         let field_co = base.lingering.as_ref().is_some_and(|f| f.takes_condition_overload);
-        let co_parts = match (radial_co, field_co) {
-            (false, false) => "direct hits only".to_string(),
-            _ => {
-                let extra = if radial_co && field_co {
-                    "the radial explosion and the lingering field"
-                } else if radial_co {
-                    "the radial explosion"
-                } else {
-                    "the lingering field"
-                };
-                format!("direct hits AND {extra} — an AoE part taking CO is a per-entry exception, declared by this weapon")
+        // A FIXED FORMAT, NOT A SENTENCE (owner, 2026-08-16). The rule is
+        // three slots — BEHAVIOUR, the BASE the term reads, and which PARTS
+        // take it — so a reader can compare two weapons by looking at the same
+        // position twice instead of parsing two paragraphs. Anything genuinely
+        // odd goes in the note BESIDE it rather than swelling the line.
+        let parts = {
+            let mut v = vec!["direct"];
+            if radial_co {
+                v.push("radial");
             }
+            if field_co {
+                v.push("field");
+            }
+            v.join(" + ")
         };
         let behavior = match panel.co_behavior {
-        wfsim_engine::loadout::CoBehavior::AdditiveWithBaseDamage =>
-            format!("joins the base-damage bracket on this weapon (additive with Hornet Strike), {co_parts}"),
-        wfsim_engine::loadout::CoBehavior::Independent =>
-            format!("an independent multiplier on this weapon, {co_parts}"),
-        wfsim_engine::loadout::CoBehavior::Inert =>
-            "INERT on this weapon — the bonus does not apply".to_string(),
-    };
-        let gunco_note = if (panel.co_base_fraction - 1.0).abs() > 1e-9 {
-            format!(
-            "computed on the ORIGINAL {:.0} base only — evolution flat damage is excluded ({:.0}% effectiveness); {behavior}",
-            raw_bd,
-            panel.co_base_fraction * 100.0
-        )
-        } else {
-            behavior.clone()
+            wfsim_engine::loadout::CoBehavior::AdditiveWithBaseDamage => "additive",
+            wfsim_engine::loadout::CoBehavior::Independent => "multiplying",
+            wfsim_engine::loadout::CoBehavior::Inert => "inert",
         };
+        let excluded = (panel.co_base_fraction - 1.0).abs() > 1e-9;
+        // THE PERCENTAGE IS ALWAYS PRINTED, including the ordinary 100%
+        // (owner, 2026-08-16). A slot that is blank when nothing is odd cannot
+        // be told apart from a slot nobody filled in, and "100%" is the claim
+        // being made — that this weapon reads its WHOLE base — which is worth
+        // as much scrutiny as a 52%. ORIGINAL of EVOLVED: `raw_bd` is the
+        // pre-evolution base and the fraction is original/evolved, so the
+        // denominator is what the panel prints as this attack's base damage.
+        let co_rule = if behavior == "inert" {
+            "inert · base = n/a · parts = none".to_string()
+        } else {
+            format!(
+                "{behavior} · base = {:.0}% ({:.0} of {:.0}) · parts = {parts}",
+                panel.co_base_fraction * 100.0,
+                raw_bd,
+                base.base_vector.total()
+            )
+        };
+
+        // THE NOTE IS FOR WHAT THE THREE SLOTS CANNOT SAY, and is absent on an
+        // ordinary weapon — which is most of them. Three things earn one.
+        let mut notes: Vec<String> = Vec::new();
+        if behavior == "inert" {
+            notes.push("this weapon takes no Condition Overload at all — the catalog lists it as \"Does not apply\"".into());
+        }
+        if excluded {
+            notes.push("an evolution raised this attack's base without raising what CO reads, so the term is computed on the ORIGINAL base (docs/CATALOGS.md)".into());
+        }
+        if radial_co || field_co {
+            notes.push("an AoE part taking CO is a per-entry exception the catalog lists; every unlisted weapon is direct hits only".into());
+        }
+        if behavior == "multiplying" {
+            notes.push("multiplying stands OUTSIDE the base-damage bracket, so Serration does not dilute it; additive joins that bracket and is diluted".into());
+        }
+
         // ALWAYS SHOWN, even with no source equipped (owner, 2026-08-16).
         //
         // The row used to appear only once a GunCO card was on the build, so
         // the one thing a reader could check — WHICH RULE this weapon is being
         // computed under — was invisible until they had already committed to
-        // the mod. The rules are per-weapon (docs/CATALOGS.md: Adding or
-        // Multiplying, which attack parts, what fraction of the base the term
-        // reads), they are transcribed by hand from a catalog, and the Burston
-        // Prime's was wrong for months. Putting the adopted rule on every
-        // weapon's panel is what lets that be caught by someone who owns the
-        // gun rather than by someone who happens to re-read the yaml.
+        // the mod. The rules are per-weapon, they are transcribed by hand from
+        // a catalog, and the Burston Prime's was wrong for months. Putting the
+        // adopted rule on every weapon's panel is what lets that be caught by
+        // someone who owns the gun rather than by someone re-reading the yaml.
         //
         // It is a STATEMENT OF METHOD, not an admission — `unmodeled:` and the
         // disclosure banner are for what the sim cannot do; this is what it
@@ -3138,11 +3161,8 @@ pub fn panel_json(v: &Value) -> Value {
             } else {
                 "no source equipped".to_string()
             },
-            "note": if has_source {
-                gunco_note.clone()
-            } else {
-                format!("{gunco_note} — this is how a GunCO source WOULD be computed here")
-            },
+            "rule": co_rule,
+            "note": if notes.is_empty() { Value::Null } else { json!(notes.join(" · ")) },
             "sources": sources("co", None) }));
 
         // The equipped arcane on the panel: Secondary Shiver is a GunCO-family
@@ -3162,7 +3182,11 @@ pub fn panel_json(v: &Value) -> Value {
                     "base": "—",
                     "final": format!("{} damage per Cold status on target (cap {})",
                         fpct(fx.per_cold_bd), fx.cold_cap),
-                    "note": format!("GunCO family — {gunco_note}"),
+                    // The SAME per-weapon rule, because Shiver is a GunCO
+                    // source: it reads the same base and joins the same
+                    // bracket, so it states the same three slots.
+                    "rule": co_rule.clone(),
+                    "note": "GunCO family — the weapon's Condition Overload rule applies to this too",
                     "sources": [json!({ "mod": format!("{} (arcane, rank {rank})", def.name),
                         "value": fpct(fx.per_cold_bd), "note": "per Cold stack; Frozen counts as the full 10" })] }));
                 }
@@ -3343,45 +3367,43 @@ pub fn panel_json(v: &Value) -> Value {
             // entries where it is "yes". The direct hit's row cannot carry it:
             // it names one bonus, and the two parts do not get the same one.
             // Shown only when a CO source is equipped, like the direct row.
-            if panel.co_per_type > 0.0 {
-                let (value, note) = if rr.takes_condition_overload {
-                    // The Burston Incarnon's own base fraction is 13/55: the
-                    // explosion takes the evolution's flat damage but not into
-                    // the base CO multiplies. Its catalog row prints the 24%.
+            // UNCONDITIONAL, like the direct hit's: this part's rule is a fact
+            // about the weapon, not about what is currently equipped.
+                // THE SAME THREE SLOTS as the direct hit's, so a reader
+                // comparing the two parts of one weapon compares positions
+                // rather than paragraphs (owner, 2026-08-16). This part has
+                // its own base and its own eligibility, so both are printed
+                // here rather than inherited from the row above.
+                let (value, rule, note) = if rr.takes_condition_overload {
                     let orig = rb.base_vector.total() * rr.co_base_fraction;
                     let cut = (rr.co_base_fraction - 1.0).abs() > 1e-9;
                     (
                         format!("{} per status type on target", fpct(panel.co_per_type)),
+                        format!(
+                            "{behavior} · base = {:.0}% ({} of {}) · this part = takes CO",
+                            rr.co_base_fraction * 100.0,
+                            num(orig),
+                            num(rb.base_vector.total())
+                        ),
                         if cut {
-                            format!(
-                                "THE EXCEPTION: CO normally reaches direct hits only, and this \
-                                 explosion is declared to take it — on the enemy the bullet \
-                                 directly hit, which a single target always is. Computed on the \
-                                 ORIGINAL {} base only ({:.0}% effectiveness): evolution flat \
-                                 damage raises the explosion's damage but not its CO base",
-                                num(orig),
-                                rr.co_base_fraction * 100.0
-                            )
+                            "THE EXCEPTION: CO normally reaches direct hits only, and this                              explosion is declared to take it — on the enemy the bullet directly                              hit, which a single target always is. An evolution raises the                              explosion's damage without raising the base CO reads, which is where                              the reduced percentage comes from"
+                                .to_string()
                         } else {
-                            "THE EXCEPTION: CO normally reaches direct hits only, and this \
-                             explosion is declared to take it — on the enemy the bullet directly \
-                             hit, which a single target always is"
+                            "THE EXCEPTION: CO normally reaches direct hits only, and this                              explosion is declared to take it — on the enemy the bullet directly                              hit, which a single target always is"
                                 .to_string()
                         },
                     )
                 } else {
                     (
                         "excluded".to_string(),
-                        "the rule: Condition Overload reaches DIRECT hits only, so this \
-                         explosion takes none of it. Weapon-wide damage buckets still reach it — \
-                         CO is the one thing an AoE part loses"
+                        format!("{behavior} · base = n/a · this part = excluded"),
+                        "the rule: Condition Overload reaches DIRECT hits only, so this                          explosion takes none of it. Weapon-wide damage buckets still reach it —                          CO is the one thing an AoE part loses"
                             .to_string(),
                     )
                 };
                 rows.push(json!({ "key": "co", "label": "Condition Overload",
-                    "base": "—", "final": value, "note": note,
+                    "base": "—", "final": value, "rule": rule, "note": note,
                     "sources": if rr.takes_condition_overload { sources("co", None) } else { vec![] } }));
-            }
             parts.push(json!({
                 "id": "radial",
                 "label": "Radial explosion",
@@ -3407,7 +3429,7 @@ pub fn panel_json(v: &Value) -> Value {
             // silent about it rather than stating a boost of ×1.
             let boost = panel.field_duration_on_empty_reload;
             let boosted = (boost > 1.0).then_some((fr.duration_s * boost, ticks * boost));
-            let rows = vec![
+            let mut rows = vec![
                 json!({ "key": "base_damage", "label": "Damage per Tick",
                     "base": num(fb.base_vector.total()), "final": num(fr.modified_base),
                     "sources": fsrc("base_damage") }),
@@ -3476,7 +3498,36 @@ pub fn panel_json(v: &Value) -> Value {
                     "note": "measured (MEASUREMENTS M13)".to_string(),
                     "sources": json!([]) }),
             ];
-            parts.push(json!({
+                        // THE FIELD'S OWN CO ROW, on the same three slots as the direct
+            // hit's and the explosion's — added 2026-08-16, because the part
+            // had none at all and "no row" reads as "nobody thought about it"
+            // rather than as an answer. A field keeps the DIRECT hit's base
+            // fraction: the catalog puts the Torid's cloud on the same base as
+            // its main fire (`field_tick` passes `ap.co_base_fraction`).
+            rows.push(json!({ "key": "co", "label": "Condition Overload",
+                "base": "—",
+                "final": if fb.takes_condition_overload {
+                    format!("{} per status type on target", fpct(panel.co_per_type))
+                } else {
+                    "excluded".to_string()
+                },
+                "rule": if fb.takes_condition_overload {
+                    format!(
+                        "{behavior} · base = {:.0}% ({:.0} of {:.0}) · this part = takes CO",
+                        panel.co_base_fraction * 100.0,
+                        raw_bd,
+                        base.base_vector.total()
+                    )
+                } else {
+                    format!("{behavior} · base = n/a · this part = excluded")
+                },
+                "note": if fb.takes_condition_overload {
+                    "THE EXCEPTION: CO normally reaches direct hits only, and this field is                      declared to take it. It keeps the DIRECT hit's base — the catalog puts the                      cloud on the same base and the same behaviour as the main fire"
+                } else {
+                    "the rule: Condition Overload reaches DIRECT hits only, so this field takes                      none of it. Weapon-wide damage buckets still reach it"
+                },
+                "sources": if fb.takes_condition_overload { sources("co", None) } else { vec![] } }));
+parts.push(json!({
                 "id": "field",
                 "label": "Lingering field",
                 "meta": format!("{} m, {} s", dist(fr.radius_m), dist(fr.duration_s)),

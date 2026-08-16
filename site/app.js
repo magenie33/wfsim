@@ -5730,6 +5730,7 @@ function renderPanel(r) {
     <div class="srow">
       <div class="shead"><span class="sk">${tr(row.label)}</span>
         <span class="sv">${row.base !== "—" && row.base !== row.final ? `<span class="sbase">${row.base}</span> → ` : ""}<b>${row.final}</b></span></div>
+      ${row.rule ? `<div class="srowrule" title="${escHtml(tr("the rule this weapon is computed under: how the bonus combines, what base it reads, and which attack parts take it"))}">▸ ${escHtml(row.rule)}</div>` : ""}
       ${row.note ? `<div class="srownote">⚙ ${row.note}</div>` : ""}
       ${row.locked_by ? `<div class="srownote">🔒 ${escHtml(tr("locked at the weapon's default by"))} ${escHtml(row.locked_by)}</div>` : ""}
       ${bucketLine(row)}

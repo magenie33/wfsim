@@ -45,26 +45,47 @@ const r = await evaluate(`(async () => {
     walk(p);
     return found[0] || null;
   };
+  // …and EVERY form and EVERY part, which is the completeness claim.
+  const allParts = async (weapon, evolutions) => {
+    const p = await api('/api/panel', { weapon, mods: [], evolutions: evolutions || [] });
+    const out = [];
+    (p.forms || []).forEach((f, fi) => (f.parts || []).forEach((pt) => {
+      const row = (pt.stats || []).find((s) => s.key === 'co');
+      out.push({ form: fi, part: pt.id, rule: row && row.rule });
+    }));
+    return out;
+  };
 
   // 1. NOTHING EQUIPPED, and the rule is still stated.
   const bare = await co('latron');
   out.bareThere = !!bare;
   out.bareFinal = bare && bare.final;
   out.bareNote = bare && bare.note;
+  out.bareRule = bare && bare.rule;
 
   // 2. ALL THREE BEHAVIOURS, from three weapons the catalog classifies
   //    differently.
-  out.adding = (await co('latron'))?.note || '';
-  out.multiplying = (await co('torid'))?.note || '';
-  out.inert = (await co('stug'))?.note || '';
+  out.adding = (await co('latron'))?.rule || '';
+  out.multiplying = (await co('torid'))?.rule || '';
+  out.inert = (await co('stug'))?.rule || '';
+  // …and an ordinary weapon carries NO prose beside the slots.
+  out.plainNote = (await co('latron'))?.note ?? null;
 
   // 3. A NON-DEFAULT FRACTION, named with its number. The Burston Prime's base
   //    form reads 46 of its evolved 88 — measured, MEASUREMENTS M48.
-  out.fraction = (await co('burston_prime',
-    ['burston_prime_evo1_incarnon_form', 'burston_prime_forceful_finality']))?.note || '';
+  const bp = await co('burston_prime',
+    ['burston_prime_evo1_incarnon_form', 'burston_prime_forceful_finality']);
+  out.fraction = bp?.rule || '';
+  out.fractionNote = bp?.note || '';
 
   // 4. AN AoE PART THAT TAKES CO says so rather than being silently included.
-  out.aoe = (await co('torid'))?.note || '';
+  out.aoe = (await co('torid'))?.rule || '';
+
+  // 5. COMPLETE: every form, every part, no gaps — including the ordinary
+  //    100% ones, because a blank slot cannot be told from an unfilled one.
+  out.burston = await allParts('burston_prime',
+    ['burston_prime_evo1_incarnon_form', 'burston_prime_forceful_finality']);
+  out.torid = await allParts('torid');
   return out;
 })()`);
 
@@ -72,22 +93,39 @@ check("the CO rule is stated with NOTHING equipped", r.bareThere === true);
 check("...and it says there is no source yet rather than a number",
   /no source/i.test(r.bareFinal || ""), r.bareFinal);
 check("...and still spells out how it WOULD be computed",
-  /would be computed/i.test(r.bareNote || ""), (r.bareNote || "").slice(0, 90));
+  /would be computed/i.test(r.bareFinal || "") || /parts =/.test(r.bareRule || ""), r.bareRule);
 
-check("ADDING is named as joining the base-damage bracket",
-  /base-damage bracket/i.test(r.adding), r.adding.slice(0, 70));
-check("MULTIPLYING is named as an independent multiplier",
-  /independent multiplier/i.test(r.multiplying), r.multiplying.slice(0, 70));
-check("INERT says the bonus does not apply at all",
-  /INERT/.test(r.inert), r.inert.slice(0, 70));
+// THE THREE SLOTS, in fixed order, so two weapons compare column for column.
+const SLOTS = /^(additive|multiplying|inert) · base = .+ · parts = .+$/;
+check("the rule is three fixed slots, not a sentence", SLOTS.test(r.adding), r.adding);
+check("ADDING is named", /^additive · /.test(r.adding), r.adding);
+check("MULTIPLYING is named", /^multiplying · /.test(r.multiplying), r.multiplying);
+check("INERT is named", /^inert · /.test(r.inert), r.inert);
+check("...and an ordinary weapon carries no prose beside the slots",
+  r.plainNote === null, String(r.plainNote).slice(0, 60));
 check("...and the three are three different sentences",
   new Set([r.adding, r.multiplying, r.inert]).size === 3);
 
-check("a weapon whose CO reads less than its base says so, with the number",
-  /ORIGINAL \d+ base only/.test(r.fraction) && /%\s*effectiveness/.test(r.fraction),
-  r.fraction.slice(0, 110));
+check("a reduced base is printed as ORIGINAL of EVOLVED, with the percentage",
+  /base = 52% \(46 of 88\)/.test(r.fraction), r.fraction);
+check("...and the WHY is in the note beside it, not in the slots",
+  /evolution raised/i.test(r.fractionNote), r.fractionNote.slice(0, 80));
 
-check("an AoE part that takes CO is named rather than silently included",
-  /direct hits AND/.test(r.aoe), r.aoe.slice(0, 90));
+check("an AoE part that takes CO is named in the parts slot",
+  /parts = direct \+ field/.test(r.aoe), r.aoe);
+
+// COMPLETENESS, which is the point of the whole row: an ordinary attack part
+// states its ordinary 100% rather than staying silent, so "no line" always
+// means "nobody filled this in" and never "nothing to say here".
+const every = [...r.burston, ...r.torid];
+check("every form and every part carries a rule",
+  every.length >= 5 && every.every((p) => !!p.rule),
+  every.map((p) => `${p.form}/${p.part}=${p.rule ? "ok" : "MISSING"}`).join(" "));
+check("...including the ordinary ones, which say 100% rather than nothing",
+  every.some((p) => /base = 100%/.test(p.rule)),
+  every.map((p) => p.rule).join(" | ").slice(0, 120));
+check("...and two forms of one weapon state their OWN bases",
+  new Set(r.burston.map((p) => p.rule)).size >= 2,
+  r.burston.map((p) => `${p.form}/${p.part}: ${p.rule}`).join("  ||  "));
 
 await finish("every weapon states the Condition Overload rule it is computed under");
