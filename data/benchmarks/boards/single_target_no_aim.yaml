@@ -209,6 +209,12 @@ entries:
     valence: impact
   - weapon: kuva_nukor
     mode: base
+    score: 5.81389737408362
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: cold
+  - weapon: kuva_nukor
+    mode: base
     score: 4.14309948338098
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence]
     arcanes: [secondary_enervate]
