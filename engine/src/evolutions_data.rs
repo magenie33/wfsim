@@ -67,11 +67,16 @@ struct EvoFile {
     /// weapon+perk pairs moved when this flipped, by 37% on average at two
     /// Galvanized stacks against two status types.
     ///
-    /// THE FLAG IS STILL THE PERK's, not the weapon's and not the CO class's,
+    /// THE FLAG IS STILL THE PERK's ON THE `Adding` SIDE, not the weapon's,
     /// because the catalog names perks and a perk reaches both forms of its
-    /// transform group — the Torid's base form is `Multiplying` where its
-    /// Incarnon form is `Adding`, so a class-scoped rule could not even be
-    /// expressed. `false` on a perk is how a measured exception gets recorded.
+    /// transform group. `false` on a perk is how a measured exception gets
+    /// recorded there.
+    ///
+    /// ON A `Multiplying` ENTRY THE CLASS ANSWERS FIRST and this flag is never
+    /// read (M51, and see [`EvolutionDef::excludes_co_base`]). The two forms of
+    /// one group can be different classes with OPPOSITE answers — the Torid is
+    /// exactly that — so a perk's flag must not be able to reach the form it
+    /// was not measured on.
     #[serde(default)]
     co_base_excludes_this_evolution: Option<bool>,
     /// …and on WHICH FORM it was measured, when the reading covers one of them.
@@ -79,9 +84,11 @@ struct EvoFile {
     ///
     /// A perk belongs to a GROUP and a reading comes off an ENTRY. Usually that
     /// gap does not matter, because the catalog rows name a weapon and both its
-    /// forms behave alike. The Torid is where it does: its Incarnon form was
-    /// measured and its base form was not, and the two are different CO classes
-    /// (MEASUREMENTS M50).
+    /// forms behave alike. The Torid is where it does: both its forms are now
+    /// measured on the same two perks and they answer OPPOSITELY — the Incarnon
+    /// form is `Adding` and excludes (M50), the base form is `Multiplying` and
+    /// feeds in full (M51). Recording the first without this scope would have
+    /// asserted the second and been wrong.
     #[serde(default)]
     co_base_excludes_only_form: Option<String>,
     /// *"Does not affect Incarnon Form"* — the whole perk is the BASE form's.
@@ -931,16 +938,31 @@ impl EvolutionDef {
     ///     by construction. Three of the four measurements are on perks the
     ///     catalog does not list, so its silence has been tested three times
     ///     and meant "unmeasured" every time.
-    ///   · `Multiplying` — INCLUDED, which is to say UNCHANGED, because
-    ///     NOTHING HAS MEASURED ONE. Every reading above is an Adding entry.
-    ///     The rule may well be the same on both sides — which base the term
-    ///     reads sits upstream of how it combines — but "may well be" is not
-    ///     the standard, and the owner stopped a flip that would have moved 24
-    ///     pairs on an inference.
+    ///   · `Multiplying` — INCLUDED, and it is the CLASS that answers rather
+    ///     than a default the perks happen to agree with. MEASURED on the
+    ///     Torid's base form (M51), which is `Multiplying` where the form of
+    ///     M50 is `Adding`: the same two tier-2 perks, +51 and +31, and the CO
+    ///     multiplier came back 1.40 and 1.80 under BOTH — identical, where a
+    ///     term reading the unevolved base would have printed 1.265 under the
+    ///     +51 and 1.305 under the +31. The two answers are OPPOSITE, so the
+    ///     "may well be the same on both sides" this comment used to carry was
+    ///     wrong: which base the term reads is decided by the class, not
+    ///     upstream of it.
     ///
-    /// THE CHEAP EXPERIMENT that settles the second half is the Torid's BASE
-    /// form: `Multiplying` where its Incarnon form is `Adding`, the same two
-    /// perks already measured on the other side (MEASUREMENTS M50 §Still open).
+    /// So THE CLASS ANSWERS FIRST ON A `Multiplying` ENTRY, above the
+    /// declaration (owner, 2026-08-16). A perk reaches every form of its
+    /// transform group and only one of them was ever the measured one, so a
+    /// reading off an `Adding` form must not be able to reach across and dilute
+    /// a `Multiplying` one — which the Torid's pair would do today without
+    /// `only_form`, and which the NEXT such perk would do by forgetting it. The
+    /// generalisation is deliberate and runs ahead of the catalog: the wiki
+    /// lists a fraction for a minority of entries, and the owner's call is that
+    /// this rule beats that table, to be revisited PER WEAPON if a measurement
+    /// ever contradicts it (2026-08-16).
+    ///
+    /// THE RESERVED SLOT is the per-entry `co_base_fraction:` in the weapon
+    /// yaml, which is 1.0 on all 26 `Multiplying` entries and is where a future
+    /// measurement would land — one weapon's file, with nothing here to change.
     ///
     /// `Inert` gets the Adding answer and never reads it — it computes no CO
     /// term at all.
@@ -949,9 +971,12 @@ impl EvolutionDef {
         form: crate::weapons_data::FormKind,
         behavior: crate::loadout::CoBehavior,
     ) -> bool {
+        if behavior == crate::loadout::CoBehavior::Independent {
+            return false;
+        }
         match self.co_base_excludes_this_evolution {
             Some(v) if self.co_base_excludes_only_form.is_none_or(|f| f == form) => v,
-            _ => behavior != crate::loadout::CoBehavior::Independent,
+            _ => true,
         }
     }
 

@@ -156,12 +156,31 @@ undeclared perk on an Adding entry keeps its flat damage out of the CO term. 238
 weapon+perk pairs moved, by 37% on average at two Galvanized stacks against two
 status types.
 
-**`Multiplying` IS UNTOUCHED**, all 24 pairs, because nothing has measured one:
-every reading in the tally is an Adding entry. The owner drew that line himself
-on the version of this change that covered both. The rule may well be the same
-on both sides — which base the term reads sits upstream of how it combines — but
-that is an argument, and the Torid's base form is one reading away from settling
-it (MEASUREMENTS M50 §Still open).
+**`Multiplying` READS THE FULL EVOLVED BASE — MEASURED, and it is the OPPOSITE
+answer** (MEASUREMENTS M51). The owner drew the line himself on the version of
+this change that covered both classes, then ran the reading that settles it: the
+Torid's base form, `Multiplying` where its Incarnon form is `Adding`, the same
+two tier-2 perks. The CO multiplier came back 1.40 and 1.80 under BOTH the +51
+and the +31 — identical, where a term reading the unevolved base prints 1.265
+and 1.305. So "the rule may well be the same on both sides, since which base the
+term reads sits upstream of how it combines" — which this file used to say — is
+wrong. **The class decides which base the term reads.**
+
+| class | the term reads | evidence |
+|---|---|---|
+| `Adding` | the UNEVOLVED base | 11 catalog rows + 4 owner readings, 15 to 0 |
+| `Multiplying` | the FULL evolved base | M51, two attack parts x two perks |
+
+**AND IT IS GENERALISED TO ALL 26 ENTRIES ON THAT ONE WEAPON'S READING** (owner,
+2026-08-16), deliberately ahead of this table: the wiki prints a fraction for a
+minority of attacks, the rule beats the table, and a measurement that
+contradicts it edits ONE weapon's yaml rather than the rule. The class now
+answers BEFORE a perk's declaration on a `Multiplying` entry, which is what stops
+a reading taken off an `Adding` form from reaching across a transform group and
+diluting one. `no_evolution_dilutes_a_multiplying_co_base` asserts the property
+roster-wide instead of the 26 numbers, so it holds for a weapon nobody has
+entered yet; the reserved per-entry slot is `co_base_fraction:` in the weapon
+yaml, 1.0 everywhere today.
 
 **A DECLARATION STAYS THE PERK'S, AND IS SCOPED TO THE FORM IT WAS MEASURED ON.**
 The catalog names perks, and a perk reaches both forms of its transform group —

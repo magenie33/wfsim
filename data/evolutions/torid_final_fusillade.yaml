@@ -15,19 +15,27 @@ selection: choose_one
 # of ~51 — the unevolved value — off panels of 102 and 82. A term that fed on
 # the evolution would have solved to those two numbers instead.
 #
-# AND IT DECLARES NOTHING, deliberately. A declaration is the PERK's and reaches
-# both forms of the transform group, and only ONE side was measured: the
-# Incarnon form is `Adding` and the base form is `Multiplying`, which nobody has
-# measured (owner, 2026-08-16 — he stopped the flip that would have covered it).
-# So the class default answers each form on its own evidence, and this file does
-# not assert the half it does not know. `evolutions_data::excludes_co_base`.
+# AND THE DECLARATION IS SCOPED, deliberately. A declaration is the PERK's and
+# reaches both forms of the transform group, and the two forms are different CO
+# classes with OPPOSITE answers: the Incarnon form is `Adding` and excludes this
+# flat damage (M50), the base form is `Multiplying` and feeds it in full (M51,
+# measured the same day on this same perk). `only_form` is what keeps the first
+# reading from asserting the second. It is now belt AND braces — the class
+# answers before any declaration on a `Multiplying` entry — but the scope stays,
+# because it is the true statement about what was read where.
+# `evolutions_data::excludes_co_base`.
 co_base_excludes_this_evolution: true
 co_base_excludes_only_form: incarnon
 
 effects:
-  # +51 on a 140 base is a big pro-rata scale-up, and it lowers the CO base
-  # fraction the same way Ripper Rounds does on the Dual Toxocyst (the GunCO
-  # base excludes evolution flat damage).
+  # ONE FLAT +51, landing on EVERY attack part of both forms — the Incarnon
+  # form's 51 becomes 102, the base form's grenade impact 100 becomes 151 and
+  # its toxin cloud 40 becomes 91. All four panels are measured (M50, M51).
+  #
+  # What it does to the CO term is per FORM, and the two are opposite: on the
+  # Incarnon form (`Adding`) it is excluded, the way Ripper Rounds is on the
+  # Dual Toxocyst; on the base form (`Multiplying`) it feeds in full. See the
+  # scoped declaration above.
   - kind: flat_base_damage
     value: 51.0
   # A FLAT +3 on the multishot stat, gated on the shot being the last round of

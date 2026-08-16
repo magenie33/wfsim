@@ -5639,5 +5639,68 @@ mod condition_overload_catalog_tests {
         }
     }
 
+    /// THE OTHER HALF, ROSTER-WIDE: NO EVOLUTION DILUTES A `Multiplying` ENTRY.
+    ///
+    /// The loop above is `Adding`, where the term reads the UNEVOLVED base. The
+    /// Torid's base form measured the opposite answer on the other class (M51):
+    /// the same two tier-2 perks, +51 and +31, and the CO multiplier came back
+    /// 1.40 and 1.80 under BOTH — so a `Multiplying` term reads the FULL
+    /// evolved base and the two classes disagree.
+    ///
+    /// GENERALISED TO ALL 26 ENTRIES ON ONE WEAPON'S READING (owner,
+    /// 2026-08-16), deliberately ahead of the catalog: the wiki prints a
+    /// fraction for a minority of attacks, this rule beats that table, and a
+    /// measurement that contradicts it edits ONE weapon's yaml rather than this.
+    ///
+    /// It asserts the PROPERTY rather than the 26 numbers, which is what makes
+    /// it hold for a weapon nobody has entered yet: the fraction with the whole
+    /// evolution ladder installed equals the fraction with none of it. A future
+    /// perk declaring `co_base_excludes_this_evolution` without scoping it to
+    /// the form it was measured on fails HERE — which is exactly the reach the
+    /// Torid's own pair would have had without `co_base_excludes_only_form`.
+    ///
+    /// The flat 1.0 is asserted SEPARATELY and only as a snapshot of today's
+    /// roster: it is what the reserved `co_base_fraction:` slot reads on every
+    /// Multiplying entry, and the day one weapon declares otherwise on evidence
+    /// that half moves while the invariant above does not.
+    #[test]
+    fn no_evolution_dilutes_a_multiplying_co_base() {
+        let mut checked = 0;
+        for spec in crate::weapons_data::all() {
+            let bare = crate::loadout::WeaponBase::from_data(&spec.id, false, &[]);
+            if bare.co_behavior != crate::loadout::CoBehavior::Independent {
+                continue;
+            }
+            // The GROUP owns the evolutions, not the form.
+            let group = spec.transform_group.as_deref().unwrap_or(&spec.id);
+            let ids: Vec<&str> = (1..=crate::evolutions_data::tier_count(group))
+                .flat_map(|t| crate::evolutions_data::options(group, t))
+                .map(|o| o.id.as_str())
+                .collect();
+            if ids.is_empty() {
+                continue;
+            }
+            checked += 1;
+            let loaded = crate::loadout::WeaponBase::from_data(&spec.id, false, &ids);
+            assert!(
+                loaded.base_vector.total() >= bare.base_vector.total(),
+                "{}: the ladder lowered the panel", spec.id
+            );
+            assert!(
+                (loaded.co_base_fraction() - bare.co_base_fraction()).abs() < 1e-9,
+                "{}: an evolution diluted a Multiplying CO base ({:.4} -> {:.4}); \
+                 a Multiplying term reads the FULL evolved base (M51)",
+                spec.id, bare.co_base_fraction(), loaded.co_base_fraction()
+            );
+            // TODAY'S ROSTER — the reserved slot, unexercised everywhere.
+            assert!(
+                (loaded.co_base_fraction() - 1.0).abs() < 1e-9,
+                "{}: no Multiplying entry declares a CO base fraction yet, got {:.4}",
+                spec.id, loaded.co_base_fraction()
+            );
+        }
+        assert!(checked >= 8, "only {checked} Multiplying entries with a ladder checked");
+    }
+
 }
 

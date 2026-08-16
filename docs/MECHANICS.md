@@ -2529,7 +2529,7 @@ the disagreeing case is expressible at the one site that folds base damage in.
 |---|---|---|
 | the weapon's own base | yes | yes |
 | an Incarnon evolution, `Adding` entry | yes | **no** (M49, M50) |
-| an Incarnon evolution, `Multiplying` entry | yes | yes — unmeasured, see CATALOGS |
+| an Incarnon evolution, `Multiplying` entry | yes | **yes** (M51) |
 | a perk the player's state gates | yes | yes — preserved, never measured |
 | a base-damage MOD (Serration, Hornet Strike) | no, it is a multiplier | no |
 | an explosion's own base | its own | its own, and it never grows |
@@ -2538,7 +2538,13 @@ The last row is behaviour preserved rather than chosen: the old code excluded a
 radial's flat add from its CO base unconditionally while the direct hit's
 followed the perk's flag, so the two halves of one weapon could disagree about
 the same +42. They agree for every `Adding` entry now, and differ only on a
-`Multiplying` entry with an explosion, where nothing has been measured.
+`Multiplying` entry with an EXPLOSION, which M51 did not reach: the second part
+it measured is the Torid's lingering FIELD, which takes the weapon's own
+fraction (`gunco_bucket` is handed `ap.co_base_fraction` for a field and the
+radial's own for an explosion). What M51 does say about a second part is that
+the +51 fed the cloud's term in full at its own evolved base of 91 — the same
+answer as the direct hit's 151, on a different number, which is the reading's
+sharpest half.
 
 A weapon may also DECLARE a starting value below its own base (`co_base_fraction`
 in the yaml, 0.5 on a bow's charged entry). That is the only place a fraction is

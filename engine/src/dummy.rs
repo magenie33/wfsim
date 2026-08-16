@@ -9157,13 +9157,11 @@ mod tests {
             );
         }
 
-        // AND THE BASE FORM IS UNTOUCHED, which is the deliberate half. It is
-        // `Multiplying` where the form measured above is `Adding`, and nothing
-        // has ever measured a Multiplying entry's evolved CO base — so the
-        // class default leaves it reading its full evolved 151 and this test
-        // pins that, rather than letting an inference ride in on the back of a
-        // measurement (owner, 2026-08-16). It is the cheapest open experiment
-        // there is: 393 if fed against 311 if not, 26% apart.
+        // AND THE BASE FORM IS THE OTHER CLASS, which is the deliberate half.
+        // It is `Multiplying` where the form measured above is `Adding`, and it
+        // reads its FULL evolved 151 — the cheapest open experiment there was
+        // (393 if fed against 311 if not, 26% apart), run by the owner within
+        // the day and answering FED. Its own readings are the test below.
         let base = crate::loadout::WeaponBase::from_data(
             "torid",
             false,
@@ -9173,9 +9171,91 @@ mod tests {
         assert_eq!(base.co_behavior, crate::loadout::CoBehavior::Independent);
         assert!(
             (base.co_base_fraction() - 1.0).abs() < 1e-9,
-            "the Multiplying half is UNMEASURED and must stay at 1.0, got {}",
+            "the Multiplying half reads its full evolved base (M51), got {}",
             base.co_base_fraction()
         );
+    }
+
+    /// M51 — THE TORID'S BASE FORM, AND THE TWO CO CLASSES DISAGREE.
+    ///
+    /// The experiment the test above named, on the same weapon, the same two
+    /// tier-2 perks and the same mod — but the `Multiplying` entry rather than
+    /// the `Adding` one. Readings (owner, 2026-08-16), with +165% base damage
+    /// and +90% Electricity, as `impact / cloud`:
+    ///
+    /// | perk | 0 x 0 | 1 x 1 | 1 x 2 |
+    /// |---|---|---|---|
+    /// | Final Fusillade (+51) | 763 / 460 | 1068 / 644 | 1373 / 827 |
+    /// | Plentiful Mayhem (+31) | 662 / 359 | 926 / 502 | 1191 / 646 |
+    ///
+    /// THE ANSWER IS THE OPPOSITE OF M50's, and that is the finding: the CO
+    /// multiplier is 1.40 and 1.80 under BOTH perks, so the term is scaled by
+    /// NOTHING — a `Multiplying` entry reads its full evolved base. Fed on the
+    /// unevolved 100 it would print 1.265 under the +51 and 1.305 under the
+    /// +31, which are neither each other nor what was read.
+    ///
+    /// THE DECISIVE SHAPE IS THE TWO COLUMNS, and it needs only the +51: the
+    /// impact's evolved base is 151 and the cloud's is 91, because the same
+    /// flat +51 lands on both attack parts. Any term reading something OTHER
+    /// than the evolved base has a different fraction in each column (100/151 =
+    /// 0.662 against 40/91 = 0.440) and must print two different multipliers,
+    /// 1.265 against 1.176. It printed 1.3997 and 1.4000. The +31 pair is a
+    /// second, independent confirmation rather than the argument.
+    ///
+    /// AND THE CLOUD TAKING CO AT ALL is the doubly-discrepant catalog row
+    /// confirmed from the other side — an AoE part receiving the bonus, and
+    /// receiving it as `Multiplying` (torid.yaml).
+    #[test]
+    fn the_torid_base_forms_multiplying_co_reads_its_full_evolved_base() {
+        for (perk, evolved, impact, cloud) in [
+            (
+                "torid_final_fusillade",
+                151.0_f64,
+                // (stacks x types, bare, hit)
+                [(1.0_f64, 763.0_f64, 1068.0_f64), (2.0, 763.0, 1373.0)],
+                [(1.0_f64, 460.0_f64, 644.0_f64), (2.0, 460.0, 827.0)],
+            ),
+            (
+                "torid_plentiful_mayhem",
+                131.0,
+                [(1.0, 662.0, 926.0), (2.0, 662.0, 1191.0)],
+                [(1.0, 359.0, 502.0), (2.0, 359.0, 646.0)],
+            ),
+        ] {
+            let b = crate::loadout::WeaponBase::from_data("torid", false, &[perk]);
+            assert!((b.base_vector.total() - evolved).abs() < 1e-9,
+                "{perk}: panel {} against a measured {evolved}", b.base_vector.total());
+            assert_eq!(b.co_behavior, crate::loadout::CoBehavior::Independent);
+            assert!((b.co_base_fraction() - 1.0).abs() < 1e-9);
+
+            // Solved the way M50 taught: a RATIO to the bare hit, which cancels
+            // the target's damage-type column and every mod on the build. Both
+            // numbers are the game's rounded display, so it is a BAND.
+            for (part, readings) in [("impact", impact), ("cloud", cloud)] {
+                for (types, bare, hit) in readings {
+                    let solved = |b: f64, h: f64| (h / b - 1.0) / (0.4 * types);
+                    let (lo, hi) =
+                        (solved(bare + 0.5, hit - 0.5), solved(bare - 0.5, hit + 0.5));
+                    assert!(lo < 1.0 && 1.0 < hi,
+                        "{perk} {part} {types} types: the full evolved base is outside \
+                         the display band [{lo:.4}, {hi:.4}]");
+                    assert!(lo > 0.85,
+                        "{perk} {part} {types} types: the band [{lo:.4}, {hi:.4}] must \
+                         exclude a CO fed by the unevolved base");
+                }
+            }
+        }
+
+        // THE TWO COLUMNS, stated as the argument rather than as six bands: one
+        // perk, two attack parts, two different evolved bases (151 and 91), and
+        // the SAME measured multiplier. Every rival hypothesis splits them.
+        let m_impact = 1068.0_f64 / 763.0;
+        let m_cloud = 644.0_f64 / 460.0;
+        assert!((m_impact - m_cloud).abs() < 0.005,
+            "the two columns must agree: {m_impact:.4} against {m_cloud:.4}");
+        // …and what "reads the unevolved base" would have required of them.
+        let split = (1.0 + 0.4 * 100.0 / 151.0) - (1.0 + 0.4 * 40.0 / 91.0);
+        assert!(split > 0.08, "the rival hypothesis must be distinguishable, got {split:.4}");
     }
 
     /// A CONE IS SPELLED ONE WAY. Ten entries carried BOTH a parsed

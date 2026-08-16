@@ -55,13 +55,22 @@ reload_seconds: 1.7
 # side too: "Galvanized Aptitude is multiplicative to base damage sources on
 # direct hits and resulting clouds of regular form."
 # 100/100 and 40/40 = 100%, and they STAY 100% with Final Fusillade or
-# Plentiful Mayhem equipped: the CO term uses the full base including a perk's
-# flat damage, which is the normal behaviour (user, 2026-07-30). So no
-# `co_base_excludes_evolution_damage` here — Dual Toxocyst is the one weapon
-# whose catalog row ("100% or 56%") calls out the exclusion.
+# Plentiful Mayhem equipped — MEASURED on this entry (MEASUREMENTS M51), which
+# is the reading that settled the rule for every `Multiplying` entry in the
+# roster. The same two perks, +51 and +31, and the CO multiplier came back 1.40
+# and 1.80 under both; a term reading the unevolved 100 would have printed 1.265
+# and 1.305. So no `co_base_excludes_evolution_damage` here, and no declaration
+# could add one — the CLASS answers first on a Multiplying entry.
 #
-# NOTE this class is per FORM: the Incarnon form is ADDITIVE, not Multiplying
-# (torid_incarnon.yaml, measured).
+# The sharpest half of that reading is THESE TWO ROWS: the same flat +51 lands
+# on both parts, so the impact's evolved base is 151 and the cloud's is 91. A
+# term reading anything but the evolved base has a different fraction in each
+# (100/151 = 0.662 against 40/91 = 0.440) and must print two different
+# multipliers. It printed 1.3997 and 1.4000.
+#
+# NOTE this class is per FORM, and the two forms give OPPOSITE answers: the
+# Incarnon form is ADDITIVE and excludes the same perks' flat damage (M50,
+# torid_incarnon.yaml). Which base the CO term reads is decided by the class.
 co_behavior: independent
 
 # TWO ATTACK PARTS, and the second is a FIELD, not an explosion (MECHANICS §7).

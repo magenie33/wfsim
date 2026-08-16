@@ -16,12 +16,15 @@ selection: choose_one
 # of ~51 — the unevolved value — off panels of 102 and 82. A term that fed on
 # the evolution would have solved to those two numbers instead.
 #
-# AND IT DECLARES NOTHING, deliberately. A declaration is the PERK's and reaches
-# both forms of the transform group, and only ONE side was measured: the
-# Incarnon form is `Adding` and the base form is `Multiplying`, which nobody has
-# measured (owner, 2026-08-16 — he stopped the flip that would have covered it).
-# So the class default answers each form on its own evidence, and this file does
-# not assert the half it does not know. `evolutions_data::excludes_co_base`.
+# AND THE DECLARATION IS SCOPED, deliberately. A declaration is the PERK's and
+# reaches both forms of the transform group, and the two forms are different CO
+# classes with OPPOSITE answers: the Incarnon form is `Adding` and excludes this
+# flat damage (M50), the base form is `Multiplying` and feeds it in full (M51,
+# measured the same day on this same perk). `only_form` is what keeps the first
+# reading from asserting the second. It is now belt AND braces — the class
+# answers before any declaration on a `Multiplying` entry — but the scope stays,
+# because it is the true statement about what was read where.
+# `evolutions_data::excludes_co_base`.
 co_base_excludes_this_evolution: true
 co_base_excludes_only_form: incarnon
 
