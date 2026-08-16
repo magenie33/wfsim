@@ -3646,6 +3646,7 @@ fn fire_extra_hits(
             // applies is one past that. Void applies none that pay damage, so
             // this is a claim nothing collects on yet — written as the ladder
             // rather than as a number so the first one that does is right.
+            &params.target,
             DEPTH_DERIVED_PROC,
         );
     }
@@ -3666,6 +3667,11 @@ fn settle_procs(
     mit: &Mitigation,
     r: &mut RunResult,
     rng: &mut Rng,
+    // WHICH BODY THIS LANDS ON — `params.target` until a formation could hold
+    // more than one (2026-08-17). Its stack caps and its status immunities are
+    // its own; the weapon-side half stays on `params`, shared by every body in
+    // the fight because the weapon is.
+    foe: &TargetParams,
     // How far this batch of procs is from the hit that started it — see
     // `faction_at`. A hit's own procs are DEPTH_PROC; a proc that Primary
     // Debilitate split out of one is DEPTH_DERIVED_PROC, because it came
@@ -3675,7 +3681,7 @@ fn settle_procs(
     let InstanceScale { mb_live, crit_mult, part_factor, attrition, xh_bracket } = scale;
     let sd = params.status_duration_mult;
     let sdm = params.status_damage_mult;
-    let caps = params.target.stack_caps;
+    let caps = foe.stack_caps;
     let gcap = |base: usize| caps.map_or(base, |c| base.min(c.general));
     let stagger_cap = caps.map_or(STAGGER_CAP, |c| STAGGER_CAP.min(c.impact));
     let heat_cap: Option<usize> = caps.map(|c| c.general);
@@ -3758,7 +3764,7 @@ fn settle_procs(
                 // target (the wiki confirms it is included). The
                 // Cold procs scale with Status Duration.
                 for _ in 0..params.arcane.cold_burst_on_puncture {
-                    debuffs.apply_cold_proc(at, sd, target.overguard > 0.0, caps, params.target.cannot_be_frozen);
+                    debuffs.apply_cold_proc(at, sd, target.overguard > 0.0, caps, foe.cannot_be_frozen);
                 }
             }
             DamageType::Slash => push_dot(
@@ -3839,7 +3845,7 @@ fn settle_procs(
                 // exists (user, 2026-08-02). Frozen lasts 3 s against a 12 s
                 // buff, so it never showed as the arcane going dark — it
                 // showed as it never quite decaying.
-                if debuffs.apply_cold_proc(at, sd, target.overguard > 0.0, caps, params.target.cannot_be_frozen) {
+                if debuffs.apply_cold_proc(at, sd, target.overguard > 0.0, caps, foe.cannot_be_frozen) {
                     arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ColdStatus, at);
                 }
             }
@@ -3912,7 +3918,7 @@ fn settle_procs(
                             TypeShares::single(DamageType::Blast),
                             false,
                             at,
-                            &params.target,
+                            foe,
                             false,
                             &mit,
                         );
@@ -4099,6 +4105,7 @@ fn settle_procs(
                     mit,
                     r,
                     rng,
+                    &params.target,
                     DEPTH_DERIVED_PROC,
                 );
             }
@@ -4118,7 +4125,7 @@ fn settle_procs(
                 TypeShares::single(proc),
                 false,
                 at,
-                &params.target,
+                foe,
                 false,
                 mit,
             );
@@ -4314,6 +4321,7 @@ fn fire_syndicate_radial(
             &mit,
             r,
             rng,
+            &params.target,
             DEPTH_PROC,
         );
     }
@@ -4466,7 +4474,7 @@ fn process_field_ticks(
         .map(|(i, f)| (i, f.next_tick))
     {
         // Status events strictly before this tick land first.
-        process_ticks(debuffs, gal, arc, at + 1e-9, target, params, ap, r, &mut d.status);
+        process_ticks(debuffs, gal, arc, at + 1e-9, target, params, ap, r, &mut d.status, &params.target);
         let part = fields[i].part;
         let dmg_mult = fields[i].damage_mult;
         fields[i].next_tick += 1.0 / part.tick_rate;
@@ -4624,6 +4632,7 @@ fn field_tick(
         &mit,
         r,
         &mut d.status,
+        &params.target,
         DEPTH_PROC,
     );
     false
@@ -4652,13 +4661,16 @@ fn process_ticks(
     ap: &DummyParams,
     r: &mut RunResult,
     rng: &mut Rng,
+    // WHICH BODY'S ticks these are — see `settle_procs`'s parameter of the
+    // same name.
+    foe: &TargetParams,
 ) {
     enum Ev {
         Dot(usize),
         Heat,
         Blast(usize),
     }
-    let p = &params.target;
+    let p = foe;
     let sd = params.status_duration_mult;
     loop {
         let mut best: Option<(f64, Ev)> = None;
@@ -6548,6 +6560,7 @@ pub fn run_once_traced(
             ap,
             &mut r,
             &mut d.status,
+            &params.target,
         );
 
         // Timed buffs (Frenzy) lapse before this shot reads the bar;
@@ -8142,6 +8155,7 @@ pub fn run_once_traced(
                 &mit,
                 &mut r,
                 &mut d.status,
+                &params.target,
                 DEPTH_PROC,
             );
             }
@@ -8480,6 +8494,7 @@ pub fn run_once_traced(
         field_ap,
         &mut r,
         &mut d.status,
+        &params.target,
     );
 
     // Partial credit: the fraction of the current individual's TOTAL bar
