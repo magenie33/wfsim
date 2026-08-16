@@ -1433,10 +1433,13 @@ pub fn meta_json() -> Value {
             "eximus": Value::Null,
             "headshot_pct": 100.0,
             // HOW FAR AWAY THE TARGET STANDS, in metres — the fight's 2D layer
-            // (`engine::space`). 0 is point blank, which is the fight every
-            // number this engine has ever reported was measured under, so a
-            // scenario saved before this field existed opens as the same fight
-            // it was and a board row does not move.
+            // (`engine::space`). SUPERSEDED by `player_at`/`target_at`, and
+            // kept only so a scenario saved before those existed opens as the
+            // fight it was; the page has not sent it since 2026-08-16, when the
+            // canvas became the only place a position is set.
+            //
+            // It is a GAP — surface to surface — which is both what it always
+            // meant ("0 is point blank") and what the arena shows today.
             "distance": 0.0,
             // ---- the TENNO, the fight's other actor. Every field here is
             // `data/tenno/default.yaml`'s: the NEUTRAL player, aiming, no
@@ -4118,7 +4121,9 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         "target_at",
         wfsim_engine::space::Vec2::new(
             0.0,
-            get_f64(v, "distance", wfsim_engine::space::CONTACT_RANGE_M).clamp(0.0, 300.0),
+            // A GAP, so the two CENTRES stand one contact further apart —
+            // the legacy field and the arena agree on what a distance means.
+            get_f64(v, "distance", 0.0).clamp(0.0, 300.0) + wfsim_engine::space::CONTACT_RANGE_M,
         ),
     );
     // …and the bodies are pushed apart if the request put them through each

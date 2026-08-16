@@ -63,9 +63,17 @@ pub struct Arena {
 }
 
 impl Arena {
-    /// How far the shot has to travel — metres from the player to the target.
+    /// Metres between the two of them, CENTRE TO CENTRE. The model's own
+    /// distance: it never goes below `space::CONTACT_RANGE_M`, because circles
+    /// do not overlap.
     pub fn engagement_range(&self) -> f64 {
         self.player_at.distance(self.target_at)
+    }
+
+    /// THE GAP — surface to surface, and what a reader is shown. Zero at
+    /// contact, which is what point blank means (`space::gap`).
+    pub fn gap(&self) -> f64 {
+        crate::space::gap(self.player_at, self.target_at)
     }
 
     /// The engine's own fixture: the neutral Tenno against a training dummy
@@ -81,9 +89,9 @@ impl Arena {
             // what point blank means once they have a size at all. The fixture
             // measures weapon numbers, and any more range than this would put a
             // falloff weapon's golden value at the mercy of a distance nobody
-            // asked for. Moving it here from a literal zero changed no golden
-            // value: only a cone wider than 26.6 degrees can miss at 0.5 m, and
-            // two entries in the roster have one.
+            // asked for. It is a GAP of zero: the shot leaves a muzzle one
+            // radius forward, so at contact nothing can miss at any cone width
+            // and no golden value depends on a weapon's spread.
             player_at: Vec2::ORIGIN,
             target_at: Vec2::new(0.0, crate::space::CONTACT_RANGE_M),
             duration_secs,
@@ -112,14 +120,13 @@ mod tests {
     }
 
     /// …AND IT STANDS ON THE TARGET. Every golden value in this engine was
-    /// measured at point blank, so the fixture's range is 0 and a falloff
+    /// measured at point blank, so the fixture's GAP is zero and a falloff
     /// weapon's fixture number cannot move when a distance is set elsewhere.
     #[test]
     fn the_training_arena_is_fought_at_contact() {
-        assert_eq!(
-            Arena::training(10.0).engagement_range(),
-            crate::space::CONTACT_RANGE_M
-        );
+        let a = Arena::training(10.0);
+        assert_eq!(a.engagement_range(), crate::space::CONTACT_RANGE_M);
+        assert_eq!(a.gap(), 0.0);
     }
 
     /// A RANGE IS TWO POINTS, and either of them may move. The web api puts the

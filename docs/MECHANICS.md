@@ -2496,6 +2496,63 @@ own row: `damage_sources` for the shares, `dstacks` for the ladders, `stacks`
 for the arcane's own uptime, and `score_mean` for the totals. Nothing here is
 hand-derived except the two published ladder formulas.
 
+## 11. THE ARENA'S GEOMETRY — where a shot leaves, and what counts as a hit
+
+The fight is two circles on a floor (`engine::space`). Everything below falls
+out of three facts, and none of it is a special case.
+
+**A BODY HAS A RADIUS: 0.2 m**, measured — walking into an enemy stops at 0.4 m
+centre to centre, and two bodies of the same size touching at 0.4 m makes each
+of them 0.2 (MEASUREMENTS M47). One number, and nothing derives from it.
+
+**A SHOT LEAVES THE MUZZLE, not the centre** (owner, 2026-08-16). The muzzle is
+a point on the shooter's own circumference facing what they are aiming at. The
+facing is DERIVED rather than stored — you are looking at what you are shooting
+at — so aiming at a second target turns the shooter and there is no third piece
+of state to keep in sync. What flies is therefore one radius shorter than the
+distance between the two of them:
+
+```
+travel = |player − target| − r
+```
+
+**HITTING THE CIRCLE IS A HIT**, which makes the question ray-versus-circle and
+nothing more. A pellet that leaves θ degrees off the aim line passes
+
+```
+miss = travel · sin(θ)          hit ⟺ miss ≤ r
+```
+
+from the target's centre. It was `|player − target| · tan(θ)` until 2026-08-16,
+which was wrong twice — measured from the centre rather than from the muzzle,
+and `tan` rather than `sin`, so a wide cone's deviation ran off toward infinity
+instead of being bounded by the distance it had to cover.
+
+**CONTACT IS THEN UNMISSABLE, AT ANY CONE WIDTH**, and that is a property of the
+geometry rather than a rule written into it: at contact the muzzle sits one
+radius from the target's centre, so the closest approach is `r · sin(θ) ≤ r` for
+every θ. Under the old formula a 60 degree cone dropped more than half its
+pellets pressed against an enemy, which nothing in the game does — the Mandonel's
+uncharged form and the Cryotra were both being simulated that way.
+`space::no_weapon_in_the_roster_can_miss_at_contact` asserts it over the whole
+roster, so a weapon added tomorrow with a wider cone is covered.
+
+**A DISTANCE IS THE GAP, SURFACE TO SURFACE — zero at contact.** That is what
+"how far apart are we" means once bodies have a size, it is what the arena shows
+and what its quick sets set, and it is what point blank has always meant to a
+player. The 0.4 m between the two centres is the model's business and nobody
+should have to subtract it.
+
+**AND FALLOFF IS KEYED ON THE GAP, not on the flight** — deliberately, because
+the two jobs differ in kind. A spread cone is geometry inside this model and
+widens over the distance a pellet really flies; a falloff window is a PUBLISHED
+TABLE whose key is "how far away is the enemy" as a player would say it.
+Reading the flight there would evaluate a card that says 25 m at 25.2 m: a
+quiet disagreement with the number on screen, for no gain, since the two differ
+by one radius — far under the resolution of anything DE prints. The EXPLOSION
+is the third distance and is neither: it reads from its own epicentre, which is
+wherever the pellet actually crossed.
+
 ## Open questions
 
 - Exact multiplicative-bucket membership for every common mod (§2).

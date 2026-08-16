@@ -2354,13 +2354,32 @@ impl DummyParams {
     /// a scenario field, because the point stops being the target's the moment
     /// a projectile has a flight time or an explosion has an epicentre of its
     /// own. Those are the next change; this is the call site they inherit.
+    ///
+    /// FROM THE MUZZLE, which is a point on the player's own circumference
+    /// facing what they are aiming at (`space::muzzle`) — a body with a size
+    /// does not fire from its centre, so every range here is one radius shorter
+    /// than the distance between the two of them (owner, 2026-08-16).
     pub fn range_to(&self, p: crate::space::Vec2) -> f64 {
-        self.player_at.distance(p)
+        crate::space::muzzle(self.player_at, self.target_at).distance(p)
     }
 
-    /// The range of a shot aimed at the target — today, every shot.
-    pub fn shot_range(&self) -> f64 {
-        self.range_to(self.target_at)
+    /// How far a shot aimed at the target has to FLY — today, every shot.
+    pub fn shot_travel(&self) -> f64 {
+        crate::space::shot_travel(self.player_at, self.target_at)
+    }
+
+    /// THE GAP between the two bodies — surface to surface, zero at contact.
+    ///
+    /// WHAT DAMAGE FALLOFF IS KEYED ON, and deliberately not the flight
+    /// (owner, 2026-08-16). The two jobs are different in kind: a spread cone
+    /// is GEOMETRY inside this model and widens over the distance a pellet
+    /// really flies, while a falloff window is a PUBLISHED TABLE whose key is
+    /// "how far away is the enemy" as a player would say it. Reading the
+    /// flight there would evaluate a card that says 25 m at 25.2 m, which is a
+    /// quiet disagreement with the number on screen for no gain — the two
+    /// differ by one radius, far under the resolution of anything DE prints.
+    pub fn gap(&self) -> f64 {
+        crate::space::gap(self.player_at, self.target_at)
     }
 
     pub fn from_panel(
@@ -4975,9 +4994,13 @@ mod every_form_runs {
     /// pass on a factor applied in the wrong bracket.
     #[test]
     fn a_shotgun_loses_exactly_its_published_share_over_its_published_window() {
-        let direct_at = |range: f64| {
+        // A GAP, which is what a published window is quoted in and what the
+        // page shows — so these are the card's own numbers, unadjusted. The
+        // two centres stand one contact further apart than this.
+        let direct_at = |gap: f64| {
             let mut arena = crate::arena::Arena::training(10.0);
-            arena.target_at = crate::space::Vec2::new(0.0, range);
+            arena.target_at =
+                crate::space::Vec2::new(0.0, gap + crate::space::CONTACT_RANGE_M);
             let base = crate::loadout::WeaponBase::from_data("boar", false, &[]);
             let refs: Vec<&crate::loadout::ModDef> = Vec::new();
             let panel =
@@ -5009,9 +5032,13 @@ mod every_form_runs {
     /// entries out of two hundred and change.
     #[test]
     fn a_weapon_without_a_published_falloff_is_the_same_at_any_range() {
-        let direct_at = |range: f64| {
+        // A GAP, which is what a published window is quoted in and what the
+        // page shows — so these are the card's own numbers, unadjusted. The
+        // two centres stand one contact further apart than this.
+        let direct_at = |gap: f64| {
             let mut arena = crate::arena::Arena::training(10.0);
-            arena.target_at = crate::space::Vec2::new(0.0, range);
+            arena.target_at =
+                crate::space::Vec2::new(0.0, gap + crate::space::CONTACT_RANGE_M);
             let base = crate::loadout::WeaponBase::from_data("latron", false, &[]);
             let refs: Vec<&crate::loadout::ModDef> = Vec::new();
             let panel =
@@ -7289,19 +7316,31 @@ pub fn run_once_traced(
             // blank all skip it. That is what keeps `d.aim` untouched in every
             // fight this engine ran before it had a range, and therefore keeps
             // every golden value and every board row exactly where it was.
-            let range = params.range_to(params.target_at);
+            //
+            // IT LEAVES THE MUZZLE, which is a point on the player's own
+            // circumference facing the target, so the cone widens over the
+            // FLIGHT rather than over the distance between two centres
+            // (`space::shot_travel`, owner 2026-08-16).
+            let range = params.shot_travel();
+            let gap_m = params.gap();
             let aim_offset = match ap.spread {
                 Some(s) if !s.is_pinpoint() && range > 0.0 => {
-                    range * s.draw(d.aim.next_f64()).to_radians().tan()
+                    crate::space::miss_distance(range, s.draw(d.aim.next_f64()))
                 }
                 _ => 0.0,
             };
-            // …AND A BODY IS A CIRCLE OF ONE RADIUS. The plane IS the model:
-            // this asks only whether the pellet reached the target, and where
-            // on it a landed pellet went is `headshot_pct`'s question, already
-            // pinned per pellet. Folding a silhouette's height in here would
-            // ask that one twice — see `space::BODY_RADIUS_M`, which is the
-            // model's one free parameter and the one line a measurement moves.
+            // …AND A BODY IS A CIRCLE OF ONE RADIUS: hitting the circle is a
+            // hit, which makes this ray-versus-circle and nothing more
+            // (`space::miss_distance`). The plane IS the model — this asks only
+            // whether the pellet reached the target, and where on it a landed
+            // pellet went is `headshot_pct`'s question, already pinned per
+            // pellet. Folding a silhouette's height in here would ask that one
+            // twice — see `space::BODY_RADIUS_M`, which is the model's one free
+            // parameter and the one line a measurement moves.
+            //
+            // AT CONTACT THIS IS ALWAYS TRUE, at any cone width, because the
+            // muzzle is then one radius from the target's centre. That is a
+            // property of the geometry rather than a special case in it.
             let pellet_lands = aim_offset <= crate::space::BODY_RADIUS_M;
             if pellet_lands {
                 landed_this_shot = true;
@@ -7518,8 +7557,10 @@ pub fn run_once_traced(
                     // THE EXPLOSION reads the distance from its EPICENTRE,
                     // which is where this pellet landed — zero when it hit.
                     (Some(r), _) => r.falloff_at(aim_offset),
-                    // THE DIRECT HIT reads the distance it TRAVELLED.
-                    (None, Some(f)) => f.factor(range),
+                    // THE DIRECT HIT reads the GAP to the target, which is the
+                    // distance a published window is quoted in — see
+                    // `DummyParams::gap` for why it is not the flight.
+                    (None, Some(f)) => f.factor(gap_m),
                     (None, None) => 1.0,
                 };
                 let raw = qtotal

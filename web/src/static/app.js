@@ -2332,17 +2332,26 @@ function setArenaDistance(s, want) {
   const d = Math.hypot(dx, dy);
   if (d < 1e-9) { dx = 0; dy = 1; }
   const u = d < 1e-9 ? 1 : d;
-  const m = Math.max(CONTACT_M, want);
+  // `want` is a GAP, and the model holds centres — one contact apart.
+  const m = Math.max(CONTACT_M, want + CONTACT_M);
   s.target_at = [ax + (dx / u) * m, ay + (dy / u) * m];
 }
 
 /// The distances worth one click. CONTACT is first because it is where both
 /// boards are scored; the rest are the ranges a falloff window and a spread
 /// cone actually change hands at.
-const ARENA_JUMPS = [CONTACT_M, 5, 10, 20, 40];
+const ARENA_JUMPS = [0, 5, 10, 20, 40];
 
-const arenaDistance = (s) =>
+/// CENTRE TO CENTRE — the model's own distance, never below CONTACT_M.
+const arenaSpan = (s) =>
   Math.hypot(s.target_at[0] - s.player_at[0], s.target_at[1] - s.player_at[1]);
+
+/// THE GAP — surface to surface, and what a reader is shown. Zero at contact,
+/// which is what point blank means to a player (owner, 2026-08-16). The 0.4 m
+/// between the two centres is the model's business; nobody should subtract it
+/// to find out how far away they are standing. Everything the page displays,
+/// sets and marks is this number; `engine::space::gap` is the same one.
+const arenaDistance = (s) => Math.max(0, arenaSpan(s) - CONTACT_M);
 
 function arenaSvg(s, en) {
   const w = ARENA_VW, h = ARENA_VH;
@@ -2364,11 +2373,26 @@ function arenaSvg(s, en) {
     lines.push(`<line class="ar-grid" x1="0" y1="${yy}" x2="${w}" y2="${yy}"/>`);
   }
   const d = arenaDistance(s);
+  // THE MUZZLE — where the shot actually leaves, a point on the player's own
+  // circumference facing the target (`engine::space::muzzle`). Drawn because
+  // it is load-bearing rather than decorative: the cone widens over the flight
+  // from HERE, which is one radius shorter than the line between the two
+  // bodies, and at contact it puts the muzzle on the enemy's surface — which
+  // is why nothing misses there (owner, 2026-08-16).
+  const span = Math.hypot(tx - px, ty - py) || 1;
+  const ux = (tx - px) / span, uy = (ty - py) / span;
+  const mx = px + ux * r, my = py + uy * r;
+  // A short arrow past the muzzle says which way the body is FACING, so a
+  // player being turned by their own aim is visible rather than implied.
+  const ax = mx + ux * 9, ay = my + uy * 9;
+  const nose = `<line class="ar-face" x1="${mx.toFixed(1)}" y1="${my.toFixed(1)}" x2="${ax.toFixed(1)}" y2="${ay.toFixed(1)}"/>
+    <circle class="ar-muzzle" cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="2.2"/>`;
   return `<svg class="ar-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">
     ${lines.join("")}
-    <line class="ar-link" x1="${px.toFixed(1)}" y1="${py.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${ty.toFixed(1)}"/>
+    <line class="ar-link" x1="${mx.toFixed(1)}" y1="${my.toFixed(1)}" x2="${(tx - ux * r).toFixed(1)}" y2="${(ty - uy * r).toFixed(1)}"/>
     <circle class="ar-body ar-foe" data-drag="target_at" cx="${tx.toFixed(1)}" cy="${ty.toFixed(1)}" r="${r.toFixed(1)}"/>
     <circle class="ar-body ar-you" data-drag="player_at" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}"/>
+    ${nose}
     <text class="ar-tag ar-tag-you" x="${px.toFixed(1)}" y="${(py + r + 13).toFixed(1)}">${escHtml(tr("You"))}</text>
     <text class="ar-tag ar-tag-foe" x="${tx.toFixed(1)}" y="${(ty - r - 6).toFixed(1)}">${escHtml((en && en.name) || tr("Enemy"))}</text>
     <text class="ar-dist" x="${((px + tx) / 2).toFixed(1)}" y="${((py + ty) / 2 - 8).toFixed(1)}">${d.toFixed(2)} m</text>
@@ -2389,7 +2413,7 @@ function mountArena(host, s, en, opts) {
   // control below that would be a second source of truth for the same fact.
   const chips = () => `<div class="ar-jumps">${ARENA_JUMPS.map((m) => {
     const on = Math.abs(arenaDistance(s) - m) < 0.05;
-    const label = m === CONTACT_M ? tr("contact") : `${m} m`;
+    const label = m === 0 ? tr("contact") : `${m} m`;
     return `<button class="ar-jump${on ? " on" : ""}" data-jump="${m}"${opts.readonly ? " disabled" : ""}>${escHtml(label)}</button>`;
   }).join("")}</div>`;
   const paint = () => { host.innerHTML = arenaSvg(s, en) + chips(); };

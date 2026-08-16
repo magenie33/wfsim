@@ -10,13 +10,19 @@
 //
 // Four claims, and the last two are the sharp ones:
 //
-//   · IT DRAWS — two bodies, a distance label, at the real 0.25 m radius.
+//   · IT DRAWS — two bodies, a MUZZLE on the shooter's own circumference with
+//     the arrow that says which way they face, and a distance label.
 //   · DRAGGING MOVES THE FIGHT — the label, the scenario state and a real
 //     `/api/simulate` in the shipping wasm build all follow the finger.
-//   · BODIES DO NOT PASS THROUGH EACH OTHER. Dragging the enemy onto the
-//     player leaves them 0.4 m apart — CONTACT, twice the measured 0.2 m body
-//     radius (M46) — that is the closest two circles go and the floor the engine
-//     clamps to as well. It is the one rule the scene exists to make visible.
+//   · BODIES DO NOT PASS THROUGH EACH OTHER, and CONTACT READS ZERO. Dragging
+//     the enemy onto the player leaves their CENTRES 0.4 m apart — twice the
+//     measured 0.2 m radius (M47) — and the number on screen is the GAP between
+//     their surfaces, which is 0 (owner, 2026-08-16). What a player calls point
+//     blank is zero; the 0.4 m is the model's business.
+//   · …AND AT CONTACT NOTHING MISSES. The shot leaves the muzzle, one radius
+//     forward, so its closest approach to the target's centre is `r·sin(θ) ≤ r`
+//     for every θ. Asserted here for the weapon on screen and for the WHOLE
+//     roster in `space`, where a cone is a number rather than a page.
 //   · AN OFFICIAL RULER'S FIGHT DOES NOT MOVE. The benchmark pins its
 //     distance, so the scene refuses the gesture there — and it has to refuse
 //     it ITSELF, because the official lock disables inputs and the bodies are
@@ -54,14 +60,21 @@ const r = await evaluate(`(async () => {
     const t = document.querySelector('#sim-target-arena .ar-dist');
     return t ? parseFloat(t.textContent) : null;
   };
+  // The model holds CENTRES; the page shows the GAP. Both, so the check can
+  // say which one an assertion is about.
   const state = () => Math.hypot(sim.target_at[0] - sim.player_at[0],
                                  sim.target_at[1] - sim.player_at[1]);
+  const gap = () => Math.max(0, state() - 0.4);
 
   // 1. IT DRAWS, and it starts at contact.
   out.drew = !!svg();
   out.bodies = document.querySelectorAll('#sim-target-arena .ar-body').length;
   out.startLabel = dist();
   out.startState = state();
+  out.startGap = gap();
+  // THE MUZZLE IS DRAWN, and it sits on the shooter's own circumference.
+  out.muzzle = !!document.querySelector('#sim-target-arena .ar-muzzle');
+  out.facing = !!document.querySelector('#sim-target-arena .ar-face');
 
   // 2. DRAGGING MOVES THE FIGHT. Pointer events on the enemy body, in the
   //    SVG's own pixel space, so this is the gesture a finger makes.
@@ -87,6 +100,7 @@ const r = await evaluate(`(async () => {
   out.oneDrag = oneDrag;
   out.afterDrag = state();
   out.afterDragLabel = dist();
+  out.afterDragGap = gap();
 
   // …and the fight that gets RUN is the one on screen. The wasm build is the
   // one shipped, so this is the real path.
@@ -105,7 +119,8 @@ const r = await evaluate(`(async () => {
   out.farHitRate = farRun.pellets / Math.max(farRun.shots, 1);
   out.farLabel = dist();
 
-  // 3. TWO BODIES DO NOT OVERLAP. Drag the enemy right onto the player.
+  // 3. TWO BODIES DO NOT OVERLAP, AND CONTACT IS ZERO. Drag the enemy right
+  //    onto the player.
   const you = document.querySelector('#sim-target-arena .ar-you').getBoundingClientRect();
   const foe = document.querySelector('#sim-target-arena .ar-foe');
   const fb = foe.getBoundingClientRect();
@@ -126,12 +141,13 @@ const r = await evaluate(`(async () => {
   out.noTypedBox = !document.querySelector('#sim-target [data-k="arena_distance"]');
   out.jumps = [...document.querySelectorAll('#sim-target-arena .ar-jump')].map(b => b.textContent.trim());
   // Put the target OFF-AXIS first, so a snap-to-axis implementation is visible
-  // rather than lucky: (6,8) is 3-4-5 scaled, so 20 m must land on (12,16).
+  // rather than lucky: (6,8) is 3-4-5 scaled, so a 20 m GAP must land on
+  // (12.24, 16.32) — 20.4 m between centres, since the quick sets set the gap.
   sim.player_at = [0, 0]; sim.target_at = [6, 8]; markScenarioDirty();
   renderSim(); await sleep(900);
   document.querySelector('#sim-target-arena .ar-jump[data-jump="20"]').click();
   await sleep(900);
-  out.typedState = state();
+  out.typedState = gap();
   out.typedAt = sim.target_at.map(v => Math.round(v * 100) / 100);
   // …and the chip for the distance you are AT is marked.
   out.marked = [...document.querySelectorAll('#sim-target-arena .ar-jump.on')].map(b => b.dataset.jump);
@@ -144,7 +160,7 @@ const r = await evaluate(`(async () => {
   // The official rulers are BUILTINS and are not in the user's preset list —
   // they are addressed by their own id, which is the benchmark's.
   pickPreset(scenarioBarCfg(), 'single_target'); await sleep(1800);
-  out.officialDistance = state();
+  out.officialDistance = gap();
   out.official = typeof officialScenarioActive === 'function' && officialScenarioActive();
   const before = state();
   drag('#sim-target-arena .ar-foe', 0, -70);
@@ -164,16 +180,18 @@ check("a scenario of your own is open before anything is dragged",
   r.startedEditable === true,
   "the app lands on the official ruler, whose fight is pinned");
 check("the arena draws, with two bodies", r.drew && r.bodies === 2, `${r.bodies} bodies`);
-check("...and the fight starts at CONTACT — 0.4 m, twice the measured 0.2 m radius",
-  Math.abs(r.startState - 0.4) < 1e-6 && Math.abs(r.startLabel - 0.4) < 0.01,
-  `state ${r.startState}, label ${r.startLabel}`);
+check("...and a MUZZLE on the shooter's own circumference, with its facing",
+  r.muzzle === true && r.facing === true, `muzzle ${r.muzzle} facing ${r.facing}`);
+check("...and the fight starts at CONTACT — centres 0.4 m apart, and it READS 0 m",
+  Math.abs(r.startState - 0.4) < 1e-6 && Math.abs(r.startLabel) < 0.01,
+  `centres ${r.startState}, label ${r.startLabel}`);
 check("dragging the enemy moves it away", r.oneDrag > r.startState + 0.3,
   `${r.startState} -> ${r.oneDrag} m`);
 check("...and it is still draggable after the repaint", r.afterDrag > r.oneDrag + 0.3,
   `a second drag went ${r.oneDrag} -> ${r.afterDrag} m`);
-check("...and the label follows the finger",
-  Math.abs(r.afterDragLabel - r.afterDrag) < 0.02,
-  `label ${r.afterDragLabel} vs ${r.afterDrag}`);
+check("...and the label follows the finger, one contact behind the centres",
+  Math.abs(r.afterDragLabel - r.afterDragGap) < 0.02,
+  `label ${r.afterDragLabel} vs gap ${r.afterDragGap} (centres ${r.afterDrag})`);
 check("...and what is dragged is EXACTLY what gets sent", r.sentMatches === true,
   `player ${JSON.stringify(r.sentPlayer)} target ${JSON.stringify(r.sentTarget)}`);
 check("...and out there the shipping build MISSES", r.farHitRate < 0.9,
@@ -181,19 +199,20 @@ check("...and out there the shipping build MISSES", r.farHitRate < 0.9,
 check("two bodies cannot pass through each other",
   Math.abs(r.overlapped - 0.4) < 1e-6,
   `dragged onto the player and landed at ${r.overlapped} m`);
-check("...and the label says so", Math.abs(r.overlapLabel - 0.4) < 0.01, `${r.overlapLabel}`);
+check("...and the label says ZERO, because that is what point blank means",
+  Math.abs(r.overlapLabel) < 0.01, `${r.overlapLabel} m`);
 check("...and at contact nothing misses", r.nearHitRate > 0.99,
   `${(r.nearHitRate * 100).toFixed(0)}%`);
 check("there is no second control for a position — the canvas is the only one",
   r.noTypedBox === true);
 check("...and the quick sets are in the scene", (r.jumps || []).length >= 4, (r.jumps || []).join(" "));
 check("...and one click moves the target ALONG its own line, not onto an axis",
-  Math.abs(r.typedState - 20) < 1e-6 && Math.abs(r.typedAt[0] - 12) < 0.01
-    && Math.abs(r.typedAt[1] - 16) < 0.01,
-  `${r.typedState} m at ${JSON.stringify(r.typedAt)}`);
+  Math.abs(r.typedState - 20) < 1e-6 && Math.abs(r.typedAt[0] - 12.24) < 0.01
+    && Math.abs(r.typedAt[1] - 16.32) < 0.01,
+  `${r.typedState} m gap at ${JSON.stringify(r.typedAt)}`);
 check("an official ruler is the active scenario for this part", r.official === true);
-check("...and it opens at the distance the ruler pins", Math.abs(r.officialDistance - 0.4) < 1e-6,
-  `${r.officialDistance} m`);
+check("...and it opens at the distance the ruler pins — contact, a zero gap",
+  Math.abs(r.officialDistance) < 1e-6, `${r.officialDistance} m`);
 check("...and its fight cannot be dragged", r.officialMoved === false);
 check("...and the scene says so rather than silently ignoring the finger",
   r.officialLooksLocked === true);

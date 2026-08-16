@@ -163,6 +163,8 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 /* QUICK SETS, inside the canvas. The scene is the one place a position is set,
    so the shortcuts live in it rather than in a second control that would be a
    second source of truth for the same fact. */
+.ar-face{stroke:var(--accent);stroke-width:2;stroke-linecap:round;opacity:.75}
+.ar-muzzle{fill:var(--accent)}
 .ar-jumps{display:flex;gap:4px;padding:5px 6px;border-top:1px solid var(--line);flex-wrap:wrap}
 .ar-jump{font-size:11px;padding:2px 8px;border:1px solid var(--line);border-radius:999px;
   background:var(--panel);color:var(--muted);cursor:pointer;line-height:1.5}
