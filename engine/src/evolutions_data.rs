@@ -1715,6 +1715,12 @@ fn effect(v: &Value) -> Option<EvoEffect> {
 pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
     let original_total = base.base_vector.total();
     let mut flat = 0.0;
+    // …AND HOW MUCH OF IT THE GunCO TERM'S BASE GROWS BY. Two sums rather than
+    // one plus a flag, because a build can carry two flat-damage perks that
+    // DISAGREE — the catalog says the Despair is exactly that, one tier-2
+    // option excluded and the other not. The old code held a single ratio and
+    // could only have been right about that pair by accident.
+    let mut flat_into_co = 0.0;
     // "…but does not take into account the Base Damage increase from THIS
     // perk". Held as a pair of sums and resolved once `evolved` exists: the
     // rate as written, and the same rate weighted by the perk's own flat add,
@@ -1741,13 +1747,28 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 EvoEffect::LiveBug { .. } => {}
                 // …and nothing to apply for an EDGE either, by definition.
                 EvoEffect::OutOfScope { .. } => {}
-                EvoEffect::FlatBaseDamage(v) => flat += v,
+                // EACH PERK DECIDES ITS OWN CONTRIBUTION to the CO base,
+                // which is the whole point of holding an absolute: two perks on
+                // one build may disagree and there is no single ratio that
+                // describes the pair.
+                EvoEffect::FlatBaseDamage(v) => {
+                    flat += v;
+                    if !e.excludes_co_base(base.form, base.co_behavior) {
+                        flat_into_co += v;
+                    }
+                }
                 // Same bucket as the line above: it is base damage, and the
                 // run is modelled holding it (see the variant's note).
                 // Into the base like any other flat damage — the buff OPENS
                 // FULL — and recorded so the buff card can take it back off.
                 EvoEffect::FlatBaseDamageOnEmptyReload(v) => {
                     flat += v;
+                    // …AND SO DOES THIS ONE, by the same rule. It is a flat
+                    // base add wearing a trigger, and nothing about the trigger
+                    // changes which base the CO term reads.
+                    if !e.excludes_co_base(base.form, base.co_behavior) {
+                        flat_into_co += v;
+                    }
                     base.reload_damage_buff += v;
                 }
                 // Into the SAME additive bucket a mod's indirect stat uses;
@@ -2155,22 +2176,18 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
         };
     }
     if flat > 0.0 && original_total > 0.0 {
-        let evolved = original_total + flat;
         // THE FOLD ITSELF LIVES ON `WeaponBase`, because a flat base-damage add
         // reaches this weapon by two routes — a plain perk here, and a perk the
         // player's state gates, which cannot be resolved until `resolve_for` has
         // the Tenno. Two implementations of "what +40 base damage does" is two
         // chances to be right about the vector and wrong about the explosion.
         // See `WeaponBase::add_flat_base_damage` for what it does and why.
-        base.add_flat_base_damage(flat);
-        // THE ENTRY'S OWN FORM decides whether a form-scoped declaration
-        // reaches it — see `EvolutionDef::excludes_co_base`.
-        if evos
-            .iter()
-            .any(|e| !e.currently_broken && e.excludes_co_base(base.form, base.co_behavior))
-        {
-            base.co_base_fraction = original_total / evolved;
-        }
+        //
+        // TWO SUMS GO IN: what the panel gains, and how much of that the CO
+        // term's base gains with it. They are equal when every perk feeds and
+        // zero apart when none does — and they are neither when a build carries
+        // two that disagree, which is the case a single ratio could not state.
+        base.add_flat_base_damage(flat, flat_into_co);
     }
 }
 

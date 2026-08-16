@@ -8953,15 +8953,15 @@ mod tests {
             &["burston_prime_forceful_finality"],
         );
         assert!(
-            (base.co_base_fraction - 13.0 / 55.0).abs() < 1e-9,
+            (base.co_base_fraction() - 13.0 / 55.0).abs() < 1e-9,
             "direct-hit CO fraction {} against a measured 13/55",
-            base.co_base_fraction
+            base.co_base_fraction()
         );
         // …and every reading it was solved from. Two AXES are exercised — the
         // arcane's stacks and the status TYPE count — and the radial is the
         // same expression without the crit, which is what identifies it as an
         // uncritical explosion rather than a second guess at the fraction.
-        let f = base.co_base_fraction;
+        let f = base.co_base_fraction();
         let co = |stacks: f64, types: f64| 1.0 + 0.4 * stacks * types * f;
         for (stacks, types, direct, radial) in
             [(1.0, 1.0, 181.0, None), (2.0, 1.0, 196.0, Some(65.0)), (2.0, 2.0, 227.0, Some(76.0))]
@@ -8986,7 +8986,7 @@ mod tests {
             false,
             &["burston_prime_forceful_finality"],
         );
-        assert!((bf.co_base_fraction - 46.0 / 88.0).abs() < 1e-9, "{}", bf.co_base_fraction);
+        assert!((bf.co_base_fraction() - 46.0 / 88.0).abs() < 1e-9, "{}", bf.co_base_fraction());
         // RATIOS to the bare crit (188), which cancels the damage-type column.
         for (stacks, types, hit) in [(1.0_f64, 3.0_f64, 306.0_f64), (2.0, 3.0, 423.0)] {
             let f = (hit / 188.0 - 1.0) / (0.4 * stacks * types);
@@ -9003,7 +9003,7 @@ mod tests {
             false,
             &["burston_prime_fortress_salvo"],
         );
-        assert!((twin.co_base_fraction - 13.0 / 55.0).abs() < 1e-9);
+        assert!((twin.co_base_fraction() - 13.0 / 55.0).abs() < 1e-9);
     }
 
     /// THE DUAL TOXOCYST COMPUTES GunCO ON A FLAT 75, WHATEVER ITS PANEL SAYS —
@@ -9036,14 +9036,14 @@ mod tests {
         let frenzy = with("dual_toxocyst_fevered_frenzy");
         let carnage = with("dual_toxocyst_carnage_reign");
         assert!(
-            (frenzy.co_base_fraction - 75.0 / 125.0).abs() < 1e-9,
+            (frenzy.co_base_fraction() - 75.0 / 125.0).abs() < 1e-9,
             "Fevered Frenzy CO fraction {} against a measured 75/125",
-            frenzy.co_base_fraction
+            frenzy.co_base_fraction()
         );
         assert!(
-            (carnage.co_base_fraction - 75.0 / 135.0).abs() < 1e-9,
+            (carnage.co_base_fraction() - 75.0 / 135.0).abs() < 1e-9,
             "Carnage Reign CO fraction {} against a measured 75/135",
-            carnage.co_base_fraction
+            carnage.co_base_fraction()
         );
 
         // …AND CARNAGE REIGN CONTRIBUTES NO CO OF ITS OWN. If the card's +33%
@@ -9074,7 +9074,7 @@ mod tests {
                 "{evo}: panel {} against {panel}",
                 b.base_vector.total()
             );
-            let got = hit(panel, b.co_base_fraction, stacks, types);
+            let got = hit(panel, b.co_base_fraction(), stacks, types);
             assert!(
                 (got - measured).abs() < 1.0,
                 "{evo} {stacks}x{types}: {got} against a measured {measured}"
@@ -9111,9 +9111,9 @@ mod tests {
             inc.base_vector.total()
         );
         assert!(
-            (inc.co_base_fraction - 51.0 / 102.0).abs() < 1e-9,
+            (inc.co_base_fraction() - 51.0 / 102.0).abs() < 1e-9,
             "CO fraction {} against a measured 51/102",
-            inc.co_base_fraction
+            inc.co_base_fraction()
         );
 
         // THE READING, solved the way M48 taught: a RATIO to the bare crit,
@@ -9126,7 +9126,7 @@ mod tests {
         assert!(lo < 0.5 && 0.5 < hi, "0.5 outside the display band [{lo}, {hi}]");
         assert!(hi < 1.0, "the band must exclude a CO fed by the +51: [{lo}, {hi}]");
         // …and the engine's own fraction lands in the same band.
-        assert!(lo < inc.co_base_fraction && inc.co_base_fraction < hi);
+        assert!(lo < inc.co_base_fraction() && inc.co_base_fraction() < hi);
 
         // THE TIER-MATE, measured on its own numbers — flagged by inference
         // from this one first and confirmed within the hour.
@@ -9136,7 +9136,7 @@ mod tests {
             &["torid_plentiful_mayhem"],
         );
         assert!((mate.base_vector.total() - 82.0).abs() < 1e-9);
-        assert!((mate.co_base_fraction - 51.0 / 82.0).abs() < 1e-9);
+        assert!((mate.co_base_fraction() - 51.0 / 82.0).abs() < 1e-9);
 
         // AND THE DECISIVE FORM OF THE FINDING, which is not either fraction:
         // THE CO BASE IS A CONSTANT. Solved as an ABSOLUTE rather than as a
@@ -9172,9 +9172,9 @@ mod tests {
         assert!((base.base_vector.total() - 151.0).abs() < 1e-9);
         assert_eq!(base.co_behavior, crate::loadout::CoBehavior::Independent);
         assert!(
-            (base.co_base_fraction - 1.0).abs() < 1e-9,
+            (base.co_base_fraction() - 1.0).abs() < 1e-9,
             "the Multiplying half is UNMEASURED and must stay at 1.0, got {}",
-            base.co_base_fraction
+            base.co_base_fraction()
         );
     }
 

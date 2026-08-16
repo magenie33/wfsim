@@ -44,7 +44,7 @@ fn main() {
                     CoBehavior::Inert => continue,
                 };
                 let spread = included / excluded - 1.0;
-                let flagged = with.co_base_fraction < 0.999;
+                let flagged = with.co_base_fraction() < 0.999;
                 rows.push((
                     spread,
                     format!(

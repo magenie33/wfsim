@@ -2496,6 +2496,54 @@ own row: `damage_sources` for the shares, `dstacks` for the ladders, `stacks`
 for the arcane's own uptime, and `score_mean` for the totals. Nothing here is
 hand-derived except the two published ladder formulas.
 
+## 10b. THE ORIGINAL BASE — what a GunCO term computes on
+
+A weapon has an ORIGINAL BASE, and some things add to it while others only add
+to what its panel prints. `WeaponBase::co_base` is the first, `base_vector` is
+the second, and the GunCO term reads the first (owner, 2026-08-16).
+
+```
+gunco_bonus = rate x stacks x status_types x (co_base / panel)
+```
+
+**IT IS AN ABSOLUTE, NOT A FRACTION.** The engine held `co_base_fraction`, a
+ratio recomputed as `original / evolved` wherever something raised the panel,
+and the ratio was the wrong noun: it described the ARITHMETIC of one loadout
+instead of the FACT underneath. Two things it could not say:
+
+* **TWO SOURCES THAT DISAGREE.** A build carrying a flat-damage perk that feeds
+  the term and one that does not has no single ratio. The catalog says the
+  Despair is exactly that pair — Stalker's Vendetta excluded, Fatal Affliction
+  not — and it only ever worked because they are tier-mates and you pick one.
+* **A MECHANIC THAT DOES NOT EXIST YET.** Anything raising base damage now
+  states whether it feeds this, and the GunCO code does not change. Under the
+  ratio, a new source meant a new site recomputing `original / evolved`, which
+  is the shape that kept producing the same bug.
+
+`add_flat_base_damage(flat, into_co)` takes both amounts rather than a flag, so
+the disagreeing case is expressible at the one site that folds base damage in.
+
+**WHO FEEDS IT TODAY**
+
+| source | panel | co_base |
+|---|---|---|
+| the weapon's own base | yes | yes |
+| an Incarnon evolution, `Adding` entry | yes | **no** (M49, M50) |
+| an Incarnon evolution, `Multiplying` entry | yes | yes — unmeasured, see CATALOGS |
+| a perk the player's state gates | yes | yes — preserved, never measured |
+| a base-damage MOD (Serration, Hornet Strike) | no, it is a multiplier | no |
+| an explosion's own base | its own | its own, and it never grows |
+
+The last row is behaviour preserved rather than chosen: the old code excluded a
+radial's flat add from its CO base unconditionally while the direct hit's
+followed the perk's flag, so the two halves of one weapon could disagree about
+the same +42. They agree for every `Adding` entry now, and differ only on a
+`Multiplying` entry with an explosion, where nothing has been measured.
+
+A weapon may also DECLARE a starting value below its own base (`co_base_fraction`
+in the yaml, 0.5 on a bow's charged entry). That is the only place a fraction is
+still written, because it is how the catalog prints it.
+
 ## 11. THE ARENA'S GEOMETRY — where a shot leaves, and what counts as a hit
 
 The fight is two circles on a floor (`engine::space`). Everything below falls

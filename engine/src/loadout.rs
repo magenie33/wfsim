@@ -1252,13 +1252,32 @@ pub struct WeaponBase {
     /// the CO term the weapon's own evolutions dilute.
     ///
     /// **1.0 on every weapon but Dual Toxocyst.** Including a perk's flat base
-    /// damage in the CO term is the NORMAL behaviour (user, 2026-07-30) — the
-    /// Torid's catalog rows say 100% for both its parts and stay 100% with
-    /// Final Fusillade or Plentiful Mayhem equipped. Dual Toxocyst is the
-    /// anomaly the catalog calls out with a "100% or 56%" row, so the exclusion
-    /// is DECLARED by that weapon (`co_base_excludes_evolution_damage`) rather
-    /// than derived from the presence of a flat-damage evolution.
-    pub co_base_fraction: f64,
+    /// THE ORIGINAL BASE — the damage the GunCO term computes on, in the same
+    /// units as `base_vector.total()`.
+    ///
+    /// AN ABSOLUTE, NOT A FRACTION (owner, 2026-08-16). It was
+    /// `co_base_fraction`, a ratio recomputed as `original / evolved` wherever
+    /// something raised the panel, and the ratio was the wrong noun: it
+    /// described the ARITHMETIC of one particular loadout instead of the FACT
+    /// underneath, which is that a weapon has an original base and some things
+    /// add to it while others only add to what it prints.
+    ///
+    /// What the fraction could not express, and this can:
+    ///
+    ///   · TWO SOURCES THAT DISAGREE. A weapon carrying two flat-damage perks,
+    ///     one feeding the term and one not, has no single ratio — the catalog
+    ///     says the Despair is exactly that (one tier-2 option excluded, the
+    ///     other not) and it only worked because nobody equips both.
+    ///   · A NEW MECHANIC. Anything that raises base damage says whether it
+    ///     feeds this, and the GunCO code does not change. Under the ratio,
+    ///     a new source meant recomputing `original / evolved` at a new site,
+    ///     which is the shape that keeps producing the same bug.
+    ///
+    /// A weapon may DECLARE a starting value below its own base
+    /// (`co_base_fraction` in the yaml, 0.5 on a bow's charged entry); that is
+    /// the only place a fraction is still written down, because that is how the
+    /// catalog prints it.
+    pub co_base: f64,
     /// Buff-injected elements as RELATIVE bonuses (element, bonus): each
     /// contributes ModifiedBase × bonus at the END of the hierarchy
     /// (rule 8) — Frenzy's +100% Toxin on the base Dual Toxocyst.
@@ -1782,11 +1801,21 @@ pub struct RadialBase {
     pub takes_condition_overload: bool,
     /// See [`crate::weapons_data::RadialSpec::takes_multishot`].
     pub takes_multishot: bool,
-    /// What fraction of this explosion's evolved base feeds its CO term — the
-    /// radial's own copy of `co_base_fraction`, and it needs one because an
-    /// evolution can raise the explosion's DAMAGE without raising the base CO
-    /// multiplies. See `evolutions_data::apply`, where it is set.
-    pub co_base_fraction: f64,
+    /// THE ORIGINAL BASE of this explosion — the radial's own [`WeaponBase::co_base`],
+    /// and it needs its own because an evolution can raise what the explosion
+    /// DEALS without raising what its CO term reads.
+    pub co_base: f64,
+}
+
+impl RadialBase {
+    /// See [`WeaponBase::co_base_fraction`] — derived, never stored.
+    pub fn co_base_fraction(&self) -> f64 {
+        let total = self.base_vector.total();
+        if total <= 0.0 {
+            return 1.0;
+        }
+        self.co_base / total
+    }
 }
 
 /// The radial part after mod resolution.
@@ -2042,19 +2071,49 @@ impl WeaponBase {
     /// the weapon, so they must not be able to come out as different panels —
     /// `a_gated_flat_base_damage_folds_exactly_as_an_ungated_one` is that
     /// assertion.
-    pub fn add_flat_base_damage(&mut self, flat: f64) {
+    /// WHAT FRACTION OF THE PANEL THE CO TERM READS — derived from
+    /// [`Self::co_base`], never stored. The damage math wants a fraction of the
+    /// evolved base; the FACT is the absolute, and deriving one from the other
+    /// means they cannot disagree.
+    pub fn co_base_fraction(&self) -> f64 {
+        let total = self.base_vector.total();
+        if total <= 0.0 {
+            return 1.0;
+        }
+        self.co_base / total
+    }
+
+    /// Add flat base damage, and say how much of it the GunCO term's base
+    /// grows by.
+    ///
+    /// `into_co` is USUALLY 0 or `flat` and is passed as an amount rather than
+    /// a bool on purpose: a build carrying two flat-damage perks that disagree
+    /// contributes part of its total, and a bool cannot say that.
+    pub fn add_flat_base_damage(&mut self, flat: f64, into_co: f64) {
         let original_total = self.base_vector.total();
         if flat <= 0.0 || original_total <= 0.0 {
             return;
         }
         let evolved = original_total + flat;
         self.base_vector = self.base_vector.scale(evolved / original_total);
+        self.co_base += into_co;
         if let Some(r) = self.radial.as_mut() {
             let rad_original = r.base_vector.total();
             if rad_original > 0.0 {
-                let rad_evolved = rad_original + flat;
-                r.base_vector = r.base_vector.scale(rad_evolved / rad_original);
-                r.co_base_fraction = rad_original / rad_evolved;
+                // THE EXPLOSION TAKES THE SAME ABSOLUTE ADD, not a pro-rata
+                // share of it.
+                r.base_vector = r.base_vector.scale((rad_original + flat) / rad_original);
+                // …AND ITS CO BASE DOES NOT GROW, EVER. That is the behaviour
+                // this refactor preserved rather than chose: the old code set
+                // the radial's fraction to `original / evolved` unconditionally
+                // while the direct hit's followed the perk's flag, so the two
+                // parts of one weapon could disagree about the same +42. They
+                // agree for every `Adding` entry now that its default excludes,
+                // and differ only on a `Multiplying` entry with an explosion,
+                // where nothing has been measured either way. Written as
+                // `+= 0.0` so the day a measurement arrives there is one line
+                // to change and it is this one.
+                r.co_base += 0.0;
             }
         }
     }
@@ -2544,7 +2603,12 @@ pub fn resolve_for(
     let base = if gated_flat > 0.0 || gated_mag > 0.0 {
         let mut b = base.clone();
         if gated_flat > 0.0 {
-            b.add_flat_base_damage(gated_flat);
+            // A GATED FLAT ADD FEEDS THE CO BASE, which is what it did
+            // before this became a choice: the old code left the fraction
+            // alone and grew the panel, so the absolute the term read grew
+            // with it. Preserved rather than decided — no gated perk is on
+            // the CO catalog and none has been measured.
+            b.add_flat_base_damage(gated_flat, gated_flat);
         }
         b.magazine_size += gated_mag;
         owned = b;
@@ -3267,7 +3331,7 @@ pub fn resolve_for(
             falloff_reduction: r.falloff_reduction,
             takes_condition_overload: r.takes_condition_overload,
             takes_multishot: r.takes_multishot,
-            co_base_fraction: r.co_base_fraction,
+            co_base_fraction: r.co_base_fraction(),
         }
     });
 
@@ -3598,7 +3662,7 @@ pub fn resolve_for(
         cd_on_undamaged: if locked_stat("critical_damage") { 0.0 } else { base.cd_on_undamaged * (1.0 + cd) },
         co_behavior: base.co_behavior,
         compression,
-        co_base_fraction: base.co_base_fraction,
+        co_base_fraction: base.co_base_fraction(),
         co_per_type: co,
         co_stack,
         ms_stack,
@@ -3848,6 +3912,64 @@ mod tests {
     /// the number means: a Paris Prime holding overshields must be exactly the
     /// weapon a plain "+74" perk would make, down to the base vector's
     /// composition and the explosion's Condition Overload fraction. Both routes
+    /// THE ORIGINAL BASE IS AN ABSOLUTE, and this is the case that made it one
+    /// (owner, 2026-08-16): TWO FLAT-DAMAGE SOURCES THAT DISAGREE.
+    ///
+    /// The engine held `co_base_fraction`, a ratio recomputed as
+    /// `original / evolved` wherever something raised the panel. One ratio can
+    /// describe one verdict — everything feeds, or nothing does — so a build
+    /// carrying a perk that feeds the CO term and a perk that does not had no
+    /// value it could take. It was never wrong in practice only because no such
+    /// build could be assembled: the two flat-damage perks on a weapon are
+    /// tier-mates and you pick one. The catalog says the Despair is exactly
+    /// that pair (Stalker's Vendetta excluded, Fatal Affliction not), so the
+    /// arrangement is one game update away from existing.
+    ///
+    /// Here it is built by hand, because no roster weapon can express it yet.
+    /// A base of 100, one source of +50 that feeds and one of +30 that does
+    /// not: the panel reads 180 and the CO term reads 150.
+    #[test]
+    fn two_flat_sources_that_disagree_each_land_where_they_should() {
+        let mut b = WeaponBase::from_data("braton", false, &[]);
+        let mut v = DamageVector::new();
+        v.add(DamageType::Impact, 100.0);
+        b.base_vector = v;
+        b.co_base = 100.0;
+        b.radial = None;
+
+        b.add_flat_base_damage(50.0, 50.0); // feeds
+        b.add_flat_base_damage(30.0, 0.0); // does not
+
+        assert_eq!(b.base_vector.total(), 180.0);
+        assert_eq!(b.co_base, 150.0);
+        assert!((b.co_base_fraction() - 150.0 / 180.0).abs() < 1e-12);
+
+        // …AND NEITHER RATIO ALONE DESCRIBES IT. `original/evolved` over the
+        // whole build is 100/180 and over the feeding source is 150/180; the
+        // truth is the second, and the old code could only have reached it by
+        // knowing which sources to leave out of a division it performed once.
+        assert!((b.co_base_fraction() - 100.0 / 180.0).abs() > 0.2);
+    }
+
+    /// …AND THE ORDER THEY ARRIVE IN DOES NOT MATTER, which is what makes the
+    /// absolute safe to accumulate. The panel folds pro-rata either way and the
+    /// CO base is a sum.
+    #[test]
+    fn the_original_base_does_not_depend_on_the_order_of_the_sources() {
+        let build = |a: (f64, f64), c: (f64, f64)| {
+            let mut b = WeaponBase::from_data("braton", false, &[]);
+            let mut v = DamageVector::new();
+        v.add(DamageType::Impact, 100.0);
+        b.base_vector = v;
+            b.co_base = 100.0;
+            b.radial = None;
+            b.add_flat_base_damage(a.0, a.1);
+            b.add_flat_base_damage(c.0, c.1);
+            (b.base_vector.total(), b.co_base)
+        };
+        assert_eq!(build((50.0, 50.0), (30.0, 0.0)), build((30.0, 0.0), (50.0, 50.0)));
+    }
+
     /// call `WeaponBase::add_flat_base_damage`, and this is what says so.
     #[test]
     fn a_gated_flat_base_damage_folds_exactly_as_an_ungated_one() {
@@ -3865,7 +3987,7 @@ mod tests {
         // 20 + 74 is what the card pays a player who has them, so a base panel
         // carrying that flat outright must resolve to the same numbers.
         let mut plain = WeaponBase::from_data("paris_prime", true, &[]);
-        plain.add_flat_base_damage(20.0 + 74.0);
+        plain.add_flat_base_damage(20.0 + 74.0, 20.0 + 74.0);
         let want = resolve_for(&plain, &[], StackPolicy::AssumedMax, neutral);
         assert!((on.modified_base - want.modified_base).abs() < 1e-9,
             "gated {} vs plain {}", on.modified_base, want.modified_base);
@@ -3882,7 +4004,7 @@ mod tests {
         // with only the perk's unconditional +20 — which is what the card says,
         // and what a build that never picks up an overshield actually gets.
         let mut just_x = WeaponBase::from_data("paris_prime", true, &[]);
-        just_x.add_flat_base_damage(20.0);
+        just_x.add_flat_base_damage(20.0, 20.0);
         let x_only = resolve_for(&just_x, &[], StackPolicy::AssumedMax, neutral);
         assert!((off.modified_base - x_only.modified_base).abs() < 1e-9,
             "shut: {} vs {}", off.modified_base, x_only.modified_base);
@@ -3985,7 +4107,7 @@ mod tests {
             // else, which is the fight the board is scored under.
             let x = crate::evolutions_data::get(evo).expect(evo).flat_base_damage();
             let mut just_x = WeaponBase::from_data(weapon, true, &[]);
-            just_x.add_flat_base_damage(x);
+            just_x.add_flat_base_damage(x, x);
             let x_only = resolve_for(&just_x, &[], StackPolicy::AssumedMax, neutral);
             assert!((off.modified_base - x_only.modified_base).abs() < 1e-9,
                 "{evo} shut: {} vs {}", off.modified_base, x_only.modified_base);

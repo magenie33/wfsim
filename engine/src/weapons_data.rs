@@ -2294,9 +2294,10 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
             ),
             takes_condition_overload: r.takes_condition_overload,
             takes_multishot: r.takes_multishot,
-            // 1.0 until an evolution raises the explosion's base without
-            // raising what CO multiplies — see `evolutions_data::apply`.
-            co_base_fraction: 1.0,
+            // AN EXPLOSION STARTS WITH ITS OWN BASE as the CO base, and stays
+            // there — see `WeaponBase::add_flat_base_damage`, where the radial's
+            // never grows.
+            co_base: v.total(),
         }
     });
 
@@ -2454,12 +2455,11 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         cc_on_undamaged: 0.0,
         cd_on_undamaged: 0.0,
         co_behavior,
-        // 1.0 = the CO term uses the FULL base, evolution damage included,
-        // which is the normal case. An evolution that declares itself excluded
-        // narrows it later (evolutions_data::apply); a WEAPON-level narrowing
-        // (a bow's charged shot computing CO off the uncharged base) is
-        // declared here, and no weapon has both.
-        co_base_fraction: s.co_base_fraction.unwrap_or(1.0),
+        // THE ORIGINAL BASE, absolute. A weapon may DECLARE a fraction of its
+        // own base here (0.5 on a bow's charged entry) and that is the only
+        // place a fraction is written down, because it is how the catalog
+        // prints it — everything downstream carries the absolute.
+        co_base: vector.total() * s.co_base_fraction.unwrap_or(1.0),
         injected_elements,
         traits: traits_for(s),
         gauge_form,
@@ -3663,7 +3663,7 @@ mod tests {
         // multiplier sitting OUTSIDE the additive bracket, not an evolution
         // exclusion — this weapon has no evolutions.
         assert_eq!(b.co_behavior, CoBehavior::AdditiveWithBaseDamage);
-        assert!((b.co_base_fraction - 0.5).abs() < 1e-9);
+        assert!((b.co_base_fraction() - 0.5).abs() < 1e-9);
         // A bow is neither a beam nor an AoE weapon.
         assert!(!b.continuous);
         assert!(b.radial.is_none() && b.lingering.is_none() && b.beam.is_none());
@@ -3695,8 +3695,8 @@ mod tests {
         // No charge multiplier to leave out, so CO computes on the full base
         // here — the catalog lists no row for this attack, and absence there
         // is a positive statement.
-        assert!((tapped.co_base_fraction - 1.0).abs() < 1e-9);
-        assert!((charged.co_base_fraction - 0.5).abs() < 1e-9);
+        assert!((tapped.co_base_fraction() - 1.0).abs() < 1e-9);
+        assert!((charged.co_base_fraction() - 0.5).abs() < 1e-9);
         // ZERO draw is a cadence statement, not a missing value: 1 / 0.65 =
         // 1.54 shots/s against the charged form's 1 / 1.15 = 0.87.
         assert_eq!(tapped.charge_seconds, Some(0.0));
@@ -3779,18 +3779,18 @@ mod tests {
         // form is `Multiplying` and stays at 1.0 until somebody measures a
         // Multiplying entry — see `EvolutionDef::excludes_co_base`.
         assert!(
-            (evolved.co_base_fraction - 1.0).abs() < 1e-9,
+            (evolved.co_base_fraction() - 1.0).abs() < 1e-9,
             "the Multiplying base form is unmeasured, got {}",
-            evolved.co_base_fraction
+            evolved.co_base_fraction()
         );
         for (perk, panel) in [("torid_final_fusillade", 102.0), ("torid_plentiful_mayhem", 82.0)] {
             let inc = WeaponBase::from_data("torid_incarnon", false, &[perk]);
             assert!((inc.base_vector.total() - panel).abs() < 1e-9);
             // ONE CO BASE, TWO PANELS — the shape the measurement turned on.
             assert!(
-                (inc.co_base_fraction * panel - 51.0).abs() < 1e-9,
+                (inc.co_base_fraction() * panel - 51.0).abs() < 1e-9,
                 "{perk}: solves to a CO base of {}",
-                inc.co_base_fraction * panel
+                inc.co_base_fraction() * panel
             );
         }
 
@@ -3799,9 +3799,9 @@ mod tests {
         for form in ["dual_toxocyst", "dual_toxocyst_incarnon"] {
             let dt = WeaponBase::from_data(form, false, &["dual_toxocyst_carnage_reign"]);
             assert!(
-                (dt.co_base_fraction - 75.0 / 135.0).abs() < 1e-9,
+                (dt.co_base_fraction() - 75.0 / 135.0).abs() < 1e-9,
                 "{form}: expected 75/135 = 0.5556, got {}",
-                dt.co_base_fraction
+                dt.co_base_fraction()
             );
         }
         // …AND SO DOES PERK 2, WHICH THE CATALOG DOES NOT LIST. Fevered Frenzy
@@ -3826,9 +3826,9 @@ mod tests {
             perk2.base_vector.total()
         );
         assert!(
-            (perk2.co_base_fraction - 75.0 / 125.0).abs() < 1e-9,
+            (perk2.co_base_fraction() - 75.0 / 125.0).abs() < 1e-9,
             "Perk 2 was measured to exclude its own +50 too; expected 75/125, got {}",
-            perk2.co_base_fraction
+            perk2.co_base_fraction()
         );
     }
 
@@ -4328,7 +4328,7 @@ mod laetum_tests {
         let b = WeaponBase::from_data("laetum_incarnon", true, &[]);
         assert_eq!(b.co_behavior, crate::loadout::CoBehavior::AdditiveWithBaseDamage);
         // 160/160 and 100/100 in the catalog: the whole base feeds the bonus.
-        assert!((b.co_base_fraction - 1.0).abs() < 1e-9);
+        assert!((b.co_base_fraction() - 1.0).abs() < 1e-9);
 
         let pool = crate::mods_data::pistol_pool();
         let co: Vec<&crate::loadout::ModDef> =
@@ -4490,10 +4490,10 @@ mod burston_incarnon_radial_tests {
         let r = b.radial.as_ref().expect("the radial survives an evolution");
         assert!((r.base_vector.total() - 74.0).abs() < 1e-9, "{}", r.base_vector.total());
         assert!(
-            (r.co_base_fraction - 70.0 / 74.0).abs() < 1e-9,
+            (r.co_base_fraction() - 70.0 / 74.0).abs() < 1e-9,
             "the explosion's CO base stays 70/74 = {:.1}%, got {}",
             70.0 / 74.0 * 100.0,
-            r.co_base_fraction
+            r.co_base_fraction()
         );
     }
 
@@ -4513,12 +4513,12 @@ mod burston_incarnon_radial_tests {
         let prime = WeaponBase::from_data("zylok_prime_incarnon", true, &["zylok_prime_precisions_payoff"]);
         let pr = prime.radial.as_ref().expect("radial");
         assert!((pr.base_vector.total() - 730.0).abs() < 1e-9, "700 + 30");
-        assert!((pr.co_base_fraction - 700.0 / 730.0).abs() < 1e-9);
+        assert!((pr.co_base_fraction() - 700.0 / 730.0).abs() < 1e-9);
 
         let plain = WeaponBase::from_data("zylok_incarnon", true, &["zylok_precisions_payoff"]);
         let cr = plain.radial.as_ref().expect("radial");
         assert!((cr.base_vector.total() - 676.0).abs() < 1e-9, "600 + 76");
-        assert!((cr.co_base_fraction - 600.0 / 676.0).abs() < 1e-9);
+        assert!((cr.co_base_fraction() - 600.0 / 676.0).abs() < 1e-9);
     }
 
     #[test]
@@ -4547,9 +4547,9 @@ mod burston_incarnon_radial_tests {
                 r.base_vector.total()
             );
             assert!(
-                (r.co_base_fraction - 13.0 / 55.0).abs() < 1e-9,
+                (r.co_base_fraction() - 13.0 / 55.0).abs() < 1e-9,
                 "{evo}: the explosion's CO base stays 13/55, got {}",
-                r.co_base_fraction
+                r.co_base_fraction()
             );
             // …AND SO DOES THE DIRECT HIT — MEASURED (owner, 2026-08-16),
             // which reversed this assertion. It read `co_base_fraction == 1.0`
@@ -4561,9 +4561,9 @@ mod burston_incarnon_radial_tests {
             // reaches wherever the +42 landed. MEASUREMENTS M48.
             assert!((b.base_vector.total() - 55.0).abs() < 1e-9);
             assert!(
-                (b.co_base_fraction - 13.0 / 55.0).abs() < 1e-9,
+                (b.co_base_fraction() - 13.0 / 55.0).abs() < 1e-9,
                 "{evo}: the direct hit's CO base is 13/55 too, got {}",
-                b.co_base_fraction
+                b.co_base_fraction()
             );
         }
     }
@@ -5585,8 +5585,8 @@ mod condition_overload_catalog_tests {
         for (entry, perk, unmodded, evolved) in rows {
             let b = crate::loadout::WeaponBase::from_data(entry, false, &[perk]);
             let want = unmodded / evolved;
-            assert!((b.co_base_fraction - want).abs() < 1e-6,
-                "{entry} + {perk}: the catalog says CO computes on {unmodded} of {evolved}                  ({:.1}%), our co_base_fraction is {:.4}", want * 100.0, b.co_base_fraction);
+            assert!((b.co_base_fraction() - want).abs() < 1e-6,
+                "{entry} + {perk}: the catalog says CO computes on {unmodded} of {evolved}                  ({:.1}%), our co_base_fraction is {:.4}", want * 100.0, b.co_base_fraction());
         }
 
         // …AND THE TIER-MATES THE CATALOG DOES NOT NAME feed the term in full.
@@ -5633,9 +5633,9 @@ mod condition_overload_catalog_tests {
             let f = bare.base_vector.total() / b.base_vector.total();
             assert!(f < 0.999, "{entry} + {perk} raises no base damage");
             assert_eq!(b.co_behavior, crate::loadout::CoBehavior::AdditiveWithBaseDamage);
-            assert!((b.co_base_fraction - f).abs() < 1e-9,
+            assert!((b.co_base_fraction() - f).abs() < 1e-9,
                 "{entry} + {perk}: an Adding entry computes CO on the UNEVOLVED base \
-                 by default — expected {f:.4}, got {:.4}", b.co_base_fraction);
+                 by default — expected {f:.4}, got {:.4}", b.co_base_fraction());
         }
     }
 
