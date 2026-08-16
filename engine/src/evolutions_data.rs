@@ -476,6 +476,21 @@ enum EvoEffect {
     /// engine will ever close it — and ON the page, which is where the
     /// difference is for.
     OutOfScope { clause: String, reason: Scope },
+    /// THE GAME DOES NOT DO IT. The card states a clause, the clause pays
+    /// nothing when measured, and a hotfix restores it.
+    ///
+    /// A THIRD PROMISE, and the only one that is not a shortfall of ours
+    /// (`live_bugs:` on an arcane has said the same thing since Primary
+    /// Debilitate). [`EvoEffect::Inert`] is work someone can do and
+    /// [`EvoEffect::OutOfScope`] is the edge of what a single-target damage
+    /// simulator is; this one says the model is RIGHT and reality is broken.
+    /// Reporting it as either of the others would tell a reader to wait for
+    /// us, when what they should do is not pick the perk.
+    ///
+    /// The `clause` is the effect's own kind, so the line names WHICH half of
+    /// a two-clause perk is dead — Carnage Reign's +60 base damage works and
+    /// its "+33% per Status Type" does not (MEASUREMENTS M49).
+    LiveBug { clause: String, note: String },
     /// A clause that QUALIFIES a neighbouring effect rather than being one —
     /// "Stacks up to 4x" on a card whose stacking bonus is the effect above it.
     ///
@@ -649,6 +664,9 @@ impl EvolutionDef {
                 // No card: nothing to configure about a payout that cannot
                 // happen. The disclosure line is what this perk gets.
                 EvoEffect::OutOfScope { .. } => None,
+                // PAYS NOTHING, which is the whole point — the sim reproduces
+                // the game, and the game pays nothing here.
+                EvoEffect::LiveBug { .. } => None,
                 EvoEffect::AssumedMaxMultishot { max_stacks, .. } => Some(EvoBuffCard {
                     id: "evo_multishot",
                     max_stacks: *max_stacks,
@@ -836,6 +854,23 @@ impl EvolutionDef {
                 EvoEffect::OutOfScope { clause, reason } => {
                     Some(format!("{clause} — {}", reason.why()))
                 }
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// WHAT THE GAME ITSELF DOES NOT DO — the clauses measured to pay nothing,
+    /// each with the note that says how we know.
+    ///
+    /// NOT counted by [`Self::fully_unmodeled`], deliberately: that question is
+    /// about OUR shortfalls, and a reader deciding whether to wait for us is
+    /// asking something different from a reader deciding whether to pick a
+    /// perk DE has broken. Both reach the page; only one is work.
+    pub fn live_bugs(&self) -> Vec<String> {
+        self.effects
+            .iter()
+            .filter_map(|e| match e {
+                EvoEffect::LiveBug { clause, note } => Some(format!("{clause} — {note}")),
                 _ => None,
             })
             .collect()
@@ -1115,6 +1150,13 @@ impl EvolutionDef {
                 EvoEffect::OutOfScope { clause, reason } => {
                     format!("{clause} — {}", reason.why())
                 }
+                // NAMED AS DEAD ON THE CARD ITSELF. A reader comparing two
+                // tier-2 options must see which half of this one pays nothing
+                // — printing it like a working clause is the one thing this
+                // line must never do.
+                EvoEffect::LiveBug { clause, note } => {
+                    format!("{clause} — DOES NOT WORK IN GAME: {note}")
+                }
                 // Said as what it is — a cap on the line above, not a line of
                 // its own claiming the perk does less than it does.
                 EvoEffect::Qualifier(what) => {
@@ -1154,6 +1196,17 @@ fn f(v: &Value, k: &str) -> Option<f64> {
 
 fn effect(v: &Value) -> Option<EvoEffect> {
     let kind = v.get("kind").and_then(Value::as_str)?;
+    // A LIVE BUG SHORT-CIRCUITS THE KIND. Declared beside the effect it kills
+    // rather than as a flag on the evolution, because a perk's two clauses can
+    // disagree — Carnage Reign's +60 base damage works and its "+33% per
+    // Status Type" does not (MEASUREMENTS M49). Intercepting here means every
+    // effect kind gets it for free and no arm has to remember to check.
+    if let Some(note) = v.get("live_bug").and_then(Value::as_str) {
+        return Some(EvoEffect::LiveBug {
+            clause: kind.replace('_', " "),
+            note: note.to_string(),
+        });
+    }
     Some(match kind {
         "flat_base_damage" => EvoEffect::FlatBaseDamage(f(v, "value").unwrap_or(0.0)),
         "flat_base_crit_chance" => EvoEffect::FlatBaseCritChance(f(v, "value").unwrap_or(0.0)),
@@ -1587,6 +1640,9 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // entry with its own stats, so applying anything here would
                 // count them twice.
                 EvoEffect::UnlocksForm(_) => {}
+                // NOTHING TO APPLY, because the game applies nothing. The
+                // clause is kept so the card can say so ().
+                EvoEffect::LiveBug { .. } => {}
                 // …and nothing to apply for an EDGE either, by definition.
                 EvoEffect::OutOfScope { .. } => {}
                 EvoEffect::FlatBaseDamage(v) => flat += v,
@@ -2336,7 +2392,22 @@ mod tests {
             .contains(&EvoEffect::AssumedMaxMultishot { total: 1.0, max_stacks: 20 }));
         let ca = get("dual_toxocyst_carnage_reign").unwrap();
         assert!(ca.effects.contains(&EvoEffect::FlatBaseDamage(60.0)));
-        assert!(ca.effects.contains(&EvoEffect::ConditionOverload { per_type: 0.33, min_sprint: 0.0 }));
+        // …AND ITS SECOND CLAUSE IS DEAD. "+33% Direct Damage per Status Type"
+        // is on DE's own CO-source list and pays nothing in game, measured
+        // twice over (MEASUREMENTS M49) — so it loads as a LIVE BUG rather
+        // than as a CO source, which is what keeps the card able to SAY so
+        // while the number stays at zero.
+        assert!(
+            !ca.effects
+                .iter()
+                .any(|e| matches!(e, EvoEffect::ConditionOverload { .. })),
+            "the +33% pays nothing in game and must not load as a CO source"
+        );
+        assert_eq!(ca.live_bugs().len(), 1, "{:?}", ca.live_bugs());
+        assert!(ca.live_bugs()[0].starts_with("condition overload — "), "{:?}", ca.live_bugs());
+        // The perk is NOT fully unmodelled — its +60 works, and the tile must
+        // not tell a player the whole option is dead.
+        assert!(!ca.fully_unmodeled());
         let cf = get("dual_toxocyst_commodores_fortune").unwrap();
         assert!(cf.effects.contains(&EvoEffect::FlatBaseCritChance(0.20)));
     }

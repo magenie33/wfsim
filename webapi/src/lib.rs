@@ -1113,6 +1113,13 @@ pub fn meta_json() -> Value {
                                 // had this split since 2026-08-05; the
                                 // evolutions said "not modelled yet" for both.
                                 "out_of_scope": e.out_of_scope_effects(),
+                                // …and the THIRD, which is not a shortfall at
+                                // all: a clause the GAME does not pay out. It
+                                // reaches the card because the reader's action
+                                // differs — an unmodelled line says wait for
+                                // us, this one says do not pick the perk for
+                                // that half (MEASUREMENTS M49).
+                                "live_bugs": e.live_bugs(),
                                 "fully_unmodeled": e.fully_unmodeled(),
                                 "desc": e.description.split('\n').collect::<Vec<_>>(),
                                 "effects": e.describe(),

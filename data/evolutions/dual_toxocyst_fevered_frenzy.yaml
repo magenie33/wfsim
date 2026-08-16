@@ -6,6 +6,22 @@ icon: IncreasedFireRateOnAbilityUseStacks(xWhite).png   # wiki File: name (Dual_
 description: "Increase Base Damage by +50.\nOn Ability Cast: +5% Multishot. Stacks up to 20x."
 selection: choose_one
 
+# THIS perk's +50 base damage does not feed the GunCO term either — MEASURED
+# (owner, 2026-08-16; MEASUREMENTS M49). At the 125 panel this perk produces,
+# Galvanized Shot at 3 stacks against 2 status types reads 305, and a CO term
+# computed on 125 would read `125 + 125 x 2.4 = 425`. A flat 75 gives
+# `125 + 75 x 2.4 = 305` exactly.
+#
+# IT CONTRADICTS THE CATALOG, which is why it is worth this paragraph. The CO
+# table names only Carnage Reign for this weapon, and CATALOGS' standing rule is
+# that ABSENCE MEANS ORDINARY — so this perk was modelled as feeding CO in full,
+# and the sibling file still carried a comment saying so in as many words. The
+# rule is not repealed by one counterexample (it has held for every other row),
+# but the catalog's silence is now known to be silence rather than a statement
+# HERE: the exclusion on this weapon is the WEAPON's, not one perk's, and both
+# tier-2 options compute CO on the unevolved 75.
+co_base_excludes_this_evolution: true
+
 effects:
   - kind: flat_base_damage
     # Adds to the BASE TOTAL, distributed PRO-RATA across the existing

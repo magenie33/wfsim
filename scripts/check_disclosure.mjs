@@ -62,6 +62,18 @@ for (const lang of ["en", "zh"]) {
     // over perks nobody is working on and nobody should.
     out.evoScope = [...document.querySelectorAll('.evopick .exchip.scope')]
         .map(e => ({ text: e.textContent.trim(), why: e.getAttribute('title') || '' }));
+    // …AND THE THIRD, which is not a shortfall of ours at all: a clause the
+    // GAME does not pay out. The mod and arcane cards have carried live bugs
+    // since 2026-08-08 and the evolutions had no arm for one until an owner
+    // measurement found the first (Carnage Reign's "+33% per Status Type" pays
+    // nothing — MEASUREMENTS M49). It is read from META rather than from the
+    // open weapon's tiles, because the assertion is about the WHOLE roster
+    // knowing how to say it, and its chip is asserted on the Dual Toxocyst's
+    // own page below.
+    out.evoBugs = (META.weapons || []).flatMap(w => (w.evolutions || [])
+      .flatMap(t => (t.options || [])
+        .filter(o => (o.live_bugs || []).length)
+        .map(o => ({ id: o.id, bugs: o.live_bugs, effects: o.effects || [] }))));
     out.evoInert = ((META.weapons || []).find(w => w.id === $('weapon').value) || {}).id;
 
 
@@ -214,6 +226,21 @@ for (const lang of ["en", "zh"]) {
   check(`[${lang}] ...naming the reason it can never pay out`,
     r.evoScope.every((c) => c.why.length > 20 && cjk.test(c.why) === (lang === "zh")),
     JSON.stringify(r.evoScope[0] || null).slice(0, 140));
+
+  // A CLAUSE THE GAME DOES NOT DO, said as that and not as a todo. The reader's
+  // action is what separates them: "not modelled yet" says wait for us, this
+  // says do not pick the perk for that half — nobody is going to implement what
+  // DE has not shipped (MEASUREMENTS M49).
+  check(`[${lang}] an evolution whose clause the GAME does not honour says so`,
+    (r.evoBugs || []).length >= 1, `${(r.evoBugs || []).length} evolutions with a live bug`);
+  check(`[${lang}] ...and it names the clause rather than condemning the whole perk`,
+    (r.evoBugs || []).every((e) => e.bugs.every((b) => b.includes(" — "))
+      && e.effects.some((x) => !/DOES NOT WORK/.test(x))),
+    JSON.stringify((r.evoBugs || [])[0] || null).slice(0, 200));
+  check(`[${lang}] ...and the dead clause never prints as if it paid`,
+    (r.evoBugs || []).every((e) => e.effects.filter((x) => /33|per Status Type/i.test(x))
+      .every((x) => /DOES NOT WORK/.test(x))),
+    JSON.stringify(((r.evoBugs || [])[0] || {}).effects || null).slice(0, 200));
   // EVERY FLAGGED MOD IN THE POOL, and no more than that. One weapon's pool
   // carries few — today the Torid's has a single `out_of_scope` (Aerial Ace),
   // because no mod is FULLY unmodelled any more and none is partly. So the

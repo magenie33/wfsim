@@ -3790,10 +3790,20 @@ mod tests {
                 dt.co_base_fraction
             );
         }
-        // …and Perk 2 does NOT. Fevered Frenzy also raises base damage (+50),
-        // so keying the exclusion off the WEAPON — or off its Adding CO class —
-        // would dock it to 75/125 = 0.6. The catalog does not list it, and the
-        // table lists only discrepancies, so it feeds the CO term in full.
+        // …AND SO DOES PERK 2, WHICH THE CATALOG DOES NOT LIST. Fevered Frenzy
+        // also raises base damage (+50), and this assertion read 1.0 until it
+        // was measured: at the 125 panel, Galvanized Shot at 3 stacks against 2
+        // status types gives 305, and a CO term on the full 125 would give 425
+        // (MEASUREMENTS M49, owner 2026-08-16).
+        //
+        // WHAT IT COST TO LEARN, and why the flag is still per PERK. The
+        // catalog's ABSENCE-MEANS-ORDINARY rule produced the old number, and
+        // the rule is not repealed — it holds for every other row and the
+        // negative controls below still assert it. What is now known is that
+        // this weapon's exclusion is the WEAPON's rather than one perk's, so
+        // both tier-2 options carry the flag. The Despair is why the
+        // granularity stays per perk regardless: one of its two is excluded
+        // and the other measurably is not.
         let perk2 =
             WeaponBase::from_data("dual_toxocyst", false, &["dual_toxocyst_fevered_frenzy"]);
         assert!(
@@ -3802,8 +3812,8 @@ mod tests {
             perk2.base_vector.total()
         );
         assert!(
-            (perk2.co_base_fraction - 1.0).abs() < 1e-9,
-            "Perk 2 is not a listed discrepancy; expected 1.0, got {}",
+            (perk2.co_base_fraction - 75.0 / 125.0).abs() < 1e-9,
+            "Perk 2 was measured to exclude its own +50 too; expected 75/125, got {}",
             perk2.co_base_fraction
         );
     }
@@ -5578,9 +5588,14 @@ mod condition_overload_catalog_tests {
         // other (50%, 40%, 38%, 57%, 65%, 25%) and contains outright
         // counter-examples — the Cinta and Nataruk are charged bows at 100%
         // Multiplying and the Balefire Charger is 0%. See docs/CATALOGS.md.
+        // The Dual Toxocyst's Fevered Frenzy WAS in this list and is not any
+        // more: it is the one entry whose absence from the catalog was measured
+        // and turned out not to mean ordinary (MEASUREMENTS M49). The other
+        // five stay, and they are the point — one counterexample does not repeal
+        // a rule that still holds everywhere it has been checked, it just means
+        // the rule is a default rather than a law.
         for (entry, perk) in [
             ("vasto_prime_incarnon", "vasto_prime_lone_gun"),
-            ("dual_toxocyst_incarnon", "dual_toxocyst_fevered_frenzy"),
             ("bronco_prime_incarnon", "bronco_prime_infused_shots"),
             ("despair_incarnon", "despair_fatal_affliction"),
             ("lato_vandal_incarnon", "lato_vandal_reified_bane"),

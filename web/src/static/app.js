@@ -5942,14 +5942,22 @@ const evoLines = (o) => {
 // TWO DIFFERENT ADMISSIONS, and saying "not modelled" for both is what made the
 // whole app look unfinished (2026-08-05). One is a todo; the other is the edge
 // of what a single-target damage simulator IS.
-/// AN EVOLUTION'S TWO ADMISSIONS, as chips. The mods have said these
+/// AN EVOLUTION'S THREE ADMISSIONS, as chips. The mods have said the first two
 /// separately since 2026-08-05 and the evolutions said "not modelled yet" for
 /// both — over perks that are not waiting on anyone. A player deciding what to
 /// equip needs to know which: a todo may be gone next week, an EDGE is what a
 /// single-target damage simulator is.
+///
+/// AND THE THIRD IS NOT A SHORTFALL AT ALL: a clause the GAME does not pay out.
+/// It reached the mod and arcane cards on 2026-08-08 and the evolutions had no
+/// arm for it until an owner measurement found one (Carnage Reign's "+33% per
+/// Status Type", MEASUREMENTS M49). It is the chip whose reader ACTION differs
+/// most — the other two say wait for us, this one says do not pick the perk for
+/// that half, because nobody is going to implement what DE has not shipped.
 const evoGapChips = (o, tag) => {
   const todo = o.unmodeled || [];
   const edge = o.out_of_scope || [];
+  const dead = o.live_bugs || [];
   const out = [];
   if (todo.length) {
     out.push(`<${tag} class="exchip unmod" title="${escHtml(
@@ -5963,6 +5971,11 @@ const evoGapChips = (o, tag) => {
     out.push(`<${tag} class="exchip scope" title="${escHtml(
       tr("this cannot pay out in a one-target fight — it is an edge of the model, not a gap in it")
       + ": " + edge.map((x) => tr(x)).join(" · "))}">${escHtml(tr("nothing to earn here"))}</${tag}>`);
+  }
+  if (dead.length) {
+    out.push(`<${tag} class="exchip livebug" title="${escHtml(
+      tr("the card states this and the game does not do it — measured, and the simulation matches the game rather than the card")
+      + ": " + dead.map((x) => tr(x)).join(" · "))}">${escHtml(tr("does not work in game"))}</${tag}>`);
   }
   return out.length ? " " + out.join(" ") : "";
 };

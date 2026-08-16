@@ -236,7 +236,11 @@ around (decision 2026-07-31).
   number is RIGHT, the game is wrong, and a hotfix changes it — Primary
   Debilitate's split leaks its zero-damage instance's multipliers into the DoT
   it leaves (MEASUREMENTS M37), so a player building around x441 is told what it
-  rests on (owner, 2026-08-08). It carries a NEGATIVE CONTROL — a weapon with
+  rests on (owner, 2026-08-08). It reaches EVOLUTIONS as of 2026-08-16, where a
+  live bug is declared beside the effect it kills rather than on the perk —
+  Carnage Reign's +60 base damage works and its "+33% per Status Type" pays
+  nothing (MEASUREMENTS M49), so a card that condemned the whole option would be
+  as wrong as one that stayed quiet. It carries a NEGATIVE CONTROL — a weapon with
   nothing to admit shows no banner — because a check that only asserts presence
   passes just as well on a page that shouts "not modelled" at everything, and
   it runs the whole pass in BOTH languages,
@@ -578,6 +582,32 @@ around (decision 2026-07-31).
 - **Golden values only change with an in-game measurement** justifying
   it. New mechanics need golden tests; a faithful-looking implementation
   without a measurement is not correct.
+- **A BUILD'S AXES ARE DECLARED ONCE** (2026-08-16). `BUILD_AXES` in `app.js`
+  names them, `buildState()` REQUIRES a value for each, and the five producers
+  of a build state — the live page, "+ new", a board row, a share link, an
+  optimizer result — all go through it. `undefined` stays a legal value meaning
+  "the weapon's own default", because that is what a blank build and a preset
+  written before an axis existed both mean; what is no longer legal is not
+  MENTIONING an axis.
+  That distinction is the whole rule. `restoreState` fills a missing axis with
+  the weapon's default, which is right — and is also why forgetting one is
+  invisible: a producer that meant the default and one that never heard of the
+  axis hand over the same object, and no consumer can tell them apart. So the
+  same bug arrived FOUR times and was patched four times where it was found:
+  `mode` missing from the board submission (2026-08-09), `valence` missing from
+  the worker's table (2026-08-14), both missing from the share tuple
+  (2026-08-15), and `valence` missing from the optimizer's "+ add" — the one a
+  player measured, reporting 26 KPM on the ranking and 15 in the simulator for
+  what he was told was the same build (2026-08-16).
+  It is NOT a divergence between the two modules, which is worth stating because
+  that is what it looks like from the outside: `parse_fight` holds, and the same
+  winner re-run under the element it was scored on matched its row to 0.1% (22.34
+  vs 22.36 KPM) while the default element gave 17.44. What diverged was the
+  page's TRANSLATION of a result into a build, which the shared-fight rule above
+  never covered — a fifth surface with its own hand-written copy of the answer to
+  "what is a build". `check_valence.mjs` asserts the property both ways: the
+  state a row becomes names every axis, and the build re-runs at the element it
+  was scored on rather than the one it would have defaulted to.
 - **A GAP THAT REPEATS IS A REASON, NOT A SENTENCE** (2026-08-15).
   `data/unmodelled/reasons.yaml` holds each one once, with `{named}` holes, and
   a weapon references it: `- reason: innate_punch_through` / `m: 1.2`. The

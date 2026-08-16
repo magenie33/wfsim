@@ -119,13 +119,28 @@ Every row, with the perk the printed number identifies:
 | Cestra (Normal) | 26 or 36 (Evolution II) | both, each +10 | — |
 | Cestra (Incarnon) | 50 or 60 (Evolution II) | both, each +10 | 0.8333 (catalog 83.3%) |
 | Despair | 60 or 120 (Evolution II **Perk 2**) | Stalker's Vendetta (+60); Fatal Affliction's +50 is NOT excluded | 0.5000 (catalog 50%) |
-| Dual Toxocyst | 75 or 135 (Evolution II Perk 1) | Carnage Reign | 0.5556 (catalog 56%) |
+| Dual Toxocyst | 75 or 135 (Evolution II Perk 1) | Carnage Reign **and Fevered Frenzy** — see below | 0.5556 (catalog 56%) |
 | Furis | 100 or 128 (Evolution II) | Haven Foray + Stormburst | 0.7812 (catalog 78%) |
 | Lato Vandal | 152 or 174 (Evolution II **Perk 1**) | Haven Foray (+22) | 0.7755 — the ONE that does not reproduce, see that file |
 | Lex Prime | 1200 or 1220 (Evolution II) | both, each +20 | 0.9836 (catalog 98%) |
 | Vasto Prime | 420 or 564 (Evolution II **Perk 2**) | Deathtrap Trigger (+24 a pellet ×6 = the 144 printed) — see below | 0.7447 (catalog 74%) |
 | Bronco Prime | 238 or 448 (Evolution II **Perk 1**) | Speeding Bullet, +30 a pellet x7 = the 210 printed | 0.5312 (catalog 53%) |
 | Zylok Prime | 500 or 530 (Evolution II) | both, each +30 | 0.9434 (catalog 94%) |
+
+**THE ONE MEASURED COUNTEREXAMPLE** (owner, 2026-08-16; MEASUREMENTS M49). The
+Dual Toxocyst's row names Evolution II **Perk 1** (Carnage Reign) and not Perk 2
+(Fevered Frenzy), so by the rule below Perk 2's +50 fed the CO term in full. It
+does not: at the 125 panel Perk 2 produces, Galvanized Shot at 3 stacks against
+2 status types reads **305**, where a CO term on the full 125 would read 425.
+Both of this weapon's tier-2 options compute CO on the unevolved 75.
+
+It does not repeal the rule — the rule holds on every other row that has been
+checked, and five of them are asserted as negative controls in
+`the_eleven_evolution_exclusion_rows_reproduce_their_own_percentages`. It
+downgrades it from a LAW to a DEFAULT: absence still means ordinary until
+somebody measures otherwise, and now one weapon has. The flag stays per PERK
+rather than moving to the weapon, because the Despair needs that granularity —
+its row says one of its two tier-2 options is excluded and the other is not.
 
 **INCLUDING an evolution's flat damage is the DEFAULT** (owner, 2026-07-30);
 the exclusion is opt-in per perk.

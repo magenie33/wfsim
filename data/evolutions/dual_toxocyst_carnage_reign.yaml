@@ -14,11 +14,16 @@ selection: choose_one
 #     Relative to Base Damage ........ 100% or 56%
 #     Notes .......................... CO-bonus does not use base damage
 #                                      increase Evolution
-# i.e. a +100% CO adds 75, never 135. The catalog "lists only discrepant
-# attacks", so this is NOT a general law: Evolution II Perk 2 (Fevered Frenzy)
-# also raises base damage and is absent from the table, so it feeds CO in full
-# — as does every Torid perk, whose two rows sit at 100%. Hence the flag lives
-# on the PERK, which is the granularity the catalog names.
+# i.e. a +100% CO adds 75, never 135.
+#
+# AND SO DOES THE SIBLING'S. The catalog "lists only discrepant attacks", so
+# Fevered Frenzy's +50 was read as feeding CO in full and this comment said so
+# — until it was measured and does not (owner, 2026-08-16; MEASUREMENTS M49).
+# On this weapon the exclusion is the WEAPON's rather than this perk's: both
+# tier-2 options compute CO on the unevolved 75. The flag stays per PERK, which
+# is still the granularity the catalog names and the granularity the Despair
+# needs (one of its two is excluded and the other is not) — it is simply set on
+# both of this weapon's.
 #
 # The catalog is AUTHORITATIVE and "not listed" is a positive statement: that
 # attack behaves normally, exactly as the mods describe. Its exceptions are
@@ -36,8 +41,29 @@ effects:
     value: 60                   # Incarnon "Increase Base Damage" layer)
   - kind: condition_overload    # +33% DIRECT damage per status TYPE on the
     value: 0.33                 # target (official CO-source list)
+    # IT PAYS NOTHING IN GAME — MEASURED (owner, 2026-08-16; MEASUREMENTS M49),
+    # and confirmed two independent ways. With Galvanized Shot equipped the 135
+    # panel reads 225 at one status type and 315 at two, which is
+    # `135 + 75 x 0.4 x stacks x types` with no room for a 33% term (it would
+    # add 25 and 50). And with the GunCO mod REMOVED entirely, a status-afflicted
+    # enemy takes exactly the panel — this clause is the only CO source left on
+    # the build and it adds nothing at all.
+    #
+    # A LIVE BUG rather than a gap: DE's own CO-source list carries this perk,
+    # the card states the clause, and a hotfix restores it. The distinction
+    # matters to a reader — an `Inert` line says wait for us, this one says do
+    # not pick the perk for that half.
+    #
+    # A CANDIDATE CAUSE, unverified: the wiki notes an unlisted requirement of
+    # ENERGY MAX >= 200 on this clause. If that is real and the measuring frame
+    # was under it, the perk is conditional rather than broken and the engine
+    # should learn the gate instead. Recorded here rather than modelled because
+    # nothing has measured the same weapon on a frame above 200.
+    live_bug: >-
+      the +33% per Status Type pays nothing, measured with the GunCO mod both
+      equipped and removed; the wiki notes an unlisted energy-max >= 200
+      requirement that may be the cause and is unverified
     applies_to: direct_damage_only   # ricochets included; AoE excluded
-    condition: energy_max >= 200   # unlisted in-game requirement (wiki note)
     # Official CO catalog entry for DT Incarnon Mode: behavior "Adding" -
     #   final = [135 x damage-bonus chain] + [75 x 0.33 x status_types]
     # The CO term uses the UNBOOSTED base 75 (this perk's own +60 is

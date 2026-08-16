@@ -731,6 +731,10 @@ ui:
   "no effect here": 此战斗中无效果
   "this cannot pay out in a one-target fight — it is an edge of the model, not a gap in it": 这在单体战斗里不可能产生收益 —— 它是模型的边界，不是模型的缺口
   "nothing to earn here": 此战斗中无从触发
+  # THE THIRD ADMISSION on an evolution, and the only one that is not ours: the
+  # card states a clause and the game does not pay it (MEASUREMENTS M49).
+  "does not work in game": 游戏内无效
+  "the card states this and the game does not do it — measured, and the simulation matches the game rather than the card": 卡面写了这一条，而游戏并不执行 —— 实测所得，模拟器跟随的是游戏而不是卡面
   "the fight has one target, so this pays nothing": 战斗只有一个目标，所以这一条毫无收益
   "every shot lands at point blank, so distance changes nothing": 每一发都是贴脸命中，距离不起作用
   "the player does not move or aim by hand here": 这里的玩家不移动，也不手动瞄准

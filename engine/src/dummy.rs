@@ -9006,6 +9006,82 @@ mod tests {
         assert!((twin.co_base_fraction - 13.0 / 55.0).abs() < 1e-9);
     }
 
+    /// THE DUAL TOXOCYST COMPUTES GunCO ON A FLAT 75, WHATEVER ITS PANEL SAYS —
+    /// and Carnage Reign's own "+33% per Status Type" does not work at all
+    /// (MEASUREMENTS M49, owner 2026-08-16).
+    ///
+    /// Two findings from one session, and each overturns something this repo
+    /// had written down.
+    ///
+    /// THE CO BASE IS THE UNEVOLVED 75 UNDER EITHER tier-2 option. The catalog
+    /// names only Carnage Reign, and CATALOGS' own rule is that absence means
+    /// ORDINARY — so Fevered Frenzy's +50 was modelled as feeding the CO term
+    /// in full, which is what the comment on `co_base_excludes_this_evolution`
+    /// still claimed. The measurement says otherwise and is not close: at a
+    /// 125 panel with 3 stacks against 2 status types, feeding the +50 gives
+    /// `125 + 125 x 2.4 = 425` and the game gives 305.
+    ///
+    /// THE +33% IS DEAD. Carnage Reign reads "+33% Direct Damage per Status
+    /// Type affecting the target", and it pays nothing — confirmed twice over,
+    /// once by the readings below and once by unequipping the GunCO mod
+    /// entirely and shooting a status-afflicted enemy for exactly the panel.
+    /// A LIVE BUG rather than a gap here: the card is a CO source, DE's own
+    /// list says so, and a hotfix restores it.
+    #[test]
+    fn the_dual_toxocysts_co_reads_a_flat_seventy_five_under_either_evolution() {
+        let with = |evo: &str| crate::loadout::WeaponBase::from_data("dual_toxocyst", false, &[evo]);
+
+        // 75 of the 125 panel, and 75 of the 135 one — a FLAT 75 either way,
+        // which is the whole finding.
+        let frenzy = with("dual_toxocyst_fevered_frenzy");
+        let carnage = with("dual_toxocyst_carnage_reign");
+        assert!(
+            (frenzy.co_base_fraction - 75.0 / 125.0).abs() < 1e-9,
+            "Fevered Frenzy CO fraction {} against a measured 75/125",
+            frenzy.co_base_fraction
+        );
+        assert!(
+            (carnage.co_base_fraction - 75.0 / 135.0).abs() < 1e-9,
+            "Carnage Reign CO fraction {} against a measured 75/135",
+            carnage.co_base_fraction
+        );
+
+        // …AND CARNAGE REIGN CONTRIBUTES NO CO OF ITS OWN. If the card's +33%
+        // paid out, the 135 panel would read 315 + 2 x 0.33 x 75 = 364 at two
+        // status types, and it reads 315.
+        assert_eq!(
+            carnage.innate_co_per_type, 0.0,
+            "Carnage Reign's +33% pays nothing in game (M49)"
+        );
+
+        // EVERY READING IT WAS SOLVED FROM. Galvanized Shot is 40% a stack per
+        // status type, and the whole expression is
+        // `panel + 75 x 0.4 x stacks x types` — the CO term added to the panel
+        // rather than multiplying it, on a base the evolution never touched.
+        let hit = |panel: f64, f: f64, stacks: f64, types: f64| {
+            panel * (1.0 + 0.4 * stacks * types * f)
+        };
+        for (evo, panel, stacks, types, measured) in [
+            ("dual_toxocyst_fevered_frenzy", 125.0, 3.0, 2.0, 305.0),
+            ("dual_toxocyst_carnage_reign", 135.0, 3.0, 1.0, 225.0),
+            ("dual_toxocyst_carnage_reign", 135.0, 1.0, 1.0, 165.0),
+            ("dual_toxocyst_carnage_reign", 135.0, 3.0, 2.0, 315.0),
+        ] {
+            let b = with(evo);
+            // The panel itself is the flat +50 / +60 landing on the base 75.
+            assert!(
+                (b.base_vector.total() - panel).abs() < 1e-9,
+                "{evo}: panel {} against {panel}",
+                b.base_vector.total()
+            );
+            let got = hit(panel, b.co_base_fraction, stacks, types);
+            assert!(
+                (got - measured).abs() < 1.0,
+                "{evo} {stacks}x{types}: {got} against a measured {measured}"
+            );
+        }
+    }
+
     /// A CONE IS SPELLED ONE WAY. Ten entries carried BOTH a parsed
     /// `spread: {min_deg, max_deg}` and a flat `spread_min_deg`/`spread_max_deg`
     /// that no code read — the second spelling arrived with the intake on
