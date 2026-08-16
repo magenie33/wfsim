@@ -98,6 +98,8 @@ fn main() {
             // …and nothing is being cast on them either. A CLI search is a
             // statement about the WEAPON.
             abilities: Vec::new(),
+            // ONE BODY — a fixture, not a formation.
+            others: Vec::new(),
         },
         // The CLI drives Dual Toxocyst, which carries the Frenzy passive.
         frenzy: wfsim_engine::weapons_data::has_perk("dual_toxocyst", "frenzy"),

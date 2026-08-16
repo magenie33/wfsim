@@ -1791,6 +1791,14 @@ pub struct DummyParams {
     pub body_parts: Vec<BodyPart>,
     /// The TARGET — one of the fight's two actors.
     pub target: TargetParams,
+    /// THE REST OF THE FORMATION — see [`crate::arena::Arena::others`]. Empty
+    /// for every fight this engine has run, and nothing below reads it when it
+    /// is.
+    pub others: Vec<crate::formation::FoeSpec>,
+    /// The beam's own geometry, when this attack is one: the damage radius that
+    /// SEEDS the chains and the chain's three constants. `None` for everything
+    /// that is not a chaining beam, which is the whole roster but one form.
+    pub beam: Option<crate::loadout::BeamGeometry>,
     /// The TENNO — the other one. Who is holding this weapon, and what they
     /// are doing: `resolve` has already asked its state which conditional mods
     /// pay, and the arcanes that scale off Warframe armor or energy read its
@@ -2415,6 +2423,7 @@ impl DummyParams {
             abilities,
             player_at,
             target_at,
+            others,
         } = arena.clone();
         // LONE ENFORCER: "+25% Multishot if no enemies are within 5m".
         //
@@ -2458,6 +2467,14 @@ impl DummyParams {
             // Straight off the ARENA, like `abilities` and `duration_secs`.
             player_at,
             target_at,
+            // …AND SO IS THE REST OF THE FORMATION. A fight's bodies are the
+            // fight's, which is what makes the optimizer search the same
+            // formation the replay will run.
+            others,
+            // The beam's own geometry, when the resolved panel has one — the
+            // damage radius here is already the MODDED value, so Firestorm has
+            // been applied and what seeds the chains is what the player built.
+            beam: panel.beam,
             lingering: panel.lingering,
             continuous: panel.continuous,
             field_duration_on_empty_reload: panel.field_duration_on_empty_reload,
@@ -2836,6 +2853,11 @@ impl Default for DummyParams {
             target: TargetParams::training_dummy(),
             tenno: crate::tenno_data::default_tenno().clone(),
             duration_secs: 10.0,
+            // ONE BODY — a fixture, not a formation.
+            others: Vec::new(),
+            // …and no beam geometry: the fixture is a generic weapon, and a
+            // chain is something a weapon DECLARES.
+            beam: None,
         }
     }
 }

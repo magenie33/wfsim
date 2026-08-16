@@ -20,6 +20,7 @@ pub mod abilities_data;
 pub mod arcanes_data;
 pub mod buffs;
 pub mod chain;
+pub mod formation;
 pub mod damage;
 pub mod data;
 pub mod arena;

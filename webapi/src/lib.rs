@@ -4247,6 +4247,11 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         // distance (`engine::space`).
         player_at,
         target_at,
+        // THE REST OF THE FORMATION, and it is empty until a request carries
+        // one. Parsed HERE for the same reason the abilities are: a formation
+        // is a property of the FIGHT, so the optimizer searches the one the
+        // replay will run without a line of optimizer code.
+        others: Vec::new(),
         duration_secs: duration,
         // WARFRAME ABILITY BUFFS — parsed HERE, in `parse_fight`, which is what
         // makes the optimizer score under them without a line of optimizer code

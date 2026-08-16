@@ -39,7 +39,24 @@ pub struct Arena {
     pub player_at: Vec2,
     pub target_at: Vec2,
     /// The enemy: its level, its pools, its faction, its scaling curves.
+    ///
+    /// THE ONE BEING AIMED AT, once there is more than one. It stays its own
+    /// field rather than becoming `foes[0]` because every caller, every golden
+    /// value and both boards describe a fight with a target in it — and because
+    /// the aim policy means this really is a distinguished body: the beam is on
+    /// it and everything else is reached only by what SPREADS.
     pub target: TargetParams,
+    /// THE REST OF THE FORMATION — empty for every fight this engine has run.
+    ///
+    /// Bodies that are not being aimed at, each with its own pools, its own
+    /// hitboxes and its own place on the floor. They take damage only from what
+    /// spreads: a damage radius, a chain, an explosion. When the aimed body
+    /// dies the nearest of these is promoted (`formation::Formation::retarget`),
+    /// which is the owner's aim policy and not a choice this layer makes.
+    ///
+    /// EMPTY IS THE OLD FIGHT EXACTLY. Nothing reads this when it is empty, so
+    /// a single-target arena runs the same code it always did.
+    pub others: Vec<crate::formation::FoeSpec>,
     /// The target's hitboxes — where a pellet can land and what each spot
     /// multiplies. They belong to the target, and travel with it.
     pub body_parts: Vec<BodyPart>,
@@ -94,6 +111,10 @@ impl Arena {
             // and no golden value depends on a weapon's spread.
             player_at: Vec2::ORIGIN,
             target_at: Vec2::new(0.0, crate::space::CONTACT_RANGE_M),
+            // ONE BODY. The fixture measures weapon numbers, and a second one
+            // would put every golden value at the mercy of a formation nobody
+            // asked for.
+            others: Vec::new(),
             duration_secs,
             // The fixture is the NEUTRAL player, and no frame is running
             // anything for them.

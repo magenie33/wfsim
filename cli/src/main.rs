@@ -143,6 +143,9 @@ fn dual_toxocyst_baseline() -> DummyParams {
         body_parts: DummyParams::humanoid_parts(),
         target: TargetParams::training_dummy(),
         duration_secs: 10.0,
+        // ONE BODY — a fixture, not a formation.
+        others: Vec::new(),
+        beam: None,
     }
 }
 

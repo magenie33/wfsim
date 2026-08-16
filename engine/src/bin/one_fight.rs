@@ -156,6 +156,8 @@ fn arena_for(c: &Cfg) -> Arena {
         target_at: wfsim_engine::space::Vec2::new(0.0, wfsim_engine::space::CONTACT_RANGE_M),
         duration_secs: c.duration,
         abilities: Vec::new(),
+        // ONE BODY — a fixture, not a formation.
+        others: Vec::new(),
     }
 }
 
