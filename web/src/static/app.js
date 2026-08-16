@@ -2284,7 +2284,7 @@ const customEnemiesFor = (id) => customEnemySpecs().filter((e) => e.id === id);
 //
 // METRES ARE THE UNIT and the view fits itself to them, with a floor on the
 // span so a contact-range fight does not zoom to two enormous discs.
-const BODY_R_M = 0.25;
+const BODY_R_M = 0.2;   // measured: contact stops at 0.4 m (M46)
 const CONTACT_M = 2 * BODY_R_M;
 // A FIXED INTERNAL COORDINATE SPACE, and the CSS stretches it. The scene used
 // to be laid out in whatever pixel width the host happened to have, which is
@@ -8085,7 +8085,7 @@ function renderScenarioFields(ids, opts = {}) {
         <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
         ${eximusField(en)}
         ${deployField(w, sim)}
-        <label title="${escHtml(tr("how far apart the two of them stand — drag them on the arena above, or type it here. Past contact a shot can MISS: every pellet draws inside the weapon's own aimed cone (the wiki's per-attack spread) against a body modelled as a 0.25 m circle, and a weapon that lists a damage falloff loses damage across its published window on top. That 0.25 m is a GUESS nobody has measured yet, so read a hit rate here as the shape rather than the number. 0.5 m is CONTACT — the closest two bodies go, nothing misses there, and it is where both official boards are scored"))}">${escHtml(tr("Distance (m)"))} <input type="number" data-k="arena_distance" min="0.5" max="300" step="0.5" value="${arenaDistance(sim).toFixed(2)}"></label>
+        <label title="${escHtml(tr("how far apart the two of them stand — drag them on the arena above, or type it here. Past contact a shot can MISS: every pellet draws inside the weapon's own aimed cone (the wiki's per-attack spread) against a body modelled as a 0.2 m circle, and a weapon that lists a damage falloff loses damage across its published window on top. That 0.2 m is MEASURED — walking into an enemy stops at 0.4 m, which is two of them touching. 0.4 m is CONTACT — the closest two bodies go, nothing misses there, and it is where both official boards are scored"))}">${escHtml(tr("Distance (m)"))} <input type="number" data-k="arena_distance" min="0.5" max="300" step="0.5" value="${arenaDistance(sim).toFixed(2)}"></label>
         <label>${escHtml(tr("Duration (s)"))} <input type="number" data-k="duration" min="1" max="3600" value="${sim.duration}"></label>
       </div>`;
     const pick = $(`${ids.target}-pick`);

@@ -4024,7 +4024,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // the same fight.
     //
     // THE FLOOR IS CONTACT, not zero (`space::CONTACT_RANGE_M`): two bodies of
-    // 0.25 m cannot stand closer than 0.5 m apart, and a zero would put them in
+    // 0.2 m cannot stand closer than 0.4 m apart, and a zero would put them in
     // the same place. Anything nearer is pushed out along the line between
     // them, which is what a drag does on screen and what a stale `distance: 0`
     // resolves to.

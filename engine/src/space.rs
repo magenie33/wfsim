@@ -62,41 +62,38 @@ impl Vec2 {
 /// from it, and no data file restates it — a measurement replaces this line and
 /// the whole model moves with it.
 ///
-/// **STILL A GUESS, AND SAID SO.** DE publishes no enemy hitbox
-/// size: the wiki's `Area of Effect` gives the zone shapes and the falloff and
-/// never says whether the radius is measured to a body's centre or to its
-/// surface, `Hit Mechanic` describes only the player's side, and `Line of
-/// Sight` is the one page that says what the game thinks an enemy IS — three
-/// rays "to the target's head, torso, and feet", which is a vertical segment
-/// with no width at all. The one public model of Warframe AoE (malurth's
-/// simulator) labels its own `entitySize = 0.5` "a guess" in the control's
-/// tooltip and then does not use it: its blast test is centre-to-centre
-/// against the published radius, and the radius only ever draws the circle.
+/// **MEASURED (owner, 2026-08-16).** Walking into an enemy stops at **0.4 m**
+/// centre to centre, and two bodies of the same size touching at 0.4 m makes
+/// each of them **0.2 m**. That is the whole derivation and it needs nothing
+/// else: the closest approach IS twice the radius, so the one quantity a
+/// player can actually read off the game gives it directly.
 ///
-/// It is NOT in the blast test, which stays centre-to-centre against the
-/// weapon's published radius — that radius is what DE calibrated against
-/// whatever the game does, so adding a body's own to it would count the same
-/// thing twice.
+/// It replaces a guess of 0.25 m, which had been reached by taking the circle
+/// of the same AREA as a 0.6 x 1.8 m silhouette — an attempt to smuggle a
+/// body's HEIGHT back into a flat world, and wrong twice over: the plane is
+/// the model, and `headshot_pct` already owns where on a body a landed pellet
+/// went. The owner's original 0.2 m was right.
 ///
-/// **IN THE HIT TEST IT IS LOAD-BEARING, DELIBERATELY.** Every miss in this
-/// engine is decided against this radius, so it sets how harshly range costs a
-/// weapon: a 2 degree aimed cone (the Braton's, from the wiki's own weapon
-/// module) puts a pellet inside 0.25 m out to about 7 m and outside it past
-/// that. Whether that is the game is exactly what the measurement below
-/// answers, and until it is answered a fight at a range says so on the page.
+/// WHAT IT DOES AND DOES NOT MOVE. Contact behaviour is invariant under it,
+/// because `CONTACT_RANGE_M` is 2r and the hit test at contact is
+/// `r / 2r = 0.5` whatever r is — so both boards, every golden value and the
+/// two entries whose cone is wide enough to miss at contact (the Mandonel's
+/// uncharged 60 degrees, the Cryotra's 40) are exactly where they were. What
+/// changes is every distance BEYOND contact, where a smaller body is a harder
+/// target: the same 2 degree cone that missed a 0.25 m body past about 7 m
+/// now misses a 0.2 m one past about 5.7 m.
 ///
-/// At CONTACT — the 0.5 m two bodies can actually reach — only two entries in
-/// the roster have a cone wide enough to miss at all: the Mandonel's uncharged
-/// "Horizontal Spread" at 60 degrees and the Cryotra at 40. A weapon that
-/// sprays that widely losing pellets on a single target is the mechanic, not a
-/// modelling artefact.
-///
-/// **THE MEASUREMENT THAT SETTLES IT** is one afternoon in the Simulacrum, and
-/// it settles the whole model because this is its only free parameter: stand a
-/// known distance from one stationary enemy, fire a counted number of pellets
-/// from a weapon of known spread, and count what lands. Two ranges and two
-/// spreads over-determine it (docs/MEASUREMENTS.md).
-pub const BODY_RADIUS_M: f64 = 0.25;
+/// STILL OPEN is whether the hit test should read this radius at all, or a
+/// larger effective one — DE publishes no hitbox size (the wiki's `Area of
+/// Effect` gives the zone shapes and never says whether a radius is measured
+/// to a body's centre or its surface, `Hit Mechanic` is the player's side
+/// only, and `Line of Sight` describes an enemy as three rays to head, torso
+/// and feet, a vertical segment with no width). What is measured is how much
+/// FLOOR a body occupies; that the same number governs whether a pellet
+/// reaches it is the model's choice, and docs/MEASUREMENTS.md carries the
+/// experiment that would confirm it: a counted number of pellets, a known
+/// range, a weapon of known spread, count what lands.
+pub const BODY_RADIUS_M: f64 = 0.2;
 
 /// THE CLOSEST TWO BODIES CAN STAND — twice a radius, because circles do not
 /// overlap (owner, 2026-08-15).

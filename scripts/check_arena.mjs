@@ -14,8 +14,8 @@
 //   · DRAGGING MOVES THE FIGHT — the label, the scenario state and a real
 //     `/api/simulate` in the shipping wasm build all follow the finger.
 //   · BODIES DO NOT PASS THROUGH EACH OTHER. Dragging the enemy onto the
-//     player leaves them 0.5 m apart — CONTACT, twice a body radius — because
-//     that is the closest two circles go and it is the floor the engine
+//     player leaves them 0.4 m apart — CONTACT, twice the measured 0.2 m body
+//     radius (M46) — that is the closest two circles go and the floor the engine
 //     clamps to as well. It is the one rule the scene exists to make visible.
 //   · THE TYPED BOX AND THE DRAG ARE ONE THING. Typing a distance moves the
 //     target ALONG the line it already stands on rather than snapping it to an
@@ -129,8 +129,8 @@ const r = await evaluate(`(async () => {
 })()`);
 
 check("the arena draws, with two bodies", r.drew && r.bodies === 2, `${r.bodies} bodies`);
-check("...and the fight starts at CONTACT — 0.5 m, twice a body radius",
-  Math.abs(r.startState - 0.5) < 1e-6 && Math.abs(r.startLabel - 0.5) < 0.01,
+check("...and the fight starts at CONTACT — 0.4 m, twice the measured 0.2 m radius",
+  Math.abs(r.startState - 0.4) < 1e-6 && Math.abs(r.startLabel - 0.4) < 0.01,
   `state ${r.startState}, label ${r.startLabel}`);
 check("dragging the enemy moves it away", r.oneDrag > r.startState + 0.3,
   `${r.startState} -> ${r.oneDrag} m`);
@@ -144,9 +144,9 @@ check("...and what is dragged is EXACTLY what gets sent", r.sentMatches === true
 check("...and out there the shipping build MISSES", r.farHitRate < 0.9,
   `${(r.farHitRate * 100).toFixed(0)}% of pellets landed at ${r.farLabel} m`);
 check("two bodies cannot pass through each other",
-  Math.abs(r.overlapped - 0.5) < 1e-6,
+  Math.abs(r.overlapped - 0.4) < 1e-6,
   `dragged onto the player and landed at ${r.overlapped} m`);
-check("...and the label says so", Math.abs(r.overlapLabel - 0.5) < 0.01, `${r.overlapLabel}`);
+check("...and the label says so", Math.abs(r.overlapLabel - 0.4) < 0.01, `${r.overlapLabel}`);
 check("...and at contact nothing misses", r.nearHitRate > 0.99,
   `${(r.nearHitRate * 100).toFixed(0)}%`);
 check("the typed box reads the distance the scene shows",

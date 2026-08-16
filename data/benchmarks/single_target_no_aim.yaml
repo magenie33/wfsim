@@ -55,7 +55,7 @@ scenario:
   # `single_target.yaml` for the argument. These two boards differ in two terms
   # and a third unnamed difference between them would be a bug, not a ruler.
   player_at: [0, 0]
-  target_at: [0, 0.5]
+  target_at: [0, 0.4]
   duration: 180
   runs: 1000
   seed: 12648430

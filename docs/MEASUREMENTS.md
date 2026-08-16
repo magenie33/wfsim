@@ -2841,67 +2841,114 @@ and agree with `data/weapons/archgun/mausolon*.yaml` exactly.
 
 ---
 
-## M46 — Cold's tenth stack: the count reaches ten, the VALUE ladder stops at nine (2026-08-16)
+## M46 — the chill ladder, walked one stack at a time ✅ (owner, 2026-08-16)
 
-**Status: RESOLVED FROM THE WIKI, one reading left to confirm in game.**
+**Setup.** Laetum, BASE form (crit multiplier 2.2), evolutions chosen not to
+move damage, Lavos's +200% Cold infusion (forced procs), every shot on the
+TORSO of a Demolisher — a target that cannot be frozen, so the ladder can be
+walked all the way to ten instead of converting at the top. Non-crit held at
+**192** throughout (192.3 before the display rounded it).
 
-The model changed on 2026-08-16 (owner): Cold is ONE status with a stack LADDER
-and a STATE. The tenth chill stack and Frozen are live at the same time — the
-ladder sits at ten for the three seconds Frozen holds, which is what the game
-displays — instead of the tenth proc consuming the pile. What forced it is a
-target that cannot be frozen: its chill really does reach ten and cycles FIFO
-there, so ten stacks are a state the game has.
+| stacks | crit | crit / 192.3 | implied bonus | ladder |
+|---|---|---|---|---|
+| 0 | 423 | 2.20 | 0.00 | — |
+| 1 | 442 | 2.30 | 0.10 | 1st rung |
+| 2 | 452 | 2.35 | 0.15 | 2nd |
+| 3 | 462 | 2.40 | 0.20 | 3rd |
+| 5 | 481 | 2.50 | 0.30 | 5th |
+| 10 | 529 | 2.75 | 0.55 | **10th** |
 
-That left one number with no source: **what is the ladder worth at ten**, on a
-target that gets there without freezing?
+Every row lands within half a point of `2.2 + 0.10 + 0.05 x (n - 1)`. Three
+things fall out of it at once.
 
-**The wiki answers it, about that exact target.** `Demolisher`, verbatim:
+### 1. THE LADDER HAS TEN RUNGS
 
-> "Demolishers will not freeze at 10 procs, instead their movement will be
-> Slowed by 90%."
++0.55x at ten, one past the published table — the page stops at nine because on
+everything it describes the tenth stack IS Frozen, whose own +1.0x replaces the
+ladder anyway. Only a target that reaches ten WITHOUT freezing can show it.
 
-**90% is the NINTH rung.** The slow table is *"50% at 1 stack, and subsequent
-stacks until the 9th add an additional 5% reduction (90% at 9 stacks)"* — a
-tenth rung would read 95%, and the page says 90%. So the stack COUNT goes to
-ten and the VALUE tables have nine rungs; the tenth stack carries the Frozen
-state, not another step.
+A NINE-RUNG CAP SHIPPED FOR ONE COMMIT and this is what removed it. The
+inference was the wiki's `Demolisher` line — *"will not freeze at 10 procs,
+instead their movement will be Slowed by 90%"* — read across from the SLOW
+table, whose ninth rung is 90%. The slow does cap at 90% (owner, confirmed);
+the crit ladder does not, and a measurement beats a reading of a neighbouring
+table.
 
-The crit-damage-received ladder is read the same way and tops out at **+0.50x**,
-on a Demolisher as on anything else. The engine returned **+0.55x** until this
-entry — an extrapolation of `0.10 + 0.05×(n−1)` to n=10 that nobody had a
-source for, present in BOTH the old consume-the-pile model and the ladder-plus-
-state one, and refuted by a source about precisely the case it applied to.
-`CHILL_VALUE_RUNGS` is the cap now.
+### 2. A HIT IS SCALED BY THE STACKS ALREADY ON THE TARGET, NOT BY ITS OWN
 
-**WHAT IS STILL WORTH CONFIRMING IN GAME**, cheapest first:
+The rows are labelled *before -> after*: the 423 was the shot that took the
+target from 0 to 1, and it was scaled by **zero**. The Cold status a hit
+applies does not pay that hit.
 
-1. **Count the stacks on a Demolisher.** Does the chill counter show **10**, or
-   does it hold at 9? This is the one readout that is an integer and cannot be
-   misread. Everything else follows from where the ladder tops out. The owner
-   is confident it is 10 (2026-08-16); the wiki's "not freeze at 10 procs"
-   agrees, but "procs" is not quite "stacks".
-2. **The slow at that point** — 90% (ninth rung, as the page says) or 95%.
-3. **The crit damage received** at 9 stacks versus 10. Hardest to read: with a
-   2.0x base and no crit-damage mods the multiplier is 2.50 versus 2.55, a 2%
-   difference, so use a LOW base crit damage to make the flat +0.05 a larger
-   share.
+The engine already worked this way — `cd_abs` is read at the top of the pellet
+body, before `settle_procs` applies that pellet's status — and now the ordering
+is measured rather than incidental. Earlier pellets of the SAME pull do count,
+because they landed first.
 
-Reading 1 settles the model; 2 and 3 only confirm it.
+### 3. IT EXPLAINS A READING THAT LOOKED LIKE A FAULT
 
-**WHO CANNOT BE FROZEN** (searched 2026-08-16). Two mechanisms, and only one of
-them needs a flag:
+The same weapon on the same target alternated between **529 and 423** with an
+unchanged non-crit of 192, which read as a bonus flickering on and off. It is
+not: 423 is the first shot into a fresh target (0 stacks) and 529 is a shot
+once the ladder is full (10). One rule, both numbers.
 
-- **By a stack cap, which needs nothing.** A cap below ten makes the trigger
-  unreachable by arithmetic — Overguard holders and bosses cap at 4 (Cold page:
-  "can receive a maximum of 4 Cold stacks", "preventing Frozen status
-  entirely"), and the Acolytes carry a per-unit cap of 4 in `data/enemies/`.
-  This is how the wiki derives it too, and the engine now does the same.
-- **By the state being absent while the ladder fills normally**, which is
-  `cannot_be_frozen` on the enemy. **Demolishers and their Amalgam variants the
-  Demolysts are the only units found with this property.** They are separately
-  immune to Confusion, Knockdown, Lifted, Stagger and Stun, and to finishers —
-  Cold's slow still applies to them, which is the point of the sentence quoted
-  above. `data/enemies/demolisher_devourer.yaml` is the roster's one carrier.
+### Also measured
 
-No unit was found that resists Cold STACKS while remaining freezable, so the
-two mechanisms above are believed to be the whole set.
+**Lavos's +200% Cold is x3.2** on this weapon against this target (60 -> 192
+non-crit). The arithmetic checks: 160 base (64 Impact + 96 Slash) plus 320 Cold
+is x3.0 before the target's own damage-type column and x3.2 after it.
+
+### How to measure here
+
+TAKE THE DIFFERENCE AT A FIXED NON-CRIT. Armour, faction, level and the
+infusion are common factors of both crits and cancel; the absolute ratio does
+not behave as cleanly (an earlier pair on this target, without the infusion,
+gave 141/60 = 2.35, which fits no rung). The clean form is
+
+    (crit_at_n - crit_at_0) / non_crit = the nth rung
+
+which is how +0.55x was separated from +0.50x: `(529 - 423) / 192 = 0.552`
+against a nine-rung prediction of 0.495.
+
+---
+
+## M47 — a body is 0.2 m across the floor, measured by walking into one ✅ (owner, 2026-08-16)
+
+Walking into an enemy stops at **0.4 m centre to centre**. Two bodies of the
+same size touching at 0.4 m makes each of them **0.2 m**, and that is the whole
+derivation — the closest approach IS twice the radius, so the one quantity a
+player can read off the game gives it directly.
+
+`space::BODY_RADIUS_M` is 0.2 and `CONTACT_RANGE_M` is 2r = 0.4.
+
+**IT REPLACES A GUESS OF 0.25 m** that shipped for one day. That number came
+from taking the circle of the same AREA as a 0.6 x 1.8 m humanoid silhouette —
+an attempt to put a body's HEIGHT back into a flat model, on the reasoning that
+a real spread cone spends half its deviation vertically. It was wrong twice:
+the plane is the model (owner, 2026-08-15), and `headshot_pct` already answers
+where on a body a landed pellet went. The owner's original 0.2 m was right and
+now has a measurement under it rather than a shrug.
+
+**WHAT IT MOVES.** Nothing at contact, and everything past it:
+
+- CONTACT IS INVARIANT under the radius. The hit test at contact is
+  `r / 2r = 0.5` for any r, so both boards, every golden value and the two
+  entries whose aimed cone is wide enough to miss at contact (the Mandonel's
+  uncharged 60 degrees, the Cryotra's 40) are exactly where they were.
+  `one_fight` reports every answer unchanged.
+- BEYOND CONTACT a smaller body is a harder target. The same 2 degree cone that
+  missed a 0.25 m body past about 7 m misses a 0.2 m one past about 5.7 m.
+
+**STILL OPEN: whether the HIT TEST should read this radius.** What is measured
+is how much FLOOR a body occupies — which is what decides where two of them can
+stand. That the same number decides whether a pellet reaches one is the model's
+choice, and DE publishes nothing to check it against: the wiki's `Area of
+Effect` gives zone shapes and never says whether a radius is measured to a
+body's centre or its surface, `Hit Mechanic` covers only the player's side, and
+`Line of Sight` describes an enemy as three rays to head, torso and feet — a
+vertical segment with no width at all.
+
+The experiment that would settle it is unchanged: stand a known distance from
+one stationary enemy, fire a counted number of pellets from a weapon of known
+spread (the per-attack `MinSpread` from the wiki's weapon module), and count
+what lands. Two ranges and two spreads over-determine it.
