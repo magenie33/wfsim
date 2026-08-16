@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: bfb8d9c64ea5fa8ead3a136e3140aab9291fb13e
+engine: 64f8a961e7bb481723b13ce17c615347c1683518
 entries:
   - weapon: akarius_prime
     mode: base
@@ -5237,6 +5237,10 @@ entries:
     mode: base
     score: 0.7152056920413402
     mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
+  - weapon: verglas_prime
+    mode: base
+    score: 0.670642410812592
+    mods: [heavy_caliber, split_chamber, serration, vile_acceleration, rime_rounds, malignant_force, hellfire, thermite_rounds]
   - weapon: verglas_prime
     mode: base
     score: 0.6523836373201128
