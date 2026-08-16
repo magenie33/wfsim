@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 1474032ec4797781f3d3a04311fb57a3251cae9e
+engine: 220b260c1ea9ad8b3fa852fd4b8e658952a9c3d6
 entries:
   - weapon: akarius_prime
     mode: base
@@ -2336,12 +2336,12 @@ entries:
   - weapon: karak_wraith
     mode: base
     score: 4.889815850354243
-    mods: [heavy_caliber, primary_acuity, galvanized_aptitude, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
+    mods: [primary_acuity, serration, galvanized_aptitude, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
     arcanes: [primary_crux]
   - weapon: karak_wraith
     mode: base
     score: 4.889815850354243
-    mods: [primary_acuity, serration, galvanized_aptitude, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
+    mods: [heavy_caliber, primary_acuity, galvanized_aptitude, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
     arcanes: [primary_crux]
   - weapon: karak_wraith
     mode: base
@@ -3921,6 +3921,12 @@ entries:
     mode: cycle
     score: 36.49384689298984
     mods: [galvanized_chamber, galvanized_aptitude, vigilante_armaments, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
+    arcanes: [primary_deadhead]
+  - weapon: phenmor
+    mode: cycle
+    score: 35.67314177121052
+    mods: [galvanized_chamber, galvanized_aptitude, speed_trigger, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_deadhead]
   - weapon: phenmor
