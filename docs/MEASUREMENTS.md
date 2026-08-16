@@ -3129,3 +3129,65 @@ against a status-afflicted enemy with the GunCO mod off.
 Both findings push the Dual Toxocyst DOWN, and the board will rescore them. The
 weapon was being credited with a CO term on up to 125/135 of base where the game
 computes 75, plus a 33%-per-status source that does not exist.
+
+## OPEN — does EVERY Incarnon evolution stay out of the GunCO base? (owner, 2026-08-16)
+
+M49 found the first row where the catalog's ABSENCE-MEANS-ORDINARY rule was
+wrong. The owner's reading of it is that the rule may be wrong GENERALLY — that
+the wiki table is a partial survey rather than a statement, and that Incarnon
+base-damage perks are excluded by default with the table simply not having
+measured most of them. That is a hypothesis about 126 unflagged weapon+perk
+pairs, and one measurement on the right weapon settles it.
+
+ prints every pair the question can be
+asked of, ranked by how far apart the two hypotheses land. The ranking is the
+whole point: a perk adding 20 to a base of 1200 answers nothing however
+carefully it is measured (Lex Prime, 1.4% apart), and one adding 51 to 51
+answers it from across the room.
+
+### The protocol
+
+**EQUIP ONLY THE GALVANIZED MOD.** Nothing else — no base-damage mod, no
+elements, no crit. Then
+
+
+
+where  is the same shot against a target with NO status on it. RATIOS,
+not absolutes, because an absolute carries the target's damage-type column
+(M48's lesson: a Corpus crewman's puncture x1.5 hid inside the Burston numbers
+until they were divided out).
+
+*  = 0.4 for Galvanized Aptitude / Shot / Savvy at max rank.
+*  — **2 max on the rifle mod, 3 on the pistol one.**
+*  = DISTINCT status types on the target, which is the axis that is
+  easiest to miscount.
+
+Then  means the evolution feeds the CO term (the catalog default) and
+ means it does not (M49's finding on the Dual Toxocyst).
+
+**THE CO CLASS IS A SEPARATE EXPERIMENT.** With only the Galvanized mod on the
+build,  and  are indistinguishable — both read
+. They separate only once a
+BASE-DAMAGE mod is present, because Adding is diluted by it and Multiplying is
+not. So: add Serration and re-read, or leave the class alone.
+
+### The shortlist, at 2 stacks x 2 status types
+
+| weapon | perk | panel | fed | not fed | apart |
+|---|---|---|---|---|---|
+| Torid, base form | Final Fusillade | 151 | 393 | 311 | 26% |
+| Soma Prime, base form | Fortress Salvo | 24 | 62 | 43 | **44%** |
+| Boar Prime, base form | Reified Bane | 64 | 166 | 128 | 30% |
+
+The **Torid** is the one to do first: it is the most-played Incarnon in the
+game, its base form is the roster's only popular  entry, and its
+catalog row is the ambiguity itself — it reads  with
+no "or 151" variant, which this repo read as "the evolution feeds in full" and
+which may only mean the table never measured the evolved weapon. Read the
+DIRECT hit; the toxin cloud is a second number and a second question.
+
+**Soma Prime is the cleanest** if the Torid cloud gets in the way — a plain
+hitscan rifle, no AoE, and the widest gap of the three.
+
+The Torid's INCARNON form is a beam and its per-tick numbers are not worth
+reading; use the base form.
