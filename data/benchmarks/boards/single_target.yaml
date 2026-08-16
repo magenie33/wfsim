@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 6559ba6bc8e25bae097418a307f4e45839df96cd
+engine: ab057f5a569a885f930d319b0e5e70a77608faca
 entries:
   - weapon: akarius_prime
     mode: base
@@ -1716,12 +1716,6 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [cascadia_flare]
-  - weapon: dual_toxocyst
-    mode: cycle
-    score: 30.097767234858072
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
-    arcanes: [secondary_encumber]
   - weapon: dual_toxocyst
     mode: cycle
     score: 30.072566185369084
