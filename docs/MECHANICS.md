@@ -2397,6 +2397,105 @@ reload, and the ceiling display are **measured** (M14).
 
 ---
 
+## 10. WHAT A STATUS-CHANCE CARD IS WORTH — the estimate, and the half everybody drops
+
+Asked often enough to write down (owner, 2026-08-16, after a player asked why
+the Burston Prime's board build takes **Galvanized Aptitude** over Serration or
+Heavy Caliber). The naive comparison puts all three in the base-damage bucket
+and stops there, which under-counts the status card by about half.
+
+### The three cards, in the one bucket they share
+
+| card | contribution to the base-damage bucket |
+| --- | --- |
+| Serration | flat **+1.65** |
+| Heavy Caliber | flat **+1.65** (its accuracy penalty is free at contact) |
+| Galvanized Aptitude | `0.4 × stacks × status TYPES` |
+
+Serration and Heavy Caliber are the SAME CARD in a contact-range fight —
+measured 144.616 against 144.612, a difference of 0.003%. So the argument only
+ever has one opponent.
+
+The crossover is arithmetic: `0.8 × N > 1.65` at **N > 2.06**. Measured on the
+Burston Prime, same build but for the one slot:
+
+| build | mean status TYPES | Aptitude | Serration | lead |
+| --- | --- | --- | --- | --- |
+| three elemental mods | 2.71 | 176.47 | 144.62 | **+22.0%** |
+| three flat-stat mods | 1.59 | 36.74 | 36.86 | **−0.3%** |
+
+Below two types the doubters are right. The board's build carries status
+BECAUSE that is what makes the card worth its slot — and the archetype gap
+(176 against 37) dwarfs the slot argument entirely.
+
+### …AND THE BUCKET IS ONLY HALF OF IT
+
+The half that gets dropped: **status chance is a rate, and the rate feeds
+DIRECT-damage multipliers, not just DoT.** Viral multiplies HEALTH damage,
+Magnetic multiplies OVERGUARD and SHIELD damage, Heat strips armour. All three
+are `× (2 + 0.25 × (stacks − 1))`-shaped ladders on the TARGET, and how fast
+they fill is exactly what a status-chance card buys.
+
+Measured, the same two builds:
+
+| | Aptitude | Serration |
+| --- | --- | --- |
+| status chance | 0.54 | 0.30 |
+| procs / s | 33.5 | 18.9 |
+| Viral stacks (mean) | 7.11 | 5.82 |
+| Magnetic stacks (mean) | 2.41 | 1.65 |
+
+### The estimate
+
+Multiply four ratios. Each is a measurable intermediate, so the estimate can be
+checked term by term rather than believed whole:
+
+```
+gain ≈  (1 + B + CO_new) / (1 + B + CO_old)     bucket, on the DIRECT share only
+      × Viral(n_new)    / Viral(n_old)          health-damage ladder
+      × Magnetic(n_new) / Magnetic(n_old)       overguard/shield ladder
+      × Armour(strip_new) / Armour(strip_old)   Heat
+```
+
+`B` is whatever else is already in the base-damage bucket — on this build,
+nothing: not one of its other seven mods is a base-damage mod, which is why the
+estimate lands so cleanly.
+
+Worked, for the Burston Prime board build:
+
+```
+CO       (1 + 0.4×1.762×2.71) / (1 + 1.65) = 1.096   ← ×0.979, the direct share
+Viral    (2 + 0.25×6.11) / (2 + 0.25×4.82) = 1.101
+Magnetic (2 + 0.25×1.41) / (2 + 0.25×0.65) = 1.088
+                                    product = 1.199
+
+measured 176.47 / 144.62            = 1.220     residual 1.8%
+```
+
+**+9.6% from the CO bucket and +9.4% from the ladders the status RATE fills.**
+Half the card's value is invisible to an accounting that only looks at
+"+40% per status type".
+
+### …and it is not eaten in full, on three separate channels
+
+Worth stating because each is a real ceiling nobody reaches:
+
+- **STACK UPTIME.** The bonus is ON KILL and caps at 2. Measured: 85.5% of the
+  fight at 2/2, 5.2% at 1, 9.3% at 0 — an effective 1.76 of 2, or 88%.
+- **TYPE COUNT.** 2.71 live on average against the six the build can produce.
+  The CO term is linear in this, so the shortfall is direct.
+- **NOT ALL DAMAGE TAKES IT.** CO is a DIRECT-hit bonus. The Burston's Incarnon
+  radial takes it at a base fraction of 24% (docs/CATALOGS.md) and status DoTs
+  take none, so 2.1% of this build's output is outside the bracket. On a build
+  whose damage is mostly DoT or AoE that share is the whole argument.
+
+### Reproducing this
+
+Every number above comes from `/api/simulate` with `replay: true` on the board's
+own row: `damage_sources` for the shares, `dstacks` for the ladders, `stacks`
+for the arcane's own uptime, and `score_mean` for the totals. Nothing here is
+hand-derived except the two published ladder formulas.
+
 ## Open questions
 
 - Exact multiplicative-bucket membership for every common mod (§2).
