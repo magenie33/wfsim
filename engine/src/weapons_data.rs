@@ -4527,10 +4527,20 @@ mod burston_incarnon_radial_tests {
                 "{evo}: the explosion's CO base stays 13/55, got {}",
                 r.co_base_fraction
             );
-            // The DIRECT hit has no catalog row, so it is not discrepant: its
-            // CO computes on the full evolved base, which is the normal rule.
+            // …AND SO DOES THE DIRECT HIT — MEASURED (owner, 2026-08-16),
+            // which reversed this assertion. It read `co_base_fraction == 1.0`
+            // on the reasoning that the catalog's row names the RADIAL and the
+            // direct hit is therefore not discrepant. It is: at one and two
+            // Galvanized Aptitude stacks against one status type the game gives
+            // 181 and 196 where the full-base reading gives 231 and 261, and
+            // both solve to 13/55. The exclusion belongs to the PERK, so it
+            // reaches wherever the +42 landed. MEASUREMENTS M48.
             assert!((b.base_vector.total() - 55.0).abs() < 1e-9);
-            assert!((b.co_base_fraction - 1.0).abs() < 1e-9);
+            assert!(
+                (b.co_base_fraction - 13.0 / 55.0).abs() < 1e-9,
+                "{evo}: the direct hit's CO base is 13/55 too, got {}",
+                b.co_base_fraction
+            );
         }
     }
 

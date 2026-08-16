@@ -2952,3 +2952,60 @@ The experiment that would settle it is unchanged: stand a known distance from
 one stationary enemy, fire a counted number of pellets from a weapon of known
 spread (the per-attack `MinSpread` from the wiki's weapon module), and count
 what lands. Two ranges and two spreads over-determine it.
+
+---
+
+## M48 — the Burston Prime's CO reads 13 of its 55 on the DIRECT hit too ✅ (owner, 2026-08-16)
+
+**Setup.** Burston Prime, Incarnon form, ONLY Forceful Finality (+42 base
+damage) and Galvanized Aptitude equipped, every shot on the TORSO, unarmoured
+target.
+
+| Aptitude stacks | status types on target | direct (crit) | radial |
+| --- | --- | --- | --- |
+| 1 | 1 | **181** | — |
+| 2 | 1 | **196** | **65** |
+| 2 | 2 | **227** | **76** |
+
+The Incarnon form is 13 base + the perk's 42 = **55**, and a crit is x3.0, so
+the direct hit before CO is 165. Solving each reading for the fraction of that
+base the CO term reads:
+
+    165 x (1 + 0.4 x 1 x 1 x f) = 181  ->  f = 0.242
+    165 x (1 + 0.4 x 2 x 1 x f) = 196  ->  f = 0.235
+    165 x (1 + 0.4 x 2 x 2 x f) = 227  ->  f = 0.236
+
+All three land on **13/55 = 0.2364** — the 24% the CO catalog prints for this
+weapon. The radial confirms it independently and without a crit:
+`55 x 1.3782 = 75.8` against a measured 76.
+
+Two axes are exercised (the arcane's stacks and the status TYPE count) and the
+fraction is constant across both, which is what makes it a fraction rather than
+a coincidence.
+
+### What was wrong
+
+The catalog's 24% was read as belonging to the **radial alone** — the row names
+"Incarnon Form Radial Attack" — so the direct hit computed its CO term on the
+full evolved 55. The error is multiplicative in the CO term, so it grows with
+the build:
+
+| reading | game | engine before | overstated by |
+| --- | --- | --- | --- |
+| 1 stack, 1 type | 181 | 231 | +28% |
+| 2 stacks, 1 type | 196 | 297 | +52% |
+| 2 stacks, 2 types | 227 | 429 | **+89%** |
+
+**THE EXCLUSION IS THE PERK'S, NOT THE ATTACK PART'S.** Once stated that way it
+needs no new machinery: `co_base_excludes_this_evolution` already sets the
+weapon's `co_base_fraction`, and the roster already carries the flag on eleven
+other perks (docs/CATALOGS.md). It is now on both tier-2 +42 options of both
+Burston variants — Forceful Finality and Fortress Salvo, flagged together the
+way the catalog already flags the Atomos's two tier-2 options.
+
+### Consequence for the board
+
+The Burston Prime's published score was computed on the overstated direct hit
+and will FALL when the board rescores. That is the correction working: the
+weapon was ranked on damage the game does not deal, and the size of the drop is
+a function of how much CO the build was carrying.

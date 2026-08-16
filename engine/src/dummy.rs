@@ -8871,6 +8871,68 @@ mod tests {
         assert!(capped.frozen_until.is_none(), "…and cannot freeze, by arithmetic");
     }
 
+    /// THE BURSTON PRIME'S CO READS 13 OF ITS 55, ON THE DIRECT HIT TOO.
+    ///
+    /// MEASURED (owner, 2026-08-16). Incarnon form, Forceful Finality and
+    /// Galvanized Aptitude and nothing else, torso, unarmoured target, ONE
+    /// status type on it:
+    ///
+    /// | stacks | status types | direct crit | radial |
+    /// |---|---|---|---|
+    /// | 1 | 1 | 181 | — |
+    /// | 2 | 1 | 196 | 65 |
+    /// | 2 | 2 | 227 | 76 |
+    ///
+    /// The form is 13 base + the perk's 42 = 55, and a crit is x3.0, so the
+    /// direct hit before CO is 165. Solving each reading for the fraction CO
+    /// reads gives 0.242 and 0.235 — both 13/55 = 0.2364, the 24% the catalog
+    /// prints for this weapon. The radial confirms it independently: an
+    /// uncritical 55 x 1.1891 = 65.4.
+    ///
+    /// WHAT IT FIXED. That 24% had been read as the RADIAL's alone, so the
+    /// direct hit computed CO on the full 55 and this engine returned 231 where
+    /// the game gives 181 — a 28% overstatement. The exclusion is the PERK's,
+    /// not the attack part's, so `co_base_excludes_this_evolution` on both
+    /// tier-2 +42 options carries it to wherever the +42 landed.
+    #[test]
+    fn the_burston_primes_co_reads_only_its_unevolved_base() {
+        let base = crate::loadout::WeaponBase::from_data(
+            "burston_prime_incarnon",
+            false,
+            &["burston_prime_forceful_finality"],
+        );
+        assert!(
+            (base.co_base_fraction - 13.0 / 55.0).abs() < 1e-9,
+            "direct-hit CO fraction {} against a measured 13/55",
+            base.co_base_fraction
+        );
+        // …and every reading it was solved from. Two AXES are exercised — the
+        // arcane's stacks and the status TYPE count — and the radial is the
+        // same expression without the crit, which is what identifies it as an
+        // uncritical explosion rather than a second guess at the fraction.
+        let f = base.co_base_fraction;
+        let co = |stacks: f64, types: f64| 1.0 + 0.4 * stacks * types * f;
+        for (stacks, types, direct, radial) in
+            [(1.0, 1.0, 181.0, None), (2.0, 1.0, 196.0, Some(65.0)), (2.0, 2.0, 227.0, Some(76.0))]
+        {
+            let d = 55.0 * 3.0 * co(stacks, types);
+            assert!((d - direct).abs() < 1.0, "{stacks}x{types}: direct {d} vs {direct}");
+            if let Some(r) = radial {
+                let got = 55.0 * co(stacks, types);
+                assert!((got - r).abs() < 1.0, "{stacks}x{types}: radial {got} vs {r}");
+            }
+        }
+
+        // THE TWIN AT THE SAME TIER carries the same flag: it adds the same
+        // +42, so a build taking it computes CO on the same base.
+        let twin = crate::loadout::WeaponBase::from_data(
+            "burston_prime_incarnon",
+            false,
+            &["burston_prime_fortress_salvo"],
+        );
+        assert!((twin.co_base_fraction - 13.0 / 55.0).abs() < 1e-9);
+    }
+
     /// A CONE IS SPELLED ONE WAY. Ten entries carried BOTH a parsed
     /// `spread: {min_deg, max_deg}` and a flat `spread_min_deg`/`spread_max_deg`
     /// that no code read — the second spelling arrived with the intake on
