@@ -88,8 +88,6 @@ attack:
   # weapon's own characteristic. Puncture is the armour-facing physical type,
   # so the split is doing real work against the Grineer this sim points at.
   damage: { impact: 3.0, puncture: 14.0, slash: 3.0 }
-  spread_min_deg: 1.0
-  spread_max_deg: 8.0
 
 # NOT MODELLED, and neither is a gap in the fight:
 #  - "low recoil and very high accuracy, even at medium-far ranges" is the

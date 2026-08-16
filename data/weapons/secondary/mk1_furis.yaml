@@ -78,8 +78,6 @@ attack:
   punch_through_m: 0.0
   # The same 15/70/15 split as the Furis, scaled down — primarily Puncture.
   damage: { impact: 1.95, puncture: 9.1, slash: 1.95 }
-  spread_min_deg: 1.0
-  spread_max_deg: 8.0
 
 # NOT BUILT YET, and the same two as the Furis: the Incarnon Genesis (which
 # covers this weapon as well) and Winds of Purity, whose `exclusive_to:` names

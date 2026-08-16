@@ -62,8 +62,6 @@ attack:
   punch_through_m: 0.0
   # 10 / 10 / 10 — an even 30, against the Prime's Slash-biased 46.
   damage: { impact: 10.0, puncture: 10.0, slash: 10.0 }
-  spread_min_deg: 0.0
-  spread_max_deg: 8.0
 
 transform_group: burston
 transforms_to: burston_incarnon

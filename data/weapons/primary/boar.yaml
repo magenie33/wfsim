@@ -87,8 +87,6 @@ attack:
   falloff_reduction: 0.5
   # The cone one pull spreads over, in degrees (module MinSpread/MaxSpread).
   # NOT READ either: with one target and no geometry, spread decides nothing.
-  spread_min_deg: 10.0
-  spread_max_deg: 30.0
 
 # TWO WEAPONS MODEL: this is the base form; the Incarnon form is a second
 # weapon entry that this one transforms into.

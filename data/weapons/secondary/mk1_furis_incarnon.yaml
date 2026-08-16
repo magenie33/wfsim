@@ -83,8 +83,6 @@ attack:
   falloff_start_m: 10.0
   falloff_end_m: 16.0
   falloff_reduction: 0.2
-  spread_min_deg: 1.0
-  spread_max_deg: 8.0
 
 # incarnon_evolutions: see data/evolutions/mk1_furis_*.yaml (four tiers)
 

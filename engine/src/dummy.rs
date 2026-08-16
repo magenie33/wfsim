@@ -8871,6 +8871,29 @@ mod tests {
         assert!(capped.frozen_until.is_none(), "…and cannot freeze, by arithmetic");
     }
 
+    /// A CONE IS SPELLED ONE WAY. Ten entries carried BOTH a parsed
+    /// `spread: {min_deg, max_deg}` and a flat `spread_min_deg`/`spread_max_deg`
+    /// that no code read — the second spelling arrived with the intake on
+    /// 2026-08-15 beside a hand-transcribed one nobody had removed.
+    ///
+    /// Two of the ten DISAGREED, and the unparsed one was wrong in the way this
+    /// repo has on the record: `furis_incarnon` and `mk1_furis_incarnon` had
+    /// their BASE form's 1/8 written on them, where the wiki module gives the
+    /// Incarnon attack 5/15. That is the Larkspur error again (AGENTS.md §"A
+    /// FORM INHERITS ITS WEAPON"), and it survived because nothing could see
+    /// the field — which is the whole argument for one spelling.
+    #[test]
+    fn a_cone_is_spelled_one_way() {
+        for path in crate::data::files_under("weapons/") {
+            let text = path.1;
+            assert!(
+                !text.contains("spread_min_deg") && !text.contains("spread_max_deg"),
+                "{}: carries a second, unparsed spelling of its cone — `spread:` is the one",
+                path.0
+            );
+        }
+    }
+
     /// THE CHILL LADDER, AGAINST THE MEASURED TABLE (owner, 2026-08-16).
     ///
     /// Laetum base form (crit multiplier 2.2), Lavos's +200% Cold, every shot

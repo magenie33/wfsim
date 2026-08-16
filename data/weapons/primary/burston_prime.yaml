@@ -73,8 +73,6 @@ attack:
   damage: { impact: 13.8, puncture: 13.8, slash: 18.4 }
   # The cone one round spreads over, in degrees (module MinSpread/MaxSpread).
   # NOT READ: with one target and no geometry, spread decides nothing.
-  spread_min_deg: 0.0
-  spread_max_deg: 8.0
 
 # TWO WEAPONS MODEL: this is the base form; the Incarnon form is a second
 # weapon entry that this one transforms into.

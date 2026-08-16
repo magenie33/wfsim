@@ -145,8 +145,6 @@ attack:
   #    radial in this engine already — an explosion never headshots);
   #  - "On Punch Through Radial Attack will hit only first enemy or be stopped
   #    if fired through an obstacle" — multi-target geometry.
-  spread_min_deg: 2.0
-  spread_max_deg: 5.0
 
 # incarnon_evolutions: see data/weapons/primary/burston_prime.yaml (shared group)
 
