@@ -21,9 +21,11 @@
 //     distance, so the scene refuses the gesture there — and it has to refuse
 //     it ITSELF, because the official lock disables inputs and the bodies are
 //     SVG circles that sweep never reaches.
-//   · THE TYPED BOX AND THE DRAG ARE ONE THING. Typing a distance moves the
-//     target ALONG the line it already stands on rather than snapping it to an
-//     axis, so neither input undoes the other's other axis.
+//   · THE CANVAS IS THE ONLY PLACE A POSITION IS SET (owner, 2026-08-16). The
+//     typed Distance box is gone; the shortcuts that replaced it live INSIDE
+//     the scene, and a quick-set moves the target ALONG the line it already
+//     stands on rather than snapping it to an axis — same rule the drag obeys,
+//     because they move the same body.
 //
 // …and the negative control: the OPTIMIZER draws the same scene read-only,
 // because it runs the simulator's fight and a preset is edited in one place.
@@ -120,18 +122,19 @@ const r = await evaluate(`(async () => {
     { ...buildPayload(), ...fightPayload(), runs: 6, seed: 7, duration: 8 });
   out.nearHitRate = nearRun.pellets / Math.max(nearRun.shots, 1);
 
-  // 4. THE TYPED BOX IS THE SAME ONE THING. Put the target off-axis first, so
-  //    a snap-to-axis implementation is visible rather than lucky.
+  // 4. THE QUICK SETS ARE IN THE CANVAS, and there is no second control.
+  out.noTypedBox = !document.querySelector('#sim-target [data-k="arena_distance"]');
+  out.jumps = [...document.querySelectorAll('#sim-target-arena .ar-jump')].map(b => b.textContent.trim());
+  // Put the target OFF-AXIS first, so a snap-to-axis implementation is visible
+  // rather than lucky: (6,8) is 3-4-5 scaled, so 20 m must land on (12,16).
   sim.player_at = [0, 0]; sim.target_at = [6, 8]; markScenarioDirty();
   renderSim(); await sleep(900);
-  const box = document.querySelector('#sim-target [data-k="arena_distance"]');
-  out.typedShows = parseFloat(box.value);
-  box.value = '20';
-  box.dispatchEvent(new Event('change', { bubbles: true }));
+  document.querySelector('#sim-target-arena .ar-jump[data-jump="20"]').click();
   await sleep(900);
   out.typedState = state();
-  // ALONG THE SAME LINE: (6,8) is 3-4-5 scaled, so 20 m must land on (12,16).
   out.typedAt = sim.target_at.map(v => Math.round(v * 100) / 100);
+  // …and the chip for the distance you are AT is marked.
+  out.marked = [...document.querySelectorAll('#sim-target-arena .ar-jump.on')].map(b => b.dataset.jump);
 
   // 5. AN OFFICIAL RULER'S FIGHT IS PINNED. Switch to the benchmark scenario
   //    and try to drag: nothing may move.
@@ -181,9 +184,10 @@ check("two bodies cannot pass through each other",
 check("...and the label says so", Math.abs(r.overlapLabel - 0.4) < 0.01, `${r.overlapLabel}`);
 check("...and at contact nothing misses", r.nearHitRate > 0.99,
   `${(r.nearHitRate * 100).toFixed(0)}%`);
-check("the typed box reads the distance the scene shows",
-  Math.abs(r.typedShows - 10) < 0.02, `${r.typedShows} for (6,8)`);
-check("...and typing moves the target ALONG its own line, not onto an axis",
+check("there is no second control for a position — the canvas is the only one",
+  r.noTypedBox === true);
+check("...and the quick sets are in the scene", (r.jumps || []).length >= 4, (r.jumps || []).join(" "));
+check("...and one click moves the target ALONG its own line, not onto an axis",
   Math.abs(r.typedState - 20) < 1e-6 && Math.abs(r.typedAt[0] - 12) < 0.01
     && Math.abs(r.typedAt[1] - 16) < 0.01,
   `${r.typedState} m at ${JSON.stringify(r.typedAt)}`);
@@ -193,6 +197,8 @@ check("...and it opens at the distance the ruler pins", Math.abs(r.officialDista
 check("...and its fight cannot be dragged", r.officialMoved === false);
 check("...and the scene says so rather than silently ignoring the finger",
   r.officialLooksLocked === true);
+check("...and the distance you are at is marked", (r.marked || []).includes("20"),
+  (r.marked || []).join(","));
 check("the optimizer draws the same scene", r.optDrew === true);
 check("...read-only, because a fight is edited in one place", r.optReadonly === true);
 

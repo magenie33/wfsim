@@ -2320,6 +2320,27 @@ function keepApart(a, b) {
   return [a[0] + dx * k, a[1] + dy * k];
 }
 
+/// Put the target `want` metres away, ALONG THE LINE it already stands on.
+///
+/// Direction is preserved rather than snapped to an axis: a quick-set and a
+/// drag are two ways to move the same body, so neither may quietly undo the
+/// other's other axis. Below contact it is pushed back out, the same rule the
+/// drag obeys.
+function setArenaDistance(s, want) {
+  const [ax, ay] = s.player_at;
+  let dx = s.target_at[0] - ax, dy = s.target_at[1] - ay;
+  const d = Math.hypot(dx, dy);
+  if (d < 1e-9) { dx = 0; dy = 1; }
+  const u = d < 1e-9 ? 1 : d;
+  const m = Math.max(CONTACT_M, want);
+  s.target_at = [ax + (dx / u) * m, ay + (dy / u) * m];
+}
+
+/// The distances worth one click. CONTACT is first because it is where both
+/// boards are scored; the rest are the ranges a falloff window and a spread
+/// cone actually change hands at.
+const ARENA_JUMPS = [CONTACT_M, 5, 10, 20, 40];
+
 const arenaDistance = (s) =>
   Math.hypot(s.target_at[0] - s.player_at[0], s.target_at[1] - s.player_at[1]);
 
@@ -2363,7 +2384,15 @@ function arenaSvg(s, en) {
 /// pointer capture.
 function mountArena(host, s, en, opts) {
   if (!host) return;
-  const paint = () => { host.innerHTML = arenaSvg(s, en); };
+  // QUICK SETS, in the canvas. The scene is the one place a position is set
+  // (owner, 2026-08-16), so the shortcuts live in it rather than in a second
+  // control below that would be a second source of truth for the same fact.
+  const chips = () => `<div class="ar-jumps">${ARENA_JUMPS.map((m) => {
+    const on = Math.abs(arenaDistance(s) - m) < 0.05;
+    const label = m === CONTACT_M ? tr("contact") : `${m} m`;
+    return `<button class="ar-jump${on ? " on" : ""}" data-jump="${m}"${opts.readonly ? " disabled" : ""}>${escHtml(label)}</button>`;
+  }).join("")}</div>`;
+  const paint = () => { host.innerHTML = arenaSvg(s, en) + chips(); };
   paint();
   if (opts.readonly) {
     host.classList.add("ar-ro");
@@ -2372,6 +2401,15 @@ function mountArena(host, s, en, opts) {
   // DELEGATED, because `paint` replaces the markup on every move: listeners
   // bound to the circles die with the first repaint, which left the scene
   // draggable exactly once (2026-08-15).
+  host.addEventListener("click", (e) => {
+    const j = e.target.closest && e.target.closest("[data-jump]");
+    if (!j) return;
+    if (opts.readonly || officialScenarioActive()) return;
+    setArenaDistance(s, Number(j.dataset.jump));
+    paint();
+    markScenarioDirty();
+    if (opts.after) opts.after();
+  });
   host.addEventListener("pointerdown", (e) => {
     const el = e.target.closest && e.target.closest("[data-drag]");
     if (!el) return;
@@ -8096,7 +8134,6 @@ function renderScenarioFields(ids, opts = {}) {
         <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
         ${eximusField(en)}
         ${deployField(w, sim)}
-        <label title="${escHtml(tr("how far apart the two of them stand — drag them on the arena above, or type it here. Past contact a shot can MISS: every pellet draws inside the weapon's own aimed cone (the wiki's per-attack spread) against a body modelled as a 0.2 m circle, and a weapon that lists a damage falloff loses damage across its published window on top. That 0.2 m is MEASURED — walking into an enemy stops at 0.4 m, which is two of them touching. 0.4 m is CONTACT — the closest two bodies go, nothing misses there, and it is where both official boards are scored"))}">${escHtml(tr("Distance (m)"))} <input type="number" data-k="arena_distance" min="0.5" max="300" step="0.5" value="${arenaDistance(sim).toFixed(2)}"></label>
         <label>${escHtml(tr("Duration (s)"))} <input type="number" data-k="duration" min="1" max="3600" value="${sim.duration}"></label>
       </div>`;
     const pick = $(`${ids.target}-pick`);
@@ -8206,21 +8243,6 @@ function renderScenarioFields(ids, opts = {}) {
         if (el.type === "checkbox") sim[k] = el.checked;
         else if (el.type === "number") sim[k] = Number(el.value);
         else sim[k] = el.value;
-        // TYPING A DISTANCE MOVES THE TARGET ALONG THE LINE they already stand
-        // on, rather than snapping it to an axis — the typed box and the drag
-        // are two ways to set the same one thing, so neither may undo the
-        // other's other axis. It is not a scenario field of its own: the
-        // scenario holds the two POINTS, which is what the engine takes.
-        if (k === "arena_distance") {
-          delete sim.arena_distance;
-          const want = Math.max(CONTACT_M, Number(el.value) || CONTACT_M);
-          const [ax, ay] = sim.player_at;
-          let dx = sim.target_at[0] - ax, dy = sim.target_at[1] - ay;
-          const d = Math.hypot(dx, dy);
-          if (d < 1e-9) { dx = 0; dy = 1; }
-          const u = d < 1e-9 ? 1 : d;
-          sim.target_at = [ax + (dx / u) * want, ay + (dy / u) * want];
-        }
         // PICKING A FRAME FILLS ITS THREE NUMBERS. They stay editable after —
         // the roster is unmodded, so a built frame carries more armor and more
         // energy than any entry here, and one gate ("With Energy Max Over 700")

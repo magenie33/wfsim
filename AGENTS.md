@@ -361,9 +361,22 @@ around (decision 2026-07-31).
   fight (fixed with a viewBox — a fixed coordinate space has no such moment);
   and `paint()` replaces the markup on every move, so listeners bound to the
   circles died with the first repaint and the scene was draggable exactly once.
-  The typed box and the drag are ONE thing — typing a distance moves the target
-  ALONG the line it already stands on rather than snapping it to an axis — and
-  the OPTIMIZER draws the same scene read-only, because a fight is edited in one
+  THE CANVAS IS THE ONLY PLACE A POSITION IS SET (owner, 2026-08-16). The typed
+  Distance box is gone: two controls for one fact is how one of them silently
+  undoes the other's other axis, and the scene is the SOURCE — the target's
+  place, and every enemy's place when there is more than one. The shortcuts
+  that replaced the box live INSIDE it (contact / 5 / 10 / 20 / 40 m), each one
+  moving the target ALONG the line it already stands on, which is the same rule
+  the drag obeys because they move the same body; the chip for the distance you
+  are at is marked. A BENCHMARK'S FIGHT IS NOT DRAGGABLE — the rulers pin their
+  distance, and the scene refuses the gesture ITSELF because
+  `lockOfficialScenario` sweeps `input,select,button,textarea` and these bodies
+  are SVG circles that sweep never reached. Adding that assertion exposed that
+  the check had been testing the wrong thing all along: the app lands a
+  first-time visitor ON the official ruler, so every drag assertion here had
+  been running against a fight that should never have been draggable, and the
+  check now opens a scenario of its own first and asserts that it did. The
+  OPTIMIZER draws the same scene read-only, because a fight is edited in one
   place.
   `node scripts/check_gunco_stated.mjs` is the TWENTY-NINTH: EVERY WEAPON SAYS
   WHICH CONDITION OVERLOAD RULE IT IS COMPUTED UNDER, with nothing equipped.
