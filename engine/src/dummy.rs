@@ -4247,6 +4247,233 @@ fn gunco_bucket(
     }
 }
 
+/// A BODY IN THE FORMATION THAT IS NOT BEING AIMED AT — its own state, and
+/// nothing else.
+///
+/// WHERE THE LINE IS (owner, 2026-08-17): a counter belongs to whoever it counts
+/// on. The pools, the procs, the DoTs and the armour a hit strips are the
+/// BODY's, so they are here; the buff bar, the Galvanized stacks, the arcane
+/// runtime and the damage-instance number are the SHOOTER's and stay in the run
+/// loop, shared by every body because one weapon is firing at all of them.
+///
+/// That split is also the shape a second TENNO slots into: the loop's own
+/// player-side locals become one source's, a `Vec` of them, and nothing on this
+/// side of the line has to change.
+struct SpreadFoe {
+    state: TargetState,
+    debuffs: DebuffState,
+}
+
+/// ONE CHAIN OR SPLASH INSTANCE LANDING ON A BODY OTHER THAN THE AIMED ONE.
+///
+/// It is the SAME hit the aimed body took, scaled — the owner's framing is that
+/// a chain hop is *"a beam with a smaller base damage"* (2026-08-17), so nothing
+/// here re-derives a damage rule. What it does re-derive is everything that
+/// belongs to the RECEIVING body, because those genuinely differ:
+///
+///   · ITS OWN CONDITION OVERLOAD. The bucket is one multiplicative factor of
+///     `raw`, and `gunco_bucket` already takes a debuff state, so
+///     `raw x share x bucket_here / bucket_there` is EXACT rather than an
+///     approximation. A body carrying four status types takes more from the
+///     same chain than a clean one does, which is the whole point of the mod
+///     that started the chain.
+///   · ITS OWN HALF-HEALTH TERM, off its own health line (owner, 2026-08-17).
+///   · ITS OWN MITIGATION — armour, shields, overguard, and whatever this
+///     body's own procs have stripped.
+///   · ITS OWN PROCS AND ITS OWN DEATH.
+///
+/// NEVER A HEADSHOT. `chain::Instance::headshot` is true for the directly
+/// struck body alone, so `part_factor` is 1.0 here and the hit lands on the
+/// body — which is the clause that reorders builds in a crowd (MECHANICS §12).
+#[allow(clippy::too_many_arguments)]
+fn spread_hit(
+    inst: &crate::chain::Instance,
+    foe: &mut SpreadFoe,
+    spec: &crate::formation::FoeSpec,
+    // The aimed hit with its OWN CO bucket divided back out, so this body can
+    // multiply its own in.
+    raw_per_bucket: f64,
+    shares: TypeShares,
+    crit_mult: f64,
+    attrition: f64,
+    modded_base: f64,
+    status_chance: f64,
+    forced: &[DamageType],
+    vector: &DamageVector,
+    params: &DummyParams,
+    ap: &DummyParams,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    r: &mut RunResult,
+    d: &mut crate::rng::Draws,
+    t: f64,
+) {
+    let bd = ap.base_damage_bonus;
+    let arc_bd = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t);
+    let arc_ratio = (1.0 + bd + arc_bd) / (1.0 + bd);
+    let half_hp = if spec.params.max_health() > 0.0
+        && foe.state.health < 0.5 * spec.params.max_health()
+    {
+        ap.bd_below_half_health
+    } else {
+        0.0
+    };
+    let bucket = gunco_bucket(
+        params,
+        ap,
+        &mut foe.debuffs,
+        gal,
+        t,
+        bd,
+        arc_bd,
+        arc_ratio,
+        half_hp,
+        ap.co_base_fraction,
+    );
+    let raw = raw_per_bucket * bucket * inst.share;
+    if raw <= 0.0 {
+        return;
+    }
+    let sd = params.status_duration_mult;
+    let mit = foe.debuffs.mitigation(t, sd, params.armor_strip_per_puncture);
+    let (eff, killed, _broke) = foe.state.apply(
+        raw,
+        shares,
+        // BODY, always — see the note above.
+        false,
+        t,
+        &spec.params,
+        false,
+        &mit,
+    );
+    r.total_damage += raw;
+    r.effective_damage += eff;
+    r.timeline.add(t, eff);
+    r.note_kills(u32::from(killed), t);
+
+    // …AND ITS OWN STATUS ROLL, at FULL chance. The share scales the damage and
+    // nothing else (owner, 2026-08-17), so a hop dealing 24% of the hit still
+    // rolls the whole status chance — which is why a chain is worth more in
+    // procs than it is in damage.
+    arc.next_instance();
+    let procs = crate::status::procs_for_hit(
+        forced,
+        status_chance,
+        vector,
+        &spec.params.status_immunities,
+        &mut d.status,
+    );
+    settle_procs(
+        procs,
+        t,
+        InstanceScale {
+            mb_live: modded_base * arc_ratio * inst.share,
+            crit_mult,
+            part_factor: 1.0,
+            attrition,
+            // THE FIRING FORM'S bracket, like any other instance of this shot —
+            // a chain hop is the same shot, and the Extra Hit it may set off is
+            // the same weapon's.
+            xh_bracket: ap.extra_hit_bracket(t),
+        },
+        &mut foe.debuffs,
+        gal,
+        arc,
+        &mut foe.state,
+        params,
+        ap,
+        &mit,
+        r,
+        &mut d.status,
+        &spec.params,
+        DEPTH_PROC,
+    );
+}
+
+/// ONE SHOT'S FACTORS, carried out of the pellet loop so the radius-caught
+/// seeds' chains can fire once for the shot rather than once per pellet.
+///
+/// TAKEN FROM THE FIRST LANDING PELLET, and that is a simplification with one
+/// moving part in it: crit is rolled per pellet, so a shot whose pellets
+/// critted differently has no single crit multiplier and this takes the first
+/// one's. Everything else in here is identical across a shot's pellets. The
+/// alternative — rolling a fresh crit for the spread — would be inventing an
+/// instance the game does not describe, so the shot it actually belongs to is
+/// the honest source.
+struct SpreadShot {
+    raw_per_bucket: f64,
+    shares: TypeShares,
+    crit_mult: f64,
+    attrition: f64,
+    modded_base: f64,
+    status_chance: f64,
+    forced: Vec<DamageType>,
+    vector: DamageVector,
+}
+
+/// RESOLVE THE SHOT'S CHAIN AND LAND EVERY INSTANCE THAT IS NOT THE AIMED
+/// BODY'S OWN.
+///
+/// `multishot_half` splits the work the way the wiki splits the mod:
+///
+///   · `true` — the instances launched from the body the BEAM struck. Called
+///     from inside the pellet loop, so they fire once per landing pellet, which
+///     is what "only targets directly hit by the beam benefit" means for a
+///     merged beam whose multishot IS its pellet count.
+///   · `false` — everything launched from a body the RADIUS caught. Called once
+///     for the shot, because *"beams chaining from targets that were in the
+///     damage radius but not directly struck by the initial beam itself will
+///     also not benefit from multishot"*.
+///
+/// The aimed body's own instance is skipped in both passes: it already took the
+/// hit through the ordinary path, and the splash is not a second instance.
+#[allow(clippy::too_many_arguments)]
+fn spread_from_seeds(
+    others: &mut [SpreadFoe],
+    params: &DummyParams,
+    ap: &DummyParams,
+    beam: crate::loadout::BeamGeometry,
+    raw_per_bucket: f64,
+    shares: TypeShares,
+    crit_mult: f64,
+    attrition: f64,
+    modded_base: f64,
+    status_chance: f64,
+    forced: &[DamageType],
+    vector: &DamageVector,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    r: &mut RunResult,
+    d: &mut crate::rng::Draws,
+    t: f64,
+    multishot_half: bool,
+) {
+    // THE FORMATION AS THE CHAIN SEES IT: the aimed body first, so index 0 is
+    // the one the beam is on and 1.. line up with `others`.
+    let mut bodies = Vec::with_capacity(others.len() + 1);
+    bodies.push(params.target_at);
+    bodies.extend(params.others.iter().map(|f| f.at));
+    let spec = crate::chain::Spec {
+        hops: beam.chain_hops,
+        range_m: beam.chain_range_m,
+        falloff: beam.chain_damage_per_hop,
+    };
+    let landed = crate::chain::resolve(
+        &bodies,
+        0,
+        crate::chain::Splash { at: params.target_at, radius_m: beam.damage_radius_m },
+        spec,
+    );
+    for inst in landed.iter().filter(|i| i.multishot == multishot_half && i.target != 0) {
+        let idx = inst.target - 1;
+        let (foe, fs) = (&mut others[idx], &params.others[idx]);
+        spread_hit(
+            inst, foe, fs, raw_per_bucket, shares, crit_mult, attrition, modded_base,
+            status_chance, forced, vector, params, ap, gal, arc, r, d, t,
+        );
+    }
+}
+
 /// FIRE A SYNDICATE RADIAL — 1000 of its element in 25 m, with a guaranteed
 /// proc for five of the six.
 ///
@@ -5676,6 +5903,30 @@ pub fn run_once_traced(
     let mut frenzy = Frenzy::new();
     let mut target = TargetState::spawn(&params.target);
     let mut debuffs = DebuffState::default();
+    // THE REST OF THE FORMATION — empty for every fight this engine has run,
+    // and every line that reads it below is behind that check.
+    //
+    // BESIDE the aimed body's state rather than holding it too, which is the
+    // aim policy showing through: the beam is on ONE body and every other is
+    // reached only by what spreads (`formation`, owner 2026-08-15). When the
+    // aimed one dies the nearest of these takes its place, so `target` and
+    // `debuffs` above stay what the whole loop already reads.
+    let mut others: Vec<SpreadFoe> = params
+        .others
+        .iter()
+        .map(|f| SpreadFoe {
+            state: TargetState::spawn(&f.params),
+            debuffs: DebuffState::default(),
+        })
+        .collect();
+    // NO PROMOTION, AND NONE IS NEEDED: `TargetState::apply` respawns a body
+    // instantly where it stood, so no body is ever left dead for the aim policy
+    // to switch away from. The formation is N streams of targets rather than N
+    // corpses, which is what a room-clear measurement wants and what the
+    // single-target arena has always been.
+    //
+    // `formation::Formation::retarget` is the policy for the day respawn
+    // becomes a setting; it is written and tested and nothing calls it.
     // On-kill stack buffs start at their configured initial stacks (full
     // per the user's setting) with a fresh duration from t = 0.
     let mut gal = GalStacks::default();
@@ -7010,6 +7261,9 @@ pub fn run_once_traced(
         // multishot pull that puts one pellet of six on the target is a hit.
         let mut landed_this_shot = false;
 
+        // THE SHOT'S FACTORS, filled by its first landing pellet — see
+        // `SpreadShot`. `None` when nothing landed, and then nothing spreads.
+        let mut shot_spread: Option<SpreadShot> = None;
         for pellet_idx in 0..n_pellets {
             // PLENTIFUL MAYHEM, discrete branch: "Damage bonus from multishot
             // consuming ammo only applies to projectiles GENERATED BY
@@ -7639,6 +7893,36 @@ pub fn run_once_traced(
                     false,
                     &mit,
                 );
+                // THE AIMED SEED'S CHAINS, HERE, so they take multishot the
+                // only way that is honest: by being inside the pellet loop.
+                // *"only targets directly hit by the beam benefit"*, and a
+                // merged beam's multishot IS the pellet count — so a chain
+                // launched from the body the beam struck fires once per landing
+                // pellet, and one launched from a body the RADIUS caught fires
+                // once for the shot. The other half is after the loop.
+                if direct && !others.is_empty() {
+                    // …and the SHOT's own factors, kept for the half that fires
+                    // once rather than per pellet.
+                    if shot_spread.is_none() {
+                        shot_spread = Some(SpreadShot {
+                            raw_per_bucket: raw / bucket,
+                            shares,
+                            crit_mult,
+                            attrition,
+                            modded_base,
+                            status_chance,
+                            forced: forced.to_vec(),
+                            vector: qvec,
+                        });
+                    }
+                    if let Some(beam) = params.beam {
+                        spread_from_seeds(
+                            &mut others, params, ap, beam, raw / bucket, shares,
+                            crit_mult, attrition, modded_base, status_chance,
+                            forced, &qvec, &mut gal, &mut arc, &mut r, d, t, true,
+                        );
+                    }
+                }
                 r.total_damage += raw;
                 r.effective_damage += effective;
                 // WHAT KIND OF HIT THAT WAS. Sorted rather than averaged: a
@@ -8160,6 +8444,20 @@ pub fn run_once_traced(
             );
             }
         }
+
+        // …AND THE RADIUS-CAUGHT SEEDS' CHAINS, ONCE FOR THE SHOT. The other
+        // half of the multishot rule: "beams chaining from targets that were in
+        // the damage radius but not directly struck by the initial beam itself
+        // will also not benefit from multishot", so these fire here rather than
+        // inside the pellet loop above.
+        if let (Some(s), Some(beam), false) = (&shot_spread, params.beam, others.is_empty()) {
+            spread_from_seeds(
+                &mut others, params, ap, beam, s.raw_per_bucket, s.shares,
+                s.crit_mult, s.attrition, s.modded_base, s.status_chance,
+                &s.forced, &s.vector, &mut gal, &mut arc, &mut r, d, t, false,
+            );
+        }
+
 
         // A SHOT THAT HIT NOTHING DROPS THE SHOT COMBO COUNTER.
         //
@@ -9293,6 +9591,87 @@ mod tests {
         // …and what "reads the unevolved base" would have required of them.
         let split = (1.0 + 0.4 * 100.0 / 151.0) - (1.0 + 0.4 * 40.0 / 91.0);
         assert!(split > 0.08, "the rival hypothesis must be distinguishable, got {split:.4}");
+    }
+
+    /// A FORMATION TAKES MORE THAN A LONE TARGET, and the whole difference is
+    /// the chain (owner, 2026-08-17). The end-to-end assertion that the layer,
+    /// the mechanic and the run loop are actually joined up.
+    ///
+    /// The Torid Incarnon is the only chaining beam in the roster, so it is the
+    /// weapon this is asked of. Eight more bodies at 3 m, the front row's
+    /// middle one aimed at — `Formation::grid`'s own arrangement, and the one
+    /// MECHANICS §12 is written against.
+    #[test]
+    fn a_formation_takes_the_damage_a_chain_spreads_into_it() {
+        let build = |others: Vec<crate::formation::FoeSpec>| {
+            let base = crate::loadout::WeaponBase::from_data(
+                "torid_incarnon",
+                false,
+                &["torid_evo1_incarnon_form"],
+            );
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let mut arena = crate::arena::Arena::training(10.0);
+            arena.others = others;
+            DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none())
+        };
+
+        let alone = build(Vec::new());
+        assert!(alone.beam.is_some(), "the Incarnon form is a beam and must say so");
+        let lone = run_once(&alone, &mut Rng::new(0x5EED)).effective_damage;
+
+        // …AND THE SAME SHOT INTO A FORMATION. The grid is built around where
+        // the aimed body already stands, so the fight it opens with is the one
+        // every golden value uses and only the neighbours are new.
+        let grid = crate::formation::Formation::grid(
+            TargetParams::training_dummy(),
+            DummyParams::humanoid_parts(),
+            3,
+            3,
+            3.0,
+            alone.target_at,
+        );
+        let others: Vec<crate::formation::FoeSpec> = grid
+            .foes
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| *i != grid.aimed)
+            .map(|(_, f)| f.clone())
+            .collect();
+        assert_eq!(others.len(), 8);
+        let crowd = run_once(&build(others.clone()), &mut Rng::new(0x5EED)).effective_damage;
+
+        assert!(
+            crowd > lone * 1.5,
+            "a formation must take substantially more than one body: {crowd} against {lone}"
+        );
+
+        // …AND THE RADIUS IS WHAT DECIDES HOW MUCH. Widen it by hand the way
+        // Primed Firestorm does and the seeds go from one to four, which is the
+        // finding `formation_value` prints and the reason the mod is worth a
+        // slot at all.
+        let mut primed = build(others);
+        if let Some(b) = primed.beam.as_mut() {
+            b.damage_radius_m *= 1.44;
+        }
+        let wide = run_once(&primed, &mut Rng::new(0x5EED)).effective_damage;
+        assert!(
+            wide > crowd * 1.5,
+            "a wider radius seeds more chains: {wide} against {crowd}"
+        );
+
+        // …AND A LONE TARGET NOTICES NEITHER. The mod that quadruples the shot
+        // in a crowd is worth exactly nothing against one body, which is the
+        // asymmetry this whole layer exists to show.
+        let mut primed_alone = build(Vec::new());
+        if let Some(b) = primed_alone.beam.as_mut() {
+            b.damage_radius_m *= 1.44;
+        }
+        assert_eq!(
+            run_once(&primed_alone, &mut Rng::new(0x5EED)).effective_damage,
+            lone,
+            "a damage radius has nothing to act on against one target"
+        );
     }
 
     /// A CONE IS SPELLED ONE WAY. Ten entries carried BOTH a parsed

@@ -2729,6 +2729,36 @@ The same tool prints the step edges, which are pure geometry: the bare radius
 (2.30 m), the primed one (3.31 m), and `3.31 / √2 = 2.34 m` where the diagonals
 come in and the mod peaks at 6x.
 
+### What the engine does with it now
+
+The run loop consumes `chain::resolve`, so a formation takes the damage a chain
+spreads into it — through the ORDINARY pipeline, one instance at a time. Each
+body computes its own Condition Overload bucket (exact, not approximated: the
+bucket is one multiplicative factor of `raw`, so `raw x share x bucket_here /
+bucket_there` is the whole correction), its own half-health term off its own
+health line, its own mitigation, its own procs and its own death.
+
+**WHERE THE LINE BETWEEN A SOURCE AND A BODY IS** (owner, 2026-08-17): a counter
+belongs to whoever it counts on. The pools, the procs, the DoTs and the armour a
+hit strips are the BODY's. The buff bar, the Galvanized stacks, the arcane
+runtime and the damage-instance number are the SHOOTER's, shared by every body
+because one weapon is firing at all of them. That is also the shape a second
+TENNO slots into — the loop's player-side locals become one source's, a list of
+them, and nothing on the body side changes.
+
+**MULTISHOT SPLITS THE WORK IN TWO PLACES**, which is the wiki's own rule made
+structural. Chains launched from the body the beam STRUCK fire inside the pellet
+loop, so they fire once per landing pellet — a merged beam's multishot IS its
+pellet count. Chains launched from a body the RADIUS caught fire once for the
+shot. `chain::Instance::multishot` is the flag that sorts them.
+
+**AND NOBODY IS PROMOTED**, because nobody stays dead: `TargetState::apply`
+respawns a body instantly where it stood, so a formation is N streams of targets
+rather than N corpses — which is what a room-clear measurement wants and what
+the single-target arena has always been. `formation::Formation::retarget` is the
+aim policy for the day respawn becomes a setting; it is written, tested, and
+called by nothing.
+
 ### Ties, and why they are not modelled
 
 **MEASURED (M52): the path is fixed, and its rule is not in the formation.** Two
