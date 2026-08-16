@@ -10,6 +10,34 @@ adapter, silently. What it no longer assumes is the number those produce: an
 adversary weapon ranks to 40 and finishes at 80, and every surface that prints
 a capacity says so.
 
+## A POLARITY BELONGS TO THE WEAPON, NOT TO THE SLOT (owner, 2026-08-16)
+
+Two slots' polarities can be SWAPPED without changing what either slot IS — the
+exilus slot stays exilus, it just carries a different polarity afterwards. It is
+the least-known thing in this file (the owner did not know it either until he
+tried it), and the whole Forma model rests on it.
+
+**WHAT IT MEANS FOR PLANNING.** The weapon's polarities are a POOL, not a set of
+fixed positions, so `plan_forma_spending` flattens `innate_slots` and matches
+the biggest-drain mods against the multiset. That is not an approximation — it
+is the rule.
+
+**AND THE EXILUS SLOT'S POLARITY IS IN THAT POOL**, even for a build that puts
+no mod in the exilus slot at all. Swap it onto a main slot; the exilus slot
+carries whatever came back and sits empty. The board withheld it until
+2026-08-16 on the reasoning that "the slot is out of scope, so its polarity is
+not a discount this build gets to spend" — and the *so* was the error, because
+the polarity is not attached to the slot. The adapter is assumed installed
+anyway (below), so the slot exists.
+
+It was over-charging **699 of the 928 stored board rows by one Forma each** —
+three quarters of the board, the Torid alone 95 rows.
+
+**WHAT DOES NOT MOVE.** The exilus SLOT still only accepts an exilus-eligible
+mod, and that constraint is about how many mods fit, never about which polarity
+goes where. So it does not reach the planner: nine polarities, eight or nine
+mods, and the eligibility rule lives in the slot check.
+
 ## The mechanics, verified (wiki, 2026-08-04)
 
 | fact | the wiki's own words |

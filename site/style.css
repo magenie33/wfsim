@@ -331,6 +331,7 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 .slot.empty .plus{font-size:13px}
 .slot.exl{cursor:default;justify-content:center}.slot.exl:hover{border-color:var(--line)}
 .exlabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px}
+.exhint{font-size:11px;line-height:1.45;color:var(--dim);margin-top:6px;max-width:46ch}
 
 /* floating popovers */
 .popover{position:absolute;z-index:50;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.35);width:340px;max-width:92vw;overflow:hidden}

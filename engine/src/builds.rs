@@ -607,10 +607,26 @@ pub fn validate(
     // CAPACITY, with Forma unlimited. `plan_forma` answers both halves at once:
     // whether ANY layout fits, and how many Forma the cheapest one costs.
     //
-    // The exilus slot's own innate polarity is NOT in the pool: the slot is out
-    // of scope, so its polarity is not a discount this build gets to spend.
-    let innate: Vec<Option<crate::mods::Polarity>> =
+    // NINE POLARITIES FOR EIGHT SLOTS, and the exilus one is in the pool even
+    // though the exilus SLOT is out of scope.
+    //
+    // A POLARITY BELONGS TO THE WEAPON, NOT TO THE SLOT IT SITS ON (owner,
+    // 2026-08-16). It can be swapped with another slot's without changing what
+    // either slot IS — the exilus slot stays exilus — so a build with no exilus
+    // mod at all can still spend that polarity: swap it onto a main slot, and
+    // the exilus slot carries whatever came back and sits empty.
+    //
+    // This line read the other way and said "the slot is out of scope, so its
+    // polarity is not a discount this build gets to spend". The `so` was the
+    // error: it assumed the polarity was attached to the slot. And the board
+    // already assumes the Exilus adapter is installed (docs/INVESTMENT.md), so
+    // the slot exists and its polarity is reachable.
+    //
+    // It over-charged 699 of the 928 stored rows by one Forma each — three
+    // quarters of the board, the Torid alone 95 of them.
+    let mut innate: Vec<Option<crate::mods::Polarity>> =
         crate::weapons_data::innate_slots(weapon).to_vec();
+    innate.push(crate::weapons_data::exilus_polarity(weapon));
     let planned: Vec<PlannedMod> = ms
         .iter()
         .map(|id| {
@@ -755,6 +771,58 @@ mod tests {
         assert!(b.drain <= cap_of("boar_prime"));
         // Forma is a COST, not a legality term: it is reported, never rejected.
         assert!(b.forma <= 4, "four mods cannot need more than four Forma");
+    }
+
+    /// A POLARITY BELONGS TO THE WEAPON, NOT TO THE SLOT — so a benchmark
+    /// build spends the EXILUS slot's polarity even though the exilus SLOT is
+    /// out of scope (owner, 2026-08-16).
+    ///
+    /// Two slots' polarities swap without changing what either slot IS, so the
+    /// exilus one can be moved onto a main slot and the exilus slot left
+    /// carrying whatever came back, empty. The board withheld it until this
+    /// was known and over-charged 699 of its 928 stored rows by one Forma each.
+    ///
+    /// The Torid is the sharp case and the biggest one — 95 of those rows. Its
+    /// exilus polarity is Madurai, which its two innate slots do not carry.
+    #[test]
+    fn a_benchmark_build_spends_the_exilus_slots_polarity() {
+        let innate = crate::weapons_data::innate_slots("torid");
+        let exilus = crate::weapons_data::exilus_polarity("torid")
+            .expect("the Torid has an exilus polarity");
+        assert!(
+            !innate.iter().flatten().any(|p| *p == exilus),
+            "this case only bites when the exilus polarity is not already innate"
+        );
+
+        // A pool of eight mods that all want the EXILUS polarity, so the ninth
+        // is the only free match on offer and its absence costs a Forma.
+        let planned: Vec<crate::mods::PlannedMod> = (0..8)
+            .map(|_| crate::mods::PlannedMod { base_drain: 12, polarity: exilus })
+            .collect();
+        let spec = crate::weapons_data::spec("torid").unwrap();
+        let with_it = {
+            let mut v = innate.to_vec();
+            v.push(Some(exilus));
+            crate::mods::fit(spec.max_rank, &v, &planned, BENCHMARK_INVESTMENT).unwrap()
+        };
+        let without =
+            crate::mods::fit(spec.max_rank, innate.as_ref(), &planned, BENCHMARK_INVESTMENT)
+                .unwrap();
+        assert_eq!(
+            with_it.cost.total() + 1,
+            without.cost.total(),
+            "the ninth polarity is worth exactly one Forma here"
+        );
+
+        // …AND `validate` USES IT. The pool it builds is the nine, so this
+        // cannot drift from the assertion above by someone editing one of them.
+        let innate_used: Vec<Option<crate::mods::Polarity>> = {
+            let mut v = crate::weapons_data::innate_slots("torid").to_vec();
+            v.push(crate::weapons_data::exilus_polarity("torid"));
+            v
+        };
+        assert_eq!(innate_used.len(), MAIN_SLOTS + 1);
+        assert_eq!(innate_used[MAIN_SLOTS], Some(exilus));
     }
 
     #[test]
