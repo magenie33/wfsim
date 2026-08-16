@@ -363,16 +363,18 @@ around (decision 2026-07-31).
   circles died with the first repaint and the scene was draggable exactly once.
   A SHOT LEAVES THE MUZZLE and a distance is the GAP (owner, 2026-08-16). The
   shooter fires from a point on its own circumference facing the target — drawn,
-  with the arrow that says which way it faces — so the cone widens over the
-  FLIGHT, which is one radius shorter than the line between two centres; and
-  hitting the circle is a hit, which makes the test ray-versus-circle
-  (`travel · sin θ ≤ r`) rather than the `centre · tan θ` it was. CONTACT IS
-  THEN UNMISSABLE AT ANY CONE WIDTH, as a property rather than a rule — the old
-  formula dropped more than half a 60 degree cone's pellets pressed against an
-  enemy. What a reader is SHOWN is the gap between the two surfaces, so point
-  blank reads 0 m, and damage falloff is keyed on that same gap because a
-  published window's key is "how far away is the enemy", not how far the pellet
-  flew. MECHANICS §11 is the whole geometry.
+  with the arrow that says which way it faces — and hitting the circle is a hit,
+  which makes the test ray-versus-circle (`range · sin θ ≤ r`, the range being
+  muzzle to the target's CENTRE) rather than the `centre · tan θ` it was. That
+  range is NOT a flight, and calling it one was worth an inconsistency the owner
+  caught on sight: a bullet vanishes at the SURFACE it hits, so what it flies is
+  the GAP between the two bodies — one radius shorter, ZERO AT CONTACT, the
+  number a reader is shown, and what damage falloff reads. One quantity wearing
+  three hats rather than three that have to be argued into agreement. CONTACT IS
+  THEN UNMISSABLE AT ANY CONE WIDTH twice over — a flight of zero leaves a cone
+  no distance to widen over, and the ray-circle test agrees from the other side
+  — where the old formula dropped more than half a 60 degree cone's pellets
+  pressed against an enemy. MECHANICS §11 is the whole geometry.
   THE CANVAS IS THE ONLY PLACE A POSITION IS SET (owner, 2026-08-16). The typed
   Distance box is gone: two controls for one fact is how one of them silently
   undoes the other's other axis, and the scene is the SOURCE — the target's

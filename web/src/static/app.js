@@ -3224,8 +3224,7 @@ async function importShare(code) {
   const evoSel2 = {};
   (data.evos || []).forEach((id, i) => { if (id) evoSel2[i + 1] = pre && !id.startsWith(pre) ? pre + id : id; });
 
-  const state = {
-    weapon: w.id,
+  const state = buildState(w.id, {
     slots: slots2,
     arcane: data.arcane,
     arcaneRank: data.arcaneRank,
@@ -3235,7 +3234,7 @@ async function importShare(code) {
     // mode it cannot be played in falls back to the arsenal's.
     mode: data.mode,
     valence: data.valence,
-  };
+  });
   const builds = loadPresetList(BUILDS);
   // Named for where it came from. Without it a link lands as "build 1 2",
   // which says nothing about being someone else's work.
@@ -4232,9 +4231,44 @@ document.addEventListener("keydown", (e) => {
 // polarity + rank), arcane + rank, and the per-tier evolution selection.
 const BUILDS = "builder-builds";
 
+/// WHAT A BUILD CONSISTS OF, declared once (owner, 2026-08-16).
+///
+/// Five different things produce a build state — the live page, "+ new", a
+/// board row, a share link, an optimizer result — and `restoreState` fills a
+/// MISSING axis with the weapon's own default, which is the right answer for a
+/// blank build and for a preset written before an axis existed. That kindness
+/// is also why forgetting an axis is invisible: a producer that meant "the
+/// default" and one that never heard of the axis hand over the same object, and
+/// nothing downstream can tell them apart.
+///
+/// So the same bug arrived FOUR times, each caught by hand and patched where it
+/// was found: `mode` missing from the board submission (2026-08-09), `valence`
+/// missing from the worker's table (2026-08-14), both missing from the share
+/// tuple (2026-08-15), and `valence` missing from the optimizer's "+ add" — the
+/// one a player measured, at 22.34 KPM against 17.44 for the same build on the
+/// wrong progenitor element (2026-08-16). Four patches, one shape.
+///
+/// `buildState` is the answer: every producer NAMES every axis, `undefined`
+/// stays a legal value meaning "the weapon's default", and adding a row here
+/// breaks all five producers at once instead of four of them silently.
+const BUILD_AXES = ["slots", "evoSel", "arcane", "arcaneRank", "mode", "valence"];
+
+/// A build state, from a producer that has to account for every axis.
+///
+/// It THROWS rather than filling in, because there is no data that can reach
+/// it: a missing axis is a producer somebody wrote without the table in front
+/// of them, so it fails on the first click of the session that introduced it
+/// (`scripts/check_opt_to_build.mjs` is the one that forces it).
+function buildState(weapon, axes) {
+  const missing = BUILD_AXES.filter((k) => !(k in axes));
+  if (missing.length) {
+    throw new Error(`build state is missing ${missing.join(", ")} — see BUILD_AXES`);
+  }
+  return { weapon, ...axes };
+}
+
 function snapshotState() {
-  return {
-    weapon: $("weapon").value,
+  return buildState($("weapon").value, {
     evoSel: { ...evoSel },
     arcane: arcanes,
     arcaneRank: arcaneRanks,
@@ -4251,7 +4285,7 @@ function snapshotState() {
     // Nothing is lost. "What this build was last measured under" was never
     // this field's job — `lastResult.key` is that record, it lives outside
     // `state`, and it is what makes a stale result show as stale.
-  };
+  });
 }
 
 // Apply a saved state. `weapon` is the weapon it belongs to — pass it and the
@@ -4908,13 +4942,19 @@ function renderPresetBarIn(bar, cfg) {
 // evolutions. NO scenario: a build does not carry a fight, so making one
 // cannot reset the fight you are in.
 function blankBuildState() {
-  return {
-    weapon: $("weapon").value,
+  return buildState($("weapon").value, {
     evoSel: {},
     arcane: ["none"],
     arcaneRank: [null],
     slots: [],
-  };
+    // THE ARSENAL'S OWN, said out loud. A new build is played the way the
+    // weapon comes, and a Lich weapon comes carrying an element — which is
+    // what `defaultMode`/`defaultValence` answer when handed nothing. Named
+    // rather than omitted, because an omission is what a producer that forgot
+    // an axis also looks like (`BUILD_AXES`).
+    mode: undefined,
+    valence: undefined,
+  });
 }
 
 // ---- THE OFFICIAL BUILDS ----------------------------------------------
@@ -4987,8 +5027,7 @@ const builtinBuilds = () => {
       hint_flat: `${bench ? tr(bench.name) : row.benchmark} · ${
         row.shown != null ? row.shown : (row.score || 0).toFixed(4)}`,
       savedAt: 0,
-      state: {
-        weapon: w.id,
+      state: buildState(w.id, {
         mode,
         slots: Array.from({ length: 9 }, (_, k) => ({
           mod: (row.mods || [])[k] || null, pol: null, rank: null,
@@ -5004,7 +5043,7 @@ const builtinBuilds = () => {
         valence: row.valence
           ? { element: row.valence, bonus: (valenceSpec(w.id) || {}).max || 0 }
           : undefined,
-      },
+      }),
     };
   });
 };
@@ -11523,8 +11562,7 @@ function resultToState(res) {
     const t = (weaponEvos()).find((tt) => tt.options.some((o) => o.id === id));
     if (t) evo[t.tier] = id;
   });
-  return {
-    weapon: $("weapon").value,
+  return buildState($("weapon").value, {
     evoSel: evo,
     // The optimizer reports one id PER SLOT, in the same pool order the
     // builder uses — so applying a result is a copy, not a translation.
@@ -11539,6 +11577,18 @@ function resultToState(res) {
     // from a run predating the dimension names none, and then the build takes
     // the mode the page is in — which is the mode that run used.
     mode: res.mode || mode,
+    // WHICH WEAPON THE ROW IS, on the same terms as the mode. The valence is a
+    // search axis, so two rows of one ranking can be two different weapons —
+    // and a row scored on Magnetic that opened on the spec's FIRST element
+    // (Impact, via `defaultValence`) re-ran 22% under its own number, which is
+    // the divergence a player reported (owner, 2026-08-16).
+    //
+    // The ELEMENT comes from the row and the BONUS from the page, because the
+    // axis ranges over elements only: every candidate in the run was built with
+    // the bonus the request carried, which is the one the page is holding.
+    valence: res.valence
+      ? { element: res.valence, bonus: valence.bonus }
+      : undefined,
     // NO `sim`. Adding a winner used to copy the optimizer's own buff config
     // into the scenario so that "add then Run Sim" matched its score. It does
     // not any more: a result is a BUILD, and a build does not get to rewrite
@@ -11546,7 +11596,7 @@ function resultToState(res) {
     // still disagree — the search's is scope-wide, the scenario's is this
     // build's — and that disagreement is now visible instead of resolved by
     // silently editing a preset the user owns.
-  };
+  });
 }
 
 // "+ add" (not load — user, 2026-07-29): the result becomes a NEW preset

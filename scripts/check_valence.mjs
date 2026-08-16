@@ -249,6 +249,101 @@ check("...and pooling two doubles the candidate count",
   opt.pooled.n === opt.pinned.n * 2,
   `${opt.pinned.n} -> ${opt.pooled.n}`);
 
+// …AND THE WINNER IS STILL THAT WEAPON WHEN IT BECOMES A BUILD.
+//
+// The row above carried the element all along; "+ add" dropped it, so a search
+// won on Magnetic became a build fired on Impact — `defaultValence` opens on
+// the spec's FIRST element, and a producer that omits an axis is
+// indistinguishable from one that means "the default". A player measured the
+// consequence: 22.34 KPM on the ranking against 17.44 for the same eight cards
+// re-run in the simulator, which reads as the optimizer lying about its own
+// number (owner, 2026-08-16).
+//
+// So this asserts the PROPERTY rather than the field, twice over. Structurally:
+// the state a row becomes NAMES every axis in `BUILD_AXES`, which is the one
+// declaration of what a build is — the same cross-file shape
+// `check_board_submit` uses, and the reason a fifth axis cannot be added to
+// four of the five producers. And on the NUMBER: the build re-runs at the
+// element it was scored on and not at the one it would have defaulted to, at a
+// FIXED SEED so the two are exactly equal or exactly not.
+const added = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  localStorage.clear();
+  history.pushState({}, '', '/weapons/Kuva_Nukor/optimizer'); route(); await sleep(4000);
+
+  // MAGNETIC, which is not what a fresh page opens on — that is the whole
+  // case. A row scored on the default element would pass this check without
+  // the axis travelling at all.
+  const opened = defaultValence('kuva_nukor', null).element;
+  const body = {
+    weapon: 'kuva_nukor',
+    mods: { hornet_strike: 'search', barrel_diffusion: 'search',
+            lethal_torrent: 'search', pathogen_rounds: 'search' },
+    build_size: 2, build_min: 2,
+    arcanes: {}, evolutions: {}, modes: {}, exilus: {},
+    valence: { magnetic: 'fixed' },
+    valence_element: opened, valence_bonus: 0.6,
+    ...fightPayload(snapshotScenario()),
+    duration: 8, runs: 2, final_runs: 2, finalists: 3, threads: 1, buffs: {},
+  };
+  const r0 = await postJson('/api/optimize', body);
+  let s = r0;
+  for (let i = 0; i < 400 && (!s || !s.done); i++) {
+    await sleep(300);
+    s = await postJson('/api/optimize/status', {});
+  }
+  const res = (s && s.result) || s;
+  const row = ((res || {}).results || [])[0];
+  if (!row) return { err: 'no ranking' };
+
+  // Through the real button's own path, so what is asserted is what a click
+  // produces and not a second copy of it.
+  addResult(row);
+  const ps = loadPresetList(BUILDS);
+  const st = (ps[ps.length - 1] || {}).state || {};
+  const missing = BUILD_AXES.filter((k) => !(k in st));
+
+  // …ON SCREEN, which is a different claim from "in the object": open the
+  // preset the way a player does and read the live axis.
+  history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(2500);
+  pickPreset(buildBarCfg(), presetId(ps[ps.length - 1])); await sleep(1200);
+  const live = { element: valence.element, bonus: valence.bonus };
+
+  // …AND IN THE NUMBER. Same fight, same fixed seed, three requests: the build
+  // as it now stands, the build with the row's element forced, and the build on
+  // the element it would have fallen back to. The first two are the same run to
+  // the bit; the third is a different weapon.
+  const fight = { ...fightPayload(snapshotScenario()), duration: 20, runs: 6, seed: 11 };
+  const at = async (el) => {
+    const q = { ...buildPayload(), ...fight };
+    if (el) { q.valence_element = el; }
+    const out = await api('/api/simulate', q);
+    return out && out.ok ? Math.round((out.dps || 0) * 1000) / 1000 : null;
+  };
+  return { err: null, opened, rowElement: row.valence, rowMods: row.mods,
+           missing, stateValence: st.valence, live,
+           asAdded: await at(null), asScored: await at(row.valence),
+           asDefaulted: await at(opened) };
+})()`);
+
+check("an optimizer winner becomes a build that states every axis",
+  added.err === null && added.missing.length === 0,
+  added.err || `missing: ${JSON.stringify(added.missing)}`);
+// The case itself: the row was won on an element the page was not holding.
+check("...and the row it came from was scored on a NON-default element",
+  added.rowElement === "magnetic" && added.opened !== "magnetic",
+  `row ${added.rowElement}, page opened on ${added.opened}`);
+check("...so the build carries the element the row was scored with",
+  added.stateValence && added.stateValence.element === added.rowElement
+    && added.live.element === added.rowElement && added.live.bonus === 0.6,
+  JSON.stringify({ state: added.stateValence, live: added.live }));
+// THE FALSIFIABLE HALF, at a fixed seed: equal to the run it claims, and not
+// equal to the run it used to become. 22.34 against 17.44 was this gap.
+check("...and it re-runs as the weapon it was scored on, not the default one",
+  added.asAdded !== null && added.asAdded === added.asScored
+    && added.asAdded !== added.asDefaulted,
+  `added ${added.asAdded} · as scored (${added.rowElement}) ${added.asScored} · as defaulted (${added.opened}) ${added.asDefaulted}`);
+
 // …AND THE THREE THINGS THAT FOLLOW FROM "IT IS PART OF THE BUILD".
 //
 // A build axis is not one because a variable holds it. It is one because every

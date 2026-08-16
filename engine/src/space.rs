@@ -62,23 +62,40 @@ pub fn muzzle(shooter: Vec2, aim_at: Vec2) -> Vec2 {
     shooter.toward(aim_at, BODY_RADIUS_M)
 }
 
-/// HOW FAR A SHOT FLIES — muzzle to the target's centre.
+/// MUZZLE TO THE TARGET'S CENTRE — the ray-versus-circle test's own parameter,
+/// and NOT how far a shot flies.
 ///
-/// Shorter than the distance between the two of them by exactly one radius,
-/// which is the whole reason it is its own function: the centre distance is
-/// what a scene DRAWS and the flight is what a cone widens over, and using one
-/// for the other is a quiet error worth a radius everywhere.
-pub fn shot_travel(shooter: Vec2, target: Vec2) -> f64 {
+/// The two were one function called `shot_travel` for a few hours, and the name
+/// was the error (owner, 2026-08-16): a bullet vanishes when it reaches the
+/// target's SURFACE, so what it flies is the [`gap`], and this is one radius
+/// longer than that. It appears in [`miss_distance`] because the perpendicular
+/// distance from a circle's CENTRE to a ray is what decides whether the ray
+/// crosses the circle — a geometric parameter that happens to have units of
+/// length, not a distance anything travels.
+pub fn range_to_centre(shooter: Vec2, target: Vec2) -> f64 {
     (shooter.distance(target) - BODY_RADIUS_M).max(0.0)
 }
 
-/// THE GAP between two bodies — surface to surface, and ZERO AT CONTACT.
+/// THE GAP between two bodies — surface to surface, ZERO AT CONTACT, and the
+/// distance a shot actually FLIES.
 ///
-/// This is what "how far apart are we" means once bodies have a size, and it
-/// is the number the arena SHOWS and the quick sets set (owner, 2026-08-16).
+/// This is what "how far apart are we" means once bodies have a size, so it is
+/// the number the arena SHOWS and the quick sets set (owner, 2026-08-16).
 /// Standing on someone reads 0 m, which is what point blank has always meant
 /// to a player; the 0.4 m between the two centres is a fact about the model
 /// and not something a reader should have to subtract.
+///
+/// IT IS ALSO THE FLIGHT, which is why damage falloff reads it and why the two
+/// need no reconciling: a bullet vanishes when it reaches the target's SURFACE
+/// rather than travelling on to its centre, so muzzle-to-surface is both what
+/// a player would call the distance and what the projectile covers. Exactly,
+/// for a shot down the middle; a grazing one lands further around the circle
+/// and covers up to one radius more, which is under the resolution of any
+/// window DE publishes.
+///
+/// AND IT IS WHY CONTACT CANNOT MISS, in one step: a flight of zero leaves a
+/// cone no distance to widen over. [`miss_distance`] reaches the same answer
+/// from the other side.
 pub fn gap(a: Vec2, b: Vec2) -> f64 {
     (a.distance(b) - CONTACT_RANGE_M).max(0.0)
 }
@@ -86,29 +103,38 @@ pub fn gap(a: Vec2, b: Vec2) -> f64 {
 /// HOW FAR A DEVIATED SHOT PASSES from the target's centre — the ray's closest
 /// approach, which is what decides whether it reaches the body at all.
 ///
+/// RAY-VERSUS-CIRCLE, and nothing more.
+///
 /// A pellet that leaves `deviation_deg` off the aim line is a RAY from the
 /// muzzle, so the question "does it hit" is ray-versus-circle and the answer is
 /// `travel · sin(θ) ≤ r`. It was `centre_distance · tan(θ)` until 2026-08-16,
 /// which was wrong twice — from the centre rather than the muzzle, and `tan`
 /// rather than `sin`, so a wide cone's deviation blew up toward infinity
-/// instead of being bounded by the distance it had to travel.
+/// instead of being bounded by the leg it is measured against.
+///
+/// `range_m` is [`range_to_centre`] and NOT a flight — the perpendicular is
+/// dropped from the circle's CENTRE, so that is the leg the formula needs.
+/// What the shot flies is the [`gap`], one radius shorter. The parameter was
+/// called `travel_m` for a few hours and the name was the whole confusion.
 ///
 /// The fix is what makes CONTACT unmissable at any cone width: the muzzle is
 /// then one radius from the target's centre, so the closest approach is
 /// `r · sin(θ) ≤ r` for every θ, and a shotgun pressed against an enemy cannot
-/// spray past it. Under the old formula a 60 degree cone missed more than half
-/// its pellets at point blank, which nothing in the game does.
+/// spray past it. The [`gap`] says the same thing more directly — at contact
+/// there is no distance to deviate over at all. Under the old formula a 60
+/// degree cone missed more than half its pellets at point blank, which nothing
+/// in the game does.
 ///
 /// Beyond 90 degrees the shot is going AWAY, and a ray's closest approach is
 /// then its own origin — no weapon in the roster has a cone that wide, but the
 /// formula is the ray's rather than the infinite line's so it cannot report a
 /// hit for a shot fired backwards.
-pub fn miss_distance(travel_m: f64, deviation_deg: f64) -> f64 {
+pub fn miss_distance(range_m: f64, deviation_deg: f64) -> f64 {
     let rad = deviation_deg.to_radians();
     if rad >= std::f64::consts::FRAC_PI_2 {
-        travel_m
+        range_m
     } else {
-        travel_m * rad.sin()
+        range_m * rad.sin()
     }
 }
 
@@ -208,8 +234,10 @@ mod tests {
         let m = muzzle(you, foe);
         assert!((you.distance(m) - BODY_RADIUS_M).abs() < 1e-12);
         assert!((m.x - 0.12).abs() < 1e-12 && (m.y - 0.16).abs() < 1e-12);
-        // …and the flight is shorter than the distance by exactly that radius.
-        assert!((shot_travel(you, foe) - (10.0 - BODY_RADIUS_M)).abs() < 1e-12);
+        // …and the test's leg is to the CENTRE, one radius in from the ten
+        // metres between them — while the FLIGHT is the gap, two radii in.
+        assert!((range_to_centre(you, foe) - (10.0 - BODY_RADIUS_M)).abs() < 1e-12);
+        assert!((gap(you, foe) - (10.0 - CONTACT_RANGE_M)).abs() < 1e-12);
         // Nowhere to face is not a crash — a body on top of you stays put.
         assert_eq!(muzzle(you, you), you);
     }
@@ -221,11 +249,14 @@ mod tests {
     /// enemy, which nothing in the game does.
     #[test]
     fn a_shot_fired_at_contact_cannot_miss_at_any_cone_width() {
-        let travel = shot_travel(Vec2::ORIGIN, Vec2::new(0.0, CONTACT_RANGE_M));
-        assert_eq!(travel, BODY_RADIUS_M);
+        let leg = range_to_centre(Vec2::ORIGIN, Vec2::new(0.0, CONTACT_RANGE_M));
+        assert_eq!(leg, BODY_RADIUS_M);
+        // …and the FLIGHT is zero, which says the same thing in one step: a
+        // cone has no distance to widen over.
+        assert_eq!(gap(Vec2::ORIGIN, Vec2::new(0.0, CONTACT_RANGE_M)), 0.0);
         for deg in [0.0, 2.0, 20.0, 40.0, 60.0, 89.0] {
             assert!(
-                miss_distance(travel, deg) <= BODY_RADIUS_M + 1e-12,
+                miss_distance(leg, deg) <= BODY_RADIUS_M + 1e-12,
                 "{deg} degrees missed at contact"
             );
         }
@@ -234,9 +265,10 @@ mod tests {
         assert_eq!(miss_distance(10.0, 120.0), 10.0);
     }
 
-    /// …AND OUT THERE IT IS THE FLIGHT THAT WIDENS THE CONE. A 2 degree Braton
-    /// deviation at 20 m of travel passes 0.70 m from the centre — well past a
-    /// 0.2 m body, which is why a distant target is missed at all.
+    /// …AND OUT THERE THE DEVIATION GROWS WITH THE DISTANCE. A 2 degree Braton
+    /// deviation against a target 20 m from the muzzle passes 0.70 m from its
+    /// centre — well past a 0.2 m body, which is why a distant target is
+    /// missed at all.
     #[test]
     fn the_deviation_grows_with_the_distance_flown() {
         let d = miss_distance(20.0, 2.0);
@@ -253,7 +285,7 @@ mod tests {
     /// an enemy. A weapon added tomorrow with a wider one is covered too.
     #[test]
     fn no_weapon_in_the_roster_can_miss_at_contact() {
-        let travel = shot_travel(Vec2::ORIGIN, Vec2::new(0.0, CONTACT_RANGE_M));
+        let leg = range_to_centre(Vec2::ORIGIN, Vec2::new(0.0, CONTACT_RANGE_M));
         let mut widest: f64 = 0.0;
         for w in crate::weapons_data::all() {
             let Some(s) = w.attack.spread else { continue };
@@ -262,7 +294,7 @@ mod tests {
             let worst = s.min_deg.max(s.max_deg) * 2.0;
             widest = widest.max(worst);
             assert!(
-                miss_distance(travel, worst) <= BODY_RADIUS_M + 1e-12,
+                miss_distance(leg, worst) <= BODY_RADIUS_M + 1e-12,
                 "{} missed at contact with a {worst} degree deviation",
                 w.id
             );

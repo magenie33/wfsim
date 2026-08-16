@@ -2363,21 +2363,22 @@ impl DummyParams {
         crate::space::muzzle(self.player_at, self.target_at).distance(p)
     }
 
-    /// How far a shot aimed at the target has to FLY — today, every shot.
-    pub fn shot_travel(&self) -> f64 {
-        crate::space::shot_travel(self.player_at, self.target_at)
+    /// The ray-versus-circle test's own leg — muzzle to the target's CENTRE,
+    /// and not a flight (`space::range_to_centre`). What a shot flies is
+    /// [`Self::gap`].
+    pub fn range_to_centre(&self) -> f64 {
+        crate::space::range_to_centre(self.player_at, self.target_at)
     }
 
-    /// THE GAP between the two bodies — surface to surface, zero at contact.
+    /// THE GAP between the two bodies — surface to surface, zero at contact,
+    /// and THE DISTANCE A SHOT FLIES.
     ///
-    /// WHAT DAMAGE FALLOFF IS KEYED ON, and deliberately not the flight
-    /// (owner, 2026-08-16). The two jobs are different in kind: a spread cone
-    /// is GEOMETRY inside this model and widens over the distance a pellet
-    /// really flies, while a falloff window is a PUBLISHED TABLE whose key is
-    /// "how far away is the enemy" as a player would say it. Reading the
-    /// flight there would evaluate a card that says 25 m at 25.2 m, which is a
-    /// quiet disagreement with the number on screen for no gain — the two
-    /// differ by one radius, far under the resolution of anything DE prints.
+    /// WHAT DAMAGE FALLOFF READS, and there is nothing to reconcile: a bullet
+    /// vanishes at the target's SURFACE rather than carrying on to its centre,
+    /// so the flight, the number on screen and the key a published window is
+    /// quoted in are one quantity (owner, 2026-08-16). `range_to_centre` is one
+    /// radius longer and is not a flight — it is the leg the ray-circle test
+    /// measures its perpendicular from.
     pub fn gap(&self) -> f64 {
         crate::space::gap(self.player_at, self.target_at)
     }
@@ -7318,10 +7319,11 @@ pub fn run_once_traced(
             // every golden value and every board row exactly where it was.
             //
             // IT LEAVES THE MUZZLE, which is a point on the player's own
-            // circumference facing the target, so the cone widens over the
-            // FLIGHT rather than over the distance between two centres
-            // (`space::shot_travel`, owner 2026-08-16).
-            let range = params.shot_travel();
+            // circumference facing the target — so the leg here is one radius
+            // in from the distance between two centres. It is the ray-circle
+            // test's parameter and NOT a flight; what the shot flies is the gap
+            // below (`space::range_to_centre`, owner 2026-08-16).
+            let range = params.range_to_centre();
             let gap_m = params.gap();
             let aim_offset = match ap.spread {
                 Some(s) if !s.is_pinpoint() && range > 0.0 => {
@@ -7557,9 +7559,8 @@ pub fn run_once_traced(
                     // THE EXPLOSION reads the distance from its EPICENTRE,
                     // which is where this pellet landed — zero when it hit.
                     (Some(r), _) => r.falloff_at(aim_offset),
-                    // THE DIRECT HIT reads the GAP to the target, which is the
-                    // distance a published window is quoted in — see
-                    // `DummyParams::gap` for why it is not the flight.
+                    // THE DIRECT HIT reads the GAP, which IS the distance it
+                    // flew: a bullet vanishes at the surface it hits.
                     (None, Some(f)) => f.factor(gap_m),
                     (None, None) => 1.0,
                 };
