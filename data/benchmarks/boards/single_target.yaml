@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 9d0f553390ec810748155828a771a1032345760e
+engine: 1474032ec4797781f3d3a04311fb57a3251cae9e
 entries:
   - weapon: akarius_prime
     mode: base
@@ -122,67 +122,67 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: ballistica
     mode: cycle
-    score: 13.4598567296933
+    score: 13.336514905241817
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [ballistica_evo1_incarnon_form, ballistica_headcracker, ballistica_rapid_reinforcement, ballistica_critical_parallel]
     arcanes: [secondary_enervate]
   - weapon: ballistica
     mode: cycle
-    score: 7.213240929864479
+    score: 7.1293471886795565
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, pistol_elementalist, frostbite, pistol_pestilence, heated_charge]
     evolutions: [ballistica_evo1_incarnon_form, ballistica_headcracker, ballistica_rapid_reinforcement, ballistica_critical_parallel]
     arcanes: [secondary_enervate]
   - weapon: ballistica_prime
     mode: cycle
-    score: 57.872446879004634
+    score: 58.25314197580572
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [secondary_deadhead]
   - weapon: ballistica_prime
     mode: cycle
-    score: 37.35430346925484
+    score: 37.963712939455455
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
     arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: cycle
-    score: 35.84887693135064
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
-    arcanes: [cascadia_flare]
-  - weapon: ballistica_prime
-    mode: cycle
-    score: 35.804122775860996
+    score: 35.95608338656088
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: cycle
-    score: 35.77210805432833
+    score: 35.77439704803807
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: cycle
-    score: 33
+    score: 35.2339280223585
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_critical_parallel]
+    arcanes: [cascadia_flare]
+  - weapon: ballistica_prime
+    mode: cycle
+    score: 33.04279450698163
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [secondary_enervate]
   - weapon: ballistica_prime
     mode: cycle
-    score: 32.333333333333336
+    score: 32.30690779353251
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [secondary_enervate]
   - weapon: ballistica_prime
     mode: cycle
-    score: 29.99518891417747
+    score: 30.677387823623388
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: cycle
-    score: 25.538740112145145
+    score: 25.475062527837313
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_prolific_perforation, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [secondary_enervate]
@@ -1490,13 +1490,13 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: coda_sporothrix
     mode: base
-    score: 29.247221139298453
+    score: 24.660900541572637
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, bladed_rounds, speed_trigger, vile_acceleration, vital_sense, thermite_rounds]
     arcanes: [primary_crux]
     valence: magnetic
   - weapon: coda_sporothrix
     mode: base
-    score: 15.235830781657748
+    score: 11.679043668864612
     mods: [galvanized_chamber, galvanized_aptitude, bladed_rounds, point_strike, speed_trigger, vile_acceleration, vital_sense, thermite_rounds]
     arcanes: [primary_crux]
     valence: impact
@@ -1550,31 +1550,31 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: dread
     mode: cycle
-    score: 25.87207344547847
+    score: 25.06379363353418
     mods: [primary_acuity, serration, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [dread_evo1_incarnon_form, dread_hitmans_opportunity, dread_swift_deliverance, dread_survivors_edge]
     arcanes: [primary_deadhead]
   - weapon: dread
     mode: cycle
-    score: 15.714344296100784
+    score: 15.259712448567974
     mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [dread_evo1_incarnon_form, dread_hitmans_opportunity, dread_hitmans_hoard, dread_elemental_balance]
     arcanes: [longbow_sharpshot]
   - weapon: dread
     mode: cycle
-    score: 4.096252051640971
+    score: 4.087544455241336
     mods: [amalgam_serration, galvanized_chamber, critical_delay, vigilante_fervor, vital_sense, unseen_dread, rime_rounds, malignant_force]
     evolutions: [dread_evo1_incarnon_form, dread_hitmans_opportunity, dread_hitmans_hoard, dread_zeroed_in]
     arcanes: [longbow_sharpshot]
   - weapon: dread
     mode: base
-    score: 3.4683245198049923
+    score: 2.9710487071056755
     mods: [primary_acuity, serration, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [dread_evo1_incarnon_form, dread_hitmans_opportunity, dread_swift_deliverance, dread_survivors_edge]
     arcanes: [primary_deadhead]
   - weapon: dread
     mode: cycle
-    score: 1.928444268677431
+    score: 1.9180399423508565
     mods: [primary_acuity, spectral_serration, critical_delay, vigilante_fervor, vital_sense, unseen_dread, high_voltage, infected_clip]
     evolutions: [dread_evo1_incarnon_form, dread_hitmans_opportunity, dread_hitmans_hoard, dread_zeroed_in]
     arcanes: [longbow_sharpshot]
@@ -2376,13 +2376,13 @@ entries:
     valence: magnetic
   - weapon: kuva_nukor
     mode: base
-    score: 25.592337160303877
+    score: 21.993624040235417
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
   - weapon: kuva_nukor
     mode: base
-    score: 19.29835796137023
+    score: 17.970505149675944
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -3528,7 +3528,7 @@ entries:
     arcanes: [primary_crux, secondary_encumber]
   - weapon: miter
     mode: cycle
-    score: 10.308796711617674
+    score: 9.96820124677427
     mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, bladed_rounds, vile_acceleration, vital_sense, magnetic_capacity]
     evolutions: [miter_evo1_incarnon_form, miter_plentiful_mayhem, miter_ready_retaliation, miter_commodores_fortune]
     arcanes: [primary_crux]
@@ -3755,7 +3755,7 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: paris_prime
     mode: cycle
-    score: 17.548155804785075
+    score: 17.389919061726598
     mods: [amalgam_serration, primary_acuity, galvanized_aptitude, point_strike, vital_sense, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
     arcanes: [primary_deadhead]
