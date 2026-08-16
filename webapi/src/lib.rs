@@ -4235,6 +4235,112 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // (The target's pools are read off the ARENA by whoever reports them —
     // one target, one place it lives.)
     let body_parts = build_body_parts(spec, headshot_pct);
+
+    // ---- THE FORMATION: every OTHER body on the floor.
+    //
+    // Each entry is wholly its own (owner, 2026-08-17): its own unit, its own
+    // level, its own Eximus answer, its own place. Nothing about one reaches
+    // another — which is why this loop is the same six lines the single target
+    // above runs, repeated, rather than a variation on it.
+    //
+    // Anything a body omits it takes from the AIMED one, so a formation of
+    // nine identical enemies is nine positions and nothing else.
+    let mut formation: Vec<wfsim_engine::formation::FoeSpec> = Vec::new();
+    if let Some(list) = v.get("formation").and_then(Value::as_array) {
+        // FIFTY, and it is the owner's number (2026-08-17). A cap belongs here
+        // rather than on the page because it is the SIM that pays: every body
+        // is a full target with its own pools, procs and DoTs, and a chain
+        // resolves against all of them on every shot.
+        const MAX_BODIES: usize = 50;
+        if list.len() > MAX_BODIES {
+            return Err(err_json(format!(
+                "{} enemies, and a formation holds at most {MAX_BODIES}",
+                list.len()
+            )));
+        }
+        for (i, e) in list.iter().enumerate() {
+            let id = e.get("enemy").and_then(Value::as_str).unwrap_or(enemy_id);
+            let Some(es) = specs.iter().find(|s| s.id == id) else {
+                return Err(err_json(format!("unknown enemy: {id}")));
+            };
+            let lv = get_f64(e, "level", level as f64) as u32;
+            let ex = get_bool(e, "eximus", es.can_be_eximus);
+            let tp = match es.target_params(lv, steel_path, ex, TargetMode::InstantRespawn) {
+                Ok(t) => t,
+                Err(err) => return Err(err_json(format!("enemy {}: {err}", i + 1))),
+            };
+            let at = e
+                .get("at")
+                .and_then(Value::as_array)
+                .filter(|a| a.len() == 2)
+                .map(|a| {
+                    wfsim_engine::space::Vec2::new(
+                        a[0].as_f64().unwrap_or(0.0),
+                        a[1].as_f64().unwrap_or(0.0),
+                    )
+                });
+            let Some(at) = at else {
+                return Err(err_json(format!("enemy {} has no position", i + 1)));
+            };
+            formation.push(wfsim_engine::formation::FoeSpec {
+                params: tp,
+                // ITS OWN HITBOXES, off its own unit — a formation of two
+                // different units has two different head multipliers, and the
+                // headshot share is the FIGHT's either way.
+                body_parts: build_body_parts(es, headshot_pct),
+                at,
+            });
+        }
+    }
+
+    // ---- WHICH BODY THE BEAM IS ON.
+    //
+    // AIM IS A DIRECTION (owner, 2026-08-17): the request names a PLACE, and
+    // whatever the line from the muzzle runs through is what gets hit —
+    // `space::first_hit`. Aiming at the floor two metres short of a body still
+    // hits it, because the body's circle is still on the line.
+    //
+    // RESOLVED HERE, ONCE, and that is exact rather than a shortcut: bodies do
+    // not move, so the first one on the line is the first one on the line for
+    // the whole engagement. The sim keeps its aimed body as a distinguished
+    // one and never has to re-decide.
+    let aim_at = v
+        .get("aim_at")
+        .and_then(Value::as_array)
+        .filter(|a| a.len() == 2)
+        .map(|a| {
+            wfsim_engine::space::Vec2::new(
+                a[0].as_f64().unwrap_or(0.0),
+                a[1].as_f64().unwrap_or(0.0),
+            )
+        });
+    let (target, body_parts, target_at, others) = if let Some(aim) = aim_at {
+        // The aimed body first in the list, then the rest — the shape the arena
+        // holds and the aim policy justifies.
+        let mut all: Vec<wfsim_engine::formation::FoeSpec> =
+            vec![wfsim_engine::formation::FoeSpec {
+                params: target,
+                body_parts,
+                at: target_at,
+            }];
+        all.extend(formation);
+        let muzzle = wfsim_engine::space::muzzle(player_at, aim);
+        let dir = wfsim_engine::space::Vec2::new(aim.x - muzzle.x, aim.y - muzzle.y);
+        let bodies: Vec<_> = all.iter().map(|f| f.at).collect();
+        let Some((hit, _)) = wfsim_engine::space::first_hit(muzzle, dir, &bodies) else {
+            return Err(err_json(
+                "the shot is aimed at bare floor and crosses nobody — point it at a body, \
+                 or within a body's width of one"
+                    .to_string(),
+            ));
+        };
+        let aimed = all.remove(hit);
+        (aimed.params, aimed.body_parts, aimed.at, all)
+    } else {
+        // NO AIM POINT is the fight this engine has always run: the beam is on
+        // the target, wherever it stands.
+        (target, body_parts, target_at, formation)
+    };
     // ---- the ARENA: both actors, and how long they are at it. Assembled
     // once and handed whole to whichever constructor runs, so the two forms
     // of a cycle cannot end up fighting two different fights.
@@ -4247,11 +4353,11 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         // distance (`engine::space`).
         player_at,
         target_at,
-        // THE REST OF THE FORMATION, and it is empty until a request carries
-        // one. Parsed HERE for the same reason the abilities are: a formation
-        // is a property of the FIGHT, so the optimizer searches the one the
-        // replay will run without a line of optimizer code.
-        others: Vec::new(),
+        // THE REST OF THE FORMATION. Parsed HERE for the same reason the
+        // abilities are: a formation is a property of the FIGHT, so the
+        // optimizer searches the one the replay will run without a line of
+        // optimizer code.
+        others,
         duration_secs: duration,
         // WARFRAME ABILITY BUFFS — parsed HERE, in `parse_fight`, which is what
         // makes the optimizer score under them without a line of optimizer code
@@ -6531,6 +6637,101 @@ mod asset_tests {
     /// here is one command away from fixed, and this is what makes anyone
     /// run it.
     /// Every weapon can be given a riven, so every weapon must reach a stat
+    /// A FORMATION REACHES THE SIM, and each body in it is wholly its own
+    /// (owner, 2026-08-17). The request path for the multi-enemy arena, end to
+    /// end: nine bodies at 3 m, the chain spreading into them, and a Primed
+    /// Firestorm radius worth four times as much there as it is worth nothing
+    /// against one.
+    #[test]
+    fn a_formation_in_the_request_reaches_the_fight() {
+        let grid = |n: usize| -> Vec<serde_json::Value> {
+            // Eight neighbours of a body standing at [0, 0.4] — the arena's
+            // own opening position — laid out 3 m apart.
+            (0..n)
+                .map(|i| {
+                    let (c, r) = ((i % 3) as f64 - 1.0, (i / 3) as f64);
+                    serde_json::json!({ "at": [c * 3.0, 0.4 + r * 3.0] })
+                })
+                .collect()
+        };
+        let req = |bodies: Vec<serde_json::Value>| {
+            serde_json::json!({
+                "weapon": "torid", "mode": "transformed",
+                "mods": [], "evolutions": ["torid_evo1_incarnon_form"],
+                "enemy": "corrupted_heavy_gunner", "level": 100,
+                "runs": 4, "seed": 7, "duration": 6,
+                "formation": bodies,
+            })
+        };
+        // DAMAGE, not kills: the claim is that a chain spreads, and a lone
+        // unmodded beam does not finish a level-100 body inside six seconds.
+        let kpm = |v: &serde_json::Value| -> f64 {
+            simulate_json(v).get("dps").and_then(Value::as_f64).unwrap_or(-1.0)
+        };
+        let raw = simulate_json(&req(Vec::new()));
+        assert!(raw.get("error").is_none(), "{raw}");
+        let alone = kpm(&req(Vec::new()));
+        let crowd = kpm(&req(grid(8)));
+        assert!(alone > 0.0, "the lone fight must run: {alone}");
+        assert!(
+            crowd > alone,
+            "a formation must out-kill one body: {crowd} against {alone}"
+        );
+
+        // …AND EACH BODY IS ITS OWN. A level-1 neighbour beside a level-9999
+        // one is two different fights in one arena, which is the claim that
+        // makes this a formation rather than a multiplier.
+        let mixed = simulate_json(&serde_json::json!({
+            "weapon": "torid", "mode": "transformed", "mods": [],
+            "evolutions": ["torid_evo1_incarnon_form"],
+            "enemy": "corrupted_heavy_gunner", "level": 100,
+            "runs": 2, "seed": 7, "duration": 4,
+            "formation": [
+                { "at": [3.0, 0.4], "level": 1 },
+                { "at": [-3.0, 0.4], "level": 9999, "enemy": "thrax_centurion" },
+            ],
+        }));
+        assert!(mixed.get("error").is_none(), "{mixed}");
+        assert!(mixed.get("dps").and_then(Value::as_f64).unwrap_or(-1.0) > 0.0);
+
+        // …AND THE CAP IS REFUSED RATHER THAN TRUNCATED.
+        let too_many = simulate_json(&req((0..51)
+            .map(|i| serde_json::json!({ "at": [i as f64 * 3.0, 5.0] }))
+            .collect()));
+        assert!(
+            too_many.get("error").and_then(Value::as_str).unwrap_or("").contains("at most 50"),
+            "{too_many}"
+        );
+    }
+
+    /// AIM IS A DIRECTION, and the request may name a PLACE rather than a body.
+    /// Aiming at the floor short of an enemy still hits it; aiming at floor
+    /// that crosses nobody is refused, in words, rather than silently fought.
+    #[test]
+    fn an_aim_point_decides_which_body_the_beam_is_on() {
+        let run = |aim: [f64; 2]| {
+            simulate_json(&serde_json::json!({
+                "weapon": "torid", "mode": "transformed", "mods": [],
+                "evolutions": ["torid_evo1_incarnon_form"],
+                "enemy": "corrupted_heavy_gunner", "level": 100,
+                "runs": 2, "seed": 7, "duration": 4,
+                "player_at": [0.0, 0.0], "target_at": [0.0, 20.0],
+                "formation": [{ "at": [0.0, 10.0] }],
+                "aim_at": aim,
+            }))
+        };
+        // Straight down the line: the body at 10 m is in FRONT of the one at
+        // 20, so it is the one the beam is on.
+        let near = run([0.0, 30.0]);
+        assert!(near.get("error").is_none(), "{near}");
+        // …and aimed at bare floor off to the side, nothing is crossed at all.
+        let miss = run([40.0, 0.1]);
+        assert!(
+            miss.get("error").and_then(Value::as_str).unwrap_or("").contains("bare floor"),
+            "{miss}"
+        );
+    }
+
     /// pool. `riven_class` walks outward from the narrowest mod pool and stops
     /// at the first one that has stats — with none, it returns "" and the
     /// editor renders a riven with NOTHING to roll, which is how the Larkspur
