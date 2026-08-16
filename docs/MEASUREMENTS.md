@@ -3224,6 +3224,13 @@ version of this change that covered both ("don't extrapolate"). The rule may
 well be the same on both sides, since which base the term reads sits upstream of
 how it combines, but that is an argument and not a reading.
 
+> **SUPERSEDED THE SAME DAY BY M51**, and kept because the reasoning is the
+> record. The argument in the last sentence was WRONG, not merely unproven: a
+> `Multiplying` entry reads its FULL evolved base, so the two classes disagree
+> and "upstream of how it combines" was the wrong picture. Refusing to
+> extrapolate is what stopped that argument from being written into 24 entries
+> as a fact — the flip would have been backwards on every one of them.
+
 **AND A DECLARATION IS SCOPED TO THE FORM IT WAS MEASURED ON.** A perk reaches
 both entries of its transform group while a reading comes off one of them, and
 the Torid is where that bites: `co_base_excludes_only_form: incarnon` on both
