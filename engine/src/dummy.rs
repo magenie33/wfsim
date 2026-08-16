@@ -8882,11 +8882,15 @@ mod tests {
     /// | Incarnon | 1 | 1 | 181 | — |
     /// | Incarnon | 2 | 1 | 196 | 65 |
     /// | Incarnon | 2 | 2 | 227 | 76 |
-    /// | **base** | 2 | 4 | **423** | — |
+    /// | base | — | 0 (bare) | 188 | — |
+    /// | base | 1 | 3 | 306 | — |
+    /// | base | 2 | 3 | 423 | — |
     ///
     /// The BASE form is the independent one: a different attack, a different
-    /// crit multiplier (1.8) and a different fraction (46/88 = 0.523 against
-    /// the Incarnon's 13/55 = 0.236), and the same rule lands it on 423.4.
+    /// crit multiplier and a different fraction (46/88 against the Incarnon's
+    /// 13/55). Its readings are taken as RATIOS to the bare crit, which cancels
+    /// the target's damage-type column — x1.19 on this IPS mix, and the reason
+    /// working from absolutes made three status types look like four.
     ///
     /// The form is 13 base + the perk's 42 = 55, and a crit is x3.0, so the
     /// direct hit before CO is 165. Solving each reading for the fraction CO
@@ -8941,8 +8945,14 @@ mod tests {
             &["burston_prime_forceful_finality"],
         );
         assert!((bf.co_base_fraction - 46.0 / 88.0).abs() < 1e-9, "{}", bf.co_base_fraction);
-        let base_hit = 1.8 * (88.0 + 0.4 * 2.0 * 4.0 * 46.0);
-        assert!((base_hit - 423.0_f64).abs() < 1.0, "base form 2x4: {base_hit}");
+        // RATIOS to the bare crit (188), which cancels the damage-type column.
+        for (stacks, types, hit) in [(1.0_f64, 3.0_f64, 306.0_f64), (2.0, 3.0, 423.0)] {
+            let f = (hit / 188.0 - 1.0) / (0.4 * stacks * types);
+            assert!(
+                (f - 46.0 / 88.0).abs() < 0.005,
+                "base form {stacks}x{types}: solved {f} against 46/88"
+            );
+        }
 
         // THE TWIN AT THE SAME TIER carries the same flag: it adds the same
         // +42, so a build taking it computes CO on the same base.

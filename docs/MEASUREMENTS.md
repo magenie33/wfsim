@@ -2967,42 +2967,38 @@ target.
 | 2 | 1 | **196** | **65** |
 | 2 | 2 | **227** | **76** |
 
-…and one on the **BASE form**, which is the independent confirmation — another
+…and four on the **BASE form**, which is the independent confirmation — another
 attack, another crit multiplier (1.8), another fraction (46/88 = 0.523 against
-the Incarnon's 0.236):
+the Incarnon's 0.236), and one reading that is the REFERENCE the others are
+divided by:
 
-| stacks | status types | direct (crit) |
-| --- | --- | --- |
-| 2 | 4 | **423** |
+| stacks | status types | direct (crit) | / bare |
+| --- | --- | --- | --- |
+| — | 0 (bare crit) | **188** | 1.0000 |
+| 1 | 3 | **306** | 1.6277 |
+| 2 | 3 | **423** | 2.2500 |
 
-`1.8 x (88 + 0.4 x 2 x 4 x 46) = 423.4`. It was reported as THREE status types
-and only four fits — 357 at three, 423 at four, 489 at five, 66 apart. The
-likely miscount is the weapon's own IPS: the base form deals Impact, Puncture
-and Slash and each is a CO type, where the Incarnon form is pure Heat and its
-counts of one and two were exact.
+    1 + 0.4 x 1 x 3 x f = 1.6277  ->  f = 0.5231
+    1 + 0.4 x 2 x 3 x f = 2.2500  ->  f = 0.5208
+                                      46/88 = 0.5227
 
-The Incarnon form is 13 base + the perk's 42 = **55**, and a crit is x3.0, so
-the direct hit before CO is 165. Solving each reading for the fraction of that
-base the CO term reads:
+Both within 0.4%, on a form whose fraction is a different number entirely.
 
-    165 x (1 + 0.4 x 1 x 1 x f) = 181  ->  f = 0.242
-    165 x (1 + 0.4 x 2 x 1 x f) = 196  ->  f = 0.235
-    165 x (1 + 0.4 x 2 x 2 x f) = 227  ->  f = 0.236
+The target was a Corpus **Crewman**, which is where the x1.19 comes from: the
+damage-type column is the faction's, and Corpus is `puncture: 1.5`. Our column
+puts the bare crit at `(26.4 + 26.4x1.5 + 35.2) x 1.8 = 182.2` against a
+measured **188** — a 3.1% gap that is a SEPARATE and much smaller question (the
+shield pool has its own column, and which pool a Crewman's first hits land on
+depends on its shields) and that the ratios above are immune to.
 
-All three land on **13/55 = 0.2364** — the 24% the CO catalog prints for this
-weapon. The radial confirms it independently and without a crit:
-`55 x 1.3782 = 75.8` against a measured 76.
-
-Two axes are exercised (the arcane's stacks and the status TYPE count) and the
-fraction is constant across both, which is what makes it a fraction rather than
-a coincidence. The base-form reading adds a third: the FORM, whose fraction is
-a different number entirely.
-
-Written the way the mechanic actually works, the whole thing collapses to
-
-    damage = crit x (evolved_base + rate x ORIGINAL_base)
-
-— the perk's +42 is added AFTER the CO term and is never multiplied by it.
+**TAKE THE RATIO TO A BARE HIT, NEVER THE ABSOLUTE.** The target's damage-type
+column multiplies everything and cancels in the ratio — here it is x1.19 on the
+base form's IPS mix (`188 / (88 x 1.8) = 1.187`) and about x1.0 on the Incarnon
+form's pure Heat, which is the only reason the Incarnon absolutes fit on the
+nose. Working from absolutes without the bare reading made the base-form
+readings look like FOUR status types when three were reported and three were
+right; the bare crit dissolved that immediately. The same lesson as M46's
+`(crit_at_n − crit_at_0) / non_crit`.
 
 ### What was wrong
 
