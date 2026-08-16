@@ -4177,6 +4177,12 @@ entries:
     arcanes: [secondary_fortifier]
   - weapon: sicarus_prime
     mode: cycle
+    score: 25.733442332213414
+    mods: [amalgam_barrel_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_kings_gambit, sicarus_prime_rapid_reinforcement, sicarus_prime_wisemans_regard]
+    arcanes: [cascadia_flare]
+  - weapon: sicarus_prime
+    mode: cycle
     score: 23.425633579289656
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_feigned_retreat, sicarus_prime_rapid_reinforcement, sicarus_prime_commodores_fortune]
@@ -5268,6 +5274,10 @@ entries:
     mode: base
     score: 0.2726538030750728
     mods: [heavy_caliber, split_chamber, serration, rifle_elementalist, vile_acceleration, primed_cryo_rounds, infected_clip, hellfire]
+  - weapon: verglas_prime
+    mode: base
+    score: 0.2161463373093845
+    mods: [heavy_caliber, split_chamber, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, stormbringer]
   - weapon: verglas_prime
     mode: base
     score: 0.21300496984746992
