@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: da2f70b95869c0b72f01bc6835545ff8ed49301f
+engine: 452cbd0f623a38c36e4b3cc9afadff9095800eec
 entries:
   - weapon: akarius_prime
     mode: base
@@ -813,7 +813,7 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston
     mode: cycle
-    score: 14.246534625580807
+    score: 10.719858021943775
     mods: [galvanized_chamber, serration, galvanized_aptitude, galvanized_scope, critical_delay, vile_acceleration, vital_sense, magnetic_capacity]
     evolutions: [burston_evo1_incarnon_form, burston_forceful_finality, burston_kinetic_battle, burston_absolute_valor]
     arcanes: [primary_deadhead]
@@ -825,141 +825,81 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 59.04160568501422
+    score: 47.59194937323199
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 59.04160568501422
+    score: 47.59194937323199
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 57.92803112300731
+    score: 47.44839725427808
+    mods: [primary_acuity, serration, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 47.44839725427808
+    mods: [primary_acuity, serration, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 47.23270802995436
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 57.92803112300731
+    score: 47.23270802995436
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 57.89409172629279
+    score: 46.55115058601806
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 57.89409172629279
+    score: 46.55115058601806
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 57.39944187375499
+    score: 46.55061279328452
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 53.8078616335243
+    score: 44.333333333333336
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, speed_trigger, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 53.03364939954963
+    score: 43.944805131483946
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, speed_trigger, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 50.700884406551
-    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
-    score: 49.789868067819185
-    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
-    score: 49.78625650403789
-    mods: [primary_acuity, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
-    score: 48.9489097099699
-    mods: [heavy_caliber, primary_acuity, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
-    score: 48.510934992368334
-    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, hammer_shot, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
-    score: 48.362222941625
+    score: 43.7776592060537
     mods: [heavy_caliber, primary_acuity, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 47.90512281046646
-    mods: [amalgam_serration, primary_acuity, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
+    score: 43.49867898351702
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
-    score: 47.44839725427808
-    mods: [primary_acuity, serration, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
-    score: 47.44839725427808
-    mods: [primary_acuity, serration, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
-    score: 46.538837019862505
-    mods: [primary_acuity, primed_shred, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
-    score: 45.46753782241874
-    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, point_strike, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
-    score: 44.87215461787381
-    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, rifle_elementalist, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
-    score: 43.86154036909576
-    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
-    score: 43.741633227365575
-    mods: [primary_acuity, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, rime_rounds, malignant_force]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
@@ -969,21 +909,21 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 43.085444948964714
-    mods: [primary_acuity, primed_firestorm, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    score: 43.07352763642374
+    mods: [amalgam_serration, primary_acuity, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 42.888843652540054
-    mods: [primary_acuity, primed_firestorm, galvanized_aptitude, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    score: 42.7227107693861
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, hammer_shot, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 42.02288184520445
-    mods: [primary_acuity, primed_firestorm, galvanized_aptitude, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, malignant_force]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    score: 42.33340198730692
+    mods: [heavy_caliber, primary_acuity, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
@@ -993,8 +933,20 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 40.26073219654637
-    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vigilante_armaments, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
+    score: 41.24790669062926
+    mods: [primary_acuity, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 40.87181357956552
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 40.545008106150455
+    mods: [primary_acuity, primed_shred, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
@@ -1005,14 +957,14 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 39.779037998011475
-    mods: [galvanized_chamber, primary_acuity, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
+    score: 39.78514671870891
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, rifle_elementalist, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 39.779037998011475
-    mods: [primary_acuity, spectral_serration, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
+    score: 39.722364315283954
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, point_strike, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
@@ -1023,20 +975,14 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 38.79589331512775
-    mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
+    score: 38.178994379909795
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
     score: 38.11018253408986
     mods: [primary_acuity, serration, critical_delay, vital_sense, argon_scope, gilded_truth, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
-    score: 37.408242763002775
-    mods: [primary_acuity, primed_firestorm, galvanized_aptitude, vital_sense, gilded_truth, magnetic_capacity, rime_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
@@ -1059,16 +1005,46 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 34.34948091991081
-    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_frostbite]
+    score: 35.25360364905152
+    mods: [primary_acuity, primed_firestorm, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 34.34948091991081
-    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    score: 35.239278755942536
+    mods: [primary_acuity, primed_firestorm, galvanized_aptitude, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_frostbite]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 35.034138304960685
+    mods: [primary_acuity, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, rime_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 34.51960967050494
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vigilante_armaments, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 34.40487875378513
+    mods: [primary_acuity, primed_firestorm, galvanized_aptitude, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 33.9892254102616
+    mods: [galvanized_chamber, primary_acuity, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 33.9892254102616
+    mods: [primary_acuity, spectral_serration, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
     score: 32.87746422005555
@@ -1095,9 +1071,15 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 29.106611750764124
-    mods: [galvanized_chamber, serration, galvanized_aptitude, point_strike, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_extended_volley, burston_prime_absolute_valor]
+    score: 31.225391849210887
+    mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 30.884907794148408
+    mods: [primary_acuity, primed_firestorm, galvanized_aptitude, vital_sense, gilded_truth, magnetic_capacity, rime_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
@@ -1113,6 +1095,12 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
+    score: 25.456966139857432
+    mods: [galvanized_chamber, serration, galvanized_aptitude, point_strike, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_extended_volley, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
     score: 24.9769021786325
     mods: [galvanized_chamber, primary_acuity, serration, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -1122,12 +1110,6 @@ entries:
     score: 24.923045376345616
     mods: [amalgam_serration, galvanized_chamber, critical_delay, hammer_shot, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
-    score: 24.617750431496404
-    mods: [galvanized_chamber, serration, galvanized_aptitude, galvanized_scope, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
@@ -1161,12 +1143,6 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 22.90408769311944
-    mods: [primary_acuity, serration, galvanized_aptitude, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, thermite_rounds]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
     score: 22.88701141877768
     mods: [amalgam_serration, galvanized_chamber, galvanized_scope, critical_delay, vital_sense, gilded_truth, stormbringer, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
@@ -1185,6 +1161,18 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
+    score: 21.627742925157666
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_frostbite]
+  - weapon: burston_prime
+    mode: cycle
+    score: 21.627742925157666
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_frostbite]
+  - weapon: burston_prime
+    mode: cycle
     score: 21.49329601489366
     mods: [galvanized_chamber, critical_delay, vigilante_armaments, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -1193,6 +1181,18 @@ entries:
     mode: cycle
     score: 21.190429355386502
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vital_sense, gilded_truth, cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 20.942021877940135
+    mods: [galvanized_chamber, serration, galvanized_aptitude, galvanized_scope, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_extended_volley, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 20.60087910988029
+    mods: [primary_acuity, serration, galvanized_aptitude, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, thermite_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
@@ -1221,21 +1221,9 @@ entries:
     arcanes: [primary_merciless]
   - weapon: burston_prime
     mode: cycle
-    score: 18.695067769055623
-    mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_merciless]
-  - weapon: burston_prime
-    mode: cycle
     score: 18.453994629903825
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, stormbringer, infected_clip, primed_cryo_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
-    score: 18.150847879239212
-    mods: [galvanized_chamber, serration, galvanized_aptitude, point_strike, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
@@ -1251,38 +1239,26 @@ entries:
     arcanes: [primary_overcharge]
   - weapon: burston_prime
     mode: cycle
-    score: 17.490751708778145
-    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
-    score: 17.131219641263144
-    mods: [galvanized_chamber, heavy_caliber, serration, galvanized_aptitude, point_strike, vital_sense, primed_cryo_rounds, malignant_force]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_extended_volley, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
-    score: 16.74849722741363
-    mods: [galvanized_chamber, serration, galvanized_aptitude, point_strike, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_extended_volley, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
     score: 16.293942835514503
     mods: [amalgam_serration, galvanized_chamber, critical_delay, vigilante_armaments, vigilante_fervor, vital_sense, cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 16.188272298203266
-    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
-    arcanes: [primary_debilitate]
+    score: 16.023856538643926
+    mods: [galvanized_chamber, serration, galvanized_aptitude, point_strike, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_extended_volley, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 16.180118265490577
-    mods: [galvanized_chamber, serration, galvanized_aptitude, point_strike, vital_sense, primed_cryo_rounds, rime_rounds, malignant_force]
+    score: 15.695720175628672
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 15.3257938574948
+    mods: [galvanized_chamber, heavy_caliber, serration, galvanized_aptitude, point_strike, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
@@ -1293,21 +1269,21 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
+    score: 15.067809484544496
+    mods: [galvanized_chamber, serration, galvanized_aptitude, point_strike, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_extended_volley, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
     score: 15.04601851456622
     mods: [amalgam_serration, galvanized_chamber, galvanized_scope, critical_delay, vital_sense, stormbringer, infected_clip, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
-    mode: base
-    score: 14.720590577826709
-    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: base
-    score: 14.720590577826709
-    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    mode: cycle
+    score: 13.83205399028122
+    mods: [galvanized_chamber, serration, galvanized_aptitude, point_strike, vital_sense, primed_cryo_rounds, rime_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
@@ -1316,17 +1292,29 @@ entries:
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_merciless]
   - weapon: burston_prime
-    mode: cycle
-    score: 10.90563927091069
-    mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, gilded_truth, magnetic_capacity, radiated_reload]
+    mode: base
+    score: 12.208471727989512
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_debilitate]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    score: 12.208471727989512
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
     score: 10.740453719133514
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_merciless]
+  - weapon: burston_prime
+    mode: cycle
+    score: 10.6817725018678
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
+    arcanes: [primary_debilitate]
   - weapon: burston_prime
     mode: cycle
     score: 10.661505324957128
@@ -1383,12 +1371,6 @@ entries:
     arcanes: [primary_merciless]
   - weapon: burston_prime
     mode: cycle
-    score: 9.497560517467576
-    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, rime_rounds, malignant_force, hellfire]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
-    arcanes: [primary_debilitate]
-  - weapon: burston_prime
-    mode: cycle
     score: 9.402711637207783
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, cryo_rounds, malignant_force, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -1401,16 +1383,16 @@ entries:
     arcanes: [primary_merciless]
   - weapon: burston_prime
     mode: cycle
-    score: 7.480980945930573
-    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, stormbringer, infected_clip, hellfire]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
-    arcanes: [primary_debilitate]
-  - weapon: burston_prime
-    mode: cycle
     score: 7.3639304324364465
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_merciless]
+  - weapon: burston_prime
+    mode: cycle
+    score: 7.345345156387231
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, rime_rounds, malignant_force, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
+    arcanes: [primary_debilitate]
   - weapon: burston_prime
     mode: cycle
     score: 6.695876176848434
@@ -1423,6 +1405,24 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, rifle_aptitude, vital_sense, gilded_truth, cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_merciless]
+  - weapon: burston_prime
+    mode: cycle
+    score: 5.9539478300395245
+    mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_merciless]
+  - weapon: burston_prime
+    mode: cycle
+    score: 5.594257204311283
+    mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, gilded_truth, magnetic_capacity, radiated_reload]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_debilitate]
+  - weapon: burston_prime
+    mode: cycle
+    score: 5.566708327781154
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, stormbringer, infected_clip, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
+    arcanes: [primary_debilitate]
   - weapon: burston_prime
     mode: cycle
     score: 5.355911236385619

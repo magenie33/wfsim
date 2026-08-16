@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: da2f70b95869c0b72f01bc6835545ff8ed49301f
+engine: 452cbd0f623a38c36e4b3cc9afadff9095800eec
 entries:
   - weapon: boar_prime
     mode: cycle
@@ -55,19 +55,19 @@ entries:
     arcanes: [primary_debilitate]
   - weapon: burston_prime
     mode: cycle
-    score: 0.7470104312962794
+    score: 0.7410547817480106
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, rime_rounds, malignant_force, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
     arcanes: [primary_debilitate]
   - weapon: burston_prime
     mode: cycle
-    score: 0.7056241106254563
+    score: 0.692446571203972
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
     arcanes: [primary_debilitate]
   - weapon: burston_prime
     mode: cycle
-    score: 0.6877819788651466
+    score: 0.6802767812536523
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
     arcanes: [primary_debilitate]
@@ -79,7 +79,7 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 0.6564845995546865
+    score: 0.6567362489597814
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, high_voltage, malignant_force, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
     arcanes: [primary_debilitate]
@@ -91,13 +91,13 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 0.543884038557425
+    score: 0.5010633880684122
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_debilitate]
   - weapon: burston_prime
     mode: cycle
-    score: 0.4994729069988771
+    score: 0.4861266820275132
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, stormbringer, infected_clip, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
     arcanes: [primary_debilitate]
