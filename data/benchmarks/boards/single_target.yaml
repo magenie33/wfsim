@@ -67,6 +67,11 @@ entries:
     mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [angstrum_evo1_incarnon_form, angstrum_paladin_virtue, angstrum_rapid_reinforcement, angstrum_critical_parallel]
     arcanes: [secondary_deadhead]
+  - weapon: arbucep
+    mode: base
+    score: 11.946868615881428
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_deadly_efficiency, marked_target, magnetized_cycle, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, secondary_fortifier]
   - weapon: atomos
     mode: base
     score: 10.588675870098816
@@ -825,6 +830,12 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
+    score: 51.273913151231895
+    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
     score: 47.59194937323199
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
@@ -1429,12 +1440,6 @@ entries:
     mods: [split_chamber, serration, critical_delay, vigilante_armaments, vile_acceleration, vital_sense, cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_frostbite]
-  - weapon: burston_prime
-    mode: cycle
-    score: 3.8969212205482537
-    mods: [galvanized_chamber, serration, galvanized_scope, critical_delay, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
-    arcanes: [primary_overcharge]
   - weapon: cestra
     mode: cycle
     score: 22.13166818912777
@@ -4200,6 +4205,11 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_aptitude, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [soma_prime_evo1_incarnon_form, soma_prime_fortress_salvo, soma_prime_rapid_reinforcement, soma_prime_zeroed_in]
     arcanes: [primary_deadhead]
+  - weapon: sporothrix
+    mode: base
+    score: 20.71230763942489
+    mods: [galvanized_chamber, heavy_caliber, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, radiated_reload, thermite_rounds]
+    arcanes: [primary_crux]
   - weapon: strun_prime
     mode: cycle
     score: 29.209771672861553

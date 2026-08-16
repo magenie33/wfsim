@@ -11,6 +11,11 @@ benchmark: single_target_no_aim
 source: submissions
 engine: 93ebf643f49dab77132053292ce67bc6076cf1e9
 entries:
+  - weapon: arbucep
+    mode: base
+    score: 4.6343154749758115
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_deadly_efficiency, marked_target, magnetized_cycle, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, secondary_fortifier]
   - weapon: boar_prime
     mode: cycle
     score: 1.0692497658249576
@@ -613,6 +618,16 @@ entries:
     mode: base
     score: 0.055370774551321625
     mods: [primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    arcanes: [primary_crux]
+  - weapon: sporothrix
+    mode: base
+    score: 1.551812545135924
+    mods: [galvanized_chamber, galvanized_aptitude, hammer_shot, semi_rifle_cannonade, vigilante_armaments, magnetic_capacity, hellfire, thermite_rounds]
+    arcanes: [primary_merciless]
+  - weapon: sporothrix
+    mode: base
+    score: 0.7911585686819611
+    mods: [galvanized_chamber, heavy_caliber, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, radiated_reload, thermite_rounds]
     arcanes: [primary_crux]
   - weapon: stug
     mode: cycle
