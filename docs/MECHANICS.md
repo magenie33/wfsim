@@ -2649,17 +2649,74 @@ well-defined, and it separates from the alternative at three targets:
 
 The 75% COMPOUNDS ALONG A PATH, so the difference grows with the crowd.
 
-### What is not known
+### Settled by the owner, 2026-08-17
 
-* **HOW A PATH PICKS ITS NEXT HOP.** malurth's simulator assumes the nearest
-  viable target and says on screen *"idk if that is actually how that works"*.
-  With two enemies there is one candidate and the question does not arise —
-  which is why the first measurement should use two.
-* **WHETHER FIRESTORM WIDENS THE CHAIN RANGE.** Two wiki pages disagree:
-  `Continuous_Weapon` says *"Mods like Firestorm will increase the range at
-  which a beam can link to another enemy"*, while the Torid's own page credits
-  Firestorm only with the 2.3 m damage radius. It decides whether Primed
-  Firestorm earns a slot, so it is worth a measurement of its own.
+* **THE NEXT HOP IS THE NEAREST VIABLE TARGET.**
+* **NO LINE OF SIGHT** — a hop is a distance test and nothing else.
+* **FIRESTORM DOES NOT WIDEN THE CHAIN RANGE.** It scales the damage radius and
+  that is all. Two wiki pages disagreed and the weapon's own page is the one
+  followed.
+* **ONLY THE DIRECTLY STRUCK TARGET MAY BE HEADSHOT.** Everything the splash
+  catches and everything a chain reaches lands on the body.
+* **A HOP IS A BEAM WITH A SMALLER BASE DAMAGE** — nothing else about it
+  changes. Its crit and status are rolled at full chance, and the procs it
+  leaves scale with its own damage the way any hit's do, so no clause of the
+  damage pipeline needs to know a chain exists.
+
+`engine::chain` is the model. It answers the geometric half — which bodies take
+an instance, at what share, whether multishot reaches it, whether it may
+headshot — and hands each instance to the ordinary pipeline.
+
+### What that adds up to
+
+Take the owner's fixture: a **3 x 3 formation at 3 m**, aimed at the front
+row's middle body, because the centre of a formation is behind it and cannot be
+aimed at.
+
+| | seeds | instances | total damage | headshot-eligible |
+| --- | --- | --- | --- | --- |
+| one enemy | 1 | 1 | 1.00 | 100% |
+| no Firestorm | 1 | 6 | 3.29 | 30.4% |
+| **Primed Firestorm** | **4** | **24** | **13.15** | **7.6%** |
+
+**A PATH'S WHOLE OUTPUT IS A CONSTANT** once the formation is dense enough that
+five hops never run out of bodies: `1 + f + … + f⁵` = **3.2881** for the Torid.
+So the total is `seeds x 3.2881`, and neither the aim point nor the tie-breaking
+moves it — ties redistribute and never add. `engine::chain` asserts that over
+500 random tie-breaks.
+
+**A RADIUS MOD BUYS SEEDS, and that is the whole of what it buys.** Primed
+Firestorm's +44% takes the radius from 2.3 m to 3.31 m, which at 3 m spacing
+reaches the three neighbours and not the two diagonals at 4.24 m: one seed
+becomes four, and the shot deals four times as much. Its value is therefore a
+STEP FUNCTION of the enemy spacing, with both edges pure geometry:
+
+| spacing | seeds bare | seeds primed | worth |
+| --- | --- | --- | --- |
+| 1.5 m | 6 | 7 | 1.2x — the bare radius already covers the crowd |
+| 2.0–2.3 m | 4 | 6 | 1.5x |
+| 2.34 m | 1 | 6 | **6.0x** — the peak, at `3.31 / √2` |
+| 2.5–3.31 m | 1 | 4 | 4.0x |
+| 3.5 m and out | 1 | 1 | 1.0x — nothing is in reach either way |
+
+**AND THE HEADSHOT CLAUSE REORDERS BUILDS.** One instance of twenty-four may
+headshot and it carries 7.6% of the damage, so a build leaning on a head
+multiplier keeps almost none of it in a crowd — while a status build collects
+all 24 rolls at full chance. The same weapon, the same formation, and the two
+builds rank in opposite orders from how they rank against one target. That
+reordering is the reason a multi-target model is worth building rather than
+approximating.
+
+### What is still not known
+
+* **HOW TIES ARE BROKEN** when two bodies are equally near. A grid is nothing
+  but ties. It moves damage between bodies without changing the total, so it
+  does not affect "how much did the formation take" and may well affect "did
+  THAT one die".
+* Everything above is the wiki plus the owner's rulings, and **none of it has
+  been measured in game yet.** The two-enemy case is the clean first one:
+  both take 175% and the unknown hop rule cannot matter, because there is only
+  one candidate.
 
 ### Settled elsewhere, and worth having here
 
