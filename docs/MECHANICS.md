@@ -2707,16 +2707,31 @@ builds rank in opposite orders from how they rank against one target. That
 reordering is the reason a multi-target model is worth building rather than
 approximating.
 
-### What is still not known
+### Ties, and why they are not modelled
 
-* **HOW TIES ARE BROKEN** when two bodies are equally near. A grid is nothing
-  but ties. It moves damage between bodies without changing the total, so it
-  does not affect "how much did the formation take" and may well affect "did
-  THAT one die".
-* Everything above is the wiki plus the owner's rulings, and **none of it has
-  been measured in game yet.** The two-enemy case is the clean first one:
-  both take 175% and the unknown hop rule cannot matter, because there is only
-  one candidate.
+**MEASURED (M52): the path is fixed, and its rule is not in the formation.** Two
+paths read off a 5 x 4 Simulacrum formation confirm NEAREST — all ten hops went
+to an orthogonal neighbour — and refute every tie-break expressible in relative
+geometry: a fixed compass priority fits 8 of 10 over all 24 orderings, a turn
+preference 8 of 10 over all 96, entity-index order 4 to 7. Arriving at one body
+heading `+x` the path went straight and at the next it turned.
+
+The owner's own clue explains it: a NON-HUMANOID model changes the path while
+every relative position is identical, so what the order depends on is the
+COLLIDER — the game's spatial query returning bodies in world-space broadphase
+order, which is not a function of the formation.
+
+So the model does not reproduce it. `chain::resolve` breaks ties by the lowest
+body index: arbitrary, and STABLE, so **a formation that does not move always
+chains the same way** — which is the property asked for in place of fidelity.
+The unknowable part never reaches the answer, because the total is invariant to
+tie-breaking; it decides which body dies first and nothing else.
+
+### What is still not measured
+
+Everything except the path rule above is the wiki plus the owner's rulings. The
+two-enemy case is the clean first one for the DAMAGE side: both bodies take
+175%, and the tie question cannot intrude because there is only one candidate.
 
 ### Settled elsewhere, and worth having here
 

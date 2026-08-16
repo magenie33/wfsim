@@ -30,7 +30,33 @@
 //! separates from the alternative at three targets, because the falloff
 //! compounds ALONG a path.
 //!
-//! **THE NEXT HOP IS THE NEAREST VIABLE TARGET** (owner, 2026-08-17).
+//! **THE NEXT HOP IS THE NEAREST VIABLE TARGET** (owner, 2026-08-17), and this
+//! is the one clause with a MEASUREMENT behind it: ten hops read off two paths
+//! in the Simulacrum went to an orthogonal neighbour every time, never to a
+//! diagonal and never past a nearer body (MEASUREMENTS M52).
+//!
+//! **AND THE TIE-BREAK IS NOT REPRODUCIBLE, SO IT IS NOT REPRODUCED.** Nine of
+//! those ten hops were exact ties, and no rule expressible in the formation's
+//! own geometry fits them: a fixed compass priority scores 8 of 10 over all 24
+//! orderings, a turn preference 8 of 10 over all 96, entity-index order 4 to 7.
+//! The same situation resolved two ways — from (3,1) the path went straight
+//! where from (4,1) it turned — so nothing that reads only relative positions
+//! can be right.
+//!
+//! The owner's own observation says why: a NON-HUMANOID model changes the path
+//! while leaving every relative position identical. What changes with the model
+//! is the collider, so the order is the game's spatial query returning bodies
+//! in world-space broadphase order — which depends on which cell each body
+//! falls into, and is not a function of the formation at all.
+//!
+//! WHAT IS GUARANTEED HERE INSTEAD (owner, 2026-08-17): *"if the enemies never
+//! move, the chain path is always fixed"*. That is the property [`resolve`]
+//! has — ties go to the lowest body index, so one formation always produces one
+//! path. It is arbitrary and it is stable, which is the honest pair when the
+//! real rule is unknowable. And it costs nothing that matters: the TOTAL is
+//! invariant to tie-breaking (`the_total_is_invariant_to_tie_breaks`), so the
+//! part nobody can know moves damage between bodies without changing how much
+//! the formation took.
 //!
 //! **NO LINE OF SIGHT** (owner, 2026-08-17) — a hop is a distance test and
 //! nothing else, so a body behind another is as reachable as one beside it.
@@ -104,13 +130,20 @@ pub struct Splash {
 /// # Ties
 ///
 /// A formation is full of exact ties: in a square grid every orthogonal
-/// neighbour is the same distance away. `tie` breaks them, and it is a real
-/// draw rather than an index rule because the choice is genuinely unknown —
-/// the reference implementation everyone points at says so on screen ("chains
-/// always target nearest viable target, idk if that is actually how that
-/// works"). It moves damage between bodies and never changes the TOTAL, which
-/// `the_total_is_invariant_to_tie_breaks` asserts.
-pub fn resolve(
+/// neighbour is the same distance away. They go to the LOWEST BODY INDEX, which
+/// makes one formation always produce one path — the property the owner asked
+/// for in place of reproducing a rule that is not reproducible (see the module
+/// header, and MEASUREMENTS M52 for the ten hops that refuted every candidate).
+///
+/// [`resolve_with`] takes the tie-break as an argument, which is what the
+/// invariance test uses; nothing in production should.
+pub fn resolve(bodies: &[Vec2], aimed: usize, splash: Splash, spec: Spec) -> Vec<Instance> {
+    resolve_with(bodies, aimed, splash, spec, &mut |_| 0)
+}
+
+/// [`resolve`] with the tie-break handed in — for asserting that it does not
+/// change the total, and for nothing else.
+pub fn resolve_with(
     bodies: &[Vec2],
     aimed: usize,
     splash: Splash,
@@ -199,9 +232,6 @@ mod tests {
     /// (owner, 2026-08-17).
     const FRONT_MIDDLE: usize = 1;
 
-    fn first_tie() -> impl FnMut(usize) -> usize {
-        |_| 0
-    }
     fn total(v: &[Instance]) -> f64 {
         v.iter().map(|i| i.share).sum()
     }
@@ -216,7 +246,6 @@ mod tests {
             FRONT_MIDDLE,
             Splash { at: Vec2::new(3.0, 0.0), radius_m: 2.3 },
             TORID,
-            &mut first_tie(),
         );
         // 2.3 m does not reach a 3 m neighbour, so the aimed body is the only
         // seed and the shot is one instance plus five hops.
@@ -234,13 +263,12 @@ mod tests {
     fn a_wider_radius_multiplies_the_shot_by_the_seeds_it_catches() {
         let bodies = grid(3.0);
         let at = Vec2::new(3.0, 0.0);
-        let bare = resolve(&bodies, FRONT_MIDDLE, Splash { at, radius_m: 2.3 }, TORID, &mut first_tie());
+        let bare = resolve(&bodies, FRONT_MIDDLE, Splash { at, radius_m: 2.3 }, TORID);
         let primed = resolve(
             &bodies,
             FRONT_MIDDLE,
             Splash { at, radius_m: 2.3 * 1.44 },
             TORID,
-            &mut first_tie(),
         );
         assert_eq!(primed.iter().filter(|i| i.share == 1.0).count(), 4, "seeds");
         assert_eq!(primed.len(), 24, "4 seeds x (1 instance + 5 hops)");
@@ -259,7 +287,6 @@ mod tests {
             FRONT_MIDDLE,
             Splash { at: Vec2::new(3.0, 0.0), radius_m: 2.3 * 1.44 },
             TORID,
-            &mut first_tie(),
         );
         let heads: Vec<&Instance> = v.iter().filter(|i| i.headshot).collect();
         assert_eq!(heads.len(), 1);
@@ -277,7 +304,6 @@ mod tests {
             FRONT_MIDDLE,
             Splash { at: Vec2::new(3.0, 0.0), radius_m: 2.3 * 1.44 },
             TORID,
-            &mut first_tie(),
         );
         assert_eq!(v.iter().filter(|i| i.multishot).count(), 6);
         // …and it is one whole path, not six scattered instances: the seed's
@@ -299,7 +325,6 @@ mod tests {
                 aimed,
                 Splash { at: bodies[aimed], radius_m: 2.3 * 1.44 },
                 TORID,
-                &mut first_tie(),
             );
             // Walk the instances back into paths: each full-share entry opens
             // one, and the hops that follow belong to it.
@@ -330,7 +355,7 @@ mod tests {
         let mut seen_spread = false;
         let mut first: Option<Vec<f64>> = None;
         for _ in 0..500 {
-            let v = resolve(&bodies, FRONT_MIDDLE, splash, TORID, &mut |n| {
+            let v = resolve_with(&bodies, FRONT_MIDDLE, splash, TORID, &mut |n| {
                 (rng.next_f64() * n as f64) as usize
             });
             assert!((total(&v) - 13.1524).abs() < 1e-3, "{}", total(&v));
@@ -350,6 +375,36 @@ mod tests {
         assert!(seen_spread, "the tie-break must actually move damage around");
     }
 
+    /// A STILL FORMATION HAS ONE PATH. The property the owner asked for in
+    /// place of reproducing the game's own tie-break, which is not a function
+    /// of the formation at all (MEASUREMENTS M52): shoot the same arrangement
+    /// a hundred times and the same bodies take the same shares.
+    #[test]
+    fn a_formation_that_does_not_move_always_chains_the_same_way() {
+        let bodies = grid(3.0);
+        let splash = Splash { at: bodies[FRONT_MIDDLE], radius_m: 2.3 * 1.44 };
+        let first = resolve(&bodies, FRONT_MIDDLE, splash, TORID);
+        for _ in 0..100 {
+            assert_eq!(resolve(&bodies, FRONT_MIDDLE, splash, TORID), first);
+        }
+        // …and MOVING one body is what changes it. A model that answered the
+        // same for every arrangement would pass the loop above too.
+        //
+        // It has to be a body the shot REACHES: the far corner is out of every
+        // path's way, and walking it off the map changes nothing, which is
+        // itself the geometry working.
+        let mut moved = bodies.clone();
+        moved[0] = Vec2::new(30.0, 30.0);
+        assert_ne!(resolve(&moved, FRONT_MIDDLE, splash, TORID), first);
+        let mut untouched = bodies.clone();
+        untouched[8] = Vec2::new(30.0, 30.0);
+        assert_eq!(
+            resolve(&untouched, FRONT_MIDDLE, splash, TORID),
+            first,
+            "the far corner is reached by nothing, so moving it may not matter"
+        );
+    }
+
     /// …AND THE CONSTANT ONLY HOLDS WHILE A PATH CAN FILL ITSELF. Two bodies
     /// give one hop and stop, which is the case the first measurement will use
     /// because it is the one where the unknown hop rule cannot matter.
@@ -361,7 +416,6 @@ mod tests {
             0,
             Splash { at: Vec2::ORIGIN, radius_m: 2.3 },
             TORID,
-            &mut first_tie(),
         );
         // Both are seeds (2 m is inside the radius), so both take a full
         // instance and each chains once into the other.
@@ -386,7 +440,6 @@ mod tests {
             0,
             Splash { at: Vec2::ORIGIN, radius_m: 2.3 },
             TORID,
-            &mut first_tie(),
         );
         assert_eq!(v.len(), 1);
         assert_eq!(v[0].target, 0);
