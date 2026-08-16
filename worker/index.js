@@ -74,25 +74,34 @@ const ID = /^[a-z0-9_]{1,64}$/;
 // would have caught both losses on the day they happened — a name added to
 // `boardPayload()` and not to this table fails it immediately, without anyone
 // having to notice a board row that never appeared.
+//
+// `axis` names which of `engine::builds::BUILD_AXES` an entry carries, where
+// there is one. It is not this worker's list to keep — the engine declares what
+// a build consists of and serves it at `/api/meta.build_axes`, and
+// `scripts/check_build_axes.mjs` asserts every axis marked `on_board` is
+// claimed by a row here. A worker with no game data cannot look that up at
+// request time, so the check does it once, on the ground.
 export const AXES = [
+  // Not build axes: the RULER a row is on and the weapon it is for. Half of a
+  // record's identity, and neither is a choice inside a build.
   { key: "benchmark", kind: "id", required: true },
   { key: "weapon", kind: "id", required: true },
   // HOW IT WAS PLAYED — half the entrant's identity. Optional because records
   // written before the dimension existed are still in KV, and the scorer's
   // migration fallback is what reads those.
-  { key: "mode", kind: "id" },
+  { key: "mode", kind: "id", axis: "mode" },
   // THE PROGENITOR ELEMENT of an adversary weapon. The ELEMENT only: the ruler
   // scores every row at the roll's maximum, so the percentage is not a row's to
   // state. Empty on everything that is not out of a Lich.
-  { key: "valence", kind: "id" },
+  { key: "valence", kind: "id", axis: "valence" },
   // An OUTER BOUND, not the rule. Admission became the BENCHMARK's business on
   // 2026-08-05 — "full" means every evolution tier and arcane seat THIS weapon
   // has — and this worker has no game data: it cannot know that a Laetum has
   // five tiers and a rifle none. It briefly hardcoded "exactly 8", which was
   // right for one benchmark and would silently be wrong for the second.
-  { key: "mods", kind: "ids", max: MAX_MODS },
-  { key: "evolutions", kind: "ids", max: 8, set: true },
-  { key: "arcanes", kind: "ids", max: 4 },
+  { key: "mods", kind: "ids", max: MAX_MODS, axis: "mods" },
+  { key: "evolutions", kind: "ids", max: 8, set: true, axis: "evolutions" },
+  { key: "arcanes", kind: "ids", max: 4, axis: "arcanes" },
 ];
 
 const bad = (msg, status = 400) =>

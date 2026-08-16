@@ -410,6 +410,36 @@ around (decision 2026-07-31).
   out loud so it can be argued with. The check walks all three behaviours from
   three weapons the catalog classifies differently and asserts they are three
   different sentences, so a page printing one of them for everything fails.
+  `node scripts/check_opt_replay.mjs` is the THIRTIETH, and the only one written
+  so that it CANNOT GO STALE. Every other check about a build names the axes it
+  is about; this one asserts the ANSWER — it runs a real search, applies the
+  winner through the button's own path, runs the simulator, and asserts the two
+  numbers agree inside 4σ of their two standard errors. It does not know what an
+  axis is, so a fifth one is covered on the day it is added, by nobody. Its
+  rotation of NEGATIVE CONTROLS is discovered from the row's own `replay` keys:
+  each is deleted in turn, the ones the engine notices are named in the
+  assertion's own title (a check that quietly exercised one axis of five reads
+  exactly like one that exercised all five), and a degenerate axis is REPORTED
+  rather than failed — the Kuva Nukor's single firing mode is not a wiring
+  fault. The sharp one is last: a build assembled from a replay with a LIVE axis
+  removed must fail the very assertion that otherwise passes, which is what
+  proves the assertion can fail at all. Two weapons, because no single one has
+  every axis live — the Nukor for the progenitor element, the Torid for modes
+  and evolution tiers. Verified to bite: reinstating the "+ add" bug takes the
+  Nukor from 0.6514 to 0.2118.
+  `node scripts/check_build_axes.mjs` is the THIRTY-FIRST and the cheap half of
+  that pair: `engine::builds::BUILD_AXES` is the one declaration, served at
+  `/api/meta.build_axes`, and the three JS surfaces that carry their own
+  spellings of it — the page's build state, the share tuple, the worker's board
+  record — each declare which axis their fields cover. It asserts the coverage
+  both ways (an id the engine never heard of is a rename that happened on one
+  side, which reads as coverage and is not) and that the worker's record and
+  identity key are still DERIVED from its table rather than re-grown as hand
+  lists. Plain node against the served meta and two source files, so it costs no
+  browser beyond the meta fetch. It exists for the surfaces an answer cannot
+  reach — a share link nobody has clicked, a board record nobody has submitted —
+  and says in its own text that it is the weaker half. Verified to bite: a fake
+  axis added in Rust reddens all three surfaces, each naming it.
   `node scripts/check_riven_pool.mjs` is the SEVENTEENTH: the riven editor
   offers the stats that weapon's rivens actually roll, in BOTH slots. What a
   riven can roll is DE's per-weapon table, published nowhere, and the wiki's
@@ -582,32 +612,63 @@ around (decision 2026-07-31).
 - **Golden values only change with an in-game measurement** justifying
   it. New mechanics need golden tests; a faithful-looking implementation
   without a measurement is not correct.
-- **A BUILD'S AXES ARE DECLARED ONCE** (2026-08-16). `BUILD_AXES` in `app.js`
-  names them, `buildState()` REQUIRES a value for each, and the five producers
-  of a build state — the live page, "+ new", a board row, a share link, an
-  optimizer result — all go through it. `undefined` stays a legal value meaning
-  "the weapon's own default", because that is what a blank build and a preset
-  written before an axis existed both mean; what is no longer legal is not
-  MENTIONING an axis.
-  That distinction is the whole rule. `restoreState` fills a missing axis with
-  the weapon's default, which is right — and is also why forgetting one is
-  invisible: a producer that meant the default and one that never heard of the
-  axis hand over the same object, and no consumer can tell them apart. So the
-  same bug arrived FOUR times and was patched four times where it was found:
-  `mode` missing from the board submission (2026-08-09), `valence` missing from
-  the worker's table (2026-08-14), both missing from the share tuple
-  (2026-08-15), and `valence` missing from the optimizer's "+ add" — the one a
-  player measured, reporting 26 KPM on the ranking and 15 in the simulator for
-  what he was told was the same build (2026-08-16).
-  It is NOT a divergence between the two modules, which is worth stating because
-  that is what it looks like from the outside: `parse_fight` holds, and the same
-  winner re-run under the element it was scored on matched its row to 0.1% (22.34
-  vs 22.36 KPM) while the default element gave 17.44. What diverged was the
-  page's TRANSLATION of a result into a build, which the shared-fight rule above
-  never covered — a fifth surface with its own hand-written copy of the answer to
-  "what is a build". `check_valence.mjs` asserts the property both ways: the
-  state a row becomes names every axis, and the build re-runs at the element it
-  was scored on rather than the one it would have defaulted to.
+- **A RANKED ROW IS A BUILD YOU CAN RE-RUN, AND THE NUMBER ON IT IS THE
+  SIMULATOR'S** (owner, 2026-08-16). The corollary of the rule above, and the
+  half it never covered.
+  "The simulator is the truth" was a statement about the ENGINE, and the engine
+  holds: `parse_fight` sees to it, and a winner replayed under the fight it was
+  scored in matches its row to 0.1%. The PAGE was not covered. It kept its own
+  hand-written translation of a ranked row into a build, and dropped an axis out
+  of it — a search won on Magnetic became a build fired on Impact, because
+  `defaultValence` opens on the spec's first element. A player measured it: 26
+  KPM on the ranking, 15 in the simulator, told it was the same build. For a
+  product whose promise is "matches in-game measurements", a search that cannot
+  reproduce its own answer is worse than a slow one.
+  So the row stops DESCRIBING a build and starts CARRYING one. `entry()` emits
+  `replay`: a complete simulate request, written by the same code that built the
+  candidate, from the optimize request itself — so every field that reaches the
+  optimizer rides along, including ones nobody has invented yet, and only the
+  ranged axes are overwritten. POST it and you get the row's number, with no
+  assembly anywhere. "+ add" applies it through `stateFromBuild`, the inverse of
+  `buildPayload` and now the ONLY translation between a request and the page;
+  the pair round-trips, which is a property one check asserts over every axis at
+  once.
+  AND THE RANKING REPORTS THE SIMULATOR. Each row is re-run through
+  `/api/simulate` and the KPM on screen is what came back, with a ✓. The search's
+  own figure keeps one job — ORDERING the list, since re-measuring cannot reorder
+  a ranking without making the ranking meaningless — and the two are compared:
+  4σ of the two standard errors combined, both of which the server reports, so
+  "they disagree" is arithmetic rather than a tolerance somebody picked. A row
+  that fails it is marked `≠` on screen. Any axis lost anywhere on the chain
+  moves the number and trips it, which is the point of checking the ANSWER
+  instead of counting the fields: it cannot go stale when an axis is added.
+- **A BUILD'S AXES ARE DECLARED ONCE — IN THE ENGINE** (2026-08-16).
+  `engine::builds::BUILD_AXES` is the list, served at `/api/meta.build_axes`.
+  The SPELLINGS stay per-protocol (`arcane` on a request, `arcanes` on a board
+  record, `arcaneRank` in page state) because renaming them would migrate every
+  stored preset; what is shared is the list, and each surface declares which
+  axis its own fields carry — `BUILD_STATE_KEYS` and `SHARE_AXES` in `app.js`,
+  `axis:` per row in the worker's `AXES`. `check_build_axes.mjs` asserts the
+  coverage in both directions, and bites: adding a fake axis in Rust reddens all
+  three surfaces by name.
+  Beside it, `buildState()` REQUIRES a value for every state key, so the five
+  producers of a build state — the live page, "+ new", a board row, a share
+  link, an optimizer result — must each name every axis. `undefined` stays a
+  legal value meaning "the weapon's own default", because a blank build and a
+  preset written before an axis existed both mean exactly that; what is no
+  longer legal is not MENTIONING one.
+  That distinction is the whole reason the bug was invisible. `restoreState`
+  fills a missing axis with the weapon's default, which is RIGHT — and is why a
+  producer that meant the default and one that never heard of the axis hand over
+  the same object, with no consumer able to tell them apart. It happened four
+  times, patched four times where it was found: `mode` missing from the board
+  submission (2026-08-09), `valence` from the worker's table (2026-08-14), both
+  from the share tuple (2026-08-15), `valence` from the optimizer's "+ add"
+  (2026-08-16).
+  A LIST IS THE WEAKER HALF and the file says so. It covers the surfaces an
+  answer cannot reach — a share link nobody has clicked, a board record nobody
+  has submitted — while the guarantee rests on `check_opt_replay.mjs`, which
+  holds no list at all.
 - **A GAP THAT REPEATS IS A REASON, NOT A SENTENCE** (2026-08-15).
   `data/unmodelled/reasons.yaml` holds each one once, with `{named}` holes, and
   a weapon references it: `- reason: innate_punch_through` / `m: 1.2`. The

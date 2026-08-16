@@ -82,6 +82,70 @@ pub const BENCHMARK_INVESTMENT: crate::mods::Investment = crate::mods::Investmen
 /// see the slot check in [`validate`].
 pub const MAIN_SLOTS: usize = 8;
 
+/// ONE AXIS OF A BUILD. See [`BUILD_AXES`].
+pub struct BuildAxis {
+    /// The stable id, and the only name shared across the product. Never a
+    /// wire field and never a display string: each protocol spells its own
+    /// half — `arcane` on a request, `arcanes` on a board record, `arcaneRank`
+    /// in the page's state — and a spelling is a detail of the protocol that
+    /// carries it, not a fact about builds.
+    pub id: &'static str,
+    /// Where a SIMULATE REQUEST carries it, which is the one spelling the
+    /// engine itself answers to.
+    pub request_field: &'static str,
+    /// Does the BOARD keep it? A ruler fixes some of these rather than
+    /// recording them — every row is scored at full mod rank and at the
+    /// valence roll's ceiling — and a riven is an item that exists on one
+    /// machine, so it can never identify a public row.
+    pub on_board: bool,
+}
+
+/// WHAT A BUILD CONSISTS OF, declared once for the whole product (owner,
+/// 2026-08-16).
+///
+/// A build travels through eight representations — the page's live state, a
+/// stored preset, a simulate request, an optimize scope, a ranked row, a board
+/// submission, a board record, a share link — and until this list existed, each
+/// of them held its own hand-written answer to "which axes are there". Adding
+/// one meant editing every copy, and the copy nobody edited dropped that axis
+/// in silence, because a missing axis and a defaulted axis are the same absence
+/// on the wire.
+///
+/// It happened four times: `mode` lost from the board submission (2026-08-09),
+/// `valence` from the worker's table (2026-08-14), both from the share tuple
+/// (2026-08-15), and `valence` from the optimizer's "+ add" (2026-08-16) — the
+/// last one measured by a player, who was shown 26 KPM on a ranking and 15 in
+/// the simulator for what he had been told was the same build.
+///
+/// This does not unify the SPELLINGS, which are protocol details and would cost
+/// a migration of every stored preset to change. It unifies the LIST: it is
+/// served at `/api/meta.build_axes`, every surface declares which axis each of
+/// its own fields carries, and `scripts/check_build_axes.mjs` asserts the
+/// coverage is total. A surface that has never heard of a new axis then fails
+/// on the day the axis is added, instead of quietly halving somebody's damage.
+///
+/// The other half of the guarantee is not a list at all and cannot go stale:
+/// every ranked row carries a simulate request that reproduces it, and
+/// `scripts/check_opt_replay.mjs` asserts the number comes back. A list can be
+/// forgotten; an answer that has to match cannot.
+pub const BUILD_AXES: &[BuildAxis] = &[
+    BuildAxis { id: "mods", request_field: "mods", on_board: true },
+    BuildAxis { id: "evolutions", request_field: "evolutions", on_board: true },
+    BuildAxis { id: "arcanes", request_field: "arcane", on_board: true },
+    // NOT on the board: a ruler scores every arcane at its own maximum, the
+    // same rule that scores every row fully forma'd — investment is not a
+    // choice, so it is not part of what a row states.
+    BuildAxis { id: "arcane_ranks", request_field: "arcane_rank", on_board: false },
+    BuildAxis { id: "mode", request_field: "mode", on_board: true },
+    // The ELEMENT only on the board, for the same reason: the roll is scored at
+    // its ceiling, which every player can Valence-fuse to.
+    BuildAxis { id: "valence", request_field: "valence_element", on_board: true },
+    // A RIVEN IS A MOD, and rides in `mods` as an id — but the item itself
+    // exists only on the machine that rolled it, so the request carries its
+    // definition too and no public record can ever hold one.
+    BuildAxis { id: "rivens", request_field: "rivens", on_board: false },
+];
+
 /// A build that passed, and what it costs to actually own.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValidBuild {

@@ -2982,6 +2982,24 @@ const evoPrefix = () => {
   return any.id.startsWith(w + "_") ? w + "_" : "";
 };
 
+/// WHICH BUILD AXES THE SHARE TUPLE CARRIES, by their engine ids.
+///
+/// The tuple is POSITIONAL and omits everything a recipient can derive, so it
+/// cannot iterate a served list the way the state table can — appending a field
+/// is a format decision, not a loop. What it can do is DECLARE, and
+/// `scripts/check_build_axes.mjs` holds this against
+/// `engine::builds::BUILD_AXES`: a new axis fails the check until somebody
+/// writes its id here, and writing it means being in this function looking at
+/// the tuple. That is the whole mechanism — a forced touch point, rather than a
+/// hope that the next person remembers a file they have never opened.
+///
+/// It has been wrong once, and expensively: `mode` and `valence` were both in
+/// `snapshotState` and neither was in the tuple, so a shared Kuva Nukor reopened
+/// on the default progenitor element — a link claiming a number for a build it
+/// did not carry (2026-08-15).
+const SHARE_AXES = ["mods", "evolutions", "arcanes", "arcane_ranks", "mode",
+                    "valence", "rivens"];
+
 function sharePayload() {
   const st = snapshotState();
   const p = loadPresetList(BUILDS).find((x) => x.name === activePreset);
@@ -4251,7 +4269,26 @@ const BUILDS = "builder-builds";
 /// `buildState` is the answer: every producer NAMES every axis, `undefined`
 /// stays a legal value meaning "the weapon's default", and adding a row here
 /// breaks all five producers at once instead of four of them silently.
-const BUILD_AXES = ["slots", "evoSel", "arcane", "arcaneRank", "mode", "valence"];
+/// …and the LIST itself is not declared here. `engine::builds::BUILD_AXES` is
+/// the one place a build's axes are named, and it arrives in `/api/meta`; this
+/// table only says which of THIS page's state keys carry each of them, because
+/// the spellings are the page's own and renaming them would migrate every
+/// stored preset. `scripts/check_build_axes.mjs` asserts the two agree, so an
+/// axis added in Rust cannot stay invisible here.
+const BUILD_STATE_KEYS = [
+  { axis: "mods", keys: ["slots"] },
+  { axis: "evolutions", keys: ["evoSel"] },
+  { axis: "arcanes", keys: ["arcane"] },
+  { axis: "arcane_ranks", keys: ["arcaneRank"] },
+  { axis: "mode", keys: ["mode"] },
+  { axis: "valence", keys: ["valence"] },
+  // A RIVEN IS A MOD: its id sits in a slot like any other, and the item
+  // itself lives in its own collection rather than inside a build. So the axis
+  // is covered, by `slots`, and saying so is the point — an axis with no entry
+  // at all is the thing the check is looking for.
+  { axis: "rivens", keys: ["slots"] },
+];
+const BUILD_AXES = [...new Set(BUILD_STATE_KEYS.flatMap((a) => a.keys))];
 
 /// A build state, from a producer that has to account for every axis.
 ///
@@ -5689,6 +5726,60 @@ function buildPayload() {
     // visitor's item, not a pool entry, so it rides along with the request.
     rivens: rivenPayload(),
   };
+}
+
+/// THE INVERSE OF `buildPayload` — a request back into builder state, and the
+/// ONLY translation left between the two (owner, 2026-08-16).
+///
+/// It exists so that nothing else has to translate. An optimizer row carries
+/// `replay`, a complete simulate request the SERVER authored from the very
+/// candidate it scored, and "+ add" applies it through here — instead of the
+/// page re-deriving a build from a description of one, which is what dropped an
+/// axis four times. What makes this pair safe where a hand-written producer was
+/// not is that it is a PAIR: `buildPayload(stateFromBuild(p)) === p` is a
+/// property one check can assert over a build with every axis set, and it fails
+/// for any axis either side forgets. Counting fields cannot say that.
+///
+/// `exilusId` is the one thing a payload cannot state. The wire carries ONE
+/// flat list of mod ids — which is what the engine resolves, and the number
+/// never depends on which slot they sat in — so the ninth slot is a matter of
+/// LAYOUT (its polarity, the Forma plan) and the caller that knows says so. An
+/// optimizer row does; a share link and a board row do not, and take the order
+/// the list is in.
+function stateFromBuild(p, weapon, exilusId) {
+  const w = weaponInfo(weapon) || {};
+  const ids = (p.mods || []).filter(Boolean);
+  const main = ids.filter((id) => id !== exilusId);
+  const sl = Array.from({ length: 9 }, () => ({ mod: null, pol: null, rank: null }));
+  main.slice(0, 8).forEach((id, i) => { sl[i].mod = id; });
+  if (exilusId && exilusId !== "none" && ids.includes(exilusId)) {
+    sl[EXILUS].mod = exilusId;
+  } else if (main.length > 8) {
+    sl[EXILUS].mod = main[8];
+  }
+  // A RANK IS THE CARD'S CEILING. The wire carries no mod rank at all — the
+  // engine reads a maxed card, which is what every number in this app is
+  // measured at — so this is the page filling in what it alone displays.
+  sl.forEach((s) => { if (s.mod && modById(s.mod)) s.rank = modById(s.mod).max_rank; });
+  const evo = { 1: null, 2: null, 3: null, 4: null };
+  (p.evolutions || []).forEach((id) => {
+    const t = (w.evolutions || []).find((tt) => tt.options.some((o) => o.id === id));
+    if (t) evo[t.tier] = id;
+  });
+  const nPools = arcanePools(weapon).length;
+  return buildState(weapon, {
+    slots: sl,
+    evoSel: evo,
+    arcane: asArcaneList(p.arcane, nPools).map((x) => x || "none"),
+    arcaneRank: asArcaneList(p.arcane_rank, nPools).map((x) => x ?? null),
+    // BOTH HALVES OR NEITHER. `restoreState` cleans them against the weapon
+    // being opened, so a payload naming an element this spec does not offer
+    // lands on the default rather than on a weapon nobody has.
+    mode: p.mode || undefined,
+    valence: p.valence_element
+      ? { element: p.valence_element, bonus: p.valence_bonus }
+      : undefined,
+  });
 }
 
 // ---- Stats panel: merged buckets, each explained by source ----
@@ -11520,7 +11611,10 @@ function renderOptResults(r) {
     return `<div class="opt-row">
       <div class="opt-head">
         <span class="opt-rank">#${res.rank}</span>
-        <span class="opt-kills">${sig2(kpm(res.kill_progress ?? res.kills, r.duration))}<small> KPM</small></span>
+        <span class="opt-kills" id="opt-kpm-${res.rank}" data-search="${
+          kpm(res.kill_progress ?? res.kills, r.duration)}">${
+          sig2(kpm(res.kill_progress ?? res.kills, r.duration))}<small> KPM</small><span class="opt-repro pending" title="${
+          escHtml(tr("re-measuring this build in the simulator"))}">·</span></span>
         <span class="opt-dps">${Math.round(res.dps || res.effective_dps || 0).toLocaleString()} DPS</span>
         <span class="opt-total">${sig2(res.kill_progress ?? res.kills)} kill score / ${Math.round(r.duration || 0)}s</span>
         <span class="forma-badge legal">${res.forma.used} Forma</span>
@@ -11552,64 +11646,121 @@ function renderOptResults(r) {
   $("opt-results").innerHTML = `<div class="opt-meta">${cov}${r.cancelled ? `<span class="warn">cancelled — best-so-far ranking (lower precision than a full run)</span> · ` : ""}${(r.jobs || 0).toLocaleString()} candidate builds · vs ${r.target.name} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""} · ${r.headshot_pct ?? "?"}% headshots · ${r.duration ?? "?"} s engagements · ${r.finalists || 20} finalists × ${(r.final_runs || 1024).toLocaleString()} runs</div>${rows}`;
   $("opt-results").querySelectorAll(".opt-add").forEach((el) =>
     el.addEventListener("click", () => addResult(JSON.parse(el.dataset.r), el)));
+  verifyOptRows(r);
+}
+
+/// THE NUMBER ON A ROW IS THE SIMULATOR'S (owner, 2026-08-16).
+///
+/// This is the hard rule made operational. "The simulator is the truth and the
+/// optimizer obeys it" was a statement about the ENGINE, and it held —
+/// `parse_fight` sees to it. What it never covered was the page, which had its
+/// own translation of a ranked row into a build, and a search that ranks by one
+/// thing while the builder fires another is a tool that lies about its own
+/// answer. A player measured it: 26 KPM here, 15 there.
+///
+/// So the ranking stops reporting the search's own figure. Each row is re-run
+/// through `/api/simulate` — with the request the SERVER wrote for that exact
+/// candidate — and the KPM on screen is what came back. The search's number
+/// keeps its one remaining job, which is to ORDER the list: it is measured
+/// under the funnel's own RNG streams, and re-measuring cannot reorder a
+/// ranking without also making the ranking mean nothing.
+///
+/// The two are then compared, and that comparison is the alarm. Both sides
+/// report their own standard error, so "they disagree" is arithmetic rather
+/// than a tolerance somebody picked: 4 sigma of the two combined, which at 40
+/// runs is a few per cent and at 1000 is a fraction of one. Any axis lost
+/// anywhere on the chain — this year's or next year's — moves the number and
+/// trips it. That is the whole point of checking the ANSWER instead of counting
+/// the fields: it cannot go stale when an axis is added.
+///
+/// Top-down and sequential, because the leader is what a reader looks at first
+/// and because twenty engagements at the final round's precision is real time.
+/// A row from a run predating `replay` has nothing to re-run and says so.
+let optVerifyToken = 0;
+async function verifyOptRows(r) {
+  const token = ++optVerifyToken;
+  const rows = (r.results || []).slice();
+  for (const res of rows) {
+    if (token !== optVerifyToken) return;          // a newer ranking owns the panel
+    const el = $(`opt-kpm-${res.rank}`);
+    if (!el) continue;
+    const mark = el.querySelector(".opt-repro");
+    if (!res.replay) {
+      if (mark) { mark.className = "opt-repro stale"; mark.textContent = ""; mark.title = tr("this ranking predates the simulator re-run"); }
+      continue;
+    }
+    let s = null;
+    try { s = await postJson("/api/simulate", res.replay); } catch (_) { s = null; }
+    if (token !== optVerifyToken) return;
+    if (!s || s.ok === false || s.score_mean == null) {
+      if (mark) { mark.className = "opt-repro failed"; mark.textContent = "!"; mark.title = tr("the simulator refused this build — see the build's own card"); }
+      continue;
+    }
+    const shown = kpm(s.score_mean, r.duration);
+    const search = Number(el.dataset.search) || 0;
+    // FOUR SIGMA OF THE TWO COMBINED. Both are means of independent runs, so
+    // their difference has the two standard errors added in quadrature — there
+    // is no systematic gap to allow for, and any tolerance written as a flat
+    // percentage would be too tight at 40 runs and too loose at 1000.
+    const se = Math.hypot(kpm(s.score_se || 0, r.duration),
+                          kpm(res.kill_progress_se || 0, r.duration));
+    const off = Math.abs(shown - search) > Math.max(4 * se, 0.01 * Math.abs(search));
+    el.firstChild.nodeValue = sig2(shown);
+    if (mark) {
+      mark.className = "opt-repro " + (off ? "off" : "ok");
+      mark.textContent = off ? "≠" : "✓";
+      mark.title = off
+        ? tr("the simulator does not reproduce the search's own score for this build — the build shown may not be the one that was scored")
+          + ` (${sig2(search)} → ${sig2(shown)} KPM)`
+        : tr("re-run in the simulator: this is the simulator's own number for this build");
+    }
+    if (off) el.closest(".opt-row").classList.add("opt-unreproduced");
+  }
 }
 
 // An optimizer result as a builder-builds preset STATE (snapshotState
 // shape) — built without touching the build being edited. autoForma()
 // works on the global `slots`, so swap in a scratch array for the plan.
 function resultToState(res) {
-  const live = slots;
-  slots = Array.from({ length: 9 }, (_, i) => ({ mod: null, pol: innate[i], rank: null }));
-  res.mods.slice(0, 8).forEach((mid, i) => {
-    if (modById(mid)) { slots[i].mod = mid; slots[i].rank = modById(mid).max_rank; }
-  });
-  // The scope's exilus choice rides along on every result row.
-  if (res.exilus && res.exilus !== "none" && modById(res.exilus)) {
-    slots[EXILUS].mod = res.exilus; slots[EXILUS].rank = modById(res.exilus).max_rank;
-  }
-  autoForma(); // minimum-Forma polarities, same as a hand-loaded build
-  const sl = slots.map((s) => ({ mod: s.mod, pol: s.pol, rank: s.rank }));
-  slots = live;
-  const evo = { 1: null, 2: null, 3: null, 4: null };
-  (res.evolutions || []).forEach((id) => {
-    const t = (weaponEvos()).find((tt) => tt.options.some((o) => o.id === id));
-    if (t) evo[t.tier] = id;
-  });
-  return buildState($("weapon").value, {
-    evoSel: evo,
-    // The optimizer reports one id PER SLOT, in the same pool order the
-    // builder uses — so applying a result is a copy, not a translation.
-    arcane: asArcaneList(res.arcane, arcanePools($("weapon").value).length)
-      .map((x) => x || "none"),
-    arcaneRank: asArcaneList(res.arcane_rank, arcanePools($("weapon").value).length)
-      .map((x) => x ?? null),
-    slots: sl,
-    // HOW THE WINNER IS PLAYED, and it comes from the ROW rather than from the
-    // page: mode is a search dimension, so two rows of one ranking can differ
-    // in it, and "add" has to carry the one that was actually scored. A row
-    // from a run predating the dimension names none, and then the build takes
-    // the mode the page is in — which is the mode that run used.
+  // THE ROW'S OWN REQUEST, not a build re-derived from a description of one.
+  //
+  // `replay` is a complete simulate request written by the server out of the
+  // very candidate it scored, so applying a result reads exactly ONE field and
+  // there is nothing here to keep in step with the search. Every axis the row
+  // was measured under is in it, including the ones nobody has invented yet.
+  //
+  // A row from a run predating `replay` still has to open, so the named fields
+  // remain the fallback — and they are a translation, with everything that
+  // implies: `mode` and `valence` fall back to the PAGE, which is the mode and
+  // the element that run was launched in.
+  const payload = res.replay || {
+    mods: (res.mods || []).concat(
+      res.exilus && res.exilus !== "none" ? [res.exilus] : [],
+    ),
+    evolutions: res.evolutions || [],
+    arcane: res.arcane,
+    arcane_rank: res.arcane_rank,
     mode: res.mode || mode,
-    // WHICH WEAPON THE ROW IS, on the same terms as the mode. The valence is a
-    // search axis, so two rows of one ranking can be two different weapons —
-    // and a row scored on Magnetic that opened on the spec's FIRST element
-    // (Impact, via `defaultValence`) re-ran 22% under its own number, which is
-    // the divergence a player reported (owner, 2026-08-16).
-    //
-    // The ELEMENT comes from the row and the BONUS from the page, because the
-    // axis ranges over elements only: every candidate in the run was built with
-    // the bonus the request carried, which is the one the page is holding.
-    valence: res.valence
-      ? { element: res.valence, bonus: valence.bonus }
-      : undefined,
-    // NO `sim`. Adding a winner used to copy the optimizer's own buff config
-    // into the scenario so that "add then Run Sim" matched its score. It does
-    // not any more: a result is a BUILD, and a build does not get to rewrite
-    // the fight you are working in (user, 2026-08-02). The two configs can
-    // still disagree — the search's is scope-wide, the scenario's is this
-    // build's — and that disagreement is now visible instead of resolved by
-    // silently editing a preset the user owns.
-  });
+    valence_element: res.valence || valence.element,
+    valence_bonus: valence.bonus,
+  };
+  const st = stateFromBuild(payload, $("weapon").value, res.exilus);
+  // …and the POLARITIES, which are the page's alone: a payload states the
+  // build, and the cheapest layout that fits it is a plan the builder makes.
+  // `autoForma` works on the global `slots`, so swap in a scratch array.
+  const live = slots;
+  slots = st.slots.map((s, i) => ({ mod: s.mod, pol: innate[i], rank: s.rank }));
+  autoForma(); // minimum-Forma polarities, same as a hand-loaded build
+  st.slots = slots.map((s) => ({ mod: s.mod, pol: s.pol, rank: s.rank }));
+  slots = live;
+  // NO `sim`. Adding a winner used to copy the optimizer's own buff config
+  // into the scenario so that "add then Run Sim" matched its score. It does
+  // not any more: a result is a BUILD, and a build does not get to rewrite the
+  // fight you are working in (user, 2026-08-02). The two configs can still
+  // disagree — the search's is scope-wide, the scenario's is this build's —
+  // and that disagreement is now visible instead of resolved by silently
+  // editing a preset the user owns.
+  return st;
 }
 
 // "+ add" (not load — user, 2026-07-29): the result becomes a NEW preset

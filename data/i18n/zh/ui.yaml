@@ -291,6 +291,11 @@ ui:
   "how many simulations each finalist gets in the last round — blank uses the fight's own count, which is what the replay will use. A smaller number searches faster and is worth re-measuring in the simulator": 最终轮里每个优胜者跑多少次模拟 —— 留空就用这场仗自己的次数，也就是重放会用的那个。填小一点搜得更快，代价是优胜者值得再到模拟器里重测一遍
   "how many simulations each option is averaged over — 10 is the floor, and more costs proportionally more time": 每个选项的数字是多少次模拟的平均 —— 最低 10 次，次数越多越慢，成正比
   "read-only — it belongs to the simulator, which is where it is edited": 只读 —— 它属于模拟器，只在那里编辑
+  "re-measuring this build in the simulator": 正在模拟器里重测这套配装
+  "re-run in the simulator: this is the simulator's own number for this build": 已在模拟器里重跑：这就是模拟器对这套配装给出的数字
+  "the simulator does not reproduce the search's own score for this build — the build shown may not be the one that was scored": 模拟器复现不出搜索给这套配装打的分 —— 屏幕上这套可能不是被评分的那一套
+  "the simulator refused this build — see the build's own card": 模拟器拒绝了这套配装 —— 看它自己的卡片
+  "this ranking predates the simulator re-run": 这份排名早于"模拟器重跑"这个功能
   "must match how you intend to play it — the winner is scored under this player": 必须和你打算怎么玩一致 —— 优胜者是在这个使用者之下评分的
   "what the search is allowed to assume": 这次搜索被允许做哪些假设
   "read-only — the fight's own, applied to every candidate; a buff nobody set starts where it would in a fight": 只读 —— 用这场仗自己的设置，套到每个候选上；没人设过的 buff 就从它在战斗中该有的位置开始

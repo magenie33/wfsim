@@ -211,6 +211,64 @@ unlock, no transformation, whoever is asking.
 simulator applies has a field the optimizer applies it from — the two cannot
 drift by omission again.
 
+## …AND SO MUST THE BUILD (2026-08-16)
+
+The section above is about the FIGHT, and it fixed the fight. The build had the
+same disease one layer out, and it took three years of calendar and four
+separate patches to see it as one thing.
+
+A build travels through eight representations — live page state, a stored
+preset, a simulate request, an optimize scope, a ranked row, a board
+submission, a board record, a share link — and each held a hand-written answer
+to "which axes are there". A missing axis and a defaulted axis are the same
+absence on the wire, so a producer that had never heard of an axis was
+indistinguishable from one that meant the default, and no consumer could
+complain. `mode` was lost from the board submission (2026-08-09), `valence` from
+the worker's table (2026-08-14), both from the share tuple (2026-08-15), and
+`valence` from the optimizer's "+ add" (2026-08-16).
+
+The last one is the one that mattered, because it is the one a player could
+see. A search won on Magnetic became a build fired on Impact — `defaultValence`
+opens on the spec's first element — and he reported 26 KPM on the ranking
+against 15 in the simulator for what he had been told was the same build.
+Measured on a Kuva Nukor, Thrax Lv 100, 180 s, an exhaustive 12-mod scope:
+
+| | KPM |
+|---|---|
+| the ranking's #1 (valence = Magnetic) | 22.34 |
+| the same build simulated, **with** Magnetic | 22.36 |
+| the same build as "+ add" handed it over (Impact) | **17.44** |
+| the same build at the optimizer's own seed | 22.23 |
+
+So the engine was never the problem — the two agree to 0.1%, and a Torid pass
+over modes, evolutions and arcanes agrees to 0.3% on all six ranked rows. The
+seed and the winner's curse are worth 0.5%. What diverged was the page's
+translation, which the rule above never covered.
+
+**The fix is that a row stops describing a build and starts carrying one.**
+`entry()` emits `replay`: a complete simulate request, built by cloning the
+optimize request and overwriting only the axes the search ranged over. Cloning
+rather than assembling is the whole trick — every field that reaches the
+optimizer rides along, including ones nobody has invented yet — and `runs`
+becomes the final round's, so the row's precision is the replay's precision.
+POST it and you get the row's number, with no assembly at any caller.
+
+**And the ranking reports the simulator.** Each row is re-run through
+`/api/simulate` and the KPM on screen is what came back, marked ✓. The search's
+own figure keeps exactly one job — ordering the list — and the two are compared
+at 4σ of their combined standard errors (`kill_progress_se` on the row,
+`score_se` from the sim), so a divergence is arithmetic rather than a tolerance
+somebody chose. A row that fails it is marked `≠`.
+
+That comparison is the durable part. Every earlier guard was a LIST of axes,
+and a list has to be maintained by whoever adds the fifth; this one is an
+ANSWER that has to match, so it covers axes that do not exist yet.
+`scripts/check_opt_replay.mjs` asserts it in CI and is verified to bite —
+reinstating the bug moves the Nukor from 0.6514 to 0.2118.
+`engine::builds::BUILD_AXES` plus `scripts/check_build_axes.mjs` cover what an
+answer cannot reach: a share link nobody has clicked, a board record nobody has
+submitted.
+
 ## ACCURACY IS MEASURED, NOT ASSERTED (2026-08-03)
 
 A search strategy cannot vouch for itself. "The funnel kept the best build" is

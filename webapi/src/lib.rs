@@ -1391,6 +1391,17 @@ pub fn meta_json() -> Value {
         // benchmark's, and travels with it below — just the one number the page
         // needs to count filled slots against.
         "board_build_mods": wfsim_engine::builds::MAIN_SLOTS,
+        // WHAT A BUILD CONSISTS OF, from the one place that declares it
+        // (`engine::builds::BUILD_AXES`). Served for the same reason
+        // `board_build_mods` is: the page and the worker each carry a table of
+        // their own spellings, and this is what a check measures those tables
+        // against — an axis added in Rust cannot then stay invisible to a
+        // surface that never heard of it.
+        "build_axes": wfsim_engine::builds::BUILD_AXES.iter().map(|a| json!({
+            "id": a.id,
+            "request_field": a.request_field,
+            "on_board": a.on_board,
+        })).collect::<Vec<_>>(),
         "benchmarks": wfsim_engine::benchmarks_data::all().iter().map(|b| json!({
             "id": b.id,
             "name": b.name,
@@ -5011,6 +5022,24 @@ pub struct OptimizePlan {
     /// merging their leaderboards; a native run is one shard of one.
     shard: u32,
     shards: u32,
+    /// THE REQUEST THIS PLAN CAME FROM, so every ranked row can carry a
+    /// simulate request that reproduces it (owner, 2026-08-16).
+    ///
+    /// THE SIMULATOR IS THE TRUTH, and a search's number is only worth
+    /// something if the simulator will say it back. That was a claim about the
+    /// engine — which holds, `parse_fight` sees to it — and it said nothing
+    /// about the PAGE, which had its own hand-written translation of a ranked
+    /// row into a build and dropped an axis out of it four times. The last one
+    /// a player measured: 22.34 KPM on the ranking, 17.44 in the simulator, the
+    /// same eight cards on the wrong progenitor element.
+    ///
+    /// So the row stops DESCRIBING a build and starts CARRYING one. The base is
+    /// the optimize request itself rather than a list of build fields, which is
+    /// what makes it forget-proof: every field that reaches the optimizer rides
+    /// along, including ones nobody has invented yet, and `entry` overwrites
+    /// only the axes the search ranged over. `runs` becomes the FINAL ROUND's,
+    /// because that is the precision the row's number was measured at.
+    replay_base: Value,
 }
 
 /// Validate an optimize request. `Err` is the ready-to-send error response.
@@ -5538,6 +5567,27 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         max_evals: v.get("max_evals").and_then(|x| x.as_u64()).unwrap_or(0),
         shards: v.get("shards").and_then(|x| x.as_u64()).unwrap_or(1).clamp(1, 64) as u32,
         shard: v.get("shard").and_then(|x| x.as_u64()).unwrap_or(0).min(63) as u32,
+        replay_base: {
+            // A CLONE, not a rebuild. Listing the fields to copy is the mistake
+            // this exists to end — the whole request is the fight plus the
+            // build, `simulate_json` reads exactly the keys it knows and
+            // ignores the rest, so the optimizer's own marks (`arcanes`,
+            // `modes`, `valence`, `exilus`, the budget) simply ride along
+            // inert while `entry` overwrites the axes that differ per row.
+            let mut r = v.clone();
+            if let Some(o) = r.as_object_mut() {
+                // The FINAL ROUND's precision, because that is what the row's
+                // number is the mean of. The fight's own count is what the
+                // replay would otherwise use, and a row measured at one
+                // precision re-run at another is a comparison of two things.
+                o.insert("runs".into(), json!(final_runs));
+                // The one field worth stripping: a resume checkpoint is the
+                // whole surviving field, and twenty rows would each carry a
+                // copy of it.
+                o.remove("__resume");
+            }
+            r
+        },
     })
 }
 
@@ -5956,6 +6006,7 @@ pub fn run_optimize_resumable(
         max_evals,
         shard,
         shards,
+        replay_base,
     } = plan;
     // Compute budget: 0 = auto (all cores minus two — the machine must stay
     // usable while the search runs). Applies to the screen and every round.
@@ -6043,10 +6094,52 @@ pub fn run_optimize_resumable(
                     .unwrap_or(0)
             })
             .collect();
+        // THE ROW, AS A REQUEST THAT REPRODUCES IT. POST this to
+        // `/api/simulate` and the answer is this row's number — no assembly, no
+        // translation, nothing for a caller to forget.
+        //
+        // The named fields below still say what the build IS, because a reader
+        // and a build editor both need that; this says how to RUN it, and it is
+        // the half that must never be reconstructed by hand. See `replay_base`:
+        // everything not overwritten here rode in from the request, so an axis
+        // added tomorrow arrives without this function being touched.
+        let replay = {
+            let mut r = replay_base.clone();
+            if let Some(o) = r.as_object_mut() {
+                // ONE FLAT LIST OF MOD IDS, exilus included — the shape
+                // `simulate_json` reads and the shape the builder's own payload
+                // has. The exilus slot is a slot.
+                let mut all: Vec<&str> = mods.clone();
+                if let Some(m) = exilus_defs[c.exilus as usize].as_ref() {
+                    all.push(m.id);
+                }
+                o.insert("mods".into(), json!(all));
+                o.insert("arcane".into(), json!(ids));
+                o.insert("arcane_rank".into(), json!(ranks));
+                o.insert(
+                    "evolutions".into(),
+                    json!(evo_sets[variants[c.variant as usize].1]),
+                );
+                o.insert("mode".into(), json!(modes[variants[c.variant as usize].0].id));
+                // The ELEMENT is the axis; the BONUS is the scope's and rode in
+                // with the request. A row that is not out of a Lich leaves both
+                // alone.
+                if let Some(el) = valences.get(variants[c.variant as usize].2) {
+                    o.insert("valence_element".into(), json!(el));
+                }
+            }
+            r
+        };
         json!({
             "rank": rank + 1,
             "kills": s.mean_kills,
             "kill_progress": s.mean_kill_progress,
+            // HOW WELL THE SEARCH KNOWS ITS OWN NUMBER. The page re-measures
+            // this row through `/api/simulate` and shows THAT; this is what
+            // lets it say whether the two disagree by more than the dice.
+            // Without it the comparison needs a hand-picked tolerance, which is
+            // a number that is too tight at 40 runs and too loose at 1000.
+            "kill_progress_se": s.std_kill_progress / f64::from(final_runs.max(1)).sqrt(),
             "dps": s.effective_dps,
             "kills_min": s.min_kills,
             "kills_max": s.max_kills,
@@ -6067,6 +6160,7 @@ pub fn run_optimize_resumable(
                 .unwrap_or_default(),
             "exilus": exilus_defs[c.exilus as usize].as_ref().map(|m| m.id).unwrap_or("none"),
             "forma": { "used": c.plan.forma_used, "total_drain": c.plan.total_drain },
+            "replay": replay,
         })
     };
     // A whole result payload. Snapshots carry `cancelled: true` — a board only
