@@ -138,6 +138,54 @@ pub fn miss_distance(range_m: f64, deviation_deg: f64) -> f64 {
     }
 }
 
+/// WHICH BODY A SHOT CROSSES FIRST, along a ray from `muzzle` in `dir`.
+///
+/// The generalisation of the hit test to a formation, and it is the SAME test:
+/// a body is hit when the ray passes within a radius of its centre
+/// ([`miss_distance`]), and of the ones it does, the nearest along the ray is
+/// the one that stops it.
+///
+/// AIM IS A DIRECTION, NOT A TARGET (owner, 2026-08-17). A player points the
+/// weapon at a place — which may be a body, or the floor beside one — and
+/// whatever the line runs through is what gets hit. Aiming a little short of an
+/// enemy still hits it, because the enemy's circle is still on the line; that
+/// is not a special case, it is what a radius means.
+///
+/// `dir` need not be normalised and behind the muzzle is not hit: a body is a
+/// candidate only at a non-negative distance along the ray.
+///
+/// Returns the body's index and how far along the ray its SURFACE is — the
+/// point of impact, which is where a damage radius is centred and where the
+/// distance a shot flew is measured to.
+pub fn first_hit(muzzle: Vec2, dir: Vec2, bodies: &[Vec2]) -> Option<(usize, f64)> {
+    let len = dir.x.hypot(dir.y);
+    if len <= 0.0 {
+        return None;
+    }
+    let (ux, uy) = (dir.x / len, dir.y / len);
+    let mut best: Option<(usize, f64)> = None;
+    for (i, b) in bodies.iter().enumerate() {
+        let (px, py) = (b.x - muzzle.x, b.y - muzzle.y);
+        // How far along the ray the body's centre projects, and how far off it
+        // sits. A negative projection is behind the shooter.
+        let along = px * ux + py * uy;
+        if along < 0.0 {
+            continue;
+        }
+        let perp = (px * uy - py * ux).abs();
+        if perp > BODY_RADIUS_M {
+            continue;
+        }
+        // THE SURFACE, not the centre: a bullet stops where it enters.
+        let half = (BODY_RADIUS_M * BODY_RADIUS_M - perp * perp).max(0.0).sqrt();
+        let entry = (along - half).max(0.0);
+        if best.is_none_or(|(_, d)| entry < d) {
+            best = Some((i, entry));
+        }
+    }
+    best
+}
+
 /// The radius of a body, in metres — every actor is a circle, and that is the
 /// WHOLE model of how big a body is.
 ///
@@ -212,6 +260,43 @@ pub const CONTACT_RANGE_M: f64 = 2.0 * BODY_RADIUS_M;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// AIM IS A DIRECTION, so a shot pointed at the FLOOR beside a body still
+    /// hits it — the body's circle is on the line, which is the whole of what a
+    /// radius means (owner, 2026-08-17).
+    #[test]
+    fn a_shot_aimed_short_of_a_body_still_crosses_it() {
+        let foe = Vec2::new(0.0, 10.0);
+        let muzzle = Vec2::new(0.0, 0.2);
+        // Dead on.
+        assert_eq!(first_hit(muzzle, Vec2::new(0.0, 1.0), &[foe]).map(|(i, _)| i), Some(0));
+        // Aimed at bare floor two metres SHORT of it: same line, same hit.
+        let short = Vec2::new(0.0, 8.0);
+        let dir = Vec2::new(short.x - muzzle.x, short.y - muzzle.y);
+        assert_eq!(first_hit(muzzle, dir, &[foe]).map(|(i, _)| i), Some(0));
+        // …and a hand's width to the SIDE of it, still inside the radius.
+        let beside = Vec2::new(BODY_RADIUS_M * 0.5, 10.0);
+        let dir = Vec2::new(beside.x - muzzle.x, beside.y - muzzle.y);
+        assert_eq!(first_hit(muzzle, dir, &[foe]).map(|(i, _)| i), Some(0));
+        // …but past the radius it is floor, and nothing is hit.
+        let wide = Vec2::new(BODY_RADIUS_M * 3.0, 10.0);
+        let dir = Vec2::new(wide.x - muzzle.x, wide.y - muzzle.y);
+        assert_eq!(first_hit(muzzle, dir, &[foe]), None);
+    }
+
+    /// THE NEAREST BODY ON THE LINE IS THE ONE THAT STOPS IT, and the distance
+    /// reported is to its SURFACE — a bullet stops where it enters.
+    #[test]
+    fn the_first_body_on_the_line_takes_the_shot() {
+        let bodies = [Vec2::new(0.0, 20.0), Vec2::new(0.0, 5.0), Vec2::new(0.0, 12.0)];
+        let (i, d) = first_hit(Vec2::ORIGIN, Vec2::new(0.0, 1.0), &bodies).unwrap();
+        assert_eq!(i, 1, "the body at 5 m is in front of the ones at 12 and 20");
+        assert!((d - (5.0 - BODY_RADIUS_M)).abs() < 1e-9, "{d}");
+        // …and BEHIND the shooter is not hit at all.
+        assert_eq!(first_hit(Vec2::ORIGIN, Vec2::new(0.0, -1.0), &bodies), None);
+        // A direction of nothing hits nothing rather than dividing by zero.
+        assert_eq!(first_hit(Vec2::ORIGIN, Vec2::ORIGIN, &bodies), None);
+    }
 
     /// CONTACT READS ZERO. The centres are 0.4 m apart and the surfaces are
     /// touching, and the second one is what the fight is described by.

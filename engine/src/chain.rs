@@ -137,7 +137,7 @@ pub struct Splash {
 ///
 /// [`resolve_with`] takes the tie-break as an argument, which is what the
 /// invariance test uses; nothing in production should.
-pub fn resolve(bodies: &[Vec2], aimed: usize, splash: Splash, spec: Spec) -> Vec<Instance> {
+pub fn resolve(bodies: &[Vec2], aimed: Option<usize>, splash: Splash, spec: Spec) -> Vec<Instance> {
     resolve_with(bodies, aimed, splash, spec, &mut |_| 0)
 }
 
@@ -145,15 +145,22 @@ pub fn resolve(bodies: &[Vec2], aimed: usize, splash: Splash, spec: Spec) -> Vec
 /// change the total, and for nothing else.
 pub fn resolve_with(
     bodies: &[Vec2],
-    aimed: usize,
+    aimed: Option<usize>,
     splash: Splash,
     spec: Spec,
     tie: &mut impl FnMut(usize) -> usize,
 ) -> Vec<Instance> {
     let mut out = Vec::new();
-    if bodies.is_empty() || aimed >= bodies.len() {
+    if bodies.is_empty() {
         return out;
     }
+    // A SHOT THAT STRUCK NOBODY STILL SPLASHES. Aim is a direction and the
+    // place it lands may be bare floor (owner, 2026-08-17) — *"a 2.3 meter
+    // damage radius from the point of impact against a SURFACE"*, and a floor
+    // is a surface. Every body the sphere catches is then an ordinary seed:
+    // none was directly struck, so none may headshot and none carries
+    // multishot, which is the same rule the radius-caught seeds already follow.
+    let aimed = aimed.filter(|&i| i < bodies.len());
     // THE SEEDS: everything the damage radius caught. The aimed body is always
     // one of them — the impact is on it.
     //
@@ -161,18 +168,17 @@ pub fn resolve_with(
     // that may headshot and the one multishot follows. The rest are a set with
     // no order the game gives them, and taking them in index order is this
     // module's choice rather than a fact.
-    let mut seeds: Vec<usize> = vec![aimed];
-    seeds.extend(
-        (0..bodies.len())
-            .filter(|&i| i != aimed && bodies[i].distance(splash.at) <= splash.radius_m + 1e-9),
-    );
+    let mut seeds: Vec<usize> = aimed.into_iter().collect();
+    seeds.extend((0..bodies.len()).filter(|&i| {
+        Some(i) != aimed && bodies[i].distance(splash.at) <= splash.radius_m + 1e-9
+    }));
 
     for &s in &seeds {
         // …AND THE SPLASH IS NOT A SECOND INSTANCE. "A target that is directly
         // struck by the beam is still only hit once", so a seed takes ONE
         // full-share instance whether the beam or the radius reached it.
-        let multishot = s == aimed;
-        out.push(Instance { target: s, share: 1.0, multishot, headshot: s == aimed });
+        let multishot = Some(s) == aimed;
+        out.push(Instance { target: s, share: 1.0, multishot, headshot: Some(s) == aimed });
 
         // …and then runs its own path.
         let (mut cur, mut share) = (s, 1.0);
@@ -243,7 +249,7 @@ mod tests {
     fn one_seed_yields_its_own_instance_plus_a_full_path() {
         let v = resolve(
             &grid(3.0),
-            FRONT_MIDDLE,
+            Some(FRONT_MIDDLE),
             Splash { at: Vec2::new(3.0, 0.0), radius_m: 2.3 },
             TORID,
         );
@@ -263,10 +269,10 @@ mod tests {
     fn a_wider_radius_multiplies_the_shot_by_the_seeds_it_catches() {
         let bodies = grid(3.0);
         let at = Vec2::new(3.0, 0.0);
-        let bare = resolve(&bodies, FRONT_MIDDLE, Splash { at, radius_m: 2.3 }, TORID);
+        let bare = resolve(&bodies, Some(FRONT_MIDDLE), Splash { at, radius_m: 2.3 }, TORID);
         let primed = resolve(
             &bodies,
-            FRONT_MIDDLE,
+            Some(FRONT_MIDDLE),
             Splash { at, radius_m: 2.3 * 1.44 },
             TORID,
         );
@@ -284,7 +290,7 @@ mod tests {
     fn only_the_directly_struck_body_can_be_headshot() {
         let v = resolve(
             &grid(3.0),
-            FRONT_MIDDLE,
+            Some(FRONT_MIDDLE),
             Splash { at: Vec2::new(3.0, 0.0), radius_m: 2.3 * 1.44 },
             TORID,
         );
@@ -301,7 +307,7 @@ mod tests {
     fn multishot_follows_the_seed_rather_than_the_hit() {
         let v = resolve(
             &grid(3.0),
-            FRONT_MIDDLE,
+            Some(FRONT_MIDDLE),
             Splash { at: Vec2::new(3.0, 0.0), radius_m: 2.3 * 1.44 },
             TORID,
         );
@@ -322,7 +328,7 @@ mod tests {
         for aimed in 0..bodies.len() {
             let v = resolve(
                 &bodies,
-                aimed,
+                Some(aimed),
                 Splash { at: bodies[aimed], radius_m: 2.3 * 1.44 },
                 TORID,
             );
@@ -355,7 +361,7 @@ mod tests {
         let mut seen_spread = false;
         let mut first: Option<Vec<f64>> = None;
         for _ in 0..500 {
-            let v = resolve_with(&bodies, FRONT_MIDDLE, splash, TORID, &mut |n| {
+            let v = resolve_with(&bodies, Some(FRONT_MIDDLE), splash, TORID, &mut |n| {
                 (rng.next_f64() * n as f64) as usize
             });
             assert!((total(&v) - 13.1524).abs() < 1e-3, "{}", total(&v));
@@ -383,9 +389,9 @@ mod tests {
     fn a_formation_that_does_not_move_always_chains_the_same_way() {
         let bodies = grid(3.0);
         let splash = Splash { at: bodies[FRONT_MIDDLE], radius_m: 2.3 * 1.44 };
-        let first = resolve(&bodies, FRONT_MIDDLE, splash, TORID);
+        let first = resolve(&bodies, Some(FRONT_MIDDLE), splash, TORID);
         for _ in 0..100 {
-            assert_eq!(resolve(&bodies, FRONT_MIDDLE, splash, TORID), first);
+            assert_eq!(resolve(&bodies, Some(FRONT_MIDDLE), splash, TORID), first);
         }
         // …and MOVING one body is what changes it. A model that answered the
         // same for every arrangement would pass the loop above too.
@@ -395,11 +401,11 @@ mod tests {
         // itself the geometry working.
         let mut moved = bodies.clone();
         moved[0] = Vec2::new(30.0, 30.0);
-        assert_ne!(resolve(&moved, FRONT_MIDDLE, splash, TORID), first);
+        assert_ne!(resolve(&moved, Some(FRONT_MIDDLE), splash, TORID), first);
         let mut untouched = bodies.clone();
         untouched[8] = Vec2::new(30.0, 30.0);
         assert_eq!(
-            resolve(&untouched, FRONT_MIDDLE, splash, TORID),
+            resolve(&untouched, Some(FRONT_MIDDLE), splash, TORID),
             first,
             "the far corner is reached by nothing, so moving it may not matter"
         );
@@ -413,7 +419,7 @@ mod tests {
         let bodies = vec![Vec2::ORIGIN, Vec2::new(0.0, 2.0)];
         let v = resolve(
             &bodies,
-            0,
+            Some(0),
             Splash { at: Vec2::ORIGIN, radius_m: 2.3 },
             TORID,
         );
@@ -437,7 +443,7 @@ mod tests {
         let bodies = vec![Vec2::ORIGIN, Vec2::new(0.0, 20.0)];
         let v = resolve(
             &bodies,
-            0,
+            Some(0),
             Splash { at: Vec2::ORIGIN, radius_m: 2.3 },
             TORID,
         );

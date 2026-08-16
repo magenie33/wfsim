@@ -198,7 +198,7 @@ mod tests {
         let total = |radius_m: f64| -> f64 {
             crate::chain::resolve(
                 &f.positions(),
-                f.aimed,
+                Some(f.aimed),
                 crate::chain::Splash { at, radius_m },
                 torid,
             )

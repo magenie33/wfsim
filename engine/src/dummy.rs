@@ -4460,7 +4460,9 @@ fn spread_from_seeds(
     };
     let landed = crate::chain::resolve(
         &bodies,
-        0,
+        // THE BEAM IS ON BODY 0 here — the aimed one. A shot that struck bare
+        // floor passes `None` and every seed is an ordinary one.
+        Some(0),
         crate::chain::Splash { at: params.target_at, radius_m: beam.damage_radius_m },
         spec,
     );
