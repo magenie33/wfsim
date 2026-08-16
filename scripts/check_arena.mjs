@@ -17,6 +17,10 @@
 //     player leaves them 0.4 m apart — CONTACT, twice the measured 0.2 m body
 //     radius (M46) — that is the closest two circles go and the floor the engine
 //     clamps to as well. It is the one rule the scene exists to make visible.
+//   · AN OFFICIAL RULER'S FIGHT DOES NOT MOVE. The benchmark pins its
+//     distance, so the scene refuses the gesture there — and it has to refuse
+//     it ITSELF, because the official lock disables inputs and the bodies are
+//     SVG circles that sweep never reaches.
 //   · THE TYPED BOX AND THE DRAG ARE ONE THING. Typing a distance moves the
 //     target ALONG the line it already stands on rather than snapping it to an
 //     axis, so neither input undoes the other's other axis.
@@ -33,6 +37,15 @@ const r = await evaluate(`(async () => {
   const out = {};
   localStorage.clear();
   history.pushState({}, '', '/weapons/Braton/simulator'); route(); await sleep(3000);
+
+  // A SCENARIO OF YOUR OWN FIRST. The app lands a first-time visitor on the
+  // OFFICIAL ruler, whose fight is pinned and therefore not draggable — which
+  // is asserted at the end. Everything before it needs an editable fight, so
+  // the run starts by making one from the preset bar's "+ new".
+  const bar0 = document.querySelector('#preset-bar-simulator-scenarios');
+  const add = bar0 && bar0.querySelector('.pchip.add');
+  if (add) { add.click(); await sleep(1500); }
+  out.startedEditable = typeof officialScenarioActive === 'function' && !officialScenarioActive();
 
   const svg = () => document.querySelector('#sim-target-arena .ar-svg');
   const dist = () => {
@@ -120,7 +133,23 @@ const r = await evaluate(`(async () => {
   // ALONG THE SAME LINE: (6,8) is 3-4-5 scaled, so 20 m must land on (12,16).
   out.typedAt = sim.target_at.map(v => Math.round(v * 100) / 100);
 
-  // 5. THE OPTIMIZER SHOWS IT READ-ONLY.
+  // 5. AN OFFICIAL RULER'S FIGHT IS PINNED. Switch to the benchmark scenario
+  //    and try to drag: nothing may move.
+  // Pick the ruler the way the app does. The benchmark bar is a searchable
+  // dropdown rather than a chip strip, so the check drives the app's own
+  // picker instead of guessing at its markup.
+  // The official rulers are BUILTINS and are not in the user's preset list —
+  // they are addressed by their own id, which is the benchmark's.
+  pickPreset(scenarioBarCfg(), 'single_target'); await sleep(1800);
+  out.officialDistance = state();
+  out.official = typeof officialScenarioActive === 'function' && officialScenarioActive();
+  const before = state();
+  drag('#sim-target-arena .ar-foe', 0, -70);
+  await sleep(700);
+  out.officialMoved = Math.abs(state() - before) > 1e-9;
+  out.officialLooksLocked = !!document.querySelector('#sim-target-arena.ar-ro');
+
+  // 6. THE OPTIMIZER SHOWS IT READ-ONLY.
   history.pushState({}, '', '/weapons/Braton/optimizer'); route(); await sleep(2200);
   const oh = document.querySelector('#opt-target-arena');
   out.optDrew = !!(oh && oh.querySelector('.ar-svg'));
@@ -128,6 +157,9 @@ const r = await evaluate(`(async () => {
   return out;
 })()`);
 
+check("a scenario of your own is open before anything is dragged",
+  r.startedEditable === true,
+  "the app lands on the official ruler, whose fight is pinned");
 check("the arena draws, with two bodies", r.drew && r.bodies === 2, `${r.bodies} bodies`);
 check("...and the fight starts at CONTACT — 0.4 m, twice the measured 0.2 m radius",
   Math.abs(r.startState - 0.4) < 1e-6 && Math.abs(r.startLabel - 0.4) < 0.01,
@@ -155,6 +187,12 @@ check("...and typing moves the target ALONG its own line, not onto an axis",
   Math.abs(r.typedState - 20) < 1e-6 && Math.abs(r.typedAt[0] - 12) < 0.01
     && Math.abs(r.typedAt[1] - 16) < 0.01,
   `${r.typedState} m at ${JSON.stringify(r.typedAt)}`);
+check("an official ruler is the active scenario for this part", r.official === true);
+check("...and it opens at the distance the ruler pins", Math.abs(r.officialDistance - 0.4) < 1e-6,
+  `${r.officialDistance} m`);
+check("...and its fight cannot be dragged", r.officialMoved === false);
+check("...and the scene says so rather than silently ignoring the finger",
+  r.officialLooksLocked === true);
 check("the optimizer draws the same scene", r.optDrew === true);
 check("...read-only, because a fight is edited in one place", r.optReadonly === true);
 

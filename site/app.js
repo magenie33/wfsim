@@ -2375,6 +2375,16 @@ function mountArena(host, s, en, opts) {
   host.addEventListener("pointerdown", (e) => {
     const el = e.target.closest && e.target.closest("[data-drag]");
     if (!el) return;
+    // AN OFFICIAL RULER'S FIGHT IS NOT DRAGGABLE (owner, 2026-08-16). The
+    // benchmark pins its distance — both boards are scored at CONTACT — so a
+    // drag there would silently move the fight off the standard while the bar
+    // still said which ruler you were on.
+    //
+    // CHECKED AT THE GESTURE rather than baked in at mount: `lockOfficialScenario`
+    // disables `input,select,button,textarea`, and the bodies here are SVG
+    // circles, which that sweep does not reach. Asking live also means
+    // switching scenarios needs no re-render to take effect.
+    if (opts.readonly || officialScenarioActive()) return;
     e.preventDefault();
     const which = el.dataset.drag;
     const box = host.querySelector(".ar-svg").getBoundingClientRect();
@@ -9166,6 +9176,12 @@ function lockOfficialScenario() {
   const on = officialScenarioActive();
   const boxes = ["sim-target", "sim-technique", "sim-wfbuffs", "sim-limits", "sim-run", "sim-buffs"]
     .map((id) => $(id)).filter(Boolean);
+  // The ARENA's bodies are SVG circles and the input sweep below cannot reach
+  // them, so the scene is marked here and refuses the gesture itself.
+  ["sim-target-arena", "opt-target-arena"].forEach((id) => {
+    const a = $(id);
+    if (a) a.classList.toggle("ar-ro", on || id.startsWith("opt-"));
+  });
   boxes.forEach((b) => {
     b.classList.toggle("locked", on);
     b.querySelectorAll("input,select,button,textarea").forEach((el) => {

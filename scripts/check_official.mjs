@@ -143,7 +143,9 @@ for (const lang of ["en", "zh"]) {
   check("it offers a copy and nothing that would edit it", r.chipFound && r.chipMarked);
   check("...in the BENCHMARK bar, not yours", r.barVisible && r.notInOwnBar);
   check("opening it makes it the active fight", r.isOfficial === true, r.active);
-  check("...and that fight is the benchmark's", r.level === 9999 && r.duration === 300 && r.metric === "kpm" && r.enemy === "thrax_centurion",
+  // 180 s since 2026-08-10, down from 300 — see data/benchmarks/single_target.yaml
+  // for the argument, which cuts both ways and is why the number moved.
+  check("...and that fight is the benchmark's", r.level === 9999 && r.duration === 180 && r.metric === "kpm" && r.enemy === "thrax_centurion",
     `lv ${r.level}, ${r.duration}s, ${r.metric}, ${r.enemy}`);
   check("a note says what it is", r.noteShown === true, JSON.stringify(r.noteText.slice(0, 60)));
   if (lang === "zh") check("...in Chinese", /官方/.test(r.noteText), JSON.stringify(r.noteText.slice(0, 40)));
@@ -410,7 +412,11 @@ check("...and the next run sends exactly one", c.postsAfterYes === 1, String(c.p
 // base-form Incarnon weapon. It says nothing about the person: it is a
 // property of the build, like the mods beside it.
 check("...carrying the BUILD and no score",
-  JSON.stringify(c.sentKeys) === JSON.stringify(["arcanes","benchmark","evolutions","mode","mods","weapon"]) && c.sentHasScore === false,
+  // `valence` joined the payload on 2026-08-14 — an adversary weapon's
+  // progenitor element is part of the build, and seven submissions were
+  // silently refused while it was carried by the page and dropped by the
+  // worker (see check_board_submit).
+  JSON.stringify(c.sentKeys) === JSON.stringify(["arcanes","benchmark","evolutions","mode","mods","valence","weapon"]) && c.sentHasScore === false,
   JSON.stringify(c.sentKeys));
 check("...against the official benchmark", c.sentBenchmark === "single_target", String(c.sentBenchmark));
 // ...and the mode is the one on screen, not a default the scorer guessed.
