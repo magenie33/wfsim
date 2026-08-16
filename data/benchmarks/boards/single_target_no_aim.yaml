@@ -106,6 +106,12 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, stormbringer, infected_clip, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
     arcanes: [primary_debilitate]
+  - weapon: coda_sporothrix
+    mode: base
+    score: 0.7797990279457169
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, bladed_rounds, speed_trigger, vile_acceleration, vital_sense, thermite_rounds]
+    arcanes: [primary_crux]
+    valence: magnetic
   - weapon: dual_toxocyst
     mode: cycle
     score: 2.167461039187288

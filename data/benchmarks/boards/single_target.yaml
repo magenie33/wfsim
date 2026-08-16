@@ -1488,6 +1488,18 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, creeping_bullseye, magnetic_might, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [cestra_evo1_incarnon_form, cestra_fortress_salvo, cestra_rapid_reinforcement, cestra_deathtrap_trigger]
     arcanes: [secondary_deadhead]
+  - weapon: coda_sporothrix
+    mode: base
+    score: 29.247221139298453
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, bladed_rounds, speed_trigger, vile_acceleration, vital_sense, thermite_rounds]
+    arcanes: [primary_crux]
+    valence: magnetic
+  - weapon: coda_sporothrix
+    mode: base
+    score: 15.235830781657748
+    mods: [galvanized_chamber, galvanized_aptitude, bladed_rounds, point_strike, speed_trigger, vile_acceleration, vital_sense, thermite_rounds]
+    arcanes: [primary_crux]
+    valence: impact
   - weapon: dera_vandal
     mode: cycle
     score: 17.52515597974942
