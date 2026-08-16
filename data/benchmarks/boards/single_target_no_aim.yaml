@@ -36,6 +36,12 @@ entries:
     arcanes: [primary_merciless]
   - weapon: burston_prime
     mode: cycle
+    score: 1.4517170500752143
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
+    arcanes: [primary_merciless]
+  - weapon: burston_prime
+    mode: cycle
     score: 1.0685460846743402
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
@@ -1024,6 +1030,12 @@ entries:
     score: 0.9480817246670896
     mods: [amalgam_serration, galvanized_chamber, critical_delay, vile_acceleration, vital_sense, stormbringer, infected_clip, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: cycle
+    score: 0.8239923139147178
+    mods: [galvanized_chamber, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, stormbringer, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
   - weapon: torid
     mode: cycle
