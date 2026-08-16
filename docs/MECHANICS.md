@@ -2707,6 +2707,28 @@ builds rank in opposite orders from how they rank against one target. That
 reordering is the reason a multi-target model is worth building rather than
 approximating.
 
+### Firestorm is worth nothing and Primed Firestorm quadruples you
+
+`cargo run --release --bin formation_value -- [cols] [rows] [spacing]` prints
+it for any formation. At 3 m — the owner's fixture:
+
+| radius mod | radius | seeds | instances | total | vs bare |
+| --- | --- | --- | --- | --- | --- |
+| nothing | 2.30 m | 1 | 6 | 3.29 | 1.00x |
+| **Firestorm** | 2.85 m | 1 | 6 | 3.29 | **1.00x** |
+| **Primed Firestorm** | 3.31 m | 4 | 24 | 13.15 | **4.00x** |
+
+**The ordinary Firestorm is worth EXACTLY NOTHING here and its primed version
+quadruples the shot**, because +24% takes the radius to 2.85 m and the nearest
+body is at 3.00. The mod does not fail gently — it fails completely, and then
+its bigger twin steps over the same line and takes four seeds. That is the
+shape of every radius mod on every chaining weapon, and it is invisible to any
+model with one target in it.
+
+The same tool prints the step edges, which are pure geometry: the bare radius
+(2.30 m), the primed one (3.31 m), and `3.31 / √2 = 2.34 m` where the diagonals
+come in and the mod peaks at 6x.
+
 ### Ties, and why they are not modelled
 
 **MEASURED (M52): the path is fixed, and its rule is not in the formation.** Two
