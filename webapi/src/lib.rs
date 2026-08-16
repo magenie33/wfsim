@@ -3115,12 +3115,35 @@ pub fn panel_json(v: &Value) -> Value {
         } else {
             behavior.clone()
         };
-        if panel.co_per_type > 0.0 {
-            stats.push(json!({ "key": "co", "label": "Condition Overload",
-            "base": "—", "final": format!("{} per status type on target", fpct(panel.co_per_type)),
-            "note": gunco_note,
+        // ALWAYS SHOWN, even with no source equipped (owner, 2026-08-16).
+        //
+        // The row used to appear only once a GunCO card was on the build, so
+        // the one thing a reader could check — WHICH RULE this weapon is being
+        // computed under — was invisible until they had already committed to
+        // the mod. The rules are per-weapon (docs/CATALOGS.md: Adding or
+        // Multiplying, which attack parts, what fraction of the base the term
+        // reads), they are transcribed by hand from a catalog, and the Burston
+        // Prime's was wrong for months. Putting the adopted rule on every
+        // weapon's panel is what lets that be caught by someone who owns the
+        // gun rather than by someone who happens to re-read the yaml.
+        //
+        // It is a STATEMENT OF METHOD, not an admission — `unmodeled:` and the
+        // disclosure banner are for what the sim cannot do; this is what it
+        // does, said out loud so it can be argued with.
+        let has_source = panel.co_per_type > 0.0;
+        stats.push(json!({ "key": "co", "label": "Condition Overload",
+            "base": "—",
+            "final": if has_source {
+                format!("{} per status type on target", fpct(panel.co_per_type))
+            } else {
+                "no source equipped".to_string()
+            },
+            "note": if has_source {
+                gunco_note.clone()
+            } else {
+                format!("{gunco_note} — this is how a GunCO source WOULD be computed here")
+            },
             "sources": sources("co", None) }));
-        }
 
         // The equipped arcane on the panel: Secondary Shiver is a GunCO-family
         // source, so its row carries the SAME per-weapon caveat as the CO row.

@@ -365,6 +365,20 @@ around (decision 2026-07-31).
   ALONG the line it already stands on rather than snapping it to an axis — and
   the OPTIMIZER draws the same scene read-only, because a fight is edited in one
   place.
+  `node scripts/check_gunco_stated.mjs` is the TWENTY-NINTH: EVERY WEAPON SAYS
+  WHICH CONDITION OVERLOAD RULE IT IS COMPUTED UNDER, with nothing equipped.
+  The rules are PER WEAPON and hand-transcribed from a catalog — Adding or
+  Multiplying, which attack parts take it, what fraction of the base the term
+  reads — and the Burston Prime's fraction was wrong for months, caught only
+  because a player measured it (MEASUREMENTS M48). The row used to appear only
+  once a CO card was on the build, so the one thing a reader could check was
+  invisible until they had already committed to the mod; it is unconditional
+  now and says "no source equipped" plus how one WOULD be computed (owner,
+  2026-08-16). It is a STATEMENT OF METHOD rather than an admission — the
+  disclosure banner is for what the sim cannot do, this is what it does, said
+  out loud so it can be argued with. The check walks all three behaviours from
+  three weapons the catalog classifies differently and asserts they are three
+  different sentences, so a page printing one of them for everything fails.
   `node scripts/check_riven_pool.mjs` is the SEVENTEENTH: the riven editor
   offers the stats that weapon's rivens actually roll, in BOTH slots. What a
   riven can roll is DE's per-weapon table, published nowhere, and the wiki's

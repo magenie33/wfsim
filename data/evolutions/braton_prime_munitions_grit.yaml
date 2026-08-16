@@ -9,6 +9,25 @@ description: "Increase Base Damage by +2. Multishot consumes ammo directly from 
 # number below is this weapon's.
 selection: choose_one
 
+# CO'S BASE EXCLUDES THIS PERK'S FLAT DAMAGE — the catalog's Braton row.
+#
+# docs/CATALOGS.md: "Braton family | Incarnon Form Radial | 95% | Adding |
+# derived: 70 + 4 = 74, 70/74". That +4 is Daring Reverie's, and Munitions Grit
+# is its tier-2 twin — flagged together the way the Atomos's, the Zylok's and
+# the Burston's tier-2 pairs already are.
+#
+# WHY IT REACHES THE DIRECT HIT AND NOT ONLY THE ROW'S NAMED PART. The exclusion
+# belongs to the PERK, not to the attack part: the +4 raises whatever it lands
+# on, and CO reads the base BEFORE it wherever that is. Measured on the Burston
+# (MEASUREMENTS M48) — five readings across both of its forms, at two fractions
+# — and the Zylok family was already flagged this way. This is the third and
+# last of the catalog's three DERIVED-fraction rows; the other two were treated
+# so, and it was not.
+#
+# NOT A GENERALISATION TO WEAPONS WITHOUT A ROW. The default stays what the
+# catalog says it is (owner, 2026-08-16): follow the wiki, and let a MEASUREMENT
+# re-certify an entry. Absence still means ordinary.
+co_base_excludes_this_evolution: true
 effects:
   - kind: flat_base_damage
     value: 2.0

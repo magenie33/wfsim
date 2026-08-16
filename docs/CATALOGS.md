@@ -128,7 +128,33 @@ Every row, with the perk the printed number identifies:
 | Zylok Prime | 500 or 530 (Evolution II) | both, each +30 | 0.9434 (catalog 94%) |
 
 **INCLUDING an evolution's flat damage is the DEFAULT** (owner, 2026-07-30);
-the exclusion is opt-in per perk. So every row above has to be flagged on the
+the exclusion is opt-in per perk.
+
+**AND THE DEFAULT FOLLOWS THE WIKI; A MEASUREMENT RE-CERTIFIES** (owner,
+2026-08-16). Flipping that default the other way was considered and refused:
+it would have touched 107 perks across 65 weapons on the strength of ONE
+measured weapon, and the repo's own rule forbids exactly that ("the catalog is
+authoritative and absence means ORDINARY", "a row is transcribed for the entry
+it names rather than generalised to a class"). What the Burston measurement
+(M48) actually established is narrower and is now applied:
+
+> **A fraction the catalog DERIVES belongs to the PERK, so it reaches every
+> attack part the perk's damage landed on — not only the part the row names.**
+
+The catalog has exactly three derived-fraction rows and they are now treated
+alike: the Zylok family was already flagged, the Burston family was flagged on
+the measurement, and the **Braton family** was flagged with them — its Daring
+Reverie is the +4 the row's `70 + 4 = 74` names, and Munitions Grit is its
+tier-2 twin. That last one needed no new measurement, only consistency: two of
+the three were already done.
+
+**AND THE ADOPTED RULE IS ON THE PAGE.** Every weapon's panel states which CO
+rule it is computed under — behaviour, which attack parts, and the fraction
+with its number — whether or not a CO source is equipped
+(`scripts/check_gunco_stated.mjs`). The rules are per-weapon and transcribed by
+hand, and the Burston's was wrong for months; putting it where a player who
+owns the gun can read it is what makes the next one findable before it is
+published rather than after. So every row above has to be flagged on the
 perk it names, or that weapon computes its CO term on a base the game does not
 use — for the Despair and the Bronco Prime, on twice it.
 
