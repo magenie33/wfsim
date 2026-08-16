@@ -143,6 +143,27 @@ attack:
       # hops, each at 75% of the one before, not five simultaneous targets.
       hops: 5
       range_m: 7.0
+      # EVERY TARGET IN THE DAMAGE RADIUS IS A SEED, and each seed runs its own
+      # path. Verbatim (wiki `Torid_Incarnon_Genesis`): "The beam will chain
+      # independently to 5 additional enemies starting from EACH target hit by
+      # the initial damage radius. Each chain chooses targets independently,
+      # and an enemy can be struck by multiple chains."
+      #
+      # A PATH VISITS NOBODY TWICE, and that is what "struck by multiple
+      # chains" means — the repeats come from DISTINCT paths, not from one path
+      # looping back (owner, 2026-08-16). The distinction is not cosmetic: it
+      # decides the number from three targets on, because the 75% compounds
+      # ALONG a path. Three seeds mutually in range give each of them
+      # 100% + 0.75 + 0.75^2 = 231%, where "each seed links every other at a
+      # flat 75%" would give 250%.
+      #
+      # NOT VERIFIED: how a path picks its NEXT hop. malurth's simulator
+      # assumes the nearest viable target and says so on screen ("idk if that
+      # is actually how that works"). With two targets there is only one
+      # candidate, so a two-enemy measurement is clean; from three on the
+      # answer depends on this rule.
+      seeds_from_radius: true
+      revisits_within_a_path: false
       damage_per_hop: 0.75
       # "The beam will chain independently to 5 additional enemies starting
       # from EACH target hit by the initial damage radius" — every enemy the

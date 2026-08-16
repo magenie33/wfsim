@@ -2615,6 +2615,76 @@ from the other side, which is the check that the two halves agree.
 epicentre, wherever the pellet actually crossed. Each distance is chosen by
 what is asking, which is why the model is not "one distance for everything".
 
+## 12. BEAM CHAINING — the mechanic a second target turns on
+
+Nothing here is modelled yet: the arena holds one target, so every clause below
+resolves to zero. It is written down because the Torid Incarnon carries all
+THREE ways a shot reaches a second body at once, which makes it the weapon a
+multi-target model should be built against (owner, 2026-08-16).
+
+### The three paths to a second target
+
+| separation | what reaches it | strength |
+| --- | --- | --- |
+| within the damage radius (2.3 m on the Torid, from the point of impact) | the beam's own instance — **not a second one**: *"a target that is directly struck by the beam is still only hit once"* | full |
+| within the chain range (7 m) of a target that was hit | a chain hop | 75% of the hop before it |
+| beyond both | nothing | — |
+
+### Seeds and paths
+
+**EVERY TARGET IN THE DAMAGE RADIUS IS A SEED.** Verbatim: *"The beam will
+chain independently to 5 additional enemies starting from EACH target hit by
+the initial damage radius. Each chain chooses targets independently, and an
+enemy can be struck by multiple chains."*
+
+**A PATH VISITS NOBODY TWICE** (owner, 2026-08-16). "Struck by multiple chains"
+means the repeats come from DISTINCT paths — one per seed — rather than from a
+path looping back on itself. That reading is what makes the arithmetic
+well-defined, and it separates from the alternative at three targets:
+
+| targets, all mutually in range | seeds + paths | "each seed links every other at 75%" |
+| --- | --- | --- |
+| 2 | 100% + 0.75 = **175%** | 175% — the same, so a two-enemy test cannot tell them apart |
+| 3 | 100% + 0.75 + 0.75² = **231%** | 100% + 2 x 0.75 = 250% |
+
+The 75% COMPOUNDS ALONG A PATH, so the difference grows with the crowd.
+
+### What is not known
+
+* **HOW A PATH PICKS ITS NEXT HOP.** malurth's simulator assumes the nearest
+  viable target and says on screen *"idk if that is actually how that works"*.
+  With two enemies there is one candidate and the question does not arise —
+  which is why the first measurement should use two.
+* **WHETHER FIRESTORM WIDENS THE CHAIN RANGE.** Two wiki pages disagree:
+  `Continuous_Weapon` says *"Mods like Firestorm will increase the range at
+  which a beam can link to another enemy"*, while the Torid's own page credits
+  Firestorm only with the 2.3 m damage radius. It decides whether Primed
+  Firestorm earns a slot, so it is worth a measurement of its own.
+
+### Settled elsewhere, and worth having here
+
+* **Sinister Reach does NOT reach the chains** — *"Weapon Range Mods no longer
+  affect the distance of chains for chainable Beam weapons. Main Beam distance
+  is still affected"*. The Torid cannot equip it anyway.
+* **Punch Through** *"will cause the beam to rapidly recalculate which enemies
+  are chained to, spreading out on the damage, but not increasing it"* — and
+  the Torid's page says punch-through has no effect on its beam at all.
+* **Chains cost no ammo.**
+* **MULTISHOT reaches only what the beam DIRECTLY struck** — not the radius,
+  and not a chain that started from a target the radius caught rather than the
+  beam.
+* **The same code family** runs on other weapons with other constants: the
+  Amprex chains 3 within 10 m at 0.5ⁿ, the Kuva Nukor 2 within 9 m at 50%.
+
+### The reference implementation, and what it is worth
+
+`https://malurth.github.io/AoE-simulator/` is a live top-down toy whose
+parameter list is very close to the axis set a spatial model needs — entity
+radius, chain radius, max chain length, beam length, multishot, enemy speed,
+and a Primed Firestorm toggle. Its author disclaims the one rule that matters
+most, so it is a reference for the SHAPE of the model and not a source for its
+numbers.
+
 ## Open questions
 
 - Exact multiplicative-bucket membership for every common mod (§2).
