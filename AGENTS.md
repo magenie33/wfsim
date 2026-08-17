@@ -639,6 +639,17 @@ around (decision 2026-07-31).
   the ones that took something, because a 19x19 ruler is 361 bodies and a
   chaining beam reaches thirteen — and because a per-BODY figure is the only
   thing that can say a crowd was REACHED rather than a big number produced.
+  SETTING UP A FIGHT AND READING ONE ARE TWO THINGS (owner, 2026-08-17), so
+  the RESULT panel draws its OWN copy of the scene. The scenario's canvas is
+  where a body is PLACED — draggable, with its distance shortcuts and its
+  +1/+8; the result's is read-only, shaded by what each body TOOK, marks the one
+  being examined and PICKS rather than drags. Neither is the other's control and
+  neither can be mistaken for it. `mountArena` takes `heat`/`selected`/`onPick`
+  for the second kind and draws no editing controls at all for it.
+  A BODY IS NAMED WHERE IT IS CREATED (`nextFoeId`), one past the highest ever
+  used rather than one past the count — so deleting a body never hands its name
+  to the next one, and a roll call, a heat map and a debuff table cannot end up
+  about different enemies.
   THE DEBUFF TABLE HAS A SUBJECT. `Replay::tracked` names the bodies it
   followed, the panel draws a chip per body and picking one redraws the table
   from the stored result at no simulation cost. It follows the aimed body plus

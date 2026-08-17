@@ -138,6 +138,48 @@ const r = await evaluate(`(async () => {
     const live = () => [...document.querySelectorAll('[data-series="debuff"]')]
       .map((e) => e.textContent.trim()).join('|');
     out.foeBefore = live();
+
+    // ---- SETTING UP A FIGHT AND READING ONE ARE TWO THINGS --------------
+    //
+    // The result panel draws its OWN copy of the scene (owner, 2026-08-17):
+    // read-only, shaded by what each body took, and clicking a body picks it.
+    // The scenario's canvas keeps the dragging and the quick sets. Neither is
+    // the other's control, and the assertion is in BOTH directions — a
+    // result map that could still drag would be editing the past.
+    out.rollRows = [...document.querySelectorAll('.rp-rollrow .nm')]
+      .map((x) => x.textContent.trim());
+    out.sceneBodies = document.querySelectorAll('#rp-scene .ar-body').length;
+    out.shaded = [...document.querySelectorAll('#rp-scene .ar-foe')]
+      .filter((c) => c.getAttribute('style')).length;
+    // THE EDITOR'S CONTROLS ARE THE EDITOR'S: the scenario has its quick sets,
+    // the result has none.
+    out.simChips = document.querySelectorAll('#sim-target-arena .ar-jump').length;
+    out.rpChips = document.querySelectorAll('#rp-scene .ar-jump').length;
+    // …AND A ROW THE REPLAY DID NOT FOLLOW says so rather than offering a
+    // click it cannot honour.
+    out.offRows = document.querySelectorAll('.rp-rollrow.off').length;
+    out.moreLine = (document.querySelector('.rp-foe-more') || {}).textContent || null;
+
+    // CLICK A BODY ON THE MAP. Pick the one a followed roll-call row names, so
+    // the map and the list are proved to be two views of ONE selection.
+    {
+      const row = [...document.querySelectorAll('.rp-rollrow[data-rpfoe]')]
+        .find((x) => x.dataset.rpfoe !== '0');
+      const wantId = row.querySelector('.nm').textContent.trim();
+      const idx = 1 + (sim.formation || []).findIndex((f) => f.id === wantId);
+      const circle = document.querySelector('#rp-scene .ar-foe[data-foe="' + idx + '"]');
+      const posBefore = JSON.stringify(sim.formation.map((f) => f.at));
+      circle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+      await sleep(1200);
+      out.mapWant = wantId;
+      out.mapPickedRow = [...document.querySelectorAll('.rp-rollrow.sel .nm')]
+        .map((x) => x.textContent.trim());
+      out.mapPickedChip = [...document.querySelectorAll('.rp-foe.sel')]
+        .map((x) => x.textContent.trim());
+      out.mapMarked = document.querySelectorAll('#rp-scene .ar-sel').length;
+      out.mapMovedNothing = JSON.stringify(sim.formation.map((f) => f.at)) === posBefore;
+    }
+
     const second = document.querySelector('[data-rpfoe="1"]');
     out.hasSecond = !!second;
     if (second) {
@@ -192,5 +234,22 @@ check("...picking one selects it", r.hasSecond === true && String(r.foeSel) === 
   String(r.foeSel));
 check("...and the table then reads THAT enemy's debuffs",
   r.foeBefore !== r.foeAfter, `${r.foeBefore} -> ${r.foeAfter}`);
+
+// SETTING UP A FIGHT AND READING ONE ARE TWO THINGS. The result draws its own
+// copy of the scene; the scenario's keeps the editing.
+check("the result panel draws its own scene",
+  r.sceneBodies > 1, `${r.sceneBodies} bodies`);
+check("...shaded by what each body took", r.shaded > 1, `${r.shaded} shaded`);
+check("...with a roll call beside it", r.rollRows.length > 1, r.rollRows.join(", "));
+check("...and NONE of the scenario's editing controls",
+  r.simChips > 0 && r.rpChips === 0, `scenario ${r.simChips}, result ${r.rpChips}`);
+check("a body the replay did not follow says so rather than offering a dead click",
+  r.offRows > 0 && /\S/.test(String(r.moreLine)), `${r.offRows} off · ${r.moreLine}`);
+check("clicking a body on the map picks it",
+  String(r.mapPickedRow) === r.mapWant && String(r.mapPickedChip) === r.mapWant,
+  `${r.mapWant}: row ${r.mapPickedRow}, chip ${r.mapPickedChip}`);
+check("...marks it on the scene", r.mapMarked === 1, `${r.mapMarked} marked`);
+check("...and moves nobody, because it is a picture of a fight already run",
+  r.mapMovedNothing === true);
 
 await app.finish("the debuff table is the buff table, read from the other side");

@@ -468,6 +468,8 @@ ui:
   "The score is kills per minute across the whole formation, counting the fraction of each target already gone.": 分数是整个阵型的每分钟击杀数，并计入每个目标已被削掉的比例。
   "A body that dies respawns where it stood, so the arrangement is the same at the end as at the start and the score is a rate rather than a race to the last body.": 死掉的目标在原地重生，所以阵型从头到尾一样，分数是一个速率而不是清空最后一个的竞速。
   "The grid is stated as three numbers rather than as 361 positions, so its terms can be read and argued with.": 方阵用三个数字描述而不是 361 个坐标，这样它的条款才读得懂、争得动。
+  "Where the damage went": 伤害落在哪里
+  "every body that took something, and how much — click one to read its debuffs": 每个吃到伤害的身体，以及吃了多少 —— 点一个就能看它身上的减益
   # WHICH ENEMY the debuff table is about (2026-08-17).
   "the body the weapon was on": 武器瞄准的那一具
   "an enemy the shot reached": 这一发够到的敌人

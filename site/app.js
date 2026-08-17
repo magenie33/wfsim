@@ -2436,7 +2436,16 @@ function arenaFirstHit(s) {
   return best ? best[0] : -1;
 }
 
-function arenaSvg(s, en) {
+/// THE SCENE. `heat` shades each body by what it TOOK and `sel` marks the one
+/// being examined — both absent when this is the scenario's own canvas.
+///
+/// SETTING UP A FIGHT AND READING ONE ARE TWO THINGS (owner, 2026-08-17), and
+/// the same picture serves both only because it is the same FIGHT. The
+/// scenario's copy is where a body is placed and carries no result; the result
+/// panel's copy is read-only, coloured by the answer, and clicking a body picks
+/// it. Neither can be mistaken for the other, and neither is the other's
+/// control.
+function arenaSvg(s, en, heat, sel) {
   const w = ARENA_VW, h = ARENA_VH;
   const bodies = arenaBodies(s);
   const aim = arenaAim(s);
@@ -2489,8 +2498,16 @@ function arenaSvg(s, en) {
     const [bx, by] = g.px(b);
     // THE ONE THE BEAM IS ON is marked, because aiming at a place means the
     // answer is not always what the cursor is nearest to.
-    const cls = i === struck ? " ar-struck" : "";
-    return `<circle class="ar-body ar-foe${cls}" data-drag="foe:${i}" data-foe="${i}" `
+    const cls = (i === struck ? " ar-struck" : "")
+      + (heat ? " ar-heat" : "")
+      + (sel === i ? " ar-sel" : "");
+    // HOW MUCH IT TOOK, as a share of the worst-hit body. A body that took
+    // NOTHING keeps the outline it has on the scenario's canvas, which is what
+    // makes "the chain reached nobody" visible at a glance rather than a table
+    // to read.
+    const fill = heat && heat[i] > 0
+      ? ` style="fill-opacity:${(0.15 + 0.75 * heat[i]).toFixed(3)}"` : "";
+    return `<circle class="ar-body ar-foe${cls}" data-drag="foe:${i}" data-foe="${i}"${fill} `
       + `cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${r.toFixed(1)}"/>`;
   }).join("");
   // A short arrow past the muzzle says which way the body is FACING, so a
@@ -2518,6 +2535,19 @@ function arenaSvg(s, en) {
 /// whole panel is not re-rendered until the finger comes up, because the panel
 /// contains the thing being dragged and rebuilding it mid-gesture drops the
 /// pointer capture.
+/// THE NEXT UNUSED NAME in this scenario — `e2` upward, `e1` being the aimed
+/// body's and not ours to give.
+///
+/// One PAST the highest ever used rather than one past the count, so deleting a
+/// body never hands its name to the next one.
+const nextFoeId = (s) => {
+  const n = (s.formation || []).reduce((m, f) => {
+    const k = Number(String(f.id || "").replace(/^e/, ""));
+    return Number.isFinite(k) ? Math.max(m, k) : m;
+  }, 1);
+  return `e${n + 1}`;
+};
+
 /// ADD A BODY, somewhere it does not stand on anyone.
 ///
 /// It walks OUTWARD in a ring around the target rather than dropping every new
@@ -2534,7 +2564,15 @@ function arenaAddFoe(s) {
       const a = (k / (ring * 8)) * Math.PI * 2;
       const at = [cx + Math.cos(a) * ring * 3, cy + Math.sin(a) * ring * 3];
       if (clear(at)) {
-        s.formation.push({ at, enemy: "", level: null });
+        // NAMED WHERE IT IS CREATED. The server fills a blank id in by
+        // POSITION, which is right for a scenario written before ids existed
+        // and wrong for one being edited: delete the body in front and every
+        // name behind it shifts, so a roll call, a heat map and a debuff table
+        // would all be about somebody else (owner, 2026-08-17).
+        //
+        // NEVER REUSED inside one scenario, which is what makes it an identity
+        // rather than a label. `e1` is the aimed body's and is not ours to give.
+        s.formation.push({ at, enemy: "", level: null, id: nextFoeId(s) });
         return true;
       }
     }
@@ -2604,10 +2642,30 @@ function mountArena(host, s, en, opts) {
         : "");
     return `<div class="ar-jumps">${jumps}</div><div class="ar-jumps ar-crowd">${crowd}</div>`;
   };
-  const paint = () => { host.innerHTML = arenaSvg(s, en) + chips(); };
+  // AN ANALYSIS MOUNT IS NOT AN EDITOR. `opts.heat` says this copy is the
+  // RESULT's, so it draws the scene and nothing else — no distance shortcuts,
+  // no +1/+8, no drag. Setting up a fight and reading one are two things and
+  // the controls of one have no business in the other (owner, 2026-08-17).
+  const analysis = !!opts.heat;
+  const paint = () => {
+    host.innerHTML = arenaSvg(s, en, opts.heat, opts.selected)
+      + (analysis ? "" : chips());
+  };
   paint();
   if (opts.readonly) {
     host.classList.add("ar-ro");
+    // AN ANALYSIS MOUNT IS READ-ONLY AND STILL CLICKABLE: it PICKS, it never
+    // moves. Bound here rather than below because everything below belongs to
+    // the EDITOR — the drag, the quick sets, the aim marker — and none of that
+    // has any business on a picture of a fight that has already been run
+    // (owner, 2026-08-17: setting up a fight and reading one are two things).
+    if (opts.onPick) {
+      host.addEventListener("pointerdown", (e) => {
+        const el = e.target.closest && e.target.closest("[data-drag]");
+        const w = el && el.dataset.drag;
+        if (w && w.startsWith("foe:")) opts.onPick(Number(w.slice(4)));
+      });
+    }
     return;
   }
   // DELEGATED, because `paint` replaces the markup on every move: listeners
@@ -7014,6 +7072,14 @@ function gainLanes() {
 // resets your selection on every Run Sim is a panel you re-select on every Run
 // Sim (owner, 2026-08-11).
 let replayFoe = 0;
+/// …CLAMPED TO WHAT THIS REPLAY ACTUALLY FOLLOWED. Three functions ask it —
+/// the markup, the frame reader and the wiring — and they run at different
+/// times, so it is derived rather than passed. It was written out three times
+/// for an hour and the third copy was in a function the other two's binding
+/// could not reach, which took the whole panel down with "dBody is not
+/// defined" rather than drawing a wrong number: it announced itself.
+const replayFoeIdx = (rp) =>
+  Math.min(replayFoe, Math.max(0, ((rp && rp.tracked) || [""]).length - 1));
 
 let gainGen = 0;
 // An axis whose scan was dropped because another axis was mid-flight. One slot:
@@ -10135,16 +10201,16 @@ function replayMarkup(r) {
     (DB_OWN_NAME[id] || DT(DEBUFF_TYPE[id] || id)) +
     (id === "frozen" ? ` (${tr("frozen")})` : "");
   // WHOSE DEBUFFS. `rp.tracked` names the bodies the replay followed — the
-  // aimed one first — and this is the index into it. It lives OUTSIDE the
-  // render (`replayFoe`) so picking an enemy survives a scrub and a re-run,
-  // which is the same rule every fold on this panel follows.
-  const dBody = Math.min(replayFoe, Math.max(0, (rp.tracked || [""]).length - 1));
+  // aimed one first — and this is the index into it. The selection lives
+  // OUTSIDE the render (`replayFoe`) so picking an enemy survives a scrub and
+  // a re-run, which is the same rule every fold on this panel follows.
+  const dBody = replayFoeIdx(rp);
   // WHICH ENEMY, as chips. Drawn only when there is a choice — one body is the
   // fight this app has always run and needs no control.
   const foeChips = (rp, sel) => {
     const ids = rp.tracked || [];
     if (ids.length < 2) return "";
-    const hit = (rp.bodies || []).length;
+    const hit = (r.bodies || []).length;
     const more = Math.max(0, hit - ids.length);
     return `<div class="rp-foes">${
       ids.map((id, k) => `<button type="button" class="rp-foe${k === sel ? " sel" : ""}" data-rpfoe="${
@@ -10251,8 +10317,50 @@ function replayMarkup(r) {
         <span id="rp-clock" class="rp-clock">${rp.t[rp.t.length - 1].toFixed(0)}s / ${rp.t[rp.t.length - 1].toFixed(0)}s</span>
       </div>
       <div class="rp-pools" id="rp-pools"></div>`;
+  // ---- WHERE THE DAMAGE WENT ------------------------------------------
+  //
+  // A SECOND COPY OF THE SCENE, and that is the point (owner, 2026-08-17):
+  // setting up a fight and reading one are two things. The scenario's canvas is
+  // where a body is PLACED — draggable, with its distance shortcuts and its
+  // +1/+8. This one is read-only, coloured by what each body TOOK, and clicking
+  // a body picks it. Neither is the other's control and neither can be mistaken
+  // for it.
+  //
+  // Only when there is a crowd: one body is the fight this app has always run
+  // and its picture is already on the scenario.
+  // THE ROLL CALL IS THE RESULT's, not the replay's: `bodies` is a mean over
+  // every run, while a replay is ONE engagement. Two different questions and
+  // two different objects, joined here by the id the page gave each body.
+  const bodyRows = (r.bodies || []);
+  const crowd = bodyRows.length > 1
+    ? `<div class="rp-scene" id="rp-scene"></div>`
+      + `<table class="rp-roll"><tbody>${bodyRows.map((b) => {
+          const top = Math.max(...bodyRows.map((x) => x.damage)) || 1;
+          const share = b.damage / top;
+          const on = (rp.tracked || []).indexOf(b.id);
+          return `<tr class="rp-rollrow${on === dBody ? " sel" : ""}${
+            on < 0 ? " off" : ""}"${on >= 0 ? ` data-rpfoe="${on}"` : ""}>`
+            + `<td class="nm">${escHtml(b.id)}${
+              b.aimed ? ` <span class="sm">${escHtml(tr("aimed"))}</span>` : ""}</td>`
+            + `<td class="bar"><span style="width:${(share * 100).toFixed(1)}%"></span></td>`
+            + `<td class="num">${Math.round(b.damage).toLocaleString()}</td></tr>`;
+        }).join("")}</tbody></table>`
+      // WHAT IS NOT CLICKABLE, and why. A row the replay did not follow has no
+      // debuff series to show, and saying so beats a dead click.
+      + ((rp.tracked || []).length < bodyRows.length
+        ? `<div class="rp-foe-more">${escHtml(
+            tr("+{n} more took damage and are not followed")
+              .replace("{n}", bodyRows.length - (rp.tracked || []).length))}</div>`
+        : "")
+    : "";
+
   const curves =
-    foldBlock("buffs", tr("Buff coverage"), tr("live stacks through the engagement"), rows)
+    (crowd
+      ? foldBlock("where", tr("Where the damage went"),
+          tr("every body that took something, and how much — click one to read its debuffs"),
+          crowd)
+      : "")
+    + foldBlock("buffs", tr("Buff coverage"), tr("live stacks through the engagement"), rows)
     + (dRows
       ? foldBlock("debuffs", tr("Debuff coverage"),
           tr("what was on the target — a respawn is the same target, so its stacks drop to zero and climb again"),
@@ -10381,11 +10489,10 @@ function replayApply(rp, i) {
   // belongs to. The DEBUFF rows index a FILTERED roster — the statuses this run
   // never applied are not drawn — so the row rebuilds the same filter rather
   // than indexing the full one and reading somebody else's series.
-  // WHOSE, again — `replayApply` re-reads the panel at a frame and has to pick
-  // the same body the table was DRAWN for, or the live count in each header
-  // would belong to somebody else. Derived from the same state rather than
-  // passed, because the two run at different times.
-  const aBody = Math.min(replayFoe, Math.max(0, (rp.tracked || [""]).length - 1));
+  // WHOSE, again — this re-reads the panel at a frame and has to pick the same
+  // body the table was DRAWN for, or the live count in each header would belong
+  // to somebody else.
+  const aBody = replayFoeIdx(rp);
   const dLive = (rp.debuffs || [])
     .map((b, k) => [b, ((rp.dstacks || [])[aBody] || [])[k] || []])
     .filter(([, s]) => s.some((v) => v > 0));
@@ -10431,16 +10538,49 @@ function wireReplay(r) {
     draw();
     if (st.playing) st.raf = requestAnimationFrame(tick);
   };
-  // PICK AN ENEMY. The debuff table is the only thing that changes: the buffs
-  // are the PLAYER's and belong to no body, and the clock does not move — you
-  // are asking "what was on THAT one at this instant", not replaying anything.
+  // PICK AN ENEMY — from a chip, from a roll-call row, or from the map. Three
+  // views of ONE selection, which is why they share the attribute.
+  //
+  // The debuff table is the only thing that changes: the buffs are the
+  // PLAYER's and belong to no body, and the clock does not move — you are
+  // asking "what was on THAT one at this instant", not replaying anything.
+  const pickFoe = (k) => {
+    replayFoe = k;
+    // The panel redraws from the stored result, so this costs no simulation.
+    renderStoredSimResult();
+  };
   document.querySelectorAll("[data-rpfoe]").forEach((el) => {
-    el.onclick = () => {
-      replayFoe = Number(el.dataset.rpfoe);
-      // The panel redraws from the stored result, so this costs no simulation.
-      renderStoredSimResult();
-    };
+    el.onclick = () => pickFoe(Number(el.dataset.rpfoe));
   });
+  // THE MAP, mounted last because it measures the box it was given. It is the
+  // RESULT's copy of the scene: read-only, shaded by what each body took, and
+  // it picks rather than drags (`mountArena`'s analysis mount).
+  const scene = $("rp-scene");
+  if (scene && (r.bodies || []).length > 1) {
+    // BY ARENA INDEX, which is what the scene draws: 0 is the aimed body and
+    // `i + 1` is `formation[i]`. The result names bodies by ID, so the two are
+    // joined on the name the page itself gave them.
+    const idAt = (i) => (i === 0
+      ? (rp.tracked || [])[0]
+      : ((sim.formation || [])[i - 1] || {}).id || `e${i + 1}`);
+    const top = Math.max(...r.bodies.map((b) => b.damage)) || 1;
+    const byId = Object.fromEntries(r.bodies.map((b) => [b.id, b.damage / top]));
+    const n = 1 + (sim.formation || []).length;
+    const heat = Array.from({ length: n }, (_, i) => byId[idAt(i)] || 0);
+    const selIdx = Array.from({ length: n }, (_, i) => i)
+      .find((i) => idAt(i) === (rp.tracked || [])[replayFoeIdx(rp)]);
+    mountArena(scene, sim, (allEnemies().find((e) => e.id === sim.enemy) || allEnemies()[0]), {
+      readonly: true,
+      heat,
+      selected: selIdx,
+      onPick: (i) => {
+        const k = (rp.tracked || []).indexOf(idAt(i));
+        // A BODY THE REPLAY DID NOT FOLLOW has no series to show, so the click
+        // does nothing rather than showing somebody else's.
+        if (k >= 0) pickFoe(k);
+      },
+    });
+  }
   $("rp-play").onclick = () => {
     if (st.playing) { stop(); return; }
     // Pressing play on a FINISHED fight rewinds it — that is what the button
