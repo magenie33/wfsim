@@ -4625,10 +4625,33 @@ fn spread_from_punch_through(
     for &s in struck.iter().skip(1) {
         let Some(idx) = s.checked_sub(1) else { continue };
         let Some(fs) = params.others.get(idx) else { continue };
+        // ITS OWN DAMAGE FALLOFF, because it is FURTHER. The page names no
+        // attenuation per body crossed, but a shot that keeps going keeps
+        // flying — and the direct hit reads the GAP it flew (`falloff.factor`).
+        // The aimed body's factor is already inside `raw_per_bucket`, so it is
+        // divided back out and this body's own put in, which is the same
+        // arithmetic the blast does with its epicentre's.
+        //
+        // 1.0 for the whole roster minus nineteen entries, and 1.0 at contact
+        // for all of them — so this moves nothing on a weapon that lists no
+        // falloff, and nothing on the first body of any fight.
+        let ratio = match ap.falloff {
+            None => 1.0,
+            Some(f) => {
+                let here = f.factor(
+                    (params.range_to(fs.at) - crate::space::BODY_RADIUS_M).max(0.0),
+                );
+                let there = f.factor(params.gap());
+                if there > 0.0 { here / there } else { 0.0 }
+            }
+        };
+        if ratio <= 0.0 {
+            continue;
+        }
         let inst = crate::chain::Instance {
             target: s,
-            // THE WHOLE SHOT, undiminished.
-            share: 1.0,
+            // THE WHOLE SHOT, undiminished — except by the distance it flew.
+            share: ratio,
             multishot: true,
             headshot: true,
         };

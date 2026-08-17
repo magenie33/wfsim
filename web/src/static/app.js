@@ -2545,19 +2545,37 @@ function arenaAddFoe(s) {
 /// KEEP A DRAGGED BODY OUT OF EVERYONE ELSE, not just out of the player.
 /// Circles do not overlap, and that rule was written for two bodies
 /// (`engine::space::CONTACT_RANGE_M`); with fifty it has to hold pairwise.
+/// WHERE A DRAGGED BODY MAY ACTUALLY GO — or `null`, meaning it does not move.
+///
+/// A body is pushed out of the ONE body it is entering, which is what makes two
+/// circles touch at contact and slide along each other instead of passing
+/// through. It is not iterated: NOTHING ELSE MOVES, and a body that has nowhere
+/// legal to go simply stays where it was (owner, 2026-08-17).
+///
+/// The old version projected repeatedly, four passes over every body. With two
+/// on the floor that is the same answer; in a CROWD it is not — it squeezed the
+/// dragged body through gaps until it found somewhere to sit, so a drag toward
+/// a packed rank ended somewhere the finger never went. Refusing is the honest
+/// answer to "there is no room here", and it makes a wedged body immovable,
+/// which is what a wedged body is.
 function arenaSettle(s, at, skip) {
-  let p = at;
   const others = [s.player_at, ...arenaBodies(s).filter((_, i) => i !== skip)];
-  for (let pass = 0; pass < 4; pass++) {
-    for (const q of others) {
-      const d = Math.hypot(p[0] - q[0], p[1] - q[1]);
-      if (d >= CONTACT_M - 1e-9) continue;
-      if (d < 1e-9) { p = [q[0], q[1] + CONTACT_M]; continue; }
-      const k = CONTACT_M / d;
-      p = [q[0] + (p[0] - q[0]) * k, q[1] + (p[1] - q[1]) * k];
-    }
-  }
-  return p;
+  const clash = (p) => others.filter((q) => Math.hypot(p[0] - q[0], p[1] - q[1]) < CONTACT_M - 1e-9);
+  const hit = clash(at);
+  if (!hit.length) return at;
+  // THE NEAREST ONE decides, so the slide is along the surface being pressed.
+  const q = hit.reduce((a, b) =>
+    Math.hypot(at[0] - a[0], at[1] - a[1]) <= Math.hypot(at[0] - b[0], at[1] - b[1]) ? a : b);
+  const d = Math.hypot(at[0] - q[0], at[1] - q[1]);
+  // Dead centre has no direction to be pushed in; take the one away from the
+  // shooter, which is the only axis the scene always has.
+  const p = d < 1e-9
+    ? [q[0], q[1] + CONTACT_M]
+    : [q[0] + (at[0] - q[0]) * (CONTACT_M / d), q[1] + (at[1] - q[1]) * (CONTACT_M / d)];
+  // …AND IF THAT LANDS IN SOMEBODY ELSE, THERE IS NO ROOM. Refused rather than
+  // projected again: a second push is how the body ends up somewhere nobody
+  // dragged it to.
+  return clash(p).length ? null : p;
 }
 
 function mountArena(host, s, en, opts) {
@@ -2665,7 +2683,11 @@ function mountArena(host, s, en, opts) {
         s.aim_at = at;
       } else if (which.startsWith("foe:")) {
         const i = Number(which.slice(4));
+        // `null` = nowhere legal to go, so the body stays put. The gesture is
+        // not cancelled — keep moving the finger and it follows again the
+        // moment there is room.
         const settled = arenaSettle(s, at, i);
+        if (settled === null) return;
         if (i === 0) s.target_at = settled;
         else if (s.formation[i - 1]) s.formation[i - 1].at = settled;
       }

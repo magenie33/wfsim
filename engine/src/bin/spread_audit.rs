@@ -41,12 +41,37 @@ fn main() {
                 td.max, td.range_m, td.acquire_deg
             ));
         }
+        // PUNCH THROUGH is the sixth way and the only one that is not a spread
+        // at all: the same shot, still travelling (MECHANICS §13). It reaches a
+        // formation with no radius, no chain and no tendril, which is why the
+        // tally under-reported by 29 entries until it was listed (2026-08-17).
+        if a.punch_through_m > 0.0 {
+            how.push(if a.punch_through_m >= 999.0 {
+                "punches through bodies without limit".to_string()
+            } else {
+                format!(
+                    "punches {:.1} m of material ({} bodies)",
+                    a.punch_through_m,
+                    1 + (a.punch_through_m / wfsim_engine::space::BODY_MATERIAL_M) as usize
+                )
+            });
+        }
+        // …AND WHETHER MODS CAN ADD ANY, which is a per-entry catalog answer
+        // and the difference between "brings none" and "can take none".
+        let takes_mods = a
+            .punch_through_mods
+            .unwrap_or(a.radial.is_none() && a.lingering.is_none());
+        if !takes_mods {
+            how.push("takes no punch-through mods".to_string());
+        }
         let kind = if a.beam.is_some() {
             "beam"
         } else if w.tendrils.is_some() {
             "tendrils"
         } else if a.radial.is_some() || a.lingering.is_some() {
             "explosive"
+        } else if a.punch_through_m > 0.0 {
+            "punch"
         } else {
             "single"
         };

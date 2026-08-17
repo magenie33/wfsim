@@ -87,6 +87,40 @@ const r = await evaluate(`(async () => {
   const crowd = await runWith(sim.formation.map(f => ({ at: f.at })));
   out.lone = lone; out.crowd = crowd;
 
+  // 4b. A DRAG NEVER SHOVES ANYBODY. A body is pushed out of the ONE body it
+  //     is entering — which is what makes two circles touch at contact instead
+  //     of passing through — and if that lands it in somebody else it does not
+  //     move at all. Nothing but the dragged body may change (owner,
+  //     2026-08-17): the settle used to project four passes over every body,
+  //     which in a crowd squeezed the dragged one through gaps until it found
+  //     somewhere to sit, so a drag toward a packed rank ended somewhere the
+  //     finger never went.
+  //
+  //     arenaBodies is [target, ...formation], so a formation body's index
+  //     here is its own plus one.
+  {
+    const A = [4, 8];
+    const B = [4.4, 8];        // exactly contact from A
+    const D = [4, 8.4];        // …and sitting where a push off A would land
+    sim.formation = [A, B, D].map(at => ({ at: [...at], enemy: '', level: null }));
+    renderSim(); await sleep(900);
+    const snap = () => JSON.stringify(sim.formation.map(f => f.at));
+    const before = snap();
+
+    // PUSHED OUT, NOT THROUGH: drag A into B and it stops one contact away.
+    const settled = arenaSettle(sim, [...B], 1);
+    out.pushedOut = settled
+      ? Math.round(Math.hypot(settled[0] - B[0], settled[1] - B[1]) * 1000) / 1000 : null;
+    // …AND THE SETTLE MOVED NOBODY. It answers a position; it does not write.
+    out.othersHeld = snap() === before;
+
+    // NOWHERE LEGAL: drag B onto A. The push off A lands exactly on D, so
+    // there is no room and the answer is "it does not move".
+    out.refused = arenaSettle(sim, [...A], 2) === null;
+    out.stillThere = JSON.stringify(sim.formation[1].at) === JSON.stringify(B);
+    sim.formation = [];
+  }
+
   // 5. THE CAP, at the api's own number — READ from /api/meta rather than
   //    written out here. This said 51 and asserted "at most 50", so it broke
   //    the day the cap moved (2026-08-17) — the same two-declarations bug the
@@ -151,6 +185,13 @@ check("...and sends them", r.grownSent === 8, `${r.grownSent} in the payload`);
 check("...and none of them stands on another",
   r.minGap > 0.399, `closest pair ${Number(r.minGap).toFixed(2)} m apart`);
 check("any body can be dragged", r.dragged === true);
+// A DRAG MOVES ONE BODY AND ONLY ONE.
+check("...a body pushed into another stops at contact",
+  r.pushedOut !== null && Math.abs(r.pushedOut - 0.4) < 0.01, `${r.pushedOut} m from it`);
+check("...and nothing else on the floor moved", r.othersHeld === true);
+check("...a body with nowhere legal to go does not move at all",
+  r.refused === true && r.stillThere === true,
+  JSON.stringify({ refused: r.refused, stayed: r.stillThere }));
 check("...and what is on screen is EXACTLY what is sent", r.sentMatches === true);
 check("a lone fight runs", !r.lone.err && r.lone.dps > 0, JSON.stringify(r.lone));
 check("...and a crowd takes more, because the chain has somewhere to go",

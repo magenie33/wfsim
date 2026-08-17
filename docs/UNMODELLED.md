@@ -454,3 +454,65 @@ this file was written:
   gap at all: the intake's clause splitter cut one sentence in half and filed
   the tail as unmodelled, so a fully-modelled perk printed "partly modelled"
   about its own second clause.
+
+## The SPATIAL audit (2026-08-17)
+
+Every effect in `data/` whose payload is about REACH, checked against whether
+the engine reads it. Prompted by "review what is missing now that a formation
+exists" (owner), and done by walking the data's own `kind:` vocabulary rather
+than from memory — 22 spatial kinds across mods, arcanes and evolutions.
+
+### Reaching the sim
+
+| kind | where | what reads it |
+|---|---|---|
+| `punch_through_bonus` | 17 mods + evolutions + rivens | `panel.punch_through_m` (MECHANICS §13) |
+| `blast_radius_bonus` | 4 mods (Firestorm family) | `radial.radius_m` and `lingering.radius_m` |
+| `aoe_echo` | 1 arcane (Secondary Irradiate) | `spread_from_echo` |
+| `multishot_beyond_range` | 2 evolutions (Lone Enforcer) | `panel.multishot_beyond_range` |
+| `accuracy_bonus` | 28 | the spread cone |
+| `projectile_speed_bonus` | 4 | the falloff window |
+
+`spread_audit` counts 101 of the roster's 224 entries reaching a formation now
+— 7 beams, 54 explosive, 39 punch-through, 1 tendrils — against 62 before punch
+through was read.
+
+### LOADED AND NEVER READ — the gaps
+
+**1. BEAM RANGE, and it is the biggest.** `beam.range_m` is in every beam
+weapon's data and **nothing in the sim reads it**, so a beam reaches any body on
+the line at any distance. On the group-clear ruler the far rank is 27 m out
+while the Atomos is a 15 m beam and the Torid Incarnon a 37 m one — two weapons
+the model cannot currently tell apart. The three mods that move it are unread
+for the same reason: **Sinister Reach** (+12 m), **Ruinous Extension** (+8 m),
+**Galvanized Acceleration** (+30%, and it stacks on kill).
+
+It is the same shape as the punch-through gap was: a stat that sat in the data
+unread because the arena had one body, and that a crowd makes load-bearing.
+
+**2. `explosion_on_kill` — Combustion Beam.** *"Enemies killed explode, dealing
+600 Damage shortly after death."* Worth exactly nothing against one target,
+which is why it was filed as indirect; against a formation it is a chain
+reaction and the mod's whole identity.
+
+**3. `status_spread_chance` — Shivering Contagion.** *"On Cold Status Effect:
+100% chance to spread that status to other enemies within 6m."* A pure formation
+mechanic — there was no second body for a status to spread to.
+
+**4. `range_bonus` — Ballista Measure** (+20% Range, Arch-Gun). What DE means by
+"Range" on an Arch-Gun is not settled by the card, which is its own reason to
+leave it: a number applied to the wrong quantity is worse than one applied to
+nothing.
+
+### Fixed while auditing
+
+**A punched body reads its OWN damage falloff.** It inherited the aimed body's,
+which understates the drop for a body further down the line — the punch-through
+work landed with the aimed pellet's factor still inside `raw_per_bucket`. It is
+divided back out and the body's own put in, the same arithmetic the blast does
+with its epicentre's. 1.0 for the whole roster minus nineteen entries, and 1.0
+at contact for all of them.
+
+**A chain hop still inherits the direct hit's falloff, and that is deliberate:**
+a hop is defined as a percentage of the previous instance's damage, so it is a
+share of what the beam delivered rather than a shot of its own.
