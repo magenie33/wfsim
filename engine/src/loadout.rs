@@ -1772,6 +1772,28 @@ pub struct ResolvedLingering {
     pub takes_condition_overload: bool,
 }
 
+impl ResolvedLingering {
+    /// WHAT A BODY `d` METRES FROM THE CLOUD'S CENTRE TAKES, as a fraction —
+    /// the same shape as [`ResolvedRadial::falloff_at`], because a cloud falls
+    /// off the same way an explosion does and nothing about it being persistent
+    /// changes that.
+    ///
+    /// Nothing outside the cloud, and the full amount before the window opens.
+    pub fn falloff_at(&self, d: f64) -> f64 {
+        if d >= self.radius_m {
+            return 0.0;
+        }
+        if d <= self.falloff_start_m {
+            return 1.0;
+        }
+        let span = self.radius_m - self.falloff_start_m;
+        if span <= 0.0 {
+            return 1.0;
+        }
+        (1.0 - self.falloff_reduction * ((d - self.falloff_start_m) / span)).max(0.0)
+    }
+}
+
 /// A weapon's radial (explosion) attack part, unmodded.
 #[derive(Debug, Clone)]
 pub struct RadialBase {

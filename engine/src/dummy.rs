@@ -4411,6 +4411,73 @@ struct SpreadShot {
     vector: DamageVector,
 }
 
+/// AN EXPLOSION REACHES EVERY BODY IT TOUCHES, not only the one it went off on.
+///
+/// The chain's sibling and the simpler of the two: a blast has no path and no
+/// hops, so every body the sphere catches takes one instance, at that body's own
+/// falloff. It is what makes a grenade a room-clear weapon, and until a
+/// formation existed it had nothing to reach — which is why an AoE weapon and a
+/// single-target one scored the same way here.
+///
+/// THE THREE BLAST RULES DECIDE ALL OF IT (`engine::space`, owner 2026-08-17):
+/// it goes off on the aimed body's SURFACE, any body touching the sphere is
+/// caught, and each one's falloff reads its own NEAREST point.
+///
+/// NO HEADSHOT AND NO MULTISHOT for anything but the body the pellet struck —
+/// an explosion lands on a body, not on a head, and a radial takes multishot
+/// only where its own spec says so.
+///
+/// THE EPICENTRE IS ON THE AIM LINE, which is exact for a pellet that hit and
+/// an assumption for one that missed: a missed pellet's blast goes off
+/// `aim_offset` metres to one SIDE of the target, and the model has never drawn
+/// which side — only the magnitude decides anything against one body. Putting
+/// it on the line is the only choice that invents nothing.
+#[allow(clippy::too_many_arguments)]
+fn spread_from_blast(
+    others: &mut [SpreadFoe],
+    params: &DummyParams,
+    ap: &DummyParams,
+    rad: &crate::loadout::ResolvedRadial,
+    // The aimed hit with its own CO bucket AND its own falloff divided back
+    // out, so each body can multiply in its own of both.
+    raw_per_bucket_per_falloff: f64,
+    shares: TypeShares,
+    crit_mult: f64,
+    attrition: f64,
+    modded_base: f64,
+    status_chance: f64,
+    forced: &[DamageType],
+    vector: &DamageVector,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    r: &mut RunResult,
+    d: &mut crate::rng::Draws,
+    t: f64,
+) {
+    let at = crate::space::detonation_point(params.target_at, params.player_at);
+    for (i, spec) in params.others.iter().enumerate() {
+        let dist = spec.at.distance(at);
+        if !crate::space::caught_by_blast(dist, rad.radius_m) {
+            continue;
+        }
+        let share = rad.falloff_at(crate::space::blast_reach(dist));
+        if share <= 0.0 {
+            continue;
+        }
+        let inst = crate::chain::Instance {
+            target: i + 1,
+            share,
+            multishot: false,
+            headshot: false,
+        };
+        spread_hit(
+            &inst, &mut others[i], spec, raw_per_bucket_per_falloff, shares, crit_mult,
+            attrition, modded_base, status_chance, forced, vector, params, ap, gal, arc,
+            r, d, t,
+        );
+    }
+}
+
 /// RESOLVE THE SHOT'S CHAIN AND LAND EVERY INSTANCE THAT IS NOT THE AIMED
 /// BODY'S OWN.
 ///
@@ -4699,6 +4766,11 @@ fn process_field_ticks(
     // A field tick decides BOTH a crit and its procs, so it takes the whole
     // set of streams rather than one of them.
     d: &mut crate::rng::Draws,
+    // THE REST OF THE FORMATION. A cloud is an AREA, so everyone standing in
+    // it burns — which is the base form's half of what a radius mod buys, and
+    // the half a grenade lives on (owner, 2026-08-17). Empty for every fight
+    // this engine ran before a formation existed.
+    others: &mut [SpreadFoe],
 ) {
     // Oldest due tick first, re-scanned each time: a tick's own procs change
     // what the NEXT tick sees, so the order has to be resolved live.
@@ -4717,7 +4789,28 @@ fn process_field_ticks(
         fields[i].ticks_left -= 1;
         let killed = field_tick(
             &part, dmg_mult, at, ctx, debuffs, gal, arc, target, params, ap, r, d,
+            &params.target,
         );
+        // …AND EVERY OTHER BODY STANDING IN IT. The cloud is stuck to the body
+        // it was left on, so that is its centre, and the three blast rules
+        // decide the rest: any body touching it burns, at its own falloff
+        // distance measured to its own nearest point (`engine::space`).
+        //
+        // A KILL HERE DOES NOT CLEAR THE CLOUD, which is the one asymmetry: the
+        // clouds belong to the body they are stuck to, so only THAT one dying
+        // takes them with it. Another body dying inside one is just a body
+        // dying inside it.
+        for (bi, spec) in params.others.iter().enumerate() {
+            let dist = spec.at.distance(params.target_at);
+            if !crate::space::caught_by_blast(dist, part.radius_m) {
+                continue;
+            }
+            let SpreadFoe { state, debuffs: fd } = &mut others[bi];
+            field_tick(
+                &part, dmg_mult * part.falloff_at(crate::space::blast_reach(dist)),
+                at, ctx, fd, gal, arc, state, params, ap, r, d, &spec.params,
+            );
+        }
         if killed {
             // Fresh individual: the clouds were stuck to the one that died, and
             // its statuses go with it (the same rule the pellet path follows).
@@ -4755,6 +4848,9 @@ fn field_tick(
     ap: &DummyParams,
     r: &mut RunResult,
     d: &mut crate::rng::Draws,
+    // WHICH BODY THIS BURNS — `params.target` until a cloud could stand over
+    // more than one (2026-08-17). Its pools, its stack caps, its immunities.
+    foe: &TargetParams,
 ) -> bool {
     let sd = params.status_duration_mult;
     let mit = debuffs.mitigation(at, sd, params.armor_strip_per_puncture);
@@ -4814,9 +4910,9 @@ fn field_tick(
         qtotal * crit_mult * bucket * faction_at(params.faction_at_time(at), DEPTH_HIT)
             * dmg_mult
             * params.ability_final_at(at);
-    let col = target.incoming_column(&params.target);
+    let col = target.incoming_column(foe);
     let (effective, killed, broke) =
-        target.apply(raw, shares, false, at, &params.target, false, &mit);
+        target.apply(raw, shares, false, at, foe, false, &mit);
     r.total_damage += raw;
     r.effective_damage += effective;
     r.sources.field += effective;
@@ -4843,7 +4939,7 @@ fn field_tick(
         &[],
         f.status_chance,
         &qvec,
-        &params.target.status_immunities,
+        &foe.status_immunities,
         &mut d.status,
     );
     settle_procs(
@@ -4868,7 +4964,7 @@ fn field_tick(
         &mit,
         r,
         &mut d.status,
-        &params.target,
+        foe,
         DEPTH_PROC,
     );
     false
@@ -7256,6 +7352,7 @@ pub fn run_once_traced(
             &field_ctx,
             &mut r,
             d,
+            &mut others,
         );
         // Secondary Encumber: at most ONE extra proc per instant — pellets
         // of one pull land simultaneously, so one roll per pull.
@@ -7913,6 +8010,19 @@ pub fn run_once_traced(
                 // launched from the body the beam struck fires once per landing
                 // pellet, and one launched from a body the RADIUS caught fires
                 // once for the shot. The other half is after the loop.
+                // AN EXPLOSION REACHES THE WHOLE FORMATION, which is the
+                // other half of what a radius mod buys and the half a grenade
+                // lives on. Its own stage, because a blast has no path: every
+                // body the sphere touches takes one instance at its own
+                // falloff.
+                if let (Some(rr), false) = (rad, others.is_empty()) {
+                    spread_from_blast(
+                        &mut others, params, ap, &rr,
+                        if falloff > 0.0 { raw / bucket / falloff } else { 0.0 },
+                        shares, crit_mult, attrition, modded_base, status_chance,
+                        forced, &qvec, &mut gal, &mut arc, &mut r, d, t,
+                    );
+                }
                 if direct && !others.is_empty() {
                     // …and the SHOT's own factors, kept for the half that fires
                     // once rather than per pellet.
@@ -8793,6 +8903,7 @@ pub fn run_once_traced(
         &field_ctx,
         &mut r,
         d,
+        &mut others,
     );
     // …then drain what is left up to the end of the engagement.
     process_ticks(
@@ -9685,6 +9796,58 @@ mod tests {
             lone,
             "a damage radius has nothing to act on against one target"
         );
+    }
+
+    /// THE BASE FORM REACHES A FORMATION TOO, and by a different mechanism —
+    /// its AoE is a lingering CLOUD, not a chain (owner, 2026-08-17). Which is
+    /// what makes a full Incarnon CYCLE simulable against a crowd: the grenade
+    /// half spreads through an area and the beam half through a chain, and both
+    /// halves now have somewhere to go.
+    #[test]
+    fn a_lingering_cloud_burns_everyone_standing_in_it() {
+        let build = |others: Vec<crate::formation::FoeSpec>, radius_mult: f64| {
+            let base = crate::loadout::WeaponBase::from_data("torid", false, &[]);
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let mut panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            // FIRESTORM, applied by hand so the test states the mechanic rather
+            // than depending on a mod id: the cloud's radius is what the mod
+            // scales, and `resolve` already multiplies it by `1 + br`.
+            if let Some(f) = panel.lingering.as_mut() {
+                f.radius_m *= radius_mult;
+            }
+            let mut arena = crate::arena::Arena::training(10.0);
+            arena.others = others;
+            DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none())
+        };
+        let alone = build(Vec::new(), 1.0);
+        assert!(alone.lingering.is_some(), "the base form leaves a cloud");
+        let lone = run_once(&alone, &mut Rng::new(0x5EED)).sources.field;
+        assert!(lone > 0.0, "the cloud must burn the body it is stuck to");
+
+        // Four bodies in a line at 1.5 m — the near two inside a 3 m cloud,
+        // the third only once a radius mod widens it. Their falloff differs, so
+        // this also asserts that each takes its OWN number rather than a share.
+        let others: Vec<crate::formation::FoeSpec> = (1..=4)
+            .map(|i| crate::formation::FoeSpec {
+                params: TargetParams::training_dummy(),
+                body_parts: DummyParams::humanoid_parts(),
+                at: crate::space::Vec2::new(i as f64 * 1.5, alone.target_at.y),
+            })
+            .collect();
+        let crowd = run_once(&build(others.clone(), 1.0), &mut Rng::new(0x5EED)).sources.field;
+        assert!(crowd > lone * 1.5, "a cloud burns everyone in it: {crowd} against {lone}");
+
+        // …AND A WIDER CLOUD CATCHES MORE OF THEM, which is the base form's
+        // half of what a radius mod buys. At 3 m the body at 4.5 m is outside;
+        // at 3 m x 1.44 it is not.
+        let wide = run_once(&build(others, 1.44), &mut Rng::new(0x5EED)).sources.field;
+        assert!(wide > crowd, "a wider cloud reaches further: {wide} against {crowd}");
+
+        // …AND A LONE BODY NOTICES NEITHER. The radius is worth exactly nothing
+        // against one target, which is the asymmetry the whole layer exists to
+        // show — the same assertion the beam half makes.
+        assert_eq!(run_once(&build(Vec::new(), 1.44), &mut Rng::new(0x5EED)).sources.field, lone);
     }
 
     /// A CONE IS SPELLED ONE WAY. Ten entries carried BOTH a parsed

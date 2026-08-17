@@ -2778,6 +2778,30 @@ the single-target arena has always been. `formation::Formation::retarget` is the
 aim policy for the day respawn becomes a setting; it is written, tested, and
 called by nothing.
 
+### Three ways a shot reaches a body that is not the aimed one
+
+They are three, not one, and a weapon may carry more than one of them. The Torid
+carries all three across its cycle, which is why it is the weapon this was built
+against.
+
+| mechanism | who it reaches | what decides the share |
+| --- | --- | --- |
+| **the chain** | a path of up to `hops` bodies, one path per seed | `falloff^k` along the path |
+| **the explosion** | every body the sphere touches | that body's own falloff, at its nearest point |
+| **the lingering cloud** | every body standing in it, every tick | the same, and for as long as the cloud lasts |
+
+All three read the same three blast rules, and all three hand ORDINARY damage
+instances to the ordinary pipeline — each body computing its own Condition
+Overload, its own half-health term, its own mitigation, its own procs and its
+own death.
+
+**SO A FULL INCARNON CYCLE IS SIMULABLE AGAINST A CROWD** (owner, 2026-08-17):
+the base form spreads through an AREA and the transformed form through a CHAIN,
+and both halves now have somewhere to go. A radius mod is worth something in
+both, by two different mechanisms — it widens the cloud in one and seeds more
+chains in the other — and worth EXACTLY NOTHING against a lone body in either,
+which is the asymmetry both tests assert as equality.
+
 ### Ties, and why they are not modelled
 
 **MEASURED (M52): the path is fixed, and its rule is not in the formation.** Two
