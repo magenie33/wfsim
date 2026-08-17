@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: 87567ceda6b589a736f77962831fbc89238f2f22
+engine: 28cb3d12ca48fea6ff66314191ab0670a2f1b74a
 entries:
   - weapon: arbucep
     mode: base
@@ -1073,6 +1073,18 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, thermite_rounds, stormbringer]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
+    score: 0.5793758927417223
+    mods: [amalgam_serration, galvanized_chamber, critical_delay, hammer_shot, vital_sense, stormbringer, infected_clip, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: cycle
+    score: 0.5165776050429225
+    mods: [amalgam_serration, galvanized_chamber, critical_delay, hammer_shot, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_frostbite]
   - weapon: torid
     mode: cycle
     score: 0.5036203992788595
