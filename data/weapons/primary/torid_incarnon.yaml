@@ -110,6 +110,16 @@ attack:
   crit_multiplier: 3.1
   status_chance: 0.39
   punch_through_m: 0.0
+  # …AND MODS DO NOT ADD ANY, verbatim: "Punch Through mods have no effect on
+  # the behavior of the beam." Declared rather than derived, because this attack
+  # is a BEAM with a damage radius — it carries no `radial:` and no `lingering:`,
+  # so the punch-through page's class rule about AoE PROJECTILES does not reach
+  # it and would have let Shred on. The family does not decide it either: the
+  # same wiki sentence that groups this with the Ignis for Primary Compression
+  # ("beam attacks with an AoE component") groups it with a weapon that is on
+  # the punch-through page's EXCEPTION list. docs/CATALOGS.md's rule: the entry
+  # is what is transcribed.
+  punch_through_mods: false
   damage: { toxin: 51.0 }
   # BEAM GEOMETRY. Real fields now, not prose: the single-target arena consumes
   # none of it, but `damage_radius_m` is what Firestorm scales (the panel shows

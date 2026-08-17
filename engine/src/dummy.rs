@@ -10564,9 +10564,11 @@ mod tests {
     /// number to quietly add up.
     #[test]
     fn an_aoe_attack_takes_no_punch_through_from_a_mod() {
-        let panel = |w: &str, mods: &[&str]| {
+        // The MOD POOL is the parent weapon's — an Incarnon form is a form of a
+        // gun, not a gun of its own (AGENTS.md: "a form inherits its weapon").
+        let panel = |w: &str, pool_of: &str, mods: &[&str]| {
             let base = crate::loadout::WeaponBase::from_data(w, false, &[]);
-            let pool = crate::mods_data::pool_for_weapon(w);
+            let pool = crate::mods_data::pool_for_weapon(pool_of);
             let refs: Vec<&crate::loadout::ModDef> = mods
                 .iter()
                 .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("{m}")))
@@ -10574,14 +10576,27 @@ mod tests {
             crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent)
         };
         // A RIFLE TAKES IT: Primed Shred is +2.2 m at max rank.
-        let bare = panel("braton_prime", &[]);
-        let shred = panel("braton_prime", &["primed_shred"]);
+        let bare = panel("braton_prime", "braton_prime", &[]);
+        let shred = panel("braton_prime", "braton_prime", &["primed_shred"]);
         assert!((bare.punch_through_m - 0.0).abs() < 1e-9);
         assert!(shred.punch_through_m > 2.0, "{}", shred.punch_through_m);
 
-        // THE TORID DOES NOT — it explodes on first contact.
-        let torid_bare = panel("torid", &[]);
-        let torid_shred = panel("torid", &["primed_shred"]);
+        // A BEAM WITH AN AoE COMPONENT DOES NOT EITHER, and only its own page
+        // says so: the Torid's Incarnon form carries no `radial:` and no
+        // `lingering:`, so the class rule about AoE PROJECTILES does not reach
+        // it — *"Punch Through mods have no effect on the behavior of the
+        // beam"* is a declaration in the entry (`punch_through_mods: false`).
+        // It is the case that proves the shape cannot be the whole rule.
+        let inc_bare = panel("torid_incarnon", "torid", &[]);
+        let inc_shred = panel("torid_incarnon", "torid", &["primed_shred"]);
+        assert!(inc_bare.radial.is_none() && inc_bare.lingering.is_none(),
+            "the fixture must be the case the class rule would get wrong");
+        assert!((inc_shred.punch_through_m - 0.0).abs() < 1e-9,
+            "the Incarnon beam takes no punch through: {}", inc_shred.punch_through_m);
+
+        // THE TORID'S BASE FORM DOES NOT — it explodes on first contact.
+        let torid_bare = panel("torid", "torid", &[]);
+        let torid_shred = panel("torid", "torid", &["primed_shred"]);
         assert!(torid_bare.lingering.is_some(), "the fixture must be an AoE weapon");
         assert!((torid_shred.punch_through_m - torid_bare.punch_through_m).abs() < 1e-9,
             "an AoE attack's punch through cannot be modified: {} vs {}",

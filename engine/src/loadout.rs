@@ -1040,6 +1040,10 @@ pub struct WeaponBase {
     /// PUNCH-THROUGH DEPTH the WEAPON brings, in metres of material — see
     /// [`crate::weapons_data::AttackSpec::punch_through_m`].
     pub punch_through_m: f64,
+    /// Whether this attack takes punch-through MODS — see
+    /// [`crate::weapons_data::AttackSpec::punch_through_mods`]. `None` means
+    /// the class rule decides.
+    pub punch_through_mods: Option<bool>,
     pub form: crate::weapons_data::FormKind,
     /// Indirect stats the WEAPON itself brings, before any mod — today only
     /// EVOLUTIONS write here (Practiced Grip's +50% accuracy, Marksman's
@@ -3461,7 +3465,14 @@ pub fn resolve_for(
     // at all, so a rule that named only radials would have let a grenade
     // launcher take Primed Shred — which is the exact mod the page says cannot
     // be applied.
-    let punch_through_m = if base.radial.is_some() || base.lingering.is_some() {
+    // THE ENTRY DECIDES, and the class rule is only the fallback: the Torid's
+    // Incarnon form is a BEAM with a damage radius — no `radial:`, no
+    // `lingering:` — and its own page says "Punch Through mods have no effect
+    // on the behavior of the beam", which the shape alone would have missed.
+    let takes_mods = base
+        .punch_through_mods
+        .unwrap_or(base.radial.is_none() && base.lingering.is_none());
+    let punch_through_m = if !takes_mods {
         base.punch_through_m
     } else {
         base.punch_through_m

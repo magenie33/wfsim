@@ -420,6 +420,31 @@ pub struct AttackSpec {
     /// cannot have their Punch Through stat modified"*.
     #[serde(default)]
     pub punch_through_m: f64,
+    /// DOES THIS ATTACK TAKE PUNCH-THROUGH MODS? A CATALOG ANSWER, and absent
+    /// means ORDINARY — which for punch through is *yes*.
+    ///
+    /// `None` falls back to the punch-through page's own CLASS rule, which is
+    /// about projectiles: *"With a very few exceptions, weapon projectiles with
+    /// an area of effect (AoE) component will not Punch Through enemies or
+    /// level geometry at all"*, and *"Projectile AoE weapons cannot have their
+    /// Punch Through stat modified"*. So an attack with a `radial:` or a
+    /// `lingering:` takes none.
+    ///
+    /// `Some(false)` is a WEAPON PAGE overruling that, and it is why this field
+    /// exists rather than the shape alone deciding. The Torid's Incarnon form
+    /// says *"Punch Through mods have no effect on the behavior of the beam"* —
+    /// and it is a BEAM with a damage radius, so it carries neither `radial:`
+    /// nor `lingering:` and the class rule would have let Shred onto it. The
+    /// same wiki sentence that classifies it for Primary Compression names the
+    /// family: *"beam attacks with an AoE component. For example, Ignis or
+    /// Torid Incarnon Genesis"* — and the Ignis is on the punch-through page's
+    /// EXCEPTION list, so the family does not decide it either. Only the entry
+    /// does, which is docs/CATALOGS.md's rule generalised once more.
+    ///
+    /// `Some(true)` is the other direction, for an AoE attack a page says DOES
+    /// take them. Nothing in the roster needs it yet.
+    #[serde(default)]
+    pub punch_through_mods: Option<bool>,
     /// A radial (AoE) part fired with every projectile of this attack.
     #[serde(default)]
     pub radial: Option<RadialSpec>,
@@ -2524,6 +2549,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         multishot_beyond_range: None,
         falloff: s.attack.falloff.clone(),
         punch_through_m: s.attack.punch_through_m,
+        punch_through_mods: s.attack.punch_through_mods,
         compression: s.attack.compression.clone(),
         lingering,
         // The data module's Trigger for a beam. Not cosmetic: it decides

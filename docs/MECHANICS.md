@@ -3005,6 +3005,28 @@ is an entry whose own infobox carries a punch-through figure, and the roster has
 exactly one attack with both (the Vulcax's 2 m). It keeps its innate depth and
 takes nothing from mods, which never invents a number the wiki did not print.
 
+### …but the SHAPE is only the fallback. The entry decides
+
+`punch_through_mods:` on an attack overrules it, and absent means ORDINARY —
+which for punch through is *yes, mods apply*. The Torid's Incarnon form is why
+the field exists rather than the shape alone deciding:
+
+> "Punch Through mods have no effect on the behavior of the beam."
+
+It is a BEAM with a 2.3 m damage radius, so it carries neither `radial:` nor
+`lingering:` and the class rule above — which is about *projectiles* — does not
+reach it. Shred would have gone on.
+
+**The family does not decide it either**, which is the sharp part. The same wiki
+sentence that classifies this weapon for Primary Compression names the group:
+*"Does not work on Continuous Weapons or beam attacks with an AoE component. For
+example, Ignis or Torid Incarnon Genesis"* — and the **Ignis is on the
+punch-through page's EXCEPTION list**, with infinite body punch-through. Two
+weapons the wiki puts in one group for one mechanic sit on opposite sides of
+another. So the answer is transcribed per ENTRY, which is docs/CATALOGS.md's
+rule generalised once more (owner, 2026-08-17: the Torid Incarnon was the
+question that found it).
+
 **Infinite body punch-through** (the Fluctus, the Phantasma, the Arca Plasmor
 family) is written `999.0`. Its one qualifier — *"innate punch through does not
 apply to surfaces"* — separates bodies from geometry, and this arena has no

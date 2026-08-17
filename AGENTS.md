@@ -759,7 +759,15 @@ around (decision 2026-07-31).
   are on the page, and it means a Shred on a grenade launcher is worth literally
   nothing. "An area of effect component" is BOTH shapes the engine models,
   `radial` and `lingering`: the Torid is the second and carries no `radial:`, so
-  a rule naming only radials would have let it take Primed Shred.
+  a rule naming only radials would have let it take Primed Shred. THE SHAPE IS
+  ONLY THE FALLBACK, though — `punch_through_mods:` on an attack overrules it,
+  and the Torid's INCARNON form is why the field exists: a beam with a damage
+  radius, so neither `radial:` nor `lingering:`, whose own page says *"Punch
+  Through mods have no effect on the behavior of the beam"*. The family does not
+  settle it either, which is the sharp part — the wiki sentence that groups this
+  weapon with the IGNIS for Primary Compression groups it with a weapon on the
+  punch-through page's EXCEPTION list. Two weapons in one group for one
+  mechanic, opposite sides of another; so it is transcribed per ENTRY.
   `punch_through_m` had sat in all 224 entries unread since the roster began —
   the honest place for it while the arena had one body — and the 22 weapons that
   admitted it as a gap admit nothing now. MECHANICS §13 is the whole of it.
