@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 41e1830460a229d9c8c20d0985daa569f2425215
+engine: 1b7d9d769e570cf1a865d00a32538fe275d6e41d
 entries:
   - weapon: akarius_prime
     mode: base
@@ -3597,15 +3597,39 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: lex_prime
     mode: cycle
+    score: 17.129041454226275
+    mods: [pistol_acuity, primed_target_cracker, galvanized_shot, anemic_agility, gunslinger, ice_storm, pistol_pestilence, primed_heated_charge]
+    evolutions: [lex_prime_evo1_incarnon_form, lex_prime_hoplite_virtue, lex_prime_ready_retaliation, lex_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: lex_prime
+    mode: cycle
     score: 16.58528659587954
     mods: [pistol_acuity, primed_target_cracker, galvanized_shot, anemic_agility, gunslinger, ice_storm, pistol_pestilence, primed_heated_charge]
     evolutions: [lex_prime_evo1_incarnon_form, lex_prime_hoplite_virtue, lex_prime_lex_talionis, lex_prime_critical_parallel]
     arcanes: [secondary_deadhead]
   - weapon: lex_prime
     mode: cycle
+    score: 15.607569928812266
+    mods: [pistol_acuity, primed_target_cracker, galvanized_shot, lethal_torrent, gunslinger, ice_storm, pistol_pestilence, primed_heated_charge]
+    evolutions: [lex_prime_evo1_incarnon_form, lex_prime_hoplite_virtue, lex_prime_ready_retaliation, lex_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: lex_prime
+    mode: cycle
     score: 15.550601788323592
     mods: [pistol_acuity, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, ice_storm, pistol_pestilence, primed_heated_charge]
     evolutions: [lex_prime_evo1_incarnon_form, lex_prime_hoplite_virtue, lex_prime_lex_talionis, lex_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: lex_prime
+    mode: cycle
+    score: 14.985762314366214
+    mods: [pistol_acuity, hornet_strike, primed_target_cracker, lethal_torrent, gunslinger, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [lex_prime_evo1_incarnon_form, lex_prime_hoplite_virtue, lex_prime_ready_retaliation, lex_prime_critical_parallel]
+    arcanes: [secondary_deadhead]
+  - weapon: lex_prime
+    mode: cycle
+    score: 13.91265533281984
+    mods: [pistol_acuity, hornet_strike, primed_target_cracker, lethal_torrent, gunslinger, ice_storm, pistol_pestilence, primed_heated_charge]
+    evolutions: [lex_prime_evo1_incarnon_form, lex_prime_hoplite_virtue, lex_prime_ready_retaliation, lex_prime_critical_parallel]
     arcanes: [secondary_deadhead]
   - weapon: lex_prime
     mode: cycle
