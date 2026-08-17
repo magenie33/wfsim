@@ -1,0 +1,149 @@
+// A FORMATION IS SOMETHING YOU BUILD ON THE FLOOR, and what you build is what
+// gets simulated.
+//
+// The arena has drawn two bodies since 2026-08-15. This is the same claim for
+// fifty of them (owner, 2026-08-17): put enemies down, drag them anywhere, aim
+// at a body or at bare floor, and the number that comes back is the fight on
+// screen. It is the check that would catch the most convincing possible bug —
+// a scene that looks like a formation and sends one target.
+//
+//   node scripts/check_formation.mjs
+//
+// Five claims:
+//
+//   · THEY DRAW AND THEY DRAG. Adding bodies puts them on the floor without
+//     standing on each other, and any one of them can be moved.
+//   · WHAT IS ON SCREEN IS WHAT IS SENT — the payload's `formation` is the
+//     scene's, body for body.
+//   · IT REACHES THE NUMBER. A real `/api/simulate` in the shipping wasm build
+//     answers HIGHER for a crowd than for one body, which is the whole point:
+//     the chain has somewhere to go.
+//   · AIM IS A PLACE. The marker rides the target until you drag it, and once
+//     dragged the beam is on whichever body the LINE crosses — not the one
+//     nearest the cursor.
+//   · AND THE CAP IS REAL, at the number the api refuses at.
+//
+// …and the negative controls: a formation of one is byte-identical to the fight
+// this app has always run, and an official ruler cannot be given a crowd.
+import { openApp } from "./cdp.mjs";
+
+const app = await openApp({ boot: 12000 });
+const { evaluate, check, finish } = app;
+
+const r = await evaluate(`(async () => {
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const out = {};
+  localStorage.clear();
+  history.pushState({}, '', '/weapons/Torid/simulator'); route(); await sleep(3000);
+
+  // A SCENARIO OF YOUR OWN: the app lands on the official ruler, whose fight is
+  // pinned and must refuse every gesture below.
+  const add = document.querySelector('#preset-bar-simulator-scenarios .pchip.add');
+  if (add) { add.click(); await sleep(1500); }
+  out.startedEditable = typeof officialScenarioActive === 'function' && !officialScenarioActive();
+
+  const foes = () => document.querySelectorAll('#sim-target-arena .ar-foe').length;
+  const btn = (sel) => document.querySelector('#sim-target-arena ' + sel);
+
+  // 1. A FORMATION OF ONE is the old fight, untouched.
+  out.startFoes = foes();
+  out.startPayload = (fightPayload().formation || []).length;
+  out.startAim = fightPayload().aim_at;
+
+  // 2. THEY DRAW, AND THEY DO NOT STAND ON EACH OTHER.
+  btn('[data-add="8"]').click(); await sleep(600);
+  out.grownFoes = foes();
+  out.grownSent = (fightPayload().formation || []).length;
+  const pts = [sim.target_at, ...sim.formation.map(f => f.at)];
+  out.minGap = Math.min(...pts.flatMap((a, i) =>
+    pts.slice(i + 1).map(b => Math.hypot(a[0] - b[0], a[1] - b[1]))));
+
+  // 3. ANY BODY DRAGS. Move the last one and watch the payload follow.
+  const dragEl = (el, dx, dy) => {
+    const b = el.getBoundingClientRect();
+    const x = b.left + b.width / 2, y = b.top + b.height / 2;
+    const ev = (type, cx, cy, target) => target.dispatchEvent(
+      new PointerEvent(type, { clientX: cx, clientY: cy, bubbles: true, cancelable: true }));
+    ev('pointerdown', x, y, el);
+    ev('pointermove', x + dx, y + dy, window);
+    ev('pointerup', x + dx, y + dy, window);
+  };
+  const before = JSON.stringify(sim.formation[sim.formation.length - 1].at);
+  dragEl([...document.querySelectorAll('#sim-target-arena .ar-foe')].pop(), 30, -20);
+  await sleep(500);
+  out.dragged = JSON.stringify(sim.formation[sim.formation.length - 1].at) !== before;
+  out.sentMatches = JSON.stringify(fightPayload().formation.map(f => f.at))
+    === JSON.stringify(sim.formation.map(f => f.at));
+
+  // 4. IT REACHES THE NUMBER. The Torid's Incarnon form is the roster's only
+  //    chaining beam, so it is the mode this is asked in.
+  const runWith = async (formation) => {
+    const body = { ...buildPayload(), ...fightPayload(), formation,
+                   mode: 'transformed', runs: 4, seed: 7, duration: 6 };
+    const res = await api('/api/simulate', body);
+    return res.error ? { err: res.error } : { dps: res.dps };
+  };
+  const lone = await runWith([]);
+  const crowd = await runWith(sim.formation.map(f => ({ at: f.at })));
+  out.lone = lone; out.crowd = crowd;
+
+  // 5. THE CAP, at the api's own number.
+  const many = await runWith(Array.from({ length: 51 }, (_, i) => ({ at: [i * 3, 5] })));
+  out.capErr = many.err || '';
+
+  // 6. AIM IS A PLACE. Two bodies on one line, the far one the target; aim past
+  //    the near one and the BEAM must be on the near one.
+  sim.formation = [{ at: [0, 10], enemy: '', level: null }];
+  sim.target_at = [0, 20];
+  sim.player_at = [0, 0];
+  sim.aim_at = [0, 30];
+  markScenarioDirty(); renderSim(); await sleep(700);
+  out.struck = typeof arenaFirstHit === 'function' ? arenaFirstHit(sim) : -99;
+  out.aimSent = fightPayload().aim_at;
+  out.aimMarker = !!document.querySelector('#sim-target-arena .ar-aim');
+  out.strokeMarked = document.querySelectorAll('#sim-target-arena .ar-struck').length;
+
+  // …and one click puts it back on the target.
+  const un = btn('[data-unaim]');
+  out.hadUnaim = !!un;
+  if (un) { un.click(); await sleep(400); }
+  out.aimCleared = fightPayload().aim_at === null;
+
+  // 7. AN OFFICIAL RULER CANNOT BE GIVEN A CROWD.
+  pickPreset(scenarioBarCfg(), 'single_target'); await sleep(1800);
+  out.official = officialScenarioActive();
+  const n0 = (sim.formation || []).length;
+  const a1 = btn('[data-add="1"]');
+  out.officialAddDisabled = !a1 || a1.disabled;
+  if (a1) a1.click();
+  await sleep(400);
+  out.officialUnchanged = (sim.formation || []).length === n0;
+  return out;
+})()`);
+
+check("a scenario of your own is open before anything is built", r.startedEditable === true);
+check("a formation of ONE is the fight this app has always run",
+  r.startFoes === 1 && r.startPayload === 0 && r.startAim === null,
+  `${r.startFoes} bodies, ${r.startPayload} sent, aim ${JSON.stringify(r.startAim)}`);
+check("adding bodies draws them", r.grownFoes === 9, `${r.grownFoes} bodies`);
+check("...and sends them", r.grownSent === 8, `${r.grownSent} in the payload`);
+check("...and none of them stands on another",
+  r.minGap > 0.399, `closest pair ${Number(r.minGap).toFixed(2)} m apart`);
+check("any body can be dragged", r.dragged === true);
+check("...and what is on screen is EXACTLY what is sent", r.sentMatches === true);
+check("a lone fight runs", !r.lone.err && r.lone.dps > 0, JSON.stringify(r.lone));
+check("...and a crowd takes more, because the chain has somewhere to go",
+  !r.crowd.err && r.crowd.dps > r.lone.dps,
+  `${JSON.stringify(r.crowd)} against ${JSON.stringify(r.lone)}`);
+check("the 51st body is refused, in words",
+  /at most 50/.test(r.capErr), r.capErr);
+check("aim is drawn as a marker of its own", r.aimMarker === true);
+check("...and the beam is on the body the LINE crosses, not the nearest to it",
+  r.struck === 1, `first hit index ${r.struck} (0 = the target at 20 m, 1 = the body at 10 m)`);
+check("...and exactly one body is marked as struck", r.strokeMarked === 1, `${r.strokeMarked}`);
+check("...and the aim point is sent", JSON.stringify(r.aimSent) === "[0,30]", JSON.stringify(r.aimSent));
+check("...and one click puts it back on the target", r.hadUnaim && r.aimCleared === true);
+check("an official ruler refuses a crowd", r.official === true && r.officialAddDisabled === true);
+check("...and clicking anyway changes nothing", r.officialUnchanged === true);
+
+await finish("a formation is something you build, and what you build is simulated");

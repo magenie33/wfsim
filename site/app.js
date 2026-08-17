@@ -606,6 +606,19 @@ function defaultScenario() {
     // two bodies can be, which is what point blank means once they have a size.
     player_at: [...(d.player_at || [0, 0])],
     target_at: [...(d.target_at || [0, CONTACT_M])],
+    // THE REST OF THE FORMATION — every body that is not the one being aimed
+    // at. Each is wholly its own (owner, 2026-08-17): a place, and optionally
+    // its own unit and level. What it omits it takes from the target above, so
+    // nine identical enemies are nine positions and nothing else.
+    formation: (Array.isArray(d.formation) ? d.formation : []).map((f) => ({
+      at: [...(f.at || [0, 0])],
+      enemy: f.enemy || "",
+      level: f.level ?? null,
+    })),
+    // WHERE THE WEAPON IS POINTED. `null` means "at the target", which is the
+    // fight this app has always run and what keeps every stored scenario
+    // meaning what it meant. Drag the marker and it becomes a place of its own.
+    aim_at: d.aim_at ? [...d.aim_at] : null,
     invisible: !!d.invisible, airborne: !!d.airborne, overshields: !!d.overshields,
     channeling: !!d.channeling, solo_weapon: !!d.solo_weapon,
     frame: d.frame || "", wf_armor: d.wf_armor || 0, wf_energy: d.wf_energy || 0,
@@ -2294,13 +2307,19 @@ const ARENA_VW = 320;
 const ARENA_VH = 176;
 
 /// Metres <-> pixels for the current pair of positions.
-function arenaGeom(w, h, p, t) {
-  const pad = 1.2;                       // metres of air around the two of them
+function arenaGeom(w, h, ...pts) {
+  const pad = 1.2;                       // metres of air around the bodies
   const floor = 5;                       // never zoom closer than a 5 m view
-  const spanX = Math.max(Math.abs(p[0] - t[0]) + 2 * pad, floor);
-  const spanY = Math.max(Math.abs(p[1] - t[1]) + 2 * pad, (floor * h) / w);
+  // EVERY BODY IN FRAME. It fitted exactly two until a formation could hold
+  // fifty (2026-08-17), and a scene that framed two of them would put the rest
+  // off the edge — which is the one thing a picture of a fight must not do.
+  const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+  const [lo, hi] = [Math.min(...xs), Math.max(...xs)];
+  const [bo, to] = [Math.min(...ys), Math.max(...ys)];
+  const spanX = Math.max(hi - lo + 2 * pad, floor);
+  const spanY = Math.max(to - bo + 2 * pad, (floor * h) / w);
   const s = Math.min(w / spanX, h / spanY);
-  const cx = (p[0] + t[0]) / 2, cy = (p[1] + t[1]) / 2;
+  const cx = (lo + hi) / 2, cy = (bo + to) / 2;
   return {
     s,
     // y grows AWAY from the viewer, so "further up the screen" is "further off"
@@ -2353,11 +2372,48 @@ const arenaSpan = (s) =>
 /// sets and marks is this number; `engine::space::gap` is the same one.
 const arenaDistance = (s) => Math.max(0, arenaSpan(s) - CONTACT_M);
 
+/// EVERY BODY ON THE FLOOR, aimed one first — the order the api and the engine
+/// both use, so nothing has to be reordered on the way out.
+const arenaBodies = (s) => [s.target_at, ...(s.formation || []).map((f) => f.at)];
+
+/// WHERE THE WEAPON POINTS. `null` means "at the target", which is what every
+/// scenario written before a formation existed means and what the app has
+/// always done.
+const arenaAim = (s) => s.aim_at || s.target_at;
+
+/// FIFTY, the api's own cap — the sim pays for every body, so the page refuses
+/// the same number the server refuses rather than a friendlier one.
+const ARENA_MAX_BODIES = 50;
+
+/// WHICH BODY A SHOT CROSSES FIRST — `engine::space::first_hit`, drawn rather
+/// than computed for damage. The page needs it for ONE reason: to show which
+/// body the beam is on, because aiming is a direction and the answer is not
+/// always the nearest thing to the cursor.
+function arenaFirstHit(s) {
+  const bodies = arenaBodies(s);
+  const aim = arenaAim(s);
+  const [px, py] = s.player_at;
+  const span = Math.hypot(aim[0] - px, aim[1] - py) || 1;
+  const [ux, uy] = [(aim[0] - px) / span, (aim[1] - py) / span];
+  const [mx, my] = [px + ux * BODY_R_M, py + uy * BODY_R_M];
+  let best = null;
+  bodies.forEach((b, i) => {
+    const [dx, dy] = [b[0] - mx, b[1] - my];
+    const along = dx * ux + dy * uy;
+    if (along < 0) return;
+    if (Math.abs(dx * uy - dy * ux) > BODY_R_M) return;
+    if (!best || along < best[1]) best = [i, along];
+  });
+  return best ? best[0] : -1;
+}
+
 function arenaSvg(s, en) {
   const w = ARENA_VW, h = ARENA_VH;
-  const g = arenaGeom(w, h, s.player_at, s.target_at);
+  const bodies = arenaBodies(s);
+  const aim = arenaAim(s);
+  const g = arenaGeom(w, h, s.player_at, ...bodies, aim);
   const [px, py] = g.px(s.player_at);
-  const [tx, ty] = g.px(s.target_at);
+  const [tx, ty] = g.px(aim);
   const r = Math.max(3, BODY_R_M * g.s);
   // A GRID THAT STAYS READABLE: the step grows with the zoom so the lines
   // never crowd, and it is labelled, because a scale nobody can read is a
@@ -2379,9 +2435,19 @@ function arenaSvg(s, en) {
   // from HERE, which is one radius shorter than the line between the two
   // bodies, and at contact it puts the muzzle on the enemy's surface — which
   // is why nothing misses there (owner, 2026-08-16).
+  // …AND IT FACES WHERE THE WEAPON POINTS, which may be a body or bare floor.
   const span = Math.hypot(tx - px, ty - py) || 1;
   const ux = (tx - px) / span, uy = (ty - py) / span;
   const mx = px + ux * r, my = py + uy * r;
+  const struck = arenaFirstHit(s);
+  const foes = bodies.map((b, i) => {
+    const [bx, by] = g.px(b);
+    // THE ONE THE BEAM IS ON is marked, because aiming at a place means the
+    // answer is not always what the cursor is nearest to.
+    const cls = i === struck ? " ar-struck" : "";
+    return `<circle class="ar-body ar-foe${cls}" data-drag="foe:${i}" data-foe="${i}" `
+      + `cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${r.toFixed(1)}"/>`;
+  }).join("");
   // A short arrow past the muzzle says which way the body is FACING, so a
   // player being turned by their own aim is visible rather than implied.
   const ax = mx + ux * 9, ay = my + uy * 9;
@@ -2389,12 +2455,13 @@ function arenaSvg(s, en) {
     <circle class="ar-muzzle" cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="2.2"/>`;
   return `<svg class="ar-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">
     ${lines.join("")}
-    <line class="ar-link" x1="${mx.toFixed(1)}" y1="${my.toFixed(1)}" x2="${(tx - ux * r).toFixed(1)}" y2="${(ty - uy * r).toFixed(1)}"/>
-    <circle class="ar-body ar-foe" data-drag="target_at" cx="${tx.toFixed(1)}" cy="${ty.toFixed(1)}" r="${r.toFixed(1)}"/>
+    <line class="ar-link" x1="${mx.toFixed(1)}" y1="${my.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${ty.toFixed(1)}"/>
+    ${foes}
+    <circle class="ar-aim" data-drag="aim" cx="${tx.toFixed(1)}" cy="${ty.toFixed(1)}" r="${(r * 0.7).toFixed(1)}"/>
     <circle class="ar-body ar-you" data-drag="player_at" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}"/>
     ${nose}
     <text class="ar-tag ar-tag-you" x="${px.toFixed(1)}" y="${(py + r + 13).toFixed(1)}">${escHtml(tr("You"))}</text>
-    <text class="ar-tag ar-tag-foe" x="${tx.toFixed(1)}" y="${(ty - r - 6).toFixed(1)}">${escHtml((en && en.name) || tr("Enemy"))}</text>
+    <text class="ar-tag ar-tag-foe" x="${g.px(bodies[Math.max(struck, 0)])[0].toFixed(1)}" y="${(g.px(bodies[Math.max(struck, 0)])[1] - r - 6).toFixed(1)}">${escHtml((en && en.name) || tr("Enemy"))}</text>
     <text class="ar-dist" x="${((px + tx) / 2).toFixed(1)}" y="${((py + ty) / 2 - 8).toFixed(1)}">${d.toFixed(2)} m</text>
     <text class="ar-scale" x="6" y="${h - 6}">${step} m ${escHtml(tr("grid"))}</text>
   </svg>`;
@@ -2406,16 +2473,74 @@ function arenaSvg(s, en) {
 /// whole panel is not re-rendered until the finger comes up, because the panel
 /// contains the thing being dragged and rebuilding it mid-gesture drops the
 /// pointer capture.
+/// ADD A BODY, somewhere it does not stand on anyone.
+///
+/// It walks OUTWARD in a ring around the target rather than dropping every new
+/// enemy on one spot: a formation you have to untangle before you can read it
+/// is worse than no formation. Three metres is the owner's own fixture spacing
+/// (2026-08-17) and the distance a chain's step edges sit at.
+function arenaAddFoe(s) {
+  if (1 + (s.formation || []).length >= ARENA_MAX_BODIES) return false;
+  const [cx, cy] = s.target_at;
+  const taken = arenaBodies(s);
+  const clear = (p) => taken.every((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) > CONTACT_M + 1e-6);
+  for (let ring = 1; ring <= 8; ring++) {
+    for (let k = 0; k < ring * 8; k++) {
+      const a = (k / (ring * 8)) * Math.PI * 2;
+      const at = [cx + Math.cos(a) * ring * 3, cy + Math.sin(a) * ring * 3];
+      if (clear(at)) {
+        s.formation.push({ at, enemy: "", level: null });
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/// KEEP A DRAGGED BODY OUT OF EVERYONE ELSE, not just out of the player.
+/// Circles do not overlap, and that rule was written for two bodies
+/// (`engine::space::CONTACT_RANGE_M`); with fifty it has to hold pairwise.
+function arenaSettle(s, at, skip) {
+  let p = at;
+  const others = [s.player_at, ...arenaBodies(s).filter((_, i) => i !== skip)];
+  for (let pass = 0; pass < 4; pass++) {
+    for (const q of others) {
+      const d = Math.hypot(p[0] - q[0], p[1] - q[1]);
+      if (d >= CONTACT_M - 1e-9) continue;
+      if (d < 1e-9) { p = [q[0], q[1] + CONTACT_M]; continue; }
+      const k = CONTACT_M / d;
+      p = [q[0] + (p[0] - q[0]) * k, q[1] + (p[1] - q[1]) * k];
+    }
+  }
+  return p;
+}
+
 function mountArena(host, s, en, opts) {
   if (!host) return;
   // QUICK SETS, in the canvas. The scene is the one place a position is set
   // (owner, 2026-08-16), so the shortcuts live in it rather than in a second
   // control below that would be a second source of truth for the same fact.
-  const chips = () => `<div class="ar-jumps">${ARENA_JUMPS.map((m) => {
-    const on = Math.abs(arenaDistance(s) - m) < 0.05;
-    const label = m === 0 ? tr("contact") : `${m} m`;
-    return `<button class="ar-jump${on ? " on" : ""}" data-jump="${m}"${opts.readonly ? " disabled" : ""}>${escHtml(label)}</button>`;
-  }).join("")}</div>`;
+  const dis = opts.readonly ? " disabled" : "";
+  const chips = () => {
+    const n = 1 + (s.formation || []).length;
+    const jumps = ARENA_JUMPS.map((m) => {
+      const on = Math.abs(arenaDistance(s) - m) < 0.05;
+      const label = m === 0 ? tr("contact") : `${m} m`;
+      return `<button class="ar-jump${on ? " on" : ""}" data-jump="${m}"${dis}>${escHtml(label)}</button>`;
+    }).join("");
+    // THE FORMATION'S OWN ROW. Separate from the distance shortcuts because
+    // they answer different questions — one is where the target stands, the
+    // other is how many bodies are on the floor.
+    const full = n >= ARENA_MAX_BODIES;
+    const crowd = `<button class="ar-jump" data-add="1"${dis || (full ? " disabled" : "")}>+1</button>`
+      + `<button class="ar-jump" data-add="8"${dis || (full ? " disabled" : "")}>+8</button>`
+      + `<button class="ar-jump" data-clear="1"${dis || (n < 2 ? " disabled" : "")}>${escHtml(tr("one enemy"))}</button>`
+      + `<span class="ar-count">${n}${full ? " / " + ARENA_MAX_BODIES : ""}</span>`
+      + (s.aim_at
+        ? `<button class="ar-jump" data-unaim="1"${dis}>${escHtml(tr("aim at the target"))}</button>`
+        : "");
+    return `<div class="ar-jumps">${jumps}</div><div class="ar-jumps ar-crowd">${crowd}</div>`;
+  };
   const paint = () => { host.innerHTML = arenaSvg(s, en) + chips(); };
   paint();
   if (opts.readonly) {
@@ -2426,10 +2551,20 @@ function mountArena(host, s, en, opts) {
   // bound to the circles die with the first repaint, which left the scene
   // draggable exactly once (2026-08-15).
   host.addEventListener("click", (e) => {
-    const j = e.target.closest && e.target.closest("[data-jump]");
-    if (!j) return;
+    const b = e.target.closest && e.target.closest("button");
+    if (!b) return;
     if (opts.readonly || officialScenarioActive()) return;
-    setArenaDistance(s, Number(j.dataset.jump));
+    if (b.dataset.jump !== undefined) setArenaDistance(s, Number(b.dataset.jump));
+    else if (b.dataset.add) {
+      for (let i = 0; i < Number(b.dataset.add); i++) if (!arenaAddFoe(s)) break;
+    } else if (b.dataset.clear) {
+      // BACK TO ONE BODY, which is the fight every golden value and both
+      // boards are measured under — so it is one click away and never
+      // something you have to drag your way back to.
+      s.formation = [];
+      s.aim_at = null;
+    } else if (b.dataset.unaim) s.aim_at = null;
+    else return;
     paint();
     markScenarioDirty();
     if (opts.after) opts.after();
@@ -2451,7 +2586,7 @@ function mountArena(host, s, en, opts) {
     const which = el.dataset.drag;
     const box = host.querySelector(".ar-svg").getBoundingClientRect();
     if (!box.width || !box.height) return;   // not on screen: nothing to drag
-    const g = arenaGeom(ARENA_VW, ARENA_VH, s.player_at, s.target_at);
+    const g = arenaGeom(ARENA_VW, ARENA_VH, s.player_at, ...arenaBodies(s), arenaAim(s));
     // CLIENT PIXELS -> the viewBox's own units, which is the one conversion
     // the fixed coordinate space costs and the reason it is worth it.
     const kx = ARENA_VW / box.width, ky = ARENA_VH / box.height;
@@ -2460,8 +2595,17 @@ function mountArena(host, s, en, opts) {
       if (which === "player_at") {
         s.player_at = at;
         s.target_at = keepApart(at, s.target_at);
-      } else {
-        s.target_at = keepApart(s.player_at, at);
+      } else if (which === "aim") {
+        // DRAGGING THE MARKER MAKES AIM A PLACE OF ITS OWN. Until you do, it
+        // rides the target — which is what every scenario written before a
+        // formation existed means, and what keeps this a strictly additive
+        // feature (owner, 2026-08-17).
+        s.aim_at = at;
+      } else if (which.startsWith("foe:")) {
+        const i = Number(which.slice(4));
+        const settled = arenaSettle(s, at, i);
+        if (i === 0) s.target_at = settled;
+        else if (s.formation[i - 1]) s.formation[i - 1].at = settled;
       }
       paint();
     };

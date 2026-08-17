@@ -165,6 +165,13 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
    second source of truth for the same fact. */
 .ar-face{stroke:var(--accent);stroke-width:2;stroke-linecap:round;opacity:.75}
 .ar-muzzle{fill:var(--accent)}
+/* WHERE THE WEAPON POINTS — a ring rather than a body, because it may be
+   standing on bare floor. */
+.ar-aim{fill:none;stroke:var(--accent);stroke-width:1.6;stroke-dasharray:3 2;cursor:grab}
+/* THE BODY THE BEAM IS ON, which is not always the nearest one to the marker. */
+.ar-body.ar-struck{stroke:var(--accent);stroke-width:2}
+.ar-crowd{margin-top:4px}
+.ar-count{font-size:11px;color:var(--dim);align-self:center;margin-left:2px}
 .ar-jumps{display:flex;gap:4px;padding:5px 6px;border-top:1px solid var(--line);flex-wrap:wrap}
 .ar-jump{font-size:11px;padding:2px 8px;border:1px solid var(--line);border-radius:999px;
   background:var(--panel);color:var(--muted);cursor:pointer;line-height:1.5}

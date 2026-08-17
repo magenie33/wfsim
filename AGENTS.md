@@ -396,6 +396,21 @@ around (decision 2026-07-31).
   check now opens a scenario of its own first and asserts that it did. The
   OPTIMIZER draws the same scene read-only, because a fight is edited in one
   place.
+  `node scripts/check_formation.mjs` is the THIRTY-SECOND: A FORMATION IS
+  SOMETHING YOU BUILD ON THE FLOOR, and what you build is what gets simulated.
+  The arena has drawn two bodies since 2026-08-15; this is the same claim for
+  fifty (owner, 2026-08-17). It would catch the most convincing possible bug —
+  a scene that looks like a formation and sends one target — so it asserts the
+  whole chain: bodies draw without standing on each other, any one drags, the
+  payload matches the scene body for body, and a real `/api/simulate` in the
+  shipping wasm build answers HIGHER for a crowd than for one body, because the
+  chain has somewhere to go. AIM IS A PLACE rather than a target: the marker
+  rides the target until dragged, and once dragged the beam is on whichever body
+  the LINE crosses — asserted with two bodies on one line where the nearest to
+  the cursor is the FAR one. Two negative controls: a formation of one is the
+  fight this app has always run (zero sent, aim null), and an official ruler
+  refuses a crowd both by disabling the control and by not moving when it is
+  clicked anyway.
   `node scripts/check_gunco_stated.mjs` is the TWENTY-NINTH: EVERY WEAPON SAYS
   WHICH CONDITION OVERLOAD RULE IT IS COMPUTED UNDER, with nothing equipped.
   The rules are PER WEAPON and hand-transcribed from a catalog — Adding or

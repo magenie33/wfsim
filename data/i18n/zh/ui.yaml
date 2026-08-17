@@ -942,6 +942,9 @@ ui:
   "Search arcane / effect…": 搜索赋能 / 效果…
   "search mods by name or effect…": 按名称或效果搜索 MOD…
   "search arcanes by name or effect…": 按名称或效果搜索赋能…
+  # THE FORMATION'S OWN CONTROLS (owner, 2026-08-17).
+  "one enemy": 只留一个
+  "aim at the target": 瞄回目标
   # THE LEAST-KNOWN RULE IN THE FORMA MODEL (owner, 2026-08-16), stated beside
   # the exilus slot because every capacity number on the page assumes it.
   "A polarity can be swapped between this slot and a main one — the slot stays Exilus. So its polarity counts toward any build, even one that leaves it empty.": 极性可以在这个槽和主槽之间对调 —— 槽位本身仍然是 Exilus。所以它的极性对任何配装都算数，哪怕这个槽空着。
