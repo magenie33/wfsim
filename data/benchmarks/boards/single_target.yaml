@@ -4213,6 +4213,18 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [prisma_gorgon_evo1_incarnon_form, prisma_gorgon_hunters_mantra, prisma_gorgon_rapid_reinforcement, prisma_gorgon_elemental_balance]
     arcanes: [primary_crux]
+  - weapon: rakta_ballistica
+    mode: cycle
+    score: 18.40714587087363
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [rakta_ballistica_evo1_incarnon_form, rakta_ballistica_headcracker, rakta_ballistica_rapid_reinforcement, rakta_ballistica_critical_parallel]
+    arcanes: [cascadia_flare]
+  - weapon: rakta_ballistica
+    mode: cycle
+    score: 16.954122460983992
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [rakta_ballistica_evo1_incarnon_form, rakta_ballistica_headcracker, rakta_ballistica_rapid_reinforcement, rakta_ballistica_critical_parallel]
+    arcanes: [secondary_deadhead]
   - weapon: rubico_prime
     mode: base
     score: 13.971121298966988
