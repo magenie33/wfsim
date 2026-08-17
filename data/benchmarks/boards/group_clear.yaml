@@ -26,11 +26,27 @@ entries:
     score: 0.29157073014403223
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, pistol_elementalist, primed_convulsion, primed_heated_charge, pathogen_rounds]
     arcanes: [secondary_enervate]
+  - weapon: kuva_nukor
+    mode: base
+    score: 43.39012732451218
+    mods: [seeker, galvanized_diffusion, hornet_strike, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: impact
   - weapon: larkspur_prime
     mode: base
     score: 299.58204464951274
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, critical_focus, marked_target, hollowed_bullets, hypothermic_shell, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: ocucor
+    mode: base
+    score: 10.42945297991133
+    mods: [seeker, galvanized_diffusion, hornet_strike, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+  - weapon: ocucor
+    mode: base
+    score: 3.9334880981317295
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
   - weapon: torid
     mode: cycle
     score: 155.66481469889197
