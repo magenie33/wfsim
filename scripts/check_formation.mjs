@@ -87,8 +87,13 @@ const r = await evaluate(`(async () => {
   const crowd = await runWith(sim.formation.map(f => ({ at: f.at })));
   out.lone = lone; out.crowd = crowd;
 
-  // 5. THE CAP, at the api's own number.
-  const many = await runWith(Array.from({ length: 51 }, (_, i) => ({ at: [i * 3, 5] })));
+  // 5. THE CAP, at the api's own number — READ from /api/meta rather than
+  //    written out here. This said 51 and asserted "at most 50", so it broke
+  //    the day the cap moved (2026-08-17) — the same two-declarations bug the
+  //    page's own ARENA_MAX_BODIES had. A check that hardcodes the number it is
+  //    checking is not checking it.
+  out.cap = ARENA_MAX_BODIES();
+  const many = await runWith(Array.from({ length: out.cap + 1 }, (_, i) => ({ at: [i * 3, 5] })));
   out.capErr = many.err || '';
 
   // 6. AIM IS A PLACE. Two bodies on one line, the far one the target; aim past
@@ -151,8 +156,8 @@ check("a lone fight runs", !r.lone.err && r.lone.dps > 0, JSON.stringify(r.lone)
 check("...and a crowd takes more, because the chain has somewhere to go",
   !r.crowd.err && r.crowd.dps > r.lone.dps,
   `${JSON.stringify(r.crowd)} against ${JSON.stringify(r.lone)}`);
-check("the 51st body is refused, in words",
-  /at most 50/.test(r.capErr), r.capErr);
+check(`the ${r.cap + 1}th body is refused, in words`,
+  r.cap > 1 && new RegExp(`at most ${r.cap}`).test(r.capErr), r.capErr);
 check("aim is drawn as a marker of its own", r.aimMarker === true);
 check("...and the beam is on the body the LINE crosses, not the nearest to it",
   r.struck === 1, `first hit index ${r.struck} (0 = the target at 20 m, 1 = the body at 10 m)`);

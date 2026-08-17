@@ -40,7 +40,23 @@ use crate::space::Vec2;
 /// is why the number belongs to the engine rather than to the page — every
 /// body is a full target with its own pools, procs and DoTs, and a chain
 /// resolves against all of them on every shot.
-pub const MAX_BODIES: usize = 50;
+/// FOUR HUNDRED, and the number is MEASURED rather than chosen (2026-08-17).
+///
+/// It was 50 while the arena was learning to hold more than two bodies, which
+/// was the right number for "some, not unbounded" and the wrong one the moment
+/// a CROWD RULER was sized: `formation_cost` says the roster's largest blast —
+/// the Morgha alt's 12 m — stops growing at a 17x17 grid, which is 289 bodies.
+/// A cap under that would have made the ARENA the thing being measured.
+///
+/// RAISING IT IS FREE, which is the part that had to be checked rather than
+/// assumed: `RunResult` is `Copy` and carries a `[f64; MAX_BODIES + 1]`, so the
+/// worry was a fixed cost paid by every fight including the single-target ones
+/// the board already runs. Measured at 400 against 50, a one-body engagement
+/// costs 0.538 ms against 0.533 — inside the noise of the machine. The array is
+/// 3.2 KB and a run produces one.
+///
+/// 400 rather than 289: headroom for a 19x19, and a round number to state.
+pub const MAX_BODIES: usize = 400;
 
 /// One body in the formation, as the caller declares it — everything that
 /// makes it a target, and where it stands.

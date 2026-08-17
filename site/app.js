@@ -2398,7 +2398,12 @@ const arenaAim = (s) => s.aim_at || s.target_at;
 
 /// FIFTY, the api's own cap — the sim pays for every body, so the page refuses
 /// the same number the server refuses rather than a friendlier one.
-const ARENA_MAX_BODIES = 50;
+// FROM THE ENGINE, never a copy of it (`formation::MAX_BODIES`, served at
+// `/api/meta.max_bodies`). It was written out as 50 here, so the cap the server
+// enforces and the cap the canvas offers were two numbers that happened to
+// agree — until the ruler work raised one of them. The fallback is only for a
+// meta that failed to load, where nothing else works either.
+const ARENA_MAX_BODIES = () => (META && META.max_bodies) || 50;
 
 /// WHICH BODY A SHOT CROSSES FIRST — `engine::space::first_hit`, drawn rather
 /// than computed for damage. The page needs it for ONE reason: to show which
@@ -2511,7 +2516,7 @@ function arenaSvg(s, en) {
 /// is worse than no formation. Three metres is the owner's own fixture spacing
 /// (2026-08-17) and the distance a chain's step edges sit at.
 function arenaAddFoe(s) {
-  if (1 + (s.formation || []).length >= ARENA_MAX_BODIES) return false;
+  if (1 + (s.formation || []).length >= ARENA_MAX_BODIES()) return false;
   const [cx, cy] = s.target_at;
   const taken = arenaBodies(s);
   const clear = (p) => taken.every((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) > CONTACT_M + 1e-6);
@@ -2562,11 +2567,11 @@ function mountArena(host, s, en, opts) {
     // THE FORMATION'S OWN ROW. Separate from the distance shortcuts because
     // they answer different questions — one is where the target stands, the
     // other is how many bodies are on the floor.
-    const full = n >= ARENA_MAX_BODIES;
+    const full = n >= ARENA_MAX_BODIES();
     const crowd = `<button class="ar-jump" data-add="1"${dis || (full ? " disabled" : "")}>+1</button>`
       + `<button class="ar-jump" data-add="8"${dis || (full ? " disabled" : "")}>+8</button>`
       + `<button class="ar-jump" data-clear="1"${dis || (n < 2 ? " disabled" : "")}>${escHtml(tr("one enemy"))}</button>`
-      + `<span class="ar-count">${n}${full ? " / " + ARENA_MAX_BODIES : ""}</span>`
+      + `<span class="ar-count">${n}${full ? " / " + ARENA_MAX_BODIES() : ""}</span>`
       + (s.aim_at
         ? `<button class="ar-jump" data-unaim="1"${dis}>${escHtml(tr("aim at the target"))}</button>`
         : "");

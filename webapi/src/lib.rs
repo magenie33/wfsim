@@ -1397,6 +1397,13 @@ pub fn meta_json() -> Value {
         // their own spellings, and this is what a check measures those tables
         // against — an axis added in Rust cannot then stay invisible to a
         // surface that never heard of it.
+        // HOW MANY BODIES A FIGHT CAN HOLD — declared once, in the engine
+        // (`formation::MAX_BODIES`), and served so the canvas stops carrying a
+        // copy of it. The page had `ARENA_MAX_BODIES = 50` written out, which
+        // is the same shape as every axis-list bug this file already guards
+        // against: two declarations of one fact, and the day one moves the
+        // other is silently wrong.
+        "max_bodies": wfsim_engine::formation::MAX_BODIES,
         "build_axes": wfsim_engine::builds::BUILD_AXES.iter().map(|a| json!({
             "id": a.id,
             "request_field": a.request_field,
@@ -6769,12 +6776,20 @@ mod asset_tests {
         assert!(mixed.get("error").is_none(), "{mixed}");
         assert!(mixed.get("dps").and_then(Value::as_f64).unwrap_or(-1.0) > 0.0);
 
-        // …AND THE CAP IS REFUSED RATHER THAN TRUNCATED.
-        let too_many = simulate_json(&req((0..51)
+        // …AND THE CAP IS REFUSED RATHER THAN TRUNCATED. Derived from the
+        // constant, not written out: this test said "at most 50" and broke the
+        // day the cap moved, which is the same two-declarations bug the error
+        // message itself is now careful to avoid (2026-08-17).
+        let cap = wfsim_engine::formation::MAX_BODIES;
+        let too_many = simulate_json(&req((0..=cap)
             .map(|i| serde_json::json!({ "at": [i as f64 * 3.0, 5.0] }))
             .collect()));
         assert!(
-            too_many.get("error").and_then(Value::as_str).unwrap_or("").contains("at most 50"),
+            too_many
+                .get("error")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .contains(&format!("at most {cap}")),
             "{too_many}"
         );
     }

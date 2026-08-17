@@ -394,6 +394,35 @@ than from the clock.
 A weapon with neither mechanic touches 1 body at every size and costs what it
 always did, so the ruler is free for most of the roster.
 
+### At 1.5 m, and where each mechanism stops growing
+
+Measured across four weapons, one per mechanism, 180 s, per 1000 runs:
+
+| grid | placed | Torid (chain 2.3 m) | Grattler (blast 9 m) | Morgha alt (blast 12 m) | Phantasma (∞ punch) |
+|---|---|---|---|---|---|
+| 7x7 | 49 | **13** · 34.8 s | 43 · 1.6 s | 49 · 1.6 s | 7 · 2.8 s |
+| 11x11 | 121 | **13** · 86.6 s | 65 · 2.2 s | 84 · 2.7 s | 11 · 4.2 s |
+| 15x15 | 225 | **13** · 135.8 s | 73 · 2.6 s | 106 · 3.4 s | 15 · 5.6 s |
+| 17x17 | 289 | **13** · 160.5 s | 75 · 2.7 s | **110** · 3.6 s | 17 · 6.4 s |
+| 19x19 | 361 | **13** · 188.1 s | 77 · 2.8 s | **110** · 3.7 s | 19 · 7.0 s |
+
+Three different saturation points, and the surprise is which one is expensive:
+
+- **A CHAIN saturates first and costs the most.** 13 bodies from 7x7 onward, and
+  the price of not stopping there is 160 s against 35 s for the same thirteen.
+- **A BLAST saturates late and costs almost nothing** — the Morgha alt reaches
+  110 bodies for 3.6 s, because a sphere is one instance per body with no
+  recursion. It stops growing at 17x17, which is where a 12 m radius (the
+  roster's largest) is finally contained by the grid.
+- **PUNCH-THROUGH never saturates** — exactly N on an NxN, all the way out.
+
+So the CLOCK does not decide this. A full pass over the roster at 17x17 is
+7 chaining entries at 160 s, 54 explosive at ~4 s and 162 at 0.6 s: about 24
+minutes, which is the order the single-target board already costs. What decides
+it is the two clipping failures — too small and the biggest blast measures the
+ARENA, too deep and a line-piercing weapon is handed a perfect column no player
+will ever line up.
+
 ### Spacing decides which radii it can tell apart
 
 At a regular lattice the thresholds are `s`, `s*sqrt(2)`, `2s`, `s*sqrt(5)` —
@@ -403,14 +432,13 @@ and a radius mod is only visible when it crosses one. Measured with
 
 | spacing | bare | Firestorm | Primed Firestorm |
 |---|---|---|---|
-| 1.45 m | 6 | 9 | 13 |
+| **1.50 m** | **6** | **9** | **13** |
 | 1.75 m | 6 | 6 | 9 |
-| **2.00 m** | 4 | 6 | 6 |
+| 2.00 m | 4 | 6 | 6 |
 | 2.50 m | 4 | 4 | 4 |
 
 At 2 m the ruler separates bare from Firestorm and is BLIND to the Primed
-upgrade; at 2.5 m it is blind to both. Only ~1.45 m separates all three — and
-that number is fitted to one mod pair on one weapon, which is an instrument
-tuned to a question rather than a fight anyone plays. The blindness is also
-specific to the Torid's unusually narrow radius ladder: an explosive weapon with
-a 3-8 m radius crosses several of a 2 m lattice's thresholds.
+upgrade (6 seeds and 6); at 2.5 m it is blind to both. **1.5 m separates all
+three** — 1.00x / 1.50x / 2.17x — and it is a round number rather than one
+fitted to the mod pair: 1.45 m gives the same three-way split, so the answer is
+a band and 1.5 sits in it.
