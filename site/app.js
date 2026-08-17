@@ -5492,7 +5492,18 @@ function scenariosChanged() {
   // switches which abilities are running, so the cards have to be repainted
   // from the incoming state rather than left showing the outgoing one's.
   if ($("sim-wfbuffs")) renderWfBuffs("sim-wfbuffs", false);
-  if ($("quick-calc")) renderQuickCalc();
+  // …and the QUICK CALC RE-ASKS. Not just repaints: switching fights is the
+  // biggest thing that can happen to a ranking, and this hook drew the box
+  // under the new fight's name while every chip beside it still answered the
+  // old one's question (owner, 2026-08-17). A `markScenarioDirty` EDIT has
+  // re-run the scan since it existed; a SWITCH never did, because a switch is
+  // a replacement rather than an edit and goes nowhere near that debounce.
+  //
+  // Here rather than at the call sites, because this hook is already "the only
+  // thing every scenario mutation goes through" — the line above says so for
+  // `lockOfficialScenario`, and the same reasoning makes it the one place that
+  // cannot be forgotten by a mutation added later.
+  refreshGains();
   if ($("opt-target")) renderOptEnemy();
 }
 
@@ -7577,8 +7588,10 @@ function renderQuickCalc() {
 /// chosen scenario does not care about costs nothing here. Evolution rows scan
 /// without being opened, so they always refresh; the pickers only when open.
 function refreshGains() {
-  if (gainPrefs.on === false) return;
+  // The BOX first and unconditionally — it names the fight being measured, so
+  // it has to follow a switch even when the scan itself is off.
   renderQuickCalc();
+  if (gainPrefs.on === false) return;
   if ($("mod-popover") && !$("mod-popover").hidden) {
     renderTools();
     renderMenu(pickerSlot, $("mod-search").value);

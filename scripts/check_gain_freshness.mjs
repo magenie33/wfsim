@@ -158,6 +158,57 @@ const r = await evaluate(`(async () => {
   // The wording: the block says what the numbers in it MEAN.
   const hint = document.querySelector('#sim-buffs')?.previousElementSibling?.querySelector('.sim-hint');
   out.hint = (hint?.textContent || '').trim();
+  // ---- A SWITCH RE-ASKS, not just repaints ------------------------------
+  //
+  // An EDIT has re-run the scan since this check existed. A SWITCH is the
+  // other way a fight moves and it never did: it is a REPLACEMENT rather than
+  // an edit, so it goes nowhere near the auto-save debounce that triggers the
+  // re-run. The box was redrawn under the new fight's name while every chip
+  // beside it still answered the old fight's question (owner, 2026-08-17).
+  //
+  // On the EVOLUTION axis, which is the one that ranks without a picker being
+  // open — so this asserts the re-ask itself rather than a repaint that
+  // happened to reopen something.
+  {
+    const settleScan = async () => {
+      for (let i = 0; i < 120; i++) {
+        await sleep(250);
+        if (!gainScan.running && gainScan.key === gainKey()) return true;
+      }
+      return false;
+    };
+    // TWO FIGHTS THAT DIFFER ENOUGH TO MOVE A NUMBER. A switch between two
+    // identical fights would pass this by coincidence.
+    sim.level = 90; markScenarioDirty(); await sleep(900);
+    const chips = () => [...document.querySelectorAll('#preset-bar-simulator-scenarios .pchip')]
+      .filter((c) => !c.classList.contains('add') && !c.classList.contains('imp'));
+    copyActiveScenario(); await sleep(1500);
+    sim.level = 950; markScenarioDirty(); await sleep(900);
+    renderEvo(); await sleep(300);
+    out.switchScanned = await settleScan();
+    const beforeKey = gainScan.key;
+    // THE SCAN'S OWN BASELINE, which is this build measured under this fight
+    // and the one number that MUST move when the fight does. A per-candidate
+    // gain is the wrong probe: a perk worth nothing under both fights is worth
+    // nothing under both fights, which is true and is no evidence that
+    // anything was re-measured.
+    out.switchHadValue = Object.keys(gainScan.by).length > 0 && gainScan.base > 0;
+    const beforeVal = gainScan.base;
+
+    // THE SWITCH ITSELF — the chip, the way a reader does it. Nothing else is
+    // touched afterwards: no picker reopened, no tab clicked, no edit made.
+    const other = chips().find((c) => !c.classList.contains('sel'));
+    out.switchFound = !!other;
+    if (other) other.click();
+    await sleep(400);
+    out.switchMovedTheFight = gainKey() !== beforeKey;
+    out.switchRescanned = await settleScan();
+    out.switchNewKey = gainScan.key !== beforeKey;
+    const afterVal = gainScan.base;
+    out.switchValueMoved = beforeVal > 0 && afterVal > 0 && beforeVal !== afterVal;
+    out.switchVals = [beforeVal, afterVal];
+  }
+
   return out;
 })()`);
 
@@ -177,6 +228,19 @@ check("...and it gave way early rather than running to its end",
   r.abandonedAt < r.staleTotal, `abandoned at ${r.abandonedAt} of ${r.staleTotal}`);
 check("...leaving the new scan's own tally intact", r.overrun === false && r.finishedClean === true,
   `done ${r.abandonedAt}, overrun ${r.overrun}`);
+// A SWITCH IS THE OTHER WAY A FIGHT MOVES, and it never re-ran until
+// 2026-08-17 — the box was redrawn under the new name while the chips beside it
+// still answered the old fight.
+check("a scenario was scanned before the switch",
+  r.switchScanned === true && r.switchHadValue === true);
+check("...and there was another scenario to switch to", r.switchFound === true);
+check("switching the fight moves what the quick calc would measure",
+  r.switchMovedTheFight === true);
+check("...and it RE-RUNS on its own, with nothing reopened or clicked",
+  r.switchRescanned === true && r.switchNewKey === true);
+check("...against a fight that really is a different fight",
+  r.switchValueMoved === true, `baseline ${JSON.stringify(r.switchVals)}`);
+
 check("a different axis does not preempt a running scan", r.axisHeld === true,
   `axis was ${r.heldAxis}`);
 check("the buff block says the stacks are the START", /START|开战/.test(r.hint), JSON.stringify(r.hint));

@@ -654,6 +654,19 @@ around (decision 2026-07-31).
   lookup, so an entry nothing grants is never read). Pruning it to the current
   build made the quick calc a different fight the moment a candidate granted a
   buff the current build lacked — which is every candidate worth ranking.
+  A SWITCH IS THE OTHER WAY A FIGHT MOVES, and it has to RE-ASK rather than
+  repaint. An EDIT re-ran the scan through `markScenarioDirty`'s debounce; a
+  switch is a REPLACEMENT and goes nowhere near it, so the box was redrawn under
+  the new fight's name while every chip beside it still answered the old one's
+  question. `scenariosChanged` calls `refreshGains()` — that hook rather than
+  the call sites, because it is already "the only thing every scenario mutation
+  goes through", which makes it the one place a mutation added later cannot
+  forget. `check_gain_freshness.mjs` asserts it on the EVOLUTION axis (the one
+  that ranks with no picker open, so it tests the re-ask and not a repaint) and
+  probes the scan's own BASELINE rather than a candidate's gain: a perk worth
+  nothing under both fights is worth nothing under both fights, which is true
+  and is no evidence anything was re-measured. Verified to bite — the baseline
+  comes back byte-identical.
   `scripts/check_one_fight.mjs` is the THIRTY-THIRD check and HOLDS NO LIST OF
   FIELDS: it asserts every module's outgoing request against `theFight()`
   ITSELF, so a field invented tomorrow is covered by nobody. Verified to bite —
