@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: 28cb3d12ca48fea6ff66314191ab0670a2f1b74a
+engine: 66868acea8b682570cef26510a42b22c3304c8c8
 entries:
   - weapon: arbucep
     mode: base
@@ -1023,6 +1023,12 @@ entries:
     mode: cycle
     score: 1.1348648479685777
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, rifle_elementalist, rime_rounds, infected_clip, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_merciless]
+  - weapon: torid
+    mode: cycle
+    score: 1.0997460565379271
+    mods: [amalgam_serration, galvanized_chamber, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_merciless]
   - weapon: torid
