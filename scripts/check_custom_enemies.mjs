@@ -72,7 +72,7 @@ const r = await evaluate(`(async () => {
   sim.runs = 20; sim.duration = 10;
   // Equipped with nothing: the Torid's own Toxin, so the immunity below is
   // about the target rather than about a mod.
-  const body = { ...buildPayload(), ...fightPayload(), buffs: {} };
+  const body = { ...buildPayload(), ...theFight(), buffs: {} };
   out.sentCustom = (body.custom_enemies || []).map(e => e.id);
   const shot = await api('/api/simulate', body);
   out.ok = shot && shot.ok !== false;
@@ -88,7 +88,7 @@ const r = await evaluate(`(async () => {
     const ps = loadPresetList('enemies');
     ps[0].state.damage_modifiers = { toxin: mult };
     storePresetList('enemies', ps);
-    const res = await api('/api/simulate', { ...buildPayload(), ...fightPayload(), buffs: {} });
+    const res = await api('/api/simulate', { ...buildPayload(), ...theFight(), buffs: {} });
     return (res && res.dps) || 0;
   };
   out.immune = await dmgVs(0);
@@ -119,7 +119,7 @@ const r = await evaluate(`(async () => {
     ps[0].state.stats.health = 1e9;
     mut(ps[0].state);
     storePresetList('enemies', ps);
-    const res = await api('/api/simulate', { ...buildPayload(), ...fightPayload(), buffs: {} });
+    const res = await api('/api/simulate', { ...buildPayload(), ...theFight(), buffs: {} });
     // PER PELLET, not per engagement: a target that takes no damage never
     // dies, so the raw counts are two different fights. The RATE is the thing
     // the wiki is talking about.

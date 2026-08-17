@@ -119,13 +119,13 @@ const r = await evaluate(`(async () => {
     out.staleTotal = gainScan.total;
     const staleKey = gainScan.key;
 
-    // The fight moves — written straight into the PRESET, because that is what
-    // a scan resolves and waiting out the auto-save debounce would let the
-    // scan we are trying to interrupt finish first.
-    const ps = loadPresetList(SCENARIOS);
-    const at = ps.findIndex((x) => x.name === activeScenario);
-    ps[at] = { ...ps[at], state: { ...ps[at].state, level: 900 } };
-    storePresetList(SCENARIOS, ps);
+    // The fight moves. Straight into the LIVE fight, which is the only place
+    // one is edited: theFight() reads sim and nothing else as of
+    // 2026-08-17, so the key moves on the assignment with no auto-save to wait
+    // out — the very debounce this used to dodge by writing into the preset
+    // behind the scan's back. A preset write is no longer a fight edit and
+    // must not behave like one.
+    sim.level = 900;
     out.stillRunningAtCut = gainScan.running;
     const t0 = Date.now();
     const p2 = scanGains(axis, () => {});          // ...and B takes over at once

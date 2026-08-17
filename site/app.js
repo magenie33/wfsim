@@ -2668,14 +2668,51 @@ function mountArena(host, s, en, opts) {
   });
 }
 
-const fightPayload = (st) => {
-  const s = st || sim;
-  // THE RUN COUNT RIDES HERE and not in the scenario, so every path that sends
-  // a fight sends the page's own count — and a caller that wants another one
-  // still overrides it after the spread, which is what the quick calc and the
-  // panel probes do.
-  return { ...s, runs: simRuns(), custom_enemies: customEnemiesFor(s.enemy) };
-};
+
+/// THE FIGHT — and there is exactly ONE, for every module that simulates.
+///
+/// `parse_fight` is the server's half of this rule: the fight is parsed once
+/// and the optimizer calls it, so the two can no longer read different fields.
+/// The PAGE had no such half. It grew five spellings of "the fight", and each
+/// one was a chance for a module to measure something the simulator never runs:
+///
+///   * Run Sim sent `fightPayload()`;
+///   * the share card sent a RAW `sim` — no run count, so the server's own
+///     default, and no `custom_enemies`, so a fight against a target you made
+///     could not be reproduced from the link at all;
+///   * the quick calc resolved a scenario of its OWN, from a sticky persisted
+///     pointer that outlived the weapon, the scenario and the session;
+///   * the optimizer's gain scan spread that scenario raw, without
+///     `custom_enemies`;
+///   * the optimizer itself sent `fightPayload(snapshotScenario())`, the
+///     STORED shape of the fight rather than the live one.
+///
+/// Each was right when written and none of them is now, which is the argument
+/// against having five: a fight gains a field — `custom_enemies`, a formation,
+/// an aim point — and it reaches whichever spellings somebody remembered
+/// (owner, 2026-08-17).
+///
+/// THE LIVE `sim` IS THE FIGHT. Not the preset behind it: a scenario preset is
+/// a SAVED COPY that `applyScenario` seeds `sim` from and the auto-save writes
+/// back, so reading it over the top can only ever hand back something staler.
+///
+/// THE BUFF MAP TRAVELS WHOLE, because buff settings are the FIGHT's (they save
+/// in a scenario preset) and it is the BUILD that decides which of them have a
+/// source. The server's `BuffCfg` is a lookup, so an entry nothing grants is
+/// never read. Filtering to `buffList` here would make the quick calc a
+/// different fight the moment a candidate granted a buff the current build does
+/// not — which is every candidate worth ranking.
+///
+/// `over` is for what a CALLER owns rather than the fight — `replay`, a seed,
+/// and the QUICK CALC'S RUN COUNT, which is a reader's precision rather than an
+/// edit to the fight. It lands LAST, which is the whole of that decoupling: the
+/// count used to be written into the scenario object BEFORE the page's own was
+/// spread over it, so the box silently did nothing while every chip's tooltip
+/// quoted it (owner, 2026-08-17).
+function theFight(over) {
+  return { ...sim, runs: simRuns(), custom_enemies: customEnemiesFor(sim.enemy),
+    buffs: sim.buffs || {}, ...(over || {}) };
+}
 
 function renderEnemies() {
   if (!META || !$("enemy-block")) return;
@@ -6724,41 +6761,37 @@ const gainPct = (x) => (x >= 0 ? "+" : "−") + sig2(Math.abs(x) * 100) + "%";
 // ON by default (user, 2026-08-01): the ranking is the reason the picker is
 // worth opening. Off, nothing simulates, no chip is drawn, and is not
 // offered as an order — a sort key with no values behind it is a trap.
-let gainPrefs = { on: true, scenario: null, runs: GAIN_RUNS_MIN };
+// NO `scenario` HERE ANY MORE: the fight is the simulator's, and a stale key
+// left in a reader's localStorage is inert because nothing reads it. See
+// `gainScenario`.
+let gainPrefs = { on: true, runs: GAIN_RUNS_MIN };
 try { const s = JSON.parse(localStorage.getItem("wfsim-gain")); if (s) gainPrefs = { ...gainPrefs, ...s }; } catch (_) {}
 const saveGainPrefs = () => localStorage.setItem("wfsim-gain", JSON.stringify(gainPrefs));
 
 let gainScan = { key: null, running: false, base: 0, floor: 0, by: {}, done: 0, total: 0, note: "", metric: "" };
 
-/// The scenario a scan runs under: the chosen preset, else the live one.
+/// THE FIGHT A SCAN RUNS UNDER, and there is only one: THE ONE YOU ARE IN.
+///
+/// This used to be a picker of its own — `gainPrefs.scenario`, persisted, and
+/// therefore STICKY across weapons, scenarios and sessions. Two controls for
+/// one fact, which is how one of them silently undoes the other: build a nine
+/// body Ocucor fight, switch the simulator to it, and the quick calc kept
+/// ranking every slot under whichever scenario that popover was last left on —
+/// an official single-target ruler, most likely, since that is where the app
+/// lands a first-time visitor. The mods that only pay in a crowd read as worth
+/// nothing, and nothing on screen said the numbers came from another fight
+/// (owner, 2026-08-17).
+///
+/// So it follows the simulator, and the rule is the arena's own: a fight is
+/// EDITED IN ONE PLACE. Ranking a slot under some other scenario is still one
+/// click — switch to it, and the simulator shows it too, so the numbers and
+/// the fight on screen can no longer disagree.
 function gainScenario() {
   const ps = scenarioList();
-  // BY ID, not by label. The active pointer stores an official ruler's ID
-  // (`single_target_no_aim`) while its NAME is a translated sentence, so a
-  // name comparison silently fell through to `ps[0]` — the quick calc then
-  // ranked every slot under the FIRST ruler no matter which fight was on
-  // screen.
-  const p = ps.find((x) => presetId(x) === gainPrefs.scenario)
-    || ps.find((x) => presetId(x) === activeScenario) || ps[0];
-  // THE ACTIVE FIGHT IS THE ONE ON SCREEN; ANY OTHER IS A STORED DOCUMENT.
-  //
-  // The picker can aim this scan at a scenario you are not in, and a benchmark
-  // yaml names only what it has an opinion about — so spreading one over the
-  // live `sim` handed it every field it does not mention. Pick "single_target"
-  // here while your own fight has Roar running and the quick calc ranked every
-  // slot under the ruler's enemy AND your Roar. A ruler is the same fight for
-  // everyone or it is not a ruler. Same rule `applyScenario` already states,
-  // and the same failure the Eximus box had (owner, 2026-08-07).
-  //
-  // The ACTIVE one still reads BOTH — `sim` for the knob you just turned, which
-  // has to reach this scan before the auto-save round-trips, and its stored
-  // state over the top, which is what a write straight into the preset means.
-  // That pair is what `check_gain_freshness` is about, and it is untouched: the
-  // change here is only that a scenario you are NOT in stops inheriting the one
-  // you are.
-  const st = p && presetId(p) === activeScenario
-    ? { ...sim, ...p.state }
-    : { ...defaultScenario(), ...(p ? p.state : {}) };
+  // The NAME only — what is measured is `theFight()`. Resolved by ID, not by
+  // label: an official ruler's name is a translated sentence while its identity
+  // is `single_target_no_aim`.
+  const p = ps.find((x) => presetId(x) === activeScenario);
   // ONE PASS, at the reader's own count (user, 2026-08-02 for the single pass;
   // owner, 2026-08-11 for the count). It was one run over the field and then
   // the leaders again — two numbers with two precisions, and the cheap one
@@ -6766,16 +6799,14 @@ function gainScenario() {
   // ±39 points on a single run). Ten is where that stops being a coin flip; it
   // is not where it stops moving, which is why every tooltip still says how
   // many runs its number came from.
-  const runs = gainRuns();
-  const refine = 0;
-  // The WHOLE buff map travels, not just the current build's cards: a
-  // candidate's buff is by definition not in `buffList`, and the scenario may
-  // well have an opinion about it. Unmentioned buffs take their own default
-  // (full stacks, unlocked), which is the honest reading of "no opinion".
-  return { name: p ? p.name : "—", refine,
-    scenario: { ...st, runs, seed: GAIN_SEED, buffs: st.buffs || {},
-      // THE RUNS THEMSELVES, because this scan PAIRS with them. See `gainOver`.
-      run_series: true } };
+  //
+  // THE COUNT IS THE ONLY THING THIS SCAN OWNS. It is the reader's precision,
+  // not an edit to the fight — which is what makes "the quick calc is the
+  // simulator run many times" true rather than aspirational (owner,
+  // 2026-08-17).
+  return { name: p ? p.name : "—", refine: 0,
+    // THE RUNS THEMSELVES, because this scan PAIRS with them. See `gainOver`.
+    scenario: theFight({ runs: gainRuns(), seed: GAIN_SEED, run_series: true }) };
 }
 
 // A scan belongs to ONE AXIS POSITION of one build under one scenario.
@@ -6949,7 +6980,7 @@ async function scanGains(axis, onTick) {
   // where the ratio has no denominator. The SCENARIO decides which.
   let useKills = (scenario.metric || "kpm") !== "dps";
   const run = async (override) => {
-    const r = await api("/api/simulate", { ...buildPayload(), ...fightPayload(scenario), ...override });
+    const r = await api("/api/simulate", { ...buildPayload(), ...scenario, ...override });
     if (!r || !r.ok) return null;
     return readGain(r, useKills);
   };
@@ -6975,7 +7006,7 @@ async function scanGains(axis, onTick) {
       if (!live()) return;
       const c = cands[cursor++];
       if (!c) return;
-      const r = await lane.call("/api/simulate", { ...buildPayload(), ...fightPayload(scenario), ...c.payload });
+      const r = await lane.call("/api/simulate", { ...buildPayload(), ...scenario, ...c.payload });
       if (!live()) return;               // the fight moved — this answer is stale
       const g = readGain(r, useKills);
       gainScan.done++;
@@ -6993,7 +7024,7 @@ async function scanGains(axis, onTick) {
   if (refine) {
     const deep = { ...scenario, runs: refine };
     const runDeep = async (override) => {
-      const r = await api("/api/simulate", { ...buildPayload(), ...fightPayload(deep), ...override });
+      const r = await api("/api/simulate", { ...buildPayload(), ...deep, ...override });
       if (!r || !r.ok) return null;
       return readGain(r, useKills);
     };
@@ -7477,27 +7508,16 @@ function renderQuickCalc() {
   const box = $("quick-calc");
   if (!box) return;
   const on = gainPrefs.on !== false;
-  const ps = scenarioList();
-  // The same identity `gainScenario` resolves with — this control and that
-  // reader must agree on which fight is selected, or the label says one thing
-  // and the numbers are another's.
-  const cur = ps.some((p) => presetId(p) === gainPrefs.scenario) ? gainPrefs.scenario
-    : (ps.some((p) => presetId(p) === activeScenario) ? activeScenario : presetId(ps[0]));
-  const opt = (v, label, sel) => `<option value="${escHtml(v)}"${v === sel ? " selected" : ""}>${escHtml(label)}</option>`;
   box.innerHTML =
     `<label class="pc-h" title="${escHtml(tr("rank a slot's options by what they would change — off, nothing is simulated"))}">` +
     `<input type="checkbox" id="gp-on"${on ? " checked" : ""}> ⚡ ${escHtml(tr("Quick calc"))}</label>` +
     (!on ? "" :
-    ddButton("gp-scen", {
-      value: cur,
-      // A SCENARIO IS A PRESET, so this list grows with use — which is why it
-      // was the worst one to leave as a bare select, and why its search is
-      // forced rather than left to the item count.
-      search: true,
-      title: tr("the saved scenario to measure under — it decides the enemy, the technique and whether the ranking is KPM or DPS"),
-      items: ps.map((p) => ({ value: presetId(p), label: p.name })),
-      onPick: (v) => { gainPrefs = { ...gainPrefs, scenario: v }; saveGainPrefs(); renderQuickCalc(); refreshGains(); },
-    }) +
+
+    // WHICH FIGHT, stated and not chosen. It is the simulator's, always — see
+    // `gainScenario`. Naming it here is the whole reason the old picker could
+    // lie for a session without being noticed: a reader could not see which
+    // fight the numbers beside every mod had come from.
+    `<span class="pc-scen" id="gp-scen" title="${escHtml(tr("the fight these numbers are measured in — the quick calc runs the Simulator's own scenario, so switch it there and every chip follows"))}">${escHtml(gainScenario().name)}</span>` +
 
     // HOW MANY RUNS a chip's number is averaged over. Ten is the floor, not a
     // suggestion: under it a status mod's chip is a coin flip. It is clamped on
@@ -9782,12 +9802,9 @@ async function runSim() {
   show("sim-results-block", true);
   $("sim-results").innerHTML = `<div class="placeholder">running ${simRuns()} simulations…</div>`;
   try {
-    // Send only the buffs the current build actually has (ids in buffList).
-    const buffs = {};
-    buffList.forEach((b) => { const c = sim.buffs[b.id]; if (c) buffs[b.id] = { stacks: c.stacks, locked: c.locked }; });
     // `replay: true` only HERE. The gain scan hits the same endpoint once per
     // candidate and shows no replay, so it must not pay for one.
-    const body = { ...buildPayload(), ...fightPayload(), buffs, replay: true };
+    const body = { ...buildPayload(), ...theFight({ replay: true }) };
     const r = await api("/api/simulate", body);
     if (!r || r.ok === false) {
       $("sim-results").innerHTML = `<div class="error">sim failed: ${r ? r.error : "no data"}</div>`;
@@ -9842,9 +9859,12 @@ async function resultForShare() {
   // its own default. That is the whole of "0.4 shared vs 0.56 run by hand"
   // (user, 2026-08-02): same seed, same build, a different buff map.
   try { renderPanel(await api("/api/panel", buildPayload())); } catch (_) { /* keep going */ }
-  const buffs = {};
-  buffList.forEach((b) => { const c = sim.buffs[b.id]; if (c) buffs[b.id] = { stacks: c.stacks, locked: c.locked }; });
-  const r = await api("/api/simulate", { ...buildPayload(), ...sim, buffs });
+  // THE SAME FIGHT RUN SIM RUNS. It spread a raw `sim` until 2026-08-17, which
+  // sent no run count (so the server's own default, not the page's) and no
+  // `custom_enemies` — so the claim on a share card for a fight against a
+  // target you made was measured against a target the server had never heard
+  // of.
+  const r = await api("/api/simulate", { ...buildPayload(), ...theFight() });
   if (!r || r.ok === false) return null;
   saveSimResult(r);
   renderStoredSimResult();
@@ -11560,14 +11580,6 @@ async function runOptimize() {
     Object.keys(opt.arcanes).forEach((id) => {
       if (opt.arcanes[id] && opt.arcanes[id] !== "off") arcs[id] = opt.arcanes[id];
     });
-    // The SCENARIO's buffs, WHOLE — not pruned to the current build's, the way
-    // the simulator prunes. A candidate carries mods you are not holding, and
-    // a setting for one of them is exactly what the scenario's wide buff view
-    // exists to record. An id no candidate has is simply never matched.
-    const buffs = {};
-    Object.entries(sim.buffs || {}).forEach(([id, c]) => {
-      if (c) buffs[id] = { stacks: c.stacks, locked: c.locked };
-    });
     const body = {
       weapon: $("weapon").value,
       mods: opt.mods,
@@ -11599,13 +11611,19 @@ async function runOptimize() {
       // never runs. That is the divergence AGENTS.md's hard rule is about, and
       // a spread cannot forget (`eximus` was the field that found it).
       //
+      // …and it is `theFight()`, the same call the simulator makes, rather
+      // than the SNAPSHOT shape of it this sent until 2026-08-17. It also
+      // stopped building the buff map itself: whole rather than pruned is what
+      // `theFight` does for everyone now, for the reason this spot argued
+      // first — a candidate carries mods you are not holding, and a setting for
+      // one of them is what the scenario's wide buff view exists to record.
+      //
       // Safe to send everything: `parse_fight` reads the fight's fields and
       // `parse_optimize` reads only its own five, so a scenario field the
       // optimizer has no opinion about simply arrives and is used.
-      ...fightPayload(snapshotScenario()),
+      ...theFight(),
       final_runs: finalRuns(), finalists: optRun.finalists,
       threads: optRun.threads || 0, // 0 = auto (cores − 2)
-      buffs,
     };
     const r = await postJson("/api/optimize", body);
     if (!r || r.ok === false) {

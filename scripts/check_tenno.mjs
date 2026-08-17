@@ -92,7 +92,7 @@ const os = await evaluate(`(async () => {
   // which the panel reports exactly where a hundred rolls report it through
   // noise. buildPayload() already carries tennoPayload(), so the state travels.
   const mb = async () => {
-    const s = await api('/api/simulate', { ...buildPayload(), ...fightPayload(sim), runs: 2 });
+    const s = await api('/api/simulate', { ...buildPayload(), ...theFight(), runs: 2 });
     return (s.panel || {}).modified_base;
   };
   const bare = await mb();
@@ -153,7 +153,7 @@ const solo = await evaluate(`(async () => {
   // magazine is a STATS ROW on the panel call — the number the page prints.
   // (No backticks in here: this whole block is a template literal.)
   const panel = async () => {
-    const body = { ...buildPayload(), ...fightPayload(sim) };
+    const body = { ...buildPayload(), ...theFight() };
     const s = await api('/api/simulate', { ...body, runs: 2 });
     const p = await api('/api/panel', body);
     const rows = (((p.forms || [])[0] || {}).stats) || [];
@@ -230,7 +230,7 @@ const extra = await evaluate(`(async () => {
   const box = document.getElementById('sim-extra');
   const keys = [...box.querySelectorAll('[data-xk]')].map(e => e.dataset.xk);
   const dps = async () => {
-    const s = await api('/api/simulate', { ...buildPayload(), ...fightPayload(sim), runs: 6, seed: 4 });
+    const s = await api('/api/simulate', { ...buildPayload(), ...theFight(), runs: 6, seed: 4 });
     return { base: (s.panel || {}).modified_base, ms: (s.panel || {}).multishot };
   };
   const before = await dps();

@@ -159,11 +159,20 @@ for (const lang of ["en", "zh"]) {
     // …and a RULER does not inherit them. A benchmark yaml names only what it
     // has an opinion about, so a ruler spread over the live fight would rank
     // every slot under the ruler's enemy AND your Roar.
+    //
+    // THROUGH THE REAL PATH, because there is no second pointer to fake it
+    // with any more: the quick calc measures the fight you are IN, so this
+    // SWITCHES to the ruler and asks what is on the fight then (2026-08-17).
+    // Stronger than what it replaced — it now also proves that switching
+    // scenarios drops the abilities rather than only that a reader pointed
+    // elsewhere would not have seen them.
     const ruler = (scenarioList().find(x => x.builtin) || {});
-    const prev = gainPrefs.scenario;
-    gainPrefs.scenario = presetId(ruler);
-    out.rulerGain = (gainScenario().scenario.abilities || []).length;
-    gainPrefs.scenario = prev;
+    const cfg = scenarioBarCfg();
+    const prevId = activeScenario;
+    const prevState = snapshotScenario();
+    cfg.setActive(presetId(ruler)); cfg.apply(ruler.state); await sleep(600);
+    out.rulerGain = (theFight().abilities || []).length;
+    cfg.setActive(prevId); cfg.apply(prevState); await sleep(600);
 
     // 4c. IT IS THE SIMULATOR'S BLOCK, AND ONLY THE SIMULATOR'S. A Warframe
     //     buff is not part of the weapon — the builder answers "what is this

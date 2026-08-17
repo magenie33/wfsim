@@ -624,6 +624,41 @@ around (decision 2026-07-31).
   free while the optimizer scored the base form (2026-08-03), and the
   optimizer keeping a buff config of its own (2026-08-02). A shared helper is
   not enough — the DECISIONS around it have to be shared too.
+- **THERE IS ONE FIGHT, AND EVERY MODULE SENDS IT** (owner, 2026-08-17). The
+  PAGE's half of the rule above. The server's half has held since `parse_fight`;
+  the page had none, and grew FIVE spellings of "the fight" — Run Sim's, the
+  share card's, the quick calc's, the optimizer gain scan's, and the
+  optimizer's. Each was right when written and none was right by the end,
+  because a fight keeps GAINING fields (`custom_enemies`, a formation, an aim
+  point) and each one reached whichever spellings somebody remembered.
+  `theFight()` is now the only one, and THE LIVE `sim` IS THE FIGHT — not the
+  preset behind it, which is a saved COPY that `applyScenario` seeds `sim` from
+  and the auto-save writes back, so reading it over the top can only hand back
+  something staler.
+  The quick calc had a SECOND SCENARIO POINTER of its own, persisted and sticky
+  across weapons, scenarios and sessions. Build a nine-body Ocucor fight, switch
+  the simulator to it, and every mod was still ranked under whatever that
+  popover was last left on — an official single-target ruler, most likely, since
+  that is where a first-time visitor lands. The mods that only pay in a crowd
+  read as worth nothing and nothing on screen said why. Two controls for one
+  fact, which is the arena's own rule (2026-08-16) in another module: the
+  control that replaced it STATES the fight and cannot be picked from.
+  THE ONLY THING A CALLER OWNS is `replay`, a `seed`, `run_series` and the quick
+  calc's RUN COUNT — the reader's precision, not an edit to the fight, and the
+  one axis deliberately decoupled. It lands LAST in the spread, which is the
+  whole of that decoupling: it used to be written into the scenario object
+  BEFORE the page's own count was spread over it, so the box silently did
+  nothing while every chip's tooltip quoted it.
+  THE BUFF MAP TRAVELS WHOLE, because buff settings are the FIGHT's and it is
+  the BUILD that decides which have a source (the server's `BuffCfg` is a
+  lookup, so an entry nothing grants is never read). Pruning it to the current
+  build made the quick calc a different fight the moment a candidate granted a
+  buff the current build lacked — which is every candidate worth ranking.
+  `scripts/check_one_fight.mjs` is the THIRTY-THIRD check and HOLDS NO LIST OF
+  FIELDS: it asserts every module's outgoing request against `theFight()`
+  ITSELF, so a field invented tomorrow is covered by nobody. Verified to bite —
+  reinstating either old bug reddens it naming the field. Its weaker partner is
+  `check_run_counts.mjs`, which reads the box; this one reads the wire.
 - **Golden values only change with an in-game measurement** justifying
   it. New mechanics need golden tests; a faithful-looking implementation
   without a measurement is not correct.

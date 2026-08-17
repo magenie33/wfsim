@@ -808,6 +808,12 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 /* The run count, beside the scenario it runs under. The unit is a word rather
    than a placeholder so the box reads as "10 runs" at a glance, and the pair
    wraps as one on a narrow screen. */
+/* WHICH FIGHT the chips were measured in. A STATEMENT, not a control — it
+   replaced a dropdown that could disagree with the simulator (2026-08-17), so
+   it must not look clickable. Truncates rather than wrapping: a scenario name
+   is a name the reader chose and can be arbitrarily long. */
+.quick-calc .pc-scen{color:var(--muted);font-size:11px;max-width:14em;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;border-bottom:1px dotted var(--line);cursor:help}
 .quick-calc .pc-runs{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;color:var(--muted);font-size:11px}
 .quick-calc .pc-runs input[type=number]{width:58px}
 /* THE RUN COUNT, on its own row and deliberately not in a field grid: it is

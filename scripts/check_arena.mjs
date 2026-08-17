@@ -104,7 +104,7 @@ const r = await evaluate(`(async () => {
 
   // …and the fight that gets RUN is the one on screen. The wasm build is the
   // one shipped, so this is the real path.
-  const body = { ...buildPayload(), ...fightPayload(), runs: 6, seed: 7, duration: 8 };
+  const body = { ...buildPayload(), ...theFight(), runs: 6, seed: 7, duration: 8 };
   out.sentPlayer = body.player_at;
   out.sentTarget = body.target_at;
   out.sentMatches = JSON.stringify(body.target_at) === JSON.stringify(sim.target_at)
@@ -115,7 +115,7 @@ const r = await evaluate(`(async () => {
   // past about 7 m; 25 m is unambiguously out there.
   sim.target_at = [0, 25]; markScenarioDirty(); renderSim(); await sleep(700);
   const farRun = await api('/api/simulate',
-    { ...buildPayload(), ...fightPayload(), runs: 6, seed: 7, duration: 8 });
+    { ...buildPayload(), ...theFight(), runs: 6, seed: 7, duration: 8 });
   out.farHitRate = farRun.pellets / Math.max(farRun.shots, 1);
   out.farLabel = dist();
 
@@ -134,7 +134,7 @@ const r = await evaluate(`(async () => {
   out.overlapLabel = dist();
   // …and at contact nothing misses, which is what makes it the boards' fight.
   const nearRun = await api('/api/simulate',
-    { ...buildPayload(), ...fightPayload(), runs: 6, seed: 7, duration: 8 });
+    { ...buildPayload(), ...theFight(), runs: 6, seed: 7, duration: 8 });
   out.nearHitRate = nearRun.pellets / Math.max(nearRun.shots, 1);
 
   // 4. THE QUICK SETS ARE IN THE CANVAS, and there is no second control.

@@ -74,15 +74,18 @@ const script = String.raw`(async () => {
       }
     }
     document.body.click(); await s(200);
-    // the quick calc scenario — search FORCED, because the list grows
+    // THE QUICK CALC'S FIGHT IS NOT A DROPDOWN, and that is the assertion.
+    // It was one until 2026-08-17 — a second, persisted pointer at a scenario,
+    // sticky across weapons and sessions, silently disagreeing with the fight
+    // the simulator was on. The control that replaced it STATES the fight and
+    // cannot be picked from; see theFight().
     history.pushState({}, '', '/weapons/Burston_Prime'); route(); await s(2500);
     const scen = document.getElementById('gp-scen');
+    out.scenExists = !!scen;
     out.scenIsDD = !!(scen && scen.dataset.dd);
-    if (scen) {
-      scen.click(); await s(300);
-      out.scenOpen = !pop().hidden;
-      out.scenSearchShown = !document.getElementById('dd-addbar').hidden;
-    }
+    out.scenNames = scen ? scen.textContent.trim() : null;
+    out.scenIsActiveFight = scen
+      ? scen.textContent.trim() === gainScenario().name : null;
     document.body.click(); await s(200);
     // NESTED — the mod picker's Sort is inside #mod-popover
     const slot = document.querySelector('#mod-slots .slot');
@@ -119,10 +122,11 @@ check("the topbar language control is the shared dropdown",
   JSON.stringify({ isDD: v.langIsDD, open: v.langOpen, rows: v.langRows }));
 check("a two-option list gets NO search bar",
   v.langSearchShown === false, `search shown: ${v.langSearchShown}`);
-check("the quick calc's scenario IS the shared dropdown",
-  v.scenIsDD && v.scenOpen, JSON.stringify({ isDD: v.scenIsDD, open: v.scenOpen }));
-check("...and forces its search bar, because a scenario list grows",
-  v.scenSearchShown === true, `search shown: ${v.scenSearchShown}`);
+check("the quick calc's fight is NOT a dropdown — there is nothing to pick",
+  v.scenExists === true && v.scenIsDD === false,
+  JSON.stringify({ exists: v.scenExists, isDD: v.scenIsDD }));
+check("...it NAMES the fight the simulator is on instead",
+  v.scenIsActiveFight === true, `on screen: ${v.scenNames}`);
 check("a scenario field is a button that still carries data-k",
   v.dataKTag === "BUTTON" && !!v.dataKField, JSON.stringify({ tag: v.dataKTag, k: v.dataKField }));
 check("picking writes through the GENERIC data-k binding",

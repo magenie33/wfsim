@@ -70,7 +70,7 @@ const runFor = (w) => evaluate(`(async () => {
     arcanes: arc ? { [arc]: 'fixed' } : {},
     evolutions: evos, modes: {}, exilus: {},
     ...W.extra,
-    ...fightPayload(snapshotScenario()),
+    ...theFight(),
     duration: 30, runs: 12, final_runs: 12, finalists: 3, threads: 1, buffs: {},
   };
   const r0 = await postJson('/api/optimize', body);
@@ -98,7 +98,7 @@ const runFor = (w) => evaluate(`(async () => {
   history.pushState({}, '', '/weapons/' + W.page); route(); await sleep(2500);
   pickPreset(buildBarCfg(), presetId(saved)); await sleep(1200);
   const asBuilt = async () => api('/api/simulate', {
-    ...buildPayload(), ...fightPayload(snapshotScenario()),
+    ...buildPayload(), ...theFight(),
     duration: row.replay.duration, runs: row.replay.runs,
   });
   const viaPage = await asBuilt();

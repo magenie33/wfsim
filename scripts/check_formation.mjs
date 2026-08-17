@@ -47,13 +47,13 @@ const r = await evaluate(`(async () => {
 
   // 1. A FORMATION OF ONE is the old fight, untouched.
   out.startFoes = foes();
-  out.startPayload = (fightPayload().formation || []).length;
-  out.startAim = fightPayload().aim_at;
+  out.startPayload = (theFight().formation || []).length;
+  out.startAim = theFight().aim_at;
 
   // 2. THEY DRAW, AND THEY DO NOT STAND ON EACH OTHER.
   btn('[data-add="8"]').click(); await sleep(600);
   out.grownFoes = foes();
-  out.grownSent = (fightPayload().formation || []).length;
+  out.grownSent = (theFight().formation || []).length;
   const pts = [sim.target_at, ...sim.formation.map(f => f.at)];
   out.minGap = Math.min(...pts.flatMap((a, i) =>
     pts.slice(i + 1).map(b => Math.hypot(a[0] - b[0], a[1] - b[1]))));
@@ -72,13 +72,13 @@ const r = await evaluate(`(async () => {
   dragEl([...document.querySelectorAll('#sim-target-arena .ar-foe')].pop(), 30, -20);
   await sleep(500);
   out.dragged = JSON.stringify(sim.formation[sim.formation.length - 1].at) !== before;
-  out.sentMatches = JSON.stringify(fightPayload().formation.map(f => f.at))
+  out.sentMatches = JSON.stringify(theFight().formation.map(f => f.at))
     === JSON.stringify(sim.formation.map(f => f.at));
 
   // 4. IT REACHES THE NUMBER. The Torid's Incarnon form is the roster's only
   //    chaining beam, so it is the mode this is asked in.
   const runWith = async (formation) => {
-    const body = { ...buildPayload(), ...fightPayload(), formation,
+    const body = { ...buildPayload(), ...theFight(), formation,
                    mode: 'transformed', runs: 4, seed: 7, duration: 6 };
     const res = await api('/api/simulate', body);
     return res.error ? { err: res.error } : { dps: res.dps };
@@ -99,7 +99,7 @@ const r = await evaluate(`(async () => {
   sim.aim_at = [0, 30];
   markScenarioDirty(); renderSim(); await sleep(700);
   out.struck = typeof arenaFirstHit === 'function' ? arenaFirstHit(sim) : -99;
-  out.aimSent = fightPayload().aim_at;
+  out.aimSent = theFight().aim_at;
   out.aimMarker = !!document.querySelector('#sim-target-arena .ar-aim');
   out.strokeMarked = document.querySelectorAll('#sim-target-arena .ar-struck').length;
 
@@ -123,7 +123,7 @@ const r = await evaluate(`(async () => {
   const un = btn('[data-unaim]');
   out.hadUnaim = !!un;
   if (un) { un.click(); await sleep(400); }
-  out.aimCleared = fightPayload().aim_at === null;
+  out.aimCleared = theFight().aim_at === null;
 
   // 7. AN OFFICIAL RULER CANNOT BE GIVEN A CROWD.
   pickPreset(scenarioBarCfg(), 'single_target'); await sleep(1800);

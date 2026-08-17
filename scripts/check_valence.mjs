@@ -29,7 +29,7 @@ const r = await evaluate(`(async () => {
 
   // The panel's own base, which is where a base-damage add has to land.
   const panel = async () => {
-    const s = await api('/api/simulate', { ...buildPayload(), ...fightPayload(sim), runs: 2 });
+    const s = await api('/api/simulate', { ...buildPayload(), ...theFight(), runs: 2 });
     return { base: (s.panel || {}).modified_base, dmg: (s.panel || {}).damage };
   };
   // WHAT IT OPENS ON, before anything is touched: every copy of an adversary
@@ -222,7 +222,7 @@ const opt = await evaluate(`(async () => {
       arcanes: {}, evolutions: {}, modes: {}, exilus: {},
       valence: marks,
       valence_element: 'impact', valence_bonus: 0.6,
-      ...fightPayload(snapshotScenario()),
+      ...theFight(),
       duration: 8, runs: 2, final_runs: 2, finalists: 3, threads: 1, buffs: {},
     };
     const r = await postJson('/api/optimize', body);
@@ -283,7 +283,7 @@ const added = await evaluate(`(async () => {
     arcanes: {}, evolutions: {}, modes: {}, exilus: {},
     valence: { magnetic: 'fixed' },
     valence_element: opened, valence_bonus: 0.6,
-    ...fightPayload(snapshotScenario()),
+    ...theFight(),
     duration: 8, runs: 2, final_runs: 2, finalists: 3, threads: 1, buffs: {},
   };
   const r0 = await postJson('/api/optimize', body);
@@ -313,7 +313,7 @@ const added = await evaluate(`(async () => {
   // as it now stands, the build with the row's element forced, and the build on
   // the element it would have fallen back to. The first two are the same run to
   // the bit; the third is a different weapon.
-  const fight = { ...fightPayload(snapshotScenario()), duration: 20, runs: 6, seed: 11 };
+  const fight = { ...theFight(), duration: 20, runs: 6, seed: 11 };
   const at = async (el) => {
     const q = { ...buildPayload(), ...fight };
     if (el) { q.valence_element = el; }

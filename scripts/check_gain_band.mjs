@@ -60,7 +60,7 @@ const r = await app.evaluate(`(async () => {
   // the build the fixture above uses. Comparing its floor against anything else
   // compares two different measurements.
   const own = await api('/api/simulate',
-    { ...buildPayload(), ...fightPayload(gainScenario().scenario) });
+    { ...buildPayload(), ...gainScenario().scenario });
 
   const chips = [...document.querySelectorAll('.gainchip')].map((e) => ({
     text: e.textContent.trim(), title: e.getAttribute('title') || '', cls: e.className }));

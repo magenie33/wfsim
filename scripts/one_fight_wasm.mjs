@@ -66,7 +66,7 @@ const out = await app.evaluate(`(async () => {
     }
     autoForma(); renderMods();
     await sleep(300);
-    const body = { ...buildPayload(), ...fightPayload(sim),
+    const body = { ...buildPayload(), ...theFight(),
       enemy: ${JSON.stringify(ENEMY)}, level: ${LEVEL},
       steel_path: ${STEEL}, duration: ${DURATION}, runs: ${RUNS} };
     // Warm: the first call pays for the worker waking up and the wasm's own

@@ -54,6 +54,24 @@ const r = await evaluate(`(async () => {
   // The floor bites on a paste as well as on the box.
   gainPrefs = { ...gainPrefs, runs: 1 };
   out.qcFloored = gainScenario().scenario.runs;
+
+  // …AND IT REACHES THE SERVER, which is the assertion this check was missing.
+  //
+  // Everything above reads gainScenario().scenario.runs — an intermediate,
+  // and it was RIGHT for months while the box did nothing: the scan wrote its
+  // count into that object and then spread the page's own fight payload over
+  // the top, so every scan ran at the simulator's count and every chip's
+  // tooltip quoted a number that had never been sent (owner, 2026-08-17). A
+  // count is only decoupled if the REQUEST says so, so this intercepts the
+  // request (2026-08-17).
+  gainPrefs = { ...gainPrefs, runs: 30 };
+  const seen = [];
+  const realApi = api;
+  window.api = async (p, b) => { if (p === '/api/simulate') seen.push(b); return realApi(p, b); };
+  try { await scanGains({ kind: 'mods', idx: 0 }, null); } catch (_) {}
+  window.api = realApi;
+  out.qcPosted = seen.length ? seen[0].runs : null;
+  out.qcPostedIsNotTheSim = seen.length ? seen[0].runs !== simRuns() : null;
   gainPrefs = { ...gainPrefs, runs: 10 };
 
   // The control is on screen and says what unit it is in.
@@ -121,6 +139,11 @@ check("...takes the count it is given", r.qc250 === 250, `${r.qc250}`);
 check("...without touching the fight", r.simUntouched === 100, `${r.simUntouched}`);
 check("...and a count change invalidates the scan's key", r.qcKeyMoved === true);
 check("...a number under the floor is raised, not obeyed", r.qcFloored === 10, `${r.qcFloored}`);
+// THE ONE THAT BITES. Every assertion above passed throughout the months the
+// box was inert, because they all read the object rather than the request.
+check("...and the count the scan sends IS the scan's, not the simulator's",
+  r.qcPosted === 30 && r.qcPostedIsNotTheSim === true,
+  `posted ${r.qcPosted}`);
 check("the box is on screen with the floor declared", r.qcOnScreen === true);
 check("...and typing in it reaches the scan", r.qcFromScreen === 40, `${r.qcFromScreen}`);
 check("...a rejected number snaps back to what was taken", r.qcSnapBack === "10", r.qcSnapBack);
