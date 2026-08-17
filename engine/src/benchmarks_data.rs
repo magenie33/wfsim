@@ -115,6 +115,20 @@ pub struct Benchmark {
     /// legal, which is a real answer for a benchmark that wants one.
     #[serde(default)]
     pub build: BuildRequirement,
+    /// THE ONE A READER MEETS FIRST, and there is at most one.
+    ///
+    /// The rulers were in PATH ORDER and that was the same thing as "the
+    /// primary one" while `single_target.yaml` sorted first. Adding
+    /// `group_clear.yaml` broke it in two places at once (2026-08-17): the
+    /// board page opened on a brand-new EMPTY ranking, and — worse — every
+    /// first-time visitor's default SCENARIO became a 361-body fight, because
+    /// the app seeds the active scenario from the first builtin.
+    ///
+    /// Declared rather than derived, and declared ONCE: `all()` sorts on it, so
+    /// every consumer downstream inherits the order instead of each one
+    /// carrying its own idea of which ruler leads.
+    #[serde(default)]
+    pub primary: bool,
     /// The fight, as the wire scenario the web api already parses. Kept as a
     /// free-form map ON PURPOSE: a benchmark is defined in the SAME vocabulary
     /// a scenario preset uses, so a field added to scenarios needs no second
@@ -122,19 +136,99 @@ pub struct Benchmark {
     pub scenario: serde_norway::Value,
 }
 
+/// A CROWD IN THREE NUMBERS, expanded HERE and nowhere else.
+///
+/// `formation_grid: {cols, rows, spacing_m}` lays a regular grid around the
+/// body being aimed at — front rank centred on it, every other rank one spacing
+/// further along the shot's own line — and becomes an ordinary `formation`
+/// list before anything downstream sees the scenario.
+///
+/// WHY THE SHORTHAND EXISTS: 361 bodies written out is 360 lines nobody can
+/// check by reading, and a ruler whose terms cannot be argued with is not a
+/// ruler (owner, 2026-08-17).
+///
+/// WHY IT IS EXPANDED HERE: because the PAGE has to draw the crowd. The arena
+/// is the source — what you see is what gets simulated — and it reads
+/// `formation`. Expanding at simulate time instead would have left the canvas
+/// drawing one body for a 361-body fight, and expanding in both places is the
+/// two-implementations bug this repo keeps paying for. One expansion, at the
+/// moment the yaml becomes a scenario, and every consumer downstream — the
+/// canvas, the payload, `parse_fight`, the board scorer — sees only bodies.
+fn expand_formation_grid(sc: &mut serde_norway::Value) -> Result<(), String> {
+    use serde_norway::Value;
+    let Some(g) = sc.get("formation_grid").cloned() else { return Ok(()) };
+    let n = |k: &str| g.get(k).and_then(Value::as_f64).unwrap_or(0.0);
+    let (cols, rows, spacing) = (n("cols") as usize, n("rows") as usize, n("spacing_m"));
+    if cols == 0 || rows == 0 || spacing <= 0.0 {
+        return Err("formation_grid needs cols, rows and a positive spacing_m".into());
+    }
+    let point = |k: &str, d: [f64; 2]| -> crate::space::Vec2 {
+        sc.get(k)
+            .and_then(Value::as_sequence)
+            .filter(|a| a.len() == 2)
+            .map_or(crate::space::Vec2::new(d[0], d[1]), |a| {
+                crate::space::Vec2::new(
+                    a[0].as_f64().unwrap_or(d[0]),
+                    a[1].as_f64().unwrap_or(d[1]),
+                )
+            })
+    };
+    let player = point("player_at", [0.0, 0.0]);
+    let target = point("target_at", [0.0, crate::space::CONTACT_RANGE_M]);
+    let forward = crate::space::Vec2::new(target.x - player.x, target.y - player.y);
+    let bodies: Vec<Value> = crate::formation::Formation::grid_around(
+        target, forward, cols, rows, spacing,
+    )
+    .into_iter()
+    // INDEX 0 IS THE AIMED BODY, which the fight already has as `target_at`.
+    .skip(1)
+    .map(|p| {
+        let mut m = serde_norway::Mapping::new();
+        m.insert(
+            Value::String("at".into()),
+            Value::Sequence(vec![
+                Value::Number(p.x.into()),
+                Value::Number(p.y.into()),
+            ]),
+        );
+        Value::Mapping(m)
+    })
+    .collect();
+    if let Some(m) = sc.as_mapping_mut() {
+        // An explicit `formation` rides alongside: the grid is a shorthand for
+        // bodies, not a mode.
+        let mut all = m
+            .get(Value::String("formation".into()))
+            .and_then(Value::as_sequence)
+            .cloned()
+            .unwrap_or_default();
+        all.extend(bodies);
+        m.insert(Value::String("formation".into()), Value::Sequence(all));
+        m.remove(Value::String("formation_grid".into()));
+    }
+    Ok(())
+}
+
 /// Every official benchmark, parsed once, in path order.
 pub fn all() -> &'static [Benchmark] {
     static B: OnceLock<Vec<Benchmark>> = OnceLock::new();
     B.get_or_init(|| {
-        crate::data::files_under("benchmarks/")
+        let mut v: Vec<Benchmark> = crate::data::files_under("benchmarks/")
             // THIS level only. `benchmarks/boards/` holds the measured results
             // and is a different shape entirely — a prefix scan would try to
             // parse a board as a benchmark and fail on a missing `id`.
             .filter(|(p, _)| p.ends_with(".yaml") && !p["benchmarks/".len()..].contains('/'))
             .map(|(p, text)| {
-                serde_norway::from_str::<Benchmark>(text).unwrap_or_else(|e| panic!("{p}: {e}"))
+                let mut b: Benchmark =
+                    serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}"));
+                expand_formation_grid(&mut b.scenario)
+                    .unwrap_or_else(|e| panic!("{p}: {e}"));
+                b
             })
-            .collect()
+            .collect::<Vec<_>>();
+        // THE PRIMARY RULER FIRST, then path order. See `Benchmark::primary`.
+        v.sort_by_key(|b| !b.primary);
+        v
     })
 }
 

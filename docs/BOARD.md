@@ -499,3 +499,57 @@ upgrade (6 seeds and 6); at 2.5 m it is blind to both. **1.5 m separates all
 three** — 1.00x / 1.50x / 2.17x — and it is a round number rather than one
 fitted to the mod pair: 1.45 m gives the same three-way split, so the answer is
 a band and 1.5 sits in it.
+
+## The group-clear ruler (2026-08-17)
+
+`data/benchmarks/group_clear.yaml` — the second ruler, and the first that is
+about a ROOM rather than a target. Its companion's name has said "Single
+Target" first since it was written, precisely so this could exist beside it.
+
+**19 x 19 at 1.5 m, Thrax Centurion Lv 9999 SP, 180 s, KPM.** The shooter
+stands at CONTACT with the middle body of the front rank and fires along the
+line that rank faces. Every number in it is measured — see the tables above —
+and the two that were choices are:
+
+- **19 x 19** is where the roster's largest blast (the Morgha alt's 12 m) stops
+  growing at 110 bodies and stays there through 23x23. Past it the extra ranks
+  only deepen an infinite-punch-through weapon's column and reward a spread
+  weapon's wide misses.
+- **1.5 m** is the only spacing that separates all three steps of a radius mod
+  (6 / 9 / 13 seeds for bare / Firestorm / Primed Firestorm).
+
+### A crowd in three numbers, expanded ONCE
+
+`formation_grid: {cols, rows, spacing_m}` becomes an ordinary `formation` list
+in `benchmarks_data`, at the moment the yaml is parsed — not at simulate time.
+361 bodies written out is 360 lines nobody can check by reading, and a ruler
+whose terms cannot be argued with is not a ruler.
+
+**Why there and not in `parse_fight`:** the PAGE has to draw the crowd. The
+arena is the source — what you see is what gets simulated — and it reads
+`formation`. Expanding at simulate time would have left the canvas drawing one
+body for a 361-body fight; expanding in both places is the two-implementations
+bug this repo keeps paying for. One expansion, and every consumer downstream —
+the canvas, the payload, `parse_fight`, the scorer — sees only bodies. The
+board page's own arena had `sc.formation = []` hard-coded from when a ruler
+could not have one, and now draws the ruler's real crowd.
+
+### A second ruler broke two things that were the same thing
+
+The rulers were in PATH ORDER, and that was indistinguishable from "the primary
+one" while `single_target.yaml` sorted first. `group_clear.yaml` sorts before
+it, so the board page opened on a brand-new EMPTY ranking — and, worse, every
+first-time visitor's default SCENARIO became a 361-body fight, because the app
+seeds the active scenario from the first builtin.
+
+`primary: true` on `single_target.yaml` is the declaration, and
+`benchmarks_data::all()` sorts on it, so both consumers inherit one answer
+rather than each carrying its own idea of which ruler leads.
+
+### An empty board is a real state
+
+A benchmark exists before anyone has submitted to it: the page lists it, states
+its twelve rules, draws its fight and reports "0 of 224 entrants measured".
+`check_board_link.mjs` REPORTS a ruler with no rows rather than failing on it —
+and says so on screen, because a check that quietly exercises nothing reads
+exactly like one that exercised everything.

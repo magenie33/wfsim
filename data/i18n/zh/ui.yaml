@@ -458,6 +458,16 @@ ui:
   # 效价加成 rather than the 融合属性 it said until 2026-08-17. A STRING IS
   # TRANSCRIBED, NEVER TRANSLATED: 融合 names the ACTION you perform, and
   # naming the stat after it was describing the wrong half.
+  # THE GROUP-CLEAR RULER (2026-08-17). Its name and its twelve rules — the
+  # board is where weapons are compared, so a reader on a Chinese page must be
+  # able to read the standard they are being compared under.
+  "Group Clear · 19x19 at 1.5 m · Thrax Centurion Lv 9999 SP · 180 s · KPM": 群体清场 · 19x19 间隔 1.5 米 · 萨克斯百夫长 9999 级 钢铁之路 · 180 秒 · KPM
+  "The target is a formation of 361 Thrax Centurions at level 9999 on Steel Path, a 19 by 19 grid spaced 1.5 metres centre to centre. The fight lasts 180 seconds.": 目标是 361 个 9999 级钢铁之路萨克斯百夫长组成的阵型，19×19 的方阵，圆心间隔 1.5 米。战斗持续 180 秒。
+  "The shooter stands at contact with the middle body of the front rank, and fires along the line that rank faces.": 射手贴身站在前排正中那个目标前，沿着该排面对的方向射击。
+  "Every shot is aimed and lands on the weak point of whatever it strikes directly. Nothing a chain, a blast or a cloud reaches can be a weak point hit.": 每一发都在瞄准状态下命中所直接击中目标的弱点。链接、爆炸和云雾波及到的一律不算弱点命中。
+  "The score is kills per minute across the whole formation, counting the fraction of each target already gone.": 分数是整个阵型的每分钟击杀数，并计入每个目标已被削掉的比例。
+  "A body that dies respawns where it stood, so the arrangement is the same at the end as at the start and the score is a rate rather than a race to the last body.": 死掉的目标在原地重生，所以阵型从头到尾一样，分数是一个速率而不是清空最后一个的竞速。
+  "The grid is stated as three numbers rather than as 361 positions, so its terms can be read and argued with.": 方阵用三个数字描述而不是 361 个坐标，这样它的条款才读得懂、争得动。
   "Valence": 效价加成
   "how many times to replay this fight HERE. Not part of the scenario: it follows you across fights and weapons, and an official ruler does not pin it. The boards themselves are scored at 1,000 by the server whatever this says": 在这里把这场战斗重放多少次。它不属于场景：换战斗、换武器它都跟着你，官方标尺也不会把它锁住。榜单本身无论这里写多少，都是服务器按 1,000 次跑分的
   "yours, not the fight's — the boards score at 1,000": 这是你的设置，不属于这场战斗——榜单按 1,000 次跑分

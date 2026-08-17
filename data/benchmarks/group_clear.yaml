@@ -1,0 +1,105 @@
+# THE OFFICIAL GROUP-CLEAR SCENARIO — the second ruler, and the first that is
+# about a ROOM rather than a target.
+#
+# `single_target` measures the shot; this measures what the shot REACHES. They
+# are companions rather than a replacement: the first ruler's own name has said
+# "Single Target" first since it was written, precisely so a group-clear
+# benchmark could exist beside it without either one having to explain itself.
+#
+# WHY THIS FILE MENTIONS NO WEAPON, AND MAY NOT. Same rule as every ruler and
+# the same reason: it has to hold for a roster it has never seen, and
+# `benchmarks_data.rs` refuses it any weapon, mod, arcane or evolution id.
+id: group_clear
+
+name: "Group Clear · 19x19 at 1.5 m · Thrax Centurion Lv 9999 SP · 180 s · KPM"
+
+rules:
+  - "The target is a formation of 361 Thrax Centurions at level 9999 on Steel Path, a 19 by 19 grid spaced 1.5 metres centre to centre. The fight lasts 180 seconds."
+  - "The shooter stands at contact with the middle body of the front rank, and fires along the line that rank faces."
+  - "Every shot is aimed and lands on the weak point of whatever it strikes directly. Nothing a chain, a blast or a cloud reaches can be a weak point hit."
+  - "The score is kills per minute across the whole formation, counting the fraction of each target already gone."
+  - "A body that dies respawns where it stood, so the arrangement is the same at the end as at the start and the score is a rate rather than a race to the last body."
+  - "The grid is stated as three numbers rather than as 361 positions, so its terms can be read and argued with."
+  - "Every main slot is filled, every evolution tier the entry has is taken, every arcane seat it has is filled. The Exilus slot is never counted."
+  - "Investment is not ranked: every entry is scored at full Forma, at max rank, and at the maximum roll of any bonus a player can raise by farming duplicates."
+  - "Ammo pickups are modelled. An entry that cannot be resupplied runs on its own reserve."
+  - "An entry that can be played more than one way is ranked once per way, and the way it was played is part of the row."
+  - "A buff starts the fight FULL only if it is permanent — no timer, and not spent by being used. Such a buff can be held for the whole engagement by anyone, so scoring it at anything less would rank how long ago the entrant last topped it up. Every other buff starts at zero and is earned in the fight. Two buffs in the data qualify today."
+  - "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above, so any row can be reproduced exactly by anyone with the repo."
+
+build:
+  mods: full
+  evolutions: full
+  arcanes: full
+  exilus: excluded
+  valence: full
+
+scenario:
+  enemy: thrax_centurion
+  level: 9999
+  steel_path: true
+
+  # THE SHOOTER AT CONTACT WITH THE MIDDLE OF THE FRONT RANK (owner,
+  # 2026-08-17). 0.4 m is twice the MEASURED 0.2 m body radius (M46,
+  # `engine::space`) — as close as two circles go, and the same distance the
+  # single-target ruler pins.
+  player_at: [0, 0]
+  target_at: [0, 0.4]
+
+  # THE CROWD, IN THREE NUMBERS. `formation_grid` lays the rank centred on the
+  # aimed body and every other rank one spacing further along the shot's line,
+  # then expands into the ordinary `formation` list — so nothing downstream
+  # knows this was a shorthand.
+  #
+  # 19 x 19 = 361 BODIES, and the number is MEASURED rather than chosen. The
+  # roster's LARGEST blast is the Morgha alt's 12 m radius, and it reaches 110
+  # bodies here, 110 at 21x21 and 110 at 23x23 — so 19 is exactly where nothing
+  # in the roster is clipped by the arena, which was the only argument for going
+  # bigger. Past it the extra ranks change two things and neither is wanted: an
+  # infinite-punch-through weapon's column runs one body deeper per rank (it
+  # never saturates, and a perfect column that long is an arrangement no player
+  # will line up), and a spread weapon's wandering epicentre catches a couple
+  # more on wide MISSES. docs/BOARD.md carries the tables.
+  #
+  # COST IS NOT WHY. `chain::Layout` made the grid's size almost free — a chain
+  # resolves against a precomputed neighbour list, so 361 bodies cost 21.2 s per
+  # 1000 runs against 19.5 s for 49. The size is settled by saturation alone.
+  #
+  # 1.5 m SPACING, also measured: it is the only spacing tested that separates
+  # all three of a radius mod's steps. At 2 m the ordinary Firestorm and the
+  # Primed one seed the same six bodies and the board cannot tell them apart;
+  # at 2.5 m neither is worth anything; at 1.5 m they are 6 / 9 / 13. It is not
+  # a number fitted to that mod pair either — 1.45 m gives the same three-way
+  # split, so the answer is a band and 1.5 sits in it.
+  formation_grid:
+    cols: 19
+    rows: 19
+    spacing_m: 1.5
+
+  # NO `aim_at`: the weapon points at the body it is in contact with, which is
+  # what an absent aim point means. A ruler that aimed at bare floor would be
+  # measuring a technique rather than a weapon.
+
+  duration: 180
+  runs: 1000
+  seed: 12648430
+  metric: kpm
+  infinite_ammo: true
+  headshot_pct: 100
+
+  # THE TENNO — the neutral player of data/tenno/default.yaml, field for field
+  # the same as the single-target ruler's. A group-clear board differs from it
+  # in the FORMATION and in nothing else, which is the whole point of having two
+  # rulers: any gap between a weapon's two ranks is what the crowd is worth to
+  # it, and a second difference would make that unreadable.
+  aiming: true
+  invisible: false
+  airborne: false
+  overshields: false
+  channeling: false
+  solo_weapon: false
+  wf_armor: 0
+  wf_energy: 0
+  wf_sprint: 0.9
+  wf_energy_pct: 1.0
+  extra_stats: {}

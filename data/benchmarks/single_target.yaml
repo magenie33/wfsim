@@ -31,6 +31,11 @@
 # Adding weapon 201 therefore cannot require editing this file — it has no
 # place to say anything wrong about it.
 id: single_target
+# THE RULER A READER MEETS FIRST — the board opens on it and a first-time
+# visitor's default scenario is its fight. Declared because the rulers used to
+# be in path order and that stopped being the same thing the moment a second
+# one arrived (2026-08-17).
+primary: true
 
 # The name states the whole definition, because a benchmark whose terms are
 # hidden in a tooltip is one nobody can argue with. Order is deliberate: what

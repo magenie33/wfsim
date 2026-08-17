@@ -82,10 +82,15 @@ const r = await evaluate(`(async () => {
   // a test plan. The row is a real row: same benchmark, a real mode this
   // weapon really has, a build the engine really accepts.
   history.pushState({}, '', '/benchmark'); route(); await s(2000);
-  // BACK TO THE FIRST RULER. The loop above left the picker on the LAST one,
-  // and a synthetic row built for one board clicked on another is a test that
-  // fails for the wrong reason.
-  const ruler = out.rulers[0];
+  // BACK TO A RULER THAT HAS ROWS. The loop above left the picker on the LAST
+  // one, and a synthetic row built for one board clicked on another is a test
+  // that fails for the wrong reason — as is one built for a board with nothing
+  // on it, which is what a NEW ruler is. rulers[0] is the PRIMARY one and
+  // therefore the populated one today, but that is a fact about the board
+  // rather than a guarantee, so this reads it.
+  const ruler = out.rulers.find(id => Object.values(BOARD).some(rs =>
+    (rs || []).some(r => r.benchmark === id))) || out.rulers[0];
+  out.fixtureRuler = ruler;
   [...document.querySelectorAll('#bench-picker [data-bench]')]
     .find(c => c.dataset.bench === ruler).click();
   await s(900);
@@ -122,7 +127,16 @@ const r = await evaluate(`(async () => {
 check("the board page knows some weapons", r.boardWeapons > 0, String(r.boardWeapons));
 check("...and offers every ruler", r.rulers.length >= 1, r.rulers.join(", "));
 
-for (const e of r.each) {
+// A RULER WITH NO ROWS HAS NO ROW TO OPEN, and that is a real state rather
+// than a failure: a benchmark exists before anyone has submitted to it. It is
+// REPORTED rather than skipped in silence, because a check that quietly
+// exercises nothing reads exactly like one that exercised everything.
+const empty = r.each.filter((e) => !e.href).map((e) => e.ruler);
+if (empty.length) console.log(`  --  no rows yet, nothing to open: ${empty.join(", ")}`);
+check("at least one ruler has rows to check",
+  r.each.some((e) => e.href), r.each.map((e) => e.ruler).join(", "));
+
+for (const e of r.each.filter((x) => x.href)) {
   const tag = `[${e.ruler}]`;
   check(`${tag} its top row links somewhere`, !!e.href, String(e.href));
   if (!e.href) continue;

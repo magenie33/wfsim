@@ -128,6 +128,47 @@ impl Formation {
     /// a player can actually put a beam on: the centre of a formation is behind
     /// it (owner, 2026-08-17). It is the fixture MECHANICS §12's numbers are
     /// computed against.
+    /// THE POSITIONS OF A GRID BUILT AROUND THE BODY BEING AIMED AT, index 0
+    /// being that body — the shape a SCENARIO describes.
+    ///
+    /// [`Self::grid`] takes a front-row corner and makes a whole formation;
+    /// this takes the aimed body's own place and lays the rest out around it,
+    /// because a fight already knows where its target stands. The front row is
+    /// centred on it and every other row is one spacing further along
+    /// `forward`, which is the direction the shot travels — so "the shooter is
+    /// at the middle of an edge" is not a special case, it is what falls out of
+    /// the aim line being perpendicular to the front rank.
+    ///
+    /// It exists so a benchmark can state a crowd in THREE NUMBERS. 361 bodies
+    /// written out is 360 lines nobody can check by reading, and a ruler whose
+    /// terms cannot be argued with is not a ruler (owner, 2026-08-17).
+    pub fn grid_around(front_middle: Vec2, forward: Vec2, cols: usize, rows: usize, spacing: f64)
+        -> Vec<Vec2>
+    {
+        let len = forward.x.hypot(forward.y);
+        // A zero direction has no grid to build; one row deep is the same
+        // arrangement whatever it points at.
+        let (fx, fy) = if len > 0.0 { (forward.x / len, forward.y / len) } else { (0.0, 1.0) };
+        // ACROSS is the perpendicular, so the front rank faces the shooter.
+        let (ax, ay) = (fy, -fx);
+        let mut out = Vec::with_capacity(cols * rows);
+        for r in 0..rows {
+            for c in 0..cols {
+                let across = (c as f64 - (cols as f64 - 1.0) / 2.0) * spacing;
+                let along = r as f64 * spacing;
+                out.push(Vec2::new(
+                    front_middle.x + ax * across + fx * along,
+                    front_middle.y + ay * across + fy * along,
+                ));
+            }
+        }
+        // THE AIMED BODY FIRST, which is the order a scenario wants: its
+        // `target_at` is index 0 and `formation` is the rest.
+        let aimed = cols / 2;
+        out.swap(0, aimed);
+        out
+    }
+
     pub fn grid(
         params: crate::dummy::TargetParams,
         body_parts: Vec<crate::dummy::BodyPart>,

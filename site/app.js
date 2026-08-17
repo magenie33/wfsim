@@ -1214,6 +1214,10 @@ function renderHome() {
 let benchPick = null;
 
 const benchList = () => META.benchmarks || [];
+// THE LIST IS ALREADY IN THE RIGHT ORDER: `benchmarks_data::all()` puts the
+// PRIMARY ruler first, so `[0]` is the one a reader should meet. It was path
+// order until a second ruler arrived and put a brand-new empty board in front
+// of the populated one (2026-08-17).
 const benchCurrent = () =>
   benchList().find((b) => b.id === benchPick) || benchList()[0] || null;
 
@@ -1310,8 +1314,13 @@ function renderBenchBoard() {
     const sc = { ...defaultScenario(), ...(cur.scenario || {}) };
     sc.player_at = [...(sc.player_at || [0, 0])];
     sc.target_at = [...(sc.target_at || [0, CONTACT_M])];
-    sc.formation = [];
-    sc.aim_at = null;
+    // THE RULER'S OWN CROWD. These two lines used to be `= []` and `= null`,
+    // written when a benchmark could not have a formation — so the day one did,
+    // the board would have drawn a single body for a 361-body fight while its
+    // rules said otherwise. A picture that contradicts the standard beside it
+    // is worse than no picture (owner, 2026-08-17).
+    sc.formation = (sc.formation || []).map((f) => ({ ...f, at: [...f.at] }));
+    sc.aim_at = sc.aim_at ? [...sc.aim_at] : null;
     mountArena(bar, sc, (allEnemies().find((e) => e.id === sc.enemy) || allEnemies()[0]), { readonly: true });
   }
   const entries = benchEntries(cur.id);

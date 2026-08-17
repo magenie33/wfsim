@@ -1410,7 +1410,7 @@ pub fn meta_json() -> Value {
             "on_board": a.on_board,
         })).collect::<Vec<_>>(),
         "benchmarks": wfsim_engine::benchmarks_data::all().iter().map(|b| json!({
-            "id": b.id,
+            "primary": b.primary, "id": b.id,
             "name": b.name,
             // The standard AT LENGTH — the name is the same thing in one line.
             // A reader deciding whether a ranking answers their question needs
@@ -6791,6 +6791,77 @@ mod asset_tests {
                 .unwrap_or("")
                 .contains(&format!("at most {cap}")),
             "{too_many}"
+        );
+    }
+
+    /// THE GROUP-CLEAR RULER RUNS, AND IT MEASURES THE CROWD.
+    ///
+    /// A benchmark is a yaml the engine never type-checks — its `scenario` is a
+    /// free-form map on purpose, so a field added to scenarios needs no second
+    /// definition — which means the only thing that can say a ruler is WELL
+    /// FORMED is running it. This does, through the same `simulate_json` every
+    /// module goes through, and it asserts the two claims the file makes:
+    ///
+    ///   · the crowd is REAL — 361 bodies, expanded from three numbers;
+    ///   · and it is what is being measured — a chaining weapon scores far
+    ///     higher here than under the single-target ruler, on the same build.
+    ///
+    /// Cheap terms (a short fight, few runs), because the claim is about the
+    /// SHAPE of the fight and not about the board's precision.
+    #[test]
+    fn the_group_clear_ruler_runs_and_measures_the_crowd() {
+        let bench = wfsim_engine::benchmarks_data::get("group_clear").expect("the ruler exists");
+        let single =
+            wfsim_engine::benchmarks_data::get("single_target").expect("its companion exists");
+        // THE RULER'S OWN SCENARIO, with only the cost terms overridden.
+        let req = |b: &wfsim_engine::benchmarks_data::Benchmark| {
+            let mut m = serde_json::to_value(&b.scenario).expect("a scenario is json");
+            let o = m.as_object_mut().expect("a mapping");
+            o.insert("weapon".into(), serde_json::json!("torid"));
+            o.insert("mode".into(), serde_json::json!("transformed"));
+            o.insert("mods".into(), serde_json::json!([]));
+            o.insert(
+                "evolutions".into(),
+                serde_json::json!(["torid_evo1_incarnon_form"]),
+            );
+            // A level the beam can actually move, so the comparison is not two
+            // zeros; and a short cheap fight.
+            o.insert("level".into(), serde_json::json!(60));
+            o.insert("duration".into(), serde_json::json!(8));
+            o.insert("runs".into(), serde_json::json!(4));
+            m
+        };
+        let crowd = simulate_json(&req(bench));
+        assert!(crowd.get("error").is_none(), "{crowd}");
+
+        // 361 BODIES, FROM THREE NUMBERS — proved by making the SAME shorthand
+        // overflow the cap. A grid that expanded into nothing could not, so
+        // this is the crowd being real rather than declared, and it exercises
+        // the shorthand through the one path that counts bodies.
+        // 361 BODIES, AND THE YAML SAYS THREE NUMBERS. The expansion happens
+        // once, where the yaml becomes a scenario (`benchmarks_data`), so what
+        // this ruler HOLDS by the time anything reads it is bodies — which is
+        // also what lets the canvas draw the crowd it is about to simulate.
+        let n = bench
+            .scenario
+            .get("formation")
+            .and_then(|f| f.as_sequence())
+            .map_or(0, |a| a.len());
+        assert_eq!(n, 19 * 19 - 1, "19x19 is 361 bodies, one of them the aimed one");
+        assert!(
+            bench.scenario.get("formation_grid").is_none(),
+            "the shorthand must not survive into the scenario"
+        );
+
+        // …AND THE CROWD IS WHAT IT MEASURES.
+        let lone = simulate_json(&req(single));
+        assert!(lone.get("error").is_none(), "{lone}");
+        let dps = |v: &Value| v.get("dps").and_then(Value::as_f64).unwrap_or(-1.0);
+        assert!(
+            dps(&crowd) > dps(&lone) * 1.5,
+            "a chaining weapon must score far higher on the group ruler: {} against {}",
+            dps(&crowd),
+            dps(&lone)
         );
     }
 
