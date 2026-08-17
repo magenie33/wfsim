@@ -2753,6 +2753,20 @@ impl RunResult {
         self.note_kills(killed, at);
     }
 
+    /// Record what a body took, growing the list as bodies appear in it.
+    fn note_body_damage(&mut self, body: usize, eff: f64) {
+        if let Some(slot) = self.damage_by_body.0.get_mut(body) {
+            *slot += eff;
+        }
+    }
+
+    /// HOW MANY BODIES THIS SHOT'S WEAPON ACTUALLY REACHED — the count a
+    /// formation exists to answer. The Ocucor's is five: its beam and four
+    /// tendrils.
+    pub fn bodies_touched(&self) -> usize {
+        self.damage_by_body.0.iter().filter(|d| **d > 0.0).count()
+    }
+
     fn note_kills(&mut self, killed: u32, at: f64) {
         if killed > 0 && self.first_kill_at.is_none() {
             self.first_kill_at = Some(at);
@@ -2911,6 +2925,21 @@ impl Default for DummyParams {
 /// array has no derived `Default`.
 pub const TIMELINE_BUCKETS: usize = 600;
 
+/// EFFECTIVE DAMAGE PER BODY — index 0 is the one being aimed at, 1.. the
+/// formation in the order it was handed in.
+///
+/// A newtype with its own `Default` for the same reason [`Timeline`] is one:
+/// `RunResult` is `Copy` and derives `Default`, and an array this long has
+/// neither.
+#[derive(Debug, Clone, Copy)]
+pub struct BodyDamage(pub [f64; crate::formation::MAX_BODIES + 1]);
+
+impl Default for BodyDamage {
+    fn default() -> Self {
+        BodyDamage([0.0; crate::formation::MAX_BODIES + 1])
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct Timeline(pub [f64; TIMELINE_BUCKETS]);
 
@@ -3053,6 +3082,18 @@ pub struct RunResult {
     /// and it is the only kind of kill in this engine that is worth less than
     /// another.
     pub kills_by_tendril: u32,
+    /// EFFECTIVE DAMAGE PER BODY — index 0 is the one being aimed at, 1.. are
+    /// the formation in the order it was handed in.
+    ///
+    /// All zero for a single-target fight, which costs nothing to read. It exists
+    /// because a formation's TOTAL cannot answer the question a formation
+    /// raises: how many bodies a shot actually reaches is a CLAIM about the
+    /// weapon — the Ocucor's four tendrils plus its beam are five, and nothing
+    /// but a per-body figure can show it is five rather than four or six.
+    /// A FIXED ARRAY rather than a `Vec` because `RunResult` is `Copy` and is
+    /// copied per run; index 0 is the aimed body and 1.. the formation, so it
+    /// is one longer than the cap.
+    pub damage_by_body: BodyDamage,
     /// Kills + the depleted fraction of the CURRENT target's total pool
     /// (overguard + health) at engagement end — partial credit so the
     /// objective is not a step function (user, 2026-07-24: "draining 80%
@@ -4435,6 +4476,7 @@ fn spread_hit(
     r.total_damage += raw;
     r.effective_damage += eff;
     r.timeline.add(t, eff);
+    r.note_body_damage(inst.target, eff);
     if by.spawns_a_tendril() {
         r.note_kills(u32::from(killed), t);
     } else {
@@ -8343,6 +8385,11 @@ pub fn run_once_traced(
                 }
                 r.total_damage += raw;
                 r.effective_damage += effective;
+                // …AND WHOSE IT WAS. Only worth recording once there is more
+                // than one body to tell apart.
+                if !others.is_empty() {
+                    r.note_body_damage(0, effective);
+                }
                 // WHAT KIND OF HIT THAT WAS. Sorted rather than averaged: a
                 // number that cannot happen stands out in a histogram and
                 // disappears in a mean. Tier is capped at 2 because that is
@@ -10317,6 +10364,55 @@ mod tests {
             "and the tendrils must be the ones taking some of them: {r:?}",
         );
         assert!(r.kills_by_tendril <= r.kills);
+    }
+
+    /// THE OCUCOR REACHES FIVE BODIES AND NO MORE — one beam and four tendrils
+    /// (owner, 2026-08-17). The COUNT is the claim a formation exists to make,
+    /// and a total cannot make it: five bodies and six bodies can deal the same
+    /// damage and only one of them is the weapon.
+    #[test]
+    fn the_ocucor_reaches_exactly_five_bodies() {
+        let build = |n: usize, tendrils: u32| {
+            let base = crate::loadout::WeaponBase::from_data("ocucor", false, &[]);
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let mut arena = crate::arena::Arena::training(10.0);
+            // A LINE ACROSS THE FRONT, all inside the tendrils' 20 m and their
+            // 40 degree cone off the reticle.
+            arena.others = (1..=n)
+                .map(|i| crate::formation::FoeSpec {
+                    params: TargetParams::training_dummy(),
+                    body_parts: DummyParams::humanoid_parts(),
+                    at: crate::space::Vec2::new(i as f64 * 0.7, 4.0),
+                })
+                .collect();
+            let mut p =
+                DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            p.tendrils_initial = tendrils;
+            p.tendrils_held = true;
+            p
+        };
+        // EIGHT BODIES ON THE FLOOR, four tendrils up: five take damage.
+        let r = run_once(&build(8, 4), &mut Rng::new(0x5EED));
+        assert_eq!(r.bodies_touched(), 5, "{:?}", &r.damage_by_body.0[..9]);
+        // …and it is the AIMED one plus the four nearest the reticle, in order.
+        assert!(r.damage_by_body.0[0] > 0.0, "the beam's own body");
+        assert!(r.damage_by_body.0[1..=4].iter().all(|d| *d > 0.0), "the four tendrils");
+        assert!(r.damage_by_body.0[5..=8].iter().all(|d| *d == 0.0), "and nobody else");
+
+        // FEWER TENDRILS REACH FEWER BODIES, one for one — which is what says
+        // the count is the tendrils' and not the formation's.
+        for up in 0..=4u32 {
+            assert_eq!(
+                run_once(&build(8, up), &mut Rng::new(0x5EED)).bodies_touched(),
+                1 + up as usize,
+                "{up} tendrils"
+            );
+        }
+        // …AND A SHORT FORMATION IS NOT PADDED: two bodies is two, however many
+        // tendrils are up.
+        assert_eq!(run_once(&build(1, 4), &mut Rng::new(0x5EED)).bodies_touched(), 2);
     }
 
     /// A CONE IS SPELLED ONE WAY. Ten entries carried BOTH a parsed

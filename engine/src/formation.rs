@@ -33,6 +33,15 @@
 
 use crate::space::Vec2;
 
+/// HOW MANY BODIES A FORMATION MAY HOLD — fifty (owner, 2026-08-17).
+///
+/// DECLARED HERE and read by everyone: the api refuses a longer list and
+/// `RunResult::damage_by_body` is sized off it. It is the SIM that pays, which
+/// is why the number belongs to the engine rather than to the page — every
+/// body is a full target with its own pools, procs and DoTs, and a chain
+/// resolves against all of them on every shot.
+pub const MAX_BODIES: usize = 50;
+
 /// One body in the formation, as the caller declares it — everything that
 /// makes it a target, and where it stands.
 #[derive(Debug, Clone)]

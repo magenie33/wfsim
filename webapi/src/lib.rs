@@ -4247,11 +4247,12 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // nine identical enemies is nine positions and nothing else.
     let mut formation: Vec<wfsim_engine::formation::FoeSpec> = Vec::new();
     if let Some(list) = v.get("formation").and_then(Value::as_array) {
-        // FIFTY, and it is the owner's number (2026-08-17). A cap belongs here
-        // rather than on the page because it is the SIM that pays: every body
-        // is a full target with its own pools, procs and DoTs, and a chain
-        // resolves against all of them on every shot.
-        const MAX_BODIES: usize = 50;
+        // FIFTY, and it is DECLARED IN THE ENGINE (`formation::MAX_BODIES`),
+        // because that is who pays for it: every body is a full target with its
+        // own pools, procs and DoTs, a chain resolves against all of them on
+        // every shot, and `RunResult::damage_by_body` is sized off the same
+        // number. Two copies of a cap is one cap and one bug.
+        use wfsim_engine::formation::MAX_BODIES;
         if list.len() > MAX_BODIES {
             return Err(err_json(format!(
                 "{} enemies, and a formation holds at most {MAX_BODIES}",
