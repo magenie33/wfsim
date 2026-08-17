@@ -7,10 +7,7 @@
 # Regenerated whole on every run — never edited by hand, and never
 # merged: an engine or data change re-scores everything rather than
 # migrating anything, because the builds are still builds.
-#
-# EMPTY because the ruler is new (2026-08-17). A board with no rows is a
-# real state: the page lists the benchmark, states its terms, and invites
-# the first submission.
 benchmark: group_clear
 source: submissions
-entries: []
+engine: 8ceb569fbb6a07e7b5b2dd63fb9e6e273a386099
+entries:
