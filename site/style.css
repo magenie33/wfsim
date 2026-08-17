@@ -812,6 +812,19 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    replaced a dropdown that could disagree with the simulator (2026-08-17), so
    it must not look clickable. Truncates rather than wrapping: a scenario name
    is a name the reader chose and can be arbitrarily long. */
+/* WHICH ENEMY the debuff table is about. Chips rather than a dropdown: there
+   are at most `REPLAY_TRACKED` of them and they are compared, not searched —
+   and the selected one has to be visible without opening anything. */
+.rp-foes{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px}
+.rp-foe{font:inherit;font-size:11px;padding:3px 9px;border-radius:999px;cursor:pointer;
+  background:var(--panel);color:var(--muted);border:1px solid var(--line)}
+.rp-foe:hover{color:var(--fg)}
+.rp-foe.sel{background:var(--accent-dim,var(--line));color:var(--fg);border-color:var(--accent,var(--fg))}
+.rp-foe .sm{opacity:.6}
+/* …AND WHAT WAS LEFT OUT. A cap nobody is told about reads as "that is
+   everyone", which is the one thing it must not. */
+.rp-foe-more{font-size:11px;color:var(--muted);margin-left:2px}
+
 .quick-calc .pc-scen{color:var(--muted);font-size:11px;max-width:14em;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap;border-bottom:1px dotted var(--line);cursor:help}
 .quick-calc .pc-runs{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;color:var(--muted);font-size:11px}

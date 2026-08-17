@@ -1825,6 +1825,9 @@ pub struct DummyParams {
     pub tendril_max: u32,
     /// How far a tendril reaches, and how far off the reticle it will take a
     /// body — see [`crate::weapons_data::TendrilSpec`].
+    /// THE AIMED BODY'S NAME (`arena::Arena::target_id`) — every other body's
+    /// is on its own `formation::FoeSpec`.
+    pub target_id: String,
     /// PUNCH-THROUGH DEPTH in metres of material — innate plus mods, and 0 on
     /// an attack that cannot use it. See [`crate::space::BODY_MATERIAL_M`].
     pub punch_through_m: f64,
@@ -1955,10 +1958,15 @@ pub struct Frame {
     pub sources: SourceDamage,
     /// Live stacks per buff, positionally matching [`Replay::buffs`].
     pub stacks: Vec<u16>,
-    /// …and the same for the TARGET, positionally matching [`DEBUFF_ROSTER`].
+    /// …and the same for the TARGETS, one series per body in
+    /// [`Replay::tracked`], each positionally matching [`DEBUFF_ROSTER`].
+    ///
     /// The mirror of the line above, because the page draws one table from each
-    /// and the two are the same component (owner, 2026-08-11).
-    pub debuffs: Vec<u16>,
+    /// and the two are the same component (owner, 2026-08-11) — and a Vec OF
+    /// series since 2026-08-17, because a fight has up to 400 bodies and each
+    /// one carries its own debuffs. Which of them are here is
+    /// `Replay::tracked`'s decision, not this struct's.
+    pub debuffs: Vec<Vec<u16>>,
 }
 
 /// A replay of one engagement: the buff roster it was fought with, and a frame
@@ -1971,6 +1979,19 @@ pub struct Frame {
 /// times `runs` — 20,000 of them at the cap (user, 2026-08-02).
 #[derive(Debug, Clone, Default)]
 pub struct Replay {
+    /// WHOSE DEBUFFS THE FRAMES CARRY, by `formation::FoeSpec::id`, in the
+    /// order `Frame::debuffs` holds them. `tracked[0]` is always the aimed
+    /// body.
+    ///
+    /// A CAP, AND IT IS STATED. A series is 600 frames x 15 debuffs, so a body
+    /// costs 18 KB and a 19x19 ruler would be 6.5 MB — larger than the whole
+    /// wasm. So the replay follows the aimed body plus the hardest-hit few, and
+    /// the page SAYS how many took damage and were not followed: a silent cap
+    /// reads as "that is everyone", which is the one thing it must not.
+    pub tracked: Vec<String>,
+    /// The same list as INDICES, which is what the sampler reads. Not public:
+    /// an index is the engine's business and a name is everyone else's.
+    pub(crate) follow: Vec<usize>,
     /// Seconds between frames.
     pub dt: f64,
     /// (buff id, max stacks) — ids are the SAME vocabulary as [`BuffConfig`]
@@ -2026,6 +2047,17 @@ pub struct HitAccount {
 /// Frames in a replay, whatever the engagement length. 600 over 300 s is one
 /// every half second — smooth enough to scrub, small enough to ship as JSON.
 pub const REPLAY_FRAMES: usize = 600;
+/// HOW MANY BODIES A REPLAY FOLLOWS — the aimed one plus the hardest-hit few.
+///
+/// Eight because the cost is real and the reader's attention is not infinite: a
+/// series is `REPLAY_FRAMES x DEBUFF_ROSTER.len()` u16, so 18 KB a body and
+/// 6.5 MB for a 19x19 ruler — larger than the whole wasm. Eight is ~145 KB,
+/// and it covers what a reader would actually open.
+///
+/// THE CAP IS STATED ON SCREEN, never applied silently: `Replay::tracked` says
+/// who was followed and the roll call says who took damage, so "five more were
+/// hit" is readable rather than implied by an absence.
+pub const REPLAY_TRACKED: usize = 8;
 
 /// Per-buff configured policy: buff id → (initial stacks, locked). Ids match
 /// the web's `enumerate_buffs` (`condition_overload`, `on_kill_multishot`,
@@ -2561,10 +2593,7 @@ impl DummyParams {
             fx
         };
         let crate::arena::Arena {
-            // Named here so the destructure stays EXHAUSTIVE: a field added to
-            // the arena and not read is a compile error, which is what has kept
-            // this constructor honest.
-            target_id: _,
+            target_id,
             tenno,
             target,
             body_parts,
@@ -2726,6 +2755,7 @@ impl DummyParams {
             combo_initial: 0,
             combo_held: false,
             tendril_max: panel.tendril_max,
+            target_id,
             punch_through_m: panel.punch_through_m,
             tendril_range_m: panel.tendril_range_m,
             tendril_acquire_deg: panel.tendril_acquire_deg,
@@ -2913,6 +2943,7 @@ impl Default for DummyParams {
     fn default() -> Self {
         Self {
             enervate_stacks: 0,
+            target_id: "e1".to_string(),
             // NO PUNCH THROUGH by default, so the fixture fires the one-body
             // shot every golden value was calibrated against.
             punch_through_m: 0.0,
@@ -7270,7 +7301,19 @@ pub fn run_once_traced(
                     transforms: r.transforms,
                     sources: r.sources,
                     stacks,
-                    debuffs: debuffs.sample(next_frame),
+                    // ONE SERIES PER FOLLOWED BODY, in `Replay::tracked`'s
+                    // order — the aimed one first.
+                    debuffs: rep
+                        .follow
+                        .iter()
+                        .map(|&bi| {
+                            if bi == 0 {
+                                debuffs.sample(next_frame)
+                            } else {
+                                others[bi - 1].debuffs.sample(next_frame)
+                            }
+                        })
+                        .collect(),
                 });
                 next_frame += frame_dt;
             }
@@ -9823,8 +9866,36 @@ pub fn run_once_traced(
 /// let rep = replay(&params, s.median_run.rng_state, REPLAY_FRAMES);
 /// ```
 pub fn replay(params: &DummyParams, rng_state: u64, frames: usize) -> Replay {
+    // WHO IS WORTH FOLLOWING, decided by a DRY RUN of the same engagement.
+    //
+    // The run is reproducible bit-for-bit from `rng_state`, so asking it who
+    // took damage and then replaying it again is exact rather than an estimate
+    // — and it is the only way to rank bodies before the frames are recorded.
+    // Two runs of one engagement, against 400 series on the wire.
+    let scout = run_once(params, &mut Rng::new(rng_state));
+    let mut ranked: Vec<(usize, f64)> = (1..=params.others.len())
+        .map(|i| (i, scout.damage_by_body.0[i]))
+        .filter(|(_, d)| *d > 0.0)
+        .collect();
+    ranked.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal).then(a.0.cmp(&b.0)));
+    // THE AIMED BODY IS ALWAYS FIRST and always followed, however little it
+    // took: it is the one the rest of the report is about.
+    let mut follow: Vec<usize> = vec![0];
+    follow.extend(ranked.into_iter().take(REPLAY_TRACKED - 1).map(|(i, _)| i));
+
     let frames = frames.max(1);
     let mut rep = Replay {
+        tracked: follow
+            .iter()
+            .map(|&i| {
+                if i == 0 {
+                    params.target_id.clone()
+                } else {
+                    params.others[i - 1].id.clone()
+                }
+            })
+            .collect(),
+        follow,
         dt: (params.duration_secs / frames as f64).max(1e-6),
         buffs: params.buff_roster(),
         frames: Vec::with_capacity(frames),

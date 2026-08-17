@@ -624,6 +624,30 @@ around (decision 2026-07-31).
   free while the optimizer scored the base form (2026-08-03), and the
   optimizer keeping a buff config of its own (2026-08-02). A shared helper is
   not enough — the DECISIONS around it have to be shared too.
+- **EVERY ENEMY HAS A NAME, AND THE PAGE CAN ASK ABOUT ONE** (owner,
+  2026-08-17). Debuffs have been per enemy since the formation landed —
+  `SpreadFoe` is `{state, debuffs}` per body, with its own pools, armour, stack
+  counts and DoT list. What no part of the model could do was say WHOSE: a body
+  was identified by its INDEX in a request, so deleting the body in front
+  renumbered everything behind it. `formation::FoeSpec::id` is that name, stable
+  across edits because it travels in the scenario and filled in BY POSITION when
+  blank, which is what every scenario written before ids existed means. The
+  aimed body is `e1` and lives on the `Arena` — it is not in the formation list,
+  it is the fight's own target — so the crowd reads as one list however it was
+  assembled.
+  `/api/simulate` returns a ROLL CALL (`bodies: [{id, aimed, at, damage}]`) of
+  the ones that took something, because a 19x19 ruler is 361 bodies and a
+  chaining beam reaches thirteen — and because a per-BODY figure is the only
+  thing that can say a crowd was REACHED rather than a big number produced.
+  THE DEBUFF TABLE HAS A SUBJECT. `Replay::tracked` names the bodies it
+  followed, the panel draws a chip per body and picking one redraws the table
+  from the stored result at no simulation cost. It follows the aimed body plus
+  the hardest-hit few (`REPLAY_TRACKED = 8`) because a series is 600 frames x 15
+  debuffs = 18 KB a body, so a 19x19 would be 6.5 MB — larger than the whole
+  wasm — and the cap is SAID ON SCREEN ("+N more took damage and are not
+  followed"), never applied silently: an absence would read as "that is
+  everyone". One body draws no chips at all, so the fight this app ran until now
+  looks exactly as it did.
 - **THERE IS ONE FIGHT, AND EVERY MODULE SENDS IT** (owner, 2026-08-17). The
   PAGE's half of the rule above. The server's half has held since `parse_fight`;
   the page had none, and grew FIVE spellings of "the fight" — Run Sim's, the

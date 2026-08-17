@@ -44,8 +44,12 @@ const r = await evaluate(`(async () => {
   const rp = shot && shot.replay;
   out.hasReplay = !!(rp && rp.t && rp.t.length > 1);
   out.rosterLen = rp ? (rp.debuffs || []).length : 0;
-  out.seriesLen = rp ? (rp.dstacks || []).length : 0;
-  out.sameFrames = rp ? (rp.dstacks || []).every((s) => s.length === rp.t.length) : false;
+  // dstacks is PER BODY since 2026-08-17 — one table of series per body the
+  // replay followed — and [0] is the aimed one, which is what every
+  // assertion below is about.
+  const ds = rp ? (rp.dstacks || [])[0] || [] : [];
+  out.seriesLen = ds.length;
+  out.sameFrames = rp ? ds.every((s) => s.length === rp.t.length) : false;
   // The SHAPE is the buff table's: (id, max) pairs indexed by the series.
   out.rosterShape = rp && rp.debuffs[0] ? Object.keys(rp.debuffs[0]).sort().join(",") : "";
   // The buff roster of an unmodded build is EMPTY, so the shape is compared
@@ -55,7 +59,7 @@ const r = await evaluate(`(async () => {
 
   // POISON is the one this weapon guarantees, and it must actually move.
   const iPoison = rp ? rp.debuffs.findIndex((d) => d.id === 'poison') : -1;
-  const poison = iPoison >= 0 ? rp.dstacks[iPoison] : [];
+  const poison = iPoison >= 0 ? ds[iPoison] || [] : [];
   out.poisonPeak = Math.max(0, ...poison);
   out.poisonUptime = poison.filter((v) => v > 0).length / Math.max(1, poison.length);
 
@@ -76,7 +80,7 @@ const r = await evaluate(`(async () => {
   // Every drawn row moved: a status the run never applied is not drawn at all,
   // because thirteen flat charts would bury the ones that matter.
   out.allNonEmpty = rows.length > 0 && rp.debuffs
-    .filter((d, i) => (rp.dstacks[i] || []).some((v) => v > 0)).length === rows.length;
+    .filter((d, i) => (ds[i] || []).some((v) => v > 0)).length === rows.length;
 
   // The cursor reads the DEBUFF series in a debuff row, not the buff one.
   const now = rows[0] && rows[0].querySelector('.rp-now');
@@ -101,6 +105,48 @@ const r = await evaluate(`(async () => {
   try { renderResults(old); replayApply(old.replay, 0); out.oldOk = true; }
   catch (e) { out.oldOk = false; out.oldErr = String(e); }
   out.oldRows = document.querySelectorAll('.rp-row[data-debuff]').length;
+
+  // ---- WHOSE DEBUFFS, when there is more than one body ------------------
+  //
+  // The table answered "what was on the target" and the fight had one target.
+  // With a formation every body carries its own debuffs — it always did, the
+  // model was per body from the day a formation existed — and what was missing
+  // was a way to ASK for one (owner, 2026-08-17). The replay follows the aimed
+  // body plus the hardest-hit few and the page picks between them.
+  {
+    document.querySelector('#preset-bar-simulator-scenarios .pchip.add').click();
+    await sleep(1500);
+    setSimRuns(3);
+    sim.level = 60;
+    sim.duration = 12;
+    for (let i = 0; i < 8; i++) arenaAddFoe(sim);
+    markScenarioDirty(); renderSim(); await sleep(1200);
+    document.getElementById('run-sim').click();
+    for (let i = 0; i < 120 && document.getElementById('run-sim').disabled; i++) await sleep(400);
+    await sleep(1500);
+    const openDebuff = async () => {
+      const s = [...document.querySelectorAll('summary')]
+        .find((x) => /Debuff|减益/i.test(x.textContent));
+      if (s && !s.parentElement.open) { s.click(); await sleep(800); }
+    };
+    await openDebuff();
+    out.foeChips = [...document.querySelectorAll('[data-rpfoe]')].map((c) => c.dataset.rpfoe);
+    out.foeNames = [...document.querySelectorAll('[data-rpfoe]')].map((c) => c.textContent.trim());
+    // THE AIMED ONE IS FIRST and says so, because the rest of the report is
+    // about it.
+    out.firstIsAimed = /aimed|瞄准/i.test(out.foeNames[0] || '');
+    const live = () => [...document.querySelectorAll('[data-series="debuff"]')]
+      .map((e) => e.textContent.trim()).join('|');
+    out.foeBefore = live();
+    const second = document.querySelector('[data-rpfoe="1"]');
+    out.hasSecond = !!second;
+    if (second) {
+      second.click(); await sleep(1000); await openDebuff();
+      out.foeSel = [...document.querySelectorAll('.rp-foe.sel')].map((c) => c.dataset.rpfoe);
+      out.foeAfter = live();
+    }
+  }
+
   return out;
 })()`);
 
@@ -134,5 +180,17 @@ check("...and moving it changes the reading", r.atZero !== r.atEnd, `${r.atZero}
 
 check("a result stored before this table still renders", r.oldOk === true, String(r.oldErr));
 check("...with no debuff table rather than a crash", r.oldRows === 0, `${r.oldRows} rows`);
+
+// EVERY BODY CARRIES ITS OWN, AND THE PAGE CAN ASK FOR ONE.
+check("a crowd gives the table a choice of subject",
+  r.foeChips.length > 1, `${r.foeChips.length} chips`);
+check("...the aimed body is first, and says so",
+  r.firstIsAimed === true, (r.foeNames || [])[0]);
+check("...named by the enemy's own id, not its position",
+  (r.foeNames || []).slice(1).every((n) => /^e\d+/.test(n)), (r.foeNames || []).join(", "));
+check("...picking one selects it", r.hasSecond === true && String(r.foeSel) === "1",
+  String(r.foeSel));
+check("...and the table then reads THAT enemy's debuffs",
+  r.foeBefore !== r.foeAfter, `${r.foeBefore} -> ${r.foeAfter}`);
 
 await app.finish("the debuff table is the buff table, read from the other side");

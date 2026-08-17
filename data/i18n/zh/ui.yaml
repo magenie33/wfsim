@@ -468,6 +468,11 @@ ui:
   "The score is kills per minute across the whole formation, counting the fraction of each target already gone.": 分数是整个阵型的每分钟击杀数，并计入每个目标已被削掉的比例。
   "A body that dies respawns where it stood, so the arrangement is the same at the end as at the start and the score is a rate rather than a race to the last body.": 死掉的目标在原地重生，所以阵型从头到尾一样，分数是一个速率而不是清空最后一个的竞速。
   "The grid is stated as three numbers rather than as 361 positions, so its terms can be read and argued with.": 方阵用三个数字描述而不是 361 个坐标，这样它的条款才读得懂、争得动。
+  # WHICH ENEMY the debuff table is about (2026-08-17).
+  "the body the weapon was on": 武器瞄准的那一具
+  "an enemy the shot reached": 这一发够到的敌人
+  "aimed": 瞄准
+  "+{n} more took damage and are not followed": 另有 {n} 个吃到伤害但没有被跟踪
   "Valence": 效价加成
   "how many times to replay this fight HERE. Not part of the scenario: it follows you across fights and weapons, and an official ruler does not pin it. The boards themselves are scored at 1,000 by the server whatever this says": 在这里把这场战斗重放多少次。它不属于场景：换战斗、换武器它都跟着你，官方标尺也不会把它锁住。榜单本身无论这里写多少，都是服务器按 1,000 次跑分的
   "yours, not the fight's — the boards score at 1,000": 这是你的设置，不属于这场战斗——榜单按 1,000 次跑分

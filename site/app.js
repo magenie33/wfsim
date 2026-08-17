@@ -7007,6 +7007,14 @@ function gainLanes() {
 // the refresh notice the key had moved and start again. Every rapid edit paid
 // for a full measurement of a question nobody was asking any more (user,
 // 2026-08-03). Cancelling at the next await bounds that to one sim.
+// WHICH ENEMY THE DEBUFF TABLE IS ABOUT — an index into `replay.tracked`, 0
+// being the body the weapon was on.
+//
+// OUTSIDE the render for the reason every fold on that panel is: a panel that
+// resets your selection on every Run Sim is a panel you re-select on every Run
+// Sim (owner, 2026-08-11).
+let replayFoe = 0;
+
 let gainGen = 0;
 // An axis whose scan was dropped because another axis was mid-flight. One slot:
 // the newest asker wins, and it is consumed when the running scan finishes.
@@ -10126,8 +10134,31 @@ function replayMarkup(r) {
   const dbName = (id) =>
     (DB_OWN_NAME[id] || DT(DEBUFF_TYPE[id] || id)) +
     (id === "frozen" ? ` (${tr("frozen")})` : "");
+  // WHOSE DEBUFFS. `rp.tracked` names the bodies the replay followed — the
+  // aimed one first — and this is the index into it. It lives OUTSIDE the
+  // render (`replayFoe`) so picking an enemy survives a scrub and a re-run,
+  // which is the same rule every fold on this panel follows.
+  const dBody = Math.min(replayFoe, Math.max(0, (rp.tracked || [""]).length - 1));
+  // WHICH ENEMY, as chips. Drawn only when there is a choice — one body is the
+  // fight this app has always run and needs no control.
+  const foeChips = (rp, sel) => {
+    const ids = rp.tracked || [];
+    if (ids.length < 2) return "";
+    const hit = (rp.bodies || []).length;
+    const more = Math.max(0, hit - ids.length);
+    return `<div class="rp-foes">${
+      ids.map((id, k) => `<button type="button" class="rp-foe${k === sel ? " sel" : ""}" data-rpfoe="${
+        k}" title="${escHtml(k === 0
+          ? tr("the body the weapon was on")
+          : tr("an enemy the shot reached"))}">${escHtml(id)}${
+        k === 0 ? ` <span class="sm">${escHtml(tr("aimed"))}</span>` : ""}</button>`).join("")
+    }${more > 0
+      ? `<span class="rp-foe-more">${escHtml(
+          tr("+{n} more took damage and are not followed").replace("{n}", more))}</span>`
+      : ""}</div>`;
+  };
   const dRoster = rp.debuffs || [];
-  const dSeries = rp.dstacks || [];
+  const dSeries = (rp.dstacks || [])[dBody] || [];
   const W = 600, H = 28;
   const curveRows = (roster, series, name, kind) => roster.map((b, i) => {
     const s = series[i] || [];
@@ -10225,7 +10256,17 @@ function replayMarkup(r) {
     + (dRows
       ? foldBlock("debuffs", tr("Debuff coverage"),
           tr("what was on the target — a respawn is the same target, so its stacks drop to zero and climb again"),
-          dRows)
+          // WHOSE, and it is a control rather than a caption. One body is one
+          // chip; the fight this app ran until 2026-08-17 has exactly one and
+          // draws no chips at all, so a single-target replay looks the way it
+          // always did.
+          //
+          // THE CAP IS SAID OUT LOUD. A replay follows the aimed body plus the
+          // hardest-hit few (`REPLAY_TRACKED`) because a series is 18 KB and a
+          // 19x19 ruler would be 6.5 MB — so when more bodies took damage than
+          // were followed, the line says how many. An absence would read as
+          // "that is everyone".
+          foeChips(rp, dBody) + dRows)
       : "");
   return { bar, curves };
 }
@@ -10340,8 +10381,13 @@ function replayApply(rp, i) {
   // belongs to. The DEBUFF rows index a FILTERED roster — the statuses this run
   // never applied are not drawn — so the row rebuilds the same filter rather
   // than indexing the full one and reading somebody else's series.
+  // WHOSE, again — `replayApply` re-reads the panel at a frame and has to pick
+  // the same body the table was DRAWN for, or the live count in each header
+  // would belong to somebody else. Derived from the same state rather than
+  // passed, because the two run at different times.
+  const aBody = Math.min(replayFoe, Math.max(0, (rp.tracked || [""]).length - 1));
   const dLive = (rp.debuffs || [])
-    .map((b, k) => [b, (rp.dstacks || [])[k] || []])
+    .map((b, k) => [b, ((rp.dstacks || [])[aBody] || [])[k] || []])
     .filter(([, s]) => s.some((v) => v > 0));
   document.querySelectorAll("[data-now]").forEach((el) => {
     const j = Number(el.dataset.now);
@@ -10385,6 +10431,16 @@ function wireReplay(r) {
     draw();
     if (st.playing) st.raf = requestAnimationFrame(tick);
   };
+  // PICK AN ENEMY. The debuff table is the only thing that changes: the buffs
+  // are the PLAYER's and belong to no body, and the clock does not move — you
+  // are asking "what was on THAT one at this instant", not replaying anything.
+  document.querySelectorAll("[data-rpfoe]").forEach((el) => {
+    el.onclick = () => {
+      replayFoe = Number(el.dataset.rpfoe);
+      // The panel redraws from the stored result, so this costs no simulation.
+      renderStoredSimResult();
+    };
+  });
   $("rp-play").onclick = () => {
     if (st.playing) { stop(); return; }
     // Pressing play on a FINISHED fight rewinds it — that is what the button

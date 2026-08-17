@@ -4902,8 +4902,26 @@ pub fn simulate_json(v: &Value) -> Value {
                 .iter()
                 .map(|(id, cap)| json!({ "id": id, "max": cap }))
                 .collect::<Vec<_>>(),
-            "dstacks": (0..wfsim_engine::dummy::DEBUFF_ROSTER.len())
-                .map(|i| rep.frames.iter().map(|f| f.debuffs[i]).collect::<Vec<_>>())
+            // ONE TABLE PER BODY THE REPLAY FOLLOWED, and the first is the
+            // aimed one. `dstacks` was a single body's until 2026-08-17, which
+            // was the whole truth while a fight had one body.
+            //
+            // THE CAP IS ON SCREEN, never silent: `tracked` says who was
+            // followed and `bodies` says who took damage, so a reader can see
+            // that five more were hit and not followed. A cap nobody is told
+            // about reads as "that is everyone".
+            "tracked": rep.tracked,
+            "dstacks": (0..rep.tracked.len())
+                .map(|b| {
+                    (0..wfsim_engine::dummy::DEBUFF_ROSTER.len())
+                        .map(|i| {
+                            rep.frames
+                                .iter()
+                                .map(|f| f.debuffs.get(b).and_then(|s| s.get(i)).copied().unwrap_or(0))
+                                .collect::<Vec<_>>()
+                        })
+                        .collect::<Vec<_>>()
+                })
                 .collect::<Vec<_>>(),
         })
     } else {
@@ -7371,7 +7389,9 @@ mod form_tests {
                 .iter()
                 .position(|d| d["id"] == "lifted")
                 .expect("lifted has a row of its own");
-            rep["dstacks"][i]
+            // `dstacks` is per BODY since 2026-08-17, and `[0]` is the AIMED
+            // one — which is the body this test is about.
+            rep["dstacks"][0][i]
                 .as_array()
                 .expect("one series per row")
                 .iter()
