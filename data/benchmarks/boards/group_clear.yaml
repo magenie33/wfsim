@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-engine: bf684d02f696a3fa916b47183c626ab8c0164dc9
+engine: 72075610d8ee26707a9861950a4e47f405d3c40a
 entries:
   - weapon: akarius_prime
     mode: base
@@ -26,6 +26,11 @@ entries:
     score: 0.29157073014403223
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, pistol_elementalist, primed_convulsion, primed_heated_charge, pathogen_rounds]
     arcanes: [secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    score: 299.58204464951274
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, critical_focus, marked_target, hollowed_bullets, hypothermic_shell, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
   - weapon: vectis_prime
     mode: base
     score: 35.47639628621795
