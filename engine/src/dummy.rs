@@ -2739,6 +2739,20 @@ impl DummyParams {
 /// the two can never disagree: a site that counts a kill and forgets the clock
 /// would leave `first_kill_at` reading like a weapon that never killed.
 impl RunResult {
+    /// …and how many of them a TENDRIL took DIRECTLY, which is the one kind
+    /// that spawns nothing.
+    ///
+    /// Verbatim from the Ocucor's page, in the rule list its weapon file
+    /// transcribes: *"a kill by the primary beam, or by a status effect from
+    /// any source (including one a tendril applied), spawns a tendril; a DIRECT
+    /// kill by a tendril does NOT spawn another."* So a DoT a tendril left
+    /// still pays — it is a status kill — and only the tendril's own hit does
+    /// not. The counter is the difference between the two.
+    fn note_tendril_kills(&mut self, killed: u32, at: f64) {
+        self.kills_by_tendril += killed;
+        self.note_kills(killed, at);
+    }
+
     fn note_kills(&mut self, killed: u32, at: f64) {
         if killed > 0 && self.first_kill_at.is_none() {
             self.first_kill_at = Some(at);
@@ -3034,6 +3048,11 @@ pub struct RunResult {
     pub reloads: u32,    // magazine reloads performed
     pub transforms: u32, // TRANSMUTES into the Incarnon form (reverts don't count)
     pub kills: u32,      // InstantRespawn deaths (0 with InfiniteHealth)
+    /// …of which this many were taken DIRECTLY by a tendril — see
+    /// [`RunResult::note_tendril_kills`]. Those spawn no tendril of their own,
+    /// and it is the only kind of kill in this engine that is worth less than
+    /// another.
+    pub kills_by_tendril: u32,
     /// Kills + the depleted fraction of the CURRENT target's total pool
     /// (overguard + health) at engagement end — partial credit so the
     /// objective is not a step function (user, 2026-07-24: "draining 80%
@@ -4292,6 +4311,42 @@ struct SpreadFoe {
     debuffs: DebuffState,
 }
 
+/// WHICH MECHANISM PUT AN INSTANCE ON A BODY — one of the five in
+/// MECHANICS §12.
+///
+/// A BOOL FIRST, AND IT BIT WITHIN THE HOUR (2026-08-17): `spread_hit` took
+/// `by_tendril: bool` and `spread_from_seeds` takes `multishot_half: bool`, and
+/// the two sat one argument apart in calls that look alike. The wrong one got
+/// flipped, the chain stopped firing, and a test caught it — which is the good
+/// outcome and still an hour spent. An enum cannot be handed to the other
+/// parameter at all.
+///
+/// It decides exactly ONE thing, and that is the whole of why it exists: a
+/// TENDRIL's own kill spawns no tendril, and every other kind of kill does.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SpreadBy {
+    Chain,
+    Blast,
+    /// A LINGERING CLOUD goes through `field_tick` rather than `spread_hit` —
+    /// it is a tick of a thing that is already there, not an instance this shot
+    /// produced — so nothing constructs this today. It is listed because the
+    /// five mechanisms are five, and a missing arm would read as an oversight
+    /// rather than as a routing fact.
+    #[allow(dead_code)]
+    Cloud,
+    Tendril,
+    Echo,
+}
+
+impl SpreadBy {
+    /// Does a kill by this mechanism spawn a tendril? Everything but a
+    /// tendril's own hit — including a status a tendril applied, which kills
+    /// through the DoT path rather than through this one.
+    fn spawns_a_tendril(self) -> bool {
+        self != SpreadBy::Tendril
+    }
+}
+
 /// ONE CHAIN OR SPLASH INSTANCE LANDING ON A BODY OTHER THAN THE AIMED ONE.
 ///
 /// It is the SAME hit the aimed body took, scaled — the owner's framing is that
@@ -4335,6 +4390,9 @@ fn spread_hit(
     r: &mut RunResult,
     d: &mut crate::rng::Draws,
     t: f64,
+    // WHICH MECHANISM PUT IT HERE — see [`SpreadBy`]. The only thing it
+    // changes is which kills spawn another tendril.
+    by: SpreadBy,
 ) {
     let bd = ap.base_damage_bonus;
     let arc_bd = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t);
@@ -4377,7 +4435,11 @@ fn spread_hit(
     r.total_damage += raw;
     r.effective_damage += eff;
     r.timeline.add(t, eff);
-    r.note_kills(u32::from(killed), t);
+    if by.spawns_a_tendril() {
+        r.note_kills(u32::from(killed), t);
+    } else {
+        r.note_tendril_kills(u32::from(killed), t);
+    }
 
     // …AND ITS OWN STATUS ROLL, at FULL chance. The share scales the damage and
     // nothing else (owner, 2026-08-17), so a hop dealing 24% of the hit still
@@ -4437,6 +4499,68 @@ struct SpreadShot {
     status_chance: f64,
     forced: Vec<DamageType>,
     vector: DamageVector,
+}
+
+/// AN ECHO — a fraction of THIS hit dealt to every other body near it.
+///
+/// Secondary Irradiate is the only member: *"deal X% of the hit damage to
+/// enemies within Xm"*, 80% to 180% of it over a 4.5 m to 7 m sphere. It sat in
+/// `arcanes_data` with the TEAM buffs — "no sim payload" — and that was right
+/// while the arena held one body, because an echo needs somebody to echo to.
+///
+/// PER DIRECT HIT, which is per landing PELLET: the arcane's own file says
+/// *"multishot pellets each trigger; beams/AoE don't spread"*. So it is called
+/// from inside the pellet loop and only on the direct stage.
+///
+/// A BODY HIT, never a head, and it *"rolls its own crits"* — which this shares
+/// with every other spread here and which is the one simplification they all
+/// carry (see `spread_hit`).
+///
+/// THE BODY THAT WAS HIT TAKES NOTHING EXTRA: the echo is to *"enemies within
+/// Xm"* of it, not to it.
+#[allow(clippy::too_many_arguments)]
+fn spread_from_echo(
+    others: &mut [SpreadFoe],
+    params: &DummyParams,
+    ap: &DummyParams,
+    raw_per_bucket: f64,
+    shares: TypeShares,
+    crit_mult: f64,
+    attrition: f64,
+    modded_base: f64,
+    status_chance: f64,
+    forced: &[DamageType],
+    vector: &DamageVector,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    r: &mut RunResult,
+    d: &mut crate::rng::Draws,
+    t: f64,
+) {
+    let share = params.arcane.echo_share;
+    let radius = params.arcane.echo_radius_m;
+    if share <= 0.0 || radius <= 0.0 {
+        return;
+    }
+    // FROM THE BODY THAT WAS HIT, at the surface the round met — the same
+    // epicentre every other sphere in this engine uses.
+    let at = crate::space::detonation_point(params.target_at, params.player_at);
+    for (i, spec) in params.others.iter().enumerate() {
+        if !crate::space::caught_by_blast(spec.at.distance(at), radius) {
+            continue;
+        }
+        let inst = crate::chain::Instance {
+            target: i + 1,
+            share,
+            multishot: false,
+            headshot: false,
+        };
+        let (foe, fs) = (&mut others[i], &params.others[i]);
+        spread_hit(
+            &inst, foe, fs, raw_per_bucket, shares, crit_mult, attrition, modded_base,
+            status_chance, forced, vector, params, ap, gal, arc, r, d, t, SpreadBy::Echo,
+        );
+    }
 }
 
 /// TENDRILS — the fourth way a shot reaches a body, and the only one that is
@@ -4516,7 +4640,7 @@ fn spread_from_tendrils(
         let (foe, fs) = (&mut others[i], &params.others[i]);
         spread_hit(
             &inst, foe, fs, raw_per_bucket, shares, crit_mult, attrition, modded_base,
-            status_chance, forced, vector, params, ap, gal, arc, r, d, t,
+            status_chance, forced, vector, params, ap, gal, arc, r, d, t, SpreadBy::Tendril,
         );
     }
 }
@@ -4583,7 +4707,7 @@ fn spread_from_blast(
         spread_hit(
             &inst, &mut others[i], spec, raw_per_bucket_per_falloff, shares, crit_mult,
             attrition, modded_base, status_chance, forced, vector, params, ap, gal, arc,
-            r, d, t,
+            r, d, t, SpreadBy::Blast,
         );
     }
 }
@@ -4668,7 +4792,7 @@ fn spread_from_seeds(
         let (foe, fs) = (&mut others[idx], &params.others[idx]);
         spread_hit(
             inst, foe, fs, raw_per_bucket, shares, crit_mult, attrition, modded_base,
-            status_chance, forced, vector, params, ap, gal, arc, r, d, t,
+            status_chance, forced, vector, params, ap, gal, arc, r, d, t, SpreadBy::Chain,
         );
     }
 }
@@ -6115,6 +6239,12 @@ pub fn run_once_traced(
     let started_at = rng.state();
     let _ = rng.next_f64();
     let d = &mut crate::rng::Draws::new(started_at);
+    // HOW FAR THE TARGET SITS OFF THE AIM LINE — a CONSTANT for the whole
+    // engagement, because neither body moves. It was read per PELLET when the
+    // aim line arrived, which costs an acos and two hypots on every pellet of
+    // every fight and showed up as a 35% slowdown in `one_fight` with no answer
+    // changed (2026-08-17). Nothing about it can differ between two pellets.
+    let aim_off_axis = params.off_axis_deg();
     let mut next_frame = 0.0f64;
     let frame_dt = trace.as_ref().map_or(f64::INFINITY, |r| r.dt);
     let mut bar = BuffBar::new();
@@ -6749,7 +6879,8 @@ pub fn run_once_traced(
             // it is the same buff.
             if r.reloads != tendril_reload_mark && !params.tendrils_held {
                 tendril_reload_mark = r.reloads;
-                tendril_kill_mark = r.kills;
+                // The mark tracks the SAME quantity the count reads.
+                tendril_kill_mark = r.kills - r.kills_by_tendril;
                 tendril_seed = 0;
             }
             // SENTIENT SURGE's refill, spent before the reload check below so
@@ -6786,7 +6917,11 @@ pub fn run_once_traced(
                     magazine += draw_from(&mut reserve, params.infinite_reserve, want);
                 }
             }
-            tendrils = (tendril_seed + (r.kills - tendril_kill_mark)).min(params.tendril_max);
+            // A TENDRIL'S OWN KILL SPAWNS NOTHING, so the count is fed by
+            // every OTHER kill — the beam's, and any status kill including one
+            // a tendril's own proc caused.
+            let spawning = r.kills - r.kills_by_tendril;
+            tendrils = (tendril_seed + (spawning - tendril_kill_mark)).min(params.tendril_max);
         }
 
         // HATA-SATYA's pile, the same mark-and-diff one block up with the
@@ -7848,7 +7983,7 @@ pub fn run_once_traced(
             // is every fight this engine ran before aim became a place you
             // choose — and zero is what makes the whole clause below collapse
             // to what it was (owner, 2026-08-17).
-            let off_axis = params.off_axis_deg();
+            let off_axis = aim_off_axis;
             let aim_offset = match ap.spread {
                 Some(s) if !s.is_pinpoint() && range > 0.0 => {
                     let dev = s.draw(d.aim.next_f64());
@@ -8186,6 +8321,13 @@ pub fn run_once_traced(
                             vector: qvec,
                         });
                     }
+                    // …AND THE ECHO, per landing pellet, because the arcane
+                    // says each one triggers it.
+                    spread_from_echo(
+                        &mut others, params, ap, raw / bucket, shares, crit_mult,
+                        attrition, modded_base, status_chance, forced, &qvec,
+                        &mut gal, &mut arc, &mut r, d, t,
+                    );
                     // THE AIMED SEED'S CHAINS take multishot by firing per
                     // landing pellet — so a pellet that landed on nobody starts
                     // none of them. The radius-caught seeds' half fires once
@@ -10083,6 +10225,98 @@ mod tests {
             run_once(&build(far, 0), &mut Rng::new(0x5EED)).effective_damage,
             "past their reach a tendril takes nobody"
         );
+    }
+
+    /// SECONDARY IRRADIATE ECHOES INTO A FORMATION, and is worth exactly
+    /// nothing against one body — which is why `arcanes_data` filed it with the
+    /// TEAM buffs, correctly, until there was a formation (group report via the
+    /// owner, 2026-08-17).
+    ///
+    /// *"Deal X% of the hit damage to enemies within Xm."* An echo needs
+    /// somebody to echo to.
+    #[test]
+    fn secondary_irradiate_echoes_only_when_there_is_somebody_to_echo_to() {
+        let build = |others: Vec<crate::formation::FoeSpec>, with: bool| {
+            let base = crate::loadout::WeaponBase::from_data("dual_toxocyst", false, &[]);
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let fx = if with {
+                crate::arcanes_data::secondary("secondary_irradiate")
+                    .expect("the arcane is in the roster")
+                    .fx(5, crate::loadout::StackPolicy::AssumedMax, &[], crate::tenno_data::default_tenno())
+            } else {
+                crate::arcanes_data::ArcaneFx::none()
+            };
+            let mut arena = crate::arena::Arena::training(10.0);
+            arena.others = others;
+            DummyParams::from_panel(&panel, &arena, &fx)
+        };
+        assert!(build(Vec::new(), true).arcane.echo_share > 0.0, "the echo has a payload");
+
+        // ONE BODY: the arcane is worth exactly nothing, as an equality.
+        let a = run_once(&build(Vec::new(), false), &mut Rng::new(0x5EED)).effective_damage;
+        let b = run_once(&build(Vec::new(), true), &mut Rng::new(0x5EED)).effective_damage;
+        assert_eq!(b, a, "an echo with nobody to echo to is worth nothing");
+
+        // FOUR MORE BODIES inside its radius, which is 4.5 m to 7 m.
+        let others: Vec<crate::formation::FoeSpec> = (1..=4)
+            .map(|i| crate::formation::FoeSpec {
+                params: TargetParams::training_dummy(),
+                body_parts: DummyParams::humanoid_parts(),
+                at: crate::space::Vec2::new(i as f64 * 0.9, 0.4),
+            })
+            .collect();
+        let c = run_once(&build(others.clone(), false), &mut Rng::new(0x5EED)).effective_damage;
+        let e = run_once(&build(others, true), &mut Rng::new(0x5EED)).effective_damage;
+        assert!(e > c * 1.2, "the echo lands on the crowd: {e} against {c}");
+    }
+
+    /// A TENDRIL'S OWN KILL SPAWNS NOTHING, which is the one kind of kill in
+    /// this engine worth less than another.
+    ///
+    /// Verbatim from the rule list the Ocucor's file transcribes: *"a kill by
+    /// the primary beam, or by a status effect from any source (including one a
+    /// tendril applied), spawns a tendril; a DIRECT kill by a tendril does NOT
+    /// spawn another."* Until a tendril could kill anyone the distinction had
+    /// nothing to bite on.
+    #[test]
+    fn a_tendrils_own_kill_spawns_no_tendril() {
+        let base = crate::loadout::WeaponBase::from_data("ocucor", false, &[]);
+        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        let mut arena = crate::arena::Arena::training(20.0);
+        // FRAIL bodies inside the tendrils' reach, so the tendrils really do
+        // the killing rather than the beam. A REAL unit at level 1, because
+        // the training dummy has infinite health and cannot die at all — which
+        // is the right fixture for measuring a weapon and the wrong one for
+        // measuring a kill.
+        let specs = crate::enemy_data::all();
+        let unit = specs
+            .iter()
+            .find(|e| e.id == "corrupted_heavy_gunner")
+            .expect("the roster has one");
+        let frail = unit
+            .target_params(1, false, false, TargetMode::InstantRespawn)
+            .expect("a level 1 ordinary unit is legal");
+        arena.target = frail.clone();
+        arena.others = (1..=4)
+            .map(|i| crate::formation::FoeSpec {
+                params: frail.clone(),
+                body_parts: DummyParams::humanoid_parts(),
+                at: crate::space::Vec2::new(i as f64 * 0.6, 4.0),
+            })
+            .collect();
+        let mut p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+        p.tendrils_initial = 4;
+        p.tendrils_held = true;
+        let r = run_once(&p, &mut Rng::new(0x5EED));
+        assert!(r.kills > 0, "the frail bodies must actually die");
+        assert!(
+            r.kills_by_tendril > 0,
+            "and the tendrils must be the ones taking some of them: {r:?}",
+        );
+        assert!(r.kills_by_tendril <= r.kills);
     }
 
     /// A CONE IS SPELLED ONE WAY. Ten entries carried BOTH a parsed

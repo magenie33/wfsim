@@ -173,6 +173,13 @@ pub struct ArcBuffSpec {
 /// multiplier fields default to their 1.0 identity, NOT zero).
 #[derive(Debug, Clone, PartialEq)]
 pub struct ArcaneFx {
+    /// AN ECHO — a fraction of THIS hit dealt to every other body within
+    /// [`Self::echo_radius_m`] of it. Secondary Irradiate is the only member.
+    ///
+    /// Zero on everything else, and zero against one target however good the
+    /// arcane is: an echo needs somebody to echo to.
+    pub echo_share: f64,
+    pub echo_radius_m: f64,
     pub id: String,
     /// Emergent stacking buffs (kill/status families).
     pub buffs: Vec<ArcBuffSpec>,
@@ -238,6 +245,8 @@ impl Default for ArcaneFx {
             id: String::new(),
             buffs: Vec::new(),
             enervate_rank: None,
+            echo_share: 0.0,
+            echo_radius_m: 0.0,
             headshot_mult_bonus: 0.0,
             reload_bonus: 0.0,
             cc_rel: 0.0,
@@ -860,11 +869,25 @@ impl ArcaneDef {
                 ArcEffect::ColdBurst { scale, .. } => {
                     fx.cold_burst_on_puncture = scale.at(rank, self.max_rank).round() as u32;
                 }
-                // Team-context / AoE / out-of-scope — no sim payload.
+                // Team-context / out-of-scope — no sim payload.
                 ArcEffect::PerAllyCritChance(_)
-                | ArcEffect::AoeEcho { .. }
                 | ArcEffect::Unmodeled { .. }
                 | ArcEffect::OutOfScope { .. } => {}
+                // AN ECHO NEEDS SOMEBODY TO ECHO TO, and until 2026-08-17 the
+                // arena had one body — so this sat in the group above with the
+                // team buffs, correctly worth nothing. A formation is what
+                // turns it on: *"deal X% of the hit damage to enemies within
+                // Xm"*, and there are enemies now.
+                ArcEffect::AoeEcho { scale, radius0, radius1 } => {
+                    fx.echo_share = scale.at(rank, self.max_rank);
+                    fx.echo_radius_m = radius0
+                        + (radius1 - radius0)
+                            * if self.max_rank == 0 {
+                                1.0
+                            } else {
+                                rank as f64 / self.max_rank as f64
+                            };
+                }
                 ArcEffect::OverguardDamage(sc) => {
                     fx.overguard_mult = 1.0 + sc.at(rank, self.max_rank);
                 }

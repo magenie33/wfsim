@@ -2789,6 +2789,7 @@ cycle, which is why it is the weapon this was built against.
 | **the explosion** | every body the sphere touches | that body's own falloff, at its nearest point |
 | **the lingering cloud** | every body standing in it, every tick | the same, for as long as the cloud lasts |
 | **tendrils** | one body each, nearest the RETICLE, inside a cone and a reach | a WHOLE instance — they are extra beams, not a spread |
+| **an echo** | every body near the one that was hit | a flat share of THAT hit — Secondary Irradiate's 80% to 180% |
 
 The fourth is the odd one and the Ocucor is its only member. A tendril is not a
 share of the shot: *"their base damage equals the primary beam's, and they roll
@@ -2796,6 +2797,21 @@ their own crits and status"*. It is worth EXACTLY NOTHING against one body —
 *"tendrils homing in on the main beam's target are only cosmetic"* — so the
 weapon's file modelled the COUNT and refused the damage, correctly, for as long
 as the arena held one target. Four tendrils on four bodies are four more beams.
+
+**A KILL IS WORTH SOMETHING BEYOND ITSELF**, and that is where a crowd
+compounds. Two mechanics read the kill count and both now see the whole
+formation: an on-kill MAGAZINE REFILL (Sentient Surge) postpones the reload,
+and a reload is what clears the Ocucor's tendrils — so more bodies means more
+kills, more refills, fewer reloads, longer-lived tendrils, and more damage
+again. Nothing was added for it; it fell out of spread damage counting toward
+`RunResult::kills`.
+
+**EXCEPT A TENDRIL'S OWN KILL**, which spawns nothing — *"a kill by the primary
+beam, or by a status effect from any source (including one a tendril applied),
+spawns a tendril; a DIRECT kill by a tendril does NOT spawn another."* It is the
+only kind of kill in this engine worth less than another, and `SpreadBy` is the
+enum that carries which mechanism landed an instance so the difference can be
+made. It was a `bool` for an hour and the hour was spent on a flipped argument.
 
 `cargo run --release --bin spread_audit` lists every entry that reaches a
 formation and how: 56 of 224 today — 54 explosive, one beam, one with tendrils.
