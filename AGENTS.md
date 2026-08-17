@@ -624,6 +624,21 @@ around (decision 2026-07-31).
   free while the optimizer scored the base form (2026-08-03), and the
   optimizer keeping a buff config of its own (2026-08-02). A shared helper is
   not enough — the DECISIONS around it have to be shared too.
+- **A LONG SIM SAYS HOW FAR IT HAS GOT** (owner, 2026-08-18). The run count is
+  unbounded and so is the cost per run: a single-target fight is about a
+  millisecond, a 361-body one is ~28 ms, so the rulers' 1000 runs is half a
+  minute. It has always run on a WORKER, so the page was never frozen — but a
+  button reading "Simulating…" for half a minute is reported as a hang, and it
+  should be. `simulate_progress` is the wasm entry (its own, not a flag on
+  `api`, because `/api/simulate` is the one endpoint whose cost is unbounded),
+  the worker forwards `{done, total}`, and the panel draws a bar, THE COUNT and
+  a time remaining. The count because "412 / 1000" is a number a reader can act
+  on where a bar alone is only a feeling; the time because that is the number
+  they actually want. THE ANSWER IS UNCHANGED — the callback observes and never
+  steers — and the throttle is in the WASM layer at one message per percent,
+  because a postMessage per run would cost more than the fight.
+  The remaining time is hidden below a second and before 5%: an estimate off
+  one or two runs extrapolated a hundredfold reads as a wild guess and is one.
 - **EVERY ENEMY HAS A NAME, AND THE PAGE CAN ASK ABOUT ONE** (owner,
   2026-08-17). Debuffs have been per enemy since the formation landed —
   `SpreadFoe` is `{state, debuffs}` per body, with its own pools, armour, stack

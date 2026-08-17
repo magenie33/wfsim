@@ -812,6 +812,15 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    replaced a dropdown that could disagree with the simulator (2026-08-17), so
    it must not look clickable. Truncates rather than wrapping: a scenario name
    is a name the reader chose and can be arbitrarily long. */
+/* THE SIM'S PROGRESS. Unbounded wait, so it gets a bar and a COUNT — "412 /
+   1000" is a number a reader can act on where a bar alone is only a feeling. */
+.simrun{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.simrun-t{color:var(--muted)}
+.simrun-bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.simrun-bar span{display:block;height:100%;background:var(--accent);
+  transition:width .12s linear}
+.simrun-n{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+
 /* WHERE THE DAMAGE WENT — the RESULT's own copy of the scene, and its roll
    call. Setting up a fight and reading one are two things (2026-08-17): this
    block is read-only and lives in the result panel, while the scenario's canvas

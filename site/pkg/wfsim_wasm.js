@@ -93,6 +93,38 @@ let wasm_bindgen = (function(exports) {
         }
     }
     exports.optimize_resume = optimize_resume;
+
+    /**
+     * A SIMULATE THAT SAYS HOW FAR IT HAS GOT.
+     *
+     * Its own entry point rather than a flag on [`api`], because it is the one
+     * endpoint whose cost is unbounded: a single-target fight is a millisecond a
+     * run and a 361-body one is tens of them, so the rulers' 1000 runs is a minute
+     * in the browser. A button that says "Simulating…" for a minute reads as a
+     * hang, which is what it was reported as (owner, 2026-08-18).
+     *
+     * `on_progress` is handed `(done, total)`. THROTTLED HERE rather than in the
+     * engine: a postMessage per run would be 1000 of them and the reporting would
+     * cost more than the fight. One per percent, and always the last one.
+     * @param {string} body
+     * @param {Function} on_progress
+     * @returns {string}
+     */
+    function simulate_progress(body, on_progress) {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ptr0 = passStringToWasm0(body, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ret = wasm.simulate_progress(ptr0, len0, on_progress);
+            deferred2_0 = ret[0];
+            deferred2_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    exports.simulate_progress = simulate_progress;
     function __wbg_get_imports() {
         const import0 = {
             __proto__: null,
@@ -103,11 +135,20 @@ let wasm_bindgen = (function(exports) {
                 const ret = arg0.call(arg1, arg2);
                 return ret;
             }, arguments); },
+            __wbg_call_e3b662382210db98: function() { return handleError(function (arg0, arg1, arg2, arg3) {
+                const ret = arg0.call(arg1, arg2, arg3);
+                return ret;
+            }, arguments); },
             __wbg_now_86c0d4ba3fa605b8: function() {
                 const ret = Date.now();
                 return ret;
             },
-            __wbindgen_cast_0000000000000001: function(arg0, arg1) {
+            __wbindgen_cast_0000000000000001: function(arg0) {
+                // Cast intrinsic for `F64 -> Externref`.
+                const ret = arg0;
+                return ret;
+            },
+            __wbindgen_cast_0000000000000002: function(arg0, arg1) {
                 // Cast intrinsic for `Ref(String) -> Externref`.
                 const ret = getStringFromWasm0(arg0, arg1);
                 return ret;

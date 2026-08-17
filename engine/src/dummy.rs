@@ -10034,15 +10034,49 @@ pub struct RunSeries {
 
 /// Run `runs` engagements from a single seed and summarize.
 pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
-    monte_carlo_inner(params, runs, seed, false).0
+    monte_carlo_inner(params, runs, seed, false, &mut |_| {}).0
+}
+
+/// …REPORTING HOW FAR IT HAS GOT, for a caller that has to wait.
+///
+/// `on_run` is handed the number of completed runs. A single-target fight is
+/// ~1 ms a run and nobody needs this; a 361-body one is tens of milliseconds,
+/// so the rulers' 1000 runs is a minute in the browser and a button that says
+/// "Simulating…" for a minute reads as a hang (owner, 2026-08-18).
+///
+/// THE ANSWER IS UNCHANGED: the callback observes, it never steers. Everything
+/// about the run — the seed, the order, the arithmetic — is what it was.
+pub fn monte_carlo_reporting(
+    params: &DummyParams,
+    runs: u32,
+    seed: u64,
+    on_run: &mut impl FnMut(u32),
+) -> Summary {
+    monte_carlo_inner(params, runs, seed, false, on_run).0
 }
 
 /// ...keeping the per-run series. See [`RunSeries`].
 pub fn monte_carlo_series(params: &DummyParams, runs: u32, seed: u64) -> (Summary, RunSeries) {
-    monte_carlo_inner(params, runs, seed, true)
+    monte_carlo_inner(params, runs, seed, true, &mut |_| {})
 }
 
-fn monte_carlo_inner(params: &DummyParams, runs: u32, seed: u64, keep: bool) -> (Summary, RunSeries) {
+/// …both at once.
+pub fn monte_carlo_series_reporting(
+    params: &DummyParams,
+    runs: u32,
+    seed: u64,
+    on_run: &mut impl FnMut(u32),
+) -> (Summary, RunSeries) {
+    monte_carlo_inner(params, runs, seed, true, on_run)
+}
+
+fn monte_carlo_inner(
+    params: &DummyParams,
+    runs: u32,
+    seed: u64,
+    keep: bool,
+    on_run: &mut impl FnMut(u32),
+) -> (Summary, RunSeries) {
     let mut rng = Rng::new(seed);
     let mut sum = 0.0f64;
     let mut sum_sq = 0.0f64;
@@ -10073,6 +10107,7 @@ fn monte_carlo_inner(params: &DummyParams, runs: u32, seed: u64, keep: bool) -> 
     for _ in 0..runs {
         let r = run_once(params, &mut rng);
         all_runs.push(r);
+        on_run(all_runs.len() as u32);
         sum += r.total_damage;
         sum_sq += r.total_damage * r.total_damage;
         min = min.min(r.total_damage);
@@ -10971,6 +11006,50 @@ mod tests {
             "and the tendrils must be the ones taking some of them: {r:?}",
         );
         assert!(r.kills_by_tendril <= r.kills);
+    }
+
+    /// AN EXPLOSION'S OWN DAMAGE FALLOFF IS READ, from its EPICENTRE.
+    ///
+    /// Nineteen entries carry a `falloff_reduction` on their radial and their
+    /// `unmodeled:` lines said it was not modelled — "this arena has no
+    /// distance, so every shot lands at point blank", written before the arena
+    /// had one (2026-08-15). It does, and this is the proof: a body further
+    /// from the blast takes strictly less than one standing on it.
+    ///
+    /// THE AIMED BODY STILL TAKES THE FULL SHARE, which is not the exception it
+    /// looks like — the bomb detonates ON it, so its epicentre distance is
+    /// zero. That is why the gap was invisible with one target.
+    #[test]
+    fn an_explosions_falloff_is_read_from_its_epicentre() {
+        let base = crate::loadout::WeaponBase::from_data("phantasma_prime_charged", false, &[]);
+        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        assert!(
+            panel.radial.as_ref().is_some_and(|r| r.falloff_reduction > 0.0),
+            "the fixture must be a weapon whose explosion falls off"
+        );
+        // TWO BODIES BEHIND THE TARGET, one close to the blast and one at its
+        // rim — both inside the 4.8 m radius, so the only thing between them is
+        // the falloff.
+        let mut arena = crate::arena::Arena::training(10.0);
+        arena.others = [1.0_f64, 4.5]
+            .into_iter()
+            .map(|d| crate::formation::FoeSpec {
+                id: String::new(),
+                params: TargetParams::training_dummy(),
+                body_parts: DummyParams::humanoid_parts(),
+                at: crate::space::Vec2::new(0.0, arena.target_at.y + d),
+            })
+            .collect();
+        let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+        let r = run_once(&p, &mut Rng::new(0x5EED));
+        let d = &r.damage_by_body.0;
+        assert!(d[1] > 0.0 && d[2] > 0.0, "both are inside the radius: {:?}", &d[..3]);
+        assert!(
+            d[2] < d[1] * 0.9,
+            "the body at the rim must take clearly less: {:?}",
+            &d[..3]
+        );
     }
 
     /// A SIMULTANEOUS BLAST DETONATION REACHES 5 m, AND NOT THE HOST.

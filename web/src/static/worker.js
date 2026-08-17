@@ -17,7 +17,16 @@ onmessage = async (e) => {
   await ready;
   const msg = e.data;
   if (msg.kind === "api") {
-    const out = wasm_bindgen.api(msg.path, JSON.stringify(msg.body ?? {}));
+    // A SIMULATE SAYS HOW FAR IT HAS GOT, and nothing else does. It is the one
+    // endpoint whose cost is unbounded — a 361-body fight at the rulers' 1000
+    // runs is a minute — and a button that says "Simulating…" for a minute
+    // reads as a hang (owner, 2026-08-18). Asked for only when the caller
+    // wants it, so every other call keeps the plain path.
+    const body = JSON.stringify(msg.body ?? {});
+    const out = msg.progress && msg.path === "/api/simulate"
+      ? wasm_bindgen.simulate_progress(body, (done, total) =>
+          postMessage({ id: msg.id, kind: "progress", done, total }))
+      : wasm_bindgen.api(msg.path, body);
     postMessage({ id: msg.id, payload: JSON.parse(out) });
   } else if (msg.kind === "optimize") {
     const onProgress = (p) => postMessage({ kind: "progress", payload: JSON.parse(p) });

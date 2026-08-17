@@ -121,6 +121,63 @@ const r = await evaluate(`(async () => {
   // …and back to blank means back to the fight's.
   await set('opt-runs', 0);
   out.sentBackToFight = (await sendOnce()).final_runs;
+
+  // ---- A LONG SIM SAYS HOW FAR IT HAS GOT -------------------------------
+  //
+  // The run count is unbounded and so is the cost per run: a single-target
+  // fight is about a millisecond, a 361-body one is ~28, so the rulers' 1000
+  // runs is half a minute. It runs on a WORKER, so the page was never frozen —
+  // but a button reading Simulating... for half a minute is reported as a
+  // hang, and it should be (owner, 2026-08-18).
+  {
+    const ruler = scenarioList().find((p) => presetId(p) === 'group_clear');
+    if (ruler) {
+      const cfg = scenarioBarCfg();
+      cfg.setActive('group_clear');
+      cfg.apply(ruler.state);
+      renderSim();
+      await sleep(1500);
+      // ENOUGH RUNS THAT THERE IS A WAIT TO REPORT. The weapon this check
+      // opens with is a SENTINEL one — cheap even against 361 bodies — so a
+      // couple of hundred runs is a second and the remaining time is under
+      // one at every sample point, where it is deliberately hidden ("about 0s
+      // left" is noise). 600 buys about three seconds of wait, which is the
+      // thing being tested.
+      setSimRuns(600);
+      out.progBodies = 1 + (sim.formation || []).length;
+      const seen = [];
+      document.getElementById('run-sim').click();
+      for (let i = 0; i < 600; i++) {
+        await sleep(100);
+        const n = document.getElementById('sim-prog-n');
+        const b = document.getElementById('sim-prog');
+        if (n && n.textContent) seen.push([n.textContent, b ? b.style.width : '']);
+        if (!document.getElementById('run-sim').disabled) break;
+      }
+      const uniq = [...new Set(seen.map((x) => x.join('|')))];
+      out.progSteps = uniq.length;
+      out.progFirst = uniq[0] || '';
+      out.progLast = uniq[uniq.length - 1] || '';
+      // THE COUNT, not just a proportion — a reader can act on 412 / 1000.
+      // NO REGEX HERE: a backslash inside this template literal is eaten
+      // before the page ever sees it, so /^\d+/ arrives as /^d+/ and the
+      // string stops parsing. Plain string work has no such trap.
+      out.progCounts = uniq.every((u) => {
+        const words = u.split('|')[0].trim().split(' ');
+        return words[1] === '/' && words[2] === '600';
+      });
+      out.progAll = uniq.slice(0, 6);
+      // …AND HOW MUCH LONGER, which is the number they actually want.
+      out.progEta = uniq.some((u) => /left|还剩/.test(u));
+      // A BAR THAT MOVES: the widths are non-decreasing and reach the end.
+      const w = uniq.map((u) => parseFloat(u.split('|')[1]) || 0);
+      out.progRises = w.every((v, i) => i === 0 || v >= w[i - 1]);
+      // …TO THE END, or as near as the last paint got: the loop stops the
+      // moment the button re-enables, which can be the same tick as the 100%.
+      out.progEnds = w[w.length - 1] >= 90;
+    }
+  }
+
   return out;
 })()`);
 
@@ -156,5 +213,14 @@ check("...its own number overrides", r.sentOwn === 60, `${r.sentOwn}`);
 check("...and does not edit the page's", r.simStillDefault === 100, `${r.simStillDefault}`);
 check("...it survives a search-preset round trip", String(r.restored) === "60,60", String(r.restored));
 check("...and clearing it returns to the page's", r.sentBackToFight === 100, `${r.sentBackToFight}`);
+
+// AND A LONG ONE SAYS HOW FAR IT HAS GOT.
+check(`a ${r.progBodies}-body fight reports its progress`,
+  r.progSteps > 3, `${r.progSteps} distinct readings`);
+check("...as a COUNT, which is a number a reader can act on",
+  r.progCounts === true, `${r.progFirst} -> ${r.progLast}`);
+check("...and as a time remaining", r.progEta === true, JSON.stringify(r.progAll));
+check("...with a bar that only ever rises, and reaches the end",
+  r.progRises === true && r.progEnds === true, r.progLast);
 
 await app.finish("how hard you measure is a number someone can set, in all three modules");

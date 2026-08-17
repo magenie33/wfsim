@@ -291,19 +291,31 @@ const imgTag = (src, cls) => src ? `<img class="${cls||''}" src="${src}" onerror
 // terminate that worker (all state lives inside it).
 let rpcWorker = null, rpcId = 0;
 const rpcPending = new Map();
+/// …and the ones that asked to be told how far along they are.
+const rpcProgress = new Map();
 function ensureRpcWorker() {
   if (rpcWorker) return rpcWorker;
   rpcWorker = new Worker("/worker.js");
   rpcWorker.onmessage = (e) => {
+    if (e.data.kind === "progress") {
+      const f = rpcProgress.get(e.data.id);
+      if (f) f(e.data.done, e.data.total);
+      return;
+    }
     const p = rpcPending.get(e.data.id);
-    if (p) { rpcPending.delete(e.data.id); p(e.data.payload); }
+    if (p) { rpcPending.delete(e.data.id); rpcProgress.delete(e.data.id); p(e.data.payload); }
   };
   return rpcWorker;
 }
-const rpc = (path, body) => new Promise((resolve) => {
+/// `onProgress(done, total)` is optional and only `/api/simulate` reports it —
+/// see the worker. Every other call is unchanged.
+const rpc = (path, body, onProgress) => new Promise((resolve) => {
   const id = ++rpcId;
   rpcPending.set(id, resolve);
-  ensureRpcWorker().postMessage({ id, kind: "api", path, body: body ?? {} });
+  if (onProgress) rpcProgress.set(id, onProgress);
+  ensureRpcWorker().postMessage({
+    id, kind: "api", path, body: body ?? {}, progress: !!onProgress,
+  });
 });
 
 let wopt = null; // the emulated optimize job: a FLEET of workers over disjoint
@@ -510,7 +522,7 @@ function woptCancel() {
   return { ok: true, job_id: wopt.id };
 }
 
-async function api(path, body) {
+async function api(path, body, onProgress) {
   if (!WASM) {
     // GET endpoints (the rest are POST-with-body):
     if (path === "/api/meta" || path === "/api/i18n") return (await fetch(path)).json();
@@ -521,7 +533,7 @@ async function api(path, body) {
   if (path === "/api/optimize") return woptStart(body, body && body.__resume);
   if (path === "/api/optimize/status") return woptStatus();
   if (path === "/api/optimize/cancel") return woptCancel();
-  return rpc(path, body);
+  return rpc(path, body, onProgress);
 }
 
 let META = null;
@@ -9923,12 +9935,52 @@ async function runSim() {
   const btn = $("run-sim");
   btn.disabled = true; btn.textContent = "Simulating…";
   show("sim-results-block", true);
-  $("sim-results").innerHTML = `<div class="placeholder">running ${simRuns()} simulations…</div>`;
+  // A BAR, BECAUSE THE WAIT IS UNBOUNDED. A single-target fight is a
+  // millisecond a run; a 361-body one is tens of them, so the rulers' 1000 runs
+  // is a minute in the browser — and a line that says "running 1000
+  // simulations…" for a minute reads as a hang (owner, 2026-08-18).
+  //
+  // IT SAYS THE COUNT, not just a proportion: "412 / 1000" is a number a reader
+  // can act on (lower the runs, take the fight apart) where a bar alone is only
+  // a feeling.
+  $("sim-results").innerHTML = `<div class="placeholder simrun">
+    <div class="simrun-t">${escHtml(tr("running {n} simulations…").replace("{n}", simRuns()))}</div>
+    <div class="simrun-bar"><span id="sim-prog" style="width:0%"></span></div>
+    <div class="simrun-n" id="sim-prog-n"></div>
+  </div>`;
   try {
     // `replay: true` only HERE. The gain scan hits the same endpoint once per
     // candidate and shows no replay, so it must not pay for one.
     const body = { ...buildPayload(), ...theFight({ replay: true }) };
-    const r = await api("/api/simulate", body);
+    // THROTTLED BY THE FRAME, not by the message: the worker already sends one
+    // per percent, and a DOM write per percent is still 100 of them for a fight
+    // that takes a second.
+    let painted = -1;
+    const began = Date.now();
+    const r = await api("/api/simulate", body, (done, total) => {
+      const pct = total ? Math.round((done / total) * 100) : 100;
+      if (pct === painted) return;
+      painted = pct;
+      const bar = $("sim-prog");
+      const num = $("sim-prog-n");
+      if (bar) bar.style.width = `${pct}%`;
+      // HOW LONG IS LEFT, from how long it has taken — free, because the run is
+      // already happening, and exact enough after a few runs because every run
+      // is the same fight. A 361-body ruler is ~28 ms a run, so the default
+      // 1000 is half a minute: the number a reader needs is not "how far" but
+      // "how much longer" (owner, 2026-08-18).
+      //
+      // AFTER 5% only. Before that the estimate is one or two runs' noise
+      // extrapolated a hundredfold, which reads as a wild guess and is one.
+      const secs = (Date.now() - began) / 1000;
+      const left = done > 0 && pct >= 5 ? (secs / done) * (total - done) : null;
+      if (num) {
+        num.textContent = `${done} / ${total}`
+          + (left !== null && left > 1
+            ? ` · ${tr("about {s}s left").replace("{s}", Math.ceil(left))}`
+            : "");
+      }
+    });
     if (!r || r.ok === false) {
       $("sim-results").innerHTML = `<div class="error">sim failed: ${r ? r.error : "no data"}</div>`;
       return;

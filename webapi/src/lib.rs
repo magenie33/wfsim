@@ -16,7 +16,7 @@
 
 use serde_json::{json, Value};
 use wfsim_engine::dummy::{
-    monte_carlo, BodyPart, BuffLock, DummyParams, LockMode, LockedBuff, TargetMode,
+    BodyPart, BuffLock, DummyParams, LockMode, LockedBuff, TargetMode,
 };
 use wfsim_engine::enemy_data::EnemySpec;
 // NO `resolve` HERE, and that is the point: it is the neutral-Tenno wrapper, and
@@ -4514,6 +4514,18 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
 
 
 pub fn simulate_json(v: &Value) -> Value {
+    simulate_json_reporting(v, &mut |_, _| {})
+}
+
+/// …TELLING A CALLER HOW FAR IT HAS GOT — `(done, total)` after every run.
+///
+/// A single-target fight is about a millisecond a run and nobody needs this. A
+/// 361-body one is tens of milliseconds, so the rulers' 1000 runs is a minute
+/// in the browser — and a button that says "Simulating…" for a minute reads as
+/// a hang, which is what it was reported as (owner, 2026-08-18).
+///
+/// THE ANSWER IS UNCHANGED. The callback observes and never steers.
+pub fn simulate_json_reporting(v: &Value, on_run: &mut impl FnMut(u32, u32)) -> Value {
     // THE FIGHT, parsed by the ONE function that parses it. The optimizer
     // calls the same one — see `parse_fight`.
     let fight = match parse_fight(v) {
@@ -4685,10 +4697,16 @@ pub fn simulate_json(v: &Value) -> Value {
     // describe each build alone. The quick calc is the caller; nobody else pays
     // the length.
     let want_series = get_bool(v, "run_series", false);
-    let (s, series) = if want_series {
-        wfsim_engine::dummy::monte_carlo_series(&params, runs, seed)
-    } else {
-        (monte_carlo(&params, runs, seed), Default::default())
+    let (s, series) = {
+        let mut tick = |done: u32| on_run(done, runs);
+        if want_series {
+            wfsim_engine::dummy::monte_carlo_series_reporting(&params, runs, seed, &mut tick)
+        } else {
+            (
+                wfsim_engine::dummy::monte_carlo_reporting(&params, runs, seed, &mut tick),
+                Default::default(),
+            )
+        }
     };
 
     let damage: Vec<Value> = report_panel

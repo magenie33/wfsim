@@ -37,6 +37,35 @@ pub fn api(endpoint: &str, body: &str) -> String {
     out.to_string()
 }
 
+/// A SIMULATE THAT SAYS HOW FAR IT HAS GOT.
+///
+/// Its own entry point rather than a flag on [`api`], because it is the one
+/// endpoint whose cost is unbounded: a single-target fight is a millisecond a
+/// run and a 361-body one is tens of them, so the rulers' 1000 runs is a minute
+/// in the browser. A button that says "Simulating…" for a minute reads as a
+/// hang, which is what it was reported as (owner, 2026-08-18).
+///
+/// `on_progress` is handed `(done, total)`. THROTTLED HERE rather than in the
+/// engine: a postMessage per run would be 1000 of them and the reporting would
+/// cost more than the fight. One per percent, and always the last one.
+#[wasm_bindgen]
+pub fn simulate_progress(body: &str, on_progress: &js_sys::Function) -> String {
+    let v: serde_json::Value = serde_json::from_str(body).unwrap_or(serde_json::Value::Null);
+    let mut last = u32::MAX;
+    let mut tick = |done: u32, total: u32| {
+        let pct = (done * 100).checked_div(total).unwrap_or(100);
+        if pct != last || done == total {
+            last = pct;
+            let _ = on_progress.call2(
+                &JsValue::NULL,
+                &JsValue::from_f64(f64::from(done)),
+                &JsValue::from_f64(f64::from(total)),
+            );
+        }
+    };
+    wfsim_webapi::simulate_json_reporting(&v, &mut tick).to_string()
+}
+
 /// Snapshot `FunnelState` into the native /api/optimize/status shape (minus
 /// `job_id`/`result` — the worker protocol owns those).
 fn status_json(state: &FunnelState, phase: &str, counts: Option<(usize, usize)>, elapsed_s: f64) -> String {
