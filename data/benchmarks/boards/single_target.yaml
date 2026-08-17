@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 38560e99fe326aabb980571a56c8eab3f509058c
+engine: 0ecea17ceb28819b3b2052c97564a071b4d69ea8
 entries:
   - weapon: akarius_prime
     mode: base
@@ -4053,8 +4053,20 @@ entries:
     arcanes: [primary_debilitate]
   - weapon: phenmor
     mode: cycle
+    score: 14.0984619247058
+    mods: [galvanized_chamber, galvanized_aptitude, rifle_elementalist, vile_acceleration, stormbringer, high_voltage, infected_clip, malignant_force]
+    evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_survivors_edge, phenmor_devouring_attrition]
+    arcanes: [primary_debilitate]
+  - weapon: phenmor
+    mode: cycle
     score: 9.666666666666666
     mods: [primary_acuity, galvanized_aptitude, rifle_elementalist, vile_acceleration, vital_sense, magnetic_capacity, high_voltage, malignant_force]
+    evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_survivors_edge, phenmor_devouring_attrition]
+    arcanes: [primary_debilitate]
+  - weapon: phenmor
+    mode: cycle
+    score: 9.29984469657884
+    mods: [primary_acuity, galvanized_aptitude, hammer_shot, rifle_elementalist, vile_acceleration, vital_sense, high_voltage, malignant_force]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_survivors_edge, phenmor_devouring_attrition]
     arcanes: [primary_debilitate]
   - weapon: prisma_angstrum
