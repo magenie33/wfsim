@@ -55,7 +55,11 @@ use crate::space::Vec2;
 /// costs 0.538 ms against 0.533 — inside the noise of the machine. The array is
 /// 3.2 KB and a run produces one.
 ///
-/// 400 rather than 289: headroom for a 19x19, and a round number to state.
+/// 400 rather than 289: a 19x19 is 361, and that is the size the measurement
+/// settles on — where the roster's LARGEST blast (the Morgha alt's 12 m) stops
+/// growing at 110 bodies and stays there through 21x21 and 23x23. Past 19 the
+/// only thing more rows change is how deep an infinite-punch-through weapon's
+/// column runs, which is the one thing that should not grow.
 pub const MAX_BODIES: usize = 400;
 
 /// One body in the formation, as the caller declares it — everything that

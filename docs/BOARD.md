@@ -436,6 +436,30 @@ was a field for an hour and a test caught the trap at once — widen
 `beam.damage_radius_m` after the params are built and the cached layout is
 silently stale, which is the two-declarations bug wearing a cache.
 
+### Where it stops mattering — 19x19
+
+With cost flat, the size is settled by SATURATION alone. Measured at 1.5 m out
+to 23x23 (bodies touched · seconds per 1000 runs):
+
+| grid | placed | Torid (chain) | Morgha alt (12 m) | Grattler (9 m) | Phantasma (∞ punch) |
+|---|---|---|---|---|---|
+| 7x7 | 49 | 13 · 19.5 s | 49 · 1.6 s | 43 · 1.6 s | 7 · 2.7 s |
+| 15x15 | 225 | 13 · 20.0 s | 106 · 3.6 s | 73 · 2.6 s | 15 · 5.6 s |
+| **19x19** | **361** | 13 · 21.2 s | **110** · 3.8 s | 77 · 2.7 s | 19 · 7.1 s |
+| 21x21 | 441 | 13 · 21.1 s | **110** · 3.7 s | 79 · 2.9 s | 21 · 7.8 s |
+| 23x23 | 529 | 13 · 20.7 s | **110** · 3.9 s | 81 · 3.0 s | 23 · 8.4 s |
+
+**19x19 is where the roster's largest blast stops growing.** The Morgha alt's
+12 m reaches 110 bodies there and 110 at 23x23, so no weapon in the roster is
+clipped by the arena any more — which was the only argument for going bigger.
+
+Past 19 the extra rows change exactly two things, and neither is wanted: an
+infinite-punch-through weapon's column runs one body deeper per row (19, 21,
+23 — it never saturates, and a perfect column that long is an arrangement no
+player will line up), and a spread weapon's wandering epicentre catches a
+couple more on wide misses (the Grattler's 77 / 79 / 81, which is its pellets
+missing rather than its radius reaching).
+
 The other three mechanisms at 19x19 were never the cost and are unchanged:
 Morgha alt 110 bodies for 3.8 s, Grattler 77 for 2.9 s, Phantasma 19 for 7.1 s.
 

@@ -59,7 +59,7 @@ fn main() {
     );
 
     let mut baseline = 0.0f64;
-    for n in [1usize, 3, 5, 7, 9, 11, 13, 15, 17, 19] {
+    for n in [1usize, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23] {
         let cells = n * n;
         if cells > wfsim_engine::formation::MAX_BODIES {
             println!(
