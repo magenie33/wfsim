@@ -2272,6 +2272,12 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_prelude_of_might]
     arcanes: [secondary_encumber]
+  - weapon: gammacor
+    mode: base
+    score: 1.2223780016330474
+    mods: [galvanized_diffusion, primed_expel_grineer, primed_target_cracker, galvanized_shot, magnetic_might, jolt, pistol_pestilence, scorch]
+    evolutions: [gammacor_evo1_incarnon_form, gammacor_infused_shots, gammacor_extended_volley, gammacor_elemental_balance]
+    arcanes: [secondary_enervate]
   - weapon: gorgon_wraith
     mode: cycle
     score: 2.9907454076315707
