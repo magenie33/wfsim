@@ -382,6 +382,13 @@ const simLanes = () => {
 /// `simulate_merged`, so there is one implementation of the arithmetic rather
 /// than a Rust one and a JavaScript one that drift.
 ///
+/// A SECOND SEAM, and every observer has to know it. A check that watches
+/// simulations by wrapping `api` sees nothing here, because a sharded run never
+/// touches it — seven of them came back empty or, worse, captured the quick
+/// calc's baseline instead and reported a null replay for a run that had one
+/// (2026-08-18). Anything that observes what the page simulates must wrap this
+/// as well, and match on the request rather than on being the only caller.
+///
 /// FALLS BACK TO ONE CALL when there is nothing to gain — a single lane, or so
 /// few runs that a slice would be one engagement. A fleet has a cost of its own
 /// (a worker each, a shard each on the wire) and it is not worth paying to

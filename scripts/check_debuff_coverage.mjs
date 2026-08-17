@@ -35,11 +35,24 @@ const r = await evaluate(`(async () => {
   // The result is captured off the wire rather than out of a global: the page
   // stores it inside the active scenario preset, which is a longer reach than
   // this check needs.
+  //
+  // OFF THE FLEET AS WELL, and only a request that PAID FOR A REPLAY. Run Sim
+  // has gone through the worker fleet since 2026-08-18 and never touches api,
+  // so this saw only the quick calc's baseline — a simulate with no replay
+  // asked for — and reported a null replay for a run that had one. Both halves
+  // are needed: watching the fleet finds the right call, and the replay guard
+  // is what stops the next caller of api from being mistaken for it.
   let shot = null;
   const real = window.api;
-  window.api = async (p, b) => { const res = await real(p, b); if (p === '/api/simulate') shot = res; return res; };
+  const realFleet = window.simulateFleet;
+  const take = (p, b, res) => { if (p === '/api/simulate' && b && b.replay) shot = res; };
+  window.api = async (p, b) => { const res = await real(p, b); take(p, b, res); return res; };
+  window.simulateFleet = async (b, onp) => {
+    const res = await realFleet(b, onp); take('/api/simulate', b, res); return res;
+  };
   await runSim();
   window.api = real;
+  window.simulateFleet = realFleet;
   for (let i = 0; i < 60 && !shot; i++) await sleep(500);
   const rp = shot && shot.replay;
   out.hasReplay = !!(rp && rp.t && rp.t.length > 1);
