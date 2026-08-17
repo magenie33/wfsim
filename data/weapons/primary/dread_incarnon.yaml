@@ -60,7 +60,12 @@ attack:
   crit_chance: 0.5
   crit_multiplier: 3
   status_chance: 0.3
-  punch_through_m: 0.0
+  # INNATE INFINITE BODY PUNCH-THROUGH — the punch-through page's own exception
+  # list, "Dread (Incarnon Form)". Written as a number the sim can
+  # hold, and it is the WHOLE mechanic here: the qualifier that goes with it separates BODIES
+  # from geometry ("innate punch through does not apply to surfaces") and this
+  # arena has no geometry, so everything the ray meets is a body.
+  punch_through_m: 999.0
   damage: { impact: 100, slash: 100, heat: 200 }   # total 400
 
 # incarnon_evolutions: see data/weapons/primary/dread.yaml (shared group)

@@ -63,7 +63,14 @@ attack:
   crit_chance: 0.40
   crit_multiplier: 3.0
   status_chance: 0.013
-  punch_through_m: 0.0
+  # INNATE INFINITE BODY PUNCH-THROUGH — the punch-through page's own exception
+  # list, "Corvas (Atmospheric Mode)". Written as a number the sim can
+  # hold, and it is the WHOLE mechanic here: the qualifier that goes with it separates BODIES
+  # from geometry ("innate punch through does not apply to surfaces") and this
+  # arena has no geometry, so everything the ray meets is a body.
+  # ATMOSPHERIC, which is the column this arena is in — the same two-column
+  # Arch-Gun trap that posted the Larkspur Prime at half its damage.
+  punch_through_m: 999.0
   damage: { impact: 128.0, puncture: 16.0, slash: 16.0 }   # 160 each, 1760 a shell
 
 unmodeled:

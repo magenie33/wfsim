@@ -39,9 +39,12 @@ attack:
   crit_chance: 0.30
   crit_multiplier: 2.0
   status_chance: 0.25
-  # 5.0 m on the ground, 0.0 in Archwing — an uncharged shot in space punches
-  # through nothing. It changes no number here either way.
-  punch_through_m: 5.0
+  # INNATE INFINITE BODY PUNCH-THROUGH — the punch-through page's own exception
+  # list, "Velocitus". Written as a number the sim can
+  # hold, and it is the WHOLE mechanic here: the qualifier that goes with it separates BODIES
+  # from geometry ("innate punch through does not apply to surfaces") and this
+  # arena has no geometry, so everything the ray meets is a body.
+  punch_through_m: 999.0
   damage: { impact: 300.0, puncture: 300.0, slash: 300.0, magnetic: 300.0 }  # 1200
 
 unmodeled:

@@ -71,7 +71,9 @@ attack:
   crit_chance: 0.30
   crit_multiplier: 2.2
   status_chance: 0.24
-  punch_through_m: 1.2
+  # 1.4 m, not the ordinary Dual Decurion's 1.2 — the page lists the Prisma
+  # separately and higher, and this entry had copied its sibling's (2026-08-17).
+  punch_through_m: 1.4
   damage: { impact: 99.0, puncture: 60.5, slash: 60.5 }   # 220 total
 unmodeled:
   - reason: arch_gun_deployer_cooldown

@@ -3027,10 +3027,41 @@ another. So the answer is transcribed per ENTRY, which is docs/CATALOGS.md's
 rule generalised once more (owner, 2026-08-17: the Torid Incarnon was the
 question that found it).
 
-**Infinite body punch-through** (the Fluctus, the Phantasma, the Arca Plasmor
-family) is written `999.0`. Its one qualifier — *"innate punch through does not
-apply to surfaces"* — separates bodies from geometry, and this arena has no
-geometry, so unlimited-through-bodies is the whole of the mechanic here.
+### The exception list is a real catalog, and it has an Arch-Gun section
+
+**Infinite body punch-through** is written `999.0`. Its one qualifier —
+*"innate punch through does not apply to surfaces"* — separates bodies from
+geometry, and this arena has no geometry, so unlimited-through-bodies is the
+whole of the mechanic here.
+
+The page carries the list per CLASS, and the Arch-Gun section is the one worth
+naming because nothing else on the page hints at it: **Cortege (Primary Fire),
+Corvas (Atmospheric Mode), Corvas Prime, Grattler, Kuva Grattler, Mandonel,
+Velocitus**. Four of those are AoE weapons, which is what the list is FOR — they
+are the *"very few exceptions"* the class rule points at.
+
+**Read the qualifiers as written.** The page restricts where it means to —
+"Cortege (Primary Fire)", "Quellor (Alt-Fire)", "Corvas (Atmospheric Mode)",
+"Mandonel (Charged Shot only: 2.4m)" in the finite list — so an UNQUALIFIED
+entry names the weapon and reaches both its forms. "Corvas (Atmospheric Mode)"
+is the two-column Arch-Gun trap again: this arena is on the ground.
+
+**A weapon can be on BOTH lists**, and it is not a contradiction: the finite
+figure is the GEOMETRY column and the infinite one is bodies. Corvas Prime is
+1.4 m and unlimited; the Lanka is 5 m and unlimited. In this arena only the
+second half exists.
+
+**What the audit found** (2026-08-17, prompted by "can the Larkspur take it?"):
+the Fluctus read `999.0` under a comment calling it *"INFINITE"* and it is on
+NEITHER infinite list — the page gives it **275 m**, a published number rather
+than a word, and it reaches everything here either way, which is exactly why the
+wrong one survived. The Prisma Dual Decurions had copied its sibling's 1.2 m
+where the page lists it separately at **1.4 m**. And twenty-two entries that
+should have been unlimited were reading 0 to 5 m.
+
+**The Larkspur is on neither list, anywhere on the page** — so it is ORDINARY
+and takes punch-through mods, which for a chaining beam means extra bodies each
+starting their own chain.
 
 ### The bug it found on the way in
 

@@ -74,12 +74,14 @@ attack:
   crit_chance: 0.22
   crit_multiplier: 2.0
   status_chance: 0.16
-  # INFINITE, and stated as a number the sim can hold. It buys nothing here —
-  # see `unmodeled:` — and it is the weapon's whole identity in a real mission.
-  punch_through_m: 999.0
+  # 275 m, from the weapon's own infobox row on the punch-through page. It read
+  # 999.0 under a comment calling it "INFINITE" until 2026-08-17 — the Fluctus
+  # is on NEITHER infinite-body list, and 275 m is a published number rather
+  # than a word. It reaches everything in this arena either way, which is
+  # exactly why the wrong one survived.
+  punch_through_m: 275.0
   damage: { impact: 100.0, puncture: 50.0, slash: 350.0 }   # 500 total
 unmodeled:
-  - "the innate INFINITE punch-through is not modelled — this arena has one target, and a wave that passes through a corridor of enemies is most of what this weapon is"
   - "the wave's vertical hitbox is not modelled — it is a wide flat projectile rather than a point, which this arena has no geometry to express"
   - reason: arch_gun_deployer_cooldown
 

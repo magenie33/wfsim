@@ -61,7 +61,12 @@ attack:
   # source for it and this weapon under-reported its status. A type that is
   # always present is also a permanent +1 to Condition Overload's count.
   forced_procs: [impact]
-  punch_through_m: 0.0
+  # INNATE INFINITE BODY PUNCH-THROUGH — the punch-through page's own exception
+  # list, "Lex Prime (Incarnon Form)". Written as a number the sim can
+  # hold, and it is the WHOLE mechanic here: the qualifier that goes with it separates BODIES
+  # from geometry ("innate punch through does not apply to surfaces") and this
+  # arena has no geometry, so everything the ray meets is a body.
+  punch_through_m: 999.0
   # NOT MODELLED — the arena has no distance, so this weapon is
   # simulated at point blank. Recorded because the RIVEN pool reads
   # it: a hitscan weapon that lists a falloff still rolls Projectile
