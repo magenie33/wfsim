@@ -103,6 +103,22 @@ const r = await evaluate(`(async () => {
   out.aimMarker = !!document.querySelector('#sim-target-arena .ar-aim');
   out.strokeMarked = document.querySelectorAll('#sim-target-arena .ar-struck').length;
 
+  // …AND THE SIGHT LINE STOPS WHERE THE SHOT STOPS. Aiming past a body draws
+  // solid to the body it reaches and DASHED on to where you are pointing —
+  // without it the scene showed a line running through a body it cannot pass.
+  out.stopsShort = !!document.querySelector('#sim-target-arena .ar-past');
+
+  // …AND POINTING AT BARE FLOOR IS A CLICK. A body is dragged; a PLACE has
+  // nothing to grab.
+  const svg = document.querySelector('#sim-target-arena .ar-svg');
+  const sb = svg.getBoundingClientRect();
+  svg.dispatchEvent(new MouseEvent('click', {
+    clientX: sb.left + sb.width * 0.12, clientY: sb.top + sb.height * 0.12,
+    bubbles: true, cancelable: true }));
+  await sleep(500);
+  out.clickAimed = JSON.stringify(sim.aim_at) !== '[0,30]' && sim.aim_at !== null;
+  out.clickStruck = arenaFirstHit(sim);
+
   // …and one click puts it back on the target.
   const un = btn('[data-unaim]');
   out.hadUnaim = !!un;
@@ -142,6 +158,11 @@ check("...and the beam is on the body the LINE crosses, not the nearest to it",
   r.struck === 1, `first hit index ${r.struck} (0 = the target at 20 m, 1 = the body at 10 m)`);
 check("...and exactly one body is marked as struck", r.strokeMarked === 1, `${r.strokeMarked}`);
 check("...and the aim point is sent", JSON.stringify(r.aimSent) === "[0,30]", JSON.stringify(r.aimSent));
+check("...and the sight line STOPS at the body it reaches, dashed on to the aim",
+  r.stopsShort === true);
+check("pointing at bare floor is a click, and it aims there", r.clickAimed === true);
+check("...and a shot at bare floor crosses nobody",
+  r.clickStruck === -1, `first hit ${r.clickStruck}`);
 check("...and one click puts it back on the target", r.hadUnaim && r.aimCleared === true);
 check("an official ruler refuses a crowd", r.official === true && r.officialAddDisabled === true);
 check("...and clicking anyway changes nothing", r.officialUnchanged === true);

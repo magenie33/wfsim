@@ -183,6 +183,13 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 .arena .ar-svg{display:block;width:100%;height:auto}
 .ar-grid{stroke:var(--line);stroke-width:1;opacity:.45}
 .ar-link{stroke:var(--muted);stroke-width:1.5;stroke-dasharray:4 3;opacity:.8}
+/* PAST THE BODY THE SHOT STOPS AT — where you are POINTING, which is not always
+   where the round ends. Fainter than the sight line, because it is the half
+   nothing travels. */
+.ar-past{stroke:var(--dim);stroke-width:1;stroke-dasharray:2 3;opacity:.5}
+/* THE SCENE IS CLICKABLE FLOOR: pointing somewhere is a click, moving a body is
+   a drag. */
+.ar-svg{cursor:crosshair}
 .ar-body{cursor:grab;stroke-width:2}
 .arena.ar-ro .ar-body{cursor:default}
 .ar-body:active{cursor:grabbing}

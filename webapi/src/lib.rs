@@ -4259,12 +4259,31 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
             )));
         }
         for (i, e) in list.iter().enumerate() {
-            let id = e.get("enemy").and_then(Value::as_str).unwrap_or(enemy_id);
+            // AN EMPTY STRING IS NOT AN ID. The page stores a body's unit as
+            // `""` for "same as the target", which is the common case and what
+            // every body a formation is built from carries — so reading it as a
+            // name looked the id up, failed, and refused the whole fight with
+            // `unknown enemy: ` and nothing after the colon (owner, 2026-08-17).
+            //
+            // The same applies to a LEVEL of null and an EXIMUS of null: absent
+            // and blank are one state here, and it means "the aimed body's".
+            let id = e
+                .get("enemy")
+                .and_then(Value::as_str)
+                .filter(|s| !s.is_empty())
+                .unwrap_or(enemy_id);
             let Some(es) = specs.iter().find(|s| s.id == id) else {
                 return Err(err_json(format!("unknown enemy: {id}")));
             };
-            let lv = get_f64(e, "level", level as f64) as u32;
-            let ex = get_bool(e, "eximus", es.can_be_eximus);
+            let lv = e
+                .get("level")
+                .and_then(Value::as_f64)
+                .filter(|v| *v >= 1.0)
+                .map_or(level, |v| v as u32);
+            let ex = e
+                .get("eximus")
+                .and_then(Value::as_bool)
+                .unwrap_or(es.can_be_eximus);
             let tp = match es.target_params(lv, steel_path, ex, TargetMode::InstantRespawn) {
                 Ok(t) => t,
                 Err(err) => return Err(err_json(format!("enemy {}: {err}", i + 1))),
@@ -6701,6 +6720,41 @@ mod asset_tests {
         assert!(
             too_many.get("error").and_then(Value::as_str).unwrap_or("").contains("at most 50"),
             "{too_many}"
+        );
+    }
+
+    /// A BODY THE PAGE BUILT IS A BODY THE FIGHT ACCEPTS — the shape the canvas
+    /// actually sends, blanks and all.
+    ///
+    /// It failed with `unknown enemy: ` and nothing after the colon (owner,
+    /// 2026-08-17): the page stores a body's unit as `""` for "same as the
+    /// target", which is what EVERY body a formation is built from carries, and
+    /// the parser read the empty string as a name. Absent and blank are one
+    /// state, and it means the aimed body's.
+    #[test]
+    fn a_body_with_blank_fields_takes_the_aimed_bodys() {
+        let run = |body: serde_json::Value| {
+            simulate_json(&serde_json::json!({
+                "weapon": "torid", "mode": "transformed", "mods": [],
+                "evolutions": ["torid_evo1_incarnon_form"],
+                "enemy": "corrupted_heavy_gunner", "level": 100,
+                "runs": 2, "seed": 7, "duration": 4,
+                "formation": [body],
+            }))
+        };
+        // EXACTLY WHAT THE CANVAS SENDS.
+        let page = run(serde_json::json!({ "at": [3.0, 0.4], "enemy": "", "level": null }));
+        assert!(page.get("error").is_none(), "{page}");
+        // …and it is the same fight as naming nothing at all.
+        let bare = run(serde_json::json!({ "at": [3.0, 0.4] }));
+        assert_eq!(page.get("dps"), bare.get("dps"), "blank must mean absent");
+        // …while a REAL id is still honoured, and a wrong one still refused.
+        let named = run(serde_json::json!({ "at": [3.0, 0.4], "enemy": "thrax_centurion" }));
+        assert!(named.get("error").is_none(), "{named}");
+        let wrong = run(serde_json::json!({ "at": [3.0, 0.4], "enemy": "no_such_unit" }));
+        assert!(
+            wrong.get("error").and_then(Value::as_str).unwrap_or("").contains("no_such_unit"),
+            "{wrong}"
         );
     }
 

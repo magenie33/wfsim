@@ -2455,6 +2455,22 @@ function arenaSvg(s, en) {
   const ux = (tx - px) / span, uy = (ty - py) / span;
   const mx = px + ux * r, my = py + uy * r;
   const struck = arenaFirstHit(s);
+  // THE SHOT STOPS WHERE IT STOPS, and the line says so. Solid from the muzzle
+  // to the body it actually reaches; DASHED on from there to wherever you are
+  // pointing. Aiming past a body is legal and common — you point at the one
+  // behind — and without this the scene showed a line running through a body it
+  // cannot pass (owner, 2026-08-17). No punch-through is modelled, so the first
+  // body on the line is where it ends.
+  const hitPx = struck >= 0 ? g.px(bodies[struck]) : null;
+  const stop = hitPx
+    ? [hitPx[0] - ux * r, hitPx[1] - uy * r]
+    : [tx, ty];
+  const sight = `<line class="ar-link" x1="${mx.toFixed(1)}" y1="${my.toFixed(1)}" `
+    + `x2="${stop[0].toFixed(1)}" y2="${stop[1].toFixed(1)}"/>`
+    + (hitPx && (Math.abs(stop[0] - tx) > 1 || Math.abs(stop[1] - ty) > 1)
+      ? `<line class="ar-past" x1="${stop[0].toFixed(1)}" y1="${stop[1].toFixed(1)}" `
+        + `x2="${tx.toFixed(1)}" y2="${ty.toFixed(1)}"/>`
+      : "");
   const foes = bodies.map((b, i) => {
     const [bx, by] = g.px(b);
     // THE ONE THE BEAM IS ON is marked, because aiming at a place means the
@@ -2470,7 +2486,7 @@ function arenaSvg(s, en) {
     <circle class="ar-muzzle" cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="2.2"/>`;
   return `<svg class="ar-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">
     ${lines.join("")}
-    <line class="ar-link" x1="${mx.toFixed(1)}" y1="${my.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${ty.toFixed(1)}"/>
+    ${sight}
     ${foes}
     <circle class="ar-aim" data-drag="aim" cx="${tx.toFixed(1)}" cy="${ty.toFixed(1)}" r="${(r * 0.7).toFixed(1)}"/>
     <circle class="ar-body ar-you" data-drag="player_at" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}"/>
@@ -2567,7 +2583,24 @@ function mountArena(host, s, en, opts) {
   // draggable exactly once (2026-08-15).
   host.addEventListener("click", (e) => {
     const b = e.target.closest && e.target.closest("button");
-    if (!b) return;
+    if (!b) {
+      // POINT AT A PLACE. Clicking bare floor aims there, which is the gesture
+      // the whole "aim is a direction" model is for (owner, 2026-08-17) — a
+      // body is dragged, but a PLACE has nothing to grab, so it is clicked.
+      // Bodies and the marker itself are dragged instead, so they are skipped.
+      const svg = e.target.closest && e.target.closest(".ar-svg");
+      if (!svg || (e.target.closest && e.target.closest("[data-drag]"))) return;
+      if (opts.readonly || officialScenarioActive()) return;
+      const box = svg.getBoundingClientRect();
+      if (!box.width || !box.height) return;
+      const g = arenaGeom(ARENA_VW, ARENA_VH, s.player_at, ...arenaBodies(s), arenaAim(s));
+      s.aim_at = g.m((e.clientX - box.left) * (ARENA_VW / box.width),
+                     (e.clientY - box.top) * (ARENA_VH / box.height));
+      paint();
+      markScenarioDirty();
+      if (opts.after) opts.after();
+      return;
+    }
     if (opts.readonly || officialScenarioActive()) return;
     if (b.dataset.jump !== undefined) setArenaDistance(s, Number(b.dataset.jump));
     else if (b.dataset.add) {
@@ -8491,7 +8524,7 @@ function renderScenarioFields(ids, opts = {}) {
   if (ids.technique) {
     $(ids.technique).innerHTML = `
       ${aimField(w, sim)}
-      <label title="${escHtml(tr("a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>
+      <label title="${escHtml(tr("a per-PELLET aim weight on the body the shot STRUCK, not a whole-spread promise — the landing spot is rolled for each pellet, and nothing a blast or a chain reaches can be a headshot"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>
       <label class="check" title="${escHtml(tr("the wielder's state: mods that only pay while Invisible (Spectral Serration) grant nothing when this is off"))}"><input type="checkbox" data-k="invisible"${sim.invisible ? " checked" : ""}> ${escHtml(tr("Invisible"))}</label>
       <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"while Airborne\""))}"><input type="checkbox" data-k="airborne"${sim.airborne ? " checked" : ""}> ${escHtml(tr("Airborne"))}</label>
       <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"With Overshields\". Nothing here takes them away, so it is a declaration"))}"><input type="checkbox" data-k="overshields"${sim.overshields ? " checked" : ""}> ${escHtml(tr("Overshields"))}</label>
