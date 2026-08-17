@@ -4887,51 +4887,51 @@ fn spread_from_seeds(
     r: &mut RunResult,
     d: &mut crate::rng::Draws,
     t: f64,
+    layout: Option<&crate::chain::Layout>,
     multishot_half: bool,
     // EVERY BODY THE BEAM STRUCK, in ray order — one of them ordinarily, more
     // with punch through, and EMPTY when it struck the floor. It decides who
     // may headshot and who carries multishot, and nothing else.
     struck: &[usize],
 ) {
-    // THE FORMATION AS THE CHAIN SEES IT: the aimed body first, so index 0 is
-    // the one the beam is on and 1.. line up with `others`.
-    let mut bodies = Vec::with_capacity(others.len() + 1);
-    bodies.push(params.target_at);
-    bodies.extend(params.others.iter().map(|f| f.at));
     let spec = crate::chain::Spec {
         hops: beam.chain_hops,
         range_m: beam.chain_range_m,
         falloff: beam.chain_damage_per_hop,
         compounds: beam.chain_compounds,
     };
-    let landed = crate::chain::resolve(
-        &bodies,
-        // THE BEAM IS ON BODY 0 when it struck one, and on everything behind it
-        // that its punch-through reached. A shot that found only floor passes
-        // an EMPTY list, and then every seed is an ordinary one: no headshot,
-        // no multishot.
-        struck,
-        // WHERE THE ROUND WENT OFF: the aimed body's surface facing the
-        // shooter, not its centre (`space::detonation_point`, owner
-        // 2026-08-17). A blast half a body deeper into the formation than it
-        // goes would seed the wrong bodies.
-        crate::chain::Splash {
-            at: match (struck.first(), params.aim_at) {
-                // ON THE FIRST BODY IT STRUCK, at its surface facing the
-                // shooter — the impact is where the round STOPS being in the
-                // air, which punch-through does not move.
-                (Some(_), _) => {
-                    crate::space::detonation_point(params.target_at, params.player_at)
-                }
-                // …OR ON THE FLOOR IT WAS POINTED AT. A beam that crossed
-                // nobody still lands, and the sphere still goes off.
-                (None, Some(a)) => a,
-                (None, None) => params.target_at,
-            },
-            radius_m: beam.damage_radius_m,
-        },
-        spec,
-    );
+    // FROM THE PRECOMPUTED LAYOUT. Nothing in this arena moves, so which body
+    // the sphere catches and which body is nearest to which are constants —
+    // asked once per engagement instead of once per landing pellet. On a 19x19
+    // grid the scan was ~11,000 distance computations a pellet to reach the
+    // same thirteen bodies a 7x7 reaches. `resolve_in` answers instance for
+    // instance what `resolve` does (`a_layout_answers_exactly_what_the_scan_does`),
+    // which is what makes this an optimisation rather than a model change.
+    let landed = match layout {
+        Some(layout) => crate::chain::resolve_in(layout, params.others.len() + 1, struck, spec),
+        // No layout means no formation — the one-body fight, where the chain
+        // has nowhere to go and the old path is as cheap as anything.
+        None => {
+            let mut bodies = Vec::with_capacity(others.len() + 1);
+            bodies.push(params.target_at);
+            bodies.extend(params.others.iter().map(|f| f.at));
+            crate::chain::resolve(
+                &bodies,
+                struck,
+                crate::chain::Splash {
+                    at: match (struck.first(), params.aim_at) {
+                        (Some(_), _) => {
+                            crate::space::detonation_point(params.target_at, params.player_at)
+                        }
+                        (None, Some(a)) => a,
+                        (None, None) => params.target_at,
+                    },
+                    radius_m: beam.damage_radius_m,
+                },
+                spec,
+            )
+        }
+    };
     for inst in landed.iter().filter(|i| i.multishot == multishot_half && i.target != 0) {
         let idx = inst.target - 1;
         let (foe, fs) = (&mut others[idx], &params.others[idx]);
@@ -6390,6 +6390,40 @@ pub fn run_once_traced(
     // every fight and showed up as a 35% slowdown in `one_fight` with no answer
     // changed (2026-08-17). Nothing about it can differ between two pellets.
     let aim_off_axis = params.off_axis_deg();
+    // THE CHAIN'S STATIC HALF (`chain::Layout`). Nothing in this arena moves,
+    // so which body the sphere catches and which body is nearest to which are
+    // constants — asked once here instead of once per landing pellet, which on
+    // a 19x19 grid was ~11,000 distance computations a pellet to reach the same
+    // thirteen bodies a 7x7 reaches.
+    //
+    // PER RUN RATHER THAN PER ENGAGEMENT, deliberately. It was a field on
+    // `DummyParams` for an hour and a test caught the trap immediately: widen
+    // `beam.damage_radius_m` after the params are built and the cached layout
+    // is silently stale, which is the two-declarations bug wearing a cache. It
+    // is O(N^2) once — 130k distance computations for a 19x19, ~0.13 s over the
+    // rulers' 1000 runs against the 188 s it removes — so there is nothing to
+    // buy by holding it longer and a correctness trap to pay for.
+    let chain_layout = match (params.beam, params.others.is_empty()) {
+        (Some(b), false) => {
+            let mut bodies = Vec::with_capacity(params.others.len() + 1);
+            bodies.push(params.target_at);
+            bodies.extend(params.others.iter().map(|f| f.at));
+            // THE SPLASH CENTRE IS STATIC TOO: the round goes off on the aimed
+            // body's surface facing the shooter, and neither of them moves.
+            let at = crate::space::detonation_point(params.target_at, params.player_at);
+            Some(crate::chain::Layout::build(
+                &bodies,
+                crate::chain::Splash { at, radius_m: b.damage_radius_m },
+                crate::chain::Spec {
+                    hops: b.chain_hops,
+                    range_m: b.chain_range_m,
+                    falloff: b.chain_damage_per_hop,
+                    compounds: b.chain_compounds,
+                },
+            ))
+        }
+        _ => None,
+    };
     // …AND WHO IS ON THE LINE, for the same reason: nobody moves, so the bodies
     // a shot passes through are the same for every pellet of every shot.
     let struck = params.struck_bodies();
@@ -8512,8 +8546,8 @@ pub fn run_once_traced(
                         spread_from_seeds(
                             &mut others, params, ap, beam, body_only(raw / bucket), shares,
                             crit_mult, attrition, modded_base, status_chance,
-                            forced, &qvec, &mut gal, &mut arc, &mut r, d, t, true,
-                            &struck,
+                            forced, &qvec, &mut gal, &mut arc, &mut r, d, t,
+                            chain_layout.as_ref(), true, &struck,
                         );
                     }
                 }
@@ -9064,7 +9098,8 @@ pub fn run_once_traced(
             spread_from_seeds(
                 &mut others, params, ap, beam, s.raw_per_bucket, s.shares,
                 s.crit_mult, s.attrition, s.modded_base, s.status_chance,
-                &s.forced, &s.vector, &mut gal, &mut arc, &mut r, d, t, false,
+                &s.forced, &s.vector, &mut gal, &mut arc, &mut r, d, t,
+                chain_layout.as_ref(), false,
                 // THE SAME STRUCK LIST the per-pellet half used — this pass
                 // fires the seeds the RADIUS caught, and it tells them apart by
                 // filtering on `multishot`, so it has to agree with that half

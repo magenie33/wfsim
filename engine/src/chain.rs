@@ -146,6 +146,101 @@ pub struct Splash {
 ///
 /// [`resolve_with`] takes the tie-break as an argument, which is what the
 /// invariance test uses; nothing in production should.
+/// THE PART OF A CHAIN THAT NEVER CHANGES, computed once per engagement.
+///
+/// Nothing in this arena moves: the shooter stands still, the formation stands
+/// still, and a body that dies RESPAWNS where it was. So both of the O(N) scans
+/// inside [`resolve`] are asking a constant question thousands of times a run —
+/// which body the sphere catches, and which body is nearest to this one.
+///
+/// That is the whole cost of a big formation. A chain resolves once per landing
+/// pellet, and the scan is `seeds x hops x N`: on a 19x19 grid that is ~11,000
+/// distance computations a pellet, ~31 billion over the rulers' 1000 runs, to
+/// reach the same THIRTEEN bodies a 7x7 reaches (docs/BOARD.md). Precomputing
+/// makes the grid's size almost free — a hop becomes "the first unvisited entry
+/// in a list that is already in order".
+///
+/// THE ANSWER IS IDENTICAL, not approximate, and that is what makes this an
+/// optimisation rather than a model change: `near` is sorted by (distance,
+/// index), which is exactly the order the scan's "nearest, ties to the lowest
+/// index" rule produces, and it is truncated at the chain's range because a hop
+/// beyond it was never a candidate. `a_layout_answers_exactly_what_the_scan_does`
+/// asserts it over every seed of a grid.
+#[derive(Debug, Clone)]
+pub struct Layout {
+    /// Bodies the splash catches — the seed set, minus whatever was struck
+    /// directly (which the caller supplies per shot).
+    caught: Vec<u32>,
+    /// Per body, every body within the chain's range, NEAREST FIRST and ties by
+    /// index. A hop reads this and takes the first one it has not visited.
+    near: Vec<Vec<u32>>,
+}
+
+impl Layout {
+    /// Build it for one arrangement. O(N^2) once, against O(N) per pellet.
+    pub fn build(bodies: &[Vec2], splash: Splash, spec: Spec) -> Self {
+        let caught = (0..bodies.len())
+            .filter(|&i| crate::space::caught_by_blast(bodies[i].distance(splash.at), splash.radius_m))
+            .map(|i| i as u32)
+            .collect();
+        let near = bodies
+            .iter()
+            .map(|b| {
+                let mut v: Vec<(f64, u32)> = bodies
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(j, o)| {
+                        let d = b.distance(*o);
+                        (d <= spec.range_m + 1e-9).then_some((d, j as u32))
+                    })
+                    .collect();
+                v.sort_by(|x, y| {
+                    x.0.partial_cmp(&y.0).unwrap_or(std::cmp::Ordering::Equal).then(x.1.cmp(&y.1))
+                });
+                v.into_iter().map(|(_, j)| j).collect()
+            })
+            .collect();
+        Self { caught, near }
+    }
+}
+
+/// [`resolve`], from a prebuilt [`Layout`] — the production path.
+pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Vec<Instance> {
+    let mut out = Vec::new();
+    if n == 0 {
+        return out;
+    }
+    let struck: Vec<usize> = struck.iter().copied().filter(|&i| i < n).collect();
+    let mut seeds: Vec<usize> = struck.clone();
+    seeds.extend(layout.caught.iter().map(|&i| i as usize).filter(|i| !struck.contains(i)));
+
+    let mut seen = vec![false; n];
+    for &s in &seeds {
+        let direct = struck.contains(&s);
+        out.push(Instance { target: s, share: 1.0, multishot: direct, headshot: direct });
+
+        // ONE `seen` PER SEED — the paths are independent, which is the wiki's
+        // own rule and the owner's. Cleared rather than reallocated: this runs
+        // once per landing pellet.
+        seen.iter_mut().for_each(|x| *x = false);
+        seen[s] = true;
+        let (mut cur, mut share) = (s, 1.0);
+        for _ in 0..spec.hops {
+            // NEAREST FIRST, so the first unvisited entry IS the answer the
+            // scan computes. `near` excludes `cur` itself only by `seen`.
+            let Some(&next) = layout.near[cur].iter().find(|&&j| !seen[j as usize]) else {
+                break;
+            };
+            let next = next as usize;
+            share = if spec.compounds { share * spec.falloff } else { spec.falloff };
+            out.push(Instance { target: next, share, multishot: direct, headshot: false });
+            seen[next] = true;
+            cur = next;
+        }
+    }
+    out
+}
+
 pub fn resolve(bodies: &[Vec2], struck: &[usize], splash: Splash, spec: Spec) -> Vec<Instance> {
     resolve_with(bodies, struck, splash, spec, &mut |_| 0)
 }
@@ -252,6 +347,45 @@ pub fn resolve_with(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// THE PRECOMPUTED PATH ANSWERS EXACTLY WHAT THE SCAN DOES.
+    ///
+    /// `Layout` exists to make a big formation affordable, and an optimisation
+    /// that changes a number is a bug (the same rule `one_fight` enforces for
+    /// the engine at large). So this asserts INSTANCE FOR INSTANCE — target,
+    /// share, multishot and headshot — over every seed of a grid, at three
+    /// spacings and for both chain shapes, compounding and flat.
+    ///
+    /// The equivalence is not a coincidence to be checked once: `near` is
+    /// sorted by (distance, index), which is precisely "nearest, ties to the
+    /// lowest index", and truncated at the chain's range, where a hop was never
+    /// a candidate anyway.
+    #[test]
+    fn a_layout_answers_exactly_what_the_scan_does() {
+        let nukor = Spec { hops: 2, range_m: 9.0, falloff: 0.5, compounds: false };
+        for spacing in [1.5_f64, 2.0, 3.0] {
+            let bodies = grid(spacing);
+            for radius in [0.0_f64, 2.3, 5.0] {
+                for spec in [TORID, nukor] {
+                    for struck in [vec![], vec![FRONT_MIDDLE], vec![0usize, 4], vec![0, 1, 2]] {
+                        let at = bodies[FRONT_MIDDLE];
+                        let splash = Splash { at, radius_m: radius };
+                        let slow = resolve(&bodies, &struck, splash, spec);
+                        let layout = Layout::build(&bodies, splash, spec);
+                        let fast = resolve_in(&layout, bodies.len(), &struck, spec);
+                        assert_eq!(slow.len(), fast.len(),
+                            "spacing {spacing}, radius {radius}, struck {struck:?}");
+                        for (a, b) in slow.iter().zip(fast.iter()) {
+                            assert_eq!(a.target, b.target, "spacing {spacing} radius {radius}");
+                            assert!((a.share - b.share).abs() < 1e-12);
+                            assert_eq!(a.multishot, b.multishot);
+                            assert_eq!(a.headshot, b.headshot);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     /// The Torid Incarnon's own constants, which are the ones every number in
     /// docs/MECHANICS.md §12 was computed against.

@@ -406,7 +406,40 @@ Measured across four weapons, one per mechanism, 180 s, per 1000 runs:
 | 17x17 | 289 | **13** · 160.5 s | 75 · 2.7 s | **110** · 3.6 s | 17 · 6.4 s |
 | 19x19 | 361 | **13** · 188.1 s | 77 · 2.8 s | **110** · 3.7 s | 19 · 7.0 s |
 
-Three different saturation points, and the surprise is which one is expensive:
+### …and then the size was made free (2026-08-17)
+
+The table above is what a chain cost BEFORE `chain::Layout`. Nothing in this
+arena moves — the shooter stands still, the formation stands still, and a body
+that dies respawns where it was — so both of the O(N) scans inside `resolve`
+were asking a constant question once per landing pellet: which body the sphere
+catches, and which body is nearest to this one. Precomputed once per run
+(O(N^2), ~0.13 s over 1000 runs on a 19x19), a hop becomes "the first unvisited
+entry in a list that is already in order".
+
+| grid | placed | touched | before | after |
+|---|---|---|---|---|
+| 7x7 | 49 | 13 | 34.8 s | **19.0 s** |
+| 13x13 | 169 | 13 | 116.4 s | **19.7 s** |
+| 17x17 | 289 | 13 | 160.5 s | **19.9 s** |
+| 19x19 | 361 | 13 | 188.1 s | **20.4 s** |
+
+**A 19x19 now costs what a 7x7 costs** — 20.4 s against 19.0 — so the grid's
+size stopped being an argument at all. The answer is identical, not
+approximate: `near` is sorted by (distance, index), which is exactly the scan's
+"nearest, ties to the lowest index", and
+`chain::tests::a_layout_answers_exactly_what_the_scan_does` asserts it instance
+for instance over every seed of a grid, at three spacings, for both chain
+shapes.
+
+It is built PER RUN rather than held on `DummyParams`, and that is deliberate: it
+was a field for an hour and a test caught the trap at once — widen
+`beam.damage_radius_m` after the params are built and the cached layout is
+silently stale, which is the two-declarations bug wearing a cache.
+
+The other three mechanisms at 19x19 were never the cost and are unchanged:
+Morgha alt 110 bodies for 3.8 s, Grattler 77 for 2.9 s, Phantasma 19 for 7.1 s.
+
+Three different saturation points, and the surprise is which one WAS expensive:
 
 - **A CHAIN saturates first and costs the most.** 13 bodies from 7x7 onward, and
   the price of not stopping there is 160 s against 35 s for the same thirteen.
