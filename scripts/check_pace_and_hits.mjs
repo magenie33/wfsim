@@ -43,8 +43,13 @@ const r = await evaluate(`(async () => {
   let shot = null;
   const real = window.api;
   window.api = async (p, b) => { const res = await real(p, b); if (p === '/api/simulate') shot = res; return res; };
+  // …AND THE FLEET, which is what Run Sim uses since 2026-08-18: a sharded
+  // simulation never touches api, so this came back with nothing at all.
+  const realFleet = window.simulateFleet;
+  window.simulateFleet = async (b, onp) => { const res = await realFleet(b, onp); shot = res; return res; };
   await runSim();
   window.api = real;
+  window.simulateFleet = realFleet;
   for (let i = 0; i < 60 && !shot; i++) await sleep(400);
   if (!shot) return { ok: false };
 

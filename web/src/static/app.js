@@ -322,9 +322,14 @@ function ensureRpcWorker() {
 /// setting of its own — a simulation is not a search and has no preset to put
 /// one in; it takes what the machine has.
 let simFleet = null;
+/// HOW MANY LANES THIS MACHINE GETS, stated once: every core but one, capped at
+/// eight. The quick calc's pool reads the same rule, and the caller asks for the
+/// NUMBER before deciding whether it wants the workers.
+const fleetSize = () =>
+  Math.max(1, Math.min((Number(navigator.hardwareConcurrency) || 4) - 1, 8));
 const simLanes = () => {
   if (simFleet) return simFleet;
-  const n = Math.max(1, Math.min((Number(navigator.hardwareConcurrency) || 4) - 1, 8));
+  const n = fleetSize();
   simFleet = Array.from({ length: n }, () => {
     const w = new Worker("/worker.js");
     const pending = new Map();
@@ -339,6 +344,7 @@ const simLanes = () => {
       const r = pending.get(e.data.id);
       if (r) { pending.delete(e.data.id); progress.delete(e.data.id); r(e.data.payload); }
     };
+    let dead = false;
     return {
       worker: w,
       // NOBODY IS COMING BACK once the worker is terminated, so a cancel has to
@@ -347,11 +353,19 @@ const simLanes = () => {
       // for ever — which is a worse hang than the one the stop button exists to
       // end (2026-08-18).
       abandon: () => {
+        dead = true;
         pending.forEach((res) => res({ ok: false, cancelled: true }));
         pending.clear();
         progress.clear();
       },
+      // …AND A LANE STAYS DEAD, which settles the waiters a cancel could not
+      // see because they did not exist yet. A simulation is TWO round trips —
+      // the shards, then the merge — and a stop pressed in the gap between them
+      // settled every shard and then posted the merge to a terminated worker,
+      // whose answer never comes. Same hang, one instruction later
+      // (2026-08-18).
       send: (msg, onProgress) => new Promise((res) => {
+        if (dead) { res({ ok: false, cancelled: true }); return; }
         const id = ++seq;
         pending.set(id, res);
         if (onProgress) progress.set(id, onProgress);
@@ -373,11 +387,23 @@ const simLanes = () => {
 /// (a worker each, a shard each on the wire) and it is not worth paying to
 /// halve a fight that takes a millisecond.
 async function simulateFleet(body, onProgress) {
-  const lanes = simLanes();
+  // ONLY IN THE WASM BUILD, which is the same guard the quick calc's lanes
+  // carry and for the same reason: `/worker.js` is generated into `site/` and
+  // the native dev server has never served it. Without this, a simulation there
+  // built a fleet of workers that 404 and then waited for answers that could
+  // not come — the Run button locked, on the one server the owner develops
+  // against and no check script uses (2026-08-18). On native there is nothing
+  // to gain either: `api` is a fetch and the fetches already parallelise.
+  if (!WASM) return api("/api/simulate", body, onProgress);
   const runs = Math.max(1, Number(body.runs) || 1);
-  if (lanes.length < 2 || runs < lanes.length * 2) {
+  // THE SIZE IS DECIDED BEFORE THE WORKERS EXIST, so a simulation that falls
+  // back does not pay for a fleet it will not use — a quick calc's ten runs
+  // would otherwise spawn eight workers to answer on one.
+  const n = fleetSize();
+  if (n < 2 || runs < n * 2) {
     return api("/api/simulate", body, onProgress);
   }
+  const lanes = simLanes();
   // EVERY RUN COVERED EXACTLY ONCE, remainder to the first lanes. A gap or an
   // overlap is not a slow answer, it is a wrong one.
   const done = new Array(lanes.length).fill(0);
@@ -5539,7 +5565,19 @@ async function loadBoard() {
 /// one has a published figure sitting next to it.
 const builtinBuilds = () => {
   const w = weaponInfo($("weapon").value) || {};
-  const rows = BOARD[w.id] || [];
+  // IN THE RULERS' OWN ORDER, which puts the PRIMARY one first — the same
+  // declaration the board page and the scenario bar read (`Benchmark::primary`).
+  //
+  // It was board.json's order, which is the scorer's, and that was
+  // indistinguishable from "the primary ruler first" until a second ruler took
+  // rows: a cold load then restored a GROUP-CLEAR build under a weapon page,
+  // which is not the row a first-time reader is looking at (2026-08-18).
+  const order = (id) => {
+    const i = benchList().findIndex((b) => b.id === id);
+    return i < 0 ? 99 : i;
+  };
+  const rows = (BOARD[w.id] || []).slice()
+    .sort((a, b) => order(a.benchmark) - order(b.benchmark));
   const many = ((w.modes || []).length > 1);
   const rank = {};
   return rows.map((row) => {
@@ -6738,7 +6776,8 @@ function closePopovers(keep) {
 // behaviour this component does not have. Loud here is cheap — the roster sweep
 // loads every weapon on every tab in both languages, and the check scripts do
 // the rest — while silent here costs a shipped feature nobody can see missing.
-const DD_CFG_KEYS = ["value", "items", "dataK", "title", "placeholder", "onPick", "search"];
+const DD_CFG_KEYS = ["value", "items", "dataK", "title", "placeholder", "onPick", "search",
+  "data", "disabled"];
 const DD_ITEM_KEYS = ["value", "label", "hint", "disabled", "group"];
 
 function ddCheck(id, cfg) {
@@ -6760,8 +6799,18 @@ function ddButton(id, cfg) {
   // listens for `change` — keeps working unchanged across the swap. That is
   // also what keeps `el.disabled = true` meaningful on the optimizer tab,
   // where the whole fight is drawn read-only.
+  // `data:` is the general form of `dataK` — a caller whose binding reads some
+  // OTHER attribute (the ability element list reads `data-wfel`) declares it
+  // here rather than rewriting the markup afterwards, which is what the first
+  // swap did and is how a component grows a caller that escapes its own values
+  // (2026-08-18). `disabled` is the same argument: the read-only optimizer tab
+  // sets it on the ELEMENT, and a control that is born disabled had no way to
+  // say so.
+  const data = Object.entries(cfg.data || {})
+    .map(([k, v]) => ` data-${k}="${escHtml(String(v))}"`).join("");
   return `<button type="button" class="dd" id="${id}" data-dd="${id}" value="${
     escHtml(String(cfg.value ?? ""))}"${cfg.dataK ? ` data-k="${escHtml(cfg.dataK)}"` : ""}${
+    data}${cfg.disabled ? " disabled" : ""}${
     cfg.title ? ` title="${escHtml(cfg.title)}"` : ""}><span class="dd-v">${
     escHtml(cur ? cur.label : (cfg.placeholder || "—"))}</span><span class="dd-c">▾</span></button>`;
 }
@@ -6822,10 +6871,19 @@ function ddRender(id, query) {
       // is not necessarily the one being used. The anchor is never ambiguous.
       const btn = $("dd-popover")._anchor;
       if (btn) btn.value = el.dataset.v;
-      // A `data-k` dropdown belongs to the scenario's generic binding, so it
-      // announces itself the way that binding expects rather than carrying a
-      // second, private path to the same state.
-      if (cfg.dataK && btn) btn.dispatchEvent(new Event("change", { bubbles: true }));
+      // IT ANNOUNCES ITSELF, ALWAYS — the same event a native `<select>` fires,
+      // which is what every binding this component replaced was written against.
+      //
+      // It was `if (cfg.dataK)`, on the reasoning that the scenario's generic
+      // binding was the only listener. It was not: the ability element list
+      // binds `change` on `[data-wfel]`, so converting that select produced a
+      // control that opened, closed, showed the picked element on its face and
+      // changed nothing (2026-08-18). A component that reflects `value` but
+      // withholds the event is one every future caller has to be told about.
+      //
+      // Every listener on this page is bound per element by attribute, so a
+      // bubbling `change` from a dropdown nobody listens to reaches nothing.
+      if (btn) btn.dispatchEvent(new Event("change", { bubbles: true }));
       if (cfg.onPick) cfg.onPick(el.dataset.v);
     };
   });
@@ -7209,10 +7267,10 @@ const GAIN_REFINE_TOP = 12;
 let gainPool = null;
 function gainLanes() {
   if (gainPool) return gainPool;
-  // Same rule as the optimizer's auto: every core but one, capped at 8. No
-  // setting of its own — the quick calc is not a search and has no preset to
-  // put one in; it takes what the machine has.
-  const n = Math.max(1, Math.min((Number(navigator.hardwareConcurrency) || 4) - 1, 8));
+  // Same rule as the optimizer's auto and the sim fleet's: every core but one,
+  // capped at 8. No setting of its own — the quick calc is not a search and has
+  // no preset to put one in; it takes what the machine has.
+  const n = fleetSize();
   if (!WASM) {
     gainPool = Array.from({ length: n }, () => ({ call: (p, b) => api(p, b) }));
     return gainPool;
@@ -8857,10 +8915,17 @@ function renderScenarioFields(ids, opts = {}) {
       <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"With Overshields\". Nothing here takes them away, so it is a declaration"))}"><input type="checkbox" data-k="overshields"${sim.overshields ? " checked" : ""}> ${escHtml(tr("Overshields"))}</label>
       <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"With Channeled Ability active\". The ability must DRAIN ENERGY over time — Desecrate, Haven and an empty Gloom do not count"))}"><input type="checkbox" data-k="channeling"${sim.channeling ? " checked" : ""}> ${escHtml(tr("Channeled ability"))}</label>
       <label class="check" title="${escHtml(tr("the LOADOUT, not what the wielder is doing: off means a full one, which is what the board is scored under. On, this weapon is the only one carried — the Vasto's Lone Gun pays its \"With No Primary Equipped\" half, and every \"On Equip from Primary\" or \"while Holstered\" clause becomes impossible rather than merely unmodelled"))}"><input type="checkbox" data-k="solo_weapon"${sim.solo_weapon ? " checked" : ""}> ${escHtml(tr("Only this weapon"))}</label>
-      <label title="${escHtml(tr("picking a frame fills armor, max energy and sprint speed below — the roster is UNMODDED, so a built frame carries more and the numbers stay editable"))}">${escHtml(tr("Warframe"))} <select data-k="frame">
-        <option value=""${sim.frame ? "" : " selected"}>${escHtml(tr("none — no frame"))}</option>
-        ${frames().map((f) => `<option value="${escHtml(f.id)}"${f.id === sim.frame ? " selected" : ""}>${escHtml(f.name)}</option>`).join("")}
-      </select></label>
+      <label title="${escHtml(tr("picking a frame fills armor, max energy and sprint speed below — the roster is UNMODDED, so a built frame carries more and the numbers stay editable"))}">${escHtml(tr("Warframe"))} ${ddButton("sim-frame", {
+        value: sim.frame || "",
+        dataK: "frame",
+        // A ROSTER GROWS, so it is searched — the same rule the scenario list
+        // follows. It was the last native `select` in the fight panel; a
+        // dropdown that looks like the platform's rather than like the page's
+        // is a control a reader has to learn twice (2026-08-18).
+        search: true,
+        items: [{ value: "", label: tr("none — no frame") }]
+          .concat(frames().map((f) => ({ value: f.id, label: f.name }))),
+      })}</label>
       <label title="${escHtml(tr("your Warframe's armor, buffs included — Primary Bulwark pays +1% damage per point past 1,000. 0 = no frame"))}">${escHtml(tr("WF Armor"))} <input type="number" data-k="wf_armor" min="0" max="100000" step="1" value="${sim.wf_armor || 0}"></label>
       <label title="${escHtml(tr("your Warframe's MAX energy — Primary Overcharge turns 35% of it into multishot. 0 = no frame"))}">${escHtml(tr("WF Energy"))} <input type="number" data-k="wf_energy" min="0" max="100000" step="1" value="${sim.wf_energy || 0}"></label>
       <label title="${escHtml(tr("your Warframe's sprint speed — several Incarnon perks pay only at 1.2 or higher, and the slowest frame is 0.9"))}">${escHtml(tr("WF Sprint"))} <input type="number" data-k="wf_sprint" min="0" max="3" step="0.05" value="${sim.wf_sprint ?? 0.9}"></label>`;
@@ -9342,10 +9407,15 @@ function renderWfBuffs(host, readonly) {
             a choice this follows without being told. */ ""}
       ${(a.elements || []).length
         ? `<label class="wfb-el" title="${escHtml(tr("this ability lets you pick the element — the gear wheel in game"))}">${
-            escHtml(tr("element"))} <select data-wfel="${escHtml(a.id)}"${(!on || readonly) ? " disabled" : ""}>${
-            a.elements.map((e) => `<option value="${escHtml(e)}"${
-              e === wfElement(a) ? " selected" : ""}>${escHtml(wfElementName(e))}</option>`).join("")
-          }</select></label>`
+            escHtml(tr("element"))} ${ddButton(`wfel-${a.id}`, {
+            value: wfElement(a),
+            items: a.elements.map((e) => ({ value: e, label: wfElementName(e) })),
+            // THE SAME HANDLER, because `ddButton` reflects `value` on the
+            // button and fires `change` — which is what let every other native
+            // select on this page be swapped without touching its wiring.
+            data: { wfel: a.id },
+            disabled: !on || readonly,
+          })}</label>`
         : ""}
       <div class="wfb-e">${escHtml(wfEffectLine(a))}</div>
       ${/* WHAT IT DOES NOT DO, in the same chips a mod and an arcane card use —
@@ -10218,7 +10288,11 @@ async function resultForShare() {
   // `custom_enemies` — so the claim on a share card for a fight against a
   // target you made was measured against a target the server had never heard
   // of.
-  const r = await api("/api/simulate", { ...buildPayload(), ...theFight() });
+  // THROUGH THE FLEET, like Run Sim: it is the same fight at the same run
+  // count, and on a crowd the difference is a minute against a quarter of one.
+  // A share card that takes a minute to appear is a share card nobody waits
+  // for (2026-08-18).
+  const r = await simulateFleet({ ...buildPayload(), ...theFight() });
   if (!r || r.ok === false) return null;
   saveSimResult(r);
   renderStoredSimResult();
@@ -12379,8 +12453,11 @@ async function verifyOptRows(r) {
       if (mark) { mark.className = "opt-repro stale"; mark.textContent = ""; mark.title = tr("this ranking predates the simulator re-run"); }
       continue;
     }
+    // …ALSO THROUGH THE FLEET. Every ranked row is re-simulated, so on a crowd
+    // ruler this is the finalist count TIMES a full simulation — the one place
+    // on the page where the fleet is worth the most.
     let s = null;
-    try { s = await postJson("/api/simulate", res.replay); } catch (_) { s = null; }
+    try { s = await simulateFleet(res.replay); } catch (_) { s = null; }
     if (token !== optVerifyToken) return;
     if (!s || s.ok === false || s.score_mean == null) {
       if (mark) { mark.className = "opt-repro failed"; mark.textContent = "!"; mark.title = tr("the simulator refused this build — see the build's own card"); }

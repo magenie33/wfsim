@@ -131,9 +131,24 @@ for (const lang of ["en", "zh"]) {
     out.selectable = (META.abilities || []).filter(a => (a.elements || []).length).map(a => a.id);
     out.noPickerWhenFixed = !cards()[idxOf('xatas_whisper')].querySelector('[data-wfel]');
     await tick('resupply', true);
-    out.pickerOptions = sel() ? [...sel().options].length : 0;
     out.pickedDefault = (sim.abilities.find(a => a.id === 'resupply') || {}).element;
-    sel().value = 'corrosive'; sel().dispatchEvent(new Event('change')); await sleep(400);
+    // BY CLICKING IT, which is the only path a player has.
+    //
+    // It used to set .value and dispatch a change event by hand, which is the
+    // BINDING's half and skips the control's. That made it blind to the way
+    // this picker actually broke: converted from a native select to the page's
+    // own dropdown, it opened, listed the elements, showed the picked one on
+    // its face — and dispatched nothing, because the component announced itself
+    // only for a data-k caller (2026-08-18). A check that drives the binding
+    // directly passes on a control that is wired to nothing.
+    const pop = () => document.getElementById('dd-popover');
+    sel().click(); await sleep(300);
+    out.pickerOptions = pop() && !pop().hidden
+      ? [...pop().querySelectorAll('.opt')].length : 0;
+    const row = pop() ? [...pop().querySelectorAll('.opt')]
+      .find(o => o.dataset.v === 'corrosive') : null;
+    if (row) row.click();
+    await sleep(400);
     out.pickedAfter = (sim.abilities.find(a => a.id === 'resupply') || {}).element;
     out.valueLine = (cards()[idxOf('resupply')].querySelector('.wfb-v') || {}).textContent || '';
     await tick('resupply', false);

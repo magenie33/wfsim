@@ -437,7 +437,10 @@ const qc = await evaluate(`(async () => {
     await s(700);
     const g = gainScenario();
     out[id] = { active: activeScenario, name: g.name,
-                headshot: g.scenario.headshot_pct, aiming: g.scenario.aiming };
+                headshot: g.scenario.headshot_pct, aiming: g.scenario.aiming,
+                // THE WHOLE FIGHT, so "these are different" holds no list of
+                // fields — see below.
+                fight: JSON.stringify(g.scenario) };
   }
   return out;
 })()`);
@@ -445,13 +448,27 @@ for (const id of qc.ids || []) {
   check(`the quick calc measures under ${id}`, qc[id].active === id,
     JSON.stringify(qc[id]));
 }
-// The two rulers differ in the terms that matter, so "it followed" is a claim
-// with teeth rather than two readings of one fight.
-if ((qc.ids || []).length > 1) {
-  const [a, b] = qc.ids;
-  check("...and the two rulers really are different fights",
-    qc[a].headshot !== qc[b].headshot || qc[a].aiming !== qc[b].aiming,
-    `${JSON.stringify(qc[a])} vs ${JSON.stringify(qc[b])}`);
+// EVERY RULER IS A DIFFERENT FIGHT, pairwise, so "it followed" is a claim with
+// teeth rather than N readings of one fight.
+//
+// It compared headshot_pct and aiming, which was the whole difference between
+// the two rulers that existed when it was written and stopped being one the day
+// a third arrived: group_clear differs from single_target by its FORMATION —
+// 361 bodies against one — and matches it on both of the fields this named, so
+// the check failed for a ruler that is as distinct as a ruler can be
+// (2026-08-18). The expected value is now the fight ITSELF, which is the same
+// rule check_one_fight rests on: a check about "the fight" that holds a list of
+// the fight's fields goes stale the next time the fight gains one.
+{
+  const ids = qc.ids || [];
+  const same = [];
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      if (qc[ids[i]].fight === qc[ids[j]].fight) same.push(`${ids[i]} == ${ids[j]}`);
+    }
+  }
+  check(`...and all ${ids.length} rulers really are different fights`,
+    ids.length > 1 && same.length === 0, same.join(" | "));
 }
 
 await app.finish("the official benchmark is the fight, and it is locked");

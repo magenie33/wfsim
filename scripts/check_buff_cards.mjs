@@ -131,6 +131,16 @@ const r = await evaluate(`(async () => {
     if (path === '/api/simulate') shot = res;
     return res;
   };
+  // …AND OFF THE FLEET, which is what Run Sim uses now: a sharded simulation
+  // never touches api at all, so an interception of it alone came back null
+  // and this file's whole point — that a card MOVES THE NUMBER — went untested
+  // (2026-08-18).
+  const realFleet = window.simulateFleet;
+  window.simulateFleet = async (body, onProgress) => {
+    const res = await realFleet(body, onProgress);
+    shot = res;
+    return res;
+  };
   const runDps = async () => {
     shot = null;
     document.getElementById('run-sim').click();

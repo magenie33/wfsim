@@ -91,8 +91,18 @@ const r = await evaluate(`(async () => {
   // could decide how the weapon is fired could only ever measure whichever way
   // it happened to pin.
   await go('/weapons/Dual_Toxocyst/simulator');
-  out.fightOffersForm = !!document.querySelector('#sim-technique [data-k="form"]')
-    || !!document.querySelector('#sim-technique [data-dd]');
+  // A CONTROL THAT BINDS THE FORM, in either shape — a native field or one of
+  // the page's own dropdowns, both of which carry data-k.
+  //
+  // It used to be "any dropdown in this block at all", which was a PROXY for
+  // "a form control" and held only while this block had no dropdowns of its
+  // own. The Warframe picker became a dropdown on 2026-08-18 and this check
+  // read it as a form. A proxy that names the wrong thing passes for months and
+  // then fails for a reason unrelated to what it is about (2026-08-18).
+  const formish = (el) => /form|mode/i.test(
+    (el.dataset.k || '') + ' ' + (el.dataset.dd || '') + ' ' + (el.id || ''));
+  out.fightOffersForm = [...document.querySelectorAll('#sim-technique [data-k], #sim-technique [data-dd]')]
+    .some(formish);
   // The scenario still says what it said: a build may report that an option is
   // unavailable to it, and may not move a selection the visitor owns.
   out.formKept = sim.form === 'incarnon_cycle';

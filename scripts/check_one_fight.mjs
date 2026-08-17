@@ -89,6 +89,15 @@ const r = await evaluate(`(async () => {
     if (p === '/api/optimize') return { ok: false, error: 'intercepted by check_one_fight' };
     return realApi(p, b);
   };
+  // THE FLEET IS A SIXTH WAY TO SEND THE FIGHT (2026-08-18), and this check
+  // exists to say they all send the same one — so it watches that path too.
+  // Run Sim and the share card both go through it now, and a sharded
+  // simulation never touches api at all.
+  const realFleet = window.simulateFleet;
+  window.simulateFleet = async (b, onp) => {
+    seen.push({ p: '/api/simulate', b });
+    return realFleet(b, onp);
+  };
   const take = () => { const n = seen.length; return () => seen.slice(n); };
 
   // ---- 1. THE SIMULATOR, which is the truth the other three obey ----------
@@ -143,6 +152,7 @@ const r = await evaluate(`(async () => {
   out.shareSent = mark()[0] ? mark()[0].b : null;
 
   window.api = realApi;
+  window.simulateFleet = realFleet;
   // Read the expectation AFTER the run too: nothing above may have edited the
   // fight, which is the other half of "the count is the scan's, not the
   // scenario's".
