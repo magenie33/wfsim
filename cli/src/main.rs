@@ -49,6 +49,8 @@ fn dual_toxocyst_baseline() -> DummyParams {
         combo_initial: 0,
         combo_held: false,
         tendril_max: 0,
+        tendril_range_m: 0.0,
+        tendril_acquire_deg: 0.0,
         cc_per_tendril: 0.0,
         sc_per_tendril: 0.0,
         tendrils_initial: 0,

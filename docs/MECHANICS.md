@@ -2778,17 +2778,29 @@ the single-target arena has always been. `formation::Formation::retarget` is the
 aim policy for the day respawn becomes a setting; it is written, tested, and
 called by nothing.
 
-### Three ways a shot reaches a body that is not the aimed one
+### Four ways a shot reaches a body that is not the aimed one
 
-They are three, not one, and a weapon may carry more than one of them. The Torid
-carries all three across its cycle, which is why it is the weapon this was built
-against.
+A weapon may carry more than one. The Torid carries three of them across its
+cycle, which is why it is the weapon this was built against.
 
-| mechanism | who it reaches | what decides the share |
+| mechanism | who it reaches | what it deals |
 | --- | --- | --- |
 | **the chain** | a path of up to `hops` bodies, one path per seed | `falloff^k` along the path |
 | **the explosion** | every body the sphere touches | that body's own falloff, at its nearest point |
-| **the lingering cloud** | every body standing in it, every tick | the same, and for as long as the cloud lasts |
+| **the lingering cloud** | every body standing in it, every tick | the same, for as long as the cloud lasts |
+| **tendrils** | one body each, nearest the RETICLE, inside a cone and a reach | a WHOLE instance — they are extra beams, not a spread |
+
+The fourth is the odd one and the Ocucor is its only member. A tendril is not a
+share of the shot: *"their base damage equals the primary beam's, and they roll
+their own crits and status"*. It is worth EXACTLY NOTHING against one body —
+*"tendrils homing in on the main beam's target are only cosmetic"* — so the
+weapon's file modelled the COUNT and refused the damage, correctly, for as long
+as the arena held one target. Four tendrils on four bodies are four more beams.
+
+`cargo run --release --bin spread_audit` lists every entry that reaches a
+formation and how: 56 of 224 today — 54 explosive, one beam, one with tendrils.
+The other 168 reach the body they hit and nothing else, which is not a gap: most
+guns are guns.
 
 All three read the same three blast rules, and all three hand ORDINARY damage
 instances to the ordinary pipeline — each body computing its own Condition

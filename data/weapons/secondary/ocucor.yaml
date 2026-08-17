@@ -74,6 +74,18 @@ co_behavior: additive_with_base_damage
 #  - their range is 20 m and Ruinous Extension extends it.
 tendrils:
   max: 4
+  # THE GEOMETRY, promoted from the prose above into fields the engine reads
+  # (2026-08-17). It was transcribed on the day the weapon landed and had
+  # nowhere to go while the arena held one body: with one target every tendril
+  # homes on it, and the wiki says those are cosmetic.
+  #
+  #   "their range is 20 m and Ruinous Extension extends it"
+  #   "they lock enemies within 40 degrees of the reticle and hold until 60"
+  #
+  # The HOLD angle is not a field because nobody moves here — a body inside the
+  # acquire cone stays inside it, so the two numbers cannot differ.
+  range_m: 20.0
+  acquire_deg: 40.0
   # WHAT CLEARS THEM. Both are magazine events, which is why this weapon wants
   # its magazine kept full — see Sentient Surge, whose on-kill refill exists to
   # postpone exactly this.

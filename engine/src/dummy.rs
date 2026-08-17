@@ -1729,6 +1729,10 @@ pub struct DummyParams {
     /// modelled and should not be — see `weapons_data::TendrilSpec`; the COUNT
     /// is what Sentient Surge reads.
     pub tendril_max: u32,
+    /// How far a tendril reaches, and how far off the reticle it will take a
+    /// body — see [`crate::weapons_data::TendrilSpec`].
+    pub tendril_range_m: f64,
+    pub tendril_acquire_deg: f64,
     /// Sentient Surge's crit chance per ACTIVE tendril, relative to the
     /// unmodded base (it joins the crit-chance bucket).
     pub cc_per_tendril: f64,
@@ -2594,6 +2598,8 @@ impl DummyParams {
             combo_initial: 0,
             combo_held: false,
             tendril_max: panel.tendril_max,
+            tendril_range_m: panel.tendril_range_m,
+            tendril_acquire_deg: panel.tendril_acquire_deg,
             cc_per_tendril: panel.cc_per_tendril,
             sc_per_tendril: panel.sc_per_tendril,
             // EARNED, like every other timed buff: a fight that has not been
@@ -2855,6 +2861,8 @@ impl Default for DummyParams {
             combo_initial: 0,
             combo_held: false,
             tendril_max: 0,
+            tendril_range_m: 0.0,
+            tendril_acquire_deg: 0.0,
             cc_per_tendril: 0.0,
             sc_per_tendril: 0.0,
             tendrils_initial: 0,
@@ -4429,6 +4437,88 @@ struct SpreadShot {
     status_chance: f64,
     forced: Vec<DamageType>,
     vector: DamageVector,
+}
+
+/// TENDRILS — the fourth way a shot reaches a body, and the only one that is
+/// not a spread at all: they are EXTRA BEAMS.
+///
+/// The Ocucor grows one per kill up to four, and the count has been modelled
+/// since 2026-08-08 because a mod reads it (Sentient Surge scales its crit and
+/// status with how many are up). Their DAMAGE was correctly worth nothing, and
+/// the weapon file says why in as many words: *"Tendrils homing in on the main
+/// beam's target are only COSMETIC, and don't deal any additional damage or
+/// status effects."* With one target every tendril homes on it, so modelling
+/// them would have invented up to five beams the wiki says do not exist.
+///
+/// A FORMATION IS WHERE THEY BECOME REAL. Each one locks a body that is NOT the
+/// one the beam is on, and *"their base damage equals the primary beam's, and
+/// they roll their own crits and status"* — so a full instance each, not a
+/// fraction of one. Four tendrils on four bodies is four more beams.
+///
+/// WHAT PICKS THE BODY: *"home-in on enemies close to the targeting reticle"*,
+/// within `acquire_deg` of it and `range_m` away. Nearest to the RETICLE first
+/// — by angle, not by distance, which is what "close to the reticle" says — and
+/// one body per tendril, because a tendril that locks an already-locked body
+/// would be the cosmetic case again.
+///
+/// NOT PER PELLET. A tendril is its own beam, so it fires once for the shot
+/// however many pellets the main beam put out.
+#[allow(clippy::too_many_arguments)]
+fn spread_from_tendrils(
+    others: &mut [SpreadFoe],
+    params: &DummyParams,
+    ap: &DummyParams,
+    live: u32,
+    raw_per_bucket: f64,
+    shares: TypeShares,
+    crit_mult: f64,
+    attrition: f64,
+    modded_base: f64,
+    status_chance: f64,
+    forced: &[DamageType],
+    vector: &DamageVector,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    r: &mut RunResult,
+    d: &mut crate::rng::Draws,
+    t: f64,
+) {
+    if live == 0 || params.tendril_max == 0 {
+        return;
+    }
+    let aim = params.aim_at.unwrap_or(params.target_at);
+    let muzzle = crate::space::muzzle(params.player_at, aim);
+    // EVERY BODY A TENDRIL COULD TAKE, nearest to the reticle first.
+    let mut cand: Vec<(f64, usize)> = params
+        .others
+        .iter()
+        .enumerate()
+        .filter_map(|(i, f)| {
+            if f.at.distance(params.player_at) > params.tendril_range_m {
+                return None;
+            }
+            let off = crate::space::off_axis_deg(muzzle, aim, f.at);
+            (off <= params.tendril_acquire_deg).then_some((off, i))
+        })
+        .collect();
+    cand.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal).then(a.1.cmp(&b.1)));
+
+    for (_, i) in cand.into_iter().take(live as usize) {
+        let inst = crate::chain::Instance {
+            target: i + 1,
+            // A WHOLE BEAM, not a share of one.
+            share: 1.0,
+            // Its own beam, so the main one's multishot is not its.
+            multishot: false,
+            // …and it lands on a body, never a head.
+            headshot: false,
+        };
+        let (foe, fs) = (&mut others[i], &params.others[i]);
+        spread_hit(
+            &inst, foe, fs, raw_per_bucket, shares, crit_mult, attrition, modded_base,
+            status_chance, forced, vector, params, ap, gal, arc, r, d, t,
+        );
+    }
 }
 
 /// AN EXPLOSION REACHES EVERY BODY IT TOUCHES, not only the one it went off on.
@@ -8631,6 +8721,17 @@ pub fn run_once_traced(
             }
         }
 
+        // …AND THE TENDRILS, ONCE FOR THE SHOT. They are extra BEAMS rather
+        // than a spread of this one, so they neither take its multishot nor
+        // fire per pellet — and they only exist once there is a body that is
+        // not the one the main beam is on (`spread_from_tendrils`).
+        if let (Some(s), false) = (&shot_spread, others.is_empty()) {
+            spread_from_tendrils(
+                &mut others, params, ap, tendrils, s.raw_per_bucket, s.shares,
+                s.crit_mult, s.attrition, s.modded_base, s.status_chance,
+                &s.forced, &s.vector, &mut gal, &mut arc, &mut r, d, t,
+            );
+        }
         // …AND THE RADIUS-CAUGHT SEEDS' CHAINS, ONCE FOR THE SHOT. The other
         // half of the multishot rule: "beams chaining from targets that were in
         // the damage radius but not directly struck by the initial beam itself
@@ -9915,6 +10016,73 @@ mod tests {
         // against one target, which is the asymmetry the whole layer exists to
         // show — the same assertion the beam half makes.
         assert_eq!(run_once(&build(Vec::new(), 1.44), &mut Rng::new(0x5EED)).sources.field, lone);
+    }
+
+    /// THE OCUCOR'S TENDRILS ARE WORTH NOTHING AGAINST ONE BODY AND FOUR MORE
+    /// BEAMS AGAINST A CROWD — which is what its own weapon file has said since
+    /// the day it landed, with nowhere to put it (owner, 2026-08-17).
+    ///
+    /// *"Tendrils homing in on the main beam's target are only COSMETIC, and
+    /// don't deal any additional damage or status effects"* — so with one
+    /// target every tendril is worth zero, and modelling them would have
+    /// invented up to five beams the wiki says do not exist. A second body is
+    /// what makes them real, at *"base damage equal to the primary beam's"*.
+    #[test]
+    fn ocucor_tendrils_pay_only_once_there_is_a_second_body() {
+        let build = |others: Vec<crate::formation::FoeSpec>, tendrils: u32| {
+            let base = crate::loadout::WeaponBase::from_data("ocucor", false, &[]);
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let mut arena = crate::arena::Arena::training(10.0);
+            arena.others = others;
+            let mut p =
+                DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            // The tendrils a run OPENS with — a tendril costs a kill, and this
+            // fixture's dummy does not die, so seeding is the only way to have
+            // any (the same knob Sentient Surge's card sets).
+            p.tendrils_initial = tendrils;
+            p.tendrils_held = true;
+            p
+        };
+        assert!(build(Vec::new(), 0).tendril_max > 0, "the Ocucor has tendrils");
+        assert!(build(Vec::new(), 0).tendril_range_m > 0.0, "…and they have a reach");
+
+        // ONE BODY: four tendrils are worth exactly nothing, asserted as
+        // equality, because they all home on the body the beam is already on.
+        let lone0 = run_once(&build(Vec::new(), 0), &mut Rng::new(0x5EED)).effective_damage;
+        let lone4 = run_once(&build(Vec::new(), 4), &mut Rng::new(0x5EED)).effective_damage;
+        assert_eq!(lone4, lone0, "a tendril on the main beam's own target is cosmetic");
+
+        // FOUR MORE BODIES, inside the reticle cone and the reach.
+        let others: Vec<crate::formation::FoeSpec> = (1..=4)
+            .map(|i| crate::formation::FoeSpec {
+                params: TargetParams::training_dummy(),
+                body_parts: DummyParams::humanoid_parts(),
+                at: crate::space::Vec2::new(i as f64 * 0.6, 4.0),
+            })
+            .collect();
+        let crowd0 = run_once(&build(others.clone(), 0), &mut Rng::new(0x5EED)).effective_damage;
+        let crowd4 = run_once(&build(others.clone(), 4), &mut Rng::new(0x5EED)).effective_damage;
+        assert!(
+            crowd4 > crowd0 * 1.5,
+            "four tendrils are four more beams: {crowd4} against {crowd0}"
+        );
+
+        // …AND THEY REACH ONLY WHAT IS IN FRONT OF YOU. The same four bodies
+        // walked out past the tendrils' 20 m and they are worth nothing again.
+        let far: Vec<crate::formation::FoeSpec> = others
+            .iter()
+            .map(|f| crate::formation::FoeSpec {
+                at: crate::space::Vec2::new(f.at.x, 400.0),
+                ..f.clone()
+            })
+            .collect();
+        assert_eq!(
+            run_once(&build(far.clone(), 4), &mut Rng::new(0x5EED)).effective_damage,
+            run_once(&build(far, 0), &mut Rng::new(0x5EED)).effective_damage,
+            "past their reach a tendril takes nobody"
+        );
     }
 
     /// A CONE IS SPELLED ONE WAY. Ten entries carried BOTH a parsed

@@ -1131,6 +1131,11 @@ pub struct WeaponBase {
     /// `weapons_data::TendrilSpec` for why the COUNT is modelled and the
     /// tendrils' own damage is not.
     pub tendril_max: u32,
+    /// How far a tendril reaches and how far off the reticle it will take a
+    /// body — see [`crate::weapons_data::TendrilSpec`]. Both zero on every
+    /// weapon that has no tendrils.
+    pub tendril_range_m: f64,
+    pub tendril_acquire_deg: f64,
     /// The sniper's Shot Combo Counter, before `resolve` asks whether the
     /// Tenno is aiming — see `weapons_data::SniperCombo`.
     pub sniper_combo: Option<crate::weapons_data::SniperCombo>,
@@ -2286,6 +2291,11 @@ pub struct ResolvedPanel {
     pub attractor_seconds: Option<f64>,
     /// Untouched by mods: the tendril cap is the weapon's.
     pub tendril_max: u32,
+    /// How far a tendril reaches and how far off the reticle it will take a
+    /// body — see [`crate::weapons_data::TendrilSpec`]. Both zero on every
+    /// weapon that has no tendrils.
+    pub tendril_range_m: f64,
+    pub tendril_acquire_deg: f64,
     /// THE SHOT COMBO COUNTER, or `None` — and `None` is what a sniper fired
     /// from the hip resolves to, because *"building combo and benefiting from
     /// its multiplier requires being scoped in"* (wiki `Sniper Rifle`). That is
@@ -3658,6 +3668,8 @@ pub fn resolve_for(
             .collect(),
         attractor_seconds: base.attractor_seconds,
         tendril_max: base.tendril_max,
+        tendril_range_m: base.tendril_range_m,
+        tendril_acquire_deg: base.tendril_acquire_deg,
         sniper_combo: if tenno.state.aiming { base.sniper_combo } else { None },
         cc_per_tendril: per_tendril_cc,
         cc_per_hit,

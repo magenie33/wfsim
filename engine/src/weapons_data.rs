@@ -1954,6 +1954,22 @@ pub struct BurstSpec {
 pub struct TendrilSpec {
     /// The cap. Four on the Ocucor.
     pub max: u32,
+    /// How far a tendril reaches, metres. Twenty on the Ocucor, and Ruinous
+    /// Extension extends it — a mod this engine has never had anything for.
+    #[serde(default = "tendril_range_default")]
+    pub range_m: f64,
+    /// How far off the reticle a tendril will ACQUIRE a body, degrees. Forty on
+    /// the Ocucor; it then holds to sixty, which nothing here needs because
+    /// nobody moves.
+    #[serde(default = "tendril_cone_default")]
+    pub acquire_deg: f64,
+}
+
+fn tendril_range_default() -> f64 {
+    20.0
+}
+fn tendril_cone_default() -> f64 {
+    40.0
 }
 
 /// THE SHOT COMBO COUNTER — a sniper rifle's own damage multiplier, and the one
@@ -2419,6 +2435,8 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         has_reserve: s.ammo_max.is_some_and(|a| a > 0.0),
         super_crit_on_status: s.super_crit_on_status,
         tendril_max: s.tendrils.map_or(0, |t| t.max),
+        tendril_range_m: s.tendrils.as_ref().map_or(0.0, |t| t.range_m),
+        tendril_acquire_deg: s.tendrils.as_ref().map_or(0.0, |t| t.acquire_deg),
         sniper_combo: s.sniper_combo,
         // The scope's bonus rides HERE unconditionally and is spent by
         // `resolve`, which is the only layer that knows whether the Tenno is
