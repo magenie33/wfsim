@@ -9,5 +9,11 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-engine: 8ceb569fbb6a07e7b5b2dd63fb9e6e273a386099
+engine: 41e1830460a229d9c8c20d0985daa569f2425215
 entries:
+  - weapon: vectis_prime
+    mode: base
+    score: 35.47639628621795
+    mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, hellfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_crux]
