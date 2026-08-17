@@ -3074,9 +3074,19 @@ was true of half the instance. The factor now comes back off at the one site
 that has it, and punch-through is the single exception that keeps it. Single
 target fights are untouched: with no formation, no spread mechanism runs.
 
-## §14 The two elements whose PROC is an area
+## §14 The elements whose PROC is an area
 
-Gas and Electricity are the only two, and both were an ordinary single-body DoT
+**THREE, and the audit is exhaustive**: every one of the fifteen damage types was
+checked against the `Status_Effect` page for a clause naming a radius, "nearby",
+"surrounding" or "other enemies". Impact, Puncture, Slash, Cold, Heat, Toxin,
+Corrosive, Magnetic, Radiation, Viral and Tau affect **only the enemy hit** —
+stated per type, so this is a closed list rather than the ones that came to mind.
+
+VOID is the fourth and is NOT damage: "creates a 2.5 meter radius field which
+attracts projectiles for 3 seconds". It is an aim aid, this arena has no
+projectile attraction, and modelling it would be inventing a benefit.
+
+Gas and Electricity were an ordinary single-body DoT
 until 2026-08-17 — right while the arena held one body, and half the mechanic
 once it held 361. Verbatim, from each element's own page:
 
@@ -3118,6 +3128,48 @@ and Electricity cannot work at all without it, which is how it surfaced.
 Every body ticks now, once per shot, and the tick credits
 `damage_by_body`. The player's buff state (`gal`, `arc`) is shared across them,
 which is right: a kill is a kill whichever body it was.
+
+### BLAST — the third, and the one whose halves differ most
+
+> "Each blast stack will detonate, dealing **30%** weapon base damage to the
+> target" after **1.5** seconds, each stack on its own timer. Stacks detonate
+> **simultaneously** when "reaching **10** blast stacks" or "the target dying",
+> and then "enemies within **5** meters are dealt **300%** of base damage per
+> proc". "The initial target of the blast procs is not dealt this AoE damage,
+> only the single target damage."
+
+So a stack is worth **ten times as much to a neighbour as to the body carrying
+it**, and SIMULTANEOUS is the trigger rather than the fuse: a stack that simply
+burns down its own 1.5 s deals the single-target hit and nothing else. The
+engine had the single-target half and its comment already said the radial was
+"excluded — it never hits the host"; there was no host's neighbour to hit.
+
+A detonation is a HIT and not a DoT, so it rides a second outbox
+(`DebuffState::area_hit`) — it lands once and carries no `dtype` for the
+neighbour to count as a status ("inherits no additional status effects"). A
+one-tick DoT would have been both of those wrongly.
+
+### A CLOUD IS A PLACE, AND IT OUTLIVES WHAT IT STUCK TO
+
+Asked of the gas proc (owner, 2026-08-17) and true of both clouds:
+
+> **Gas** — "If the host target dies, Gas will continue to tick damage on all
+> enemies caught in the host's radius for its remaining duration."
+>
+> **The Torid's lingering cloud** — "Torid projectiles can also attach to
+> corpses and will remain at their position even if they disintegrate, granting
+> a fixed position mid-air and allowing a greater spread of toxin damage onto
+> enemies."
+
+`DebuffState::on_death` therefore keeps three things and drops everything else:
+the outboxes (a cloud this body already produced belongs to its neighbours), the
+GAS dots — only gas, because the page says it of gas and of nothing else — and
+the blast stacks detonate on the way out. The weapon-made fields stopped being
+cleared on a kill for the same reason.
+
+**It moves scores.** The clouds were wiped on every respawn, which on a fight
+with instant respawns is most of their uptime. `one_fight`'s three shapes do not
+see it because their Thrax never dies.
 
 `a_gas_or_electric_proc_reaches_the_bodies_standing_around_it` asserts a COUNT
 rather than a total — the claim is that the proc reaches bodies the shot never

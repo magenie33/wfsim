@@ -814,6 +814,14 @@ struct DebuffState {
     /// Nothing moves in this arena, so draining a moment later is exact rather
     /// than approximate: a `Dot` carries an absolute `next_tick`.
     area_out: Vec<(Dot, f64)>,
+    /// INSTANT area damage this body owes its neighbours — today only a
+    /// simultaneous BLAST detonation. `(damage, radius_m)`.
+    ///
+    /// Separate from `area_out` because a detonation is a HIT and not a DoT: it
+    /// lands once, and it carries no `dtype` for the neighbour to count as a
+    /// status ("inherits no additional status effects"). A one-tick DoT would
+    /// have been both of those things wrongly.
+    area_hit: Vec<(f64, f64)>,
     /// MICROWAVE — the Nukor family's own status effect, and the only one in
     /// this file that carries no payload at all.
     ///
@@ -909,6 +917,19 @@ const ATTRACTOR_DURATION: f64 = 3.0;
 const TEN_STACK_CAP: usize = 10;
 const BLAST_COEFFICIENT: f64 = 0.3;
 const BLAST_FUSE: f64 = 1.5;
+/// THE OTHER HALF OF A BLAST STACK, and it is the bigger half.
+///
+/// Verbatim: "all stacks are dealt simultaneously as enemies within **5**
+/// meters are dealt **300%** of base damage per proc", against the 30% the host
+/// takes — so a stack is worth TEN TIMES as much to a neighbour as to the body
+/// carrying it. "The initial target of the blast procs is not dealt this AoE
+/// damage, only the single target damage."
+///
+/// SIMULTANEOUS IS THE TRIGGER, not the fuse: a stack that simply burns down
+/// its own 1.5 s deals the single-target hit and nothing else. The two
+/// simultaneous triggers are "reaching 10 blast stacks" and "the target dying".
+const BLAST_AOE_COEFFICIENT: f64 = 3.0;
+const BLAST_AOE_RADIUS_M: f64 = 5.0;
 const FREEZE_CAP_UNDER_OVERGUARD: usize = 4;
 const FROZEN_DURATION: f64 = 3.0;
 const FROZEN_CRIT_DAMAGE_RECEIVED: f64 = 1.00;
@@ -1036,6 +1057,48 @@ impl DebuffState {
     /// Push an independent DoT (Slash/Toxin/Electricity/Gas). These have no
     /// natural cap; under a per-unit cap the count of THIS TYPE is limited,
     /// FIFO replace-oldest (the oldest same-type instance drops).
+    /// THE BODY DIED and a fresh individual takes its place, carrying none of
+    /// its statuses (decision 2026-07-24).
+    ///
+    /// THREE THINGS SURVIVE, and they are what makes this a method rather than
+    /// `*debuffs = default()` written five times:
+    ///
+    ///   · THE OUTBOXES. A cloud or a detonation this body already produced
+    ///     belongs to its NEIGHBOURS and has not been delivered yet; wiping it
+    ///     with the corpse would lose damage that was already dealt.
+    ///   · A GAS CLOUD, because a cloud is a PLACE and not a body. Verbatim:
+    ///     "If the host target dies, Gas will continue to tick damage on all
+    ///     enemies caught in the host's radius for its remaining duration" —
+    ///     and the respawned individual stands where the dead one did, so it is
+    ///     one of those enemies (owner, 2026-08-17). ONLY gas: the page says it
+    ///     of gas and of nothing else, and inventing it for Toxin or Bleed
+    ///     would be a rule nobody published.
+    ///   · …and THE BLAST STACKS DETONATE ON THE WAY OUT — "stacks detonate
+    ///     simultaneously when … the target dying", and a simultaneous
+    ///     detonation is the one that reaches 5 m. The host takes nothing more
+    ///     (it is already dead, and the AoE never hits it anyway).
+    fn on_death(&mut self) {
+        let out = std::mem::take(&mut self.area_out);
+        let mut hits = std::mem::take(&mut self.area_hit);
+        let clouds: Vec<Dot> = self
+            .dots
+            .iter()
+            .filter(|d| d.dtype == DamageType::Gas)
+            .copied()
+            .collect();
+        if !self.blast.is_empty() {
+            let single: f64 = self.blast.iter().map(|b| b.value).sum();
+            hits.push((
+                single / BLAST_COEFFICIENT * BLAST_AOE_COEFFICIENT,
+                BLAST_AOE_RADIUS_M,
+            ));
+        }
+        *self = DebuffState::default();
+        self.area_out = out;
+        self.area_hit = hits;
+        self.dots = clouds;
+    }
+
     fn push_dot_capped(&mut self, dot: Dot, cap: Option<usize>) {
         if let Some(cap) = cap {
             while self.dots.iter().filter(|d| d.dtype == dot.dtype).count() >= cap {
@@ -3742,7 +3805,7 @@ fn fire_extra_hits(
         if killed {
             gal.bump_on_kill(params, at);
             arc.on_kill(params, at);
-            *debuffs = DebuffState::default();
+            debuffs.on_death();
             // A fresh individual, so the remaining extra hits of this trigger
             // are gone with the one that earned them — the same rule the wiki
             // states for the trigger itself ("If a hit that would trigger an
@@ -3818,17 +3881,25 @@ fn fire_extra_hits(
 ///
 /// A cloud reaches a body when any part of it touches — `space::caught_by_blast`,
 /// the same rule every sphere in this engine uses.
+#[allow(clippy::too_many_arguments)]
 fn drain_area_procs(
     debuffs: &mut DebuffState,
+    target: &mut TargetState,
     others: &mut [SpreadFoe],
     params: &DummyParams,
+    r: &mut RunResult,
+    at_now: f64,
 ) {
     if params.others.is_empty() {
         // ONE BODY, so a cloud has nobody to reach and the queue is dropped
         // rather than walked. This is what keeps every single-target fight
         // byte-identical.
         debuffs.area_out.clear();
-        others.iter_mut().for_each(|f| f.debuffs.area_out.clear());
+        debuffs.area_hit.clear();
+        others.iter_mut().for_each(|f| {
+            f.debuffs.area_out.clear();
+            f.debuffs.area_hit.clear();
+        });
         return;
     }
     // Collected first: handing a Dot from body i to body j needs both, and one
@@ -3841,6 +3912,17 @@ fn drain_area_procs(
         let at = params.others[i].at;
         for (dot, r) in f.debuffs.area_out.drain(..) {
             pending.push((at, dot, r));
+        }
+    }
+    // …AND THE INSTANT ONES, which today is a simultaneous Blast detonation.
+    let mut blows: Vec<(crate::space::Vec2, f64, f64)> = Vec::new();
+    for (dmg, rad) in debuffs.area_hit.drain(..) {
+        blows.push((params.target_at, dmg, rad));
+    }
+    for (i, f) in others.iter_mut().enumerate() {
+        let at = params.others[i].at;
+        for (dmg, rad) in f.debuffs.area_hit.drain(..) {
+            blows.push((at, dmg, rad));
         }
     }
     for (from, dot, radius_m) in pending {
@@ -3857,6 +3939,63 @@ fn drain_area_procs(
             if crate::space::caught_by_blast(at.distance(from), radius_m) {
                 f.debuffs
                     .push_dot_capped(dot, params.others[i].params.stack_caps.map(|c| c.general));
+            }
+        }
+    }
+    let sd = params.status_duration_mult;
+    for (from, dmg, radius_m) in blows {
+        // THE HOST IS NEVER ONE OF THEM: it took the single-target half and the
+        // page excludes it from this one.
+        if params.target_at.distance(from) > 1e-9
+            && crate::space::caught_by_blast(params.target_at.distance(from), radius_m)
+        {
+            let mit = debuffs.mitigation(at_now, sd, params.armor_strip_per_puncture);
+            let (eff, killed, _broke) = target.apply(
+                dmg,
+                TypeShares::single(DamageType::Blast),
+                false,
+                at_now,
+                &params.target,
+                false,
+                &mit,
+            );
+            r.total_damage += dmg;
+            r.effective_damage += eff;
+            r.dot_damage += eff;
+            r.note_body_damage(0, eff);
+            r.sources.add_status(DamageType::Blast, eff);
+            r.timeline.add(at_now, eff);
+            r.note_kills(u32::from(killed), at_now);
+            if killed {
+                debuffs.on_death();
+            }
+        }
+        for (i, f) in others.iter_mut().enumerate() {
+            let at = params.others[i].at;
+            if at.distance(from) <= 1e-9
+                || !crate::space::caught_by_blast(at.distance(from), radius_m)
+            {
+                continue;
+            }
+            let mit = f.debuffs.mitigation(at_now, sd, params.armor_strip_per_puncture);
+            let (eff, killed, _broke) = f.state.apply(
+                dmg,
+                TypeShares::single(DamageType::Blast),
+                false,
+                at_now,
+                &params.others[i].params,
+                false,
+                &mit,
+            );
+            r.total_damage += dmg;
+            r.effective_damage += eff;
+            r.dot_damage += eff;
+            r.note_body_damage(i + 1, eff);
+            r.sources.add_status(DamageType::Blast, eff);
+            r.timeline.add(at_now, eff);
+            r.note_kills(u32::from(killed), at_now);
+            if killed {
+                f.debuffs.on_death();
             }
         }
     }
@@ -4146,6 +4285,16 @@ fn settle_procs(
                     // excluded — it never hits the host).
                     let fired: Vec<BlastStack> = debuffs.blast.drain(..).collect();
                     let total: f64 = fired.iter().map(|b| b.value).sum();
+                    // …AND THE OTHER HALF, which is the bigger one: a
+                    // SIMULTANEOUS detonation reaches 5 m at ten times the
+                    // per-stack value the host takes. The host is excluded by
+                    // the page's own words — "the initial target of the blast
+                    // procs is not dealt this AoE damage" — and by the drain,
+                    // which never hands a body its own.
+                    debuffs.area_hit.push((
+                        total / BLAST_COEFFICIENT * BLAST_AOE_COEFFICIENT,
+                        BLAST_AOE_RADIUS_M,
+                    ));
                     // …and each stack's OWN extra-hit contribution, pre-scaled
                     // by the bracket the gun that applied it had. Ten stacks
                     // land as one number here, but they are ten detonations and
@@ -4175,7 +4324,7 @@ fn settle_procs(
                     if killed {
                         gal.bump_on_kill(params, at);
                         arc.on_kill(params, at);
-                        *debuffs = DebuffState::default();
+                        debuffs.on_death();
                     } else {
                         // THE ONE STATUS PAYLOAD THAT TRIGGERS AN EXTRA HIT.
                         // The bracket is already folded into `xh_total`, and no
@@ -4382,7 +4531,7 @@ fn settle_procs(
             if killed {
                 gal.bump_on_kill(params, at);
                 arc.on_kill(params, at);
-                *debuffs = DebuffState::default();
+                debuffs.on_death();
             }
         }
     }
@@ -5346,10 +5495,23 @@ fn process_field_ticks(
             );
         }
         if killed {
-            // Fresh individual: the clouds were stuck to the one that died, and
-            // its statuses go with it (the same rule the pellet path follows).
-            *debuffs = DebuffState::default();
-            fields.clear();
+            // A CLOUD IS A PLACE, AND IT OUTLIVES WHAT IT STUCK TO.
+            //
+            // This used to clear the fields with the words "the clouds were
+            // stuck to the one that died, and its statuses go with it". The
+            // weapon's own page refutes it, verbatim: "Torid projectiles can
+            // also attach to corpses and will remain at their position even if
+            // they disintegrate, granting a fixed position mid-air and allowing
+            // a greater spread of toxin damage onto enemies" — and the
+            // respawned individual stands where the dead one did, so the cloud
+            // is on it (owner, 2026-08-17, asking the same question of the GAS
+            // proc, which the Gas page answers the same way).
+            //
+            // IT MOVES SCORES, and that is the point: the cloud was wiped on
+            // every respawn, which on a fight with instant respawns is most of
+            // its uptime. `one_fight`'s three shapes do not see it because
+            // their Thrax never dies.
+            debuffs.on_death();
             return;
         }
     }
@@ -5667,7 +5829,7 @@ fn process_ticks(
             gal.bump_on_kill(params, now);
             arc.on_kill(params, now);
             // Fresh individual: clean DebuffBar (decision 2026-07-24).
-            *debuffs = DebuffState::default();
+            debuffs.on_death();
             break;
         }
         // …and the detonation's EXTRA HIT, off the value that actually landed —
@@ -8970,10 +9132,10 @@ pub fn run_once_traced(
                         }
                     }
                     // The killing instance's procs die with the old
-                    // individual, and so do the clouds stuck to it; what
-                    // follows hits the fresh spawn.
-                    debuffs = DebuffState::default();
-                    fields.clear();
+                    // individual; the CLOUDS do not — see the note in
+                    // `field_tick`. What follows hits the fresh spawn, standing
+                    // in whatever is still burning where it spawned.
+                    debuffs.on_death();
                     continue;
                 }
                 // THE EXTRA HIT, off a WEAPON damage instance — the direct
@@ -9014,7 +9176,7 @@ pub fn run_once_traced(
                     &mut r,
                     &mut d.status,
                 ) {
-                    fields.clear();
+                    // …and the clouds stay where they were. See `field_tick`.
                     continue;
                 }
                 // Per-INSTANCE proc roll (wiki Multishot/Status_Effect):
@@ -9282,7 +9444,7 @@ pub fn run_once_traced(
         // cloud posted by the first pellet and one posted by the fourth are the
         // same instant, and the drain is where a body's outbox becomes its
         // neighbours' DoTs (`DebuffState::area_out`).
-        drain_area_procs(&mut debuffs, &mut others, params);
+        drain_area_procs(&mut debuffs, &mut target, &mut others, params, &mut r, t);
 
         // A SHOT THAT HIT NOTHING DROPS THE SHOT COMBO COUNTER.
         //
@@ -10710,6 +10872,83 @@ mod tests {
             "and the tendrils must be the ones taking some of them: {r:?}",
         );
         assert!(r.kills_by_tendril <= r.kills);
+    }
+
+    /// A SIMULTANEOUS BLAST DETONATION REACHES 5 m, AND NOT THE HOST.
+    ///
+    /// The third element whose proc is an area, and the one whose two halves
+    /// differ most: "all stacks are dealt simultaneously as enemies within 5
+    /// meters are dealt 300% of base damage per proc" against the 30% the host
+    /// takes, and "the initial target of the blast procs is not dealt this AoE
+    /// damage, only the single target damage".
+    #[test]
+    fn a_simultaneous_blast_detonation_reaches_five_metres() {
+        let build = |forced: Vec<DamageType>| {
+            let base = crate::loadout::WeaponBase::from_data("braton_prime", false, &[]);
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let mut arena = crate::arena::Arena::training(12.0);
+            // ONE INSIDE the 5 m and one OUTSIDE, on the same line, so the
+            // radius is what is being tested and not the geometry.
+            arena.others = [3.0_f64, 20.0]
+                .into_iter()
+                .map(|x| crate::formation::FoeSpec {
+                    params: TargetParams::training_dummy(),
+                    body_parts: DummyParams::humanoid_parts(),
+                    at: crate::space::Vec2::new(x, arena.target_at.y),
+                })
+                .collect();
+            let mut p =
+                DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            p.status_chance = 1.0;
+            p.forced_procs = forced;
+            p
+        };
+        let r = run_once(&build(vec![DamageType::Blast]), &mut Rng::new(0x5EED));
+        let d = &r.damage_by_body.0;
+        assert!(d[0] > 0.0, "the host takes the single-target half");
+        assert!(d[1] > 0.0, "the body 3 m away takes the detonation: {:?}", &d[..3]);
+        assert_eq!(d[2], 0.0, "20 m is outside the 5 m radius: {:?}", &d[..3]);
+
+        // THE CONTROL: Impact stacks the same way and reaches nobody, so this
+        // is Blast's own mechanic rather than any full stack bar detonating.
+        let imp = run_once(&build(vec![DamageType::Impact]), &mut Rng::new(0x5EED));
+        assert_eq!(imp.bodies_touched(), 1, "{:?}", &imp.damage_by_body.0[..3]);
+    }
+
+    /// A GAS CLOUD OUTLIVES ITS HOST; EVERY OTHER DoT DIES WITH IT.
+    ///
+    /// Verbatim: "If the host target dies, Gas will continue to tick damage on
+    /// all enemies caught in the host's radius for its remaining duration" —
+    /// and the respawned individual stands where the dead one did.
+    ///
+    /// A UNIT TEST OF THE RULE, and asserted in BOTH directions: a version that
+    /// kept everything would pass an assertion about gas alone.
+    #[test]
+    fn a_gas_cloud_survives_the_death_and_nothing_else_does() {
+        let dot = |dtype| Dot {
+            next_tick: 5.0, ticks_left: 4, value: 100.0, dtype, ignores_armor: false,
+        };
+        let mut d = DebuffState::default();
+        d.dots.push(dot(DamageType::Gas));
+        d.dots.push(dot(DamageType::Toxin));
+        d.dots.push(dot(DamageType::Electricity));
+        d.blast.push(BlastStack { fuse: 9.0, value: 30.0, xh_bracket: 1.0 });
+        d.microwave = true;
+
+        d.on_death();
+
+        assert_eq!(d.dots.len(), 1, "only the cloud stays: {:?}", d.dots);
+        assert_eq!(d.dots[0].dtype, DamageType::Gas);
+        assert_eq!(d.dots[0].ticks_left, 4, "…with its own remaining duration");
+        assert!(d.blast.is_empty(), "the stacks detonated on the way out");
+        assert!(!d.microwave, "everything else was the dead individual's");
+        // …AND THE DETONATION IS OWED TO THE NEIGHBOURS: 300% a stack against
+        // the 30% the host carried, so ten times what it held.
+        assert_eq!(d.area_hit.len(), 1);
+        assert!((d.area_hit[0].0 - 300.0).abs() < 1e-9, "{:?}", d.area_hit);
+        assert!((d.area_hit[0].1 - BLAST_AOE_RADIUS_M).abs() < 1e-9);
     }
 
     /// GAS AND ELECTRICITY REACH PAST THE BODY THEY LANDED ON.
