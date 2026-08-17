@@ -31,6 +31,18 @@ entries:
     score: 299.58204464951274
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, critical_focus, marked_target, hollowed_bullets, hypothermic_shell, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: torid
+    mode: cycle
+    score: 155.66481469889197
+    mods: [galvanized_chamber, primed_firestorm, point_strike, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_merciless]
+  - weapon: torid
+    mode: cycle
+    score: 114.85377355888316
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, vital_sense, magnetic_capacity, rime_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_merciless]
   - weapon: vectis_prime
     mode: base
     score: 35.47639628621795

@@ -826,6 +826,12 @@ entries:
     arcanes: [primary_merciless]
   - weapon: burston
     mode: cycle
+    score: 22.58298423414976
+    mods: [primary_acuity, serration, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, magnetic_capacity, thermite_rounds]
+    evolutions: [burston_evo1_incarnon_form, burston_forceful_finality, burston_kinetic_battle, burston_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston
+    mode: cycle
     score: 22.57425858609999
     mods: [primary_acuity, serration, galvanized_scope, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, hellfire]
     evolutions: [burston_evo1_incarnon_form, burston_forceful_finality, burston_kinetic_battle, burston_absolute_valor]
