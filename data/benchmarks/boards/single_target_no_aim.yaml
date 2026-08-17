@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: f56f788622a1d90ceae15981d6e06984814c0a00
+engine: a6846967b7883103c2bfd3b484c93426209283dc
 entries:
   - weapon: arbucep
     mode: base
