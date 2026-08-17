@@ -138,6 +138,45 @@ pub fn miss_distance(range_m: f64, deviation_deg: f64) -> f64 {
     }
 }
 
+/// HOW FAR OFF THE AIM LINE A BODY SITS, in degrees, seen from the muzzle.
+///
+/// ZERO when the weapon is pointed straight at it, which is the fight this
+/// engine ran until aim became a place you choose (owner, 2026-08-17). Every
+/// deviation the spread cone rolls is measured from the AIM line, and this is
+/// how far the body already is from it before a single degree of spread is
+/// added.
+pub fn off_axis_deg(muzzle: Vec2, aim_at: Vec2, body: Vec2) -> f64 {
+    let (ax, ay) = (aim_at.x - muzzle.x, aim_at.y - muzzle.y);
+    let (bx, by) = (body.x - muzzle.x, body.y - muzzle.y);
+    let (la, lb) = (ax.hypot(ay), bx.hypot(by));
+    if la <= 0.0 || lb <= 0.0 {
+        return 0.0;
+    }
+    let cos = ((ax * bx + ay * by) / (la * lb)).clamp(-1.0, 1.0);
+    cos.acos().to_degrees()
+}
+
+/// WHERE A PELLET PASSES a body, when the weapon is not pointed at it.
+///
+/// The cone is around the AIM line and the body sits `off_axis` degrees off it,
+/// so the two offsets are added as VECTORS in the plane the shot crosses, with
+/// the pellet's direction around the cone uniform. `phi` is that direction, in
+/// turns.
+///
+/// Pointed straight at the body (`off_axis == 0`) it collapses to
+/// [`miss_distance`] exactly and reads no `phi` — which is what keeps every
+/// fight this engine has ever run byte-identical, and why the caller draws
+/// `phi` only when it is going to be used.
+pub fn miss_distance_off_axis(range_m: f64, off_axis_deg: f64, deviation_deg: f64, phi: f64) -> f64 {
+    if off_axis_deg <= 0.0 {
+        return miss_distance(range_m, deviation_deg);
+    }
+    let a = miss_distance(range_m, off_axis_deg);
+    let b = miss_distance(range_m, deviation_deg);
+    let c = (phi * std::f64::consts::TAU).cos();
+    (a * a + b * b - 2.0 * a * b * c).max(0.0).sqrt()
+}
+
 /// WHERE AN EXPLOSION GOES OFF ON A BODY — the point on its circumference
 /// FACING THE SHOOTER, not its centre (owner, 2026-08-17).
 ///
@@ -299,6 +338,32 @@ pub const CONTACT_RANGE_M: f64 = 2.0 * BODY_RADIUS_M;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// POINTING SOMEWHERE ELSE IS A REAL ANGLE, and pointing AT a body is zero
+    /// of it — which is what keeps every fight this engine ran byte-identical.
+    #[test]
+    fn a_body_off_the_aim_line_has_an_angle_and_one_on_it_has_none() {
+        let m = Vec2::ORIGIN;
+        let foe = Vec2::new(0.0, 10.0);
+        assert_eq!(off_axis_deg(m, foe, foe), 0.0);
+        assert_eq!(off_axis_deg(m, Vec2::new(0.0, 40.0), foe), 0.0, "further along the same line");
+        assert!((off_axis_deg(m, Vec2::new(10.0, 10.0), foe) - 45.0).abs() < 1e-9);
+        // Degenerate inputs answer zero rather than NaN.
+        assert_eq!(off_axis_deg(m, m, foe), 0.0);
+
+        // …AND THE OFFSET COLLAPSES TO THE ON-AXIS ONE when it is zero, at
+        // every phi, which is the property the old numbers rest on.
+        for phi in [0.0, 0.25, 0.5, 0.7] {
+            assert_eq!(miss_distance_off_axis(20.0, 0.0, 2.0, phi), miss_distance(20.0, 2.0));
+        }
+        // Off axis it is a vector sum: pointing 2 degrees away and deviating 2
+        // degrees BACK lands on the body, and deviating 2 degrees further out
+        // doubles the miss.
+        let back = miss_distance_off_axis(20.0, 2.0, 2.0, 0.0);
+        let away = miss_distance_off_axis(20.0, 2.0, 2.0, 0.5);
+        assert!(back < 1e-9, "{back}");
+        assert!((away - 2.0 * miss_distance(20.0, 2.0)).abs() < 1e-9, "{away}");
+    }
 
     /// THE THREE BLAST RULES, which are one idea: a body is a CIRCLE and a
     /// blast meets it at its nearest surface (owner, 2026-08-17).

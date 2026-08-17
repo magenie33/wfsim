@@ -145,6 +145,8 @@ fn dual_toxocyst_baseline() -> DummyParams {
         duration_secs: 10.0,
         // ONE BODY — a fixture, not a formation.
         others: Vec::new(),
+        // …and the weapon points AT it.
+        aim_at: None,
         beam: None,
     }
 }

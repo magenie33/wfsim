@@ -69,6 +69,8 @@ fn scenario(duration: f64, level: u32) -> Scenario {
             duration_secs: duration,
             // ONE BODY — a fixture, not a formation.
             others: Vec::new(),
+            // …and the weapon points AT it.
+            aim_at: None,
         },
         incarnon_cycle: false,
         frenzy_lock: LockMode::Initial(0),

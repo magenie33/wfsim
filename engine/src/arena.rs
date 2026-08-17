@@ -57,6 +57,15 @@ pub struct Arena {
     /// EMPTY IS THE OLD FIGHT EXACTLY. Nothing reads this when it is empty, so
     /// a single-target arena runs the same code it always did.
     pub others: Vec<crate::formation::FoeSpec>,
+    /// WHERE THE WEAPON POINTS. `None` means "at the target", which is the
+    /// fight every golden value and both boards rest on.
+    ///
+    /// A PLACE, not a body (owner, 2026-08-17): it may be bare floor, and then
+    /// the shot simply crosses nobody and deals nothing — the engine fires
+    /// along the line it is given and what it meets is what it meets. The
+    /// splash still goes off where the round lands, which is what makes aiming
+    /// beside a crowd a real tactic rather than an error.
+    pub aim_at: Option<Vec2>,
     /// The target's hitboxes — where a pellet can land and what each spot
     /// multiplies. They belong to the target, and travel with it.
     pub body_parts: Vec<BodyPart>,
@@ -115,6 +124,9 @@ impl Arena {
             // would put every golden value at the mercy of a formation nobody
             // asked for.
             others: Vec::new(),
+            // …and the weapon points AT it, which is what every golden value
+            // was measured under.
+            aim_at: None,
             duration_secs,
             // The fixture is the NEUTRAL player, and no frame is running
             // anything for them.

@@ -158,6 +158,8 @@ fn arena_for(c: &Cfg) -> Arena {
         abilities: Vec::new(),
         // ONE BODY — a fixture, not a formation.
         others: Vec::new(),
+        // …and the weapon points AT it.
+        aim_at: None,
     }
 }
 

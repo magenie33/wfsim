@@ -1795,6 +1795,10 @@ pub struct DummyParams {
     /// for every fight this engine has run, and nothing below reads it when it
     /// is.
     pub others: Vec<crate::formation::FoeSpec>,
+    /// WHERE THE WEAPON POINTS — see [`crate::arena::Arena::aim_at`]. `None`
+    /// is "at the target", and every fight this engine ran before a formation
+    /// existed is that.
+    pub aim_at: Option<crate::space::Vec2>,
     /// The beam's own geometry, when this attack is one: the damage radius that
     /// SEEDS the chains and the chain's three constants. `None` for everything
     /// that is not a chaining beam, which is the whole roster but one form.
@@ -2378,6 +2382,19 @@ impl DummyParams {
         crate::space::range_to_centre(self.player_at, self.target_at)
     }
 
+    /// HOW FAR THE TARGET SITS OFF THE AIM LINE, in degrees — 0 whenever the
+    /// weapon points at it (`space::off_axis_deg`).
+    pub fn off_axis_deg(&self) -> f64 {
+        match self.aim_at {
+            None => 0.0,
+            Some(a) => crate::space::off_axis_deg(
+                crate::space::muzzle(self.player_at, a),
+                a,
+                self.target_at,
+            ),
+        }
+    }
+
     /// THE GAP between the two bodies — surface to surface, zero at contact,
     /// and THE DISTANCE A SHOT FLIES.
     ///
@@ -2424,6 +2441,7 @@ impl DummyParams {
             player_at,
             target_at,
             others,
+            aim_at,
         } = arena.clone();
         // LONE ENFORCER: "+25% Multishot if no enemies are within 5m".
         //
@@ -2471,6 +2489,7 @@ impl DummyParams {
             // fight's, which is what makes the optimizer search the same
             // formation the replay will run.
             others,
+            aim_at,
             // The beam's own geometry, when the resolved panel has one — the
             // damage radius here is already the MODDED value, so Firestorm has
             // been applied and what seeds the chains is what the player built.
@@ -2855,6 +2874,7 @@ impl Default for DummyParams {
             duration_secs: 10.0,
             // ONE BODY — a fixture, not a formation.
             others: Vec::new(),
+            aim_at: None,
             // …and no beam geometry: the fixture is a generic weapon, and a
             // chain is something a weapon DECLARES.
             beam: None,
@@ -4514,6 +4534,9 @@ fn spread_from_seeds(
     d: &mut crate::rng::Draws,
     t: f64,
     multishot_half: bool,
+    // WHICH BODY THE BEAM STRUCK, or `None` when it struck the floor. It
+    // decides who may headshot and who carries multishot, and nothing else.
+    aimed: Option<usize>,
 ) {
     // THE FORMATION AS THE CHAIN SEES IT: the aimed body first, so index 0 is
     // the one the beam is on and 1.. line up with `others`.
@@ -4527,15 +4550,25 @@ fn spread_from_seeds(
     };
     let landed = crate::chain::resolve(
         &bodies,
-        // THE BEAM IS ON BODY 0 here — the aimed one. A shot that struck bare
-        // floor passes `None` and every seed is an ordinary one.
-        Some(0),
+        // THE BEAM IS ON BODY 0 when it struck one. A shot that found only
+        // floor passes `None`, and then every seed is an ordinary one: no
+        // headshot, no multishot.
+        aimed,
         // WHERE THE ROUND WENT OFF: the aimed body's surface facing the
         // shooter, not its centre (`space::detonation_point`, owner
         // 2026-08-17). A blast half a body deeper into the formation than it
         // goes would seed the wrong bodies.
         crate::chain::Splash {
-            at: crate::space::detonation_point(params.target_at, params.player_at),
+            at: match (aimed, params.aim_at) {
+                // ON THE BODY IT STRUCK, at its surface facing the shooter.
+                (Some(_), _) => {
+                    crate::space::detonation_point(params.target_at, params.player_at)
+                }
+                // …OR ON THE FLOOR IT WAS POINTED AT. A beam that crossed
+                // nobody still lands, and the sphere still goes off.
+                (None, Some(a)) => a,
+                (None, None) => params.target_at,
+            },
             radius_m: beam.damage_radius_m,
         },
         spec,
@@ -7720,11 +7753,25 @@ pub fn run_once_traced(
             // below (`space::range_to_centre`, owner 2026-08-16).
             let range = params.range_to_centre();
             let gap_m = params.gap();
+            // HOW FAR THE TARGET ALREADY IS FROM THE AIM LINE, before a degree
+            // of spread is added. Zero whenever the weapon points at it, which
+            // is every fight this engine ran before aim became a place you
+            // choose — and zero is what makes the whole clause below collapse
+            // to what it was (owner, 2026-08-17).
+            let off_axis = params.off_axis_deg();
             let aim_offset = match ap.spread {
                 Some(s) if !s.is_pinpoint() && range > 0.0 => {
-                    crate::space::miss_distance(range, s.draw(d.aim.next_f64()))
+                    let dev = s.draw(d.aim.next_f64());
+                    // THE SECOND DRAW IS GATED on actually aiming elsewhere, so
+                    // no existing fight consumes it and no existing number
+                    // moves. It is WHICH WAY around the cone the pellet went,
+                    // which only matters once the body is off the axis.
+                    let phi = if off_axis > 0.0 { d.aim.next_f64() } else { 0.0 };
+                    crate::space::miss_distance_off_axis(range, off_axis, dev, phi)
                 }
-                _ => 0.0,
+                // A PINPOINT WEAPON POINTED ELSEWHERE still misses: no spread
+                // does not mean no aim.
+                _ => crate::space::miss_distance(range, off_axis),
             };
             // …AND A BODY IS A CIRCLE OF ONE RADIUS: hitting the circle is a
             // hit, which makes this ray-versus-circle and nothing more
@@ -7754,6 +7801,15 @@ pub fn run_once_traced(
                 // status draw, the gauge charge, the on-hit buffs and the combo
                 // count all live inside it, and a hit that dealt zero is not
                 // what a miss is.
+                //
+                // A BEAM THAT STRUCK NOBODY THEREFORE DEALS NOTHING, which is
+                // the owner's own rule read straight (2026-08-17): *"if it
+                // hits, it hits; if it does not, it is zero"*. What it does NOT
+                // do yet is leave its damage sphere on the floor where it
+                // landed — see docs/UNMODELLED.md. Trying it by keeping the
+                // instance alive and zeroing the damage made a MISS proc
+                // status, charge the gauge and feed the on-kill buffs, which is
+                // what the paragraph above exists to prevent.
                 if direct && !pellet_lands {
                     continue;
                 }
@@ -8025,7 +8081,9 @@ pub fn run_once_traced(
                 }
                 if direct && !others.is_empty() {
                     // …and the SHOT's own factors, kept for the half that fires
-                    // once rather than per pellet.
+                    // once rather than per pellet — recorded on a MISS too, so
+                    // the sphere that went off on the floor still has a number
+                    // behind it.
                     if shot_spread.is_none() {
                         shot_spread = Some(SpreadShot {
                             raw_per_bucket: raw / bucket,
@@ -8038,11 +8096,16 @@ pub fn run_once_traced(
                             vector: qvec,
                         });
                     }
+                    // THE AIMED SEED'S CHAINS take multishot by firing per
+                    // landing pellet — so a pellet that landed on nobody starts
+                    // none of them. The radius-caught seeds' half fires once
+                    // after the loop, miss or not.
                     if let Some(beam) = params.beam {
                         spread_from_seeds(
                             &mut others, params, ap, beam, raw / bucket, shares,
                             crit_mult, attrition, modded_base, status_chance,
                             forced, &qvec, &mut gal, &mut arc, &mut r, d, t, true,
+                            Some(0),
                         );
                     }
                 }
@@ -8578,6 +8641,10 @@ pub fn run_once_traced(
                 &mut others, params, ap, beam, s.raw_per_bucket, s.shares,
                 s.crit_mult, s.attrition, s.modded_base, s.status_chance,
                 &s.forced, &s.vector, &mut gal, &mut arc, &mut r, d, t, false,
+                // NOBODY WAS STRUCK when every pellet missed, so no seed is the
+                // directly-hit one: none may headshot and none takes multishot,
+                // which is the rule the radius-caught seeds already follow.
+                Some(0),
             );
         }
 

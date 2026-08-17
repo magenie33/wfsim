@@ -282,6 +282,31 @@ rather than observed, because this arena fires one weapon and casts nothing:
 
 ---
 
+## A SHOT THAT CROSSES NOBODY LEAVES NO SPHERE
+
+Aim is a place (MECHANICS §11), and pointing at bare floor is a legal shot that
+deals ZERO — *"if it hits, it hits, and if it does not, it is zero"* (owner,
+2026-08-17). That much is modelled, and the api stopped refusing such a shot on
+the same day.
+
+**WHAT IS NOT** is the sphere it should leave where it landed. A weapon with a
+damage radius that strikes nobody still detonates on the floor in game, and
+anyone standing near that spot takes it — which makes "aim BESIDE the crowd so
+the splash catches more of them" a real tactic. Here it is worth nothing,
+because a missed shot produces no instance at all.
+
+**WHY IT IS NOT A ONE-LINE FIX.** The miss is a `continue` that skips the whole
+direct stage, and it skips it for good reasons named at the site: the status
+draw, the gauge charge, the on-kill buffs and the combo count all live inside
+it, and a hit that dealt zero is not what a miss is. It was tried by keeping the
+instance alive with its damage zeroed, and that made a MISS proc status and
+charge the gauge. Doing it properly means separating "compute this instance"
+from "apply its consequences", or giving the sphere a STAGE of its own beside
+the radial's — the second is the shape the code already has and is the way in.
+
+Aiming AT a body, or within a body's width of one, is unaffected: the line
+crosses it, the shot lands, and the sphere seeds from its surface as it should.
+
 ## Open decisions, not missing machinery
 
 These are things the engine COULD do today and deliberately does not, because

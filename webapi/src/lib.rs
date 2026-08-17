@@ -4334,8 +4334,18 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
             )
         });
     let (target, body_parts, target_at, others) = if let Some(aim) = aim_at {
-        // The aimed body first in the list, then the rest — the shape the arena
-        // holds and the aim policy justifies.
+        // WHICHEVER BODY THE LINE CROSSES FIRST — and a shot that crosses
+        // NOBODY is a legal shot (owner, 2026-08-17): *"the engine mechanically
+        // fires toward the aim point; if it hits, it hits, and if it does not,
+        // it is zero"*. Refusing it was wrong twice over — a miss is an answer,
+        // and aiming BESIDE a crowd so the splash catches more of it is a real
+        // tactic rather than a mistake.
+        //
+        // The arena still names a target, because a fight has one and every
+        // report reads its pools; what changes is that the weapon is not
+        // pointed at it. `DummyParams::off_axis_deg` is how far off the line it
+        // sits, the spread cone is measured from the LINE, and a body far
+        // enough off it is simply never hit.
         let mut all: Vec<wfsim_engine::formation::FoeSpec> =
             vec![wfsim_engine::formation::FoeSpec {
                 params: target,
@@ -4346,14 +4356,23 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         let muzzle = wfsim_engine::space::muzzle(player_at, aim);
         let dir = wfsim_engine::space::Vec2::new(aim.x - muzzle.x, aim.y - muzzle.y);
         let bodies: Vec<_> = all.iter().map(|f| f.at).collect();
-        let Some((hit, _)) = wfsim_engine::space::first_hit(muzzle, dir, &bodies) else {
-            return Err(err_json(
-                "the shot is aimed at bare floor and crosses nobody — point it at a body, \
-                 or within a body's width of one"
-                    .to_string(),
-            ));
-        };
-        let aimed = all.remove(hit);
+        // NOBODY ON THE LINE keeps the NEAREST body as the arena's target. It
+        // is not being shot at — the geometry says so and the numbers follow —
+        // but it is the body whose pools the run reports, and the one a chain
+        // or a splash is most likely to reach.
+        let aimed = wfsim_engine::space::first_hit(muzzle, dir, &bodies)
+            .map(|(i, _)| i)
+            .or_else(|| {
+                (0..bodies.len()).min_by(|&a, &b| {
+                    bodies[a]
+                        .distance(aim)
+                        .partial_cmp(&bodies[b].distance(aim))
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                        .then(a.cmp(&b))
+                })
+            })
+            .unwrap_or(0);
+        let aimed = all.remove(aimed);
         (aimed.params, aimed.body_parts, aimed.at, all)
     } else {
         // NO AIM POINT is the fight this engine has always run: the beam is on
@@ -4377,6 +4396,9 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         // optimizer searches the one the replay will run without a line of
         // optimizer code.
         others,
+        // WHERE THE WEAPON POINTS. `None` is at the target, which is the fight
+        // every golden value and both boards rest on.
+        aim_at,
         duration_secs: duration,
         // WARFRAME ABILITY BUFFS — parsed HERE, in `parse_fight`, which is what
         // makes the optimizer score under them without a line of optimizer code
@@ -6778,11 +6800,19 @@ mod asset_tests {
         // 20, so it is the one the beam is on.
         let near = run([0.0, 30.0]);
         assert!(near.get("error").is_none(), "{near}");
-        // …and aimed at bare floor off to the side, nothing is crossed at all.
+        // …AND AIMED AT BARE FLOOR IT IS A LEGAL SHOT THAT MISSES (owner,
+        // 2026-08-17). It was refused for a day, which was wrong twice over: a
+        // miss is an answer, and aiming BESIDE a crowd so the splash catches
+        // more of it is a tactic rather than a mistake.
         let miss = run([40.0, 0.1]);
+        assert!(miss.get("error").is_none(), "a shot at bare floor is legal: {miss}");
+        let (hit, floor) = (
+            near.get("dps").and_then(Value::as_f64).unwrap_or(-1.0),
+            miss.get("dps").and_then(Value::as_f64).unwrap_or(-1.0),
+        );
         assert!(
-            miss.get("error").and_then(Value::as_str).unwrap_or("").contains("bare floor"),
-            "{miss}"
+            floor >= 0.0 && floor < hit,
+            "pointing at nobody must deal less than pointing at somebody: {floor} vs {hit}"
         );
     }
 

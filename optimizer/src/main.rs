@@ -100,6 +100,8 @@ fn main() {
             abilities: Vec::new(),
             // ONE BODY — a fixture, not a formation.
             others: Vec::new(),
+            // …and the weapon points AT it.
+            aim_at: None,
         },
         // The CLI drives Dual Toxocyst, which carries the Frenzy passive.
         frenzy: wfsim_engine::weapons_data::has_perk("dual_toxocyst", "frenzy"),
