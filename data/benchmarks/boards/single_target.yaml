@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 5ff5e071330d7fa59a0799e90f3209c0a942fa9f
+engine: 0d22a12dccb0b30559f2e4755648c46257eec857
 entries:
   - weapon: akarius_prime
     mode: base
@@ -5148,6 +5148,12 @@ entries:
     score: 10.419819768010228
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [vectis_evo1_incarnon_form, vectis_inciting_incident, vectis_rapid_reinforcement, vectis_critical_parallel]
+    arcanes: [primary_crux]
+  - weapon: vectis_prime
+    mode: base
+    score: 35.47639628621795
+    mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, hellfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_crux]
   - weapon: vectis_prime
     mode: base
