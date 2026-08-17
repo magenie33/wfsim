@@ -94,17 +94,46 @@ const r = await evaluate(`(async () => {
   [...document.querySelectorAll('#bench-picker [data-bench]')]
     .find(c => c.dataset.bench === ruler).click();
   await s(900);
-  const twoModes = (META.weapons || []).find(w =>
+  // THE LIVE CASE FIRST, and only then the synthetic one.
+  //
+  // This was injection-only, and the injection went wrong the day the board
+  // stopped needing it: the Larkspur Prime now holds a REAL alternate-fire row
+  // under single_target, so a synthetic second-mode row landed beside it, the
+  // rendered mode= link resolved to the REAL leader, and the check compared
+  // that leader's build against the base row it had copied. It reported a
+  // one-mod difference and blamed the link (2026-08-18).
+  //
+  // A fixture that duplicates something the live data already has is a fixture
+  // that will collide with it. So the live rows are preferred and the
+  // injection stays as the FALLBACK — the case has to keep being covered on a
+  // board that loses its last two-mode weapon, which is how it was covered for
+  // the nine days before one arrived.
+  const modesOn = (w) => [...new Set((BOARD[w.id] || [])
+    .filter(r => r.benchmark === ruler).map(r => r.mode || 'base'))];
+  const live = (META.weapons || []).find(w =>
+    (w.modes || []).length > 1 && modesOn(w).length > 1);
+  const twoModes = live || (META.weapons || []).find(w =>
     (w.modes || []).length > 1 &&
     (BOARD[w.id] || []).some(r => r.benchmark === ruler));
   out.twoModeWeapon = twoModes ? twoModes.id : null;
+  out.synthetic = !live;
   if (twoModes) {
-    const have = (BOARD[twoModes.id] || []).find(r => r.benchmark === ruler);
-    const other = (twoModes.modes || []).find(m => m !== (have.mode || 'base'));
+    // THE LEADER OF EACH MODE, which is what the board lists and what the link
+    // opens — board.json is stored best-first, so find is the leader.
+    const base = (BOARD[twoModes.id] || [])
+      .find(r => r.benchmark === ruler && (r.mode || 'base') === 'base');
+    const other = live
+      ? modesOn(live).find(m => m !== 'base')
+      : (twoModes.modes || []).find(m => m !== ((base || {}).mode || 'base'));
     out.otherMode = other;
-    BOARD[twoModes.id] = (BOARD[twoModes.id] || []).concat([
-      { ...have, mode: other, score: have.score / 3, shown: String(have.score / 3) },
-    ]);
+    if (!live) {
+      const have = base || (BOARD[twoModes.id] || []).find(r => r.benchmark === ruler);
+      BOARD[twoModes.id] = (BOARD[twoModes.id] || []).concat([
+        { ...have, mode: other, score: have.score / 3, shown: String(have.score / 3) },
+      ]);
+    }
+    const have = (BOARD[twoModes.id] || [])
+      .find(r => r.benchmark === ruler && (r.mode || 'base') === other);
     renderBenchBoard(); await s(1200);
     const rows = [...document.querySelectorAll('.bench-rows .brow')]
       .filter(a => (a.getAttribute('href') || '').includes('/' + wikiSlug(twoModes) + '?'));
@@ -158,8 +187,11 @@ for (const e of r.each.filter((x) => x.href)) {
 }
 
 // ---- and the same weapon in TWO modes ----------------------------------
-check("a weapon with two modes is on the board twice", r.bothListed === 2,
-  `${r.twoModeWeapon}: ${r.bothListed} rows`);
+// WHICH CASE RAN, in the title. A live two-mode weapon and an injected one are
+// two different amounts of evidence, and a check that does not say which it
+// found reads as the stronger one on the day it silently becomes the weaker.
+check(`a weapon with two modes is on the board twice (${r.synthetic ? "injected" : "LIVE"})`,
+  r.bothListed === 2, `${r.twoModeWeapon}: ${r.bothListed} rows`);
 check("...both measured, so both are rows and not placeholders",
   r.bothMeasured === 2, `${r.bothMeasured} measured`);
 check("...and the second one's link names ITS mode",
