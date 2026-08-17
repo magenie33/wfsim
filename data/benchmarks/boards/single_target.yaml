@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 0d22a12dccb0b30559f2e4755648c46257eec857
+engine: 0691b971974df4253199eaa71f682e2f12f94c81
 entries:
   - weapon: akarius_prime
     mode: base
@@ -2390,6 +2390,18 @@ entries:
     score: 0.6006187454499217
     mods: [galvanized_chamber, serration, galvanized_aptitude, point_strike, vital_sense, high_voltage, malignant_force, thermite_rounds]
     arcanes: [primary_deadhead]
+  - weapon: kuva_ayanga
+    mode: base
+    score: 3.2158376628519862
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, parallax_scope, primed_electrified_barrel, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    valence: impact
+  - weapon: kuva_ayanga
+    mode: base
+    score: 2
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, parallax_scope, primed_electrified_barrel, contamination_casing, magma_chamber]
+    arcanes: [primary_crux, cascadia_flare]
+    valence: impact
   - weapon: kuva_grattler
     mode: base
     score: 8.876417802376848
