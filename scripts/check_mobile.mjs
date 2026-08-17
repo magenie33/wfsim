@@ -38,6 +38,11 @@ const SCREENS = [
 for (const [label, w, h, mobile] of SCREENS) {
   await send("Emulation.setDeviceMetricsOverride",
     { width: w, height: h, deviceScaleFactor: mobile ? 2 : 1, mobile });
+  // A PHONE HAS A FINGER, and `mobile: true` alone does not give it one:
+  // `navigator.maxTouchPoints` stays 0 and every touch-only behaviour goes
+  // untested. This check is the one that is about phones (2026-08-18).
+  await send("Emulation.setTouchEmulationEnabled",
+    { enabled: mobile, maxTouchPoints: mobile ? 5 : 1 });
   await send("Page.navigate", { url: BASE });
   await sleep(mobile ? 11000 : 9000);
 
@@ -57,7 +62,57 @@ for (const [label, w, h, mobile] of SCREENS) {
       .reduce((m, el) => Math.max(m, el.getBoundingClientRect().right), 0);
     const names = [...document.querySelectorAll('#mod-slots .slot .mn')]
       .map(el => Math.round(el.getBoundingClientRect().width)).filter(x => x > 0);
-    return {
+    const out = {};
+  // ---- A FINGER SCROLLS, IT DOES NOT DRAG THE FIGHT --------------------
+  //
+  // A browser decides who owns a gesture at pointerdown and never gives it
+  // back, so a body that drags on touch means the finger that started on it
+  // can no longer scroll. A 19x19 formation covers the canvas in bodies, so on
+  // a phone almost every scroll past the arena dragged an enemy instead — the
+  // fight moved silently and the result it had just produced was for a fight
+  // nobody was in any more (owner, 2026-08-18).
+  //
+  // Only on the touch screens, because a mouse has no scroll to lose.
+  if (navigator.maxTouchPoints > 0) {
+    history.pushState({}, '', '/weapons/Torid/simulator'); route(); await sleep(2600);
+    const add = document.querySelector('#preset-bar-simulator-scenarios .pchip.add');
+    if (add) { add.click(); await sleep(1400); }
+    const svg = () => document.querySelector('#sim-target-arena .ar-svg');
+    out.dragToggle = !!document.querySelector('[data-touchdrag]');
+    out.taDefault = svg() ? svg().style.touchAction : null;
+    const swipe = async () => {
+      const c = document.querySelector('#sim-target-arena .ar-foe');
+      if (!c) return;
+      const b = c.getBoundingClientRect();
+      const x = b.x + b.width / 2;
+      const y = b.y + b.height / 2;
+      c.dispatchEvent(new PointerEvent('pointerdown',
+        { bubbles: true, cancelable: true, pointerType: 'touch', clientX: x, clientY: y }));
+      for (let k = 1; k <= 6; k++) {
+        window.dispatchEvent(new PointerEvent('pointermove',
+          { bubbles: true, cancelable: true, pointerType: 'touch', clientX: x, clientY: y - 14 * k }));
+        await sleep(30);
+      }
+      window.dispatchEvent(new PointerEvent('pointerup',
+        { bubbles: true, cancelable: true, pointerType: 'touch' }));
+      await sleep(600);
+    };
+    let was = JSON.stringify(sim.target_at);
+    await swipe();
+    out.swipeMovedTheFight = JSON.stringify(sim.target_at) !== was;
+    // …AND THE MODE IS THERE FOR WHEN A READER DOES MEAN TO MOVE ONE.
+    const tog = document.querySelector('[data-touchdrag]');
+    if (tog) {
+      tog.click(); await sleep(500);
+      out.taWhileOn = svg() ? svg().style.touchAction : null;
+      was = JSON.stringify(sim.target_at);
+      await swipe();
+      out.swipeMovedWhileOn = JSON.stringify(sim.target_at) !== was;
+    }
+  }
+
+  return {
+      ...out,
       vw,
       // The page's own sideways scroll — the symptom a reader actually feels.
       scrollW: document.documentElement.scrollWidth,
@@ -134,6 +189,17 @@ for (const [label, w, h, mobile] of SCREENS) {
     `${r.searchW}px`);
   // A column squeezed to nothing is not a fixed layout. 90px is about a dozen
   // characters — enough to tell two mods apart, which is the job.
+  // A FINGER SCROLLS, IT DOES NOT DRAG THE FIGHT. Only where a finger is
+  // possible, because a mouse has no scroll to lose.
+  if (mobile) {
+    check(`${tag} a swipe that starts on a body does NOT move the fight`,
+      r.swipeMovedTheFight === false, `touch-action ${r.taDefault}`);
+    check(`${tag} ...and the scene still lets the page scroll through it`,
+      r.taDefault === "pan-y", String(r.taDefault));
+    check(`${tag} ...with a mode for when a reader does mean to move one`,
+      r.dragToggle === true && r.swipeMovedWhileOn === true,
+      `toggle ${r.dragToggle}, moved ${r.swipeMovedWhileOn}, on ${r.taWhileOn}`);
+  }
   check(`${tag} a mod name still has room to be a name`, r.narrowestName >= 90,
     `narrowest name column ${r.narrowestName}px (grid: ${r.cols})`);
   // …and the grid says which cell is which. It belongs in the geometry check

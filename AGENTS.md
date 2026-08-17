@@ -624,6 +624,24 @@ around (decision 2026-07-31).
   free while the optimizer scored the base form (2026-08-03), and the
   optimizer keeping a buff config of its own (2026-08-02). A shared helper is
   not enough — the DECISIONS around it have to be shared too.
+- **A FINGER SCROLLS; IT DOES NOT DRAG THE FIGHT** (owner, 2026-08-18).
+  A browser decides who owns a gesture at `pointerdown` and never gives it back,
+  so a body that drags on touch means the finger that started on it can no
+  longer SCROLL. A 19x19 formation covers the canvas in bodies, so on a phone
+  almost every scroll past the arena dragged an enemy instead — the fight moved
+  silently and the result it had just produced was for a fight nobody was in any
+  more, which reads as "I tapped and it made me simulate again".
+  A LONG PRESS CANNOT FIX IT: once the gesture is the browser's it is gone, so
+  claiming it later is not something a page can do. The answer is a MODE the
+  reader turns on — a ✥ chip in the scene's own control row, off by default,
+  drawn only where `navigator.maxTouchPoints > 0` (a touchscreen laptop reports
+  a FINE pointer and has the same problem, so a `pointer: coarse` query is the
+  wrong test). `touch-action` follows it: `pan-y` off, `none` on. A MOUSE is
+  unaffected — it has no scroll to lose.
+  `check_mobile.mjs` asserts it at every phone width, and it had to be taught to
+  have a finger first: `mobile: true` on `setDeviceMetricsOverride` leaves
+  `maxTouchPoints` at 0, so every touch-only behaviour was going untested on the
+  one check that is about phones.
 - **A SIMULATION RUNS ON A WORKER FLEET** (owner, 2026-08-18). The runs are
   INDEPENDENT given their index, so the page shards them across one worker per
   core (capped at eight, the quick calc's rule) and the shards merge back into

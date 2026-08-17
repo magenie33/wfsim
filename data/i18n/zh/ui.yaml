@@ -470,6 +470,8 @@ ui:
   "The grid is stated as three numbers rather than as 361 positions, so its terms can be read and argued with.": 方阵用三个数字描述而不是 361 个坐标，这样它的条款才读得懂、争得动。
   "running {n} simulations…": 正在跑 {n} 次模拟…
   "about {s}s left": 还剩约 {s} 秒
+  "move": 拖动
+  "while this is on, dragging a body moves it instead of scrolling the page": 打开后，拖动身体会移动它，而不是滚动页面
   "stop": 停止
   "stopped — nothing was measured": 已停止 —— 没有测出任何结果
   "Where the damage went": 伤害落在哪里

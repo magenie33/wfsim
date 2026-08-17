@@ -2753,6 +2753,24 @@ function arenaSettle(s, at, skip) {
   return clash(p).length ? null : p;
 }
 
+/// IS THE SCENE ACCEPTING DRAGS FROM A FINGER?
+///
+/// OFF BY DEFAULT, and the whole reason is that a browser decides who owns a
+/// gesture at `pointerdown` and never gives it back. A body that drags on touch
+/// means the finger that started on it can no longer SCROLL — and a 19x19
+/// formation covers the canvas in bodies, so on a phone almost every scroll
+/// past the arena dragged an enemy instead. The fight moved silently and the
+/// result it had just produced was for a fight nobody was in any more (owner,
+/// 2026-08-18: "我点击，为啥会退出啊").
+///
+/// A LONG PRESS CANNOT FIX IT: once the browser has given the gesture to
+/// scrolling it is gone, so claiming it later is not something the page can do.
+/// The honest answer is a MODE the reader turns on, which is also what makes
+/// "why can I not move anything" answerable — the button is right there.
+///
+/// A MOUSE IS UNAFFECTED: it has no scroll to lose, so it drags either way.
+let arenaTouchDrag = false;
+
 function mountArena(host, s, en, opts) {
   if (!host) return;
   // QUICK SETS, in the canvas. The scene is the one place a position is set
@@ -2772,6 +2790,15 @@ function mountArena(host, s, en, opts) {
     const full = n >= ARENA_MAX_BODIES();
     const crowd = `<button class="ar-jump" data-add="1"${dis || (full ? " disabled" : "")}>+1</button>`
       + `<button class="ar-jump" data-add="8"${dis || (full ? " disabled" : "")}>+8</button>`
+      // DRAG-ON-TOUCH, off by default — see `arenaTouchDrag`. Drawn wherever a
+      // finger CAN be the pointer, because on a mouse there is nothing to
+      // choose. `maxTouchPoints` rather than a `pointer: coarse` query: a
+      // touchscreen laptop reports a FINE pointer and still has the problem.
+      + (navigator.maxTouchPoints > 0
+        ? `<button class="ar-jump${arenaTouchDrag ? " on" : ""}" data-touchdrag="1"${dis}
+           title="${escHtml(tr("while this is on, dragging a body moves it instead of scrolling the page"))}"
+           >✥ ${escHtml(tr("move"))}</button>`
+        : "")
       + `<button class="ar-jump" data-clear="1"${dis || (n < 2 ? " disabled" : "")}>${escHtml(tr("one enemy"))}</button>`
       + `<span class="ar-count">${n}${full ? " / " + ARENA_MAX_BODIES() : ""}</span>`
       + (s.aim_at
@@ -2787,6 +2814,11 @@ function mountArena(host, s, en, opts) {
   const paint = () => {
     host.innerHTML = arenaSvg(s, en, opts.heat, opts.selected)
       + (analysis ? "" : chips());
+    // TOUCH-ACTION FOLLOWS THE MODE, because it is what the browser reads to
+    // decide whether a gesture on this element is a scroll. `pan-y` keeps the
+    // page scrollable through the scene; `none` hands every gesture here.
+    const svg = host.querySelector(".ar-svg");
+    if (svg) svg.style.touchAction = analysis || !arenaTouchDrag ? "pan-y" : "none";
   };
   paint();
   if (opts.readonly) {
@@ -2828,6 +2860,14 @@ function mountArena(host, s, en, opts) {
       if (opts.after) opts.after();
       return;
     }
+    // THE TOUCH-DRAG MODE IS NOT AN EDIT to the fight, so it is answered before
+    // the official-ruler guard: a ruler's scene refuses to MOVE, and offering a
+    // dead toggle beside it would say the opposite.
+    if (b.dataset.touchdrag) {
+      arenaTouchDrag = !arenaTouchDrag;
+      paint();
+      return;
+    }
     if (opts.readonly || officialScenarioActive()) return;
     if (b.dataset.jump !== undefined) setArenaDistance(s, Number(b.dataset.jump));
     else if (b.dataset.add) {
@@ -2857,6 +2897,9 @@ function mountArena(host, s, en, opts) {
     // circles, which that sweep does not reach. Asking live also means
     // switching scenarios needs no re-render to take effect.
     if (opts.readonly || officialScenarioActive()) return;
+    // A FINGER SCROLLS UNLESS TOLD OTHERWISE. Returning here leaves the gesture
+    // with the browser, which is the only way the page still scrolls.
+    if (e.pointerType === "touch" && !arenaTouchDrag) return;
     e.preventDefault();
     const which = el.dataset.drag;
     const box = host.querySelector(".ar-svg").getBoundingClientRect();
