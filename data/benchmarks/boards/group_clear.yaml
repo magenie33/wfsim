@@ -26,6 +26,18 @@ entries:
     score: 0.291622243912884
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, pistol_elementalist, primed_convulsion, primed_heated_charge, pathogen_rounds]
     arcanes: [secondary_enervate]
+  - weapon: ballistica_prime
+    mode: cycle
+    score: 1040.4646406318495
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_irradiate]
+  - weapon: ballistica_prime
+    mode: cycle
+    score: 44.22551022436284
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
+    arcanes: [secondary_deadhead]
   - weapon: kuva_nukor
     mode: base
     score: 43.81303532811469
@@ -37,6 +49,12 @@ entries:
     score: 298.9149181106041
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, critical_focus, marked_target, hollowed_bullets, hypothermic_shell, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: latron_prime
+    mode: cycle
+    score: 608.0263967586843
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: ocucor
     mode: base
     score: 10.339435694038407
