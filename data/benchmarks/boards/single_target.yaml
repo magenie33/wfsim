@@ -5143,6 +5143,12 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_lone_gun, vasto_prime_extended_volley, vasto_prime_survivors_edge]
     arcanes: [secondary_deadhead]
+  - weapon: vectis
+    mode: base
+    score: 10.419819768010228
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [vectis_evo1_incarnon_form, vectis_inciting_incident, vectis_rapid_reinforcement, vectis_critical_parallel]
+    arcanes: [primary_crux]
   - weapon: vectis_prime
     mode: base
     score: 34.41052696779994
@@ -5153,6 +5159,12 @@ entries:
     mode: base
     score: 31.5392039016022
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, stormbringer, malignant_force]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_crux]
+  - weapon: vectis_prime
+    mode: base
+    score: 30.805098005482673
+    mods: [galvanized_chamber, serration, galvanized_aptitude, galvanized_scope, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_crux]
   - weapon: vectis_prime
@@ -5203,6 +5215,12 @@ entries:
     mods: [primary_acuity, serration, hunter_munitions, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, infected_clip, thermite_rounds]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_deadhead]
+  - weapon: vectis_prime
+    mode: base
+    score: 8.149138072696124
+    mods: [heavy_caliber, split_chamber, critical_delay, hammer_shot, semi_rifle_cannonade, vital_sense, hellfire, thermite_rounds]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_survivors_edge]
+    arcanes: [primary_merciless]
   - weapon: vectis_prime
     mode: cycle
     score: 6.96751865300755
