@@ -233,8 +233,18 @@ const md = await evaluate(`(async () => {
   // that broke check_opt_gain when an evolution got a Chinese name. Comparing
   // to what the app would print for this mode is true in every language.
   out.simShows = out.simText.includes(modeLabel(weaponInfo($('weapon').value), mode));
-  out.simCanEdit = !!document.querySelector('#sim-build-info [data-dd]')
-    || !!document.querySelector('#sim-technique [data-dd]');
+  // A CONTROL THAT BINDS THE MODE, not any control at all.
+  //
+  // It was "is there a dropdown in either block", which was a PROXY for "can
+  // the mode be changed here" and held only while neither block had a dropdown
+  // of its own. The Warframe picker became one on 2026-08-18 and this read it
+  // as a mode control — the same stale proxy check_equip_rules carried, found
+  // the same night.
+  const bindsMode = (el) => /mode|form/i.test(
+    (el.dataset.k || '') + ' ' + (el.dataset.dd || '') + ' ' + (el.id || ''));
+  out.simCanEdit = [...document.querySelectorAll(
+    '#sim-build-info [data-dd], #sim-build-info [data-k], #sim-technique [data-dd], #sim-technique [data-k]')]
+    .some(bindsMode);
   return out;
 })()`);
 
