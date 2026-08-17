@@ -9,1190 +9,1190 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: 72075610d8ee26707a9861950a4e47f405d3c40a
+engine: 144784d0bd019eb8eb79ce738c2de7a475561963
 entries:
   - weapon: akarius_prime
     mode: base
-    score: 1.2880285568289258
+    score: 1.3024632783900882
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, target_cracker, convulsion, pathogen_rounds, primed_heated_charge]
     arcanes: [secondary_enervate]
   - weapon: arbucep
     mode: base
-    score: 4.650031837983288
+    score: 4.65584856227954
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_deadly_efficiency, marked_target, magnetized_cycle, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_fortifier]
   - weapon: boar_prime
     mode: cycle
-    score: 1.0692497658249576
+    score: 1.0699035483184682
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, vigilante_armaments, primed_chilling_grasp, toxic_barrage, blaze]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
     arcanes: [primary_merciless]
   - weapon: boltor_prime
     mode: cycle
-    score: 0.42724412978071175
+    score: 0.42678698448104146
     mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [boltor_prime_evo1_incarnon_form, boltor_prime_hunters_mantra, boltor_prime_rapid_reinforcement, boltor_prime_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: burston_prime
     mode: cycle
-    score: 1.4734426933736346
+    score: 1.4741317142620558
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, magnetic_capacity, rime_rounds, malignant_force, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_merciless]
   - weapon: burston_prime
     mode: cycle
-    score: 1.4517170500752143
+    score: 1.4573120352974118
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_merciless]
   - weapon: burston_prime
     mode: cycle
-    score: 1.0685460846743402
+    score: 1.0698085627844998
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_merciless]
   - weapon: burston_prime
     mode: cycle
-    score: 1.0001868187274134
+    score: 1.0003643706528718
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vital_sense, rime_rounds, malignant_force, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_debilitate]
   - weapon: burston_prime
     mode: cycle
-    score: 0.9202815819337136
+    score: 0.9250027326742392
     mods: [galvanized_chamber, serration, critical_delay, rifle_elementalist, vital_sense, rime_rounds, high_voltage, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_debilitate]
   - weapon: burston_prime
     mode: cycle
-    score: 0.8214127331659367
+    score: 0.8274640893588467
     mods: [galvanized_chamber, serration, critical_delay, rifle_elementalist, vital_sense, rime_rounds, malignant_force, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_debilitate]
   - weapon: burston_prime
     mode: cycle
-    score: 0.7410547817480106
+    score: 0.7435469856920918
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, rime_rounds, malignant_force, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
     arcanes: [primary_debilitate]
   - weapon: burston_prime
     mode: cycle
-    score: 0.692446571203972
+    score: 0.6915425529732038
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
     arcanes: [primary_debilitate]
   - weapon: burston_prime
     mode: cycle
-    score: 0.6802767812536523
+    score: 0.6790291684874648
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
     arcanes: [primary_debilitate]
   - weapon: burston_prime
     mode: cycle
-    score: 0.6600708669534572
-    mods: [heavy_caliber, primary_acuity, hammer_shot, vital_sense, gilded_truth, magnetic_capacity, hellfire, thermite_rounds]
-    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
-    arcanes: [primary_deadhead]
-  - weapon: burston_prime
-    mode: cycle
-    score: 0.6567362489597814
+    score: 0.6578789814343166
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, high_voltage, malignant_force, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
     arcanes: [primary_debilitate]
   - weapon: burston_prime
     mode: cycle
-    score: 0.6071508093589182
+    score: 0.654304708153395
+    mods: [heavy_caliber, primary_acuity, hammer_shot, vital_sense, gilded_truth, magnetic_capacity, hellfire, thermite_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 0.6061081366139895
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
-    score: 0.5010633880684122
+    score: 0.5051733495956119
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_extended_volley, burston_prime_absolute_valor]
     arcanes: [primary_debilitate]
   - weapon: burston_prime
     mode: cycle
-    score: 0.4861266820275132
+    score: 0.49012907511693193
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, stormbringer, infected_clip, hellfire]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_kinetic_battle, burston_prime_absolute_valor]
     arcanes: [primary_debilitate]
   - weapon: coda_sporothrix
     mode: base
-    score: 0.7615650671178178
+    score: 0.7611961106733016
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, bladed_rounds, speed_trigger, vile_acceleration, vital_sense, thermite_rounds]
     arcanes: [primary_crux]
     valence: magnetic
   - weapon: dual_toxocyst
     mode: cycle
-    score: 2.1448255902055675
+    score: 2.2053525202113966
     mods: [hornet_strike, barrel_diffusion, lethal_torrent, perpetual_agony, pistol_elementalist, magnetic_might, sure_shot, pistol_pestilence]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_evolved_autoloader, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_encumber]
   - weapon: dual_toxocyst
     mode: cycle
-    score: 1.333215528427122
+    score: 1.3129662696317312
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, pistol_elementalist, frostbite, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_encumber]
   - weapon: dual_toxocyst
     mode: cycle
-    score: 0.940556272182758
+    score: 0.9467726576402302
     mods: [hornet_strike, galvanized_shot, lethal_torrent, perpetual_agony, pistol_elementalist, synth_charge, frostbite, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_encumber]
   - weapon: dual_toxocyst
     mode: cycle
-    score: 0.7651636961685835
+    score: 0.7563217277349951
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_deadhead]
   - weapon: dual_toxocyst
     mode: cycle
-    score: 0.29650647228130306
+    score: 0.2959273057915519
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_encumber]
   - weapon: furis
     mode: cycle
-    score: 2.8317114957734915
+    score: 2.8159746970842328
     mods: [hornet_strike, primed_target_cracker, galvanized_shot, barrel_diffusion, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
     arcanes: [secondary_encumber]
   - weapon: furis
     mode: cycle
-    score: 2.452414419458404
+    score: 2.530566095063259
     mods: [hornet_strike, primed_target_cracker, galvanized_shot, barrel_diffusion, lethal_torrent, pistol_elementalist, primed_heated_charge, scorch]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
     arcanes: [secondary_encumber]
   - weapon: furis
     mode: cycle
-    score: 2.0192012576398453
+    score: 2.0238438925541526
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
-    score: 0.8555692107583966
+    score: 0.8607294653595758
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_elemental_balance]
     arcanes: [secondary_encumber]
   - weapon: furis
     mode: cycle
-    score: 0.3094981492437675
+    score: 0.309547817157327
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_elemental_balance]
     arcanes: [secondary_enervate]
   - weapon: gotva_prime
     mode: base
-    score: 0.3402276243918234
+    score: 0.3432568513988783
     mods: [heavy_caliber, galvanized_aptitude, speed_trigger, vigilante_armaments, vigilante_supplies, vital_sense, wildfire, thermite_rounds]
     arcanes: [primary_merciless]
   - weapon: kuva_ayanga
     mode: base
-    score: 0.2803557792336077
+    score: 0.28295114922920356
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, parallax_scope, primed_electrified_barrel, contamination_casing, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
     valence: impact
   - weapon: kuva_nukor
     mode: base
-    score: 6.33795204756862
+    score: 6.34737427654317
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: heat
   - weapon: kuva_nukor
     mode: base
-    score: 6.205285305111973
+    score: 6.188591324516646
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
   - weapon: kuva_nukor
     mode: base
-    score: 6.140005842769162
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, ice_storm, pistol_pestilence, primed_heated_charge]
-    arcanes: [secondary_enervate]
-    valence: impact
-  - weapon: kuva_nukor
-    mode: base
-    score: 6.0648942385019415
+    score: 6.15692624285377
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, ice_storm, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
   - weapon: kuva_nukor
     mode: base
-    score: 5.81389737408362
+    score: 6.102019918853644
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, ice_storm, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: impact
+  - weapon: kuva_nukor
+    mode: base
+    score: 5.859730470421208
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: cold
   - weapon: kuva_nukor
     mode: base
-    score: 4.14309948338098
+    score: 4.145397906463131
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence]
     arcanes: [secondary_enervate]
     valence: heat
   - weapon: kuva_nukor
     mode: base
-    score: 3.485522429234575
+    score: 3.439999013082063
     mods: [hornet_strike, barrel_diffusion, lethal_torrent, pistol_elementalist, target_cracker, magnetic_might, frostbite, pistol_pestilence]
     arcanes: [secondary_enervate]
     valence: heat
   - weapon: kuva_nukor
     mode: base
-    score: 2.420681511165802
+    score: 2.4052563154417967
     mods: [pistol_acuity, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: heat
   - weapon: kuva_nukor
     mode: base
-    score: 1.695797900884204
+    score: 1.693758590340303
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence]
     arcanes: [cascadia_empowered]
     valence: heat
   - weapon: kuva_nukor
     mode: base
-    score: 1.1837833827022168
+    score: 1.183591010370863
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence]
     arcanes: [cascadia_empowered]
     valence: heat
   - weapon: kuva_nukor
     mode: base
-    score: 1.0951949576082645
+    score: 1.0966548747938396
     mods: [pistol_acuity, merciless_gunfight, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
     arcanes: [secondary_enervate]
     valence: heat
   - weapon: laetum
     mode: cycle
-    score: 4.239757591781465
+    score: 4.241704305282842
     mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
-    score: 4.0020369243245755
+    score: 4.011250919718059
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, jolt, pistol_pestilence]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
-    score: 2.627938463118381
+    score: 2.6290119005443913
     mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
-    score: 2.3782695435531425
+    score: 2.3644156237298866
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [cascadia_flare]
   - weapon: laetum
     mode: cycle
-    score: 2.2335069998340153
+    score: 2.241083826871125
     mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
-    score: 1.583567665759776
+    score: 1.5860167179595894
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, accelerated_isotope, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [cascadia_flare]
   - weapon: laetum
     mode: cycle
-    score: 1.32039355497726
+    score: 1.3225633822256044
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
-    score: 1.0226160494377985
+    score: 1.0200699548996195
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, accelerated_isotope, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_overwhelming_attrition]
     arcanes: [cascadia_flare]
   - weapon: laetum
     mode: cycle
-    score: 0.6378328474752165
+    score: 0.6405486699918765
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, gunslinger, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [secondary_deadhead]
   - weapon: laetum
     mode: cycle
-    score: 0.6334415505425376
+    score: 0.6345826103257849
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [secondary_deadhead]
   - weapon: larkspur_prime
     mode: base
-    score: 4.666666666666667
+    score: 4.7668711950483935
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
-    score: 4.316239645550133
+    score: 4.309602944514212
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, ammo_chain, magnetized_cycle, polar_magazine, venomous_clip, magma_chamber]
     arcanes: [primary_debilitate, secondary_fortifier]
   - weapon: larkspur_prime
     mode: base
-    score: 3.9585984304074646
+    score: 4
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
-    score: 3.6522286407298687
+    score: 3.6280329088842462
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
-    score: 3.4698983352413233
+    score: 3.464766446751303
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, polar_magazine, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
-    score: 3
+    score: 3.0119576340279335
     mods: [primed_rubedo_lined_barrel, dual_rounds, ammo_chain, magnetized_cycle, hypothermic_shell, contamination_casing, combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
   - weapon: larkspur_prime
     mode: base
-    score: 2.4880037587360917
+    score: 2.5101265002816673
     mods: [primed_rubedo_lined_barrel, dual_rounds, ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, combustion_rounds]
     arcanes: [primary_merciless, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
-    score: 2.385780353594211
+    score: 2.429317089589097
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
   - weapon: larkspur_prime
     mode: base
-    score: 2.080635625842296
+    score: 2.0908391886328475
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, containment_breach, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
   - weapon: larkspur_prime
     mode: base
-    score: 2.0271888201702666
+    score: 2.0439660533466393
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
   - weapon: larkspur_prime
     mode: alternate
-    score: 2
+    score: 1.9987630569085133
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, primed_ammo_chain, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_merciless, secondary_fortifier]
   - weapon: larkspur_prime
     mode: base
-    score: 1.7111984760294756
+    score: 1.713880018395674
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, critical_focus, marked_target, primed_ammo_chain, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
-    score: 0.22672160132387095
+    score: 0.22671595523573368
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, primed_combustion_rounds, magma_chamber, primed_venomous_clip, hypothermic_shell]
     arcanes: [primary_crux, cascadia_flare]
   - weapon: latron_prime
     mode: cycle
-    score: 0.30930648523394005
+    score: 0.30964516776722667
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
     arcanes: [primary_merciless]
   - weapon: latron_prime
     mode: cycle
-    score: 0.27632116058897266
+    score: 0.2763857720660908
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
     arcanes: [primary_deadhead]
   - weapon: latron_prime
     mode: cycle
-    score: 0.13309195081436168
+    score: 0.13324980192207825
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
     arcanes: [primary_deadhead]
   - weapon: mk1_furis
     mode: cycle
-    score: 1.303215954898256
+    score: 1.3211838244989584
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [mk1_furis_evo1_incarnon_form, mk1_furis_stormburst, mk1_furis_executioners_fortune, mk1_furis_elemental_balance]
     arcanes: [secondary_enervate]
   - weapon: mk1_furis
     mode: cycle
-    score: 0.6697242684753245
+    score: 0.6674679770482331
     mods: [galvanized_diffusion, hornet_strike, primed_pistol_gambit, lethal_torrent, pistol_elementalist, scorch, pistol_pestilence, jolt]
     evolutions: [mk1_furis_evo1_incarnon_form, mk1_furis_stormburst, mk1_furis_extended_volley, mk1_furis_elemental_balance]
     arcanes: [secondary_encumber]
   - weapon: ocucor
     mode: base
-    score: 5.003541337101061
+    score: 5.0034659281085245
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_fortifier]
   - weapon: ocucor
     mode: base
-    score: 2.1544725635433104
+    score: 2.145147352028097
     mods: [galvanized_diffusion, lethal_torrent, anemic_agility, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
   - weapon: ocucor
     mode: base
-    score: 2.080353966425921
+    score: 2.1018266951526345
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
   - weapon: ocucor
     mode: base
-    score: 1.8602236877151557
+    score: 1.9092034203059705
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, sure_shot, primed_heated_charge, scorch]
     arcanes: [secondary_encumber]
   - weapon: ocucor
     mode: base
-    score: 1.8110330479097216
+    score: 1.833975949037797
     mods: [galvanized_diffusion, lethal_torrent, pistol_elementalist, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
   - weapon: ocucor
     mode: base
-    score: 1.7797747850123746
+    score: 1.770196411984943
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
   - weapon: ocucor
     mode: base
-    score: 1.378569389579204
+    score: 1.378488820131794
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_encumber]
   - weapon: ocucor
     mode: base
-    score: 0.8908210707527252
+    score: 0.8859016831937407
     mods: [hornet_strike, primed_target_cracker, barrel_diffusion, lethal_torrent, magnetic_might, sentient_surge, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
   - weapon: ocucor
     mode: base
-    score: 0.8636314513574284
+    score: 0.8656828485884331
     mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, pistol_elementalist, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
   - weapon: ocucor
     mode: base
-    score: 0.423626824883857
+    score: 0.4217800722348892
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, sentient_surge, primed_convulsion, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
   - weapon: ocucor
     mode: base
-    score: 0.40142879855162256
+    score: 0.3994143052906177
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, sentient_surge, primed_convulsion, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_flare]
   - weapon: ocucor
     mode: base
-    score: 0.33837581879599454
+    score: 0.33883733032180824
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, sentient_surge, primed_convulsion, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_encumber]
   - weapon: ocucor
     mode: base
-    score: 0.30833917457186266
+    score: 0.30979865961414405
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, sentient_surge, primed_convulsion, pathogen_rounds, primed_heated_charge]
     arcanes: [secondary_enervate]
   - weapon: ocucor
     mode: base
-    score: 0.27832649174979207
+    score: 0.27905256982800236
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, sentient_surge, primed_convulsion, pistol_pestilence, primed_heated_charge]
     arcanes: [cascadia_empowered]
   - weapon: ocucor
     mode: base
-    score: 0.24488273613939324
+    score: 0.2468933328608896
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_gambit, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_encumber]
   - weapon: ocucor
     mode: base
-    score: 0.0017048573490463883
+    score: 0.0017066618740419666
     mods: [pistol_acuity, galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, accelerated_isotope, sentient_surge, frostbite]
     arcanes: [cascadia_flare]
   - weapon: phantasma
     mode: base
-    score: 6.311676735055979
+    score: 6.318447089301814
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, vigilante_armaments, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
   - weapon: phantasma_prime
     mode: base
-    score: 6.725957847004379
+    score: 6.675404482363965
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
   - weapon: phantasma_prime
     mode: base
-    score: 6.691844701721747
+    score: 6.67084042611791
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, vigilante_armaments, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
   - weapon: phantasma_prime
     mode: base
-    score: 6.38623565648021
+    score: 6.379475995340114
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, vigilante_armaments, magnetic_strafe, chilling_reload, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
   - weapon: phantasma_prime
     mode: base
-    score: 5.81164894222583
+    score: 5.815973598484083
     mods: [galvanized_hell, primed_point_blank, vigilante_armaments, magnetic_strafe, shotgun_savvy, chilling_reload, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
   - weapon: phantasma_prime
     mode: base
-    score: 5.39649957615166
+    score: 5.393350879358298
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
   - weapon: phantasma_prime
     mode: base
-    score: 5.334797611613261
+    score: 5.33529603614214
     mods: [galvanized_hell, magnetic_welt, primed_point_blank, shotgun_barrage, shotgun_savvy, incendiary_coat, blaze, scattering_inferno]
     arcanes: [shotgun_vendetta]
   - weapon: phantasma_prime
     mode: alternate
-    score: 0.2348292941478878
+    score: 0.2350621240786916
     mods: [magnetic_welt, primed_point_blank, hells_chamber, hunter_track, shotgun_savvy, incendiary_coat, blaze, scattering_inferno]
     arcanes: [primary_merciless]
   - weapon: phantasma_prime
     mode: alternate
-    score: 0.23274734123924232
+    score: 0.23228279000461735
     mods: [primed_point_blank, hells_chamber, shotgun_barrage, vigilante_armaments, frigid_blast, shell_shock, incendiary_coat, scattering_inferno]
     arcanes: [primary_merciless]
   - weapon: phantasma_prime
     mode: alternate
-    score: 0.23156535905412465
+    score: 0.23069783568487073
     mods: [magnetic_welt, primed_point_blank, hells_chamber, shotgun_barrage, shotgun_savvy, incendiary_coat, blaze, scattering_inferno]
     arcanes: [primary_merciless]
   - weapon: phantasma_prime
     mode: alternate
-    score: 0.22909068204170413
+    score: 0.2278681653400872
     mods: [magnetic_welt, primed_point_blank, galvanized_savvy, hells_chamber, shotgun_barrage, incendiary_coat, blaze, scattering_inferno]
     arcanes: [primary_merciless]
   - weapon: phantasma_prime
     mode: alternate
-    score: 0.22161400800129985
+    score: 0.2225247474700882
     mods: [galvanized_hell, magnetic_welt, primed_point_blank, shotgun_barrage, shotgun_savvy, incendiary_coat, blaze, scattering_inferno]
     arcanes: [shotgun_vendetta]
   - weapon: phantasma_prime
     mode: alternate
-    score: 0.13380295938582798
+    score: 0.134330590203266
     mods: [magnetic_welt, primed_point_blank, galvanized_savvy, accelerated_blast, shotgun_elementalist, incendiary_coat, blaze, scattering_inferno]
     arcanes: [primary_merciless]
   - weapon: phantasma_prime
     mode: alternate
-    score: 0.13291827464958128
+    score: 0.13417943217077166
     mods: [magnetic_welt, primed_point_blank, hunter_track, shotgun_elementalist, shotgun_savvy, incendiary_coat, blaze, scattering_inferno]
     arcanes: [primary_merciless]
   - weapon: phantasma_prime
     mode: alternate
-    score: 0.12806641915123948
+    score: 0.12857033954956962
     mods: [magnetic_welt, primed_point_blank, galvanized_savvy, hunter_track, shotgun_elementalist, incendiary_coat, blaze, scattering_inferno]
     arcanes: [primary_merciless]
   - weapon: phantasma_prime
     mode: alternate
-    score: 0.11057705004282849
+    score: 0.11013090444266548
     mods: [primed_point_blank, magnetic_strafe, shotgun_savvy, frigid_blast, shell_shock, incendiary_coat, blaze, scattering_inferno]
     arcanes: [primary_merciless]
   - weapon: phantasma_prime
     mode: alternate
-    score: 0.06831967668327785
+    score: 0.06826581860187438
     mods: [magnetic_welt, primed_point_blank, hells_chamber, hunter_track, shotgun_savvy, frigid_blast, shell_shock, scattering_inferno]
     arcanes: [primary_merciless]
   - weapon: phantasma_prime
     mode: alternate
-    score: 0.057394645373561246
+    score: 0.05806211087528146
     mods: [magnetic_welt, primed_point_blank, lingering_torment, hells_chamber, hunter_track, shotgun_elementalist, primed_charged_shell, shell_shock]
     arcanes: [primary_merciless]
   - weapon: phantasma_prime
     mode: alternate
-    score: 0.04196318031302193
+    score: 0.04274413542358624
     mods: [magnetic_welt, primed_point_blank, hells_chamber, hunter_track, shotgun_savvy, primed_chilling_grasp, toxic_barrage, scattering_inferno]
     arcanes: [primary_merciless]
   - weapon: phantasma_prime
     mode: alternate
-    score: 0.040737543106651675
+    score: 0.041022227822456125
     mods: [magnetic_welt, primed_point_blank, hells_chamber, hunter_track, blaze, toxic_barrage, primed_charged_shell, shell_shock]
     arcanes: [primary_merciless]
   - weapon: phantasma_prime
     mode: alternate
-    score: 0.018237446198653567
+    score: 0.018277705592263677
     mods: [galvanized_hell, primed_point_blank, vigilante_armaments, magnetic_strafe, shotgun_savvy, chilling_reload, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
   - weapon: phantasma_prime
     mode: alternate
-    score: 0.012564364524020618
+    score: 0.012599296711865252
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
   - weapon: phenmor
     mode: cycle
-    score: 3.690836054381202
+    score: 3.7620290440620674
     mods: [galvanized_chamber, galvanized_aptitude, vile_acceleration, magnetic_capacity, primed_cryo_rounds, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_ready_retaliation, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_debilitate]
   - weapon: prisma_angstrum
     mode: cycle
-    score: 2.1710087752750855
+    score: 2.163132208469111
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, primed_pistol_gambit, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_swift_deliverance, prisma_angstrum_critical_parallel]
     arcanes: [cascadia_flare]
   - weapon: prisma_angstrum
     mode: cycle
-    score: 1.625481348031909
+    score: 1.6472608157121846
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, primed_pistol_gambit, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_rapid_reinforcement, prisma_angstrum_survivors_edge]
     arcanes: [cascadia_flare]
   - weapon: rubico_prime
     mode: base
-    score: 0.2234794950257265
+    score: 0.22301736042877873
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, critical_delay, semi_rifle_cannonade, vital_sense, magnetic_capacity, hellfire]
     arcanes: [primary_crux]
   - weapon: shedu
     mode: base
-    score: 0.4892389841490149
+    score: 0.4968537640404176
     mods: [split_chamber, serration, critical_delay, hammer_shot, vital_sense, rime_rounds, high_voltage, hellfire]
     arcanes: [primary_merciless]
   - weapon: shedu
     mode: base
-    score: 0.2299013039712653
+    score: 0.23096583179773064
     mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, hellfire]
     arcanes: [primary_crux]
   - weapon: shedu
     mode: base
-    score: 0.05760412490604313
+    score: 0.05809318798435462
     mods: [primary_acuity, serration, galvanized_aptitude, hammer_shot, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip]
     arcanes: [primary_compression]
   - weapon: shedu
     mode: base
-    score: 0.055370774551321625
+    score: 0.05539608285237525
     mods: [primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     arcanes: [primary_crux]
   - weapon: sporothrix
     mode: base
-    score: 1.551812545135924
+    score: 1.5529244267509423
     mods: [galvanized_chamber, galvanized_aptitude, hammer_shot, semi_rifle_cannonade, vigilante_armaments, magnetic_capacity, hellfire, thermite_rounds]
     arcanes: [primary_merciless]
   - weapon: sporothrix
     mode: base
-    score: 0.7911585686819611
+    score: 0.7873217582605677
     mods: [galvanized_chamber, heavy_caliber, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, radiated_reload, thermite_rounds]
     arcanes: [primary_crux]
   - weapon: stug
     mode: cycle
-    score: 1.4356866979974905
+    score: 1.4379328178583854
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, lethal_torrent, anemic_agility, primed_convulsion, pathogen_rounds]
     evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
     arcanes: [secondary_deadhead]
   - weapon: torid
     mode: cycle
-    score: 5.0981424318636535
-    mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_debilitate]
-  - weapon: torid
-    mode: cycle
-    score: 5.086546454200925
-    mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_debilitate]
-  - weapon: torid
-    mode: cycle
-    score: 5.079360869065493
+    score: 5.131457975984749
     mods: [galvanized_chamber, heavy_caliber, serration, hammer_shot, point_strike, vigilante_armaments, vital_sense, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 5.068073213142772
-    mods: [galvanized_chamber, serration, hammer_shot, point_strike, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_debilitate]
-  - weapon: torid
-    mode: cycle
-    score: 5.043535865801397
+    score: 5.128419590857925
     mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_elemental_balance]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 4.729444381315731
+    score: 5.109965537553047
+    mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
+    score: 5.092860657116853
+    mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
+    score: 5.073591213697545
+    mods: [galvanized_chamber, serration, hammer_shot, point_strike, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
+    score: 4.698299682577968
     mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 4.684606805872358
+    score: 4.659179891871204
     mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 4.684606805872358
+    score: 4.659179891871204
     mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 4.566017948227486
+    score: 4.5668267906872275
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 4.510292700026644
-    mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_debilitate]
-  - weapon: torid
-    mode: cycle
-    score: 4.505150174153886
+    score: 4.55630015847184
     mods: [galvanized_chamber, serration, hammer_shot, point_strike, vigilante_armaments, vital_sense, magnetic_capacity, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 4.303588832717519
+    score: 4.528160570081653
+    mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
+    score: 4.28532176165993
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 3.965371486945423
-    mods: [galvanized_chamber, serration, critical_delay, hammer_shot, magnetic_capacity, rime_rounds, malignant_force, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
-    arcanes: [primary_debilitate]
-  - weapon: torid
-    mode: cycle
-    score: 3.955663462280475
+    score: 3.9536450458436567
     mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 3.692642731560683
+    score: 3.9318335896342096
+    mods: [galvanized_chamber, serration, critical_delay, hammer_shot, magnetic_capacity, rime_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
+    score: 3.7209831779175455
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 3.6704271801786312
+    score: 3.668051954161601
     mods: [split_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 3.01293466114816
+    score: 3.010047725515867
     mods: [split_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 2.6700544235850225
+    score: 2.66686567185343
     mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_merciless]
   - weapon: torid
     mode: cycle
-    score: 2.635968453639125
+    score: 2.631650157100011
     mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_deadhead]
   - weapon: torid
     mode: cycle
-    score: 2.635968453639125
+    score: 2.631650157100011
     mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_overcharge]
   - weapon: torid
     mode: cycle
-    score: 2.5730184615523366
+    score: 2.574598891669519
     mods: [galvanized_chamber, serration, point_strike, vigilante_armaments, vital_sense, magnetic_capacity, high_voltage, malignant_force]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 2.5561112484639303
+    score: 2.5558282205663834
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, magnetic_capacity, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_merciless]
   - weapon: torid
     mode: cycle
-    score: 2.524432499362919
+    score: 2.5068723837027704
     mods: [galvanized_chamber, galvanized_aptitude, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 2.4489131219057474
+    score: 2.4680657355980764
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, magnetic_capacity, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_crux]
   - weapon: torid
     mode: cycle
-    score: 2.4489131219057474
+    score: 2.4680657355980764
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, magnetic_capacity, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_deadhead]
   - weapon: torid
     mode: cycle
-    score: 2.3919414352301325
+    score: 2.3988628260908955
     mods: [galvanized_chamber, serration, critical_delay, vigilante_armaments, magnetic_capacity, high_voltage, wildfire, rime_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 2.3303893972354746
+    score: 2.333415845639373
     mods: [amalgam_serration, galvanized_chamber, primed_firestorm, vigilante_armaments, magnetic_capacity, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 2.3144917507336364
+    score: 2.3170856924608767
     mods: [amalgam_serration, galvanized_chamber, primed_firestorm, hammer_shot, magnetic_capacity, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 2.292435356978543
+    score: 2.292957313011126
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, high_voltage]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 2.2220269569054443
+    score: 2.196444364837139
     mods: [amalgam_serration, galvanized_chamber, primed_firestorm, vital_sense, magnetic_capacity, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 2.1720035932508925
+    score: 2.1865990138327875
     mods: [amalgam_serration, galvanized_chamber, primed_firestorm, vigilante_armaments, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 2.1100377486645603
+    score: 2.118991999652673
     mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_deadhead]
   - weapon: torid
     mode: cycle
-    score: 2.047943036028006
+    score: 2.050663641879754
     mods: [galvanized_chamber, serration, point_strike, vile_acceleration, vital_sense, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 2.047943036028006
+    score: 2.050663641879754
     mods: [galvanized_chamber, serration, point_strike, vile_acceleration, vital_sense, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 1.9745519454013412
+    score: 1.9850253584998625
     mods: [split_chamber, serration, critical_delay, hammer_shot, vigilante_armaments, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 1.952661263914521
+    score: 1.9509733633953583
     mods: [galvanized_chamber, serration, rifle_aptitude, rifle_elementalist, magnetic_capacity, rime_rounds, infected_clip, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_elemental_balance]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 1.8513953265973857
+    score: 1.8450371008967912
+    mods: [galvanized_chamber, serration, hammer_shot, point_strike, vital_sense, cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
+    score: 1.8419694193800211
     mods: [galvanized_chamber, galvanized_aptitude, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_merciless]
   - weapon: torid
     mode: cycle
-    score: 1.839180478241462
-    mods: [galvanized_chamber, serration, hammer_shot, point_strike, vital_sense, cryo_rounds, malignant_force, thermite_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_debilitate]
-  - weapon: torid
-    mode: cycle
-    score: 1.7667328901361874
+    score: 1.788071130453124
     mods: [heavy_caliber, split_chamber, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
   - weapon: torid
     mode: cycle
-    score: 1.7309667941380311
+    score: 1.7383826197248589
     mods: [galvanized_chamber, serration, point_strike, vile_acceleration, vital_sense, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 1.67149143491826
+    score: 1.6764948837588187
     mods: [amalgam_serration, galvanized_chamber, critical_delay, hammer_shot, vital_sense, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_merciless]
   - weapon: torid
     mode: cycle
-    score: 1.5805806780057106
+    score: 1.536055804835187
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, hellfire, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_crux]
   - weapon: torid
     mode: cycle
-    score: 1.5274580938338445
-    mods: [galvanized_chamber, serration, critical_delay, vital_sense, primed_cryo_rounds, infected_clip, hellfire, thermite_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_debilitate]
-  - weapon: torid
-    mode: cycle
-    score: 1.5171183551777117
+    score: 1.5355510045205227
     mods: [split_chamber, serration, critical_delay, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 1.4812686771465442
+    score: 1.5239591342995582
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, primed_cryo_rounds, infected_clip, hellfire, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
+    score: 1.4906524149019216
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 1.4756517279375367
-    mods: [galvanized_chamber, serration, hammer_shot, rifle_elementalist, rime_rounds, malignant_force, hellfire, thermite_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_elemental_balance]
-    arcanes: [primary_deadhead]
-  - weapon: torid
-    mode: cycle
-    score: 1.4460438092814822
+    score: 1.4415648796948175
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 1.3955124174218398
+    score: 1.433351864331864
+    mods: [galvanized_chamber, serration, hammer_shot, rifle_elementalist, rime_rounds, malignant_force, hellfire, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_elemental_balance]
+    arcanes: [primary_deadhead]
+  - weapon: torid
+    mode: cycle
+    score: 1.393443401708383
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, rifle_elementalist, rime_rounds, infected_clip, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 1.3785441155438825
+    score: 1.3902632254412426
+    mods: [amalgam_serration, galvanized_chamber, critical_delay, vile_acceleration, vital_sense, cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_merciless]
+  - weapon: torid
+    mode: cycle
+    score: 1.3838706965338954
     mods: [amalgam_serration, galvanized_chamber, critical_delay, rifle_elementalist, vital_sense, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_merciless]
   - weapon: torid
     mode: cycle
-    score: 1.3754426516191456
-    mods: [amalgam_serration, galvanized_chamber, critical_delay, vile_acceleration, vital_sense, cryo_rounds, malignant_force, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_merciless]
-  - weapon: torid
-    mode: cycle
-    score: 1.367491032462082
+    score: 1.378050758997983
     mods: [amalgam_serration, galvanized_chamber, critical_delay, vile_acceleration, vital_sense, cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_deadhead]
   - weapon: torid
     mode: cycle
-    score: 1.3586078519228
-    mods: [galvanized_chamber, serration, point_strike, vigilante_armaments, vital_sense, cryo_rounds, malignant_force, thermite_rounds]
-    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_frostbite]
-  - weapon: torid
-    mode: cycle
-    score: 1.351930239517929
+    score: 1.3668035701055763
     mods: [galvanized_chamber, serration, point_strike, vile_acceleration, vital_sense, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_merciless]
   - weapon: torid
     mode: cycle
-    score: 1.3468415004897727
-    mods: [galvanized_chamber, serration, hammer_shot, point_strike, vital_sense, cryo_rounds, malignant_force, thermite_rounds]
+    score: 1.359390882777716
+    mods: [galvanized_chamber, serration, point_strike, vigilante_armaments, vital_sense, cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_frostbite]
   - weapon: torid
     mode: cycle
-    score: 1.3436031845897538
+    score: 1.3449239488883171
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 1.3381964945446905
+    score: 1.3396239088347015
+    mods: [galvanized_chamber, serration, hammer_shot, point_strike, vital_sense, cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_frostbite]
+  - weapon: torid
+    mode: cycle
+    score: 1.322158949959084
     mods: [galvanized_chamber, serration, critical_delay, rifle_aptitude, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 1.2335590526446276
+    score: 1.2513889123731163
     mods: [galvanized_chamber, serration, critical_delay, rifle_aptitude, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_renewed_horror, torid_survivors_edge]
     arcanes: [primary_dexterity]
   - weapon: torid
     mode: cycle
-    score: 1.2195057030662222
+    score: 1.222531274303855
     mods: [galvanized_chamber, heavy_caliber, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_merciless]
   - weapon: torid
     mode: cycle
-    score: 1.200929232757217
+    score: 1.203280620861936
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, rifle_elementalist, primed_cryo_rounds, infected_clip, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 1.185047099744279
+    score: 1.188007566062529
     mods: [galvanized_chamber, serration, critical_delay, rifle_elementalist, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_renewed_horror, torid_survivors_edge]
     arcanes: [primary_dexterity]
   - weapon: torid
     mode: cycle
-    score: 1.1686175593934718
+    score: 1.16794402947763
     mods: [galvanized_chamber, heavy_caliber, critical_delay, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_merciless]
   - weapon: torid
     mode: cycle
-    score: 1.1686175593934718
+    score: 1.16794402947763
     mods: [galvanized_chamber, serration, critical_delay, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_merciless]
   - weapon: torid
     mode: cycle
-    score: 1.1297671053367098
+    score: 1.1066382870004423
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, rifle_elementalist, rime_rounds, infected_clip, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_merciless]
   - weapon: torid
     mode: cycle
-    score: 1.1063748580227817
+    score: 1.0901897945956331
     mods: [amalgam_serration, galvanized_chamber, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_merciless]
   - weapon: torid
     mode: cycle
-    score: 1.0721966675385075
+    score: 1.0733195638338584
     mods: [galvanized_chamber, serration, critical_delay, rifle_elementalist, vital_sense, primed_cryo_rounds, infected_clip, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 1.05014249860026
+    score: 1.0530558105034256
     mods: [galvanized_chamber, serration, rifle_aptitude, rifle_elementalist, vile_acceleration, rime_rounds, infected_clip, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_elemental_balance]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 1.038683990890099
+    score: 1.043357369203521
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, rifle_elementalist, primed_cryo_rounds, infected_clip, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_elemental_balance]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 0.9496666395370876
+    score: 0.9494559603486056
     mods: [amalgam_serration, galvanized_chamber, critical_delay, vile_acceleration, vital_sense, stormbringer, infected_clip, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_frostbite]
   - weapon: torid
     mode: cycle
-    score: 0.8277511579430551
+    score: 0.8295160176894458
     mods: [galvanized_chamber, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, stormbringer, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
   - weapon: torid
     mode: cycle
-    score: 0.7944358387235528
+    score: 0.7957695392633188
     mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_frostbite]
   - weapon: torid
     mode: cycle
-    score: 0.5853034494159466
+    score: 0.5853902891707957
     mods: [heavy_caliber, serration, critical_delay, vile_acceleration, vital_sense, high_voltage, malignant_force, rime_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_frostbite]
   - weapon: torid
     mode: cycle
-    score: 0.5814334492655255
+    score: 0.5815991170415343
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, thermite_rounds, stormbringer]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
-    score: 0.5793758927417223
+    score: 0.5796760657566797
     mods: [amalgam_serration, galvanized_chamber, critical_delay, hammer_shot, vital_sense, stormbringer, infected_clip, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_frostbite]
   - weapon: torid
     mode: cycle
-    score: 0.5174917518028146
+    score: 0.5179455845180009
     mods: [amalgam_serration, galvanized_chamber, critical_delay, hammer_shot, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_frostbite]
   - weapon: torid
     mode: cycle
-    score: 0.5038227555210039
+    score: 0.5045161273336884
     mods: [galvanized_chamber, serration, critical_delay, rifle_aptitude, vital_sense, high_voltage, malignant_force, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_frostbite]
   - weapon: torid
     mode: cycle
-    score: 0.3267978493646906
+    score: 0.3271396288808037
     mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, primed_cryo_rounds, thermite_rounds, high_voltage]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_merciless]
   - weapon: torid
     mode: cycle
-    score: 0.28402567705018
+    score: 0.28424112938623064
     mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, primed_cryo_rounds, high_voltage, malignant_force]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_frostbite]
   - weapon: torid
     mode: cycle
-    score: 0.28088569406878167
+    score: 0.281192091609155
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vital_sense, primed_cryo_rounds, thermite_rounds, high_voltage]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_merciless]
   - weapon: torid
     mode: cycle
-    score: 0.27023873786022745
+    score: 0.2700421562819184
     mods: [primary_acuity, serration, galvanized_aptitude, hunter_munitions, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_deadhead]
   - weapon: torid
     mode: cycle
-    score: 0.23841463893491024
+    score: 0.23853091290630635
     mods: [galvanized_chamber, serration, critical_delay, rifle_aptitude, vital_sense, primed_cryo_rounds, hellfire, malignant_force]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_renewed_horror, torid_survivors_edge]
     arcanes: [primary_dexterity]
   - weapon: torid
     mode: cycle
-    score: 0.17033484369504454
+    score: 0.17075680333926008
     mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_deadhead]
   - weapon: torid
     mode: cycle
-    score: 0.1442965696610231
+    score: 0.144914130279317
     mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_merciless]
   - weapon: vectis_prime
     mode: base
-    score: 1.6973155120252124
+    score: 1.696582842816628
     mods: [heavy_caliber, split_chamber, critical_delay, hammer_shot, semi_rifle_cannonade, vital_sense, hellfire, thermite_rounds]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_survivors_edge]
     arcanes: [primary_merciless]
   - weapon: vectis_prime
     mode: base
-    score: 0.8862422564339674
+    score: 0.8896738289914345
     mods: [galvanized_chamber, galvanized_aptitude, rifle_elementalist, semi_rifle_cannonade, magnetic_capacity, rime_rounds, malignant_force, hellfire]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_survivors_edge]
     arcanes: [primary_merciless]
   - weapon: verglas_prime
     mode: base
-    score: 1.0411118336292406
+    score: 1.0402240549177186
     mods: [heavy_caliber, split_chamber, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire, thermite_rounds]
   - weapon: verglas_prime
     mode: base
-    score: 0.7087734953965382
+    score: 0.7095226384633503
     mods: [galvanized_chamber, heavy_caliber, serration, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
   - weapon: verglas_prime
     mode: base
-    score: 0.6714357307048275
+    score: 0.6695521553137208
     mods: [galvanized_chamber, heavy_caliber, primed_shred, serration, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
   - weapon: verglas_prime
     mode: base
-    score: 0.6679210795037888
-    mods: [heavy_caliber, serration, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, wildfire, thermite_rounds]
-  - weapon: verglas_prime
-    mode: base
-    score: 0.6669884707101911
+    score: 0.6669535248023396
     mods: [galvanized_chamber, serration, galvanized_aptitude, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
   - weapon: verglas_prime
     mode: base
-    score: 0.6492865381271052
+    score: 0.664387655967895
+    mods: [heavy_caliber, serration, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, wildfire, thermite_rounds]
+  - weapon: verglas_prime
+    mode: base
+    score: 0.6444101757314155
     mods: [heavy_caliber, split_chamber, serration, vile_acceleration, rime_rounds, high_voltage, hellfire, thermite_rounds]
   - weapon: verglas_prime
     mode: base
-    score: 0.21300496984746992
+    score: 0.2130364829565959
     mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, magnetic_capacity, rime_rounds, thermite_rounds, malignant_force]
