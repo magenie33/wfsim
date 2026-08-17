@@ -66,6 +66,46 @@ pub fn simulate_progress(body: &str, on_progress: &js_sys::Function) -> String {
     wfsim_webapi::simulate_json_reporting(&v, &mut tick).to_string()
 }
 
+/// ONE SHARD OF A SIMULATION — what a worker in the FLEET runs.
+///
+/// `from` is the index of the first run, `count` how many. Every run's dice are
+/// a pure function of `(seed, index)`, so the shards of a range merge into
+/// exactly what one call over the whole range produces — asserted twice, on the
+/// summary (`dummy::tests::eight_shards_are_one_run`) and on the whole response
+/// (`a_fleet_of_shards_reports_what_one_worker_reports`).
+///
+/// Returns the shard, which carries SUMS rather than runs: about 24 KB at a
+/// thousand runs against the 8 MB a thousand `RunResult`s would be.
+#[wasm_bindgen]
+pub fn simulate_shard(body: &str, from: u32, count: u32, on_progress: &js_sys::Function) -> String {
+    let v: serde_json::Value = serde_json::from_str(body).unwrap_or(serde_json::Value::Null);
+    let mut last = u32::MAX;
+    let mut tick = |done: u32, total: u32| {
+        let pct = (done * 100).checked_div(total).unwrap_or(100);
+        if pct != last || done == total {
+            last = pct;
+            let _ = on_progress.call2(
+                &JsValue::NULL,
+                &JsValue::from_f64(f64::from(done)),
+                &JsValue::from_f64(f64::from(total)),
+            );
+        }
+    };
+    wfsim_webapi::simulate_shard_json(&v, from, count, &mut tick).to_string()
+}
+
+/// …AND THE MERGE, which turns the fleet's shards into the ordinary response.
+///
+/// Every field of the answer is computed in Rust, so there is ONE
+/// implementation of the arithmetic rather than a Rust one and a JavaScript one
+/// that drift — the page only schedules and collects.
+#[wasm_bindgen]
+pub fn simulate_merged(body: &str, shards: &str) -> String {
+    let v: serde_json::Value = serde_json::from_str(body).unwrap_or(serde_json::Value::Null);
+    let parts: Vec<serde_json::Value> = serde_json::from_str(shards).unwrap_or_default();
+    wfsim_webapi::simulate_merged_json(&v, &parts).to_string()
+}
+
 /// Snapshot `FunnelState` into the native /api/optimize/status shape (minus
 /// `job_id`/`result` — the worker protocol owns those).
 fn status_json(state: &FunnelState, phase: &str, counts: Option<(usize, usize)>, elapsed_s: f64) -> String {

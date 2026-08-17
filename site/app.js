@@ -309,6 +309,110 @@ function ensureRpcWorker() {
 }
 /// `onProgress(done, total)` is optional and only `/api/simulate` reports it —
 /// see the worker. Every other call is unchanged.
+/// THE SIM'S OWN WORKER FLEET — one worker per core, the same shape the
+/// optimizer's has used since it existed.
+///
+/// The runs of a simulation are INDEPENDENT given their index, so N workers
+/// each take a slice and the shards are merged back into exactly what one
+/// worker would have produced (`eight_shards_are_one_run`). Measured on a
+/// 361-body ruler with a full status build: 14.4 s a hundred runs on one
+/// thread, 2.1 on eight — 6.8x (owner, 2026-08-18).
+///
+/// SAME RULE AS THE QUICK CALC'S LANES: every core but one, capped at eight. No
+/// setting of its own — a simulation is not a search and has no preset to put
+/// one in; it takes what the machine has.
+let simFleet = null;
+const simLanes = () => {
+  if (simFleet) return simFleet;
+  const n = Math.max(1, Math.min((Number(navigator.hardwareConcurrency) || 4) - 1, 8));
+  simFleet = Array.from({ length: n }, () => {
+    const w = new Worker("/worker.js");
+    const pending = new Map();
+    const progress = new Map();
+    let seq = 0;
+    w.onmessage = (e) => {
+      if (e.data.kind === "progress") {
+        const f = progress.get(e.data.id);
+        if (f) f(e.data.done, e.data.total);
+        return;
+      }
+      const r = pending.get(e.data.id);
+      if (r) { pending.delete(e.data.id); progress.delete(e.data.id); r(e.data.payload); }
+    };
+    return {
+      worker: w,
+      // NOBODY IS COMING BACK once the worker is terminated, so a cancel has to
+      // settle every waiter itself. Without this the fleet's promises hang, the
+      // caller never reaches its `finally`, and the Run button stays disabled
+      // for ever — which is a worse hang than the one the stop button exists to
+      // end (2026-08-18).
+      abandon: () => {
+        pending.forEach((res) => res({ ok: false, cancelled: true }));
+        pending.clear();
+        progress.clear();
+      },
+      send: (msg, onProgress) => new Promise((res) => {
+        const id = ++seq;
+        pending.set(id, res);
+        if (onProgress) progress.set(id, onProgress);
+        w.postMessage({ ...msg, id });
+      }),
+    };
+  });
+  return simFleet;
+};
+
+/// RUN A SIMULATION ACROSS THE FLEET, and merge in Rust.
+///
+/// The page schedules and collects; every field of the answer is computed by
+/// `simulate_merged`, so there is one implementation of the arithmetic rather
+/// than a Rust one and a JavaScript one that drift.
+///
+/// FALLS BACK TO ONE CALL when there is nothing to gain — a single lane, or so
+/// few runs that a slice would be one engagement. A fleet has a cost of its own
+/// (a worker each, a shard each on the wire) and it is not worth paying to
+/// halve a fight that takes a millisecond.
+async function simulateFleet(body, onProgress) {
+  const lanes = simLanes();
+  const runs = Math.max(1, Number(body.runs) || 1);
+  if (lanes.length < 2 || runs < lanes.length * 2) {
+    return api("/api/simulate", body, onProgress);
+  }
+  // EVERY RUN COVERED EXACTLY ONCE, remainder to the first lanes. A gap or an
+  // overlap is not a slow answer, it is a wrong one.
+  const done = new Array(lanes.length).fill(0);
+  const total = runs;
+  const tick = () => {
+    if (onProgress) onProgress(done.reduce((a, b) => a + b, 0), total);
+  };
+  let at = 0;
+  const shards = await Promise.all(lanes.map((lane, k) => {
+    const count = Math.floor(runs / lanes.length) + (k < runs % lanes.length ? 1 : 0);
+    const from = at;
+    at += count;
+    return lane.send({ kind: "shard", body, from, count }, (d) => { done[k] = d; tick(); });
+  }));
+  // A CANCELLED SHARD CANCELS THE SIMULATION — there is no answer to merge
+  // from an eighth of the runs, and the reader asked for it to stop.
+  if (shards.some((s) => s && s.cancelled)) return { ok: false, cancelled: true };
+  if (shards.some((s) => !s || s.error)) {
+    return shards.find((s) => s && s.error) || { ok: false, error: "a shard failed" };
+  }
+  // EVERY RUN IS IN. The merge is arithmetic over sums and takes no time worth
+  // reporting, so the bar completes here rather than sitting at 97% while the
+  // last lane's answer is added up.
+  if (onProgress) onProgress(total, total);
+  return lanes[0].send({ kind: "merge", body, shards });
+}
+
+/// STOP THE WHOLE FLEET as well as the single worker: a simulation may be on
+/// either, and a reader pressing stop means both.
+function cancelFleet() {
+  if (!simFleet) return;
+  simFleet.forEach((l) => { l.worker.terminate(); l.abandon(); });
+  simFleet = null;
+}
+
 /// STOP THE SIM WORKER, which is the only way to interrupt a wasm call: it runs
 /// to completion inside `simulate_json` and there is no yield point to check a
 /// flag at. Terminating is instant and costs nothing to recover from — the next
@@ -318,6 +422,7 @@ function ensureRpcWorker() {
 /// the page never has two sims running (the button is disabled) and the quick
 /// calc has lanes of its own.
 function cancelSim() {
+  cancelFleet();
   if (!rpcWorker) return false;
   rpcWorker.terminate();
   rpcWorker = null;
@@ -9985,7 +10090,7 @@ async function runSim() {
     // that takes a second.
     let painted = -1;
     const began = Date.now();
-    const r = await api("/api/simulate", body, (done, total) => {
+    const r = await simulateFleet(body, (done, total) => {
       const pct = total ? Math.round((done / total) * 100) : 100;
       if (pct === painted) return;
       painted = pct;

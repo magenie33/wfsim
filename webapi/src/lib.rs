@@ -4526,6 +4526,56 @@ pub fn simulate_json(v: &Value) -> Value {
 ///
 /// THE ANSWER IS UNCHANGED. The callback observes and never steers.
 pub fn simulate_json_reporting(v: &Value, on_run: &mut impl FnMut(u32, u32)) -> Value {
+    simulate_from(v, Work::All, on_run)
+}
+
+/// ONE SHARD OF A SIMULATION — what a WORKER runs.
+///
+/// `from` is the index of the first run and `count` how many. Every run's dice
+/// are a pure function of `(seed, index)`, so the shards of a range merge into
+/// exactly what one call over the whole range produces
+/// (`dummy::tests::eight_shards_are_one_run`).
+///
+/// Returns the shard itself as JSON — small, because it carries sums rather
+/// than runs — for `simulate_merged_json` to add up.
+pub fn simulate_shard_json(
+    v: &Value,
+    from: u32,
+    count: u32,
+    on_run: &mut impl FnMut(u32, u32),
+) -> Value {
+    simulate_from(v, Work::Shard(from, count), on_run)
+}
+
+/// …AND THE MERGE, which produces the ordinary simulate response.
+///
+/// The page fans the shards out and collects them; every field of the answer is
+/// computed HERE, so there is one implementation of the arithmetic rather than
+/// a Rust one and a JavaScript one that drift.
+pub fn simulate_merged_json(v: &Value, shards: &[Value]) -> Value {
+    let mut merged = wfsim_engine::dummy::Shard::default();
+    for s in shards {
+        match serde_json::from_value::<wfsim_engine::dummy::Shard>(s.clone()) {
+            Ok(part) => merged.merge(&part),
+            Err(e) => return err_json(format!("shard: {e}")),
+        }
+    }
+    simulate_from(v, Work::Merged(Box::new(merged)), &mut |_, _| {})
+}
+
+/// WHAT THIS CALL IS DOING — the three ways a simulation is run, sharing one
+/// path so a shard and a whole run cannot build different params.
+enum Work {
+    /// The ordinary call: run every run here.
+    All,
+    /// A slice of the runs, for a worker. Returns the shard rather than a
+    /// report.
+    Shard(u32, u32),
+    /// Already run by a fleet; this call only finishes it.
+    Merged(Box<wfsim_engine::dummy::Shard>),
+}
+
+fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Value {
     // THE FIGHT, parsed by the ONE function that parses it. The optimizer
     // calls the same one — see `parse_fight`.
     let fight = match parse_fight(v) {
@@ -4697,15 +4747,31 @@ pub fn simulate_json_reporting(v: &Value, on_run: &mut impl FnMut(u32, u32)) -> 
     // describe each build alone. The quick calc is the caller; nobody else pays
     // the length.
     let want_series = get_bool(v, "run_series", false);
-    let (s, series) = {
-        let mut tick = |done: u32| on_run(done, runs);
-        if want_series {
-            wfsim_engine::dummy::monte_carlo_series_reporting(&params, runs, seed, &mut tick)
-        } else {
-            (
-                wfsim_engine::dummy::monte_carlo_reporting(&params, runs, seed, &mut tick),
-                Default::default(),
-            )
+    // A SHARD STOPS HERE. Everything above is the fight; everything below is
+    // the report, and a worker running an eighth of the runs has no business
+    // producing one.
+    if let Work::Shard(from, count) = work {
+        let mut tick = |done: u32| on_run(done, count);
+        let s =
+            wfsim_engine::dummy::shard(&params, from, count, seed, want_series, &mut tick);
+        return serde_json::to_value(&s).unwrap_or_else(|e| err_json(format!("shard: {e}")));
+    }
+    let (s, series) = match work {
+        // ALREADY RUN, by a fleet of workers — this call only finishes it.
+        Work::Merged(m) => {
+            let n = m.runs;
+            m.finish(&params, n)
+        }
+        _ => {
+            let mut tick = |done: u32| on_run(done, runs);
+            if want_series {
+                wfsim_engine::dummy::monte_carlo_series_reporting(&params, runs, seed, &mut tick)
+            } else {
+                (
+                    wfsim_engine::dummy::monte_carlo_reporting(&params, runs, seed, &mut tick),
+                    Default::default(),
+                )
+            }
         }
     };
 
@@ -6945,6 +7011,93 @@ mod asset_tests {
             bodies.iter().all(|b| b.get("damage").and_then(Value::as_f64).unwrap_or(0.0) > 0.0),
             "{bodies:?}"
         );
+    }
+
+    /// A FLEET PRODUCES THE SAME REPORT AS ONE WORKER.
+    ///
+    /// `eight_shards_are_one_run` asserts it of the SUMMARY; this asserts it of
+    /// the whole response, which is what a reader sees — every KPI, the damage
+    /// meter, the histogram, the roll call, the replay's own frames. A merge
+    /// that lost one field would pass the engine's test and still put a
+    /// different number on the page.
+    ///
+    /// It compares the JSON with the replay taken out, because a replay is one
+    /// engagement sampled at 600 instants and is not what sharding is about —
+    /// the MEDIAN RUN it replays is asserted in the engine.
+    ///
+    /// NUMBERS ARE COMPARED TO A PART IN 10^12, not bit for bit. Adding a
+    /// thousand runs in eight groups and then combining differs from adding
+    /// them in one sequence in the last bit or two, because floating-point
+    /// addition is not associative. That is arithmetic ORDER and not a
+    /// different answer; anything the merge actually lost would be off by far
+    /// more than a part in a trillion.
+    #[test]
+    fn a_fleet_of_shards_reports_what_one_worker_reports() {
+        let req = serde_json::json!({
+            "weapon": "torid", "mode": "transformed",
+            "mods": ["serration", "split_chamber"],
+            "evolutions": ["torid_evo1_incarnon_form"],
+            "enemy": "corrupted_heavy_gunner", "level": 40,
+            "runs": 42, "seed": 7, "duration": 10,
+            "formation": [
+                { "at": [1.5, 0.4] }, { "at": [-1.5, 0.4] }, { "at": [0.0, 2.0] },
+            ],
+        });
+        let whole = simulate_json(&req);
+        assert!(whole.get("error").is_none(), "{whole}");
+
+        // EIGHT SLICES of 42, so the last ones are short — the fleet that
+        // actually runs.
+        let mut shards = Vec::new();
+        let mut at = 0u32;
+        for k in 0..8u32 {
+            let count = 42 / 8 + u32::from(k < 42 % 8);
+            shards.push(simulate_shard_json(&req, at, count, &mut |_, _| {}));
+            at += count;
+        }
+        assert_eq!(at, 42);
+        assert!(
+            shards.iter().all(|s| s.get("error").is_none()),
+            "a shard failed: {shards:?}"
+        );
+        let merged = simulate_merged_json(&req, &shards);
+        assert!(merged.get("error").is_none(), "{merged}");
+
+        let strip = |mut v: Value| -> Value {
+            if let Some(o) = v.as_object_mut() {
+                o.remove("replay");
+            }
+            v
+        };
+        fn same(a: &Value, b: &Value, path: &str) {
+            match (a, b) {
+                (Value::Number(x), Value::Number(y)) => {
+                    let (x, y) = (x.as_f64().unwrap_or(0.0), y.as_f64().unwrap_or(0.0));
+                    assert!(
+                        (x - y).abs() <= y.abs() * 1e-12 + 1e-12,
+                        "{path}: {x} vs {y}"
+                    );
+                }
+                (Value::Array(x), Value::Array(y)) => {
+                    assert_eq!(x.len(), y.len(), "{path}: length");
+                    for (i, (u, v)) in x.iter().zip(y).enumerate() {
+                        same(u, v, &format!("{path}[{i}]"));
+                    }
+                }
+                (Value::Object(x), Value::Object(y)) => {
+                    let (mut kx, mut ky): (Vec<_>, Vec<_>) =
+                        (x.keys().collect(), y.keys().collect());
+                    kx.sort();
+                    ky.sort();
+                    assert_eq!(kx, ky, "{path}: keys");
+                    for k in kx {
+                        same(&x[k], &y[k], &format!("{path}.{k}"));
+                    }
+                }
+                _ => assert_eq!(a, b, "{path}"),
+            }
+        }
+        same(&strip(merged), &strip(whole), "");
     }
 
     /// THE GROUP-CLEAR RULER RUNS, AND IT MEASURES THE CROWD.

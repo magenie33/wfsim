@@ -624,6 +624,35 @@ around (decision 2026-07-31).
   free while the optimizer scored the base form (2026-08-03), and the
   optimizer keeping a buff config of its own (2026-08-02). A shared helper is
   not enough — the DECISIONS around it have to be shared too.
+- **A SIMULATION RUNS ON A WORKER FLEET** (owner, 2026-08-18). The runs are
+  INDEPENDENT given their index, so the page shards them across one worker per
+  core (capped at eight, the quick calc's rule) and the shards merge back into
+  exactly what one worker would have produced. Measured on the group-clear
+  ruler with the board's own #1 Phantasma Prime build: **85.7 s -> 18.3 s**.
+  THE ENABLER IS THE SEED. Each run's dice are now a pure function of
+  `(seed, index)` rather than one Rng chain threaded through every run — which
+  is what made a run impossible to start without replaying everything before it.
+  Still reproducible; what moved ONCE is the SAMPLE, measured at 0.001% to
+  0.09% across `one_fight`'s three shapes against a Monte-Carlo standard error
+  of about 0.3% at a thousand runs.
+  THE MERGE IS IN RUST, so there is one implementation of the arithmetic: the
+  page schedules and collects, `simulate_merged` computes every field. A
+  `Shard` carries SUMS rather than runs — 24 KB at a thousand runs against 8 MB
+  — plus one `(effective, rng_state)` per run, because the MEDIAN engagement is
+  what the panel shows and finding it means ranking every run. The merge ranks
+  those and REPLAYS the winner.
+  **A JSON NUMBER IN JAVASCRIPT IS A DOUBLE**, and that cost an evening: the
+  64-bit RNG state came back ROUNDED across the wasm boundary, so the merge
+  replayed a fight that never happened. Every mean matched to the last bit and
+  only `score` disagreed, because `score` is the one figure taken from the
+  median run. It travels as two `u32` halves now (`RunKey`).
+  Asserted three times: on the summary (`eight_shards_are_one_run`, 23 fields
+  plus the median), on the whole response (`a_fleet_of_shards_reports_what_one
+  _worker_reports`), and ON THE WIRE in `check_run_counts` — which is the only
+  one that could have caught the rounding.
+  A COMPARISON IS TO A PART IN 10^12, not bit for bit: adding in eight groups
+  and combining differs from one sequence in the last bit, because
+  floating-point addition is not associative.
 - **A LONG SIM SAYS HOW FAR IT HAS GOT** (owner, 2026-08-18). The run count is
   unbounded and so is the cost per run: a single-target fight is about a
   millisecond, a 361-body one is ~28 ms, so the rulers' 1000 runs is half a

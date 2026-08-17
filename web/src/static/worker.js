@@ -16,7 +16,19 @@ const ready = wasm_bindgen({ module_or_path: "pkg/wfsim_wasm_bg.wasm" });
 onmessage = async (e) => {
   await ready;
   const msg = e.data;
-  if (msg.kind === "api") {
+  if (msg.kind === "shard") {
+    // ONE SLICE OF A SIMULATION. The runs are independent given their index, so
+    // a fleet of these covers the range between them — see `simulate_shard`.
+    const out = wasm_bindgen.simulate_shard(
+      JSON.stringify(msg.body ?? {}), msg.from, msg.count,
+      (done, total) => postMessage({ id: msg.id, kind: "progress", done, total }),
+    );
+    postMessage({ id: msg.id, payload: JSON.parse(out) });
+  } else if (msg.kind === "merge") {
+    const out = wasm_bindgen.simulate_merged(
+      JSON.stringify(msg.body ?? {}), JSON.stringify(msg.shards ?? []));
+    postMessage({ id: msg.id, payload: JSON.parse(out) });
+  } else if (msg.kind === "api") {
     // A SIMULATE SAYS HOW FAR IT HAS GOT, and nothing else does. It is the one
     // endpoint whose cost is unbounded — a 361-body fight at the rulers' 1000
     // runs is a minute — and a button that says "Simulating…" for a minute

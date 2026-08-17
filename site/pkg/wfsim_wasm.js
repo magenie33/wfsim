@@ -95,6 +95,34 @@ let wasm_bindgen = (function(exports) {
     exports.optimize_resume = optimize_resume;
 
     /**
+     * …AND THE MERGE, which turns the fleet's shards into the ordinary response.
+     *
+     * Every field of the answer is computed in Rust, so there is ONE
+     * implementation of the arithmetic rather than a Rust one and a JavaScript one
+     * that drift — the page only schedules and collects.
+     * @param {string} body
+     * @param {string} shards
+     * @returns {string}
+     */
+    function simulate_merged(body, shards) {
+        let deferred3_0;
+        let deferred3_1;
+        try {
+            const ptr0 = passStringToWasm0(body, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ptr1 = passStringToWasm0(shards, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len1 = WASM_VECTOR_LEN;
+            const ret = wasm.simulate_merged(ptr0, len0, ptr1, len1);
+            deferred3_0 = ret[0];
+            deferred3_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        }
+    }
+    exports.simulate_merged = simulate_merged;
+
+    /**
      * A SIMULATE THAT SAYS HOW FAR IT HAS GOT.
      *
      * Its own entry point rather than a flag on [`api`], because it is the one
@@ -125,6 +153,39 @@ let wasm_bindgen = (function(exports) {
         }
     }
     exports.simulate_progress = simulate_progress;
+
+    /**
+     * ONE SHARD OF A SIMULATION — what a worker in the FLEET runs.
+     *
+     * `from` is the index of the first run, `count` how many. Every run's dice are
+     * a pure function of `(seed, index)`, so the shards of a range merge into
+     * exactly what one call over the whole range produces — asserted twice, on the
+     * summary (`dummy::tests::eight_shards_are_one_run`) and on the whole response
+     * (`a_fleet_of_shards_reports_what_one_worker_reports`).
+     *
+     * Returns the shard, which carries SUMS rather than runs: about 24 KB at a
+     * thousand runs against the 8 MB a thousand `RunResult`s would be.
+     * @param {string} body
+     * @param {number} from
+     * @param {number} count
+     * @param {Function} on_progress
+     * @returns {string}
+     */
+    function simulate_shard(body, from, count, on_progress) {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ptr0 = passStringToWasm0(body, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ret = wasm.simulate_shard(ptr0, len0, from, count, on_progress);
+            deferred2_0 = ret[0];
+            deferred2_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    exports.simulate_shard = simulate_shard;
     function __wbg_get_imports() {
         const import0 = {
             __proto__: null,

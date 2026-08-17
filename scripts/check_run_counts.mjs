@@ -143,7 +143,10 @@ const r = await evaluate(`(async () => {
       // one at every sample point, where it is deliberately hidden ("about 0s
       // left" is noise). 600 buys about three seconds of wait, which is the
       // thing being tested.
-      setSimRuns(600);
+      // A FLEET MAKES THIS FAST, so the count has to grow with it: eight
+      // workers over a sentinel weapon finish 600 runs before a 100 ms sampler
+      // sees anything worth reporting.
+      setSimRuns(4000);
       out.progBodies = 1 + (sim.formation || []).length;
       const seen = [];
       document.getElementById('run-sim').click();
@@ -164,7 +167,7 @@ const r = await evaluate(`(async () => {
       // string stops parsing. Plain string work has no such trap.
       out.progCounts = uniq.every((u) => {
         const words = u.split('|')[0].trim().split(' ');
-        return words[1] === '/' && words[2] === '600';
+        return words[1] === '/' && words[2] === '4000';
       });
       out.progAll = uniq.slice(0, 6);
       // …AND HOW MUCH LONGER, which is the number they actually want.
@@ -210,6 +213,27 @@ const r = await evaluate(`(async () => {
         if (!document.getElementById('run-sim').disabled) break;
       }
       out.stopRecovered = !!document.querySelector('#sim-results table, #sim-results .fold');
+
+      // ---- A FLEET ANSWERS WHAT ONE WORKER ANSWERS ---------------------
+      //
+      // The runs of a simulation are independent given their index, so the
+      // page shards them across a worker fleet and merges in Rust. That is
+      // worth nothing if the answer depends on how many workers happened to be
+      // free, so this asserts the two paths agree — and it asserts it on the
+      // WIRE, where the engine's own test cannot reach: a shard crosses the
+      // wasm boundary as JSON, and a JSON number in JavaScript is a double, so
+      // the run's 64-bit RNG state came back ROUNDED and the merge replayed a
+      // fight that never happened (2026-08-18). Every mean matched; only the
+      // median run's figures moved.
+      const body = { ...buildPayload(), ...theFight({ runs: 40 }) };
+      out.fleetLanes = simLanes().length;
+      const fleet = await simulateFleet(body, () => {});
+      const solo = await api('/api/simulate', body);
+      out.fleetDiff = ['score', 'score_mean', 'dps', 'burst_dps', 'max_hit', 'procs', 'kills_std']
+        .map((k) => [k, fleet[k], solo[k]])
+        .filter(([, a, b]) => Math.abs(a - b) > Math.abs(b) * 1e-9 + 1e-9)
+        .map(([k, a, b]) => k + ': ' + a + ' vs ' + b);
+      out.fleetRuns = [fleet.runs, solo.runs];
     }
   }
 
@@ -265,5 +289,11 @@ check("...says nothing was measured rather than reporting a failure",
   /nothing was measured|没有测出/.test(r.stopSaid), r.stopSaid);
 check("...frees the button", r.stopFreed === true);
 check("...and the next run still answers", r.stopRecovered === true);
+// A FLEET ANSWERS WHAT ONE WORKER ANSWERS.
+check(`the sim shards across ${r.fleetLanes} workers`, r.fleetLanes > 1, String(r.fleetLanes));
+check("...and every one of the runs is still run once",
+  String(r.fleetRuns[0]) === String(r.fleetRuns[1]), JSON.stringify(r.fleetRuns));
+check("...for the same answer, on the wire and not just in Rust",
+  r.fleetDiff.length === 0, r.fleetDiff.join(" · "));
 
 await app.finish("how hard you measure is a number someone can set, in all three modules");

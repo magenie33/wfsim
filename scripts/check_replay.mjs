@@ -46,6 +46,9 @@ const r = await evaluate(`(async () => {
     hero: document.querySelector('[data-hero]').textContent,
   });
   const atEnd = read();
+  // THE LIVE STACK COUNTS AS THE PANEL OPENS, before anything is scrubbed —
+  // the other half of "it opens on the finished fight".
+  const nowAtOpen = [...document.querySelectorAll('.rp-now')].map(e => e.textContent);
   // ...and the replay BELOW everything it drives.
   const res = document.querySelector('#sim-results .results');
   const kids = [...res.children].map(e=>e.tagName+'.'+(e.className||''));
@@ -127,7 +130,7 @@ const r = await evaluate(`(async () => {
     const v = parseFloat((el.querySelector('.mval')||{}).textContent?.replace(/[^\d.]/g,'') || '0');
     meterByType[ty] = (meterByType[ty] || 0) + v;
   }
-  return { rows, atEnd, atZero, restored, nowAtEnd, movedTo, iBar, iMeter, iTable, iRow, kids,
+  return { rows, atEnd, atZero, restored, nowAtOpen, nowAtEnd, movedTo, iBar, iMeter, iTable, iRow, kids,
            meterRows, segs, legend, collapse, meterTypes: Object.keys(meterByType).sort(),
            clock: document.getElementById('rp-clock').textContent };
 })()`);
@@ -137,9 +140,14 @@ check("one row per buff, drawn and open by default",
 // Language-agnostic: this check runs in whatever locale the browser picks, so
 // it asserts the FIGURES (mean out of max, a percentage, a ramp time) rather
 // than the words around them.
-check("the header states average, uptime and the ramp",
+// THE RAMP IS THE THIRD FIGURE and it is CONDITIONAL: a run that never fills
+// the bar has no ramp to state, and the header says so in words instead
+// ("not full"). Asserting a ramp time unconditionally made this a test of the
+// median run's LUCK — it passed for months and moved the day the seed scheme
+// did, with nothing about the header changed (2026-08-18).
+check("the header states average, uptime and either the ramp or why there is none",
   /[\d.]+\/40/.test(r.rows[0].stat) && /\d+%/.test(r.rows[0].stat) &&
-  /[\d.]+s/.test(r.rows[0].stat), r.rows[0].stat);
+  (/[\d.]+s/.test(r.rows[0].stat) || /full|满层/.test(r.rows[0].stat)), r.rows[0].stat);
 // THE METER IS COLOURED BY DAMAGE TYPE, NOT BY ROW POSITION (owner,
 // 2026-08-06). It used to take its colour from `(i % 8) + 1`, so the same
 // element was one colour under a direct hit and another under a lingering
@@ -209,7 +217,13 @@ check("the replay BAR sits above everything it drives",
   r.iBar < r.iMeter && r.iBar < r.iTable, JSON.stringify(r.kids));
 check("...and the buff CURVES stay down with the other chart",
   r.iRow > r.iMeter && r.iRow < r.iTable, JSON.stringify(r.kids));
-check("it opens on the finished fight", r.nowAtEnd[0] === "40/40", String(r.nowAtEnd));
+// IT OPENS ON THE FINISHED FIGHT — the cursor is at the LAST frame, which is
+// what this is about. It used to assert "40/40", which is that plus the claim
+// that the buff happened to fill in this particular run: two facts in one
+// assertion, and only one of them is the panel's doing.
+check("it opens on the finished fight",
+  r.nowAtOpen.length > 0 && r.nowAtOpen.join() === r.nowAtEnd.join(),
+  `${r.nowAtOpen} vs ${r.nowAtEnd}`);
 check("rewinding empties the KPIs and the meter",
   r.atZero.kpi.shots === "0" && r.atZero.kpi.procs === "0" &&
   r.atZero.meter.every((v) => /^0 /.test(v)),
