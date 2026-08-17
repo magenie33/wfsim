@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 66868acea8b682570cef26510a42b22c3304c8c8
+engine: fb6b14cd00940a0f07097bab6ef470858c127239
 entries:
   - weapon: akarius_prime
     mode: base
@@ -2396,8 +2396,32 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: kunai
     mode: cycle
+    score: 6.200265851357897
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, primed_convulsion, pathogen_rounds, primed_heated_charge]
+    evolutions: [kunai_evo1_incarnon_form, kunai_swift_conclusion, kunai_extended_volley, kunai_survivors_edge]
+    arcanes: [cascadia_flare]
+  - weapon: kunai
+    mode: cycle
+    score: 3.56767367256444
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, primed_pistol_gambit, lethal_torrent, primed_convulsion, pathogen_rounds, primed_heated_charge]
+    evolutions: [kunai_evo1_incarnon_form, kunai_swift_conclusion, kunai_extended_volley, kunai_survivors_edge]
+    arcanes: [cascadia_flare]
+  - weapon: kunai
+    mode: cycle
     score: 2.2266771609920752
     mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, primed_convulsion, pathogen_rounds, primed_heated_charge]
+    evolutions: [kunai_evo1_incarnon_form, kunai_swift_conclusion, kunai_extended_volley, kunai_survivors_edge]
+    arcanes: [cascadia_accuracy]
+  - weapon: kunai
+    mode: cycle
+    score: 1.9101438890813824
+    mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [kunai_evo1_incarnon_form, kunai_swift_conclusion, kunai_extended_volley, kunai_survivors_edge]
+    arcanes: [cascadia_accuracy]
+  - weapon: kunai
+    mode: cycle
+    score: 1.8986612539696608
+    mods: [pistol_acuity, hornet_strike, primed_target_cracker, primed_pistol_gambit, magnetic_might, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [kunai_evo1_incarnon_form, kunai_swift_conclusion, kunai_extended_volley, kunai_survivors_edge]
     arcanes: [cascadia_accuracy]
   - weapon: kuva_ayanga
