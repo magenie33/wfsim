@@ -357,3 +357,60 @@ data in the repo; nothing secret decides a rank.
 Until step 1 is done the endpoint answers 503 and the page says "could not
 reach the board — nothing was sent", which is the honest state rather than a
 silent failure.
+
+## Sizing an AoE ruler — what was measured (2026-08-17)
+
+A crowd ruler was proposed as an odd-sided grid, so it has an exact centre to
+aim at. `cargo run --release --bin formation_cost` answers what each size costs
+and — the deciding column — how many bodies the weapon actually REACHES.
+
+Torid Incarnon (a chaining beam with a 2.3 m sphere: every spread mechanism the
+engine has, live at once), 2 m spacing, 180 s, per 1000 runs:
+
+| grid | placed | touched | 1000 runs |
+|---|---|---|---|
+| 3x3 | 9 | 8 | 15.9 s |
+| 5x5 | 25 | 10 | 17.3 s |
+| 7x7 | 49 | **11** | 22.3 s |
+| 9x9 | 81 | **11** | 37.1 s |
+| 11x11 | 121 | **11** | 60.8 s |
+| 15x15 | 225 | **11** | 88.1 s |
+
+**It saturates at 7x7.** A 15x15 costs four times as much to learn the same
+eleven bodies — the chain has five hops and the sphere has one radius, so the
+extra 176 enemies are never touched. And 49 is the largest odd square under
+`formation::MAX_BODIES`, so the size the measurement points at needs no cap
+change.
+
+**Punch-through does NOT saturate**, which is the other half and is a ruler
+DESIGN problem rather than a cost one. An infinite-body weapon reaches exactly
+as deep as the grid — Lanka and Phantasma touch N bodies on an NxN, all the way
+to 15 — and it is cheap (5.6 s at 15x15, because extra direct instances cost
+almost nothing next to chains). So the grid's DEPTH becomes the score for that
+family, without limit. A 15-deep perfect column is also an arrangement no player
+will ever line up, which is the argument from the product's own promise rather
+than from the clock.
+
+A weapon with neither mechanic touches 1 body at every size and costs what it
+always did, so the ruler is free for most of the roster.
+
+### Spacing decides which radii it can tell apart
+
+At a regular lattice the thresholds are `s`, `s*sqrt(2)`, `2s`, `s*sqrt(5)` —
+and a radius mod is only visible when it crosses one. Measured with
+`formation_value 7 7 <s>`, seeds for the Torid's three radii (2.30 / 2.85 /
+3.31 m, plus a body radius of reach):
+
+| spacing | bare | Firestorm | Primed Firestorm |
+|---|---|---|---|
+| 1.45 m | 6 | 9 | 13 |
+| 1.75 m | 6 | 6 | 9 |
+| **2.00 m** | 4 | 6 | 6 |
+| 2.50 m | 4 | 4 | 4 |
+
+At 2 m the ruler separates bare from Firestorm and is BLIND to the Primed
+upgrade; at 2.5 m it is blind to both. Only ~1.45 m separates all three — and
+that number is fitted to one mod pair on one weapon, which is an instrument
+tuned to a question rather than a fight anyone plays. The blindness is also
+specific to the Torid's unusually narrow radius ladder: an explosive weapon with
+a 3-8 m radius crosses several of a 2 m lattice's thresholds.
