@@ -3074,6 +3074,59 @@ was true of half the instance. The factor now comes back off at the one site
 that has it, and punch-through is the single exception that keeps it. Single
 target fights are untouched: with no formation, no spread mechanism runs.
 
+## §14 The two elements whose PROC is an area
+
+Gas and Electricity are the only two, and both were an ordinary single-body DoT
+until 2026-08-17 — right while the arena held one body, and half the mechanic
+once it held 361. Verbatim, from each element's own page:
+
+> **Gas** — "a gas cloud that deals a tick of damage each second to all enemies
+> within a **3**-meter radius", "subsequent procs increase the radius by **0.3**
+> meters up to **6** meters", "**6** second duration". "Up to **10** instances
+> of the effect can stack on the same target, with each instance having its own
+> timer."
+>
+> **Electricity** — the proc "chains between nearby enemies", hitting "all
+> enemies in a **3**-meter radius", "every second for **6** seconds", and "only
+> the original target will be stunned … others around it will only take damage".
+
+**Only the DoT travels.** The stun, the arcane triggers (Conjunction Voltage,
+Primary Blight) and the stack counts stay on the body that was hit; what reaches
+the neighbours is the tick. The gas cloud's radius grows with the number of
+clouds already on that body and is read BEFORE the new proc is counted, which is
+what makes the first one 3 m rather than 3.3.
+
+**An OUTBOX rather than a threaded queue.** `settle_procs` holds ONE body's
+debuff state and spreading needs every body's, so the proc posts to
+`DebuffState::area_out` — the per-body struct every proc path already has in
+hand — and the drain, which is the one place that knows WHICH body is which,
+hands the `Dot` to everyone the radius catches. It costs no parameter anywhere.
+A `Dot` is self-contained (`{next_tick, ticks_left, value, dtype,
+ignores_armor}`) and carries an absolute tick time, and nothing in this arena
+moves, so draining a moment later is exact rather than approximate.
+
+The copy is BODY-ONLY: `part_factor` comes back off, because an arc is not
+aimed at anything. Same rule every instance that lands on a neighbour follows.
+
+### The gap it uncovered: a formation body never ticked at all
+
+`process_ticks` was called for the aimed body and for **nothing else**. So every
+status a chain hop, a splash, a tendril or an echo applied to a neighbour was
+recorded on its debuff state and **never paid out** — a ledger nobody read. Gas
+and Electricity cannot work at all without it, which is how it surfaced.
+
+Every body ticks now, once per shot, and the tick credits
+`damage_by_body`. The player's buff state (`gal`, `arc`) is shared across them,
+which is right: a kill is a kill whichever body it was.
+
+`a_gas_or_electric_proc_reaches_the_bodies_standing_around_it` asserts a COUNT
+rather than a total — the claim is that the proc reaches bodies the shot never
+touched. Bodies at 2 m take it, bodies at 12 m do not, and TOXIN reaches nobody,
+which is the control that says this is the element's mechanic and not the engine
+spreading every DoT it has. The fixture is a weapon with no AoE of its own: the
+Torid was the first one and its lingering cloud reached the neighbours by
+itself, which that control caught.
+
 ## Open questions
 
 - Exact multiplicative-bucket membership for every common mod (§2).

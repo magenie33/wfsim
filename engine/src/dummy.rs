@@ -742,6 +742,10 @@ impl TargetState {
 /// snapshot baked into `value`). Bleed (Cinematic ticks) ignores armor;
 /// elemental DoTs (Toxin/Electricity/Gas, Disrupt's break-proc Tesla) take
 /// live armor mitigation. `dtype` is the STATUS type (for CO counting).
+///
+/// COPY, because an AREA proc hands the same tick to every body near the one it
+/// landed on — a gas cloud is ONE entity and its neighbours take its number.
+#[derive(Debug, Clone, Copy)]
 struct Dot {
     next_tick: f64,
     ticks_left: u32,
@@ -783,6 +787,33 @@ struct BlastStack {
 /// vector can produce (data/debuffs/*.yaml; simplifications noted inline).
 #[derive(Default)]
 struct DebuffState {
+    /// GAS CLOUDS AND TESLA ARCS THIS BODY IS THE ORIGIN OF, waiting to be
+    /// handed to everybody standing near it.
+    ///
+    /// Gas and Electricity are the only two elements whose proc is an AREA, and
+    /// both were an ordinary DoT on one body until 2026-08-17 — right while the
+    /// arena held one, and half the mechanic once it held 361. Verbatim, from
+    /// each element's own page:
+    ///
+    ///   · GAS — "a gas cloud that deals a tick of damage each second to all
+    ///     enemies within a 3-meter radius", "subsequent procs increase the
+    ///     radius by 0.3 meters up to 6 meters", "6 second duration".
+    ///   · ELECTRICITY — the proc "chains between nearby enemies", hitting "all
+    ///     enemies in a 3-meter radius", and "only the original target will be
+    ///     stunned ... others around it will only take damage".
+    ///
+    /// SO ONLY THE DoT TRAVELS: the stun, the arcane triggers and the stack
+    /// counts stay on the body that was hit.
+    ///
+    /// AN OUTBOX RATHER THAN A THREADED QUEUE. `settle_procs` holds ONE body's
+    /// debuff state and spreading needs every body's — and this struct is
+    /// already the per-body thing every proc path has in hand, so recording it
+    /// here costs no parameter anywhere. The DRAIN knows which body it is
+    /// reading, which is the one fact `settle_procs` does not have.
+    ///
+    /// Nothing moves in this arena, so draining a moment later is exact rather
+    /// than approximate: a `Dot` carries an absolute `next_tick`.
+    area_out: Vec<(Dot, f64)>,
     /// MICROWAVE — the Nukor family's own status effect, and the only one in
     /// this file that carries no payload at all.
     ///
@@ -3775,6 +3806,70 @@ fn fire_extra_hits(
     false
 }
 
+/// HAND EVERY GAS CLOUD AND TESLA ARC TO THE BODIES STANDING IN IT.
+///
+/// The one place that knows which body is which, which is the fact
+/// `settle_procs` does not have — it holds one body's state and posts to that
+/// body's `area_out` (see [`DebuffState::area_out`] for the mechanic and its
+/// sources).
+///
+/// THE ORIGIN IS SKIPPED: it already has the DoT, and that IS the cloud's
+/// damage to the body standing in it.
+///
+/// A cloud reaches a body when any part of it touches — `space::caught_by_blast`,
+/// the same rule every sphere in this engine uses.
+fn drain_area_procs(
+    debuffs: &mut DebuffState,
+    others: &mut [SpreadFoe],
+    params: &DummyParams,
+) {
+    if params.others.is_empty() {
+        // ONE BODY, so a cloud has nobody to reach and the queue is dropped
+        // rather than walked. This is what keeps every single-target fight
+        // byte-identical.
+        debuffs.area_out.clear();
+        others.iter_mut().for_each(|f| f.debuffs.area_out.clear());
+        return;
+    }
+    // Collected first: handing a Dot from body i to body j needs both, and one
+    // of them may be the aimed body, which is not in `others` at all.
+    let mut pending: Vec<(crate::space::Vec2, Dot, f64)> = Vec::new();
+    for (dot, r) in debuffs.area_out.drain(..) {
+        pending.push((params.target_at, dot, r));
+    }
+    for (i, f) in others.iter_mut().enumerate() {
+        let at = params.others[i].at;
+        for (dot, r) in f.debuffs.area_out.drain(..) {
+            pending.push((at, dot, r));
+        }
+    }
+    for (from, dot, radius_m) in pending {
+        if crate::space::caught_by_blast(params.target_at.distance(from), radius_m)
+            && params.target_at.distance(from) > 1e-9
+        {
+            debuffs.push_dot_capped(dot, params.target.stack_caps.map(|c| c.general));
+        }
+        for (i, f) in others.iter_mut().enumerate() {
+            let at = params.others[i].at;
+            if at.distance(from) <= 1e-9 {
+                continue;
+            }
+            if crate::space::caught_by_blast(at.distance(from), radius_m) {
+                f.debuffs
+                    .push_dot_capped(dot, params.others[i].params.stack_caps.map(|c| c.general));
+            }
+        }
+    }
+}
+
+/// THE GAS CLOUD's reach, from that element's own page: 3 m, growing 0.3 m per
+/// further proc on the same body, capped at 6 m.
+const GAS_RADIUS_M: f64 = 3.0;
+const GAS_RADIUS_STEP_M: f64 = 0.3;
+const GAS_RADIUS_MAX_M: f64 = 6.0;
+/// THE TESLA CHAIN's, and it does not grow: "all enemies in a 3-meter radius".
+const TESLA_RADIUS_M: f64 = 3.0;
+
 #[allow(clippy::too_many_arguments)]
 fn settle_procs(
     procs: Vec<DamageType>,
@@ -3826,15 +3921,16 @@ fn settle_procs(
     // ECLIPSE, ONCE. Not `faction_at`-style repetition: the wiki draws the
     // contrast in so many words.
     let ecl = params.ability_final_at(at);
+    // RETURNS THE DOT IT PUSHED, so an AREA proc can post a copy to
+    // `DebuffState::area_out` for everybody standing near this body.
     let push_dot = |debuffs: &mut DebuffState,
                     dtype: DamageType,
                     coeff: f64,
                     bracket: f64,
                     delay: f64,
                     ticks: u32,
-                    ignores_armor: bool| {
-        debuffs.push_dot_capped(
-            Dot {
+                    ignores_armor: bool| -> Dot {
+        let dot = Dot {
                 next_tick: at + delay,
                 ticks_left: ticks,
                 // `bracket` is `1 + Σ this element's bonuses`, and an ability
@@ -3847,9 +3943,9 @@ fn settle_procs(
                     * sdm * crit_mult * part_factor * fm2 * attrition * ecl,
                 dtype,
                 ignores_armor,
-            },
-            dot_cap,
-        );
+        };
+        debuffs.push_dot_capped(dot, dot_cap);
+        dot
     };
     // MICROWAVE, landed with this weapon's own procs and never taken off.
     //
@@ -3889,7 +3985,7 @@ fn settle_procs(
                     debuffs.apply_cold_proc(at, sd, target.overguard > 0.0, caps, foe.cannot_be_frozen);
                 }
             }
-            DamageType::Slash => push_dot(
+            DamageType::Slash => { push_dot(
                 debuffs,
                 DamageType::Slash,
                 BLEED_COEFFICIENT,
@@ -3897,14 +3993,14 @@ fn settle_procs(
                 BLEED_DELAY,
                 delayed_ticks,
                 true, // Cinematic: ignores armor
-            ),
+            ); }
             DamageType::Toxin => {
                 // Primary Blight: each Toxin status THIS WEAPON
                 // applies grants one stack to both of its buffs
                 // (crit damage + multishot). The weapon-only rule is
                 // the arcane's own (wiki), not a sim limitation.
                 arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ToxinStatus, at);
-                push_dot(
+                let _ = push_dot(
                     debuffs,
                     DamageType::Toxin,
                     DOT_COEFFICIENT,
@@ -3912,14 +4008,14 @@ fn settle_procs(
                     1.0,
                     delayed_ticks,
                     false,
-                )
+                );
             }
             DamageType::Electricity => {
                 // Conjunction Voltage: each Electricity status this
                 // weapon applies grants one stack to both of its
                 // buffs (reload speed + multishot).
                 arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ElectricityStatus, at);
-                push_dot(
+                let dot = push_dot(
                     debuffs,
                     DamageType::Electricity,
                     DOT_COEFFICIENT,
@@ -3927,17 +4023,40 @@ fn settle_procs(
                     0.0,
                     immediate_ticks,
                     false,
-                )
+                );
+                // THE TESLA CHAIN, at a FIXED 3 m — "all enemies in a 3-meter
+                // radius". The stun stays here: "only the original target will
+                // be stunned ... others around it will only take damage".
+                //
+                // BODY-ONLY, like every other instance that lands on a
+                // neighbour: `part_factor` is the aimed pellet's headshot and
+                // an arc is not aimed at anything.
+                debuffs.area_out.push((
+                    Dot { value: dot.value / part_factor.max(1e-9), ..dot },
+                    TESLA_RADIUS_M,
+                ));
             }
-            DamageType::Gas => push_dot(
-                debuffs,
-                DamageType::Gas,
-                DOT_COEFFICIENT,
-                1.0, // literal Gas sources only; Heat/Toxin mods: nothing
-                0.0,
-                immediate_ticks,
-                false,
-            ),
+            DamageType::Gas => {
+                let dot = push_dot(
+                    debuffs,
+                    DamageType::Gas,
+                    DOT_COEFFICIENT,
+                    1.0, // literal Gas sources only; Heat/Toxin mods: nothing
+                    0.0,
+                    immediate_ticks,
+                    false,
+                );
+                // THE CLOUD, and its radius GROWS: "subsequent procs increase
+                // the radius by 0.3 meters up to 6 meters". Counted BEFORE this
+                // proc was applied, which is what makes the first cloud 3 m
+                // rather than 3.3.
+                let radius_m = (GAS_RADIUS_M + GAS_RADIUS_STEP_M * stacks_before as f64)
+                    .min(GAS_RADIUS_MAX_M);
+                debuffs.area_out.push((
+                    Dot { value: dot.value / part_factor.max(1e-9), ..dot },
+                    radius_m,
+                ));
+            }
             DamageType::Heat => {
                 // Singleton accumulator: add the contribution and
                 // refresh the shared clock; ticks stay anchored to
@@ -5197,7 +5316,7 @@ fn process_field_ticks(
         .map(|(i, f)| (i, f.next_tick))
     {
         // Status events strictly before this tick land first.
-        process_ticks(debuffs, gal, arc, at + 1e-9, target, params, ap, r, &mut d.status, &params.target);
+        process_ticks(debuffs, gal, arc, at + 1e-9, target, params, ap, r, &mut d.status, &params.target, 0);
         let part = fields[i].part;
         let dmg_mult = fields[i].damage_mult;
         fields[i].next_tick += 1.0 / part.tick_rate;
@@ -5411,6 +5530,15 @@ fn process_ticks(
     // WHICH BODY'S ticks these are — see `settle_procs`'s parameter of the
     // same name.
     foe: &TargetParams,
+    // WHICH BODY IS TICKING — 0 is the aimed one, `i + 1` is `others[i]`, the
+    // same numbering `RunResult::damage_by_body` uses.
+    //
+    // A FORMATION BODY NEVER TICKED AT ALL until 2026-08-17: this was called
+    // for the aimed body and for nothing else, so every status a chain hop, a
+    // splash, a tendril or an echo applied to a neighbour was recorded and
+    // never paid out. Gas and Electricity are the two elements whose PROC is an
+    // area, and they cannot work at all without it.
+    body: usize,
 ) {
     enum Ev {
         Dot(usize),
@@ -5522,6 +5650,9 @@ fn process_ticks(
         r.total_damage += value;
         r.effective_damage += effective;
         r.dot_damage += effective;
+        // …AND WHOSE BODY IT WAS. Only worth recording once there is more than
+        // one to tell apart, which is the same rule the direct hit follows.
+        r.note_body_damage(body, effective);
         r.sources.add_status(src, effective);
         r.timeline.add(now, effective);
         r.dot_ticks += is_dot_tick as u32;
@@ -7380,6 +7511,7 @@ pub fn run_once_traced(
             &mut r,
             &mut d.status,
             &params.target,
+            0,
         );
 
         // Timed buffs (Frenzy) lapse before this shot reads the bar;
@@ -9131,6 +9263,26 @@ pub fn run_once_traced(
             );
         }
 
+        // EVERY BODY'S STATUS BURNS, not just the aimed one's. A formation
+        // body's DoTs were pushed and never ticked until 2026-08-17 — recorded
+        // and never paid — so a chain hop's Slash, a splash's Heat and a gas
+        // cloud all landed on a ledger nobody read.
+        //
+        // The PLAYER's buff state (`gal`, `arc`) is shared, which is right: a
+        // kill is a kill whichever body it was.
+        for (bi, f) in others.iter_mut().enumerate() {
+            process_ticks(
+                &mut f.debuffs, &mut gal, &mut arc, t + 1e-9, &mut f.state,
+                params, ap, &mut r, &mut d.status, &params.others[bi].params, bi + 1,
+            );
+        }
+
+        // …AND THE CLOUDS AND ARCS THIS SHOT LEFT reach the bodies standing in
+        // them. Once per SHOT, after every instance of it has settled: a gas
+        // cloud posted by the first pellet and one posted by the fourth are the
+        // same instant, and the drain is where a body's outbox becomes its
+        // neighbours' DoTs (`DebuffState::area_out`).
+        drain_area_procs(&mut debuffs, &mut others, params);
 
         // A SHOT THAT HIT NOTHING DROPS THE SHOT COMBO COUNTER.
         //
@@ -9467,6 +9619,7 @@ pub fn run_once_traced(
         &mut r,
         &mut d.status,
         &params.target,
+        0,
     );
 
     // Partial credit: the fraction of the current individual's TOTAL bar
@@ -10557,6 +10710,78 @@ mod tests {
             "and the tendrils must be the ones taking some of them: {r:?}",
         );
         assert!(r.kills_by_tendril <= r.kills);
+    }
+
+    /// GAS AND ELECTRICITY REACH PAST THE BODY THEY LANDED ON.
+    ///
+    /// The two elements whose proc is an AREA, and both were an ordinary
+    /// single-body DoT until 2026-08-17 — right while the arena held one body,
+    /// and half the mechanic once it held 361. Verbatim: gas leaves "a gas
+    /// cloud that deals a tick of damage each second to all enemies within a
+    /// 3-meter radius"; electricity "chains between nearby enemies", hitting
+    /// "all enemies in a 3-meter radius".
+    ///
+    /// A COUNT, not a total: the claim is that the proc reaches bodies the shot
+    /// never touched, and only a per-body count can say that. The neighbours
+    /// stand 2 m from the aimed body — inside both radii — and the far pair at
+    /// 12 m, outside them, which is the control that stops this passing on a
+    /// weapon that simply hits everything.
+    #[test]
+    fn a_gas_or_electric_proc_reaches_the_bodies_standing_around_it() {
+        let build = |element: &str| {
+            // A FORCED PROC EVERY SHOT, so the test measures the spread and not
+            // the status roll — and a weapon with NO AoE of its own, so the
+            // only thing that can reach a neighbour is the proc under test.
+            // The Torid was the first fixture and its lingering cloud reached
+            // them by itself, which the Toxin control caught.
+            let base = crate::loadout::WeaponBase::from_data("braton_prime", false, &[]);
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let mut arena = crate::arena::Arena::training(12.0);
+            arena.others = [
+                crate::space::Vec2::new(2.0, arena.target_at.y),
+                crate::space::Vec2::new(-2.0, arena.target_at.y),
+                crate::space::Vec2::new(12.0, arena.target_at.y),
+                crate::space::Vec2::new(-12.0, arena.target_at.y),
+            ]
+            .into_iter()
+            .map(|at| crate::formation::FoeSpec {
+                params: TargetParams::training_dummy(),
+                body_parts: DummyParams::humanoid_parts(),
+                at,
+            })
+            .collect();
+            let mut p =
+                DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            p.status_chance = 1.0;
+            p.forced_procs = vec![match element {
+                "gas" => DamageType::Gas,
+                "electricity" => DamageType::Electricity,
+                _ => DamageType::Toxin,
+            }];
+            p
+        };
+        for element in ["gas", "electricity"] {
+            let r = run_once(&build(element), &mut Rng::new(0x5EED));
+            let d = &r.damage_by_body.0;
+            assert!(d[0] > 0.0, "{element}: the aimed body");
+            assert!(
+                d[1] > 0.0 && d[2] > 0.0,
+                "{element}: the two bodies 2 m away must take the cloud: {:?}",
+                &d[..5]
+            );
+            assert!(
+                d[3] == 0.0 && d[4] == 0.0,
+                "{element}: 12 m is outside every radius on the page: {:?}",
+                &d[..5]
+            );
+        }
+        // …AND TOXIN, WHICH IS NOT AN AREA, reaches nobody. The control that
+        // says this is the ELEMENT's mechanic and not the engine spreading
+        // every DoT it has.
+        let r = run_once(&build("toxin"), &mut Rng::new(0x5EED));
+        assert_eq!(r.bodies_touched(), 1, "{:?}", &r.damage_by_body.0[..5]);
     }
 
     /// PUNCH THROUGH REACHES THE BODY BEHIND, and the budget decides how many.
