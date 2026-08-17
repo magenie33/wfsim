@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 68db50294a7b92da8502cebb2d33f9c7304bdbf2
+engine: bf684d02f696a3fa916b47183c626ab8c0164dc9
 entries:
   - weapon: akarius_prime
     mode: base
@@ -4275,6 +4275,21 @@ entries:
     score: 3.079128237777369
     mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, hellfire]
     arcanes: [primary_crux]
+  - weapon: shedu
+    mode: base
+    score: 0.7747557124024196
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, hammer_shot, vital_sense, magnetic_capacity, cryo_rounds, malignant_force]
+    arcanes: [primary_merciless]
+  - weapon: shedu
+    mode: base
+    score: 0.7288802950695745
+    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, hammer_shot, vital_sense, rime_rounds, malignant_force]
+    arcanes: [primary_merciless]
+  - weapon: shedu
+    mode: base
+    score: 0.3964302318233224
+    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, hunter_munitions, vital_sense, primed_cryo_rounds, malignant_force]
+    arcanes: [primary_merciless]
   - weapon: shedu
     mode: base
     score: 0.3520300262266525

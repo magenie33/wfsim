@@ -9,8 +9,13 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: 68db50294a7b92da8502cebb2d33f9c7304bdbf2
+engine: bf684d02f696a3fa916b47183c626ab8c0164dc9
 entries:
+  - weapon: akarius_prime
+    mode: base
+    score: 1.2880285568289258
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, target_cracker, convulsion, pathogen_rounds, primed_heated_charge]
+    arcanes: [secondary_enervate]
   - weapon: arbucep
     mode: base
     score: 4.650031837983288
