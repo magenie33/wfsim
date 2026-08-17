@@ -47,6 +47,7 @@ fn scenario(duration: f64, level: u32) -> Scenario {
     let w = 1.0 / bodies.len().max(1) as f64;
     Scenario {
         arena: Arena {
+            target_id: "e1".to_string(),
             abilities: Vec::new(),
             tenno: wfsim_engine::tenno_data::default_tenno().clone(),
             // Point blank: this test grades the SEARCH against an exhaustive

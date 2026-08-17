@@ -2561,6 +2561,10 @@ impl DummyParams {
             fx
         };
         let crate::arena::Arena {
+            // Named here so the destructure stays EXHAUSTIVE: a field added to
+            // the arena and not read is a compile error, which is what has kept
+            // this constructor honest.
+            target_id: _,
             tenno,
             target,
             body_parts,
@@ -9833,6 +9837,14 @@ pub fn replay(params: &DummyParams, rng_state: u64, frames: usize) -> Replay {
 /// Aggregate statistics over many engagements.
 #[derive(Debug, Clone, Copy)]
 pub struct Summary {
+    /// MEAN EFFECTIVE DAMAGE PER BODY, index for index with
+    /// [`RunResult::damage_by_body`] — 0 is the aimed one.
+    ///
+    /// Aggregated because a per-BODY figure is the only thing that can say a
+    /// crowd was reached rather than a big number produced (owner, 2026-08-17):
+    /// five bodies and six bodies can deal the same total, and only one of them
+    /// is the weapon.
+    pub mean_damage_by_body: BodyDamage,
     pub runs: u32,
     pub duration_secs: f64,
     pub mean_damage: f64,
@@ -10074,7 +10086,19 @@ fn monte_carlo_inner(params: &DummyParams, runs: u32, seed: u64, keep: bool) -> 
         RunSeries::default()
     };
 
+    // WHO TOOK WHAT, averaged over the runs — the same arithmetic every other
+    // mean here uses, done per body.
+    let mut mean_damage_by_body = BodyDamage::default();
+    if runs > 0 {
+        for run in &all_runs {
+            for (i, d) in run.damage_by_body.0.iter().enumerate() {
+                mean_damage_by_body.0[i] += d / f64::from(runs);
+            }
+        }
+    }
+
     let summary = Summary {
+        mean_damage_by_body,
         runs,
         duration_secs: params.duration_secs,
         mean_damage: mean,
@@ -10695,6 +10719,7 @@ mod tests {
         // this also asserts that each takes its OWN number rather than a share.
         let others: Vec<crate::formation::FoeSpec> = (1..=4)
             .map(|i| crate::formation::FoeSpec {
+                id: String::new(),
                 params: TargetParams::training_dummy(),
                 body_parts: DummyParams::humanoid_parts(),
                 at: crate::space::Vec2::new(i as f64 * 1.5, alone.target_at.y),
@@ -10754,6 +10779,7 @@ mod tests {
         // FOUR MORE BODIES, inside the reticle cone and the reach.
         let others: Vec<crate::formation::FoeSpec> = (1..=4)
             .map(|i| crate::formation::FoeSpec {
+                id: String::new(),
                 params: TargetParams::training_dummy(),
                 body_parts: DummyParams::humanoid_parts(),
                 at: crate::space::Vec2::new(i as f64 * 0.6, 4.0),
@@ -10817,6 +10843,7 @@ mod tests {
         // FOUR MORE BODIES inside its radius, which is 4.5 m to 7 m.
         let others: Vec<crate::formation::FoeSpec> = (1..=4)
             .map(|i| crate::formation::FoeSpec {
+                id: String::new(),
                 params: TargetParams::training_dummy(),
                 body_parts: DummyParams::humanoid_parts(),
                 at: crate::space::Vec2::new(i as f64 * 0.9, 0.4),
@@ -10857,6 +10884,7 @@ mod tests {
         arena.target = frail.clone();
         arena.others = (1..=4)
             .map(|i| crate::formation::FoeSpec {
+                id: String::new(),
                 params: frail.clone(),
                 body_parts: DummyParams::humanoid_parts(),
                 at: crate::space::Vec2::new(i as f64 * 0.6, 4.0),
@@ -10894,6 +10922,7 @@ mod tests {
             arena.others = [3.0_f64, 20.0]
                 .into_iter()
                 .map(|x| crate::formation::FoeSpec {
+                    id: String::new(),
                     params: TargetParams::training_dummy(),
                     body_parts: DummyParams::humanoid_parts(),
                     at: crate::space::Vec2::new(x, arena.target_at.y),
@@ -10986,6 +11015,7 @@ mod tests {
             ]
             .into_iter()
             .map(|at| crate::formation::FoeSpec {
+                id: String::new(),
                 params: TargetParams::training_dummy(),
                 body_parts: DummyParams::humanoid_parts(),
                 at,
@@ -11043,6 +11073,7 @@ mod tests {
             // stand directly behind it.
             arena.others = (1..=n)
                 .map(|i| crate::formation::FoeSpec {
+                    id: String::new(),
                     params: TargetParams::training_dummy(),
                     body_parts: DummyParams::humanoid_parts(),
                     at: crate::space::Vec2::new(
@@ -11069,6 +11100,7 @@ mod tests {
         // of the shot; it does not widen it.
         let mut side = build(0, 9.0);
         side.others = vec![crate::formation::FoeSpec {
+            id: String::new(),
             params: TargetParams::training_dummy(),
             body_parts: DummyParams::humanoid_parts(),
             at: crate::space::Vec2::new(6.0, 4.0),
@@ -11141,6 +11173,7 @@ mod tests {
             // 40 degree cone off the reticle.
             arena.others = (1..=n)
                 .map(|i| crate::formation::FoeSpec {
+                    id: String::new(),
                     params: TargetParams::training_dummy(),
                     body_parts: DummyParams::humanoid_parts(),
                     at: crate::space::Vec2::new(i as f64 * 0.7, 4.0),

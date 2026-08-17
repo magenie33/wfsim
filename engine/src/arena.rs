@@ -21,6 +21,13 @@ use crate::tenno_data::Tenno;
 /// One engagement: who shoots, who is shot, from where, for how long.
 #[derive(Debug, Clone)]
 pub struct Arena {
+    /// WHO THE AIMED BODY IS, by name. `crate::formation::FoeSpec::id` for
+    /// every OTHER body; this one is not in `others` — it is the fight's own
+    /// target — so its name lives here.
+    ///
+    /// `e1` by default and by convention: the formation is numbered from `e2`,
+    /// so the whole crowd reads as one list however it was assembled.
+    pub target_id: String,
     /// The player. What they ARE (a Warframe's stat block, read by the arcanes
     /// that scale off armor or energy) and what they are DOING (the state every
     /// `condition:` on a mod card asks about).
@@ -108,6 +115,7 @@ impl Arena {
     /// exactly this and should not have to spell it out.
     pub fn training(duration_secs: f64) -> Self {
         Self {
+            target_id: "e1".to_string(),
             tenno: crate::tenno_data::default_tenno().clone(),
             target: TargetParams::training_dummy(),
             body_parts: crate::dummy::DummyParams::humanoid_parts(),

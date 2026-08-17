@@ -143,6 +143,7 @@ fn arena_for(c: &Cfg) -> Arena {
         .find(|e| e.id == c.enemy)
         .unwrap_or_else(|| panic!("unknown enemy: {}", c.enemy));
     Arena {
+        target_id: "e1".to_string(),
         tenno: wfsim_engine::tenno_data::default_tenno().clone(),
         target: e
             .target_params(c.level, c.steel_path, e.can_be_eximus, TargetMode::InstantRespawn)

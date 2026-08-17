@@ -66,6 +66,21 @@ pub const MAX_BODIES: usize = 400;
 /// makes it a target, and where it stands.
 #[derive(Debug, Clone)]
 pub struct FoeSpec {
+    /// WHO THIS ONE IS, and it is a name rather than a position.
+    ///
+    /// A formation body was identified only by its index in the list until
+    /// 2026-08-17, which is enough for the ENGINE — it reads bodies by index
+    /// and always will — and not enough for anything that has to talk ABOUT
+    /// one. Every debuff, every pool and every DoT is already this body's own
+    /// (`dummy::SpreadFoe`); what was missing was a way to say WHOSE, so a
+    /// damage figure, a canvas label and a replay could name the same enemy
+    /// (owner, 2026-08-17).
+    ///
+    /// STABLE ACROSS EDITS: it travels in the scenario, so deleting the body in
+    /// front does not rename the one behind. A blank id is filled in by
+    /// position at parse time, which is what every scenario written before this
+    /// existed means and what keeps them all readable.
+    pub id: String,
     pub params: crate::dummy::TargetParams,
     /// Where a pellet can land on it and what each spot multiplies.
     pub body_parts: Vec<crate::dummy::BodyPart>,
@@ -85,7 +100,7 @@ impl Formation {
     /// The single-target arena, which is what this engine has always run.
     /// `Formation::one(..).len() == 1` and the aim policy can never fire.
     pub fn one(params: crate::dummy::TargetParams, body_parts: Vec<crate::dummy::BodyPart>, at: Vec2) -> Self {
-        Self { foes: vec![FoeSpec { params, body_parts, at }], aimed: 0 }
+        Self { foes: vec![FoeSpec { id: "e1".into(), params, body_parts, at }], aimed: 0 }
     }
 
     pub fn len(&self) -> usize {
@@ -181,6 +196,7 @@ impl Formation {
         for r in 0..rows {
             for c in 0..cols {
                 foes.push(FoeSpec {
+                    id: format!("e{}", r * cols + c + 1),
                     params: params.clone(),
                     body_parts: body_parts.clone(),
                     // x across the front, y away from the player.
@@ -227,9 +243,9 @@ mod tests {
         let (p, b) = spec();
         let f = Formation {
             foes: vec![
-                FoeSpec { params: p.clone(), body_parts: b.clone(), at: Vec2::new(0.0, 10.0) },
-                FoeSpec { params: p.clone(), body_parts: b.clone(), at: Vec2::new(0.0, 3.0) },
-                FoeSpec { params: p, body_parts: b, at: Vec2::new(0.0, 6.0) },
+                FoeSpec { id: String::new(), params: p.clone(), body_parts: b.clone(), at: Vec2::new(0.0, 10.0) },
+                FoeSpec { id: String::new(), params: p.clone(), body_parts: b.clone(), at: Vec2::new(0.0, 3.0) },
+                FoeSpec { id: String::new(), params: p, body_parts: b, at: Vec2::new(0.0, 6.0) },
             ],
             aimed: 0,
         };

@@ -4343,6 +4343,15 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
                 return Err(err_json(format!("enemy {} has no position", i + 1)));
             };
             formation.push(wfsim_engine::formation::FoeSpec {
+                // WHO THIS ONE IS. The page may name it; a blank or absent one
+                // is filled in BY POSITION, which is what every scenario
+                // written before ids existed means and what keeps them all
+                // readable. `+ 2` because the AIMED body is `e1`.
+                id: e
+                    .get("id")
+                    .and_then(Value::as_str)
+                    .filter(|s| !s.is_empty())
+                    .map_or_else(|| format!("e{}", i + 2), str::to_string),
                 params: tp,
                 // ITS OWN HITBOXES, off its own unit — a formation of two
                 // different units has two different head multipliers, and the
@@ -4374,7 +4383,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
                 a[1].as_f64().unwrap_or(0.0),
             )
         });
-    let (target, body_parts, target_at, others) = if let Some(aim) = aim_at {
+    let (target, body_parts, target_at, others, aimed_id) = if let Some(aim) = aim_at {
         // WHICHEVER BODY THE LINE CROSSES FIRST — and a shot that crosses
         // NOBODY is a legal shot (owner, 2026-08-17): *"the engine mechanically
         // fires toward the aim point; if it hits, it hits, and if it does not,
@@ -4389,6 +4398,14 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         // enough off it is simply never hit.
         let mut all: Vec<wfsim_engine::formation::FoeSpec> =
             vec![wfsim_engine::formation::FoeSpec {
+                // THE AIMED BODY IS `e1`, always. It is not in the `formation`
+                // list — it is the fight's own target — so it takes the first
+                // name rather than one out of that list's numbering.
+                id: v
+                    .get("target_id")
+                    .and_then(Value::as_str)
+                    .filter(|s| !s.is_empty())
+                    .map_or_else(|| "e1".to_string(), str::to_string),
                 params: target,
                 body_parts,
                 at: target_at,
@@ -4414,16 +4431,27 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
             })
             .unwrap_or(0);
         let aimed = all.remove(aimed);
-        (aimed.params, aimed.body_parts, aimed.at, all)
+        (aimed.params, aimed.body_parts, aimed.at, all, aimed.id)
     } else {
         // NO AIM POINT is the fight this engine has always run: the beam is on
         // the target, wherever it stands.
-        (target, body_parts, target_at, formation)
+        // NO AIM POINT, so the aimed body is the fight's own target and it keeps
+        // the first name — the formation is numbered from `e2`.
+        let id = v
+            .get("target_id")
+            .and_then(Value::as_str)
+            .filter(|s| !s.is_empty())
+            .map_or_else(|| "e1".to_string(), str::to_string);
+        (target, body_parts, target_at, formation, id)
     };
     // ---- the ARENA: both actors, and how long they are at it. Assembled
     // once and handed whole to whichever constructor runs, so the two forms
     // of a cycle cannot end up fighting two different fights.
     let arena = wfsim_engine::arena::Arena {
+        // THE BODY THE WEAPON IS ON, by name. It may be any of them: the shot
+        // goes where it is pointed, and the nearest body on the LINE is the one
+        // it hits — which need not be the fight's nominal target.
+        target_id: aimed_id,
         tenno: tenno.clone(),
         target,
         body_parts,
@@ -4967,6 +4995,39 @@ pub fn simulate_json(v: &Value) -> Value {
             "co_per_type": report_panel.co_per_type,
         },
         "forma": forma,
+        // WHO TOOK WHAT, by NAME. `damage_by_body` has been per body since the
+        // formation landed and had no way to say WHOSE — the index into a list
+        // is not a name, and a reader deleting the body in front would renumber
+        // everything behind it (owner, 2026-08-17).
+        //
+        // ONLY THE ONES THAT TOOK SOMETHING. A 19x19 ruler is 361 bodies and a
+        // chaining beam reaches thirteen; listing 348 zeroes would bury the
+        // thirteen, which is the same reason the debuff table drops the rows a
+        // run never touched.
+        //
+        // MEAN OVER THE RUNS, like every other figure here.
+        "bodies": std::iter::once((
+            arena.target_id.clone(),
+            arena.target_at,
+            true,
+        ))
+        .chain(
+            arena
+                .others
+                .iter()
+                .map(|f| (f.id.clone(), f.at, false)),
+        )
+        .enumerate()
+        .filter_map(|(i, (id, at, aimed))| {
+            let d = s.mean_damage_by_body.0[i];
+            (d > 0.0).then(|| json!({
+                "id": id,
+                "aimed": aimed,
+                "at": [at.x, at.y],
+                "damage": d,
+            }))
+        })
+        .collect::<Vec<_>>(),
         "target": {
             "name": enemy_name,
             "level": level,
@@ -6791,6 +6852,62 @@ mod asset_tests {
                 .unwrap_or("")
                 .contains(&format!("at most {cap}")),
             "{too_many}"
+        );
+    }
+
+    /// EVERY ENEMY HAS A NAME, AND THE RESULT SAYS WHOSE.
+    ///
+    /// A formation body was identified only by its index in the request until
+    /// 2026-08-17 — enough for the ENGINE, which reads bodies by index and
+    /// always will, and not enough for anything that has to talk ABOUT one
+    /// (owner: "我们场景的敌人应该要每个都有id，才对"). Every debuff, pool and
+    /// DoT was already per body; what was missing was a way to say WHOSE.
+    ///
+    /// Asserts the three halves that make it useful: a name given is a name
+    /// kept, a name omitted is filled in BY POSITION so every scenario written
+    /// before ids existed still reads, and the ones that took NOTHING are not
+    /// listed — a 19x19 ruler is 361 bodies and a chaining beam reaches
+    /// thirteen.
+    #[test]
+    fn every_enemy_is_named_and_the_result_says_who_took_what() {
+        let req = |formation: Vec<serde_json::Value>| {
+            serde_json::json!({
+                "weapon": "torid", "mode": "transformed",
+                "mods": [], "evolutions": ["torid_evo1_incarnon_form"],
+                "enemy": "corrupted_heavy_gunner", "level": 40,
+                "runs": 3, "seed": 7, "duration": 6,
+                "formation": formation,
+            })
+        };
+        // A NAMED ONE beside the target, and two unnamed further out.
+        let out = simulate_json(&req(vec![
+            serde_json::json!({ "at": [1.5, 0.4], "id": "the-one-i-care-about" }),
+            serde_json::json!({ "at": [3.0, 0.4] }),
+            serde_json::json!({ "at": [90.0, 90.0] }),
+        ]));
+        assert!(out.get("error").is_none(), "{out}");
+        let bodies = out.get("bodies").and_then(Value::as_array).expect("a roll call");
+        let named: Vec<&str> =
+            bodies.iter().filter_map(|b| b.get("id").and_then(Value::as_str)).collect();
+
+        // THE AIMED BODY IS `e1` and says so.
+        assert_eq!(named.first(), Some(&"e1"), "{named:?}");
+        assert_eq!(
+            bodies[0].get("aimed").and_then(Value::as_bool),
+            Some(true),
+            "the first entry is the body the weapon is on"
+        );
+        // A NAME GIVEN IS A NAME KEPT.
+        assert!(named.contains(&"the-one-i-care-about"), "{named:?}");
+        // …AND ONE OMITTED IS FILLED IN BY POSITION, from `e2`.
+        assert!(named.contains(&"e3"), "the second unnamed body is e3: {named:?}");
+        // THE FAR ONE TOOK NOTHING and is therefore not on the roll call: 90 m
+        // is outside every radius, chain and sphere this weapon has.
+        assert!(!named.contains(&"e4"), "a body that took nothing is not listed: {named:?}");
+        // …and every entry that IS listed took something.
+        assert!(
+            bodies.iter().all(|b| b.get("damage").and_then(Value::as_f64).unwrap_or(0.0) > 0.0),
+            "{bodies:?}"
         );
     }
 
