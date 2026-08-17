@@ -138,6 +138,45 @@ pub fn miss_distance(range_m: f64, deviation_deg: f64) -> f64 {
     }
 }
 
+/// WHERE AN EXPLOSION GOES OFF ON A BODY — the point on its circumference
+/// FACING THE SHOOTER, not its centre (owner, 2026-08-17).
+///
+/// A round detonates where it touches, and once a body is a circle rather than
+/// a dot that is a real place one body-radius nearer the muzzle. Using the
+/// centre put every blast half a metre deeper into the formation than it goes.
+///
+/// Punch-through is not modelled, so a round never detonates on the FAR side.
+pub fn detonation_point(body: Vec2, shooter: Vec2) -> Vec2 {
+    body.toward(shooter, BODY_RADIUS_M)
+}
+
+/// IS THIS BODY IN THE BLAST? **ANY PART OF IT TOUCHING IS ENOUGH** (owner,
+/// 2026-08-17) — a corner clipped by the edge takes damage.
+///
+/// So the radius a blast really covers is its own plus a body radius, and the
+/// test is on the distance between CENTRES, which is the only distance the
+/// arena stores.
+pub fn caught_by_blast(centre_distance_m: f64, blast_radius_m: f64) -> bool {
+    centre_distance_m <= blast_radius_m + BODY_RADIUS_M + 1e-9
+}
+
+/// HOW FAR INTO A BODY THE BLAST HAS TO REACH — the distance to its NEAREST
+/// point, which is what falloff reads.
+///
+/// **THE BEST POINT ON THE BODY WINS** (owner, 2026-08-17). A body standing
+/// across a falloff gradient has a different number at every point of it, and
+/// the model takes the largest — which is the point nearest the epicentre while
+/// no weapon in the game falls off the other way. It is a rule rather than an
+/// average because an average would need a shape integral to defend, and this
+/// needs only "the round found the best part of it", which is what a blast
+/// does.
+///
+/// Zero once the epicentre is inside the body: it cannot reach less far than
+/// nothing.
+pub fn blast_reach(centre_distance_m: f64) -> f64 {
+    (centre_distance_m - BODY_RADIUS_M).max(0.0)
+}
+
 /// WHICH BODY A SHOT CROSSES FIRST, along a ray from `muzzle` in `dir`.
 ///
 /// The generalisation of the hit test to a formation, and it is the SAME test:
@@ -260,6 +299,30 @@ pub const CONTACT_RANGE_M: f64 = 2.0 * BODY_RADIUS_M;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// THE THREE BLAST RULES, which are one idea: a body is a CIRCLE and a
+    /// blast meets it at its nearest surface (owner, 2026-08-17).
+    #[test]
+    fn a_blast_meets_a_body_at_its_nearest_surface() {
+        // IT GOES OFF WHERE IT TOUCHES — one radius nearer the shooter than
+        // the body's centre.
+        let foe = Vec2::new(0.0, 10.0);
+        let d = detonation_point(foe, Vec2::ORIGIN);
+        assert!((d.y - (10.0 - BODY_RADIUS_M)).abs() < 1e-12, "{d:?}");
+        assert!((foe.distance(d) - BODY_RADIUS_M).abs() < 1e-12);
+
+        // ANY PART TOUCHING IS ENOUGH, so a 3 m blast reaches a body whose
+        // CENTRE is 3.2 m away and not one at 3.21.
+        assert!(caught_by_blast(3.0, 3.0));
+        assert!(caught_by_blast(3.0 + BODY_RADIUS_M, 3.0));
+        assert!(!caught_by_blast(3.0 + BODY_RADIUS_M + 0.01, 3.0));
+
+        // …AND FALLOFF READS THE BEST POINT, which is the nearest one.
+        assert!((blast_reach(3.0) - 2.8).abs() < 1e-12);
+        // A body standing ON the epicentre reaches zero rather than negative.
+        assert_eq!(blast_reach(0.0), 0.0);
+        assert_eq!(blast_reach(BODY_RADIUS_M * 0.5), 0.0);
+    }
 
     /// AIM IS A DIRECTION, so a shot pointed at the FLOOR beside a body still
     /// hits it — the body's circle is on the line, which is the whole of what a

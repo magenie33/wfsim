@@ -4463,7 +4463,14 @@ fn spread_from_seeds(
         // THE BEAM IS ON BODY 0 here — the aimed one. A shot that struck bare
         // floor passes `None` and every seed is an ordinary one.
         Some(0),
-        crate::chain::Splash { at: params.target_at, radius_m: beam.damage_radius_m },
+        // WHERE THE ROUND WENT OFF: the aimed body's surface facing the
+        // shooter, not its centre (`space::detonation_point`, owner
+        // 2026-08-17). A blast half a body deeper into the formation than it
+        // goes would seed the wrong bodies.
+        crate::chain::Splash {
+            at: crate::space::detonation_point(params.target_at, params.player_at),
+            radius_m: beam.damage_radius_m,
+        },
         spec,
     );
     for inst in landed.iter().filter(|i| i.multishot == multishot_half && i.target != 0) {
@@ -7847,9 +7854,13 @@ pub fn run_once_traced(
                 // so this factor moves no number the engine reported before the
                 // arena had a distance in it (owner, 2026-08-15).
                 let falloff = match (rad, ap.falloff) {
-                    // THE EXPLOSION reads the distance from its EPICENTRE,
-                    // which is where this pellet landed — zero when it hit.
-                    (Some(r), _) => r.falloff_at(aim_offset),
+                    // THE EXPLOSION reads the distance from its EPICENTRE to
+                    // the body's NEAREST POINT, not to its centre — a body
+                    // standing across a falloff gradient takes the best number
+                    // on it (`space::blast_reach`, owner 2026-08-17). Zero when
+                    // the pellet hit, and zero for anything the blast is
+                    // standing inside.
+                    (Some(r), _) => r.falloff_at(crate::space::blast_reach(aim_offset)),
                     // THE DIRECT HIT reads the GAP, which IS the distance it
                     // flew: a bullet vanishes at the surface it hits.
                     (None, Some(f)) => f.factor(gap_m),

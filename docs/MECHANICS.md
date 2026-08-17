@@ -2707,27 +2707,46 @@ builds rank in opposite orders from how they rank against one target. That
 reordering is the reason a multi-target model is worth building rather than
 approximating.
 
-### Firestorm is worth nothing and Primed Firestorm quadruples you
+### A BLAST MEETS A BODY AT ITS NEAREST SURFACE
 
-`cargo run --release --bin formation_value -- [cols] [rows] [spacing]` prints
-it for any formation. At 3 m — the owner's fixture:
+Three rulings, and they are one idea: a body is a CIRCLE, so a blast touches it
+before it reaches its centre (owner, 2026-08-17). `engine::space` owns all three.
 
-| radius mod | radius | seeds | instances | total | vs bare |
+| | rule |
+| --- | --- |
+| **where it goes off** | on the body's surface FACING the shooter, one radius nearer than its centre — a round detonates where it touches (`detonation_point`) |
+| **who is caught** | ANY part of a body touching the sphere is enough, so the reach is `radius + body radius` (`caught_by_blast`) |
+| **how far it fell off** | to the body's NEAREST point, because a body across a gradient takes the best number on it and nothing in the game falls off the other way (`blast_reach`) |
+
+The third is a rule rather than an average on purpose: an average would need a
+shape integral to defend, and this needs only *"the round found the best part of
+it"*, which is what a blast does.
+
+**IT MOVES NO EXISTING NUMBER** (`one_fight`: every answer unchanged), because
+at contact a pellet cannot miss, so the reach into a body is zero either way.
+It bites at RANGE and in a FORMATION, which is where it was always going to.
+
+### What a radius mod is worth — and the reach is what decides it
+
+`cargo run --release --bin formation_value -- [cols] [rows] [spacing]`. At 3 m:
+
+| radius mod | radius | REACH | seeds | total | vs bare |
 | --- | --- | --- | --- | --- | --- |
-| nothing | 2.30 m | 1 | 6 | 3.29 | 1.00x |
-| **Firestorm** | 2.85 m | 1 | 6 | 3.29 | **1.00x** |
-| **Primed Firestorm** | 3.31 m | 4 | 24 | 13.15 | **4.00x** |
+| nothing | 2.30 m | 2.50 m | 1 | 3.29 | 1.00x |
+| Firestorm | 2.85 m | **3.05 m** | 4 | 13.15 | **4.00x** |
+| Primed Firestorm | 3.31 m | 3.51 m | 4 | 13.15 | 4.00x |
 
-**The ordinary Firestorm is worth EXACTLY NOTHING here and its primed version
-quadruples the shot**, because +24% takes the radius to 2.85 m and the nearest
-body is at 3.00. The mod does not fail gently — it fails completely, and then
-its bigger twin steps over the same line and takes four seeds. That is the
-shape of every radius mod on every chaining weapon, and it is invisible to any
-model with one target in it.
+**THE REACH IS THE NUMBER TO READ, not the radius**, and it corrected a headline
+finding written a day earlier: with the radius alone, Firestorm's 2.85 m fell
+short of a 3 m neighbour and this table said the mod was worth EXACTLY NOTHING
+while its primed twin quadrupled the shot. With the reach it clears 3.00 m by
+five centimetres, so both take four seeds — and **Primed Firestorm is worth
+nothing OVER the ordinary one at exactly this spacing**. The step is real either
+way; it just sits one body-radius further out than it looked.
 
-The same tool prints the step edges, which are pure geometry: the bare radius
-(2.30 m), the primed one (3.31 m), and `3.31 / √2 = 2.34 m` where the diagonals
-come in and the mod peaks at 6x.
+That is the argument for the tool rather than for a rule of thumb: the answer
+turns on centimetres, and it turns on the formation you are actually shooting
+into.
 
 ### What the engine does with it now
 

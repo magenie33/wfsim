@@ -102,11 +102,20 @@ fn main() {
         let (b, pf) = (tot(RADIUS_M), tot(RADIUS_M * 1.44));
         println!("{s:<9.2}m{b:>8.2}{pf:>9.2}{:>10.2}x", pf / b);
     }
+    // THE EDGES ARE THE REACH, NOT THE RADIUS. Any part of a body touching the
+    // sphere is caught (owner, 2026-08-17), so what a mod really covers is its
+    // radius plus a body radius — and that is the number every step above sits
+    // on. Reading the radius alone put both edges one body too close in, and
+    // said a mod was worth nothing that is worth four times the shot.
+    let br = wfsim_engine::space::BODY_RADIUS_M;
     println!(
-        "\nthe edges are pure geometry: {:.2} m is the bare radius and {:.2} m the primed one,\n\
-         and {:.2} m = primed / sqrt(2) is where the diagonals come in.",
-        RADIUS_M,
-        RADIUS_M * 1.44,
-        RADIUS_M * 1.44 / 2f64.sqrt()
+        "
+the edges are the REACH — radius plus a body radius, because any part of a
+body touching the sphere is caught: bare {:.2} m, Firestorm {:.2} m, primed
+{:.2} m. {:.2} m = the primed reach over sqrt(2) is where diagonals come in.",
+        RADIUS_M + br,
+        RADIUS_M * 1.24 + br,
+        RADIUS_M * 1.44 + br,
+        (RADIUS_M * 1.44 + br) / 2f64.sqrt()
     );
 }

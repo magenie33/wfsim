@@ -170,7 +170,11 @@ pub fn resolve_with(
     // module's choice rather than a fact.
     let mut seeds: Vec<usize> = aimed.into_iter().collect();
     seeds.extend((0..bodies.len()).filter(|&i| {
-        Some(i) != aimed && bodies[i].distance(splash.at) <= splash.radius_m + 1e-9
+        // ANY PART OF A BODY TOUCHING THE SPHERE IS ENOUGH — the blast rule,
+        // in one place (`space::caught_by_blast`, owner 2026-08-17). So the
+        // radius a splash really seeds over is its own plus a body radius.
+        Some(i) != aimed
+            && crate::space::caught_by_blast(bodies[i].distance(splash.at), splash.radius_m)
     }));
 
     for &s in &seeds {
