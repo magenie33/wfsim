@@ -103,6 +103,27 @@ attack:
   crit_multiplier: 5.0
   status_chance: 0.50
   punch_through_m: 0.0
+  # THE CHAIN, and it is the one that does NOT compound (2026-08-17):
+  #
+  #   "Beam can chain up to 2 nearby enemies within 9 meters from the initial
+  #    target, each doing 50% of the main beam's damage"
+  #
+  # "OF THE MAIN BEAM'S", not "of the previous chain's" — both hops at 50%,
+  # where every other chaining weapon in the roster reads the second way. One
+  # word on the page and a factor of two on the second hop, which is why
+  # `compounds` is a field rather than an assumption.
+  #
+  # No damage radius: the page gives none and calls it hit-scan.
+  beam:
+    range_m: 29.0
+    damage_radius_m: 0.0
+    radius_takes_multishot: false
+    chain:
+      hops: 2
+      range_m: 9.0
+      damage_per_hop: 0.50
+      compounds: false
+      origin: radius_targets
   damage: { radiation: 21 }   # total 21
 
   # NO `beam:` BLOCK, the same call the Ocucor, the Phantasma and the Boar's

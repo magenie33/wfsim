@@ -4803,6 +4803,7 @@ fn spread_from_seeds(
         hops: beam.chain_hops,
         range_m: beam.chain_range_m,
         falloff: beam.chain_damage_per_hop,
+        compounds: beam.chain_compounds,
     };
     let landed = crate::chain::resolve(
         &bodies,

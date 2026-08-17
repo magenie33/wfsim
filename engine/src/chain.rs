@@ -96,6 +96,15 @@ pub struct Spec {
     pub range_m: f64,
     /// What each hop deals relative to the hop before it. The Torid's 0.75.
     pub falloff: f64,
+    /// Does `falloff` COMPOUND along the path, or does every hop deal the same
+    /// share of the main beam?
+    ///
+    /// Compounding is the common shape — the Atomos is *"0.75^n times the main
+    /// beam's damage, where n is the chain number"*. The Kuva Nukor is not:
+    /// *"each doing 50% of the main beam's damage"*, both hops at 50% rather
+    /// than 50% and 25%. One word's difference on the page and a factor of two
+    /// on the second hop.
+    pub compounds: bool,
 }
 
 /// ONE DAMAGE INSTANCE the shot produced, and everything the geometry decides
@@ -211,7 +220,7 @@ pub fn resolve_with(
                 break;
             }
             let next = tied[tie(tied.len()).min(tied.len() - 1)];
-            share *= spec.falloff;
+            share = if spec.compounds { share * spec.falloff } else { spec.falloff };
             out.push(Instance { target: next, share, multishot, headshot: false });
             seen[next] = true;
             cur = next;
@@ -226,7 +235,7 @@ mod tests {
 
     /// The Torid Incarnon's own constants, which are the ones every number in
     /// docs/MECHANICS.md §12 was computed against.
-    const TORID: Spec = Spec { hops: 5, range_m: 7.0, falloff: 0.75 };
+    const TORID: Spec = Spec { hops: 5, range_m: 7.0, falloff: 0.75, compounds: true };
 
     /// A 3 x 3 formation at 3 m, the fixture the owner chose (2026-08-17): the
     /// smallest arrangement dense enough that a five-hop path never runs out of
@@ -383,6 +392,34 @@ mod tests {
             }
         }
         assert!(seen_spread, "the tie-break must actually move damage around");
+    }
+
+    /// A FLAT CHAIN PAYS EVERY HOP THE SAME, and a compounding one does not.
+    ///
+    /// The Kuva Nukor is the roster's only flat one: *"chain up to 2 nearby
+    /// enemies within 9 meters from the initial target, each doing 50% of the
+    /// MAIN BEAM's damage"* — where every other page reads "of the PREVIOUS
+    /// chain's". One word, and a factor of two on the second hop.
+    #[test]
+    fn a_flat_chain_pays_every_hop_the_same() {
+        let bodies: Vec<Vec2> = (0..3).map(|i| Vec2::new(i as f64 * 2.0, 0.0)).collect();
+        let splash = Splash { at: bodies[0], radius_m: 0.0 };
+        let nukor = Spec { hops: 2, range_m: 9.0, falloff: 0.5, compounds: false };
+        let hops: Vec<f64> = resolve(&bodies, Some(0), splash, nukor)
+            .iter()
+            .filter(|i| i.share < 1.0)
+            .map(|i| i.share)
+            .collect();
+        assert_eq!(hops, vec![0.5, 0.5], "both hops at half the main beam");
+
+        // …and the same weapon read the other way would have halved twice.
+        let compounding = Spec { compounds: true, ..nukor };
+        let hops: Vec<f64> = resolve(&bodies, Some(0), splash, compounding)
+            .iter()
+            .filter(|i| i.share < 1.0)
+            .map(|i| i.share)
+            .collect();
+        assert_eq!(hops, vec![0.5, 0.25]);
     }
 
     /// A STILL FORMATION HAS ONE PATH. The property the owner asked for in

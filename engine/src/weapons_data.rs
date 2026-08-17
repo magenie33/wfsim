@@ -523,6 +523,10 @@ pub struct BeamSpec {
     pub chain: ChainSpec,
 }
 
+fn chain_compounds_default() -> bool {
+    true
+}
+
 /// The chain a beam propagates through enemies.
 #[derive(Debug, Clone, Deserialize)]
 pub struct ChainSpec {
@@ -530,6 +534,18 @@ pub struct ChainSpec {
     pub hops: u32,
     pub range_m: f64,
     pub damage_per_hop: f64,
+    /// Does `damage_per_hop` COMPOUND along the path, or does every hop deal
+    /// the same share of the main beam?
+    ///
+    /// Compounding is the common shape and the default — the Atomos is
+    /// *"0.75^n times the main beam's damage, where n is the chain number"*,
+    /// and the Torid, Larkspur and Boar all read the same way ("of the previous
+    /// chain's damage"). The Kuva Nukor does NOT: *"chain up to 2 nearby
+    /// enemies … each doing 50% of the main beam's damage"* — both hops at 50%,
+    /// not 50% and 25%. It is one word's difference on the page and a factor of
+    /// two on the second hop.
+    #[serde(default = "chain_compounds_default")]
+    pub compounds: bool,
     /// Which targets start a chain (`radius_targets`: every enemy the sphere
     /// catches starts its own).
     pub origin: String,
@@ -2498,6 +2514,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
             chain_hops: b.chain.hops,
             chain_range_m: b.chain.range_m,
             chain_damage_per_hop: b.chain.damage_per_hop,
+            chain_compounds: b.chain.compounds,
             chain_takes_multishot: b.chain.takes_multishot,
             chain_nodes_have_radius: b.chain.nodes_have_radius,
         }),

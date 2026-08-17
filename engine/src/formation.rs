@@ -202,7 +202,7 @@ mod tests {
     fn the_grid_fixture_reproduces_the_documented_chain_totals() {
         let (p, b) = spec();
         let f = Formation::grid(p, b, 3, 3, 3.0, Vec2::new(0.0, 5.0));
-        let torid = crate::chain::Spec { hops: 5, range_m: 7.0, falloff: 0.75 };
+        let torid = crate::chain::Spec { hops: 5, range_m: 7.0, falloff: 0.75, compounds: true };
         let at = f.foes[f.aimed].at;
         let total = |radius_m: f64| -> f64 {
             crate::chain::resolve(

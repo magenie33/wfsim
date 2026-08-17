@@ -2003,8 +2003,10 @@ pub struct BeamGeometry {
     pub radius_takes_multishot: bool,
     pub chain_hops: u32,
     pub chain_range_m: f64,
-    /// Each hop deals this fraction of the hop before it.
+    /// Each hop deals this fraction of the hop before it — or of the MAIN beam
+    /// when `chain_compounds` is false, which is the Kuva Nukor's shape.
     pub chain_damage_per_hop: f64,
+    pub chain_compounds: bool,
     pub chain_takes_multishot: bool,
     /// Does every chain NODE carry a sphere too? UNVERIFIED (MEASUREMENTS
     /// M15) — one line of weapon data so a measurement flips it.

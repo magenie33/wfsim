@@ -2813,10 +2813,40 @@ only kind of kill in this engine worth less than another, and `SpreadBy` is the
 enum that carries which mechanism landed an instance so the difference can be
 made. It was a `bool` for an hour and the hour was spent on a flipped argument.
 
+### The chaining roster
+
+Seven entries, and their constants are the whole of what differs between them.
+The wiki's `Beam` page names which weapons chain; each number below is
+transcribed from that weapon's own page.
+
+| entry | hops | range | per hop | compounds |
+| --- | --- | --- | --- | --- |
+| Torid, Incarnon form | 5 | 7 m | 75% | yes |
+| Atomos | 3 | 7 m | 75% | yes |
+| Larkspur / Prime | 3 | **6 m** | 80% | yes |
+| Boar / Prime, Incarnon form | 2 | 10 m | 80% | yes |
+| **Kuva Nukor** | 2 | 9 m | 50% | **no** |
+
+**THE KUVA NUKOR DOES NOT COMPOUND**, and it is one word on the page: *"each
+doing 50% of the MAIN BEAM's damage"*, where every other reads "of the PREVIOUS
+chain's". Both hops at 50%, not 50% and 25% — a factor of two on the second hop,
+which is why `compounds` is a field rather than an assumption.
+
+**THE LARKSPUR'S 6 m IS THE GROUND COLUMN.** *"In Atmospheric Mode, the beam
+chains within 6 meters … In Archwing Mode, maximum chain distance extends to 30
+meters."* This weapon is the reason AGENTS.md carries a rule about the
+two-column Arch-Gun infobox: an export that took the Archwing column posted the
+Larkspur Prime at half its damage. The arena is on the ground.
+
+**NONE OF THE FIVE STATES A DAMAGE RADIUS**, so theirs is zero and only the body
+the beam struck seeds a chain. The Atomos's page mentions *"a small radius of
+damage around the beam"* and gives no number; a zero is the conservative reading
+and a measurement is what would move it.
+
 `cargo run --release --bin spread_audit` lists every entry that reaches a
-formation and how: 56 of 224 today — 54 explosive, one beam, one with tendrils.
-The other 168 reach the body they hit and nothing else, which is not a gap: most
-guns are guns.
+formation and how: 62 of 224 today — 54 explosive, seven beams, one with
+tendrils. The other 162 reach the body they hit and nothing else, which is not a
+gap: most guns are guns.
 
 All three read the same three blast rules, and all three hand ORDINARY damage
 instances to the ordinary pipeline — each body computing its own Condition

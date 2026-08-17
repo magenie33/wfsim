@@ -107,6 +107,26 @@ attack:
   punch_through_m: 0.0
   # PURE HEAT — the form drops the base weapon's IPS entirely. 20 against the
   # Prime's 30, at 7.5 ticks per second against 8.0.
+  # THE CHAIN, from the Genesis page (2026-08-17):
+  #
+  #   "each beam chaining up to 2 nearby enemies within 10 meters of the initial
+  #    target and subsequent targets struck by punch through"
+  #   "with each chain doing 80% of the previous one's damage"
+  #   "the main beam has a maximum range of 20 meters"
+  #
+  # THE PUNCH-THROUGH CLAUSE IS NOT MODELLED and is not a chain rule: it says
+  # the chain also starts from bodies a punched-through beam hit, and this
+  # engine has no punch-through geometry (docs/UNMODELLED.md). What is modelled
+  # is the ordinary case — the body the beam struck starts the chain.
+  beam:
+    range_m: 20.0
+    damage_radius_m: 0.0
+    radius_takes_multishot: false
+    chain:
+      hops: 2
+      range_m: 10.0
+      damage_per_hop: 0.80
+      origin: radius_targets
   damage: { heat: 20.0 }
   # NO `beam:` BLOCK, deliberately — the same call the Prime's entry makes and
   # for the same reason: that block's `damage_radius_m` is what Firestorm

@@ -16,8 +16,14 @@ fn main() {
         let mut how: Vec<String> = Vec::new();
         if let Some(b) = &a.beam {
             how.push(format!(
-                "chain {}x{}m@{:.0}% + sphere {:.1}m",
-                b.chain.hops, b.chain.range_m, b.chain.damage_per_hop * 100.0, b.damage_radius_m
+                "chain {}x{}m@{:.0}%{} + sphere {:.1}m",
+                b.chain.hops,
+                b.chain.range_m,
+                b.chain.damage_per_hop * 100.0,
+                // COMPOUNDING IS THE COMMON SHAPE, so the line marks the one
+                // that is not: the Kuva Nukor pays every hop the same.
+                if b.chain.compounds { "^n" } else { " flat" },
+                b.damage_radius_m
             ));
         }
         if let Some(r) = &a.radial {

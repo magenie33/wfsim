@@ -69,6 +69,27 @@ attack:
   crit_multiplier: 1.4
   status_chance: 0.50
   punch_through_m: 0.0
+  # THE CHAIN, and THE GROUND COLUMN of it (2026-08-17):
+  #
+  #   "Primary fire releases a continuous beam that can chain to 3 enemies after
+  #    hitting the initial target, with each chain doing 80% of the previous
+  #    chain's damage" — 100% / 80% / 64% / 51.2%.
+  #   "In Atmospheric Mode, the beam chains within 6 meters of the initial
+  #    target. In Archwing Mode, maximum chain distance extends to 30 meters."
+  #
+  # SIX, NOT THIRTY. This weapon is the reason AGENTS.md has a rule about the
+  # two-column Arch-Gun infobox: an export that took the ARCHWING column posted
+  # the Larkspur Prime at half its damage. The arena is on the ground, so every
+  # number here is the atmospheric one.
+  beam:
+    range_m: 20.0
+    damage_radius_m: 0.0
+    radius_takes_multishot: false
+    chain:
+      hops: 3
+      range_m: 6.0
+      damage_per_hop: 0.80
+      origin: radius_targets
   damage: { impact: 20.0, radiation: 160.0 }   # 180 total (Archwing: 90)
 
 unmodeled:

@@ -23,7 +23,7 @@ use wfsim_engine::chain::{resolve, Spec, Splash};
 use wfsim_engine::formation::Formation;
 
 /// The Torid Incarnon's, and the only chaining beam in the roster today.
-const TORID: Spec = Spec { hops: 5, range_m: 7.0, falloff: 0.75 };
+const TORID: Spec = Spec { hops: 5, range_m: 7.0, falloff: 0.75, compounds: true };
 const RADIUS_M: f64 = 2.3;
 
 fn main() {

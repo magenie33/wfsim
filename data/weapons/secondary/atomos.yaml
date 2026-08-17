@@ -55,6 +55,27 @@ attack:
   crit_multiplier: 1.7
   status_chance: 0.21
   punch_through_m: 0.0
+  # THE CHAIN, transcribed from the weapon's own page (2026-08-17):
+  #
+  #   "When fired at an enemy, the beam will chain to the closest living enemy
+  #    within 7 meters of the initial target. From there it will chain again, up
+  #    to a maximum of 3 chains in total."
+  #   "A chain will do 0.75^n times the main beam's damage, where n is the chain
+  #    number" — 100% / 75% / 56.25% / 42.1875%, which is the COMPOUNDING shape.
+  #
+  # THE SPHERE IS NOT TRANSCRIBED. The page says only "a small radius of damage
+  # around the beam, similar to the Ignis and Embolist" and gives no number, so
+  # `damage_radius_m` is 0 rather than a guess: with none, only the body the
+  # beam struck seeds a chain, which is the conservative reading.
+  beam:
+    range_m: 15.0
+    damage_radius_m: 0.0
+    radius_takes_multishot: false
+    chain:
+      hops: 3
+      range_m: 7.0
+      damage_per_hop: 0.75
+      origin: radius_targets
   damage: { heat: 29 }   # total 29
 
 # incarnon_evolutions: definitions live in data/evolutions/atomos_*.yaml.
