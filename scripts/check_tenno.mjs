@@ -11,6 +11,14 @@ const r = await evaluate(`(async () => {
   history.pushState({}, '', '/weapons/Torid'); route(); await sleep(2500);
   document.querySelectorAll('.tab').forEach(t => { if (/Sim/i.test(t.textContent)) t.click(); });
   await sleep(1200);
+  // IN A FIGHT OF ITS OWN. A first-time visitor lands ON the official ruler,
+  // whose fields are locked — so every field this check sets was being set on a
+  // control a player cannot touch, and it only appeared to work because setting
+  // .value and dispatching by hand goes around the disabled attribute. Same
+  // fault check_arena found in itself (2026-08-18).
+  document.querySelector('#preset-bar-simulator-scenarios .pchip.add').click();
+  await sleep(1500);
+  const editable = typeof officialScenarioActive === 'function' && !officialScenarioActive();
   const box = document.getElementById('sim-technique');
   const keys = [...box.querySelectorAll('[data-k]')].map(e => e.dataset.k);
 
@@ -33,9 +41,19 @@ const r = await evaluate(`(async () => {
   // here: it could not be set at all before this control existed, so every
   // "With Sprint Speed 1.2 or Higher" perk in the roster was unreachable from
   // the page no matter what a player did.
+  // BY OPENING IT AND CLICKING, which is the only path a player has. The frame
+  // roster stopped being a native select on 2026-08-18 — reading .options off
+  // it threw, and setting .value by hand would have driven the binding while
+  // skipping the control, which is how the ability element picker shipped wired
+  // to nothing on the same day.
   const pick = box.querySelector('[data-k="frame"]');
-  const nFrames = pick ? pick.options.length : 0;
-  pick.value = 'valkyr_prime'; pick.dispatchEvent(new Event('change'));
+  const pop = () => document.getElementById('dd-popover');
+  pick.click(); await sleep(400);
+  const rows = pop() && !pop().hidden ? [...pop().querySelectorAll('.opt')] : [];
+  // …minus the "no frame" row, which is not a Warframe.
+  const nFrames = Math.max(0, rows.length - 1);
+  const row = rows.find((o) => o.dataset.v === 'valkyr_prime');
+  if (row) row.click();
   await sleep(1800);
   const picked = { armor: sim.wf_armor, energy: sim.wf_energy, sprint: sim.wf_sprint };
   // The numbers stay EDITABLE after a pick — the roster is unmodded, and one
@@ -44,7 +62,7 @@ const r = await evaluate(`(async () => {
   e2.value = '900'; e2.dispatchEvent(new Event('change'));
   await sleep(1200);
 
-  return { keys, nFrames, picked, overridden: sim.wf_energy, simArmor: 1500,
+  return { keys, editable, nFrames, picked, overridden: sim.wf_energy, simArmor: 1500,
            before: before.replace(/\s+/g,' ').trim().slice(0,120),
            after: after.replace(/\s+/g,' ').trim().slice(0,120),
            url: await shareUrl() };
@@ -55,6 +73,8 @@ check("the Tenno block carries every player field",
    "frame", "wf_armor", "wf_energy", "wf_sprint"]
     .every((k) => r.keys.includes(k)),
   r.keys.join(","));
+check("the check is standing on a fight of its own, not the locked ruler",
+  r.editable === true);
 check("the whole Warframe roster is offered", r.nFrames >= 120, `${r.nFrames} options`);
 // Valkyr Prime, from data/frames.yaml: 1000 armor, 1.1 sprint, 225 max energy
 // (175 at rank 0, +50). Three DIFFERENT numbers from one pick is the claim —

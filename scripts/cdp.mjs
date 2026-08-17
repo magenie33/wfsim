@@ -233,7 +233,20 @@ export async function openApp(o = {}) {
       });
       const ex = r.result?.exceptionDetails;
       if (ex) {
-        throw new Error(String(ex.exception?.description || ex.text || "page threw").slice(0, 800));
+        const msg = String(ex.exception?.description || ex.text || "page threw").slice(0, 800);
+        // THE ONE MISTAKE THIS FILE'S SHAPE INVITES, named where it is found.
+        //
+        // A check's page-side half is a template literal, so a backtick inside
+        // it — in a COMMENT, which is where the repo's idiom puts them around
+        // identifiers — ends the literal early and splices whatever follows
+        // into the expression. The result usually still PARSES, so `node
+        // --check` is clean and the only symptom is the page throwing about a
+        // method nothing calls. It has cost a full check cycle seven times
+        // (2026-08-18); the hint costs three lines and cannot false-positive,
+        // because it only ever appends to a failure that already happened.
+        throw new Error(`${msg}\n\n  hint: if that names something this check ` +
+          `never wrote, look for a backtick or \${ inside the page-side body ` +
+          `of ${process.argv[1]} — it ends the template literal early.`);
       }
       return r.result?.result?.value;
     },
