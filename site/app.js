@@ -309,6 +309,26 @@ function ensureRpcWorker() {
 }
 /// `onProgress(done, total)` is optional and only `/api/simulate` reports it —
 /// see the worker. Every other call is unchanged.
+/// STOP THE SIM WORKER, which is the only way to interrupt a wasm call: it runs
+/// to completion inside `simulate_json` and there is no yield point to check a
+/// flag at. Terminating is instant and costs nothing to recover from — the next
+/// call builds a fresh worker, and a sim carries no state between calls.
+///
+/// Every request in flight on that worker is abandoned, which is exactly one:
+/// the page never has two sims running (the button is disabled) and the quick
+/// calc has lanes of its own.
+function cancelSim() {
+  if (!rpcWorker) return false;
+  rpcWorker.terminate();
+  rpcWorker = null;
+  // Nobody is coming back with an answer, so every waiter is told so rather
+  // than left hanging on a promise that can no longer settle.
+  rpcPending.forEach((resolve) => resolve({ ok: false, cancelled: true }));
+  rpcPending.clear();
+  rpcProgress.clear();
+  return true;
+}
+
 const rpc = (path, body, onProgress) => new Promise((resolve) => {
   const id = ++rpcId;
   rpcPending.set(id, resolve);
@@ -9947,7 +9967,15 @@ async function runSim() {
     <div class="simrun-t">${escHtml(tr("running {n} simulations…").replace("{n}", simRuns()))}</div>
     <div class="simrun-bar"><span id="sim-prog" style="width:0%"></span></div>
     <div class="simrun-n" id="sim-prog-n"></div>
+    <button type="button" id="sim-stop" class="ghost-btn small">${escHtml(tr("stop"))}</button>
   </div>`;
+  // STOPPABLE, because the wait is unbounded and a reader who realises the
+  // fight is too big should not have to reload the page (owner, 2026-08-18).
+  $("sim-stop").onclick = () => {
+    cancelSim();
+    $("sim-results").innerHTML =
+      `<div class="placeholder">${escHtml(tr("stopped — nothing was measured"))}</div>`;
+  };
   try {
     // `replay: true` only HERE. The gain scan hits the same endpoint once per
     // candidate and shows no replay, so it must not pay for one.
@@ -9981,6 +10009,9 @@ async function runSim() {
             : "");
       }
     });
+    // A CANCEL IS NOT A FAILURE: the reader asked for it, and the panel already
+    // says so. Nothing to report and nothing to complain about.
+    if (r && r.cancelled) return;
     if (!r || r.ok === false) {
       $("sim-results").innerHTML = `<div class="error">sim failed: ${r ? r.error : "no data"}</div>`;
       return;

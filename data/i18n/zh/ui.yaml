@@ -470,6 +470,8 @@ ui:
   "The grid is stated as three numbers rather than as 361 positions, so its terms can be read and argued with.": 方阵用三个数字描述而不是 361 个坐标，这样它的条款才读得懂、争得动。
   "running {n} simulations…": 正在跑 {n} 次模拟…
   "about {s}s left": 还剩约 {s} 秒
+  "stop": 停止
+  "stopped — nothing was measured": 已停止 —— 没有测出任何结果
   "Where the damage went": 伤害落在哪里
   "every body that took something, and how much — click one to read its debuffs": 每个吃到伤害的身体，以及吃了多少 —— 点一个就能看它身上的减益
   # WHICH ENEMY the debuff table is about (2026-08-17).

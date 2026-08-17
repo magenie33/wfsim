@@ -3118,6 +3118,43 @@ moves, so draining a moment later is exact rather than approximate.
 The copy is BODY-ONLY: `part_factor` comes back off, because an arc is not
 aimed at anything. Same rule every instance that lands on a neighbour follows.
 
+### What it cost, and what that cost was made of (2026-08-18)
+
+An area proc hands a `Dot` to every body within its radius, and on a 19x19 grid
+at 1.5 m spacing that is **29 bodies per proc**. The Phantasma Prime — six
+beams, infinite body punch-through, twelve ticks a second — struck 19 bodies
+deep with every one of its six beams, so a full status build produced **146,000
+procs and 4.26 million DoT pushes per run**. Measured: **9,551 ms a run**,
+against 88 with the spread switched off. A hundred runs was sixteen minutes.
+
+Two things were wrong, and neither was the mechanic:
+
+**The scan.** Each proc asked "who is within radius of this body?" by walking
+every body — `O(bodies)` per proc, thousands of procs a second.
+`space::Neighbours` answers it once per run: per body, its neighbours within
+`AREA_MAX_M` (a full-stack gas cloud plus a body radius), nearest first, so a
+lookup at any smaller radius is a prefix that stops at the first body out of
+range. Same shape and same reason as `chain::Layout` — nothing in this arena
+moves.
+
+**The cap.** `dot_cap` was the unit's declared `stack_caps.general` and `None`
+otherwise, so a generic enemy's DoT list was UNBOUNDED. It grew with every proc
+and `process_ticks` walks it once per body per shot — linear cost, quadratic
+outcome. It is TEN now where a unit declares nothing, which is the Gas page's
+own wording ("up to 10 instances of the effect can stack on the same target")
+and the rule the ten-stack families in `DEBUFF_ROSTER` already followed.
+
+**9,551 ms -> ~150 ms, a 64x cut, with `one_fight` reporting every answer
+unchanged.** A hundred runs of the group-clear ruler with the board's own #1
+Phantasma Prime build went from ninety minutes in the browser to 85 seconds.
+
+What is left is the mechanic itself: 146k procs times 29 neighbours is work
+nobody can argue away, and it is what a six-beam infinite-punch-through shotgun
+does to a nineteen-deep column. The remaining lever is PARALLELISM — the runs
+are independent — and taking it means giving each run its own derived seed,
+which changes every published number and is the owner's call rather than an
+optimisation.
+
 ### The gap it uncovered: a formation body never ticked at all
 
 `process_ticks` was called for the aimed body and for **nothing else**. So every

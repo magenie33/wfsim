@@ -819,6 +819,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .simrun-bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
 .simrun-bar span{display:block;height:100%;background:var(--accent);
   transition:width .12s linear}
+.simrun button{align-self:flex-start}
 .simrun-n{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
 
 /* WHERE THE DAMAGE WENT — the RESULT's own copy of the scene, and its roll

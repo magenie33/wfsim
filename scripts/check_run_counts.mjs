@@ -178,6 +178,41 @@ const r = await evaluate(`(async () => {
     }
   }
 
+  // ---- …AND IT CAN BE STOPPED ------------------------------------------
+  //
+  // The wait is unbounded, so a reader who realises the fight is too big must
+  // not have to reload the page. There is no yield point inside a wasm call to
+  // check a flag at, so the worker is TERMINATED — instant, and costs nothing
+  // to recover from since a sim carries no state between calls (owner,
+  // 2026-08-18).
+  {
+    const ruler = scenarioList().find((p) => presetId(p) === 'group_clear');
+    if (ruler) {
+      setSimRuns(4000);
+      document.getElementById('run-sim').click();
+      await sleep(2000);
+      out.stopOffered = !!document.getElementById('sim-stop');
+      out.stopMidRun = (document.getElementById('sim-prog-n') || {}).textContent || '';
+      const t0 = Date.now();
+      document.getElementById('sim-stop').click();
+      // MEASURED AT THE CLICK, not after a sleep: terminating a worker is
+      // synchronous, so what is being timed is the call and not the wait.
+      out.stopMs = Date.now() - t0;
+      await sleep(700);
+      out.stopSaid = (document.querySelector('#sim-results .placeholder') || {}).textContent || '';
+      out.stopFreed = !document.getElementById('run-sim').disabled;
+      // A CANCEL IS NOT A FAILURE, and it must not leave the page broken: the
+      // next run builds a fresh worker and answers.
+      setSimRuns(5);
+      document.getElementById('run-sim').click();
+      for (let i = 0; i < 300; i++) {
+        await sleep(200);
+        if (!document.getElementById('run-sim').disabled) break;
+      }
+      out.stopRecovered = !!document.querySelector('#sim-results table, #sim-results .fold');
+    }
+  }
+
   return out;
 })()`);
 
@@ -222,5 +257,13 @@ check("...as a COUNT, which is a number a reader can act on",
 check("...and as a time remaining", r.progEta === true, JSON.stringify(r.progAll));
 check("...with a bar that only ever rises, and reaches the end",
   r.progRises === true && r.progEnds === true, r.progLast);
+// AND IT CAN BE STOPPED — the wait is unbounded, so a reader who realises the
+// fight is too big must not have to reload the page.
+check("a running sim offers a stop", r.stopOffered === true, r.stopMidRun);
+check("...which takes effect at once", r.stopMs < 700, `${r.stopMs} ms`);
+check("...says nothing was measured rather than reporting a failure",
+  /nothing was measured|没有测出/.test(r.stopSaid), r.stopSaid);
+check("...frees the button", r.stopFreed === true);
+check("...and the next run still answers", r.stopRecovered === true);
 
 await app.finish("how hard you measure is a number someone can set, in all three modules");

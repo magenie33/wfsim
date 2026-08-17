@@ -813,7 +813,17 @@ struct DebuffState {
     ///
     /// Nothing moves in this arena, so draining a moment later is exact rather
     /// than approximate: a `Dot` carries an absolute `next_tick`.
-    area_out: Vec<(Dot, f64)>,
+    /// …AND HOW MANY OF THAT EXACT CLOUD. Within one shot a body can take a
+    /// hundred gas procs and every one produces the SAME cloud — same value,
+    /// same radius, same tick time, because they came from the same instant of
+    /// the same shot. They are indistinguishable, so they are one entry and a
+    /// COUNT rather than a hundred entries.
+    ///
+    /// It is what makes a crowd affordable. The drain hands each entry to every
+    /// body in radius, a dozen on a 1.5 m grid, and the receiving body keeps at
+    /// most its stack cap — so a hundred pushes to keep ten was ten times the
+    /// work for the same answer (2026-08-18).
+    area_out: Vec<(Dot, f64, u16)>,
     /// INSTANT area damage this body owes its neighbours — today only a
     /// simultaneous BLAST detonation. `(damage, radius_m)`.
     ///
@@ -1077,6 +1087,51 @@ impl DebuffState {
     ///     simultaneously when … the target dying", and a simultaneous
     ///     detonation is the one that reaches 5 m. The host takes nothing more
     ///     (it is already dead, and the AoE never hits it anyway).
+    /// POST A CLOUD OR AN ARC for the neighbours, keeping at most `cap` of them.
+    ///
+    /// NOT ONLY AN OPTIMISATION. A cloud that is evicted from its own host
+    /// before the next tick never ticked anybody: ticks are one a second and a
+    /// shot is a fraction of that, so twenty gas procs in one shot leave ten
+    /// clouds and the other ten delivered nothing. Keeping every one of them
+    /// would hand the neighbours DoTs that do not exist.
+    ///
+    /// IT IS ALSO MOST OF THE COST. The drain hands each entry to every body in
+    /// radius — a dozen on a 1.5 m grid — so posting a hundred a shot to keep
+    /// ten is ten times the work for the same answer (2026-08-18).
+    /// IS THERE ANYTHING TO TICK? A body with no DoT, no Heat and no Blast fuse
+    /// has no event `process_ticks` could find, so calling it is a scan of
+    /// three empty lists.
+    ///
+    /// That is 361 bodies once per shot on a crowd ruler, and all but a few
+    /// dozen of them are never touched at all — the shot reaches thirteen
+    /// bodies and the formation has 361 (2026-08-18).
+    fn idle(&self) -> bool {
+        self.dots.is_empty() && self.heat.is_none() && self.blast.is_empty()
+    }
+
+    fn post_area(&mut self, dot: Dot, radius_m: f64, cap: Option<usize>) {
+        let lim = cap.unwrap_or(TEN_STACK_CAP).max(1) as u16;
+        // COALESCED: the same cloud again is the same cloud, and a receiving
+        // body cannot hold more than its cap of them anyway.
+        if let Some((d, r, n)) = self.area_out.last_mut() {
+            if *r == radius_m
+                && d.dtype == dot.dtype
+                && d.ticks_left == dot.ticks_left
+                && (d.value - dot.value).abs() < 1e-9
+                && (d.next_tick - dot.next_tick).abs() < 1e-9
+            {
+                *n = (*n + 1).min(lim);
+                return;
+            }
+        }
+        if let Some(c) = cap {
+            while self.area_out.len() >= c.max(1) {
+                self.area_out.remove(0);
+            }
+        }
+        self.area_out.push((dot, radius_m, 1));
+    }
+
     fn on_death(&mut self) {
         let out = std::mem::take(&mut self.area_out);
         let mut hits = std::mem::take(&mut self.area_hit);
@@ -3917,11 +3972,31 @@ fn fire_extra_hits(
 /// A cloud reaches a body when any part of it touches — `space::caught_by_blast`,
 /// the same rule every sphere in this engine uses.
 #[allow(clippy::too_many_arguments)]
+/// HOW MANY DoTs OF ONE KIND A BODY CAN CARRY.
+///
+/// The unit's own cap where it declares one, and TEN otherwise: "Up to 10
+/// instances of the effect can stack on the same target" is the Gas page's
+/// wording and the general rule the ten-stack families in `DEBUFF_ROSTER`
+/// already follow.
+///
+/// IT IS ALSO WHAT BOUNDS THE WORK. An uncapped list grows with every proc, and
+/// `process_ticks` walks it once per body per shot — so a spread that hands a
+/// DoT to a dozen neighbours thousands of times a second turns a linear cost
+/// quadratic (2026-08-18).
+fn dot_cap_for(p: &TargetParams) -> Option<usize> {
+    Some(p.stack_caps.map_or(TEN_STACK_CAP, |c| c.general))
+}
+
 fn drain_area_procs(
     debuffs: &mut DebuffState,
     target: &mut TargetState,
     others: &mut [SpreadFoe],
     params: &DummyParams,
+    // WHO IS NEAR WHOM, built once per run — see `space::Neighbours`. Asking
+    // per proc is `O(bodies)` and a dense grid produces thousands of procs a
+    // second: the Phantasma Prime on a 19x19 ruler was 9,551 ms a run against
+    // 88 with the spread off, entirely on that scan (2026-08-18).
+    near: &crate::space::Neighbours,
     r: &mut RunResult,
     at_now: f64,
 ) {
@@ -3939,98 +4014,83 @@ fn drain_area_procs(
     }
     // Collected first: handing a Dot from body i to body j needs both, and one
     // of them may be the aimed body, which is not in `others` at all.
-    let mut pending: Vec<(crate::space::Vec2, Dot, f64)> = Vec::new();
-    for (dot, r) in debuffs.area_out.drain(..) {
-        pending.push((params.target_at, dot, r));
+    let mut pending: Vec<(usize, Dot, f64, u16)> = Vec::new();
+    for (dot, r, n) in debuffs.area_out.drain(..) {
+        pending.push((0, dot, r, n));
     }
     for (i, f) in others.iter_mut().enumerate() {
-        let at = params.others[i].at;
-        for (dot, r) in f.debuffs.area_out.drain(..) {
-            pending.push((at, dot, r));
+        for (dot, r, n) in f.debuffs.area_out.drain(..) {
+            pending.push((i + 1, dot, r, n));
         }
     }
     // …AND THE INSTANT ONES, which today is a simultaneous Blast detonation.
-    let mut blows: Vec<(crate::space::Vec2, f64, f64)> = Vec::new();
+    let mut blows: Vec<(usize, f64, f64)> = Vec::new();
     for (dmg, rad) in debuffs.area_hit.drain(..) {
-        blows.push((params.target_at, dmg, rad));
+        blows.push((0, dmg, rad));
     }
     for (i, f) in others.iter_mut().enumerate() {
-        let at = params.others[i].at;
         for (dmg, rad) in f.debuffs.area_hit.drain(..) {
-            blows.push((at, dmg, rad));
+            blows.push((i + 1, dmg, rad));
         }
     }
-    for (from, dot, radius_m) in pending {
-        if crate::space::caught_by_blast(params.target_at.distance(from), radius_m)
-            && params.target_at.distance(from) > 1e-9
-        {
-            debuffs.push_dot_capped(dot, params.target.stack_caps.map(|c| c.general));
-        }
-        for (i, f) in others.iter_mut().enumerate() {
-            let at = params.others[i].at;
-            if at.distance(from) <= 1e-9 {
+    for (from, dot, radius_m, count) in pending {
+        for j in near.within(from, radius_m) {
+            // THE ORIGIN ALREADY HAS IT: the cloud's damage to the body
+            // standing in it is the proc itself.
+            if j == from {
                 continue;
             }
-            if crate::space::caught_by_blast(at.distance(from), radius_m) {
-                f.debuffs
-                    .push_dot_capped(dot, params.others[i].params.stack_caps.map(|c| c.general));
+            let (dbf, cap) = if j == 0 {
+                (&mut *debuffs, dot_cap_for(&params.target))
+            } else {
+                match others.get_mut(j - 1) {
+                    Some(f) => (&mut f.debuffs, dot_cap_for(&params.others[j - 1].params)),
+                    None => continue,
+                }
+            };
+            // NEVER MORE THAN THE RECEIVER CAN HOLD: pushing an eleventh copy
+            // of an identical cloud only evicts the first.
+            let n = cap.map_or(usize::from(count), |c| usize::from(count).min(c));
+            for _ in 0..n {
+                dbf.push_dot_capped(dot, cap);
             }
         }
     }
     let sd = params.status_duration_mult;
     for (from, dmg, radius_m) in blows {
-        // THE HOST IS NEVER ONE OF THEM: it took the single-target half and the
-        // page excludes it from this one.
-        if params.target_at.distance(from) > 1e-9
-            && crate::space::caught_by_blast(params.target_at.distance(from), radius_m)
-        {
-            let mit = debuffs.mitigation(at_now, sd, params.armor_strip_per_puncture);
-            let (eff, killed, _broke) = target.apply(
-                dmg,
-                TypeShares::single(DamageType::Blast),
-                false,
-                at_now,
-                &params.target,
-                false,
-                &mit,
-            );
-            r.total_damage += dmg;
-            r.effective_damage += eff;
-            r.dot_damage += eff;
-            r.note_body_damage(0, eff);
-            r.sources.add_status(DamageType::Blast, eff);
-            r.timeline.add(at_now, eff);
-            r.note_kills(u32::from(killed), at_now);
-            if killed {
-                debuffs.on_death();
-            }
-        }
-        for (i, f) in others.iter_mut().enumerate() {
-            let at = params.others[i].at;
-            if at.distance(from) <= 1e-9
-                || !crate::space::caught_by_blast(at.distance(from), radius_m)
-            {
+        for j in near.within(from, radius_m) {
+            // THE HOST IS NEVER ONE OF THEM: it took the single-target half and
+            // the page excludes it from this one.
+            if j == from {
                 continue;
             }
-            let mit = f.debuffs.mitigation(at_now, sd, params.armor_strip_per_puncture);
-            let (eff, killed, _broke) = f.state.apply(
+            let (state, dbf, fp) = if j == 0 {
+                (&mut *target, &mut *debuffs, &params.target)
+            } else {
+                match others.get_mut(j - 1) {
+                    Some(f) => (&mut f.state, &mut f.debuffs, &params.others[j - 1].params),
+                    None => continue,
+                }
+            };
+            let mit = dbf.mitigation(at_now, sd, params.armor_strip_per_puncture);
+            let (eff, killed, _broke) = state.apply(
                 dmg,
                 TypeShares::single(DamageType::Blast),
                 false,
                 at_now,
-                &params.others[i].params,
+                fp,
                 false,
                 &mit,
             );
             r.total_damage += dmg;
             r.effective_damage += eff;
             r.dot_damage += eff;
-            r.note_body_damage(i + 1, eff);
+            r.note_body_damage(j, eff);
             r.sources.add_status(DamageType::Blast, eff);
             r.timeline.add(at_now, eff);
             r.note_kills(u32::from(killed), at_now);
             if killed {
-                f.debuffs.on_death();
+                dbf.on_death();
             }
         }
     }
@@ -4205,10 +4265,11 @@ fn settle_procs(
                 // BODY-ONLY, like every other instance that lands on a
                 // neighbour: `part_factor` is the aimed pellet's headshot and
                 // an arc is not aimed at anything.
-                debuffs.area_out.push((
+                debuffs.post_area(
                     Dot { value: dot.value / part_factor.max(1e-9), ..dot },
                     TESLA_RADIUS_M,
-                ));
+                    dot_cap,
+                );
             }
             DamageType::Gas => {
                 let dot = push_dot(
@@ -4226,10 +4287,11 @@ fn settle_procs(
                 // rather than 3.3.
                 let radius_m = (GAS_RADIUS_M + GAS_RADIUS_STEP_M * stacks_before as f64)
                     .min(GAS_RADIUS_MAX_M);
-                debuffs.area_out.push((
+                debuffs.post_area(
                     Dot { value: dot.value / part_factor.max(1e-9), ..dot },
                     radius_m,
-                ));
+                    dot_cap,
+                );
             }
             DamageType::Heat => {
                 // Singleton accumulator: add the contribution and
@@ -6754,6 +6816,17 @@ pub fn run_once_traced(
     // is O(N^2) once — 130k distance computations for a 19x19, ~0.13 s over the
     // rulers' 1000 runs against the 188 s it removes — so there is nothing to
     // buy by holding it longer and a correctness trap to pay for.
+    // WHO IS NEAR WHOM, for the three AREA status effects (gas, the Tesla
+    // chain, a Blast detonation). Static like the chain's, and for the same
+    // reason: nothing in this arena moves.
+    let area_near = if params.others.is_empty() {
+        crate::space::Neighbours::default()
+    } else {
+        let mut bodies = Vec::with_capacity(params.others.len() + 1);
+        bodies.push(params.target_at);
+        bodies.extend(params.others.iter().map(|f| f.at));
+        crate::space::Neighbours::build(&bodies)
+    };
     let chain_layout = match (params.beam, params.others.is_empty()) {
         (Some(b), false) => {
             let mut bodies = Vec::with_capacity(params.others.len() + 1);
@@ -9480,6 +9553,12 @@ pub fn run_once_traced(
         // The PLAYER's buff state (`gal`, `arc`) is shared, which is right: a
         // kill is a kill whichever body it was.
         for (bi, f) in others.iter_mut().enumerate() {
+            // NOTHING TO BURN, NOTHING TO DO. A formation is up to 400 bodies
+            // and a shot reaches a handful; walking the rest once per shot is
+            // the whole difference between a crowd being affordable and not.
+            if f.debuffs.idle() {
+                continue;
+            }
             process_ticks(
                 &mut f.debuffs, &mut gal, &mut arc, t + 1e-9, &mut f.state,
                 params, ap, &mut r, &mut d.status, &params.others[bi].params, bi + 1,
@@ -9491,7 +9570,9 @@ pub fn run_once_traced(
         // cloud posted by the first pellet and one posted by the fourth are the
         // same instant, and the drain is where a body's outbox becomes its
         // neighbours' DoTs (`DebuffState::area_out`).
-        drain_area_procs(&mut debuffs, &mut target, &mut others, params, &mut r, t);
+        drain_area_procs(
+            &mut debuffs, &mut target, &mut others, params, &area_near, &mut r, t,
+        );
 
         // A SHOT THAT HIT NOTHING DROPS THE SHOT COMBO COUNTER.
         //

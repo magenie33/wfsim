@@ -364,6 +364,77 @@ pub const BODY_RADIUS_M: f64 = 0.2;
 /// Vigilante Offense's 0.75 does not), which is that caveat showing.
 pub const BODY_MATERIAL_M: f64 = 0.5;
 
+/// THE FURTHEST ANY AREA EFFECT REACHES — a gas cloud at full stacks (6 m) plus
+/// a body radius, which is more than the Tesla chain's 3 m and the Blast
+/// detonation's 5 m.
+///
+/// It is the truncation for [`Neighbours`]: past it no mechanic in this engine
+/// can hand anything to anybody, so the list stops there.
+pub const AREA_MAX_M: f64 = 6.0 + BODY_RADIUS_M;
+
+/// WHO IS NEAR WHOM — computed once, because nothing in this arena moves.
+///
+/// A gas cloud, a Tesla arc and a Blast detonation each hand a payload to every
+/// body within a radius of the one that produced it. Asked directly that is
+/// `O(bodies)` per proc, and a dense grid produces thousands of procs a second:
+/// the Phantasma Prime on a 19x19 ruler went from 88 ms a run to 9,551 —
+/// 108x — entirely on that scan (measured 2026-08-18).
+///
+/// The question is a CONSTANT. This answers it once per run: per body, its
+/// neighbours within [`AREA_MAX_M`], NEAREST FIRST, so a lookup at any smaller
+/// radius is a prefix of the list and stops at the first body out of range.
+///
+/// Same shape and same reason as [`crate::chain::Layout`], and deliberately
+/// separate: a chain's reach is the WEAPON's and can be 30 m, while these three
+/// are the ELEMENT's and are fixed.
+#[derive(Debug, Clone, Default)]
+pub struct Neighbours {
+    near: Vec<Vec<(f64, u32)>>,
+}
+
+impl Neighbours {
+    /// O(N^2) once — 130k distance computations for a 361-body grid, against
+    /// the millions the per-proc scan was doing.
+    pub fn build(bodies: &[Vec2]) -> Self {
+        Self {
+            near: bodies
+                .iter()
+                .map(|b| {
+                    let mut v: Vec<(f64, u32)> = bodies
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(j, o)| {
+                            let d = b.distance(*o);
+                            (d <= AREA_MAX_M + 1e-9).then_some((d, j as u32))
+                        })
+                        .collect();
+                    v.sort_by(|x, y| {
+                        x.0.partial_cmp(&y.0).unwrap_or(std::cmp::Ordering::Equal).then(x.1.cmp(&y.1))
+                    });
+                    v
+                })
+                .collect(),
+        }
+    }
+
+    /// Every body within `radius_m` of body `from`, itself included — ANY PART
+    /// TOUCHING IS ENOUGH, the same rule every sphere in this engine uses
+    /// ([`caught_by_blast`]).
+    ///
+    /// The list is nearest-first, so this stops at the first body out of range
+    /// rather than walking the formation.
+    pub fn within(&self, from: usize, radius_m: f64) -> impl Iterator<Item = usize> + '_ {
+        let reach = radius_m + BODY_RADIUS_M + 1e-9;
+        self.near
+            .get(from)
+            .map(Vec::as_slice)
+            .unwrap_or(&[])
+            .iter()
+            .take_while(move |(d, _)| *d <= reach)
+            .map(|(_, j)| *j as usize)
+    }
+}
+
 /// EVERY BODY A SHOT PASSES THROUGH, in the order the ray meets them.
 ///
 /// The generalisation of [`first_hit`] to a weapon that does not stop at the
