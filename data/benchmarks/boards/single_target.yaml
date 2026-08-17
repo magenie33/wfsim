@@ -82,6 +82,10 @@ entries:
     score: 11.946868615881428
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_deadly_efficiency, marked_target, magnetized_cycle, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_fortifier]
+  - weapon: artax
+    mode: base
+    score: 0.19638660643993255
+    mods: [heavy_caliber, serration, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, wildfire, thermite_rounds]
   - weapon: atomos
     mode: base
     score: 10.588675870098816
