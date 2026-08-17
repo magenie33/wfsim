@@ -78,8 +78,6 @@ attack:
 unmodeled:
   - reason: auto_spool_ramp
     rate: 25
-  - reason: innate_punch_through
-    m: 1.2
   - reason: arch_gun_deployer_cooldown
 
 source:

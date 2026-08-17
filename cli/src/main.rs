@@ -21,6 +21,7 @@ use wfsim_engine::scaling;
 fn dual_toxocyst_baseline() -> DummyParams {
     DummyParams {
         abilities: Vec::new(),
+        punch_through_m: 0.0,
         super_crit_on_status: None,
         enervate_stacks: 0,
         tenno: wfsim_engine::tenno_data::default_tenno().clone(),

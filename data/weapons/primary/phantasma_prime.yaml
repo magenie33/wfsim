@@ -77,10 +77,11 @@ attack:
   # INNATE INFINITE BODY PUNCH-THROUGH, and the qualifier is the whole of it:
   # "Innate punch through does not apply to surfaces, requiring punch through
   # mods." So it passes through BODIES without limit and through nothing else.
-  # Recorded as a comment rather than as `punch_through_m: infinity` because
-  # the field means metres of material and this is not that — and because the
-  # single-target arena has no second body for it to reach either way.
-  punch_through_m: 0.0
+  # WRITTEN AS THE NUMBER since 2026-08-17, the way the Fluctus has been: the
+  # qualifier separates BODIES from geometry and this arena has no geometry, so
+  # unlimited-through-bodies is the whole of the mechanic here. It was 0.0 with
+  # this comment while the arena held one body and there was nothing to reach.
+  punch_through_m: 999.0
   # 15 per beam, mostly Radiation — "This weapon deals primarily Radiation
   # damage", and the innate element is already COMBINED, so MECHANICS §3 rule 2
   # applies: the innate takes what the elemental mods leave rather than

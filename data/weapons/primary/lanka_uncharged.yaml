@@ -33,8 +33,6 @@ attack:
 unmodeled:
   - reason: sniper_combo_miss
     seconds: 6
-  - reason: innate_punch_through
-    m: 1.5
   - reason: zoom_steps
 
 source:

@@ -66,8 +66,6 @@ attack:
     status_chance: 0.20
 unmodeled:
   - "the CHARGE TIME is not modelled because the page publishes none — the weapon is a charge weapon here and mods treat it as one, but its draw adds nothing to the cycle, so it fires on the listed 1.00/s alone and this entry is a CEILING on its rate: a real draw can only make it slower"
-  - reason: innate_punch_through
-    m: 2
   - reason: companion_fires_it
   - reason: spread_not_transcribed
 

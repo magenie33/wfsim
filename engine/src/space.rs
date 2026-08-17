@@ -319,6 +319,102 @@ pub fn first_hit(muzzle: Vec2, dir: Vec2, bodies: &[Vec2]) -> Option<(usize, f64
 /// range, a weapon of known spread, count what lands.
 pub const BODY_RADIUS_M: f64 = 0.2;
 
+/// WHAT A BODY COSTS A PUNCH-THROUGH BUDGET, in metres of material — and it is
+/// NOT twice [`BODY_RADIUS_M`], because the two are different quantities with
+/// different sources.
+///
+/// The radius above is MEASURED (M46): walking into an enemy stops at 0.4 m
+/// centre to centre, so a body occupies 0.2 m of floor. This one is PUBLISHED,
+/// and the wiki's Punch Through page gives it twice over:
+///
+/// - *"The torso hitbox of three butchers combined adds up to over 1.2m of
+///   material"* — so over 0.4 m each; and
+/// - the "Minimum Mod Ranks for Penetration" table, which is the sharp one.
+///
+/// THE TABLE PINS IT. Every one of its thirteen humanoid cells is reproduced by
+/// a single threshold of 0.5 m, and the table brackets the value from both
+/// sides — the largest rank that FAILS is 0.4 and the smallest that WORKS is
+/// 0.5, so the true figure is in (0.4, 0.5] and 0.5 is the only round number
+/// in it:
+///
+/// | mod                          | largest ✗ | smallest ✓ |
+/// |------------------------------|-----------|------------|
+/// | Shred / Seeking Fury         | 0.4       | 0.6        |
+/// | Primed Shred                 | 0.4       | 0.6        |
+/// | Vigilante Offense            | 0.25      | **0.5**    |
+/// | Power Throw                  | 0.3       | 0.7        |
+/// | Metal Auger / Seeker         | 0.4       | 0.7        |
+///
+/// `a_body_costs_what_the_wiki_table_says` asserts the whole table.
+///
+/// WHY NOT MOVE THE RADIUS INSTEAD. Deriving this from the radius would mean
+/// raising it to 0.25 m, which overwrites an in-game measurement the owner took
+/// himself with a table whose own note says *"Average data, result will differ
+/// due to width variances"* — and would move every distance-dependent number on
+/// the board by 0.05 m for the privilege. Two facts about one body, each kept
+/// at its own source. The property that motivated the question survives either
+/// way: crossing a body costs 0.5, so 0.5 m of punch-through reaches the SECOND
+/// of two adjacent enemies, which is exactly what the table says.
+///
+/// A FLAT COST, not a chord. The table publishes ONE number per enemy type and
+/// warns that the real thing varies with width; charging a chord would be a
+/// geometry this engine invented, and it would contradict the table for every
+/// shot that is not dead centre. QUADRUPEDS are out of scope — the table's own
+/// rows for them disagree with each other (Power Throw's 0.7 penetrates where
+/// Vigilante Offense's 0.75 does not), which is that caveat showing.
+pub const BODY_MATERIAL_M: f64 = 0.5;
+
+/// EVERY BODY A SHOT PASSES THROUGH, in the order the ray meets them.
+///
+/// The generalisation of [`first_hit`] to a weapon that does not stop at the
+/// first body: *"the total distance of material (object or enemy) that a
+/// weapon's projectile, bullet or beam can pass through before dissipating"*.
+/// Each body crossed spends [`BODY_MATERIAL_M`] of the budget, so `n` bodies
+/// are struck where `n - 1` crossings fit — a budget of zero is the ordinary
+/// one-body shot this engine has always fired, and `first_hit` is this function
+/// with no budget.
+///
+/// THE ARENA HAS NO COVER, which is what makes the model complete rather than
+/// approximate here: the page's one qualifier on innate punch-through — *"does
+/// not apply to surfaces"* — separates bodies from geometry, and this floor has
+/// no geometry. Everything the ray meets is a body.
+pub fn struck_along(muzzle: Vec2, dir: Vec2, bodies: &[Vec2], punch_through_m: f64) -> Vec<usize> {
+    let len = dir.x.hypot(dir.y);
+    if len <= 0.0 {
+        return Vec::new();
+    }
+    let (ux, uy) = (dir.x / len, dir.y / len);
+    // Everything on the line, nearest first — the same test `first_hit` makes,
+    // asked of every body rather than of the best one.
+    let mut on_line: Vec<(f64, usize)> = bodies
+        .iter()
+        .enumerate()
+        .filter_map(|(i, b)| {
+            let (px, py) = (b.x - muzzle.x, b.y - muzzle.y);
+            let along = px * ux + py * uy;
+            if along < 0.0 {
+                return None;
+            }
+            let perp = (px * uy - py * ux).abs();
+            if perp > BODY_RADIUS_M {
+                return None;
+            }
+            let half = (BODY_RADIUS_M * BODY_RADIUS_M - perp * perp).max(0.0).sqrt();
+            Some(((along - half).max(0.0), i))
+        })
+        .collect();
+    // By entry distance, then by index — the same determinism rule the chain
+    // follows, for the same reason: a tie the game breaks in world-space order
+    // is not reproducible, and a fixed order is.
+    on_line.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal).then(a.1.cmp(&b.1)));
+    // HOW MANY THE BUDGET REACHES. The first is free — it is the contact the
+    // shot was going to make anyway — and each one after it is paid for by
+    // crossing the one in front.
+    let reach = 1 + (punch_through_m.max(0.0) / BODY_MATERIAL_M + 1e-9).floor() as usize;
+    on_line.into_iter().take(reach).map(|(_, i)| i).collect()
+}
+
+
 /// THE CLOSEST TWO BODIES CAN STAND — twice a radius, because circles do not
 /// overlap (owner, 2026-08-15).
 ///
@@ -338,6 +434,82 @@ pub const CONTACT_RANGE_M: f64 = 2.0 * BODY_RADIUS_M;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// THE WHOLE "Minimum Mod Ranks for Penetration" TABLE, humanoid rows.
+    ///
+    /// Every published rank of every mod on it, with the wiki's own verdict —
+    /// thirteen cells, one threshold, no exceptions. It is what pins
+    /// [`BODY_MATERIAL_M`] to 0.5 rather than to any other number: 0.4 fails on
+    /// three independent mods and 0.5 works on one, so the value is in
+    /// (0.4, 0.5].
+    #[test]
+    fn a_body_costs_what_the_wiki_table_says() {
+        // (punch-through metres, does it reach a SECOND humanoid)
+        let table: &[(f64, bool)] = &[
+            // Seeking Fury / Shred / Merciless Gunfight
+            (0.2, false), (0.4, false), (0.6, true), (0.8, true), (1.0, true), (1.2, true),
+            // Vigilante Offense — the row that pins the value from above
+            (0.25, false), (0.5, true), (0.75, true), (1.0, true), (1.25, true), (1.5, true),
+            // Power Throw
+            (0.3, false), (0.7, true), (1.0, true), (1.3, true), (1.7, true), (2.0, true),
+            // Metal Auger / Seeker / Seeking Force
+            (0.4, false), (0.7, true), (1.1, true), (1.4, true), (1.8, true), (2.1, true),
+            // Primed Shred
+            (0.2, false), (0.4, false), (0.6, true), (0.8, true), (1.0, true), (1.2, true),
+            (1.4, true), (1.6, true), (1.8, true), (2.0, true), (2.2, true),
+        ];
+        // Two bodies in a line, as close as they go.
+        let muzzle = Vec2::new(0.0, BODY_RADIUS_M);
+        let dir = Vec2::new(0.0, 1.0);
+        let bodies = [Vec2::new(0.0, 3.0), Vec2::new(0.0, 3.0 + CONTACT_RANGE_M)];
+        for &(pt, second) in table {
+            let hit = struck_along(muzzle, dir, &bodies, pt);
+            assert_eq!(
+                hit.len(), if second { 2 } else { 1 },
+                "{pt} m of punch through: the wiki says the second body is {}",
+                if second { "reached" } else { "not reached" }
+            );
+            assert_eq!(hit[0], 0, "the near body is always the first one struck");
+        }
+    }
+
+    /// ...AND THE ORDER IS THE RAY'S, not the list's. A formation is stored in
+    /// whatever order it was built in, so a shot that crosses three bodies must
+    /// sort them by where it MEETS them — the first is the one that may keep a
+    /// blast, and the rest are paid for in front-to-back order.
+    #[test]
+    fn punched_bodies_come_back_in_the_order_the_ray_meets_them() {
+        let muzzle = Vec2::new(0.0, BODY_RADIUS_M);
+        let dir = Vec2::new(0.0, 1.0);
+        // Deliberately stored far, near, middle.
+        let bodies = [Vec2::new(0.0, 9.0), Vec2::new(0.0, 3.0), Vec2::new(0.0, 6.0)];
+        assert_eq!(struck_along(muzzle, dir, &bodies, 1.0), vec![1, 2, 0]);
+        // A budget that pays for one crossing reaches two of them.
+        assert_eq!(struck_along(muzzle, dir, &bodies, 0.5), vec![1, 2]);
+        // …and none at all is the shot this engine has always fired.
+        assert_eq!(struck_along(muzzle, dir, &bodies, 0.0), vec![1]);
+    }
+
+    /// A BODY OFF THE LINE IS NOT CROSSED however much punch through is on the
+    /// weapon: it penetrates material in FRONT of it, it does not spread.
+    #[test]
+    fn punch_through_does_not_widen_the_shot() {
+        let muzzle = Vec2::new(0.0, BODY_RADIUS_M);
+        let dir = Vec2::new(0.0, 1.0);
+        let bodies = [Vec2::new(0.0, 3.0), Vec2::new(5.0, 6.0)];
+        assert_eq!(struck_along(muzzle, dir, &bodies, 99.0), vec![0]);
+    }
+
+    /// WITH NO BUDGET IT IS `first_hit`, which is what keeps every fight this
+    /// engine has ever run byte-identical.
+    #[test]
+    fn no_punch_through_is_the_shot_this_engine_already_fired() {
+        let muzzle = Vec2::new(0.0, BODY_RADIUS_M);
+        let dir = Vec2::new(1.0, 4.0);
+        let bodies = [Vec2::new(2.0, 8.0), Vec2::new(1.0, 4.2), Vec2::new(-9.0, 1.0)];
+        let first = first_hit(muzzle, dir, &bodies).map(|(i, _)| i);
+        assert_eq!(struck_along(muzzle, dir, &bodies, 0.0).first().copied(), first);
+    }
 
     /// POINTING SOMEWHERE ELSE IS A REAL ANGLE, and pointing AT a body is zero
     /// of it — which is what keeps every fight this engine ran byte-identical.

@@ -3281,10 +3281,43 @@ pub fn panel_json(v: &Value) -> Value {
         // flat DAMAGE. `IndirectStat::format` owns that, so this table and the
         // effect line on the card cannot drift apart.
         for (stat, total) in &panel.indirect {
+            // PUNCH THROUGH IS REPORTED RESOLVED, below — this bucket is the
+            // raw sum of what the mods GRANT, and since 2026-08-17 that is not
+            // what the weapon HAS: an AoE attack takes none of it (*"Projectile
+            // AoE weapons cannot have their Punch Through stat modified"*), so
+            // a Primed Shred on a Torid would have posted +2.2 m against an
+            // engine that spends 0.
+            if *stat == wfsim_engine::loadout::IndirectStat::PunchThrough {
+                continue;
+            }
             indirect_rows.push(
                 json!({ "key": "indirect", "label": stat.label(), "base": "—",
             "final": stat.format(*total), "sources": sources("indirect", Some(stat.label())) }),
             );
+        }
+        // …AND HERE IT IS, as the number the simulation actually spends: the
+        // weapon's own depth plus every grant the attack is allowed to take.
+        //
+        // The row is drawn whenever there is anything to say — a weapon that
+        // brings its own (which the mod bucket never knew about, so no row was
+        // drawn at all) or a mod that tried. The SOURCES stay the mods', which
+        // is what makes a zeroed total legible rather than mysterious: the
+        // grants are listed and the final says 0 m.
+        {
+            let stat = wfsim_engine::loadout::IndirectStat::PunchThrough;
+            let granted: f64 = panel
+                .indirect
+                .iter()
+                .filter(|(s, _)| *s == stat)
+                .map(|(_, v)| *v)
+                .sum();
+            if panel.punch_through_m > 0.0 || granted > 0.0 {
+                indirect_rows.push(json!({
+                    "key": "indirect", "label": stat.label(), "base": "—",
+                    "final": stat.format(panel.punch_through_m),
+                    "sources": sources("indirect", Some(stat.label())),
+                }));
+            }
         }
 
         // A weapon is the GUN plus the PROJECTILE(s) it launches (user,

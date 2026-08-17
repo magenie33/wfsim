@@ -2910,6 +2910,117 @@ and a Primed Firestorm toggle. Its author disclaims the one rule that matters
 most, so it is a reference for the SHAPE of the model and not a source for its
 numbers.
 
+## §13 Punch through
+
+**It is not "how far it still flies after the first hit."** It is metres of
+MATERIAL, and the wiki's own definition makes no distinction between kinds:
+
+> "Geometry Punch Through is the total distance of material (object or enemy)
+> that a weapon's projectile, bullet or beam can pass through before
+> dissipating."
+
+Each body crossed spends part of the budget; when it runs out the shot stops.
+`space::struck_along` walks the aim ray and returns every body it reaches, in
+the order it meets them.
+
+### What a body costs — 0.5 m, and the table pins it
+
+`space::BODY_MATERIAL_M = 0.5`, and it is **not** twice `BODY_RADIUS_M`. The
+two are different quantities from different sources, and keeping them apart is
+the decision:
+
+- **`BODY_RADIUS_M = 0.2` is MEASURED** (M46, the owner's own reading): walking
+  into an enemy stops at 0.4 m centre to centre. It governs spacing, the hit
+  test and blast reach.
+- **`BODY_MATERIAL_M = 0.5` is PUBLISHED**: the punch-through page's "Minimum
+  Mod Ranks for Penetration" table.
+
+Every one of that table's thirteen humanoid cells is reproduced by a single
+threshold of 0.5 m, and the table brackets the value from both sides — the
+largest rank that FAILS is 0.4 and the smallest that WORKS is 0.5:
+
+| mod | largest ✗ | smallest ✓ |
+|---|---|---|
+| Shred / Seeking Fury / Merciless Gunfight | 0.4 | 0.6 |
+| Primed Shred | 0.4 | 0.6 |
+| Vigilante Offense | 0.25 | **0.5** |
+| Power Throw | 0.3 | 0.7 |
+| Metal Auger / Seeker / Seeking Force | 0.4 | 0.7 |
+
+The page's other statement agrees from the other side: *"The torso hitbox of
+three butchers combined adds up to over 1.2m of material"* — over 0.4 m each.
+`space::tests::a_body_costs_what_the_wiki_table_says` asserts the whole table.
+
+**Why not raise the radius to 0.25 instead.** It would overwrite an in-game
+measurement with a table whose own note says *"Average data, result will differ
+due to width variances"*, and move every distance-dependent number on the board
+by 0.05 m for the privilege. The property that motivates the question survives
+either way: crossing a body costs 0.5, so **0.5 m of punch through reaches the
+second of two adjacent enemies**, which is exactly what the table says.
+
+A FLAT COST, not a chord: the table publishes one number per enemy type and
+warns the real thing varies with width, so charging a chord would be a geometry
+this engine invented. QUADRUPEDS are out of scope — the table's own rows for
+them disagree with each other (Power Throw's 0.7 penetrates where Vigilante
+Offense's 0.75 does not), which is that caveat showing.
+
+### A punched body is a DIRECT hit, and it starts its own chain
+
+The body behind takes the shot itself, at full damage — the page names no
+attenuation per body and the engine invents none. It carries multishot (every
+pellet punches through) and it may HEADSHOT (owner, 2026-08-17: punch through
+does not stop a shot being aimed). That makes it the opposite of a chain hop,
+which does neither.
+
+On a chaining weapon the two mechanics compose, and the wiki is explicit:
+
+> "Each enemy hit by the main beam from Punch Through can generate a new set of
+> 3 chains." — "Punch Through will cause the main beam to chain INDEPENDENTLY
+> from each additional target hit, potentially doubling or tripling the total
+> damage output when fired into a crowd." — "The chain from the target hit after
+> the Punch Through can deal damage to the first target, and vice versa."
+
+That last clause is the owner's own rule for two chains meeting (2026-08-17): a
+body takes a second instance only when a SECOND independent link reaches it.
+`chain::resolve` takes the struck bodies as its seed list and each seed keeps
+its own `seen` set, so this falls out rather than being arranged.
+
+### An AoE attack takes none of it — from its weapon or from a mod
+
+A catalog rule, and the page states both halves:
+
+> "With a very few exceptions, weapon projectiles with an area of effect (AoE)
+> component will not Punch Through enemies or level geometry at all. Instead the
+> projectile will explode on first contact." — "Projectile AoE weapons cannot
+> have their Punch Through stat modified."
+
+So a Shred on a grenade launcher is worth **literally nothing**. "An area of
+effect component" is both shapes this engine models — a `radial` (one explosion
+at impact) and a `lingering` cloud (an explosion that stays and ticks): the
+Torid is the second kind and carries no `radial:` at all, so a rule naming only
+radials would have let a grenade launcher take Primed Shred.
+
+The page's *"very few exceptions"* announce themselves in the DATA: an exception
+is an entry whose own infobox carries a punch-through figure, and the roster has
+exactly one attack with both (the Vulcax's 2 m). It keeps its innate depth and
+takes nothing from mods, which never invents a number the wiki did not print.
+
+**Infinite body punch-through** (the Fluctus, the Phantasma, the Arca Plasmor
+family) is written `999.0`. Its one qualifier — *"innate punch through does not
+apply to surfaces"* — separates bodies from geometry, and this arena has no
+geometry, so unlimited-through-bodies is the whole of the mechanic here.
+
+### The bug it found on the way in
+
+`raw` is multiplied by the pellet's `part_factor`, and every spread mechanism
+was fed `raw / bucket` — so a chain hop, a splash and an echo all inherited the
+aimed pellet's HEADSHOT on their direct damage, while `spread_hit`'s own doc
+comment said *"NEVER A HEADSHOT ... `part_factor` is 1.0 here"*. It was 1.0
+where that comment looks (the PROC scale) and not in the damage, so the claim
+was true of half the instance. The factor now comes back off at the one site
+that has it, and punch-through is the single exception that keeps it. Single
+target fights are untouched: with no formation, no spread mechanism runs.
+
 ## Open questions
 
 - Exact multiplicative-bucket membership for every common mod (§2).

@@ -62,8 +62,6 @@ attack:
   damage: { puncture: 400.0, heat: 600.0, radiation: 800.0 }   # 1800
 
 unmodeled:
-  - reason: innate_punch_through
-    m: 2.4
   - reason: arch_gun_deployer_cooldown
 
 source:

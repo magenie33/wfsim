@@ -63,7 +63,7 @@ fn main() {
     let mut bare = 0.0;
     for (name, bonus) in mods {
         let r = RADIUS_M * (1.0 + bonus);
-        let v = resolve(&pos, Some(f.aimed), Splash { at, radius_m: r }, TORID);
+        let v = resolve(&pos, &[f.aimed], Splash { at, radius_m: r }, TORID);
         let total: f64 = v.iter().map(|i| i.share).sum();
         let seeds = v.iter().filter(|i| i.share == 1.0).count();
         if bonus == 0.0 {
@@ -94,7 +94,7 @@ fn main() {
         let p = g.positions();
         let a0 = p[g.aimed];
         let tot = |r: f64| -> f64 {
-            resolve(&p, Some(g.aimed), Splash { at: a0, radius_m: r }, TORID)
+            resolve(&p, &[g.aimed], Splash { at: a0, radius_m: r }, TORID)
                 .iter()
                 .map(|i| i.share)
                 .sum()

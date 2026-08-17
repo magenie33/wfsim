@@ -1037,6 +1037,9 @@ pub struct WeaponBase {
     /// knew which of the two it was — every evolution applied to both. Eleven
     /// evolutions say *"Does not affect Incarnon Form"* and this is what lets
     /// them be obeyed rather than transcribed and ignored.
+    /// PUNCH-THROUGH DEPTH the WEAPON brings, in metres of material — see
+    /// [`crate::weapons_data::AttackSpec::punch_through_m`].
+    pub punch_through_m: f64,
     pub form: crate::weapons_data::FormKind,
     /// Indirect stats the WEAPON itself brings, before any mod — today only
     /// EVOLUTIONS write here (Practiced Grip's +50% accuracy, Marksman's
@@ -2156,6 +2159,10 @@ impl WeaponBase {
 /// The resolved panel: everything the dummy sim needs from layers [1]+[2].
 #[derive(Debug, Clone)]
 pub struct ResolvedPanel {
+    /// PUNCH-THROUGH DEPTH, in metres of material — the weapon's own plus every
+    /// mod, riven and evolution that grants one, and ZERO on an attack that
+    /// cannot use it. See [`crate::space::BODY_MATERIAL_M`].
+    pub punch_through_m: f64,
     /// Post-hierarchy damage vector (physical × (1+bd) + combined elements).
     pub damage: DamageVector,
     /// The resolved radial (AoE) part, when the weapon has one.
@@ -3431,6 +3438,41 @@ pub fn resolve_for(
         Spread { min_deg: s.min_deg / k, max_deg: s.max_deg / k }
     });
 
+    // PUNCH THROUGH: the weapon's own plus every grant, in metres of material.
+    //
+    // AN AoE ATTACK GETS NEITHER, and that is a catalog rule rather than a
+    // simplification — the punch-through page states both halves: *"weapon
+    // projectiles with an area of effect (AoE) component will not Punch Through
+    // enemies or level geometry at all. Instead the projectile will explode on
+    // first contact"*, and *"Projectile AoE weapons cannot have their Punch
+    // Through stat modified"*. So a Shred on a grenade launcher is worth
+    // literally nothing, which is a thing a build screen should say out loud
+    // rather than a number it should quietly add up.
+    //
+    // The page's *"very few exceptions"* announce themselves in the DATA: an
+    // exception is an entry whose own infobox carries a punch-through figure,
+    // and the roster has exactly one attack with both (the Vulcax's 2 m). It
+    // keeps its innate depth and takes nothing from mods, which is the reading
+    // that never invents a number the wiki did not print.
+    //
+    // "AN AREA OF EFFECT COMPONENT" IS BOTH SHAPES this engine models: a
+    // RADIAL (one explosion at impact) and a LINGERING cloud (an explosion that
+    // stays and ticks). The Torid is the second kind and carries no `radial:`
+    // at all, so a rule that named only radials would have let a grenade
+    // launcher take Primed Shred — which is the exact mod the page says cannot
+    // be applied.
+    let punch_through_m = if base.radial.is_some() || base.lingering.is_some() {
+        base.punch_through_m
+    } else {
+        base.punch_through_m
+            + indirect
+                .iter()
+                .filter(|(s, _)| *s == IndirectStat::PunchThrough)
+                .map(|(_, v)| *v)
+                .sum::<f64>()
+    }
+    .max(0.0);
+
     let falloff = base.falloff.as_ref().map(|f| {
         let ps = 1.0
             + indirect
@@ -3442,6 +3484,7 @@ pub fn resolve_for(
     });
 
     ResolvedPanel {
+        punch_through_m,
         damage,
         radial,
         spread,

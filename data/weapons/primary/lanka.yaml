@@ -66,8 +66,6 @@ attack:
 unmodeled:
   - reason: sniper_combo_miss
     seconds: 6
-  - reason: innate_punch_through
-    m: 5.0
   - reason: zoom_steps
   - "the PARTIAL CHARGE is a separate entry (`lanka_uncharged`) — in game the two are the same trigger released at different moments, and picking between them here is a form choice rather than something the fight decides"
 

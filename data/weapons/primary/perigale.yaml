@@ -52,8 +52,6 @@ attack:
 unmodeled:
   - reason: sniper_combo_miss
     seconds: 2
-  - reason: innate_punch_through
-    m: 1.0
   - reason: zoom_steps
   - "Voruna's signature bonus is not modelled — carried by her the ammo pool doubles to 48, and this arena has no Warframe holding it"
 source:

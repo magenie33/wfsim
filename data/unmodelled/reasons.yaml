@@ -36,8 +36,11 @@ reasons:
   # file is where a reader looks to find out whether a gap is still a gap.
   spread_not_transcribed:
     text: "this attack's SPREAD is not in the data, so none of its shots can miss — the wiki's weapon module publishes a cone for it and the intake could not identify which of that weapon's attacks this entry is, so it took nothing rather than the wrong one. At a range every pellet lands here, which is the ceiling; at point blank it costs nothing, because nothing misses there anyway"
-  innate_punch_through:
-    text: "the innate {m} m punch-through is not modelled — this arena has one target, so it changes no number"
+  # NO `innate_punch_through` — IT IS MODELLED (2026-08-17). `punch_through_m`
+  # sat in all 224 entries unread for as long as the arena held one body; a
+  # formation is what gave it something to reach, and `space::struck_along`
+  # spends it at `space::BODY_MATERIAL_M` per body crossed. The 22 weapons that
+  # carried this admission carry none now.
   sniper_combo_miss:
     text: "a MISSED shot drops the combo counter and this entry cannot miss — the only thing that misses here is SPREAD, and this one lands on the reticle, so nothing but its {seconds} s timer ever takes a stack off. A player who pulls the shot loses the combo and this sim never pulls one"
   # NO `radial_falloff` — IT IS MODELLED (2026-08-15). The explosion reads the

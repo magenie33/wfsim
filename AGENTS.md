@@ -732,6 +732,37 @@ around (decision 2026-07-31).
   answer cannot reach — a share link nobody has clicked, a board record nobody
   has submitted — while the guarantee rests on `check_opt_replay.mjs`, which
   holds no list at all.
+- **PUNCH THROUGH IS METRES OF MATERIAL, NOT FREE FLIGHT** (2026-08-17).
+  *"The total distance of material (object or enemy) that a weapon's projectile,
+  bullet or beam can pass through before dissipating"* — so a body costs a fixed
+  `space::BODY_MATERIAL_M` and `space::struck_along` walks the aim ray spending
+  it. THAT CONSTANT IS NOT TWICE THE RADIUS, and keeping the two apart is the
+  decision: `BODY_RADIUS_M = 0.2` is MEASURED (M46, walking into an enemy stops
+  at 0.4 m centre to centre) and governs spacing, the hit test and blast reach;
+  `BODY_MATERIAL_M = 0.5` is PUBLISHED, by the wiki's "Minimum Mod Ranks for
+  Penetration" table, whose thirteen humanoid cells are reproduced by that one
+  threshold and which brackets it from both sides (0.4 fails on three
+  independent mods, 0.5 works on Vigilante Offense). Raising the radius instead
+  would overwrite an in-game measurement with a table whose own note says
+  *"Average data, result will differ due to width variances"*, and move every
+  distance-dependent number on the board for the privilege — while the property
+  that motivates the question holds either way: 0.5 m reaches the SECOND of two
+  adjacent enemies.
+  A PUNCHED BODY IS A DIRECT HIT — full damage, multishot, and it may HEADSHOT
+  (owner, 2026-08-17) — and on a chaining weapon it STARTS ITS OWN CHAIN, which
+  is the wiki's own rule: *"Each enemy hit by the main beam from Punch Through
+  can generate a new set of 3 chains"*, independently, and *"the chain from the
+  target hit after the Punch Through can deal damage to the first target, and
+  vice versa"*. `chain::resolve` takes the struck bodies as its seeds and each
+  keeps its own `seen`, so that falls out rather than being arranged.
+  AN AoE ATTACK TAKES NONE OF IT, from its weapon or from a mod — both halves
+  are on the page, and it means a Shred on a grenade launcher is worth literally
+  nothing. "An area of effect component" is BOTH shapes the engine models,
+  `radial` and `lingering`: the Torid is the second and carries no `radial:`, so
+  a rule naming only radials would have let it take Primed Shred.
+  `punch_through_m` had sat in all 224 entries unread since the roster began —
+  the honest place for it while the arena had one body — and the 22 weapons that
+  admitted it as a gap admit nothing now. MECHANICS §13 is the whole of it.
 - **A GAP THAT REPEATS IS A REASON, NOT A SENTENCE** (2026-08-15).
   `data/unmodelled/reasons.yaml` holds each one once, with `{named}` holes, and
   a weapon references it: `- reason: innate_punch_through` / `m: 1.2`. The

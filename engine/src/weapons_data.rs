@@ -399,6 +399,27 @@ pub struct AttackSpec {
     /// transcribed, and the entry says so in `unmodeled:`.
     #[serde(default)]
     pub spread: Option<SpreadSpec>,
+    /// PUNCH-THROUGH DEPTH in metres of material, from the weapon's own infobox.
+    ///
+    /// Written into every entry by the intake since the roster began and read
+    /// by nobody until 2026-08-17, when the arena grew a second body — until
+    /// then it changed no number, which is why an unread field was the honest
+    /// place for it rather than an invented one.
+    ///
+    /// WHAT IT COSTS is [`crate::space::BODY_MATERIAL_M`] per body crossed.
+    /// `999.0` is how INFINITE BODY punch-through is written (the Fluctus, the
+    /// Phantasma): the page's qualifier on it — *"innate punch through does not
+    /// apply to surfaces"* — separates bodies from geometry, and this arena has
+    /// no geometry, so unlimited through bodies is the whole of it here.
+    ///
+    /// AN AoE ATTACK IGNORES THIS AND EVERY MOD, which is the punch-through
+    /// page's own catalog rule and is applied in `loadout::resolve` rather than
+    /// here: *"weapon projectiles with an area of effect (AoE) component will
+    /// not Punch Through enemies or level geometry at all. Instead the
+    /// projectile will explode on first contact"*, and *"Projectile AoE weapons
+    /// cannot have their Punch Through stat modified"*.
+    #[serde(default)]
+    pub punch_through_m: f64,
     /// A radial (AoE) part fired with every projectile of this attack.
     #[serde(default)]
     pub radial: Option<RadialSpec>,
@@ -2502,6 +2523,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // Only an EVOLUTION grants one (Lone Enforcer); no weapon declares it.
         multishot_beyond_range: None,
         falloff: s.attack.falloff.clone(),
+        punch_through_m: s.attack.punch_through_m,
         compression: s.attack.compression.clone(),
         lingering,
         // The data module's Trigger for a beam. Not cosmetic: it decides

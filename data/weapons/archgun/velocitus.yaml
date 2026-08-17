@@ -66,8 +66,6 @@ attack:
   damage: { impact: 800.0, puncture: 800.0, slash: 800.0, magnetic: 800.0 }  # 3200
 
 unmodeled:
-  - reason: innate_punch_through
-    m: 5
   - reason: arch_gun_deployer_cooldown
 
 source:

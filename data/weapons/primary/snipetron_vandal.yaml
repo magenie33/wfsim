@@ -50,8 +50,6 @@ attack:
 unmodeled:
   - reason: sniper_combo_miss
     seconds: 2
-  - reason: innate_punch_through
-    m: 3.0
   - reason: zoom_steps
 source:
   url: https://wiki.warframe.com/w/Snipetron_Vandal

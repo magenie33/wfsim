@@ -1731,6 +1731,9 @@ pub struct DummyParams {
     pub tendril_max: u32,
     /// How far a tendril reaches, and how far off the reticle it will take a
     /// body — see [`crate::weapons_data::TendrilSpec`].
+    /// PUNCH-THROUGH DEPTH in metres of material — innate plus mods, and 0 on
+    /// an attack that cannot use it. See [`crate::space::BODY_MATERIAL_M`].
+    pub punch_through_m: f64,
     pub tendril_range_m: f64,
     pub tendril_acquire_deg: f64,
     /// Sentient Surge's crit chance per ACTIVE tendril, relative to the
@@ -2399,6 +2402,33 @@ impl DummyParams {
         }
     }
 
+    /// EVERY BODY THIS SHOT PASSES THROUGH, in the order the ray meets them —
+    /// index 0 being the aimed body and 1.. lining up with [`Self::others`].
+    ///
+    /// With no punch-through it is exactly the one body this engine has always
+    /// fired at, which is what keeps every existing fight byte-identical.
+    ///
+    /// STATIC FOR THE ENGAGEMENT: nothing moves, so this is computed once and
+    /// hoisted out of the pellet loop rather than asked per shot.
+    pub fn struck_bodies(&self) -> Vec<usize> {
+        if self.punch_through_m <= 0.0 || self.others.is_empty() {
+            return vec![0];
+        }
+        let aim = self.aim_at.unwrap_or(self.target_at);
+        let muzzle = crate::space::muzzle(self.player_at, aim);
+        let mut bodies = Vec::with_capacity(self.others.len() + 1);
+        bodies.push(self.target_at);
+        bodies.extend(self.others.iter().map(|f| f.at));
+        let dir = crate::space::Vec2::new(aim.x - muzzle.x, aim.y - muzzle.y);
+        let hit = crate::space::struck_along(muzzle, dir, &bodies, self.punch_through_m);
+        // THE AIMED BODY IS STRUCK BY DEFINITION. The ray is cast at the aim
+        // point, and `webapi` has already resolved which body that is — so a
+        // walk that somehow disagrees (an aim point past everything, a body
+        // moved onto the line behind it) must not silently drop the target the
+        // rest of the engagement is scored against.
+        if hit.first() == Some(&0) { hit } else { vec![0] }
+    }
+
     /// THE GAP between the two bodies — surface to surface, zero at contact,
     /// and THE DISTANCE A SHOT FLIES.
     ///
@@ -2598,6 +2628,7 @@ impl DummyParams {
             combo_initial: 0,
             combo_held: false,
             tendril_max: panel.tendril_max,
+            punch_through_m: panel.punch_through_m,
             tendril_range_m: panel.tendril_range_m,
             tendril_acquire_deg: panel.tendril_acquire_deg,
             cc_per_tendril: panel.cc_per_tendril,
@@ -2784,6 +2815,9 @@ impl Default for DummyParams {
     fn default() -> Self {
         Self {
             enervate_stacks: 0,
+            // NO PUNCH THROUGH by default, so the fixture fires the one-body
+            // shot every golden value was calibrated against.
+            punch_through_m: 0.0,
             damage: Self::dual_toxocyst_base_vector(),
             radial: None,
             // POINT BLANK, and no falloff to notice it with — every golden
@@ -4377,6 +4411,10 @@ enum SpreadBy {
     Cloud,
     Tendril,
     Echo,
+    /// …AND THE ONE THAT IS NOT A SPREAD: the same shot, still travelling.
+    /// It is here because it routes through `spread_hit` like the others, and
+    /// it is told apart from them because it is the only one that may headshot.
+    PunchThrough,
 }
 
 impl SpreadBy {
@@ -4541,6 +4579,66 @@ struct SpreadShot {
     status_chance: f64,
     forced: Vec<DamageType>,
     vector: DamageVector,
+}
+
+/// PUNCH THROUGH — the sixth way a shot reaches a body, and the only one that
+/// is not a spread at all: it is the SAME shot, still travelling.
+///
+/// *"The total distance of material (object or enemy) that a weapon's
+/// projectile, bullet or beam can pass through before dissipating"* — so a body
+/// behind the one that was aimed at takes the shot itself, at FULL damage. The
+/// page names no attenuation per body and the engine invents none; what the
+/// budget buys is HOW MANY, which `space::struck_along` decides and
+/// `space::BODY_MATERIAL_M` prices.
+///
+/// A DIRECT HIT IN EVERY SENSE: it may HEADSHOT (owner, 2026-08-17 — punch
+/// through does not stop a shot being aimed) and it is per PELLET, because
+/// every pellet that lands punches through. That makes it the opposite of a
+/// chain hop, which does neither.
+///
+/// ONLY FOR A WEAPON WITH NO BEAM. Where there IS one, `spread_from_seeds`
+/// already emits these bodies — they are its seeds, which is the wiki's own
+/// rule for the two together: *"Each enemy hit by the main beam from Punch
+/// Through can generate a new set of 3 chains."* Firing both would pay twice.
+#[allow(clippy::too_many_arguments)]
+fn spread_from_punch_through(
+    others: &mut [SpreadFoe],
+    params: &DummyParams,
+    ap: &DummyParams,
+    struck: &[usize],
+    raw_per_bucket: f64,
+    shares: TypeShares,
+    crit_mult: f64,
+    attrition: f64,
+    modded_base: f64,
+    status_chance: f64,
+    forced: &[DamageType],
+    vector: &DamageVector,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    r: &mut RunResult,
+    d: &mut crate::rng::Draws,
+    t: f64,
+) {
+    // The FIRST is the body the rest of the engagement is already scored
+    // against; everything behind it is what this function is for.
+    for &s in struck.iter().skip(1) {
+        let Some(idx) = s.checked_sub(1) else { continue };
+        let Some(fs) = params.others.get(idx) else { continue };
+        let inst = crate::chain::Instance {
+            target: s,
+            // THE WHOLE SHOT, undiminished.
+            share: 1.0,
+            multishot: true,
+            headshot: true,
+        };
+        let foe = &mut others[idx];
+        spread_hit(
+            &inst, foe, fs, raw_per_bucket, shares, crit_mult, attrition, modded_base,
+            status_chance, forced, vector, params, ap, gal, arc, r, d, t,
+            SpreadBy::PunchThrough,
+        );
+    }
 }
 
 /// AN ECHO — a fraction of THIS hit dealt to every other body near it.
@@ -4790,9 +4888,10 @@ fn spread_from_seeds(
     d: &mut crate::rng::Draws,
     t: f64,
     multishot_half: bool,
-    // WHICH BODY THE BEAM STRUCK, or `None` when it struck the floor. It
-    // decides who may headshot and who carries multishot, and nothing else.
-    aimed: Option<usize>,
+    // EVERY BODY THE BEAM STRUCK, in ray order — one of them ordinarily, more
+    // with punch through, and EMPTY when it struck the floor. It decides who
+    // may headshot and who carries multishot, and nothing else.
+    struck: &[usize],
 ) {
     // THE FORMATION AS THE CHAIN SEES IT: the aimed body first, so index 0 is
     // the one the beam is on and 1.. line up with `others`.
@@ -4807,17 +4906,20 @@ fn spread_from_seeds(
     };
     let landed = crate::chain::resolve(
         &bodies,
-        // THE BEAM IS ON BODY 0 when it struck one. A shot that found only
-        // floor passes `None`, and then every seed is an ordinary one: no
-        // headshot, no multishot.
-        aimed,
+        // THE BEAM IS ON BODY 0 when it struck one, and on everything behind it
+        // that its punch-through reached. A shot that found only floor passes
+        // an EMPTY list, and then every seed is an ordinary one: no headshot,
+        // no multishot.
+        struck,
         // WHERE THE ROUND WENT OFF: the aimed body's surface facing the
         // shooter, not its centre (`space::detonation_point`, owner
         // 2026-08-17). A blast half a body deeper into the formation than it
         // goes would seed the wrong bodies.
         crate::chain::Splash {
-            at: match (aimed, params.aim_at) {
-                // ON THE BODY IT STRUCK, at its surface facing the shooter.
+            at: match (struck.first(), params.aim_at) {
+                // ON THE FIRST BODY IT STRUCK, at its surface facing the
+                // shooter — the impact is where the round STOPS being in the
+                // air, which punch-through does not move.
                 (Some(_), _) => {
                     crate::space::detonation_point(params.target_at, params.player_at)
                 }
@@ -6288,6 +6390,9 @@ pub fn run_once_traced(
     // every fight and showed up as a 35% slowdown in `one_fight` with no answer
     // changed (2026-08-17). Nothing about it can differ between two pellets.
     let aim_off_axis = params.off_axis_deg();
+    // …AND WHO IS ON THE LINE, for the same reason: nobody moves, so the bodies
+    // a shot passes through are the same for every pellet of every shot.
+    let struck = params.struck_bodies();
     let mut next_frame = 0.0f64;
     let frame_dt = trace.as_ref().map_or(f64::INFINITY, |r| r.dt);
     let mut bar = BuffBar::new();
@@ -8287,6 +8392,23 @@ pub fn run_once_traced(
                     (None, Some(f)) => f.factor(gap_m),
                     (None, None) => 1.0,
                 };
+                // A SPREAD INSTANCE LANDS ON A BODY, so the pellet's own
+                // head factor comes back off before it is handed on.
+                //
+                // `raw` below is multiplied by `part_factor`, and every spread
+                // mechanism was fed `raw / bucket` — so a chain hop, a splash
+                // and an echo all inherited the aimed pellet's HEADSHOT on
+                // their direct damage, while `spread_hit`'s own doc comment
+                // said "NEVER A HEADSHOT ... `part_factor` is 1.0 here". It was
+                // 1.0 where that comment looks (the PROC scale) and not in the
+                // damage, so the claim was true of half the instance (found
+                // 2026-08-17, building punch-through). Single-target fights are
+                // untouched: with no formation, no spread mechanism runs.
+                //
+                // PUNCH THROUGH IS THE EXCEPTION and takes `raw` undivided: it
+                // is the same pellet on the same line, so if it took a head it
+                // keeps taking one (owner, 2026-08-17).
+                let body_only = |x: f64| x / part_factor.max(1e-9);
                 let raw = qtotal
                     * part_factor
                     * crit_mult
@@ -8342,7 +8464,7 @@ pub fn run_once_traced(
                 if let (Some(rr), false) = (rad, others.is_empty()) {
                     spread_from_blast(
                         &mut others, params, ap, &rr,
-                        if falloff > 0.0 { raw / bucket / falloff } else { 0.0 },
+                        if falloff > 0.0 { body_only(raw / bucket / falloff) } else { 0.0 },
                         shares, crit_mult, attrition, modded_base, status_chance,
                         forced, &qvec, &mut gal, &mut arc, &mut r, d, t,
                     );
@@ -8354,7 +8476,7 @@ pub fn run_once_traced(
                     // behind it.
                     if shot_spread.is_none() {
                         shot_spread = Some(SpreadShot {
-                            raw_per_bucket: raw / bucket,
+                            raw_per_bucket: body_only(raw / bucket),
                             shares,
                             crit_mult,
                             attrition,
@@ -8367,20 +8489,31 @@ pub fn run_once_traced(
                     // …AND THE ECHO, per landing pellet, because the arcane
                     // says each one triggers it.
                     spread_from_echo(
-                        &mut others, params, ap, raw / bucket, shares, crit_mult,
+                        &mut others, params, ap, body_only(raw / bucket), shares, crit_mult,
                         attrition, modded_base, status_chance, forced, &qvec,
                         &mut gal, &mut arc, &mut r, d, t,
                     );
+                    // …AND EVERYTHING BEHIND THE TARGET that this pellet
+                    // punched through to, at full damage. Only where there is
+                    // no beam: with one, these bodies are the chain's seeds
+                    // and `spread_from_seeds` below already pays them.
+                    if params.beam.is_none() {
+                        spread_from_punch_through(
+                            &mut others, params, ap, &struck, raw / bucket, shares,
+                            crit_mult, attrition, modded_base, status_chance,
+                            forced, &qvec, &mut gal, &mut arc, &mut r, d, t,
+                        );
+                    }
                     // THE AIMED SEED'S CHAINS take multishot by firing per
                     // landing pellet — so a pellet that landed on nobody starts
                     // none of them. The radius-caught seeds' half fires once
                     // after the loop, miss or not.
                     if let Some(beam) = params.beam {
                         spread_from_seeds(
-                            &mut others, params, ap, beam, raw / bucket, shares,
+                            &mut others, params, ap, beam, body_only(raw / bucket), shares,
                             crit_mult, attrition, modded_base, status_chance,
                             forced, &qvec, &mut gal, &mut arc, &mut r, d, t, true,
-                            Some(0),
+                            &struck,
                         );
                     }
                 }
@@ -8932,10 +9065,11 @@ pub fn run_once_traced(
                 &mut others, params, ap, beam, s.raw_per_bucket, s.shares,
                 s.crit_mult, s.attrition, s.modded_base, s.status_chance,
                 &s.forced, &s.vector, &mut gal, &mut arc, &mut r, d, t, false,
-                // NOBODY WAS STRUCK when every pellet missed, so no seed is the
-                // directly-hit one: none may headshot and none takes multishot,
-                // which is the rule the radius-caught seeds already follow.
-                Some(0),
+                // THE SAME STRUCK LIST the per-pellet half used — this pass
+                // fires the seeds the RADIUS caught, and it tells them apart by
+                // filtering on `multishot`, so it has to agree with that half
+                // about who was struck directly.
+                &struck,
             );
         }
 
@@ -10365,6 +10499,93 @@ mod tests {
             "and the tendrils must be the ones taking some of them: {r:?}",
         );
         assert!(r.kills_by_tendril <= r.kills);
+    }
+
+    /// PUNCH THROUGH REACHES THE BODY BEHIND, and the budget decides how many.
+    ///
+    /// A COUNT, not a total, for the reason the Ocucor test gives: two bodies
+    /// and three bodies can deal the same damage and only one of them is the
+    /// weapon. The arrangement is a COLUMN — bodies stacked along the aim line,
+    /// which is the only place punch-through reaches anybody — at contact
+    /// spacing, so the thresholds are the wiki table's own.
+    #[test]
+    fn punch_through_reaches_the_body_behind_and_the_budget_says_how_many() {
+        let build = |n: usize, pt: f64| {
+            let base = crate::loadout::WeaponBase::from_data("braton_prime", false, &[]);
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let mut arena = crate::arena::Arena::training(10.0);
+            // A COLUMN BEHIND THE TARGET, each one contact-spaced from the last
+            // — `Arena::training` puts the aimed body on the y axis, so these
+            // stand directly behind it.
+            arena.others = (1..=n)
+                .map(|i| crate::formation::FoeSpec {
+                    params: TargetParams::training_dummy(),
+                    body_parts: DummyParams::humanoid_parts(),
+                    at: crate::space::Vec2::new(
+                        0.0,
+                        crate::space::CONTACT_RANGE_M * (1.0 + i as f64),
+                    ),
+                })
+                .collect();
+            let mut p =
+                DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            p.punch_through_m = pt;
+            p
+        };
+        // THE TABLE, on a real engagement: 0.4 m reaches nobody behind, 0.5
+        // reaches one, 1.0 reaches two.
+        for (pt, want) in [(0.0, 1), (0.4, 1), (0.5, 2), (1.0, 3), (2.0, 5)] {
+            let r = run_once(&build(4, pt), &mut Rng::new(0x5EED));
+            assert_eq!(
+                r.bodies_touched(), want,
+                "{pt} m of punch through: {:?}", &r.damage_by_body.0[..5]
+            );
+        }
+        // …AND ONLY ALONG THE LINE. Punch through penetrates what is in FRONT
+        // of the shot; it does not widen it.
+        let mut side = build(0, 9.0);
+        side.others = vec![crate::formation::FoeSpec {
+            params: TargetParams::training_dummy(),
+            body_parts: DummyParams::humanoid_parts(),
+            at: crate::space::Vec2::new(6.0, 4.0),
+        }];
+        assert_eq!(run_once(&side, &mut Rng::new(0x5EED)).bodies_touched(), 1);
+    }
+
+    /// AN AoE ATTACK TAKES NO PUNCH THROUGH, from its weapon or from a mod.
+    ///
+    /// The punch-through page's own catalog rule, both halves: *"weapon
+    /// projectiles with an area of effect (AoE) component will not Punch
+    /// Through enemies or level geometry at all"*, and *"Projectile AoE weapons
+    /// cannot have their Punch Through stat modified"*. So a Shred on a grenade
+    /// launcher is worth literally nothing — which is a thing to SAY, not a
+    /// number to quietly add up.
+    #[test]
+    fn an_aoe_attack_takes_no_punch_through_from_a_mod() {
+        let panel = |w: &str, mods: &[&str]| {
+            let base = crate::loadout::WeaponBase::from_data(w, false, &[]);
+            let pool = crate::mods_data::pool_for_weapon(w);
+            let refs: Vec<&crate::loadout::ModDef> = mods
+                .iter()
+                .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("{m}")))
+                .collect();
+            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent)
+        };
+        // A RIFLE TAKES IT: Primed Shred is +2.2 m at max rank.
+        let bare = panel("braton_prime", &[]);
+        let shred = panel("braton_prime", &["primed_shred"]);
+        assert!((bare.punch_through_m - 0.0).abs() < 1e-9);
+        assert!(shred.punch_through_m > 2.0, "{}", shred.punch_through_m);
+
+        // THE TORID DOES NOT — it explodes on first contact.
+        let torid_bare = panel("torid", &[]);
+        let torid_shred = panel("torid", &["primed_shred"]);
+        assert!(torid_bare.lingering.is_some(), "the fixture must be an AoE weapon");
+        assert!((torid_shred.punch_through_m - torid_bare.punch_through_m).abs() < 1e-9,
+            "an AoE attack's punch through cannot be modified: {} vs {}",
+            torid_shred.punch_through_m, torid_bare.punch_through_m);
     }
 
     /// THE OCUCOR REACHES FIVE BODIES AND NO MORE — one beam and four tendrils

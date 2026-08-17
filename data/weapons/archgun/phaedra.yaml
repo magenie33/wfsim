@@ -73,8 +73,6 @@ attack:
   punch_through_m: 1.2
   damage: { impact: 29.0, puncture: 75.4, slash: 11.6 }   # 116 total
 unmodeled:
-  - reason: innate_punch_through
-    m: 1.2
   - reason: arch_gun_deployer_cooldown
 
 source:

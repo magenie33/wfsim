@@ -34,8 +34,6 @@ attack:
   damage: { impact: 230.0, heat: 330.0 }   # 560, and the same in Archwing
 
 unmodeled:
-  - reason: innate_punch_through
-    m: 1.4
   - reason: arch_gun_deployer_cooldown
 
 source:
