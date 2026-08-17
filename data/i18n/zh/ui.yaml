@@ -453,10 +453,12 @@ ui:
   "element": 元素
   "this ability lets you pick the element — the gear wheel in game": 这个技能可以自选元素——游戏里那个装备轮盘
   "5 · Extra stats": 5 · 额外属性
-  # THE VALENCE BLOCK (an adversary weapon's bonus element). "Valence" is DE's
-  # own word and its Chinese client writes 融合 for Valence Fusion, so the block
-  # is named for what it IS rather than transliterated.
-  "Valence": 融合属性
+  # THE VALENCE BLOCK (an adversary weapon's bonus element). DE's Chinese
+  # client's own word is 效价 — Valence Fusion is 效价融合 — so the block is
+  # 效价加成 rather than the 融合属性 it said until 2026-08-17. A STRING IS
+  # TRANSCRIBED, NEVER TRANSLATED: 融合 names the ACTION you perform, and
+  # naming the stat after it was describing the wrong half.
+  "Valence": 效价加成
   "how many times to replay this fight HERE. Not part of the scenario: it follows you across fights and weapons, and an official ruler does not pin it. The boards themselves are scored at 1,000 by the server whatever this says": 在这里把这场战斗重放多少次。它不属于场景：换战斗、换武器它都跟着你，官方标尺也不会把它锁住。榜单本身无论这里写多少，都是服务器按 1,000 次跑分的
   "yours, not the fight's — the boards score at 1,000": 这是你的设置，不属于这场战斗——榜单按 1,000 次跑分
   "7 · Measure": 7 · 指标
@@ -468,8 +470,8 @@ ui:
   # meaning 增益 (a buff), which this is not — so the control says VALENCE BONUS
   # and gets a key of its own rather than borrowing a word that means the other
   # thing on the same page.
-  "Valence bonus": 融合加成
-  "how big the roll was, as a share of base damage — a Lich rolls it randomly and Valence Fusion raises it, capping at the number on the right": 这次roll出来多大，按基础伤害的比例算——Lich 随机给，融合可以往上提，上限就是右边那个数
+  "Valence bonus": 效价加成幅度
+  "how big the roll was, as a share of base damage — a Lich rolls it randomly and Valence Fusion raises it, capping at the number on the right": 这次roll出来多大，按基础伤害的比例算——Lich 随机给，效价融合可以往上提，上限就是右边那个数
   "rolls": 区间
   "Extra stats": 额外属性
   "anything this weapon is handed from outside its build — it lands in the same bucket a mod would": 这把武器从配装之外拿到的任何加成——它落在和对应 mod 同一个乘区里

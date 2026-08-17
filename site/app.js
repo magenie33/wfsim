@@ -8390,20 +8390,6 @@ function renderSimBuild() {
   parts.push(`<div class="sb-h">${tr("Mode")}</div>`);
   parts.push(`<div class="sb-chips"><span class="sb-chip">${
     escHtml(modeLabel(weaponInfo($("weapon").value), mode))}</span></div>`);
-  // THE VALENCE, beside the mode and for exactly the same reason: it is part
-  // of what this build IS. Two Kuva Nukors differing only in progenitor
-  // element are two different builds and two different numbers, so a card that
-  // says "this is what is being tested" and omits it is telling half of it.
-  //
-  // Only where the weapon HAS one — the same "no choice, no axis" rule the
-  // block in the builder follows. The percentage is shown with the element
-  // because the roll is the other half of the fact: 60% Heat and 25% Heat are
-  // not the same weapon.
-  if (valenceSpec(w.id)) {
-    parts.push(`<div class="sb-h">${tr("Valence")}</div>`);
-    parts.push(`<div class="sb-chips"><span class="sb-chip">${
-      escHtml(DT(valence.element))} +${Math.round(valence.bonus * 1000) / 10}%</span></div>`);
-  }
   parts.push(`<div class="sb-h">${tr("Mods")} · ${modChips.length}</div>`);
   parts.push(`<div class="sb-chips">${modChips.join("") || `<span class="sb-empty">${tr("no mods equipped")}</span>`}</div>`);
   if ((w.arcane_slots || 0) >= 1) {
@@ -8423,6 +8409,24 @@ function renderSimBuild() {
     }).filter(Boolean);
     parts.push(`<div class="sb-h">${tr("Evolutions")}</div>`);
     parts.push(`<div class="sb-chips">${evoChips.join("") || `<span class="sb-empty">${tr("none selected")}</span>`}</div>`);
+  }
+  // THE VALENCE, LAST — which is where the builder puts it (owner,
+  // 2026-08-17). This card reads in the builder's own order so the two can be
+  // compared line for line, and that makes it the FOURTH block on an adversary
+  // weapon, because such a weapon has no evolutions and the block above it is
+  // not drawn. It sat second for a while, beside the mode, which read as a
+  // different build from the one the builder shows.
+  //
+  // It is part of what this build IS: two Kuva Nukors differing only in
+  // progenitor element are two different builds and two different numbers, so
+  // a card that says "this is what is being tested" and omits it is telling
+  // half of it. Only where the weapon HAS one — the same "no choice, no axis"
+  // rule the builder's block follows — and the percentage rides with the
+  // element, because 60% Heat and 25% Heat are not the same weapon.
+  if (valenceSpec(w.id)) {
+    parts.push(`<div class="sb-h">${tr("Valence")}</div>`);
+    parts.push(`<div class="sb-chips"><span class="sb-chip">${
+      escHtml(DT(valence.element))} +${Math.round(valence.bonus * 1000) / 10}%</span></div>`);
   }
   parts.push(`<a class="ghost-btn small sb-edit" href="${weaponPath($("weapon").value)}">${tr("edit in Builder")}</a>`);
   box.innerHTML = parts.join("");
