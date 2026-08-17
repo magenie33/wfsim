@@ -65,13 +65,21 @@ name: "Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM"
 # THE RULES IN PROSE, for the page that publishes them. The name above states
 # the same standard in one line so a rank stays quotable; this is it at length.
 rules:
-  - "One Thrax Centurion at level 9999 on Steel Path, for 180 seconds. A single target, so nothing here rewards clearing a room."
-  - "Aimed, with every shot on the weak point. This is the ceiling a weapon reaches in skilled hands — the companion board removes the aim and measures the floor."
-  - "Scored in kills per minute, counting the fraction of the current target already gone. A weapon that removes 3% of one Thrax in 180 seconds scores 0.03 and still has a rank."
-  - "Every main slot filled, every evolution tier the weapon has, every arcane seat it has. Exilus is never counted."
-  - "Ammo pickups are modelled, because a real player is being resupplied over three minutes. A weapon that cannot be resupplied runs on its real reserve."
-  - "How the weapon is PLAYED belongs to the entry, not to this ruler: a weapon with an Incarnon form is ranked twice, once through its cycle and once never transmuting."
-  - "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above — so any row can be reproduced exactly by anyone with the repo."
+  # MECHANICAL LANGUAGE, AND NO WEAPON IN IT (owner, 2026-08-17). A rule that
+  # names a weapon is a rule that has to be edited when the roster grows, and
+  # `benchmarks_data.rs` already refuses this file any weapon, mod, arcane or
+  # evolution id. These lines are held to the same standard by hand: they say
+  # what is done to EVERY entry, never what is done to one of them.
+  - "The target is one Thrax Centurion at level 9999 on Steel Path. The fight lasts 180 seconds."
+  - "One target, so nothing here rewards clearing a room."
+  - "Every shot is aimed and lands on the weak point. The companion board removes the aim; between them they are the ceiling and the floor."
+  - "The score is kills per minute, counting the fraction of the current target already gone. Removing 3% of one target in 180 seconds scores 0.03 and still ranks."
+  - "Every main slot is filled, every evolution tier the entry has is taken, every arcane seat it has is filled. The Exilus slot is never counted."
+  - "Investment is not ranked: every entry is scored at full Forma, at max rank, and at the maximum roll of any bonus a player can raise by farming duplicates."
+  - "Ammo pickups are modelled. An entry that cannot be resupplied runs on its own reserve."
+  - "An entry that can be played more than one way is ranked once per way, and the way it was played is part of the row."
+  - "A buff starts the fight FULL only if it is permanent — no timer, and not spent by being used. Such a buff can be held for the whole engagement by anyone, so scoring it at anything less would rank how long ago the entrant last topped it up. Every other buff starts at zero and is earned in the fight. Two buffs in the data qualify today."
+  - "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above, so any row can be reproduced exactly by anyone with the repo."
 
 build:
   mods: full          # every main slot

@@ -194,6 +194,12 @@
     <p class="bench-sub" data-i18n>One ruler, every weapon. A score is a build measured by this engine under the benchmark's own pinned terms — nobody submits a number. An empty row is a weapon nobody has measured yet.</p>
     <div id="bench-picker"></div>
     <div id="bench-rules"></div>
+    <!-- THE RULER'S OWN FIGHT, as the picture the simulator draws. Read-only:
+         a benchmark pins its positions, and the scene refuses the gesture
+         itself. It is here because the rules above describe the fight in
+         sentences and this IS the fight — the same component, the same
+         geometry, and the same body radius the numbers were computed at. -->
+    <div id="bench-arena" class="arena ar-ro"></div>
     <div id="bench-board"></div>
   </main>
 

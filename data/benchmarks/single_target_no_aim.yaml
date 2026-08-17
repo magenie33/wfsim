@@ -31,11 +31,21 @@ name: "Single Target · No Aim · Thrax Centurion Lv 9999 SP · 180 s · KPM"
 # Identical to the first board's, and deliberately so — the whole point is that
 # only the aim differs, so a weapon's two rows are comparable.
 rules:
-  - "The same fight as the aimed board: one Thrax Centurion at level 9999 on Steel Path, for 180 seconds, scored in kills per minute."
-  - "Not aiming, and no shot finds a head. Two terms, because the stance and where the shots land are different facts — the stance is what gates mods like Argon Scope."
-  - "Which means no Incarnon, for all but one weapon: eight of the nine Incarnon forms charge their gauge on weak-point hits, so at this rate they never fill it. The Torid charges on direct hits and still cycles."
-  - "Read it against the aimed board rather than alone. A weapon high on both is strong; one high there and low here is being carried by precision, and the gap between its two positions is how much of it is your aim."
-  - "A sentinel weapon scores the same on both boards. Its companion picks its own targets and never aims for a head, so neither term is the player's to set — and none of that weapon is your aim."
+  # MECHANICAL LANGUAGE, AND NO WEAPON IN IT (owner, 2026-08-17). A rule that
+  # names a weapon is a rule that has to be edited when the roster grows, and
+  # `benchmarks_data.rs` already refuses this file any weapon, mod, arcane or
+  # evolution id. These lines are held to the same standard by hand: they say
+  # what is done to EVERY entry, never what is done to one of them.
+  - "The target is one Thrax Centurion at level 9999 on Steel Path. The fight lasts 180 seconds."
+  - "One target, so nothing here rewards clearing a room."
+  - "No shot is aimed and none lands on a weak point. The companion board aims every shot; between them they are the floor and the ceiling."
+  - "The score is kills per minute, counting the fraction of the current target already gone. Removing 3% of one target in 180 seconds scores 0.03 and still ranks."
+  - "Every main slot is filled, every evolution tier the entry has is taken, every arcane seat it has is filled. The Exilus slot is never counted."
+  - "Investment is not ranked: every entry is scored at full Forma, at max rank, and at the maximum roll of any bonus a player can raise by farming duplicates."
+  - "Ammo pickups are modelled. An entry that cannot be resupplied runs on its own reserve."
+  - "An entry that can be played more than one way is ranked once per way, and the way it was played is part of the row."
+  - "A buff starts the fight FULL only if it is permanent — no timer, and not spent by being used. Such a buff can be held for the whole engagement by anyone, so scoring it at anything less would rank how long ago the entrant last topped it up. Every other buff starts at zero and is earned in the fight. Two buffs in the data qualify today."
+  - "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above, so any row can be reproduced exactly by anyone with the repo."
 
 build:
   mods: full

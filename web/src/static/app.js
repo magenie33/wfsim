@@ -1299,6 +1299,21 @@ function renderBenchBoard() {
       <ul>${rs.map((x) => `<li>${escHtml(tr(x))}</li>`).join("")}</ul>
     </details>`;
   }
+  // THE RULER'S FIGHT, DRAWN. The rules above say it in sentences; this is
+  // the same fight as a picture, by the same component the simulator uses, so
+  // the two cannot describe different arenas (owner, 2026-08-17).
+  //
+  // READ-ONLY, and doubly so: `mountArena` is told, and the scene also asks
+  // `officialScenarioActive` at the gesture — a board's positions are pinned.
+  const bar = $("bench-arena");
+  if (bar) {
+    const sc = { ...defaultScenario(), ...(cur.scenario || {}) };
+    sc.player_at = [...(sc.player_at || [0, 0])];
+    sc.target_at = [...(sc.target_at || [0, CONTACT_M])];
+    sc.formation = [];
+    sc.aim_at = null;
+    mountArena(bar, sc, (allEnemies().find((e) => e.id === sc.enemy) || allEnemies()[0]), { readonly: true });
+  }
   const entries = benchEntries(cur.id);
   // SORTED BY THE BENCHMARK'S OWN METRIC — it says which one it is measured in
   // (`scenario.metric`), and a second ruler may answer differently. Unmeasured

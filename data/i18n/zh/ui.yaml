@@ -942,6 +942,18 @@ ui:
   "Search arcane / effect…": 搜索赋能 / 效果…
   "search mods by name or effect…": 按名称或效果搜索 MOD…
   "search arcanes by name or effect…": 按名称或效果搜索赋能…
+  # THE BOARD'S RULES (owner, 2026-08-17): mechanical, and naming no weapon.
+  "The target is one Thrax Centurion at level 9999 on Steel Path. The fight lasts 180 seconds.": 目标是一只 9999 级钢铁之路的 Thrax Centurion。战斗持续 180 秒。
+  "One target, so nothing here rewards clearing a room.": 只有一个目标，所以这里的任何东西都不因清场而得分。
+  "Every shot is aimed and lands on the weak point. The companion board removes the aim; between them they are the ceiling and the floor.": 每一发都瞄准并命中弱点。姊妹榜取消瞄准；两者一个是上限、一个是下限。
+  "No shot is aimed and none lands on a weak point. The companion board aims every shot; between them they are the floor and the ceiling.": 没有一发瞄准，也没有一发命中弱点。姊妹榜每发都瞄准；两者一个是下限、一个是上限。
+  "The score is kills per minute, counting the fraction of the current target already gone. Removing 3% of one target in 180 seconds scores 0.03 and still ranks.": 分数是每分钟击杀数，并计入当前目标已被削去的比例。180 秒内削掉一个目标的 3%，得分 0.03，仍然进榜。
+  "Every main slot is filled, every evolution tier the entry has is taken, every arcane seat it has is filled. The Exilus slot is never counted.": 每个主槽都装满，该条目拥有的每一阶进化都选，每一个赋能位都填。Exilus 槽从不计入。
+  "Investment is not ranked: every entry is scored at full Forma, at max rank, and at the maximum roll of any bonus a player can raise by farming duplicates.": 投入不参与排名：每个条目都按满 Forma、满等级、以及任何可以靠刷重复品提升的加成的最大值来计分。
+  "Ammo pickups are modelled. An entry that cannot be resupplied runs on its own reserve.": 弹药拾取被建模。无法补给的条目只能靠自己的备弹。
+  "An entry that can be played more than one way is ranked once per way, and the way it was played is part of the row.": 一个可以有多种打法的条目，每种打法各排一次，而用哪种打法本身就是这一行的一部分。
+  "A buff starts the fight FULL only if it is permanent — no timer, and not spent by being used. Such a buff can be held for the whole engagement by anyone, so scoring it at anything less would rank how long ago the entrant last topped it up. Every other buff starts at zero and is earned in the fight. Two buffs in the data qualify today.": 一个 buff 只有在它是永久的时候才以满层开局 —— 没有计时，也不会因使用而消耗。这样的 buff 任何人都能全程保持，所以按低于满层计分，等于在排「投稿者上次补层是多久以前」。其余所有 buff 从零开始，在战斗中挣得。目前数据中有两个 buff 符合。
+  "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above, so any row can be reproduced exactly by anyone with the repo.": 没有人提交数字。提交的是一套配装，分数由本引擎在上面钉死的种子下算出，所以任何一行都能被拿到仓库的人精确复现。
   # THE FORMATION'S OWN CONTROLS (owner, 2026-08-17).
   "one enemy": 只留一个
   "aim at the target": 瞄回目标
