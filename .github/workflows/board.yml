@@ -255,7 +255,15 @@ jobs:
           for f in data/benchmarks/*.yaml; do
             id=$(basename "$f" .yaml)
             prior=""
-            if [ "${{ inputs.full }}" != "true" ]; then
+            # A BRAND-NEW BENCHMARK HAS NO BOARD YET, and that is a legal
+            # state — the ruler exists before anyone has submitted to it. This
+            # `cp` used to be unguarded, and under `set -e` a missing file
+            # aborted the whole publish job, so ADDING A RULER would have
+            # broken the hourly board until somebody hand-wrote an empty yaml
+            # (2026-08-17). The scoring step above never had the problem: it
+            # passes the path straight to the binary, which treats an
+            # unreadable prior as "full rescore" and carries on.
+            if [ "${{ inputs.full }}" != "true" ]                && [ -f "data/benchmarks/boards/$id.yaml" ]; then
               # Read the board BEFORE it is overwritten: the loop writes in
               # place, so a copy is what the reuse actually reads.
               cp "data/benchmarks/boards/$id.yaml" "/tmp/$id-prior.yaml"

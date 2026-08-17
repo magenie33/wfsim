@@ -161,6 +161,33 @@ console.log("the board's submission endpoint\n");
   check("a malformed valence is rejected", !res.ok && kv.rows.size === 0, String(res.status));
 }
 
+// ---- 5. A BENCHMARK THE WORKER HAS NEVER HEARD OF -------------------------
+//
+// THERE WILL BE MANY RULERS. `single_target` was alone for months, then a
+// companion, then `group_clear` (2026-08-17) — and the point of this block is
+// that adding the FOURTH costs nothing here. The worker validates `benchmark`
+// as an ID and holds no LIST of them, which is what makes a ruler a data file
+// rather than a deploy; this asserts it stays that way.
+//
+// A NAME NOBODY HAS SEEN, deliberately: submitting to an existing ruler would
+// prove only that the existing rulers work.
+{
+  const kv = store();
+  const fresh = { ...PAYLOAD, benchmark: "a_ruler_invented_by_this_check_v3" };
+  const res = await post(fresh, kv);
+  check("a benchmark the worker has never heard of is accepted", res.ok, String(res.status));
+  const rec = [...kv.rows.values()][0];
+  check("...and reaches storage under its own name",
+    rec && rec.benchmark === fresh.benchmark, JSON.stringify(rec && rec.benchmark));
+
+  // …AND IT IS ITS OWN ROW. Two rulers scoring one BUILD are two records, or
+  // the second silently overwrites the first's answer — the identity key has to
+  // carry the benchmark.
+  await post(PAYLOAD, kv);
+  check("...beside the same build's row on another ruler, not on top of it",
+    kv.rows.size === 2, `${kv.rows.size} records`);
+}
+
 console.log(
   failures
     ? `\n${failures} failed`

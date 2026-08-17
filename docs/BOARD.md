@@ -553,3 +553,48 @@ its twelve rules, draws its fight and reports "0 of 224 entrants measured".
 `check_board_link.mjs` REPORTS a ruler with no rows rather than failing on it —
 and says so on screen, because a check that quietly exercises nothing reads
 exactly like one that exercised everything.
+
+## Adding a ruler: what it costs (audited 2026-08-17)
+
+There will be many. `single_target` was alone for months, then a companion,
+then `group_clear` — so the chain was walked end to end asking what the FOURTH
+one would cost.
+
+**A ruler is a data file.** Nothing on the path holds a list of benchmark ids:
+
+| link | how it learns of a new ruler |
+|---|---|
+| the engine | `benchmarks_data::all()` globs `data/benchmarks/*.yaml` |
+| `/api/meta` | maps that list |
+| the page's ruler picker, scenario bar, board page | read `META.benchmarks` |
+| the worker | validates `benchmark` as an ID, holds no whitelist |
+| the scoring workflow | `for f in data/benchmarks/*.yaml` |
+| `site/board.json` | read back and merged, so each ruler replaces only its own rows |
+| the site build | globs `data/benchmarks/boards/*.yaml` |
+
+**And the rules come with it.** `group_clear` refuses an incomplete build with
+the same words `single_target` does — "0 mods, and this benchmark wants all 8
+main slots", "0 of 4 evolution tiers" — because `validate_for_board` reads the
+`build:` block out of the yaml. A new ruler's admission standard is written, not
+coded.
+
+### The one thing that was NOT frictionless
+
+`.github/workflows/board.yml`'s publish step copied the prior board before
+overwriting it:
+
+```
+cp "data/benchmarks/boards/$id.yaml" "/tmp/$id-prior.yaml"
+```
+
+unguarded, under `set -euo pipefail`. A brand-new ruler has no board yet — a
+legal state, since the ruler exists before anyone has submitted to it — so
+adding one would have **aborted the hourly board job** until somebody
+hand-wrote an empty yaml. Guarded now. The SCORING step never had the problem:
+it passes the path straight to the binary, which treats an unreadable prior as
+"full rescore" and carries on.
+
+`check_board_submit.mjs` holds the assertion: a benchmark id **nobody has ever
+seen** is accepted, reaches storage under its own name, and sits BESIDE the same
+build's row on another ruler rather than on top of it — the identity key carries
+the benchmark, so two rulers scoring one build are two records.
