@@ -796,6 +796,36 @@ around (decision 2026-07-31).
   between them the export's compatibility column is fully swept. Adding a mod
   starts there: run the survey, take a row, transcribe it from the WIKI, lower
   the ceiling.
+- **AIM IS DRAGGED, AND A PICK READS NOTHING** (owner, 2026-08-18). Two
+  gestures on the result and the scene that were doing more than they were
+  asked to.
+  A BARE CLICK NO LONGER AIMS. It did, on the reasoning that a body is dragged
+  and a place has nothing to grab — the cost was that every mis-click while
+  selecting silently re-aimed the weapon, and a fight that moves on a mis-click
+  makes the result on screen a result for a fight nobody was in. It clears the
+  selection now. That leaves a fight whose aim has never moved with nothing to
+  pick up, since the marker rides the target and the body wins the grab, so the
+  rail got an AIM TOOL: an explicit verb, after which the marker drags in Select
+  like anything else with a position.
+  AND PICKING AN ENEMY IN THE RESULT READS NO STORAGE. It called
+  `renderStoredSimResult`, which looks the run up in a preset collection — so a
+  pick was a bet that the SAVE had worked, and every way it could not have took
+  the result off screen. Fixing storage fixed one of those and the report came
+  back unchanged: an active preset that is not in the list is another, and
+  `saveSimResult` returns early on it having stored nothing anywhere. `renderResults`
+  records `shownResult` and a pick redraws THAT. Storage is what survives a
+  reload or a preset switch, and nothing else asks it a question.
+  HARDEST HIT FIRST, in both views. `tracked` came back in the engine's
+  slot order, which answers "who got followed" rather than the reader's "who
+  took the most". The display order is sorted; `data-rpfoe` stays the index into
+  `tracked`, because `dstacks[k]` is that body's series. Each chip carries the
+  number it is sorted by, since an order nobody can check is an order nobody
+  trusts.
+  A UNIT IS A COLOUR, derived and never declared: `unitHue` hashes the id (FNV-1a)
+  into a hue, so a formation of several units reads without clicking through it,
+  a unit that arrives tomorrow already has one, and it is the same colour on
+  every machine. The same hue is a swatch wherever a unit is NAMED — a key with
+  nothing to read it against is decoration.
 - **A BODY IS THE UNIT IT WAS PLACED WITH** (owner, 2026-08-18). The card on
   the left of the arena says what you are ABOUT to place; it is not a control
   over the floor. It was one, silently: a placed body carried no unit of its

@@ -145,6 +145,24 @@ const r = await evaluate(`(async () => {
     const sent2 = theFight();
     out.nextTakesNew = sent2.formation[sent2.formation.length - 1].enemy === others[0];
     out.mixedOnTheWire = new Set(sent2.formation.map(f => f.enemy)).size === 2;
+    // …AND YOU CAN SEE WHICH IS WHICH. The two units are drawn in two hues
+    // derived from their ids, so a mixed formation reads without clicking
+    // through it. Sampled off the CANVAS rather than asked of the helper: a
+    // colour function that returns two values and paints one would pass that.
+    {
+      const old = sim.formation[0], fresh = sim.formation[sim.formation.length - 1];
+      const px = (pt) => {
+        const c = cvEl(), b = c.getBoundingClientRect(), g = c.getContext('2d');
+        const [ox, oy] = arena().px(pt);
+        const d = g.getImageData(Math.round(ox * (c.width / b.width)),
+                                 Math.round(oy * (c.height / b.height)), 1, 1).data;
+        return [d[0], d[1], d[2]];
+      };
+      const a = px(old.at), b2 = px(fresh.at);
+      out.twoHues = Math.abs(a[0] - b2[0]) + Math.abs(a[1] - b2[1]) + Math.abs(a[2] - b2[2]) > 20;
+      out.hueSample = [a, b2];
+      out.swatches = [...document.querySelectorAll('#sim-target-arena .ai-sw')].length;
+    }
     sim.formation.pop();
     sim.enemy = out.brushWas;
     markScenarioDirty(); renderSim(); await sleep(500);
@@ -232,19 +250,47 @@ const r = await evaluate(`(async () => {
   // matters - aiming past a body still resolves to the body in front.
   out.stopsShort = out.struck >= 0;
 
-  // …AND POINTING AT BARE FLOOR IS A CLICK. A body is dragged; a PLACE has
-  // nothing to grab.
-  {
+  // …AND A BARE CLICK DOES NOT AIM (owner, 2026-08-18). It used to, on the
+  // reasoning that a body is dragged and a place has nothing to grab; the cost
+  // was that every mis-click while selecting silently re-aimed the weapon, and
+  // a fight that moves on a mis-click makes the result you were just looking at
+  // a result for a fight nobody was in. AIM IS DRAGGED, like everything else
+  // with a position on this canvas.
+  const aimWas = JSON.stringify(sim.aim_at);
+  const bareClick = () => {
     const b = cvEl().getBoundingClientRect();
     const x = b.left + b.width * 0.12, y = b.top + b.height * 0.12;
-    // A CLICK, not a drag: down and up in the same place. The scene tells the
-    // two apart by whether the pointer moved, which is what lets one gesture
-    // be both "aim here" and "select these".
     send('pointerdown', x, y);
     send('pointerup', x, y);
+  };
+  bareClick();
+  await sleep(400);
+  out.clickHeldAim = JSON.stringify(sim.aim_at) === aimWas;
+
+  // …and the AIM TOOL is how a place gets aimed at the first time, which is the
+  // half that has to exist for the half above to be liveable: with the marker
+  // riding the target there is nothing on the floor to pick up.
+  {
+    const tool = document.querySelector('#sim-target-arena .arc-tool[data-tool=aim]');
+    out.hasAimTool = !!tool;
+    if (tool) {
+      tool.click();
+      await sleep(200);
+      bareClick();
+      await sleep(400);
+      out.toolAimed = JSON.stringify(sim.aim_at) !== aimWas && sim.aim_at !== null;
+      const back = document.querySelector('#sim-target-arena .arc-tool[data-tool=select]');
+      if (back) { back.click(); await sleep(200); }
+    }
   }
-  await sleep(500);
-  out.clickAimed = JSON.stringify(sim.aim_at) !== '[0,30]' && sim.aim_at !== null;
+  // …and back in Select the marker itself drags, because by then it is a thing
+  // of its own standing on the floor.
+  {
+    const before = JSON.stringify(sim.aim_at);
+    dragAt(sim.aim_at, 26, 18);
+    await sleep(400);
+    out.markerDrags = JSON.stringify(sim.aim_at) !== before;
+  }
   out.clickStruck = arenaFirstHit(sim);
 
   // …and one click puts it back on the target.
@@ -306,6 +352,10 @@ check("...while the AIMED body follows it, because that card is the target's",
 check("...and the next one placed takes the new unit, so two units coexist",
   r.nextTakesNew === true && r.mixedOnTheWire === true,
   JSON.stringify({ next: r.nextTakesNew, mixed: r.mixedOnTheWire }));
+check("...and they are DRAWN as two, so a mixed formation reads at a glance",
+  r.twoHues === true, JSON.stringify(r.hueSample));
+check("...with the same hue beside the name, which is what makes it a key",
+  r.swatches > 0, `${r.swatches} swatches`);
 check("a lone fight runs", !r.lone.err && r.lone.dps > 0, JSON.stringify(r.lone));
 check("...and a crowd takes more, because the chain has somewhere to go",
   !r.crowd.err && r.crowd.dps > r.lone.dps,
@@ -319,7 +369,13 @@ check("...and exactly one body is marked as struck", r.strokeMarked === 1, `${r.
 check("...and the aim point is sent", JSON.stringify(r.aimSent) === "[0,30]", JSON.stringify(r.aimSent));
 check("...and the sight line STOPS at the body it reaches, dashed on to the aim",
   r.stopsShort === true);
-check("pointing at bare floor is a click, and it aims there", r.clickAimed === true);
+// AIM IS DRAGGED, NOT CLICKED INTO PLACE.
+check("a bare click leaves the aim alone", r.clickHeldAim === true);
+check("...and the aim TOOL is what puts one on bare floor",
+  r.hasAimTool === true && r.toolAimed === true,
+  JSON.stringify({ tool: r.hasAimTool, aimed: r.toolAimed }));
+check("...after which the marker itself drags, in Select",
+  r.markerDrags === true, JSON.stringify(r.markerDrags));
 check("...and a shot at bare floor crosses nobody",
   r.clickStruck === -1, `first hit ${r.clickStruck}`);
 check("...and one click puts it back on the target", r.hadUnaim && r.aimCleared === true);

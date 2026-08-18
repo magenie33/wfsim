@@ -2810,6 +2810,36 @@ const arenaDistance = (s) => Math.max(0, arenaSpan(s) - CONTACT_M);
 /// both use, so nothing has to be reordered on the way out.
 const arenaBodies = (s) => [s.target_at, ...(s.formation || []).map((f) => f.at)];
 
+/// WHICH UNIT A BODY IS, AS A COLOUR — derived, never declared.
+///
+/// A formation can hold fifty bodies of several units and they were all one
+/// red circle, so the only way to find out who was standing where was to click
+/// each one (owner, 2026-08-18). The cheap answer is the right one here: hash
+/// the unit's id into a HUE. It costs no data file, no art, no translation and
+/// no maintenance — a unit that arrives tomorrow already has a colour, and it
+/// is the SAME colour on every machine and in every session, which a palette
+/// handed out in load order would not be.
+///
+/// FNV-1a, because it is four lines and mixes short ASCII ids well; the id is
+/// a stable English slug, so the colour is stable too. The saturation and
+/// lightness are fixed so nothing lands on the floor's own grey or on the
+/// accent, and the same hue is drawn as a swatch wherever a unit is NAMED —
+/// the colour is only useful as a key if the key is somewhere.
+const unitHue = (id) => {
+  let h = 2166136261;
+  for (let i = 0; i < String(id).length; i++) {
+    h ^= String(id).charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h % 360;
+};
+const unitColor = (id, a) => `hsl(${unitHue(id)} 62% 58%${a === undefined ? "" : ` / ${a}`})`;
+/// The unit a body is, by arena index — 0 is the aimed body, which is the
+/// FIGHT's target, and the rest carry their own since 2026-08-18.
+const unitAt = (s, i) => (i === 0
+  ? s.enemy
+  : ((s.formation || [])[i - 1] || {}).enemy || s.enemy);
+
 /// WHERE THE WEAPON POINTS. `null` means "at the target", which is what every
 /// scenario written before a formation existed means and what the app has
 /// always done.
@@ -3213,12 +3243,17 @@ function mountArenaCanvas(host, s, en, opts) {
       const [x, y] = px(bodies[i]);
       if (x < -r * 3 || x > W + r * 3 || y < -r * 3 || y > H + r * 3) continue;
       const on = sel.has(i);
+      // ITS UNIT'S COLOUR (see `unitHue`), so a mixed formation reads as one
+      // without clicking through it. SELECTION still wins the outline, because
+      // "which ones am I about to move" is the more urgent question and the hue
+      // is still visible in the fill underneath.
+      const col = unitColor(unitAt(s, i));
       ctx.beginPath(); ctx.arc(x, y, r, 0, 7);
-      ctx.fillStyle = cssv("critical");
+      ctx.fillStyle = col;
       ctx.globalAlpha = i === struck ? 0.62 : on ? 0.5 : 0.3; ctx.fill();
       ctx.globalAlpha = 1;
       ctx.lineWidth = on || i === struck ? 2 : 1.25;
-      ctx.strokeStyle = on ? cssv("accent") : cssv("critical");
+      ctx.strokeStyle = on ? cssv("accent") : col;
       ctx.stroke();
       // THE ONE THE SHOT IS ON, ringed: aiming at a place means the answer is
       // not always the body nearest the cursor.
@@ -3291,18 +3326,22 @@ function mountArenaCanvas(host, s, en, opts) {
     const unitOf = (i) => {
       const f = i === 0 ? null : s.formation[i - 1] || {};
       const id = (f && f.enemy) || s.enemy;
-      return { en: allEnemies().find((e) => e.id === id), level: (f && f.level) || s.level };
+      return { id, en: allEnemies().find((e) => e.id === id), level: (f && f.level) || s.level };
     };
+    // THE SWATCH IS THE KEY TO THE FLOOR. The bodies are drawn in their unit's
+    // hue (`unitHue`), which is only useful if the same hue is beside the name
+    // somewhere — this is that somewhere.
+    const swatch = (id) => `<i class="ai-sw" style="background:${unitColor(id)}"></i>`;
     if (sel.size === 1) {
       const i = [...sel][0];
       const b = bodies[i];
       if (b) {
-        const { en, level } = unitOf(i);
+        const { id, en, level } = unitOf(i);
         const art = IMG(en && en.image);
         insp.innerHTML = `<p class="ai-h">${escHtml(nameOf(i))}</p>`
           + `<div class="ai-who">`
           + (art ? `<img src="${escHtml(art)}" alt="">` : "")
-          + `<div><b>${escHtml((en && en.name) || tr("Enemy"))}</b>`
+          + `<div><b>${swatch(id)}${escHtml((en && en.name) || tr("Enemy"))}</b>`
           + `<span>${escHtml(tr("Level"))} ${escHtml(String(level))}`
           + `${s.steel_path ? " · " + escHtml(tr("Steel Path")) : ""}</span>`
           + `<span>${escHtml(enemyMeta(en))}</span></div></div>`
@@ -3328,11 +3367,11 @@ function mountArenaCanvas(host, s, en, opts) {
     }
     // NOTHING PICKED IS AN ANSWER TOO: describe the fight, since that is what
     // you are looking at.
-    const { en, level } = unitOf(0);
+    const { id, en, level } = unitOf(0);
     insp.innerHTML = `<p class="ai-h">${escHtml(tr("the fight"))}</p>`
       + `<div class="ai-who">`
       + (IMG(en && en.image) ? `<img src="${escHtml(IMG(en.image))}" alt="">` : "")
-      + `<div><b>${escHtml((en && en.name) || tr("Enemy"))}</b>`
+      + `<div><b>${swatch(id)}${escHtml((en && en.name) || tr("Enemy"))}</b>`
       + `<span>${escHtml(tr("Level"))} ${escHtml(String(level))}`
       + `${s.steel_path ? " · " + escHtml(tr("Steel Path")) : ""}</span></div></div>`
       + row(tr("enemy count"), bodies.length)
@@ -3397,6 +3436,15 @@ function mountArenaCanvas(host, s, en, opts) {
     ["select", "V", tr("Select"), '<path d="M4 3l6 14 2.2-5.6L18 9.2z"/>'],
     ["place", "B", tr("Place enemies"),
       '<circle cx="8" cy="8" r="3.1"/><circle cx="14.5" cy="13.5" r="3.1"/><path d="M4 16.5h2.6M5.3 15.2v2.6"/>'],
+    // AIM IS A TOOL, because it stopped being a side effect. A bare click used
+    // to aim, which meant every mis-click while selecting silently re-aimed the
+    // weapon; and once it does not, a fight whose aim has never been moved has
+    // NOTHING TO GRAB — the marker rides the target, so it sits exactly where
+    // the body is and the body wins the grab. An explicit verb answers both:
+    // pick it up and drag, and the marker stays draggable in Select afterwards
+    // because by then it is a thing of its own standing on the floor.
+    ["aim", "A", tr("Aim"),
+      '<circle cx="11" cy="11" r="6.2"/><path d="M11 1.6v3.4M11 17v3.4M1.6 11H5m12 0h3.4"/>'],
     ["erase", "E", tr("Erase"),
       '<path d="M6.5 16.5h9"/><path d="M4.6 12.4l5.4-5.4a2 2 0 012.8 0l2.6 2.6a2 2 0 010 2.8l-3.6 3.6H7.4z"/>'],
     ["hand", "H", tr("Pan"),
@@ -3581,6 +3629,9 @@ function mountArenaCanvas(host, s, en, opts) {
     if (ro()) return;                       // a ruler's fight is not editable
     if (tool === "place") { mode = "paint"; painted = null; placeAt(p); return; }
     if (tool === "erase") { mode = "erase"; eraseAt(p); return; }
+    // …and with the aim tool the whole floor is the marker, which is the only
+    // way to put an aim somewhere the first time.
+    if (tool === "aim") { mode = "aim"; s.aim_at = snapTo(p); draw(); paintChips(); return; }
     // THE ORDER IS WHAT YOU REACH FOR FIRST: a placed aim marker, then an
     // ENEMY, then yourself. The enemy before the player, because at contact
     // they are one grab apart and the enemy is what a formation is made of.
@@ -3662,15 +3713,22 @@ function mountArenaCanvas(host, s, en, opts) {
       if (touches.size === 1) { mode = null; marquee = null; }
     }
     let wrote = mode && mode !== "pan" && mode !== "marquee";
-    // POINT AT A PLACE. A marquee that never moved is a CLICK on bare floor,
-    // and clicking bare floor aims there — a body is dragged, but a PLACE has
-    // nothing to grab (owner, 2026-08-17). The distinction is the drag itself,
-    // so one gesture serves both without a mode to choose.
-    if (mode === "marquee" && marquee && !ro()) {
+    // A CLICK ON BARE FLOOR CLEARS THE SELECTION AND NOTHING ELSE (owner,
+    // 2026-08-18). It used to AIM there, on the reasoning that a body is
+    // dragged and a place has nothing to grab — but the aim marker is always on
+    // the floor, so it does have something to grab, and making a bare click
+    // move it meant every miss-click while selecting silently re-aimed the
+    // weapon. A fight that moved on a mis-click is a result that was for a
+    // fight nobody was in.
+    //
+    // AIM IS DRAGGED, like everything else on this canvas. One rule for every
+    // thing that has a position, and no gesture that edits the fight without
+    // being asked to.
+    if (mode === "marquee" && marquee) {
       const moved = Math.hypot(marquee.b[0] - marquee.a[0], marquee.b[1] - marquee.a[1]);
-      if (moved < 4) { s.aim_at = snapTo(mt(marquee.a[0], marquee.a[1])); wrote = true; }
+      if (moved < 4) { sel.clear(); }
+      marquee = null;
     }
-    if (mode === "marquee") marquee = null;
     mode = null; panning = false; dragging = false; painted = null;
     cursor();
     if (wrote) changed(); else draw();
@@ -9981,7 +10039,9 @@ function renderScenarioFields(ids, opts = {}) {
          <button class="en-card" id="${ids.target}-pick" title="${escHtml(tr("choose the target"))}">
            ${enemyImg(en, "en-img")}
            <span class="en-txt">
-             <span class="en-name">${escHtml(en ? en.name : tr("Enemy"))}</span>
+             <span class="en-name">${en
+               ? `<i class="ai-sw" style="background:${unitColor(en.id)}"></i>` : ""
+             }${escHtml(en ? en.name : tr("Enemy"))}</span>
              <span class="en-meta">${escHtml(enemyMeta(en))}</span>
              ${enemyVuln(en)}${enemyStatusImmune(en)}${enemyEffectsNulled(en)}
              ${enemyCaveat(en)}
@@ -11674,12 +11734,27 @@ function replayMarkup(r) {
     if (ids.length < 2) return "";
     const hit = (r.bodies || []).length;
     const more = Math.max(0, hit - ids.length);
+    // BY DAMAGE, HARDEST HIT FIRST (owner, 2026-08-18). The engine follows the
+    // aimed body plus the hardest-hit few, and `tracked` came back in ITS
+    // order, which is an implementation detail of who got a slot rather than an
+    // answer to the question a reader is asking — "who took the most" is the
+    // reason to open this table at all.
+    //
+    // THE ORDER IS THE DISPLAY'S, NOT THE DATA'S. `data-rpfoe` stays the index
+    // into `tracked`, because `dstacks[k]` is that body's series and reordering
+    // the list itself would draw one body's chip over another's debuffs.
+    const dmgOf = Object.fromEntries((r.bodies || []).map((b) => [b.id, b.damage || 0]));
+    const order = ids.map((id, k) => k)
+      .sort((a, b) => (dmgOf[ids[b]] || 0) - (dmgOf[ids[a]] || 0));
     return `<div class="rp-foes">${
-      ids.map((id, k) => `<button type="button" class="rp-foe${k === sel ? " sel" : ""}" data-rpfoe="${
+      order.map((k) => `<button type="button" class="rp-foe${k === sel ? " sel" : ""}" data-rpfoe="${
         k}" title="${escHtml(k === 0
           ? tr("the body the weapon was on")
-          : tr("an enemy the shot reached"))}">${escHtml(id)}${
-        k === 0 ? ` <span class="sm">${escHtml(tr("aimed"))}</span>` : ""}</button>`).join("")
+          : tr("an enemy the shot reached"))}">${escHtml(ids[k])} <span class="sm">${
+        // THE NUMBER IT IS SORTED BY, on the chip. An order nobody can check is
+        // an order nobody trusts, and this is the whole reason the chips exist.
+        escHtml(sig2(dmgOf[ids[k]] || 0))}${
+        k === 0 ? ` · ${escHtml(tr("aimed"))}` : ""}</span></button>`).join("")
     }${more > 0
       ? `<span class="rp-foe-more">${escHtml(
           tr("+{n} more took damage and are not followed").replace("{n}", more))}</span>`
@@ -11793,7 +11868,11 @@ function replayMarkup(r) {
   // THE ROLL CALL IS THE RESULT's, not the replay's: `bodies` is a mean over
   // every run, while a replay is ONE engagement. Two different questions and
   // two different objects, joined here by the id the page gave each body.
-  const bodyRows = (r.bodies || []);
+  // HARDEST HIT FIRST, like the chips above it — the two are the same list
+  // read two ways, so they are ordered the same way (owner, 2026-08-18). A copy
+  // rather than a sort in place: `r.bodies` is the stored result and a render
+  // does not get to reorder it.
+  const bodyRows = [...(r.bodies || [])].sort((a, b) => (b.damage || 0) - (a.damage || 0));
   const crowd = bodyRows.length > 1
     ? `<div class="rp-scene" id="rp-scene"></div>`
       + `<table class="rp-roll"><tbody>${bodyRows.map((b) => {
@@ -12008,8 +12087,11 @@ function wireReplay(r) {
   // asking "what was on THAT one at this instant", not replaying anything.
   const pickFoe = (k) => {
     replayFoe = k;
-    // The panel redraws from the stored result, so this costs no simulation.
-    renderStoredSimResult();
+    // FROM THE RESULT IN HAND. No simulation, and no storage lookup either —
+    // see `shownResult`. Picking an enemy is a question about a run that has
+    // already happened and cannot be a reason to lose it.
+    if (shownResult) renderResults(shownResult.r, shownResult.at);
+    else renderStoredSimResult();
   };
   document.querySelectorAll("[data-rpfoe]").forEach((el) => {
     el.onclick = () => pickFoe(Number(el.dataset.rpfoe));
@@ -12066,7 +12148,21 @@ function wireReplay(r) {
   draw();
 }
 
+/// WHAT IS ON SCREEN RIGHT NOW, and the ONLY thing a redraw reads.
+///
+/// Picking an enemy in the result used to call `renderStoredSimResult`, which
+/// looks the result up in a preset collection — so a pick was a bet that the
+/// SAVE had worked, and every way it could not have took the result off screen
+/// with it (owner, 2026-08-18, twice). A full disk was one way. A preset that
+/// is not in the list is another, and `saveSimResult` returns early on it
+/// without storing anywhere. Neither has anything to do with picking an enemy.
+///
+/// So a redraw takes the object the panel was drawn from. Storage is what
+/// survives a RELOAD or a preset switch, and nothing else asks it a question.
+let shownResult = null;
+
 function renderResults(r, testedAt) {
+  shownResult = { r, at: testedAt };
   const t = r.target || {};
   const pc = pct2; // 2 decimals, more when the value would otherwise vanish
   const n0 = (x) => Math.round(x || 0).toLocaleString();

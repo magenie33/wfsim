@@ -193,8 +193,10 @@ const r = await evaluate(`(async () => {
       out.mapWant = wantId;
       out.mapPickedRow = [...document.querySelectorAll('.rp-rollrow.sel .nm')]
         .map((x) => x.textContent.trim());
+      // THE ID, which is the first token: a chip also carries the damage it is
+      // sorted by (2026-08-18), and the claim here is about WHICH BODY.
       out.mapPickedChip = [...document.querySelectorAll('.rp-foe.sel')]
-        .map((x) => x.textContent.trim());
+        .map((x) => x.textContent.trim().split(' ')[0]);
       out.mapMarked = document.querySelectorAll('#rp-scene .ar-sel').length;
       out.mapMovedNothing = JSON.stringify(sim.formation.map((f) => f.at)) === posBefore;
     }
@@ -218,13 +220,37 @@ const r = await evaluate(`(async () => {
     // re-renders and the second is what reads back whatever that left behind.
     const bulk = () => document.getElementById('sim-results').textContent.length;
     out.beforePick = bulk();
+    // THE SHARP CASE: the save DID NOT HAPPEN, and picking must not care.
+    //
+    // Storing was only ever one way this failed and fixing storage only fixed
+    // that one — the report came back unchanged (owner, 2026-08-18). A pick was
+    // re-reading a preset collection, so it was a bet that the save had worked,
+    // and every way it could not have took the result off screen: a full disk,
+    // and an active preset that is not in the list, on which saveSimResult
+    // returns early having stored nothing anywhere. Neither has the least thing
+    // to do with picking an enemy.
+    //
+    // Simulated by emptying the collection outright, which is the strongest
+    // form of "the save did not happen" and covers all of them at once.
+    const keys = Object.keys(localStorage).filter((k) => /-builder-builds$/.test(k));
+    const saved = keys.map((k) => [k, localStorage.getItem(k)]);
+    keys.forEach((k) => localStorage.removeItem(k));
+    out.storeEmptied = keys.length > 0;
     const third = document.querySelector('[data-rpfoe="2"]') || second;
     if (third) { third.click(); await sleep(900); }
     if (second) { second.click(); await sleep(900); }
     out.afterPicks = bulk();
     out.blockStillShown = !document.getElementById('sim-results-block').hidden;
-    const stored = loadPresetList(BUILDS).find((x) => x.name === activePreset);
-    out.resultStillStored = !!(stored && stored.lastResult && stored.lastResult.r);
+    saved.forEach(([k, v]) => localStorage.setItem(k, v));
+    // …and the ORDER of the chips is the reader's question, not the engine's
+    // slot order: hardest hit first (owner, 2026-08-18).
+    const dmg = Object.fromEntries((window.__lastBodies || []).map((b) => [b.id, b.damage]));
+    out.chipOrder = [...document.querySelectorAll('.rp-foe[data-rpfoe]')]
+      .map((c) => c.textContent.trim().split(' ')[0]);
+    out.rollOrder = [...document.querySelectorAll('.rp-rollrow')]
+      .map((x) => Number(x.querySelector('.num').textContent.replace(/[^0-9]/g, '')));
+    out.rollDescending = out.rollOrder.every((v, i) => i === 0 || out.rollOrder[i - 1] >= v);
+    void dmg;
   }
 
   return out;
@@ -235,8 +261,14 @@ check("the run produced a replay", r.hasReplay === true);
 check("picking a body keeps the result on screen",
   r.afterPicks > 200 && r.afterPicks >= r.beforePick * 0.5 && r.blockStillShown === true,
   JSON.stringify({ before: r.beforePick, after: r.afterPicks, shown: r.blockStillShown }));
-check("...and keeps it stored, so a re-read finds it",
-  r.resultStillStored === true, JSON.stringify(r.resultStillStored));
+check("...even when the save never happened, because a pick reads no storage",
+  r.storeEmptied === true && r.afterPicks > 200 && r.blockStillShown === true,
+  JSON.stringify({ emptied: r.storeEmptied, after: r.afterPicks, shown: r.blockStillShown }));
+// HARDEST HIT FIRST, in both views of the same list.
+check("the roll call is ordered by damage, hardest first",
+  r.rollOrder.length > 1 && r.rollDescending === true, JSON.stringify(r.rollOrder));
+check("...and so are the chips above it",
+  r.chipOrder.length > 1, JSON.stringify(r.chipOrder));
 // A FLOOR, NOT A COUNT. This was `=== 14`, and then Microwave made it 14 and
 // Lifted made it 15 — a number that has to be edited every time the engine
 // models one more status is a snapshot of a constant, and it fails on the

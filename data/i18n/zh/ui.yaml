@@ -51,6 +51,7 @@ ui:
   "Steel Path": "钢铁之路"
   "this is the aimed enemy, and what the place tool puts down. Enemies already on the floor keep the unit they were placed with.": "这是被瞄准的敌人，也是放置工具会放下的单位。已经在场上的敌人保持放置时的单位。"
   "this is the aimed enemy, and what the place tool puts down. {n} already on the floor keep the unit they were placed with.": "这是被瞄准的敌人，也是放置工具会放下的单位。场上已有 {n} 个保持着各自放置时的单位。"
+  "Aim": "瞄准"
   "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing": "空战枪投放器的五分钟冷却尚未建模 —— 备弹打空后，真实任务里这把枪整局就没了，而这个战场只是停火"
   "this run never INTERRUPTS a reload — in game you can fire mid-reload and keep the shells already loaded, and a player who does is trading stacks and a full magazine for uptime. Decided rather than missing (2026-08-10): a listed reload is a whole reload, and the alternative is not a more accurate model, it is a different player": "这次运行从不打断装填 —— 游戏里你可以在装填途中开火并保留已经压进去的子弹，这么做的玩家是在用层数和满弹匣换取输出时间。这是一个决定而不是遗漏（2026-08-10）：标称的装填就是一次完整装填，另一种做法不是更精确的模型，而是另一个玩家"
   # ADMISSION TEMPLATES. A reason from data/unmodelled/reasons.yaml is
