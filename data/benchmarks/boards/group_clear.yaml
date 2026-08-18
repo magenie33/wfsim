@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-engine: 098315cd8f522532d074be9ee11596bd4b2447d3
+engine: 4052aa13f30883053de8d1671c60a57298f43fac
 entries:
   - weapon: akarius_prime
     mode: base
@@ -66,7 +66,7 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
   - weapon: latron_prime
     mode: cycle
-    score: 608.0263967586843
+    score: 4853.218506856762
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
     arcanes: [primary_deadhead]
