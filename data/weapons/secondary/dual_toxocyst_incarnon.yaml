@@ -80,11 +80,22 @@ attack:
   # mechanic catalog classifies DT Incarnon Mode as Projectile. Needs
   # an in-game check (travel time / falloff observation).
   shot_type: hit_scan
+  # MODELLED as of 2026-08-18, having sat here unread since the entry was
+  # written. ONE bounce, within 5 m — this weapon's ricochet is a shorter
+  # mechanic than the Latron family's five, which is why the shape is per entry.
+  #
+  # HEADSHOT CHANCE 0.5 (owner, 2026-08-18), and this entry is where the note
+  # below said it should be: *"Ricochets can headshot"*. A bounce is not aimed,
+  # so the scenario's headshot_pct is the wrong number for it and DE publishes
+  # none — half is the flat rate, a decision rather than a transcription, and it
+  # is the same figure the whole mechanic takes.
   ricochet:
-    targets: 1                  # per hit, within 5 m of the struck enemy
+    bounces: 1                  # per hit, within 5 m of the struck enemy
+    headshot_chance: 0.5
     range_m: 5.0
     # notes:
-    # - Ricochets can headshot and trigger Frenzy.
+    # - Ricochets trigger Frenzy — NOT modelled: Frenzy arms off this
+    # weapon's own on-headshot rule, which reads the aimed pellet.
     # - "Per-hit trigger (wiki Ricochet): each multishot pellet and each
     # punch-through victim ricochets separately; terrain never, corpses
     # do; ragdolled enemies cannot be ricochet targets."

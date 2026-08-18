@@ -374,6 +374,8 @@ pub struct AttackSpec {
     /// rate — docs/UNMODELLED.md §Bullet Attractor.
     #[serde(default)]
     pub attractor_seconds: Option<f64>,
+    /// A projectile that BOUNCES off what it hits and keeps going — the Latron
+    /// family's Incarnon form, and the roster's only member.
     #[serde(default)]
     pub ricochet: Option<RicochetSpec>,
     /// DAMAGE FALLOFF on the direct hit — the shotgun's, and the one the
@@ -658,10 +660,40 @@ pub struct RadialSpec {
     pub takes_multishot: bool,
 }
 
+/// A PROJECTILE THAT DEFLECTS OFF WHAT IT HITS and keeps going.
+///
+/// Verbatim, from the Latron Incarnon Genesis page: *"a traveling projectile
+/// that can ricochet off enemies and terrain, exploding up to 6 times with a 4
+/// meter radius, dealing damage once for any collision on enemies, and again
+/// for the explosion"*.
+///
+/// NO ATTENUATION PER BOUNCE. The page names none, and it names the one thing
+/// that does change — *"Each ricochet will cause the projectile to slow
+/// down"* — so every bounce deals this attack's collision and this attack's
+/// explosion in full. The slowing is what ends the projectile in game and is
+/// declared as a gap on the weapons that have it.
+///
+/// It was `{ targets, range_m }` and unread by anything, in any file, since it
+/// was written. Rewritten rather than joined, so the roster has one spelling.
 #[derive(Debug, Clone, Deserialize)]
 pub struct RicochetSpec {
-    pub targets: u32,
-    pub range_m: f64,
+    /// Bounces AFTER the first collision.
+    ///
+    /// SIX EXPLOSIONS IS FIVE BOUNCES: *"exploding up to 6 times"*, and the
+    /// first of the six is the shot arriving, which the ordinary pipeline
+    /// already pays for.
+    pub bounces: u32,
+    /// The chance a bounce lands on a head.
+    ///
+    /// A bounce is NOT AIMED, so the scenario's `headshot_pct` — a statement
+    /// about the player's aim — says nothing about where one lands. Owner,
+    /// 2026-08-18: 0.5.
+    pub headshot_chance: f64,
+    /// How far a bounce may travel to find its next body. Absent = the nearest
+    /// body it has not already hit, however far, which leaves the bounce COUNT
+    /// as the only limit — and the count is the only limit the page states.
+    #[serde(default)]
+    pub range_m: Option<f64>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -2555,6 +2587,15 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // The data module's Trigger for a beam. Not cosmetic: it decides
         // whether `fire_rate` means shots or TICKS and whether multishot merges.
         continuous: s.attack.trigger == "held",
+        // A BOUNCE IS NOT SCALED BY ANYTHING, so it comes across as written.
+        ricochet: s.attack.ricochet.as_ref().map(|r| crate::loadout::Ricochet {
+            bounces: r.bounces,
+            headshot_chance: r.headshot_chance,
+            // NO RANGE IS NOT ZERO RANGE — it is the page stating no limit but
+            // the count, so an absent field means "the nearest body it has not
+            // hit yet, however far".
+            range_m: r.range_m.unwrap_or(f64::INFINITY),
+        }),
         beam: s.attack.beam.as_ref().map(|b| crate::loadout::BeamGeometry {
             range_m: b.range_m,
             damage_radius_m: b.damage_radius_m,

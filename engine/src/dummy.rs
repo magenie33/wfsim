@@ -787,6 +787,13 @@ struct BlastStack {
 /// vector can produce (data/debuffs/*.yaml; simplifications noted inline).
 #[derive(Default)]
 struct DebuffState {
+    /// The clock reading this state was last pruned at — see [`Self::prune`].
+    ///
+    /// An OPTION rather than a sentinel float: the derived default of an `f64`
+    /// is 0.0, which is a real instant here — the first shot of every
+    /// engagement is fired at it — so a bare number would have skipped the one
+    /// prune it must never skip. `None` cannot collide with a clock reading.
+    pruned_at: Option<f64>,
     /// GAS CLOUDS AND TESLA ARCS THIS BODY IS THE ORIGIN OF, waiting to be
     /// handed to everybody standing near it.
     ///
@@ -1058,6 +1065,14 @@ impl DebuffState {
     /// order; uniform durations make the front the oldest).
     fn push_capped(list: &mut Vec<f64>, expiry: f64, cap: usize, now: f64) {
         list.retain(|&e| e > now); // lazy prune of expired stacks
+        // A STACK THAT IS ALREADY DEAD IS NOT APPLIED. Unreachable in the
+        // roster — a status lasts `STATUS_DURATION * sd` and both are positive
+        // — and stated rather than left to chance, because it is the one thing
+        // that could put an expired entry in a list `prune` has been told it
+        // may skip (see [`Self::prune`]).
+        if expiry <= now {
+            return;
+        }
         if list.len() >= cap {
             list.remove(0); // replace the oldest APPLIED stack
         }
@@ -1210,6 +1225,23 @@ impl DebuffState {
     }
 
     fn prune(&mut self, now: f64, sd: f64) {
+        // ONCE PER INSTANT. `mitigation` prunes, and mitigation is asked once
+        // per DAMAGE INSTANCE — so a shot that lands nine procs pruned ten
+        // times at the same clock reading. Measured on the build that started
+        // this (Phantasma Prime, eight status mods, Primary Debilitate): 62,091
+        // prunes a run of which 45,107 were repeats of one already done
+        // (2026-08-18).
+        //
+        // IT IS EXACT, not an approximation, and the invariant is what makes it
+        // so: after a prune at `now` every list holds only expiries past `now`,
+        // and the ONE way a list grows is `push_capped`, which prunes as it goes
+        // and refuses a stack that is already dead. So a second prune at the
+        // same reading has nothing to find. The clock only ever moves forward,
+        // which is what makes an equality test the whole of the check.
+        if self.pruned_at == Some(now) {
+            return;
+        }
+        self.pruned_at = Some(now);
         self.lifted = self.lifted.filter(|&e| e > now);
         self.stagger.retain(|&e| e > now);
         self.weakened.retain(|&e| e > now);
@@ -1962,6 +1994,10 @@ pub struct DummyParams {
     /// SEEDS the chains and the chain's three constants. `None` for everything
     /// that is not a chaining beam, which is the whole roster but one form.
     pub beam: Option<crate::loadout::BeamGeometry>,
+    /// A PROJECTILE THAT BOUNCES — the Latron family's Incarnon form. Every
+    /// bounce is this attack's collision and this attack's explosion arriving
+    /// again, at a body it has not hit yet.
+    pub ricochet: Option<crate::loadout::Ricochet>,
     /// The TENNO — the other one. Who is holding this weapon, and what they
     /// are doing: `resolve` has already asked its state which conditional mods
     /// pay, and the arcanes that scale off Warframe armor or energy read its
@@ -2710,6 +2746,7 @@ impl DummyParams {
             // damage radius here is already the MODDED value, so Firestorm has
             // been applied and what seeds the chains is what the player built.
             beam: panel.beam,
+            ricochet: panel.ricochet,
             lingering: panel.lingering,
             continuous: panel.continuous,
             field_duration_on_empty_reload: panel.field_duration_on_empty_reload,
@@ -3132,6 +3169,7 @@ impl Default for DummyParams {
             // …and no beam geometry: the fixture is a generic weapon, and a
             // chain is something a weapon DECLARES.
             beam: None,
+            ricochet: None,
         }
     }
 }
@@ -4776,6 +4814,9 @@ enum SpreadBy {
     Cloud,
     Tendril,
     Echo,
+    /// …AND THE OTHER ONE THAT IS NOT A SPREAD: the same shot, ARRIVING AGAIN
+    /// somewhere else. It is the only one that may land on a head.
+    Ricochet,
     /// …AND THE ONE THAT IS NOT A SPREAD: the same shot, still travelling.
     /// It is here because it routes through `spread_hit` like the others, and
     /// it is told apart from them because it is the only one that may headshot.
@@ -4860,7 +4901,11 @@ fn spread_hit(
         half_hp,
         ap.co_base_fraction,
     );
-    let raw = raw_per_bucket * bucket * inst.share;
+    // THE PART FACTOR IS A SEPARATE MULTIPLIER FROM THE SHARE, and the two are
+    // not interchangeable: `share` scales the hit AND the modded base its DoTs
+    // are computed from, while a head multiplier scales the hit alone. 1.0 for
+    // every mechanism but the ricochet, so this changes nothing anywhere else.
+    let raw = raw_per_bucket * bucket * inst.share * inst.part_factor;
     if raw <= 0.0 {
         return;
     }
@@ -4869,8 +4914,10 @@ fn spread_hit(
     let (eff, killed, _broke) = foe.state.apply(
         raw,
         shares,
-        // BODY, always — see the note above.
-        false,
+        // THE SHIELD GATE'S QUESTION, and the only thing this bool decides: a
+        // headshot goes through a gated shield. False for every mechanism but
+        // the ricochet, which is the one spread that can land on a head.
+        inst.headshot,
         t,
         &spec.params,
         false,
@@ -4902,9 +4949,15 @@ fn spread_hit(
         procs,
         t,
         InstanceScale {
+            // THE HEAD FACTOR IS NOT IN HERE, which is the point of keeping it
+            // off `share`: a Slash bleed off a headshot is the same size as one
+            // off a bodyshot, because a status effect reads the modded base.
             mb_live: modded_base * arc_ratio * inst.share,
             crit_mult,
-            part_factor: 1.0,
+            // …AND IT IS IN HERE, because Heat and Blast are computed as a
+            // fraction of the HIT rather than of the base — the same two the
+            // direct path multiplies by its own part factor.
+            part_factor: inst.part_factor,
             attrition,
             // THE FIRING FORM'S bracket, like any other instance of this shot —
             // a chain hop is the same shot, and the Extra Hit it may set off is
@@ -5019,12 +5072,95 @@ fn spread_from_punch_through(
             share: ratio,
             multishot: true,
             headshot: true,
+            part_factor: 1.0,
         };
         let foe = &mut others[idx];
         spread_hit(
             &inst, foe, fs, raw_per_bucket, shares, crit_mult, attrition, modded_base,
             status_chance, forced, vector, params, ap, gal, arc, r, d, t,
             SpreadBy::PunchThrough,
+        );
+    }
+}
+
+/// A RICOCHET — the projectile arriving again, at a body it has not hit yet.
+///
+/// The SEVENTH way a shot reaches a body, and the only one that is a second
+/// arrival of the whole shot rather than a share of it. Verbatim, from the
+/// Latron Incarnon Genesis page:
+///
+///   *"Incarnon Form changes the weapon's fire mode from hitscan to a traveling
+///    projectile that can ricochet off enemies and terrain, exploding up to 6
+///    times with a 4 meter radius, dealing damage once for any collision on
+///    enemies, and again for the explosion."*
+///
+/// TWO INSTANCES PER BOUNCE, which is what "dealing damage once for any
+/// collision, and again for the explosion" says: the collision lands on the
+/// body it bounced off, and the explosion is an ordinary blast centred there.
+/// This function fires the COLLISION; the explosion rides the radial part and
+/// walks the same path (`bounces`), so both halves agree about where the
+/// projectile went.
+///
+/// IN FULL. The page names no attenuation per bounce and names the one thing
+/// that does change — *"Each ricochet will cause the projectile to slow
+/// down"* — so a bounce deals the collision the aimed body took, undiminished.
+///
+/// AND IT MAY HEADSHOT, at a flat chance the data states (owner, 2026-08-18:
+/// 0.5). This is the one spread in the engine that can: a chain hop, a splash,
+/// an echo and a tendril all land on the body, because none of them is the shot
+/// and none is aimed. A ricochet IS the shot, and it is not aimed either — so
+/// the scenario's `headshot_pct`, which is a statement about the player's aim,
+/// is the wrong number for it and a flat chance is the honest one.
+///
+/// WHAT IT DOES NOT DO, and the weapons declare it: it does not bounce off
+/// TERRAIN (this arena has no walls, so a projectile that would have come off a
+/// surface finds the next body instead, and a fight against one body bounces
+/// nowhere), and it does not come back to a body it has already hit — the
+/// page's own note that repeated bounces *"seem to require multiple enemies"*
+/// is the reason, and it is the same rule a chain path follows.
+#[allow(clippy::too_many_arguments)]
+fn spread_from_ricochet(
+    others: &mut [SpreadFoe],
+    params: &DummyParams,
+    ap: &DummyParams,
+    // Where the projectile went and whether each arrival found a head, decided
+    // ONCE for the pellet so the collision and the explosion agree.
+    path: &[(usize, bool)],
+    raw_per_bucket: f64,
+    shares: TypeShares,
+    crit_mult: f64,
+    attrition: f64,
+    modded_base: f64,
+    status_chance: f64,
+    forced: &[DamageType],
+    vector: &DamageVector,
+    head_factor: &dyn Fn(&crate::formation::FoeSpec) -> f64,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    r: &mut RunResult,
+    d: &mut crate::rng::Draws,
+    t: f64,
+) {
+    for &(body, head) in path {
+        // THE AIMED BODY IS NEVER A BOUNCE TARGET — it is where the projectile
+        // came from, and `bounce_path` has it visited before the walk starts.
+        let Some(idx) = body.checked_sub(1) else { continue };
+        let Some(fs) = params.others.get(idx) else { continue };
+        let inst = crate::chain::Instance {
+            target: body,
+            // THE WHOLE COLLISION, undiminished.
+            share: 1.0,
+            // NO MULTISHOT. Multishot is pellets, and each pellet is its own
+            // projectile with its own bounces — this is called once per landing
+            // pellet, so the count is already there.
+            multishot: false,
+            headshot: head,
+            part_factor: if head { head_factor(fs) } else { 1.0 },
+        };
+        spread_hit(
+            &inst, &mut others[idx], fs, raw_per_bucket, shares, crit_mult, attrition,
+            modded_base, status_chance, forced, vector, params, ap, gal, arc, r, d, t,
+            SpreadBy::Ricochet,
         );
     }
 }
@@ -5082,6 +5218,7 @@ fn spread_from_echo(
             share,
             multishot: false,
             headshot: false,
+            part_factor: 1.0,
         };
         let (foe, fs) = (&mut others[i], &params.others[i]);
         spread_hit(
@@ -5164,6 +5301,7 @@ fn spread_from_tendrils(
             multishot: false,
             // …and it lands on a body, never a head.
             headshot: false,
+            part_factor: 1.0,
         };
         let (foe, fs) = (&mut others[i], &params.others[i]);
         spread_hit(
@@ -5217,6 +5355,41 @@ fn spread_from_blast(
     t: f64,
 ) {
     let at = crate::space::detonation_point(params.target_at, params.player_at);
+    blast_at(
+        at, others, params, ap, rad, raw_per_bucket_per_falloff, shares, crit_mult,
+        attrition, modded_base, status_chance, forced, vector, gal, arc, r, d, t,
+        SpreadBy::Blast,
+    );
+}
+
+/// [`spread_from_blast`] AT AN EPICENTRE OF ITS OWN.
+///
+/// The aimed body's explosion goes off on its surface and that is the only
+/// place a blast happened until a projectile started BOUNCING: a ricochet
+/// explodes wherever it landed, which is another body entirely. Same rules from
+/// there — any body touching the sphere is caught, each reads its own falloff.
+#[allow(clippy::too_many_arguments)]
+fn blast_at(
+    at: crate::space::Vec2,
+    others: &mut [SpreadFoe],
+    params: &DummyParams,
+    ap: &DummyParams,
+    rad: &crate::loadout::ResolvedRadial,
+    raw_per_bucket_per_falloff: f64,
+    shares: TypeShares,
+    crit_mult: f64,
+    attrition: f64,
+    modded_base: f64,
+    status_chance: f64,
+    forced: &[DamageType],
+    vector: &DamageVector,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    r: &mut RunResult,
+    d: &mut crate::rng::Draws,
+    t: f64,
+    by: SpreadBy,
+) {
     for (i, spec) in params.others.iter().enumerate() {
         let dist = spec.at.distance(at);
         if !crate::space::caught_by_blast(dist, rad.radius_m) {
@@ -5231,11 +5404,12 @@ fn spread_from_blast(
             share,
             multishot: false,
             headshot: false,
+            part_factor: 1.0,
         };
         spread_hit(
             &inst, &mut others[i], spec, raw_per_bucket_per_falloff, shares, crit_mult,
             attrition, modded_base, status_chance, forced, vector, params, ap, gal, arc,
-            r, d, t, SpreadBy::Blast,
+            r, d, t, by,
         );
     }
 }
@@ -6826,6 +7000,33 @@ pub fn run_once_traced(
         bodies.push(params.target_at);
         bodies.extend(params.others.iter().map(|f| f.at));
         crate::space::Neighbours::build(&bodies)
+    };
+    // WHERE A BOUNCE GOES, precomputed for the same reason the chain's is:
+    // nothing in this arena moves, so "which body is nearest to this one" is a
+    // constant being asked once per shot. Its own layout because its RANGE is
+    // its own — ordinarily unbounded, where a chain's is a published metre
+    // figure.
+    let ricochet_layout = match (params.ricochet, params.others.is_empty()) {
+        (Some(rc), false) => {
+            let mut bodies = Vec::with_capacity(params.others.len() + 1);
+            bodies.push(params.target_at);
+            bodies.extend(params.others.iter().map(|f| f.at));
+            Some(crate::chain::Layout::build(
+                &bodies,
+                // NO SPLASH SEEDS. A bounce starts from the body the projectile
+                // struck and from nowhere else, so the sphere here is empty —
+                // the explosion each bounce sets off is fired separately, by
+                // the blast path, at that bounce's own body.
+                crate::chain::Splash { at: params.target_at, radius_m: 0.0 },
+                crate::chain::Spec {
+                    hops: rc.bounces,
+                    range_m: rc.range_m,
+                    falloff: 1.0,
+                    compounds: false,
+                },
+            ))
+        }
+        _ => None,
     };
     let chain_layout = match (params.beam, params.others.is_empty()) {
         (Some(b), false) => {
@@ -8493,17 +8694,35 @@ pub fn run_once_traced(
                 Some(s) if t < streak_expiry => s.value,
                 _ => 0.0,
             } + buff_total!(ap, crate::loadout::BuffGrant::HeadshotDamage, t);
-            let (head_bonus, head_innate) = if part.is_head {
-                if ap.headshot_bonus_multiplicative {
-                    (params.arcane.headshot_mult_bonus + streak_bonus, ap.headshot_damage_bonus)
-                } else {
-                    (
-                        params.arcane.headshot_mult_bonus + streak_bonus + ap.headshot_damage_bonus,
-                        0.0,
-                    )
-                }
+            // WHAT A HEAD WOULD BE WORTH, computed whether or not THIS pellet
+            // found one: a RICOCHET rolls its own head, on another body, later
+            // in the same shot, and it is worth exactly what a head is worth
+            // here. Split out rather than duplicated so the two can never say
+            // different things.
+            let (hb_head, hi_head) = if ap.headshot_bonus_multiplicative {
+                (params.arcane.headshot_mult_bonus + streak_bonus, ap.headshot_damage_bonus)
             } else {
-                (0.0, 0.0)
+                (
+                    params.arcane.headshot_mult_bonus + streak_bonus + ap.headshot_damage_bonus,
+                    0.0,
+                )
+            };
+            let (head_bonus, head_innate) =
+                if part.is_head { (hb_head, hi_head) } else { (0.0, 0.0) };
+            // …and the same arithmetic `part_factor` does below, for a head on
+            // SOME OTHER body — whose own parts decide the multiplier, because a
+            // formation may hold more than one kind of enemy.
+            // PER PELLET, because each pellet is its own projectile with its own
+            // flight. Filled on the first attack part that needs it and read by
+            // the second, so the collision and the explosion are one flight.
+            let mut ric_path: Option<Vec<(usize, bool)>> = None;
+            let head_factor = |fs: &crate::formation::FoeSpec| -> f64 {
+                let m = fs
+                    .body_parts
+                    .iter()
+                    .find(|p| p.is_head)
+                    .map_or(1.0, |p| p.multiplier);
+                (m + 1.5 * ap.weakpoint_damage) * (1.0 + hb_head) * (1.0 + hi_head)
             };
             let wp_mult = if part.is_head {
                 part.multiplier + 1.5 * ap.weakpoint_damage
@@ -8940,6 +9159,43 @@ pub fn run_once_traced(
                         forced, &qvec, &mut gal, &mut arc, &mut r, d, t,
                     );
                 }
+                // …AND ONE EXPLOSION PER BOUNCE, centred on the body the
+                // projectile came off rather than on the aimed one. "Dealing
+                // damage once for any collision on enemies, and AGAIN FOR THE
+                // EXPLOSION" — this is the second half of that sentence, and it
+                // is the larger half on this family: 140 to the collision's 50.
+                if let (Some(rr), Some(path)) = (rad, ric_path.as_deref()) {
+                    for &(body, _) in path {
+                        let Some(idx) = body.checked_sub(1) else { continue };
+                        let Some(fs) = params.others.get(idx) else { continue };
+                        blast_at(
+                            fs.at, &mut others, params, ap, &rr,
+                            if falloff > 0.0 { body_only(raw / bucket / falloff) } else { 0.0 },
+                            shares, crit_mult, attrition, modded_base, status_chance,
+                            forced, &qvec, &mut gal, &mut arc, &mut r, d, t,
+                            SpreadBy::Ricochet,
+                        );
+                    }
+                }
+                // WHERE THE PROJECTILE BOUNCED, and whether each arrival found
+                // a head — decided ONCE for this pellet, because the collision
+                // (direct part) and the explosion (radial part) are two passes
+                // over the same flight and must not disagree about it.
+                if direct && ric_path.is_none() {
+                    if let (Some(rc), Some(layout)) = (params.ricochet, ricochet_layout.as_ref()) {
+                        let from = struck.first().copied().unwrap_or(0);
+                        let n = params.others.len() + 1;
+                        ric_path = Some(
+                            crate::chain::bounce_path(layout, n, from, rc.bounces)
+                                .into_iter()
+                                // ONE ROLL PER ARRIVAL, off the same stream the
+                                // aimed pellet's body part comes from — a place
+                                // the shot landed is a place the shot landed.
+                                .map(|b| (b, d.spine.chance(rc.headshot_chance)))
+                                .collect::<Vec<_>>(),
+                        );
+                    }
+                }
                 if direct && !others.is_empty() {
                     // …and the SHOT's own factors, kept for the half that fires
                     // once rather than per pellet — recorded on a MISS too, so
@@ -8956,6 +9212,16 @@ pub fn run_once_traced(
                             forced: forced.to_vec(),
                             vector: qvec,
                         });
+                    }
+                    // …AND EVERY BOUNCE'S COLLISION. The projectile arriving
+                    // again, in full, at a body it has not hit — and the one
+                    // spread that may land on a head.
+                    if let Some(path) = ric_path.as_deref() {
+                        spread_from_ricochet(
+                            &mut others, params, ap, path, body_only(raw / bucket), shares,
+                            crit_mult, attrition, modded_base, status_chance, forced, &qvec,
+                            &head_factor, &mut gal, &mut arc, &mut r, d, t,
+                        );
                     }
                     // …AND THE ECHO, per landing pellet, because the arcane
                     // says each one triggers it.
@@ -13896,6 +14162,110 @@ mod tests {
             (a - b).abs() / a < 0.01,
             "unarmoured, an armour strip is worth nothing: {a:.0} vs {b:.0}"
         );
+    }
+
+    /// A LATRON PRIME INCARNON facing a LINE of bodies, 5 m apart.
+    ///
+    /// WIDER THAN THE EXPLOSION, deliberately: at 4 m radius plus a body radius
+    /// a blast reaches 4.2 m, so at this spacing each bounce's explosion catches
+    /// only the body it went off. That is what makes `bodies_touched` count
+    /// BOUNCES — pack the line tighter and the count is the explosions' reach
+    /// as well, which is correct behaviour and answers a different question.
+    ///
+    /// `headshot_pct` stays 0, so the AIMED pellet is always a body shot and
+    /// the only head in the fight is one a bounce found.
+    #[cfg(test)]
+    fn latron_incarnon_in_a_line(n: usize, head_chance: f64) -> DummyParams {
+        let base = crate::loadout::WeaponBase::from_data("latron_prime_incarnon", false, &[]);
+        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        let mut arena = crate::arena::Arena::training(10.0);
+        arena.others = (1..=n)
+            .map(|i| crate::formation::FoeSpec {
+                id: String::new(),
+                params: TargetParams::training_dummy(),
+                body_parts: DummyParams::humanoid_parts(),
+                at: crate::space::Vec2::new(5.0 * i as f64, arena.target_at.y),
+            })
+            .collect();
+        let mut p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+        // A BODY SHOT EVERY TIME on the aimed body — `body_parts` is where
+        // the scenario's headshot rate lives, so one part with no head is a
+        // player who never lands one. The OTHER bodies keep their heads, which
+        // is what leaves the bounce as the only head in the fight.
+        p.body_parts = vec![BodyPart {
+            name: "body".into(),
+            aim_weight: 1.0,
+            multiplier: 1.0,
+            is_head: false,
+            crit_bonus: false,
+        }];
+        if let Some(rc) = p.ricochet.as_mut() {
+            rc.headshot_chance = head_chance;
+        }
+        p
+    }
+
+    /// A RICOCHET REACHES BODIES THE SHOT NEVER AIMED AT, and it takes its
+    /// EXPLOSION with it.
+    ///
+    /// Verbatim, from the Latron Incarnon Genesis page: *"a traveling
+    /// projectile that can ricochet off enemies and terrain, exploding up to 6
+    /// times with a 4 meter radius, dealing damage once for any collision on
+    /// enemies, and again for the explosion"*.
+    ///
+    /// The claim is the WHOLE CHAIN — that a crowd takes more than one body
+    /// would, that the count is the bounce count rather than the formation's
+    /// size, and that a formation of ONE bounces nowhere, which is the case the
+    /// weapon's own admission is about (no terrain here).
+    #[test]
+    fn a_ricochet_reaches_five_more_bodies_and_one_reaches_none() {
+        let line = |n: usize| {
+            let p = latron_incarnon_in_a_line(n, 0.5);
+            let out = run_once(&p, &mut Rng::new(0x5EED));
+            (out.bodies_touched(), out.effective_damage)
+        };
+        let (one, dmg_one) = line(0);
+        assert_eq!(one, 1, "a formation of one bounces nowhere — no terrain here");
+        // …and every extra body is another arrival, until the bounce count runs
+        // out. SIX BODIES TOUCHED at five bounces, not seven.
+        let (five, dmg_five) = line(6);
+        assert_eq!(five, 6, "the aimed body plus five bounces, and no more");
+        assert!(dmg_five > dmg_one * 2.0,
+            "a crowd takes far more than one body: {dmg_one:.0} -> {dmg_five:.0}");
+        // THE COUNT IS THE LIMIT, not the formation: a longer line is the same
+        // six bodies.
+        let (still_five, _) = line(9);
+        assert_eq!(still_five, 6, "a tenth body is out of bounces, not out of range");
+    }
+
+    /// …AND IT MAY LAND ON A HEAD, which no other spread in this engine can.
+    ///
+    /// Owner, 2026-08-18: half of them do. The assertion is on the DAMAGE
+    /// rather than on a counter, because a chance that is stored and not
+    /// applied looks exactly like one that works — a humanoid head is 3x, so a
+    /// coin-flip head is worth a large, visible fraction of every bounce.
+    ///
+    /// TWO CONTROLS, because one alone proves nothing: at 0.0 the bounces are
+    /// body hits and at 1.0 they are all heads, and the measured run must sit
+    /// between them. The AIMED body is held at a pure body shot in all three
+    /// (`headshot_pct` 0), so the only thing moving is the bounce.
+    #[test]
+    fn half_of_a_weapons_bounces_find_a_head() {
+        // MANY RUNS: the roll is a coin flip, so one engagement says nothing
+        // about the rate.
+        let at = |chance: f64| {
+            monte_carlo(&latron_incarnon_in_a_line(5, chance), 60, 0x8EAD)
+                .mean_effective_damage
+        };
+        let (body, half, head) = (at(0.0), at(0.5), at(1.0));
+        assert!(head > body * 1.2, "a head is worth 3x: {body:.0} -> {head:.0}");
+        assert!(half > body && half < head,
+            "half the bounces: {body:.0} < {half:.0} < {head:.0}");
+        // …and it really is about HALF, inside the noise of 60 engagements.
+        let want = 0.5 * (body + head);
+        assert!((half - want).abs() / want < 0.10,
+            "half should sit near the midpoint {want:.0}, got {half:.0}");
     }
 
     /// SWIFT PUNISHMENT ASKS ABOUT THE PLAYER, and the neutral one cannot

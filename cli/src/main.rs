@@ -152,6 +152,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         // …and the weapon points AT it.
         aim_at: None,
         beam: None,
+        ricochet: None,
     }
 }
 

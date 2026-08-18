@@ -50,14 +50,17 @@ co_behavior: independent
 # with a 4 meter radius, dealing damage once for any collision on enemies, and
 # again for the explosion."
 #
-# The first collision and its explosion both land on the target in front of
-# you, which is what this entry models. The BOUNCES do not: the reason used to
-# be that a single-target arena had nowhere for them to go, and since the
-# formation landed (2026-08-17) it has somewhere — so this is work now rather
-# than an edge, and it is declared as a gap below instead of only here.
+# The first collision and its explosion land on the target in front of you, and
+# THE BOUNCES ARE MODELLED as of 2026-08-18 (`ricochet:` below). The reason they
+# were not used to be that a single-target arena had nowhere for them to go;
+# the formation landed on 2026-08-17 and gave them somewhere.
+#
+# What is still missing is TERRAIN — the page says enemies *and terrain*, this
+# arena has no walls, and a projectile that would have come off one finds the
+# next body instead. So a fight against ONE body still bounces nowhere, which is
+# the case the admission below is about.
 unmodeled:
-  - reason: ricochet
-    n: 5
+  - reason: ricochet_terrain
 
 attack:
   # Cone half-angle from the reticle, degrees — wiki
@@ -75,6 +78,32 @@ attack:
   crit_multiplier: 3.0
   status_chance: 0.24
   punch_through_m: 0.0
+  # PUNCH THROUGH DOES NOTHING HERE, and the page says so outright rather than
+  # leaving it to the AoE rule: *"Punch Through does not affect the incarnon
+  # projectile."* Transcribed per entry, because the shape rule that would also
+  # forbid it (this attack has a `radial:`) is only the FALLBACK — see
+  # AGENTS.md and `punch_through_mods`.
+  punch_through_mods: false
+  # THE PROJECTILE BOUNCES. VERBATIM: *"a traveling projectile that can ricochet
+  # off enemies and terrain, exploding up to 6 times with a 4 meter radius,
+  # dealing damage once for any collision on enemies, and again for the
+  # explosion"* — so five bounces after the first collision, each dealing the
+  # collision above AND the explosion below, in full. The page names no
+  # attenuation per bounce; what it names is *"Each ricochet will cause the
+  # projectile to slow down"*.
+  #
+  # HEADSHOT CHANCE 0.5 (owner, 2026-08-18). A bounce is not aimed, so the
+  # scenario's headshot_pct — which states how well the PLAYER aims — is the
+  # wrong number for it, and DE publishes none. Half is the flat rate, and it is
+  # a decision rather than a transcription.
+  #
+  # NO RANGE. The page gives the bounce COUNT and no distance, so a bounce finds
+  # the nearest body it has not already hit, however far. Its own note is the
+  # evidence that this is the shape: repeated bounces *"seem to require multiple
+  # enemies"*.
+  ricochet:
+    bounces: 5
+    headshot_chance: 0.5
   # The COLLISION: pure Impact, with a guaranteed proc the engine has no
   # per-part forced-proc field for on a direct hit — recorded here, and the
   # weapon's own status chance is what rolls.

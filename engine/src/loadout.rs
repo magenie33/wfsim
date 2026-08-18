@@ -1400,6 +1400,8 @@ pub struct WeaponBase {
     pub multishot_beyond_range: Option<(f64, f64)>,
     /// Continuous-beam geometry, when this form is one.
     pub beam: Option<BeamGeometry>,
+    /// Ricochet geometry, when this form's projectile bounces.
+    pub ricochet: Option<Ricochet>,
     /// Final Fusillade: a FLAT multishot add on the LAST round of the magazine
     /// (0.0 = not installed). Base form only — the evolution loader drops it on
     /// a charge-backed form, so this is always 0.0 there.
@@ -1998,6 +2000,22 @@ impl Falloff {
     }
 }
 
+/// A BOUNCING PROJECTILE'S GEOMETRY — shape, not a damage part, exactly like
+/// [`BeamGeometry`]. What a bounce DEALS is the attack's own collision and the
+/// attack's own radial arriving again; this says only how many and how far.
+#[derive(Debug, Clone, Copy)]
+pub struct Ricochet {
+    /// Bounces after the first collision — five on the Latron family, whose
+    /// page gives *"exploding up to 6 times"*.
+    pub bounces: u32,
+    /// The chance a bounce lands on a head. A bounce is not aimed, so the
+    /// scenario's `headshot_pct` does not decide it (owner, 2026-08-18: 0.5).
+    pub headshot_chance: f64,
+    /// How far a bounce may reach. `f64::INFINITY` when the data states none —
+    /// the count is then the only limit, which is the only limit the page has.
+    pub range_m: f64,
+}
+
 /// A continuous beam's GEOMETRY — shape, not a damage part. Carried so
 /// Firestorm has a radius to scale and the multi-target model has its inputs;
 /// the single-target arena reads none of it.
@@ -2212,6 +2230,11 @@ pub struct ResolvedPanel {
     /// single-target panel can honestly report about it, since the sphere adds
     /// no damage to a target the beam already struck.
     pub beam: Option<BeamGeometry>,
+    /// Ricochet geometry — untouched by mods, unlike the beam's sphere: the
+    /// page gives no mod that changes how far or how often a projectile
+    /// bounces, and Firestorm reaches the EXPLOSION each bounce sets off
+    /// through the radial's own radius rather than through this.
+    pub ricochet: Option<Ricochet>,
     /// Additive headshot-damage bonus from evolutions (Caput Mortuum).
     pub headshot_damage_bonus: f64,
     /// Devouring Attrition's (chance, bonus) on non-crit instances.
@@ -3553,6 +3576,7 @@ pub fn resolve_for(
             damage_radius_m: b.damage_radius_m * (1.0 + br),
             ..b
         }),
+        ricochet: base.ricochet,
         modified_base,
         // Elemental Excess adds its crit/status FLAT, after the mod
         // multiply (wiki) — a different layer from the base-stat one.

@@ -29,7 +29,29 @@ fn main() {
     // WHICH WEAPON, because the answer is not one number: a chaining beam
     // saturates at a handful of bodies however big the grid gets, while an
     // infinite-punch-through weapon reaches as deep as the grid is.
-    let weapon: String = a.get(3).cloned().unwrap_or_else(|| "torid_incarnon".into());
+    let weapon: String = a
+        .get(3)
+        .filter(|s| !s.contains('='))
+        .cloned()
+        .unwrap_or_else(|| "torid_incarnon".into());
+    // …AND WHAT IT IS CARRYING, because a bare weapon is not what costs
+    // anything. A full status build generates several times the procs, DoTs and
+    // ticks a bare one does, and an arcane that fires an EXTRA HIT doubles the
+    // instances every one of those is counted from — which is the shape the
+    // owner reported as unusable on a phone (2026-08-18: the Phantasma Prime
+    // with Primary Debilitate). `k=v` anywhere in the arguments, like one_fight.
+    let kv = |k: &str| {
+        a.iter()
+            .find_map(|s| s.strip_prefix(&format!("{k}=")))
+            .map(str::to_string)
+    };
+    let split = |s: Option<String>| -> Vec<String> {
+        s.map(|s| s.split(',').filter(|x| !x.is_empty()).map(str::to_string).collect())
+            .unwrap_or_default()
+    };
+    let mod_ids = split(kv("mods"));
+    let evos = split(kv("evolutions"));
+    let arcane = kv("arcane");
 
     // A REAL UNIT at a level it can die at: a training dummy has infinite
     // health, and a crowd that cannot die never re-targets, never feeds an
@@ -43,14 +65,40 @@ fn main() {
         .target_params(60, false, false, wfsim_engine::dummy::TargetMode::InstantRespawn)
         .expect("an ordinary unit is legal");
 
-    let base = wfsim_engine::loadout::WeaponBase::from_data(&weapon, false, &[]);
-    let refs: Vec<&wfsim_engine::loadout::ModDef> = Vec::new();
+    let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
+    let base = wfsim_engine::loadout::WeaponBase::from_data(&weapon, false, &evo_refs);
+    let pool = wfsim_engine::mods_data::pool_for_weapon(&weapon);
+    let refs: Vec<&wfsim_engine::loadout::ModDef> = mod_ids
+        .iter()
+        .map(|id| {
+            pool.iter()
+                .find(|m| m.id == *id)
+                .unwrap_or_else(|| panic!("no mod {id} in {weapon}'s pool"))
+        })
+        .collect();
     let panel =
         wfsim_engine::loadout::resolve(&base, &refs, wfsim_engine::loadout::StackPolicy::Emergent);
+    let fx = match &arcane {
+        Some(id) => {
+            let def = wfsim_engine::arcanes_data::slots()
+                .iter()
+                .find_map(|s| wfsim_engine::arcanes_data::for_slot(s, id))
+                .unwrap_or_else(|| panic!("no arcane {id}"));
+            def.fx(
+                def.max_rank,
+                wfsim_engine::loadout::StackPolicy::Emergent,
+                base.traits,
+                wfsim_engine::tenno_data::default_tenno(),
+            )
+        }
+        None => wfsim_engine::arcanes_data::ArcaneFx::none(),
+    };
 
     println!(
-        "{weapon} · {spacing} m spacing · {runs} runs · {secs} s\n\
+        "{weapon} · {} mods{} · {spacing} m spacing · {runs} runs · {secs} s\n\
          (the cap is formation::MAX_BODIES = {})\n",
+        refs.len(),
+        arcane.as_deref().map(|a| format!(" · {a}")).unwrap_or_default(),
         wfsim_engine::formation::MAX_BODIES
     );
     println!(
@@ -88,7 +136,7 @@ fn main() {
             .filter(|(i, _)| *i != f.aimed)
             .map(|(_, x)| x.clone())
             .collect();
-        let p = DummyParams::from_panel(&panel, &arena, &wfsim_engine::arcanes_data::ArcaneFx::none());
+        let p = DummyParams::from_panel(&panel, &arena, &fx);
 
         let t0 = Instant::now();
         let mut touched = 0usize;

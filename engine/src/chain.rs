@@ -119,9 +119,23 @@ pub struct Instance {
     /// Does merged-beam multishot reach it? Decided by the SEED and inherited
     /// down its path.
     pub multishot: bool,
-    /// May `headshot_pct` be rolled for it? True for the directly struck
-    /// target and for nothing else.
+    /// Did it land on a HEAD? True for the directly struck target, for a body
+    /// the same shot punched through to, and for a RICOCHET that rolled one.
+    /// False for everything else — a splash, a chain hop, an echo, a tendril.
+    ///
+    /// It is the shield-gate question (`head_direct`), and nothing else: what a
+    /// head is WORTH is `part_factor`.
     pub headshot: bool,
+    /// THE BODY PART'S OWN FACTOR — 1.0 on a body, and the head's multiplier
+    /// with every headshot bonus folded in on a head.
+    ///
+    /// Separate from `share`, and it has to be: `share` is "a beam with a
+    /// smaller base damage", so it scales the hit AND the status base that hit
+    /// computes its DoTs from. A head multiplier scales the HIT and leaves the
+    /// modded base alone, which is why a headshot's Slash bleed is the same
+    /// size as a bodyshot's. Folding one into the other would inflate every DoT
+    /// a ricochet headshot leaves.
+    pub part_factor: f64,
 }
 
 /// Where the beam landed and how wide its damage radius is, AFTER mods.
@@ -204,6 +218,52 @@ impl Layout {
     }
 }
 
+/// THE PATH A DEFLECTED PROJECTILE TAKES — the same walk a chain does, with no
+/// damage rule attached to it.
+///
+/// A RICOCHET IS NOT A CHAIN, and it is here because it is the same GEOMETRY.
+/// What differs is everything downstream: a chain hop is one instance at a
+/// share of the beam, and a bounce is the whole projectile arriving again —
+/// its collision damage in full, its own explosion, and its own chance at a
+/// head. So this returns the ORDER OF BODIES and the caller decides what
+/// arriving means.
+///
+/// Verbatim, from the Latron Incarnon Genesis page: *"a traveling projectile
+/// that can ricochet off enemies and terrain, exploding up to 6 times with a 4
+/// meter radius, dealing damage once for any collision on enemies, and again
+/// for the explosion"*, and *"seem to require multiple enemies to ricochet
+/// repeatedly"* — which is this walk, observed from the other side.
+///
+/// NOBODY TWICE, like a chain path, and for the stronger reason: the page's own
+/// note says repeated bounces need MULTIPLE ENEMIES, so a projectile pinging
+/// between two of them is exactly what the game does not do.
+///
+/// TERRAIN IS NOT HERE. The page says enemies *and terrain*, and this arena has
+/// no walls — so a bounce that would have come off a surface finds the next
+/// body instead, and a formation of one bounces nowhere. Declared as a gap on
+/// the weapons that have it rather than guessed at.
+pub fn bounce_path(layout: &Layout, n: usize, from: usize, bounces: u32) -> Vec<usize> {
+    let mut out = Vec::new();
+    if n == 0 || from >= n {
+        return out;
+    }
+    let mut seen = vec![false; n];
+    seen[from] = true;
+    let mut cur = from;
+    for _ in 0..bounces {
+        // NEAREST FIRST — `near` is sorted by (distance, index), which is the
+        // same rule and the same tie-break the chain walks under.
+        let Some(&next) = layout.near[cur].iter().find(|&&j| !seen[j as usize]) else {
+            break;
+        };
+        let next = next as usize;
+        out.push(next);
+        seen[next] = true;
+        cur = next;
+    }
+    out
+}
+
 /// [`resolve`], from a prebuilt [`Layout`] — the production path.
 pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Vec<Instance> {
     let mut out = Vec::new();
@@ -217,7 +277,10 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
     let mut seen = vec![false; n];
     for &s in &seeds {
         let direct = struck.contains(&s);
-        out.push(Instance { target: s, share: 1.0, multishot: direct, headshot: direct });
+        out.push(Instance {
+            target: s, share: 1.0, multishot: direct, headshot: direct,
+            part_factor: 1.0,
+        });
 
         // ONE `seen` PER SEED — the paths are independent, which is the wiki's
         // own rule and the owner's. Cleared rather than reallocated: this runs
@@ -233,7 +296,10 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
             };
             let next = next as usize;
             share = if spec.compounds { share * spec.falloff } else { spec.falloff };
-            out.push(Instance { target: next, share, multishot: direct, headshot: false });
+            out.push(Instance {
+                target: next, share, multishot: direct, headshot: false,
+                part_factor: 1.0,
+            });
             seen[next] = true;
             cur = next;
         }
@@ -306,7 +372,10 @@ pub fn resolve_with(
         // through does not stop a shot being aimed (owner, 2026-08-17). A body
         // the sphere merely caught does neither.
         let direct = struck.contains(&s);
-        out.push(Instance { target: s, share: 1.0, multishot: direct, headshot: direct });
+        out.push(Instance {
+            target: s, share: 1.0, multishot: direct, headshot: direct,
+            part_factor: 1.0,
+        });
 
         // …and then runs its own path.
         let (mut cur, mut share) = (s, 1.0);
@@ -336,7 +405,10 @@ pub fn resolve_with(
             }
             let next = tied[tie(tied.len()).min(tied.len() - 1)];
             share = if spec.compounds { share * spec.falloff } else { spec.falloff };
-            out.push(Instance { target: next, share, multishot: direct, headshot: false });
+            out.push(Instance {
+                target: next, share, multishot: direct, headshot: false,
+                part_factor: 1.0,
+            });
             seen[next] = true;
             cur = next;
         }
