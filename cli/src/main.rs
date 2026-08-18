@@ -98,6 +98,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         applies_microwave: false,
         independent_procs: &[],
         last_round_damage: 0.0,
+        first_round_damage: 0.0,
         bd_on_reload: None,
         bd_on_eximus_weakpoint: None,
         cc_per_hit: None,

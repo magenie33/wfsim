@@ -4,7 +4,7 @@ slot: primary
 class: sniper
 form: base
 default_form: true
-mod_pools: [primary, rifle]
+mod_pools: [primary, rifle, sniper]
 mastery_rank: 8
 max_rank: 30
 

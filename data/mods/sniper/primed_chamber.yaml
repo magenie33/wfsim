@@ -1,0 +1,38 @@
+# NOT A PRIMED MOD, despite the name, and it matters mechanically. VERBATIM:
+# "Despite its name, Primed Chamber is not related to Primed Mods, and was in
+# fact added to the game long before the first such mod. As a result, it is not
+# the 'Primed version' of Charged Chamber, and thus can be equipped alongside
+# it." So there is deliberately NO `family:` here — the two cards go on the same
+# build and their bonuses add, which is the "up to 140%" the pages both quote.
+id: primed_chamber
+name: Primed Chamber
+rarity: rare
+polarity: madurai
+base_drain: 4                 # max drain 7 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Rifle/EventSniperReloadDamageMod
+description: "+X% Damage on first shot in Magazine"
+
+effects:
+  # THE LAST BRACKET. VERBATIM: "Primed Chamber is applied multiplicatively
+  # after all other modifiers from mods and abilities", worked through on the
+  # page as `225 x (1 + 1.0) x (1 + 1.65) x (1 + 0.90) x (1 + 0.60) x (1 + 0.30)
+  # x (1 + 0.30)` for a headshot.
+  #
+  # AND IT REACHES STATUS DAMAGE: "The damage bonus applies to all Multishot
+  # hits and to Status Damage" — the one sentence that separates this family
+  # from Synth Charge, whose page never says either way.
+  - kind: first_round_damage
+    rank0: 0.25
+    rankMax: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Chamber
+  # Rank table (+25/50/75/100%, cost 4-7), Notes and Patch History, read
+  # 2026-08-18. WFCD cross-check on `uniqueName`: madurai, Rare, baseDrain 4,
+  # fusionLimit 3, compatName Sniper — agrees on every field.
+  #
+  # ver 43.5: "Fixed the Vectis Incarnon Form benefitting from Primed Chamber on
+  # every shot." So the Incarnon form takes it once per magazine like any other
+  # form — the reason `resolve` does NOT copy Synth Charge's Incarnon exemption,
+  # which is that card's own text and not a property of a first-round bonus.

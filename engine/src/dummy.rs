@@ -1827,6 +1827,8 @@ pub struct DummyParams {
     pub consecutive_hit_damage: Option<(f64, u32, f64)>,
     /// SYNTH CHARGE — see [`crate::loadout::ModEffect::LastRoundDamage`].
     pub last_round_damage: f64,
+    /// THE CHAMBERS — see [`crate::loadout::ModEffect::FirstRoundDamage`].
+    pub first_round_damage: f64,
     pub round_restore_on_status: Option<(DamageType, f64, f64)>,
     /// Exact Penance: the chance a KILL reloads instantly. Rolled off the kill
     /// COUNTER, so a status kill counts — which the card requires.
@@ -2828,6 +2830,7 @@ impl DummyParams {
             derived_crit_from_status: panel.derived_crit_from_status,
             consecutive_hit_damage: panel.consecutive_hit_damage,
             last_round_damage: panel.last_round_damage,
+            first_round_damage: panel.first_round_damage,
             round_restore_on_status: panel.round_restore_on_status,
             instant_reload_on_kill: panel.instant_reload_on_kill,
             mag_growth_on_empty_reload: panel.mag_growth_on_empty_reload,
@@ -3135,6 +3138,7 @@ impl Default for DummyParams {
             derived_crit_from_status: None,
             consecutive_hit_damage: None,
             last_round_damage: 0.0,
+            first_round_damage: 0.0,
             round_restore_on_status: None,
             instant_reload_on_kill: None,
             mag_growth_on_empty_reload: None,
@@ -3561,6 +3565,9 @@ struct LiveStacks {
     /// first. Empty for the Galvanized family, which shares a single clock.
     each: Vec<f64>,
     per_stack: bool,
+    /// [`BuffDecay::AllAtOnce`]: the shared clock takes the WHOLE pile when it
+    /// falls due, instead of shedding one stack and restarting for the rest.
+    all_at_once: bool,
 }
 
 impl LiveStacks {
@@ -3572,6 +3579,15 @@ impl LiveStacks {
             // which is FIFO because they were pushed in time order.
             self.each.retain(|&e| e > now);
             self.stacks = self.each.len() as u32;
+            return self.stacks;
+        }
+        if self.all_at_once {
+            // Split Flights: "Stacks expire all at once after 2 seconds
+            // without a hit." Nothing is shed one at a time, so there is no
+            // remainder to restart the clock for.
+            if self.stacks > 0 && self.expiry <= now {
+                self.stacks = 0;
+            }
             return self.stacks;
         }
         while self.stacks > 0 && self.expiry <= now {
@@ -3590,7 +3606,13 @@ impl LiveStacks {
             expiry: duration,
             each: Vec::new(),
             per_stack: false,
+            all_at_once: false,
         }
+    }
+
+    /// Seed a pile that expires WHOLE — [`crate::loadout::BuffDecay::AllAtOnce`].
+    fn seed_all_at_once(initial: u32, max: u32, duration: f64) -> Self {
+        LiveStacks { all_at_once: true, ..LiveStacks::seed(initial, max, duration) }
     }
 
     /// Seed a per-stack-expiry buff. A seeded stack starts its own clock at
@@ -3601,6 +3623,7 @@ impl LiveStacks {
             expiry: duration,
             each: vec![duration; initial.min(max) as usize],
             per_stack: true,
+            all_at_once: false,
         }
     }
 
@@ -7302,6 +7325,9 @@ pub fn run_once_traced(
             crate::loadout::BuffDecay::LoseOneAndReset => {
                 LiveStacks::seed(b.initial_stacks, b.max_stacks, b.duration)
             }
+            crate::loadout::BuffDecay::AllAtOnce => {
+                LiveStacks::seed_all_at_once(b.initial_stacks, b.max_stacks, b.duration)
+            }
         })
         .collect();
     // BUMP BY TRIGGER, TOTAL BY GRANT — the two operations the whole family
@@ -8249,6 +8275,30 @@ pub fn run_once_traced(
         // 15 on a Burston (2026-08-11).
         let mag_left = if in_base_form { base_mag } else { magazine };
         let last_round = mag_left <= last_n + 1e-9;
+        // THE CHAMBER FAMILY'S GATE, and it is READ AFTER THE ROUND IS PAID
+        // FOR. Both cards say "+X% Damage on first shot in Magazine" and both
+        // pages say what that really means: the bonus lands *"as long as the
+        // magazine counter is at Max Magazine - 1 AFTER a shot is fired"*, and
+        // *"the buff doesn't apply on a completely full one"*.
+        //
+        // On an ordinary weapon that is exactly the first shot out of a fresh
+        // magazine — full goes to full-1 — so the plain case needs no thought.
+        // It is AMMO EFFICIENCY that makes the wording load-bearing: a free
+        // shot leaves the counter where it was, so a FULL magazine pays
+        // nothing however often you fire it and one sitting at max-1 pays
+        // every single shot. That is the wiki's Vulkar example, and it is the
+        // reason this cannot be `mag_left == mag_max` at the top of the pull.
+        //
+        // The cost is `ap.ammo_cost * (1 - efficiency)`, spelled the same way
+        // the spend below spells it — one expression, so the reading and the
+        // payment cannot drift.
+        let mag_max = if in_base_form {
+            params.cycle.as_ref().map_or(0.0, |c| c.base_form.magazine_size)
+        } else {
+            mag_cap
+        };
+        let first_round = ap.first_round_damage > 0.0
+            && ((mag_left - ap.ammo_cost * (1.0 - efficiency)) - (mag_max - 1.0)).abs() < 1e-9;
         // The round itself is spent BELOW, once the multishot roll is known:
         // Plentiful Mayhem makes the extra projectiles cost ammo too, so the
         // draw cannot be settled before the roll.
@@ -8430,6 +8480,11 @@ pub fn run_once_traced(
         // so a burst weapon's "last round" is its last BURST, and a cycle's
         // window is whichever magazine is actually being fired.
         let sc_mult = if last_round { 1.0 + ap.last_round_damage } else { 1.0 };
+        // THE CHAMBERS' multiplier, on the magazine's FIRST round only. The two
+        // cards are already summed into one number by `resolve` — "stacks
+        // additively … for up to 140% bonus damage" — so this is one factor
+        // beside Synth Charge's rather than a second bracket.
+        let cc_mult = if first_round { 1.0 + ap.first_round_damage } else { 1.0 };
         let dt_mult = match ap.consecutive_hit_damage {
             Some((per_stack, max_stacks, duration)) => {
                 if t >= dt_expiry {
@@ -9158,7 +9213,14 @@ pub fn run_once_traced(
                     * match &rad {
                         None => mb_live,
                         Some(r) => r.modified_base * arc_ratio,
-                    };
+                    }
+                    // THE CHAMBERS REACH STATUS DAMAGE, which is stated and not
+                    // inferred: *"The damage bonus applies to all Multishot
+                    // hits and to Status Damage"* (wiki, Primed Chamber). It is
+                    // the ONE line that separates this card from Synth Charge,
+                    // whose page never says either way and which therefore
+                    // multiplies the instance and leaves `mb_live` alone.
+                    * cc_mult;
                 // The direct hit always carries CO. An explosion does NOT by
                 // default — the mods say direct hits only — but the engine
                 // supports the case the mods forbid, because some entries do it
@@ -9303,6 +9365,15 @@ pub fn run_once_traced(
                     // explosion because every part of the shot comes through
                     // this line.
                     * sc_mult
+                    // THE CHAMBERS, on the magazine's FIRST round only: Charged
+                    // Chamber is "multiplicative with other damage mods" and
+                    // Primed Chamber "is applied multiplicatively after all
+                    // other modifiers from mods and abilities", so it is a
+                    // factor here beside Synth Charge's. It reaches the whole
+                    // shot — "applies to all Multishot hits" — and the status
+                    // payload takes it separately below, which is the one thing
+                    // that tells it apart from the last-round card.
+                    * cc_mult
                     // ECLIPSE: "an unique multiplier", so it stands beside the
                     // others rather than joining any of them.
                     * params.ability_final_at(t)
@@ -9491,6 +9562,7 @@ pub fn run_once_traced(
                                 // the check had run.
                                 ("Double Tap", dt_mult),
                                 ("Synth Charge", sc_mult),
+                                ("Chamber (first round)", cc_mult),
                                 ("sniper combo", combo_mult),
                                 ("multishot-as-damage", ms_damage),
                                 ("multishot-generated", pm_mult),
@@ -15021,6 +15093,79 @@ mod tests {
         assert_eq!(off.mean_reloads, 0.0);
     }
 
+    /// THE CHAMBER FAMILY pays the magazine's FIRST round and nothing else.
+    ///
+    /// Five rounds, one magazine, +100% on the first: the damage of the whole
+    /// magazine is 6/5 of the unbuffed one, which is what "one shot at 2x out
+    /// of five" means and is not what "the magazine was full" would give on
+    /// its own.
+    #[test]
+    fn a_chamber_pays_the_first_round_of_the_magazine_and_no_other() {
+        let p = |bonus: f64| DummyParams {
+            multishot: 1.0,
+            first_round_damage: bonus,
+            fire_rate: 1.0,
+            magazine_size: 5.0,
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: ArcaneFx::none(),
+            // Exactly one magazine, so the ratio is arithmetic and not a
+            // question about how many reloads fitted in the window.
+            infinite_reserve: false,
+            reserve_ammo: 0.0,
+            duration_secs: 10.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let off = monte_carlo(&p(0.0), 4, 3);
+        let on = monte_carlo(&p(1.0), 4, 3);
+        assert!((off.mean_shots - 5.0).abs() < 1e-9, "shots {}", off.mean_shots);
+        assert!((on.mean_shots - off.mean_shots).abs() < 1e-9, "cadence must not change");
+        assert!(
+            (on.mean_damage / off.mean_damage - 1.2).abs() < 1e-6,
+            "one of five rounds doubled: {} vs {}",
+            on.mean_damage, off.mean_damage
+        );
+    }
+
+    /// …AND THE GATE IS A POST-SHOT READING, which is the half of the rule that
+    /// only shows itself under AMMO EFFICIENCY.
+    ///
+    /// VERBATIM (wiki, both chamber pages): the bonus lands *"as long as the
+    /// magazine counter is at Max Magazine - 1 after a shot is fired"*, and
+    /// *"when used alongside 100% ammo efficiency, make sure one shot is
+    /// missing from the magazine, since the buff doesn't apply on a completely
+    /// full one"*.
+    ///
+    /// So at 100% efficiency the magazine never leaves full and the mod is
+    /// worth EXACTLY NOTHING — where a "the magazine was full" gate would have
+    /// paid it on every shot of the run, which is the same bug DE fixed on the
+    /// Vectis Incarnon in ver 43.5.
+    #[test]
+    fn full_ammo_efficiency_never_leaves_the_magazine_full_enough_to_pay() {
+        let p = |bonus: f64| DummyParams {
+            multishot: 1.0,
+            first_round_damage: bonus,
+            fire_rate: 1.0,
+            magazine_size: 5.0,
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: ArcaneFx { ammo_efficiency: 1.0, ..ArcaneFx::none() },
+            ammo_efficiency_applies: true,
+            duration_secs: 10.0,
+            body_parts: mono_body(1.0),
+            ..no_status()
+        };
+        let off = monte_carlo(&p(0.0), 4, 3);
+        let on = monte_carlo(&p(1.0), 4, 3);
+        assert!((on.mean_shots - off.mean_shots).abs() < 1e-9, "cadence must not change");
+        assert!(
+            (on.mean_damage - off.mean_damage).abs() < 1e-6,
+            "a magazine that never empties never reads max-1: {} vs {}",
+            on.mean_damage, off.mean_damage
+        );
+    }
+
     /// Plentiful Mayhem, discrete branch: "only applies to projectiles
     /// GENERATED BY multishot". Two pellets a pull means ONE plain and ONE at
     /// x1.6, so a pull deals 2.6 pellet-units where it used to deal 2.0 — not
@@ -18615,6 +18760,26 @@ mod tests {
         assert!((s.mean_shots - 15.0).abs() < 1e-9, "shots {}", s.mean_shots);
     }
 
+    /// SPLIT FLIGHTS' decay: "Stacks expire all at once after 2 seconds
+    /// without a hit." The contrast with the Galvanized family below is the
+    /// whole reason `BuffDecay::AllAtOnce` exists — same three stacks, same
+    /// clock, and one sheds them over three windows while this drops the pile
+    /// in one.
+    #[test]
+    fn an_all_at_once_pile_goes_whole_and_a_hit_refreshes_all_of_it() {
+        let mut s = LiveStacks::seed_all_at_once(3, 4, 2.0);
+        assert_eq!(s.current(1.9, 2.0), 3);
+        assert_eq!(s.current(2.1, 2.0), 0, "the pile, not one stack");
+
+        // A hit inside the window carries every stack forward — the same
+        // shared clock the Galvanized family uses, which is why "subsequent
+        // hits refresh all stacks' duration" needs no code of its own.
+        let mut s = LiveStacks::seed_all_at_once(3, 4, 2.0);
+        s.bump(1.5, 2.0, 4);
+        assert_eq!(s.current(3.4, 2.0), 4, "climbed to 4 and still alive at 3.4");
+        assert_eq!(s.current(3.6, 2.0), 0);
+    }
+
     #[test]
     fn galvanized_decay_loses_one_stack_and_resets_duration() {
         let mut s = LiveStacks {
@@ -18622,6 +18787,7 @@ mod tests {
             expiry: 5.0,
             each: Vec::new(),
             per_stack: false,
+            all_at_once: false,
         };
         assert_eq!(s.current(4.9, 10.0), 3);
         assert_eq!(s.current(5.1, 10.0), 2); // lost one, next decay at 15

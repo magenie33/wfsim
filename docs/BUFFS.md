@@ -190,11 +190,45 @@ expires on it, oldest first. Stormburst is the first perk that needed it
 (owner, observed in game), and at the cap a new stack evicts the oldest rather
 than being dropped.
 
+`all_at_once` became real on 2026-08-18, on a MOD rather than a perk. Split
+Flights states both halves of it in consecutive lines — *"Subsequent hits
+refresh all stacks' duration"* and *"Stacks expire all at once after 2 seconds
+without a hit"* — so it shares `lose_one_and_reset`'s single clock and differs
+only in what falls due: the pile, not one stack.
+
 **The difference is not cosmetic.** Under `lose_one_and_reset` a single hit
 inside the window refreshes the whole pile, so one hit every 2 s holds three
 stacks. Under `per_stack_expiry` that same hit holds exactly one — sustaining
 three needs three hits per window. On the Furis that moved Stormburst's extra
-pellets from 11 to 7 over the same engagement.
+pellets from 11 to 7 over the same engagement. `all_at_once` is identical to
+the Galvanized rule while you keep hitting and four times harsher the moment you
+stop — a full pile drains over four windows there and vanishes in one here,
+which is why the choice has to be data rather than a default nobody re-read.
+
+### A MOD can grant one too (2026-08-18)
+
+Every stacking buff before Split Flights came from an EVOLUTION or an ARCANE,
+so `WeaponBase::stacking_buffs` was the only door and a mod that stacked on a
+trigger had to invent a bespoke `ModEffect` — `OnKillMultishot`,
+`OnHeadshotKillCritChance`, `ConditionOverload`, three variants for one idea.
+Split Flights is a trigger already in `BuffTrigger` (a hit) feeding a grant
+already in `BuffGrant` (the multishot percentage bracket), so a fourth would
+have been absurd.
+
+`ModEffect::GrantsStackingBuff` carries the whole spec and `resolve` hands it to
+the panel beside the weapon's own. Everything downstream — the buff card, the
+replay curve, the stack config, the sampler — walks that list by construction
+and keys on `id`, so **a second mod on any trigger/grant pair in those two
+vocabularies costs no engine code at all**. The yaml is
+`kind: stacking_buff` with `trigger:` / `grants:` / `max_stacks:` /
+`duration:` / `decay:`, and the buff's id is the MOD's, leaked once — which is
+what stops those four readers from drifting.
+
+It is a separate `kind:` from the existing `kind: buff` deliberately. That one
+contributes at the ASSUMED MAX through `CondBucket`, which is the right answer
+for a card whose trigger the sim has no event for and the wrong one the moment
+it does — so opting in per mod is what keeps every card written before this
+exactly where it was.
   one_stack_per_instance: true  # optional, arcanes: cap the GRANT (see below)
 ```
 

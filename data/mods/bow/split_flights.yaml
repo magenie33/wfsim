@@ -1,0 +1,97 @@
+# THE FIRST MOD IN THE `bow` POOL. Nine bow entries have declared
+# `mod_pools: [primary, rifle, bow]` since the roster began and the directory
+# did not exist, so the pool resolved to nothing — DE tags a mod PRIMARY, Rifle,
+# or narrower still (Assault Rifle, Bow, Sniper), and two of those narrow tags
+# had no home here. `scripts/survey_pool_mods.py` is what found it.
+id: split_flights
+name: Split Flights
+rarity: rare
+polarity: madurai
+base_drain: 10                # max drain 15 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Rifle/BowMultiShotOnHitMod
+# DE'S OWN CARD, verbatim — the accuracy WORDING is theirs even though the
+# model reads the wiki's spread table, and the two ladders are the same numbers
+# a hundred apart (-30% accuracy is +0.3 degrees, -180% is +1.8). So the stored
+# degrees render DE's percentages through the `X%` placeholder with nothing
+# converted, and `describe()` states separately what the engine actually applies.
+description: "On Hit:
++X% Multishot
+-X% Accuracy for Xs. Stacks up to Xx.
+(Non-AOE Bows)"
+
+# THE ONE MULTISHOT SLOT. "Cannot be used with Split Chamber or Galvanized
+# Chamber" — the family those two already share.
+family: split_chamber
+incompatible_with: [split_chamber]
+
+effects:
+  # A LIVE STACKING BUFF, not a flat +400% multishot. The distinction is the
+  # whole mod: a bow that lands a hit every draw holds four stacks and one that
+  # stops connecting holds none, and a flat reading would hand the second build
+  # the first's number.
+  #
+  # +100% MULTISHOT A STACK at rank 5, up to four, for 2 s — so a full pile is
+  # +400% in the bucket Split Chamber's +90% lives in (`MultishotPercent`, the
+  # percentage bracket every multishot MOD grants).
+  #
+  # THE WHOLE PILE EXPIRES TOGETHER, which is `decay: all_at_once` and is
+  # stated as two consecutive lines: "Subsequent hits refresh all stacks'
+  # duration" and "Stacks expire all at once after 2 seconds without a hit".
+  # The Galvanized default would have shed one stack per window instead, which
+  # is four times as forgiving on a bow that stops connecting.
+  #
+  # EVERY LANDING PELLET IS A HIT: "Multishot allows for getting multiple
+  # stacks in one shot" and "Punch-through allows for getting multiple stacks in
+  # one shot" — both already true of `BuffTrigger::Hit`, which fires per pellet
+  # reaching a body, so the Cernos Prime's three arrows and a punched-through
+  # second body each earn one without any of it being arranged here.
+  - kind: stacking_buff
+    trigger: on_hit
+    grants: multishot
+    rank0: 0.167
+    rankMax: 1.0
+    max_stacks: 4
+    duration: 2.0
+    decay: all_at_once
+
+  # THE COST, IN DEGREES. The card words it as "-180% Accuracy" and the wiki's
+  # rank table gives the same ladder as SPREAD (+0.3 -> +1.8), which is the unit
+  # this engine's cone is in — and the page settles the bracket: "Added spread
+  # is not affected by bonuses that increase accuracy, such as Twitch or Guided
+  # Ordnance." So it is `added_spread` and not `accuracy_bonus`, which would
+  # have divided the cone rather than widening it and would have let a Twitch on
+  # the same build take some of it back.
+  #
+  # `max_stacks: 4` because the spread stacks with the multishot — one sentence
+  # on the card covers both — and a build carrying this mod is played at its
+  # cap: +7.2 degrees on top of a bow's own cone.
+  - kind: added_spread
+    rank0: 0.3
+    rankMax: 1.8
+    max_stacks: 4
+    # THE WINDOW RAMPS WITH RANK, 0.33 s -> 2 s (the wiki's Duration column).
+    # Without `duration_rank0` the card would read "for 2s" at every rank — a
+    # rank-varying value shown as a constant, which is the trap Argon Scope's
+    # 2 s -> 9 s ladder set first.
+    duration: 2.0
+    duration_rank0: 0.333
+
+  # THE PER-WEAPON EXTRA the wiki tabulates separately: the Cernos Prime takes
+  # an ADDITIONAL +0.1 -> +0.6 spread, because its three arrows fan out on their
+  # own axis. It is a one-row catalog and it is not transcribed, so this roster
+  # runs the Cernos Prime a third of a degree tighter than the game does.
+  - kind: the_cernos_prime_takes_an_additional_spread_row_of_its_own
+
+source:
+  url: https://wiki.warframe.com/w/Split_Flights
+  # Rank table (Multishot +16.7% -> +100%, Spread +0.3 -> +1.8, Duration 0.33 s
+  # -> 2 s, cost 10 -> 15), Notes and Patch History, read 2026-08-18. WFCD
+  # cross-check on `uniqueName`: madurai, Rare, baseDrain 10, fusionLimit 5,
+  # compatName Bow — agrees on every field.
+  #
+  # THE AoE BOWS IT REFUSES are Artemis Bow, Attica, Kuva Bramma, Lenz (and
+  # Prisma), Nagantaka (and Prime), Nataruk, Proboscis Cernos and Zhuge (and
+  # Prime) — "(Non-AOE Bows)" on the card itself. None of the nine bows in this
+  # roster is one of them, so no equip rule is transcribed for weapons the app
+  # does not have; the list moves here the day one of them is added.

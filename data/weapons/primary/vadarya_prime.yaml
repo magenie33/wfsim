@@ -6,7 +6,7 @@ class: sniper
 # only the one — "Auto Charge" is how it always fires.
 form: charged
 default_form: true
-mod_pools: [primary, rifle]
+mod_pools: [primary, rifle, sniper]
 mastery_rank: 15
 max_rank: 30
 

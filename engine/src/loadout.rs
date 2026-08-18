@@ -164,7 +164,65 @@ pub enum ModEffect {
     /// higher. The first two are resolved against the form; the third is an
     /// equip rule, because a magazine mod can neither buy it nor lose it.
     LastRoundDamage(f64),
+    /// THE CHAMBER FAMILY: *"+X% Damage on first shot in Magazine"* (Charged
+    /// Chamber, Primed Chamber).
+    ///
+    /// THE GATE IS NOT "THE MAGAZINE WAS FULL", and the wiki says so on both
+    /// pages in the same words: the bonus lands *"as long as the magazine
+    /// counter is at Max Magazine - 1 **after** a shot is fired"*, with the
+    /// consequence spelled out — *"when used alongside 100% ammo efficiency,
+    /// make sure one shot is missing from the magazine, since the buff doesn't
+    /// apply on a completely full one"*. So it is a POST-SHOT reading, and with
+    /// an efficiency source a magazine sitting at max-1 pays it every shot
+    /// while a full one pays it never. `resolve` cannot answer that; the sim
+    /// does, where the round's real cost is known.
+    ///
+    /// ONE BRACKET FOR BOTH CARDS. Charged Chamber is *"multiplicative with
+    /// other damage mods"*, Primed Chamber is *"applied multiplicatively after
+    /// all other modifiers from mods and abilities"*, and they *"stack
+    /// additively with each other for up to 140% bonus damage"* — so the two
+    /// sum here and the sum is one factor, never a base-damage bucket term.
+    /// They are NOT a mod family: *"Despite its name, Primed Chamber is … not
+    /// the 'Primed version' of Charged Chamber, and thus can be equipped
+    /// alongside it"*.
+    ///
+    /// IT REACHES STATUS DAMAGE — *"The damage bonus applies to all Multishot
+    /// hits and to Status Damage"* — which is the one thing that separates it
+    /// from [`ModEffect::LastRoundDamage`], whose own page never says either
+    /// way (see `data/mods/pistol/synth_charge.yaml`).
+    FirstRoundDamage(f64),
     ConsecutiveHitDamage { per_stack: f64, max_stacks: u32, duration: f64 },
+    /// ADDED SPREAD, in DEGREES, and it is NOT an accuracy bonus.
+    ///
+    /// Split Flights is the roster's first. Its rank ladder is published as a
+    /// SPREAD table (+0.3 -> +1.8) beside the card's accuracy wording, and the
+    /// page states the bracket outright: *"Added spread is not affected by
+    /// bonuses that increase accuracy, such as Twitch or Guided Ordnance"*.
+    ///
+    /// [`IndirectStat::Accuracy`] is the wrong home for it twice over. That
+    /// bucket DIVIDES the cone — accuracy is `100 / spread`, so a +30% card
+    /// divides by 1.3 — which means a negative entry there would both scale
+    /// instead of adding AND be clawed back by exactly the mods the wiki says
+    /// cannot touch it. Applied here, after the divisor, both halves come out
+    /// right and the number stays in the unit the source published it in.
+    AddedSpread(f64),
+    /// A MOD THAT GRANTS A [`StackingBuff`] — the same shape a weapon perk
+    /// grants, reaching the sim by the same path.
+    ///
+    /// Every stacking buff in this engine used to come from an EVOLUTION or an
+    /// ARCANE, so `WeaponBase::stacking_buffs` was the only door and a mod that
+    /// stacked on a trigger had to invent a bespoke effect (`OnKillMultishot`,
+    /// `OnHeadshotKillCritChance`, `ConditionOverload` — three variants for one
+    /// idea). Split Flights is the mod that made the fourth one absurd: *"On
+    /// Hit: +100% Multishot … Stacks up to 4x"* is a trigger already in
+    /// [`BuffTrigger`] feeding a grant already in [`BuffGrant`].
+    ///
+    /// So the mod carries the whole spec and `resolve` hands it to the panel
+    /// beside the weapon's own. Everything downstream — the buff card, the
+    /// replay curve, the stack config, the sampler — is keyed by `id` and
+    /// already walks that list "by construction", so a second mod on any
+    /// trigger/grant pair in those two vocabularies costs no engine code at all.
+    GrantsStackingBuff(StackingBuff),
     /// Additive base-damage bucket (Hornet Strike).
     BaseDamage(f64),
     /// Additive multishot bucket (total pellets = base × (1 + Σ)).
@@ -586,7 +644,15 @@ pub fn fill_x(template: &str, vals: &[f64]) -> String {
             if i > 0 && matches!(b[i - 1], '+' | '-' | '−') {
                 v = v.abs();
             }
-            let s = format!("{v:.2}");
+            // THREE DECIMALS, trailing zeros trimmed. Two was enough until a
+            // card printed a THIRD: Split Flights opens at 0.333 s, which
+            // rendered as "0.33s" against DE's own "0.333" and failed
+            // `localized_card_numbers_are_numbers_we_also_state` — a real
+            // disagreement, since the check's whole job is that a number we
+            // state is a number DE states. Nothing else moves: a value whose
+            // third decimal is zero trims back to exactly what it printed
+            // before.
+            let s = format!("{v:.3}");
             out.push_str(s.trim_end_matches('0').trim_end_matches('.'));
             vi += 1;
         } else {
@@ -619,6 +685,22 @@ impl ModEffect {
             LastRoundDamage(v) => format!(
                 "{} damage on the magazine's LAST round — its own multiplier, not the                  base-damage bucket (nothing on a continuous weapon or an Incarnon form)",
                 pct(v)
+            ),
+            FirstRoundDamage(v) => format!(
+                "{} damage on the magazine's FIRST round — its own multiplier, not the base-damage bucket, and it reaches status damage",
+                pct(v)
+            ),
+            AddedSpread(v) => format!(
+                "+{v} degrees of spread — added after accuracy bonuses, which do not reach it"
+            ),
+            GrantsStackingBuff(b) => format!(
+                "{} {} per stack, up to {} ({}), for {}s — earned {}",
+                pct(b.per_stack),
+                b.grant.label(),
+                b.max_stacks,
+                pct(b.per_stack * f64::from(b.max_stacks)),
+                b.duration,
+                b.trigger.label(),
             ),
             ConsecutiveHitDamage { per_stack, max_stacks, duration } => format!(
                 "{} damage per consecutive hit, up to {max_stacks} ({}), for {duration}s — its own multiplier, not the base-damage bucket",
@@ -1595,6 +1677,44 @@ impl BuffGrant {
             BuffGrant::HeadshotDamage => "headshot_damage",
         }
     }
+
+    /// The stat this grant feeds, for a card line. Distinct from
+    /// [`Self::locked_stat`] on purpose: that one is a `disables:` KEY and
+    /// collapses three multishot brackets into one word, where a reader of a
+    /// mod's effect list has to be told WHICH bracket they are buying.
+    pub fn label(self) -> &'static str {
+        match self {
+            BuffGrant::BaseDamage => "Base Damage",
+            BuffGrant::FlatBaseDamage => "flat Base Damage",
+            BuffGrant::BaseMultishot => "Base Multishot",
+            BuffGrant::MultishotPercent => "Multishot",
+            BuffGrant::Multishot => "flat Multishot",
+            BuffGrant::ReloadSpeed => "Reload Speed",
+            BuffGrant::FireRate => "Fire Rate",
+            BuffGrant::BaseCritDamage => "Base Critical Damage",
+            BuffGrant::HeadshotDamage => "Headshot Damage",
+        }
+    }
+}
+
+impl BuffTrigger {
+    /// What EARNS a stack, for a card line — the trigger stated in the words
+    /// the mod's own text uses.
+    pub fn label(self) -> &'static str {
+        match self {
+            BuffTrigger::PlainHit => "on a hit that neither crits nor procs",
+            BuffTrigger::Headshot => "on a weak-point hit",
+            BuffTrigger::HitEnemyWithStatus(_) => "on hitting a target already carrying the status",
+            BuffTrigger::ReloadComplete => "on a completed reload",
+            BuffTrigger::ReloadFromEmpty => "on a reload from empty",
+            BuffTrigger::FullBurst => "on a completed burst",
+            BuffTrigger::Kill => "on a kill",
+            BuffTrigger::Firing => "on firing",
+            BuffTrigger::StatusApplied => "on a status landing",
+            BuffTrigger::Hit => "on a hit",
+            BuffTrigger::ConsecutiveHeadshot => "on consecutive weak-point hits",
+        }
+    }
 }
 
 /// HOW A STACK LEAVES. `docs/BUFFS.md` has named these three since the buff
@@ -1609,6 +1729,17 @@ pub enum BuffDecay {
     /// FIFO. Strictly harsher: holding N stacks needs N hits per window, not
     /// one. Stormburst is the roster's first (owner, 2026-08-07).
     PerStackExpiry,
+    /// THE WHOLE PILE GOES AT ONCE. Split Flights is the roster's first, and
+    /// its page states both halves of the rule in consecutive lines:
+    /// *"Subsequent hits refresh all stacks' duration"* and *"Stacks expire all
+    /// at once after 2 seconds without a hit"*.
+    ///
+    /// One window separates it from [`Self::LoseOneAndReset`], which is the
+    /// same shape until the hits STOP: a full pile of four drains over four
+    /// windows there and vanishes in one here. Neither is the harsher of the
+    /// two while you keep hitting — which is exactly why the difference has to
+    /// be data rather than a default nobody re-read.
+    AllAtOnce,
 }
 
 /// ONE STACKING BUFF, and one place its identity is written.
@@ -2454,6 +2585,12 @@ pub struct ResolvedPanel {
     /// [`ModEffect::LastRoundDamage`]. Zero on a continuous weapon and on an
     /// Incarnon form, resolved here because only this layer knows the form.
     pub last_round_damage: f64,
+    /// THE CHAMBER FAMILY's summed multiplier for the magazine's FIRST round —
+    /// see [`ModEffect::FirstRoundDamage`]. Unlike its last-round twin nothing
+    /// is switched off here: the Incarnon exemption is Synth Charge's own card
+    /// text, and the Vectis Incarnon's per-shot Primed Chamber was a BUG DE
+    /// fixed (wiki, ver 43.5) rather than a form that pays nothing.
+    pub first_round_damage: f64,
     pub round_restore_on_status: Option<(crate::damage::DamageType, f64, f64)>,
     /// Exact Penance: the chance a KILL — from anywhere — reloads instantly.
     pub instant_reload_on_kill: Option<f64>,
@@ -2799,6 +2936,14 @@ pub fn resolve_for(
     // is still a bucket, and a second card would otherwise silently replace the
     // first.
     let mut last_round_damage = 0.0f64;
+    let mut first_round_damage = 0.0f64;
+    // STACKING BUFFS THE MODS GRANT — see `ModEffect::GrantsStackingBuff`.
+    // They join the weapon's own list below rather than replacing anything, so
+    // a build can carry a perk's buff and a mod's at once.
+    let mut mod_buffs: Vec<StackingBuff> = Vec::new();
+    // Degrees of cone added AFTER the accuracy divisor — see
+    // `ModEffect::AddedSpread`.
+    let mut added_spread = 0.0f64;
     let (mut wp_dmg, mut wp_cc) = (0.0, base.evo_weakpoint_cc_rel);
     let mut cd_on_kill: Option<TimedBuff> = None;
     let mut fr_on_reload: Option<TimedBuff> = None;
@@ -2888,7 +3033,12 @@ pub fn resolve_for(
                 // DOUBLE TAP does not join a bucket — it carries its own
                 // multiplier to the sim, which is the whole point of the card's
                 // "multiplicatively stacks with damage bonuses like Serration".
+                ModEffect::AddedSpread(v) => added_spread += v,
+                ModEffect::GrantsStackingBuff(b) => mod_buffs.push(b),
                 ModEffect::LastRoundDamage(v) => last_round_damage += v,
+                // THE CHAMBERS SUM, which is the wiki's own "stacks additively
+                // with … for up to 140% bonus damage" — one factor, two cards.
+                ModEffect::FirstRoundDamage(v) => first_round_damage += v,
                 ModEffect::ConsecutiveHitDamage { per_stack, max_stacks, duration } => {
                     consecutive_hit = Some((per_stack, max_stacks, duration));
                 }
@@ -3492,7 +3642,13 @@ pub fn resolve_for(
             .find(|(st, _)| *st == IndirectStat::Accuracy)
             .map_or(0.0, |(_, v)| *v);
         let k = (1.0 + bonus).max(0.05);
-        Spread { min_deg: s.min_deg / k, max_deg: s.max_deg / k }
+        // ADDED SPREAD LANDS OUTSIDE THE DIVISOR, which is the whole of what
+        // "not affected by bonuses that increase accuracy" means: a Twitch on
+        // the same build narrows the weapon's own cone and leaves this alone.
+        Spread {
+            min_deg: s.min_deg / k + added_spread,
+            max_deg: s.max_deg / k + added_spread,
+        }
     });
 
     // PUNCH THROUGH: the weapon's own plus every grant, in metres of material.
@@ -3668,6 +3824,7 @@ pub fn resolve_for(
         stacking_buffs: base
             .stacking_buffs
             .iter()
+            .chain(mod_buffs.iter())
             .filter(|b| !locked_stat(b.grant.locked_stat()))
             // A LOCKED STAT TAKES ITS BUFFS WITH IT, and they go rather than
             // going quiet: a card that opens, stacks and grants nothing is a
@@ -3835,6 +3992,7 @@ pub fn resolve_for(
         } else {
             last_round_damage
         },
+        first_round_damage,
         // The card's numbers converted into POST-MOD units, so the sim adds one
         // term and never has to know about the status bucket. Same units trick
         // `BuffGrant::FlatBaseDamage` and `BaseCritDamage` take.

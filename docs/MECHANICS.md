@@ -1426,6 +1426,48 @@ magazine is the charge pool rather than a reloaded magazine, so there is no
 the engine gates on the form's own charge-backed marker (`incarnon.is_some()`)
 rather than on a weapon id — `engine::evolutions_data::apply` drops it there.
 
+### The two ends of a magazine, and why only one of them is "the magazine was full"
+
+Two mod families read a magazine COUNTER rather than a stat, and they are not
+mirror images.
+
+**SYNTH CHARGE — the LAST round.** *"bonus damage to the final shot in the
+Magazine"*, and the window is read BEFORE the round is paid for: this pull is
+the last if at most one round is left to fire. On a burst weapon that is the
+last BURST (Forceful Finality's *"final magazine burst"*, three rounds on a
+Burston), which is why the gate is `mag_left ≤ burst.count`.
+
+**THE CHAMBER FAMILY — the FIRST round, read AFTER.** Charged Chamber and Primed
+Chamber both print *"+X% Damage on first shot in Magazine"*, and both pages
+define it the same way: the bonus lands *"as long as the magazine counter is at
+Max Magazine − 1 **after** a shot is fired"*, with the consequence spelled out —
+*"when used alongside 100% ammo efficiency, make sure one shot is missing from
+the magazine, since the buff doesn't apply on a completely full one"*.
+
+On an ordinary weapon that IS the first shot out of a fresh magazine (full goes
+to full − 1) and the distinction never surfaces. **AMMO EFFICIENCY is what makes
+the wording load-bearing**: a free shot leaves the counter where it was, so a
+full magazine pays nothing however often you fire it and one sitting at max − 1
+pays every single shot. `mag_left == mag_max` at the top of the pull would have
+inverted both cases — and that is the same bug DE fixed on the Vectis Incarnon
+in ver 43.5 (*"Fixed the Vectis Incarnon Form benefitting from Primed Chamber on
+every shot"*), which is also why the Incarnon form is NOT exempted here the way
+Synth Charge's own card exempts it.
+
+**ONE BRACKET, TWO CARDS.** Charged Chamber is *"multiplicative with other
+damage mods"*, Primed Chamber *"is applied multiplicatively after all other
+modifiers from mods and abilities"*, and they *"stack additively with each other
+for up to 140% bonus damage"* — so the two sum and the sum is one factor beside
+Double Tap's and Synth Charge's. They are deliberately NOT a mod family:
+*"Despite its name … it is not the 'Primed version' of Charged Chamber, and thus
+can be equipped alongside it."*
+
+**AND IT REACHES STATUS DAMAGE** — *"The damage bonus applies to all Multishot
+hits and to Status Damage"* — so the factor multiplies `mb_live` as well as the
+instance. That one sentence is the whole difference from Synth Charge, whose
+page never says either way and which therefore leaves the status base alone
+(recorded as an open question on its card).
+
 **A charge that eats the MAGAZINE — the Phantasma's alt fire.** Three of the
 weapon's numbers are derived from one another rather than stated, and the field
 that says so is `charge_ammo_per_second`:
@@ -2614,6 +2656,19 @@ from the other side, which is the check that the two halves agree.
 **THE EXPLOSION IS THE THIRD DISTANCE** and is neither: it reads from its own
 epicentre, wherever the pellet actually crossed. Each distance is chosen by
 what is asking, which is why the model is not "one distance for everything".
+
+**THE CONE ITSELF HAS TWO BRACKETS, and a mod picks one.** Accuracy DIVIDES:
+the wiki's `Accuracy` page says *"Bonuses that increase accuracy decrease the
+deviation (spread) of a shot"* and accuracy is `100 / spread`, so a +30% card
+divides the angle by 1.3 rather than subtracting from it. ADDED SPREAD does not
+go through that divisor. Split Flights is the roster's first — its rank ladder
+is published as a spread table in DEGREES (+0.3 → +1.8) beside a card that words
+it as accuracy, and its page settles the bracket outright: *"Added spread is not
+affected by bonuses that increase accuracy, such as Twitch or Guided
+Ordnance."* So `ModEffect::AddedSpread` lands after the division and a Twitch on
+the same build narrows the weapon's own cone while leaving this alone. Filing it
+in the accuracy bucket would have been wrong twice — scaling instead of adding,
+and clawed back by exactly the mods the source says cannot touch it.
 
 ## 12. BEAM CHAINING — the mechanic a second target turns on
 

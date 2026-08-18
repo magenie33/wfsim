@@ -768,6 +768,46 @@ its reason written into the survey:
 An exclusion costs a written reason, asserted by the same test — otherwise the
 cheapest way to close a ratchet is to declare everything out of scope.
 
+### The POOL-TAG sweep, and the pool that was a name and nothing else (2026-08-18)
+
+The sibling of the sweep above, and the half it never covered. That one joins
+`compatName` against WEAPON NAMES, which finds the mod written for one gun.
+This one joins it against the **POOL TAGS** — `PRIMARY`, `Rifle`, `Assault
+Rifle`, `Bow`, `Sniper`, `Shotgun`, `Pistol`, `Archgun` — which is where the
+other five hundred live.
+
+Nothing looked at those, and the failure mode is invisible in a way a missing
+mod is not: **a pool a weapon DECLARES and no directory holds resolves to an
+empty list, with no error anywhere.** Nine bows had carried
+`mod_pools: [primary, rifle, bow]` since the roster began and `data/mods/bow/`
+did not exist, so Split Flights — the only multishot mod a bow can hold — was
+unreachable. Fifteen snipers carried `[primary, rifle]` and no `sniper` at all,
+so both Chambers were. Neither shows up as a gap in any earlier sweep, because
+every sweep before this one asked about mods we HAVE.
+
+`scripts/survey_pool_mods.py` writes `data/surveys/pool_mods.yaml`, read by
+`the_pool_mods_we_still_owe_only_goes_down` and nothing else. 461 rows;
+the ratchet opened at **29 owed**, which is a work list rather than a defect.
+
+Two things it does that the weapon sweep does not:
+
+- **The pool set comes from the ROSTER.** Every distinct tag in every weapon's
+  `mod_pools:` must be a value of the script's `POOL_TAG` map, and the script
+  REFUSES to run when one is not. That is the check that catches the next `bow`
+  on the day somebody writes the tag down rather than months later.
+- **Exclusions are RULES, not rows.** The weapon sweep keeps a per-`uniqueName`
+  table because its refusals are one-offs with individual arguments; here they
+  are whole families of DE's own bookkeeping — riven placeholders
+  (`/Randomized/`), flawed variants (`/Beginner/`, `/Intermediate/` under a name
+  already carried), export duplicates (`/Expert/` under a name already carried,
+  where the real Primed mod has its own `uniqueName`), and Conclave-only mods.
+  145 rows are excluded by four rules instead of 145 sentences.
+
+The test carries one assertion that is not about the survey at all and is what
+would have caught the original bug: **every pool a weapon claims holds at least
+one mod.** Verified to bite — moving `data/mods/bow/` aside fails it with
+`cernos_prime: mod pool `bow` is empty`.
+
 ## Equippability: the wiki module is the only structured source (2026-08-02)
 
 A mod's `excludes_weapon` mirrors DE's own incompatibility tags. The WFCD

@@ -1,0 +1,32 @@
+id: charged_chamber
+name: Charged Chamber
+rarity: uncommon
+polarity: madurai
+base_drain: 6                 # max drain 9 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Rifle/SniperReloadDamageMod
+description: "+X% Damage on first shot in Magazine"
+
+effects:
+  # ITS OWN MULTIPLIER, and the wiki works the example: a Vectis with a max
+  # ranked Charged Chamber and Serration deals `225 x (1 + 165%) x (1 + 40%)`.
+  # So it is a factor beside Synth Charge's, never a base-damage bucket term.
+  #
+  # THE WINDOW is a POST-SHOT reading of the magazine counter, not "the
+  # magazine was full" — see `ModEffect::FirstRoundDamage` for the sentence and
+  # for why ammo efficiency is what makes the difference visible.
+  - kind: first_round_damage
+    rank0: 0.1
+    rankMax: 0.4
+
+  # NOT DECLARED AS A GAP: "Charged Chamber does not work with Sentinel weapons
+  # (you can fit it but there is no bonus damage)". No sentinel weapon draws
+  # the `sniper` pool, so the case cannot be reached — and a disclosure banner
+  # for a situation a player cannot get into is noise on every card that has a
+  # real one to make.
+
+source:
+  url: https://wiki.warframe.com/w/Charged_Chamber
+  # Rank table (+10/20/30/40%, cost 6-9), Notes and Patch History, read
+  # 2026-08-18. WFCD cross-check on `uniqueName`: madurai, Uncommon,
+  # baseDrain 6, fusionLimit 3, compatName Sniper — agrees on every field.

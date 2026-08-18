@@ -168,7 +168,56 @@ fn tenno_condition(cond: Option<&str>) -> Option<crate::loadout::TennoCondition>
     }
 }
 
-fn effect(v: &Value) -> Option<ModEffect> {
+/// A buff's `trigger:` naming an EVENT the sim already fires. One line per
+/// trigger, and adding one here is the whole cost of a mod that stacks on it —
+/// see [`crate::loadout::ModEffect::GrantsStackingBuff`].
+fn buff_trigger(name: &str) -> Option<crate::loadout::BuffTrigger> {
+    use crate::loadout::BuffTrigger as T;
+    Some(match name {
+        "on_hit" => T::Hit,
+        "on_plain_hit" => T::PlainHit,
+        "on_headshot" => T::Headshot,
+        "on_consecutive_headshot" => T::ConsecutiveHeadshot,
+        "on_kill" => T::Kill,
+        "on_firing" => T::Firing,
+        "on_status_applied" => T::StatusApplied,
+        "on_full_burst" => T::FullBurst,
+        "on_reload" => T::ReloadComplete,
+        "on_reload_from_empty" => T::ReloadFromEmpty,
+        _ => return None,
+    })
+}
+
+/// A buff's `grants:` naming a BRACKET. The multishot spellings are three
+/// because the brackets are three — see [`crate::loadout::BuffGrant`].
+fn buff_grant(name: &str) -> Option<crate::loadout::BuffGrant> {
+    use crate::loadout::BuffGrant as G;
+    Some(match name {
+        "multishot" => G::MultishotPercent,
+        "flat_multishot" => G::Multishot,
+        "base_multishot" => G::BaseMultishot,
+        "base_damage" | "damage" => G::BaseDamage,
+        "flat_base_damage" => G::FlatBaseDamage,
+        "base_crit_damage" => G::BaseCritDamage,
+        "headshot_damage" => G::HeadshotDamage,
+        "fire_rate" => G::FireRate,
+        "reload_speed" => G::ReloadSpeed,
+        _ => return None,
+    })
+}
+
+fn buff_decay(name: Option<&str>) -> crate::loadout::BuffDecay {
+    use crate::loadout::BuffDecay as D;
+    match name {
+        Some("all_at_once") => D::AllAtOnce,
+        Some("per_stack_expiry") => D::PerStackExpiry,
+        // The Galvanized family's, which is what every buff written before the
+        // third decay model was implemented does.
+        _ => D::LoseOneAndReset,
+    }
+}
+
+fn effect(id: &str, v: &Value) -> Option<ModEffect> {
     let kind = v.get("kind").and_then(Value::as_str)?;
     let max = |k: &str| f(v, k).unwrap_or(0.0);
     // `condition:` gates ANY effect, not only a triggered one. `while_aiming`
@@ -217,7 +266,39 @@ fn effect(v: &Value) -> Option<ModEffect> {
         },
         // SYNTH CHARGE. Its own multiplier on the magazine's last round — see
         // `ModEffect::LastRoundDamage` for the three things that switch it off.
+        // A MOD THAT GRANTS A LIVE STACKING BUFF, in the vocabulary the weapon
+        // perks already speak. Deliberately its own kind rather than a new arm
+        // on `kind: buff`: that one contributes at the ASSUMED MAX through
+        // `CondBuff`, which is right for a card whose trigger the sim has no
+        // event for and wrong the moment it does — so opting in per mod is what
+        // keeps every existing card exactly where it was.
+        //
+        // The buff's ID is the MOD's, leaked once. It is the key the card, the
+        // replay curve, the stack config and the sampler all share, so deriving
+        // it is what stops those four from drifting.
+        "stacking_buff" => ModEffect::GrantsStackingBuff(crate::loadout::StackingBuff {
+            id: Box::leak(id.to_string().into_boxed_str()),
+            trigger: buff_trigger(v.get("trigger").and_then(Value::as_str)?)?,
+            grant: buff_grant(v.get("grants").and_then(Value::as_str)?)?,
+            per_stack: max("rankMax"),
+            max_stacks: u(v, "max_stacks").max(1),
+            duration: n(v, "duration").unwrap_or(0.0),
+            chance: n(v, "chance").unwrap_or(1.0),
+            decay: buff_decay(v.get("decay").and_then(Value::as_str)),
+            initial_stacks: 0,
+            stacks_per_trigger: 1,
+            per_shell: false,
+            cleared_by: crate::loadout::ClearedBy::Nothing,
+        }),
+        // DEGREES, not an accuracy fraction — see `ModEffect::AddedSpread`.
+        // `max_stacks` multiplies it, the same assumed-max reading a `kind:
+        // buff` with an indirect grant already takes: a build carrying this
+        // mod is played at its cap.
+        "added_spread" => {
+            ModEffect::AddedSpread(max("rankMax") * f64::from(u(v, "max_stacks").max(1)))
+        }
         "last_round_damage" => ModEffect::LastRoundDamage(max("rankMax")),
+        "first_round_damage" => ModEffect::FirstRoundDamage(max("rankMax")),
         "fire_rate_bonus" => ModEffect::FireRate(max("rankMax")),
         "reload_speed_bonus" => ModEffect::ReloadSpeed(max("rankMax")),
         "magazine_capacity_bonus" => ModEffect::MagazineCapacity(max("rankMax")),
@@ -424,7 +505,7 @@ fn effect(v: &Value) -> Option<ModEffect> {
 }
 
 fn to_moddef(mf: ModFile) -> ModDef {
-    let effects = mf.effects.iter().filter_map(effect).collect();
+    let effects = mf.effects.iter().filter_map(|e| effect(&mf.id, e)).collect();
     // WHAT WE KNOWINGLY DO NOT MODEL, kept rather than dropped. An `unmodeled`
     // effect returns None from `effect` and vanishes, so a mod carrying only
     // one loads as a mod that does nothing and says nothing — which is exactly
@@ -765,7 +846,7 @@ pub fn unmodeled_effects(id: &str) -> &'static [String] {
             let dropped: Vec<String> = mf
                 .effects
                 .iter()
-                .filter(|e| effect(e).is_none())
+                .filter(|e| effect(&mf.id, e).is_none())
                 .filter_map(|e| e.get("kind").and_then(Value::as_str))
                 // The two that already have their own flag and their own line
                 // on the card.
@@ -1841,6 +1922,14 @@ mod card_values_tests {
                 // Warframe".
                 "neutralizing_justice :: destroys a nullifier shield generator no such \
                  enemy in this roster",
+                // A PER-WEAPON CATALOG ROW, of the kind docs/CATALOGS.md is
+                // about: the wiki tabulates an ADDITIONAL spread penalty for
+                // the Cernos Prime (and, commented out, four crossbows this
+                // roster does not carry) on top of the flat ladder every bow
+                // takes. One row for one weapon in the roster, so the mod's
+                // own number is right for eight of the nine bows and a third
+                // of a degree tight on the ninth.
+                "split_flights :: the cernos prime takes an additional spread row of its own",
                 // TWO THINGS THE PAGE STATES AND THE MODEL CANNOT. One is an
                 // open question — whether the bonus reaches a status payload —
                 // and the other is a family of alt-fire and reload mechanics
@@ -1995,5 +2084,239 @@ mod synth_charge_tests {
         assert!(has("kuva_nukor"), "77 rounds, so it EQUIPS");
         assert_eq!(val("kuva_nukor"), 0.0, "…and a continuous weapon gets nothing");
         assert_eq!(val("lex_incarnon"), 0.0, "…and neither does an Incarnon fire mode");
+    }
+}
+
+#[cfg(test)]
+mod chamber_tests {
+    /// THE CHAMBER FAMILY: two cards, one bracket, and no family tie.
+    ///
+    /// Both are `Sniper`-tagged, which is a pool this roster had no directory
+    /// for at all until 2026-08-18 — fifteen snipers were drawing `[primary,
+    /// rifle]` and nothing else, so every sniper-only mod in the game was
+    /// invisible to the builder. `scripts/survey_pool_mods.py` is what stops
+    /// that happening again.
+    #[test]
+    fn the_chambers_sum_into_one_first_round_bracket_and_are_not_a_family() {
+        use crate::loadout::{resolve, ModEffect, StackPolicy, WeaponBase};
+        let pool = crate::mods_data::class_pool("sniper");
+        let pick = |id: &str| {
+            pool.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("{id}")).clone()
+        };
+        let cc = pick("charged_chamber");
+        let pc = pick("primed_chamber");
+        assert!(
+            cc.effects.iter().any(|e| matches!(e, ModEffect::FirstRoundDamage(v) if (v - 0.4).abs() < 1e-9)),
+            "Charged Chamber is +40% at rank 3: {:?}", cc.effects
+        );
+        assert!(
+            pc.effects.iter().any(|e| matches!(e, ModEffect::FirstRoundDamage(v) if (v - 1.0).abs() < 1e-9)),
+            "Primed Chamber is +100% at rank 3: {:?}", pc.effects
+        );
+        // "Despite its name … it is not the 'Primed version' of Charged
+        // Chamber, and thus can be equipped alongside it." A shared `family`
+        // would have made the pair mutually exclusive, which is the one thing
+        // the page goes out of its way to deny.
+        assert_ne!(
+            (cc.family, pc.family), (Some("chamber"), Some("chamber")),
+            "the two chambers are not a mod family"
+        );
+        assert!(cc.family.is_none() && pc.family.is_none());
+
+        // ONE BRACKET: "Stacks additively with … for up to 140% bonus damage."
+        let base = WeaponBase::from_data("vectis_prime", true, &[]);
+        let both = resolve(&base, &[&cc, &pc], StackPolicy::Emergent);
+        assert!(
+            (both.first_round_damage - 1.4).abs() < 1e-9,
+            "140%, not 1.4x1.0: {}", both.first_round_damage
+        );
+
+        // …AND THE INCARNON FORM KEEPS IT, which is where this card parts
+        // company with Synth Charge. "Fixed the Vectis Incarnon Form
+        // benefitting from Primed Chamber on every shot" (ver 43.5) says the
+        // form pays it once a magazine — a bug in HOW OFTEN, not an exemption.
+        let inc = WeaponBase::from_data("vectis_prime_incarnon", true, &[]);
+        assert!(
+            (resolve(&inc, &[&pc], StackPolicy::Emergent).first_round_damage - 1.0).abs() < 1e-9,
+            "an Incarnon fire mode still takes the first-round bonus"
+        );
+    }
+
+    /// EVERY SNIPER SEES THE SNIPER POOL, and nothing else does.
+    #[test]
+    fn the_sniper_pool_reaches_snipers_and_only_snipers() {
+        let has = |w: &str| {
+            crate::mods_data::pool_for_weapon(w).iter().any(|m| m.id == "primed_chamber")
+        };
+        for w in ["vectis", "vectis_prime", "rubico_prime", "lanka", "vulkar", "komorex"] {
+            assert!(has(w), "{w} is a sniper");
+        }
+        for w in ["braton_prime", "paris_prime", "boar_prime", "lex", "kuva_nukor"] {
+            assert!(!has(w), "{w} is not a sniper");
+        }
+        // A FORM DECLARES NO POOL AT ALL — modding is the WEAPON's, and every
+        // form entry resolves to an empty one (see
+        // `a_form_entry_answers_with_its_weapons_trigger`). So the pool goes on
+        // the weapon and the Incarnon halves need nothing, which is also why
+        // this edit touched fifteen files and not thirty.
+        assert!(crate::mods_data::pool_for_weapon("vectis_incarnon").is_empty());
+    }
+}
+
+#[cfg(test)]
+mod pool_survey {
+    /// EVERY CLASS-TAGGED GUN MOD THE ROSTER'S POOLS CAN HOLD, and how many
+    /// are still missing.
+    ///
+    /// The sibling of `the_weapon_exclusive_mods_we_still_owe_only_goes_down`,
+    /// and the half it never covered. That survey joins `compatName` against
+    /// WEAPON NAMES, which finds the mod written for one gun; this one joins it
+    /// against the POOL TAGS — Rifle, Bow, Sniper, Shotgun, Pistol, Assault
+    /// Rifle, PRIMARY, Archgun — which is where the other five hundred live.
+    ///
+    /// Nothing looked at those, and the failure mode was invisible: a pool a
+    /// weapon DECLARES and no directory holds resolves to an empty list, with
+    /// no error anywhere. Nine bows had claimed `bow` since the roster began
+    /// and `data/mods/bow/` did not exist, so Split Flights — the only
+    /// multishot mod a bow can hold — was unreachable; fifteen snipers claimed
+    /// no `sniper` pool at all, so both Chambers were (owner, 2026-08-18).
+    ///
+    /// `scripts/survey_pool_mods.py` refuses to run when a weapon claims a pool
+    /// no export tag maps to, which is the check that catches the NEXT one at
+    /// the moment somebody writes the tag down rather than months later.
+    ///
+    /// The ceiling is a RATCHET and starts where the pools stood the day the
+    /// survey was written. It is not zero and is not meant to be yet — the 29
+    /// are a work list, not a defect: three Thunderbolt entries, the ammo
+    /// mutations, Target Acquired, Depleted Reload, Primed Blunderbuss, and a
+    /// handful of one-offs.
+    #[test]
+    fn the_pool_mods_we_still_owe_only_goes_down() {
+        const OWED: usize = 29;
+        let text = crate::data::file("surveys/pool_mods.yaml")
+            .expect("data/surveys/pool_mods.yaml — run scripts/survey_pool_mods.py");
+        let mut total = 0usize;
+        let mut missing: Vec<String> = Vec::new();
+        let mut unreasoned: Vec<String> = Vec::new();
+        let (mut name, mut pool) = ("", "");
+        for line in text.lines() {
+            let l = line.trim();
+            if let Some(v) = l.strip_prefix("- name:") {
+                name = v.trim();
+                total += 1;
+            } else if let Some(v) = l.strip_prefix("pool:") {
+                pool = v.trim();
+            } else if let Some(v) = l.strip_prefix("carried:") {
+                match v.trim() {
+                    "~" => missing.push(format!("{pool}: {name}")),
+                    "excluded" => unreasoned.push(format!("{pool}: {name}")),
+                    _ => {}
+                }
+            } else if l.starts_with("reason:") {
+                let key = format!("{pool}: {name}");
+                unreasoned.retain(|n| *n != key);
+            }
+        }
+        assert!(total >= 400, "the survey looks empty: {total} rows");
+        assert_eq!(
+            missing.len(),
+            OWED,
+            "{} class-tagged mods missing, ceiling {OWED} — transcribe one and lower \
+             this line, or raise it deliberately:\n  {}",
+            missing.len(),
+            missing.join("\n  ")
+        );
+        // A REFUSAL IS NOT A SHORTCUT — the same rule the weapon-exclusive
+        // survey holds. `excluded` takes a mod out of the gap count, so it
+        // costs a written reason; otherwise the cheapest way to close a ratchet
+        // is to declare everything out of scope.
+        assert!(
+            unreasoned.is_empty(),
+            "excluded without a reason: {}",
+            unreasoned.join(", ")
+        );
+
+        // AND EVERY POOL A WEAPON CLAIMS HOLDS SOMETHING. This is the assertion
+        // that bites on the actual bug: `bow` and `sniper` were both legal
+        // names carried by real weapons and both resolved to nothing.
+        for w in crate::weapons_data::all() {
+            for p in &w.mod_pools {
+                assert!(
+                    !crate::mods_data::class_pool(p).is_empty(),
+                    "{}: mod pool `{p}` is empty — every mod tagged for it is unreachable",
+                    w.id
+                );
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod split_flights_tests {
+    /// SPLIT FLIGHTS: a MOD that grants a live stacking buff, which is a route
+    /// the engine had no door for until this card.
+    ///
+    /// Every stacking buff before it came from an evolution or an arcane, so a
+    /// mod that stacked on a trigger had to invent a bespoke `ModEffect`
+    /// (`OnKillMultishot`, `OnHeadshotKillCritChance`, `ConditionOverload` —
+    /// three variants for one idea). This one is a trigger already in
+    /// `BuffTrigger` feeding a grant already in `BuffGrant`, so it carries the
+    /// whole spec and `resolve` hands it to the panel beside the weapon's own.
+    #[test]
+    fn split_flights_reaches_the_panel_as_a_live_stacking_buff() {
+        use crate::loadout::{resolve, BuffDecay, BuffGrant, BuffTrigger, StackPolicy, WeaponBase};
+        let pool = crate::mods_data::class_pool("bow");
+        let sf = pool.iter().find(|m| m.id == "split_flights").expect("split flights");
+
+        let base = WeaponBase::from_data("paris_prime", true, &[]);
+        let panel = resolve(&base, &[sf], StackPolicy::Emergent);
+        let b = panel
+            .stacking_buffs
+            .iter()
+            .find(|b| b.id == "split_flights")
+            .expect("the mod's buff reaches the panel");
+        assert_eq!(b.trigger, BuffTrigger::Hit, "every landing pellet earns one");
+        // The PERCENTAGE bracket, which is where a multishot MOD's bonus goes —
+        // not `Multishot` (a flat add) and not `BaseMultishot` (added before
+        // mods). Split Chamber's +90% is in the same one, which is also why the
+        // two share a family and cannot be equipped together.
+        assert_eq!(b.grant, BuffGrant::MultishotPercent);
+        assert!((b.per_stack - 1.0).abs() < 1e-9, "+100% a stack at rank 5");
+        assert_eq!(b.max_stacks, 4);
+        assert!((b.duration - 2.0).abs() < 1e-9);
+        assert_eq!(
+            b.decay,
+            BuffDecay::AllAtOnce,
+            "\"Stacks expire all at once after 2 seconds without a hit\""
+        );
+
+        // THE PENALTY IS DEGREES OF CONE, outside the accuracy bucket — "Added
+        // spread is not affected by bonuses that increase accuracy". The Paris
+        // Prime's aimed deviation is 0, so the whole of what this mod costs
+        // shows up as widening from nothing rather than as a divided cone.
+        let bare = resolve(&base, &[], StackPolicy::Emergent);
+        let (b0, s0) = (bare.spread.expect("a bow has a cone"), panel.spread.unwrap());
+        assert!(
+            (s0.min_deg - b0.min_deg - 7.2).abs() < 1e-6,
+            "+1.8 degrees a stack at four stacks: {} -> {}",
+            b0.min_deg, s0.min_deg
+        );
+        assert!((s0.max_deg - b0.max_deg - 7.2).abs() < 1e-6);
+    }
+
+    /// …AND ONLY A BOW CAN HOLD IT. The `bow` pool existed as a NAME on nine
+    /// weapons and as no directory at all, so this is the first assertion in
+    /// the app that the tag reaches anything.
+    #[test]
+    fn the_bow_pool_reaches_bows_and_only_bows() {
+        let has = |w: &str| {
+            crate::mods_data::pool_for_weapon(w).iter().any(|m| m.id == "split_flights")
+        };
+        for w in ["paris", "paris_prime", "mk1_paris", "dread", "cernos_prime"] {
+            assert!(has(w), "{w} is a bow");
+        }
+        for w in ["braton_prime", "vectis_prime", "boar_prime", "lex"] {
+            assert!(!has(w), "{w} is not a bow");
+        }
     }
 }

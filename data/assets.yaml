@@ -273,6 +273,7 @@ mods:
   catalyzer_link: StatusChanceWhileAimingMods.jpg
   cautious_shot: WeaponResistSelfDamageMod.jpg
   charged_bullets: ArchwingEventElectricityStatusRifleMod.jpg
+  charged_chamber: RifleChargedChamberMod.jpg
   charged_shell: ShotgunElectricityDamageMod.jpg
   chilling_grasp: ShotgunFreezeDamageMod.jpg
   chilling_reload: ColdDmgReloadSpeedMod.jpg
@@ -411,6 +412,11 @@ mods:
   primed_bane_of_infested: RifleDamageInfested.jpg
   primed_bane_of_orokin: RifleDamageCorrupted.jpg
   primed_bane_of_the_murmur: WeaponFactionDamageMurmurs.jpg
+  # WFCD gives Primed Chamber the SAME `imageName` as Charged Chamber
+  # (RifleChargedChamberMod.jpg), which is the export being wrong about a card
+  # that has looked different since 2013 — so the fetcher takes this one from
+  # the wiki, where the mod's own page links it.
+  primed_chamber: wiki:PrimedChamberMod.png
   primed_charged_shell: ShotgunElectricityDamageMod.jpg
   primed_chilling_grasp: ShotgunFreezeDamageMod.jpg
   primed_cleanse_corpus: ShotgunDamageCorpus.jpg
@@ -504,6 +510,7 @@ mods:
   spectral_serration: WeaponDamageAmountInvisibleMod.jpg
   speed_trigger: RifleFireRateMod.jpg
   split_chamber: RifleFireIterationsMod.jpg
+  split_flights: BowMultiShotOnHitMod.jpg
   spring_loaded_chamber: FireRateWhileAimingMods.jpg
   stabilizer: RifleRecoilReductionMod.jpg
   steady_hands: PistolRecoilReductionMod.jpg

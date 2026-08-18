@@ -769,6 +769,25 @@ around (decision 2026-07-31).
   ITSELF, so a field invented tomorrow is covered by nobody. Verified to bite —
   reinstating either old bug reddens it naming the field. Its weaker partner is
   `check_run_counts.mjs`, which reads the box; this one reads the wire.
+- **A MOD POOL A WEAPON CLAIMS MUST HOLD SOMETHING** (2026-08-18). DE tags a mod
+  PRIMARY, Rifle, or narrower still — Assault Rifle, Bow, Sniper — and a weapon
+  draws every tag that applies to it, which is why `mod_pools:` is a LIST. The
+  failure mode is silent in a way a missing mod is not: a pool a weapon
+  DECLARES and no `data/mods/<pool>/` holds resolves to an empty list, with no
+  error anywhere. Nine bows carried `[primary, rifle, bow]` from the day the
+  roster began and `data/mods/bow/` did not exist, so Split Flights — the only
+  multishot mod a bow can hold — was unreachable; fifteen snipers carried no
+  `sniper` tag at all, so both Chambers were. No earlier sweep could see it,
+  because every one of them asked about mods we HAVE.
+  `scripts/survey_pool_mods.py` is the answer and it works from the ROSTER: every
+  tag any weapon claims must map to an export `compatName`, and the script
+  REFUSES to run when one does not. Its `data/surveys/pool_mods.yaml` is read by
+  a ratchet test that also asserts, per weapon, that each claimed pool holds at
+  least one mod — verified to bite. It is the sibling of
+  `survey_weapon_mods.py`, which joins the same field against WEAPON NAMES;
+  between them the export's compatibility column is fully swept. Adding a mod
+  starts there: run the survey, take a row, transcribe it from the WIKI, lower
+  the ceiling.
 - **Golden values only change with an in-game measurement** justifying
   it. New mechanics need golden tests; a faithful-looking implementation
   without a measurement is not correct.

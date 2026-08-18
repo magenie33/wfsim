@@ -1931,6 +1931,26 @@ fn enumerate_buffs(
                 other => other,
             };
             match *e {
+                // A MOD-GRANTED STACKING BUFF, carded by the SAME rule the
+                // weapon's own take: the id is the buff's, which is the key the
+                // replay, the config and the sampler already share, and the
+                // name is the MOD's, which is what a reader is looking for on
+                // the panel. A locked stat takes its buffs with it — the same
+                // filter `resolve` applies to the sim's copy, so the card and
+                // the number cannot disagree.
+                GrantsStackingBuff(b) if !locked(b.grant.locked_stat()) => push(BuffMeta {
+                    id: b.id.into(),
+                    name: nm.clone(),
+                    grants: String::new(),
+                    max_stacks: b.max_stacks,
+                    kind: "stacking",
+                    // EARNED, so it opens at zero: nothing in hand when the
+                    // fight starts, like every other triggered buff here.
+                    default_stacks: 0,
+                    default_locked: false,
+                    permanent: false,
+                    uncapped: false,
+                }),
                 OnKillMultishot { max_stacks, .. } if !locked("multishot") => push(BuffMeta {
                     id: "on_kill_multishot".into(),
                     name: nm.clone(),
@@ -2452,6 +2472,51 @@ pub fn panel_json(v: &Value) -> Value {
                         } else {
                             "nothing here: the mod has no effect on a continuous weapon or on an Incarnon fire mode, whatever its magazine".to_string()
                         },
+                    }));
+                }
+                // THE CHAMBER FAMILY, the same shape from the other end of the
+                // magazine — and it is a conditional for the same reason: it
+                // pays one round in `magazine` and stands on its own
+                // multiplier, so a bucket line would overstate every shot and
+                // put it in the wrong bracket.
+                FirstRoundDamage(x) => {
+                    conditionals.push(json!({
+                        "mod": name,
+                        "desc": e.describe(),
+                        "active": x > 0.0,
+                        "why": "the magazine's FIRST round only — the counter has to read one under full AFTER the shot, so an ammo-efficiency source that leaves the magazine full pays nothing at all",
+                    }));
+                }
+                // DEGREES OF CONE, not a damage stat and not the accuracy
+                // bucket — the panel's accuracy row would claw it back with
+                // every accuracy mod on the build, which is the one thing the
+                // source says cannot happen.
+                AddedSpread(x) => {
+                    conditionals.push(json!({
+                        "mod": name,
+                        "desc": e.describe(),
+                        "active": x > 0.0,
+                        "why": "a WIDER cone, so it costs nothing at contact and grows with the distance on the arena floor — and no accuracy mod on this build takes any of it back",
+                    }));
+                }
+                // A MOD-GRANTED STACKING BUFF gets a CARD (see
+                // `enumerate_buffs`), which is where its stack count is set —
+                // so here it only has to say what it is and what earns it.
+                GrantsStackingBuff(b) => {
+                    conditionals.push(json!({
+                        "mod": name,
+                        "desc": e.describe(),
+                        "active": true,
+                        "why": format!(
+                            "earned in the fight and lost {} — the card beside the build sets how many stacks it opens with",
+                            match b.decay {
+                                wfsim_engine::loadout::BuffDecay::AllAtOnce =>
+                                    format!("WHOLE, {}s after the last one", b.duration),
+                                wfsim_engine::loadout::BuffDecay::PerStackExpiry =>
+                                    format!("one at a time, each {}s after it was earned", b.duration),
+                                wfsim_engine::loadout::BuffDecay::LoseOneAndReset =>
+                                    format!("one at a time, {}s after the last one", b.duration),
+                            }),
                     }));
                 }
                 ConsecutiveHitDamage { per_stack, max_stacks, duration } => {

@@ -8,7 +8,7 @@ class: sniper
 form: charged
 default_form: true
 transform_group: lanka
-mod_pools: [primary, rifle]
+mod_pools: [primary, rifle, sniper]
 mastery_rank: 10
 max_rank: 30
 
