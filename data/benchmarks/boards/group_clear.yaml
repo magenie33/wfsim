@@ -136,6 +136,11 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: ocucor
     mode: base
+    score: 44.678471059546915
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_irradiate]
+  - weapon: ocucor
+    mode: base
     score: 10.339435694038407
     mods: [seeker, galvanized_diffusion, hornet_strike, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
