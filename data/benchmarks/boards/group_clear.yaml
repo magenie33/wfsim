@@ -41,6 +41,11 @@ entries:
     score: 0.291622243912884
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, pistol_elementalist, primed_convulsion, primed_heated_charge, pathogen_rounds]
     arcanes: [secondary_enervate]
+  - weapon: arbucep
+    mode: base
+    score: 83.91076980757306
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_deadly_efficiency, marked_target, magnetized_cycle, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, secondary_fortifier]
   - weapon: ballistica_prime
     mode: cycle
     score: 1040.4646406318495
