@@ -812,6 +812,21 @@ around (decision 2026-07-31).
   is worse than one that omits it: to anyone auditing, it reads as if the rule
   were being applied. Adding a condition now means deciding on purpose which of
   the two kinds it is.
+  A CONDITION IS HONOURED AT RESOLVE OR AT THE HIT, and the test that says so
+  is DERIVED from the yaml rather than naming arcanes. The one it replaced
+  named two by hand, which is precisely why the third one's broken gate sat
+  there: a hand list cannot report what is not on it. A Tenno state pays
+  NOTHING under `Emergent`, the app's default policy — asserted against
+  `ArcaneFx::none()`, not against another policy of the same code, because
+  comparing `Emergent` to `BaseOnly` cannot see a guard removed from BOTH and
+  the first version of that assertion passed on a sabotaged build. A target
+  state sets the gate the sim reads. Both arms are verified to bite. The audit
+  it forced found the other three clean and found one real subtlety worth
+  recording: Secondary Kinship pays zero under BOTH policies, because a solo
+  fight has no allies to buff — the honest answer rather than a broken gate,
+  and the reason the claim is "never pays under Emergent" rather than "the two
+  policies differ".
+
 - **AIM IS DRAGGED, AND A PICK READS NOTHING** (owner, 2026-08-18). Two
   gestures on the result and the scene that were doing more than they were
   asked to.
@@ -861,9 +876,25 @@ around (decision 2026-07-31).
   target and the aimed body is the thing a placement copies. That split is
   invisible until somebody switches and watches nothing change, so the panel
   states it and counts what is holding a different unit.
-  `check_formation.mjs` asserts all four halves ON THE WIRE rather than on page
-  state, and bites: reinstating the blank reddens three of them, one of them
-  reading `kept false`.
+  AND EVERY FORMATION SAVED BEFORE THE RULE PINS ITSELF ON LOAD. Stamping at
+  placement stops the growth and does nothing for the bodies already saved,
+  which carry no unit and therefore still follow the card — indistinguishable,
+  from the reader's side, from the bug the rule was written to end, and
+  reported AGAIN for exactly that reason. `applyScenario` fills the blank in
+  from the scenario's own enemy, which writes down what those bodies already
+  meant. Same lesson as `reclaimStoredReplays`, missed the same way: growth
+  stopping is not the same as what is already there being fixed.
+  `check_formation.mjs` asserts every half ON THE WIRE rather than on page
+  state, and bites: reinstating the blank reddens three, one reading
+  `kept false`; removing the load-time pin reddens two more.
+- **THE PAGE SAYS WHICH BUILD IT IS** (2026-08-18). A fix that is deployed and
+  a fix that is on the reader's screen are two different things, and without a
+  version on the page neither side of a bug report can tell them apart —
+  "still broken" and "still holding the old file" read identically, which cost
+  three rounds on one bug. `build_site_app.py` stamps the footer with the
+  commit, a `+` for a dirty tree, and the UTC minute it generated `site/`; the
+  commit alone is not enough because `site/` is built from a WORKING TREE. The
+  dev server ships the `dev` placeholder, which is the right answer there.
 - **A MEASUREMENT COSTS ITS SUMMARY, NOT ITS REPLAY** (owner, 2026-08-18).
   Storage is the reader's machine and the app had no budget for it: a REPLAY is
   600 frames of debuff series per followed body plus a hit account per attack
