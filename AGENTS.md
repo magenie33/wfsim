@@ -796,6 +796,28 @@ around (decision 2026-07-31).
   between them the export's compatibility column is fully swept. Adding a mod
   starts there: run the survey, take a row, transcribe it from the WIKI, lower
   the ceiling.
+- **A BODY IS THE UNIT IT WAS PLACED WITH** (owner, 2026-08-18). The card on
+  the left of the arena says what you are ABOUT to place; it is not a control
+  over the floor. It was one, silently: a placed body carried no unit of its
+  own and the server reads a blank one as "the aimed body's" — the right
+  default for a scenario written before formations and the wrong one for a
+  formation being built unit by unit — so reaching for a second enemy to place
+  turned every enemy already down into it. Placing a Gunner line and then
+  picking a Thrax destroyed the Gunner line, on the wire, with nothing on
+  screen saying so.
+  The unit is STAMPED at the moment of placement (`placeAt`, `arenaAddFoe`) and
+  nothing afterwards moves it. `FoeSpec` has carried a per-body `enemy`,
+  `level` and `eximus` since the formation landed; the page simply never filled
+  them. The LEVEL deliberately stays the FIGHT's — it is one dial for every
+  body on the floor and a ruler pins one number — so a body leaves it blank and
+  follows.
+  The AIMED body still follows the card, because that card IS the fight's
+  target and the aimed body is the thing a placement copies. That split is
+  invisible until somebody switches and watches nothing change, so the panel
+  states it and counts what is holding a different unit.
+  `check_formation.mjs` asserts all four halves ON THE WIRE rather than on page
+  state, and bites: reinstating the blank reddens three of them, one of them
+  reading `kept false`.
 - **A MEASUREMENT COSTS ITS SUMMARY, NOT ITS REPLAY** (owner, 2026-08-18).
   Storage is the reader's machine and the app had no budget for it: a REPLAY is
   600 frames of debuff series per followed body plus a hit account per attack

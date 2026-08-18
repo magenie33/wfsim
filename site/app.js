@@ -2982,7 +2982,11 @@ function arenaAddFoe(s) {
         //
         // NEVER REUSED inside one scenario, which is what makes it an identity
         // rather than a label. `e1` is the aimed body's and is not ours to give.
-        s.formation.push({ at, enemy: "", level: null, id: nextFoeId(s) });
+        // STAMPED WITH THE UNIT, like every other placement — see `placeAt`.
+        // A blank one means "whatever the aimed body is", which is what a
+        // scenario written before this means and is not what a body being
+        // placed now means.
+        s.formation.push({ at, enemy: s.enemy, level: null, id: nextFoeId(s) });
         return true;
       }
     }
@@ -3435,7 +3439,20 @@ function mountArenaCanvas(host, s, en, opts) {
     if (painted && Math.hypot(painted[0] - p[0], painted[1] - p[1]) < floor) return;
     if (arenaBodies(s).length >= ARENA_MAX_BODIES() || !clearAt(p)) return;
     s.formation = s.formation || [];
-    s.formation.push({ id: nextFoeId(s), at: [p[0], p[1]] });
+    // A BODY IS THE UNIT IT WAS PLACED WITH (owner, 2026-08-18). The brush on
+    // the left says what you are ABOUT to place; it does not reach back and
+    // rewrite what is already standing on the floor. Placing a Gunner and then
+    // picking a Thrax to place next used to turn every Gunner already down into
+    // a Thrax, because a body carried no unit of its own and the server reads a
+    // blank one as "the aimed body's" — which is the right default for a
+    // scenario written before a formation existed and the wrong one for a
+    // formation you are building unit by unit.
+    //
+    // So the unit is STAMPED here, at the moment of placement, and nothing
+    // afterwards moves it. The LEVEL deliberately is not: it is a dial for the
+    // whole fight (a ruler pins one number for every body on the floor), so it
+    // stays the scenario's and a body left blank keeps following it.
+    s.formation.push({ id: nextFoeId(s), at: [p[0], p[1]], enemy: s.enemy });
     painted = [p[0], p[1]];
     changed();
   }
@@ -9942,6 +9959,23 @@ function renderScenarioFields(ids, opts = {}) {
       ? `<a class="en-wiki" href="${wikiUrl(en.name_en || en.name)}" target="_blank" rel="noopener"
             title="${escHtml(tr("open the wiki page"))}">${escHtml(tr("wiki"))} ↗</a>`
       : "";
+    // WHAT THIS CARD REACHES, said out loud once there is more than one body.
+    //
+    // It is the AIMED body's unit and it is the BRUSH for the next placement —
+    // two jobs that were one thing while a fight had one target, and are still
+    // one control because the aimed body IS the thing you place a copy of. What
+    // it is NOT is a control over the floor: a body keeps the unit it was
+    // placed with (`placeAt`), which is the whole point of a formation built
+    // unit by unit and is invisible until somebody switches and watches nothing
+    // change. So the count is on screen rather than left to be discovered.
+    const brushNote = (s) => {
+      const n = (s.formation || []).length;
+      if (!n || opts.readonly) return "";
+      const kept = (s.formation || []).filter((f) => f.enemy && f.enemy !== s.enemy).length;
+      return `<p class="arc-note">${escHtml(kept
+        ? trF("this is the aimed enemy, and what the place tool puts down. {n} already on the floor keep the unit they were placed with.", { n: kept })
+        : tr("this is the aimed enemy, and what the place tool puts down. Enemies already on the floor keep the unit they were placed with."))}</p>`;
+    };
     const card =
       `<div class="en-row">
          <button class="en-card" id="${ids.target}-pick" title="${escHtml(tr("choose the target"))}">
@@ -9972,6 +10006,7 @@ function renderScenarioFields(ids, opts = {}) {
             <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
             ${eximusField(en)}
           </div>
+          ${brushNote(sim)}
         </div>
       </div>` +
       `<div class="field-grid">

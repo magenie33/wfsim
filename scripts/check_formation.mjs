@@ -118,6 +118,38 @@ const r = await evaluate(`(async () => {
   out.sentMatches = JSON.stringify(theFight().formation.map(f => f.at))
     === JSON.stringify(sim.formation.map(f => f.at));
 
+  // 3b. THE BRUSH IS NOT A CONTROL OVER THE FLOOR (owner, 2026-08-18).
+  //
+  // The card on the left says what you are ABOUT to place; it does not reach
+  // back and rewrite what is already standing there. It used to, and silently:
+  // a body carried no unit of its own, the server reads a blank one as "the
+  // aimed body's", so picking a different enemy to place next turned every
+  // enemy already on the floor into that one. Placing a Gunner line and then
+  // reaching for a Thrax destroyed the Gunner line.
+  //
+  // Asserted on the WIRE rather than on the state, because the state agreeing
+  // is not the claim - what gets simulated is.
+  out.brushWas = sim.enemy;
+  out.placedWith = sim.formation.map(f => f.enemy);
+  {
+    const others = allEnemies().map(e => e.id).filter(id => id !== sim.enemy);
+    sim.enemy = others[0];
+    markScenarioDirty(); renderSim(); await sleep(700);
+    const sent = theFight();
+    out.brushNow = sim.enemy;
+    out.floorKept = sent.formation.every(f => f.enemy === out.brushWas);
+    out.aimedFollowed = sent.enemy === others[0];
+    // ...and the next body placed takes the NEW one, which is the other half:
+    // a brush that changed nothing at all would pass the line above.
+    arenaAddFoe(sim); markScenarioDirty(); renderSim(); await sleep(500);
+    const sent2 = theFight();
+    out.nextTakesNew = sent2.formation[sent2.formation.length - 1].enemy === others[0];
+    out.mixedOnTheWire = new Set(sent2.formation.map(f => f.enemy)).size === 2;
+    sim.formation.pop();
+    sim.enemy = out.brushWas;
+    markScenarioDirty(); renderSim(); await sleep(500);
+  }
+
   // 4. IT REACHES THE NUMBER. The Torid's Incarnon form is the roster's only
   //    chaining beam, so it is the mode this is asked in.
   const runWith = async (formation) => {
@@ -262,6 +294,18 @@ check("...a body with nowhere legal to go does not move at all",
   r.refused === true && r.stillThere === true,
   JSON.stringify({ refused: r.refused, stayed: r.stillThere }));
 check("...and what is on screen is EXACTLY what is sent", r.sentMatches === true);
+// THE BRUSH STAGES; IT DOES NOT EDIT THE FLOOR.
+check("every placed body records the unit it was placed with",
+  r.placedWith.length > 0 && r.placedWith.every((e) => e === r.brushWas),
+  JSON.stringify(r.placedWith));
+check("...so changing the brush leaves the floor alone, ON THE WIRE",
+  r.floorKept === true && r.brushNow !== r.brushWas,
+  `${r.brushWas} -> ${r.brushNow}, kept ${r.floorKept}`);
+check("...while the AIMED body follows it, because that card is the target's",
+  r.aimedFollowed === true, JSON.stringify(r.aimedFollowed));
+check("...and the next one placed takes the new unit, so two units coexist",
+  r.nextTakesNew === true && r.mixedOnTheWire === true,
+  JSON.stringify({ next: r.nextTakesNew, mixed: r.mixedOnTheWire }));
 check("a lone fight runs", !r.lone.err && r.lone.dps > 0, JSON.stringify(r.lone));
 check("...and a crowd takes more, because the chain has somewhere to go",
   !r.crowd.err && r.crowd.dps > r.lone.dps,
