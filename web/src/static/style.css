@@ -1523,3 +1523,8 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 @media (max-width:640px){
   .arc-tool{width:29px; height:29px}
 }
+
+/* THE BUILD ON SCREEN. Footer weight and then some: it is for a bug report,
+   not for a reader. */
+.build-stamp{color:var(--dim); font-size:11px; font-variant-numeric:tabular-nums;
+  user-select:all; cursor:text}

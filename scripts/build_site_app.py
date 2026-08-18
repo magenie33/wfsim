@@ -515,6 +515,31 @@ def check_data_parses() -> None:
         )
 
 
+def build_stamp() -> str:
+    """The commit this `site/` was generated from, plus when — UTC.
+
+    The commit alone is not enough: `site/` is generated from a WORKING TREE,
+    which may carry changes that are not in any commit, so the timestamp is
+    what tells two builds of one commit apart. A `+` marks a dirty tree for
+    the same reason.
+    """
+    import datetime
+    import subprocess
+
+    def git(*a: str) -> str:
+        try:
+            return subprocess.run(
+                ("git", *a), capture_output=True, text=True, check=True
+            ).stdout.strip()
+        except Exception:
+            return ""
+
+    sha = git("rev-parse", "--short=8", "HEAD") or "nogit"
+    dirty = "+" if git("status", "--porcelain") else ""
+    when = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M")
+    return f"{sha}{dirty} · {when}Z"
+
+
 def main() -> None:
     check_data_parses()
     run("cargo", "build", "--release", "-p", "wfsim-wasm", "--target", "wasm32-unknown-unknown")
@@ -542,6 +567,23 @@ def main() -> None:
     )
     if flagged == html:
         sys.exit("index.html: <script src=\"app.js\"> anchor not found — flag not injected")
+
+    # WHICH BUILD THIS IS, stamped into the footer.
+    #
+    # A fix that is deployed and a fix that is on the reader's screen are two
+    # different things, and without a version on the page neither side of a bug
+    # report can tell them apart: "still broken" and "still holding the old
+    # file" read identically (owner, 2026-08-18, after three rounds of that on
+    # one bug). The dev server ships the placeholder, which is the right answer
+    # there — a page saying `dev` is not a deployed build.
+    stamped = flagged.replace(
+        '<span class="build-stamp" id="build-stamp" title="which build this page is">dev</span>',
+        f'<span class="build-stamp" id="build-stamp" '
+        f'title="which build this page is">{build_stamp()}</span>',
+    )
+    if stamped == flagged:
+        sys.exit("index.html: build-stamp placeholder not found")
+    flagged = stamped
     (APP / "index.html").write_text(flagged, encoding="utf-8", newline="\n")
     ship_art()
     write_board()

@@ -1678,6 +1678,89 @@ mod tests {
         );
     }
 
+    /// EVERY CONDITION IS HONOURED SOMEWHERE, and the roster is DERIVED.
+    ///
+    /// There are exactly two places a condition can be honoured, and a
+    /// condition honoured in neither is the Secondary Irradiate bug:
+    ///
+    ///   · AT RESOLVE, by the POLICY. A Tenno state this sim does not model
+    ///     must pay NOTHING under `Emergent`, which is the policy the app runs
+    ///     by default — `fx(Emergent)` has to be indistinguishable from
+    ///     `fx(BaseOnly)`, where no conditional arms at all. That is the claim
+    ///     worth defending: not "the two policies differ" (Secondary Kinship's
+    ///     stacks are zero under both, because a solo fight has no allies to
+    ///     buff, and that is the honest answer rather than a broken gate) but
+    ///     "an unmodelled condition never hands out its bonus for free".
+    ///   · AT THE HIT, by the SIM. A condition about the TARGET is checked
+    ///     when the shot lands, so the two `fx` are legitimately identical and
+    ///     what must be non-zero is the gate the sim reads.
+    ///
+    /// The test this replaced named two arcanes by hand, which is why the third
+    /// one's broken gate sat there for six months: a hand list cannot report
+    /// what is not on it (2026-08-18, and the repo's own rule — derive
+    /// triggers, do not list them).
+    #[test]
+    fn every_condition_is_honoured_at_resolve_or_at_the_hit() {
+        let tenno = crate::tenno_data::default_tenno();
+        let mut checked = 0;
+        for (path, text) in crate::data::files_under("arcanes/") {
+            let v: Value = serde_norway::from_str(text).expect("an arcane file parses");
+            let Some(effects) = v.get("effects").and_then(Value::as_sequence) else {
+                continue;
+            };
+            let Some(id) = v.get("id").and_then(Value::as_str) else {
+                continue;
+            };
+            for e in effects {
+                let Some(cond) = arc_condition(e) else { continue };
+                let def = secondary(id).expect("a roster arcane");
+                // AN ARCANE THAT DEMANDS A WEAPON TRAIT GETS IT. Akimbo Slip
+                // Shot is `requires: dual_pistols` and is inert without it, so
+                // asking about its condition on a weapon it cannot go on would
+                // compare two zeroes and call the gate broken — which the first
+                // run of this test did.
+                let req = v.get("requires").and_then(Value::as_str);
+                let traits: Vec<&str> = req.into_iter().collect();
+                let em = def.fx(def.max_rank, StackPolicy::Emergent, &traits, tenno);
+                // AGAINST NOTHING, not against another policy of the same code.
+                // Comparing `Emergent` to `BaseOnly` cannot see a guard removed
+                // from BOTH — the first version of this test did exactly that
+                // and passed on a sabotaged build. The claim is absolute: with
+                // every effect in this file conditional and none of those
+                // conditions modelled, the arcane is worth what having no
+                // arcane is worth.
+                let none = {
+                    let mut n = ArcaneFx::none();
+                    n.id = def.id.clone();
+                    n
+                };
+                let all_conditional = effects.iter().all(|e| arc_condition(e).is_some());
+                checked += 1;
+                match cond {
+                    ArcCondition::AssumedTennoState => {
+                        if all_conditional {
+                            assert_eq!(
+                                format!("{em:?}"),
+                                format!("{none:?}"),
+                                "{path}: an unmodelled Tenno-state condition pays NOTHING                                  under Emergent, which is the policy the app runs by default"
+                            );
+                        }
+                    }
+                    ArcCondition::TargetRadiationStacks(n) => assert_eq!(
+                        em.echo_needs_radiation, n,
+                        "{path}: a target-state condition must be the SIM's gate"
+                    ),
+                    ArcCondition::Unknown(s) => {
+                        panic!("{path}: condition `{s}` is not known to `arc_condition`")
+                    }
+                }
+            }
+        }
+        // …and it FOUND them, so a loader that stopped reaching the effect list
+        // fails here rather than passing over an empty roster.
+        assert!(checked >= 4, "every declared condition was reached: {checked}");
+    }
+
     #[test]
     fn assumed_max_only_conditionals_are_emergent_noops() {
         let o = secondary("cascadia_overcharge").unwrap();

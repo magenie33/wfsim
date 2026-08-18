@@ -6929,6 +6929,23 @@ function applyScenario(st) {
   // (headshot %) is already right — stamp the marker so the re-seed does not
   // overwrite a saved choice with a default.
   sim.__weapon = $("weapon").value;
+  // …AND EVERY BODY GETS ITS UNIT, ONCE.
+  //
+  // A body placed since 2026-08-18 carries the unit it was placed with. Every
+  // body placed BEFORE that carries nothing, and a blank means "the aimed
+  // body's" — which is exactly what those bodies meant when they were placed,
+  // and is also, from the reader's side, indistinguishable from the bug that
+  // rule was written to end: switch the enemy on the left and the whole
+  // formation follows it (owner, 2026-08-18, reporting it AGAIN after the
+  // placement fix, because his formations predate it).
+  //
+  // So the blank is filled in HERE, at the one place a scenario becomes the
+  // live fight, from the enemy that scenario itself carries. It changes nothing
+  // about what those bodies are — it writes down what they already were — and
+  // from that moment they stop following. Growth stopping is not the same as
+  // the existing ones being fixed, which is the same lesson as
+  // `reclaimStoredReplays` and was missed the same way.
+  (sim.formation || []).forEach((f) => { if (!f.enemy) f.enemy = sim.enemy; });
   renderSim();      // redraws every knob, and the bar with them
   refreshPanel();   // the Tenno half of a scenario changes what the build is worth
 }

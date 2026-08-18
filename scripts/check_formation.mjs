@@ -168,6 +168,36 @@ const r = await evaluate(`(async () => {
     markScenarioDirty(); renderSim(); await sleep(500);
   }
 
+  // 3c. AND EVERY FORMATION SAVED BEFORE THE RULE PINS ITSELF ON LOAD.
+  //
+  // Stamping at placement stops the growth; it does nothing for the bodies
+  // already saved, which carry no unit and therefore still follow the card —
+  // indistinguishable, from the reader's side, from the bug the rule was
+  // written to end, and reported again for exactly that reason (owner,
+  // 2026-08-18). applyScenario fills the blank in from the scenario's own
+  // enemy, which writes down what those bodies already meant.
+  {
+    // The formation built above is still needed by everything after this, so
+    // it is put back rather than cleared.
+    const keep = JSON.parse(JSON.stringify(sim.formation));
+    sim.formation = [[12, 2], [12, -2], [14, 0]]
+      .map((at, i) => ({ id: 'legacy' + i, at }));
+    markScenarioDirty(); renderSim(); await sleep(900);
+    out.legacyBlank = sim.formation.every(f => f.enemy === undefined);
+    const chips = [...document.querySelectorAll(
+      '#preset-bar-simulator-scenarios .pchip:not(.add)')];
+    chips[0].click(); await sleep(800);
+    chips[chips.length - 1].click(); await sleep(1000);
+    const was = sim.enemy;
+    out.legacyPinned = (sim.formation || []).every(f => f.enemy === was);
+    const others = allEnemies().map(e => e.id).filter(id => id !== was);
+    sim.enemy = others[0]; markScenarioDirty(); renderSim(); await sleep(800);
+    out.legacyHeld = theFight().formation.every(f => f.enemy === was)
+      && sim.enemy !== was;
+    sim.enemy = was; sim.formation = keep;
+    markScenarioDirty(); renderSim(); await sleep(500);
+  }
+
   // 4. IT REACHES THE NUMBER. The Torid's Incarnon form is the roster's only
   //    chaining beam, so it is the mode this is asked in.
   const runWith = async (formation) => {
@@ -356,6 +386,13 @@ check("...and they are DRAWN as two, so a mixed formation reads at a glance",
   r.twoHues === true, JSON.stringify(r.hueSample));
 check("...with the same hue beside the name, which is what makes it a key",
   r.swatches > 0, `${r.swatches} swatches`);
+// AND THE ONES ALREADY SAVED, which is the half that was missed.
+check("a formation saved before the rule carries no unit at all",
+  r.legacyBlank === true, JSON.stringify(r.legacyBlank));
+check("...and pins itself to the scenario's enemy when it is loaded",
+  r.legacyPinned === true, JSON.stringify(r.legacyPinned));
+check("...so it stops following the card from then on",
+  r.legacyHeld === true, JSON.stringify(r.legacyHeld));
 check("a lone fight runs", !r.lone.err && r.lone.dps > 0, JSON.stringify(r.lone));
 check("...and a crowd takes more, because the chain has somewhere to go",
   !r.crowd.err && r.crowd.dps > r.lone.dps,
