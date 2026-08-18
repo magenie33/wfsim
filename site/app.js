@@ -3078,23 +3078,47 @@ function mountArenaCanvas(host, s, en, opts) {
   // else holds a reference to. Detach, build, re-attach.
   const side = host.querySelector(".arc-side");
   if (side) side.remove();
+  // THE LOGIC LINE (owner, 2026-08-18): LEFT IS THE VERB, RIGHT IS THE NOUN.
+  //
+  //   · LEFT — what you are about to DO. The tools, and directly under them
+  //     what the active tool acts WITH: the place tool's brush is an enemy, so
+  //     the enemy's own card, level and Steel Path live there. Brush settings
+  //     belong with the brush. Under those, the two switches, which are about
+  //     how the doing behaves.
+  //   · RIGHT — what you have SELECTED. Click a body and this says which one,
+  //     where it stands, how far off it is and whether the shot is on it. With
+  //     nothing picked it describes the fight instead, which is the honest
+  //     answer to "what am I looking at".
+  //   · BOTTOM — the read-outs, which are nobody's control.
+  //
+  // The card used to float top-right and was BOTH of those things at once: it
+  // named the enemy you were placing and it was the only thing the right-hand
+  // side ever said. One panel doing two jobs is why neither was findable.
   host.innerHTML =
     `<div class="arc-wrap">
        <canvas class="arc-cv"></canvas>
-       <div class="arc-rail" role="toolbar" aria-label="${escHtml(tr("Tools"))}"></div>
-       <div class="arc-opts"></div>
+       <div class="arc-left">
+         <div class="arc-rail" role="toolbar" aria-label="${escHtml(tr("Tools"))}"></div>
+         <div class="arc-brush"></div>
+         <div class="arc-opts"></div>
+         <div class="arc-chips"></div>
+       </div>
+       <div class="arc-insp"></div>
        <div class="arc-read num"></div>
-       <div class="arc-chips"></div>
      </div>
      `;
   const wrap = host.querySelector(".arc-wrap");
-  if (side) wrap.appendChild(side);
+  // THE BRUSH IS WHAT YOU PLACE, so the caller's enemy card and its fields go
+  // into the LEFT column beside the place tool rather than floating on their
+  // own. Moved, never re-serialised — see above.
+  if (side) host.querySelector(".arc-brush").appendChild(side);
   const cv = host.querySelector(".arc-cv");
   const ctx = cv.getContext("2d");
   const rail = host.querySelector(".arc-rail");
   const optbox = host.querySelector(".arc-opts");
   const readout = host.querySelector(".arc-read");
   const chipbox = host.querySelector(".arc-chips");
+  const insp = host.querySelector(".arc-insp");
 
   // ---- the view ---------------------------------------------------------
   // METRES ARE THE UNIT and `k` is pixels per metre. Nothing here is stored in
@@ -3228,6 +3252,57 @@ function mountArenaCanvas(host, s, en, opts) {
       ctx.setLineDash([4, 3]); ctx.strokeRect(lx + 0.5, ly + 0.5, w, h); ctx.setLineDash([]);
     }
     paintReadout();
+    paintInspector();
+  }
+
+  /// WHAT YOU HAVE PICKED, in the top right and nowhere else.
+  ///
+  /// A body is identified by its NAME (`e1`, `e2`, …) because that is what the
+  /// roll call, the heat map and the debuff table use — a scene that called it
+  /// something else would be the fourth spelling of the same body.
+  function paintInspector() {
+    const bodies = arenaBodies(s);
+    const struck = arenaFirstHit(s);
+    const nameOf = (i) => (i === 0
+      ? tr("the aimed target")
+      : (s.formation[i - 1] || {}).id || "e" + (i + 1));
+    const row = (k, v) => `<div class="ai-row"><span>${escHtml(k)}</span>`
+      + `<span class="num">${escHtml(String(v))}</span></div>`;
+    const gapTo = (b) => Math.max(0,
+      Math.hypot(b[0] - s.player_at[0], b[1] - s.player_at[1]) - CONTACT_M).toFixed(2) + " m";
+
+    if (sel.size === 1) {
+      const i = [...sel][0];
+      const b = bodies[i];
+      if (b) {
+        insp.innerHTML = `<p class="ai-h">${escHtml(nameOf(i))}</p>`
+          + row(tr("at"), `${b[0].toFixed(1)}, ${b[1].toFixed(1)}`)
+          + row(tr("from you"), gapTo(b))
+          + row(tr("on the shot line"), i === struck ? tr("yes") : tr("no"));
+        return;
+      }
+    }
+    if (sel.size > 1) {
+      const picked = [...sel].map((i) => bodies[i]).filter(Boolean);
+      const xs = picked.map((q) => q[0]), ys = picked.map((q) => q[1]);
+      insp.innerHTML =
+        `<p class="ai-h">${escHtml(String(sel.size))} ${escHtml(tr("selected"))}</p>`
+        + row(tr("centre"), `${((Math.min(...xs) + Math.max(...xs)) / 2).toFixed(1)}, `
+          + `${((Math.min(...ys) + Math.max(...ys)) / 2).toFixed(1)}`)
+        + row(tr("spread"), `${(Math.max(...xs) - Math.min(...xs)).toFixed(1)} x `
+          + `${(Math.max(...ys) - Math.min(...ys)).toFixed(1)} m`)
+        + row(tr("nearest to you"), gapTo(picked.reduce((a, q) =>
+          Math.hypot(q[0] - s.player_at[0], q[1] - s.player_at[1])
+            < Math.hypot(a[0] - s.player_at[0], a[1] - s.player_at[1]) ? q : a, picked[0])));
+      return;
+    }
+    // NOTHING PICKED IS AN ANSWER TOO: describe the fight, since that is what
+    // you are looking at.
+    insp.innerHTML = `<p class="ai-h">${escHtml(tr("the fight"))}</p>`
+      + row(tr("enemy count"), bodies.length)
+      + row(tr("range"), gapTo(bodies[Math.max(struck, 0)] || s.target_at))
+      + row(tr("aim"), s.aim_at ? tr("a place of its own") : tr("on the target"))
+      + `<p class="ai-hint">${escHtml(tr("click a body to inspect it"))}</p>`;
   }
 
   function paintReadout() {

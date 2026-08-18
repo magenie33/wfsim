@@ -1399,22 +1399,23 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
   color:var(--text); font-size:13px; box-shadow:0 6px 24px rgba(0,0,0,.28)}
 
 /* ---- THE ARENA AS AN EDITOR (2026-08-18) -------------------------------
-   A canvas you pan and zoom, with its chrome floating on it. The old scene was
-   a fixed viewBox that reframed itself under your hand; this one is a floor, so
-   it takes a height of its own rather than an aspect ratio. */
-/* THE FLOOR GETS THE ROOM. It is the thing you work in, so it takes a real
-   slice of the screen rather than a thumbnail's worth (owner, 2026-08-18). */
+   A canvas you pan and zoom, with its chrome floating on it.
+
+   ONE LOGIC LINE: the LEFT column is what you are about to DO (the tools, the
+   brush the active tool acts with, the switches that change how it behaves),
+   the TOP RIGHT is what you have SELECTED, and the bottom is the read-outs.
+   Nothing appears in two places, and neither side does the other's job -- the
+   card used to be both at once, which is why neither was findable. */
 .arena{container-type:inline-size}
 /* THE FLOOR IS NOT PROSE, so it does not live inside the reading column. The
-   page caps itself at 760px, which is right for text and wrong for a thing you
-   lay a formation out on — the canvas came out 462px wide on a 1440px screen.
-   It breaks out and re-centres on the VIEWPORT; the parent is already centred,
-   so `50%` of it is the viewport's middle and the arithmetic is exact. Only
-   where there is room to break out into. */
+   page caps itself at 760px, right for text and wrong for a thing you lay a
+   formation out on. It breaks out and re-centres on the VIEWPORT; the parent is
+   already centred, so 50% of it is the viewport's middle and the arithmetic is
+   exact. Only where there is room to break out into. */
 @media (min-width:900px){
   .arena{width:min(1180px,92vw); margin-inline:calc(50% - min(590px,46vw))}
 }
-.arc-wrap{position:relative; width:100%; height:min(62vh,560px); min-height:360px;
+.arc-wrap{position:relative; width:100%; height:min(66vh,620px); min-height:380px;
   border-radius:10px; overflow:hidden; border:1px solid var(--line);
   background:var(--panel3)}
 .arc-wrap:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
@@ -1425,9 +1426,14 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .arc-cv.arc-panning{cursor:grabbing}
 .arc-cv.arc-moving{cursor:move}
 
-.arc-rail{position:absolute; left:8px; top:8px; display:flex; flex-direction:column;
-  gap:3px; padding:4px; border-radius:9px; background:var(--surface);
-  border:1px solid var(--line); box-shadow:0 2px 10px rgba(0,0,0,.14)}
+/* ---- LEFT: the verb ---------------------------------------------------- */
+.arc-left{position:absolute; left:8px; top:8px; bottom:8px; width:250px;
+  display:flex; flex-direction:column; gap:6px; pointer-events:none}
+.arc-left > *{pointer-events:auto}
+
+.arc-rail{display:flex; gap:3px; padding:4px; align-self:flex-start;
+  background:var(--surface); border:1px solid var(--line); border-radius:9px;
+  box-shadow:0 2px 10px rgba(0,0,0,.14)}
 .arc-tool{width:32px; height:32px; display:grid; place-items:center; border-radius:6px;
   border:1px solid transparent; background:none; color:var(--text-2); cursor:pointer}
 .arc-tool:hover:not(:disabled){background:var(--panel2); color:var(--text)}
@@ -1439,64 +1445,68 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .arc-tool svg{width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.7;
   stroke-linecap:round; stroke-linejoin:round}
 
-.arc-opts{position:absolute; left:8px; bottom:8px; display:flex; gap:4px; padding:4px;
-  border-radius:9px; background:var(--surface); border:1px solid var(--line);
+/* THE BRUSH: what the place tool acts with. It is the tallest thing here and
+   the only one that may scroll, because an enemy card carries a vulnerability
+   column, a status-immunity list and a caveat, and all of them are worth
+   reading -- the old floating card cut them off. */
+.arc-brush{flex:1 1 auto; min-height:0; overflow-y:auto;
+  background:var(--surface); border:1px solid var(--line); border-radius:9px;
   box-shadow:0 2px 10px rgba(0,0,0,.14)}
+.arc-brush:empty{display:none}
+.arc-side{display:flex; flex-direction:column; gap:6px; padding:7px; font-size:12px}
+.arc-side .en-row{margin:0}
+.arc-side .en-card{width:100%; padding:5px 6px; gap:7px; align-items:flex-start}
+.arc-side .en-img{width:38px; height:38px}
+.arc-side .en-name{font-size:13px}
+.arc-side .en-meta{font-size:10.5px; line-height:1.4}
+.arc-fields{display:flex; flex-wrap:wrap; gap:5px 10px; align-items:center;
+  font-size:11.5px}
+.arc-fields label{display:flex; align-items:center; gap:4px; margin:0}
+.arc-fields input[type=number]{width:70px}
+
+.arc-opts,.arc-chips{display:flex; gap:4px; padding:4px; align-self:flex-start;
+  background:var(--surface); border:1px solid var(--line); border-radius:9px;
+  box-shadow:0 2px 10px rgba(0,0,0,.14)}
+.arc-chips:empty{display:none}
 .arc-opt{padding:4px 9px; border-radius:6px; border:1px solid var(--line);
   background:var(--panel3); color:var(--muted); cursor:pointer; font:inherit;
   font-size:11.5px; line-height:1.2}
 .arc-opt:hover:not(:disabled){color:var(--text)}
-.arc-opt[aria-pressed="true"]{color:var(--accent);
+.arc-opt[aria-pressed="true"],.arc-opt.on{color:var(--accent);
   background:color-mix(in srgb,var(--accent) 14%,transparent);
   border-color:color-mix(in srgb,var(--accent) 42%,transparent)}
 .arc-opt:disabled{opacity:.4; cursor:default}
 .arc-opt:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
 
-/* THE TWO CONTROLS THE CANVAS DID NOT REPLACE, beside the switches rather than
-   in a row of their own under the scene. */
-.arc-chips{position:absolute; left:8px; bottom:46px; display:flex; gap:4px}
-.arc-chips:empty{display:none}
-.arc-chips .arc-opt.on{color:var(--accent);
-  background:color-mix(in srgb,var(--accent) 14%,transparent);
-  border-color:color-mix(in srgb,var(--accent) 42%,transparent)}
+/* ---- RIGHT: the noun --------------------------------------------------- */
+.arc-insp{position:absolute; right:8px; top:8px; width:min(34%,238px);
+  padding:8px 10px; border-radius:9px; background:var(--surface);
+  border:1px solid var(--line); box-shadow:0 2px 10px rgba(0,0,0,.14);
+  font-size:12px}
+.ai-h{margin:0 0 6px; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--muted); font-weight:600}
+.ai-row{display:flex; justify-content:space-between; gap:12px; padding:1.5px 0}
+.ai-row span:first-child{color:var(--text-2)}
+.ai-hint{margin:7px 0 0; font-size:11px; color:var(--muted)}
 
 .arc-read{position:absolute; right:8px; bottom:8px; padding:5px 9px; border-radius:8px;
   background:var(--surface); border:1px solid var(--line); font-size:11.5px;
   color:var(--text-2); box-shadow:0 2px 10px rgba(0,0,0,.14)}
 
-/* THE TARGET'S OWN CONTROLS, floating on the floor they are about. Scrollable in
-   its own right: an enemy card carries a vulnerability column and a caveat, and
-   neither may push the scene off the panel. */
-/* THE TARGET'S CARD IS A LABEL ON THE FLOOR, not a second panel: it takes as
-   little of the scene as it can and still be read. */
-.arc-side{position:absolute; right:8px; top:8px; width:min(38%,268px);
-  max-height:calc(100% - 16px); overflow-y:auto; padding:6px; border-radius:9px;
-  background:var(--surface); border:1px solid var(--line);
-  box-shadow:0 2px 10px rgba(0,0,0,.14); display:flex; flex-direction:column; gap:5px;
-  font-size:12px}
-.arc-side .en-row{margin:0}
-.arc-side .en-card{width:100%; padding:4px 6px; gap:6px}
-.arc-side .en-img{width:34px; height:34px}
-.arc-side .en-name{font-size:12.5px}
-.arc-side .en-meta{font-size:10.5px; line-height:1.35}
-.arc-fields{display:flex; flex-wrap:wrap; gap:4px 10px; align-items:center; font-size:11.5px}
-.arc-fields label{display:flex; align-items:center; gap:4px; margin:0}
-.arc-fields input[type=number]{width:66px}
-
 /* A NARROW PANEL IS NARROW WHATEVER THE VIEWPORT IS. The simulator's column can
-   be a couple of hundred pixels on a wide screen, and a card floating over a
-   floor that thin leaves no floor — so the measurement is of the CONTAINER, not
-   of the window. */
-@container (max-width:560px){
+   be a couple of hundred pixels on a wide screen, so the measurement is of the
+   CONTAINER: the chrome stops floating and the three groups stack. */
+@container (max-width:620px){
   .arc-wrap{height:auto; min-height:0; display:flex; flex-direction:column}
-  .arc-side{position:static; width:auto; max-height:none; order:-1;
-    border-radius:0; border-width:0 0 1px; box-shadow:none}
-  .arc-cv{height:min(52vh,380px); flex:0 0 auto}
+  .arc-left{position:static; width:auto; flex-direction:row; flex-wrap:wrap;
+    align-items:flex-start; order:-1; padding:6px; gap:5px}
+  .arc-brush{flex:1 1 100%; max-height:190px}
+  .arc-insp{position:static; width:auto; order:2; border-radius:0;
+    border-width:1px 0 0; box-shadow:none}
+  .arc-cv{height:min(50vh,360px); flex:0 0 auto; order:1}
+  .arc-read{display:none}
 }
 
 @media (max-width:640px){
   .arc-tool{width:29px; height:29px}
-  .arc-read{display:none}
-  .arc-rail{top:auto; bottom:8px; left:8px; flex-direction:row}
-  .arc-opts{left:auto; right:8px; bottom:8px}
 }
