@@ -2459,6 +2459,18 @@ entries:
     valence: impact
   - weapon: kuva_grattler
     mode: base
+    score: 14.05398263379217
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, parallax_scope, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    valence: magnetic
+  - weapon: kuva_grattler
+    mode: base
+    score: 9.933319342422111
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, critical_focus, hollowed_bullets, parallax_scope, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, cascadia_flare]
+    valence: magnetic
+  - weapon: kuva_grattler
+    mode: base
     score: 8.912357408610267
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, critical_focus, containment_breach, hollowed_bullets, parallax_scope, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
