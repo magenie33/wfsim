@@ -77,24 +77,28 @@ for (const [label, w, h, mobile] of SCREENS) {
     history.pushState({}, '', '/weapons/Torid/simulator'); route(); await sleep(2600);
     const add = document.querySelector('#preset-bar-simulator-scenarios .pchip.add');
     if (add) { add.click(); await sleep(1400); }
-    const svg = () => document.querySelector('#sim-target-arena .ar-svg');
+    // THE SCENE IS A CANVAS as of 2026-08-18, so the finger lands on the canvas
+    // rather than on a circle - and touch-action is read from the canvas,
+    // which is the element the browser asks about when it decides who owns the
+    // gesture. The RULE has not moved: pan-y by default so the page still
+    // scrolls, none while the move mode is on.
+    const cv = () => document.querySelector('#sim-target-arena .arc-cv');
     out.dragToggle = !!document.querySelector('[data-touchdrag]');
-    out.taDefault = svg() ? svg().style.touchAction : null;
+    out.taDefault = cv() ? cv().style.touchAction : null;
     const swipe = async () => {
-      const c = document.querySelector('#sim-target-arena .ar-foe');
+      const c = cv();
       if (!c) return;
+      c.setPointerCapture = () => {};
+      const host = document.querySelector('#sim-target-arena');
+      const [ax, ay] = host.__arena.px(sim.target_at);
       const b = c.getBoundingClientRect();
-      const x = b.x + b.width / 2;
-      const y = b.y + b.height / 2;
-      c.dispatchEvent(new PointerEvent('pointerdown',
-        { bubbles: true, cancelable: true, pointerType: 'touch', clientX: x, clientY: y }));
-      for (let k = 1; k <= 6; k++) {
-        window.dispatchEvent(new PointerEvent('pointermove',
-          { bubbles: true, cancelable: true, pointerType: 'touch', clientX: x, clientY: y - 14 * k }));
-        await sleep(30);
-      }
-      window.dispatchEvent(new PointerEvent('pointerup',
-        { bubbles: true, cancelable: true, pointerType: 'touch' }));
+      const x = b.left + ax, y = b.top + ay;
+      const send = (type, cx, cy) => c.dispatchEvent(new PointerEvent(type,
+        { bubbles: true, cancelable: true, pointerType: 'touch', pointerId: 1,
+          isPrimary: true, button: 0, clientX: cx, clientY: cy }));
+      send('pointerdown', x, y);
+      for (let k = 1; k <= 6; k++) { send('pointermove', x, y - 14 * k); await sleep(30); }
+      send('pointerup', x, y - 84);
       await sleep(600);
     };
     let was = JSON.stringify(sim.target_at);
@@ -104,7 +108,7 @@ for (const [label, w, h, mobile] of SCREENS) {
     const tog = document.querySelector('[data-touchdrag]');
     if (tog) {
       tog.click(); await sleep(500);
-      out.taWhileOn = svg() ? svg().style.touchAction : null;
+      out.taWhileOn = cv() ? cv().style.touchAction : null;
       was = JSON.stringify(sim.target_at);
       await swipe();
       out.swipeMovedWhileOn = JSON.stringify(sim.target_at) !== was;

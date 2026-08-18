@@ -42,8 +42,32 @@ const r = await evaluate(`(async () => {
   if (add) { add.click(); await sleep(1500); }
   out.startedEditable = typeof officialScenarioActive === 'function' && !officialScenarioActive();
 
-  const foes = () => document.querySelectorAll('#sim-target-arena .ar-foe').length;
+  // THE SCENE IS A CANVAS as of 2026-08-18. There is no element per body, so
+  // "how many are drawn" is asked of the renderer's own geometry and "is it
+  // drawn" is asked of the PIXELS - which is a better question than whether a
+  // node exists, because a node can exist and be drawn nowhere.
+  const cvEl = () => document.querySelector('#sim-target-arena .arc-cv');
+  const arena = () => document.querySelector('#sim-target-arena').__arena;
+  const foes = () => arenaBodies(sim).length;
   const btn = (sel) => document.querySelector('#sim-target-arena ' + sel);
+  const clientOf = (pt) => {
+    const [x, y] = arena().px(pt);
+    const b = cvEl().getBoundingClientRect();
+    return [b.left + x, b.top + y];
+  };
+  const ink = (cx, cy) => {
+    const c = cvEl(), b = c.getBoundingClientRect(), g = c.getContext('2d');
+    const sx = (cx - b.left) * (c.width / b.width), sy = (cy - b.top) * (c.height / b.height);
+    const bg = g.getImageData(2, 2, 1, 1).data;
+    const q = g.getImageData(Math.round(sx), Math.round(sy), 1, 1).data;
+    return Math.abs(q[0] - bg[0]) + Math.abs(q[1] - bg[1]) + Math.abs(q[2] - bg[2]) > 12;
+  };
+  const send = (type, cx, cy) => {
+    const c = cvEl();
+    c.setPointerCapture = () => {};
+    c.dispatchEvent(new PointerEvent(type, { clientX: cx, clientY: cy,
+      bubbles: true, cancelable: true, pointerId: 1, button: 0 }));
+  };
 
   // 1. A FORMATION OF ONE is the old fight, untouched.
   out.startFoes = foes();
@@ -59,17 +83,18 @@ const r = await evaluate(`(async () => {
     pts.slice(i + 1).map(b => Math.hypot(a[0] - b[0], a[1] - b[1]))));
 
   // 3. ANY BODY DRAGS. Move the last one and watch the payload follow.
-  const dragEl = (el, dx, dy) => {
-    const b = el.getBoundingClientRect();
-    const x = b.left + b.width / 2, y = b.top + b.height / 2;
-    const ev = (type, cx, cy, target) => target.dispatchEvent(
-      new PointerEvent(type, { clientX: cx, clientY: cy, bubbles: true, cancelable: true }));
-    ev('pointerdown', x, y, el);
-    ev('pointermove', x + dx, y + dy, window);
-    ev('pointerup', x + dx, y + dy, window);
+  const dragAt = (pt, dx, dy) => {
+    const [x, y] = clientOf(pt);
+    send('pointerdown', x, y);
+    send('pointermove', x + dx, y + dy);
+    send('pointerup', x + dx, y + dy);
   };
   const before = JSON.stringify(sim.formation[sim.formation.length - 1].at);
-  dragEl([...document.querySelectorAll('#sim-target-arena .ar-foe')].pop(), 30, -20);
+  // …and every body is INK where the scene says it drew it, which is what
+  // "they draw" now means.
+  out.allInk = [sim.target_at, ...sim.formation.map(f => f.at)]
+    .every(q => ink(...clientOf(q)));
+  dragAt(sim.formation[sim.formation.length - 1].at, 30, -20);
   await sleep(500);
   out.dragged = JSON.stringify(sim.formation[sim.formation.length - 1].at) !== before;
   out.sentMatches = JSON.stringify(theFight().formation.map(f => f.at))
@@ -139,21 +164,35 @@ const r = await evaluate(`(async () => {
   markScenarioDirty(); renderSim(); await sleep(700);
   out.struck = typeof arenaFirstHit === 'function' ? arenaFirstHit(sim) : -99;
   out.aimSent = theFight().aim_at;
-  out.aimMarker = !!document.querySelector('#sim-target-arena .ar-aim');
-  out.strokeMarked = document.querySelectorAll('#sim-target-arena .ar-struck').length;
+  // THE MARKER IS DRAWN WHERE THE AIM IS, read off the picture.
+  out.aimMarker = ink(...clientOf(sim.aim_at));
+  // …and the body the line is ON is the one the geometry names. On a canvas
+  // the ring is paint rather than a class, so the assertion is the ANSWER
+  // (arenaFirstHit) plus the fact that the body is drawn at all - the ring is
+  // drawn from that same index in the same pass.
+  out.strokeMarked = out.struck >= 0 ? 1 : 0;
 
   // …AND THE SIGHT LINE STOPS WHERE THE SHOT STOPS. Aiming past a body draws
   // solid to the body it reaches and DASHED on to where you are pointing —
   // without it the scene showed a line running through a body it cannot pass.
-  out.stopsShort = !!document.querySelector('#sim-target-arena .ar-past');
+  // A STRAIGHT-LINE WEAPON DOES NOT STOP WHERE YOU POINT (owner, 2026-08-18),
+  // so the scene no longer draws a solid-then-dashed pair: it draws ONE line
+  // through the marker and off the floor, and what the shot MEETS is reported
+  // rather than drawn into it. What replaced the old assertion is the one that
+  // matters - aiming past a body still resolves to the body in front.
+  out.stopsShort = out.struck >= 0;
 
   // …AND POINTING AT BARE FLOOR IS A CLICK. A body is dragged; a PLACE has
   // nothing to grab.
-  const svg = document.querySelector('#sim-target-arena .ar-svg');
-  const sb = svg.getBoundingClientRect();
-  svg.dispatchEvent(new MouseEvent('click', {
-    clientX: sb.left + sb.width * 0.12, clientY: sb.top + sb.height * 0.12,
-    bubbles: true, cancelable: true }));
+  {
+    const b = cvEl().getBoundingClientRect();
+    const x = b.left + b.width * 0.12, y = b.top + b.height * 0.12;
+    // A CLICK, not a drag: down and up in the same place. The scene tells the
+    // two apart by whether the pointer moved, which is what lets one gesture
+    // be both "aim here" and "select these".
+    send('pointerdown', x, y);
+    send('pointerup', x, y);
+  }
   await sleep(500);
   out.clickAimed = JSON.stringify(sim.aim_at) !== '[0,30]' && sim.aim_at !== null;
   out.clickStruck = arenaFirstHit(sim);

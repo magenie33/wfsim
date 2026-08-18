@@ -1397,3 +1397,72 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
   background:color-mix(in srgb,var(--critical) 14%,var(--surface));
   border:1px solid color-mix(in srgb,var(--critical) 45%,transparent);
   color:var(--text); font-size:13px; box-shadow:0 6px 24px rgba(0,0,0,.28)}
+
+/* ---- THE ARENA AS AN EDITOR (2026-08-18) -------------------------------
+   A canvas you pan and zoom, with its chrome floating on it. The old scene was
+   a fixed viewBox that reframed itself under your hand; this one is a floor, so
+   it takes a height of its own rather than an aspect ratio. */
+.arc-wrap{position:relative; width:100%; height:340px; border-radius:10px;
+  overflow:hidden; border:1px solid var(--line); background:var(--panel3)}
+.arc-wrap:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.arc-cv{display:block; width:100%; height:100%; touch-action:pan-y}
+.arc-cv.arc-select{cursor:default}
+.arc-cv.arc-place,.arc-cv.arc-erase{cursor:crosshair}
+.arc-cv.arc-hand{cursor:grab}
+.arc-cv.arc-panning{cursor:grabbing}
+.arc-cv.arc-moving{cursor:move}
+
+.arc-rail{position:absolute; left:8px; top:8px; display:flex; flex-direction:column;
+  gap:3px; padding:4px; border-radius:9px; background:var(--surface);
+  border:1px solid var(--line); box-shadow:0 2px 10px rgba(0,0,0,.14)}
+.arc-tool{width:32px; height:32px; display:grid; place-items:center; border-radius:6px;
+  border:1px solid transparent; background:none; color:var(--text-2); cursor:pointer}
+.arc-tool:hover:not(:disabled){background:var(--panel2); color:var(--text)}
+.arc-tool[aria-pressed="true"]{color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 15%,transparent);
+  border-color:color-mix(in srgb,var(--accent) 45%,transparent)}
+.arc-tool:disabled{opacity:.4; cursor:default}
+.arc-tool:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.arc-tool svg{width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.7;
+  stroke-linecap:round; stroke-linejoin:round}
+
+.arc-opts{position:absolute; left:8px; bottom:8px; display:flex; gap:4px; padding:4px;
+  border-radius:9px; background:var(--surface); border:1px solid var(--line);
+  box-shadow:0 2px 10px rgba(0,0,0,.14)}
+.arc-opt{padding:4px 9px; border-radius:6px; border:1px solid var(--line);
+  background:var(--panel3); color:var(--muted); cursor:pointer; font:inherit;
+  font-size:11.5px; line-height:1.2}
+.arc-opt:hover:not(:disabled){color:var(--text)}
+.arc-opt[aria-pressed="true"]{color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 14%,transparent);
+  border-color:color-mix(in srgb,var(--accent) 42%,transparent)}
+.arc-opt:disabled{opacity:.4; cursor:default}
+.arc-opt:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+
+.arc-read{position:absolute; right:8px; bottom:8px; padding:5px 9px; border-radius:8px;
+  background:var(--surface); border:1px solid var(--line); font-size:11.5px;
+  color:var(--text-2); box-shadow:0 2px 10px rgba(0,0,0,.14)}
+
+/* THE TARGET'S OWN CONTROLS, floating on the floor they are about. Scrollable in
+   its own right: an enemy card carries a vulnerability column and a caveat, and
+   neither may push the scene off the panel. */
+.arc-side{position:absolute; right:8px; top:8px; width:min(56%,340px);
+  max-height:calc(100% - 16px); overflow-y:auto; padding:7px; border-radius:9px;
+  background:var(--surface); border:1px solid var(--line);
+  box-shadow:0 2px 10px rgba(0,0,0,.14); display:flex; flex-direction:column; gap:7px}
+.arc-side .en-row{margin:0}
+.arc-side .en-card{width:100%}
+.arc-fields{display:flex; flex-wrap:wrap; gap:6px 12px; align-items:center; font-size:12px}
+.arc-fields label{display:flex; align-items:center; gap:5px; margin:0}
+.arc-fields input[type=number]{width:82px}
+
+@media (max-width:640px){
+  .arc-wrap{height:auto; min-height:300px; display:flex; flex-direction:column}
+  .arc-side{position:static; width:auto; max-height:none; border-radius:0;
+    border-width:0 0 1px; box-shadow:none; order:-1}
+  .arc-cv{height:250px; flex:0 0 auto}
+  .arc-tool{width:29px; height:29px}
+  .arc-read{display:none}
+  .arc-rail{top:auto; bottom:8px; left:8px; flex-direction:row}
+  .arc-opts{left:auto; right:8px; bottom:8px}
+}

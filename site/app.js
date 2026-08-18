@@ -3044,8 +3044,600 @@ function arenaSettle(s, at, skip) {
 /// A MOUSE IS UNAFFECTED: it has no scroll to lose, so it drags either way.
 let arenaTouchDrag = false;
 
+/// THE ARENA AS AN EDITOR — an infinite canvas you pan, zoom and lay a fight
+/// out on (owner, 2026-08-18: it should feel like Miro or n8n, not like a
+/// picture with chips beside it).
+///
+/// WHAT IT REPLACES AND WHY. The scene was a fixed 320x176 viewBox that framed
+/// itself to whatever was in it, so a formation you were building rescaled under
+/// your hand, there was nowhere to put a body outside the frame, and the only
+/// way to add one was a +1 button that chose the place for you. None of that is
+/// an editor. This is: a floor that extends as far as you drag, a tool that
+/// paints bodies where the pointer goes, a marquee that selects them, and a drag
+/// that moves the whole selection at once.
+///
+/// THE TRUTH IS STILL `sim`. There is no scene state — every gesture writes
+/// `player_at`, `target_at`, `aim_at` or `formation` and redraws from them, so
+/// this is a VIEW of the fight in exactly the way the old one was and nothing
+/// downstream (the payload, the share link, the checks that read the scenario)
+/// has to learn that the picture changed.
+///
+/// NOTHING MOVES A BODY FOR YOU, unless you asked (owner, 2026-08-18: no
+/// snapping, or make it a switch). Two things can, and both are switches on
+/// screen: SNAP puts what you place on the grid you can SEE, off by default;
+/// COLLIDE keeps two bodies out of the same ground, on by default because it is
+/// the engine's own contact rule and because the canvas is supposed to refuse to
+/// shove somebody aside (owner, 2026-08-17).
+function mountArenaCanvas(host, s, en, opts) {
+  const ro = () => opts.readonly || officialScenarioActive();
+
+  // THE TARGET'S OWN CONTROLS ARE ALREADY HERE, rendered by the caller into
+  // this host. They are MOVED into the scene rather than re-serialised: an
+  // `innerHTML` round trip would drop `pick.onclick`, every `data-k` listener
+  // the scenario binding attached, and the identity of every node something
+  // else holds a reference to. Detach, build, re-attach.
+  const side = host.querySelector(".arc-side");
+  if (side) side.remove();
+  host.innerHTML =
+    `<div class="arc-wrap">
+       <canvas class="arc-cv"></canvas>
+       <div class="arc-rail" role="toolbar" aria-label="${escHtml(tr("Tools"))}"></div>
+       <div class="arc-opts"></div>
+       <div class="arc-read num"></div>
+     </div>
+     <div class="ar-chips"></div>`;
+  const wrap = host.querySelector(".arc-wrap");
+  if (side) wrap.appendChild(side);
+  const cv = host.querySelector(".arc-cv");
+  const ctx = cv.getContext("2d");
+  const rail = host.querySelector(".arc-rail");
+  const optbox = host.querySelector(".arc-opts");
+  const readout = host.querySelector(".arc-read");
+  const chipbox = host.querySelector(".ar-chips");
+
+  // ---- the view ---------------------------------------------------------
+  // METRES ARE THE UNIT and `k` is pixels per metre. Nothing here is stored in
+  // the scenario: where you are LOOKING is not part of the fight.
+  const view = { x: 0, y: 0, k: 26 };
+  let W = 0, H = 0;
+  const px = (p) => [W / 2 + (p[0] - view.x) * view.k, H / 2 - (p[1] - view.y) * view.k];
+  const mt = (x, y) => [view.x + (x - W / 2) / view.k, view.y - (y - H / 2) / view.k];
+
+  let tool = "select";
+  let snapGrid = false, collide = true;
+  const sel = new Set();          // indices into `arenaBodies(s)`
+  let space = false, panning = false, dragging = false, marquee = null;
+  let mode = null, last = null, dragFrom = null, painted = null;
+  const touches = new Map();
+  let pinch = null;
+
+  const gridStep = () => (view.k < 9 ? 10 : 2);
+  const snapTo = (p) => {
+    if (!snapGrid) return p;
+    const g = gridStep();
+    return [Math.round(p[0] / g) * g, Math.round(p[1] / g) * g];
+  };
+  const bodyAt = (i) => (i === 0 ? s.target_at : (s.formation[i - 1] || {}).at);
+
+  // ---- drawing ----------------------------------------------------------
+  const cssv = (n) => getComputedStyle(document.documentElement)
+    .getPropertyValue("--" + n).trim() || "#888";
+
+  function fit() {
+    const pts = [...arenaBodies(s), s.player_at, arenaAim(s)];
+    const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+    const pad = 2;
+    const w = Math.max(Math.max(...xs) - Math.min(...xs) + pad * 2, 6);
+    const h = Math.max(Math.max(...ys) - Math.min(...ys) + pad * 2, 6);
+    view.k = Math.min(160, Math.max(1.6, Math.min(W / w, H / h)));
+    view.x = (Math.min(...xs) + Math.max(...xs)) / 2;
+    view.y = (Math.min(...ys) + Math.max(...ys)) / 2;
+  }
+
+  function grid() {
+    const step = gridStep();
+    const [x0, y1] = mt(0, 0), [x1, y0] = mt(W, H);
+    ctx.lineWidth = 1;
+    for (let pass = 0; pass < 2; pass++) {
+      const g = pass ? step * 5 : step;
+      if (pass === 0 && view.k * g < 11) continue;
+      ctx.strokeStyle = pass ? cssv("arc-grid2") : cssv("arc-grid");
+      ctx.beginPath();
+      for (let x = Math.ceil(x0 / g) * g; x <= x1; x += g) {
+        const q = Math.round(px([x, 0])[0]) + 0.5;
+        ctx.moveTo(q, 0); ctx.lineTo(q, H);
+      }
+      for (let y = Math.ceil(y0 / g) * g; y <= y1; y += g) {
+        const q = Math.round(px([0, y])[1]) + 0.5;
+        ctx.moveTo(0, q); ctx.lineTo(W, q);
+      }
+      ctx.stroke();
+    }
+  }
+
+  function draw() {
+    if (!W || !H) return;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = cssv("panel3"); ctx.fillRect(0, 0, W, H);
+    grid();
+
+    const r = Math.max(2.5, BODY_R_M * view.k);
+    const bodies = arenaBodies(s);
+    const aim = arenaAim(s);
+    const struck = arenaFirstHit(s);
+    const you = px(s.player_at), aimS = px(aim);
+
+    // THE MUZZLE, and the line from it. A straight-line weapon does not stop
+    // where you point (owner, 2026-08-18) — the aim marker is a DIRECTION, so
+    // the line runs through it and off the floor.
+    const span = Math.hypot(aim[0] - s.player_at[0], aim[1] - s.player_at[1]) || 1;
+    const u = [(aim[0] - s.player_at[0]) / span, (aim[1] - s.player_at[1]) / span];
+    const mz = px([s.player_at[0] + u[0] * BODY_R_M, s.player_at[1] + u[1] * BODY_R_M]);
+    const su = [u[0], -u[1]];
+    ctx.save();
+    ctx.strokeStyle = cssv("accent"); ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(mz[0], mz[1]);
+    ctx.lineTo(mz[0] + su[0] * 4000, mz[1] + su[1] * 4000); ctx.stroke();
+    ctx.restore();
+
+    for (let i = 0; i < bodies.length; i++) {
+      const [x, y] = px(bodies[i]);
+      if (x < -r * 3 || x > W + r * 3 || y < -r * 3 || y > H + r * 3) continue;
+      const on = sel.has(i);
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 7);
+      ctx.fillStyle = cssv("critical");
+      ctx.globalAlpha = i === struck ? 0.62 : on ? 0.5 : 0.3; ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = on || i === struck ? 2 : 1.25;
+      ctx.strokeStyle = on ? cssv("accent") : cssv("critical");
+      ctx.stroke();
+      // THE ONE THE SHOT IS ON, ringed: aiming at a place means the answer is
+      // not always the body nearest the cursor.
+      if (i === struck) {
+        ctx.beginPath(); ctx.arc(x, y, r + 4, 0, 7);
+        ctx.strokeStyle = cssv("accent"); ctx.lineWidth = 1.3;
+        ctx.setLineDash([3, 3]); ctx.stroke(); ctx.setLineDash([]);
+      }
+    }
+
+    ctx.beginPath(); ctx.arc(you[0], you[1], Math.max(3, r), 0, 7);
+    ctx.fillStyle = cssv("gold"); ctx.globalAlpha = 0.45; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.lineWidth = 2; ctx.strokeStyle = cssv("gold"); ctx.stroke();
+    // …and a short arrow past the muzzle, so being turned by your own aim is
+    // visible rather than implied.
+    ctx.beginPath(); ctx.moveTo(mz[0], mz[1]);
+    ctx.lineTo(mz[0] + su[0] * 11, mz[1] + su[1] * 11); ctx.stroke();
+
+    // THE AIM MARKER, always drawn: it is a place you set, not a lock that
+    // finds a body.
+    ctx.beginPath(); ctx.arc(aimS[0], aimS[1], 6.5, 0, 7);
+    ctx.strokeStyle = cssv("accent"); ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(aimS[0] - 10, aimS[1]); ctx.lineTo(aimS[0] + 10, aimS[1]);
+    ctx.moveTo(aimS[0], aimS[1] - 10); ctx.lineTo(aimS[0], aimS[1] + 10);
+    ctx.lineWidth = 1; ctx.stroke();
+
+    if (marquee) {
+      const [x0, y0] = marquee.a, [x1, y1] = marquee.b;
+      const [lx, ly] = [Math.min(x0, x1), Math.min(y0, y1)];
+      const [w, h] = [Math.abs(x1 - x0), Math.abs(y1 - y0)];
+      ctx.fillStyle = cssv("accent"); ctx.globalAlpha = 0.1;
+      ctx.fillRect(lx, ly, w, h); ctx.globalAlpha = 1;
+      ctx.strokeStyle = cssv("accent"); ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]); ctx.strokeRect(lx + 0.5, ly + 0.5, w, h); ctx.setLineDash([]);
+    }
+    paintReadout();
+  }
+
+  function paintReadout() {
+    const n = arenaBodies(s).length;
+    readout.textContent =
+      `${n} ${n === 1 ? tr("enemy") : tr("enemies")}  ·  ${arenaDistance(s).toFixed(2)} m` +
+      (sel.size ? `  ·  ${sel.size} ${tr("selected")}` : "");
+  }
+
+  // ---- the chips, unchanged in meaning ----------------------------------
+  const dis = () => (ro() ? " disabled" : "");
+  function paintChips() {
+    const n = arenaBodies(s).length;
+    const full = n >= ARENA_MAX_BODIES();
+    const jumps = ARENA_JUMPS.map((m) => {
+      const on = Math.abs(arenaDistance(s) - m) < 0.05;
+      return `<button class="ar-jump${on ? " on" : ""}" data-jump="${m}"${dis()}>${
+        escHtml(m === 0 ? tr("contact") : `${m} m`)}</button>`;
+    }).join("");
+    const crowd =
+      `<button class="ar-jump" data-add="1"${dis() || (full ? " disabled" : "")}>+1</button>`
+      + `<button class="ar-jump" data-add="8"${dis() || (full ? " disabled" : "")}>+8</button>`
+      + `<button class="ar-jump" data-clear="1"${dis() || (n < 2 ? " disabled" : "")}>${
+        escHtml(tr("one enemy"))}</button>`
+      + `<span class="ar-count">${n}${full ? " / " + ARENA_MAX_BODIES() : ""}</span>`
+      // A FINGER SCROLLS; IT DOES NOT DRAG THE FIGHT (owner, 2026-08-18). The
+      // rule survived the move to a canvas unchanged, and so did its reason: a
+      // browser decides who owns a gesture at `pointerdown` and never gives it
+      // back, so a body that drags on touch is a body whose finger can no
+      // longer scroll past the scene. Drawn wherever a finger CAN be the
+      // pointer -- `maxTouchPoints`, not a `pointer: coarse` query, because a
+      // touchscreen laptop reports a FINE pointer and has the same problem.
+      //
+      // TWO FINGERS ARE STILL THE VIEW whatever this says: a pinch is
+      // unambiguous, so pan and zoom never needed the mode.
+      + (navigator.maxTouchPoints > 0
+        ? `<button class="ar-jump${arenaTouchDrag ? " on" : ""}" data-touchdrag="1"
+           title="${escHtml(tr("while this is on, dragging a body moves it instead of scrolling the page"))}"
+           >\u2725 ${escHtml(tr("move"))}</button>`
+        : "")
+      + (s.aim_at
+        ? `<button class="ar-jump" data-unaim="1"${dis()}>${escHtml(tr("aim at the target"))}</button>`
+        : "");
+    chipbox.innerHTML =
+      `<div class="ar-jumps">${jumps}</div><div class="ar-jumps ar-crowd">${crowd}</div>`;
+  }
+
+  // ---- the tool rail ----------------------------------------------------
+  const TOOLS = [
+    ["select", "V", tr("Select"), '<path d="M4 3l6 14 2.2-5.6L18 9.2z"/>'],
+    ["place", "B", tr("Place enemies"),
+      '<circle cx="8" cy="8" r="3.1"/><circle cx="14.5" cy="13.5" r="3.1"/><path d="M4 16.5h2.6M5.3 15.2v2.6"/>'],
+    ["erase", "E", tr("Erase"),
+      '<path d="M6.5 16.5h9"/><path d="M4.6 12.4l5.4-5.4a2 2 0 012.8 0l2.6 2.6a2 2 0 010 2.8l-3.6 3.6H7.4z"/>'],
+    ["hand", "H", tr("Pan"),
+      '<path d="M7 11V5.4a1.3 1.3 0 012.6 0V10m0-.6V4.6a1.3 1.3 0 012.6 0V10m0-.8V5.8a1.3 1.3 0 012.6 0v6.4c0 3.2-2 5.3-5.2 5.3-2.4 0-3.6-1-4.7-2.6L4.6 12a1.3 1.3 0 012.1-1.5z"/>'],
+  ];
+  function paintRail() {
+    rail.innerHTML = TOOLS.map(([id, key, title, svg]) =>
+      `<button class="arc-tool" data-tool="${id}" title="${escHtml(title)} (${key})"
+         aria-label="${escHtml(title)}" aria-pressed="${id === tool}"${
+        id === "hand" ? "" : dis()}>
+         <svg viewBox="0 0 22 22">${svg}</svg></button>`).join("");
+    optbox.innerHTML =
+      `<button class="arc-opt" data-opt="snap" aria-pressed="${snapGrid}"${dis()}
+         title="${escHtml(tr("put what you place and drag on the grid you can see"))}">${
+        escHtml(tr("snap"))}</button>`
+      + `<button class="arc-opt" data-opt="collide" aria-pressed="${collide}"${dis()}
+         title="${escHtml(tr("keep two bodies out of the same ground - the engine's own contact rule"))}">${
+        escHtml(tr("collide"))}</button>`
+      + `<button class="arc-opt" data-opt="fit" title="${escHtml(tr("frame everything"))}">${
+        escHtml(tr("fit"))}</button>`;
+  }
+
+  const changed = () => {
+    paintChips(); paintRail(); draw();
+    markScenarioDirty();
+    if (opts.after) opts.after();
+  };
+
+  // ---- placement --------------------------------------------------------
+  const clearAt = (p, skip) => {
+    if (!collide) return true;
+    const bodies = arenaBodies(s);
+    return bodies.every((b, i) => i === skip
+      || Math.hypot(b[0] - p[0], b[1] - p[1]) >= CONTACT_M - 1e-9)
+      && Math.hypot(s.player_at[0] - p[0], s.player_at[1] - p[1]) >= CONTACT_M - 1e-9;
+  };
+  function placeAt(raw) {
+    const p = snapTo(raw);
+    const floor = collide ? 0 : BODY_R_M;
+    if (painted && Math.hypot(painted[0] - p[0], painted[1] - p[1]) < floor) return;
+    if (arenaBodies(s).length >= ARENA_MAX_BODIES() || !clearAt(p)) return;
+    s.formation = s.formation || [];
+    s.formation.push({ id: nextFoeId(s), at: [p[0], p[1]] });
+    painted = [p[0], p[1]];
+    changed();
+  }
+  function eraseAt(p) {
+    const i = hitBody(p);
+    // THE TARGET IS NOT ERASABLE. It is the body the fight is scored against
+    // and `arenaBodies` reads it from `target_at` — deleting it would be
+    // deleting the fight, which is what "one enemy" is for in the other
+    // direction.
+    if (i === null || i === 0) return;
+    s.formation.splice(i - 1, 1);
+    sel.clear();
+    changed();
+  }
+
+  // ---- hit tests --------------------------------------------------------
+  // HOW CLOSE COUNTS AS ON IT. A body is small on screen when you are zoomed
+  // out, so the grab is given a few pixels of slop — but NEVER more than half
+  // the closest two bodies can ever be (`CONTACT_M / 2`). Without that cap the
+  // player's slop swallowed the enemy standing at contact, and dragging the
+  // enemy silently dragged YOU: at 24 px per metre the slop was 0.42 m and the
+  // two of them are 0.4 m apart (2026-08-18).
+  const grab = () => Math.min(CONTACT_M / 2, Math.max(BODY_R_M, 9 / view.k));
+  function hitBody(p) {
+    const r = grab();
+    const bodies = arenaBodies(s);
+    let best = null, bd = Infinity;
+    for (let i = 0; i < bodies.length; i++) {
+      const d = Math.hypot(bodies[i][0] - p[0], bodies[i][1] - p[1]);
+      if (d <= r && d < bd) { bd = d; best = i; }
+    }
+    return best;
+  }
+  const hitYou = (p) => Math.hypot(s.player_at[0] - p[0], s.player_at[1] - p[1]) <= grab();
+  // THE MARKER IS GRABBABLE ONLY ONCE IT IS A PLACE OF ITS OWN.
+  //
+  // Until you put it somewhere, aim RIDES THE TARGET — which means the marker
+  // sits exactly on the body, and hit-testing it first made the target
+  // impossible to drag: every grab took the aim instead. It is set by CLICKING
+  // BARE FLOOR (see `end`), which is the gesture the "aim is a direction" model
+  // is for and the one the SVG scene had; after that it is a handle like any
+  // other.
+  const hitAim = (p) => {
+    if (!s.aim_at) return false;
+    const a = s.aim_at;
+    return Math.hypot(a[0] - p[0], a[1] - p[1]) <= grab();
+  };
+
+  // ---- sizing -----------------------------------------------------------
+  const dpr = () => Math.min(window.devicePixelRatio || 1, 2);
+  function resize() {
+    const b = cv.getBoundingClientRect();
+    if (!b.width || !b.height) return;          // on another tab: nothing to do
+    const first = !W;
+    W = b.width; H = b.height;
+    cv.width = Math.round(W * dpr()); cv.height = Math.round(H * dpr());
+    ctx.setTransform(dpr(), 0, 0, dpr(), 0, 0);
+    if (first) fit();
+    draw();
+  }
+  new ResizeObserver(resize).observe(cv);
+
+  // ---- gestures ---------------------------------------------------------
+  const cursor = () => {
+    cv.className = "arc-cv arc-" + (space || tool === "hand" ? "hand" : tool)
+      + (panning ? " arc-panning" : "") + (dragging ? " arc-moving" : "");
+    // TOUCH-ACTION FOLLOWS THE MODE. `pan-y` keeps the page scrollable through
+    // the scene; `none` hands every gesture here (owner, 2026-08-18: a finger
+    // scrolls, it does not drag the fight).
+    cv.style.touchAction = arenaTouchDrag ? "none" : "pan-y";
+  };
+
+  rail.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-tool]");
+    if (!b || b.disabled) return;
+    tool = b.dataset.tool; paintRail(); cursor();
+  });
+  optbox.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-opt]");
+    if (!b || b.disabled) return;
+    if (b.dataset.opt === "snap") snapGrid = !snapGrid;
+    else if (b.dataset.opt === "collide") collide = !collide;
+    else if (b.dataset.opt === "fit") fit();
+    paintRail(); draw();
+  });
+  chipbox.addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    // THE TOUCH-DRAG MODE IS NOT AN EDIT to the fight, so it is answered before
+    // the official-ruler guard: a ruler's scene refuses to MOVE, and offering a
+    // dead toggle beside it would say the opposite.
+    if (b.dataset.touchdrag) { arenaTouchDrag = !arenaTouchDrag; paintChips(); cursor(); return; }
+    if (ro()) return;
+    if (b.dataset.jump !== undefined) setArenaDistance(s, Number(b.dataset.jump));
+    else if (b.dataset.add) {
+      for (let i = 0; i < Number(b.dataset.add); i++) if (!arenaAddFoe(s)) break;
+    } else if (b.dataset.clear) { s.formation = []; s.aim_at = null; sel.clear(); }
+    else if (b.dataset.unaim) s.aim_at = null;
+    else return;
+    changed();
+  });
+
+  const pinchState = () => {
+    const [a, b] = [...touches.values()];
+    return { d: Math.hypot(a[0] - b[0], a[1] - b[1]),
+             c: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] };
+  };
+  const local = (e) => {
+    const b = cv.getBoundingClientRect();
+    return [e.clientX - b.left, e.clientY - b.top];
+  };
+
+  cv.addEventListener("pointerdown", (e) => {
+    const [lx, ly] = local(e);
+    if (e.pointerType === "touch") {
+      if (!arenaTouchDrag && touches.size === 0) return;   // the finger scrolls
+      touches.set(e.pointerId, [lx, ly]);
+      if (touches.size === 2) {
+        if (mode === "paint" && painted) { s.formation.pop(); changed(); }
+        mode = null; marquee = null; painted = null;
+        const st = pinchState();
+        pinch = { d: st.d, w: mt(st.c[0], st.c[1]) };
+        return;
+      }
+    }
+    cv.setPointerCapture(e.pointerId);
+    const p = mt(lx, ly);
+    last = [lx, ly];
+    if (space || tool === "hand" || e.button === 1 || e.button === 2) {
+      mode = "pan"; panning = true; cursor(); return;
+    }
+    if (ro()) return;                       // a ruler's fight is not editable
+    if (tool === "place") { mode = "paint"; painted = null; placeAt(p); return; }
+    if (tool === "erase") { mode = "erase"; eraseAt(p); return; }
+    // THE ORDER IS WHAT YOU REACH FOR FIRST: a placed aim marker, then an
+    // ENEMY, then yourself. The enemy before the player, because at contact
+    // they are one grab apart and the enemy is what a formation is made of.
+    if (hitAim(p)) { mode = "aim"; return; }
+    const i = hitBody(p);
+    if (i === null && hitYou(p)) { mode = "you"; return; }
+    if (i !== null) {
+      if (e.shiftKey) (sel.has(i) ? sel.delete(i) : sel.add(i));
+      else if (!sel.has(i)) { sel.clear(); sel.add(i); }
+      mode = "move"; dragging = true; dragFrom = snapTo(p); cursor(); draw();
+      return;
+    }
+    if (!e.shiftKey) sel.clear();
+    mode = "marquee"; marquee = { a: [lx, ly], b: [lx, ly], base: new Set(sel) };
+    draw();
+  });
+
+  cv.addEventListener("pointermove", (e) => {
+    const [lx, ly] = local(e);
+    if (e.pointerType === "touch" && touches.has(e.pointerId)) touches.set(e.pointerId, [lx, ly]);
+    if (pinch && touches.size === 2) {
+      const st = pinchState();
+      view.k = Math.min(160, Math.max(1.6, view.k * (st.d / (pinch.d || 1))));
+      const after = mt(st.c[0], st.c[1]);
+      view.x += pinch.w[0] - after[0];
+      view.y += pinch.w[1] - after[1];
+      pinch.d = st.d; pinch.w = mt(st.c[0], st.c[1]);
+      draw(); return;
+    }
+    if (!mode) return;
+    const p = mt(lx, ly);
+    if (mode === "pan") {
+      view.x -= (lx - last[0]) / view.k;
+      view.y += (ly - last[1]) / view.k;
+      last = [lx, ly]; draw(); return;
+    }
+    if (mode === "paint") { placeAt(p); return; }
+    if (mode === "erase") { eraseAt(p); return; }
+    if (mode === "aim") { s.aim_at = snapTo(p); draw(); paintChips(); return; }
+    if (mode === "you") {
+      s.player_at = snapTo(p);
+      s.target_at = keepApart(s.player_at, s.target_at);
+      draw(); return;
+    }
+    if (mode === "move") {
+      const to = snapTo(p);
+      const dx = to[0] - dragFrom[0], dy = to[1] - dragFrom[1];
+      if (!dx && !dy) return;
+      // EVERY SELECTED BODY MOVES BY ONE DELTA, and each is settled on its own
+      // so the block cannot be pushed through somebody standing outside it.
+      for (const i of sel) {
+        const b = bodyAt(i);
+        if (!b) continue;
+        const want = [b[0] + dx, b[1] + dy];
+        const at = collide ? arenaSettle(s, want, i) : want;
+        if (at === null) continue;
+        if (i === 0) s.target_at = at; else s.formation[i - 1].at = at;
+      }
+      dragFrom = to; draw(); return;
+    }
+    if (mode === "marquee") {
+      marquee.b = [lx, ly];
+      const [ax, ay] = mt(marquee.a[0], marquee.a[1]);
+      const [bx, by] = mt(marquee.b[0], marquee.b[1]);
+      const lo = [Math.min(ax, bx), Math.min(ay, by)];
+      const hi = [Math.max(ax, bx), Math.max(ay, by)];
+      sel.clear(); marquee.base.forEach((i) => sel.add(i));
+      arenaBodies(s).forEach((b, i) => {
+        if (b[0] >= lo[0] && b[0] <= hi[0] && b[1] >= lo[1] && b[1] <= hi[1]) sel.add(i);
+      });
+      draw();
+    }
+  });
+
+  const end = (e) => {
+    if (e && e.pointerType === "touch") {
+      touches.delete(e.pointerId);
+      if (touches.size < 2) pinch = null;
+      if (touches.size === 1) { mode = null; marquee = null; }
+    }
+    let wrote = mode && mode !== "pan" && mode !== "marquee";
+    // POINT AT A PLACE. A marquee that never moved is a CLICK on bare floor,
+    // and clicking bare floor aims there — a body is dragged, but a PLACE has
+    // nothing to grab (owner, 2026-08-17). The distinction is the drag itself,
+    // so one gesture serves both without a mode to choose.
+    if (mode === "marquee" && marquee && !ro()) {
+      const moved = Math.hypot(marquee.b[0] - marquee.a[0], marquee.b[1] - marquee.a[1]);
+      if (moved < 4) { s.aim_at = snapTo(mt(marquee.a[0], marquee.a[1])); wrote = true; }
+    }
+    if (mode === "marquee") marquee = null;
+    mode = null; panning = false; dragging = false; painted = null;
+    cursor();
+    if (wrote) changed(); else draw();
+  };
+  cv.addEventListener("pointerup", end);
+  cv.addEventListener("pointercancel", end);
+  cv.addEventListener("contextmenu", (e) => e.preventDefault());
+
+  cv.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const [lx, ly] = local(e);
+    const before = mt(lx, ly);
+    view.k = Math.min(160, Math.max(1.6, view.k * Math.exp(-e.deltaY * 0.0016)));
+    const after = mt(lx, ly);
+    view.x += before[0] - after[0];
+    view.y += before[1] - after[1];
+    draw();
+  }, { passive: false });
+
+  // KEYS ONLY WHILE THE SCENE HAS FOCUS, so typing a level into the box beside
+  // it cannot delete the formation.
+  wrap.tabIndex = 0;
+  wrap.addEventListener("keydown", (e) => {
+    if (e.code === "Space" && !space) { space = true; cursor(); e.preventDefault(); return; }
+    const k = e.key.toLowerCase();
+    if (k === "v" || k === "b" || k === "e" || k === "h") {
+      if (ro() && k !== "h") return;
+      tool = { v: "select", b: "place", e: "erase", h: "hand" }[k];
+      paintRail(); cursor(); return;
+    }
+    if (ro()) return;
+    if (k === "s") { snapGrid = !snapGrid; paintRail(); return; }
+    if (k === "c") { collide = !collide; paintRail(); return; }
+    if (k === "escape") { sel.clear(); draw(); return; }
+    if (e.key === "Delete" || e.key === "Backspace") {
+      const gone = [...sel].filter((i) => i > 0).sort((a, b) => b - a);
+      if (!gone.length) return;
+      gone.forEach((i) => s.formation.splice(i - 1, 1));
+      sel.clear(); changed(); e.preventDefault(); return;
+    }
+    if (e.key.startsWith("Arrow") && sel.size) {
+      const d = e.shiftKey ? 1 : 0.1;
+      const dx = ((e.key === "ArrowRight") - (e.key === "ArrowLeft")) * d;
+      const dy = ((e.key === "ArrowUp") - (e.key === "ArrowDown")) * d;
+      for (const i of sel) {
+        const b = bodyAt(i);
+        if (!b) continue;
+        const at = collide ? arenaSettle(s, [b[0] + dx, b[1] + dy], i) : [b[0] + dx, b[1] + dy];
+        if (at === null) continue;
+        if (i === 0) s.target_at = at; else s.formation[i - 1].at = at;
+      }
+      changed(); e.preventDefault();
+    }
+  });
+  wrap.addEventListener("keyup", (e) => {
+    if (e.code === "Space") { space = false; cursor(); }
+  });
+
+  // THE SCENE, ADDRESSABLE. A canvas has no per-body element, so anything that
+  // needs to point at a body -- a check driving a drag, a caller re-framing the
+  // view -- needs the same metres-to-pixels map the renderer uses. Exposing THAT
+  // rather than a set of stand-in DOM nodes keeps one geometry: whatever it says
+  // is where the body was drawn.
+  host.__arena = {
+    view,
+    px, mt,
+    fit: () => { fit(); draw(); },
+    draw,
+    tool: (id) => { tool = id; paintRail(); cursor(); },
+    get sel() { return sel; },
+    get snap() { return snapGrid; },
+    get collide() { return collide; },
+  };
+  // READ-ONLY SAYS SO ON THE HOST, the same class the SVG scene set — it is
+  // what tells a reader (and a check) that this copy is a picture rather than
+  // an editor, and the optimizer's copy has always carried it.
+  host.classList.toggle("ar-ro", !!opts.readonly);
+  paintRail(); paintChips(); cursor(); resize();
+  // THE HOST MAY BE ON ANOTHER TAB at mount, where the box is zero and there is
+  // nothing to size to. The observer catches it the moment it is shown.
+}
+
 function mountArena(host, s, en, opts) {
   if (!host) return;
+  // THE EDITOR IS A CANVAS as of 2026-08-18; the ANALYSIS mount is still the
+  // SVG scene. They were always two different things (owner, 2026-08-17:
+  // setting up a fight and reading one are two things) and only one of them
+  // needed to become an editor — the result panel's copy draws a fight that has
+  // already been run, picks rather than drags, and shades by damage. Staged
+  // deliberately: one renderer moves at a time, and the half a RESULT depends
+  // on moves second.
+  if (!opts.heat) return mountArenaCanvas(host, s, en, opts);
   // QUICK SETS, in the canvas. The scene is the one place a position is set
   // (owner, 2026-08-16), so the shortcuts live in it rather than in a second
   // control below that would be a second source of truth for the same fact.
@@ -9174,7 +9766,7 @@ function renderScenarioFields(ids, opts = {}) {
       ? `<a class="en-wiki" href="${wikiUrl(en.name_en || en.name)}" target="_blank" rel="noopener"
             title="${escHtml(tr("open the wiki page"))}">${escHtml(tr("wiki"))} ↗</a>`
       : "";
-    $(ids.target).innerHTML =
+    const card =
       `<div class="en-row">
          <button class="en-card" id="${ids.target}-pick" title="${escHtml(tr("choose the target"))}">
            ${enemyImg(en, "en-img")}
@@ -9186,12 +9778,27 @@ function renderScenarioFields(ids, opts = {}) {
            </span>
          </button>
          ${wiki}
-       </div>` +
-      `<div class="arena" id="${ids.target}-arena"></div>` +
+       </div>`;
+    // EVERYTHING ABOUT THE TARGET LIVES IN THE CANVAS (owner, 2026-08-18), and
+    // only the DURATION stays outside: how long the fight runs is a property of
+    // the ENGAGEMENT rather than of anybody standing on the floor, and it is the
+    // one field in this block that is not about the target.
+    //
+    // The card and the fields are rendered INTO the arena host and then MOVED —
+    // not re-serialised — into the scene by `mountArenaCanvas`. Moving the nodes
+    // is what keeps `pick.onclick` bound, every `data-k` listener live, and
+    // every selector pointing at the element it always did.
+    $(ids.target).innerHTML =
+      `<div class="arena" id="${ids.target}-arena">
+        <div class="arc-side">${card}
+          <div class="arc-fields">
+            <label>${escHtml(tr("Level"))} <input type="number" data-k="level" min="1" max="9999" value="${sim.level}"></label>
+            <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
+            ${eximusField(en)}
+          </div>
+        </div>
+      </div>` +
       `<div class="field-grid">
-        <label>${escHtml(tr("Level"))} <input type="number" data-k="level" min="1" max="9999" value="${sim.level}"></label>
-        <label class="check"><input type="checkbox" data-k="steel_path" ${sim.steel_path ? "checked" : ""}> Steel Path</label>
-        ${eximusField(en)}
         ${deployField(w, sim)}
         <label>${escHtml(tr("Duration (s)"))} <input type="number" data-k="duration" min="1" max="3600" value="${sim.duration}"></label>
       </div>`;

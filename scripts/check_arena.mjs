@@ -55,10 +55,44 @@ const r = await evaluate(`(async () => {
   if (add) { add.click(); await sleep(1500); }
   out.startedEditable = typeof officialScenarioActive === 'function' && !officialScenarioActive();
 
-  const svg = () => document.querySelector('#sim-target-arena .ar-svg');
+  // THE SCENE IS A CANVAS as of 2026-08-18, so there is no circle to grab and
+  // no label element to read. Two things replace them, and both are STRONGER
+  // than what they replace:
+  //
+  //   · at(i) asks the scene itself where it drew body i (host.__arena.px
+  //     is the renderer's own metres-to-pixels map), so a drag starts exactly
+  //     where the body is on screen rather than where a DOM box says it is.
+  //   · ink(x, y) reads the PIXELS BACK. "It is drawn" used to mean "an
+  //     element exists"; on a canvas it can mean the thing a reader actually
+  //     sees, which is a better question to be asking.
+  const cvEl = () => document.querySelector('#sim-target-arena .arc-cv');
+  const arena = () => document.querySelector('#sim-target-arena').__arena;
+  const at = (i) => {
+    const b = i === 0 ? sim.target_at : sim.formation[i - 1].at;
+    const [x, y] = arena().px(b);
+    const box = cvEl().getBoundingClientRect();
+    return [box.left + x, box.top + y];
+  };
+  const atPoint = (p) => {
+    const [x, y] = arena().px(p);
+    const box = cvEl().getBoundingClientRect();
+    return [box.left + x, box.top + y];
+  };
+  // Anything that is not the floor. The floor is one flat colour, so a pixel
+  // that differs from the corner is something the renderer put there.
+  const ink = (cx, cy) => {
+    const c = cvEl(), box = c.getBoundingClientRect();
+    const g = c.getContext('2d');
+    const sx = (cx - box.left) * (c.width / box.width);
+    const sy = (cy - box.top) * (c.height / box.height);
+    const bg = g.getImageData(2, 2, 1, 1).data;
+    const px = g.getImageData(Math.round(sx), Math.round(sy), 1, 1).data;
+    return Math.abs(px[0] - bg[0]) + Math.abs(px[1] - bg[1]) + Math.abs(px[2] - bg[2]) > 12;
+  };
   const dist = () => {
-    const t = document.querySelector('#sim-target-arena .ar-dist');
-    return t ? parseFloat(t.textContent) : null;
+    const t = document.querySelector('#sim-target-arena .arc-read');
+    const m = t && t.textContent.match(/([0-9.]+) m/);
+    return m ? parseFloat(m[1]) : null;
   };
   // The model holds CENTRES; the page shows the GAP. Both, so the check can
   // say which one an assertion is about.
@@ -67,35 +101,50 @@ const r = await evaluate(`(async () => {
   const gap = () => Math.max(0, state() - 0.4);
 
   // 1. IT DRAWS, and it starts at contact.
-  out.drew = !!svg();
-  out.bodies = document.querySelectorAll('#sim-target-arena .ar-body').length;
+  out.drew = !!cvEl();
+  out.bodies = arenaBodies(sim).length + 1;   // the enemies, and you
+  // …and both of them are INK on the floor, at the places the scene says it
+  // put them. An element could exist and be drawn nowhere; a pixel cannot.
+  out.bodyInk = ink(...at(0));
+  out.youInk = ink(...atPoint(sim.player_at));
   out.startLabel = dist();
   out.startState = state();
   out.startGap = gap();
   // THE MUZZLE IS DRAWN, and it sits on the shooter's own circumference.
-  out.muzzle = !!document.querySelector('#sim-target-arena .ar-muzzle');
-  out.facing = !!document.querySelector('#sim-target-arena .ar-face');
+  // THE MUZZLE IS ON THE SHOOTER'S OWN CIRCUMFERENCE, facing the aim, and both
+  // halves are read off the picture: ink one body radius along the aim line
+  // from the player's centre, and ink again further along it where the facing
+  // arrow reaches. Nothing is drawn a radius BEHIND, which is the control that
+  // stops "the player is a big blob" from passing this.
+  {
+    const a = arenaAim(sim), you = sim.player_at;
+    const d = Math.hypot(a[0] - you[0], a[1] - you[1]) || 1;
+    const u = [(a[0] - you[0]) / d, (a[1] - you[1]) / d];
+    const along = (m) => atPoint([you[0] + u[0] * m, you[1] + u[1] * m]);
+    out.muzzle = ink(...along(0.2));
+    out.facing = ink(...along(0.55));
+  }
 
   // 2. DRAGGING MOVES THE FIGHT. Pointer events on the enemy body, in the
   //    SVG's own pixel space, so this is the gesture a finger makes.
-  const drag = (sel, dx, dy) => {
-    const el = document.querySelector(sel);
-    const b = el.getBoundingClientRect();
-    const x = b.left + b.width / 2, y = b.top + b.height / 2;
-    const ev = (type, cx, cy, target) => target.dispatchEvent(
-      new PointerEvent(type, { clientX: cx, clientY: cy, bubbles: true, cancelable: true }));
-    ev('pointerdown', x, y, el);
-    ev('pointermove', x + dx, y + dy, window);
-    ev('pointerup', x + dx, y + dy, window);
+  const drag = (i, dx, dy) => {
+    const c = cvEl();
+    c.setPointerCapture = () => {};
+    const [x, y] = at(i);
+    const ev = (type, cx, cy) => c.dispatchEvent(new PointerEvent(type,
+      { clientX: cx, clientY: cy, bubbles: true, cancelable: true, pointerId: 1, button: 0 }));
+    ev('pointerdown', x, y);
+    ev('pointermove', x + dx, y + dy);
+    ev('pointerup', x + dx, y + dy);
   };
   // Up the screen is further away (y grows away from the viewer). Twice, so
   // this also covers the repaint: the scene rebuilds its own markup on every
   // move, and a listener bound to the circle rather than to the host would
   // make the scene draggable exactly once.
-  drag('#sim-target-arena .ar-foe', 0, -60);
+  drag(0, 0, -60);
   await sleep(600);
   const oneDrag = state();
-  drag('#sim-target-arena .ar-foe', 0, -60);
+  drag(0, 0, -60);
   await sleep(600);
   out.oneDrag = oneDrag;
   out.afterDrag = state();
@@ -121,14 +170,17 @@ const r = await evaluate(`(async () => {
 
   // 3. TWO BODIES DO NOT OVERLAP, AND CONTACT IS ZERO. Drag the enemy right
   //    onto the player.
-  const you = document.querySelector('#sim-target-arena .ar-you').getBoundingClientRect();
-  const foe = document.querySelector('#sim-target-arena .ar-foe');
-  const fb = foe.getBoundingClientRect();
-  const ev = (type, cx, cy, target) => target.dispatchEvent(
-    new PointerEvent(type, { clientX: cx, clientY: cy, bubbles: true, cancelable: true }));
-  ev('pointerdown', fb.left + fb.width / 2, fb.top + fb.height / 2, foe);
-  ev('pointermove', you.left + you.width / 2, you.top + you.height / 2, window);
-  ev('pointerup', you.left + you.width / 2, you.top + you.height / 2, window);
+  {
+    const c = cvEl();
+    c.setPointerCapture = () => {};
+    const [fx, fy] = at(0);
+    const [yx, yy] = atPoint(sim.player_at);
+    const ev = (type, cx, cy) => c.dispatchEvent(new PointerEvent(type,
+      { clientX: cx, clientY: cy, bubbles: true, cancelable: true, pointerId: 1, button: 0 }));
+    ev('pointerdown', fx, fy);
+    ev('pointermove', yx, yy);
+    ev('pointerup', yx, yy);
+  }
   await sleep(900);
   out.overlapped = state();
   out.overlapLabel = dist();
@@ -139,7 +191,7 @@ const r = await evaluate(`(async () => {
 
   // 4. THE QUICK SETS ARE IN THE CANVAS, and there is no second control.
   out.noTypedBox = !document.querySelector('#sim-target [data-k="arena_distance"]');
-  out.jumps = [...document.querySelectorAll('#sim-target-arena .ar-jump')].map(b => b.textContent.trim());
+  out.jumps = [...document.querySelectorAll('#sim-target-arena .ar-jump[data-jump]')].map(b => b.textContent.trim());
   // Put the target OFF-AXIS first, so a snap-to-axis implementation is visible
   // rather than lucky: (6,8) is 3-4-5 scaled, so a 20 m GAP must land on
   // (12.24, 16.32) — 20.4 m between centres, since the quick sets set the gap.
@@ -163,7 +215,7 @@ const r = await evaluate(`(async () => {
   out.officialDistance = gap();
   out.official = typeof officialScenarioActive === 'function' && officialScenarioActive();
   const before = state();
-  drag('#sim-target-arena .ar-foe', 0, -70);
+  drag(0, 0, -70);
   await sleep(700);
   out.officialMoved = Math.abs(state() - before) > 1e-9;
   out.officialLooksLocked = !!document.querySelector('#sim-target-arena.ar-ro');
@@ -171,7 +223,7 @@ const r = await evaluate(`(async () => {
   // 6. THE OPTIMIZER SHOWS IT READ-ONLY.
   history.pushState({}, '', '/weapons/Braton/optimizer'); route(); await sleep(2200);
   const oh = document.querySelector('#opt-target-arena');
-  out.optDrew = !!(oh && oh.querySelector('.ar-svg'));
+  out.optDrew = !!(oh && oh.querySelector('.arc-cv'));
   out.optReadonly = !!(oh && oh.classList.contains('ar-ro'));
   return out;
 })()`);
@@ -180,6 +232,8 @@ check("a scenario of your own is open before anything is dragged",
   r.startedEditable === true,
   "the app lands on the official ruler, whose fight is pinned");
 check("the arena draws, with two bodies", r.drew && r.bodies === 2, `${r.bodies} bodies`);
+check("...and both are INK on the floor, where the scene says it put them",
+  r.bodyInk === true && r.youInk === true, `enemy ${r.bodyInk}, you ${r.youInk}`);
 check("...and a MUZZLE on the shooter's own circumference, with its facing",
   r.muzzle === true && r.facing === true, `muzzle ${r.muzzle} facing ${r.facing}`);
 check("...and the fight starts at CONTACT — centres 0.4 m apart, and it READS 0 m",
