@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 3fbb853a568e45258d38669c8cc704072024bc35
+engine: bb56b2000e3eaa2dd2722d567c9e0d950e7b2ab0
 entries:
   - weapon: akarius_prime
     mode: base
@@ -3912,6 +3912,18 @@ entries:
     mode: cycle
     score: 7.004747429236659
     mods: [amalgam_serration, galvanized_chamber, critical_delay, vital_sense, radiated_reload, rime_rounds, malignant_force, thermite_rounds]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [longbow_sharpshot]
+  - weapon: paris_prime
+    mode: cycle
+    score: 2.320496351228975
+    mods: [primary_acuity, serration, critical_delay, vile_acceleration, vital_sense, argon_scope, primed_cryo_rounds, thermite_rounds]
+    evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
+    arcanes: [longbow_sharpshot]
+  - weapon: paris_prime
+    mode: cycle
+    score: 0.997306392662356
+    mods: [galvanized_chamber, serration, critical_delay, hammer_shot, vile_acceleration, vital_sense, primed_cryo_rounds, thermite_rounds]
     evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
     arcanes: [longbow_sharpshot]
   - weapon: phaedra
