@@ -289,94 +289,123 @@ const imgTag = (src, cls) => src ? `<img class="${cls||''}" src="${src}" onerror
 // shape the poller renders, so the progress UI is unchanged. Cancelling a
 // busy single-threaded worker is impossible from the outside: cancel =
 // terminate that worker (all state lives inside it).
-let rpcWorker = null, rpcId = 0;
-const rpcPending = new Map();
-/// …and the ones that asked to be told how far along they are.
-const rpcProgress = new Map();
-function ensureRpcWorker() {
-  if (rpcWorker) return rpcWorker;
-  rpcWorker = new Worker("/worker.js");
-  rpcWorker.onmessage = (e) => {
+/// ONE POOL OF WORKERS, and every wasm call this page makes runs on it.
+///
+/// There were THREE, each right for its own caller and wrong together: a single
+/// RPC worker behind `api`, a fleet the simulator sharded across, and a pool of
+/// lanes the quick calc scanned across. On an eight-core machine that is up to
+/// seventeen wasm instances, each holding its own copy of the engine's memory —
+/// while the fleet sat idle through a scan and the scan's lanes sat idle through
+/// a simulation (owner, 2026-08-18). It is the rule this repo already has about
+/// fights and axes, one layer down: one of a thing, not three.
+///
+/// SIZE: every core but one, capped at eight. No setting of its own — a
+/// simulation is not a search. THE OPTIMIZER KEEPS ITS OWN WORKERS, because a
+/// search owns them for minutes rather than for one call and its count is a
+/// preset the reader sets; sharing would mean a scan waiting on a search.
+///
+/// A LANE IS A QUEUE. The worker handles one message at a time and the wasm
+/// call inside it is synchronous, so `busy` is queue depth and the least busy
+/// lane is the one that will answer soonest.
+let pool = null;
+const poolSize = () =>
+  Math.max(1, Math.min((Number(navigator.hardwareConcurrency) || 4) - 1, 8));
+
+function makeLane() {
+  const w = new Worker("/worker.js");
+  const pending = new Map();
+  const progress = new Map();
+  let seq = 0, dead = false, busy = 0;
+  w.onmessage = (e) => {
     if (e.data.kind === "progress") {
-      const f = rpcProgress.get(e.data.id);
+      const f = progress.get(e.data.id);
       if (f) f(e.data.done, e.data.total);
       return;
     }
-    const p = rpcPending.get(e.data.id);
-    if (p) { rpcPending.delete(e.data.id); rpcProgress.delete(e.data.id); p(e.data.payload); }
+    const r = pending.get(e.data.id);
+    if (r) {
+      pending.delete(e.data.id);
+      progress.delete(e.data.id);
+      busy = Math.max(0, busy - 1);
+      r(e.data.payload);
+    }
   };
-  return rpcWorker;
-}
-/// `onProgress(done, total)` is optional and only `/api/simulate` reports it —
-/// see the worker. Every other call is unchanged.
-/// THE SIM'S OWN WORKER FLEET — one worker per core, the same shape the
-/// optimizer's has used since it existed.
-///
-/// The runs of a simulation are INDEPENDENT given their index, so N workers
-/// each take a slice and the shards are merged back into exactly what one
-/// worker would have produced (`eight_shards_are_one_run`). Measured on a
-/// 361-body ruler with a full status build: 14.4 s a hundred runs on one
-/// thread, 2.1 on eight — 6.8x (owner, 2026-08-18).
-///
-/// SAME RULE AS THE QUICK CALC'S LANES: every core but one, capped at eight. No
-/// setting of its own — a simulation is not a search and has no preset to put
-/// one in; it takes what the machine has.
-let simFleet = null;
-/// HOW MANY LANES THIS MACHINE GETS, stated once: every core but one, capped at
-/// eight. The quick calc's pool reads the same rule, and the caller asks for the
-/// NUMBER before deciding whether it wants the workers.
-const fleetSize = () =>
-  Math.max(1, Math.min((Number(navigator.hardwareConcurrency) || 4) - 1, 8));
-const simLanes = () => {
-  if (simFleet) return simFleet;
-  const n = fleetSize();
-  simFleet = Array.from({ length: n }, () => {
-    const w = new Worker("/worker.js");
-    const pending = new Map();
-    const progress = new Map();
-    let seq = 0;
-    w.onmessage = (e) => {
-      if (e.data.kind === "progress") {
-        const f = progress.get(e.data.id);
-        if (f) f(e.data.done, e.data.total);
-        return;
-      }
-      const r = pending.get(e.data.id);
-      if (r) { pending.delete(e.data.id); progress.delete(e.data.id); r(e.data.payload); }
-    };
-    let dead = false;
-    return {
-      worker: w,
-      // NOBODY IS COMING BACK once the worker is terminated, so a cancel has to
-      // settle every waiter itself. Without this the fleet's promises hang, the
-      // caller never reaches its `finally`, and the Run button stays disabled
-      // for ever — which is a worse hang than the one the stop button exists to
-      // end (2026-08-18).
-      abandon: () => {
-        dead = true;
-        pending.forEach((res) => res({ ok: false, cancelled: true }));
-        pending.clear();
-        progress.clear();
-      },
-      // …AND A LANE STAYS DEAD, which settles the waiters a cancel could not
-      // see because they did not exist yet. A simulation is TWO round trips —
-      // the shards, then the merge — and a stop pressed in the gap between them
-      // settled every shard and then posted the merge to a terminated worker,
-      // whose answer never comes. Same hang, one instruction later
-      // (2026-08-18).
-      send: (msg, onProgress) => new Promise((res) => {
+  const lane = {
+    worker: w,
+    get busy() { return busy; },
+    // NOBODY IS COMING BACK once the worker is terminated, so a cancel settles
+    // every waiter itself. Without this the promises hang, the caller never
+    // reaches its `finally`, and the Run button stays disabled for ever — a
+    // worse hang than the one the stop button exists to end (2026-08-18).
+    //
+    // …AND THE LANE STAYS DEAD, which settles the waiters a cancel could not
+    // see because they did not exist yet: a simulation is TWO round trips, and
+    // a stop pressed in the gap between them posted the merge to a terminated
+    // worker and waited on an answer that could not come.
+    abandon() {
+      dead = true;
+      pending.forEach((res) => res({ ok: false, cancelled: true }));
+      pending.clear();
+      progress.clear();
+      busy = 0;
+    },
+    send(msg, onProgress) {
+      return new Promise((res) => {
         if (dead) { res({ ok: false, cancelled: true }); return; }
         const id = ++seq;
         pending.set(id, res);
+        busy += 1;
         if (onProgress) progress.set(id, onProgress);
         w.postMessage({ ...msg, id });
-      }),
-    };
-  });
-  return simFleet;
-};
+      });
+    },
+    /// An ENDPOINT on this lane. Progress is asked for explicitly because only
+    /// `/api/simulate` reports it — see the worker.
+    call(path, body, onProgress) {
+      return lane.send(
+        { kind: "api", path, body: body ?? {}, progress: !!onProgress },
+        onProgress,
+      );
+    },
+  };
+  return lane;
+}
 
-/// RUN A SIMULATION ACROSS THE FLEET, and merge in Rust.
+const lanes = () => {
+  if (!pool) pool = Array.from({ length: poolSize() }, makeLane);
+  return pool;
+};
+/// THE LANE THAT WILL ANSWER SOONEST. One rpc worker meant a long simulate held
+/// up every meta and i18n call queued behind it; now it parks on one lane.
+const freeLane = () => lanes().reduce((a, b) => (b.busy < a.busy ? b : a));
+
+/// ONE CALL ON A LANE THAT MAY DIE UNDER IT.
+///
+/// A stop takes the WHOLE pool, because a simulation occupies every lane — so a
+/// scan running beside one gets `cancelled` instead of an answer, and the lane
+/// it is holding is dead for good. Retrying ON IT would spin through every
+/// remaining candidate in an instant and leave a scan that looks finished with
+/// holes in it, which is the worst of the three outcomes: worse than stopping,
+/// and worse than being slow.
+///
+/// So the retry is on a FRESH lane, ONCE. A second refusal returns null and the
+/// caller stands that lane's loop down — two stops during one scan means the
+/// reader is not waiting for it.
+async function laneAsk(lane, path, body, live) {
+  const r = await lane.call(path, body);
+  if (!r || !r.cancelled) return r;
+  if (live && !live()) return null;
+  const again = await freeLane().call(path, body);
+  return again && again.cancelled ? null : again;
+}
+
+/// RUN A SIMULATION ACROSS THE POOL, and merge in Rust.
+///
+/// The runs of a simulation are INDEPENDENT given their index, so N lanes each
+/// take a slice and the shards merge back into exactly what one worker would
+/// have produced (`eight_shards_are_one_run`). Measured on a 361-body ruler
+/// with a full status build: 14.4 s a hundred runs on one thread, 2.1 on eight
+/// — 6.8x (owner, 2026-08-18).
 ///
 /// The page schedules and collects; every field of the answer is computed by
 /// `simulate_merged`, so there is one implementation of the arithmetic rather
@@ -390,43 +419,41 @@ const simLanes = () => {
 /// as well, and match on the request rather than on being the only caller.
 ///
 /// FALLS BACK TO ONE CALL when there is nothing to gain — a single lane, or so
-/// few runs that a slice would be one engagement. A fleet has a cost of its own
-/// (a worker each, a shard each on the wire) and it is not worth paying to
-/// halve a fight that takes a millisecond.
+/// few runs that a slice would be one engagement. Sharding has a cost of its
+/// own (a shard each on the wire, a merge at the end) and it is not worth
+/// paying to halve a fight that takes a millisecond.
 async function simulateFleet(body, onProgress) {
-  // ONLY IN THE WASM BUILD, which is the same guard the quick calc's lanes
-  // carry and for the same reason: `/worker.js` is generated into `site/` and
-  // the native dev server has never served it. Without this, a simulation there
-  // built a fleet of workers that 404 and then waited for answers that could
-  // not come — the Run button locked, on the one server the owner develops
-  // against and no check script uses (2026-08-18). On native there is nothing
-  // to gain either: `api` is a fetch and the fetches already parallelise.
+  // ONLY IN THE WASM BUILD: `/worker.js` is generated into `site/` and the
+  // native dev server has never served it. Without this, a simulation there
+  // built workers that 404 and then waited for answers that could not come —
+  // the Run button locked, on the one server the owner develops against and no
+  // check script uses (2026-08-18). On native there is nothing to gain either:
+  // `api` is a fetch and the fetches already parallelise.
   if (!WASM) return api("/api/simulate", body, onProgress);
   const runs = Math.max(1, Number(body.runs) || 1);
   // THE SIZE IS DECIDED BEFORE THE WORKERS EXIST, so a simulation that falls
-  // back does not pay for a fleet it will not use — a quick calc's ten runs
-  // would otherwise spawn eight workers to answer on one.
-  const n = fleetSize();
+  // back does not pay for a pool it will not use.
+  const n = poolSize();
   if (n < 2 || runs < n * 2) {
     return api("/api/simulate", body, onProgress);
   }
-  const lanes = simLanes();
+  const ls = lanes();
   // EVERY RUN COVERED EXACTLY ONCE, remainder to the first lanes. A gap or an
   // overlap is not a slow answer, it is a wrong one.
-  const done = new Array(lanes.length).fill(0);
+  const done = new Array(ls.length).fill(0);
   const total = runs;
   const tick = () => {
     if (onProgress) onProgress(done.reduce((a, b) => a + b, 0), total);
   };
   let at = 0;
-  const shards = await Promise.all(lanes.map((lane, k) => {
-    const count = Math.floor(runs / lanes.length) + (k < runs % lanes.length ? 1 : 0);
+  const shards = await Promise.all(ls.map((lane, k) => {
+    const count = Math.floor(runs / ls.length) + (k < runs % ls.length ? 1 : 0);
     const from = at;
     at += count;
     return lane.send({ kind: "shard", body, from, count }, (d) => { done[k] = d; tick(); });
   }));
-  // A CANCELLED SHARD CANCELS THE SIMULATION — there is no answer to merge
-  // from an eighth of the runs, and the reader asked for it to stop.
+  // A CANCELLED SHARD CANCELS THE SIMULATION — there is no answer to merge from
+  // an eighth of the runs, and the reader asked for it to stop.
   if (shards.some((s) => s && s.cancelled)) return { ok: false, cancelled: true };
   if (shards.some((s) => !s || s.error)) {
     return shards.find((s) => s && s.error) || { ok: false, error: "a shard failed" };
@@ -435,46 +462,23 @@ async function simulateFleet(body, onProgress) {
   // reporting, so the bar completes here rather than sitting at 97% while the
   // last lane's answer is added up.
   if (onProgress) onProgress(total, total);
-  return lanes[0].send({ kind: "merge", body, shards });
+  return ls[0].send({ kind: "merge", body, shards });
 }
 
-/// STOP THE WHOLE FLEET as well as the single worker: a simulation may be on
-/// either, and a reader pressing stop means both.
-function cancelFleet() {
-  if (!simFleet) return;
-  simFleet.forEach((l) => { l.worker.terminate(); l.abandon(); });
-  simFleet = null;
-}
-
-/// STOP THE SIM WORKER, which is the only way to interrupt a wasm call: it runs
-/// to completion inside `simulate_json` and there is no yield point to check a
+/// STOP EVERY WASM CALL IN FLIGHT, which is the only way to interrupt one: it
+/// runs to completion inside the engine and there is no yield point to check a
 /// flag at. Terminating is instant and costs nothing to recover from — the next
-/// call builds a fresh worker, and a sim carries no state between calls.
+/// call builds a fresh pool, and none of these calls carries state between them.
 ///
-/// Every request in flight on that worker is abandoned, which is exactly one:
-/// the page never has two sims running (the button is disabled) and the quick
-/// calc has lanes of its own.
+/// IT TAKES THE WHOLE POOL, which is what one pool costs: a simulation occupies
+/// every lane, so there is no smaller thing to stop. A quick calc caught in the
+/// blast is told `cancelled` and asks again — see `scanGains`.
 function cancelSim() {
-  cancelFleet();
-  if (!rpcWorker) return false;
-  rpcWorker.terminate();
-  rpcWorker = null;
-  // Nobody is coming back with an answer, so every waiter is told so rather
-  // than left hanging on a promise that can no longer settle.
-  rpcPending.forEach((resolve) => resolve({ ok: false, cancelled: true }));
-  rpcPending.clear();
-  rpcProgress.clear();
+  if (!pool) return false;
+  pool.forEach((l) => { l.worker.terminate(); l.abandon(); });
+  pool = null;
   return true;
 }
-
-const rpc = (path, body, onProgress) => new Promise((resolve) => {
-  const id = ++rpcId;
-  rpcPending.set(id, resolve);
-  if (onProgress) rpcProgress.set(id, onProgress);
-  ensureRpcWorker().postMessage({
-    id, kind: "api", path, body: body ?? {}, progress: !!onProgress,
-  });
-});
 
 let wopt = null; // the emulated optimize job: a FLEET of workers over disjoint
                  // strides — { id, workers[], statuses[], parts[], result, … }
@@ -691,7 +695,7 @@ async function api(path, body, onProgress) {
   if (path === "/api/optimize") return woptStart(body, body && body.__resume);
   if (path === "/api/optimize/status") return woptStatus();
   if (path === "/api/optimize/cancel") return woptCancel();
-  return rpc(path, body, onProgress);
+  return freeLane().call(path, body, onProgress);
 }
 
 let META = null;
@@ -7268,35 +7272,30 @@ const GAIN_REFINE_TOP = 12;
 // engagement DURATION is never the lever (user, 2026-08-03). So the work is
 // spread over lanes instead of being made smaller or shorter.
 //
-// A lane is "somewhere a simulate can run": a dedicated worker in the wasm
-// build, and plain `api` on the native server, where the fetch already
-// parallelises and there is no worker to own.
+// A lane is "somewhere a simulate can run", and it is THE PAGE'S POOL — the
+// same lanes the simulator shards across and `api` picks from. This kept a
+// second pool of its own until 2026-08-18, which meant a machine that had run
+// one simulation and one scan was holding two full sets of wasm instances, each
+// idle whenever the other was working.
+//
+// On the native server there is no worker to own, so a lane is plain `api`
+// there and the fetches parallelise by themselves.
+//
+// PINNABLE. A scan's lanes are the one thing a check needs to reach into: a
+// worker is opaque from the page, so `check_one_fight` and
+// `check_gain_freshness` point the scan back through `api` to read what it
+// actually sent. It has always been assignable — it was a bare `let` — and
+// saying so is cheaper than a second mechanism that means the same thing.
 let gainPool = null;
+let nativeLanes = null;
 function gainLanes() {
   if (gainPool) return gainPool;
-  // Same rule as the optimizer's auto and the sim fleet's: every core but one,
-  // capped at 8. No setting of its own — the quick calc is not a search and has
-  // no preset to put one in; it takes what the machine has.
-  const n = fleetSize();
-  if (!WASM) {
-    gainPool = Array.from({ length: n }, () => ({ call: (p, b) => api(p, b) }));
-    return gainPool;
+  if (WASM) return lanes();
+  if (!nativeLanes) {
+    nativeLanes = Array.from({ length: poolSize() },
+      () => ({ call: (p, b) => api(p, b) }));
   }
-  gainPool = Array.from({ length: n }, () => {
-    const w = new Worker("/worker.js");
-    const pending = new Map();
-    let seq = 0;
-    w.onmessage = (e) => {
-      const r = pending.get(e.data.id);
-      if (r) { pending.delete(e.data.id); r(e.data.payload); }
-    };
-    return { call: (path, body) => new Promise((res) => {
-      const id = ++seq;
-      pending.set(id, res);
-      w.postMessage({ id, kind: "api", path, body: body ?? {} });
-    }) };
-  });
-  return gainPool;
+  return nativeLanes;
 }
 
 // The generation of the scan that is allowed to write `gainScan`. Bumped on
@@ -7372,8 +7371,10 @@ async function scanGains(axis, onTick) {
       if (!live()) return;
       const c = cands[cursor++];
       if (!c) return;
-      const r = await lane.call("/api/simulate", { ...buildPayload(), ...scenario, ...c.payload });
+      const r = await laneAsk(lane, "/api/simulate",
+        { ...buildPayload(), ...scenario, ...c.payload }, live);
       if (!live()) return;               // the fight moved — this answer is stale
+      if (r === null) return;            // the pool was taken twice — stand down
       const g = readGain(r, useKills);
       gainScan.done++;
       if (g) {
@@ -7724,8 +7725,10 @@ async function scanOptGains(onTick) {
       if (!live()) return;
       const j = jobs[cursor++];
       if (!j) return;
-      const r = await lane.call("/api/simulate", { ...base, ...scenario, mods: j.mods, ...j.override });
+      const r = await laneAsk(lane, "/api/simulate",
+        { ...base, ...scenario, mods: j.mods, ...j.override }, live);
       if (!live()) return;
+      if (r === null) return;            // the pool was taken twice — stand down
       got[j.si][j.oi] = read(r);
       ses[j.si][j.oi] = seOf(r);
       runsAt[j.si][j.oi] = runsOf(r);
