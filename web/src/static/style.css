@@ -1407,13 +1407,20 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    Nothing appears in two places, and neither side does the other's job -- the
    card used to be both at once, which is why neither was findable. */
 .arena{container-type:inline-size}
-/* THE FLOOR IS NOT PROSE, so it does not live inside the reading column. The
-   page caps itself at 760px, right for text and wrong for a thing you lay a
-   formation out on. It breaks out and re-centres on the VIEWPORT; the parent is
-   already centred, so 50% of it is the viewport's middle and the arithmetic is
-   exact. Only where there is room to break out into. */
+/* THE FLOOR IS NOT PROSE, so it does not live inside the reading column: the
+   page caps itself at 760px, which is right for text and wrong for a thing you
+   lay a formation out on.
+   THE BLOCK BREAKS OUT, NOT THE ARENA. Widening the arena alone put it outside
+   its own section, and `.block` is `overflow:hidden` so that its rounded
+   corners clip the header's background — so the floor's left and right edges,
+   which is exactly where its two panels live, were cut off (owner, 2026-08-18:
+   两边完全截掉了). Moving the breakout up one level keeps the clip doing its
+   job at the section's own, wider bounds.
+   `:has()` rather than an id, so a block that gains a floor tomorrow gets the
+   room without anybody remembering to grant it. The parent is centred, so 50%
+   of it is the viewport's middle and the arithmetic is exact. */
 @media (min-width:900px){
-  .arena{width:min(1180px,92vw); margin-inline:calc(50% - min(590px,46vw))}
+  .block:has(.arena){width:min(1220px,94vw); margin-inline:calc(50% - min(610px,47vw))}
 }
 .arc-wrap{position:relative; width:100%; height:min(66vh,620px); min-height:380px;
   border-radius:10px; overflow:hidden; border:1px solid var(--line);
@@ -1427,7 +1434,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .arc-cv.arc-moving{cursor:move}
 
 /* ---- LEFT: the verb ---------------------------------------------------- */
-.arc-left{position:absolute; left:8px; top:8px; bottom:8px; width:250px;
+.arc-left{position:absolute; left:8px; top:8px; bottom:8px; width:272px;
   display:flex; flex-direction:column; gap:6px; pointer-events:none}
 .arc-left > *{pointer-events:auto}
 
@@ -1449,16 +1456,27 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    the only one that may scroll, because an enemy card carries a vulnerability
    column, a status-immunity list and a caveat, and all of them are worth
    reading -- the old floating card cut them off. */
-.arc-brush{flex:1 1 auto; min-height:0; overflow-y:auto;
+/* IT HUGS ITS CONTENT. `flex:1 1 auto` made it fill the column, so a card three
+   lines long sat at the top of a panel six hundred pixels tall — and the empty
+   white below it read as something failing to load. It grows to what it holds
+   and only scrolls past the room there is. */
+.arc-brush{flex:0 1 auto; min-height:0; max-height:calc(100% - 104px); overflow:auto;
   background:var(--surface); border:1px solid var(--line); border-radius:9px;
   box-shadow:0 2px 10px rgba(0,0,0,.14)}
 .arc-brush:empty{display:none}
+/* AND IT WRAPS RATHER THAN SCROLLING SIDEWAYS. Every one of these is a
+   `min-width:0`: a flex item's default minimum is its CONTENT, so an enemy's
+   stat line — which is one long unbroken sentence — pushed the card wider than
+   the column and took the panel's own edges off the screen with it. */
+.arc-brush,.arc-side,.arc-side *{min-width:0}
 .arc-side{display:flex; flex-direction:column; gap:6px; padding:7px; font-size:12px}
-.arc-side .en-row{margin:0}
+.arc-side .en-row{margin:0; display:block}
 .arc-side .en-card{width:100%; padding:5px 6px; gap:7px; align-items:flex-start}
-.arc-side .en-img{width:38px; height:38px}
+.arc-side .en-img{width:38px; height:38px; flex:0 0 auto}
+.arc-side .en-txt{flex:1 1 auto; overflow-wrap:anywhere}
 .arc-side .en-name{font-size:13px}
-.arc-side .en-meta{font-size:10.5px; line-height:1.4}
+.arc-side .en-meta{font-size:10.5px; line-height:1.4; white-space:normal}
+.arc-side .en-wiki{display:inline-block; margin-top:4px; font-size:11px}
 .arc-fields{display:flex; flex-wrap:wrap; gap:5px 10px; align-items:center;
   font-size:11.5px}
 .arc-fields label{display:flex; align-items:center; gap:4px; margin:0}
