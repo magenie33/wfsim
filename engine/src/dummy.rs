@@ -787,6 +787,18 @@ struct BlastStack {
 /// vector can produce (data/debuffs/*.yaml; simplifications noted inline).
 #[derive(Default)]
 struct DebuffState {
+    /// THE TICK SCHEDULER'S SCRATCH, reused across calls.
+    ///
+    /// `process_ticks` runs once per SHOT per BODY — a 19x19 ruler is ~300,000
+    /// calls a run — so building a fresh heap each time cost more than the scan
+    /// it replaced (measured: 444 ms a run -> 772). It lives here rather than in
+    /// a local because the capacity is what is worth keeping, and a body's
+    /// schedule is the same size from one shot to the next.
+    ///
+    /// SCRATCH, not state: it holds nothing between calls and is refilled from
+    /// `dots`/`heat`/`blast` every time. Taken out and put back around the loop,
+    /// which is what lets the loop hold `&mut self` for everything else.
+    tick_q: std::collections::BinaryHeap<std::cmp::Reverse<TickKey>>,
     /// The clock reading this state was last pruned at — see [`Self::prune`].
     ///
     /// An OPTION rather than a sentinel float: the derived default of an `f64`
@@ -5949,6 +5961,114 @@ fn field_tick(
 /// `rng` is the STATUS stream, and it is here for exactly one payload: a Blast
 /// detonation triggers an EXTRA HIT, which rolls a status of its own. Every
 /// other event this function settles is a payload already decided.
+/// WHERE THE QUEUE STARTS PAYING, in live DoTs on one body.
+///
+/// Not tuned to a curve: it is a floor well above what a formation body carries
+/// (a handful) and well below what a status build puts on the aimed one (291
+/// measured). Anywhere between those two the choice does not matter, which is
+/// what makes a single constant honest here rather than a fitted one.
+const TICK_QUEUE_MIN: usize = 32;
+
+/// ONE SCHEDULED STATUS EVENT, ordered the way the scan that preceded it was.
+///
+/// The scan took the strictly earliest event, considering DoTs in index order,
+/// then Heat, then Blast — so a tie went to the first thing considered. `(t,
+/// class, index)` ascending is that rule as a key, which is what lets a queue
+/// replace the scan without moving a single number: an optimisation that
+/// changes an answer is a bug, and the ORDER of these events is the order the
+/// RNG is consumed in.
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct TickKey {
+    t: f64,
+    /// 0 = DoT, 1 = Heat, 2 = Blast — the order the scan considered them in.
+    class: u8,
+    index: u32,
+}
+
+impl Eq for TickKey {}
+impl Ord for TickKey {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // `total_cmp` because these are clock readings: never NaN, and an
+        // ordering that is total is what `BinaryHeap` requires.
+        self.t
+            .total_cmp(&other.t)
+            .then(self.class.cmp(&other.class))
+            .then(self.index.cmp(&other.index))
+    }
+}
+impl PartialOrd for TickKey {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl DebuffState {
+    /// THE SHAPE OF THE SCHEDULE, as three numbers.
+    ///
+    /// A queued event names its slot by INDEX, so anything that reshapes the
+    /// collections invalidates the queue. Rather than remember to say so at
+    /// every mutation site — the failure mode this repo has been bitten by
+    /// before — the loop DERIVES it: take the fingerprint, process one event,
+    /// take it again, and rebuild if it moved.
+    fn tick_shape(&self) -> (usize, usize, bool) {
+        (self.dots.len(), self.blast.len(), self.heat.is_some())
+    }
+
+    /// THE NEXT EVENT, BY SCANNING. The original rule, kept as the small-state
+    /// path — and kept as the DEFINITION of the order, which the queue's key
+    /// reproduces rather than replaces.
+    fn scan_next(&self, until: f64) -> Option<TickKey> {
+        let mut best: Option<TickKey> = None;
+        let mut consider = |t: f64, class: u8, index: usize| {
+            if t < until && best.as_ref().is_none_or(|b| t < b.t) {
+                best = Some(TickKey { t, class, index: index as u32 });
+            }
+        };
+        for (i, d) in self.dots.iter().enumerate() {
+            if d.ticks_left > 0 {
+                consider(d.next_tick, 0, i);
+            }
+        }
+        if let Some(h) = &self.heat {
+            if h.next_tick <= h.expiry {
+                consider(h.next_tick, 1, 0);
+            }
+        }
+        for (i, b) in self.blast.iter().enumerate() {
+            consider(b.fuse, 2, i);
+        }
+        best
+    }
+
+    /// Every event this state has pending before `until`, into a queue the
+    /// caller owns — see [`Self::tick_q`] for why it is not returned.
+    fn refill_tick_queue(
+        &self,
+        q: &mut std::collections::BinaryHeap<std::cmp::Reverse<TickKey>>,
+        until: f64,
+    ) {
+        q.clear();
+        let mut push = |t: f64, class: u8, index: usize| {
+            if t < until {
+                q.push(std::cmp::Reverse(TickKey { t, class, index: index as u32 }));
+            }
+        };
+        for (i, d) in self.dots.iter().enumerate() {
+            if d.ticks_left > 0 {
+                push(d.next_tick, 0, i);
+            }
+        }
+        if let Some(h) = &self.heat {
+            if h.next_tick <= h.expiry {
+                push(h.next_tick, 1, 0);
+            }
+        }
+        for (i, b) in self.blast.iter().enumerate() {
+            push(b.fuse, 2, i);
+        }
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 fn process_ticks(
     debuffs: &mut DebuffState,
@@ -5980,27 +6100,49 @@ fn process_ticks(
     }
     let p = foe;
     let sd = params.status_duration_mult;
+    // A QUEUE, NOT A SCAN. This loop asks one question of every pending status
+    // on the body — which of you is next — and it asked it once per EVENT.
+    //
+    // Measured on the build that made it matter (Phantasma Prime, eight status
+    // mods, Primary Debilitate, 180 s — owner, 2026-08-18, unusable on a
+    // phone): 291 live DoTs, 58,918 tick events, 18.2 MILLION scan iterations a
+    // run, and this function alone was 80% of the engagement.
+    //
+    // AND THE COUNT IS CORRECT — 291 is not a leak. An ordinary enemy has no
+    // stack cap, so Slash, Toxin and Electricity stack without limit and
+    // `dot_cap` is `None` for it on purpose. The list is that long because the
+    // game's is, which is why the fix had to be the algorithm.
+    // …AND ONLY WHERE IT PAYS. A queue costs one pass to build plus `log n` an
+    // event; a scan costs `n` an event and NOTHING to set up. On a body with
+    // three DoTs and one event due, the scan wins outright — and a formation is
+    // mostly those: this runs PER BODY, so a 19x19 ruler is ~300,000 calls a
+    // run, almost all of them finding one event or none. Building a heap for
+    // each cost more than the scan it replaced (measured: 444 ms a run -> 831).
+    //
+    // So the shape of the state picks the path, and the two are one loop with
+    // two ways of asking for the next event — `scan_next` is the ORDER's
+    // definition and `TickKey` reproduces it, which is what keeps the answer
+    // identical whichever side of the threshold a body falls on.
+    //
+    // An empty `BinaryHeap` allocates nothing, so the scan path pays no setup.
+    let use_queue = debuffs.dots.len() > TICK_QUEUE_MIN;
+    let mut q = std::mem::take(&mut debuffs.tick_q);
+    if use_queue {
+        debuffs.refill_tick_queue(&mut q, until);
+    }
+    let mut shape = debuffs.tick_shape();
     loop {
-        let mut best: Option<(f64, Ev)> = None;
-        let consider = |t: f64, ev: Ev, best: &mut Option<(f64, Ev)>| {
-            if t < until && best.as_ref().is_none_or(|(bt, _)| t < *bt) {
-                *best = Some((t, ev));
-            }
+        let next = if use_queue {
+            q.pop().map(|std::cmp::Reverse(k)| k)
+        } else {
+            debuffs.scan_next(until)
         };
-        for (i, d) in debuffs.dots.iter().enumerate() {
-            if d.ticks_left > 0 {
-                consider(d.next_tick, Ev::Dot(i), &mut best);
-            }
-        }
-        if let Some(h) = &debuffs.heat {
-            if h.next_tick <= h.expiry {
-                consider(h.next_tick, Ev::Heat, &mut best);
-            }
-        }
-        for (i, b) in debuffs.blast.iter().enumerate() {
-            consider(b.fuse, Ev::Blast(i), &mut best);
-        }
-        let Some((now, ev)) = best else { break };
+        let Some(k) = next else { break };
+        let (now, ev) = match k.class {
+            0 => (k.t, Ev::Dot(k.index as usize)),
+            1 => (k.t, Ev::Heat),
+            _ => (k.t, Ev::Blast(k.index as usize)),
+        };
 
         let mit = debuffs.mitigation(now, sd, params.armor_strip_per_puncture);
         // A tick is one damage type — which is also the type the
@@ -6114,7 +6256,51 @@ fn process_ticks(
                 break;
             }
         }
+
+        // KEEP THE QUEUE HONEST. A queued event names its slot by INDEX, so
+        // anything that RESHAPES the collections invalidates every entry — a
+        // Blast detonation removes itself, and a detonation's own procs can
+        // push a DoT and evict another. The shape is DERIVED rather than
+        // announced by each mutation site (`tick_shape`), so a site added later
+        // cannot forget to say so: the loop simply looks.
+        //
+        // Otherwise the event that just fired goes back in at its new time,
+        // which is what makes this O(log n) instead of a fresh scan.
+        if !use_queue {
+            continue;   // the scan re-reads the truth every time; nothing to keep
+        }
+        let now_shape = debuffs.tick_shape();
+        if now_shape != shape {
+            debuffs.refill_tick_queue(&mut q, until);
+            shape = now_shape;
+        } else {
+            match &ev {
+                Ev::Dot(i) => {
+                    let d = &debuffs.dots[*i];
+                    if d.ticks_left > 0 && d.next_tick < until {
+                        q.push(std::cmp::Reverse(TickKey {
+                            t: d.next_tick, class: 0, index: *i as u32,
+                        }));
+                    }
+                }
+                Ev::Heat => {
+                    if let Some(h) = &debuffs.heat {
+                        if h.next_tick <= h.expiry && h.next_tick < until {
+                            q.push(std::cmp::Reverse(TickKey {
+                                t: h.next_tick, class: 1, index: 0,
+                            }));
+                        }
+                    }
+                }
+                // A detonation removes itself, so the shape ALWAYS moved and
+                // the rebuild above ran. Nothing to re-queue.
+                Ev::Blast(_) => {}
+            }
+        }
     }
+    // BACK WHERE IT LIVES, with its capacity — see `tick_q`.
+    q.clear();
+    debuffs.tick_q = q;
     debuffs.dots.retain(|d| d.ticks_left > 0);
 }
 
