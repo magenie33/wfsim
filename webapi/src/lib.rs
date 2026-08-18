@@ -155,12 +155,16 @@ fn attack_desc(s: &wfsim_engine::weapons_data::WeaponSpec) -> String {
         parts.push(st.label().to_string());
     }
     if let Some(r) = &s.attack.ricochet {
-        parts.push(format!(
-            "ricochet to {} enem{} within {} m",
-            r.targets,
-            if r.targets == 1 { "y" } else { "ies" },
-            r.range_m
-        ));
+        // THE COUNT IS WHAT THE PAGE STATES, and the reach usually is not: a
+        // bounce ordinarily finds the nearest body it has not hit, however far
+        // (`RicochetSpec::range_m`), so a line naming a distance would be
+        // stating a number nobody published.
+        parts.push(match r.range_m {
+            Some(m) => format!("ricochets {} more time{} within {m} m",
+                r.bounces, if r.bounces == 1 { "" } else { "s" }),
+            None => format!("ricochets {} more time{}",
+                r.bounces, if r.bounces == 1 { "" } else { "s" }),
+        });
     }
     parts.join(" · ")
 }

@@ -307,9 +307,58 @@ const imgTag = (src, cls) => src ? `<img class="${cls||''}" src="${src}" onerror
 /// A LANE IS A QUEUE. The worker handles one message at a time and the wasm
 /// call inside it is synchronous, so `busy` is queue depth and the least busy
 /// lane is the one that will answer soonest.
+/// HOW MUCH OF THE MACHINE THIS PAGE MAY USE — one setting, and it is GLOBAL.
+///
+/// Every heavy thing here is the same shape: N workers, each pinned to a core,
+/// each running the engine flat out for as long as the answer takes. That is
+/// the right default on a desktop and it is a hand-warmer on a phone (owner,
+/// 2026-08-18: 我的手机现在就发烫了). The lever is the WORKER COUNT, because the
+/// heat is the worker count — a longer run at fewer cores is cooler than a
+/// shorter one at all of them, and the answer is identical either way.
+///
+/// GLOBAL RATHER THAN PER MODULE, which is the owner's own framing and is also
+/// what the merged pool makes true: the simulator, the quick calc and every
+/// `api` call draw from ONE pool now, so one number is the whole of it. The
+/// optimizer keeps its own workers and reads the same setting as its default —
+/// its `CPU threads` preset still overrides, because a search you deliberately
+/// set to twelve threads is a decision, not an accident.
+///
+/// IT IS NOT A QUALITY SETTING. Nothing here changes what is computed: a run at
+/// one lane and a run at eight produce the same numbers (`eight_shards_are_one_
+/// run`). The run COUNT is the accuracy knob and it lives per module, where it
+/// already was.
+const COMPUTE_KEY = "wfsim-compute";
+/// `full` is the default and is what every build before this one did.
+const COMPUTE_LEVELS = ["saver", "balanced", "full"];
+let computeLevel = COMPUTE_LEVELS.includes(localStorage.getItem(COMPUTE_KEY))
+  ? localStorage.getItem(COMPUTE_KEY)
+  : "full";
+
 let pool = null;
-const poolSize = () =>
-  Math.max(1, Math.min((Number(navigator.hardwareConcurrency) || 4) - 1, 8));
+/// The lane count this machine gets at the current setting.
+///
+/// `full` is every core but one, capped at eight — past that the strides get
+/// short and each worker costs a wasm instance. `balanced` is half of that, and
+/// `saver` is ONE, which is a page that answers while you keep using the phone.
+const poolSize = () => {
+  const cores = Number(navigator.hardwareConcurrency) || 4;
+  const full = Math.max(1, Math.min(cores - 1, 8));
+  if (computeLevel === "saver") return 1;
+  if (computeLevel === "balanced") return Math.max(1, Math.floor(full / 2));
+  return full;
+};
+
+/// Change it, and MEAN IT NOW. The pool is built once and held, so a setting
+/// that only applied to the next page load would read as broken on the machine
+/// it was set to rescue. Dropping the pool is safe at any moment — every waiter
+/// is settled with `cancelled` and the callers that can re-ask do (`laneAsk`).
+function setComputeLevel(level) {
+  if (!COMPUTE_LEVELS.includes(level) || level === computeLevel) return;
+  computeLevel = level;
+  try { localStorage.setItem(COMPUTE_KEY, level); } catch (_) { /* private mode */ }
+  cancelSim();
+  renderComputePicker();
+}
 
 function makeLane() {
   const w = new Worker("/worker.js");
@@ -535,8 +584,11 @@ function loadCheckpoint() {
 // starts swapping.
 function woptWorkerCount() {
   if (optRun.threads > 0) return Math.min(optRun.threads, 16);
-  const cores = Number(navigator.hardwareConcurrency) || 4;
-  return Math.max(1, Math.min(cores - 1, 8));
+  // THE GLOBAL SETTING IS THE DEFAULT — see `poolSize`. A search owns its
+  // workers for minutes, so it is the one thing on this page most able to cook
+  // a phone, and the setting would be worth little if it were the one thing
+  // that ignored it. A `CPU threads` preset still wins: that is a decision.
+  return poolSize();
 }
 
 // Merge the fleet's leaderboards into one. Each worker ran its own funnel over
@@ -909,6 +961,40 @@ try { const s = JSON.parse(localStorage.getItem("wfsim-picker")); if (s) pickerP
 const savePickerPrefs = () => localStorage.setItem("wfsim-picker", JSON.stringify(pickerPrefs));
 
 // ---- topbar weapon search: filter chips + sort, rows navigate ----------
+/// THE COMPUTE PICKER, in the topbar beside the language.
+///
+/// In the TOPBAR because it is the page's setting rather than any module's —
+/// the same place the language and the theme live, and the same reason. It
+/// names the lane count it will actually use, because "balanced" says nothing
+/// on a machine whose core count the reader does not know.
+function renderComputePicker() {
+  const host = $("compute-select");
+  if (!host) return;
+  const cores = Number(navigator.hardwareConcurrency) || 4;
+  const at = (level) => {
+    const was = computeLevel;
+    computeLevel = level;
+    const n = poolSize();
+    computeLevel = was;
+    return n;
+  };
+  const label = {
+    saver: tr("Power saver"),
+    balanced: tr("Balanced"),
+    full: tr("Full speed"),
+  };
+  host.outerHTML = ddButton("compute-select", {
+    value: computeLevel,
+    title: tr("how much of this machine the page may use — it changes how FAST an answer arrives, never what the answer is"),
+    items: COMPUTE_LEVELS.map((lv) => ({
+      value: lv,
+      label: label[lv],
+      hint: tr("{n} of {c} cores").replace("{n}", at(lv)).replace("{c}", cores),
+    })),
+    onPick: (v) => setComputeLevel(v),
+  });
+}
+
 function initWeaponSearch() {
   const input = $("wsearch-input"), panel = $("wsearch-panel"),
         tools = $("wsearch-tools"), listEl = $("wsearch-list");
@@ -995,6 +1081,10 @@ function initWeaponSearch() {
         location.reload();
       },
     });
+    // …AND THE COMPUTE PICKER BESIDE IT, drawn in the same deferred block and
+    // for the same reason: both are the page's own settings and both call a
+    // component declared further down this file.
+    renderComputePicker();
   });
 })();
 
