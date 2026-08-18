@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: c43f251b18a057123790e3b71c1ef55b29129221
+engine: 098315cd8f522532d074be9ee11596bd4b2447d3
 entries:
   - weapon: akarius_prime
     mode: base
@@ -3877,13 +3877,13 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: paris_prime
     mode: cycle
-    score: 17.24771159145478
+    score: 23.510977862229534
     mods: [amalgam_serration, primary_acuity, galvanized_aptitude, point_strike, vital_sense, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
     arcanes: [primary_deadhead]
   - weapon: paris_prime
     mode: cycle
-    score: 4.009466634310278
+    score: 7.004747429236659
     mods: [amalgam_serration, galvanized_chamber, critical_delay, vital_sense, radiated_reload, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
     arcanes: [longbow_sharpshot]
