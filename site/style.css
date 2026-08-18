@@ -1388,3 +1388,12 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 /* An option the scan has not reached yet. Muted and non-committal on purpose:
    it is the one state that must not read as a number. */
 .gainchip.pend { opacity: .45; letter-spacing: .1em; }
+
+/* A ONE-LINE NOTICE FROM THE PAGE ITSELF — see `noteInline`. Fixed to the top,
+   because what it reports (a save that did not happen) is true wherever you
+   have scrolled to; click it to dismiss. */
+.page-note{position:fixed; left:50%; transform:translateX(-50%); top:10px; z-index:9998;
+  max-width:min(92vw,560px); padding:9px 14px; border-radius:9px; cursor:pointer;
+  background:color-mix(in srgb,var(--critical) 14%,var(--surface));
+  border:1px solid color-mix(in srgb,var(--critical) 45%,transparent);
+  color:var(--text); font-size:13px; box-shadow:0 6px 24px rgba(0,0,0,.28)}

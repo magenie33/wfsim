@@ -378,7 +378,7 @@ const readComputePct = () => {
 };
 let computePct = readComputePct();
 
-let pool = null;
+let pool = [];
 /// The lane count that share comes to on this machine — at least one, and never
 /// more than the ceiling.
 const poolSize = () =>
@@ -429,6 +429,28 @@ function makeLane() {
   const pending = new Map();
   const progress = new Map();
   let seq = 0, dead = false, busy = 0;
+  // A LANE THAT CANNOT LOAD IS A LANE, NOT A DEAD PAGE.
+  //
+  // `worker.js` fetches a ~6 MB wasm module, and a fetch can fail — a flaky
+  // network, a proxy, a CDN refusing the eleventh simultaneous request for the
+  // same large file. Reported live from wfsim.app (owner, 2026-08-18):
+  // "Failed to execute 'importScripts' ... The script at
+  // 'https://wfsim.app/pkg/wfsim_wasm.js' failed to load", and the whole app
+  // showed "WFSim could not start on this browser" because the boot guard
+  // treats any window `error` as fatal.
+  //
+  // It is handled HERE, at the lane, because that is the only place that knows
+  // the difference between "this worker is gone" and "the app is broken": the
+  // waiters are settled with an error they can act on, the lane marks itself
+  // dead so nothing new is queued on it, and the event is stopped rather than
+  // left to reach the page's error handler.
+  w.onerror = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    dead = true;
+    const why = String((e && e.message) || "worker failed to load");
+    pending.forEach((res) => res({ ok: false, error: why, worker_dead: true }));
+    pending.clear(); progress.clear(); busy = 0;
+  };
   w.onmessage = (e) => {
     if (e.data.kind === "progress") {
       const f = progress.get(e.data.id);
@@ -446,6 +468,7 @@ function makeLane() {
   const lane = {
     worker: w,
     get busy() { return busy; },
+    get dead() { return dead; },
     // NOBODY IS COMING BACK once the worker is terminated, so a cancel settles
     // every waiter itself. Without this the promises hang, the caller never
     // reaches its `finally`, and the Run button stays disabled for ever — a
@@ -484,13 +507,49 @@ function makeLane() {
   return lane;
 }
 
-const lanes = () => {
-  if (!pool) pool = Array.from({ length: poolSize() }, makeLane);
-  return pool;
+/// ONE LANE AT A TIME, made when something actually needs it.
+///
+/// The pool used to be built whole on first use, and first use is the BOOT's
+/// own `/api/meta` — so opening the page fetched a 6 MB wasm module once per
+/// core, all at once, before anything had been drawn. On a 28-thread machine
+/// that is fourteen simultaneous requests for the same large file to answer one
+/// small question, and a single one of them failing took the page down
+/// (owner, 2026-08-18). A plain endpoint call needs ONE worker; a sharded
+/// simulation is the only thing that wants them all, and it says so.
+const laneAt = (i) => {
+  if (!pool[i]) pool[i] = makeLane();
+  return pool[i];
 };
-/// THE LANE THAT WILL ANSWER SOONEST. One rpc worker meant a long simulate held
-/// up every meta and i18n call queued behind it; now it parks on one lane.
-const freeLane = () => lanes().reduce((a, b) => (b.busy < a.busy ? b : a));
+/// EVERY LANE, for a sharded run — the one caller that wants the whole machine.
+const lanes = () => {
+  const n = poolSize();
+  for (let i = 0; i < n; i++) laneAt(i);
+  return pool.slice(0, n);
+};
+/// THE LANE THAT WILL ANSWER SOONEST, and a NEW one only when every lane that
+/// exists is already working. One rpc worker meant a long simulate held up every
+/// meta and i18n call queued behind it; this parks a long call on its own lane
+/// without paying for a pool nobody asked for.
+/// HOW MANY LANES A PLAIN ENDPOINT CALL MAY BRING INTO BEING.
+///
+/// TWO. `api` traffic is short calls, and the boot fires several at once (meta,
+/// i18n, targets, the board) — with no cap, each one that found the others busy
+/// opened a worker of its own, so opening the page fetched a 6 MB module six
+/// times before anything was drawn. One lane serves them; the second exists so
+/// a long call that fell back off `simulateFleet` cannot hold up a small one
+/// behind it, which is the whole reason the single rpc worker was replaced.
+/// Everything above two is for SHARDING, and `lanes()` is what asks for it.
+const API_LANES = 2;
+const freeLane = () => {
+  const live = pool.filter(Boolean).filter((l) => !l.dead);
+  const idle = live.find((l) => l.busy === 0);
+  if (idle) return idle;
+  const made = pool.filter(Boolean).length;
+  if (made < Math.min(API_LANES, poolSize())) return laneAt(made);
+  return live.length
+    ? live.reduce((a, b) => (b.busy < a.busy ? b : a))
+    : laneAt(0);
+};
 
 /// ONE CALL ON A LANE THAT MAY DIE UNDER IT.
 ///
@@ -587,9 +646,10 @@ async function simulateFleet(body, onProgress) {
 /// every lane, so there is no smaller thing to stop. A quick calc caught in the
 /// blast is told `cancelled` and asks again — see `scanGains`.
 function cancelSim() {
-  if (!pool) return false;
-  pool.forEach((l) => { l.worker.terminate(); l.abandon(); });
-  pool = null;
+  const live = pool.filter(Boolean);
+  if (!live.length) return false;
+  live.forEach((l) => { l.worker.terminate(); l.abandon(); });
+  pool = [];
   return true;
 }
 
@@ -811,7 +871,17 @@ async function api(path, body, onProgress) {
   if (path === "/api/optimize") return woptStart(body, body && body.__resume);
   if (path === "/api/optimize/status") return woptStatus();
   if (path === "/api/optimize/cancel") return woptCancel();
-  return freeLane().call(path, body, onProgress);
+  const r = await freeLane().call(path, body, onProgress);
+  // A LANE THAT DIED MID-CALL GETS ONE RETRY on a new one. The failure this is
+  // for is a transport failure — the module did not download — and those are
+  // usually not the second time. Once, because a retry loop against a genuinely
+  // broken deployment is a hang rather than a recovery.
+  if (r && r.worker_dead) {
+    const i = pool.findIndex((l) => l && l.dead);
+    if (i >= 0) pool[i] = null;
+    return freeLane().call(path, body, onProgress);
+  }
+  return r;
 }
 
 let META = null;
@@ -4662,10 +4732,67 @@ const freeName = (ps, mk) => {
   for (let n = 1; ; n++) { const nm = mk(n); if (!ps.some((p) => p.name === nm)) return nm; }
 };
 
+/// WHAT A COLLECTION SHEDS when it will not fit, in the order of what it costs
+/// the reader to lose. Each stage is applied, the write retried, and the first
+/// one that fits wins.
+///
+/// localStorage is a few megabytes and this app stores MEASUREMENTS in it, so
+/// "it does not fit" is a state a long-lived install reaches rather than an
+/// impossible one. Throwing there is the worst outcome available: the edit is
+/// already on screen and simply never persisted, so the reader finds out at the
+/// next reload — and here it also aborted the simulation that was reporting it.
+const PRESET_SHED = [
+  // 1. Every replay. The biggest field by far, and the only one that can be
+  //    regenerated by pressing Run again.
+  (ps) => ps.forEach((x) => { if (x.lastResult && x.lastResult.r) x.lastResult.r.replay = null; }),
+  // 2. Every stored measurement but the active preset's. A card falls back to
+  //    "not measured yet", which is true and is one click from false.
+  (ps, active) => ps.forEach((x) => { if (x.name !== active) x.lastResult = null; }),
+  // 3. All of them. The presets themselves are what this collection is for, and
+  //    they are the last thing to go.
+  (ps) => ps.forEach((x) => { x.lastResult = null; }),
+];
+
+/// A ONE-LINE NOTICE, in the page. No native dialog — `alert` is blocked in the
+/// owner's browser, and a message nobody can see is not a message. It replaces
+/// itself, so a repeated failure is one line rather than a stack.
+function noteInline(msg) {
+  let el = document.getElementById("page-note");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "page-note";
+    el.className = "page-note";
+    el.addEventListener("click", () => el.remove());
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+}
+
 const storePresetList = (d, ps, w) => {
   const weapon = w ?? presetWeapon();
   recordUndo(d, weapon, ps);
-  localStorage.setItem(presetListKey(d, weapon), JSON.stringify(ps));
+  const key = presetListKey(d, weapon);
+  const isQuota = (e) => !!e && (e.name === "QuotaExceededError"
+    || e.name === "NS_ERROR_DOM_QUOTA_REACHED" || e.code === 22 || e.code === 1014);
+  try {
+    localStorage.setItem(key, JSON.stringify(ps));
+    return;
+  } catch (e) {
+    if (!isQuota(e)) throw e;
+  }
+  for (const shed of PRESET_SHED) {
+    shed(ps, activePreset);
+    try {
+      localStorage.setItem(key, JSON.stringify(ps));
+      return;
+    } catch (e) {
+      if (!isQuota(e)) throw e;
+    }
+  }
+  // NOTHING LEFT TO DROP. Say so where the reader is rather than throwing into a
+  // console nobody has open: the edit is on screen and it is not saved, and that
+  // is the one thing they need to know.
+  noteInline(tr("this browser's storage is full - the change is on screen but was not saved"));
 };
 
 // ---- UNDO — Ctrl+Z across every preset collection ----------------------
@@ -10454,6 +10581,20 @@ function saveSimResult(r) {
   const at = ps.findIndex((p) => p.name === activePreset);
   if (at < 0) return;
   ps[at].lastResult = { r, at: Date.now(), key: simKey() };
+  // ONE REPLAY, ON THE BUILD YOU ARE LOOKING AT.
+  //
+  // A replay is the biggest thing this app stores by a wide margin: 600 frames
+  // carrying a debuff series per followed body. Keeping one on EVERY build
+  // filled localStorage, and the throw took the whole run's result down with it
+  // — reported live (owner, 2026-08-18: QuotaExceededError on
+  // `wfsim-presets-boar_prime-builder-builds`, surfacing as "sim failed").
+  //
+  // The other builds keep their SUMMARY, which is what their cards and the
+  // share claim read; what they lose is redrawing the median engagement without
+  // re-running, and re-running is a button.
+  ps.forEach((q, i) => {
+    if (i !== at && q.lastResult && q.lastResult.r) q.lastResult.r.replay = null;
+  });
   storePresetList(BUILDS, ps);
 }
 
