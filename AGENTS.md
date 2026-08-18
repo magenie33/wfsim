@@ -796,6 +796,22 @@ around (decision 2026-07-31).
   between them the export's compatibility column is fully swept. Adding a mod
   starts there: run the survey, take a row, transcribe it from the WIKI, lower
   the ceiling.
+- **A CONDITION ABOUT THE TARGET IS SIMULATED; ONE ABOUT THE TENNO IS ASSUMED**
+  (2026-08-18). `data/arcanes/` carries four `condition:` strings and the
+  loader read NONE of them — it took `trigger`/`grants` and the per-rank values
+  and stopped. Three of the four are Tenno states this sim does not model
+  (sliding or aim-gliding, overshields up, buffing an ally), where assumed-max
+  is the documented house reading, so nothing looked wrong. The fourth is
+  Secondary Irradiate's *"On hitting enemies afflicted by 10 stacks of
+  Radiation"* — a state of the TARGET, tracked as `debuffs.confusion` since the
+  engine had statuses at all — so its echo fired off enemies with no Radiation
+  on them. A PLAYER reported it; no check we had could.
+  The fix is `arc_condition`, which returns a TYPED condition and `Unknown` for
+  anything it has not been taught, plus a test that walks every arcane yaml and
+  refuses an unknown one. A data file stating a rule the engine does not apply
+  is worse than one that omits it: to anyone auditing, it reads as if the rule
+  were being applied. Adding a condition now means deciding on purpose which of
+  the two kinds it is.
 - **AIM IS DRAGGED, AND A PICK READS NOTHING** (owner, 2026-08-18). Two
   gestures on the result and the scene that were doing more than they were
   asked to.

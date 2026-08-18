@@ -11,10 +11,17 @@ effects:
   # multiplier), roll their own crits, and apply the same status effects as the
   # triggering hit.
   - kind: aoe_echo
-    # NOT READ by `arcanes_data`: the loader takes `trigger`/`grants` and the
-    # per-rank values, never `condition`. So the buff resolves as if its gate were
-    # always satisfied — the house assumed-max reading, recorded here because
-    # it is optimistic, not neutral (data/README.md).
+    # READ AND SIMULATED as of 2026-08-18 (`arc_condition` ->
+    # `ArcCondition::TargetRadiationStacks`). The echo fires only off a body
+    # already at 10 stacks of Radiation, which is the cap and is most of what
+    # this arcane costs to use.
+    #
+    # It was NOT read before that: the loader took `trigger`/`grants` and the
+    # per-rank values and never `condition`, so the echo fired off targets with
+    # no Radiation on them at all — reported by a player, not by any check we
+    # had. A CONDITION ABOUT THE TARGET IS SIMULATED; one about the TENNO is
+    # assumed-max and says so. Radiation's stacks have been tracked since the
+    # engine had statuses, so this was never something the sim could not know.
     condition: target_has_10_radiation_stacks
     rank0: 0.8                 # fraction of the hit damage dealt in the radius
     rankMax: 1.8

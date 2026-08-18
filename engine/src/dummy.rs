@@ -5220,6 +5220,9 @@ fn spread_from_ricochet(
 #[allow(clippy::too_many_arguments)]
 fn spread_from_echo(
     others: &mut [SpreadFoe],
+    // STACKS ON THE BODY THAT WAS HIT, read at the moment of the hit — the
+    // arcane's gate is about the target, not about the shooter.
+    hit_radiation_stacks: usize,
     params: &DummyParams,
     ap: &DummyParams,
     raw_per_bucket: f64,
@@ -5239,6 +5242,18 @@ fn spread_from_echo(
     let share = params.arcane.echo_share;
     let radius = params.arcane.echo_radius_m;
     if share <= 0.0 || radius <= 0.0 {
+        return;
+    }
+    // THE CARD'S OWN PRICE: *"On hitting enemies afflicted by 10 stacks of
+    // Radiation"*. The hit body has to be WEARING them, and 10 is the cap, so
+    // this is not a rider — it is most of the arcane.
+    //
+    // It fired unconditionally until 2026-08-18, on a target with no Radiation
+    // on it at all, because the loader read `trigger`/`grants` and the per-rank
+    // values and never `condition:` (a player reported it). Radiation's stacks
+    // have been tracked as `confusion` since the engine had statuses, so this
+    // was never a thing the sim could not know.
+    if hit_radiation_stacks < params.arcane.echo_needs_radiation as usize {
         return;
     }
     // FROM THE BODY THAT WAS HIT, at the surface the round met — the same
@@ -9483,7 +9498,8 @@ pub fn run_once_traced(
                     // …AND THE ECHO, per landing pellet, because the arcane
                     // says each one triggers it.
                     spread_from_echo(
-                        &mut others, params, ap, body_only(raw / bucket), shares, crit_mult,
+                        &mut others, debuffs.confusion.len(), params, ap,
+                        body_only(raw / bucket), shares, crit_mult,
                         attrition, modded_base, status_chance, forced, &qvec,
                         &mut gal, &mut arc, &mut r, d, t,
                     );
@@ -11749,18 +11765,51 @@ mod tests {
         );
     }
 
-    /// SECONDARY IRRADIATE ECHOES INTO A FORMATION, and is worth exactly
-    /// nothing against one body — which is why `arcanes_data` filed it with the
-    /// TEAM buffs, correctly, until there was a formation (group report via the
-    /// owner, 2026-08-17).
+    /// SECONDARY IRRADIATE ECHOES INTO A FORMATION, and only off a target
+    /// that is actually IRRADIATED.
     ///
-    /// *"Deal X% of the hit damage to enemies within Xm."* An echo needs
-    /// somebody to echo to.
+    /// Two claims, and each one was a bug on its own day.
+    ///
+    /// It needs somebody to echo to — *"deal X% of the hit damage to enemies
+    /// within Xm"* — which is why `arcanes_data` filed it with the TEAM buffs,
+    /// correctly, until there was a formation (group report via the owner,
+    /// 2026-08-17).
+    ///
+    /// AND IT NEEDS THE TARGET AT 10 STACKS OF RADIATION, which is the other
+    /// half of its own card and was not read at all: the loader took
+    /// `trigger`/`grants` and the per-rank values and never `condition:`, so
+    /// the echo fired off a target with no Radiation on it (player report via
+    /// the owner, 2026-08-18). This test measured the bug for as long as it
+    /// existed, because a bare Dual Toxocyst makes no Radiation and the echo
+    /// landed anyway.
     #[test]
-    fn secondary_irradiate_echoes_only_when_there_is_somebody_to_echo_to() {
-        let build = |others: Vec<crate::formation::FoeSpec>, with: bool| {
+    fn secondary_irradiate_echoes_only_off_an_irradiated_target() {
+        // RADIATION IS HEAT + ELECTRICITY, and reaching 10 stacks needs the
+        // status chance to get there inside the engagement — so the build that
+        // is supposed to trigger it is a real one rather than a flag.
+        let build = |others: Vec<crate::formation::FoeSpec>, with: bool, rad: bool| {
             let base = crate::loadout::WeaponBase::from_data("dual_toxocyst", false, &[]);
-            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            // TEN STACKS IS THE CAP, so the build has to actually get there and
+            // stay there: the two elements that make Radiation, the multishot
+            // and fire rate that pay for the ROLLS, and the status chance that
+            // wins them. Reaching it is the test.
+            let want = [
+                "primed_heated_charge", "primed_convulsion", "lethal_torrent",
+                "barrel_diffusion", "gunslinger", "stunning_speed", "sure_shot",
+            ];
+            let pool = crate::mods_data::pistol_pool();
+            let mods: Vec<crate::loadout::ModDef> = if rad {
+                want
+                    .iter()
+                    .filter_map(|m| pool.iter().find(|d| d.id == *m).cloned())
+                    .collect()
+            } else {
+                Vec::new()
+            };
+            if rad {
+                assert_eq!(mods.len(), want.len(), "the Radiation build is complete");
+            }
+            let refs: Vec<&crate::loadout::ModDef> = mods.iter().collect();
             let panel =
                 crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
             let fx = if with {
@@ -11770,16 +11819,18 @@ mod tests {
             } else {
                 crate::arcanes_data::ArcaneFx::none()
             };
-            let mut arena = crate::arena::Arena::training(10.0);
+            // A LONGER ENGAGEMENT, because stacks have to ACCUMULATE: a proc
+            // lasts a few seconds and ten of them have to be alive at once.
+            let mut arena = crate::arena::Arena::training(60.0);
             arena.others = others;
             DummyParams::from_panel(&panel, &arena, &fx)
         };
-        assert!(build(Vec::new(), true).arcane.echo_share > 0.0, "the echo has a payload");
-
-        // ONE BODY: the arcane is worth exactly nothing, as an equality.
-        let a = run_once(&build(Vec::new(), false), &mut Rng::new(0x5EED)).effective_damage;
-        let b = run_once(&build(Vec::new(), true), &mut Rng::new(0x5EED)).effective_damage;
-        assert_eq!(b, a, "an echo with nobody to echo to is worth nothing");
+        let p = build(Vec::new(), true, false);
+        assert!(p.arcane.echo_share > 0.0, "the echo has a payload");
+        assert_eq!(
+            p.arcane.echo_needs_radiation, 10,
+            "…and the card's own price, read from `condition:` rather than dropped"
+        );
 
         // FOUR MORE BODIES inside its radius, which is 4.5 m to 7 m.
         let others: Vec<crate::formation::FoeSpec> = (1..=4)
@@ -11790,9 +11841,27 @@ mod tests {
                 at: crate::space::Vec2::new(i as f64 * 0.9, 0.4),
             })
             .collect();
-        let c = run_once(&build(others.clone(), false), &mut Rng::new(0x5EED)).effective_damage;
-        let e = run_once(&build(others, true), &mut Rng::new(0x5EED)).effective_damage;
-        assert!(e > c * 1.2, "the echo lands on the crowd: {e} against {c}");
+
+        // ONE BODY: worth exactly nothing, as an equality — there is nobody to
+        // echo TO however irradiated the target is.
+        let a = run_once(&build(Vec::new(), false, true), &mut Rng::new(0x5EED)).effective_damage;
+        let b = run_once(&build(Vec::new(), true, true), &mut Rng::new(0x5EED)).effective_damage;
+        assert_eq!(b, a, "an echo with nobody to echo to is worth nothing");
+
+        // A CROWD AND NO RADIATION: also exactly nothing, and this is the one
+        // that was wrong. An equality rather than a bound, because a gate that
+        // is read either holds or does not.
+        let c0 = run_once(&build(others.clone(), false, false), &mut Rng::new(0x5EED)).effective_damage;
+        let c1 = run_once(&build(others.clone(), true, false), &mut Rng::new(0x5EED)).effective_damage;
+        assert_eq!(
+            c1, c0,
+            "no Radiation on the target, no echo — the arcane's own condition"
+        );
+
+        // A CROWD AND A RADIATION BUILD: it lands.
+        let d0 = run_once(&build(others.clone(), false, true), &mut Rng::new(0x5EED)).effective_damage;
+        let d1 = run_once(&build(others, true, true), &mut Rng::new(0x5EED)).effective_damage;
+        assert!(d1 > d0, "irradiated and in a crowd, the echo lands: {d1} against {d0}");
     }
 
     /// A TENDRIL'S OWN KILL SPAWNS NOTHING, which is the one kind of kill in

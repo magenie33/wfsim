@@ -180,6 +180,23 @@ pub struct ArcaneFx {
     /// arcane is: an echo needs somebody to echo to.
     pub echo_share: f64,
     pub echo_radius_m: f64,
+    /// …AND WHAT THE HIT BODY HAS TO BE WEARING FOR IT TO FIRE. Secondary
+    /// Irradiate's card is *"On hitting enemies afflicted by 10 stacks of
+    /// Radiation"*, and 10 is the cap — so this is not a rider on the effect,
+    /// it is the effect's whole price.
+    ///
+    /// Zero means no gate. It was zero for every rank of every build until
+    /// 2026-08-18, because the loader read `trigger`/`grants` and the per-rank
+    /// values and never `condition:` — so the echo fired on a target with no
+    /// Radiation on it at all, which is what a player noticed and reported.
+    ///
+    /// A CONDITION ABOUT THE TARGET IS SIMULATED; ONE ABOUT THE PLAYER IS
+    /// ASSUMED. The other three `condition:` strings in `data/arcanes/` are
+    /// Tenno states this sim does not model (sliding, overshields, buffing an
+    /// ally), where assumed-max is the house reading and is disclosed as such.
+    /// This one is a debuff the engine has tracked since it had statuses at
+    /// all, so assuming it was never "we cannot know" — it was not looking.
+    pub echo_needs_radiation: u32,
     pub id: String,
     /// Emergent stacking buffs (kill/status families).
     pub buffs: Vec<ArcBuffSpec>,
@@ -247,6 +264,7 @@ impl Default for ArcaneFx {
             enervate_rank: None,
             echo_share: 0.0,
             echo_radius_m: 0.0,
+            echo_needs_radiation: 0,
             headshot_mult_bonus: 0.0,
             reload_bonus: 0.0,
             cc_rel: 0.0,
@@ -482,7 +500,7 @@ enum ArcEffect {
     PerAllyCritChance(Scale),
     /// Irradiate: % of the hit damage echoed in a radius — AoE, inert in
     /// the single-target sim; values render in the description.
-    AoeEcho { scale: Scale, radius0: f64, radius1: f64 },
+    AoeEcho { scale: Scale, radius0: f64, radius1: f64, needs_radiation: u32 },
     /// `kind: unmodeled` — an effect whose payload is OUT OF THE SIM'S WORLD
     /// (Warframe armor/energy, enemy behaviour, a mechanic still to be built).
     /// No sim payload, but it OWNS a description `X`: its per-rank value still
@@ -542,6 +560,46 @@ fn scale(v: &Value) -> Scale {
         rank_max: f(v, "rankMax").unwrap_or(0.0),
         ranks,
     }
+}
+
+/// A `condition:` ON AN ARCANE EFFECT, typed — and the point of typing it is
+/// that an unknown one is LOUD.
+///
+/// `data/arcanes/` carries four. Three are TENNO states this sim does not model
+/// (sliding or aim-gliding, overshields up, buffing an ally), and for those the
+/// house reading is assumed-max: documented, optimistic, and disclosed on the
+/// card. The fourth is a state of the TARGET, which the engine has tracked
+/// since it had statuses at all — and the loader read neither, because it read
+/// `trigger`/`grants` and the per-rank numbers and nothing else. So Secondary
+/// Irradiate echoed off a target with no Radiation on it, which is what a
+/// player reported (2026-08-18).
+///
+/// The fix is not "read this one string". It is that a condition the loader
+/// does not understand can no longer be dropped in silence: this returns
+/// `Unknown`, and a test walks the whole roster refusing one.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ArcCondition {
+    /// The body being hit is at N stacks of Radiation. SIMULATED.
+    TargetRadiationStacks(u32),
+    /// A Tenno or squad state this sim does not model. ASSUMED satisfied, and
+    /// the arcane's own file says so.
+    AssumedTennoState,
+    /// Something nobody has taught this loader. Never silently ignored.
+    Unknown(String),
+}
+
+/// The `condition:` an effect declares, if it declares one.
+pub fn arc_condition(v: &Value) -> Option<ArcCondition> {
+    let s = v.get("condition").and_then(Value::as_str)?;
+    Some(match s {
+        "target_has_10_radiation_stacks" => ArcCondition::TargetRadiationStacks(10),
+        // The three Tenno states, NAMED rather than matched by shape: a new one
+        // has to be added here, which is the whole mechanism.
+        "while_sliding_or_aim_gliding"
+        | "while_overshields_active"
+        | "while_buffing_ally_warframes" => ArcCondition::AssumedTennoState,
+        other => ArcCondition::Unknown(other.to_string()),
+    })
 }
 
 fn effect(v: &Value) -> Option<ArcEffect> {
@@ -645,6 +703,14 @@ fn effect(v: &Value) -> Option<ArcEffect> {
             scale: scale(v),
             radius0: f(v, "radius_rank0").unwrap_or(0.0),
             radius1: f(v, "radius_rankMax").unwrap_or(0.0),
+            // THE GATE, READ. `arc_condition` refuses a string it does not
+            // know, which is the half that matters: this effect carried a
+            // `condition:` for as long as it existed and the loader dropped it
+            // silently, so the next one has to be impossible to drop.
+            needs_radiation: match arc_condition(v) {
+                Some(ArcCondition::TargetRadiationStacks(n)) => n,
+                _ => 0,
+            },
         },
         "overguard_damage_bonus" => ArcEffect::OverguardDamage(scale(v)),
         "ammo_efficiency" => ArcEffect::AmmoEfficiency(scale(v)),
@@ -878,8 +944,9 @@ impl ArcaneDef {
                 // team buffs, correctly worth nothing. A formation is what
                 // turns it on: *"deal X% of the hit damage to enemies within
                 // Xm"*, and there are enemies now.
-                ArcEffect::AoeEcho { scale, radius0, radius1 } => {
+                ArcEffect::AoeEcho { scale, radius0, radius1, needs_radiation } => {
                     fx.echo_share = scale.at(rank, self.max_rank);
+                    fx.echo_needs_radiation = *needs_radiation;
                     fx.echo_radius_m = radius0
                         + (radius1 - radius0)
                             * if self.max_rank == 0 {
@@ -960,7 +1027,7 @@ impl ArcaneDef {
                 // bent to fit a formatting rule.
                 ArcEffect::OverguardDamage(scale) => vals.push(at(scale) - 1.0),
                 ArcEffect::ColdBurst { scale, radius0, radius1 }
-                | ArcEffect::AoeEcho { scale, radius0, radius1 } => {
+                | ArcEffect::AoeEcho { scale, radius0, radius1, .. } => {
                     vals.push(at(scale));
                     vals.push(lerp(*radius0, *radius1));
                 }
@@ -1111,10 +1178,18 @@ impl ArcaneDef {
                     "{} Crit Chance per ally-affecting buff (team context)",
                     pct(at(sc))
                 )),
-                ArcEffect::AoeEcho { scale, .. } => out.push(format!(
-                    "{} of the hit damage echoed to nearby enemies (AoE)",
-                    pct(at(scale))
-                )),
+                // …AND THE CARD STATES THE GATE. Not a footnote: the echo is
+                // worth exactly nothing until the target is at 10 stacks, so a
+                // line printing only the payout would describe the good half of
+                // a conditional as if it were the whole thing.
+                ArcEffect::AoeEcho { scale, needs_radiation, .. } => out.push(if *needs_radiation > 0 {
+                    format!(
+                        "on a target at {needs_radiation} Radiation stacks: {} of the hit damage echoed to nearby enemies (AoE)",
+                        pct(at(scale))
+                    )
+                } else {
+                    format!("{} of the hit damage echoed to nearby enemies (AoE)", pct(at(scale)))
+                }),
                 // DE PRINTS THE EXTRA, and so does this: "x8 Extra Damage to
                 // Overguard" is the card, ×9 is what it does (M38). Printing
                 // the total here would put a number on the panel that appears
@@ -1550,6 +1625,56 @@ mod tests {
         assert_eq!(
             c.fx(3, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno()).cold_burst_on_puncture,
             2
+        );
+    }
+
+    /// EVERY `condition:` IN THE ROSTER IS ONE THIS LOADER KNOWS.
+    ///
+    /// The bug this exists to prevent is not a wrong number, it is SILENCE.
+    /// Secondary Irradiate carried `condition: target_has_10_radiation_stacks`
+    /// from the day it was written, and the loader read `trigger`/`grants` and
+    /// the per-rank values and nothing else — so the gate was dropped without a
+    /// warning anywhere, the echo fired off targets with no Radiation on them,
+    /// and the only thing that caught it was a player noticing (2026-08-18).
+    ///
+    /// A data file that states a rule the engine does not implement is worse
+    /// than one that omits it: it reads, to anyone auditing, as if the rule
+    /// were being applied. So a string nobody has taught this loader fails
+    /// here, and adding one means deciding on purpose whether it is a target
+    /// state (simulate it) or a Tenno state (assume it, and disclose).
+    #[test]
+    fn every_condition_in_the_roster_is_known() {
+        // FROM THE YAML, not from the parsed roster: an effect the loader skips
+        // entirely has no parsed form to inspect, and that is precisely the
+        // shape of the bug — a rule written down and never reached.
+        let mut seen: Vec<(String, String)> = Vec::new();
+        for (path, text) in crate::data::files_under("arcanes/") {
+            let v: Value = serde_norway::from_str(text).expect("an arcane file parses");
+            let Some(effects) = v.get("effects").and_then(Value::as_sequence) else {
+                continue;
+            };
+            for e in effects {
+                match arc_condition(e) {
+                    None => {}
+                    Some(ArcCondition::Unknown(s)) => panic!(
+                        "{path}: condition `{s}` is not known to `arc_condition` — teach it,                          or the rule is stated in yaml and applied nowhere"
+                    ),
+                    Some(_) => seen.push((
+                        path.to_string(),
+                        e.get("condition")
+                            .and_then(Value::as_str)
+                            .unwrap_or("")
+                            .to_string(),
+                    )),
+                }
+            }
+        }
+        // …and there IS one, so a loader that stopped finding any at all — a
+        // renamed key, a parser that no longer reaches the effect list — fails
+        // here rather than passing vacuously.
+        assert!(
+            seen.iter().any(|(_, c)| c == "target_has_10_radiation_stacks"),
+            "the roster's one simulated condition is still found: {seen:?}"
         );
     }
 
