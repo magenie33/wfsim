@@ -313,8 +313,14 @@ const imgTag = (src, cls) => src ? `<img class="${cls||''}" src="${src}" onerror
 /// each running the engine flat out for as long as the answer takes. That is
 /// the right default on a desktop and it is a hand-warmer on a phone (owner,
 /// 2026-08-18: 我的手机现在就发烫了). The lever is the WORKER COUNT, because the
-/// heat is the worker count — a longer run at fewer cores is cooler than a
-/// shorter one at all of them, and the answer is identical either way.
+/// heat is the worker count — a longer run on fewer cores is cooler than a
+/// shorter one on all of them, and the answer is identical either way.
+///
+/// A PERCENTAGE, not a named tier (owner, 2026-08-18). The machine's core count
+/// is something the page can ASK FOR, so the setting can be a share of it and
+/// mean the same thing on an eight-core phone and a twenty-eight-core
+/// workstation — where "balanced" would have meant two different machines'
+/// worth of heat under one word. It also survives the reader changing device.
 ///
 /// GLOBAL RATHER THAN PER MODULE, which is the owner's own framing and is also
 /// what the merged pool makes true: the simulator, the quick calc and every
@@ -328,34 +334,92 @@ const imgTag = (src, cls) => src ? `<img class="${cls||''}" src="${src}" onerror
 /// run`). The run COUNT is the accuracy knob and it lives per module, where it
 /// already was.
 const COMPUTE_KEY = "wfsim-compute";
-/// `full` is the default and is what every build before this one did.
-const COMPUTE_LEVELS = ["saver", "balanced", "full"];
-let computeLevel = COMPUTE_LEVELS.includes(localStorage.getItem(COMPUTE_KEY))
-  ? localStorage.getItem(COMPUTE_KEY)
-  : "full";
+/// HALF, by decision (owner, 2026-08-18). It is cooler than what this page did
+/// before on a phone and faster on a desktop with more than sixteen threads,
+/// which is the same change in both directions: the old default was a fixed
+/// eight whatever the machine was.
+const COMPUTE_DEFAULT_PCT = 50;
+/// The ceiling, in lanes. Each one is a Web Worker holding its own instance of
+/// a ~6 MB wasm module, so the cost of the last few is memory rather than heat,
+/// and it is the same ceiling the optimizer's own `CPU threads` preset has.
+const COMPUTE_MAX_LANES = 16;
+
+/// WHAT THE MACHINE SAYS IT HAS, and how much that is worth believing.
+///
+/// `navigator.hardwareConcurrency` is the only thing a page can ask, and three
+/// things about it matter here:
+///
+///   · it counts LOGICAL processors, not cores — a four-core CPU with SMT
+///     answers 8, and a phone counts its efficiency cores among them, so a
+///     phone's "8" is not eight cores' worth of work;
+///   · the spec lets a browser report FEWER on purpose ("don't treat this as an
+///     absolute measurement"), and Firefox's resistFingerprinting and Tor do;
+///   · it is absent on iOS Safari 11 through 15.3 — five years of iPhones —
+///     where `undefined` falls back to 4 and the control says it is guessing.
+///
+/// All three argue for the same thing: a share the reader can move, rather than
+/// a number this file works out for them.
+const detectedCores = () => {
+  const n = Number(navigator.hardwareConcurrency);
+  return Number.isFinite(n) && n >= 1
+    ? { n: Math.floor(n), known: true }
+    : { n: 4, known: false };
+};
+
+/// The reader's share, 10–100. Migrates the three named tiers this shipped with
+/// for a few hours on 2026-08-18, so nobody's stored setting reads as garbage.
+const readComputePct = () => {
+  const raw = localStorage.getItem(COMPUTE_KEY);
+  const legacy = { saver: 10, balanced: 50, full: 100 }[raw];
+  const n = legacy ?? Number(raw);
+  return Number.isFinite(n) && n >= 10 && n <= 100
+    ? Math.round(n / 10) * 10
+    : COMPUTE_DEFAULT_PCT;
+};
+let computePct = readComputePct();
 
 let pool = null;
-/// The lane count this machine gets at the current setting.
+/// The lane count that share comes to on this machine — at least one, and never
+/// more than the ceiling.
+const poolSize = () =>
+  Math.max(1, Math.min(Math.round((detectedCores().n * computePct) / 100), COMPUTE_MAX_LANES));
+
+/// THE SHARES WORTH OFFERING — one per distinct lane count.
 ///
-/// `full` is every core but one, capped at eight — past that the strides get
-/// short and each worker costs a wasm instance. `balanced` is half of that, and
-/// `saver` is ONE, which is a page that answers while you keep using the phone.
-const poolSize = () => {
-  const cores = Number(navigator.hardwareConcurrency) || 4;
-  const full = Math.max(1, Math.min(cores - 1, 8));
-  if (computeLevel === "saver") return 1;
-  if (computeLevel === "balanced") return Math.max(1, Math.floor(full / 2));
-  return full;
+/// Ten fixed steps read badly at both ends: on a 28-core machine everything
+/// from 60% up lands on the 16-lane ceiling and five rows say the same thing,
+/// and on a 4-core one two steps share a lane count. So the list is built from
+/// what the shares actually BUY on this machine, keeping the cheapest share
+/// that reaches each count — which also makes the last row always mean "all of
+/// them", whatever the machine is.
+const computeSteps = () => {
+  const { n: cores } = detectedCores();
+  const lanes = (pct) =>
+    Math.max(1, Math.min(Math.round((cores * pct) / 100), COMPUTE_MAX_LANES));
+  const out = [];
+  const seen = new Set();
+  for (let pct = 10; pct <= 100; pct += 10) {
+    const n = lanes(pct);
+    if (seen.has(n)) continue;
+    seen.add(n);
+    out.push({ pct, lanes: n });
+  }
+  return out;
 };
 
 /// Change it, and MEAN IT NOW. The pool is built once and held, so a setting
 /// that only applied to the next page load would read as broken on the machine
 /// it was set to rescue. Dropping the pool is safe at any moment — every waiter
 /// is settled with `cancelled` and the callers that can re-ask do (`laneAsk`).
-function setComputeLevel(level) {
-  if (!COMPUTE_LEVELS.includes(level) || level === computeLevel) return;
-  computeLevel = level;
-  try { localStorage.setItem(COMPUTE_KEY, level); } catch (_) { /* private mode */ }
+function setComputePct(pct) {
+  const want = Math.max(10, Math.min(100, Math.round(Number(pct) / 10) * 10));
+  // ONTO AN OFFERED STEP, so the list always has the current value in it — a
+  // share that buys the same lanes as a cheaper one is that cheaper one.
+  const step = computeSteps().find((s) => s.pct >= want) || computeSteps().slice(-1)[0];
+  const n = step ? step.pct : want;
+  if (!Number.isFinite(n) || n === computePct) return;
+  computePct = n;
+  try { localStorage.setItem(COMPUTE_KEY, String(n)); } catch (_) { /* private mode */ }
   cancelSim();
   renderComputePicker();
 }
@@ -964,35 +1028,47 @@ const savePickerPrefs = () => localStorage.setItem("wfsim-picker", JSON.stringif
 /// THE COMPUTE PICKER, in the topbar beside the language.
 ///
 /// In the TOPBAR because it is the page's setting rather than any module's —
-/// the same place the language and the theme live, and the same reason. It
-/// names the lane count it will actually use, because "balanced" says nothing
-/// on a machine whose core count the reader does not know.
+/// the same place the language and the theme live, and the same reason.
+///
+/// EVERY ROW NAMES THE LANE COUNT IT BUYS, because a percentage alone is not
+/// something a reader can act on: "50%" says nothing until it says "4 of 8".
+/// The button shows the LANES rather than the share, for the same reason —
+/// that is the number that decides how hot the phone gets.
+///
+/// …AND IT SAYS WHEN IT IS GUESSING. A browser that will not report its core
+/// count (iOS Safari 11–15.3, or a privacy mode) gets a fallback of 4 and a
+/// line saying so, rather than a confident number nobody measured.
 function renderComputePicker() {
   const host = $("compute-select");
   if (!host) return;
-  const cores = Number(navigator.hardwareConcurrency) || 4;
-  const at = (level) => {
-    const was = computeLevel;
-    computeLevel = level;
-    const n = poolSize();
-    computeLevel = was;
-    return n;
-  };
-  const label = {
-    saver: tr("Power saver"),
-    balanced: tr("Balanced"),
-    full: tr("Full speed"),
-  };
+  const { n: cores, known } = detectedCores();
+  const steps = computeSteps();
+  // LANES OVER CORES on the face — `14/28` states the setting and its ceiling
+  // in one, and it is plain text: an emoji or a dingbat is the one glyph the
+  // platform draws in its own colour and its own shape, which is why this
+  // topbar has none (2026-08-06).
+  const face = known ? `${poolSize()}/${cores}` : `${poolSize()}/?`;
   host.outerHTML = ddButton("compute-select", {
-    value: computeLevel,
-    title: tr("how much of this machine the page may use — it changes how FAST an answer arrives, never what the answer is"),
-    items: COMPUTE_LEVELS.map((lv) => ({
-      value: lv,
-      label: label[lv],
-      hint: tr("{n} of {c} cores").replace("{n}", at(lv)).replace("{c}", cores),
+    value: String(computePct),
+    title: known
+      ? tr("how much of this machine the page may use — it changes how FAST an answer arrives, never what the answer is")
+      : tr("this browser will not say how many cores it has, so 4 is assumed — the share still applies"),
+    // A LANE COUNT, not a share: it is what the setting actually does.
+    placeholder: face,
+    items: steps.map((s) => ({
+      value: String(s.pct),
+      label: `${s.pct}%`,
+      hint: known
+        ? tr("{n} of {c} cores").replace("{n}", s.lanes).replace("{c}", cores)
+        : tr("{n} lanes · cores unknown, assuming {c}")
+            .replace("{n}", s.lanes).replace("{c}", cores),
     })),
-    onPick: (v) => setComputeLevel(v),
+    onPick: (v) => setComputePct(v),
   });
+  // The face shows the LANES; the list shows the shares.
+  const btn = $("compute-select");
+  const el = btn && btn.querySelector(".dd-v");
+  if (el) el.textContent = face;
 }
 
 function initWeaponSearch() {
@@ -6720,6 +6796,18 @@ const evoGapChips = (o, tag) => {
     out.push(`<${tag} class="exchip livebug" title="${escHtml(
       tr("the card states this and the game does not do it — measured, and the simulation matches the game rather than the card")
       + ": " + dead.map((x) => tr(x)).join(" · "))}">${escHtml(tr("does not work in game"))}</${tag}>`);
+  }
+  // A FIFTH CHIP, and the second that is not a shortfall of ours — the OPPOSITE
+  // advice to the one above it. A live bug says the card is right and the game
+  // is broken, so do not pick the perk; a MISPRINT says the effect works and
+  // the card is wrong ABOUT it, so pick it for a reason the card does not
+  // state. Owner, 2026-08-18: anything that differs from what the game displays
+  // is to be noted, and a note nobody can see on the card is not one.
+  const wrong = o.misprints || [];
+  if (wrong.length) {
+    out.push(`<${tag} class="exchip misprint" title="${escHtml(
+      tr("this works, and its own card describes it wrongly — the simulation follows the game")
+      + ": " + wrong.map((x) => tr(x)).join(" · "))}">${escHtml(tr("card is wrong"))}</${tag}>`);
   }
   return out.length ? " " + out.join(" ") : "";
 };

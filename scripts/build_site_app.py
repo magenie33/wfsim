@@ -479,7 +479,44 @@ def run(*cmd: str) -> None:
     subprocess.run(cmd, cwd=ROOT, check=True)
 
 
+def check_data_parses() -> None:
+    """EVERY `data/` YAML MUST PARSE, before any of it is compiled into a wasm.
+
+    The engine embeds `data/` at COMPILE TIME and reads most of it LAZILY, so a
+    malformed file is not a build error — it is a panic the first time something
+    asks for it. Inside a Web Worker that panic settles nothing: the promise the
+    page is awaiting never resolves, no exception reaches the console, and the
+    app simply stops half-booted with a populated `META` and an empty weapon
+    list. That is the least debuggable failure this project can produce, and it
+    shipped once (2026-08-18: an unescaped double quote inside a double-quoted
+    zh string, which `cargo test` catches and this script did not).
+
+    `cargo test` DOES catch it — `i18n_data::locales()` panics on a parse error
+    and a test calls it — so this is not a second source of truth. It is the
+    gate on the path that does not run tests: `python scripts/build_site_app.py`
+    is what turns data into something a browser loads, and it had no reason to
+    look at the data at all.
+    """
+    try:
+        import yaml
+    except ImportError:                       # pragma: no cover - dev machines have it
+        print("(pyyaml not installed — skipping the data parse check)")
+        return
+    bad: list[str] = []
+    for f in sorted(Path("data").rglob("*.yaml")):
+        try:
+            yaml.safe_load(f.read_text(encoding="utf-8"))
+        except Exception as e:                # noqa: BLE001 - report every one
+            bad.append(f"{f}: {str(e).splitlines()[0]}")
+    if bad:
+        raise SystemExit(
+            "data/ does not parse — refusing to build a site around it:\n  "
+            + "\n  ".join(bad)
+        )
+
+
 def main() -> None:
+    check_data_parses()
     run("cargo", "build", "--release", "-p", "wfsim-wasm", "--target", "wasm32-unknown-unknown")
     APP.mkdir(parents=True, exist_ok=True)
     run("wasm-bindgen", str(WASM), "--target", "no-modules", "--no-typescript",

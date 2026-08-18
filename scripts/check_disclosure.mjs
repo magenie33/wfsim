@@ -162,6 +162,43 @@ for (const lang of ["en", "zh"]) {
     out.todoScope = [...document.querySelectorAll('.evopick .exchip.scope')]
         .map(e => e.textContent.trim());
 
+    // 7b-2. THE FIFTH KIND OF ADMISSION: THE CARD ITSELF IS WRONG.
+    //
+    // The other four are all "the number here is lower than the card promises",
+    // in four different senses. This one is the opposite: the effect WORKS,
+    // the simulation follows the game, and the perk's own text misdescribes it.
+    // Swift Punishment prints "With Sprint Speed 1.2 or Higher" and its wiki
+    // row says *"Despite the description, the effect only requires 1.1"* — a
+    // player reading the card would mod for a threshold the game never asks
+    // for (owner, 2026-08-18: anything that differs from what the game DISPLAYS
+    // is to be noted).
+    //
+    // A NEGATIVE CONTROL IN THE SAME TIER, which is what makes the assertion
+    // mean anything: Riddled Target sits beside it, has no such note, and must
+    // carry no chip. A check that only asserts presence passes just as well on
+    // a page that stamps "card is wrong" on everything.
+    history.pushState({}, '', '/weapons/Latron_Prime'); route(); await sleep(3800);
+    const pick = (id) => document.querySelector('.evopick[data-id="' + id + '"]');
+    out.misprintDeclared = ((META.weapons || [])
+      .find((w) => w.id === 'latron_prime') || {}).evolutions || [];
+    out.misprintChips = pick('latron_prime_swift_punishment')
+      ? [...pick('latron_prime_swift_punishment').querySelectorAll('.exchip.misprint')]
+          .map((e) => e.textContent.trim())
+      : null;
+    out.misprintWhy = pick('latron_prime_swift_punishment')
+      ? [...pick('latron_prime_swift_punishment').querySelectorAll('.exchip.misprint')]
+          .map((e) => e.title)
+      : [];
+    out.misprintControl = pick('latron_prime_riddled_target')
+      ? pick('latron_prime_riddled_target').querySelectorAll('.exchip.misprint').length
+      : -1;
+    // …AND IT IS NOT FILED WITH THE BROKEN ONES. A live bug tells a reader not
+    // to pick the perk; this tells them to pick it for a reason the card does
+    // not state, so wearing the same chip would be the opposite advice.
+    out.misprintNotLiveBug = pick('latron_prime_swift_punishment')
+      ? pick('latron_prime_swift_punishment').querySelectorAll('.exchip.livebug').length
+      : -1;
+
     // 7c. A BONUS THAT PAYS NOTHING SAYS WHY — the fourth surface, and the only
     //     one where the mechanic is fully MODELLED and still worth a line.
     //
@@ -218,6 +255,19 @@ for (const lang of ["en", "zh"]) {
   // screen, told apart.
   check(`[${lang}] evolution tiles carry a chip`, r.todoChips.length >= 1,
     `${r.todoChips.length} chips on the Felarx`);
+
+  // THE FIFTH ADMISSION, and the one that is not a shortfall.
+  check(`[${lang}] a perk whose CARD is wrong says so on the card`,
+    Array.isArray(r.misprintChips) && r.misprintChips.length === 1,
+    JSON.stringify(r.misprintChips));
+  check(`[${lang}] ...naming the disagreement, in this language`,
+    (r.misprintWhy[0] || '').length > 40
+      && (lang === 'zh' ? /[\u4e00-\u9fff]/.test(r.misprintWhy[0]) : true),
+    (r.misprintWhy[0] || '').slice(0, 120));
+  check(`[${lang}] ...and not as a live bug, which is the opposite advice`,
+    r.misprintNotLiveBug === 0, String(r.misprintNotLiveBug));
+  check(`[${lang}] ...while its tier-mate, whose card is right, carries none`,
+    r.misprintControl === 0, String(r.misprintControl));
   // BOTH KINDS ON SCREEN, and told apart. The Stug carries each: clauses the
   // model has no rule for yet, and Hoplite Virtue, whose trigger is the
   // PLAYER's shields breaking — which nothing in this arena can do.

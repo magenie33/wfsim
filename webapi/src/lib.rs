@@ -1124,6 +1124,15 @@ pub fn meta_json() -> Value {
                                 // us, this one says do not pick the perk for
                                 // that half (MEASUREMENTS M49).
                                 "live_bugs": e.live_bugs(),
+                                // …AND THE FOURTH, which is not a shortfall
+                                // either and is the OPPOSITE advice to a live
+                                // bug: the effect works and its own CARD is
+                                // wrong about it. A live bug says do not pick
+                                // this; a misprint says pick it for a reason
+                                // the card does not state (owner, 2026-08-18:
+                                // anything that differs from what the game
+                                // DISPLAYS is to be noted).
+                                "misprints": e.misprints(),
                                 "fully_unmodeled": e.fully_unmodeled(),
                                 "desc": e.description.split('\n').collect::<Vec<_>>(),
                                 "effects": e.describe(),

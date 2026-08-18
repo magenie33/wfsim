@@ -579,6 +579,27 @@ pub struct EvolutionDef {
     /// Everything this evolution grants applies to the BASE form only — see
     /// the loader field of the same name.
     pub base_form_only: bool,
+    /// WHERE THE CARD AND THE GAME DISAGREE — one line per clause, each saying
+    /// what the card prints and what the effect actually does.
+    ///
+    /// THE FOURTH KIND OF ADMISSION, and the second that is not a shortfall of
+    /// ours. [`EvoEffect::Inert`] is work someone can do,
+    /// [`EvoEffect::OutOfScope`] is the edge of what this simulator is, and
+    /// [`EvoEffect::LiveBug`] says the model is right and the game is broken.
+    /// This one says the model is right and the CARD is wrong: the effect works,
+    /// it simply does not do what it says.
+    ///
+    /// It is NOT a live bug and must not be reported as one. A live bug tells a
+    /// reader not to pick the perk; this tells them the perk is better or worse
+    /// than its own text, which is the opposite advice. Swift Punishment prints
+    /// "With Sprint Speed 1.2 or Higher" and its own wiki row says *"Despite
+    /// the description, the effect only requires 1.1"* — a player reading the
+    /// card would mod for a threshold the game does not ask for.
+    ///
+    /// Owner, 2026-08-18: anything that differs from what the game DISPLAYS is
+    /// to be noted. It rides beside the effect rather than short-circuiting it,
+    /// which is the whole difference from `live_bug` in the same position.
+    misprints: Vec<String>,
     effects: Vec<EvoEffect>,
 }
 
@@ -987,6 +1008,16 @@ impl EvolutionDef {
     /// about OUR shortfalls, and a reader deciding whether to wait for us is
     /// asking something different from a reader deciding whether to pick a
     /// perk DE has broken. Both reach the page; only one is work.
+    /// WHERE THIS PERK'S CARD IS WRONG — see [`Self::misprints`] the field.
+    ///
+    /// NOT counted by [`Self::fully_unmodeled`] and not reported beside the
+    /// live bugs: a perk whose card misstates a threshold is fully modelled and
+    /// fully working, and filing it with the broken ones would tell a reader to
+    /// avoid the one thing they should be told to trust.
+    pub fn misprints(&self) -> &[String] {
+        &self.misprints
+    }
+
     pub fn live_bugs(&self) -> Vec<String> {
         self.effects
             .iter()
@@ -1322,6 +1353,10 @@ fn effect(v: &Value) -> Option<EvoEffect> {
     // disagree — Carnage Reign's +60 base damage works and its "+33% per
     // Status Type" does not (MEASUREMENTS M49). Intercepting here means every
     // effect kind gets it for free and no arm has to remember to check.
+    // A MISPRINT DOES NOT SHORT-CIRCUIT, which is the whole difference between
+    // it and `live_bug` one line below: the effect works and is parsed exactly
+    // as it would be without the note. Collected by the caller, because it
+    // belongs to the perk's card rather than to the effect's arithmetic.
     if let Some(note) = v.get("live_bug").and_then(Value::as_str) {
         return Some(EvoEffect::LiveBug {
             clause: kind.replace('_', " "),
@@ -2404,6 +2439,18 @@ pub fn pool() -> &'static Vec<EvolutionDef> {
                 ef.weapon
             );
             let effects = ef.effects.iter().filter_map(effect).collect();
+            // …AND THE CLAUSES WHOSE CARD IS WRONG. Read off the same effect
+            // maps and kept beside them: `misprint:` names the disagreement and
+            // changes nothing about how the effect is loaded.
+            let misprints: Vec<String> = ef
+                .effects
+                .iter()
+                .filter_map(|v| {
+                    let note = v.get("misprint").and_then(Value::as_str)?;
+                    let kind = v.get("kind").and_then(Value::as_str).unwrap_or("");
+                    Some(format!("{} — {note}", kind.replace('_', " ")))
+                })
+                .collect();
             out.push(EvolutionDef {
                 id: ef.id,
                 name: ef.name,
@@ -2421,6 +2468,7 @@ pub fn pool() -> &'static Vec<EvolutionDef> {
                     }
                 }),
                 base_form_only: ef.base_form_only,
+                misprints,
                 effects,
             });
         }
@@ -2584,6 +2632,7 @@ mod tests {
     fn a_broken_evolution_changes_nothing_whatever_it_grants() {
         use crate::loadout::{IndirectStat, WeaponBase};
         let everything = |broken: bool| EvolutionDef {
+            misprints: Vec::new(),
             id: "synthetic".into(),
             name: "Synthetic".into(),
             weapon: "torid".into(),

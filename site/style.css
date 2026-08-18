@@ -1193,6 +1193,12 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .exchip.livebug{background:color-mix(in srgb,var(--bad,#e06c75) 12%,transparent);
   color:var(--bad,#e06c75);
   border:1px solid color-mix(in srgb,var(--bad,#e06c75) 40%,transparent)}
+/* A MISPRINT IS NOT A FAULT — the effect works and its card is wrong about it,
+   which is the opposite advice to `.livebug` beside it. So it reads as a NOTE
+   rather than a warning: the accent colour, not the bad one. */
+.exchip.misprint{background:color-mix(in srgb,var(--acc,#c8a165) 12%,transparent);
+  color:var(--acc,#c8a165);
+  border:1px solid color-mix(in srgb,var(--acc,#c8a165) 40%,transparent)}
 
 /* ---- topbar navigation: the site's OWN pages ---------------------------
    Against the wordmark, before the search — these are destinations, not the
