@@ -3203,6 +3203,11 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
+    score: 14.115017579993552
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: base
     score: 14.020504375601968
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, polar_magazine, primed_venomous_clip, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
@@ -3414,6 +3419,11 @@ entries:
   - weapon: larkspur_prime
     mode: base
     score: 8.666666666666666
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, sabot_rounds, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    score: 8.666666666666666
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, ammo_chain, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_merciless, cascadia_flare]
   - weapon: larkspur_prime
@@ -3576,16 +3586,6 @@ entries:
     score: 5
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_merciless, cascadia_flare]
-  - weapon: larkspur_prime
-    mode: base
-    score: 4.666666666666667
-    mods: [primed_rubedo_lined_barrel, ammo_chain, containment_breach, magnetized_cycle, polar_magazine, contamination_casing, combustion_rounds, magma_chamber]
-    arcanes: [primary_merciless, secondary_enervate]
-  - weapon: larkspur_prime
-    mode: base
-    score: 4.196849478011629
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, hypothermic_shell, primed_venomous_clip, contamination_casing, primed_combustion_rounds, magma_chamber]
-    arcanes: [primary_merciless, secondary_enervate]
   - weapon: latron_prime
     mode: cycle
     score: 58.59674617658
