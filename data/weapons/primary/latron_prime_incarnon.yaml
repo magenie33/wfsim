@@ -50,12 +50,15 @@ co_behavior: independent
 # with a 4 meter radius, dealing damage once for any collision on enemies, and
 # again for the explosion."
 #
-# The first collision and its explosion both land on the target in front of you,
-# which is what this entry models. The other five bounces need somewhere to go,
-# and a single-target arena has nowhere — the same treatment punch-through and
-# beam chaining already get here. So a Latron's number below is its
-# SINGLE-TARGET number and the weapon is worth more against a crowd, which is
-# true of it in game too.
+# The first collision and its explosion both land on the target in front of
+# you, which is what this entry models. The BOUNCES do not: the reason used to
+# be that a single-target arena had nowhere for them to go, and since the
+# formation landed (2026-08-17) it has somewhere — so this is work now rather
+# than an edge, and it is declared as a gap below instead of only here.
+unmodeled:
+  - reason: ricochet
+    n: 5
+
 attack:
   # Cone half-angle from the reticle, degrees — wiki
   # Module:Weapons/data (MinSpread/MaxSpread on this attack).

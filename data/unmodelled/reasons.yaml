@@ -53,6 +53,14 @@ reasons:
     text: "the AUTO-SPOOL ramp is not modelled — the page gives this trigger as Auto-Spool and the fire rate here is the spooled-up {rate}/s from the first shot, so a short burst is faster in this sim than in game"
   beam_range:
     text: "the {m} m range is not modelled — the fight has a distance now, but a beam still reaches whatever it is aimed at, so a target standing past the beam's end takes damage here that it would not take in game"
+  # THE RICOCHET IS THE LATRONS', all three of them, and the reason it is
+  # still a gap CHANGED on 2026-08-17. It read "a single-target arena has
+  # nowhere for the bounces to go", which was true and is not: the arena
+  # holds a formation, and chaining, punch-through and blasts all reach
+  # across it. What is missing now is the BOUNCE ITSELF — where a deflected
+  # projectile goes — and that is work rather than an edge.
+  ricochet:
+    text: "the projectile's other {n} RICOCHETS are not modelled — it bounces off enemies and terrain, and every bounce deals its collision damage again and explodes again. Only the first collision and its own explosion are counted here, so this number is a FLOOR: in a crowd, or anywhere with a wall behind the target, the weapon is worth more"
   reload_never_interrupted:
     text: "this run never INTERRUPTS a reload — in game you can fire mid-reload and keep the shells already loaded, and a player who does is trading stacks and a full magazine for uptime. Decided rather than missing (2026-08-10): a listed reload is a whole reload, and the alternative is not a more accurate model, it is a different player"
   spool_rebuilds_after_reload:

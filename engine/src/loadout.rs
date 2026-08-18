@@ -2610,15 +2610,45 @@ pub fn resolve_for(
     // every other caller get it for free — and it is per FORM, which a single
     // request-level Tenno cannot express: the Vasto aims and its Incarnon form
     // does not, and a cycle resolves both.
-    let aimless;
-    let tenno = if base.cannot_zoom && tenno.state.aiming {
+    //
+    // A SPRINT GATE READS THE MOD ON THE GUN, and this is the second reason the
+    // Tenno is adjusted before any gate is asked. VERBATIM, from the Notes cell
+    // of both Swift Punishment (Latron Incarnon Genesis) and Deadly Pace (Paris
+    // Incarnon Genesis): *"Equipping Amalgam Serration will allow any Warframe
+    // to reach the threshold without needing to mod for sprint speed on the
+    // Warframe itself."*
+    //
+    // Its "+25% Sprint Speed" is a WARFRAME stat the weapon carries — that is
+    // why the mod is barred from companion weapons — so the frame the panel
+    // describes is not the frame holding this build. The roster's own sprint
+    // figures are UNMODDED, and the slowest frame is 0.9: 0.9 x 1.25 = 1.125,
+    // which clears the 1.1 those two perks actually require and does not clear
+    // the 1.2 their cards print. The wiki's two notes are consistent with each
+    // other only at 1.1, which is what makes them evidence rather than one
+    // claim.
+    //
+    // Sprint mods are a share of the BASE, added together, so a second one
+    // joins the same sum rather than compounding.
+    let mut adjusted: Option<crate::tenno_data::Tenno> = None;
+    let sprint_bonus: f64 = mods
+        .iter()
+        .flat_map(|m| m.effects.iter())
+        .filter_map(|e| match e {
+            ModEffect::Indirect(IndirectStat::SprintSpeed, v) => Some(*v),
+            _ => None,
+        })
+        .sum();
+    if sprint_bonus > 0.0 {
         let mut t = tenno.clone();
+        t.sprint *= 1.0 + sprint_bonus;
+        adjusted = Some(t);
+    }
+    if base.cannot_zoom && tenno.state.aiming {
+        let mut t = adjusted.take().unwrap_or_else(|| tenno.clone());
         t.state.aiming = false;
-        aimless = t;
-        &aimless
-    } else {
-        tenno
-    };
+        adjusted = Some(t);
+    }
+    let tenno = adjusted.as_ref().unwrap_or(tenno);
     let gated_flat: f64 = base
         .gated
         .iter()

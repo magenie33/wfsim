@@ -13905,29 +13905,79 @@ mod tests {
     /// a question about who is carrying the gun rather than about the gun, so
     /// it is answered where the Tenno exists. The default wielder sprints at
     /// 0.9, the slowest a frame has (owner, 2026-08-12), so the perk's second
-    /// half pays NOTHING until a frame is named; a Volt at 1.2 turns it on.
+    /// half pays NOTHING until a frame is named.
     ///
-    /// The flat +6 it also grants is untouched either way, which is what says
-    /// the gate is on the right half.
+    /// THE CARD SAYS 1.2 AND THE EFFECT WANTS 1.1. VERBATIM, from the Notes
+    /// cell of this row: *"Despite the description, the effect only requires
+    /// 1.1 or higher sprint speed."* 1.15 is the case that tells the two
+    /// readings apart, and it is the whole of the fix (2026-08-18).
+    ///
+    /// The flat +6 it also grants is untouched at every speed, which is what
+    /// says the gate is on the right half.
     #[test]
-    fn swift_punishment_pays_only_a_frame_that_can_run() {
+    fn swift_punishment_wants_1_1_however_the_card_reads() {
         let base = crate::loadout::WeaponBase::from_data(
             "latron_prime", true, &["latron_prime_swift_punishment"],
         );
         let bare = crate::loadout::WeaponBase::from_data("latron_prime", true, &[]);
-        let with = |sprint: f64| {
+        let at = |sprint: f64| {
             let mut t = crate::tenno_data::default_tenno().clone();
             t.sprint = sprint;
             crate::loadout::resolve_for(&base, &[], crate::loadout::StackPolicy::Emergent, &t)
         };
-        let slow = with(0.9);
-        let fast = with(1.2);
-        assert_eq!(slow.co_per_type, 0.0, "0.9 cannot reach 1.2");
-        assert!((fast.co_per_type - 0.30).abs() < 1e-9, "{}", fast.co_per_type);
+        assert_eq!(at(0.9).co_per_type, 0.0, "0.9 reaches neither reading");
+        assert_eq!(at(1.05).co_per_type, 0.0, "just under the real threshold");
+        // THE SHARP ONE: between the printed 1.2 and the measured 1.1.
+        assert!((at(1.15).co_per_type - 0.30).abs() < 1e-9, "{}", at(1.15).co_per_type);
+        assert!((at(1.1).co_per_type - 0.30).abs() < 1e-9, "the threshold itself");
+        assert!((at(1.2).co_per_type - 0.30).abs() < 1e-9, "and above it");
         // …and the flat half is the perk's either way.
         let plain = crate::loadout::resolve(&bare, &[], crate::loadout::StackPolicy::Emergent);
-        assert!(slow.modified_base > plain.modified_base, "the +6 pays regardless");
-        assert!((slow.modified_base - fast.modified_base).abs() < 1e-9);
+        assert!(at(0.9).modified_base > plain.modified_base, "the +6 pays regardless");
+        assert!((at(0.9).modified_base - at(1.2).modified_base).abs() < 1e-9);
+    }
+
+    /// …AND AMALGAM SERRATION IS ENOUGH ON ITS OWN.
+    ///
+    /// VERBATIM, from the same Notes cell and from Deadly Pace's: *"Equipping
+    /// Amalgam Serration will allow any Warframe to reach the threshold without
+    /// needing to mod for sprint speed on the Warframe itself."*
+    ///
+    /// Its "+25% Sprint Speed" is a WARFRAME stat the weapon carries — the
+    /// reason the mod is barred from companion weapons — so the gate has to
+    /// read the BUILD as well as the frame. It did not, and the two wiki notes
+    /// pin each other: the slowest frame reaches 0.9 x 1.25 = 1.125, which
+    /// clears 1.1 and does not clear the 1.2 the card prints. "Any Warframe" is
+    /// only true at 1.1, so each note is evidence for the other (2026-08-18).
+    ///
+    /// PLAIN SERRATION IS THE CONTROL: same family, same damage bucket, no
+    /// sprint clause — so a test that only equipped the Amalgam could not tell
+    /// "the sprint bonus opened the gate" from "any mod did".
+    #[test]
+    fn amalgam_serration_opens_the_sprint_gate_for_the_slowest_frame() {
+        let base = crate::loadout::WeaponBase::from_data(
+            "latron_prime", true, &["latron_prime_swift_punishment"],
+        );
+        let pool = crate::mods_data::class_pool("rifle");
+        let pick = |id: &str| pool.iter().find(|m| m.id == id)
+            .unwrap_or_else(|| panic!("{id} in the rifle pool"));
+        let amalgam = pick("amalgam_serration");
+        let plain = pick("serration");
+        // THE SPRINT CLAUSE IS ON THE CARD, so the test rests on the data
+        // rather than on the mod's name.
+        assert!(
+            amalgam.effects.iter().any(|e| matches!(
+                e, crate::loadout::ModEffect::Indirect(crate::loadout::IndirectStat::SprintSpeed, _))),
+            "{:?}", amalgam.effects);
+        let with = |m: &crate::loadout::ModDef| {
+            let t = crate::tenno_data::default_tenno().clone();   // sprint 0.9
+            assert_eq!(t.sprint, 0.9, "the neutral wielder is the slowest frame");
+            crate::loadout::resolve_for(&base, &[m], crate::loadout::StackPolicy::Emergent, &t)
+        };
+        assert!((with(amalgam).co_per_type - 0.30).abs() < 1e-9,
+            "0.9 x 1.25 = 1.125 clears 1.1: {}", with(amalgam).co_per_type);
+        assert_eq!(with(plain).co_per_type, 0.0,
+            "plain Serration carries no sprint clause and opens nothing");
     }
 
     /// THE EMPTY MAGAZINE ARMS IT, and the TRANSFORM is what proves that.
