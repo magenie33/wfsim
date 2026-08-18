@@ -75,7 +75,25 @@ const r = await evaluate(`(async () => {
   out.startAim = theFight().aim_at;
 
   // 2. THEY DRAW, AND THEY DO NOT STAND ON EACH OTHER.
-  btn('[data-add="8"]').click(); await sleep(600);
+  // PAINTED, not added by a button. The +1 / +8 chips were deleted on
+  // 2026-08-18 — they existed because the old scene had no way to place a body
+  // — so the crowd is now laid down the way a reader lays one down: pick the
+  // place tool and drag.
+  {
+    const c = cvEl();
+    c.setPointerCapture = () => {};
+    const b = c.getBoundingClientRect();
+    arena().tool('place');
+    const y = b.top + b.height * 0.3;
+    send('pointerdown', b.left + b.width * 0.18, y);
+    for (let k = 1; k <= 40; k++) {
+      send('pointermove', b.left + b.width * (0.18 + 0.016 * k), y);
+      if (arenaBodies(sim).length >= 9) break;
+    }
+    send('pointerup', b.left + b.width * 0.8, y);
+    arena().tool('select');
+  }
+  await sleep(600);
   out.grownFoes = foes();
   out.grownSent = (theFight().formation || []).length;
   const pts = [sim.target_at, ...sim.formation.map(f => f.at)];
@@ -198,6 +216,9 @@ const r = await evaluate(`(async () => {
   out.clickStruck = arenaFirstHit(sim);
 
   // …and one click puts it back on the target.
+  // THE AIM RESET SURVIVED THE DELETION, because nothing replaced it: aim
+  // becomes a place the moment you click the floor and no gesture means "stop
+  // being a place". It is a canvas control now rather than a chip.
   const un = btn('[data-unaim]');
   out.hadUnaim = !!un;
   if (un) { un.click(); await sleep(400); }
@@ -207,9 +228,18 @@ const r = await evaluate(`(async () => {
   pickPreset(scenarioBarCfg(), 'single_target'); await sleep(1800);
   out.official = officialScenarioActive();
   const n0 = (sim.formation || []).length;
-  const a1 = btn('[data-add="1"]');
-  out.officialAddDisabled = !a1 || a1.disabled;
-  if (a1) a1.click();
+  // THE PLACE TOOL IS DISABLED and painting writes nothing — the button that
+  // used to be the thing to disable is gone, so the assertion moved to the tool
+  // that replaced it.
+  const tool1 = document.querySelector('#sim-target-arena [data-tool="place"]');
+  out.officialAddDisabled = !tool1 || tool1.disabled;
+  {
+    const c = cvEl(), b = c.getBoundingClientRect();
+    c.setPointerCapture = () => {};
+    send('pointerdown', b.left + b.width * 0.3, b.top + b.height * 0.3);
+    send('pointermove', b.left + b.width * 0.5, b.top + b.height * 0.3);
+    send('pointerup', b.left + b.width * 0.5, b.top + b.height * 0.3);
+  }
   await sleep(400);
   out.officialUnchanged = (sim.formation || []).length === n0;
   return out;

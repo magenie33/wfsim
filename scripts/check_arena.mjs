@@ -189,20 +189,29 @@ const r = await evaluate(`(async () => {
     { ...buildPayload(), ...theFight(), runs: 6, seed: 7, duration: 8 });
   out.nearHitRate = nearRun.pellets / Math.max(nearRun.shots, 1);
 
-  // 4. THE QUICK SETS ARE IN THE CANVAS, and there is no second control.
+  // 4. THE CANVAS IS THE ONLY PLACE A POSITION IS SET, and now it is the only
+  //    CONTROL as well.
+  //
+  // The quick sets (contact / 5 / 10 / 20 / 40 m) and the crowd buttons were
+  // deleted on 2026-08-18: every one of them existed because the old scene
+  // could not be edited — you could not drag to a distance in a picture that
+  // reframed itself, and there was no way to place or remove a body. Dragging,
+  // painting and erasing are those four things done directly, and the owner's
+  // call was that the compensations go.
+  //
+  // What is asserted here is what remains true: no typed box, no second
+  // control anywhere, and a drag that lands the fight OFF-AXIS — because the
+  // one thing a row of preset distances could do that a drag cannot is snap to
+  // an axis, and nothing here should.
   out.noTypedBox = !document.querySelector('#sim-target [data-k="arena_distance"]');
-  out.jumps = [...document.querySelectorAll('#sim-target-arena .ar-jump[data-jump]')].map(b => b.textContent.trim());
-  // Put the target OFF-AXIS first, so a snap-to-axis implementation is visible
-  // rather than lucky: (6,8) is 3-4-5 scaled, so a 20 m GAP must land on
-  // (12.24, 16.32) — 20.4 m between centres, since the quick sets set the gap.
+  out.noQuickSets = document.querySelectorAll('#sim-target-arena [data-jump]').length;
   sim.player_at = [0, 0]; sim.target_at = [6, 8]; markScenarioDirty();
   renderSim(); await sleep(900);
-  document.querySelector('#sim-target-arena .ar-jump[data-jump="20"]').click();
-  await sleep(900);
-  out.typedState = gap();
-  out.typedAt = sim.target_at.map(v => Math.round(v * 100) / 100);
-  // …and the chip for the distance you are AT is marked.
-  out.marked = [...document.querySelectorAll('#sim-target-arena .ar-jump.on')].map(b => b.dataset.jump);
+  arena().fit(); await sleep(300);
+  drag(0, 40, -30);
+  await sleep(700);
+  out.offAxis = sim.target_at[0] !== 6 && sim.target_at[1] !== 8
+    && Math.abs(sim.target_at[0]) > 0.5;
 
   // 5. AN OFFICIAL RULER'S FIGHT IS PINNED. Switch to the benchmark scenario
   //    and try to drag: nothing may move.
@@ -259,19 +268,21 @@ check("...and at contact nothing misses", r.nearHitRate > 0.99,
   `${(r.nearHitRate * 100).toFixed(0)}%`);
 check("there is no second control for a position — the canvas is the only one",
   r.noTypedBox === true);
-check("...and the quick sets are in the scene", (r.jumps || []).length >= 4, (r.jumps || []).join(" "));
-check("...and one click moves the target ALONG its own line, not onto an axis",
-  Math.abs(r.typedState - 20) < 1e-6 && Math.abs(r.typedAt[0] - 12.24) < 0.01
-    && Math.abs(r.typedAt[1] - 16.32) < 0.01,
-  `${r.typedState} m gap at ${JSON.stringify(r.typedAt)}`);
+// THE QUICK SETS ARE GONE (owner, 2026-08-18), and so is the row they lived in:
+// they existed because the old scene could not be dragged to a distance, and it
+// can. What replaced the assertion is the property that made them worth having
+// and the drag has to keep — the target moves where you put it rather than
+// snapping to an axis.
+check("...and there are no quick sets left either", r.noQuickSets === 0,
+  `${r.noQuickSets} still drawn`);
+check("...so a drag is the only way, and it lands OFF-AXIS", r.offAxis === true,
+  JSON.stringify(r.sentTarget));
 check("an official ruler is the active scenario for this part", r.official === true);
 check("...and it opens at the distance the ruler pins — contact, a zero gap",
   Math.abs(r.officialDistance) < 1e-6, `${r.officialDistance} m`);
 check("...and its fight cannot be dragged", r.officialMoved === false);
 check("...and the scene says so rather than silently ignoring the finger",
   r.officialLooksLocked === true);
-check("...and the distance you are at is marked", (r.marked || []).includes("20"),
-  (r.marked || []).join(","));
 check("the optimizer draws the same scene", r.optDrew === true);
 check("...read-only, because a fight is edited in one place", r.optReadonly === true);
 

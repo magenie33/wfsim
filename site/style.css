@@ -1402,8 +1402,21 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    A canvas you pan and zoom, with its chrome floating on it. The old scene was
    a fixed viewBox that reframed itself under your hand; this one is a floor, so
    it takes a height of its own rather than an aspect ratio. */
-.arc-wrap{position:relative; width:100%; height:340px; border-radius:10px;
-  overflow:hidden; border:1px solid var(--line); background:var(--panel3)}
+/* THE FLOOR GETS THE ROOM. It is the thing you work in, so it takes a real
+   slice of the screen rather than a thumbnail's worth (owner, 2026-08-18). */
+.arena{container-type:inline-size}
+/* THE FLOOR IS NOT PROSE, so it does not live inside the reading column. The
+   page caps itself at 760px, which is right for text and wrong for a thing you
+   lay a formation out on — the canvas came out 462px wide on a 1440px screen.
+   It breaks out and re-centres on the VIEWPORT; the parent is already centred,
+   so `50%` of it is the viewport's middle and the arithmetic is exact. Only
+   where there is room to break out into. */
+@media (min-width:900px){
+  .arena{width:min(1180px,92vw); margin-inline:calc(50% - min(590px,46vw))}
+}
+.arc-wrap{position:relative; width:100%; height:min(62vh,560px); min-height:360px;
+  border-radius:10px; overflow:hidden; border:1px solid var(--line);
+  background:var(--panel3)}
 .arc-wrap:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
 .arc-cv{display:block; width:100%; height:100%; touch-action:pan-y}
 .arc-cv.arc-select{cursor:default}
@@ -1439,6 +1452,14 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .arc-opt:disabled{opacity:.4; cursor:default}
 .arc-opt:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
 
+/* THE TWO CONTROLS THE CANVAS DID NOT REPLACE, beside the switches rather than
+   in a row of their own under the scene. */
+.arc-chips{position:absolute; left:8px; bottom:46px; display:flex; gap:4px}
+.arc-chips:empty{display:none}
+.arc-chips .arc-opt.on{color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 14%,transparent);
+  border-color:color-mix(in srgb,var(--accent) 42%,transparent)}
+
 .arc-read{position:absolute; right:8px; bottom:8px; padding:5px 9px; border-radius:8px;
   background:var(--surface); border:1px solid var(--line); font-size:11.5px;
   color:var(--text-2); box-shadow:0 2px 10px rgba(0,0,0,.14)}
@@ -1446,21 +1467,34 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 /* THE TARGET'S OWN CONTROLS, floating on the floor they are about. Scrollable in
    its own right: an enemy card carries a vulnerability column and a caveat, and
    neither may push the scene off the panel. */
-.arc-side{position:absolute; right:8px; top:8px; width:min(56%,340px);
-  max-height:calc(100% - 16px); overflow-y:auto; padding:7px; border-radius:9px;
+/* THE TARGET'S CARD IS A LABEL ON THE FLOOR, not a second panel: it takes as
+   little of the scene as it can and still be read. */
+.arc-side{position:absolute; right:8px; top:8px; width:min(38%,268px);
+  max-height:calc(100% - 16px); overflow-y:auto; padding:6px; border-radius:9px;
   background:var(--surface); border:1px solid var(--line);
-  box-shadow:0 2px 10px rgba(0,0,0,.14); display:flex; flex-direction:column; gap:7px}
+  box-shadow:0 2px 10px rgba(0,0,0,.14); display:flex; flex-direction:column; gap:5px;
+  font-size:12px}
 .arc-side .en-row{margin:0}
-.arc-side .en-card{width:100%}
-.arc-fields{display:flex; flex-wrap:wrap; gap:6px 12px; align-items:center; font-size:12px}
-.arc-fields label{display:flex; align-items:center; gap:5px; margin:0}
-.arc-fields input[type=number]{width:82px}
+.arc-side .en-card{width:100%; padding:4px 6px; gap:6px}
+.arc-side .en-img{width:34px; height:34px}
+.arc-side .en-name{font-size:12.5px}
+.arc-side .en-meta{font-size:10.5px; line-height:1.35}
+.arc-fields{display:flex; flex-wrap:wrap; gap:4px 10px; align-items:center; font-size:11.5px}
+.arc-fields label{display:flex; align-items:center; gap:4px; margin:0}
+.arc-fields input[type=number]{width:66px}
+
+/* A NARROW PANEL IS NARROW WHATEVER THE VIEWPORT IS. The simulator's column can
+   be a couple of hundred pixels on a wide screen, and a card floating over a
+   floor that thin leaves no floor — so the measurement is of the CONTAINER, not
+   of the window. */
+@container (max-width:560px){
+  .arc-wrap{height:auto; min-height:0; display:flex; flex-direction:column}
+  .arc-side{position:static; width:auto; max-height:none; order:-1;
+    border-radius:0; border-width:0 0 1px; box-shadow:none}
+  .arc-cv{height:min(52vh,380px); flex:0 0 auto}
+}
 
 @media (max-width:640px){
-  .arc-wrap{height:auto; min-height:300px; display:flex; flex-direction:column}
-  .arc-side{position:static; width:auto; max-height:none; border-radius:0;
-    border-width:0 0 1px; box-shadow:none; order:-1}
-  .arc-cv{height:250px; flex:0 0 auto}
   .arc-tool{width:29px; height:29px}
   .arc-read{display:none}
   .arc-rail{top:auto; bottom:8px; left:8px; flex-direction:row}

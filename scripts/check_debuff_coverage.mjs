@@ -166,8 +166,14 @@ const r = await evaluate(`(async () => {
       .filter((c) => c.getAttribute('style')).length;
     // THE EDITOR'S CONTROLS ARE THE EDITOR'S: the scenario has its quick sets,
     // the result has none.
-    out.simChips = document.querySelectorAll('#sim-target-arena .ar-jump').length;
-    out.rpChips = document.querySelectorAll('#rp-scene .ar-jump').length;
+    // THE SCENARIO'S SCENE IS AN EDITOR AND THE RESULT'S IS NOT, which is the
+    // property this has always asserted. What counts as "an editing control"
+    // moved on 2026-08-18: the row of quick sets became a tool rail and two
+    // switches, so the count follows the controls rather than a class name
+    // that no longer exists.
+    out.simChips = document.querySelectorAll(
+      '#sim-target-arena .arc-tool, #sim-target-arena .arc-opt').length;
+    out.rpChips = document.querySelectorAll('#rp-scene .arc-tool, #rp-scene .arc-opt').length;
     // …AND A ROW THE REPLAY DID NOT FOLLOW says so rather than offering a
     // click it cannot honour.
     out.offRows = document.querySelectorAll('.rp-rollrow.off').length;

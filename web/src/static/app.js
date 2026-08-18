@@ -3084,8 +3084,9 @@ function mountArenaCanvas(host, s, en, opts) {
        <div class="arc-rail" role="toolbar" aria-label="${escHtml(tr("Tools"))}"></div>
        <div class="arc-opts"></div>
        <div class="arc-read num"></div>
+       <div class="arc-chips"></div>
      </div>
-     <div class="ar-chips"></div>`;
+     `;
   const wrap = host.querySelector(".arc-wrap");
   if (side) wrap.appendChild(side);
   const cv = host.querySelector(".arc-cv");
@@ -3093,7 +3094,7 @@ function mountArenaCanvas(host, s, en, opts) {
   const rail = host.querySelector(".arc-rail");
   const optbox = host.querySelector(".arc-opts");
   const readout = host.querySelector(".arc-read");
-  const chipbox = host.querySelector(".ar-chips");
+  const chipbox = host.querySelector(".arc-chips");
 
   // ---- the view ---------------------------------------------------------
   // METRES ARE THE UNIT and `k` is pixels per metre. Nothing here is stored in
@@ -3236,42 +3237,48 @@ function mountArenaCanvas(host, s, en, opts) {
       (sel.size ? `  ·  ${sel.size} ${tr("selected")}` : "");
   }
 
-  // ---- the chips, unchanged in meaning ----------------------------------
+  // READ-ONLY IS ASKED LIVE, not baked in at mount: switching to an official
+  // ruler must disable these without a re-render.
   const dis = () => (ro() ? " disabled" : "");
+
+  // ---- WHAT THE CANVAS DID NOT REPLACE ----------------------------------
+  //
+  // The row of quick sets under the scene is GONE (owner, 2026-08-18: the
+  // canvas system is obviously better to use, so the things on the right can
+  // be deleted). Every one of them was a way to do something the old scene
+  // could not: `contact/5/10/20/40 m` because you could not drag to a
+  // distance in a picture that reframed itself, `+1` and `+8` because there
+  // was no way to place a body, `one enemy` because there was no way to
+  // remove one. Dragging, painting and erasing are those four things, done
+  // directly.
+  //
+  // TWO SURVIVE, because nothing replaced them, and they are canvas controls
+  // rather than a row of chips:
+  //
+  //   · AIM AT THE TARGET. Aim becomes a place of its own the moment you click
+  //     the floor, and there is no gesture that means "stop being a place" —
+  //     so it needs a control or it is a one-way door.
+  //   · THE MOVE MODE. Not an edit to the fight at all: it decides whether a
+  //     FINGER belongs to the page's scroll or to this scene, and it is drawn
+  //     only where a finger can be the pointer.
   function paintChips() {
-    const n = arenaBodies(s).length;
-    const full = n >= ARENA_MAX_BODIES();
-    const jumps = ARENA_JUMPS.map((m) => {
-      const on = Math.abs(arenaDistance(s) - m) < 0.05;
-      return `<button class="ar-jump${on ? " on" : ""}" data-jump="${m}"${dis()}>${
-        escHtml(m === 0 ? tr("contact") : `${m} m`)}</button>`;
-    }).join("");
-    const crowd =
-      `<button class="ar-jump" data-add="1"${dis() || (full ? " disabled" : "")}>+1</button>`
-      + `<button class="ar-jump" data-add="8"${dis() || (full ? " disabled" : "")}>+8</button>`
-      + `<button class="ar-jump" data-clear="1"${dis() || (n < 2 ? " disabled" : "")}>${
-        escHtml(tr("one enemy"))}</button>`
-      + `<span class="ar-count">${n}${full ? " / " + ARENA_MAX_BODIES() : ""}</span>`
-      // A FINGER SCROLLS; IT DOES NOT DRAG THE FIGHT (owner, 2026-08-18). The
-      // rule survived the move to a canvas unchanged, and so did its reason: a
-      // browser decides who owns a gesture at `pointerdown` and never gives it
-      // back, so a body that drags on touch is a body whose finger can no
-      // longer scroll past the scene. Drawn wherever a finger CAN be the
-      // pointer -- `maxTouchPoints`, not a `pointer: coarse` query, because a
-      // touchscreen laptop reports a FINE pointer and has the same problem.
-      //
-      // TWO FINGERS ARE STILL THE VIEW whatever this says: a pinch is
-      // unambiguous, so pan and zoom never needed the mode.
-      + (navigator.maxTouchPoints > 0
-        ? `<button class="ar-jump${arenaTouchDrag ? " on" : ""}" data-touchdrag="1"
-           title="${escHtml(tr("while this is on, dragging a body moves it instead of scrolling the page"))}"
-           >\u2725 ${escHtml(tr("move"))}</button>`
-        : "")
-      + (s.aim_at
-        ? `<button class="ar-jump" data-unaim="1"${dis()}>${escHtml(tr("aim at the target"))}</button>`
-        : "");
     chipbox.innerHTML =
-      `<div class="ar-jumps">${jumps}</div><div class="ar-jumps ar-crowd">${crowd}</div>`;
+      (s.aim_at
+        ? `<button class="arc-opt" data-unaim="1"${dis()}>${
+          escHtml(tr("aim at the target"))}</button>`
+        : "")
+      // A FINGER SCROLLS; IT DOES NOT DRAG THE FIGHT (owner, 2026-08-18). The
+      // rule survived the move to a canvas and so did its reason: a browser
+      // decides who owns a gesture at `pointerdown` and never gives it back.
+      // `maxTouchPoints`, not a `pointer: coarse` query — a touchscreen laptop
+      // reports a FINE pointer and has the same problem. Two fingers are still
+      // the view whatever this says.
+      + (navigator.maxTouchPoints > 0
+        ? `<button class="arc-opt${arenaTouchDrag ? " on" : ""}" data-touchdrag="1"
+           aria-pressed="${arenaTouchDrag}"
+           title="${escHtml(tr("while this is on, dragging a body moves it instead of scrolling the page"))}"
+           >✥ ${escHtml(tr("move"))}</button>`
+        : "");
   }
 
   // ---- the tool rail ----------------------------------------------------
@@ -3410,18 +3417,12 @@ function mountArenaCanvas(host, s, en, opts) {
   chipbox.addEventListener("click", (e) => {
     const b = e.target.closest("button");
     if (!b) return;
-    // THE TOUCH-DRAG MODE IS NOT AN EDIT to the fight, so it is answered before
-    // the official-ruler guard: a ruler's scene refuses to MOVE, and offering a
+    // THE MOVE MODE IS NOT AN EDIT to the fight, so it is answered before the
+    // official-ruler guard: a ruler's scene refuses to MOVE, and offering a
     // dead toggle beside it would say the opposite.
     if (b.dataset.touchdrag) { arenaTouchDrag = !arenaTouchDrag; paintChips(); cursor(); return; }
     if (ro()) return;
-    if (b.dataset.jump !== undefined) setArenaDistance(s, Number(b.dataset.jump));
-    else if (b.dataset.add) {
-      for (let i = 0; i < Number(b.dataset.add); i++) if (!arenaAddFoe(s)) break;
-    } else if (b.dataset.clear) { s.formation = []; s.aim_at = null; sel.clear(); }
-    else if (b.dataset.unaim) s.aim_at = null;
-    else return;
-    changed();
+    if (b.dataset.unaim) { s.aim_at = null; changed(); }
   });
 
   const pinchState = () => {
