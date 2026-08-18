@@ -108,6 +108,12 @@ entries:
     score: 0.022840270901582915
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
+  - weapon: phenmor
+    mode: cycle
+    score: 461
+    mods: [galvanized_chamber, serration, galvanized_aptitude, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip, thermite_rounds]
+    evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
+    arcanes: [primary_deadhead]
   - weapon: stug
     mode: cycle
     score: 53.710598389474974
