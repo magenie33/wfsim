@@ -4529,6 +4529,12 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: sybaris_prime
     mode: cycle
+    score: 13.93703414057077
+    mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, stormbringer]
+    evolutions: [sybaris_prime_evo1_incarnon_form, sybaris_prime_blazing_barrel, sybaris_prime_ready_retaliation, sybaris_prime_survivors_edge]
+    arcanes: [primary_deadhead]
+  - weapon: sybaris_prime
+    mode: cycle
     score: 13.1241002442969
     mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, stormbringer, infected_clip, primed_cryo_rounds]
     evolutions: [sybaris_prime_evo1_incarnon_form, sybaris_prime_well_rehearsed, sybaris_prime_marksmans_hand, sybaris_prime_survivors_edge]

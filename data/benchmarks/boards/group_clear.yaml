@@ -18,6 +18,11 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: akarius_prime
     mode: base
+    score: 53.287204889726034
+    mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
+    arcanes: [secondary_enervate]
+  - weapon: akarius_prime
+    mode: base
     score: 14.862971848259775
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, target_cracker, convulsion, pathogen_rounds, primed_heated_charge]
     arcanes: [secondary_enervate]
