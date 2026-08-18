@@ -3271,11 +3271,37 @@ function mountArenaCanvas(host, s, en, opts) {
     const gapTo = (b) => Math.max(0,
       Math.hypot(b[0] - s.player_at[0], b[1] - s.player_at[1]) - CONTACT_M).toFixed(2) + " m";
 
+    // WHO IT IS COMES FIRST (owner, 2026-08-18). A body's NAME is `e3` — what
+    // the roll call, the heat map and the debuff table call it, so the header
+    // has to say it too or they are about different enemies. But `e3` alone
+    // does not tell a reader WHICH of fifty bodies they just picked, and
+    // finding that out is the whole reason to pick one. So the identity goes
+    // above the geometry: the unit, its art, its LEVEL and what it is made of
+    // at that level — `enemyMeta` is the enemy card's own line, which reads the
+    // engine's answer once `loadTargetStats` has given it.
+    //
+    // A body placed on the floor carries no unit of its own (the place tool
+    // pushes a position and nothing else), so it IS the scenario's enemy at the
+    // scenario's level. Reading it that way is what makes this panel agree with
+    // what the sim will actually field.
+    const unitOf = (i) => {
+      const f = i === 0 ? null : s.formation[i - 1] || {};
+      const id = (f && f.enemy) || s.enemy;
+      return { en: allEnemies().find((e) => e.id === id), level: (f && f.level) || s.level };
+    };
     if (sel.size === 1) {
       const i = [...sel][0];
       const b = bodies[i];
       if (b) {
+        const { en, level } = unitOf(i);
+        const art = IMG(en && en.image);
         insp.innerHTML = `<p class="ai-h">${escHtml(nameOf(i))}</p>`
+          + `<div class="ai-who">`
+          + (art ? `<img src="${escHtml(art)}" alt="">` : "")
+          + `<div><b>${escHtml((en && en.name) || tr("Enemy"))}</b>`
+          + `<span>${escHtml(tr("Level"))} ${escHtml(String(level))}`
+          + `${s.steel_path ? " · " + escHtml(tr("Steel Path")) : ""}</span>`
+          + `<span>${escHtml(enemyMeta(en))}</span></div></div>`
           + row(tr("at"), `${b[0].toFixed(1)}, ${b[1].toFixed(1)}`)
           + row(tr("from you"), gapTo(b))
           + row(tr("on the shot line"), i === struck ? tr("yes") : tr("no"));
@@ -3298,7 +3324,13 @@ function mountArenaCanvas(host, s, en, opts) {
     }
     // NOTHING PICKED IS AN ANSWER TOO: describe the fight, since that is what
     // you are looking at.
+    const { en, level } = unitOf(0);
     insp.innerHTML = `<p class="ai-h">${escHtml(tr("the fight"))}</p>`
+      + `<div class="ai-who">`
+      + (IMG(en && en.image) ? `<img src="${escHtml(IMG(en.image))}" alt="">` : "")
+      + `<div><b>${escHtml((en && en.name) || tr("Enemy"))}</b>`
+      + `<span>${escHtml(tr("Level"))} ${escHtml(String(level))}`
+      + `${s.steel_path ? " · " + escHtml(tr("Steel Path")) : ""}</span></div></div>`
       + row(tr("enemy count"), bodies.length)
       + row(tr("range"), gapTo(bodies[Math.max(struck, 0)] || s.target_at))
       + row(tr("aim"), s.aim_at ? tr("a place of its own") : tr("on the target"))
@@ -5409,16 +5441,72 @@ const freeName = (ps, mk) => {
 /// impossible one. Throwing there is the worst outcome available: the edit is
 /// already on screen and simply never persisted, so the reader finds out at the
 /// next reload — and here it also aborted the simulation that was reporting it.
+/// THE ACTIVE PRESET'S RESULT IS NEVER SHED. It is the thing the write is
+/// usually FOR, and dropping it means the run that just finished was thrown
+/// away by the act of saving it — which is exactly what happened: on a full
+/// disk, simulating stored nothing, and the first thing that re-read the
+/// collection (picking a body in the result panel) found no result and hid the
+/// whole block (owner, 2026-08-18).
+///
+/// A REPLAY NEVER REACHES THE DISK (owner, 2026-08-18: "why is storage full").
+///
+/// It is the biggest thing this app produces by a wide margin — 600 frames
+/// carrying a debuff series per followed body, plus a per-attack-part hit
+/// account — and it is the ONE part of a result that a button regenerates. So
+/// it is stripped on the way to `localStorage` and kept in `resultMem` for the
+/// session instead, which makes the stored footprint of a measurement a few
+/// kilobytes of summary and BOUNDED: no number of weapons, builds or runs can
+/// grow it into the quota.
+///
+/// This is not the shed being tidy. Shedding is a response to a disk that is
+/// already full; this is the reason it stops being full. The two bugs it ends
+/// were the same bug seen from two sides — "sim failed: QuotaExceededError",
+/// and a saved result vanishing when the panel re-read it.
+const stripReplays = (ps) => ps.map((x) => (x && x.lastResult && x.lastResult.r
+  && x.lastResult.r.replay
+  ? { ...x, lastResult: { ...x.lastResult, r: { ...x.lastResult.r, replay: null } } }
+  : x));
+
+/// EVERY WFSIM KEY, because a quota is the ORIGIN's and a shed was the list's.
+///
+/// This is what the first version got wrong. Writing
+/// `wfsim-presets-phantasma_prime-builder-builds` would fail on a disk filled
+/// by `wfsim-presets-boar_prime-builder-builds`, shed its own list down to
+/// nothing, still not fit, and give up — while the space it needed sat in
+/// another weapon's key that nothing was ever going to look at. So a shed
+/// sweeps the ORIGIN, and the list being written is simply the last one it is
+/// allowed to touch.
+const otherPresetKeys = (skip) => Object.keys(localStorage)
+  .filter((k) => k.startsWith("wfsim-presets-") && k !== skip);
+
+/// Drop `lastResult` from every OTHER collection, oldest first, until the write
+/// fits. A card falls back to "not measured yet", which is true and is one
+/// click from false — and it is the right thing to lose, because it is a
+/// measurement of a build the reader is not looking at.
+function shedOtherResults(skip) {
+  const rows = [];
+  for (const k of otherPresetKeys(skip)) {
+    let list = null;
+    try { list = JSON.parse(localStorage.getItem(k)); } catch (_) { continue; }
+    if (!Array.isArray(list)) continue;
+    list.forEach((x, i) => {
+      if (x && x.lastResult) rows.push({ k, i, at: x.lastResult.at || 0, list });
+    });
+  }
+  rows.sort((a, b) => a.at - b.at);
+  return rows.map((row) => () => {
+    row.list[row.i].lastResult = null;
+    try { localStorage.setItem(row.k, JSON.stringify(row.list)); } catch (_) {}
+  });
+}
+
+/// …and the ladder for the list actually being written, outside in. The active
+/// preset's own result is the LAST thing to go: it is usually what the write is
+/// FOR, and dropping it means the run that just finished was thrown away by the
+/// act of saving it.
 const PRESET_SHED = [
-  // 1. Every replay. The biggest field by far, and the only one that can be
-  //    regenerated by pressing Run again.
-  (ps) => ps.forEach((x) => { if (x.lastResult && x.lastResult.r) x.lastResult.r.replay = null; }),
-  // 2. Every stored measurement but the active preset's. A card falls back to
-  //    "not measured yet", which is true and is one click from false.
   (ps, active) => ps.forEach((x) => { if (x.name !== active) x.lastResult = null; }),
-  // 3. All of them. The presets themselves are what this collection is for, and
-  //    they are the last thing to go.
-  (ps) => ps.forEach((x) => { x.lastResult = null; }),
+  (ps, active) => ps.forEach((x) => { if (x.name === active) x.lastResult = null; }),
 ];
 
 /// A ONE-LINE NOTICE, in the page. No native dialog — `alert` is blocked in the
@@ -5438,24 +5526,36 @@ function noteInline(msg) {
 
 const storePresetList = (d, ps, w) => {
   const weapon = w ?? presetWeapon();
-  recordUndo(d, weapon, ps);
   const key = presetListKey(d, weapon);
   const isQuota = (e) => !!e && (e.name === "QuotaExceededError"
     || e.name === "NS_ERROR_DOM_QUOTA_REACHED" || e.code === 22 || e.code === 1014);
-  try {
-    localStorage.setItem(key, JSON.stringify(ps));
-    return;
-  } catch (e) {
-    if (!isQuota(e)) throw e;
-  }
-  for (const shed of PRESET_SHED) {
-    shed(ps, activePreset);
+  // The REPLAY never travels. `ps` itself keeps it, because the caller and
+  // `resultMem` are still holding that object and the panel reads it.
+  const flat = stripReplays(ps);
+  // UNDO COMPARES LIKE WITH LIKE. Its "is this a no-op write" test is against
+  // what is ON THE DISK, which now never has a replay — so a `ps` that still
+  // carried one would differ from the stored copy every single time and push a
+  // step that undoes nothing.
+  recordUndo(d, weapon, flat);
+  const put = () => {
     try {
-      localStorage.setItem(key, JSON.stringify(ps));
-      return;
+      localStorage.setItem(key, JSON.stringify(flat));
+      return true;
     } catch (e) {
       if (!isQuota(e)) throw e;
+      return false;
     }
+  };
+  if (put()) return;
+  // OTHER COLLECTIONS FIRST — see `shedOtherResults`. A quota is the origin's,
+  // so the space this write needs is usually not in this write's list.
+  for (const drop of shedOtherResults(key)) {
+    drop();
+    if (put()) return;
+  }
+  for (const shed of PRESET_SHED) {
+    shed(flat, activePreset);
+    if (put()) return;
   }
   // NOTHING LEFT TO DROP. Say so where the reader is rather than throwing into a
   // console nobody has open: the edit is on screen and it is not saved, and that
@@ -10273,17 +10373,15 @@ function renderEnemyMenu(query) {
 // STABLE, which is the point: re-seeding the choice every time tier 1 is
 // touched would move the selection under someone who had already made it.
 
-// The arena's target actor: its name, and its portrait when it has one. The
-// dot stands in for a unit with no art rather than sitting beside it — two
-// markers for one actor is one too many.
-function setArenaEnemy(en) {
-  $("arena-ename").textContent = en ? en.name : "Enemy";
-  const src = IMG(en && en.image);
-  const img = $("arena-eimg");
-  img.hidden = !src;
-  if (src) img.src = src;
-  $("arena-edot").hidden = !!src;
-}
+// THE ACTOR STRIP IS GONE (owner, 2026-08-18: the Tenno and enemy markers on
+// the bar are meaningless now). It was a dot, a lane and a portrait standing in
+// for a fight the page could not draw — and the page draws the fight now, at
+// the engine's own scale, with every body in it. Two pictures of one fight is
+// one too many, and the strip was the one that could not be edited, could not
+// be measured off, and showed one enemy however many were standing there.
+//
+// The enemy's identity did not go with it: it is on the brush card in the
+// scene (which is where you pick it) and in the result panel's own copy.
 
 
 // ---- WARFRAME ABILITY BUFFS (scenario section 3) ------------------------
@@ -10546,7 +10644,6 @@ function renderSim() {
   // shows the buffs you had when you last arrived.
   renderWfBuffs("opt-wfbuffs", true);
   renderScenarioBar();
-  setArenaEnemy(en);
   $("sim-sub").textContent = "current build vs the enemy";
   renderSimBuffs();
   lockOfficialScenario();
@@ -11233,7 +11330,6 @@ async function runSim() {
       return;
     }
     renderResults(r);
-    animateArena(r);
     saveSimResult(r);
     // A run under the OFFICIAL scenario is the only thing that can reach the
     // board, and only after you have said so. Never blocks the result.
@@ -11264,20 +11360,9 @@ function saveSimResult(r) {
   const at = ps.findIndex((p) => p.name === activePreset);
   if (at < 0) return;
   ps[at].lastResult = { r, at: Date.now(), key: simKey() };
-  // ONE REPLAY, ON THE BUILD YOU ARE LOOKING AT.
-  //
-  // A replay is the biggest thing this app stores by a wide margin: 600 frames
-  // carrying a debuff series per followed body. Keeping one on EVERY build
-  // filled localStorage, and the throw took the whole run's result down with it
-  // — reported live (owner, 2026-08-18: QuotaExceededError on
-  // `wfsim-presets-boar_prime-builder-builds`, surfacing as "sim failed").
-  //
-  // The other builds keep their SUMMARY, which is what their cards and the
-  // share claim read; what they lose is redrawing the median engagement without
-  // re-running, and re-running is a button.
-  ps.forEach((q, i) => {
-    if (i !== at && q.lastResult && q.lastResult.r) q.lastResult.r.replay = null;
-  });
+  // …AND IN MEMORY FIRST, which is where the REPLAY stays for good. See
+  // `stripReplays`: the copy that reaches the disk has none.
+  resultMem.set(resultMemKey(), ps[at].lastResult);
   storePresetList(BUILDS, ps);
 }
 
@@ -11310,10 +11395,35 @@ async function resultForShare() {
   renderStoredSimResult();
   return { r, at: Date.now(), key: simKey() };
 }
+/// THE RESULT ON SCREEN, held in memory as well as in storage.
+///
+/// The panel used to redraw itself from localStorage alone, which made every
+/// re-render a bet that the save had worked — and on a full disk it had not, so
+/// clicking a body in the result deleted the result (owner, 2026-08-18). It is
+/// a RENDER CACHE and nothing else: storage is still where a result persists
+/// across a reload, and this is only what the current page is showing.
+/// KEYED BY WEAPON AND PRESET, because switching either one asks for a
+/// different result and both are legal to do without re-running.
+const resultMem = new Map();
+const resultMemKey = () => JSON.stringify([presetWeapon(), activePreset]);
+
 function renderStoredSimResult() {
   const box = $("sim-results");
   if (!box) return;
-  const p = loadPresetList(BUILDS).find((x) => x.name === activePreset);
+  let p = loadPresetList(BUILDS).find((x) => x.name === activePreset);
+  // WHAT IS ON SCREEN WINS over what reached the disk, and only for the build
+  // it was measured on — a cache that outlived its build would attach a number
+  // to something that never produced it.
+  const mem = resultMem.get(resultMemKey());
+  // A STORED RESULT HAS NO REPLAY (see `stripReplays`), so memory is not only
+  // the fallback for a failed write — it is where the median engagement, the
+  // buff curves and the hit account live for the whole session. Prefer it
+  // whenever it describes the same run, and fall back to it entirely when the
+  // disk has nothing.
+  if (mem && (!p || !p.lastResult || !p.lastResult.r
+      || (p.lastResult.key === mem.key && mem.r.replay))) {
+    p = { lastResult: mem };
+  }
   const has = !!(p && p.lastResult && p.lastResult.r);
   show("sim-results-block", has); // an untested build shows no Result block
   if (has) renderResults(p.lastResult.r, p.lastResult.at);
@@ -12139,34 +12249,6 @@ function renderResults(r, testedAt) {
   }
 }
 
-// Illustrative arena replay: drain the enemy's layered bars over a fixed
-// visual window (NOT the simulated kill time — the sim is Monte-Carlo over
-// many runs, so the headline number is authoritative; this only shows the
-// enemy getting beaten).
-function animateArena(r) {
-  const t = r.target || {};
-  const layers = [
-    { k: "og", v: t.overguard || 0 }, { k: "sh", v: t.shield || 0 }, { k: "hp", v: t.health || 0 },
-  ].filter((l) => l.v > 0);
-  $("arena-bars").innerHTML = layers.map((l) =>
-    `<div class="bar ${l.k}"><div class="fill" style="width:100%"></div></div>`).join("");
-  const killed = (r.kills || 0) >= 1;
-  const frac = killed ? 1 : Math.max(0, Math.min(1, r.score || 0));
-  const remain = ((1 - frac) * 100).toFixed(1) + "%";
-  const dmg = (r.panel && r.panel.damage) || [];
-  const chips = dmg.map((d, i) => `<span class="chip" style="--c:var(--s${(i % 8) + 1})">${DT(d.type)}</span>`);
-  if ((r.procs || 0) > 0) chips.push(`<span class="chip proc">⚡ ${Math.round(r.procs)} procs</span>`);
-  $("arena-status").innerHTML = chips.join("");
-  const enemy = $("arena-enemy"), tracer = $("arena-tracer");
-  enemy.classList.remove("defeated");
-  tracer.classList.remove("firing");
-  void tracer.offsetWidth; // force reflow so the animation restarts each run
-  tracer.classList.add("firing");
-  requestAnimationFrame(() => {
-    $("arena-bars").querySelectorAll(".fill").forEach((f) => { f.style.width = remain; });
-    if (killed) setTimeout(() => enemy.classList.add("defeated"), 1500);
-  });
-}
 
 // ---- Optimizer: scope (mods/arcanes/evolutions) → top-10 builds ---------
 // Mod scope is a 3-state cycle (off / pool / required); the client estimates
@@ -13556,6 +13638,42 @@ function addResult(res, btn) {
   renderPresetBar(); // the builder's bar shows the new chip when you switch back
   if (btn) { btn.textContent = "✓ " + name; btn.disabled = true; }
 }
+
+/// RECLAIM WHAT THE OLD RULE LEFT BEHIND, once, on the way in.
+///
+/// `stripReplays` stops the growth; it does not undo it. Every replay written
+/// before 2026-08-18 is still on the reader's disk, in a key for a weapon they
+/// may never open again — and a browser that is already at its quota fails the
+/// NEXT write, not the one that filled it, so without this the fix would only
+/// arrive for whoever cleared their own storage first.
+///
+/// It rewrites each `wfsim-presets-*` key in place and only when the stripped
+/// copy is actually smaller, so a reader with nothing to reclaim pays one parse
+/// per key and writes nothing.
+function reclaimStoredReplays() {
+  let freed = 0;
+  for (const k of Object.keys(localStorage)) {
+    if (!k.startsWith("wfsim-presets-")) continue;
+    const raw = localStorage.getItem(k) || "";
+    // The cheap test first: a list with no replay in it is not worth parsing.
+    if (!raw.includes('"replay"')) continue;
+    let list = null;
+    try { list = JSON.parse(raw); } catch (_) { continue; }
+    if (!Array.isArray(list)) continue;
+    const next = JSON.stringify(stripReplays(list));
+    if (next.length >= raw.length) continue;
+    try {
+      localStorage.setItem(k, next);
+      freed += raw.length - next.length;
+    } catch (_) {
+      // Full enough that even the SMALLER copy will not go in. Removing the key
+      // is still better than leaving it: the collection re-creates itself.
+      try { localStorage.removeItem(k); freed += raw.length; } catch (_) { /* nothing left to try */ }
+    }
+  }
+  return freed;
+}
+try { reclaimStoredReplays(); } catch (_) { /* storage may be unavailable entirely */ }
 
 // THE BOOT IS OVER, one way or the other, and the page must say which.
 //

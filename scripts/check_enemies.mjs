@@ -74,9 +74,6 @@ for (const lang of ["en", "zh"]) {
         gap: (host.querySelector('.en-gap') || {}).textContent || '',
         vuln: [...host.querySelectorAll('.en-vuln span')]
           .map(e => e.className + ':' + e.textContent.trim()),
-        arenaImg: document.getElementById('arena-eimg').hidden
-          ? null : document.getElementById('arena-eimg').getAttribute('src'),
-        arenaDot: document.getElementById('arena-edot').hidden,
         // WHAT IT IS MADE OF, and the Eximus switch beside it.
         meta: (host.querySelector('.en-meta') || {}).textContent || '',
         eximusBox: !!host.querySelector('[data-k=eximus]'),
@@ -120,9 +117,7 @@ for (const lang of ["en", "zh"]) {
 
   for (const [who, card] of [["acolyte", r.acolyte], ["gunner", r.gunner]]) {
     check(`${tag} ${who}: the card shows the portrait`, card.imgShown, card.imgSrc);
-    check(`${tag} ${who}: the arena shows it too, instead of the dot`,
-      !!card.arenaImg && card.arenaDot, `${card.arenaImg} / dot hidden ${card.arenaDot}`);
-    // The whole reason this runs in zh: the label is localized, the URL is not.
+        // The whole reason this runs in zh: the label is localized, the URL is not.
     const want = who === "acolyte" ? "Angst" : "Corrupted_Heavy_Gunner";
     check(`${tag} ${who}: the wiki link is the ENGLISH page`,
       card.href === `https://wiki.warframe.com/w/${want}`, card.href);

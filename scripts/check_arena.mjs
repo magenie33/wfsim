@@ -101,6 +101,31 @@ const r = await evaluate(`(async () => {
   const gap = () => Math.max(0, state() - 0.4);
 
   // 1. IT DRAWS, and it starts at contact.
+  // WHO YOU PICKED, in the top right. The id e3 is what the roll call, the heat
+  // map and the debuff table call this body, so the header says it too or they
+  // are about different enemies — but a name is not an IDENTITY, and a reader
+  // looking at fifty bodies had no other way to find out which unit was
+  // standing there or at what level (owner, 2026-08-18). Three separate facts,
+  // because a panel that named the unit and dropped the level would read as
+  // working.
+  {
+    const cv = cvEl();
+    cv.setPointerCapture = () => {};
+    const box = cv.getBoundingClientRect();
+    const [px, py] = arena().px(sim.target_at);
+    const ev = (ty) => cv.dispatchEvent(new PointerEvent(ty,
+      { clientX: box.left + px, clientY: box.top + py,
+        bubbles: true, cancelable: true, pointerId: 1, button: 0 }));
+    ev('pointerdown'); ev('pointerup');
+    await sleep(300);
+    const insp = document.querySelector('#sim-target-arena .arc-insp');
+    const en = allEnemies().find((e) => e.id === sim.enemy);
+    out.inspName = (insp.querySelector('.ai-who b') || {}).textContent || '';
+    out.inspWants = (en && en.name) || '';
+    out.inspLines = [...insp.querySelectorAll('.ai-who span')].map((s) => s.textContent.trim());
+    out.inspHead = (insp.querySelector('.ai-h') || {}).textContent || '';
+  }
+
   out.drew = !!cvEl();
   out.bodies = arenaBodies(sim).length + 1;   // the enemies, and you
   // …and both of them are INK on the floor, at the places the scene says it
@@ -241,6 +266,14 @@ check("a scenario of your own is open before anything is dragged",
   r.startedEditable === true,
   "the app lands on the official ruler, whose fight is pinned");
 check("the arena draws, with two bodies", r.drew && r.bodies === 2, `${r.bodies} bodies`);
+check("picking a body says WHICH UNIT it is, not just its name",
+  r.inspName === r.inspWants && r.inspName.length > 2,
+  `${r.inspName} (wanted ${r.inspWants})`);
+check("...at what level, and what it is made of there",
+  /\d/.test(r.inspLines[0] || '') && (r.inspLines[1] || '').length > 3,
+  JSON.stringify(r.inspLines));
+check("...while still carrying the name the roll call uses",
+  /aimed|e\d|瞄准/i.test(r.inspHead), r.inspHead);
 check("...and both are INK on the floor, where the scene says it put them",
   r.bodyInk === true && r.youInk === true, `enemy ${r.bodyInk}, you ${r.youInk}`);
 check("...and a MUZZLE on the shooter's own circumference, with its facing",

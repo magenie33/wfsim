@@ -764,6 +764,14 @@ around (decision 2026-07-31).
   nothing under both fights is worth nothing under both fights, which is true
   and is no evidence anything was re-measured. Verified to bite — the baseline
   comes back byte-identical.
+  `node scripts/check_storage.mjs` is the THIRTY-FOURTH and the only one about
+  how much room the app takes on the READER's machine — see the hard rule
+  "A MEASUREMENT COSTS ITS SUMMARY, NOT ITS REPLAY". It measures the ratio
+  rather than asserting a constant, fills the disk from OTHER weapons' keys to
+  prove the shed sweeps the origin, and plants a replay written under the old
+  rule to prove the boot takes it back. Its second assertion is the one that
+  keeps the fix honest: the panel must STILL DRAW a replay, because removing
+  the feature would pass the first assertion perfectly.
   `scripts/check_one_fight.mjs` is the THIRTY-THIRD check and HOLDS NO LIST OF
   FIELDS: it asserts every module's outgoing request against `theFight()`
   ITSELF, so a field invented tomorrow is covered by nobody. Verified to bite —
@@ -788,6 +796,33 @@ around (decision 2026-07-31).
   between them the export's compatibility column is fully swept. Adding a mod
   starts there: run the survey, take a row, transcribe it from the WIKI, lower
   the ceiling.
+- **A MEASUREMENT COSTS ITS SUMMARY, NOT ITS REPLAY** (owner, 2026-08-18).
+  Storage is the reader's machine and the app had no budget for it: a REPLAY is
+  600 frames of debuff series per followed body plus a hit account per attack
+  part — **65 KB against the 1.6 KB summary of every number a card, a share or
+  the board ever reads, 42x** — and one was stored per WEAPON. About seventy-five
+  weapons fill a 5 MB origin and the roster is 136.
+  Past that the failure is not "storage is full". `setItem` THROWS, the throw
+  lands in the save path of the run that just finished, and the reader is told
+  **"sim failed: QuotaExceededError"** for a simulation that worked perfectly —
+  or, from the other side, picks an enemy in the result and watches the result
+  vanish, because the panel re-reads a collection the save never wrote.
+  So a replay NEVER reaches the disk. Not "is shed under pressure" — never
+  reaches it: `stripReplays` takes it out on the way to `localStorage` and
+  `resultMem` (keyed by weapon AND preset) keeps it for the session, which is
+  what makes the stored cost of a measurement bounded by its summary rather
+  than by how hard it was measured.
+  A SHED SWEEPS THE ORIGIN, not the list. A quota belongs to the origin and the
+  first shed belonged to the collection being written, so a save for one weapon
+  failed on space held by ANOTHER weapon's key, shed its own list to nothing,
+  and still failed — while the room it needed sat in a key nothing would ever
+  look at again. `shedOtherResults` walks every `wfsim-presets-*`, oldest result
+  first, and the list being written is the LAST thing it may touch.
+  AND WHAT IS ALREADY THERE COMES BACK: growth stopping is not space returning,
+  and a reader at their quota fails the NEXT write rather than the one that
+  filled it, so `reclaimStoredReplays` strips every replay written under the old
+  rule on the way in. `scripts/check_storage.mjs` holds all four and bites —
+  making `stripReplays` a no-op reddens two of them.
 - **Golden values only change with an in-game measurement** justifying
   it. New mechanics need golden tests; a faithful-looking implementation
   without a measurement is not correct.

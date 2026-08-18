@@ -206,12 +206,37 @@ const r = await evaluate(`(async () => {
       out.foeSel = [...document.querySelectorAll('.rp-foe.sel')].map((c) => c.dataset.rpfoe);
       out.foeAfter = live();
     }
+    // …AND PICKING ONE MUST NOT COST THE RESULT (owner, 2026-08-18: clicking an
+    // enemy in the result deleted it and the run had to be paid for again).
+    //
+    // The pick is free by design — the panel redraws from the STORED result at
+    // no simulation cost — which is exactly what made this fail so completely:
+    // it re-reads the collection, and on a full disk the save that was supposed
+    // to have happened had thrown, so the re-read found nothing and hid the
+    // whole block. The cause was storage (check_storage) and the symptom is
+    // here, because this is where the click is. Twice, because the first pick
+    // re-renders and the second is what reads back whatever that left behind.
+    const bulk = () => document.getElementById('sim-results').textContent.length;
+    out.beforePick = bulk();
+    const third = document.querySelector('[data-rpfoe="2"]') || second;
+    if (third) { third.click(); await sleep(900); }
+    if (second) { second.click(); await sleep(900); }
+    out.afterPicks = bulk();
+    out.blockStillShown = !document.getElementById('sim-results-block').hidden;
+    const stored = loadPresetList(BUILDS).find((x) => x.name === activePreset);
+    out.resultStillStored = !!(stored && stored.lastResult && stored.lastResult.r);
   }
 
   return out;
 })()`);
 
 check("the run produced a replay", r.hasReplay === true);
+// A PICK IS FREE, and free includes "does not throw the measurement away".
+check("picking a body keeps the result on screen",
+  r.afterPicks > 200 && r.afterPicks >= r.beforePick * 0.5 && r.blockStillShown === true,
+  JSON.stringify({ before: r.beforePick, after: r.afterPicks, shown: r.blockStillShown }));
+check("...and keeps it stored, so a re-read finds it",
+  r.resultStillStored === true, JSON.stringify(r.resultStillStored));
 // A FLOOR, NOT A COUNT. This was `=== 14`, and then Microwave made it 14 and
 // Lifted made it 15 — a number that has to be edited every time the engine
 // models one more status is a snapshot of a constant, and it fails on the
