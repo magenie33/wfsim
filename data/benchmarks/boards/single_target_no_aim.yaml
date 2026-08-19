@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: 7733e1ad9e08379454fa7ef6a05da8db0acf6a14
+engine: 1bc8412181584039c7fa0da567d6c3a816ba3be4
 entries:
   - weapon: akarius_prime
     mode: base
@@ -702,6 +702,12 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: torid
     mode: cycle
+    score: 5.219184207742051
+    mods: [galvanized_chamber, heavy_caliber, serration, hammer_shot, point_strike, vile_acceleration, vital_sense, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
     score: 5.131457975984749
     mods: [galvanized_chamber, heavy_caliber, serration, hammer_shot, point_strike, vigilante_armaments, vital_sense, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
@@ -758,6 +764,12 @@ entries:
     mode: cycle
     score: 4.55630015847184
     mods: [galvanized_chamber, serration, hammer_shot, point_strike, vigilante_armaments, vital_sense, magnetic_capacity, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
+    score: 4.555200362663332
+    mods: [galvanized_chamber, serration, hammer_shot, point_strike, vigilante_armaments, vile_acceleration, vital_sense, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
