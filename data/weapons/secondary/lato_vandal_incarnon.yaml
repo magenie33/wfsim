@@ -55,6 +55,9 @@ attack:
   crit_multiplier: 3
   status_chance: 0.1
   punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 19, slash: 38, puncture: 19 }   # total 76
 
 # incarnon_evolutions: see data/weapons/secondary/lato_vandal.yaml (shared group)

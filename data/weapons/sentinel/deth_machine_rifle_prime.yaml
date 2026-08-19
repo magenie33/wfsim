@@ -46,6 +46,9 @@ attack:
   crit_multiplier: 2.0
   status_chance: 0.04
   punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 2.0, puncture: 1.0, slash: 17.0 }   # 20 total
 unmodeled:
   - reason: auto_spool_ramp
