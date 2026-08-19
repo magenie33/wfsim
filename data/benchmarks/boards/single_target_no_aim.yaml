@@ -411,6 +411,12 @@ entries:
     arcanes: [primary_crux, cascadia_flare]
   - weapon: latron_prime
     mode: cycle
+    score: 5.6667902300907675
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_flensing_spikes]
+    arcanes: [primary_debilitate]
+  - weapon: latron_prime
+    mode: cycle
     score: 0.30964516776722667
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
