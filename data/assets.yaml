@@ -79,6 +79,7 @@ weapons:
   kunai_incarnon: Kunai.png
   # THE KUVA BATCH (2026-08-19). The module's own `Image` field for each, which
   # is DE's asset name rather than the display name — the CDN keys on the former.
+  kuva_bramma: wiki:KuvaBramma.png
   kuva_brakk: wiki:KuvaBrakk.png
   kuva_chakkhurr: wiki:KuvaChakkhurr.png
   # A FORM SHOWS ITS WEAPON'S PICTURE — the same gun, two triggers.
@@ -96,8 +97,12 @@ weapons:
   kuva_karak: wiki:KuvaKarak.png
   kuva_kohm: wiki:KuvaKohm.png
   kuva_kohm_single: wiki:KuvaKohm.png
+  kuva_ogris: wiki:KuvaOgris.png
   kuva_seer: wiki:KuvaSeer.png
   kuva_sobek: wiki:KuvaSobek.png
+  kuva_tonkor: wiki:KuvaTonkor.png
+  kuva_zarr: wiki:KuvaZarr.png
+  kuva_zarr_barrage: wiki:KuvaZarr.png
   kuva_twin_stubbas: wiki:KuvaTwinStubbas.png
   kuva_nukor: KuvaNukor.png
   laetum: ZarimanHeavyPistol.png

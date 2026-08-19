@@ -672,6 +672,16 @@ ui:
     弹丸数会从 1 爬升到 12，而这个条目从第一发就打 12 发 —— 射速的爬升已建模，弹丸数的爬升没有，所以短点射在这里打出的弹丸比游戏里多
   "the alt-fire needs four rounds in the magazine and reloads instead when it has fewer — this sim fires it whenever the mode is chosen, so a magazine that has run down does not force the reload here that it would in game":
     副射击需要弹匣里有四发，不够时会改成换弹 —— 这个模拟只要选了这个模式就照打，所以弹匣见底时不会像游戏里那样被强制换弹
+  "the explosion staggers the WIELDER, harder the closer they are to it — this arena has no body for the player, so nothing here is ever knocked about by its own shot and a build that would be unplayable in a corridor costs nothing":
+    爆炸会把持有者自己震退，离爆心越近越狠 —— 这个战场里玩家没有身体，所以这里没有任何东西会被自己的射击掀翻，一套在走廊里根本没法用的配装在这里不付出任何代价
+  "the rocket flies at 60 m/s and can be shot down in flight — this sim gives a projectile a travel time but nothing here shoots back, so a rocket always arrives":
+    火箭以 60 m/s 飞行，途中可以被打掉 —— 这个模拟会给弹体飞行时间，但这里没有任何东西会还击，所以火箭总是能飞到
+  "a direct hit forces a knockdown whatever the explosion does — this arena's enemies are not knocked down, so the crowd control that makes this weapon safe to fire up close pays nothing here":
+    直击必定造成击倒，与爆炸无关 —— 这个战场的敌人不会被击倒，所以让这把武器敢近距离开火的那部分控场，在这里一分不值
+  "the shot also throws {n} bomblets that explode again for {dmg} between them, and this engine gives an attack ONE explosion — so everything below is the main blast alone and this weapon is understated by roughly {share} of its damage. The wiki's Condition Overload catalog gives those bomblets a rule of their own (their CO term reads the PARENT projectile's damage), which consequently does not apply here either":
+    这一发还会抛出 {n} 颗子炸弹，它们合计再炸出 {dmg} 伤害，而这个引擎每次攻击只有一次爆炸 —— 所以下面的一切只算主爆炸，这把武器在这里被低估了大约 {share} 的伤害。维基的 Condition Overload 目录给这些子炸弹单独定了一条规则（它们的 CO 项读的是母弹体的伤害），因此那条规则在这里同样没有生效
+  "the alternate fire detonates the arrow in mid-flight — this sim fires the shot and lets it land, so the choice of WHEN to burst it, which is most of how this weapon is aimed, is not a decision here":
+    副射击可以让箭在半空引爆 —— 这个模拟只是把它射出去并让它落地，所以「什么时候引爆」这个几乎决定了这把武器怎么瞄的选择，在这里根本不存在
   "Support": 支持
   "what WFSim costs to run": WF模拟的运营成本
   # The topbar icon's tooltip. It names the COST rather than the ask,

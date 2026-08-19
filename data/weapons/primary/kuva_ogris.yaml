@@ -1,0 +1,86 @@
+id: kuva_ogris
+name: Kuva Ogris
+slot: primary
+# A ROCKET LAUNCHER, and the explosion is the whole weapon: 687 against the
+# rocket's own 27. Three magazine, seven reserve, and no way to refill either
+# in a hurry.
+class: launcher
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle]
+mastery_rank: 15
+# RANK 40 after 5 polarizations — 80 capacity (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 0.7
+polarities: []
+exilus_polarity: naramon
+riven_family: Ogris
+traits: [grineer, kuva_lich]
+introduced: "26"
+internal_name: /Lotus/Weapons/Grineer/KuvaLich/LongGuns/Ogris/KuvaOgris
+noise: alarming
+ammo_type: primary
+ammo_max: 7
+ammo_pickup: 1
+magazine: 3
+reload_seconds: 2.1
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-19) —
+# ordinary Additive at the full +100%. An AoE part takes no CO unless its own
+# row says so, and this weapon has none for either part.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — see data/weapons/primary/kuva_karak.yaml for the
+# quoted Characteristic. Seven elements, never Puncture and never Slash.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Pinpoint — "Very high accuracy", and the module carries no cone.
+  spread:
+    min_deg: 0
+    max_deg: 0
+  trigger: semi_auto
+  shot_type: projectile
+  fire_rate: 1.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.09
+  crit_multiplier: 2.0
+  status_chance: 0.47
+  # "Direct hits guaranteed Impact proc." A type that is always present is also
+  # a permanent +1 to Condition Overload's count.
+  forced_procs: [impact]
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH, from its weapon or from a mod — the
+  # punch-through page's own class rule, applied because this attack carries a
+  # `radial:` (MECHANICS §13).
+  punch_through_m: 0.0
+  # NO RANGE ROW on the Rocket Impact block — the page states none. The 7.9 m
+  # below is the explosion's RADIUS and not a reach.
+  damage: { impact: 18.9, puncture: 8.1 }   # total 27
+  # THE EXPLOSION — rules in MECHANICS §7, and it is 25x the rocket.
+  radial:
+    radius_m: 7.9
+    falloff_start_m: 0.0
+    # Linear 0.0-7.9 m, 100% -> 20%.
+    falloff_reduction: 0.8
+    crit_chance: 0.09
+    crit_multiplier: 2.0
+    status_chance: 0.47
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { puncture: 183.0, slash: 155.0, blast: 349.0 }   # total 687
+
+unmodeled:
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
+  - "the rocket flies at 60 m/s and can be shot down in flight — this sim gives a projectile a travel time but nothing here shoots back, so a rocket always arrives"
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Ogris

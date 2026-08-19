@@ -51,6 +51,7 @@
 # blind transcription would have taken for a reach.
 
 
+
 checked:
   akarius:                     { range: null, type: read, note: 'the Rocket IMPACT block states no Range; the 7.2 m belongs to the Rocket Detonation and is a radius' }
   akarius_prime:               { range: null, type: projectile, note: 'the Rocket IMPACT block states no Range; the 7.8 m is the Rocket Detonation radius. Projectile' }
@@ -132,8 +133,16 @@ checked:
   kunai:                       { range: null, type: read, note: 'no Range row; Projectile' }
   kunai_incarnon:              { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
   kuva_ayanga:                 { range: null, type: read, note: 'grenade IMPACT block states no Range; the 6.0 m is the explosion''s radius' }
-  kuva_bramma:                 { range: null,   type: projectile, note: 'no Range row; Projectile Speed 50 m/s' }
+  kuva_bramma:                 { range: null, type: read, note: "the Charged Shot block states no Range; the 8.3 m is the explosion radius" }
+  kuva_chakkhurr:              { range: null, type: read, note: "the Normal Attack block states no Range; the 2.9 m is the explosion radius" }
+  kuva_drakgoon:               { range: null, type: read, note: "neither the tapped nor the charged block states a Range; Projectile" }
+  kuva_drakgoon_uncharged:     { range: null, type: read, note: "see kuva_drakgoon — the same page, no Range on either block" }
   kuva_grattler:               { range: 225.0, type: projectile, note: 'wiki, ATMOSPHERE column: "Range: 225.0 m", Projectile' }
+  kuva_ogris:                  { range: null, type: read, note: "the Rocket Impact block states no Range; the 7.9 m is the explosion radius" }
+  kuva_seer:                   { range: null, type: read, note: "the Projectile Impact block states no Range; the 2.3 m is the explosion radius" }
+  kuva_tonkor:                 { range: null, type: read, note: "the Grenade Impact block states no Range; the 7 m is the explosion radius" }
+  kuva_zarr:                   { range: null, type: read, note: "the Cannon Mode Projectile block states no Range; the 7 m is the explosion radius" }
+  kuva_zarr_barrage:           { range: null, type: read, note: "the Barrage Mode block states no Range either" }
   laetum:                      { range: null, type: projectile, note: 'no Range row; Projectile' }
   laetum_incarnon:             { range: null, type: read, note: 'Incarnon Form: no Range row; the 2.0 m is the Auto Radial Attack''s radius' }
   lanka:                       { range: null, type: read, note: 'neither the partial nor the full charge states a Range; Projectile' }
@@ -262,7 +271,3 @@ checked:
   zylok_incarnon:              { range: null, type: read, note: 'Incarnon Form: no Range row; its 6.0 m is the Radial Attack''s radius' }
   zylok_prime:                 { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
   zylok_prime_incarnon:        { range: null, type: read, note: 'Incarnon Form: no Range row; its 6.0 m is the Radial Attack''s radius' }
-  kuva_seer:                   { range: null, type: read, note: "the Projectile Impact block states no Range; the 2.3 m is the explosion radius" }
-  kuva_chakkhurr:              { range: null, type: read, note: "the Normal Attack block states no Range; the 2.9 m is the explosion radius" }
-  kuva_drakgoon:               { range: null, type: read, note: "neither the tapped nor the charged block states a Range; Projectile" }
-  kuva_drakgoon_uncharged:     { range: null, type: read, note: "see kuva_drakgoon — the same page, no Range on either block" }

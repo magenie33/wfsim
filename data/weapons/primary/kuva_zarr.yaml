@@ -1,0 +1,93 @@
+id: kuva_zarr
+name: Kuva Zarr
+slot: primary
+# TWO WEAPONS ON ONE TRIGGER. Cannon Mode is artillery — a 673 Blast shell in
+# 7 m plus three bomblets; Barrage Mode is a ten-pellet shotgun with 1.6 m of
+# punch through. This entry is the CANNON, which is the arsenal's own display
+# (module `_TooltipAttackDisplay: 2`, pointing at the cannon's explosion);
+# `kuva_zarr_barrage` is the other.
+class: launcher
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: kuva_zarr
+mod_pools: [primary, rifle]
+mastery_rank: 15
+# RANK 40 after 5 polarizations — 80 capacity (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 0.7
+polarities: [madurai, madurai, madurai]
+exilus_polarity: madurai
+riven_family: Zarr
+traits: [grineer, kuva_lich]
+introduced: "30.5"
+internal_name: /Lotus/Weapons/Grineer/KuvaLich/LongGuns/Zarr/KuvaZarr
+noise: alarming
+ammo_type: primary
+ammo_max: 5
+ammo_pickup: 1
+magazine: 5
+reload_seconds: 4.8
+
+# Condition Overload: the catalog's only row for this weapon names its CANNON
+# CHILD BOMB —
+#
+#   Kuva Zarr | Cannon Child Bomb | Projectile | 15 | 50 | 333% | Adding
+#
+# — i.e. the bomblet, whose CO term reads 333% of its own 15 because it takes
+# the PARENT shell's damage instead. That part is not modelled here (see the
+# admission below), so nothing this entry computes is discrepant and the
+# attack that IS modelled is ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — see data/weapons/primary/kuva_karak.yaml for the
+# quoted Characteristic. Seven elements, never Puncture and never Slash.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # "Pinpoint accuracy with minimal penalty from Heavy Caliber."
+  spread:
+    min_deg: 0
+    max_deg: 0
+  trigger: semi_auto
+  shot_type: projectile
+  fire_rate: 2.17
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.25
+  crit_multiplier: 2.5
+  status_chance: 0.31
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13) — the BARRAGE mode's
+  # 1.6 m is that form's, and it has no explosion.
+  punch_through_m: 0.0
+  # NO RANGE ROW on the Cannon Mode Projectile block — the page states none.
+  damage: { impact: 50.0 }   # total 50
+  # THE SHELL'S EXPLOSION — rules in MECHANICS §7, and it is 13x the shell.
+  radial:
+    radius_m: 7.0
+    falloff_start_m: 0.0
+    # Linear 0.0-7.0 m, 100% -> 30%.
+    falloff_reduction: 0.7
+    crit_chance: 0.25
+    crit_multiplier: 2.5
+    status_chance: 0.31
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { blast: 673.0 }   # total 673
+
+unmodeled:
+  - reason: cluster_bomblets
+    n: 3
+    dmg: "45 on contact and 150 in 3 m explosions"
+    share: "a fifth"
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Zarr

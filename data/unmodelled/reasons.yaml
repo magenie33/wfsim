@@ -59,6 +59,16 @@ reasons:
   # fight's own flag — so the two can be set to a pair the game cannot produce.
   mode_is_the_aim_state:
     text: "this mode is entered by AIMING rather than by a trigger, and the simulator treats the mode and the fight's Aiming state as two separate settings — so a run with this mode and Aiming off is a combination the game cannot produce, and every while-aiming bonus should be read as active whenever this mode is"
+  # SELF-STAGGER, which every modern AoE weapon carries and none of them can
+  # suffer here — the wielder is not a body in this arena.
+  self_stagger:
+    text: "the explosion staggers the WIELDER, harder the closer they are to it — this arena has no body for the player, so nothing here is ever knocked about by its own shot and a build that would be unplayable in a corridor costs nothing"
+  # A SECOND EXPLOSION FROM ONE SHOT. An attack carries ONE `radial:`, and the
+  # cluster weapons throw bomblets that explode again — so their contribution
+  # is stated here rather than modelled. Two on the day it was written (Kuva
+  # Bramma, Kuva Zarr) and the shape is shared by the Kulstar family.
+  cluster_bomblets:
+    text: "the shot also throws {n} bomblets that explode again for {dmg} between them, and this engine gives an attack ONE explosion — so everything below is the main blast alone and this weapon is understated by roughly {share} of its damage. The wiki's Condition Overload catalog gives those bomblets a rule of their own (their CO term reads the PARENT projectile's damage), which consequently does not apply here either"
   auto_spool_ramp:
     text: "the AUTO-SPOOL ramp is not modelled — the page gives this trigger as Auto-Spool and the fire rate here is the spooled-up {rate}/s from the first shot, so a short burst is faster in this sim than in game"
   # THE RICOCHET ITSELF IS MODELLED (2026-08-18) — `ricochet:` on the three

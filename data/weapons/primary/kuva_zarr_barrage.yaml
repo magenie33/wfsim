@@ -1,0 +1,40 @@
+id: kuva_zarr_barrage
+name: Kuva Zarr
+# BARRAGE MODE: the same gun as a ten-pellet shotgun, and the only half of this
+# weapon with no explosion at all — so it is the half that keeps its punch
+# through. "Barrage Mode requires 29%+ elemental bonus to exceed standard Zarr
+# damage", which is a sentence about the valence roll and nothing else here.
+inherits: kuva_zarr
+form: alt_fire
+transform_group: kuva_zarr
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon's
+# only row names the cannon's bomblet. This attack has none and is ordinary.
+co_behavior: additive_with_base_damage
+
+attack:
+  spread:
+    min_deg: 17
+    max_deg: 29
+  trigger: semi_auto
+  shot_type: projectile
+  fire_rate: 2.17
+  # TEN PELLETS, and the damage below is PER PELLET.
+  multishot: 10.0
+  ammo_cost: 1
+  crit_chance: 0.37
+  crit_multiplier: 2.5
+  # PER PELLET, so ten rolls a shot.
+  status_chance: 0.097
+  # 1.6 m — three whole bodies of material (`space::BODY_MATERIAL_M` is 0.5).
+  # It keeps this where the cannon cannot, because an AoE attack takes none.
+  punch_through_m: 1.6
+  # NO RANGE ROW on this block either.
+  falloff:
+    start_m: 20.0
+    end_m: 40.0
+    reduction: 0.98
+  damage: { impact: 15.0, puncture: 25.0, slash: 10.0 }   # 50 per pellet
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Zarr

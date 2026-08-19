@@ -1,0 +1,81 @@
+id: kuva_tonkor
+name: Kuva Tonkor
+slot: primary
+# A GRENADE LAUNCHER WITH NO ARMING DISTANCE: the Kuva version "removes the
+# minimum arming distance", so its grenades "explode on impact and even at
+# closer ranges — which can stagger its wielder". One round a magazine, so the
+# reload IS the cadence.
+class: launcher
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle]
+mastery_rank: 13
+# RANK 40 after 5 polarizations — 80 capacity (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 0.9
+polarities: []
+exilus_polarity: naramon
+riven_family: Tonkor
+traits: [grineer, kuva_lich]
+introduced: "26"
+internal_name: /Lotus/Weapons/Grineer/KuvaLich/LongGuns/Tonkor/KuvaTonkor
+noise: alarming
+ammo_type: primary
+ammo_max: 30
+ammo_pickup: 3
+magazine: 1
+reload_seconds: 1.5
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-19) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — see data/weapons/primary/kuva_karak.yaml for the
+# quoted Characteristic. Seven elements, never Puncture and never Slash.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # "Very High (0 degree spread)".
+  spread:
+    min_deg: 0
+    max_deg: 0
+  trigger: semi_auto
+  shot_type: projectile
+  fire_rate: 3.17
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.3
+  crit_multiplier: 2.5
+  status_chance: 0.17
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # NO RANGE ROW on the Grenade Impact block — the page states none. The 7 m
+  # below is the explosion's RADIUS and not a reach.
+  damage: { puncture: 59.0 }   # total 59
+  # THE EXPLOSION — rules in MECHANICS §7, and it is 11x the grenade.
+  radial:
+    radius_m: 7.0
+    falloff_start_m: 0.0
+    # "100% to 30% over 7m".
+    falloff_reduction: 0.7
+    crit_chance: 0.3
+    crit_multiplier: 2.5
+    status_chance: 0.17
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { puncture: 168.0, slash: 204.0, blast: 302.0 }   # total 674
+
+unmodeled:
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
+  - "a direct hit forces a knockdown whatever the explosion does — this arena's enemies are not knocked down, so the crowd control that makes this weapon safe to fire up close pays nothing here"
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Tonkor

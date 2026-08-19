@@ -1,0 +1,90 @@
+id: kuva_bramma
+name: Kuva Bramma
+slot: primary
+# A BOW THAT FIRES ARTILLERY. The arrow is 187; its explosion is 839 in 8.3 m;
+# and then it "splits into 3 smaller bomblets" that explode again — the third
+# part is the one this engine cannot carry, and the entry says so.
+class: bow
+form: charged
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, bow]
+mastery_rank: 15
+# RANK 40 after 5 polarizations — 80 capacity (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 16.7
+disposition: 0.65
+# "Innate Madurai polarity."
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Kuva Bramma
+traits: [grineer, kuva_lich]
+introduced: "27.1"
+internal_name: /Lotus/Weapons/Grineer/Bows/GrnBow/GrnBowWeapon
+noise: alarming
+ammo_type: primary
+ammo_max: 5
+ammo_pickup: 1
+magazine: 1
+reload_seconds: 0.6
+
+# Condition Overload: the catalog's only mention of this weapon is its CLUSTER
+# BOMB CONTACT, under "child projectiles that spawn from a parent projectile" —
+# a part this engine does not model, so nothing here is discrepant and the
+# attack that IS modelled is ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — see data/weapons/primary/kuva_karak.yaml for the
+# quoted Characteristic. Seven elements, never Puncture and never Slash.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  spread:
+    min_deg: 0
+    max_deg: 12
+  trigger: charge
+  # "Cannot fire unless fully charged", so there is no tapped shot to model —
+  # this weapon has ONE entry where the other bows have two.
+  charge_seconds: 0.4
+  shot_type: projectile
+  fire_rate: 0.667
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.35
+  crit_multiplier: 2.1
+  status_chance: 0.21
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # NO RANGE ROW on the Charged Shot block — the page states none. The 8.3 m
+  # below is the explosion's RADIUS and not a reach.
+  damage: { impact: 187.0 }   # total 187
+  # THE MAIN EXPLOSION — rules in MECHANICS §7.
+  radial:
+    radius_m: 8.3
+    falloff_start_m: 0.0
+    # "100% - 10%" over 8.3 m, so nine tenths is lost at the edge.
+    falloff_reduction: 0.9
+    crit_chance: 0.35
+    crit_multiplier: 2.1
+    status_chance: 0.21
+    takes_multishot: false
+    # "Compatible with Firestorm, Primed Firestorm."
+    takes_blast_radius_mods: true
+    damage: { blast: 839.0 }   # total 839
+
+unmodeled:
+  - reason: cluster_bomblets
+    n: 3
+    dmg: "147 on contact and 171 in 3.5 m explosions"
+    share: "a fifth"
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
+  - "the alternate fire detonates the arrow in mid-flight — this sim fires the shot and lets it land, so the choice of WHEN to burst it, which is most of how this weapon is aimed, is not a decision here"
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Bramma
