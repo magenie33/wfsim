@@ -109,6 +109,9 @@ attack:
     start_m: 10
     end_m: 16
     reduction: 0.48   # fraction KEPT past end_m
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Incarnon Form: "Range: 16.0 m"
+  range_m: 16.0
   damage: { heat: 100.0 }
   # RANGE FALLOFF, and the two sources disagree. The wiki: "linear Damage
   # Falloff from 100% to 80% from 10m to 16m", i.e. a 0.2 reduction. WFCD's

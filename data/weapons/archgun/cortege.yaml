@@ -70,6 +70,9 @@ attack:
     effectiveness: 0.00
     stacking: multiplies
     radius_calculation: doesnt_work
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Limited range of: 28 meters in Atmospheric Mode" (Archwing is 380 — the ATMOSPHERE column, like every other number on this weapon)
+  range_m: 28.0
   damage: { heat: 180.0 }          # Archwing: 90
 
 unmodeled:

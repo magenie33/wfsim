@@ -55,6 +55,9 @@ attack:
   crit_multiplier: 1.8
   status_chance: 0.2
   punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 25.0 m"
+  range_m: 25.0
   damage: { magnetic: 16 }   # total 16
 
 # incarnon_evolutions: definitions live in data/evolutions/gammacor_*.yaml.

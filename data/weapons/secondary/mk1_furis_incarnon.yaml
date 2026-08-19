@@ -76,6 +76,9 @@ attack:
     start_m: 10
     end_m: 16
     reduction: 0.2167   # fraction KEPT past end_m
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Incarnon Form: "Range: 16.0 m"
+  range_m: 16.0
   damage: { heat: 60.0 }
   # The wiki states one falloff rule for the Genesis (100% to 80%, 10-16 m);
   # WFCD gives this attack 0.2167 and the Furis's 0.48. The wiki takes it, and

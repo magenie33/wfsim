@@ -338,6 +338,37 @@ against what the rendered page had already given).
 This is the route to use. The two below are what happens without it, kept
 because the failure is not obvious.
 
+## "RANGE" ON A GUN MEANS TWO DIFFERENT THINGS (2026-08-19)
+
+Transcribing the roster's ranges in bulk would have been wrong, and the wiki's
+own schema says why: on a gun entry `Range` is documented as *"the base radius
+of area of effect in meters"* — **it is the AoE radius, not the shot's reach.**
+Melee has a separate `MeleeRange`; a bullet's reach has no field at all.
+
+On a RENDERED weapon page the same label appears under whichever attack block it
+belongs to, and there it means whichever of the two that attack has:
+
+| the attack | what its `Range` row is |
+| --- | --- |
+| a beam / continuous attack | HOW FAR IT REACHES — what `attack.range_m` wants |
+| an AoE attack (a detonation, a charge blast) | THE BLAST RADIUS — already `radial.radius_m` |
+| an ordinary bullet | no row at all |
+
+So the Akarius's "Range: 7.2 m" is its explosion, the Phantasma's "Range: 20.0
+m" is its beam, and the Onos Incarnon's "Range: 3.0 m" sits under its *Charge
+Radial Attack* and is a radius. Reading the number without reading which block
+it is in puts blast radii into weapons' reach.
+
+**ASK WHICH BLOCK IT IS IN.** Every range in `data/weapons/` carries the
+sentence it came from for exactly this reason, and the ARCH-GUN two-column rule
+applies on top: the Cortege lists *"28 meters in Atmospheric Mode"* against 380
+in Archwing, and the arena is on the ground.
+
+WHERE A BEAM HAS NO ROW, LEAVE IT UNTRANSCRIBED. The Onos Incarnon's beam lists
+none; `infinite` is a claim and the page does not make it. `range_m` absent
+means "nobody has looked", which is what the ratchet in `weapons_data` counts —
+203 of 224 today.
+
 ## The module pages TRUNCATE, and a summariser will fill the gap
 
 `Module:Weapons/data/primary` and `/secondary` are single Lua tables of a few

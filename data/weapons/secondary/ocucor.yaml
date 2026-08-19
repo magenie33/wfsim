@@ -115,6 +115,9 @@ attack:
   # Radiation damage". A weapon whose innate element is already combined is
   # the case MECHANICS §3 rule 2 is about: the innate takes what the elemental
   # mods leave, rather than combining with them.
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Normal Attack: "Range: 20.0 m". The TENDRILS carry their own `range_m` below and it is a different number about a different thing
+  range_m: 20.0
   damage: { puncture: 1.0, radiation: 10.0 }
   # NO `beam:` BLOCK, deliberately — the same call boar_prime_incarnon.yaml
   # makes, and for the same reason. That block requires `damage_radius_m` and
