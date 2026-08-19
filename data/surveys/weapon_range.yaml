@@ -153,3 +153,17 @@ checked:
   mk1_paris_incarnon:        { range: null, type: read, note: 'Incarnon Form charged shot: no Range row; Projectile' }
   paris_prime_incarnon:      { range: null, type: read, note: 'Incarnon Form charged shot: no Range row; Projectile' }
   lanka:                     { range: null, type: read, note: 'neither the partial nor the full charge states a Range; Projectile' }
+  mausolon:                  { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column, Auto block: "Range: 300.0 m", Hit-Scan (its 1.8 m Auto Radial Attack is a RADIUS)' }
+  cyngas:                    { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
+  dual_decurion:             { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
+  prisma_dual_decurions:     { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
+  phaedra:                   { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
+  kuva_ayanga:               { range: null, type: read, note: 'grenade IMPACT block states no Range; the 6.0 m is the explosion''s radius' }
+  morgha:                    { range: null, type: read, note: 'the charged shot states no Range; its 3.0 m and 12.0 m are both AoE sub-block radii' }
+  prisma_gorgon:             { range: 300.0, type: read, note: 'wiki, Fully Spooled: "Range: 300.0 m", Hit-Scan' }
+  prisma_grinlok:            { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  prisma_gorgon_incarnon:    { range: null, type: read, note: 'Incarnon Form: no Range row; its 5.0 m is an AoE sub-block radius' }
+  prisma_burst_laser:        { range: null, type: read, note: 'no Range row; Projectile' }
+  prime_laser_rifle:         { range: null, type: read, note: 'no Range row; Projectile' }
+  multron:                   { range: null, type: read, note: 'the Projectile Impact block states no Range; the 3.5 m is the Radial Attack''s radius' }
+  helstrum:                  { range: null, type: read, note: 'the normal attack states no Range; the 3.0 m is the explosion''s radius' }

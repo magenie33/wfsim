@@ -78,6 +78,9 @@ attack:
   crit_multiplier: 2.2
   status_chance: 0.30
   punch_through_m: 1.5
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 80.0, puncture: 80.0, slash: 80.0 }   # 240 total
 unmodeled:
   - reason: arch_gun_deployer_cooldown

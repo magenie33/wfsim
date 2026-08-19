@@ -73,6 +73,9 @@ attack:
     effectiveness: 1.00
     stacking: adds
     radius_calculation: stolen
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, ATMOSPHERE column, Auto block: "Range: 300.0 m", Hit-Scan (its 1.8 m Auto Radial Attack is a RADIUS)
+  range_m: 300.0
   damage: { impact: 35.0, puncture: 70.0, heat: 75.0 }   # 180 (Archwing: 120)
   # A SMALL radial on every bullet — 1.8 m, which is why its falloff barely
   # matters and why Primary Compression has a row for it at all.

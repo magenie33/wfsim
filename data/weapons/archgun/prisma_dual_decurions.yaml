@@ -74,6 +74,9 @@ attack:
   # 1.4 m, not the ordinary Dual Decurion's 1.2 — the page lists the Prisma
   # separately and higher, and this entry had copied its sibling's (2026-08-17).
   punch_through_m: 1.4
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 99.0, puncture: 60.5, slash: 60.5 }   # 220 total
 unmodeled:
   - reason: arch_gun_deployer_cooldown

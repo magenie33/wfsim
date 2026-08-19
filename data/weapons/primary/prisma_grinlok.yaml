@@ -49,6 +49,9 @@ attack:
   crit_multiplier: 2.9
   status_chance: 0.37
   punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 74.8, puncture: 18.7, slash: 93.5 }   # total 187
 
 source:
