@@ -134,3 +134,22 @@ checked:
   latron_incarnon:           { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
   latron_prime_incarnon:     { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
   latron_wraith_incarnon:    { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
+  lex_prime:                 { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  lex_prime_incarnon:        { range: 28.0, type: read, note: 'wiki, Incarnon Form: "Range: 28.0 m", Projectile — the form trades reach for what it gains' }
+  lex_incarnon:              { range: 28.0, type: read, note: 'wiki, Incarnon Form: "Range: 28 meters (affected by Projectile Speed)", Projectile' }
+  mk1_braton:                { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  mk1_braton_incarnon:       { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (its 3.0 m AoE sub-block is a RADIUS)' }
+  mk1_strun:                 { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  mk1_furis:                 { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan (the Incarnon form is 16 m and is its own entry)' }
+  mk1_strun_incarnon:        { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
+  rubico_prime:              { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
+  kunai:                     { range: null, type: read, note: 'no Range row; Projectile' }
+  kunai_incarnon:            { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
+  mk1_kunai:                 { range: null, type: read, note: 'no Range row; Projectile at 70 m/s' }
+  mk1_kunai_incarnon:        { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
+  paris:                     { range: null, type: read, note: 'neither the uncharged nor the charged block states a Range; Projectile' }
+  paris_incarnon:            { range: null, type: read, note: 'Incarnon Form charged shot: no Range row; Projectile' }
+  mk1_paris:                 { range: null, type: read, note: 'no Range row on any block; Projectile' }
+  mk1_paris_incarnon:        { range: null, type: read, note: 'Incarnon Form charged shot: no Range row; Projectile' }
+  paris_prime_incarnon:      { range: null, type: read, note: 'Incarnon Form charged shot: no Range row; Projectile' }
+  lanka:                     { range: null, type: read, note: 'neither the partial nor the full charge states a Range; Projectile' }

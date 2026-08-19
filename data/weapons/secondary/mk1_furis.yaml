@@ -77,6 +77,9 @@ attack:
   status_chance: 0.01
   punch_through_m: 0.0
   # The same 15/70/15 split as the Furis, scaled down — primarily Puncture.
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan (the Incarnon form is 16 m and is its own entry)
+  range_m: 300.0
   damage: { impact: 1.95, puncture: 9.1, slash: 1.95 }
 
 # NOT BUILT YET, and the same two as the Furis: the Incarnon Genesis (which

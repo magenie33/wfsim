@@ -75,6 +75,9 @@ attack:
     start_m: 10
     end_m: 18
     reduction: 0.3333   # fraction KEPT past end_m
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Incarnon Form: "Range: 28.0 m", Projectile — the form trades reach for what it gains
+  range_m: 28.0
   damage: { impact: 400, radiation: 800 }   # total 1200
 
 # incarnon_evolutions: see data/weapons/secondary/lex_prime.yaml (shared group)

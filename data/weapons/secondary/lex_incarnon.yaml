@@ -61,6 +61,9 @@ attack:
   # from geometry ("innate punch through does not apply to surfaces") and this
   # arena has no geometry, so everything the ray meets is a body.
   punch_through_m: 999.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Incarnon Form: "Range: 28 meters (affected by Projectile Speed)", Projectile
+  range_m: 28.0
   damage: { impact: 300, radiation: 700 }   # total 1000
 
 # incarnon_evolutions: see data/weapons/secondary/lex.yaml (shared group)

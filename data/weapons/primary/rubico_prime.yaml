@@ -48,6 +48,9 @@ attack:
   crit_multiplier: 3.0
   status_chance: 0.16
   punch_through_m: 1.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 1000.0 m", Hit-Scan
+  range_m: 1000.0
   damage: { impact: 149.6, puncture: 28.1, slash: 9.3 }   # 187 total
 unmodeled:
   - reason: sniper_combo_miss
