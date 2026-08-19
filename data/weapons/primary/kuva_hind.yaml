@@ -1,0 +1,76 @@
+id: kuva_hind
+name: Kuva Hind
+slot: primary
+# THREE TRIGGERS ON ONE GUN, cycled with Alternate Fire: "three togglable
+# firing modes: 5-round burst, semi-auto, and full-auto". This entry is the
+# BURST, which is the arsenal's own display (module `_TooltipAttackDisplay: 1`);
+# the other two are `kuva_hind_semi` and `kuva_hind_auto`.
+#
+# It is the weapon that made the form vocabulary grow. A form is identified by
+# its KIND, so a group cannot hold two `alt_fire` entries — see
+# `FormKind::SemiAuto`.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: kuva_hind
+mod_pools: [primary, rifle, assault_rifle]
+mastery_rank: 15
+# RANK 40 after 5 polarizations — 80 capacity (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 33.33
+disposition: 1.1
+# "Innate Madurai polarity."
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Hind
+traits: [grineer, kuva_lich]
+introduced: "27.1"
+internal_name: /Lotus/Weapons/Grineer/KuvaLich/LongGuns/Hind/KuvaHind
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 90
+reload_seconds: 2.3
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-19) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — see data/weapons/primary/kuva_karak.yaml for the
+# quoted Characteristic. Seven elements, never Puncture and never Slash.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0
+    max_deg: 6
+  trigger: burst
+  # FIVE A PULL, and `fire_rate` counts PULLS.
+  burst:
+    count: 5
+    delay_seconds: 0.083     # module BurstDelay
+  shot_type: hit_scan
+  fire_rate: 5.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.25
+  crit_multiplier: 2.1
+  status_chance: 0.33
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
+  # "Primarily deals Slash damage."
+  damage: { impact: 7.5, puncture: 7.5, slash: 15.0 }   # total 30
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Hind

@@ -897,6 +897,25 @@ pub enum FormKind {
     /// bow, the id is what a saved preset and a share link carry, and a wrong
     /// word there is wrong forever (owner, 2026-08-14).
     AltFire,
+    /// …AND THE THIRD ONE, for a weapon that CYCLES more than two triggers.
+    ///
+    /// A form is identified by its KIND — `forms_of` keys on it and `/api/meta`
+    /// looks a form up by `kind.id()` — so a group cannot hold two `AltFire`
+    /// entries: the second would be unreachable. The Kuva Hind has three
+    /// togglable modes ("5-round burst, semi-auto, and full-auto", cycled with
+    /// Alternate Fire), which is one more than the vocabulary had.
+    ///
+    /// NAMED FOR THE TRIGGER, because on this weapon the trigger IS the whole
+    /// difference — three blocks that share every weapon-level stat and differ
+    /// in cadence, crit and damage. The alternative was `alt_fire_2`, which
+    /// says nothing and would be in every saved preset and share link forever
+    /// (the reason `AltFire` itself exists rather than borrowing `Charged`).
+    ///
+    /// So the Hind reads base / semi_auto / auto: `Base` is the arsenal's
+    /// burst, and these two are the other pulls.
+    SemiAuto,
+    /// See [`FormKind::SemiAuto`] — the fully automatic member of the same set.
+    Auto,
 }
 
 impl FormKind {
@@ -908,6 +927,8 @@ impl FormKind {
             FormKind::Charged => "charged",
             FormKind::Incarnon => "incarnon",
             FormKind::AltFire => "alt_fire",
+            FormKind::SemiAuto => "semi_auto",
+            FormKind::Auto => "auto",
         }
     }
 
@@ -918,6 +939,8 @@ impl FormKind {
             FormKind::Charged => "Charged Shot",
             FormKind::Incarnon => "Incarnon Form",
             FormKind::AltFire => "Alternate Fire",
+            FormKind::SemiAuto => "Semi-Auto",
+            FormKind::Auto => "Full-Auto",
         }
     }
 
@@ -943,6 +966,8 @@ impl FormKind {
             "charged" => FormKind::Charged,
             "incarnon" => FormKind::Incarnon,
             "alt_fire" => FormKind::AltFire,
+            "semi_auto" => FormKind::SemiAuto,
+            "auto" => FormKind::Auto,
             other => panic!("unknown form kind in weapon data: {other}"),
         }
     }
@@ -1684,8 +1709,24 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
         // a tapped shot and an Incarnon form), and a mode id is what a build
         // names, so two of them sharing one id names neither.
         let mode = if gauged { PlayMode::Transformed } else { PlayMode::Alternate };
+        // …AND A THIRD FORM NEEDS A THIRD NAME. This is the same collision the
+        // Paris caused in 2026-08-08 — two alternates both emitting
+        // `id: "alternate"`, so a build naming a mode named neither — arriving
+        // from the other side: the Kuva Hind's two extra triggers are both FREE,
+        // so `Transformed` does not tell them apart either.
+        //
+        // A MODE IS NAMED FOR ITS FORM, but only where it has to be. Every kind
+        // that existed before keeps `"alternate"`, because a mode id is what a
+        // saved preset, a share link and a board row carry, and renaming one
+        // would orphan every stored build. Only the two kinds that could not
+        // have been stored yet take their own name.
+        let id = match (gauged, alt.kind) {
+            (true, _) => mode.id(),
+            (false, FormKind::SemiAuto | FormKind::Auto) => alt.kind.id(),
+            (false, _) => PlayMode::Alternate.id(),
+        };
         out.push(WeaponPlayMode {
-            id: mode.id(),
+            id,
             mode,
             weapon_id: alt.weapon_id,
             other_id: None,

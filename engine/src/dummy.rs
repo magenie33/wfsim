@@ -1001,7 +1001,7 @@ fn ten_stack_amp(stacks: usize) -> f64 {
 /// stack goes with it — so a respawn shows as the series dropping to zero and
 /// climbing again, and `uptime` counts that gap against you. That is the point
 /// (owner).
-pub const DEBUFF_ROSTER: [(&str, u32); 15] = [
+pub const DEBUFF_ROSTER: [(&str, u32); 17] = [
     // The 10-stack families, and the three that are not.
     ("virus", TEN_STACK_CAP as u32),
     ("corrosion", TEN_STACK_CAP as u32),
@@ -1027,6 +1027,15 @@ pub const DEBUFF_ROSTER: [(&str, u32); 15] = [
     ("bleed", TEN_STACK_CAP as u32),
     ("poison", TEN_STACK_CAP as u32),
     ("ignite", 1),
+    // …AND THE OTHER TWO DoT FAMILIES, which had no row at all until a player
+    // reported that their DoTs were on the enemy and not on the chart
+    // (2026-08-19). FOUR damage types reach `push_dot` — Slash, Toxin,
+    // Electricity, Gas — and only the first two were listed, so a build running
+    // either of these could see the damage in the meter and never see WHEN it
+    // was up. Both are independent per-instance piles like bleed and poison,
+    // and both are AREA: a tesla arc and a gas cloud hand their tick to the
+    // neighbours too, which is the other reason a reader wants them drawn.
+
     // On or off, and off only because the target died. It is drawn like every
     // other row so the replay can show WHEN this weapon's invisible status
     // landed — which is the only place a reader can see it at all.
@@ -1036,6 +1045,17 @@ pub const DEBUFF_ROSTER: [(&str, u32); 15] = [
     // no damage type explains, so a reader comparing a Condition Overload
     // number against the vector has to be able to see it.
     ("lifted", 1),
+    // …AND THE OTHER TWO DoT FAMILIES, which had no row at all until a player
+    // reported that their DoTs were on the enemy and not on the chart
+    // (2026-08-19). FOUR damage types reach `push_dot` — Slash, Toxin,
+    // Electricity, Gas — and only the first two were listed, so a build running
+    // either could see the damage in the meter and never see WHEN it was up.
+    //
+    // APPENDED, NOT INSERTED beside the other DoTs: a series is read by INDEX,
+    // so a row added in the middle would relabel every chart drawn from a
+    // replay stored before it.
+    ("tesla", TEN_STACK_CAP as u32),
+    ("gas", TEN_STACK_CAP as u32),
 ];
 
 impl DebuffState {
@@ -1068,6 +1088,12 @@ impl DebuffState {
             u16::from(self.heat.is_some()),
             u16::from(self.microwave),
             u16::from(self.lifted.is_some_and(|e| e > now)),
+            // POSITIONALLY MATCHING `DEBUFF_ROSTER`, which is why these two sit
+            // at the END rather than beside the other DoTs: the series are
+            // read by index, so inserting a row in the middle would silently
+            // relabel every chart drawn from a stored replay.
+            dots_of(DamageType::Electricity),
+            dots_of(DamageType::Gas),
         ]
     }
 }

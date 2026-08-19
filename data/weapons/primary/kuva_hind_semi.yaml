@@ -1,0 +1,34 @@
+id: kuva_hind_semi
+name: Kuva Hind
+# THE SEMI-AUTO PULL, and the hardest-hitting of the three: 90 a shot against
+# the burst's 30, with the crit chance and multiplier to match. It pays for it
+# in ammo — "Semi-auto mode consumes 3 ammo per shot".
+inherits: kuva_hind
+form: semi_auto
+transform_group: kuva_hind
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK. No row for any of
+# this weapon's three, so all three are ordinary Additive.
+co_behavior: additive_with_base_damage
+
+attack:
+  spread:
+    min_deg: 0
+    max_deg: 7
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 2.5
+  multishot: 1.0
+  # THREE ROUNDS A SHOT, stated as a Characteristic of this mode alone.
+  ammo_cost: 3
+  crit_chance: 0.37
+  crit_multiplier: 2.9
+  status_chance: 0.21
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
+  damage: { impact: 18.0, puncture: 18.0, slash: 54.0 }   # total 90
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Hind

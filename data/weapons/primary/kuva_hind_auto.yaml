@@ -1,0 +1,31 @@
+id: kuva_hind_auto
+name: Kuva Hind
+# THE FULL-AUTO PULL: the fastest and the weakest per round, and the only one
+# of the three that is not a discrete pull.
+inherits: kuva_hind
+form: auto
+transform_group: kuva_hind
+
+# NOT INHERITED — see `kuva_hind_semi`.
+co_behavior: additive_with_base_damage
+
+attack:
+  spread:
+    min_deg: 0
+    max_deg: 6
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 10.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.21
+  crit_multiplier: 1.9
+  status_chance: 0.33
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
+  damage: { impact: 6.0, puncture: 6.0, slash: 18.0 }   # total 30
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Hind

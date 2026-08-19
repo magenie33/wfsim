@@ -666,6 +666,8 @@ ui:
     这轮爆发会打空整个弹匣，而这个条目每次扣发固定打 21 发 —— 也就是未改装的弹匣容量。装了弹匣 MOD 之后真实的爆发会更长，而这里不会变长，所以带弹匣 MOD 的配装在这里被低估了
   "the burst can be interrupted by a quick melee, a dodge roll or a weapon swap — this arena does none of those, so it always runs to the end":
     这轮爆发可以被快速近战、翻滚或换武器打断 —— 这个战场这三件事都不做，所以它总是打到底
+  "{n} more statuses this engine models never landed and are not drawn":
+    这个引擎还模拟另外 {n} 种异常状态，本场一次都没上，因此没有画出来
   "Support": 支持
   "what WFSim costs to run": WF模拟的运营成本
   # The topbar icon's tooltip. It names the COST rather than the ask,

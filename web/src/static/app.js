@@ -12101,6 +12101,19 @@ function replayMarkup(r) {
     dRoster.filter((_, i) => (dSeries[i] || []).some((v) => v > 0)),
     dSeries.filter((s) => (s || []).some((v) => v > 0)),
     dbName, "debuff");
+  // …AND HOW MANY NEVER MOVED, said out loud (owner, 2026-08-19: 我要完整显示).
+  //
+  // A row the run never touched is dropped, because seventeen flat lines bury
+  // the three that moved. That is a real filter and it looks exactly like a
+  // CAP from the reader's side — which is how it was reported: DoTs that were
+  // on the enemy and not on the chart. They were missing for a different
+  // reason (two whole families had no row at all — `DEBUFF_ROSTER`), but the
+  // silence was the same either way.
+  //
+  // So the omission is counted rather than hidden, which is the rule the body
+  // roll call already follows one panel up.
+  const dQuiet = dRoster.length - dRoster
+    .filter((_, i) => (dSeries[i] || []).some((v) => v > 0)).length;
   // TWO pieces, deliberately far apart (user, 2026-08-03). The transport
   // belongs at the top, next to the numbers it drives; the CURVES are charts
   // and belong with the other chart, under the DPS curve. Moving both up put
@@ -12178,7 +12191,11 @@ function replayMarkup(r) {
           // 19x19 ruler would be 6.5 MB — so when more bodies took damage than
           // were followed, the line says how many. An absence would read as
           // "that is everyone".
-          foeChips(rp, dBody) + dRows)
+          foeChips(rp, dBody) + dRows + (dQuiet > 0
+            ? `<div class="rp-foe-more">${escHtml(
+                tr("{n} more statuses this engine models never landed and are not drawn")
+                  .replace("{n}", dQuiet))}</div>`
+            : ""))
       : "");
   return { bar, curves };
 }
