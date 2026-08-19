@@ -77,6 +77,9 @@ attack:
     start_m: 15
     end_m: 25
     reduction: 0.5   # fraction KEPT past end_m
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 12.1, puncture: 3.3, slash: 6.6 }
   # Damage FALLOFF, hitscan: full damage to 15 m, decaying to 50% of it at 25 m
   # and beyond (module `Falloff`, Reduction 0.5). NOT READ by the engine — the

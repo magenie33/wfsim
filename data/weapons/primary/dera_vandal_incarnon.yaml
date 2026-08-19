@@ -55,6 +55,9 @@ attack:
   crit_multiplier: 3
   status_chance: 0.22
   punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 50, slash: 90, puncture: 140, magnetic: 90 }   # total 370
 
 # incarnon_evolutions: see data/weapons/primary/dera_vandal.yaml (shared group)

@@ -76,3 +76,29 @@ checked:
   paris_prime:       { range: null, type: read, note: 'no Range row; Projectile' }
   cestra:            { range: null, type: read, note: 'no Range row; Projectile' }
   stug:              { range: null, type: read, note: 'TRAP: its only Range row is 2.0 m under a block whose Projectile Type is AoE — that is the BLOB''S BLAST RADIUS, not the weapon''s reach. The reach is not stated' }
+  boar:                    { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  braton_incarnon:         { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan. The 3.0 m on the Incarnon AoE sub-block is a RADIUS' }
+  prisma_angstrum:         { range: null, type: read, note: 'the Single Rocket IMPACT block states no Range; the explosion block''s figure is a radius' }
+  coda_sporothrix:         { range: null, type: read, note: 'no Range row; Projectile' }
+  angstrum:                { range: null, type: read, note: 'impact block: no Range. Its 3.6 m sits under an AoE block and is a radius' }
+  angstrum_incarnon:       { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
+  boltor:                  { range: null, type: read, note: 'no Range row on either the normal attack or the Incarnon form; Projectile' }
+  boltor_incarnon:         { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
+  boltor_prime_incarnon:   { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
+  braton_prime_incarnon:       { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (the 3.0 m AoE sub-block is a RADIUS)' }
+  braton_vandal_incarnon:      { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (the 3.0 m AoE sub-block is a RADIUS)' }
+  ballistica_incarnon:         { range: 80.0, type: read, note: 'wiki, Incarnon Form: "Range: 80.0 m", Projectile' }
+  ballistica_prime_incarnon:   { range: 80.0, type: read, note: 'wiki, Incarnon Form: "Range: 80.0 m", Projectile' }
+  bronco:                      { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  bronco_incarnon:             { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  bronco_prime:                { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  bronco_prime_incarnon:       { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  ballistica:                  { range: null, type: read, note: 'burst and charged blocks both state no Range; Projectile' }
+  dera_incarnon:           { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (the base Dera is a Projectile with no Range row — the form changes both)' }
+  dera_vandal_incarnon:    { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  cestra_incarnon:         { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
+  burst_laser:             { range: null, type: read, note: 'no Range row; Projectile' }
+  burst_laser_prime:       { range: null, type: read, note: 'no Range row; Projectile' }
+  cernos_prime:            { range: null, type: read, note: 'neither the uncharged nor the charged block states a Range; Projectile' }
+  dera:                    { range: null, type: read, note: 'no Range row; Projectile' }
+  dera_vandal:             { range: null, type: read, note: 'no Range row; Projectile' }

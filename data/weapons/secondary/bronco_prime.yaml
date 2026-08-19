@@ -64,6 +64,9 @@ attack:
     start_m: 9
     end_m: 18
     reduction: 0.74   # fraction KEPT past end_m
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 40, slash: 5, puncture: 5 }   # total 50
 
 # incarnon_evolutions: definitions live in data/evolutions/bronco_prime_*.yaml.

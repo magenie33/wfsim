@@ -60,6 +60,9 @@ attack:
   crit_multiplier: 2.5
   status_chance: 0.3
   punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Incarnon Form: "Range: 80.0 m", Projectile
+  range_m: 80.0
   damage: { slash: 830 }   # total 830
 
 # incarnon_evolutions: see data/weapons/secondary/ballistica_prime.yaml (shared group)

@@ -59,6 +59,9 @@ attack:
   crit_multiplier: 3.2
   status_chance: 0.22
   punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (the 3.0 m AoE sub-block is a RADIUS)
+  range_m: 300.0
   damage: { impact: 26.0, puncture: 2.6, slash: 36.4 }   # total 65
   # The radial (AoE) part — rules in MECHANICS §7, plus the two this entry
   # declares for itself, both from the CO catalog's Braton row.
