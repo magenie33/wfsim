@@ -95,6 +95,9 @@ attack:
   # the sim (there is no spatial model), recorded because the shot combo and
   # multi-hit mechanics that would read it are coming with the sniper.
   punch_through_m: 0.5
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { puncture: 25.0 }   # pure Puncture, total 25
 
 source:

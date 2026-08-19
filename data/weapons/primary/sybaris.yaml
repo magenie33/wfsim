@@ -61,6 +61,9 @@ attack:
   crit_multiplier: 2
   status_chance: 0.1
   punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 26.4, slash: 27.2, puncture: 26.4 }   # total 80.0
 
 # incarnon_evolutions: definitions live in data/evolutions/sybaris_*.yaml.

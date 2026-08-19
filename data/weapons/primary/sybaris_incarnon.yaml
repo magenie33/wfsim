@@ -66,6 +66,9 @@ attack:
   # always present is also a permanent +1 to Condition Overload's count.
   forced_procs: [blast]
   punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 29.7, slash: 30.6, puncture: 29.7 }   # total 90.0
 
 # incarnon_evolutions: see data/weapons/primary/sybaris.yaml (shared group)

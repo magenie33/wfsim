@@ -55,6 +55,9 @@ attack:
   crit_multiplier: 3.4
   status_chance: 0.03
   punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 1.08, slash: 11.88, puncture: 5.04 }   # total 18.0
 
 # incarnon_evolutions: see data/weapons/primary/soma_prime.yaml (shared group)

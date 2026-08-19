@@ -167,3 +167,22 @@ checked:
   prime_laser_rifle:         { range: null, type: read, note: 'no Range row; Projectile' }
   multron:                   { range: null, type: read, note: 'the Projectile Impact block states no Range; the 3.5 m is the Radial Attack''s radius' }
   helstrum:                  { range: null, type: read, note: 'the normal attack states no Range; the 3.0 m is the explosion''s radius' }
+  perigale:                  { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
+  perigale_prime:            { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
+  gotva_prime:               { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  komorex:                   { range: null, type: read, note: 'no row LABELLED Range; the 400/600 m figures are its Damage Falloff row, which is a ramp and already modelled. Re-read once because the first answer quoted the falloff row as the range' }
+  scourge:                   { range: null, type: read, note: 'no Range on either the primary or the thrown impact; its 1.7 m and 7.0 m are explosion radii' }
+  onos:                      { range: null, type: read, note: 'no Range row on the normal attack; Projectile' }
+  soma:                      { range: 300.0, type: read, note: 'wiki, Fully Spooled: "Range: 300.0 m", Hit-Scan' }
+  soma_incarnon:             { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  soma_prime:                { range: 300.0, type: read, note: 'wiki, Fully Spooled: "Range: 300.0 m", Hit-Scan' }
+  soma_prime_incarnon:       { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  sybaris:                   { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  sybaris_incarnon:          { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  sybaris_prime:             { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  sybaris_prime_incarnon:    { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  strun:                     { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  strun_wraith:              { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  strun_incarnon:            { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
+  strun_wraith_incarnon:     { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
+  strun_prime_incarnon:      { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius (the family is uniform here)' }
