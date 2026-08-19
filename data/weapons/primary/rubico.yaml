@@ -51,6 +51,9 @@ attack:
   crit_multiplier: 3.0
   status_chance: 0.12
   punch_through_m: 1.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 1000.0 m", Hit-Scan — a sniper reaches far further than a rifle, which is why there is no class rule to shortcut
+  range_m: 1000.0
   damage: { impact: 144.0, puncture: 27.0, slash: 9.0 }   # 180 total
 unmodeled:
   - reason: sniper_combo_miss

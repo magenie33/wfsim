@@ -3101,7 +3101,7 @@ mod tests {
             })
             .map(|s| s.id.as_str())
             .collect();
-        const CEILING: usize = 203;
+        const CEILING: usize = 197;
         assert!(
             silent.len() <= CEILING,
             "{} entries state neither a range nor `infinite`; the ceiling is              {CEILING} and may only go down",

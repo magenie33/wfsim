@@ -1,0 +1,53 @@
+# WEAPON RANGE, TRANSCRIBED FROM THE WIKI, ONE PAGE AT A TIME.
+#
+# Read by nothing — this is the WORKSHEET. The authority is each weapon's own
+# yaml; this file records what the page said, so the next person does not have
+# to re-read 190 pages to know what has been checked and what has not.
+#
+# WHY THERE IS NO SHORTCUT (2026-08-19). The obvious one is a class rule, and
+# it survives five samples and then dies:
+#
+#   Braton      rifle    Hit-Scan    300.0 m
+#   Boar Prime  shotgun  Hit-Scan    300.0 m
+#   Lex         pistol   Hit-Scan    300.0 m
+#   Rubico      sniper   Hit-Scan   1000.0 m
+#   Vectis      sniper   Hit-Scan   1000.0 m
+#   Dread       bow      Projectile  NO RANGE ROW  (Projectile Speed 85 m/s)
+#   Kuva Bramma launcher Projectile  NO RANGE ROW  (Projectile Speed 50 m/s)
+#   Grattler    archgun  Projectile  225.0 m       <- breaks it
+#
+# The Grattler is a PROJECTILE with a range row while two other projectiles have
+# none, so "projectile means no range" is false and there is nothing left to
+# generalise from. Every entry is its own lookup.
+#
+# AND "RANGE" MEANS TWO THINGS — see docs/DATA_SOURCES.md. Under a continuous or
+# ordinary attack it is the reach; under an AoE attack it is the blast radius.
+# Read which block it is in, every time.
+#
+# ARCH-GUNS HAVE TWO COLUMNS and the ATMOSPHERE one is ours (the arena is on the
+# ground). It has bitten three times now: Larkspur 40 not 160, Cortege 28 not
+# 380, Grattler 225 with the Archwing column carrying no row at all.
+#
+# `range: null` means THE PAGE STATES NONE — a fact, not a gap. `infinite` is a
+# claim the wiki has to make before we write it.
+
+checked:
+  braton:            { range: 300.0,  type: hit-scan,   note: 'Range: 300.0 m' }
+  boar_prime:        { range: 300.0,  type: hit-scan,   note: 'Range: 300.0 m' }
+  lex:               { range: 300.0,  type: hit-scan,   note: 'Range: 300.0 m' }
+  rubico:            { range: 1000.0, type: hit-scan,   note: 'Range: 1000.0 m; falloff 400-600 m to 50%' }
+  vectis:            { range: 1000.0, type: hit-scan,   note: 'Range: 1000.0 m' }
+  dread:             { range: null,   type: projectile, note: 'no Range row; Projectile Speed 85 m/s' }
+  kuva_bramma:       { range: null,   type: projectile, note: 'no Range row; Projectile Speed 50 m/s' }
+  grattler:          { range: 225.0,  type: projectile, note: 'ATMOSPHERE column; the Archwing column has no Range row' }
+  # …the continuous ones, already written into their weapon yamls.
+  phantasma:         { range: 20.0,  type: continuous, note: '"Limited range of 20 meters"; No Damage Falloff' }
+  phantasma_prime:   { range: 25.0,  type: continuous, note: 'Range: 25.0 m' }
+  gammacor:          { range: 25.0,  type: continuous, note: 'Range: 25.0 m' }
+  synoid_gammacor:   { range: 40.0,  type: continuous, note: 'Range: 40.0 m' }
+  ocucor:            { range: 20.0,  type: continuous, note: 'Normal Attack Range: 20.0 m (the tendrils are a separate 20 m about a separate thing)' }
+  cortege:           { range: 28.0,  type: continuous, note: 'ATMOSPHERE: "28 meters in Atmospheric Mode" (Archwing 380)' }
+  furis_incarnon:    { range: 16.0,  type: continuous, note: 'Incarnon Form Range: 16.0 m' }
+  mk1_furis_incarnon: { range: 16.0,  type: continuous, note: 'Incarnon Form Range: 16.0 m' }
+  larkspur:          { range: 40.0,  type: continuous, note: 'ATMOSPHERE column (Archwing 160)' }
+  onos_incarnon:     { range: null,  type: continuous, note: 'the Incarnon beam lists NO Range; the 3.0 m is its Charge Radial blast radius' }
