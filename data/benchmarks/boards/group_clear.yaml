@@ -196,6 +196,12 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_aptitude, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip, thermite_rounds]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_deadhead]
+  - weapon: strun_prime
+    mode: cycle
+    score: 159.4253636605592
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, semi_shotgun_cannonade, shotgun_savvy, frigid_blast, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_debilitate]
   - weapon: stug
     mode: cycle
     score: 53.710598389474974
