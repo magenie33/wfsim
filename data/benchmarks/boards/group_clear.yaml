@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-engine: 76c4472c046b3df02e385ffe99bd5aaaf424ff61
+engine: 7733e1ad9e08379454fa7ef6a05da8db0acf6a14
 entries:
   - weapon: akarius_prime
     mode: base
@@ -30,6 +30,11 @@ entries:
     mode: base
     score: 53.287204889726034
     mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_target_cracker, magnetic_might, frostbite, pathogen_rounds, primed_heated_charge]
+    arcanes: [secondary_enervate]
+  - weapon: akarius_prime
+    mode: base
+    score: 26.77142994205658
+    mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
   - weapon: akarius_prime
     mode: base
