@@ -1771,12 +1771,6 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: dual_toxocyst
     mode: cycle
-    score: 30.847502123388185
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
-    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
-    arcanes: [secondary_encumber]
-  - weapon: dual_toxocyst
-    mode: cycle
     score: 30.01832150855435
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
