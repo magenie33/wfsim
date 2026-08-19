@@ -1,0 +1,91 @@
+id: kuva_seer
+name: Kuva Seer
+slot: secondary
+# A PISTOL THAT EXPLODES. Every shot detonates in 2.3 m of Corrosive, and the
+# page is explicit that the two halves are separate instances: "Initial hit and
+# explosion apply status separately."
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 15
+# RANK 40 after 5 polarizations — 80 capacity (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 16.0
+disposition: 1.1
+polarities: []
+exilus_polarity: madurai
+riven_family: Seer
+traits: [grineer, kuva_lich]
+introduced: "26"
+internal_name: /Lotus/Weapons/Grineer/KuvaLich/Secondaries/Seer/KuvaSeer
+noise: alarming
+ammo_type: secondary
+ammo_max: 27
+ammo_pickup: 9
+magazine: 9
+reload_seconds: 2.3
+
+# CONDITION OVERLOAD — this weapon HAS a row, and it is one of four Kuva
+# entries that do. Verbatim from the catalog:
+#
+#   Kuva Seer | Projectile Impact | Projectile | 131 | 131 | 100% | Multiplying
+#
+# MULTIPLYING at the full base, on the DIRECT hit — which is `independent` in
+# this schema: the catalog's word is about the arithmetic (a multiplier of its
+# own rather than a term in the base-damage bucket) and the engine names the
+# class. The explosion has no row of its own, and an AoE part takes no CO unless
+# its own row says so (docs/CATALOGS.md).
+co_behavior: independent
+
+# THE PROGENITOR BONUS — see data/weapons/primary/kuva_karak.yaml for the
+# quoted Characteristic. Seven elements, never Puncture and never Slash.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.5
+    max_deg: 12
+  trigger: semi_auto
+  shot_type: projectile
+  fire_rate: 2.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.21
+  crit_multiplier: 1.9
+  status_chance: 0.33
+  punch_through_m: 0.0
+  # NO RANGE ROW on the Projectile Impact block — the page states none, which
+  # is a fact rather than a gap (docs/DATA_SOURCES.md). The 2.3 m below is the
+  # explosion's RADIUS and not a reach.
+  # "Does primarily Puncture and Corrosive damage" — the Puncture is here and
+  # the Corrosive is the explosion's.
+  damage: { impact: 26.2, puncture: 68.12, slash: 36.68 }   # total 131
+  # THE EXPLOSION — rules in MECHANICS §7. "Shots explode in a 2.3 meter radius
+  # upon impact with surface or enemy."
+  radial:
+    radius_m: 2.3
+    falloff_start_m: 0.0
+    # Linear 0.0-2.3 m, 100% -> 70%, so 30% is lost at the edge.
+    falloff_reduction: 0.3
+    crit_chance: 0.21
+    crit_multiplier: 1.9
+    status_chance: 0.33
+    takes_multishot: false
+    # "Can benefit from Fulmination (and Primed Fulmination)."
+    takes_blast_radius_mods: true
+    damage: { corrosive: 69.0 }
+
+unmodeled:
+  - "the explosion does not need line of sight and penetrates walls — this arena has no geometry, so nothing is ever behind cover here and the perk pays nothing it would not pay anyway"
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Seer

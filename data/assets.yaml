@@ -77,6 +77,12 @@ weapons:
   karak_wraith: KarakWraith.png
   kunai: Kunai.png
   kunai_incarnon: Kunai.png
+  # THE KUVA BATCH (2026-08-19). The module's own `Image` field for each, which
+  # is DE's asset name rather than the display name — the CDN keys on the former.
+  kuva_brakk: wiki:KuvaBrakk.png
+  kuva_karak: wiki:KuvaKarak.png
+  kuva_seer: wiki:KuvaSeer.png
+  kuva_twin_stubbas: wiki:KuvaTwinStubbas.png
   kuva_nukor: KuvaNukor.png
   laetum: ZarimanHeavyPistol.png
   laetum_incarnon: ZarimanHeavyPistol.png

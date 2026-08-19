@@ -1,0 +1,88 @@
+id: kuva_brakk
+name: Kuva Brakk
+slot: secondary
+# A SHOTGUN SIDEARM: ten pellets out of a pistol, and the roster's second
+# weapon of that class. Its page sells it on the pair of facts that fight each
+# other — "Very high burst and sustained DPS" against "Significant damage
+# falloff at range" and "Wide pellet spread reduces effectiveness beyond medium
+# range" — which is a weapon the arena's distance axis has something to say
+# about for once.
+class: shotgun_sidearm
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+# A SHOTGUN SIDEARM TAKES PISTOL MODS, not shotgun ones — the pellets are the
+# weapon's, not a mod class. The roster's first of the kind, so there was no
+# precedent to copy and `[secondary, pistol, shotgun_sidearm]` was the first
+# guess: `secondary` and `shotgun_sidearm` are not pools any `data/mods/`
+# directory holds, and the guard said so by name.
+mod_pools: [pistol]
+mastery_rank: 13
+# RANK 40 after 5 polarizations — 80 capacity (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 7.7
+disposition: 0.95
+# "Innate Madurai and Naramon polarities" — the page states them as a
+# Characteristic and the module's order is Naramon first.
+polarities: [naramon, madurai]
+exilus_polarity: naramon
+riven_family: Brakk
+traits: [grineer, kuva_lich]
+introduced: "26"
+internal_name: /Lotus/Weapons/Grineer/KuvaLich/Secondaries/Brakk/KuvaBrakk
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 20
+magazine: 11
+reload_seconds: 1.1
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-19) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — see data/weapons/primary/kuva_karak.yaml for the
+# quoted Characteristic. Seven elements, never Puncture and never Slash.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 9
+    max_deg: 17
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 5.0
+  # "Innate 10-pellet multishot", and the damage below is PER PELLET.
+  multishot: 10.0
+  ammo_cost: 1
+  crit_chance: 0.29
+  crit_multiplier: 2.0
+  # "Highest status chance among secondary shotguns" — per PELLET, so ten
+  # rolls a shot.
+  status_chance: 0.111
+  # "Innate 0.5 meter punch through" — one whole body of material
+  # (`space::BODY_MATERIAL_M`), so it really does reach the enemy behind.
+  punch_through_m: 0.5
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
+  # …AND A RAMP AS WELL, which is the other half of "Significant damage falloff
+  # at range". Verbatim: "No falloff below 10.0 m (100%, 15 damage); linear
+  # falloff between 10.0-20.0 m (100%-4%); maximum falloff beyond 20.0 m (4%)".
+  # FOUR PER CENT is the floor, not zero — past 20 m it still deals something.
+  falloff:
+    start_m: 10.0
+    end_m: 20.0
+    reduction: 0.96
+  # "Primarily Impact damage weapon."
+  damage: { impact: 6.75, puncture: 3.75, slash: 4.5 }   # 15 per pellet
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Brakk

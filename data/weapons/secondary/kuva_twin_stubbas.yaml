@@ -1,0 +1,64 @@
+id: kuva_twin_stubbas
+name: Kuva Twin Stubbas
+slot: secondary
+# The plainest adversary secondary: dual autos, one attack, no prose beyond the
+# shared Kuva boilerplate. "This weapon does primarily Slash damage."
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 13
+# RANK 40 after 5 polarizations — 80 capacity (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 36.4
+disposition: 1.0
+polarities: [madurai]
+exilus_polarity: madurai
+riven_family: Kuva Twin Stubbas
+traits: [grineer, kuva_lich]
+introduced: "26"
+internal_name: /Lotus/Weapons/Grineer/KuvaLich/Secondaries/Stubba/KuvaStubba
+noise: alarming
+ammo_type: secondary
+ammo_max: 684
+ammo_pickup: 40
+magazine: 114
+reload_seconds: 2.7
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-19) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — see data/weapons/primary/kuva_karak.yaml for the
+# quoted Characteristic. Seven elements, never Puncture and never Slash.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.5
+    max_deg: 6
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 10.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.23
+  crit_multiplier: 1.9
+  status_chance: 0.31
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
+  # "This weapon does primarily Slash damage."
+  damage: { impact: 11.61, puncture: 2.7, slash: 12.69 }   # total 27
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Twin_Stubbas

@@ -3169,6 +3169,11 @@ mod tests {
             ("paris_incarnon", "independent", 1.0),
             ("paris_prime", "additive_with_base_damage", 0.5),
             ("paris_prime_incarnon", "independent", 1.0),
+            // THE KUVA BATCH (2026-08-19). Four of the sixteen have a row and
+            // the rest are ordinary; each is transcribed for the entry the
+            // catalog NAMES, never generalised to the family.
+            //   Kuva Seer | Projectile Impact | Projectile | 131 | 131 | 100% | Multiplying
+            ("kuva_seer", "independent", 1.0),
             ("shedu", "independent", 1.0),
             // The row is `Blob Impact | 0% | Does not apply`, and its unmodded 4
             // names the BASE form (the Incarnon deals 50).

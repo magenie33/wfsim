@@ -1,0 +1,82 @@
+id: kuva_karak
+name: Kuva Karak
+slot: primary
+# THE ADVERSARY BASELINE. An ordinary auto-rifle carrying the one axis nothing
+# else in the roster has — see the Kuva Nukor, which is where that axis was
+# built. Worth having for the same reason the Karak Wraith is: the plainest
+# possible weapon on which to see what the valence bonus is actually worth.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]
+mastery_rank: 13
+# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+# at rank 40 after 5 polarizations, granting the weapon additional mod
+# capacity", so this carries 80 capacity where an ordinary rifle carries 60
+# (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 80.0
+disposition: 1.05            # riven disposition
+polarities: [madurai]
+exilus_polarity: madurai
+riven_family: Karak
+traits: [grineer, kuva_lich]
+introduced: "26"
+internal_name: /Lotus/Weapons/Grineer/KuvaLich/LongGuns/Karak/KuvaKarak
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 70
+reload_seconds: 1.7
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-19,
+# when the Primary Compression catalog moved and both were checked) — ordinary
+# Additive at the full +100%. Four Kuva weapons DO have rows (Drakgoon, Zarr,
+# Seer, Bramma); this is not one of them, and absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS. Verbatim from the page's Characteristics:
+#
+#   "Comes with an additional bonus Impact, Heat, Cold, Electricity, Toxin,
+#    Magnetic, or Radiation damage, based on the Kuva Lich's progenitor
+#    Warframe, which increases the listed base damage of the weapon by 25%-60%."
+#   "This bonus stat is considered a base damage type and will be applied after
+#    all elemental mods."
+#
+# Seven elements, and note which are NOT there: never Puncture, never Slash.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.5
+    max_deg: 2
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 11.67
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.23
+  crit_multiplier: 2.1
+  status_chance: 0.31
+  # INNATE, and the page states it as its own Characteristic: "Innate 0.2 meter
+  # punch through." Two-fifths of a body (`space::BODY_MATERIAL_M` is 0.5), so
+  # it reaches nobody behind — it is a wall-and-cover perk this arena has none
+  # of, and the number is written because the mechanic is modelled.
+  punch_through_m: 0.2
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
+  # "This weapon does primarily Slash damage" — and the split says so.
+  damage: { impact: 7.13, puncture: 6.21, slash: 9.66 }   # total 23
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Karak

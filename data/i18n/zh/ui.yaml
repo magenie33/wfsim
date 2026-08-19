@@ -656,6 +656,8 @@ ui:
   # The money sentences stay CONCRETE on purpose: what the bill is and what
   # a donation cannot buy. "支持一下" with nothing behind it is the version
   # that reads as begging.
+  "the explosion does not need line of sight and penetrates walls — this arena has no geometry, so nothing is ever behind cover here and the perk pays nothing it would not pay anyway":
+    爆炸不需要视线，能穿墙 —— 这个战场没有几何结构，所以这里没有任何东西处在掩体后面，这个特性拿不到它本来就拿不到的东西
   "Support": 支持
   "what WFSim costs to run": WF模拟的运营成本
   # The topbar icon's tooltip. It names the COST rather than the ask,
