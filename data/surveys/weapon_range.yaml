@@ -202,3 +202,24 @@ checked:
   snipetron_vandal:          { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
   vectis_incarnon:           { range: null, type: read, note: 'Incarnon Form: the MAIN block has no Range; the 6.7 m belongs to Incarnon Form Headshot AoE and the 0.1 m to Incarnon Form Embed AoE, both radii. Re-read, because the first answer offered 6.7 m as the form''s reach' }
   vectis_prime_incarnon:     { range: null, type: read, note: 'Incarnon Form: the MAIN block has no Range; 6.7 m and 0.1 m are both AoE sub-block radii' }
+  sweeper:                   { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  sweeper_prime:             { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  telos_boltor:              { range: null, type: read, note: 'no Range row on either block; Projectile' }
+  telos_boltor_incarnon:     { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
+  shedu:                     { range: null, type: read, note: 'no Range row; the 6.6 m is the Radial Attack''s radius' }
+  sporothrix:                { range: null, type: read, note: 'no row LABELLED Range; the 400/600 m figures are its Damage Falloff row and the 1.7 m is its AoE radius. Re-read once, because the first answer quoted the falloff row as the range' }
+  vulklok:                   { range: null, type: read, note: 'no Range row; Projectile at 100 m/s' }
+  stinger:                   { range: null, type: read, note: 'no Range row; Projectile at 65 m/s' }
+  rakta_ballistica_incarnon:   { range: 80.0, type: read, note: 'wiki, Incarnon Form: "Range: 80.0 m", Projectile — the whole Ballistica family agrees on 80' }
+  velocitus:                   { range: null, type: read, note: 'neither the uncharged nor the charged block states a Range; Projectile' }
+  vulcax:                      { range: null, type: read, note: 'no Range on the impact; the 5.0 m is the Radial Attack''s radius (and the page is a robotic companion weapon, not an Arch-Gun)' }
+  mandonel:                    { range: null, type: read, note: 'no Range row on either block; its 2.4 m is PUNCH THROUGH, which is a third thing again' }
+  rakta_ballistica:            { range: null, type: read, note: 'neither the burst nor the charged block states a Range; Projectile' }
+  miter:                       { range: null, type: read, note: 'no Range on any of the three shot blocks; the 3.0 m is the Incarnon Radial Attack''s radius' }
+  miter_incarnon:              { range: null, type: read, note: 'Incarnon Form: no Range row; its 3.0 m is the Radial Attack''s radius' }
+  felarx_incarnon:             { range: 56.0, type: read, note: 'wiki, Incarnon Form: "Range: 56.0 m", Projectile — a real reach, and NOT an AoE sub-block (checked, because the base Felarx is 300)' }
+  laetum_incarnon:             { range: null, type: read, note: 'Incarnon Form: no Range row; the 2.0 m is the Auto Radial Attack''s radius' }
+  phenmor_incarnon:            { range: null, type: read, note: 'Incarnon Form: no Range row, and no AoE sub-block either; Projectile' }
+  gammacor_incarnon:           { range: null, type: read, note: 'Incarnon Form: no Range row; the 5.0 m is the Incarnon Radial Attack''s radius' }
+  synoid_gammacor_incarnon:    { range: null, type: read, note: 'Incarnon Form: no Range row; the 5.0 m is the Incarnon Radial Attack''s radius' }
+  prisma_angstrum_incarnon:    { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile (the family''s figures are explosion radii)' }

@@ -49,6 +49,9 @@ attack:
   crit_multiplier: 1.75
   status_chance: 0.045
   punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 29.75, puncture: 1.75, slash: 3.5 }   # 35 each, 210 a shell
 unmodeled:
   - "the 20-40 degree spread is not modelled — this arena has one target at zero distance, so all six pellets always land on it"

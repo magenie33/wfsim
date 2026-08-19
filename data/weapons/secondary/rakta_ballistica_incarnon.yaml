@@ -58,6 +58,9 @@ attack:
   crit_multiplier: 2.2
   status_chance: 0.25
   punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Incarnon Form: "Range: 80.0 m", Projectile — the whole Ballistica family agrees on 80
+  range_m: 80.0
   damage: { slash: 734 }   # total 734
 
 # incarnon_evolutions: see data/weapons/secondary/rakta_ballistica.yaml (shared group)
