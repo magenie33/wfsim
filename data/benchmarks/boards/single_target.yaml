@@ -4314,6 +4314,16 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: rubico_prime
     mode: base
+    score: 19.63570308169636
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip, hellfire]
+    arcanes: [primary_crux]
+  - weapon: rubico_prime
+    mode: base
+    score: 13.988705536520696
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    arcanes: [primary_crux]
+  - weapon: rubico_prime
+    mode: base
     score: 13.9401760445899
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, critical_delay, semi_rifle_cannonade, vital_sense, magnetic_capacity, hellfire]
     arcanes: [primary_crux]
