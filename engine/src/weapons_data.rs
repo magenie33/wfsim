@@ -2398,10 +2398,29 @@ fn traits_for(s: &WeaponSpec) -> &'static [&'static str] {
     if let Some(t) = g.get(&s.id) {
         return t;
     }
-    let base = s
-        .transforms_from
-        .as_deref()
-        .and_then(spec)
+    // THE TRIGGER IS THE WEAPON'S, WHICH IS THE GROUP'S DEFAULT FORM — the same
+    // entry `mods_data::triggers_of` reads, and for the same reason: a mod's
+    // `requires:` is an EQUIP rule, decided once for the weapon, and a mod the
+    // weapon may legally wear has to keep working on every form of it.
+    //
+    // It used to follow `transforms_from`, which reaches only GAUGE-FED forms
+    // (an entry may not carry that field without a gauge), so a free alternate
+    // fire reported its OWN trigger — and the Tenet Detron found the hole: its
+    // primary fire is Semi-Auto and its Mag Burst is not, so Semi-Pistol
+    // Cannonade was offered on the weapon, went inert on the alternate form,
+    // AND TOOK ITS FIRE-RATE LOCK WITH IT. A mod that locks a stat on one form
+    // and not the other is the worst of the three possible answers.
+    //
+    // The narrow blast radius is what makes this safe: three mods in the whole
+    // data set gate on a trigger (the Cannonades, `semi_auto`), and the only
+    // entries whose answer moves are ones whose DEFAULT form is semi-auto and
+    // whose alternate is not — the Tenet Detron and the Tenet Plinx. Everywhere
+    // else `pool_for_build` had already refused the mod, so nothing could reach
+    // this gate to change.
+    let group = s.transform_group.as_deref().unwrap_or(&s.id);
+    let base = all()
+        .iter()
+        .find(|x| x.transform_group.as_deref().unwrap_or(&x.id) == group && x.default_form)
         .unwrap_or(s);
     let mut out: Vec<&'static str> = Vec::new();
     match base.attack.trigger.as_str() {
@@ -3261,6 +3280,41 @@ mod tests {
             //    catalog's own two damage columns are 460 and 230. The TAPPED
             //    shot has no row and stays ordinary.
             ("kuva_drakgoon", "additive_with_base_damage", 0.5),
+            // THE TENET AND CODA BATCH (2026-08-20). Twenty weapons, and the
+            // two catalog tables name SEVEN of their attacks between them —
+            // five that are anomalies and reach this list, and two that the
+            // catalog checked and called ordinary (both Tenet Detron rows,
+            // `Adding` at 100%), which is a row worth transcribing into the
+            // weapon and worth nothing here.
+            //   Coda Bassocyst | Normal Attack | Projectile | 808 | 808 | 100% | Multiplying
+            // …and its ALT-FIRE has the opposite row — `303 | 0 | 0% | N/A,
+            // "Does not apply"` — which would be `inert` and has no entry,
+            // because that alt fire is a Mercy-finisher tool rather than a way
+            // to fight and is recorded as a gap instead.
+            ("coda_bassocyst", "independent", 1.0),
+            //   Coda Hema | Normal Attack | Projectile | 52 | 52 | 100% | Multiplying
+            ("coda_hema", "independent", 1.0),
+            //   Tenet Arca Plasmor | Normal Attack | Projectile | 760 | 760 | 100% | Multiplying
+            // The ORDINARY Arca Plasmor has no row and stays Additive.
+            ("tenet_arca_plasmor", "independent", 1.0),
+            //   Tenet Plinx | Alt Fire Impact | Projectile | 1000 | 1000 | 100%
+            //     | Multiplying | "Scales properly with magazine size"
+            // The Base Damage cell is 1000 rather than the infobox's 100, which
+            // is the catalog independently confirming that this attack's damage
+            // is multiplied by the magazine. The PRIMARY fire has no row.
+            ("tenet_plinx_charged", "independent", 1.0),
+            //   Tenet Spirex | Slug Impact | Projectile | 120 | 120 | 100% | Multiplying
+            // The cell is the slug's own 120, which is what tells the row apart
+            // from the 80 explosion beside it.
+            ("tenet_spirex", "independent", 1.0),
+            // AND ONE THE CATALOG NAMES THAT THIS ROSTER CANNOT TAKE:
+            //   Tenet Ferrox | Hitscan AoE Direct | AoE | 60 | 200 | 333%
+            //     | Adding | "Radial hit receives CO bonus on direct hit only"
+            // It is about the RADIAL, whose term reads the DIRECT hit's base of
+            // 200 against its own 60. `co_base_fraction` is one number per
+            // ENTRY and that entry's direct hit is ordinary, so the radial takes
+            // no Condition Overload at all — the conservative reading, stated in
+            // the weapon's own `unmodeled:`.
             ("shedu", "independent", 1.0),
             // The row is `Blob Impact | 0% | Does not apply`, and its unmodded 4
             // names the BASE form (the Incarnon deals 50).
@@ -5351,6 +5405,25 @@ mod play_mode_tests {
             ("cortege_alt", 0.0),
             ("kuva_ayanga", 0.0),
             ("arbucep", 0.0),
+            // THE TENET AND CODA BATCH (2026-08-20). Six rows, and the last is
+            // the third tested ZERO in the catalog.
+            //   Tenet Envoy   | Primary Fire + AoE | 100% | Multiplies | 8.0 m | +640%
+            //   Tenet Tetra   | Alt-Fire + AoE     | 100% | Multiplies | 8.0 m | +640%
+            //   Tenet Ferrox  | Primary Fire + AoE | 100% | ADDS       | 4.0 m | +320%
+            //   Tenet Quanta  | Alt-Fire + AoE     | 100% / 8% | Multiplies | 0.5 m | +40%
+            //   Coda Bubonico | Alt-Fire + AoE     | 100% | Multiplies | 7.0 m | +560%
+            //   Tenet Ferrox  | Throw + AoE        |   0% | Doesn't Work
+            // The Quanta's two effectiveness figures are its cube's TWO
+            // explosions — 100% on the 0.5 m contact blast this roster fires,
+            // 8% on the 6 m one a player shoots loose, which is unmodelled. The
+            // base-radius column agrees with the first, so the single figure is
+            // right for what the entry carries.
+            ("tenet_envoy", 6.40),
+            ("tenet_tetra_grenade", 6.40),
+            ("tenet_ferrox", 3.20),
+            ("tenet_quanta_cube", 0.40),
+            ("coda_bubonico_burst", 5.60),
+            ("tenet_ferrox_thrown", 0.0),
         ];
         // At rank 5 a metre is worth +100%, so the bonus IS the metres lost.
         let fx = crate::arcanes_data::for_slot("primary", "primary_compression")
@@ -5569,8 +5642,8 @@ mod play_mode_tests {
         // The Braton four, the Burston two, and BOTH Mausolon radials — its two
         // rows are the only Arch-Gun ones in the table and both print "Adds".
         assert_eq!(
-            adds, 8,
-            "the Braton four, the Burston two and the Mausolon two add, and nothing else here does"
+            adds, 9,
+            "the Braton four, the Burston two, the Mausolon two and the Tenet Ferrox add, and nothing else here does"
         );
         // …and a tested ZERO is not the same as an absent row. The Torid's
         // Incarnon form has one, and its base form is 100% — one arcane, two
@@ -5667,6 +5740,11 @@ mod play_mode_tests {
             // the PELLET COUNT over 12. Only the first is modelled, which is
             // what the weapon's own admission says.
             ("kuva_kohm", 0.20, 1.00, 4.0, 0.20, 5),
+            // "Requires a spool-up of 7 shots before optimal fire rate is
+            // achieved", and "Fire rate starts at 30% of the listed value, and
+            // increases by 11.67% per shot" — 0.70 / 6 = 11.67% a shot, full
+            // from the 7th, so the two published sentences reconcile exactly.
+            ("coda_bubonico", 0.30, 1.00, 6.0, 0.11667, 7),
         ];
         for (id, start, end, over, per_shot, full_at) in published {
             let s = spec(id)
