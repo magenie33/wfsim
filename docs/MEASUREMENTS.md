@@ -3466,3 +3466,35 @@ wall stops the round a few metres on and the blast still lands near the crowd;
 this floor has none (docs/UNMODELLED.md), so a round that crosses every body
 simply goes away. That is the conservative reading and it is the one the
 single-target measurement supports.
+
+### OPEN — the four Braton Incarnons, and why they were NOT changed with this
+
+The same evidence that convicted the Burston points at exactly four more entries
+and no others. A sweep of the roster for a form that carries BOTH a `radial:`
+and an evolution whose own text reads *"On Punch Through Hit"*:
+
+| entry | radial | punch-through evolution |
+| --- | --- | --- |
+| `braton_incarnon` | yes | Gunsmoke Pick Up — *"On Punch Through Hit: 20% chance for 10% Ammo restored"* |
+| `braton_prime_incarnon` | yes | the same |
+| `braton_vandal_incarnon` | yes | the same |
+| `mk1_braton_incarnon` | yes | the same |
+
+Every other weapon with such a perk — the Paris family, the Ballisticas, the
+Felarx, the Onos — carries no radial at all, so it already takes punch-through
+mods normally and there is nothing to decide.
+
+**THEY ARE STILL `contact`, AND THAT IS A KNOWN-WRONG STATE**, said plainly
+rather than left in the data: a form whose own evolution rewards punch-through
+hits cannot be a weapon that refuses punch through. What is NOT known is which
+way to fix it, and the two answers differ by a lot:
+
+- `terminal`, like the Burston — punch through works and MOVES THE BLAST past a
+  lone target, so it is a trade.
+- `contact` plus `punch_through_mods: true` — punch through works and the blast
+  still lands on what it hit, which is strictly better and has no downside.
+
+Guessing between them is the mistake this file exists to prevent, and it is the
+CO rule's own ("never generalise a row to a family") in another mechanic. **One
+shot settles it**: fire a Braton Incarnon with a punch-through mod at a single
+enemy and see whether the explosion lands on it or behind it.
