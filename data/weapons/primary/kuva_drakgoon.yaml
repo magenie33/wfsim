@@ -1,0 +1,92 @@
+id: kuva_drakgoon
+name: Kuva Drakgoon
+slot: primary
+# A CHARGE SHOTGUN. Uncharged it throws a 60-80 degree wall of shrapnel; drawn,
+# it tightens to a slug and doubles its Slash. This entry is the CHARGED shot,
+# which is the arsenal's own display (module `_TooltipAttackDisplay: 2`); the
+# tapped one is `kuva_drakgoon_uncharged`.
+class: shotgun
+form: charged
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: kuva_drakgoon
+mod_pools: [primary, shotgun]
+mastery_rank: 13
+# RANK 40 after 5 polarizations — 80 capacity (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 1.4
+disposition: 1.15
+polarities: []
+exilus_polarity: madurai
+riven_family: Drakgoon
+traits: [grineer, kuva_lich]
+introduced: "26"
+internal_name: /Lotus/Weapons/Grineer/KuvaLich/LongGuns/Drakgoon/KuvaDrakgoon
+noise: alarming
+ammo_type: primary
+ammo_max: 120
+ammo_pickup: 15
+magazine: 11
+reload_seconds: 2.0
+
+# CONDITION OVERLOAD — this weapon HAS a row, and it names the CHARGED attack.
+# Verbatim from the catalog:
+#
+#   Kuva Drakgoon | Charged Attack | Projectile | 460 | 230 | 50% | Adding
+#   | CO-bonus only applies to base (uncharged) damage; uses bows mechanics;
+#     bows have innate 2x damage multiplier when fully charged
+#
+# FIFTY PER CENT, Adding. The note says why the fraction is a half rather than
+# a discount somebody chose: the charged shot is the UNCHARGED base doubled by
+# the bow multiplier, and CO reads the base — so its term is half of what this
+# attack deals. 460 and 230 are the catalog's own two damage columns and they
+# are exactly that ratio.
+co_behavior: additive_with_base_damage
+co_base_fraction: 0.5
+
+# THE PROGENITOR BONUS — see data/weapons/primary/kuva_karak.yaml for the
+# quoted Characteristic. Seven elements, never Puncture and never Slash.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # PINPOINT once drawn — "Tightly focused blast for longer ranges", against
+  # the tapped shot's 60-80 degrees. The module carries no cone for this attack
+  # at all, which is what that means.
+  spread:
+    min_deg: 0
+    max_deg: 0
+  trigger: charge
+  charge_seconds: 0.3
+  shot_type: projectile
+  fire_rate: 3.33
+  # TEN PELLETS, and the damage below is PER PELLET.
+  multishot: 10.0
+  ammo_cost: 1
+  crit_chance: 0.21
+  crit_multiplier: 2.5
+  # PER PELLET, so ten rolls a shot.
+  status_chance: 0.09
+  # "Charged shots have innate 1.5 meter punch through", where the tapped shot
+  # has none — three whole bodies of material (`space::BODY_MATERIAL_M`).
+  punch_through_m: 1.5
+  # ONE BOUNCE, and it is MODELLED rather than admitted: "Shots bounce once;
+  # shrapnel doesn't slow after bouncing". No headshot chance is published for
+  # the bounce, so it is left at zero rather than invented — the Latron
+  # Incarnons' 50% is their page's own figure and not a class rule.
+  ricochet:
+    bounces: 1
+    headshot_chance: 0.0
+  # NO RANGE ROW on either block — the page states none for this weapon.
+  # "Primarily Slash damage (80%)" once charged.
+  damage: { impact: 4.6, puncture: 4.6, slash: 36.8 }   # 46 per pellet
+
+unmodeled:
+  - reason: ricochet_terrain
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Drakgoon

@@ -264,3 +264,5 @@ checked:
   zylok_prime_incarnon:        { range: null, type: read, note: 'Incarnon Form: no Range row; its 6.0 m is the Radial Attack''s radius' }
   kuva_seer:                   { range: null, type: read, note: "the Projectile Impact block states no Range; the 2.3 m is the explosion radius" }
   kuva_chakkhurr:              { range: null, type: read, note: "the Normal Attack block states no Range; the 2.9 m is the explosion radius" }
+  kuva_drakgoon:               { range: null, type: read, note: "neither the tapped nor the charged block states a Range; Projectile" }
+  kuva_drakgoon_uncharged:     { range: null, type: read, note: "see kuva_drakgoon — the same page, no Range on either block" }

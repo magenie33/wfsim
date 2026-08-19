@@ -1,0 +1,91 @@
+id: kuva_kohm
+name: Kuva Kohm
+slot: primary
+# A SPOOLING SHOTGUN, and the ramp is the weapon: the pellet count climbs from
+# ONE to TWELVE over the spool, the fire rate from a fifth to full, and the
+# ammo cost from one shell to four. This entry is the FULLY SPOOLED state,
+# which is the arsenal's own display (module `_TooltipAttackDisplay: 2`); the
+# single-pellet opening shot is `kuva_kohm_single`.
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: kuva_kohm
+mod_pools: [primary, shotgun]
+mastery_rank: 13
+# RANK 40 after 5 polarizations — 80 capacity (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 8.0
+disposition: 0.9
+polarities: [vazarin]
+exilus_polarity: madurai
+riven_family: Kohm
+traits: [grineer, kuva_lich]
+introduced: "26"
+internal_name: /Lotus/Weapons/Grineer/KuvaLich/LongGuns/Kohm/KuvaKohm
+noise: alarming
+ammo_type: primary
+ammo_max: 836
+ammo_pickup: 40
+magazine: 209
+reload_seconds: 2.0
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-19) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — see data/weapons/primary/kuva_karak.yaml for the
+# quoted Characteristic. Seven elements, never Puncture and never Slash.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data. "Low accuracy when fully spooled" is this.
+  spread:
+    min_deg: 5
+    max_deg: 20
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 4.17
+  # …AND IT NEVER FIRES AT THAT RATE FROM THE FIRST SHOT. "Fire rate ramps from
+  # 20% baseline, increasing by 20% per shot", full from the 12th — the same
+  # shape the Gorgon carries, and `over_shots` is the exact half.
+  sustained_fire_rate:
+    start: 0.20
+    end: 1.00
+    over_shots: 4.0
+  # TWELVE PELLETS at full spool, and the damage below is PER PELLET. The
+  # ramp from one is admitted below: this entry IS the spooled state.
+  multishot: 12.0
+  # FOUR SHELLS A SHOT once spooled — "Poor ammo efficiency at full spool".
+  ammo_cost: 4
+  crit_chance: 0.19
+  crit_multiplier: 2.3
+  # PER PELLET, and the page is explicit that the headline 90% "is only for the
+  # first shot" and divides among the pellets in sustained fire — 0.90 / 12 is
+  # exactly the 0.075 the module carries for this state.
+  status_chance: 0.075
+  # "Innate 1.5m punch through" — three whole bodies of material
+  # (`space::BODY_MATERIAL_M` is 0.5), so this reaches deep into a crowd.
+  punch_through_m: 1.5
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
+  # …AND A RAMP AS WELL: "Damage falloff from 13-26m (harsh scaling)".
+  falloff:
+    start_m: 13.0
+    end_m: 26.0
+    reduction: 0.9
+  # "Primarily Slash damage."
+  damage: { impact: 4.0, puncture: 4.0, slash: 12.0 }   # 20 per pellet
+
+unmodeled:
+  - "the PELLET COUNT spools from 1 to 12 and this entry fires 12 from the first shot — the fire-rate spool is modelled and the multishot one is not, so a short burst puts more pellets downrange here than in game"
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Kohm

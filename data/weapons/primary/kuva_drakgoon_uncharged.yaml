@@ -1,0 +1,40 @@
+id: kuva_drakgoon_uncharged
+name: Kuva Drakgoon
+# THE TAPPED SHOT: a 60-80 degree wall of shrapnel, half the Slash of the drawn
+# one and no punch through. "Wide-dispersal for mid/long range or quick
+# single-target hits at close range."
+inherits: kuva_drakgoon
+form: base
+transform_group: kuva_drakgoon
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon's
+# row names the CHARGED attack alone. An entry the catalog does not name is
+# ORDINARY, so this one takes the full base and no fraction.
+co_behavior: additive_with_base_damage
+
+attack:
+  # "Very low accuracy (60-80 degree spread)" — the widest cone in the roster.
+  spread:
+    min_deg: 60
+    max_deg: 80
+  trigger: semi_auto
+  shot_type: projectile
+  fire_rate: 3.33
+  multishot: 10.0
+  ammo_cost: 1
+  crit_chance: 0.19
+  crit_multiplier: 2.1
+  status_chance: 0.09
+  # NO PUNCH THROUGH — the charged shot's 1.5 m is that form's alone.
+  punch_through_m: 0.0
+  ricochet:
+    bounces: 1
+    headshot_chance: 0.0
+  # "Primarily Slash damage (60%)" untapped.
+  damage: { impact: 4.6, puncture: 4.6, slash: 13.8 }   # 23 per pellet
+
+unmodeled:
+  - reason: ricochet_terrain
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Drakgoon

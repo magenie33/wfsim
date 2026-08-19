@@ -1,0 +1,51 @@
+id: kuva_hek_quad
+name: Kuva Hek
+# ALL FOUR BARRELS AT ONCE: 28 pellets, the whole magazine, one trigger pull.
+# "Alt-fire requires minimum 4 rounds in magazine; attempting with fewer
+# triggers reload instead."
+inherits: kuva_hek
+form: alt_fire
+transform_group: kuva_hek
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK. No row for either of
+# this weapon's, so both are ordinary Additive.
+co_behavior: additive_with_base_damage
+
+attack:
+  # "Very low accuracy" — the cone is nearly twice the single barrel's and it
+  # barely varies, which is what firing four spreads at once looks like.
+  spread:
+    min_deg: 19
+    max_deg: 23
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 1.17
+  # TWENTY-EIGHT PELLETS: four barrels of seven, and the damage is PER PELLET.
+  multishot: 28.0
+  # THE WHOLE MAGAZINE, which is why the magazine is 4 and this costs 4.
+  ammo_cost: 4
+  crit_chance: 0.23
+  crit_multiplier: 2.1
+  # PER PELLET — a quarter of the single barrel's, because the shot's total
+  # status budget is spread over four times the pellets.
+  status_chance: 0.0332
+  punch_through_m: 0.3
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past. The
+  # ALT-FIRE reaches far further than the single barrel — 1000 m against 300 —
+  # which is the module's own figure for this attack and one of the few places
+  # in the roster where two forms of one weapon disagree about their reach.
+  # wiki: "Range: 1000.0 m", Hit-Scan
+  range_m: 1000.0
+  # "Minimal falloff" — and the module's number says how minimal: it keeps only
+  # 1.1% past 30 m, which is a far HARSHER ramp than the single barrel's.
+  falloff:
+    start_m: 15.0
+    end_m: 30.0
+    reduction: 0.989
+  damage: { impact: 13.05, puncture: 56.55, slash: 17.4 }   # 87 per pellet
+
+unmodeled:
+  - "the alt-fire needs four rounds in the magazine and reloads instead when it has fewer — this sim fires it whenever the mode is chosen, so a magazine that has run down does not force the reload here that it would in game"
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Hek

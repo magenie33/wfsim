@@ -1,0 +1,72 @@
+id: kuva_sobek
+name: Kuva Sobek
+slot: primary
+# A PLAIN AUTO SHOTGUN, and the only Kuva primary whose page has nothing to say
+# beyond its numbers: five pellets, 75% Impact, no charge, no second mode, no
+# spool.
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, shotgun]
+mastery_rank: 15
+# RANK 40 after 5 polarizations — 80 capacity (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 9.1
+disposition: 0.8
+polarities: []
+exilus_polarity: naramon
+riven_family: Sobek
+traits: [grineer, kuva_lich]
+introduced: "35.6"
+internal_name: /Lotus/Weapons/Grineer/KuvaLich/LongGuns/Sobek/KuvaSobek
+noise: alarming
+ammo_type: primary
+ammo_max: 240
+ammo_pickup: 15
+magazine: 20
+reload_seconds: 2.1
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-19) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — see data/weapons/primary/kuva_karak.yaml for the
+# quoted Characteristic. Seven elements, never Puncture and never Slash.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki Module:Weapons/data.
+  spread:
+    min_deg: 6
+    max_deg: 16
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 2.5
+  # FIVE PELLETS, and the damage below is PER PELLET.
+  multishot: 5.0
+  ammo_cost: 1
+  crit_chance: 0.21
+  crit_multiplier: 2.3
+  # PER PELLET, so five rolls a shot.
+  status_chance: 0.21
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
+  # …AND A RAMP AS WELL — the gentlest of the four Kuva shotguns: it keeps
+  # better than half its damage past 40 m where the Kohm keeps a tenth.
+  falloff:
+    start_m: 25.0
+    end_m: 40.0
+    reduction: 0.4805
+  # "Primarily deals Impact damage (75% of total)."
+  damage: { impact: 57.75, puncture: 9.625, slash: 9.625 }   # 77 per pellet
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Sobek

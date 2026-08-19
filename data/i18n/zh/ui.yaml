@@ -668,6 +668,10 @@ ui:
     这轮爆发可以被快速近战、翻滚或换武器打断 —— 这个战场这三件事都不做，所以它总是打到底
   "{n} more statuses this engine models never landed and are not drawn":
     这个引擎还模拟另外 {n} 种异常状态，本场一次都没上，因此没有画出来
+  "the PELLET COUNT spools from 1 to 12 and this entry fires 12 from the first shot — the fire-rate spool is modelled and the multishot one is not, so a short burst puts more pellets downrange here than in game":
+    弹丸数会从 1 爬升到 12，而这个条目从第一发就打 12 发 —— 射速的爬升已建模，弹丸数的爬升没有，所以短点射在这里打出的弹丸比游戏里多
+  "the alt-fire needs four rounds in the magazine and reloads instead when it has fewer — this sim fires it whenever the mode is chosen, so a magazine that has run down does not force the reload here that it would in game":
+    副射击需要弹匣里有四发，不够时会改成换弹 —— 这个模拟只要选了这个模式就照打，所以弹匣见底时不会像游戏里那样被强制换弹
   "Support": 支持
   "what WFSim costs to run": WF模拟的运营成本
   # The topbar icon's tooltip. It names the COST rather than the ask,

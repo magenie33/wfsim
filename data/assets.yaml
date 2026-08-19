@@ -86,11 +86,18 @@ weapons:
   kuva_kraken_mag_burst: wiki:KuvaKraken.png
   kuva_quartakk: wiki:KuvaQuartakk.png
   kuva_quartakk_auto: wiki:KuvaQuartakk.png
+  kuva_drakgoon: wiki:KuvaDrakgoon.png
+  kuva_drakgoon_uncharged: wiki:KuvaDrakgoon.png
+  kuva_hek: wiki:KuvaHek.png
+  kuva_hek_quad: wiki:KuvaHek.png
   kuva_hind: wiki:KuvaHind.png
   kuva_hind_auto: wiki:KuvaHind.png
   kuva_hind_semi: wiki:KuvaHind.png
   kuva_karak: wiki:KuvaKarak.png
+  kuva_kohm: wiki:KuvaKohm.png
+  kuva_kohm_single: wiki:KuvaKohm.png
   kuva_seer: wiki:KuvaSeer.png
+  kuva_sobek: wiki:KuvaSobek.png
   kuva_twin_stubbas: wiki:KuvaTwinStubbas.png
   kuva_nukor: KuvaNukor.png
   laetum: ZarimanHeavyPistol.png

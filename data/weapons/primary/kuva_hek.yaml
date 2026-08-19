@@ -1,0 +1,73 @@
+id: kuva_hek
+name: Kuva Hek
+slot: primary
+# FOUR BARRELS. Normal fire is one of them — seven pellets — and the alt-fire
+# "shoots four shots simultaneously", 28 pellets for the whole magazine. This
+# entry is the single barrel, which is the arsenal's own display (module
+# `_TooltipAttackDisplay: 1`); the volley is `kuva_hek_quad`.
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: kuva_hek
+mod_pools: [primary, shotgun]
+mastery_rank: 15
+# RANK 40 after 5 polarizations — 80 capacity (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 9.09
+disposition: 1.0
+polarities: []
+exilus_polarity: naramon
+riven_family: Hek
+traits: [grineer, kuva_lich]
+introduced: "30.5"
+internal_name: /Lotus/Weapons/Grineer/KuvaLich/LongGuns/Hek/KuvaHekWeapon
+noise: alarming
+ammo_type: primary
+ammo_max: 120
+ammo_pickup: 15
+magazine: 4
+reload_seconds: 1.9
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-19) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — see data/weapons/primary/kuva_karak.yaml for the
+# quoted Characteristic. Seven elements, never Puncture and never Slash.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki Module:Weapons/data.
+  spread:
+    min_deg: 6
+    max_deg: 16
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 2.17
+  # SEVEN PELLETS, and the damage below is PER PELLET.
+  multishot: 7.0
+  ammo_cost: 1
+  crit_chance: 0.23
+  crit_multiplier: 2.1
+  # PER PELLET, so seven rolls a shot.
+  status_chance: 0.133
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
+  # …AND A RAMP AS WELL: "100% below 15m, linear to 17.2% at 30m+".
+  falloff:
+    start_m: 15.0
+    end_m: 30.0
+    reduction: 0.828
+  # "Primarily Puncture damage (65% of total)."
+  damage: { impact: 13.05, puncture: 56.55, slash: 17.4 }   # 87 per pellet
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Hek

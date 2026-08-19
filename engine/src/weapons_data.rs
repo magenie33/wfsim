@@ -3215,6 +3215,13 @@ mod tests {
             // catalog NAMES, never generalised to the family.
             //   Kuva Seer | Projectile Impact | Projectile | 131 | 131 | 100% | Multiplying
             ("kuva_seer", "independent", 1.0),
+            //   Kuva Drakgoon | Charged Attack | Projectile | 460 | 230 | 50% | Adding
+            //   "CO-bonus only applies to base (uncharged) damage; uses bows
+            //    mechanics; bows have innate 2x damage multiplier when fully
+            //    charged" — which is why the fraction is exactly a half and the
+            //    catalog's own two damage columns are 460 and 230. The TAPPED
+            //    shot has no row and stays ordinary.
+            ("kuva_drakgoon", "additive_with_base_damage", 0.5),
             ("shedu", "independent", 1.0),
             // The row is `Blob Impact | 0% | Does not apply`, and its unmodded 4
             // names the BASE form (the Incarnon deals 50).
@@ -5613,6 +5620,14 @@ mod play_mode_tests {
             ("prisma_gorgon", 0.20, 1.00, 6.0, 0.13333, 7),
             ("soma", 0.25, 1.00, 5.0, 0.15, 6),
             ("soma_prime", 0.25, 1.00, 2.5, 0.30, 4),
+            // "Fire rate ramps from 20% baseline, increasing by 20% per shot",
+            // so it is full from the FIFTH round: 0.20 + 4 x 0.20 = 1.00. The
+            // page's Disadvantages also say "Requires 5-12 shot spool before
+            // optimal performance" — a RANGE because two things spool at
+            // different speeds on this weapon: the fire rate over 5 shots and
+            // the PELLET COUNT over 12. Only the first is modelled, which is
+            // what the weapon's own admission says.
+            ("kuva_kohm", 0.20, 1.00, 4.0, 0.20, 5),
         ];
         for (id, start, end, over, per_shot, full_at) in published {
             let s = spec(id)

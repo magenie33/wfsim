@@ -1,0 +1,39 @@
+id: kuva_kohm_single
+name: Kuva Kohm
+# THE OPENING SHOT, before the spool: one pellet, and the whole 90% status
+# chance on it. It is a different weapon from the spooled state in every stat
+# that matters, which is why the module carries it as its own attack.
+inherits: kuva_kohm
+form: alt_fire
+transform_group: kuva_kohm
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK. No row for either of
+# this weapon's, so both are ordinary Additive.
+co_behavior: additive_with_base_damage
+
+attack:
+  spread:
+    min_deg: 5
+    max_deg: 20
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 0.8333
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.19
+  crit_multiplier: 2.3
+  # THE WHOLE 90% ON ONE PELLET — the headline number, and the page says it is
+  # "only for the first shot".
+  status_chance: 0.9
+  punch_through_m: 1.5
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
+  falloff:
+    start_m: 13.0
+    end_m: 26.0
+    reduction: 0.9
+  damage: { impact: 4.0, puncture: 4.0, slash: 12.0 }   # 20 total
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Kohm
