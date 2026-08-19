@@ -102,16 +102,58 @@ entries:
     valence: heat
   - weapon: kuva_grattler
     mode: base
+    score: 88.82675331563331
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, critical_focus, hollowed_bullets, magnetized_cycle, electrified_barrel, primed_venomous_clip]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_grattler
+    mode: base
+    score: 72.89009332318133
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, hollowed_bullets, magnetized_cycle, electrified_barrel, primed_venomous_clip, contamination_casing]
+    arcanes: [primary_deadhead, secondary_enervate]
+    valence: toxin
+  - weapon: kuva_grattler
+    mode: base
+    score: 72.5945761109748
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, hollowed_bullets, magnetized_cycle, electrified_barrel, charged_bullets, primed_venomous_clip]
+    arcanes: [primary_deadhead, secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_grattler
+    mode: base
     score: 72.24647044304793
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, critical_focus, hollowed_bullets, magnetized_cycle, primed_electrified_barrel, primed_venomous_clip]
     arcanes: [primary_deadhead, secondary_enervate]
     valence: magnetic
   - weapon: kuva_grattler
     mode: base
+    score: 60.0839476127948
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, critical_focus, hollowed_bullets, magnetized_cycle, electrified_barrel, primed_venomous_clip]
+    arcanes: [primary_deadhead, secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_grattler
+    mode: base
+    score: 55.9853185448914
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, critical_focus, hollowed_bullets, magnetized_cycle, electrified_barrel, primed_venomous_clip]
+    arcanes: [primary_deadhead, secondary_enervate]
+    valence: toxin
+  - weapon: kuva_grattler
+    mode: base
     score: 42.98626330380425
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, critical_focus, hollowed_bullets, magnetized_cycle, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_deadhead, secondary_enervate]
     valence: heat
+  - weapon: kuva_grattler
+    mode: base
+    score: 34.23174724573346
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, critical_focus, hollowed_bullets, electrified_barrel, primed_venomous_clip, contamination_casing]
+    arcanes: [primary_deadhead, secondary_enervate]
+    valence: toxin
+  - weapon: kuva_grattler
+    mode: base
+    score: 21.733819135909343
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, critical_focus, hollowed_bullets, magnetized_cycle, electrified_barrel, primed_venomous_clip]
+    arcanes: [primary_compression, secondary_enervate]
+    valence: magnetic
   - weapon: kuva_nukor
     mode: base
     score: 43.81303532811469
@@ -185,6 +227,16 @@ entries:
     score: 3.947610673521325
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
+  - weapon: ocucor
+    mode: base
+    score: 0.21950427783541607
+    mods: [amalgam_barrel_diffusion, lethal_torrent, pistol_elementalist, magnetic_might, sentient_surge, frostbite, scorch, jolt]
+    arcanes: [secondary_irradiate]
+  - weapon: ocucor
+    mode: base
+    score: 0.21503237039263368
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, sentient_surge, frostbite, pistol_pestilence, primed_convulsion]
+    arcanes: [secondary_irradiate]
   - weapon: phantasma_prime
     mode: alternate
     score: 0.022840270901582915
