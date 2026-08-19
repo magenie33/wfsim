@@ -68,6 +68,9 @@ attack:
   crit_multiplier: 1.9
   status_chance: 0.21
   punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Fully Spooled: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 22.95, slash: 1.35, puncture: 2.7 }   # total 27.0
 
 # incarnon_evolutions: definitions live in data/evolutions/gorgon_wraith_*.yaml.

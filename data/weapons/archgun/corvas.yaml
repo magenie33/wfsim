@@ -71,6 +71,9 @@ attack:
   # ATMOSPHERIC, which is the column this arena is in — the same two-column
   # Arch-Gun trap that posted the Larkspur Prime at half its damage.
   punch_through_m: 999.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan on BOTH the uncharged and charged blocks (re-read to be sure, because its Prime is a Projectile at 60/70 m — the two really do differ)
+  range_m: 300.0
   damage: { impact: 128.0, puncture: 16.0, slash: 16.0 }   # 160 each, 1760 a shell
 
 unmodeled:

@@ -80,6 +80,9 @@ attack:
   # than a word. It reaches everything in this arena either way, which is
   # exactly why the wrong one survived.
   punch_through_m: 275.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, ATMOSPHERE column: "Range: 54.0 m", Projectile
+  range_m: 54.0
   damage: { impact: 100.0, puncture: 50.0, slash: 350.0 }   # 500 total
 unmodeled:
   - "the wave's vertical hitbox is not modelled — it is a wide flat projectile rather than a point, which this arena has no geometry to express"

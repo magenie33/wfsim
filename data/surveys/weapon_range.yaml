@@ -102,3 +102,19 @@ checked:
   cernos_prime:            { range: null, type: read, note: 'neither the uncharged nor the charged block states a Range; Projectile' }
   dera:                    { range: null, type: read, note: 'no Range row; Projectile' }
   dera_vandal:             { range: null, type: read, note: 'no Range row; Projectile' }
+  dex_sybaris:             { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  dex_sybaris_incarnon:    { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  gorgon:                  { range: 300.0, type: read, note: 'wiki, Fully Spooled: "Range: 300.0 m", Hit-Scan' }
+  gorgon_wraith:           { range: 300.0, type: read, note: 'wiki, Fully Spooled: "Range: 300.0 m", Hit-Scan' }
+  akarius:                 { range: null, type: read, note: 'the Rocket IMPACT block states no Range; the 7.2 m belongs to the Rocket Detonation and is a radius' }
+  atomos_incarnon:         { range: null, type: read, note: 'Incarnon Form: no Range row; its 7.9 m sits under the Incarnon Radial Attack (AoE) and is a radius' }
+  despair:                 { range: null, type: read, note: 'no Range row; Projectile' }
+  despair_incarnon:        { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
+  dread_incarnon:          { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
+  gorgon_incarnon:         { range: null, type: read, note: 'Incarnon Form: no Range row; its 5.0 m is an AoE sub-block radius' }
+  gorgon_wraith_incarnon:  { range: null, type: read, note: 'Incarnon Form: no Range row; its 5.0 m is an AoE sub-block radius' }
+  fluctus:                 { range: 54.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 54.0 m", Projectile' }
+  imperator:               { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
+  imperator_vandal:        { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
+  corvas:                  { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan on BOTH the uncharged and charged blocks (re-read to be sure, because its Prime is a Projectile at 60/70 m — the two really do differ)' }
+  corvas_prime:            { range: 60.0, type: read, note: 'wiki, ATMOSPHERE column: uncharged "Range: 60.0 m", charged 70.0 m, both Projectile. The UNCHARGED figure is taken because that is the attack this entry models' }
