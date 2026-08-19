@@ -2620,6 +2620,14 @@ impl DummyParams {
         crate::space::range_to_centre(self.player_at, self.target_at)
     }
 
+    /// WHERE THE WEAPON POINTS, resolved — the aim point when one is set, and
+    /// the target itself when none is, which is the fight this engine ran until
+    /// aim became a place you choose. Spelled out here because three callers
+    /// were writing `self.aim_at.unwrap_or(self.target_at)` by hand.
+    pub fn aim_point(&self) -> crate::space::Vec2 {
+        self.aim_at.unwrap_or(self.target_at)
+    }
+
     /// HOW FAR THE TARGET SITS OFF THE AIM LINE, in degrees — 0 whenever the
     /// weapon points at it (`space::off_axis_deg`).
     pub fn off_axis_deg(&self) -> f64 {
@@ -2645,7 +2653,7 @@ impl DummyParams {
         if self.punch_through_m <= 0.0 || self.others.is_empty() {
             return vec![0];
         }
-        let aim = self.aim_at.unwrap_or(self.target_at);
+        let aim = self.aim_point();
         let muzzle = crate::space::muzzle(self.player_at, aim);
         let mut bodies = Vec::with_capacity(self.others.len() + 1);
         bodies.push(self.target_at);
@@ -5384,6 +5392,10 @@ fn spread_from_tendrils(
 /// it on the line is the only choice that invents nothing.
 #[allow(clippy::too_many_arguments)]
 fn spread_from_blast(
+    // WHERE THE ROUND WENT OFF, decided by the caller from the pellet's own
+    // deviation — not assumed to be the aimed body's surface, which is what it
+    // was until 2026-08-19 and the whole of the bug this signature ends.
+    det: crate::space::Detonation,
     others: &mut [SpreadFoe],
     params: &DummyParams,
     ap: &DummyParams,
@@ -5404,9 +5416,8 @@ fn spread_from_blast(
     d: &mut crate::rng::Draws,
     t: f64,
 ) {
-    let at = crate::space::detonation_point(params.target_at, params.player_at);
     blast_at(
-        at, others, params, ap, rad, raw_per_bucket_per_falloff, shares, crit_mult,
+        det, others, params, ap, rad, raw_per_bucket_per_falloff, shares, crit_mult,
         attrition, modded_base, status_chance, forced, vector, gal, arc, r, d, t,
         SpreadBy::Blast,
     );
@@ -5420,7 +5431,7 @@ fn spread_from_blast(
 /// there — any body touching the sphere is caught, each reads its own falloff.
 #[allow(clippy::too_many_arguments)]
 fn blast_at(
-    at: crate::space::Vec2,
+    det: crate::space::Detonation,
     others: &mut [SpreadFoe],
     params: &DummyParams,
     ap: &DummyParams,
@@ -5441,7 +5452,10 @@ fn blast_at(
     by: SpreadBy,
 ) {
     for (i, spec) in params.others.iter().enumerate() {
-        let dist = spec.at.distance(at);
+        // THREE DIMENSIONS: the floor gap and how far over or under the shot
+        // went are legs of the same triangle, and a pellet that sailed above
+        // the crowd is genuinely farther from every one of them.
+        let dist = det.distance_to(spec.at);
         if !crate::space::caught_by_blast(dist, rad.radius_m) {
             continue;
         }
@@ -9078,14 +9092,35 @@ pub fn run_once_traced(
             // choose — and zero is what makes the whole clause below collapse
             // to what it was (owner, 2026-08-17).
             let off_axis = aim_off_axis;
-            let aim_offset = match ap.spread {
+            // THE DEVIATION AND ITS DIRECTION ARE KEPT, not collapsed. They
+            // used to produce one scalar — how far the pellet passed the aimed
+            // body — because that was the only thing one body could be asked.
+            // A crowd asks WHERE, so both survive to build the epicentre below.
+            let (dev, phi) = match ap.spread {
                 Some(s) if !s.is_pinpoint() && range > 0.0 => {
                     let dev = s.draw(d.aim.next_f64());
-                    // THE SECOND DRAW IS GATED on actually aiming elsewhere, so
-                    // no existing fight consumes it and no existing number
-                    // moves. It is WHICH WAY around the cone the pellet went,
-                    // which only matters once the body is off the axis.
-                    let phi = if off_axis > 0.0 { d.aim.next_f64() } else { 0.0 };
+                    // WHICH WAY IT WENT, drawn whenever the weapon points away
+                    // from the body OR there is a crowd (owner, 2026-08-19).
+                    // Against one body only the magnitude decides anything,
+                    // which is why it used to be drawn only in the first case;
+                    // with a crowd the side decides who is in the blast. Off
+                    // `blast_dir`, a stream of its own, so adding the draw
+                    // shifts no other roll — see `rng::Draws`. No board ruler
+                    // sets an aim point, so nothing that was drawn from `aim`
+                    // before is drawn from it now either.
+                    let phi = if off_axis > 0.0 || !params.others.is_empty() {
+                        d.blast_dir.next_f64()
+                    } else {
+                        0.0
+                    };
+                    (dev, phi)
+                }
+                // A PINPOINT WEAPON POINTED ELSEWHERE still misses: no spread
+                // does not mean no aim.
+                _ => (0.0, 0.0),
+            };
+            let aim_offset = match ap.spread {
+                Some(s) if !s.is_pinpoint() && range > 0.0 => {
                     crate::space::miss_distance_off_axis(range, off_axis, dev, phi)
                 }
                 // A PINPOINT WEAPON POINTED ELSEWHERE still misses: no spread
@@ -9105,6 +9140,38 @@ pub fn run_once_traced(
             // muzzle is then one radius from the target's centre. That is a
             // property of the geometry rather than a special case in it.
             let pellet_lands = aim_offset <= crate::space::BODY_RADIUS_M;
+            // WHERE THE ROUND WENT OFF — ONE EPICENTRE FOR THE WHOLE
+            // EXPLOSION (owner, 2026-08-19).
+            //
+            // It used to be two. The aimed body read its falloff from the miss
+            // distance, correctly; every OTHER body read its distance from the
+            // aimed body's SURFACE, so a shot that went nine metres wide
+            // dropped the aimed body's damage by 61% and left the body two
+            // metres behind it taking a direct hit's blast. Measured on the
+            // wire before this landed: 7115 with the shot on target, 7120 with
+            // it nine metres off.
+            //
+            // A ROUND THAT HIT DETONATES ON THE SURFACE it touched; one that
+            // missed detonates where it actually passed. The two agree at the
+            // boundary, and `detonation_of_miss` is built so that its distance
+            // back to the aimed body IS `aim_offset` — so this cannot move the
+            // aimed body's number, which is asserted in `space`.
+            let det = if pellet_lands {
+                crate::space::Detonation {
+                    at: crate::space::detonation_point(params.target_at, params.player_at),
+                    height_m: 0.0,
+                }
+            } else {
+                crate::space::detonation_of_miss(
+                    crate::space::muzzle(params.player_at, params.aim_point()),
+                    params.aim_point(),
+                    params.target_at,
+                    range,
+                    off_axis,
+                    dev,
+                    phi,
+                )
+            };
             if pellet_lands {
                 landed_this_shot = true;
             }
@@ -9139,7 +9206,19 @@ pub fn run_once_traced(
                 // own falloff a distance to read (2026-08-15). Past the blast
                 // radius there is no explosion to resolve at all.
                 if let Some(r) = rad {
-                    if r.falloff_at(aim_offset) <= 0.0 {
+                    // DOES IT REACH ANYBODY? It used to ask only about the
+                    // AIMED body, which threw the whole explosion away when a
+                    // wide shot left that one body out of range — including
+                    // for the bodies standing where it actually landed. And it
+                    // asked with `aim_offset` where the damage below asks with
+                    // `blast_reach(aim_offset)`, so it fired one body radius
+                    // early (owner, 2026-08-19).
+                    let reaches = |b: crate::space::Vec2| {
+                        r.falloff_at(crate::space::blast_reach(det.distance_to(b))) > 0.0
+                    };
+                    if !reaches(params.target_at)
+                        && !params.others.iter().any(|f| reaches(f.at))
+                    {
                         continue;
                     }
                 }
@@ -9339,7 +9418,9 @@ pub fn run_once_traced(
                     // on it (`space::blast_reach`, owner 2026-08-17). Zero when
                     // the pellet hit, and zero for anything the blast is
                     // standing inside.
-                    (Some(r), _) => r.falloff_at(crate::space::blast_reach(aim_offset)),
+                    (Some(r), _) => {
+                        r.falloff_at(crate::space::blast_reach(det.distance_to(params.target_at)))
+                    }
                     // THE DIRECT HIT reads the GAP, which IS the distance it
                     // flew: a bullet vanishes at the surface it hits.
                     (None, Some(f)) => f.factor(gap_m),
@@ -9425,7 +9506,7 @@ pub fn run_once_traced(
                 // falloff.
                 if let (Some(rr), false) = (rad, others.is_empty()) {
                     spread_from_blast(
-                        &mut others, params, ap, &rr,
+                        det, &mut others, params, ap, &rr,
                         if falloff > 0.0 { body_only(raw / bucket / falloff) } else { 0.0 },
                         shares, crit_mult, attrition, modded_base, status_chance,
                         forced, &qvec, &mut gal, &mut arc, &mut r, d, t,
@@ -9441,7 +9522,8 @@ pub fn run_once_traced(
                         let Some(idx) = body.checked_sub(1) else { continue };
                         let Some(fs) = params.others.get(idx) else { continue };
                         blast_at(
-                            fs.at, &mut others, params, ap, &rr,
+                            crate::space::Detonation { at: fs.at, height_m: 0.0 },
+                            &mut others, params, ap, &rr,
                             if falloff > 0.0 { body_only(raw / bucket / falloff) } else { 0.0 },
                             shares, crit_mult, attrition, modded_base, status_chance,
                             forced, &qvec, &mut gal, &mut arc, &mut r, d, t,
@@ -11571,6 +11653,53 @@ mod tests {
     /// weapon this is asked of. Eight more bodies at 3 m, the front row's
     /// middle one aimed at — `Formation::grid`'s own arrangement, and the one
     /// MECHANICS §12 is written against.
+    /// A SHOT THAT WENT WIDE DOES NOT BLAST A BYSTANDER (owner, 2026-08-19).
+    ///
+    /// Reported by a player, found on the wire: the explosion had TWO
+    /// epicentres. The aimed body read its falloff from how far the pellet
+    /// passed it — correctly — while every other body read its distance from
+    /// the AIMED BODY'S SURFACE, so a shot nine metres wide dropped the aimed
+    /// body's damage 61% and left the body two metres behind it taking a direct
+    /// hit's blast (7120 against 7115 on target).
+    ///
+    /// It is asserted as a MONOTONICITY rather than as a number: the further
+    /// the weapon points from the crowd, the less the crowd takes. Under the
+    /// old code the bystander's damage was flat in this parameter and then fell
+    /// off a cliff to zero, which is what a single number could easily have
+    /// been picked to miss.
+    #[test]
+    fn a_shot_that_went_wide_does_not_blast_the_bystanders() {
+        let target_at = crate::space::Vec2::new(0.0, 10.0);
+        let bystander = crate::space::Vec2::new(0.0, 12.0);
+        // The Akarius is a rocket pistol: a real radial, 7.2 m, with spread.
+        let bystander_damage = |aim_x: f64| {
+            let base = crate::loadout::WeaponBase::from_data("akarius", false, &[]);
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let mut arena = crate::arena::Arena::training(10.0);
+            arena.target_at = target_at;
+            arena.others = vec![crate::formation::FoeSpec {
+                id: "e2".into(),
+                params: TargetParams::training_dummy(),
+                body_parts: DummyParams::humanoid_parts(),
+                at: bystander,
+            }];
+            arena.aim_at = Some(crate::space::Vec2::new(aim_x, 10.0));
+            let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            let r = run_once(&p, &mut Rng::new(0x5EED));
+            r.damage_by_body.0.get(1).copied().unwrap_or(0.0)
+        };
+
+        let on_target = bystander_damage(0.0);
+        let a_little = bystander_damage(4.0);
+        let wide = bystander_damage(9.0);
+        assert!(on_target > 0.0, "the bystander must take the blast at all: {on_target}");
+        assert!(
+            a_little < on_target && wide < a_little,
+            "pointing further from the crowd must cost the crowd damage:              on target {on_target}, 4 m off {a_little}, 9 m off {wide}"
+        );
+    }
+
     #[test]
     fn a_formation_takes_the_damage_a_chain_spreads_into_it() {
         let build = |others: Vec<crate::formation::FoeSpec>| {

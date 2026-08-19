@@ -94,6 +94,19 @@ pub struct Draws {
     /// above zero), so a point-blank fight advances it never and every number
     /// this engine reported before the arena had a distance is byte-identical.
     pub aim: Rng,
+    /// WHICH WAY the pellet went, as against how far — the direction around
+    /// the spread cone, on a stream of its own.
+    ///
+    /// It is separate from `aim` for the ordinary reason (a build that changes
+    /// only its accuracy must not re-roll anything else) and for one specific
+    /// to it: the direction was drawn from `aim` and only when the weapon was
+    /// pointed AWAY from the target, because against ONE body only the
+    /// magnitude of a miss decides anything. That stopped being true when a
+    /// fight could hold a crowd — which side a grenade landed on decides who is
+    /// in the blast — and a fight with a crowd must now draw it always. Off
+    /// `aim` that would have shifted every subsequent spread roll; off a stream
+    /// of its own it shifts nothing, which is what this split is for.
+    pub blast_dir: Rng,
 }
 
 impl Draws {
@@ -118,7 +131,7 @@ impl Draws {
             z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
             Rng::new(z ^ (z >> 31))
         };
-        Self { spine: at(1), status: at(2), extra: at(3), aim: at(4) }
+        Self { spine: at(1), status: at(2), extra: at(3), aim: at(4), blast_dir: at(5) }
     }
 }
 

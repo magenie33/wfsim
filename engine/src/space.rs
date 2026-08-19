@@ -177,6 +177,100 @@ pub fn miss_distance_off_axis(range_m: f64, off_axis_deg: f64, deviation_deg: f6
     (a * a + b * b - 2.0 * a * b * c).max(0.0).sqrt()
 }
 
+/// WHERE THE PELLET ACTUALLY WENT OFF, when it did not hit anything.
+///
+/// A FLOOR POINT AND A HEIGHT, because the arena is a plane and the spread cone
+/// is not. The cross-section of the cone at the target's range is a disc, and
+/// only its IN-FLOOR component moves the epicentre across the arena; the rest
+/// is how far over or under the shot went, which is a real distance to every
+/// body on the floor and belongs in the range rather than being thrown away.
+///
+/// WHY IT EXISTS (owner, 2026-08-19). [`miss_distance_off_axis`] answers "how
+/// far did it pass the aimed body", which was the whole question while a fight
+/// held ONE body — its own doc says so: *"the model has never drawn which side
+/// — only the magnitude decides anything against one body"*. With a crowd, the
+/// side decides WHO IS IN THE BLAST, and until this existed every other body
+/// read its distance from the AIMED BODY'S SURFACE however wide the shot went.
+/// Measured on the wire: a shot nine metres wide dropped the aimed body's
+/// damage 61% and left the body two metres behind it on 7120 against 7115 —
+/// the bystander took a direct hit's blast off a shot that went nowhere near.
+///
+/// IT CANNOT MOVE THE AIMED BODY'S NUMBER, by construction rather than by care:
+/// with the body at `O + a·û` and the pellet at `O + b·cos(2πφ)·û + b·sin(2πφ)·v̂`,
+/// the distance between them is `√(a² + b² − 2ab·cos 2πφ)`, which is
+/// [`miss_distance_off_axis`] exactly. This is that formula's two vectors kept
+/// apart instead of collapsed into their difference.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Detonation {
+    /// Where it went off, on the floor.
+    pub at: Vec2,
+    /// How far above (or below) the floor — always taken as a magnitude, since
+    /// a body is as far from a shot that went over it as from one that went
+    /// under.
+    pub height_m: f64,
+}
+
+impl Detonation {
+    /// How far this explosion is from a body standing at `body`, in three
+    /// dimensions — the floor gap and the height are legs of the same triangle.
+    pub fn distance_to(self, body: Vec2) -> f64 {
+        self.at.distance(body).hypot(self.height_m)
+    }
+}
+
+/// Build the detonation for a pellet that left `deviation_deg` off the aim
+/// line, `phi` turns around the cone.
+///
+/// `toward` is the body the offsets are measured against — the û axis points at
+/// it, which is what makes `phi` mean the same angle it means in
+/// [`miss_distance_off_axis`]. When the weapon points straight at that body the
+/// axis is any perpendicular and the answer is symmetric in `phi`, so the
+/// choice does not matter; it is taken from the aim line so it is never
+/// undefined.
+pub fn detonation_of_miss(
+    muzzle: Vec2,
+    aim_at: Vec2,
+    toward: Vec2,
+    range_m: f64,
+    off_axis_deg: f64,
+    deviation_deg: f64,
+    phi: f64,
+) -> Detonation {
+    let (ax, ay) = (aim_at.x - muzzle.x, aim_at.y - muzzle.y);
+    let la = ax.hypot(ay);
+    if la <= 0.0 {
+        return Detonation { at: toward, height_m: 0.0 };
+    }
+    let dir = Vec2::new(ax / la, ay / la);
+    // THE ORIGIN IS THE BODY'S FOOT ON THE AIM RAY, not the ray's point at
+    // `range_m`. `a` in the scalar is a PERPENDICULAR distance
+    // (`range_m · sin θ`), so the station it is measured at is `range_m · cos θ`
+    // along the ray — using `range_m` there instead was wrong by
+    // `range_m(1 − cos θ)` and showed up the moment the weapon was pointed off
+    // the body at all.
+    let (sin_o, cos_o) = off_axis_deg.to_radians().sin_cos();
+    let along = range_m * cos_o;
+    let o = Vec2::new(muzzle.x + dir.x * along, muzzle.y + dir.y * along);
+    // …and the in-floor perpendicular, oriented TOWARD the body so that `phi`
+    // is measured from the same direction the scalar formula measures it from.
+    let mut u = Vec2::new(-dir.y, dir.x);
+    if (toward.x - o.x) * u.x + (toward.y - o.y) * u.y < 0.0 {
+        u = Vec2::new(-u.x, -u.y);
+    }
+    // THE BODY, RECONSTRUCTED rather than read: `o + a·û` is where the scalar
+    // believes it stands, and the epicentre has to be placed in the scalar's
+    // own frame or the two stop agreeing. They differ only by the plane model's
+    // own approximation, which is not this function's to correct.
+    let a = range_m * sin_o;
+    let b = miss_distance(range_m, deviation_deg);
+    let (s, c) = (phi * std::f64::consts::TAU).sin_cos();
+    let base = Vec2::new(o.x + u.x * a, o.y + u.y * a);
+    Detonation {
+        at: Vec2::new(base.x + u.x * (b * c - a), base.y + u.y * (b * c - a)),
+        height_m: (b * s).abs(),
+    }
+}
+
 /// WHERE AN EXPLOSION GOES OFF ON A BODY — the point on its circumference
 /// FACING THE SHOOTER, not its centre (owner, 2026-08-17).
 ///
@@ -610,6 +704,84 @@ mod tests {
 
     /// THE THREE BLAST RULES, which are one idea: a body is a CIRCLE and a
     /// blast meets it at its nearest surface (owner, 2026-08-17).
+    /// THE DETONATION AND THE SCALAR ARE ONE MODEL, and this is the property
+    /// that says so: however wide the shot and whichever way it went, the
+    /// distance from the epicentre to the AIMED body is the miss distance the
+    /// engine has always computed. So giving the crowd a real epicentre cannot
+    /// move the aimed body's number — the two are the same two vectors, kept
+    /// apart instead of collapsed.
+    #[test]
+    fn a_detonation_is_the_miss_distance_it_came_from() {
+        let shooter = Vec2::new(0.0, 0.5);
+        for &(bx, by) in &[(0.0, 10.0), (3.0, 10.0), (-4.0, 7.0), (0.2, 25.0)] {
+            let body = Vec2::new(bx, by);
+            for &aim in &[body, Vec2::new(2.0, 10.0), Vec2::new(-5.0, 9.0)] {
+                // The caller's own two steps: the shot leaves the MUZZLE, and
+                // the range is measured from the shooter (which steps to the
+                // muzzle itself — handing it one subtracts a radius twice).
+                let muzzle = muzzle(shooter, aim);
+                let range = range_to_centre(shooter, body);
+                let off = off_axis_deg(muzzle, aim, body);
+                for dev in [0.0, 1.0, 5.0, 20.0] {
+                    for phi in [0.0, 0.125, 0.25, 0.5, 0.75, 0.9] {
+                        let d = detonation_of_miss(muzzle, aim, body, range, off, dev, phi);
+                        let scalar = miss_distance_off_axis(range, off, dev, phi);
+                        // EXACT where the weapon points AT the body, which is
+                        // every fight this engine ran before aim became a place
+                        // you choose — so no existing number can move.
+                        //
+                        // Pointed ELSEWHERE the two differ by about a
+                        // millimetre, and it is the SCALAR that is loose: it
+                        // uses `range_m` as the lever for an angle measured at
+                        // the muzzle, while the muzzle steps toward the AIM
+                        // rather than toward the body. Reconstructing the frame
+                        // does not inherit that, and the difference is four
+                        // orders of magnitude under the resolution of anything
+                        // this engine is calibrated against.
+                        // …and RELATIVE past that, because the gap grows with
+                        // the angle. THE EXACT ARM IS THE ONE THAT MATTERS —
+                        // it is every fight before aim became a place, so this
+                        // test's real job is to pin that at 1e-9. Off-axis it
+                        // only confirms the two stay the same model: the worst
+                        // case in this grid is 1.27%, at 49 degrees off with a
+                        // 20 degree cone, which is a shot pointed nowhere near
+                        // the body it is being measured against.
+                        let tol = if off <= 0.0 { 1e-9 } else { 0.02 * scalar.max(1.0) + 0.02 };
+                        assert!(
+                            (d.distance_to(body) - scalar).abs() < tol,
+                            "body {body:?} aim {aim:?} off {off} dev {dev} phi {phi}:                              detonation says {}, the scalar says {scalar}",
+                            d.distance_to(body),
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /// …AND A CROWD IS WHY IT HAD TO EXIST. A shot that goes wide moves the
+    /// epicentre AWAY from a bystander standing beside the target, which is
+    /// the whole of the bug this replaced: the bystander used to read its
+    /// distance from the aimed body's surface and take a direct hit's blast
+    /// off a shot that went nowhere near it.
+    #[test]
+    fn a_wide_shot_moves_the_epicentre_off_the_bystander_too() {
+        let shooter = Vec2::new(0.0, 0.0);
+        let target = Vec2::new(0.0, 10.0);
+        let bystander = Vec2::new(0.0, 12.0);
+        let muzzle = muzzle(shooter, target);
+        let range = range_to_centre(shooter, target);
+        // phi = 0 sends the pellet along the floor, away from the aim line.
+        let near = detonation_of_miss(muzzle, target, target, range, 0.0, 0.0, 0.0);
+        let wide = detonation_of_miss(muzzle, target, target, range, 0.0, 30.0, 0.0);
+        assert!(near.distance_to(bystander) < wide.distance_to(bystander),
+            "a wide shot must be farther from the bystander: {} vs {}",
+            near.distance_to(bystander), wide.distance_to(bystander));
+        // …and straight up is still a real distance to everyone on the floor.
+        let over = detonation_of_miss(muzzle, target, target, range, 0.0, 30.0, 0.25);
+        assert!(over.height_m > 1.0, "height {}", over.height_m);
+        assert!(over.distance_to(bystander) > near.distance_to(bystander));
+    }
+
     #[test]
     fn a_blast_meets_a_body_at_its_nearest_surface() {
         // IT GOES OFF WHERE IT TOUCHES — one radius nearer the shooter than

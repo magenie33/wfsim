@@ -184,10 +184,24 @@ const r = await evaluate(`(async () => {
       .map((at, i) => ({ id: 'legacy' + i, at }));
     markScenarioDirty(); renderSim(); await sleep(900);
     out.legacyBlank = sim.formation.every(f => f.enemy === undefined);
-    const chips = [...document.querySelectorAll(
-      '#preset-bar-simulator-scenarios .pchip:not(.add)')];
-    chips[0].click(); await sleep(800);
-    chips[chips.length - 1].click(); await sleep(1000);
+    // AWAY AND BACK is what re-runs 'applyScenario', and the check has to make
+    // its OWN second scenario to go away to. It used to click chips[0] then
+    // chips[last] and rely on those being two different presets — true only
+    // while the app auto-created a 'scenario 1' on boot. Nothing is
+    // auto-created since 2026-08-19, so on a fresh profile there was one chip,
+    // both clicks landed on it, and 'selectPreset' returns early on the preset
+    // already open: the reload never happened and the two assertions below
+    // were reporting on a scenario that had never been loaded.
+    const bar = document.querySelector('#preset-bar-simulator-scenarios');
+    // BY data-name, never by textContent: the ACTIVE chip carries its
+    // duplicate/rename/delete buttons inside it, so its text is the name plus
+    // three glyphs and stops matching itself the moment it is deselected.
+    const mine = bar.querySelector('.pchip.sel:not(.add)')
+      || bar.querySelector('.pchip:not(.add)');
+    const mineName = mine.dataset.name;
+    bar.querySelector('.pchip.add').click(); await sleep(900);
+    bar.querySelector('.pchip[data-name="' + mineName + '"]').click();
+    await sleep(1000);
     const was = sim.enemy;
     out.legacyPinned = (sim.formation || []).every(f => f.enemy === was);
     const others = allEnemies().map(e => e.id).filter(id => id !== was);

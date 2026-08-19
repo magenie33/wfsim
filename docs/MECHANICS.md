@@ -2781,6 +2781,51 @@ it"*, which is what a blast does.
 at contact a pellet cannot miss, so the reach into a body is zero either way.
 It bites at RANGE and in a FORMATION, which is where it was always going to.
 
+### AN EXPLOSION HAS ONE EPICENTRE
+
+The rulings above say where a blast goes off *on a body*. They did not say where
+it goes off when the pellet **hit nothing**, and until 2026-08-19 the engine
+quietly answered that twice.
+
+- The **aimed** body read its falloff from how far the pellet passed it —
+  correct, and the reason the miss distance is computed at all.
+- Every **other** body read its distance from the aimed body's SURFACE, whatever
+  the pellet did. So the crowd was blasted as though every shot landed perfectly.
+
+Measured on the wire with an Akarius (7.2 m radius), a target at 10 m and a
+bystander 2 m behind it: pointing **nine metres wide** dropped the aimed body
+from 10105 to 3972 and left the bystander on **7120, against 7115 on target**. A
+player reported it; no check we had could see it, because none existed for the
+case — with ONE body the two epicentres coincide.
+
+`space::detonation_of_miss` is the fix and it invents nothing: the model already
+draws how far the pellet deviated and, when the weapon points off the body, which
+way around the cone it went. Those two were being collapsed into a single
+scalar. Kept apart they are a **point on the floor plus a height** — the cone's
+cross-section is a disc, only its in-floor part moves the epicentre across the
+arena, and the rest is how far over or under the shot went, which is a real
+distance to everyone standing on the floor.
+
+**IT CANNOT MOVE THE AIMED BODY'S NUMBER**, by construction rather than by care:
+with the body at `O + a·û` and the pellet at `O + b·cos(2πφ)·û + b·sin(2πφ)·v̂`,
+the distance between them is `√(a² + b² − 2ab·cos 2πφ)`, which is
+`miss_distance_off_axis` exactly. That identity is asserted at `1e-9` wherever
+the weapon points at the body — which is every fight the engine ran before aim
+became a place you choose, and every board ruler, since none sets an aim point.
+The whole test suite passed unchanged.
+
+TWO SMALLER FAULTS FELL OUT WITH IT. The stage was skipped entirely when the
+blast could not reach the **aimed** body, which threw the explosion away for the
+bodies standing where it actually landed; it now asks whether it reaches anybody.
+And that gate compared `aim_offset` where the damage compares
+`blast_reach(aim_offset)`, so it fired one body radius early.
+
+WHICH WAY the pellet went is now drawn whenever there is a crowd, not only when
+the weapon points away — against one body only the magnitude decides anything,
+which is why it was gated that way, and a crowd makes the side decide who is in
+the blast. It comes off `rng::Draws::blast_dir`, a stream of its own, so adding
+the draw shifts no other roll.
+
 ### What a radius mod is worth — and the reach is what decides it
 
 `cargo run --release --bin formation_value -- [cols] [rows] [spacing]`. At 3 m:
