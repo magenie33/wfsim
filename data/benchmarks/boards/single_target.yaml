@@ -3125,6 +3125,11 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: larkspur_prime
     mode: base
+    score: 21.87683472293703
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_deadhead, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
     score: 20.666666666666668
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
@@ -3618,11 +3623,6 @@ entries:
     score: 5.666666666666667
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_merciless, secondary_enervate]
-  - weapon: larkspur_prime
-    mode: base
-    score: 5.666666666666667
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds, magma_chamber]
-    arcanes: [primary_bulwark, secondary_enervate]
   - weapon: larkspur_prime
     mode: alternate
     score: 5.360089135323836
