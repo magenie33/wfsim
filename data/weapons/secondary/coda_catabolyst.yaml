@@ -1,0 +1,112 @@
+id: coda_catabolyst
+name: Coda Catabolyst
+slot: secondary
+# A BEAM WITH A BLAST ON THE END OF IT — the roster's second beam to carry a
+# damage radius, and the only one in this batch. The weapon's OTHER half is
+# thrown on every reload and is not modelled; see the unmodelled list, which is
+# the honest part of this entry.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+# ENFORCED, unlike a Kuva or Tenet weapon's — a Coda weapon is BOUGHT from
+# Eleanor, so there is no lich to vanquish under the requirement.
+mastery_rank: 17
+# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+# at rank 40 after 5 polarizations, granting the weapon additional mod
+# capacity" (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 6.3
+disposition: 0.65            # riven disposition
+polarities: [madurai]
+exilus_polarity: madurai
+riven_family: Catabolyst
+traits: [infested, coda]
+introduced: "38.5"
+internal_name: /Lotus/Weapons/Infested/InfestedLich/Pistols/CodaCatabolyst
+noise: alarming
+ammo_type: secondary
+ammo_max: 155
+ammo_pickup: 20
+magazine: 37
+reload_seconds: 1.7
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,
+# Cold, Electricity, Toxin, Magnetic, or Radiation damage, which increases the
+# listed base damage of the weapon by 25%-60%." Nothing merges on this weapon:
+# the beam is Corrosive, which is not one of the seven, so a progenitor element
+# always arrives beside it.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). The widest cone on
+  # any beam in the roster; the page files it as "Very low accuracy".
+  spread:
+    min_deg: 9.0
+    max_deg: 23.0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12.0
+  multishot: 1.0
+  # "Consumes 0.5 ammo per tick of damage."
+  ammo_cost: 0.5
+  crit_chance: 0.11
+  crit_multiplier: 2.9
+  status_chance: 0.50
+  # INNATE 0.9 m, from the attack block's own Punch Through row; the
+  # punch-through page's exception list does not name this weapon. Just under
+  # two body-thicknesses (`space::BODY_MATERIAL_M` is 0.5), so it reaches the
+  # second enemy in a line and stops there.
+  punch_through_m: 0.9
+  # "Has linear damage falloff from 100% to 1.88% from 9m to 19m target
+  # distance" — the steepest in the roster by a wide margin, and it ends exactly
+  # where the beam does. The module's reduction is 0.9811, which is the exact
+  # figure the infobox's "1.89%, 1 damage" floor comes from.
+  falloff:
+    start_m: 9.0
+    end_m: 19.0
+    reduction: 0.9811
+  damage: { corrosive: 56 }   # total 56
+
+  # A BEAM THAT SPLASHES — "The zone of impact or maximum beam range has a
+  # spherical blast radius of 0.7 meters, bringing up the total range to 19.7
+  # meters before mods, allowing it to hit multiple enemies at once", and
+  # "Radial damage is not affected by multishot", which is what
+  # `radius_takes_multishot: false` states.
+  #
+  # No chain: the page gives none, and a zero would be recording a fact the page
+  # does not state.
+  beam:
+    range_m: 19.0
+    damage_radius_m: 0.7
+    radius_takes_multishot: false
+    chain:
+      hops: 0
+      range_m: 0.0
+      damage_per_hop: 0.0
+      origin: radius_targets
+
+# THE RAMP IS THE ENGINE'S OWN DEFAULT — "Damage ramps up from 20% to 100% over
+# 0.6 seconds when firing. After firing stops for 0.8 seconds, the damage decays
+# back to 20% over 2 seconds", which is BEAM_RAMP_SECONDS, BEAM_DECAY_DELAY and
+# the 20% floor exactly, so no `beam_ramp_floor` override.
+
+unmodeled:
+  - "THE RELOAD GRENADES, which are most of this weapon and the whole reason it is built: \"Reload throws 3 grenades at a 45 degree angle towards the reticle that explodes in 3-5 meter radius on impact\", and reloading FROM EMPTY makes them far larger — 658 Corrosive apiece in 5 metres at 31% crit and 59% status, against 74 in 3 metres at 11% and 43% on a partial reload. Three of the from-empty grenades is 1,974 damage, which dwarfs the beam that earned them. The engine has no hook that fires an attack ON A RELOAD, so none of it is counted and the number on screen is the beam alone"
+  - "the reload-from-empty penalty that pays for them: an innate -20% Reload Speed, additive with Quickdraw, taking the 1.7 s reload to 2.125 s. Not applied, because what it buys is not either"
+  - "this weapon will never reload on its own and must be reloaded manually — a habit cost this arena does not charge"
+  - "Critical Mutation, the Catabolyst family's exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Coda_Catabolyst

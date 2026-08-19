@@ -1,0 +1,100 @@
+id: coda_pox
+name: Coda Pox
+slot: secondary
+# A THROWN SPORE THAT LEAVES A CLOUD — a `lingering:` rather than a `radial:`,
+# which is the difference between a blast and four seconds of standing in it.
+# It is also SILENT on the throw and ALARMING on the cloud, which is a
+# distinction the roster carries and this arena spends nothing on.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+# ENFORCED, unlike a Kuva or Tenet weapon's — a Coda weapon is BOUGHT from
+# Eleanor, so there is no lich to vanquish under the requirement.
+mastery_rank: 17
+# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+# at rank 40 after 5 polarizations, granting the weapon additional mod
+# capacity" (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.0             # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: naramon
+riven_family: Pox
+traits: [infested, coda]
+introduced: "38.5"
+internal_name: /Lotus/Weapons/Infested/InfestedLich/Pistols/CodaPox
+noise: silent               # the THROW is silent; the cloud beside it is alarming
+ammo_type: secondary
+ammo_max: 40
+ammo_pickup: 4
+magazine: 8
+reload_seconds: 1.0
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100% on the throw, and the cloud takes none at
+# all, which is the engine's standing rule for an area part.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,
+# Cold, Electricity, Toxin, Magnetic, or Radiation damage, which increases the
+# listed base damage of the weapon by 25%-60%." On THIS weapon a Toxin
+# progenitor merges into the Toxin it already deals; any other arrives beside it.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 30
+  fire_rate: 2.08
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.10
+  crit_multiplier: 2.2
+  status_chance: 0.45
+  punch_through_m: 0.0
+  # NO RANGE ROW on the Spore Impact — Projectile at 30 m/s, and the page states
+  # no reach. Its 2.8 m sits under the Poison Cloud block and is a RADIUS. See
+  # data/surveys/weapon_range.yaml.
+  damage: { toxin: 55 }   # total 55
+
+  # THE CLOUD — "Spores explode in a 2.8 meter radius upon impact with a surface
+  # or enemy, lingering for 4 seconds while dealing continuous Toxin damage",
+  # with "Initial hit and spore cloud apply status separately".
+  #
+  # NO DAMAGE FALLOFF, which the page states outright and the module confirms
+  # (`Falloff: {StartRange 0, EndRange 2.8, Reduction 0}`) — full damage to the
+  # rim. `falloff_reduction: 0.0` is therefore a transcription, not an omission.
+  #
+  # ONE TICK A SECOND over four seconds. The module gives the cloud a FireRate of
+  # 1.00 and the page gives it a 4 second life; four ticks of 35 is 140 Toxin
+  # from one spore, against the 55 the spore itself deals.
+  lingering:
+    damage: { toxin: 35.0 }
+    tick_rate: 1.0
+    duration_s: 4.0
+    radius_m: 2.8
+    falloff_start_m: 0.0
+    falloff_reduction: 0.0
+    crit_chance: 0.10
+    crit_multiplier: 2.2
+    status_chance: 0.45
+    stacking: stack
+
+unmodeled:
+  - "the throw is SILENT and the cloud is not, which is a stealth distinction this arena has no alarm to raise"
+  - "this weapon cannot equip Concealed Explosives, the thrown-exclusive mod — a card outside the pools this roster loads either way"
+
+source:
+  url: https://wiki.warframe.com/w/Coda_Pox

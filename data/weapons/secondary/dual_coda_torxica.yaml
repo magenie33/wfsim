@@ -1,0 +1,77 @@
+id: dual_coda_torxica
+name: Dual Coda Torxica
+slot: secondary
+# THE SPORE PISTOLS, and the spores are the weapon. What the stats describe is
+# an ordinary pair of auto pistols; what the page describes is a KILL that
+# spreads a 50% damage vulnerability to three more enemies for 20 seconds. This
+# arena can carry the first and not the second — see the unmodelled list, which
+# is the honest half of this entry.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+# ENFORCED, unlike a Kuva or Tenet weapon's — a Coda weapon is BOUGHT from
+# Eleanor, so there is no lich to vanquish under the requirement.
+mastery_rank: 17
+# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+# at rank 40 after 5 polarizations, granting the weapon additional mod
+# capacity" (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 0.55            # riven disposition
+polarities: [naramon]
+exilus_polarity: madurai
+riven_family: Dual Torxica
+traits: [infested, coda]
+introduced: "38.5"
+internal_name: /Lotus/Weapons/Infested/InfestedLich/Pistols/1999InfSporePistol/1999InfSporePistolWeapon
+noise: alarming
+ammo_type: secondary
+ammo_max: 480
+ammo_pickup: 60
+magazine: 160
+reload_seconds: 2.33
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. "Dual Coda" appears in no row of either
+# table, and absence means ORDINARY rather than unknown.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,
+# Cold, Electricity, Toxin, Magnetic, or Radiation damage, which increases the
+# listed base damage of the weapon by 25%-60%." The Coda wording carries no
+# Warframe, because a Coda weapon is bought rather than won from a progenitor.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 1.5
+    max_deg: 5.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 6.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.25
+  crit_multiplier: 2.4
+  status_chance: 0.28
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Hit-Scan, and the page states no reach, which
+  # is unusual for a hit-scan weapon (most read 300 m). See
+  # data/surveys/weapon_range.yaml.
+  # "This weapon primarily deals Slash damage" — and the split says so.
+  damage: { puncture: 17.5, slash: 32.5 }   # total 50
+
+unmodeled:
+  - "THE SPORES, which are most of what this weapon is: \"Enemies hit by Dual Coda Torxica and then killed from any source will spread spores to 3 enemies within 20 meters with the closest being prioritized, inflicting guaranteed Cold status per second and 50% Damage Vulnerability lasting for 20 seconds\". Three things have to line up for it to pay and this arena has none of them — the trigger is a KILL, the payload lands on OTHER enemies, and the vulnerability applies only to this weapon's own damage. Against one standing target it is worth exactly nothing; in a room it roughly doubles the weapon"
+
+source:
+  url: https://wiki.warframe.com/w/Dual_Coda_Torxica

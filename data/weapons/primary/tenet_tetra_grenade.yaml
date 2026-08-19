@@ -1,0 +1,91 @@
+id: tenet_tetra_grenade
+name: Tenet Tetra
+# THE GRENADE. "Alt fire launches a single grenade that explode in an 8 meter
+# radius on impact with a surface or enemy, dealing Blast damage. Consumes all
+# remaining ammunition. Damage of the alt-fire scales linearly with the
+# percentage of the remaining magazine."
+#
+# TWO THINGS ARE TRUE AT ONCE and they pull opposite ways: the shot costs the
+# whole magazine, and its damage is a FRACTION of the listed 1000 set by how
+# full that magazine was. The infobox's 80 ammo cost and 1000 damage are the
+# FULL-MAGAZINE case, which is what is transcribed here — so this entry is the
+# best the weapon can do, fired at a full magazine, and any other moment is
+# worth less. Admitted below.
+inherits: tenet_tetra
+form: alt_fire
+transform_group: tenet_tetra
+
+introduced: "30.5"
+# THE GRENADE HAS ITS OWN RELOAD, shorter than the rifle's 2.2 s: the module
+# gives this attack a Reload of 1.8, and the page lists it under Grenade Impact.
+reload_seconds: 1.8
+
+# NOT INHERITED — the CO catalog gives a class per ATTACK. No row for either of
+# this weapon's, so both are ordinary Additive; the explosion takes no Condition
+# Overload at all, which is the engine's standing rule for a radial.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). The same cone as
+  # the rifle's, stated rather than inherited because an ATTACK is never
+  # inherited (`weapons_data::INHERITED`).
+  spread:
+    min_deg: 3.0
+    max_deg: 8.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 60
+  fire_rate: 1.33
+  multishot: 1.0
+  # THE WHOLE MAGAZINE — 80 is the unmodded one, and "Consumes all remaining
+  # ammunition" is the rule behind the number.
+  ammo_cost: 80
+  crit_chance: 0.28
+  crit_multiplier: 2.2
+  status_chance: 0.30
+  punch_through_m: 0.0
+  # AND IT MAY NOT BE GIVEN ANY — this attack has an area-of-effect component,
+  # so the punch-through page's class rule applies and the engine refuses Shred
+  # and both Augers on it. The `radial:` block below is what states the shape.
+  #
+  # NO RANGE ROW on the Grenade Impact block — Projectile at 60 m/s. The 8.0 m
+  # below is the RADIUS. See data/surveys/weapon_range.yaml.
+  damage: { impact: 200 }   # total 200
+
+  # PRIMARY COMPRESSION's row, by column (docs/CATALOGS.md §2):
+  #   Attack Name   Alt-Fire + AoE         Base Radius   8.0 m
+  #   Effectiveness 100%                   Max @ base    +640%
+  #   Stacking      Multiplies             w/ Primed Firestorm  +921.6%
+  #   Radius calc   Snapshot               Class         Rifle
+  #
+  # Ordinary in every column, and the same figures as the Tenet Envoy's — the
+  # two share the joint-largest radius in this batch.
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
+
+  # THE EXPLOSION — 1000 Blast in 8 metres, with "Initial hit and explosion
+  # apply status separately", which is why it is a second instance rather than
+  # added damage. A 1x body-part multiplier and no headshot conditions, the
+  # engine's standing rule for every radial.
+  radial:
+    damage: { blast: 1000 }
+    radius_m: 8.0
+    falloff_start_m: 0.0
+    # "Explosion has linear damage falloff from 100% to 40%" — three fifths
+    # removed at the rim.
+    falloff_reduction: 0.6
+    crit_chance: 0.28
+    crit_multiplier: 2.2
+    status_chance: 0.30
+
+unmodeled:
+  - "THE DAMAGE SCALES WITH HOW FULL THE MAGAZINE WAS — \"Damage of the alt-fire scales linearly with the percentage of the remaining magazine\" — and this entry fires the full-magazine grenade every time. Every shot after the first in a magazine is therefore overstated here unless the rifle was reloaded first, which is how the weapon is actually played"
+  - reason: explosion_ignores_cover
+  - "the alt fire cannot be reloaded manually to skip its delay, and Kinetic Ricochet does not affect its projectile — two cadence rules this arena has no reload interruption for"
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Tenet_Tetra

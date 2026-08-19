@@ -1,0 +1,104 @@
+id: tenet_spirex
+name: Tenet Spirex
+slot: secondary
+# A SLUG THAT EXPLODES ON CONTACT — "the Corpus's answer to the Kuva Seer", by
+# the page's own comparison, and like the Seer its CO row is Multiplying.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 14
+# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+# at rank 40 after 5 polarizations, granting the weapon additional mod
+# capacity" (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 12.5
+disposition: 1.05            # riven disposition
+polarities: [madurai, madurai]
+# NO EXILUS POLARITY — the module reads `ExilusPolarity: 'None'`, which is the
+# absence of one rather than a polarity called none, so the field is omitted.
+riven_family: Tenet Spirex
+traits: [corpus, tenet]
+introduced: "30.5"
+internal_name: /Lotus/Weapons/Corpus/Pistols/CrpIgniterPistol/CrpIgniterPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 80
+ammo_pickup: 40
+magazine: 8
+reload_seconds: 2.4
+
+# Condition Overload: THE CATALOG NAMES THE SLUG and it is MULTIPLYING. Verbatim
+# row (docs/CATALOGS.md §1):
+#
+#   Weapon       | Attack Name | Projectile Type | Base Attack Damage
+#                | CO Damage Bonus at +100% | CO Damage Bonus Relative To Base
+#                Damage | Math/Behavior Type
+#   Tenet Spirex | Slug Impact | Projectile      | 120 | 120 | 100% | Multiplying
+#
+# The Base Attack Damage cell is the slug's own 120 (40 + 20 + 60), which is
+# what tells the row apart from the 80 explosion beside it. The EXPLOSION has no
+# row and takes no Condition Overload at all, which is the engine's standing
+# rule for a radial.
+co_behavior: independent
+
+# THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,
+# Cold, Electricity, Toxin, Magnetic, or Radiation damage, based on the Sister's
+# progenitor Warframe, which increases the listed base damage of the weapon by
+# 25%-60%." An Impact or a Heat progenitor merges into what the slug already
+# deals; the other five arrive beside it.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 7.0
+    max_deg: 9.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 260
+  fire_rate: 2.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.26
+  crit_multiplier: 2.4
+  status_chance: 0.40
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 260 m/s, and the page states no
+  # reach. Its 2.0 m sits under the Explosion block and is a RADIUS. See
+  # data/surveys/weapon_range.yaml.
+  #
+  # "Shots have a guaranteed Impact proc" — said of the DIRECT hit, which is
+  # where `forced_procs` belongs; the explosion below carries none.
+  forced_procs: [impact]
+  damage: { impact: 40, puncture: 20, heat: 60 }   # total 120
+
+  # THE EXPLOSION — "Shots explode in a 2 meter radius upon impact with a
+  # surface or enemy", with "Initial hit and explosion apply status separately",
+  # which is exactly why it is a second instance rather than added damage.
+  # A 1x body-part multiplier and no headshot conditions, which is the engine's
+  # standing rule for every radial.
+  radial:
+    damage: { heat: 80 }
+    radius_m: 2.0
+    falloff_start_m: 0.0
+    # "Explosion has linear Damage Falloff from 100% to 80% from central
+    # impact" — a fifth removed at the rim, the gentlest in the roster.
+    falloff_reduction: 0.2
+    crit_chance: 0.26
+    crit_multiplier: 2.4
+    status_chance: 0.40
+
+unmodeled:
+  - "BULLSEYE RELOAD, this weapon's own passive: \"Landing a successful headshot grants the 'Bullseye Reload' buff, increasing reload speed by 25% and can stack up to 2 times to a total of 50%. The buff lasts 4 seconds and can be refreshed on subsequent headshots.\" It is worth a shorter reload in proportion to how often a head is hit, and it is not applied here"
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Tenet_Spirex

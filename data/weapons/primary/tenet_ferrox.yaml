@@ -1,0 +1,134 @@
+id: tenet_ferrox
+name: Tenet Ferrox
+slot: primary
+# THE FIRST CHARGE-TRIGGER WEAPON WITH A FULLY AUTOMATIC FIRING FUNCTION, by the
+# page's own claim: hold the trigger and it charges, fires and charges again.
+# A speargun like the Scourge pair, so its alternate fire throws the weapon —
+# see `tenet_ferrox_thrown`.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle]   # Speargun, CompatibilityTags PROJECTILE — as the Scourge
+transform_group: tenet_ferrox
+mastery_rank: 16
+# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+# at rank 40 after 5 polarizations, granting the weapon additional mod
+# capacity" (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 16.7
+disposition: 1.15            # riven disposition
+polarities: [madurai, madurai, vazarin]
+exilus_polarity: naramon
+riven_family: Ferrox
+traits: [corpus, tenet]
+introduced: "32.2"
+internal_name: /Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEFerrox/CrpBEFerrox
+noise: alarming
+ammo_type: primary
+ammo_max: 100
+ammo_pickup: 20
+magazine: 20
+reload_seconds: 1.8
+
+# Condition Overload: THE CATALOG NAMES THE RADIAL, and it is the strangest row
+# in this batch. Verbatim (docs/CATALOGS.md §1):
+#
+#   Weapon       | Attack Name        | Projectile Type | Attack Unmodded Damage
+#                | Actual CO Damage Bonus at +100% | CO Damage Bonus Relative To
+#                Base Damage | Math/Behavior Type | Notes
+#   Tenet Ferrox | Hitscan AoE Direct | AoE             | 60 | 200 | 333%
+#                | Adding | "Radial hit receives CO bonus on direct hit only"
+#
+# Two things it says. The EXPLOSION takes Condition Overload at all, which no
+# ordinary radial does; and its term is computed on 200 — the DIRECT hit's base
+# — against a radial whose own base is 60, which is where the 333% comes from.
+#
+# NEITHER IS EXPRESSIBLE HERE. `co_base_fraction` is one number per ENTRY and
+# this entry's direct hit is ordinary at 1.0, so a 3.333 would be wrong for the
+# half of the attack the catalog does not name. The radial therefore takes no
+# Condition Overload, which is the engine's standing rule and the conservative
+# reading — a build stacking statuses is understated on this weapon's explosion,
+# and it says so on the card.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,
+# Cold, Electricity, Toxin, Magnetic, or Radiation damage, based on the Sister's
+# progenitor Warframe, which increases the listed base damage of the weapon by
+# 25%-60%." An Impact progenitor merges into the 20 Impact this already deals;
+# the other six arrive beside it.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 12.0
+  trigger: charged_auto
+  # "Charge Time: 0.40 s", and the weapon "fires as soon as it has reached a
+  # full charge" — it cannot be fired partially charged, so there is no tapped
+  # entry beside this one the way a bow has.
+  charge_seconds: 0.4
+  shot_type: hit_scan
+  fire_rate: 2.67
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.34
+  crit_multiplier: 3.0
+  status_chance: 0.26
+  # INNATE 1.5 m, from the attack block's own Punch Through row, and it is what
+  # PLACES the explosion: "Shots explode in a 4 meter radius after reaching
+  # maximum punch through distance". Three body-thicknesses
+  # (`space::BODY_MATERIAL_M` is 0.5), so the beam reaches the third body in a
+  # line and detonates there.
+  punch_through_m: 1.5
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Charged Shot: "Range: 300.0 m", Hit-Scan — "Beams are hitscan and do
+  # not have projectile travel time, despite the animation".
+  range_m: 300.0
+  # "This weapon deals primarily Puncture damage on its primary fire" — and the
+  # split says so.
+  damage: { impact: 20, puncture: 140, slash: 40 }   # total 200
+
+  # PRIMARY COMPRESSION's row, by column (docs/CATALOGS.md §2):
+  #   Attack Name   Primary Fire + AoE     Base Radius   4.0 m
+  #   Effectiveness 100%                   Max @ base    +320%
+  #   Stacking      ADDS                   w/ Primed Firestorm  +460.8%
+  #   Radius calc   Snapshot               Class         Speargun
+  #
+  # `Adds` rather than `Multiplies`, which is the one column where this weapon
+  # is not ordinary and is the same answer the Mausolon's two rows give.
+  compression:
+    effectiveness: 1.00
+    stacking: adds
+    radius_calculation: snapshot
+
+  # THE EXPLOSION — "Shots explode in a 4 meter radius after reaching maximum
+  # punch through distance", with a 1x body-part multiplier and no headshot
+  # conditions, the engine's standing rule for every radial.
+  radial:
+    damage: { impact: 6, puncture: 42, slash: 12 }   # total 60
+    radius_m: 4.0
+    falloff_start_m: 0.0
+    # "Explosion has linear Damage Falloff from 100% to 70% from central
+    # impact" — three tenths removed at the rim.
+    falloff_reduction: 0.3
+    crit_chance: 0.34
+    crit_multiplier: 3.0
+    status_chance: 0.26
+
+unmodeled:
+  - "the explosion's CONDITION OVERLOAD, which the catalog says it takes and computes on the DIRECT hit's base — 200 against the radial's own 60, a 333% term. `co_base_fraction` is one number per entry and this entry's direct hit is ordinary, so the radial takes none here and a status-stacking build is understated on it"
+  - reason: explosion_ignores_cover
+  - reason: holstered_reload
+    pct: 33
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Tenet_Ferrox

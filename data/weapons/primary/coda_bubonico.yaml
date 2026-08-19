@@ -1,0 +1,124 @@
+id: coda_bubonico
+name: Coda Bubonico
+slot: primary
+# AN ARM CANNON THAT SPOOLS ITS FIRE RATE, seven pellets a barrage with 1.9 m of
+# innate punch through — the deepest in this batch, and enough to reach the
+# fourth body in a line.
+#
+# ITS CLASS IS DISPUTED AND THE WIKI WINS. The module gives Class = Shotgun with
+# CompatibilityTags PROJECTILE/AOE/BATTERY, identical to the ordinary Bubonico's;
+# WFCD types the ordinary one Shotgun and THIS one Rifle, which is WFCD
+# disagreeing with itself across two entries the wiki says are the same weapon.
+# So `[primary, shotgun]`, per docs/DATA_SOURCES.md. The page's own "It is
+# officially classified as a Launcher and cannot be used in missions with
+# Shotgun-Only restrictions" appears verbatim on the ORDINARY Bubonico too, so
+# it is a mission-restriction tag rather than a statement about mods.
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, shotgun]
+transform_group: coda_bubonico
+# ENFORCED, unlike a Kuva or Tenet weapon's — a Coda weapon is BOUGHT from
+# Eleanor, so there is no lich to vanquish under the requirement.
+mastery_rank: 17
+# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+# at rank 40 after 5 polarizations, granting the weapon additional mod
+# capacity" (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — the one disagreement is the class above).
+accuracy: 25.0
+disposition: 0.5             # riven disposition
+polarities: [naramon, madurai, naramon]
+exilus_polarity: madurai
+riven_family: Bubonico
+traits: [infested, coda]
+introduced: "42"
+internal_name: /Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaBubonico/CodaBubonicoCannon
+noise: alarming
+ammo_type: primary
+# NO AMMO POOL — "This weapon does not use ammo pickups; ammo regenerates over
+# time", and "Does not benefit from mods that increase maximum ammo, due to lack
+# of an ammo pool." Zero is the fact, not a gap.
+ammo_max: 0
+ammo_pickup: 0
+magazine: 36
+reload_seconds: 5.5
+
+# THE BATTERY, AND ITS TWO DELAYS ARE THE OTHER WAY ROUND FROM THE SHEDU'S —
+# "Has a 1.5 second delay after the weapon stops firing before regenerating
+# ammo. Then, regenerates 9 ammo per second… If the magazine is completely
+# emptied, the reload delay is shortened to 0.1 seconds."
+#
+# So EMPTY is the FAST case here, where on the Shedu it is the slow one. Written
+# out rather than assumed, because a battery that punishes running dry and one
+# that rewards it are opposite weapons to play.
+battery:
+  regen_per_second: 9.0
+  delay_empty_s: 0.1
+  delay_partial_s: 1.5
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,
+# Cold, Electricity, Toxin, Magnetic, or Radiation damage, which increases the
+# listed base damage of the weapon by 25%-60%." An Impact or Toxin progenitor
+# merges into what a pellet already carries; the other five arrive beside it.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 1.0
+    max_deg: 7.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 57
+  fire_rate: 5.33
+  # …AND IT NEVER FIRES AT THAT RATE UNTIL THE 7th SHOT. VERBATIM: "Requires a
+  # spool-up of 7 shots before optimal fire rate is achieved", and "Fire rate
+  # starts at 30% of the listed value, and increases by 11.67% per shot" — two
+  # statements of one mechanic, and they reconcile exactly: 0.70 / 6 = 11.67% a
+  # shot, full from the 7th. `over_shots` carries the span because it is the
+  # half that is exact; the percentage is its rounded presentation.
+  sustained_fire_rate:
+    start: 0.30
+    end: 1.00
+    over_shots: 6.0
+  # "Primary fire shoots 7 pellet barrages" — 41 damage apiece, 287 a shot.
+  multishot: 7.0
+  ammo_cost: 1
+  crit_chance: 0.27
+  crit_multiplier: 2.3
+  status_chance: 0.1014
+  # INNATE 1.9 m, from the attack block's own Punch Through row — "Innate punch
+  # through allows hitting multiple targets in line", and at nearly four
+  # body-thicknesses (`space::BODY_MATERIAL_M` is 0.5) it means it: this reaches
+  # the fourth body in a line, which is the deepest innate punch through in the
+  # batch.
+  punch_through_m: 1.9
+  # NO RANGE ROW on this attack — Projectile at 57 m/s, and the page states no
+  # reach. Its 7.0 m sits under the Radial Attack block and is a RADIUS. See
+  # data/surveys/weapon_range.yaml.
+  #
+  # "No falloff below 19.0m; Linear 19.0-41.0m; Max falloff over 41.0m (50%)."
+  falloff:
+    start_m: 19.0
+    end_m: 41.0
+    reduction: 0.5
+  # "This weapon deals primarily Slash damage and innate Toxin on its primary
+  # fire" — and the split says so, per pellet.
+  damage: { impact: 2, puncture: 13, slash: 19, toxin: 7 }   # 41 a pellet, 287 a shot
+
+unmodeled:
+  - reason: spool_rebuilds_after_reload
+
+source:
+  url: https://wiki.warframe.com/w/Coda_Bubonico

@@ -271,3 +271,30 @@ checked:
   zylok_incarnon:              { range: null, type: read, note: 'Incarnon Form: no Range row; its 6.0 m is the Radial Attack''s radius' }
   zylok_prime:                 { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
   zylok_prime_incarnon:        { range: null, type: read, note: 'Incarnon Form: no Range row; its 6.0 m is the Radial Attack''s radius' }
+  coda_bassocyst:              { range: 49.6, type: read, note: 'wiki, Normal Attack: "Range: 49.6 m", Projectile at 62 m/s. The projectile DIES BEFORE THE FALLOFF ENDS (35-60 m), so its 32.55% floor is never reached' }
+  coda_bubonico:               { range: null, type: read, note: 'the Auto block states no Range; its 7.0 m sits under the Radial Attack and is a radius. Projectile at 57 m/s' }
+  coda_bubonico_burst:         { range: null, type: read, note: 'the Burst block states no Range; the 7.0 m is the Radial Attack''s radius. Projectile at 25 m/s' }
+  coda_catabolyst:             { range: 19.0, type: read, note: 'wiki, Primary: "Range: 19.0 m", Hit-Scan beam — and its falloff ENDS at the same 19 m, which is the only entry where the two coincide' }
+  coda_hema:                   { range: null, type: read, note: 'no Range row; Projectile at 150 m/s' }
+  coda_pox:                    { range: null, type: read, note: 'the Spore Impact block states no Range; its 2.8 m is the Poison Cloud''s radius. Projectile at 30 m/s' }
+  coda_synapse:                { range: 32.0, type: read, note: 'wiki: "Range: 32.0 m", Hit-Scan beam — the Characteristics say the same ("Shoots a beam with a range of 32 meters")' }
+  coda_tysis:                  { range: null, type: read, note: 'no Range row; Projectile at 75 m/s' }
+  dual_coda_torxica:           { range: null, type: read, note: 'no Range row, which is unusual on a HIT-SCAN weapon — most read 300 m and this page states none' }
+  tenet_arca_plasmor:          { range: 44.4, type: read, note: 'wiki: "Range: 44.4 m", Projectile at 120 m/s. The page DISAGREES WITH ITSELF: its disadvantages say "Limited range of 36 meters", which is where the falloff bottoms out rather than where the shot dies. The ROW is transcribed' }
+  tenet_cycron:                { range: 28.0, type: read, note: 'wiki: "Range: 28.0 m", Hit-Scan beam. "Extendable to 36 meters with Ruinous Extension", which is a beam-range mod and not applied' }
+  tenet_detron:                { range: null, type: read, note: 'no Range row; Projectile at 150 m/s' }
+  tenet_detron_mag_burst:      { range: null, type: read, note: 'the Burst Shot block states no Range either; Projectile at 150 m/s' }
+  tenet_diplos:                { range: null, type: read, note: 'the Normal Attack block states no Range; the 60 m belongs to Lock-on Mode. Projectile at 50 m/s' }
+  tenet_diplos_lock_on:        { range: 60.0, type: read, note: 'wiki, Lock-on Mode: "Range: 60.0 m", Projectile at 200 m/s — and on this attack the number is BOTH the reach and the acquisition range ("targeting up to 8 enemies within 60 meters")' }
+  tenet_envoy:                 { range: null, type: read, note: 'the Grenade Impact block states no Range; its 8.0 m is the Rocket Explosion''s radius. Projectile at 40 m/s' }
+  tenet_ferrox:                { range: 300.0, type: read, note: 'wiki, Charged Shot: "Range: 300.0 m", Hit-Scan ("Beams are hitscan and do not have projectile travel time, despite the animation"). Its 4.0 m is the Radial Attack''s radius' }
+  tenet_ferrox_thrown:         { range: null, type: read, note: 'the Spear Throw block states no Range; the 10.0 m is the Attraction Field''s radius. Projectile at 90 m/s' }
+  tenet_flux_rifle:            { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  tenet_glaxion:               { range: 30.0, type: read, note: 'wiki: "Range: 30.0 m", Hit-Scan beam — the disadvantages say the same ("Limited range of 30 meters")' }
+  tenet_plinx:                 { range: 100.0, type: read, note: 'wiki, Semi-Auto: "Range: 100.0 m", Hit-Scan — a third of the ordinary 300 m, and one of the few entries stating a number in between' }
+  tenet_plinx_charged:         { range: null, type: read, note: 'the Alt-Fire block states no Range; its 6.0 m is the Alt-Fire AoE''s radius. Projectile at 100 m/s' }
+  tenet_quanta:                { range: 50.0, type: read, note: 'wiki, Beam: "Range: 50.0 m", Hit-Scan — the longest beam in the roster' }
+  tenet_quanta_cube:           { range: 15.0, type: read, note: 'wiki, Cube (direct hit): "Range: 15.0 m", Projectile at 25 m/s — a real reach on a lobbed projectile, and the disadvantages agree ("Cubes have slow travel; ~15-meter range"). Its 0.5 m is the Cube Explosion''s radius' }
+  tenet_spirex:                { range: null, type: read, note: 'the Slug Impact block states no Range; its 2.0 m is the Explosion''s radius. Projectile at 260 m/s' }
+  tenet_tetra:                 { range: null, type: read, note: 'the Normal Attack block states no Range; the 8.0 m is the Grenade AoE''s radius. Projectile at 100 m/s' }
+  tenet_tetra_grenade:         { range: null, type: read, note: 'the Grenade Impact block states no Range either; the 8.0 m is the Grenade AoE''s radius. Projectile at 60 m/s' }

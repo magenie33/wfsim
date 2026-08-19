@@ -1,0 +1,85 @@
+id: tenet_flux_rifle
+name: Tenet Flux Rifle
+slot: primary
+# THE PLAINEST TENET WEAPON, and worth having for that: no alt-fire, no gauge,
+# no explosion — an auto rifle with the valence axis bolted on, which is what
+# makes it the one entry where the progenitor bonus can be read on its own.
+# It is also a lie the Arsenal tells: the Flux Rifle family FIRES A BEAM in
+# every animation and DE classifies this one Auto/Hit-Scan, which is why its
+# one Advantage on the page is that it may equip Combustion Beam anyway.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags BEAM, ASSAULT_AMMO
+mastery_rank: 16
+# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+# at rank 40 after 5 polarizations, granting the weapon additional mod
+# capacity", so this carries 80 capacity where an ordinary rifle carries 60
+# (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 200.0
+disposition: 1.2             # riven disposition
+# NO INNATE POLARITIES — "Polarities: None", which on a weapon that reaches
+# rank 40 is less of a drawback than it looks.
+polarities: []
+exilus_polarity: naramon
+riven_family: Flux Rifle
+traits: [corpus, tenet]
+introduced: "30.5"
+internal_name: /Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEFluxRifle/CrpBEFluxRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 1200
+ammo_pickup: 80
+magazine: 120
+reload_seconds: 1.8
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20 for
+# the Tenet and Coda families) — ordinary Additive at the full +100%. Five
+# Tenet entries DO have rows; this is not one of them, and absence means
+# ORDINARY rather than unknown.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS. Verbatim from the page's Characteristics:
+#
+#   "Comes with an additional bonus Impact, Heat, Cold, Electricity, Toxin,
+#    Magnetic, or Radiation damage, based on the Sister's progenitor Warframe,
+#    which increases the listed base damage of the weapon by 25%-60%."
+#
+# The same seven elements and the same span as a Kuva weapon's — Tenet differs
+# in who hands it over, not in what it rolls. Note what is NOT there: never
+# Puncture, never Slash.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 1.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 15.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.20
+  crit_multiplier: 1.8
+  status_chance: 0.26
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
+  # "This weapon deals primarily Slash damage" — and the split says so.
+  damage: { puncture: 4.84, slash: 17.16 }   # total 22
+
+unmodeled:
+  - "Flux Overdrive, the Flux Rifle family's exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Tenet_Flux_Rifle

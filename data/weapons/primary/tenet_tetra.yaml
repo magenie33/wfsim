@@ -1,0 +1,73 @@
+id: tenet_tetra
+name: Tenet Tetra
+slot: primary
+# THE HIGHEST DISPOSITION IN THIS BATCH (1.25x) on an ordinary auto rifle, whose
+# alternate fire spends the WHOLE REMAINING MAGAZINE on one 1000-damage grenade
+# — see the alt-fire entry, and note that its damage scales with how full the
+# magazine was, which is the one thing that entry cannot hold.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags PROJECTILE, ASSAULT_AMMO
+transform_group: tenet_tetra
+mastery_rank: 16
+# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+# at rank 40 after 5 polarizations, granting the weapon additional mod
+# capacity" (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 18.2
+disposition: 1.25            # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Tetra
+traits: [corpus, tenet]
+introduced: "30.5"
+internal_name: /Lotus/Weapons/Corpus/BoardExec/Primary/CrpBETetra/CrpBETetra
+noise: alarming
+ammo_type: primary
+ammo_max: 480
+ammo_pickup: 40
+magazine: 80
+reload_seconds: 2.2
+
+# Condition Overload: NO row for the NORMAL ATTACK in the wiki's CO catalog
+# (re-read 2026-08-20) — ordinary Additive at the full +100%. Absence means
+# ORDINARY.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,
+# Cold, Electricity, Toxin, Magnetic, or Radiation damage, based on the Sister's
+# progenitor Warframe, which increases the listed base damage of the weapon by
+# 25%-60%." An Impact progenitor merges into the 13.2 Impact this already deals;
+# the other six arrive beside it.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 3.0
+    max_deg: 8.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 5.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.28
+  crit_multiplier: 2.2
+  status_chance: 0.30
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 100 m/s, and the page states no
+  # reach. Its 8.0 m sits under the Grenade AoE block and is a RADIUS. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 13.2, puncture: 33.6, slash: 13.2 }   # total 60
+
+source:
+  url: https://wiki.warframe.com/w/Tenet_Tetra

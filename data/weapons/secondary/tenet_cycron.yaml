@@ -1,0 +1,115 @@
+id: tenet_cycron
+name: Tenet Cycron
+slot: secondary
+# A BATTERY BEAM THAT CHAINS, and the chain does NOT compound — the other half
+# of the pair the Tenet Glaxion's comment describes. Its ramp floor is 30% where
+# the engine's default is 20%, which is the second thing the two do not share.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 14
+# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+# at rank 40 after 5 polarizations, granting the weapon additional mod
+# capacity" (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 0.7             # riven disposition
+polarities: [naramon, naramon]
+exilus_polarity: naramon
+riven_family: Cycron
+traits: [corpus, tenet]
+introduced: "30.5"
+internal_name: /Lotus/Weapons/Corpus/BoardExec/Secondary/CrpBECycron/CrpBECycron
+noise: alarming
+ammo_type: secondary
+# NO AMMO POOL AT ALL — "Does not use ammo pickups; ammo regenerates over time",
+# and "Does not benefit from mods that increase maximum ammo, due to lack of an
+# ammo pool." Zero is the fact here, not a gap in the transcription.
+ammo_max: 0
+ammo_pickup: 0
+magazine: 40
+reload_seconds: 1.5
+
+# THE BATTERY — "Has a 0.5 second delay after the weapon stops firing before
+# regenerating ammo. Then, regenerates 40 ammo per second; takes 1 second to
+# regenerate a fully depleted battery excluding the delay."
+#
+# ONE DELAY WHERE THE SHEDU'S PAGE STATES TWO, so both fields carry it: nothing
+# on this page tells a partial battery from an empty one, and inventing a
+# difference between them would be inventing a fact.
+battery:
+  regen_per_second: 40.0
+  delay_empty_s: 0.5
+  delay_partial_s: 0.5
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,
+# Cold, Electricity, Toxin, Magnetic, or Radiation damage, based on the Sister's
+# progenitor Warframe, which increases the listed base damage of the weapon by
+# 25%-60%." On THIS weapon a Heat progenitor merges into the 22 Heat it already
+# deals; any other element arrives beside it.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12.0
+  multishot: 1.0
+  ammo_cost: 0.5
+  crit_chance: 0.20
+  crit_multiplier: 1.8
+  status_chance: 0.40
+  # INNATE, and the punch-through page's own exception list names it: "Tenet
+  # Cycron (1.0m)". Two body-thicknesses (`space::BODY_MATERIAL_M` is 0.5), so
+  # it reaches the second enemy in a line — and each one it reaches starts its
+  # own chain, which is the sentence in the beam block below.
+  punch_through_m: 1.0
+  damage: { heat: 22 }   # total 22
+
+  # THE CHAIN, and it does NOT compound: "Beam can chain up to 2 nearby enemies
+  # within 7 meters from the initial target, each doing 60% of the main beam's
+  # damage." "OF THE MAIN BEAM'S" — both hops at 60%, where the Tenet Glaxion
+  # says "of the previous chain's" and means 50% and then 25%.
+  #
+  # "If multiple enemies are hit with the main beam thanks to punch through, up
+  # to 2 chains are generated from each of them" is `chain::resolve` taking the
+  # struck bodies as its seeds, which this weapon gets for free.
+  beam:
+    range_m: 28.0
+    damage_radius_m: 0.0
+    radius_takes_multishot: false
+    chain:
+      hops: 2
+      range_m: 7.0
+      damage_per_hop: 0.60
+      compounds: false
+      origin: radius_targets
+
+# THE RAMP FLOOR IS 30%, not the engine's 20% default: "Takes 0.6 seconds of
+# firing to ramp up the damage from 30% to 100%. After firing stops for 0.8
+# seconds, the damage decays back to 30% over 2 seconds." The 0.6 and the 0.8
+# are the engine's own constants and match this weapon exactly; only the floor
+# differs, which is the same shape the Kuva Nukor's page has.
+beam_ramp_floor: 0.30
+
+unmodeled:
+  - "corpses keep conducting the chain, which the page states as 'Enemy corpses will still allow the beam to connect to nearby enemies' — this arena removes a body when it dies"
+  - "Ruinous Extension's reach — the page states the beam is 'extendable to 36 meters', and beam-range mods are shown on the card without being applied until a measurement settles the flat-versus-percent bracket (docs/UNMODELLED.md)"
+
+source:
+  url: https://wiki.warframe.com/w/Tenet_Cycron

@@ -250,6 +250,42 @@ weapons:
   zylok: ConclaveLeverPistol.png
   zylok_prime: ZylokPrime.png
 
+
+  # THE TENET AND CODA BATCH (2026-08-20), resolved from WFCD's OWN EXPORT
+  # (`vendor/warframe-items`, the `imageName` field) rather than by asking
+  # api.warframestat.us item by item — same source, same answer, no network,
+  # and it does not touch the 69 hand-set FORM rows the generator drops (see
+  # docs/DATA_SOURCES.md). Two are named for the file DE actually ships rather
+  # than for the weapon — `1999InfShotgunWeapon` and `1999InfSporePistolWeapon`
+  # — which is why a guess from the id would have missed both. A FORM carries
+  # its weapon's art.
+  coda_bassocyst: 1999InfShotgunWeapon.png
+  coda_bubonico: CodaBubonico.png
+  coda_bubonico_burst: CodaBubonico.png
+  coda_catabolyst: CodaCatabolyst.png
+  coda_hema: CodaHema.png
+  coda_pox: CodaPox.png
+  coda_synapse: CodaSynapse.png
+  coda_tysis: CodaTysis.png
+  dual_coda_torxica: 1999InfSporePistolWeapon.png
+  tenet_arca_plasmor: CrpBEArcaPlasmor.png
+  tenet_cycron: CrpBECycron.png
+  tenet_detron: CrpBEDetron.png
+  tenet_detron_mag_burst: CrpBEDetron.png
+  tenet_diplos: CrpBriefcaseAkimboGun.png
+  tenet_diplos_lock_on: CrpBriefcaseAkimboGun.png
+  tenet_envoy: CrpBriefcaseLauncher.png
+  tenet_ferrox: TenetFerrox.png
+  tenet_ferrox_thrown: TenetFerrox.png
+  tenet_flux_rifle: CrpBEFluxRifle.png
+  tenet_glaxion: CrpBEGlaxion.png
+  tenet_plinx: TenetPlinx.png
+  tenet_plinx_charged: TenetPlinx.png
+  tenet_quanta: TenetQuanta.png
+  tenet_quanta_cube: TenetQuanta.png
+  tenet_spirex: CrpIgniterPistol.png
+  tenet_tetra: CrpBETetra.png
+  tenet_tetra_grenade: CrpBETetra.png
 mods:
   # A RIVEN's card, DE's own: every riven shares one image because the game
   # draws them all the same — `OmegaMod.png` is the unveiled riven mod on

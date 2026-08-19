@@ -1,0 +1,94 @@
+id: coda_hema
+name: Coda Hema
+slot: primary
+# A BURST RIFLE THAT PAYS FOR ITS AMMO IN HEALTH. The cost is real and this
+# arena cannot charge it — nobody shoots back and nothing here has a health
+# pool to spend (docs/UNMODELLED.md), so what the sim shows is the weapon with
+# its drawback removed. Said on the card rather than left to be discovered.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO, PROJECTILE
+# ENFORCED, unlike a Kuva or Tenet weapon's — a Coda weapon is BOUGHT from
+# Eleanor, so there is no lich to vanquish under the requirement.
+mastery_rank: 17
+# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+# at rank 40 after 5 polarizations, granting the weapon additional mod
+# capacity" (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 20.0
+disposition: 0.95            # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: naramon
+riven_family: Hema
+traits: [infested, coda]
+introduced: "38.5"
+internal_name: /Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaHema
+noise: alarming
+ammo_type: primary
+# NO AMMO POOL — "This weapon does not use ammo pickups; health is converted to
+# ammo." Zero is the fact, not a gap: the infobox states 0 for both.
+ammo_max: 0
+ammo_pickup: 0
+magazine: 72
+reload_seconds: 2.0
+
+# Condition Overload: THE CATALOG NAMES THIS ONE and it is MULTIPLYING. Verbatim
+# row (docs/CATALOGS.md §1):
+#
+#   Weapon    | Attack Name   | Projectile Type | Attack Unmodded Damage
+#             | Actual CO Damage Bonus at +100% | CO Damage Bonus Relative To
+#             Base Damage | Math/Behavior Type
+#   Coda Hema | Normal Attack | Projectile      | 52 | 52 | 100% | Multiplying
+#
+# The Unmodded Damage cell is this attack's own 52, which is what ties the row
+# to this entry. `Multiplying` is the free-standing bracket — x (1 + co x types)
+# — so Serration does not dilute it.
+co_behavior: independent
+
+# THE PROGENITOR BONUS. The Coda wording drops the Warframe — verbatim: "Comes
+# with an additional bonus Impact, Heat, Cold, Electricity, Toxin, Magnetic, or
+# Radiation damage, which increases the listed base damage of the weapon by
+# 25%-60%." On THIS weapon nothing merges: the base is Viral, which is not one
+# of the seven, so a progenitor element always arrives beside it.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 10.0
+  trigger: burst
+  # Three rounds a pull at 0.1 s between them, from the module's own BurstCount
+  # and BurstDelay. The 5.33 fire rate is the PULL rate, which is what the
+  # burst cadence formula reads.
+  burst:
+    count: 3
+    delay_seconds: 0.1
+  shot_type: projectile
+  projectile_speed_mps: 150
+  fire_rate: 5.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.20
+  crit_multiplier: 2.3
+  status_chance: 0.30
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 150 m/s, and the page states no
+  # reach. See data/surveys/weapon_range.yaml.
+  damage: { viral: 52 }   # total 52
+
+unmodeled:
+  - "the HEALTH COST, which is the whole of this weapon's drawback: \"health is converted to ammo\", scaling with the ammo restored up to 5% of the user's max health. Nothing shoots back here and the Tenno has no health pool to spend, so the sim shows this rifle with its price removed"
+  - "the 5% Life Steal on headshots, which is the other side of the same trade and equally invisible with nothing to heal from"
+  - "Necrophagic Vigor, the Hema family's exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Coda_Hema

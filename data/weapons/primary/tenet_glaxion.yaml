@@ -1,0 +1,107 @@
+id: tenet_glaxion
+name: Tenet Glaxion
+slot: primary
+# A CHAINING COLD BEAM, and the roster's fourth COMPOUNDING chain. Its pair with
+# the Tenet Cycron is the reason `ChainSpec::compounds` is a field at all: one
+# page says "of the previous chain's damage" and the other "of the main beam's
+# damage", which is three words and a factor of two on the second hop.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags BEAM, ASSAULT_AMMO
+mastery_rank: 16
+# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+# at rank 40 after 5 polarizations, granting the weapon additional mod
+# capacity" (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 0.65            # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Glaxion
+traits: [corpus, tenet]
+introduced: "35.6"
+internal_name: /Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEGlaxion/CrpBEGlaxion
+noise: alarming
+ammo_type: primary
+ammo_max: 810
+ammo_pickup: 80
+magazine: 90
+reload_seconds: 2.0
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20, when
+# the Tenet and Coda families were transcribed) — ordinary Additive at the full
+# +100%. Five Tenet entries DO have rows; this is not one of them, and absence
+# in that catalog means ORDINARY rather than unknown.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,
+# Cold, Electricity, Toxin, Magnetic, or Radiation damage, based on the Sister's
+# progenitor Warframe, which increases the listed base damage of the weapon by
+# 25%-60%."
+#
+# The same seven elements and the same span as a Kuva weapon's — Tenet differs
+# in who hands it over, not in what it rolls. On THIS weapon a Cold progenitor
+# merges into the 34 Cold it already deals; any other element arrives beside it.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12.0
+  multishot: 1.0
+  # "Consumes 0.5 ammo per tick of damage."
+  ammo_cost: 0.5
+  crit_chance: 0.20
+  crit_multiplier: 2.2
+  status_chance: 0.40
+  punch_through_m: 0.0
+  damage: { cold: 34 }   # total 34
+
+  # THE CHAIN, and it COMPOUNDS: "Beam can chain up to 3 nearby enemies within 8
+  # meters from each other, with each chain doing 50% of the previous chain's
+  # damage" — 50%, 25%, 12.5%. The Tenet Cycron's three words later ("of the
+  # main beam's damage") mean a flat 60% on both of ITS hops.
+  #
+  # "Each enemy hit by the main beam from Punch Through can generate a new set
+  # of 3 chains" is the punch-through rule `chain::resolve` already applies from
+  # its seeds — it falls out here rather than being arranged.
+  #
+  # NO DAMAGE RADIUS: the page gives none, so only the body the beam struck
+  # seeds a chain. The conservative reading, and the same call the Atomos and
+  # the Kuva Nukor make.
+  beam:
+    range_m: 30.0
+    damage_radius_m: 0.0
+    radius_takes_multishot: false
+    chain:
+      hops: 3
+      range_m: 8.0
+      damage_per_hop: 0.50
+      compounds: true
+      origin: radius_targets
+
+# THE RAMP IS THE ENGINE'S OWN DEFAULT HERE — "Damage ramps up from 20% to 100%
+# over 0.6 seconds when firing. After firing stops for 0.8 seconds, the damage
+# decays back to 20% over 2 seconds", which is BEAM_RAMP_SECONDS,
+# BEAM_DECAY_DELAY and the 20% floor exactly. No `beam_ramp_floor` override: the
+# Tenet Cycron beside it needs one and this does not, and writing the default
+# down would be a second copy of a constant that could drift from it.
+
+unmodeled:
+  - "Photon Overcharge, the Glaxion family's exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+  - "corpses keep conducting the chain, which the page states as 'Enemy corpses will still allow the beam to connect to nearby enemies' — this arena removes a body when it dies, so a chain that would have hopped THROUGH a corpse to a live enemy behind it finds nothing there"
+
+source:
+  url: https://wiki.warframe.com/w/Tenet_Glaxion

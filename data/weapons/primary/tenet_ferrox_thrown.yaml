@@ -1,0 +1,96 @@
+id: tenet_ferrox_thrown
+name: Tenet Ferrox
+# THE THROW, and it is a FIELD rather than a projectile: "Alternate Fire throws
+# the Ferrox, creating a field where it lands that deals Electricity damage
+# every 2 seconds and continuously pulls enemies within 10 meters toward itself.
+# The field lasts for 30 seconds."
+#
+# So this is the Scourge's shape with the payload swapped — that pair plants a
+# Bullet Attractor, this one plants thirty seconds of Electricity. The spear
+# itself is almost incidental: 50 damage against 150 a tick, fifteen times.
+inherits: tenet_ferrox
+form: alt_fire
+transform_group: tenet_ferrox
+
+introduced: "32.2"
+# ONE THROW IS ONE MAGAZINE — the same call the Scourge pair makes (owner,
+# 2026-08-14): the throw is wind-up, release, RELOAD, every time, so the
+# magazine is 1 and the 20 rounds belong to the primary-fire entry. The module
+# gives this attack its own Reload of 2.0 s.
+magazine: 1
+reload_seconds: 2.0
+
+# NOT INHERITED — the CO catalog gives a class per ATTACK, and its Tenet Ferrox
+# row names the "Hitscan AoE Direct", which is the PRIMARY fire's explosion. The
+# throw has no row and is ordinary Additive; the field takes no Condition
+# Overload at all, the engine's standing rule for an area part.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). The same cone as
+  # the charged shot's, stated rather than inherited because an ATTACK is never
+  # inherited (`weapons_data::INHERITED`).
+  spread:
+    min_deg: 0.0
+    max_deg: 12.0
+  trigger: semi
+  shot_type: projectile
+  projectile_speed_mps: 90
+  fire_rate: 1.0
+  multishot: 1.0
+  # "Throwing the spear consumes no ammo", and "Multishot has no effect on the
+  # number of spears thrown" — so one spear, and the magazine of 1 above is what
+  # paces it rather than an ammo cost.
+  ammo_cost: 0
+  crit_chance: 0.04
+  crit_multiplier: 2.0
+  status_chance: 0.40
+  punch_through_m: 0.0
+  # NO RANGE ROW on the Spear Throw block — Projectile at 90 m/s, and the page
+  # states no reach. The 10.0 m belongs to the Attraction Field block and is
+  # that field's RADIUS. See data/surveys/weapon_range.yaml.
+  #
+  # ITS FORCED PROC IS A KNOCKDOWN, which is not a damage type and so is not in
+  # `forced_procs`: that field carries proc TYPES the damage model knows, and a
+  # knockdown deals none. Admitted below instead.
+  # "This weapon deals ... Impact damage on its alt-fire" — and the split says so.
+  damage: { impact: 35, puncture: 5, slash: 10 }   # total 50
+
+  # PRIMARY COMPRESSION DOES NOT WORK ON THE THROW, and the catalog says so
+  # outright rather than omitting the row (docs/CATALOGS.md §2):
+  #   Attack Name   Throw + AoE            Base Radius   -
+  #   Effectiveness 0%                     Max @ base    -
+  #   Stacking      Doesn't Work           Notes  "Pull radial tick damage can
+  #   Radius calc   N/A                            benefit from Compression
+  #                                                while aiming"
+  #
+  # A tested ZERO is a stronger statement than an absent row, so it is carried
+  # rather than left to be inferred — the same call the Cortege's two rows and
+  # the Kuva Ayanga's get.
+  compression:
+    effectiveness: 0.0
+    stacking: multiplies
+    radius_calculation: doesnt_work
+
+  # THE ATTRACTION FIELD — thirty seconds of Electricity in ten metres, ticking
+  # every two seconds, which is 15 ticks of 150 for a total of 2,250 against the
+  # spear's own 50. `tick_rate` is per second, so every two seconds is 0.5.
+  lingering:
+    damage: { electricity: 150.0 }
+    tick_rate: 0.5
+    duration_s: 30.0
+    radius_m: 10.0
+    crit_chance: 0.04
+    crit_multiplier: 2.0
+    status_chance: 0.50
+    stacking: refresh
+
+unmodeled:
+  - "THE PULL, which is the field's other half and the reason it is thrown: it \"continuously pulls enemies within 10 meters toward itself\" for thirty seconds. Gathering a room into one place is worth an enormous amount to every AoE weapon the player carries and nothing at all to a damage number measured against bodies that do not move"
+  - "the throw's forced KNOCKDOWN, which is crowd control — worth time and safety rather than damage, and this arena charges for neither"
+  - "the field is DISABLED OUTRIGHT against some enemies and the page states it as a bug: \"For enemies with both Shield and Armor, or with Overguard, the Attraction Field is completely disabled, including damage and traction effects\". Against such a target the 2,250 above is zero"
+  - "the spear must be picked back up or waited out; this arena throws it and keeps firing"
+
+source:
+  url: https://wiki.warframe.com/w/Tenet_Ferrox

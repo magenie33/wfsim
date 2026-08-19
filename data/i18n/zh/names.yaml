@@ -20,244 +20,295 @@
 # the suffix says which form — which is why this section is hand-written
 # while `mods`/`arcanes` below are filled by the script.
 weapons:
+  # (BurstRifle -> 伯斯顿, PrimeBurston -> 伯斯顿 Prime, FullAutoShotgun ->
+  # Arch-Gun (2026-08-01). Both entries are the same weapon; the FORM is
+  # DE own strings (WFCD i18n.json, joined on internal name).
+  # DE 的中文是意译：Latin "furis" 的贼盗之意，不是音译。
+  # DE's own string (WFCD i18n.json, CrpSentExperimentPistol).
+  # DE's own strings (WFCD i18n.json, joined on internal name:
+  # DE's own strings, from WFCD i18n.json joined on internal name
+  # SapientPistol -> 阿利乌双枪, PrimeAkarius -> 阿利乌双枪 Prime).
+  # The FORM, named the way every other Incarnon form here is: DE's own
+  # named separately in the UI, so neither gets an invented suffix.
+  # translated one wearing a disguise.
+  # was unreachable the day these went in, and a remembered name is a
+  # weapon name plus our own bracket. DE ships no separate name for a form.
+  # 野猪, PrimeBoar -> 野猪 Prime). Checked rather than recalled: the CN wiki
+  akarius: 阿利乌双枪
+  akarius_prime: 阿利乌双枪 Prime
+  angstrum: 安格斯壮
+  angstrum_incarnon: 安格斯壮 (灵化形态)
+  arbucep: 蕈菇
+  artax: 阿塔克斯
+  atomos: 原子矿融炮
+  atomos_incarnon: 原子矿融炮 (灵化形态)
+  ballistica: 布里斯提卡
+  ballistica_incarnon: 布里斯提卡 (灵化形态)
+  ballistica_prime: 布里斯提卡 Prime
+  ballistica_prime_incarnon: 布里斯提卡 Prime (灵化形态)
   boar: 野猪
   boar_incarnon: 野猪 (灵化形态)
   boar_prime: 野猪 Prime
-  # DE's own strings, from WFCD i18n.json joined on internal name
-  # (BurstRifle -> 伯斯顿, PrimeBurston -> 伯斯顿 Prime, FullAutoShotgun ->
-  # 野猪, PrimeBoar -> 野猪 Prime). Checked rather than recalled: the CN wiki
-  # was unreachable the day these went in, and a remembered name is a
-  # translated one wearing a disguise.
-  # DE own strings (WFCD i18n.json, joined on internal name).
-  phantasma: 幻离子
-  phantasma_charged: 幻离子
-  phantasma_prime: 幻离子 Prime
-  phantasma_prime_charged: 幻离子 Prime
-  # DE's own string (WFCD i18n.json, CrpSentExperimentPistol).
-  ocucor: 视使之触
-  # DE 的中文是意译：Latin "furis" 的贼盗之意，不是音译。
-  furis: 盗贼
-  mk1_furis: MK1-盗贼
-  furis_incarnon: 盗贼 (灵化形态)
-  mk1_furis_incarnon: MK1-盗贼 (灵化形态)
-  burston: 伯斯顿
-  burston_incarnon: 伯斯顿 (灵化形态)
-  burston_prime: 伯斯顿 Prime
-  burston_prime_incarnon: 伯斯顿 Prime (灵化形态)
   boar_prime_incarnon: 野猪 Prime (灵化形态)
-  cernos_prime: 西诺斯 Prime
-  cernos_prime_uncharged: 西诺斯 Prime (速射)   # the tapped form, same weapon
-  dual_toxocyst: 毒囊双枪
-  dual_toxocyst_incarnon: 毒囊双枪 (灵化形态)   # Incarnon Genesis = 灵化之源
-  laetum: 奏凯
-  laetum_incarnon: 奏凯 (灵化形态)
-  torid: 托里德
-  torid_incarnon: 托里德 (灵化形态)
-  verglas_prime: 冰凇 Prime
-  # Arch-Gun (2026-08-01). Both entries are the same weapon; the FORM is
-  # named separately in the UI, so neither gets an invented suffix.
-  larkspur_prime: 翠雀 Prime
-  larkspur_prime_charged: 翠雀 Prime
-  gotva_prime: 骨葬 Prime
-  karak_wraith: 卡拉克·亡魂
-  prisma_grinlok: 棱晶·葛恩火枪
-  phenmor: 凤殁
-  # The FORM, named the way every other Incarnon form here is: DE's own
-  # weapon name plus our own bracket. DE ships no separate name for a form.
-  phenmor_incarnon: 凤殁 (灵化形态)
+  boltor: 螺钉步枪
+  boltor_incarnon: 螺钉步枪 (灵化形态)
+  boltor_prime: 螺钉步枪 Prime
+  boltor_prime_incarnon: 螺钉步枪 Prime (灵化形态)
   braton: 布莱顿
   braton_incarnon: 布莱顿 (灵化形态)
   braton_prime: 布莱顿 Prime
   braton_prime_incarnon: 布莱顿 Prime (灵化形态)
   braton_vandal: 布莱顿·破坏者
   braton_vandal_incarnon: 布莱顿·破坏者 (灵化形态)
-  mk1_braton: MK1-布莱顿
-  mk1_braton_incarnon: MK1-布莱顿 (灵化形态)
-  latron: 拉特昂
-  latron_incarnon: 拉特昂 (灵化形态)
-  latron_prime: 拉特昂 Prime
-  latron_prime_incarnon: 拉特昂 Prime (灵化形态)
-  latron_wraith: 拉特昂·亡魂
-  latron_wraith_incarnon: 拉特昂·亡魂 (灵化形态)
-  boltor: 螺钉步枪
-  boltor_incarnon: 螺钉步枪 (灵化形态)
-  boltor_prime: 螺钉步枪 Prime
-  boltor_prime_incarnon: 螺钉步枪 Prime (灵化形态)
-  telos_boltor: 终极·螺钉步枪
-  telos_boltor_incarnon: 终极·螺钉步枪 (灵化形态)
-  dera: 德拉
-  dera_incarnon: 德拉 (灵化形态)
-  dera_vandal: 德拉·破坏者
-  dera_vandal_incarnon: 德拉·破坏者 (灵化形态)
-  dex_sybaris: Dex 席芭莉丝
-  dex_sybaris_incarnon: Dex 席芭莉丝 (灵化形态)
-  lato: 拉托
-  lato_incarnon: 拉托 (灵化形态)
-  lato_prime: 拉托 Prime
-  lato_prime_incarnon: 拉托 Prime (灵化形态)
-  lato_vandal: 拉托·破坏者
-  lato_vandal_incarnon: 拉托·破坏者 (灵化形态)
-  lex: 雷克斯
-  lex_incarnon: 雷克斯 (灵化形态)
-  lex_prime: 雷克斯 Prime
-  lex_prime_incarnon: 雷克斯 Prime (灵化形态)
-  sybaris: 席芭莉丝
-  sybaris_incarnon: 席芭莉丝 (灵化形态)
-  sybaris_prime: 席芭莉丝 Prime
-  sybaris_prime_incarnon: 席芭莉丝 Prime (灵化形态)
   bronco: 野马
   bronco_incarnon: 野马 (灵化形态)
   bronco_prime: 野马 Prime
   bronco_prime_incarnon: 野马 Prime (灵化形态)
-  kunai: 苦无
-  kunai_incarnon: 苦无 (灵化形态)
-  mk1_kunai: MK1-苦无
-  mk1_kunai_incarnon: MK1-苦无 (灵化形态)
-  vasto: 瓦斯托
-  vasto_incarnon: 瓦斯托 (灵化形态)
-  vasto_prime: 瓦斯托 Prime
-  vasto_prime_incarnon: 瓦斯托 Prime (灵化形态)
-  atomos: 原子矿融炮
-  atomos_incarnon: 原子矿融炮 (灵化形态)
+  burst_laser: 激光点发
+  burst_laser_prime: 激光点发 Prime
+  burston: 伯斯顿
+  burston_incarnon: 伯斯顿 (灵化形态)
+  burston_prime: 伯斯顿 Prime
+  burston_prime_incarnon: 伯斯顿 Prime (灵化形态)
+  cernos_prime: 西诺斯 Prime
+  cernos_prime_uncharged: 西诺斯 Prime (速射)   # the tapped form, same weapon
   cestra: 锡斯特
   cestra_incarnon: 锡斯特 (灵化形态)
-  despair: 绝望
-  despair_incarnon: 绝望 (灵化形态)
-  sicarus: 暗杀者
-  sicarus_incarnon: 暗杀者 (灵化形态)
-  # DE's own strings (WFCD i18n.json, joined on internal name:
-  # SapientPistol -> 阿利乌双枪, PrimeAkarius -> 阿利乌双枪 Prime).
-  akarius: 阿利乌双枪
-  akarius_prime: 阿利乌双枪 Prime
-  sicarus_prime: 暗杀者 Prime
-  sicarus_prime_incarnon: 暗杀者 Prime (灵化形态)
-  angstrum: 安格斯壮
-  angstrum_incarnon: 安格斯壮 (灵化形态)
-  ballistica: 布里斯提卡
-  ballistica_incarnon: 布里斯提卡 (灵化形态)
-  ballistica_prime: 布里斯提卡 Prime
-  ballistica_prime_incarnon: 布里斯提卡 Prime (灵化形态)
-  gammacor: 咖玛腕甲枪
-  gammacor_incarnon: 咖玛腕甲枪 (灵化形态)
-  miter: 米特尔
-  miter_incarnon: 米特尔 (灵化形态)
-  prisma_angstrum: 棱晶·安格斯壮
-  prisma_angstrum_incarnon: 棱晶·安格斯壮 (灵化形态)
-  rakta_ballistica: 绯红·布里斯提卡
-  rakta_ballistica_incarnon: 绯红·布里斯提卡 (灵化形态)
-  synoid_gammacor: 枢议·咖玛腕甲枪
-  synoid_gammacor_incarnon: 枢议·咖玛腕甲枪 (灵化形态)
-  dread: 恐惧
-  dread_incarnon: 恐惧 (灵化形态)
-  dread_uncharged: 恐惧
-  mk1_paris: MK1-帕里斯
-  mk1_paris_incarnon: MK1-帕里斯 (灵化形态)
-  mk1_paris_uncharged: MK1-帕里斯
-  paris: 帕里斯
-  paris_incarnon: 帕里斯 (灵化形态)
-  paris_prime: 帕里斯 Prime
-  paris_prime_incarnon: 帕里斯 Prime (灵化形态)
-  paris_prime_uncharged: 帕里斯 Prime
-  paris_uncharged: 帕里斯
-  gorgon: 蛇发女妖
-  gorgon_incarnon: 蛇发女妖 (灵化形态)
-  gorgon_wraith: 蛇发女妖·亡魂
-  gorgon_wraith_incarnon: 蛇发女妖·亡魂 (灵化形态)
-  prisma_gorgon: 棱晶·蛇发女妖
-  prisma_gorgon_incarnon: 棱晶·蛇发女妖 (灵化形态)
-  soma: 月神
-  soma_incarnon: 月神 (灵化形态)
-  soma_prime: 月神 Prime
-  soma_prime_incarnon: 月神 Prime (灵化形态)
-  mk1_strun: MK1-斯特朗
-  mk1_strun_incarnon: MK1-斯特朗 (灵化形态)
-  strun: 斯特朗
-  strun_incarnon: 斯特朗 (灵化形态)
-  strun_prime: 斯特朗 Prime
-  strun_prime_incarnon: 斯特朗 Prime (灵化形态)
-  strun_wraith: 斯特朗·亡魂
-  strun_wraith_incarnon: 斯特朗·亡魂 (灵化形态)
-  vectis: 守望者
-  vectis_incarnon: 守望者 (灵化形态)
-  vectis_prime: 守望者 Prime
-  vectis_prime_incarnon: 守望者 Prime (灵化形态)
-  zylok: 席尔火枪
-  zylok_incarnon: 席尔火枪 (灵化形态)
-  zylok_prime: 席尔火枪 Prime
-  zylok_prime_incarnon: 席尔火枪 Prime (灵化形态)
-  felarx: 逐枭
-  felarx_incarnon: 逐枭 (灵化形态)
-  onos: 赘骨
-  onos_incarnon: 赘骨 (灵化形态)
-  stug: 史特克
-  stug_incarnon: 史特克 (灵化形态)
-  shedu: 舍杜
-  kuva_nukor: 赤毒·努寇微波枪
-  scourge: 祸根
-  scourge_prime: 祸根 Prime
-  scourge_prime_thrown: 祸根 Prime
-  scourge_thrown: 祸根
-  cyngas: 合成燃气炮
-  dual_decurion: 什长双枪
-  fluctus: 巨浪
-  imperator: 凯旋将军
-  imperator_vandal: 凯旋将军·破坏者
-  phaedra: 菲德菈
-  prisma_dual_decurions: 棱晶·什长双枪
+  coda_bassocyst: 终幕·低音爆囊
+  coda_bubonico: 终幕·横痃重炮
+  coda_bubonico_burst: 终幕·横痃重炮
+  coda_catabolyst: 终幕·异化者
+  coda_hema: 终幕·血肢
+  coda_pox: 终幕·脓痘
+  coda_sporothrix: 终幕·孢丝感染枪
+  coda_synapse: 终幕·突触生化枪
+  coda_tysis: 终幕·啐沫者
   cortege: 送葬者
   cortege_alt: 送葬者
   corvas: 黑鸦
   corvas_prime: 黑鸦 Prime
   corvas_prime_uncharged: 黑鸦 Prime
   corvas_uncharged: 黑鸦
+  cryotra: 急冻喷枪
+  cyngas: 合成燃气炮
+  deconstructor: 分离
+  deconstructor_prime: 分离 Prime
+  dera: 德拉
+  dera_incarnon: 德拉 (灵化形态)
+  dera_vandal: 德拉·破坏者
+  dera_vandal_incarnon: 德拉·破坏者 (灵化形态)
+  despair: 绝望
+  despair_incarnon: 绝望 (灵化形态)
+  deth_machine_rifle: 死亡机枪
+  deth_machine_rifle_prime: 死亡机枪 Prime
+  dex_sybaris: Dex 席芭莉丝
+  dex_sybaris_incarnon: Dex 席芭莉丝 (灵化形态)
+  dread: 恐惧
+  dread_incarnon: 恐惧 (灵化形态)
+  dread_uncharged: 恐惧
+  dual_coda_torxica: 终幕·孢蚀双枪
+  dual_decurion: 什长双枪
+  dual_toxocyst: 毒囊双枪
+  dual_toxocyst_incarnon: 毒囊双枪 (灵化形态)   # Incarnon Genesis = 灵化之源
+  felarx: 逐枭
+  felarx_incarnon: 逐枭 (灵化形态)
+  fluctus: 巨浪
+  furis: 盗贼
+  furis_incarnon: 盗贼 (灵化形态)
+  gammacor: 咖玛腕甲枪
+  gammacor_incarnon: 咖玛腕甲枪 (灵化形态)
+  gorgon: 蛇发女妖
+  gorgon_incarnon: 蛇发女妖 (灵化形态)
+  gorgon_wraith: 蛇发女妖·亡魂
+  gorgon_wraith_incarnon: 蛇发女妖·亡魂 (灵化形态)
+  gotva_prime: 骨葬 Prime
   grattler: 葛拉特勒
+  helstrum: 赫尔斯壮
+  imperator: 凯旋将军
+  imperator_vandal: 凯旋将军·破坏者
+  karak_wraith: 卡拉克·亡魂
+  komorex: 猛毒
+  kunai: 苦无
+  kunai_incarnon: 苦无 (灵化形态)
   kuva_ayanga: 赤毒·怒雷
+  kuva_brakk: 赤毒·布拉克
+  kuva_bramma: 赤毒·布拉玛
+  kuva_chakkhurr: 赤毒·邪眼
+  kuva_drakgoon: 赤毒·龙骑兵
+  kuva_drakgoon_uncharged: 赤毒·龙骑兵
   kuva_grattler: 赤毒·葛拉特勒
+  kuva_hek: 赤毒·海克
+  kuva_hek_quad: 赤毒·海克
+  kuva_hind: 赤毒·雌鹿
+  kuva_hind_auto: 赤毒·雌鹿
+  kuva_hind_semi: 赤毒·雌鹿
+  kuva_karak: 赤毒·卡拉克
+  kuva_kohm: 赤毒·寇恩热能枪
+  kuva_kohm_single: 赤毒·寇恩热能枪
+  kuva_kraken: 赤毒·北海巨妖
+  kuva_kraken_mag_burst: 赤毒·北海巨妖
+  kuva_nukor: 赤毒·努寇微波枪
+  kuva_ogris: 赤毒·食人女魔
+  kuva_quartakk: 赤毒·夸塔克
+  kuva_quartakk_auto: 赤毒·夸塔克
+  kuva_seer: 赤毒·预言者
+  kuva_sobek: 赤毒·鳄神
+  kuva_tonkor: 赤毒·征服榴炮
+  kuva_twin_stubbas: 赤毒·双子史度巴
+  kuva_zarr: 赤毒·沙皇
+  kuva_zarr_barrage: 赤毒·沙皇
+  laetum: 奏凯
+  laetum_incarnon: 奏凯 (灵化形态)
+  lanka: 兰卡
+  lanka_uncharged: 兰卡
   larkspur: 翠雀
   larkspur_charged: 翠雀
+  larkspur_prime: 翠雀 Prime
+  larkspur_prime_charged: 翠雀 Prime
+  laser_rifle: 激光步枪
+  lato: 拉托
+  lato_incarnon: 拉托 (灵化形态)
+  lato_prime: 拉托 Prime
+  lato_prime_incarnon: 拉托 Prime (灵化形态)
+  lato_vandal: 拉托·破坏者
+  lato_vandal_incarnon: 拉托·破坏者 (灵化形态)
+  latron: 拉特昂
+  latron_incarnon: 拉特昂 (灵化形态)
+  latron_prime: 拉特昂 Prime
+  latron_prime_incarnon: 拉特昂 Prime (灵化形态)
+  latron_wraith: 拉特昂·亡魂
+  latron_wraith_incarnon: 拉特昂·亡魂 (灵化形态)
+  lex: 雷克斯
+  lex_incarnon: 雷克斯 (灵化形态)
+  lex_prime: 雷克斯 Prime
+  lex_prime_incarnon: 雷克斯 Prime (灵化形态)
   mandonel: 辐光弩炮
   mandonel_uncharged: 辐光弩炮
   mausolon: 惩戒者
   mausolon_charged: 惩戒者
+  miter: 米特尔
+  miter_incarnon: 米特尔 (灵化形态)
+  mk1_braton: MK1-布莱顿
+  mk1_braton_incarnon: MK1-布莱顿 (灵化形态)
+  mk1_furis: MK1-盗贼
+  mk1_furis_incarnon: MK1-盗贼 (灵化形态)
+  mk1_kunai: MK1-苦无
+  mk1_kunai_incarnon: MK1-苦无 (灵化形态)
+  mk1_paris: MK1-帕里斯
+  mk1_paris_incarnon: MK1-帕里斯 (灵化形态)
+  mk1_paris_uncharged: MK1-帕里斯
+  mk1_strun: MK1-斯特朗
+  mk1_strun_incarnon: MK1-斯特朗 (灵化形态)
   morgha: 置灵者
   morgha_alt: 置灵者
-  velocitus: 极速电磁步枪
-  velocitus_uncharged: 极速电磁步枪
-  artax: 阿塔克斯
-  burst_laser: 激光点发
-  burst_laser_prime: 激光点发 Prime
-  cryotra: 急冻喷枪
-  deth_machine_rifle: 死亡机枪
-  deth_machine_rifle_prime: 死亡机枪 Prime
-  laser_rifle: 激光步枪
-  prime_laser_rifle: 激光步枪 Prime
-  prisma_burst_laser: 棱晶 激光点发
-  stinger: 毒刺
-  sweeper: 扫除者
-  sweeper_prime: 扫除者 Prime
-  verglas: 冰凇
-  vulklok: 金工火枪
-  helstrum: 赫尔斯壮
   multron: 多连穿甲枪
-  tazicor: 泰瑟步枪
-  vulcax: 金工火舌
-  deconstructor: 分离
-  deconstructor_prime: 分离 Prime
-  lanka: 兰卡
-  lanka_uncharged: 兰卡
-  rubico: 绝路
-  rubico_prime: 绝路 Prime
-  vulkar: 金工火神
-  vulkar_wraith: 金工火神·亡魂
-  coda_sporothrix: 终幕·孢丝感染枪
-  komorex: 猛毒
+  ocucor: 视使之触
+  onos: 赘骨
+  onos_incarnon: 赘骨 (灵化形态)
+  paris: 帕里斯
+  paris_incarnon: 帕里斯 (灵化形态)
+  paris_prime: 帕里斯 Prime
+  paris_prime_incarnon: 帕里斯 Prime (灵化形态)
+  paris_prime_uncharged: 帕里斯 Prime
+  paris_uncharged: 帕里斯
   perigale: 月面狂风
   perigale_prime: 月面狂风 Prime
+  phaedra: 菲德菈
+  phantasma: 幻离子
+  phantasma_charged: 幻离子
+  phantasma_prime: 幻离子 Prime
+  phantasma_prime_charged: 幻离子 Prime
+  phenmor: 凤殁
+  phenmor_incarnon: 凤殁 (灵化形态)
+  prime_laser_rifle: 激光步枪 Prime
+  prisma_angstrum: 棱晶·安格斯壮
+  prisma_angstrum_incarnon: 棱晶·安格斯壮 (灵化形态)
+  prisma_burst_laser: 棱晶 激光点发
+  prisma_dual_decurions: 棱晶·什长双枪
+  prisma_gorgon: 棱晶·蛇发女妖
+  prisma_gorgon_incarnon: 棱晶·蛇发女妖 (灵化形态)
+  prisma_grinlok: 棱晶·葛恩火枪
+  rakta_ballistica: 绯红·布里斯提卡
+  rakta_ballistica_incarnon: 绯红·布里斯提卡 (灵化形态)
+  rubico: 绝路
+  rubico_prime: 绝路 Prime
+  scourge: 祸根
+  scourge_prime: 祸根 Prime
+  scourge_prime_thrown: 祸根 Prime
+  scourge_thrown: 祸根
+  shedu: 舍杜
+  sicarus: 暗杀者
+  sicarus_incarnon: 暗杀者 (灵化形态)
+  sicarus_prime: 暗杀者 Prime
+  sicarus_prime_incarnon: 暗杀者 Prime (灵化形态)
   snipetron: 狙击特昂
   snipetron_vandal: 狙击特昂·破坏者
+  soma: 月神
+  soma_incarnon: 月神 (灵化形态)
+  soma_prime: 月神 Prime
+  soma_prime_incarnon: 月神 Prime (灵化形态)
   sporothrix: 孢丝感染枪
+  stinger: 毒刺
+  strun: 斯特朗
+  strun_incarnon: 斯特朗 (灵化形态)
+  strun_prime: 斯特朗 Prime
+  strun_prime_incarnon: 斯特朗 Prime (灵化形态)
+  strun_wraith: 斯特朗·亡魂
+  strun_wraith_incarnon: 斯特朗·亡魂 (灵化形态)
+  stug: 史特克
+  stug_incarnon: 史特克 (灵化形态)
+  sweeper: 扫除者
+  sweeper_prime: 扫除者 Prime
+  sybaris: 席芭莉丝
+  sybaris_incarnon: 席芭莉丝 (灵化形态)
+  sybaris_prime: 席芭莉丝 Prime
+  sybaris_prime_incarnon: 席芭莉丝 Prime (灵化形态)
+  synoid_gammacor: 枢议·咖玛腕甲枪
+  synoid_gammacor_incarnon: 枢议·咖玛腕甲枪 (灵化形态)
+  tazicor: 泰瑟步枪
+  telos_boltor: 终极·螺钉步枪
+  telos_boltor_incarnon: 终极·螺钉步枪 (灵化形态)
+  tenet_arca_plasmor: 信条·弧电离子枪
+  tenet_cycron: 信条·循环离子枪
+  tenet_detron: 信条·德特昂
+  tenet_detron_mag_burst: 信条·德特昂
+  tenet_diplos: 信条·纵横双枪
+  tenet_diplos_lock_on: 信条·纵横双枪
+  tenet_envoy: 信条·典客
+  tenet_ferrox: 信条·铁晶磁轨炮
+  tenet_ferrox_thrown: 信条·铁晶磁轨炮
+  tenet_flux_rifle: 信条·通量步枪
+  tenet_glaxion: 信条·冷冻光束步枪
+  tenet_plinx: 信条·漫射者
+  tenet_plinx_charged: 信条·漫射者
+  tenet_quanta: 信条·量子切割器
+  tenet_quanta_cube: 信条·量子切割器
+  tenet_spirex: 信条·斯派克斯
+  tenet_tetra: 信条·特拉
+  tenet_tetra_grenade: 信条·特拉
+  torid: 托里德
+  torid_incarnon: 托里德 (灵化形态)
   vadarya_prime: 瓦德雅 Prime
-  arbucep: 蕈菇
+  vasto: 瓦斯托
+  vasto_incarnon: 瓦斯托 (灵化形态)
+  vasto_prime: 瓦斯托 Prime
+  vasto_prime_incarnon: 瓦斯托 Prime (灵化形态)
+  vectis: 守望者
+  vectis_incarnon: 守望者 (灵化形态)
+  vectis_prime: 守望者 Prime
+  vectis_prime_incarnon: 守望者 Prime (灵化形态)
+  velocitus: 极速电磁步枪
+  velocitus_uncharged: 极速电磁步枪
+  verglas: 冰凇
+  verglas_prime: 冰凇 Prime
+  vulcax: 金工火舌
+  vulkar: 金工火神
+  vulkar_wraith: 金工火神·亡魂
+  vulklok: 金工火枪
+  zylok: 席尔火枪
+  zylok_incarnon: 席尔火枪 (灵化形态)
+  zylok_prime: 席尔火枪 Prime
+  zylok_prime_incarnon: 席尔火枪 Prime (灵化形态)
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's

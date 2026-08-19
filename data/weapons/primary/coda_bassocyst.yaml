@@ -1,0 +1,111 @@
+id: coda_bassocyst
+name: Coda Bassocyst
+slot: primary
+# 808 DAMAGE A SHOT THROUGH AN UNLIMITED NUMBER OF BODIES — the second infinite
+# body punch through in this batch, beside the Tenet Arca Plasmor. Its alternate
+# fire is a Mercy-finisher tool rather than a way to fight, and is recorded as a
+# gap rather than modelled; see the unmodelled list.
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, shotgun]
+# ENFORCED, unlike a Kuva or Tenet weapon's — a Coda weapon is BOUGHT from
+# Eleanor, so there is no lich to vanquish under the requirement.
+mastery_rank: 17
+# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+# at rank 40 after 5 polarizations, granting the weapon additional mod
+# capacity" (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 0.55            # riven disposition
+polarities: [madurai]
+exilus_polarity: madurai
+riven_family: Bassocyst
+traits: [infested, coda]
+introduced: "38.5"
+internal_name: /Lotus/Weapons/Infested/InfestedLich/LongGuns/1999InfShotgun/1999InfShotgunWeapon
+noise: alarming
+ammo_type: primary
+ammo_max: 96
+ammo_pickup: 15
+magazine: 24
+reload_seconds: 2.5
+
+# Condition Overload: THE CATALOG NAMES BOTH OF THIS WEAPON'S ATTACKS and gives
+# them OPPOSITE answers. Verbatim rows (docs/CATALOGS.md §1):
+#
+#   Weapon         | Attack Name   | Projectile Type   | Attack Unmodded Damage
+#                  | Actual CO Damage Bonus at +100% | CO Damage Bonus Relative
+#                  To Base Damage | Math/Behavior Type | Notes
+#   Coda Bassocyst | Normal Attack | Projectile        | 808 | 808 | 100%
+#                  | Multiplying | -
+#   Coda Bassocyst | Alt-fire      | Homing Projectile | 303 |   0 |   0%
+#                  | N/A | "Does not apply"
+#
+# This entry is the FIRST row: the Unmodded Damage cell is 808 (789 + 19), which
+# is this attack's own total. The alt-fire's `Does not apply` would be `inert`,
+# and there is no entry to put it on because the alt-fire is not modelled.
+co_behavior: independent
+
+# THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,
+# Cold, Electricity, Toxin, Magnetic, or Radiation damage, which increases the
+# listed base damage of the weapon by 25%-60%." A Radiation progenitor merges
+# into the 19 Radiation this already carries; the other six arrive beside it,
+# and none of them merges with the Blast that is 97.65% of the shot.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). Perfect, on a
+  # shotgun — the projectile is one wide sonic sheet rather than a pellet spread.
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 62
+  fire_rate: 1.17
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.18
+  crit_multiplier: 2.2
+  status_chance: 0.40
+  # INNATE INFINITE BODY PUNCH-THROUGH — the punch-through page's own exception
+  # list, "Coda Bassocyst (infinite body punch through)", defined there as
+  # "allows these weapons to pierce an unlimited amount of enemies, but not
+  # level geometry, objects, or barriers". Written as a number the sim can hold,
+  # and it IS the whole mechanic here: the qualifier separates BODIES from
+  # geometry and this arena has no geometry, so everything the ray meets is a
+  # body.
+  punch_through_m: 999.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Normal Attack: "Range: 49.6 m", Projectile at 62 m/s.
+  #
+  # THE PROJECTILE DIES BEFORE THE FALLOFF ENDS, which is the reverse of the
+  # Tenet Arca Plasmor's shape and is worth noting: the falloff below runs to
+  # 60 m and nothing ever reaches it, so the worst this shot is ever seen at is
+  # its value at 49.6 m rather than the 32.55% floor the infobox prints.
+  range_m: 49.6
+  # "Has linear damage falloff from 100% to 50% from 35m to 60m target
+  # distance" is the disadvantages bullet; the module's reduction is 0.6745,
+  # which is the exact figure and what the infobox's "32.55%, 263 damage" floor
+  # is computed from. The exact one is transcribed.
+  falloff:
+    start_m: 35.0
+    end_m: 60.0
+    reduction: 0.6745
+  damage: { blast: 789, radiation: 19 }   # total 808
+
+unmodeled:
+  - "THE ALTERNATE FIRE, which is a Mercy-finisher tool rather than a way to fight: it \"launches a mite that latches up to 6 enemies, highlighting their heads for 5 seconds while dealing Impact and Magnetic damage and status effects per second for 10 seconds\", and against an enemy already opened to a Mercy it teleports the player in for an execution instead. Three things put it out of reach here — it needs a target within 25 m to fire at all, its payload is a ten-second damage-over-time the engine has no shape for, and its real use is the finisher, which this arena has no execution threshold for. The CO catalog's own row for it reads `Does not apply`"
+  - "the MERCY KILL BUFF that alt fire exists to earn: \"Performing a Mercy Kill grants +100% damage and Multishot for 20 seconds\", refreshed on every Mercy. A doubling of the weapon, gated behind a finisher this arena cannot perform"
+  - "the projectile has a stated THICKNESS the page leaves blank (\"Projectiles have a thickness of ? meters\") — this arena fires a ray, so a wide sheet strikes only the bodies on the line either way"
+
+source:
+  url: https://wiki.warframe.com/w/Coda_Bassocyst

@@ -1,0 +1,62 @@
+id: tenet_diplos_lock_on
+name: Tenet Diplos
+# LOCK-ON MODE, and the roster's first attack whose whole point is that it hits
+# SEVERAL enemies without being aimed at them: "Aiming activates lock-on mode,
+# targeting up to 8 enemies within 60 meters on the reticle to burst-fire 2
+# shots of seeking projectiles per target."
+#
+# WHAT IS MODELLED IS ONE TARGET'S SHARE. The engine picks no targets — an aim
+# point is a place and a body is struck by geometry — so this entry fires the
+# 2-round burst that ONE locked enemy receives. Against a single standing target
+# that is exactly right; against a crowd it is a whole eighth of the weapon.
+inherits: tenet_diplos
+form: alt_fire
+transform_group: tenet_diplos
+
+introduced: "30.5"
+
+# NOT INHERITED — the CO catalog gives a class per ATTACK. No row for either of
+# this weapon's, so both are ordinary Additive.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). Wider than the
+  # primary fire's zero, because these rounds seek rather than fly straight.
+  spread:
+    min_deg: 1.2
+    max_deg: 2.0
+  trigger: burst
+  # "burst-fire 2 shots of seeking projectiles per target", at the module's own
+  # 0.06 s between them.
+  burst:
+    count: 2
+    delay_seconds: 0.06
+  shot_type: projectile
+  projectile_speed_mps: 200
+  fire_rate: 1.0
+  multishot: 1.0
+  # "Lock-on burst-fire consumes 4 ammo (2 per pistol) per target" — 2 a round
+  # on the module's own AmmoCost, which is the per-pistol half of the same fact.
+  ammo_cost: 2
+  crit_chance: 0.36
+  crit_multiplier: 2.2
+  status_chance: 0.14
+  # NO punch through on this form, where the primary fire has 1.0 m: seeking
+  # rounds have their own target and do not carry on through it.
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Lock-on Mode: "Range: 60.0 m", Projectile at 200 m/s — and on this
+  # attack the number is BOTH, since 60 m is also the distance inside which the
+  # page says a target can be acquired.
+  range_m: 60.0
+  damage: { impact: 11.2, puncture: 9.0, slash: 7.8 }   # total 28
+
+unmodeled:
+  - "SEVEN OF THE EIGHT TARGETS. The mode locks \"up to 8 enemies within 60 meters on the reticle\" and fires a 2-round burst at each; this entry fires the burst ONE enemy receives, because the engine aims at a place and never picks targets. Against a lone enemy that is the whole attack and correct; in a crowd this weapon does up to eight times what is shown"
+  - "the ~0.5 second delay after a burst before the mode can lock on again, which is a cadence cost between bursts rather than inside one"
+  - "lock-on homes on the BODY, \"making it difficult to achieve headshots unless aiming upward\" — so a headshot rate set on the scenario is optimistic on this form specifically"
+  - "seeking rounds must travel 5 metres before they begin to seek, which at contact range makes them ordinary bullets"
+
+source:
+  url: https://wiki.warframe.com/w/Tenet_Diplos

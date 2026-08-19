@@ -1,0 +1,118 @@
+id: tenet_envoy
+name: Tenet Envoy
+slot: primary
+# A GUIDED ROCKET LAUNCHER, and the biggest single explosion in this batch: 640
+# Cold in an 8 metre radius. The guidance is the part this arena has no hand
+# for — see the unmodelled list — and it costs nothing here, because a rocket
+# that flies at a standing target does not need steering.
+class: launcher
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle]   # CompatibilityTags PROJECTILE, AOE — a launcher takes rifle mods
+mastery_rank: 16
+# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+# at rank 40 after 5 polarizations, granting the weapon additional mod
+# capacity" (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 0.65            # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: naramon
+riven_family: Tenet Envoy
+traits: [corpus, tenet]
+introduced: "30.5"
+internal_name: /Lotus/Weapons/Corpus/LongGuns/CrpBriefcaseLauncher/CrpBriefcaseLauncher
+noise: alarming
+ammo_type: primary
+# TWO RELOADS AND THE RESERVE IS GONE — "Extremely low ammo capacity; requires
+# just 2 reloads to fully deplete all ammo reserves."
+ammo_max: 16
+ammo_pickup: 4
+magazine: 8
+reload_seconds: 4.0
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100% on the direct hit, and the explosion takes
+# none at all, which is the engine's standing rule for a radial.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,
+# Cold, Electricity, Toxin, Magnetic, or Radiation damage, based on the Sister's
+# progenitor Warframe, which increases the listed base damage of the weapon by
+# 25%-60%." An Impact progenitor merges into the grenade's 100 Impact and a Cold
+# one into the explosion's 640 Cold; the rest arrive beside them.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 40
+  fire_rate: 0.83
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.28
+  crit_multiplier: 2.6
+  status_chance: 0.24
+  punch_through_m: 0.0
+  # AND IT MAY NOT BE GIVEN ANY. This attack has an area-of-effect component, so
+  # the punch-through page's class rule applies: "weapon projectiles with an
+  # area of effect (AoE) component will not Punch Through enemies or level
+  # geometry at all", and "Projectile AoE weapons cannot have their Punch
+  # Through stat modified". The `radial:` block below is what states the shape;
+  # the engine reads it and refuses Shred and both Augers on this weapon.
+  #
+  # NO RANGE ROW on the Grenade Impact block — Projectile at 40 m/s. Its 8.0 m
+  # sits under the Rocket Explosion block and is a RADIUS. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 100 }   # total 100
+
+  # PRIMARY COMPRESSION's row, by column (docs/CATALOGS.md §2):
+  #   Attack Name   Primary Fire + AoE     Base Radius   8.0 m
+  #   Effectiveness 100%                   Max @ base    +640%
+  #   Stacking      Multiplies             w/ Primed Firestorm  +921.6%
+  #   Radius calc   Snapshot               Class         Launcher
+  #
+  # Ordinary in every column, on the joint-largest radius in this batch — which
+  # is why the arcane is worth as much here as on the Tenet Tetra's grenade.
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
+
+  # THE EXPLOSION — "Rocket explode in a 8 meter radius after impacting a
+  # surface or enemy", with "Initial hit and explosion apply status separately",
+  # which is why it is a second instance rather than added damage. A 1x
+  # body-part multiplier and no headshot conditions, the engine's standing rule
+  # for every radial.
+  radial:
+    damage: { cold: 640 }
+    radius_m: 8.0
+    falloff_start_m: 0.0
+    # "Explosion has linear Damage Falloff from 100% to 20% from central
+    # impact" — four fifths removed at the rim, the steepest in this batch.
+    falloff_reduction: 0.8
+    crit_chance: 0.28
+    crit_multiplier: 2.6
+    status_chance: 0.24
+
+unmodeled:
+  - reason: explosion_ignores_cover
+  - "the rockets are STEERED: \"Aiming will cause fired rockets to travel toward the aiming reticle, allowing them to be guided\", and \"Allows firing rockets from behind cover\". Both are hand-aim mechanics, and both cost the shot half its speed while used (20 m/s guided against 40 unguided). Against a target that does not move, guidance buys nothing and is charged nothing"
+  - "a rocket that hits nothing detonates on its own after 6 seconds, which needs a miss this arena resolves at the wall of its own geometry-free floor"
+  - reason: holstered_reload
+    pct: 10
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Tenet_Envoy

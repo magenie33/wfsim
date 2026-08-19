@@ -1,0 +1,100 @@
+id: tenet_detron
+name: Tenet Detron
+slot: secondary
+# TEN PELLETS OF RADIATION out of a sidearm, and the roster's second Mag Burst
+# after the Kuva Kraken's. Its CO rows are the interesting part: the catalog
+# names BOTH of its attacks and calls both ORDINARY, which is the only way a
+# catalog can say "we checked, and there is nothing here".
+class: shotgun_sidearm
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+transform_group: tenet_detron
+mastery_rank: 16
+# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+# at rank 40 after 5 polarizations, granting the weapon additional mod
+# capacity" (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 20.0
+disposition: 1.0             # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Detron
+traits: [corpus, tenet]
+introduced: "30.5"
+internal_name: /Lotus/Weapons/Corpus/BoardExec/Secondary/CrpBEDetron/CrpBEDetron
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 20
+magazine: 6
+reload_seconds: 1.05
+
+# Condition Overload: THE CATALOG NAMES THIS ATTACK AND CALLS IT ORDINARY.
+# Verbatim row (docs/CATALOGS.md §1):
+#
+#   Weapon       | Attack Name   | Projectile Type | Base Attack Damage
+#                | CO Damage Bonus at +100% | CO Damage Bonus Relative To Base
+#                Damage | Math/Behavior Type | Notes
+#   Tenet Detron | Normal Attack | Projectile      | 26 | 26 | 100% | Adding
+#                | "CO-bonus ignores Damage Falloff"
+#
+# Adding at the full 100% IS the ordinary class, so this entry is not a CO
+# anomaly and does not belong on the NAMED list — a row that says "normal" is
+# still worth transcribing, because it is the difference between checked and
+# unchecked. Its Notes cell is a real anomaly the CoBehavior vocabulary has no
+# word for; see the unmodelled list.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,
+# Cold, Electricity, Toxin, Magnetic, or Radiation damage, based on the Sister's
+# progenitor Warframe, which increases the listed base damage of the weapon by
+# 25%-60%." On THIS weapon a Radiation progenitor merges into the Radiation it
+# already deals; any other element arrives beside it. The page notes what that
+# is worth here: ten pellets against the Detron's seven means "higher overall
+# damage even with the lowest possible elemental bonus (+25%)".
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 4.0
+    max_deg: 6.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 150
+  fire_rate: 3.33
+  # "Innate multishot of 10 pellets" — 26 Radiation apiece, 260 a shot.
+  multishot: 10.0
+  ammo_cost: 1
+  crit_chance: 0.18
+  crit_multiplier: 2.0
+  status_chance: 0.10
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 150 m/s, and the page states no
+  # reach. See data/surveys/weapon_range.yaml.
+  #
+  # "Has linear damage falloff from 100% to 55% from 26m to 52m target
+  # distance." The module's reduction is 0.3077, which is the exact figure and
+  # what the infobox's "69.23%, 18 damage" floor is computed from; the
+  # disadvantages bullet's "55%" is the rounded prose.
+  falloff:
+    start_m: 26.0
+    end_m: 52.0
+    reduction: 0.3077
+  damage: { radiation: 26 }   # 26 a pellet, 260 a shot
+
+unmodeled:
+  - "the CO bonus IGNORES damage falloff, which is the catalog's own Notes cell on both of this weapon's rows. Here the Condition Overload term falls off with the rest of the shot, so a build stacking statuses at range is understated"
+  - "the in-game falloff display is WRONG on this weapon and the page says so: \"The falloff ranges displayed ingame (13m-22m) are incorrect. Tenet Detron will still deal full damage until about 28m.\" The 26-52 m transcribed above is the module's and the infobox's, not the arsenal's"
+  - "Thermagnetic Shells, the Detron family's exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Tenet_Detron

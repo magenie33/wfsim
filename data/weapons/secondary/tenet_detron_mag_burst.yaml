@@ -1,0 +1,68 @@
+id: tenet_detron_mag_burst
+name: Tenet Detron
+# THE MAGAZINE DUMP. "Alternate Fire shoots all remaining ammunition in the
+# magazine in a quick burst", and the same shape as the Kuva Kraken's — see that
+# entry for why the burst count is a constant here and cannot be the magazine.
+inherits: tenet_detron
+form: alt_fire
+transform_group: tenet_detron
+
+introduced: "30.5"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon has
+# its own row for this one. Verbatim (docs/CATALOGS.md §1):
+#
+#   Tenet Detron | Burst Shot | Projectile | 26 | 26 | 100% | Adding
+#                | "CO-bonus ignores Damage Falloff"
+#
+# The same answer as the Normal Attack's row, which is a fact worth having: the
+# Mandonel's two forms take two DIFFERENT classes from two rows, so "the other
+# form's answer" is never assumable.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). Identical to the
+  # primary fire's, which is stated rather than inherited because an ATTACK is
+  # never inherited (`weapons_data::INHERITED`).
+  spread:
+    min_deg: 4.0
+    max_deg: 6.0
+  trigger: burst
+  # THE BURST COUNT IS THE MAGAZINE, which is the one thing this entry cannot
+  # say properly: `count` is a constant and the real number is however many
+  # rounds are left. 6 is the UNMODDED magazine, and the page states outright
+  # that a magazine mod makes the burst longer ("Benefits from magazine
+  # increasing mods to further increase the burst's damage") — admitted below.
+  #
+  # 0.12 s between rounds is the module's own BurstDelay. The page's "Base
+  # effective fire rate is 8 rounds per second" is the same number rounded from
+  # the other side (1 / 0.12 = 8.33).
+  burst:
+    count: 6
+    delay_seconds: 0.12
+  shot_type: projectile
+  projectile_speed_mps: 150
+  fire_rate: 2.0
+  multishot: 10.0
+  ammo_cost: 1
+  crit_chance: 0.18
+  crit_multiplier: 2.0
+  status_chance: 0.10
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack either — Projectile at 150 m/s. See
+  # data/surveys/weapon_range.yaml.
+  falloff:
+    start_m: 26.0
+    end_m: 52.0
+    reduction: 0.3077
+  damage: { radiation: 26 }   # 26 a pellet, 10 pellets a round, 6 rounds a pull
+
+unmodeled:
+  - "the burst empties the MAGAZINE and this entry fires a fixed 6 rounds a pull — the unmodded magazine. The page states that magazine mods lengthen it (\"Benefits from magazine increasing mods to further increase the burst's damage\"), so a build carrying one is understated here"
+  - "aiming is disabled for the duration of the burst, so the alternate fire cannot benefit from Acolyte mods — a gate this arena has no aim state to apply"
+  - "the burst can be cancelled with a quick melee, which is a way to spend less than a full magazine and this arena never takes"
+  - "the CO bonus IGNORES damage falloff, per the catalog's Notes cell on this row"
+
+source:
+  url: https://wiki.warframe.com/w/Tenet_Detron

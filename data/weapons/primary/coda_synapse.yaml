@@ -1,0 +1,110 @@
+id: coda_synapse
+name: Coda Synapse
+slot: primary
+# THE ROSTER'S FIRST WEAPON WITH AN INNATE HEADSHOT BONUS THAT IS NOT A BOW'S,
+# and the counterpart to the Tenet Arca Plasmor arriving beside it: the module
+# states this one's as `ExtraHeadshotDmg = 0.2` and that one's as -2, which is
+# what separates a real additive bonus from a multiplier DE encodes in the same
+# column. See `WeaponSpec::headshot_multiplier`.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags BEAM, ASSAULT_AMMO
+# ENFORCED, unlike a Kuva or Tenet weapon's — "Unlike Kuva and Tenet weapons
+# directly acquired from a Kuva Lich or Sisters of Parvos, the listed Mastery
+# Rank requirement is enforced." A Coda weapon is BOUGHT from Eleanor, so there
+# is no lich to vanquish under the requirement.
+mastery_rank: 17
+# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+# at rank 40 after 5 polarizations, granting the weapon additional mod
+# capacity" (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 0.9             # riven disposition
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Synapse
+traits: [infested, coda]
+introduced: "38.5"
+internal_name: /Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaSynapse
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 76
+reload_seconds: 1.5
+
+# +20% ON A HEAD, ADDITIVE — "Deals 20% additional damage on headshots", and the
+# module states it in the same column a bow's charge bonus uses
+# (`ExtraHeadshotDmg = 0.2`). It joins the bracket Primary Deadhead is in, which
+# is where every innate headshot source the wiki lists goes except Cernos
+# Prime's.
+headshot_damage_bonus: 0.20
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20, when
+# the Tenet and Coda families were transcribed) — ordinary Additive at the full
+# +100%. Three Coda entries DO have rows (both Bassocyst attacks, Coda Hema);
+# this is not one of them, and absence means ORDINARY rather than unknown.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS. The Coda wording drops the Warframe — verbatim: "Comes
+# with an additional bonus Impact, Heat, Cold, Electricity, Toxin, Magnetic, or
+# Radiation damage, which increases the listed base damage of the weapon by
+# 25%-60%." Same seven elements and same span as Kuva and Tenet; what differs is
+# only that a Coda weapon is bought rather than won from a progenitor, so there
+# is no Warframe in the sentence.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12.0
+  multishot: 1.0
+  # "Consumes 0.5 ammo per tick of damage."
+  ammo_cost: 0.5
+  crit_chance: 0.40
+  crit_multiplier: 2.7
+  status_chance: 0.15
+  # INNATE 1.2 m, from the attack block's own Punch Through row rather than from
+  # the punch-through page's exception list — which does not name this weapon.
+  # Two body-thicknesses and a bit (`space::BODY_MATERIAL_M` is 0.5), so it
+  # reaches the second enemy in a line and stops inside the third.
+  punch_through_m: 1.2
+  damage: { corrosive: 26 }   # total 26
+
+  # A BEAM WITH NO SPLASH AND NO CHAIN — "Shoots a beam with a range of 32
+  # meters" and nothing else. The block exists for the RANGE, which on a
+  # continuous weapon lives here rather than on the attack; the radius is 0 and
+  # the chain is empty because the page gives neither, and a zero would be
+  # inventing a fact rather than recording none.
+  beam:
+    range_m: 32.0
+    damage_radius_m: 0.0
+    radius_takes_multishot: false
+    chain:
+      hops: 0
+      range_m: 0.0
+      damage_per_hop: 0.0
+      origin: radius_targets
+
+# THE RAMP IS THE ENGINE'S OWN DEFAULT — "Damage ramps up from 20% to 100% over
+# 0.6 seconds when firing. After firing stops for 0.8 seconds, the damage decays
+# back to 20% over 2 seconds", which is BEAM_RAMP_SECONDS, BEAM_DECAY_DELAY and
+# the 20% floor exactly, so no `beam_ramp_floor` override.
+
+unmodeled:
+  - "Necrophagic Vigor, the Synapse family's exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Coda_Synapse

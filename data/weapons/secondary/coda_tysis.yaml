@@ -1,0 +1,87 @@
+id: coda_tysis
+name: Coda Tysis
+slot: secondary
+# THE ONE WEAPON IN THIS BATCH WHOSE NUMBER IS MATERIALLY UNDERSTATED, and it is
+# stated here rather than discovered: 70% of what this dart deals is a DoT the
+# engine has no shape for. See the unmodelled list.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+# ENFORCED, unlike a Kuva or Tenet weapon's — a Coda weapon is BOUGHT from
+# Eleanor, so there is no lich to vanquish under the requirement.
+mastery_rank: 17
+# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+# at rank 40 after 5 polarizations, granting the weapon additional mod
+# capacity" (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.0             # riven disposition
+polarities: [vazarin]
+exilus_polarity: madurai
+riven_family: Tysis
+traits: [infested, coda]
+introduced: "38.5"
+internal_name: /Lotus/Weapons/Infested/InfestedLich/Pistols/CodaTysis
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 18
+reload_seconds: 1.2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,
+# Cold, Electricity, Toxin, Magnetic, or Radiation damage, which increases the
+# listed base damage of the weapon by 25%-60%."
+#
+# THIS WEAPON APPLIES IT TWICE AND THE ARSENAL LIES ABOUT IT — "The progenitor
+# bonus is applied separately to the dart impact and the DoT effect, using the
+# relative base damage of each attack", and the page files the arsenal's own
+# display of that as a UI bug. Only the DART's share is modelled here, since
+# only the dart is.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 75
+  fire_rate: 2.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.13
+  crit_multiplier: 2.0
+  status_chance: 0.50
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 75 m/s, and the page states no
+  # reach. See data/surveys/weapon_range.yaml.
+  #
+  # THE 76 IS THE DART ALONE. The in-game codex shows 135 and the page calls
+  # that wrong: "the base damage listed in the in-game codex (135) is incorrect
+  # as it is split between the two attacks (76 and 59, respectively)". So this
+  # entry carries the dart's 76 and the DoT's 59 is admitted below rather than
+  # folded in — folding it in would get the total right and the timing, the
+  # crit rolls, the proc draws and the progenitor split all wrong.
+  damage: { impact: 18, puncture: 32, slash: 26 }   # total 76
+
+unmodeled:
+  - "THE INNATE CORROSIVE DoT, which is 177 of this weapon's 253 damage a dart — \"The 177 Corrosive damage is dealt in 3 ticks of 59 damage over the course of 2 seconds\", with each multishot pellet creating its own. It is a DAMAGE-OVER-TIME ATTACK rather than a status proc or an explosion, and the engine has no shape for one: three attacks in the whole game are typed this way and two of them are this weapon's family, so it is recorded rather than built. THE NUMBER ON SCREEN IS THEREFORE ABOUT A THIRD OF THE REAL ONE against a single target"
+  - "the dart carries its DoT THROUGH what it pierces at a reduced rate — \"If the dart punches through an enemy, they will instead receive 1 tick\" — which is a second rule about the DoT above and equally unmodelled"
+  - "corpses ride the dart: \"On kill, bodies will follow the dart that killed them, damaging anyone in their path\", which needs a corpse, a direction and a bystander this arena does not move"
+
+source:
+  url: https://wiki.warframe.com/w/Coda_Tysis

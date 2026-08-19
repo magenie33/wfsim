@@ -1,0 +1,92 @@
+id: tenet_quanta
+name: Tenet Quanta
+slot: primary
+# TWO BEAMS AT ONCE — "Primary Fire shoots two concentrated continuous beams
+# with innate multishot of 2" — which is why its listed total damage (36) is
+# twice its per-beam damage (18). Its alternate fire lobs a cube; see that
+# entry.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags PROJECTILE, BEAM, ASSAULT_AMMO
+transform_group: tenet_quanta
+mastery_rank: 16
+# RANK 40, NOT 30 — "Polarizing the weapon increases its max rank by 2, capping
+# at rank 40 after 5 polarizations, granting the weapon additional mod
+# capacity" (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 0.75            # riven disposition
+polarities: [vazarin, madurai, naramon]
+exilus_polarity: naramon
+riven_family: Quanta
+traits: [corpus, tenet]
+introduced: "42"
+internal_name: /Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEQuanta/CrpBEQuanta
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 100
+reload_seconds: 2.0
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,
+# Cold, Electricity, Toxin, Magnetic, or Radiation damage, based on the Sister's
+# progenitor Warframe, which increases the listed base damage of the weapon by
+# 25%-60%." An Electricity progenitor merges into the beam's own Electricity;
+# the other six arrive beside it.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 10.0
+  # INNATE MULTISHOT OF 2, and it is two real beams rather than a damage
+  # multiplier: "Primary Fire shoots two concentrated continuous beams with
+  # innate multishot of 2". `damage:` below is what ONE of them carries.
+  multishot: 2.0
+  # "Consumes 0.5 ammo per tick of damage."
+  ammo_cost: 0.5
+  crit_chance: 0.31
+  crit_multiplier: 2.5
+  status_chance: 0.26
+  punch_through_m: 0.0
+  damage: { electricity: 18 }   # 18 a beam, 36 a tick
+
+  # A BEAM WITH NO SPLASH AND NO CHAIN — the block exists for the RANGE, which
+  # on a continuous weapon lives here rather than on the attack. Fifty metres is
+  # the longest beam in the roster; the radius is 0 and the chain empty because
+  # the page gives neither.
+  beam:
+    range_m: 50.0
+    damage_radius_m: 0.0
+    radius_takes_multishot: false
+    chain:
+      hops: 0
+      range_m: 0.0
+      damage_per_hop: 0.0
+      origin: radius_targets
+
+# THE RAMP FLOOR IS 30%, not the engine's 20% default: "Damage ramps 30% to 100%
+# over 0.6 seconds; decays to 30% over 2 seconds after 0.8-second firing pause."
+# The 0.6 and the 0.8 are the engine's own constants and match exactly; only the
+# floor differs, the same shape the Tenet Cycron and the Kuva Nukor have.
+beam_ramp_floor: 0.30
+
+source:
+  url: https://wiki.warframe.com/w/Tenet_Quanta

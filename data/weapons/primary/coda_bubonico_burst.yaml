@@ -1,0 +1,94 @@
+id: coda_bubonico_burst
+name: Coda Bubonico
+# THE THREE-ROUND BURST. "Alternate fires a three round burst that explode in a
+# 7 meter radius upon impact with a surface or enemy", for 9 Impact on the hit
+# and 143 Viral in the blast — so the explosion is sixteen times the round that
+# delivered it, which is the whole shape of this mode.
+#
+# IT IS THE OPPOSITE WEAPON TO THE PRIMARY FIRE in every stat that matters: 5%
+# crit against 27% but a 3.5x multiplier against 2.3x, and 61% status against
+# 10%. The base form is a shotgun; this is a grenade launcher wearing it.
+inherits: coda_bubonico
+form: alt_fire
+transform_group: coda_bubonico
+
+introduced: "42"
+
+# NOT INHERITED — the CO catalog gives a class per ATTACK. No row for either of
+# this weapon's, so both are ordinary Additive; the explosion takes no Condition
+# Overload at all, which is the engine's standing rule for a radial.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). PERFECT, where the
+  # primary fire's barrage spreads 1-7 degrees.
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: burst
+  # Three rounds a pull at 0.23 s between them, from the module's own BurstCount
+  # and BurstDelay. The 7.00 fire rate is the PULL rate, which is what the burst
+  # cadence formula reads.
+  burst:
+    count: 3
+    delay_seconds: 0.23
+  shot_type: projectile
+  projectile_speed_mps: 25
+  fire_rate: 7.0
+  multishot: 1.0
+  # THREE ROUNDS A SHOT, NINE A BURST, which is what the page's own disadvantage
+  # means by "Multiplied consumption results in only three bursts before
+  # recharging" — 36 rounds of magazine divided by 9.
+  ammo_cost: 3
+  crit_chance: 0.05
+  crit_multiplier: 3.5
+  status_chance: 0.61
+  punch_through_m: 0.0
+  # AND IT MAY NOT BE GIVEN ANY. The primary fire carries 1.9 m of innate punch
+  # through; this form carries none and can be given none, because it has an
+  # area-of-effect component and the punch-through page's class rule applies:
+  # "weapon projectiles with an area of effect (AoE) component will not Punch
+  # Through enemies or level geometry at all". One weapon, two forms, opposite
+  # answers — which is why the field is per attack.
+  #
+  # NO RANGE ROW on the Burst block — Projectile at 25 m/s. The 7.0 m below is
+  # the RADIUS. See data/surveys/weapon_range.yaml.
+  damage: { impact: 9 }   # total 9
+
+  # PRIMARY COMPRESSION's row, by column (docs/CATALOGS.md §2):
+  #   Attack Name   Alt-Fire + AoE         Base Radius   7.0 m
+  #   Effectiveness 100%                   Max @ base    +560%
+  #   Stacking      Multiplies             w/ Primed Firestorm  (not listed)
+  #   Radius calc   Snapshot               Class         Shotgun
+  #
+  # Ordinary in every column it states.
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
+
+  # THE EXPLOSION — 143 Viral in 7 metres, with "Initial hit and explosion apply
+  # status separately", which is why it is a second instance rather than added
+  # damage. A 1x body-part multiplier and no headshot conditions, the engine's
+  # standing rule for every radial. Its status chance is 57% where the round's
+  # is 61%, which is a real difference and is transcribed rather than shared.
+  radial:
+    damage: { viral: 143 }
+    radius_m: 7.0
+    falloff_start_m: 0.0
+    # "Explosion has linear damage falloff from 100% to 50% from central
+    # impact" — half removed at the rim.
+    falloff_reduction: 0.5
+    crit_chance: 0.05
+    crit_multiplier: 3.5
+    status_chance: 0.57
+
+unmodeled:
+  - "the explosion's +9 s STATUS DURATION, which the page states is applied before other percentage-based duration modifiers — a flat bonus ahead of the multiplicative bracket, and the only one of its shape in the roster"
+  - reason: explosion_ignores_cover
+  - "the projectiles arc heavily and travel slowly, so at range the burst has to be led — an aiming cost this arena has no hand to pay"
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Coda_Bubonico

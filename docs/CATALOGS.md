@@ -70,6 +70,50 @@ until the row is checked for that weapon's own name.
 | Torid | Toxin AoE Cloud (AoE) | 40 | 100% | Multiplying | the cloud's `takes_condition_overload: true` |
 | Shedu | Normal Attack (Projectile) | 71 | 100% | Multiplying | `shedu.yaml` → `independent` |
 
+### THE TENET AND CODA BATCH — re-read 2026-08-20
+
+Twenty weapons arrived at once and the two tables name **seven** of their
+attacks. Five are anomalies; two are the catalog saying "checked, ordinary",
+which is a different and useful statement.
+
+| weapon | attack | unmodded | bonus | relative | type | our entry |
+| --- | --- | --- | --- | --- | --- | --- |
+| Tenet Arca Plasmor | Normal Attack (Projectile) | 760 | 760 | 100% | Multiplying | `tenet_arca_plasmor` → `independent` |
+| Coda Bassocyst | Normal Attack (Projectile) | 808 | 808 | 100% | Multiplying | `coda_bassocyst` → `independent` |
+| Coda Bassocyst | Alt-fire (Homing Projectile) | 303 | **0** | **0%** | N/A — *"Does not apply"* | no entry: the alt fire is unmodelled |
+| Coda Hema | Normal Attack (Projectile) | 52 | 52 | 100% | Multiplying | `coda_hema` → `independent` |
+| Tenet Plinx | Alt Fire Impact (Projectile) | **1000** | 1000 | 100% | Multiplying — *"Scales properly with magazine size"* | `tenet_plinx_charged` → `independent` |
+| Tenet Spirex | Slug Impact (Projectile) | 120 | 120 | 100% | Multiplying | `tenet_spirex` → `independent` |
+| Tenet Ferrox | Hitscan AoE Direct (**AoE**) | 60 | **200** | **333%** | Adding — *"Radial hit receives CO bonus on direct hit only"* | **not expressible** — see below |
+| Tenet Detron | Normal Attack (Projectile) | 26 | 26 | 100% | **Adding** — *"CO-bonus ignores Damage Falloff"* | ordinary; transcribed anyway |
+| Tenet Detron | Burst Shot (Projectile) | 26 | 26 | 100% | **Adding** — *"CO-bonus ignores Damage Falloff"* | ordinary; transcribed anyway |
+
+Four things this batch taught the file.
+
+1. **THE PLINX ROW IS A MEASUREMENT OF SOMETHING ELSE.** Its unmodded damage
+   cell reads 1000 where the infobox lists 100, which is the catalog
+   independently confirming the weapon's own Notes: *"the attack deals 100
+   Impact on contact and 100 Radiation on explosion, multiplied by the magazine
+   capacity"*. A CO table cross-checking a damage mechanic is not what it is
+   for, and it is the second time the damage column has paid for itself.
+2. **A WEAPON CAN HAVE TWO ROWS WITH OPPOSITE ANSWERS.** The Coda Bassocyst's
+   primary fire is Multiplying and its alt fire is `Does not apply` — the two
+   ends of the vocabulary, on one weapon, three columns apart.
+3. **THE FERROX ROW IS THE FIRST ONE THIS ENGINE CANNOT CARRY.** It says two
+   things at once: that a RADIAL takes Condition Overload at all, which no
+   ordinary radial does, and that its term reads the DIRECT hit's base (200)
+   rather than its own (60). `co_base_fraction` is one number per ENTRY, and
+   that entry's direct hit is ordinary — so a 3.333 would be wrong for the half
+   of the attack the row does not name. The radial takes none, which understates
+   a status-stacking build, and the weapon's own `unmodeled:` says so on the
+   card.
+4. **A ROW THAT SAYS "ORDINARY" IS STILL WORTH TRANSCRIBING.** Both Tenet Detron
+   rows are `Adding` at 100%, which is the default — so they add nothing to the
+   engine and everything to the reader: they are the difference between *checked
+   and ordinary* and *never looked at*. Their Notes cell is a real anomaly with
+   no word in `CoBehavior` (the CO term ignoring damage falloff), and it is
+   admitted on the weapon rather than silently dropped.
+
 **Rows for roster weapons that are NOT the ordinary case.** Transcribed
 2026-08-12 from `?action=raw`, which is also when this table stopped being three
 rows — the file exists so the catalog can be diffed against the wiki in one
@@ -651,6 +695,26 @@ Only ours, so this stays diffable. The full table lives on the wiki.
 | Scourge (Prime) — Primary Fire + AoE | 100% | 1.7 m | +136% | Multiplies | Speargun |
 | Scourge (Prime) — **Throw + AoE** | 100% | 7.0 m | +560% | Multiplies | Speargun; the biggest radius the pair has |
 | Larkspur Prime | Untested / 0% | 9.6 m | — | — | "Archguns cannot equip" |
+| Tenet Envoy — Primary Fire + AoE | 100% | 8.0 m | +640% | Multiplies | Launcher; joint-largest radius in the batch |
+| Tenet Tetra — Alt-Fire + AoE | 100% | 8.0 m | +640% | Multiplies | Rifle; the other half of that pair |
+| Tenet Ferrox — Primary Fire + AoE | 100% | 4.0 m | +320% | **Adds** | Speargun — and the only `Adds` outside the Braton/Burston/Mausolon set |
+| Tenet Ferrox — **Throw + AoE** | **0%** | — | — | Doesn't Work | *"Pull radial tick damage can benefit from Compression while aiming"* |
+| Tenet Quanta — Alt-Fire + AoE | **100% / 8%** | 0.5 m | +40% | Multiplies | the two figures are the cube's TWO explosions |
+| Coda Bubonico — Alt-Fire + AoE | 100% | 7.0 m | +560% | Multiplies | Shotgun |
+| Coda Sporothrix — Primary Fire + AoE | **100% / 33% / 42%** | 2.0 m | +160% | Multiplies | Sniper |
+
+**THE SPEARGUNS' SPLIT REPEATS, AND FLIPS.** The Scourge pair's two rows are
+1.7 m and 7.0 m, both ordinary; the Tenet Ferrox's are 4.0 m **Adds** and a
+tested **zero** on the throw. Same weapon class, same two firing modes, and the
+arcane is worth four times more on one pair's alt-fire and *nothing at all* on
+the other's. Two rows for one weapon is the shape; which way they fall is not
+something a class can tell you.
+
+**THE QUANTA'S TWO EFFECTIVENESS FIGURES** are its cube's two explosions —
+100% on the 0.5 m contact blast the roster fires, 8% on the 6 m one a player
+shoots loose, which is unmodelled. The base-radius column agrees with the first
+(0.5 m → +40%), so the single figure the entry carries is right for what it
+actually fires.
 
 **The spearguns are TWO ROWS FOR ONE WEAPON**, split by firing mode the way §1's
 CO rows are, and the Weapon cell reads `Scourge (Scourge Prime)` — one row that
