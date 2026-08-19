@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-engine: f9a832b31fdf17bd995b6af0a4cfa85b81e09034
+engine: 8e217420b11fdf70a2c8b56487ac0ea29d57eacb
 entries:
   - weapon: akarius_prime
     mode: base
@@ -76,6 +76,12 @@ entries:
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, repeater_clip, magnetic_strafe, primed_charged_shell, contagious_spread]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
     arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: base
+    score: 24.900054449063248
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, repeater_clip, magnetic_strafe, primed_charged_shell, contagious_spread]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_merciless]
   - weapon: braton_prime
     mode: cycle
     score: 41.879128151852946

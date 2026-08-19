@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: f9a832b31fdf17bd995b6af0a4cfa85b81e09034
+engine: 8e217420b11fdf70a2c8b56487ac0ea29d57eacb
 entries:
   - weapon: akarius_prime
     mode: base
@@ -1535,6 +1535,24 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, bladed_rounds, point_strike, speed_trigger, vile_acceleration, vital_sense, thermite_rounds]
     arcanes: [primary_crux]
     valence: impact
+  - weapon: dera_vandal
+    mode: cycle
+    score: 22.056317594387497
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [dera_vandal_evo1_incarnon_form, dera_vandal_paragon_essence, dera_vandal_extended_volley, dera_vandal_deathtrap_trigger]
+    arcanes: [primary_deadhead]
+  - weapon: dera_vandal
+    mode: cycle
+    score: 18.63428293570548
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [dera_vandal_evo1_incarnon_form, dera_vandal_paragon_essence, dera_vandal_extended_volley, dera_vandal_deathtrap_trigger]
+    arcanes: [primary_deadhead]
+  - weapon: dera_vandal
+    mode: cycle
+    score: 18.53899687061865
+    mods: [primary_acuity, galvanized_aptitude, hammer_shot, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [dera_vandal_evo1_incarnon_form, dera_vandal_paragon_essence, dera_vandal_extended_volley, dera_vandal_deathtrap_trigger]
+    arcanes: [primary_deadhead]
   - weapon: dera_vandal
     mode: cycle
     score: 17.784165974150902
