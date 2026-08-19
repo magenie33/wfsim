@@ -258,6 +258,15 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 .topbar-inner .qq-link,.topbar-inner .dc-link,.topbar-inner .gh-link,.topbar-inner .sup-link{
   width:28px;padding:0;text-decoration:none;
   display:inline-flex;align-items:center;justify-content:center}
+/* …EXCEPT the ask, which carries its name and therefore its own width. It is
+   the one entry in this row that is not chrome, and until 2026-08-19 it was
+   drawn exactly like the theme toggle — a bare heart, which reads as
+   "favourite" as often as it reads as "donate". Tinted rather than filled:
+   the topbar is still chrome, so this is the row's emphasis and not a CTA. */
+.topbar-inner .sup-link{width:auto;gap:6px;padding:0 10px;color:var(--gold);
+  border-color:color-mix(in srgb,var(--gold) 42%,transparent)}
+.topbar-inner .sup-link:hover{background:color-mix(in srgb,var(--gold) 12%,transparent)}
+.topbar-inner .sup-link .tbl{display:inline;font-size:12px;font-weight:600}
 .sup-link svg{display:block}
 /* MEASURED, not guessed: at 360px the bar used to wrap to two rows and the
    weapon search — the site's navigation — was down to 29px wide, so the
@@ -1204,6 +1213,43 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .menu-toggle{order:5;font-size:15px;line-height:1}
 .topbar-inner .menu-toggle{display:none}
 
+/* ---- the topbar overflow: `⋯` -----------------------------------------
+   The bar carries what a reader ACTS on; everything else is one click away
+   (owner, 2026-08-19). Below 700px this whole thing is `display:contents` and
+   its children flatten into the phone menu — one copy of every control at both
+   widths, which is the same trick `.topmenu` plays one level up. */
+.tbmore{position:relative}
+.tbmore-panel{display:none;position:absolute;top:calc(100% + 10px);right:0;z-index:60;
+  min-width:190px;flex-direction:column;gap:2px;padding:6px;
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 8px 28px rgba(0,0,0,.35)}
+.tbmore.open .tbmore-panel{display:flex}
+.tbmore-btn{font-size:15px;line-height:1}
+/* A MARK WORKS IN A ROW OF MARKS; A PANEL IS A LIST, AND A LIST HAS NAMES.
+   The 28px icon rule above is `.topbar-inner .x-link` (0,2,0), so winning it
+   back inside the panel takes the same specificity plus one — the same trap
+   that rule itself was written to escape. */
+.topbar-inner .tbmore-panel .ghost-btn{width:100%;height:30px;gap:9px;padding:0 8px;
+  justify-content:flex-start;border-color:transparent}
+.topbar-inner .tbmore-panel .ghost-btn:hover{background:var(--plane)}
+.tbl{display:none}
+.tbmore-panel .tbl{display:inline;font-size:12px;color:var(--text-2)}
+/* The language dropdown's `margin-left:auto` is what pushes the right-hand
+   group over on the bar; inside the panel there is nothing to push. */
+.tbmore-row{display:flex;align-items:center;gap:9px;height:30px;padding:0 8px}
+.tbmore-row .tbl{flex:1 1 auto}
+.topbar .tbmore-panel .dd{margin-left:0}
+/* THE COMMUNITY SLOT IS A HOLE, NOT A BOX: `applyCommunityOrder()` moves a
+   mark into it, and it must sit where the mark itself would have. Which means
+   the promoted child needs the ORDER — `.topbar-inner .tblinks>*` reaches the
+   slot, and a slot that is `display:contents` is not a flex item, so the value
+   lands on nothing while its child defaults to 0 and sorts in front of the
+   WORDMARK. Caught on a screenshot, not by geometry: the mark was still
+   on screen and still inside the viewport, so nothing measuring reachability
+   could see it. Same trap this file warns about two rules up. */
+.tbcomm{display:contents}
+.topbar-inner .tbcomm>*{order:4}
+
 @media (max-width:700px){
   /* Below here the wrapper becomes a real box, hanging off the bar. The
      anchor is the bar itself so the panel tracks the sticky header. */
@@ -1234,7 +1280,33 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
   /* The language dropdown's `margin-left:auto` is what pushes the right-hand
      group over on a desktop; inside the panel there is nothing to push. */
   .topbar .topmenu .dd{margin-left:0}
+  /* The overflow stops being one: its children join the phone menu directly,
+     so the `⋯` has nothing left to open and the panel is not a box. */
+  .tbmore,.tbmore-panel,.tbmore.open .tbmore-panel{display:contents}
+  .topbar-inner .tbmore-btn{display:none}
+  /* `.topbar-inner .tblinks>*` sets order:4 on the row's own children; the
+     overflow's promoted children default to 0 and would jump ahead of the ask.
+     They sort after it instead — the ask is LAST of what the reader came for
+     and first of what spilled out of the bar. */
+  .topbar-inner .tbmore-panel>*,.topbar-inner .tbmore-panel .tbcomm>*,
+  .topbar-inner .tbmore-row>*{order:5}
+  /* Back to a ROW of marks, which is what the phone menu has always been:
+     names down a narrow panel would be six lines of chrome above nothing. */
+  .tbmore-panel .tbl{display:none}
+  .topbar-inner .tbmore-panel .ghost-btn{width:28px;height:28px;padding:0;
+    justify-content:center;border-color:var(--line)}
+  .tbmore-row{display:contents}
 }
+
+/* ---- the ask, beneath a finished result -------------------------------
+   Muted, static, below the last fold — it states the work in numbers the
+   reader can check against the Detail table above it, and only then asks.
+   Never a modal, never a banner, and it does not move: the topbar being
+   chrome was always the rule, and it still is (owner, 2026-08-19). */
+.sim-ask{margin:16px 0 0;padding-top:12px;border-top:1px solid var(--line);
+  color:var(--muted);font-size:12px;line-height:1.6}
+.sim-ask a{color:var(--gold);text-decoration:none;white-space:nowrap}
+.sim-ask a:hover{text-decoration:underline}
 
 /* ---- the board -------------------------------------------------------- */
 .bench-sub{max-width:70ch;margin:0 0 14px;color:var(--text-2);font-size:13px;line-height:1.55}

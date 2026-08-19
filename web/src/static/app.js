@@ -1284,6 +1284,50 @@ const QQ_GROUP = "995078378";
   addEventListener("resize", () => { if (innerWidth > 700) set(false); });
 })();
 
+// THE COMMUNITY LINK A READER CAN ACT ON GOES ON THE BAR (owner, 2026-08-19);
+// the other one is in the overflow. A Chinese reader will never click Discord
+// and an English reader will never click QQ, so putting both on the bar spent
+// two of its slots to serve half a reader each.
+//
+// ORDERED, NEVER DROPPED — an English reader still finds the QQ group one
+// click away. English is the source everywhere in this repo, so the markup
+// ships the English order and this swaps it; a language change reloads the
+// page, so it runs exactly once.
+function applyCommunityOrder() {
+  const primary = $("community-primary"), alt = $("community-alt");
+  const qq = document.querySelector(".qq-link"), dc = document.querySelector(".dc-link");
+  if (!primary || !alt || !qq || !dc) return;
+  const [near, far] = LANG === "zh" ? [qq, dc] : [dc, qq];
+  primary.appendChild(near);
+  alt.appendChild(far);
+}
+applyCommunityOrder();
+
+// The topbar overflow. Below 700px it is `display:contents` and the button is
+// not drawn, so this only does anything on a desktop — but it binds either
+// way, because a resize crosses the breakpoint without reloading.
+(function () {
+  const box = $("tbmore"), btn = $("tbmore-toggle");
+  if (!box || !btn) return;
+  const set = (open) => {
+    box.classList.toggle("open", open);
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+  };
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    set(!box.classList.contains("open"));
+  });
+  // `#dd-popover` counts as INSIDE, for the same reason the phone menu counts
+  // it: the compute picker draws into the shared popover, which is a SIBLING
+  // of this panel in the DOM, so picking a share would close the panel out
+  // from under the control that is being used.
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#tbmore, #dd-popover")) set(false);
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") set(false); });
+  addEventListener("resize", () => set(false));
+})();
+
 // theme
 (function () {
   const saved = localStorage.getItem("wfsim-theme");
@@ -1788,15 +1832,24 @@ function renderBenchBoard() {
 // work yet is worse than one that is not offered, so an entry with an empty
 // `url` renders nothing — and filling that url in is the whole of adding one.
 //
-// ONE channel serves every locale (owner, 2026-08-06). There is deliberately
-// no per-locale ordering and no QR path here: both would be machinery for a
-// second channel that does not exist, and the shape a domestic one wants is
-// not knowable until there is one to look at.
+// A CHANNEL A READER CANNOT PAY THROUGH IS NOT AN OPTION (owner, 2026-08-19).
+// Ko-fi wants a card or PayPal, which is not how anyone in mainland China pays
+// for anything — so a Chinese reader was being shown one channel and offered
+// none. The ones that match the display language come first.
+//
+// ORDERED, NEVER FILTERED, which is the rule the topbar's community links
+// follow and for the same reason: a reader who can use the other one still has
+// to be able to find it. `locale: null` means "works anywhere" and sorts
+// between the two. The per-locale ORDER is all that lives here — the shape a
+// domestic channel wants (a scan code rather than a link) is not knowable
+// until there is a real payload to draw, so that waits for one.
+const chRank = (c) => (c.locale === LANG ? 0 : c.locale ? 2 : 1);
 const SUPPORT_CHANNELS = [
   {
     id: "kofi",
     name: "Ko-fi",
     url: "https://ko-fi.com/magenie33",
+    locale: "en",
     // ONE-OFF ONLY. Ko-fi's memberships are a subscription with perks, which
     // is the one shape DE's non-commercial rule does not allow — they stay
     // switched off in the account, and so do its shop and commissions.
@@ -1810,7 +1863,8 @@ const SUPPORT_CHANNELS = [
 function renderSupport() {
   const box = $("support-channels");
   if (!box) return;
-  box.innerHTML = SUPPORT_CHANNELS.filter((c) => c.url).map((c) => `
+  box.innerHTML = SUPPORT_CHANNELS.filter((c) => c.url)
+    .sort((a, b) => chRank(a) - chRank(b)).map((c) => `
     <a class="sup-card" href="${escHtml(c.url)}" target="_blank" rel="noopener">
       <div class="sup-name">${escHtml(c.name)}</div>
       <div class="sup-what">${escHtml(tr(c.what))}</div>
@@ -2019,6 +2073,30 @@ const aimField = (w, state) => {
     ? tr("a sentinel weapon is always aiming — it just never aims at the head, so on-headshot effects never fire")
     : tr("mods that only work while aiming (Galvanized Crosshairs, Argon Scope, Sharpened Bullets…) grant nothing when this is off");
   return `<label class="check" title="${escHtml(why)}"><input type="checkbox" data-k="aiming"${on ? " checked" : ""}${forced ? " disabled" : ""}> ${escHtml(tr("Aiming"))}</label>`;
+};
+/// …AND ITS HEADSHOT RATE IS 0 AND NOT YOURS (owner, 2026-08-19).
+///
+/// The VALUE was already right from both ends — `defaultHeadshotPct` opens a
+/// sentinel at 0, and `parse_fight` forces 0 on one whatever the request
+/// carries. The CONTROL was not: a bare number input, editable, so a reader
+/// could type 100 on a Verglas, watch the page accept it, and get a run
+/// computed at 0 with nothing on screen saying why. A column that is shown and
+/// not applied looks exactly like one that works — the same fault
+/// `check_custom_enemies` was written for, in another panel.
+///
+/// It is DISPLAY-ONLY, and that is deliberate: `sim.headshot_pct` belongs to a
+/// scenario SHARED across the whole roster (`SHARED_DOMAINS`), so writing 0
+/// into it here would rewrite the fight every time a sentinel was opened and
+/// auto-save would store it — which is the exact trap `switchWeapon` documents
+/// and avoids. So the field shows 0 and disables itself while the underlying
+/// scenario keeps whatever the reader set for the rest of the roster.
+const headshotField = (w, state) => {
+  const forced = !!w.sentinel;
+  const val = forced ? 0 : state.headshot_pct;
+  const why = forced
+    ? tr("a sentinel weapon is fired by the companion and never aims at the head, so this is 0 whatever is typed — and every on-headshot effect stays dead")
+    : tr("a per-PELLET aim weight on the body the shot STRUCK, not a whole-spread promise — the landing spot is rolled for each pellet, and nothing a blast or a chain reaches can be a headshot");
+  return `<label title="${escHtml(why)}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${val}"${forced ? " disabled" : ""}></label>`;
 };
 const ammoField = (w, state) => {
   const forced = ammoForced(w);
@@ -4451,26 +4529,31 @@ function renderRivenTools() {
 // table: the table would have to be append-only forever, and one reordering
 // would silently reinterpret every link ever posted.
 const SHARE_PARAM = "b";
-/// SHARING IS OFF (owner, 2026-08-07).
+/// SHARING IS BACK ON (owner, 2026-08-19), and the condition it was switched
+/// off under was met before it was.
 ///
-/// Two people reported a shared link opening blank on the same day and neither
-/// case could be reproduced here — the live site produced a link and read it
-/// back correctly under every condition tried. An unreproducible failure in the
-/// one feature whose whole job is to be pasted somewhere public is not a
-/// feature to leave running while it is investigated.
+/// IT WAS OFF SINCE 2026-08-07. Two people reported a shared link opening blank
+/// on the same day and neither case could be reproduced here — an
+/// unreproducible failure in the one feature whose whole job is to be pasted
+/// somewhere public is not a feature to leave running while it is investigated.
+/// The commit that switched it off named exactly one thing it needed first, and
+/// that thing is done: the payload did not carry the build's MODE, so a shared
+/// build was reproduced played the wrong way. `mode` and `valence` joined the
+/// tuple on 2026-08-15 — see `SHARE_AXES`, which now exists precisely so that
+/// an axis cannot go missing from it again without a check going red.
 ///
-/// BOTH HALVES ARE OFF, and the import half matters more: a link already posted
-/// must not open blank. With this false an incoming `?b=` is dropped, the query
-/// is stripped, and the visitor lands on the weapon's own page with a line
-/// saying why — which is the worst case a posted link should ever reach.
+/// AND THE BLANK IS NO LONGER SILENT, which is what made it undiagnosable
+/// rather than what caused it. Two things landed since: the boot GUARD in the
+/// document head (same commit, so it survives an app.js that never parses) and
+/// the BUILD STAMP in the footer (2026-08-18) — without which "still broken"
+/// and "still holding the old file" are the same sentence from the reporter's
+/// side. A repeat report is now answerable instead of unreproducible.
 ///
-/// Nothing about the codec is deleted. `sharePayload`/`decodeShare` and their
-/// tests stand, so turning this back to true is the whole of turning it back
-/// on. What it still needs before that: the payload does not carry the build's
-/// MODE, so a shared build is reproduced played the wrong way — the share rule
-/// is that a link reproduces the whole thing, and it stopped being true the day
-/// mode became part of a build.
-const SHARE_ENABLED = false;
+/// FALSE STILL WORKS AND STILL MATTERS: with it, an incoming `?b=` is dropped,
+/// the query is stripped, and the visitor lands on the weapon's own page with a
+/// line saying why — the worst case a posted link should ever reach. It stays
+/// the switch to reach for, not a thing to delete.
+const SHARE_ENABLED = true;
 const SHARE_V_DEFLATE = "1";
 const SHARE_V_PLAIN = "0";
 
@@ -4551,7 +4634,7 @@ const evoPrefix = () => {
 const SHARE_AXES = ["mods", "evolutions", "arcanes", "arcane_ranks", "mode",
                     "valence", "rivens"];
 
-function sharePayload() {
+function sharePayload(withFight = true) {
   const st = snapshotState();
   const p = loadPresetList(BUILDS).find((x) => x.name === activePreset);
   const pre = evoPrefix();
@@ -4650,7 +4733,15 @@ function sharePayload() {
   const val = (st.valence && st.valence.element !== dv.element) || (st.valence && st.valence.bonus !== dv.bonus)
     ? [st.valence.element, r3(st.valence.bonus)] : 0;
 
-  const out = [2, st.weapon, activePreset, slots9, arcs, evos, rivens, sc, m, md, val];
+  // A SHARE IS EITHER A BUILD OR A CLAIM (owner, 2026-08-19), and fields 7 and
+  // 8 are the difference. A BUILD-only link carries neither: `0` at field 7
+  // means NO FIGHT TRAVELLED, which is a different statement from `{}` — an
+  // empty object means "a fight travelled and it happens to equal the
+  // defaults", and a recipient must be able to tell those apart or every build
+  // link silently plants a scenario preset nobody asked for. Every link posted
+  // before today sends an object there, so they land exactly as they did.
+  const out = [2, st.weapon, activePreset, slots9, arcs, evos, rivens,
+               withFight ? sc : 0, withFight ? m : 0, md, val];
   while (out.length > 9 && !out[out.length - 1]) out.pop();
   return out;
 }
@@ -4658,8 +4749,8 @@ function sharePayload() {
 const r3 = (x) => Math.round((Number(x) || 0) * 1000) / 1000;
 const cap1 = (s) => String(s || "").replace(/^./, (c) => c.toUpperCase());
 
-async function shareUrl() {
-  const json = new TextEncoder().encode(JSON.stringify(sharePayload()));
+async function shareUrl(withFight = true) {
+  const json = new TextEncoder().encode(JSON.stringify(sharePayload(withFight)));
   const z = await deflate(json);
   const code = z && z.length < json.length
     ? SHARE_V_DEFLATE + b64urlEnc(z)
@@ -4699,7 +4790,9 @@ async function decodeShare(code) {
         malus: malus ? { id: malus[0], roll: malus[1] } : null,
       },
     })),
-    sc: expandScenario(sc || {}),
+    // `null` means the link carried NO FIGHT — see `sharePayload`. `{}` means
+    // it carried one that equals the defaults, and the two must not collapse.
+    sc: sc ? expandScenario(sc) : null,
     m: m ? { score: m[0], duration: m[1], dps: m[2] } : null,
   };
 }
@@ -4756,18 +4849,26 @@ async function importShare(code) {
     refreshRivenNames();
   }
 
-  // 2. The SCENARIO, as its own new entry — the fight the number was measured
-  //    in is half of what makes the number checkable. Only the differences
-  //    travelled, so the defaults fill the rest back in.
-  // Only the DIFFERENCES travelled; the server's own defaults fill the rest
-  // back in, which is the same table the sender diffed against.
-  const scState = { ...defaultScenario(), ...(data.sc || {}) };
-  const sc = loadPresetList(SCENARIOS);
-  const scName = freeName(sc, (n) => "scenario" + (n > 1 ? " " + n : ""));
-  sc.push({ name: scName, savedAt: Date.now(), state: scState });
-  storePresetList(SCENARIOS, sc);
-  activeScenario = scName;
-  localStorage.setItem(presetActiveKey(SCENARIOS), scName);
+  // 2. The SCENARIO — only when one travelled. A BUILD-only link carries no
+  //    fight (`data.sc === null`), and the rule that makes it worth having is
+  //    that it CHANGES NOTHING about the reader's own: no new preset, no
+  //    switch of the active one. A build is a statement about a weapon and a
+  //    fight is not, so posting "here is my Torid" into a chat must not move
+  //    the fight of everyone who clicks it.
+  //
+  //    When one DID travel it lands as its own new entry, because the fight a
+  //    number was measured in is half of what makes the number checkable.
+  //    Only the differences travelled; the server's own defaults fill the rest
+  //    back in, which is the same table the sender diffed against.
+  const scState = data.sc ? { ...defaultScenario(), ...data.sc } : null;
+  if (scState) {
+    const sc = loadPresetList(SCENARIOS);
+    const scName = freeName(sc, (n) => "scenario" + (n > 1 ? " " + n : ""));
+    sc.push({ name: scName, savedAt: Date.now(), state: scState });
+    storePresetList(SCENARIOS, sc);
+    activeScenario = scName;
+    localStorage.setItem(presetActiveKey(SCENARIOS), scName);
+  }
 
   // 3. The BUILD, with riven ids repointed at the copies just made and any id
   //    this build of the site does not know dropped — said out loud rather
@@ -4815,7 +4916,14 @@ async function importShare(code) {
   // carries both and both must land, but a build does not set a scenario:
   // the copy above is already the active `simulator-scenarios` entry, and
   // this is what puts it on screen.
-  whileApplying(() => { restoreState(state, w.id); applyScenario(scState); });
+  whileApplying(() => {
+    restoreState(state, w.id);
+    // …and nothing else touches the fight when none travelled: `applyScenario`
+    // is the only door a scenario is set through, so not opening it IS the
+    // guarantee (`check_preset_independence.mjs` asserts the same rule for a
+    // build being LOADED, which is the case this one now matches).
+    if (scState) applyScenario(scState);
+  });
   builds.push({
     name, savedAt: Date.now(), state: snapshotState(),
     // The sharer's number, as THEIR claim: it is stamped with a key that
@@ -4827,9 +4935,12 @@ async function importShare(code) {
 
   renderPresetBar(); renderScenarioBar(); renderMods(); renderSim(); refreshPanel();
   renderStoredSimResult();
+  // WHAT LANDED, said out loud — and a build-only link says so by NOT listing
+  // a scenario, which is the one thing a reader would otherwise have to check
+  // their own scenario bar to discover.
   const bits = [tr("build")];
   if ((data.rivens || []).length) bits.push(`${data.rivens.length} ${tr("riven")}`);
-  bits.push(tr("scenario"));
+  if (scState) bits.push(tr("scenario"));
   presetToast(`${tr("imported")}: ${name} · ${bits.join(" + ")}` +
     (dropped.length ? ` · ${tr("dropped")} ${dropped.length}` : ""));
   return true;
@@ -4842,39 +4953,74 @@ async function openSharePanel(bar) {
   const panel = bar.querySelector(".pshare");
   if (!panel) return;
   if (!panel.hidden) { panel.hidden = true; return; }
+  // TWO THINGS ARE SHAREABLE HERE AND ONLY ONE OF THEM IS A CLAIM (owner,
+  // 2026-08-19). A BUILD is a statement about a weapon; a RESULT is that build
+  // plus the fight it was measured in plus the number. They were one link, so
+  // every "here is my Torid" posted into a chat also carried a fight and a
+  // measurement — and planted a scenario preset in the reader's collection.
+  //
+  // The BUILD link is the default and it is INSTANT: it needs no simulation,
+  // which is the whole reason the panel used to open on a spinner. The claim
+  // is one click away and still costs a run, because a number nobody measured
+  // is not a claim.
+  panel.hidden = false;
+  const bUrl = await shareUrl(false);
+  panel.innerHTML =
+    `<div class="sh-row"><input class="sh-url" type="text" readonly value="${escHtml(bUrl)}">` +
+    `<button class="cu-btn sh-copy">${escHtml(tr("copy link"))}</button></div>` +
+    `<div class="sh-note">${escHtml(tr("the build and its rivens — no fight and no measurement, so opening it leaves the reader's own scenario untouched"))}</div>` +
+    `<div class="sh-more"><button class="cu-btn sh-full">${
+      escHtml(tr("…with the fight and the measurement →"))}</button></div>`;
+  const bBox = panel.querySelector(".sh-url");
+  bBox.onclick = () => bBox.select();
+  panel.querySelector(".sh-copy").onclick = async () => {
+    try { await navigator.clipboard.writeText(bUrl); presetToast(tr("link copied")); }
+    catch (_) { bBox.select(); presetToast(tr("press Ctrl+C to copy the selected link")); }
+  };
+  panel.querySelector(".sh-full").onclick = () => openShareClaim(panel);
+}
+
+/// The CLAIM: the build, the fight it was measured in, the measurement, and the
+/// card that carries all three into a chat window. Split out of the panel above
+/// so it costs a simulation only when somebody asks for one.
+async function openShareClaim(panel) {
+  const more = panel.querySelector(".sh-more");
+  if (!more) return;
   // Measure BEFORE building the link, so both the card and the payload carry
   // a number produced by exactly this build in exactly this fight.
-  panel.hidden = false;
-  panel.innerHTML = `<div class="sh-note">${escHtml(tr("simulating this build in the current scenario…"))}</div>`;
+  more.innerHTML = `<div class="sh-note">${escHtml(tr("simulating this build in the current scenario…"))}</div>`;
   await resultForShare();
-  const url = await shareUrl();
-  panel.innerHTML =
+  const url = await shareUrl(true);
+  more.innerHTML =
     `<div class="sh-row"><input class="sh-url" type="text" readonly value="${escHtml(url)}">` +
     `<button class="cu-btn sh-copy">${escHtml(tr("copy link"))}</button>` +
     `<button class="cu-btn sh-img">${escHtml(tr("copy image"))}</button>` +
     `<button class="cu-btn sh-dl">${escHtml(tr("download image"))}</button></div>` +
     `<div class="sh-note">${escHtml(tr("the link carries the build, its rivens, the fight it was measured in and the measurement — opening it saves a new copy of each"))}</div>` +
     `<canvas class="sh-canvas" width="900" height="640"></canvas>`;
-  const urlBox = panel.querySelector(".sh-url");
+  const urlBox = more.querySelector(".sh-url");
   urlBox.onclick = () => urlBox.select();
-  const canvas = panel.querySelector(".sh-canvas");
+  const canvas = more.querySelector(".sh-canvas");
   await drawShareCard(canvas, url);
 
+  // SCOPED TO `more`, NOT TO THE PANEL: the build link above has a `.sh-copy`
+  // of its own, and a panel-wide lookup finds THAT one — which would leave the
+  // claim's button dead and silently repoint the build's at the claim's url.
   const say = (msg) => presetToast(tr(msg));
-  panel.querySelector(".sh-copy").onclick = async () => {
+  more.querySelector(".sh-copy").onclick = async () => {
     try { await navigator.clipboard.writeText(url); say("link copied"); }
     // Clipboard permission can be refused; selecting the text is the fallback
     // that always works, and no dialog is involved either way.
     catch (_) { urlBox.select(); say("press Ctrl+C to copy the selected link"); }
   };
-  panel.querySelector(".sh-img").onclick = async () => {
+  more.querySelector(".sh-img").onclick = async () => {
     try {
       const blob = await new Promise((res) => canvas.toBlob(res, "image/png"));
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
       say("image copied");
     } catch (_) { say("this browser will not copy images — use download"); }
   };
-  panel.querySelector(".sh-dl").onclick = () => {
+  more.querySelector(".sh-dl").onclick = () => {
     const a = document.createElement("a");
     a.href = canvas.toDataURL("image/png");
     a.download = `wfsim-${$("weapon").value}-${presetLabel(buildNamed(activePreset))}.png`.replace(/[\s#]+/g, "-");
@@ -6196,33 +6342,31 @@ function initPresets() {
   // (The old 300-run migration lived here. It rewrote `state.sim.runs` inside
   // BUILD presets — a field nothing reads any more, because a build no longer
   // carries a copy of the fight.)
-  if (!ps.length) {
-    // BLANK, NEVER THE LIVE STATE. A weapon opened for the first time is a bare
-    // weapon — the same rule the scenario has carried since 2026-08-02
-    // ("绝对不能串"), applied to the build, where it was missing.
-    //
-    // `snapshotState()` here is the state of the weapon you just LEFT, and this
-    // runs during the switch. Mods survived it only because `restoreState`
-    // prunes them against the new weapon's pool; an ARCANE has no such prune
-    // when it fits, so a Primary Crux picked up from a board build followed you
-    // onto every primary you opened afterwards, and was WRITTEN into that
-    // weapon's own "build 1" (owner, 2026-08-08). Reproduced: open the
-    // Boar through a board row, switch to the Sybaris, and the Sybaris's
-    // first build has the arcane.
-    //
-    // Every axis a future build gains is covered by this, because the answer is
-    // "the blank one" rather than "the live one minus what does not fit".
-    ps = [{ name: "build 1", savedAt: Date.now(), state: blankBuildState() }];
-    storePresetList(BUILDS, ps);
-  }
-  let sc = loadPresetList(SCENARIOS);
-  if (!sc.length) {
-    // FROM THE DEFAULTS, never from the live fight — see `defaultScenario`.
-    // This runs on a weapon switch, when `sim` still holds the weapon you
-    // just left.
-    sc = [{ name: "scenario 1", savedAt: Date.now(), state: defaultScenario() }];
-    storePresetList(SCENARIOS, sc);
-  }
+  // NOTHING IS AUTO-CREATED (owner, 2026-08-19). Opening a weapon used to write
+  // a blank "build 1" into storage, and opening the app used to write a
+  // "scenario 1" — so a reader who browsed forty weapons owned forty builds
+  // they had never made. That is fine while the only place they are listed is
+  // the bar of the weapon you are on; it stops being fine the moment there is
+  // one page listing everything you own, because then the page's whole answer
+  // is "everything", which is the same as no answer.
+  //
+  // THE RULE IT LOOKS LIKE IT BREAKS, AND DOES NOT. "Presets are not optional —
+  // the modules always have a state" conflated two things. The LIVE state must
+  // always exist and still does: with nothing stored the builder opens on
+  // `blankBuildState()` and the simulator on an official ruler, which is a
+  // BUILTIN and was never in this list. What is now optional is the SAVED
+  // entry, which is exactly the contract customs have always had.
+  //
+  // A preset appears on the first EDIT instead — see `markPresetDirty`. So the
+  // collection means "what you have worked on", and that is a sentence a
+  // config page can be built out of.
+  //
+  // (What the blank seed was FOR is not lost: a weapon opened for the first
+  // time must be a bare weapon, never the live state of the weapon you just
+  // left — an arcane has no prune and a Primary Crux followed you onto every
+  // primary you opened (owner, 2026-08-08). `blankBuildState()` is still what
+  // is applied below; it simply is not written down until you touch it.)
+  const sc = loadPresetList(SCENARIOS);
   // Resolved against the JOINT list, so the official scenario can be the one
   // you left open — it is a scenario like any other to everything downstream.
   //
@@ -6254,12 +6398,19 @@ function initPresets() {
   // Applied under THIS weapon, never the payload's — a preset filed here
   // belongs here by definition.
   whileApplying(() => {
-    restoreState(buildNamed(activePreset).state, here);
+    // NO PRESET IS A REAL STATE, so this is the one place that says what it
+    // means: a bare weapon. `blankBuildState()` was already the answer — it
+    // was simply being written to disk first.
+    restoreState((buildNamed(activePreset) || {}).state || blankBuildState(), here);
+    if (!activePreset) notePristineBuild();
     // THE FIGHT, from its own collection. It used to arrive inside the build
     // preset, which is exactly why picking a build changed the scenario; it
     // now comes from the active `simulator-scenarios` entry, and this is the
     // only place the live scenario is seeded on load or on a weapon switch.
-    applyScenario(scenarioNamed(activeScenario).state);
+    // The scenario cannot actually reach the fallback — an official ruler is a
+    // BUILTIN and there is always one — but it is written the same way so that
+    // the two collections have one rule between them rather than one each.
+    applyScenario((scenarioNamed(activeScenario) || {}).state || defaultScenario());
   });
   renderPresetBar();
   lockOfficialBuild();
@@ -6290,16 +6441,81 @@ function whileApplying(fn) {
 }
 
 let presetSaveTimer = null;
+/// TWO STATES ARE THE SAME STATE WHATEVER ORDER THEIR KEYS CAME IN.
+///
+/// `JSON.stringify` is key-ORDER sensitive, and the order is whatever order the
+/// producer happened to assign in. `snapshotOpt()` and `blankOpt()` build the
+/// identical object and spell it `…modes, evos…` and `…evos, modes…`, so a
+/// plain stringify comparison of the two is false for every input — which made
+/// the "is this still untouched" guard below always answer "touched" and gave a
+/// search preset to anyone who so much as opened the optimizer tab (2026-08-19).
+const canon = (v) => {
+  if (Array.isArray(v)) return v.map(canon);
+  if (v && typeof v === "object") {
+    return Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon(v[k])]));
+  }
+  return v;
+};
+const sameState = (a, b) => JSON.stringify(canon(a)) === JSON.stringify(canon(b));
+
+/// THE LIVE BUILD AS IT STANDS WITH NOTHING OWNED, recorded at the two moments
+/// a blank is applied — the boot of a weapon nobody has built for, and the
+/// delete of the last build.
+///
+/// It exists because `markPresetDirty` is NOT only an edit: `refreshPanel`
+/// calls it, and `refreshPanel` runs from `renderMods`, `restoreState` and
+/// `applyWeapon`. So with birth-on-edit, a render was enough to create a build
+/// — and deleting your last one grew it straight back, on the re-render that
+/// the delete itself caused (2026-08-19).
+///
+/// It cannot be `sameState(snapshotState(), blankBuildState())`, which was the
+/// first attempt: `blankBuildState()` is SPARSE — `slots: []`, `evoSel: {}`, no
+/// mode, no valence, every one of them meaning "the weapon's own default" for
+/// `restoreState` to fill in — while `snapshotState()` is the dense realized
+/// state. They describe the same build and never compare equal.
+///
+/// So the blank is realized ONCE, through the same path every other state goes
+/// through, and remembered. Derived rather than declared: an axis added
+/// tomorrow is in the snapshot on the day it is added, and nobody has to be
+/// told about this variable.
+let pristineBuild = null;
+const notePristineBuild = () => { pristineBuild = JSON.stringify(canon(snapshotState())); };
+const buildIsUntouched = () =>
+  pristineBuild !== null && JSON.stringify(canon(snapshotState())) === pristineBuild;
+
 function markPresetDirty() {
   if (presetApplying) return;
   clearTimeout(presetSaveTimer);
   presetSaveTimer = setTimeout(() => {
-    if (!activePreset || presetApplying) return;
+    if (presetApplying) return;
     // An official build is not written — same rule as the official scenario,
     // and enforced in the same place. Auto-save is what would otherwise make
     // read-only a suggestion.
     if (officialBuildActive()) return;
     const ps = loadPresetList(BUILDS);
+    // A PRESET IS BORN ON THE FIRST EDIT (owner, 2026-08-19). Nothing is
+    // auto-created when a weapon is opened, so this is where "a build you own"
+    // begins to exist — the moment you change something.
+    //
+    // THE TRIGGER IS THE EXISTING DIRTY MARK AND NOT A LIST OF WHAT COUNTS.
+    // Every control that edits a build already calls `markPresetDirty`, so an
+    // axis added tomorrow creates a preset on the day it is added, by nobody.
+    // A hand-kept list of "meaningful" edits would have to be maintained, and
+    // this repo has the receipts for what happens to those — `BUILD_AXES`
+    // exists because four separate hand lists each went stale once. The cost is
+    // that a stray click creates a build, and that build is one row you can see
+    // and delete; a missed edit is one you cannot see at all.
+    if (!activePreset) {
+      // Reaching here is not evidence of an edit — see `pristineBuild`.
+      if (buildIsUntouched()) return;
+      const name = freeName(ps, (n) => "build " + n);
+      ps.push({ name, savedAt: Date.now(), state: snapshotState() });
+      storePresetList(BUILDS, ps);
+      activePreset = name;
+      localStorage.setItem(presetActiveKey(BUILDS), name);
+      renderPresetBar();
+      return;
+    }
     const at = ps.findIndex((p) => p.name === activePreset);
     if (at < 0) return;
     ps[at] = { ...ps[at], savedAt: Date.now(), state: snapshotState() };
@@ -6317,6 +6533,10 @@ function markScenarioDirty() {
   clearTimeout(scenarioSaveTimer);
   scenarioSaveTimer = setTimeout(() => {
     if (!activeScenario || presetApplying) return;
+    // NO BIRTH-ON-EDIT HERE, deliberately. The fight always resolves to
+    // something — an official ruler when you own nothing — and a ruler is
+    // PINNED, so there is no edit to be the first one. A scenario of your own
+    // starts at "+ new", which is the only way to leave a ruler at all.
     // THE OFFICIAL SCENARIO IS NOT WRITTEN. Auto-save is what would otherwise
     // make "read-only" a lie: every edit debounces into the active preset, so
     // a disabled control is a suggestion and this line is the rule. It is also
@@ -6501,7 +6721,13 @@ function renderPresetBarIn(bar, cfg) {
       ? ""
       : `<button class="pop dup" title="${escHtml(tr("duplicate"))}">⧉</button>` +
         `<button class="pop ren" title="rename">✎</button>` +
-        (ps.length > 1 || cfg.optional ? `<button class="pop del" title="delete">✕</button>` : "");
+        // DELETABLE TO ZERO (owner, 2026-08-19). "There is always one" was true
+        // while one was auto-created; now that nothing is, the last one is as
+        // deletable as the first — and a collection you cannot empty is one the
+        // config page can never show you an honest count of. `cfg.optional` was
+        // already the customs' flag for exactly this and is simply no longer
+        // the thing that distinguishes them.
+        `<button class="pop del" title="delete">✕</button>`;
     return `<span class="pchip ${sel ? "sel" : ""}" data-name="${escHtml(p.name)}" title="switch to ${escHtml(p.name)}${escHtml(hint)}">${escHtml(p.name)}${ops}</span>`;
   };
   bar.innerHTML =
@@ -6636,17 +6862,36 @@ function renderPresetBarIn(bar, cfg) {
   });
 
   on(".pop.del", () => {
-    const ps2 = cfg.load().filter((p) => p.name !== cfg.active());
-    // OPTIONAL collections may go to zero. For everything else there is
-    // always at least one, because the module behind it always has a state —
-    // a build, a fight, a search — and "no build" is not a thing the builder
-    // can show. A riven is different: not owning one is the common case, and
-    // a blank card standing in for it is a claim nobody made.
-    if (!ps2.length && !cfg.optional) return;
+    // YOURS ONLY, which is what the bar drawing these chips already counts
+    // (`renderPresetBarIn` filters `!p.builtin`). Counting the joint list here
+    // meant that on a weapon WITH board rows, deleting your last build fell
+    // through to a BENCHMARK build — so the page answered "you deleted your
+    // build" by loading somebody else's, and the bar's count and this handler's
+    // disagreed about what a collection contains.
+    const ps2 = cfg.load().filter((p) => !p.builtin && p.name !== cfg.active());
+    // EVERY COLLECTION MAY GO TO ZERO (owner, 2026-08-19). It used to be only
+    // the OPTIONAL ones — the customs — on the reasoning that a module always
+    // has a state and "no build" is not a thing the builder can show. Both
+    // halves of that are still true and neither needs a stored row: nothing is
+    // auto-created any more (`initPresets`), so the state the builder shows
+    // when you own nothing is `cfg.blank()`, and a preset comes back the moment
+    // you edit it.
+    //
+    // `cfg.blank` is what the three modules already declare for "+ new", so the
+    // state after deleting the last one is the state a new one would start
+    // from — one answer, not two. A CUSTOM keeps `null`, which is how its
+    // editor knows to stand down.
     cfg.store(ps2);
     cfg.setActive(ps2.length ? ps2[0].name : "");
-    whileApplying(() => cfg.apply(ps2.length ? ps2[0].state : null));
+    whileApplying(() => cfg.apply(
+      ps2.length ? ps2[0].state : (cfg.optional || !cfg.blank ? null : cfg.blank())));
+    // A DELETE IS NOT AN EDIT, and the state it leaves behind is the pristine
+    // one — recorded here so the re-render this very handler causes cannot
+    // create the row that was just removed.
+    if (!ps2.length && cfg.pristine) cfg.pristine();
     cfg.rerender();
+    clearTimeout(presetSaveTimer);
+    clearTimeout(optSaveTimer);
   });
 }
 
@@ -6844,6 +7089,7 @@ function buildBarCfg() {
     // owns it, so the boot path gets it too. See the comment there.
     apply: (st) => restoreState(st, presetWeapon()),
     blank: blankBuildState,
+    pristine: notePristineBuild,
     rerender: () => { renderPresetBar(); lockOfficialBuild(); },
   };
 }
@@ -10119,7 +10365,7 @@ function renderScenarioFields(ids, opts = {}) {
   if (ids.technique) {
     $(ids.technique).innerHTML = `
       ${aimField(w, sim)}
-      <label title="${escHtml(tr("a per-PELLET aim weight on the body the shot STRUCK, not a whole-spread promise — the landing spot is rolled for each pellet, and nothing a blast or a chain reaches can be a headshot"))}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${sim.headshot_pct}"></label>
+      ${headshotField(w, sim)}
       <label class="check" title="${escHtml(tr("the wielder's state: mods that only pay while Invisible (Spectral Serration) grant nothing when this is off"))}"><input type="checkbox" data-k="invisible"${sim.invisible ? " checked" : ""}> ${escHtml(tr("Invisible"))}</label>
       <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"while Airborne\""))}"><input type="checkbox" data-k="airborne"${sim.airborne ? " checked" : ""}> ${escHtml(tr("Airborne"))}</label>
       <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"With Overshields\". Nothing here takes them away, so it is a declaration"))}"><input type="checkbox" data-k="overshields"${sim.overshields ? " checked" : ""}> ${escHtml(tr("Overshields"))}</label>
@@ -12350,6 +12596,23 @@ function renderResults(r, testedAt) {
     row("Kills min–max (±σ)", `${r.kills_min}–${r.kills_max} (±${sig2(r.kills_std)})`),
     row("Runs", n0(r.runs)),
   ].join("");
+  // THE ASK, BENEATH THE ANSWER (owner, 2026-08-19). The topbar is chrome and
+  // the ask lived only there, which put it as far from the moment this tool
+  // delivers anything as a page can put it. This is not an interruption: it is
+  // a line of text below the last fold, after the result, and it never moves,
+  // blocks, animates or asks twice.
+  //
+  // IT STATES THE WORK BEFORE IT STATES THE ASK, and both numbers are ones the
+  // reader can check against the Detail table directly above it — `runs` is the
+  // count they set, and `pellets` is PER RUN on the wire (webapi/src/lib.rs),
+  // so the product is the damage instances this answer was actually averaged
+  // over. A figure a reader can verify is the only kind worth printing here.
+  const askRuns = Math.round(r.runs || 0), askRolls = Math.round(askRuns * (r.pellets || 0));
+  const ask = `<p class="sim-ask">${escHtml(trF(
+    "{runs} engagements · {rolls} damage instances rolled, on your own machine.",
+    { runs: askRuns.toLocaleString(), rolls: askRolls.toLocaleString() }))} ${
+    escHtml(tr("Builder, simulator and optimizer stay free for everyone."))} <a href="/support">${
+    escHtml(tr("Chip in ↗"))}</a></p>`;
   $("sim-results").innerHTML = `
     <div class="results">
       <div class="hero"><div><div class="hero-num" data-hero="${byDps ? "dps" : "kpm"}">${heroNum}<span class="hero-unit">${heroUnit}</span></div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
@@ -12359,6 +12622,7 @@ function renderResults(r, testedAt) {
         `<div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${composition}`)}
       ${speedMarkup(r)}${hitTableMarkup(r)}${hitAccountsMarkup(r)}${chart}${replayCurves}
       ${foldBlock("detail", tr("Detail"), "", `<div class="stat-table">${detail}</div>`)}
+      ${ask}
     </div>`;
   // Meter rows that carry a per-type split toggle theirs. The choice is kept
   // across runs — a player who opened Direct hits wants it open on the next
@@ -12904,17 +13168,15 @@ const storeOptPresets = (ps) => storePresetList(OPT_DOMAIN, ps);
 // first-ever run creates "search 1" from the build-seeded scope; afterwards
 // the active preset IS the scope.
 function bootstrapOptPresets() {
-  let ps = loadOptPresets();
-  if (!ps.length) {
-    // Named after what it is, like the scenario and riven collections. An
-    // existing "preset 1" is the user's name now and is left alone.
-    ps = [{ name: "search 1", savedAt: Date.now(), state: snapshotOpt() }];
-    storeOptPresets(ps);
-  }
+  // NOTHING IS AUTO-CREATED here either — see `initPresets`. A search that has
+  // never been run is not a search you own, and the scope controls are already
+  // a complete live state without one (`OPT_RUN_DEFAULTS` plus an empty scope).
+  const ps = loadOptPresets();
   const want = activeOptPreset || localStorage.getItem(presetActiveKey(OPT_DOMAIN));
-  activeOptPreset = ps.some((p) => p.name === want) ? want : ps[0].name;
+  activeOptPreset = ps.some((p) => p.name === want) ? want : (ps[0] ? ps[0].name : "");
   localStorage.setItem(presetActiveKey(OPT_DOMAIN), activeOptPreset);
-  applyOptState(ps.find((p) => p.name === activeOptPreset).state);
+  const cur = ps.find((p) => p.name === activeOptPreset);
+  if (cur) applyOptState(cur.state);
 }
 
 // One-time merges, oldest first: the single legacy bar was split into three
@@ -13332,6 +13594,24 @@ function updateOptEstimate() {
   optSaveTimer = setTimeout(() => {
     if (presetApplying) return;
     const ps = loadOptPresets();
+    // A SEARCH IS BORN ON THE FIRST EDIT, like a build (`markPresetDirty`).
+    //
+    // …BUT THIS FUNNEL IS NOT ONLY AN EDIT. Unlike `markPresetDirty`, which
+    // edit handlers call by hand, `updateOptEstimate` also runs on every render
+    // — including the first paint of a tab nobody has touched — so "it ran" is
+    // no evidence of an edit. The evidence is the STATE: a search that is still
+    // `blankOpt()` is a search nobody has made. Compared as a whole rather than
+    // field by field, so an axis added tomorrow counts on the day it is added.
+    if (!activeOptPreset) {
+      if (sameState(snapshotOpt(), blankOpt())) return;
+      const name = freeName(ps, (n) => "search " + n);
+      ps.push({ name, savedAt: Date.now(), state: snapshotOpt() });
+      storeOptPresets(ps);
+      activeOptPreset = name;
+      localStorage.setItem(presetActiveKey(OPT_DOMAIN), name);
+      renderOptPresetBars();
+      return;
+    }
     const at = ps.findIndex((p) => p.name === activeOptPreset);
     if (at < 0) return;
     ps[at] = { ...ps[at], savedAt: Date.now(), state: snapshotOpt() };

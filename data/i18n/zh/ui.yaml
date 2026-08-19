@@ -617,6 +617,10 @@ ui:
   "Atmosphere": 地面
   "Archwing": 空战
   "where the weapon is fired — it changes reload and ammo, nothing else": 武器在哪里开火 —— 它只影响装填和弹药，其余不变
+  # The headshot rate a companion weapon can never reach. The VALUE was always
+  # 0 from both ends; this is the sentence the disabled control carries.
+  "a sentinel weapon is fired by the companion and never aims at the head, so this is 0 whatever is typed — and every on-headshot effect stays dead":
+    守护武器由守护自己开火，它从不瞄头，所以这里无论填什么都是 0 —— 一切「爆头时」的效果也都不会触发。
   "a sentinel weapon is always aiming — it just never aims at the head, so on-headshot effects never fire": 守护武器永远处于瞄准状态 —— 它只是从不瞄准头部，所以爆头触发类效果不会生效
   "this weapon cannot be resupplied — once its reserve is gone it is removed for five minutes, so the setting has nothing to stand in for": 这把武器无法补给——储备打光后会被收回，五分钟后才能再次召唤，所以这个选项没有可代表的东西
   "on = ammo pickups keep the reserve topped up, which the sim has no entities for; off = it runs dry. The magazine and its reloads apply either way": 开 = 用弹药拾取补满储备（模拟器没有拾取实体，用这个代替）；关 = 会打光。弹匣和换弹两种情况下都照常生效
@@ -632,6 +636,20 @@ ui:
   "Damage Falloff": 距离衰减
   "QQ group": QQ官方交流群
   "Join the Discord": 加入官方 Discord
+  # The topbar's own row. "Support" already has a key below — it is the page
+  # title, the footer link and this button, all naming the same DESTINATION,
+  # so it stays the neutral 支持. The warm word belongs to the ASK itself, in
+  # the result panel: 投喂 is what this reads as in Chinese, where 捐助 is the
+  # charity word and 赞助 implies something is handed back.
+  "More": 更多
+  "Cores": 算力
+  # THE ASK BENEATH A FINISHED RESULT. It states the work first, and both
+  # numbers are ones the reader can check against the Detail table above it.
+  "{runs} engagements · {rolls} damage instances rolled, on your own machine.":
+    "{runs} 次交战 · {rolls} 次伤害判定，全部跑在你自己的机器上。"
+  "Builder, simulator and optimizer stay free for everyone.":
+    构建、模拟、优化，对所有人永远免费。
+  "Chip in ↗": 投喂一下 ↗
   "join the Discord": 加入官方 Discord
   # ---- /support: running costs, and where to chip in. -------------------
   # WF模拟 in prose, WFSim as the mark (the page's own <h1> keeps the
@@ -647,8 +665,15 @@ ui:
   # "支持一下" reads as a request.
   "Support WFSim — what it costs to run": 支持 WF模拟 —— 它的运营成本
   "Support WFSim": 支持 WFSim
-  "WFSim is free and open source. No ads, and no feature will ever be locked behind a payment — that part is not going to change. It does cost money and time to run, so if it saved you a Forma, you can chip in.":
-    WF模拟免费、开源。没有广告，也永远不会有任何功能要付费才能用——这一条不会变。它确实要花钱和时间维持，所以如果它替你省下过一根 Forma，可以来添一点。
+  # NARROW AND ABSOLUTE rather than broad and hedged — the three modules and
+  # the licence, both of which the reader can check. See index.html for why
+  # the "most core features stay free" draft was not used.
+  "WFSim is free software, licensed AGPL-3.0. Building, simulating and optimizing are the whole of this site, and they are the same for everyone: no account, no payment, no part held back.":
+    WF模拟是自由软件，采用 AGPL-3.0 授权。构建、模拟、优化——这三件事就是这个站点的全部，而且对所有人完全一致：不需要账号，不需要付费，没有哪一部分是留着不给的。
+  "The engine, the game data and the wasm it all runs on are public. If you ever stop recognising what this becomes, you can run your own — that is not my assurance, it is the licence.":
+    引擎、游戏数据，以及承载它们的 wasm，全部公开。真到哪天你不再认可它变成的样子，你可以自己跑一个——这不是我的保证，是授权协议决定的。
+  "It does take money and time to run. If it has ever saved you a Forma, you can chip in.":
+    它确实要花钱和时间来维持。如果它替你省下过一根 Forma，可以来投喂一下。
   "One-off, in USD, from $5. Card or PayPal, no account needed.": 一次性，按美元结算，5 美元起。信用卡或 PayPal，无需注册账号。
   "Open": 前往
   "Where it goes": 钱花在哪
@@ -660,14 +685,22 @@ ui:
   "$5 to start, and after that whatever you think it is worth. There is no tier and no target — this is what the bill is, not a price list.":
     5 美元起，之后给多少由你说了算。没有档位，也没有目标——上面是账单本身，不是价目表。
   "What a donation never buys": 捐助永远买不到什么
-  "No paid features and no paywall. Every build, simulation and search stays the same for everyone.":
-    没有付费功能，没有付费墙。配装、模拟、搜索，对所有人完全一致。
+  "A number. Nothing bought here moves a result by one decimal — an in-game measurement is the only thing that changes what the engine does.":
+    一个数字。这里买到的东西不会让任何结果动一位小数——能改变引擎行为的只有游戏内实测，没有第二样。
   "No tiers, no perks, no supporter badge. A donation is a thank-you, not a purchase.":
     没有档位，没有特权，没有赞助者标识。捐助是一句谢谢，不是一次购买。
-  "No ads, and no tracking beyond what Cloudflare counts to serve the page.":
-    没有广告；除了 Cloudflare 为发送页面而记的那点数，不做任何追踪。
-  "No influence on the numbers. An in-game measurement is the only thing that changes what the engine does.":
-    左右不了数字。能改变引擎行为的只有游戏内实测，没有第二样东西。
+  "No tracking beyond what Cloudflare counts to serve the page.":
+    除了 Cloudflare 为发送页面而记的那点数，不做任何追踪。
+  # THE EVIDENCE, on the page rather than buried in a weapon card.
+  "Why you can check it": 为什么你可以检验它
+  "Every formula in the engine cites its source — a wiki page, a datamine, or a measurement — and every golden test is calibrated against a real in-game run.":
+    引擎里每一条公式都注明来源——wiki 页面、数据挖掘，或一次实测——每一个 golden test 都对着一次真实的游戏内运行校准。
+  "It tells you what it cannot model, on the card where you are standing: on a weapon, an evolution, a mod, an arcane, an enemy. It lists those itself rather than waiting to be asked.":
+    它会在你正看着的那张卡上告诉你它算不准什么：武器上、进化词条上、MOD 上、赋能上、敌人上。这些是它自己列出来的，不用你来问。
+  "Sometimes it says the number is right and the game is wrong, and names the bug a hotfix would take away.":
+    有时候它会说：这个数字是对的，是游戏本身错了——并指明那个热修可能会拿掉的 bug。
+  "And if your own in-game measurement disagrees with it, the measurement wins. That is a bug report about reality, and it is the one thing that changes what this engine does.":
+    而如果你自己的游戏内实测和它对不上，那么以实测为准。那是一份关于现实的 bug 报告，也是唯一能改变这个引擎的东西。
   "Free, and worth more": 不花钱，但更值钱
   "Report a number that disagrees with your own in-game measurement. That is the one contribution nothing else can replace — every formula here is calibrated against a real run, and a discrepancy is a bug report on reality.":
     报告一个和你自己游戏内实测对不上的数字。这是唯一无可替代的贡献——这里每一条公式都以真实实测校准，一处对不上就是一份来自现实的 bug 报告。
@@ -768,6 +801,12 @@ ui:
   "image copied": 图片已复制
   "press Ctrl+C to copy the selected link": 已选中链接，按 Ctrl+C 复制
   "this browser will not copy images — use download": 这个浏览器不支持复制图片，请用下载
+  # A BUILD is not a CLAIM. The build-only link is the default and says what it
+  # does NOT carry, because the thing a reader would otherwise have to discover
+  # by checking their own scenario bar is that nothing moved there.
+  "the build and its rivens — no fight and no measurement, so opening it leaves the reader's own scenario untouched":
+    只有这套配装和它的紫卡 —— 不带战场，也不带测量结果，所以对方打开它，他自己的战场设置不会被动过。
+  "…with the fight and the measurement →": ……连同战场与测量结果 →
   "the link carries the build, its rivens, the fight it was measured in and the measurement — opening it saves a new copy of each": 链接带上了配装、它装的裂罅、测它用的那场仗，以及测出的数字——对方打开会各存一份新的，不会覆盖他原有的
   "that share link could not be read": 这条分享链接读不出来
   "that share link is for a weapon this build of the site does not have": 这条分享链接指向本站还没有的武器

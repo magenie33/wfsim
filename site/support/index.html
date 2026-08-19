@@ -132,40 +132,77 @@
           <a class="tnav" data-nav="benchmark" href="/benchmark" data-i18n>Benchmark</a>
         </nav>
         <div class="tblinks">
-      <span id="compute-select"></span>
-      <span id="lang-select"></span>
-      <button id="theme-toggle" class="ghost-btn" title="Toggle light / dark" data-i18n-title aria-label="Toggle theme">◐</button>
-      <a class="gh-link ghost-btn" href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub">
-        <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-      </a>
-      <!-- Official QQ community group — the qm.qq.com join link deep-links
-           into the QQ app (Discord-invite style). The mark is the penguin
-           (user, 2026-07-31), drawn inline in currentColor: an icon reads at
-           topbar size where two letters did not, it needs no asset, and a
-           monochrome silhouette sits with the other ghost buttons instead of
-           dropping a brand block into them. -->
-      <a class="qq-link ghost-btn" href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener" title="Join the QQ group — 995078378" data-i18n-title aria-label="QQ group"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M12 1.8c-2.9 0-5.2 2.3-5.2 5.2v1.1c0 .9-.35 1.75-.98 2.4C4.35 12 3.7 13.8 3.7 15.3c0 .85.5 1.45 1.25 1.45.5 0 .95-.25 1.25-.7.2.5.48.95.83 1.35-.95.35-1.55 1-1.55 1.75 0 1.1 1.3 1.85 2.9 1.85.95 0 1.8-.3 2.35-.75.42.06.85.09 1.27.09s.85-.03 1.27-.09c.55.45 1.4.75 2.35.75 1.6 0 2.9-.75 2.9-1.85 0-.75-.6-1.4-1.55-1.75.35-.4.63-.85.83-1.35.3.45.75.7 1.25.7.75 0 1.25-.6 1.25-1.45 0-1.5-.65-3.3-2.12-4.8-.63-.65-.98-1.5-.98-2.4V7c0-2.9-2.3-5.2-5.2-5.2zM9.05 6.35a1.15 1.55 0 1 0 2.3 0a1.15 1.55 0 1 0-2.3 0zM12.65 6.35a1.15 1.55 0 1 0 2.3 0a1.15 1.55 0 1 0-2.3 0z"/></svg></a>
-      <!-- Official Discord, after the QQ group: the community is a QQ group
-           first and the order says so. The INVITE is the only thing here —
-           unlike a QQ group number, which is how you find the group by hand
-           when the deep link fails, a Discord server id joins nothing, so
-           there is no reason to put one on the page. -->
-      <a class="dc-link ghost-btn" href="https://discord.gg/5GXgbtmxY" target="_blank" rel="noopener" title="Join the Discord" data-i18n-title aria-label="Discord"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false"><path fill="currentColor" d="M19.54 4.94A16.3 16.3 0 0 0 15.5 3.7a.06.06 0 0 0-.06.03c-.17.31-.37.72-.5 1.03a15.1 15.1 0 0 0-4.5 0 10.4 10.4 0 0 0-.51-1.03.06.06 0 0 0-.06-.03A16.26 16.26 0 0 0 5.83 4.94a.06.06 0 0 0-.03.02C3.24 8.77 2.54 12.48 2.89 16.14a.07.07 0 0 0 .03.05 16.4 16.4 0 0 0 4.94 2.5.06.06 0 0 0 .07-.02c.38-.52.72-1.07 1.01-1.64a.06.06 0 0 0-.03-.09c-.54-.2-1.05-.45-1.54-.73a.06.06 0 0 1 0-.11l.3-.24a.06.06 0 0 1 .07 0 11.7 11.7 0 0 0 9.94 0 .06.06 0 0 1 .07 0l.3.24a.06.06 0 0 1 0 .11c-.5.29-1 .53-1.55.73a.06.06 0 0 0-.03.09c.3.57.63 1.12 1 1.64a.06.06 0 0 0 .08.02 16.35 16.35 0 0 0 4.95-2.5.06.06 0 0 0 .02-.05c.42-4.23-.67-7.9-2.85-11.18a.05.05 0 0 0-.03-.02zM9.68 13.91c-.97 0-1.78-.9-1.78-2s.79-2 1.78-2c1 0 1.8.91 1.78 2 0 1.1-.79 2-1.78 2zm6.57 0c-.98 0-1.78-.9-1.78-2s.78-2 1.78-2c1 0 1.8.91 1.78 2 0 1.1-.78 2-1.78 2z"/></svg></a>
-      <!-- SUPPORT, and it belongs HERE for one reason: GitHub, the QQ group and
-           the Discord above it are all "this project, elsewhere", and so is
-           this. Leaving it in the footer alone put a SMALLER ask (star the
-           repo) in a better place than the larger one, which is not a decision
-           anybody made — it is what happens when a page is added late.
-           The rule it does NOT break is the one that matters: the topbar is
-           chrome, never the path of a calculation. No modal, no banner, no
-           thank-you box after a run.
-           LAST in the row, after the community links, because it is the ask.
-           It used to be HIDDEN under 700px, because the bar wrapped to two rows
-           on a phone and squeezed the weapon search — the site's own navigation
-           — to 29px at 360px. The menu is what bought that room back: the bar
-           now carries the wordmark, the search and one button at every width,
-           and this link is in the menu with everything else. -->
-      <a class="sup-link ghost-btn" href="/support" title="Support WFSim — what it costs to run" data-i18n-title aria-label="Support"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 20.35l-1.32-1.2C6.03 14.92 3 12.17 3 8.79 3 6.03 5.16 3.87 7.92 3.87c1.56 0 3.06.72 4.04 1.86l.04.05.04-.05c.98-1.14 2.48-1.86 4.04-1.86C18.84 3.87 21 6.03 21 8.79c0 3.38-3.03 6.13-7.68 10.37l-1.32 1.19z"/></svg></a>
+          <!-- THE RIGHT-HAND ROW IS THREE THINGS AND AN OVERFLOW (owner,
+               2026-08-19). It used to be seven ghost buttons of equal weight,
+               which is three unrelated categories wearing one costume: page
+               SETTINGS (compute, language, theme), this project ELSEWHERE
+               (GitHub, QQ, Discord) and the one ASK (Support). A reader
+               cannot tell them apart, and the ask — the only thing here that
+               is not chrome — was styled exactly like the theme toggle.
+               What stays on the bar is what a reader acts on: the two
+               settings they might change, ONE community link, and the ask
+               with its NAME on it. The rest is one click away behind `⋯`.
+               THE COMMUNITY LINK IS THE READER'S OWN. A Chinese reader will
+               never click Discord and an English reader will never click QQ,
+               so the one that matches the display language is on the bar and
+               the other is in the overflow — ordered, never dropped, which is
+               the same rule `SUPPORT_CHANNELS` follows. English is the source
+               here as everywhere, so the markup ships the English order and
+               `applyCommunityOrder()` swaps it. -->
+          <span id="lang-select"></span>
+          <button id="theme-toggle" class="ghost-btn" title="Toggle light / dark" data-i18n-title aria-label="Toggle theme">◐</button>
+          <!-- The QQ mark is the penguin (user, 2026-07-31), drawn inline in
+               currentColor: an icon reads at topbar size where two letters did
+               not, and a monochrome silhouette sits with the other ghost
+               buttons instead of dropping a brand block into them. The QQ link
+               is the qm.qq.com JOIN page, which deep-links into the app; the
+               footer carries the raw group number, because that is how you find
+               a group by hand when a deep link fails. Discord ships its INVITE
+               and nothing else — a server id joins nothing, so there is no
+               reason to put one on the page. -->
+          <span class="tbcomm" id="community-primary">
+            <a class="dc-link ghost-btn" href="https://discord.gg/5GXgbtmxY" target="_blank" rel="noopener" title="Join the Discord" data-i18n-title aria-label="Discord"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false"><path fill="currentColor" d="M19.54 4.94A16.3 16.3 0 0 0 15.5 3.7a.06.06 0 0 0-.06.03c-.17.31-.37.72-.5 1.03a15.1 15.1 0 0 0-4.5 0 10.4 10.4 0 0 0-.51-1.03.06.06 0 0 0-.06-.03A16.26 16.26 0 0 0 5.83 4.94a.06.06 0 0 0-.03.02C3.24 8.77 2.54 12.48 2.89 16.14a.07.07 0 0 0 .03.05 16.4 16.4 0 0 0 4.94 2.5.06.06 0 0 0 .07-.02c.38-.52.72-1.07 1.01-1.64a.06.06 0 0 0-.03-.09c-.54-.2-1.05-.45-1.54-.73a.06.06 0 0 1 0-.11l.3-.24a.06.06 0 0 1 .07 0 11.7 11.7 0 0 0 9.94 0 .06.06 0 0 1 .07 0l.3.24a.06.06 0 0 1 0 .11c-.5.29-1 .53-1.55.73a.06.06 0 0 0-.03.09c.3.57.63 1.12 1 1.64a.06.06 0 0 0 .08.02 16.35 16.35 0 0 0 4.95-2.5.06.06 0 0 0 .02-.05c.42-4.23-.67-7.9-2.85-11.18a.05.05 0 0 0-.03-.02zM9.68 13.91c-.97 0-1.78-.9-1.78-2s.79-2 1.78-2c1 0 1.8.91 1.78 2 0 1.1-.79 2-1.78 2zm6.57 0c-.98 0-1.78-.9-1.78-2s.78-2 1.78-2c1 0 1.8.91 1.78 2 0 1.1-.78 2-1.78 2z"/></svg><span class="tbl">Discord</span></a>
+          </span>
+          <!-- SUPPORT, and it is the only thing in this row that is not
+               chrome — so it is the only one that carries its NAME. An icon
+               button is a control; a control is not an ask, and a heart with
+               no word beside it is read as "favourite" about as often as it is
+               read as "donate".
+               THE RULE IT USED TO STATE WAS NARROWED (owner, 2026-08-19). It
+               read "no modal, no banner, no thank-you box after a run", which
+               put the ask in the chrome and nowhere else — i.e. as far from
+               the moment the tool delivers anything as a page can put it. What
+               still holds is the half that matters: the topbar is never the
+               path of a calculation, and nothing INTERRUPTS one. An ask
+               BENEATH a finished result is not an interruption — see
+               `renderResults`, where it is drawn after the answer and states
+               the work before it states the ask. -->
+          <a class="sup-link ghost-btn" href="/support" title="Support WFSim — what it costs to run" data-i18n-title aria-label="Support"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 20.35l-1.32-1.2C6.03 14.92 3 12.17 3 8.79 3 6.03 5.16 3.87 7.92 3.87c1.56 0 3.06.72 4.04 1.86l.04.05.04-.05c.98-1.14 2.48-1.86 4.04-1.86C18.84 3.87 21 6.03 21 8.79c0 3.38-3.03 6.13-7.68 10.37l-1.32 1.19z"/></svg><span class="tbl" data-i18n>Support</span></a>
+          <!-- The overflow. On a desktop it is a real popover; below 700px it
+               is `display:contents` and its children flatten into the phone
+               menu exactly as they did before it existed — one copy of every
+               control at both widths, which is the same trick `.topmenu`
+               plays one level up. -->
+          <div class="tbmore" id="tbmore">
+            <button id="tbmore-toggle" class="ghost-btn tbmore-btn" aria-expanded="false"
+                    aria-controls="tbmore-panel" aria-haspopup="true"
+                    title="More" data-i18n-title aria-label="More">⋯</button>
+            <div class="tbmore-panel" id="tbmore-panel">
+              <!-- The compute picker is the one entry here whose face is a
+                   NUMBER (`14/28` — lanes over cores), so it is the one that
+                   cannot name itself the way a mark plus a word does. The row
+                   is `display:contents` on a phone, where the panel goes back
+                   to being a strip of marks and there is no list to label. -->
+              <div class="tbmore-row">
+                <span class="tbl" data-i18n>Cores</span>
+                <span id="compute-select"></span>
+              </div>
+              <a class="gh-link ghost-btn" href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span class="tbl">GitHub</span></a>
+              <span class="tbcomm" id="community-alt">
+                <a class="qq-link ghost-btn" href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener" title="Join the QQ group — 995078378" data-i18n-title aria-label="QQ group"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M12 1.8c-2.9 0-5.2 2.3-5.2 5.2v1.1c0 .9-.35 1.75-.98 2.4C4.35 12 3.7 13.8 3.7 15.3c0 .85.5 1.45 1.25 1.45.5 0 .95-.25 1.25-.7.2.5.48.95.83 1.35-.95.35-1.55 1-1.55 1.75 0 1.1 1.3 1.85 2.9 1.85.95 0 1.8-.3 2.35-.75.42.06.85.09 1.27.09s.85-.03 1.27-.09c.55.45 1.4.75 2.35.75 1.6 0 2.9-.75 2.9-1.85 0-.75-.6-1.4-1.55-1.75.35-.4.63-.85.83-1.35.3.45.75.7 1.25.7.75 0 1.25-.6 1.25-1.45 0-1.5-.65-3.3-2.12-4.8-.63-.65-.98-1.5-.98-2.4V7c0-2.9-2.3-5.2-5.2-5.2zM9.05 6.35a1.15 1.55 0 1 0 2.3 0a1.15 1.55 0 1 0-2.3 0zM12.65 6.35a1.15 1.55 0 1 0 2.3 0a1.15 1.55 0 1 0-2.3 0z"/></svg><span class="tbl" data-i18n>QQ group</span></a>
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -213,7 +250,28 @@
        rather than in a footnote. DE's Content Policy permits fan use of
        Warframe assets only NON-COMMERCIALLY and forbids charging for access to
        what you make with them — so a donation buys no feature, no tier and no
-       badge, and every promise below is a constraint on the product, not copy.
+       badge, and that is a constraint on the product, not copy.
+
+       THE PROMISE IS NARROW AND ABSOLUTE RATHER THAN BROAD AND HEDGED (owner,
+       2026-08-19). It used to be "no feature will ever be locked behind a
+       payment", which is checkable and was therefore worth something; the
+       draft that replaced it read "most core features stay free", which only
+       the promiser can adjudicate — a promise nobody else can check is not a
+       promise, and one that announces a reserved right reads as "the good part
+       gets charged for later". So it names the THREE MODULES instead. They are
+       the ones `docs/CORE.md` is organised around, the boundary is already
+       drawn, and nothing that does not exist yet is mentioned at all.
+
+       ITS GUARANTOR IS THE LICENCE, NOT THE AUTHOR. This is AGPL-3.0: the
+       engine, the data and the wasm are public, so being locked out is not
+       something the reader has to take on trust — it is not available to us.
+       That is a stronger statement than any pledge on this page and it was
+       being spent as the adjective in "free and open source".
+
+       NO CLAIM ABOUT ADVERTISING, in either direction (owner, 2026-08-19). The
+       page carried "no ads" as a promise; it is withdrawn rather than
+       reversed, and withdrawing one nobody has relied on yet costs nothing
+       where breaking it later would cost everything.
 
        There is NO SUGGESTED-AMOUNT LADDER here, and that is a decision rather
        than an omission (owner, 2026-08-06): $5 to start, anything after that.
@@ -224,12 +282,37 @@
        would only be a second, staler copy of one. -->
   <main id="support-page" class="support-page" hidden>
     <h1 class="hero-h" data-i18n>Support WFSim</h1>
-    <!-- What this promise does NOT say is anything about accounts: one may yet
-         exist (owner, 2026-08-06). The promise is about the PAYWALL, which is
-         the part that has to hold whatever else the site grows. -->
-    <p class="hero-sub" data-i18n>WFSim is free and open source. No ads, and no feature will ever be locked behind a payment — that part is not going to change. It does cost money and time to run, so if it saved you a Forma, you can chip in.</p>
+    <!-- What this says nothing about is accounts, or anything else that does
+         not exist yet (owner, 2026-08-06, narrowed 2026-08-19). The promise is
+         about the THREE MODULES and about the LICENCE — the two things that
+         are true today and can be checked by the reader today. -->
+    <p class="hero-sub" data-i18n>WFSim is free software, licensed AGPL-3.0. Building, simulating and optimizing are the whole of this site, and they are the same for everyone: no account, no payment, no part held back.</p>
+    <p class="hero-sub" data-i18n>The engine, the game data and the wasm it all runs on are public. If you ever stop recognising what this becomes, you can run your own — that is not my assurance, it is the licence.</p>
+    <p class="hero-sub" data-i18n>It does take money and time to run. If it has ever saved you a Forma, you can chip in.</p>
 
     <div id="support-channels" class="sup-channels"></div>
+
+    <!-- THE EVIDENCE, WHERE SOMEBODY READS IT (owner, 2026-08-19). This site's
+         strongest property is that it says what it CANNOT do — a weapon
+         banner, an evolution chip, a mod line, an arcane line, an enemy caveat
+         (`check_disclosure.mjs` asserts all five). Every one of them lives
+         deep inside a weapon page: a reader has to pick a weapon and equip
+         something before any of it is visible, so the most persuasive thing
+         here sat at the bottom of the funnel and no surface above it said a
+         word. None of these claims is an adjective — each names something
+         checkable, which is the only kind of confidence this repo allows
+         itself outside the home hero. -->
+    <section class="block">
+      <div class="bh"><h2 data-i18n>Why you can check it</h2></div>
+      <div class="bb">
+        <ul class="sup-costs">
+          <li data-i18n>Every formula in the engine cites its source — a wiki page, a datamine, or a measurement — and every golden test is calibrated against a real in-game run.</li>
+          <li data-i18n>It tells you what it cannot model, on the card where you are standing: on a weapon, an evolution, a mod, an arcane, an enemy. It lists those itself rather than waiting to be asked.</li>
+          <li data-i18n>Sometimes it says the number is right and the game is wrong, and names the bug a hotfix would take away.</li>
+          <li data-i18n>And if your own in-game measurement disagrees with it, the measurement wins. That is a bug report about reality, and it is the one thing that changes what this engine does.</li>
+        </ul>
+      </div>
+    </section>
 
     <section class="block">
       <div class="bh"><h2 data-i18n>Where it goes</h2></div>
@@ -247,10 +330,9 @@
       <div class="bh"><h2 data-i18n>What a donation never buys</h2></div>
       <div class="bb">
         <ul class="sup-costs">
-          <li data-i18n>No paid features and no paywall. Every build, simulation and search stays the same for everyone.</li>
+          <li data-i18n>A number. Nothing bought here moves a result by one decimal — an in-game measurement is the only thing that changes what the engine does.</li>
           <li data-i18n>No tiers, no perks, no supporter badge. A donation is a thank-you, not a purchase.</li>
-          <li data-i18n>No ads, and no tracking beyond what Cloudflare counts to serve the page.</li>
-          <li data-i18n>No influence on the numbers. An in-game measurement is the only thing that changes what the engine does.</li>
+          <li data-i18n>No tracking beyond what Cloudflare counts to serve the page.</li>
         </ul>
       </div>
     </section>
@@ -643,7 +725,7 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (owner, 2026-08-18, after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">034ef930+ · 2026-08-18 16:26Z</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">862d53fd+ · 2026-08-19 05:09Z</span>
     </div>
   </footer>
 

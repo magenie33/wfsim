@@ -142,22 +142,46 @@ for (const [label, w, h, mobile] of SCREENS) {
       // real box on screen, inside the viewport on both sides.
       // (No backticks in here: this comment lives inside a template literal.)
       ...(() => {
-        const SEL = ['.topnav .tnav[data-nav="home"]', '.topnav .tnav[data-nav="benchmark"]',
-                     '#lang-select', '#theme-toggle', '.gh-link', '.qq-link', '.dc-link', '.sup-link'];
-        const missing = () => SEL.filter((s) => {
+        // THE BAR CARRIES WHAT A READER ACTS ON; THE REST IS ONE CLICK AWAY
+        // (owner, 2026-08-19). Until then all eight sat on the desktop bar with
+        // equal weight, which is three unrelated categories in one costume —
+        // so this check asserted that all eight were visible with nothing
+        // opened, and that assertion WAS the old design. Two sets now.
+        // BAR: what is on the desktop bar with nothing opened. The ask is here
+        // because it is the only entry that is not chrome.
+        const BAR = ['.topnav .tnav[data-nav="home"]', '.topnav .tnav[data-nav="benchmark"]',
+                     '#lang-select', '#theme-toggle', '.sup-link', '#tbmore-toggle'];
+        // ALL: nothing was DELETED to make the bar fit — every destination and
+        // every control is still REACHABLE at every width, which is the claim
+        // this check has always existed to make. Only the number of clicks
+        // moved. '.qq-link' / '.dc-link' are BOTH here: one is on the bar and one
+        // is in the overflow, and which is which follows the display language.
+        // ...and the overflow BUTTON is not in it. It is a container, not a
+        // destination or a control: below 700px it is not drawn at all, because
+        // the phone menu already holds what it would have opened.
+        const ALL = BAR.filter((x) => x !== '#tbmore-toggle')
+          .concat(['.gh-link', '.qq-link', '.dc-link', '#compute-select']);
+        const missing = (SEL) => SEL.filter((s) => {
           const el = document.querySelector(s);
           if (!el) return true;
           const b = el.getBoundingClientRect();
           return b.width < 1 || b.height < 1 || b.right > vw + 0.5 || b.left < -0.5;
         });
         const tog = document.querySelector('.menu-toggle');
-        const closed = missing();
+        const more = document.querySelector('#tbmore-toggle');
+        const closed = missing(BAR);
+        // Open BOTH: below 700px the hamburger holds everything and the '⋯' is
+        // not drawn; above it the '⋯' holds the overflow and the hamburger is
+        // not drawn. Clicking one that is not there is a no-op either way.
         if (tog) tog.click();
-        const opened = missing();
+        if (more) more.click();
+        const opened = missing(ALL);
+        if (more) more.click();
         if (tog) tog.click();
         return {
           missingClosed: closed, missingOpen: opened,
           toggleDisplay: tog ? getComputedStyle(tog).display : 'absent',
+          moreDisplay: more ? getComputedStyle(more).display : 'absent',
         };
       })(),
       // TWO: what the room bought. The search is the thing the old bar was
@@ -182,8 +206,13 @@ for (const [label, w, h, mobile] of SCREENS) {
   // the same eight sit on the bar itself with nothing to open.
   check(`${tag} the menu is ${w <= 700 ? "how a phone reaches them" : "not in the way"}`,
     (r.toggleDisplay !== "none") === (w <= 700), `toggle display ${r.toggleDisplay}`);
+  // The `⋯` is the DESKTOP's overflow and only the desktop's: below the
+  // breakpoint it is `display:contents` and its children join the phone menu
+  // directly, so there would be nothing left for it to open.
+  check(`${tag} the overflow is ${w <= 700 ? "not a second menu on a phone" : "the desktop's"}`,
+    (r.moreDisplay !== "none") === (w > 700), `⋯ display ${r.moreDisplay}`);
   if (w > 700) {
-    check(`${tag} ...and the bar shows them without one`,
+    check(`${tag} ...and the bar itself shows what a reader acts on`,
       r.missingClosed.length === 0, `hidden until opened: ${r.missingClosed.join(", ")}`);
   }
   // What the room bought. The old bar wrapped to two rows and left the search
