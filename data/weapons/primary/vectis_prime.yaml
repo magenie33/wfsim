@@ -78,6 +78,9 @@ attack:
   crit_multiplier: 2
   status_chance: 0.3
   punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 1000.0 m", Hit-Scan
+  range_m: 1000.0
   damage: { impact: 140, slash: 52.5, puncture: 157.5 }   # total 350.0
 
 # incarnon_evolutions: definitions live in data/evolutions/vectis_prime_*.yaml.

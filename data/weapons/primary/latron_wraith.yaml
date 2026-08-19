@@ -52,6 +52,9 @@ attack:
   crit_multiplier: 2.8
   status_chance: 0.14
   punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 15.5, puncture: 43.4, slash: 3.1 }   # total 62
 
 # incarnon_evolutions: nine perks shared by the transform group; definitions

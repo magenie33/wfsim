@@ -61,6 +61,9 @@ attack:
   status_chance: 0.18
   punch_through_m: 0.0
   # 10 / 10 / 10 — an even 30, against the Prime's Slash-biased 46.
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 10.0, puncture: 10.0, slash: 10.0 }
 
 transform_group: burston

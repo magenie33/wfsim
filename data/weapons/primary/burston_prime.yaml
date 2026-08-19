@@ -70,6 +70,9 @@ attack:
   punch_through_m: 0.0
   # 13.8 / 13.8 / 18.4 — 46 total, Slash-biased, which is what the page's one
   # Characteristics line says ("This weapon deals primarily Slash damage").
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 13.8, puncture: 13.8, slash: 18.4 }
   # The cone one round spreads over, in degrees (module MinSpread/MaxSpread).
   # NOT READ: with one target and no geometry, spread decides nothing.

@@ -97,6 +97,9 @@ attack:
   # CEILING already reached. That used to be filed as an unmodelled admission,
   # which was true only while the arena had one body (2026-08-17).
   punch_through_m: 999.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" — a PROJECTILE with a range row, like the Grattler
+  range_m: 300.0
   damage: { impact: 38, slash: 83.6, puncture: 68.4 }   # total 190.0
 
 # incarnon_evolutions: definitions live in data/evolutions/felarx_*.yaml.

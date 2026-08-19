@@ -51,3 +51,28 @@ checked:
   mk1_furis_incarnon: { range: 16.0,  type: continuous, note: 'Incarnon Form Range: 16.0 m' }
   larkspur:          { range: 40.0,  type: continuous, note: 'ATMOSPHERE column (Archwing 160)' }
   onos_incarnon:     { range: null,  type: continuous, note: 'the Incarnon beam lists NO Range; the 3.0 m is its Charge Radial blast radius' }
+  latron_prime:      { range: 300.0, type: hit-scan, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  latron_wraith:     { range: 300.0, type: hit-scan, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  sicarus_prime:     { range: 300.0, type: hit-scan, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  kuva_grattler:     { range: 225.0, type: projectile, note: 'wiki, ATMOSPHERE column: "Range: 225.0 m", Projectile' }
+  phenmor:           { range: null, type: projectile, note: 'the page states NO Range row on either the normal attack or the Incarnon form; both are Projectile' }
+  strun_prime:       { range: 300.0, type: hit-scan, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  lato_prime:        { range: 300.0, type: hit-scan, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  vasto_prime:       { range: 300.0, type: hit-scan, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  akarius_prime:     { range: null, type: projectile, note: 'the Rocket IMPACT block states no Range; the 7.8 m is the Rocket Detonation radius. Projectile' }
+  torid:             { range: null, type: projectile, note: 'no Range row on the grenade launch; Projectile Speed 40 m/s' }
+  arbucep:           { range: null, type: projectile, note: 'ATMOSPHERE column states no Range row. Projectile' }
+  burston_prime:     { range: 300.0, type: hit-scan, note: 'Range: 300.0 m' }
+  burston:           { range: 300.0, type: hit-scan, note: 'Range: 300.0 m' }
+  braton_prime:      { range: 300.0, type: hit-scan, note: 'Range: 300.0 m' }
+  braton_vandal:     { range: 300.0, type: hit-scan, note: 'Range: 300.0 m' }
+  laetum:            { range: null, type: projectile, note: 'no Range row; Projectile' }
+  miter:             { range: null, type: projectile, note: 'no Range row; Projectile' }
+  ballistica_prime:  { range: null, type: projectile, note: 'no Range row; Projectile' }
+  felarx:            { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m" — a PROJECTILE with a range row, like the Grattler' }
+  furis:             { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan (the Incarnon form is 16 m and is its own entry)' }
+  vectis_prime:      { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
+  boltor_prime:      { range: null, type: read, note: 'no Range row; Projectile' }
+  paris_prime:       { range: null, type: read, note: 'no Range row; Projectile' }
+  cestra:            { range: null, type: read, note: 'no Range row; Projectile' }
+  stug:              { range: null, type: read, note: 'TRAP: its only Range row is 2.0 m under a block whose Projectile Type is AoE — that is the BLOB''S BLAST RADIUS, not the weapon''s reach. The reach is not stated' }
