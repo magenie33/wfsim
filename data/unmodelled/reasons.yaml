@@ -51,8 +51,6 @@ reasons:
   # being accurate rather than the model being short.
   auto_spool_ramp:
     text: "the AUTO-SPOOL ramp is not modelled — the page gives this trigger as Auto-Spool and the fire rate here is the spooled-up {rate}/s from the first shot, so a short burst is faster in this sim than in game"
-  beam_range:
-    text: "the {m} m range is not modelled — the fight has a distance now, but a beam still reaches whatever it is aimed at, so a target standing past the beam's end takes damage here that it would not take in game"
   # THE RICOCHET ITSELF IS MODELLED (2026-08-18) — `ricochet:` on the three
   # Latron Incarnon entries, five bounces each dealing the collision and the
   # explosion in full. This is what is LEFT of it: the page says enemies *and

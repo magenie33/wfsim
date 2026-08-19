@@ -12,6 +12,23 @@ effects:
   - kind: projectile_speed_bonus
     rank0: 0.0273
     rankMax: 0.3
+  # …AND IT SAYS SO ON THE CARD (2026-08-19). `unmodeled` rides ALONGSIDE the
+  # real effect rather than replacing it — replacing it is what threw the number
+  # away — so the reader sees the metres AND the "not modelled yet" badge.
+  #
+  # IT BECAME A REAL DISCREPANCY on the day range was modelled. Before that the
+  # sim had no reach at all, so a mod that extends one changed nothing and was
+  # right to say nothing. Now a range is a WALL, this mod moves it in game, and
+  # it does not here: measured on an Ocucor (20 m) with Ruinous Extension
+  # (+8 m) against a target at 25 m — 0 damage with the mod and 0 without.
+  #
+  # NOT IMPLEMENTED YET because the BRACKET is unsourced. The flat mods are
+  # unambiguous on their own (+8, +12 metres) and so is the percentage on its
+  # own (+30%), but the Phantasma can hold Sinister Reach AND Galvanized
+  # Acceleration at once, and neither Sinister Reach's page, Beam Length nor
+  # Continuous Weapon states whether flat and percent add or multiply. A
+  # faithful-looking formula without a measurement is not correct.
+  - kind: unmodeled
   - kind: beam_range_bonus
     rank0: 0.0273
     rankMax: 0.3

@@ -468,11 +468,11 @@ pub struct AttackSpec {
     /// already modelled. A weapon can have either, both or neither: the
     /// Phantasma has a hard 20 m and no ramp at all.
     ///
-    /// ABSENT MEANS UNLIMITED, which is what this engine did for everything
-    /// until 2026-08-19. It is honest rather than right — most of the roster
-    /// has a real range and the number has not been transcribed yet — so a
-    /// weapon that HAS one and lacks a number here keeps admitting it through
-    /// the `beam_range` reason in `data/unmodelled/reasons.yaml`.
+    /// ABSENT MEANS THE PAGE STATES NONE, and 101 of the roster's 224 entries
+    /// are in that state — a fact about the wiki rather than a gap in us. Every
+    /// entry has had its page opened (`every_entry_has_had_its_range_page_opened`),
+    /// so absence is no longer ambiguous and the `beam_range` admission that
+    /// stood for it is gone.
     #[serde(default)]
     pub range_m: Option<RangeSpec>,
     /// DOES THIS ATTACK TAKE PUNCH-THROUGH MODS? A CATALOG ANSWER, and absent
