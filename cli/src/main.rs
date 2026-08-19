@@ -131,6 +131,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         dot_modified_base: None,
         reload_bonus: 0.0,
         weakpoint_damage: 0.0,
+        headshot_multiplier: None,
         weakpoint_cc_rel: 0.0,
         bodyshot_cc_mult: 1.0,
         derived_status_from_crit: None,

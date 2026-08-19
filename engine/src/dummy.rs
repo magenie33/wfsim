@@ -1836,6 +1836,10 @@ pub struct DummyParams {
     /// Σ LISTED Weak Point damage (Pistol Acuity): +1.5× this on the part
     /// multiplier of true weak points, before the headshot bracket.
     pub weakpoint_damage: f64,
+    /// The weapon's own headshot multiplier where it overrules the enemy body
+    /// part's — see `weapons_data::WeaponSpec::headshot_multiplier`. `None` on
+    /// every weapon whose head is worth what the body part says.
+    pub headshot_multiplier: Option<f64>,
     /// ABSOLUTE crit chance added on weak-point pellets only (Acuity).
     pub weakpoint_cc_rel: f64,
     /// King's Gambit: MULTIPLIES a non-weak-point pellet's crit chance.
@@ -2859,6 +2863,7 @@ impl DummyParams {
             dot_modified_base: Some(panel.modified_base),
             reload_bonus: panel.reload_bonus,
             weakpoint_damage: panel.weakpoint_damage,
+            headshot_multiplier: panel.headshot_multiplier,
             crit_tier_upgrade_chance: panel.crit_tier_upgrade_chance,
             slash_on_crit: panel.slash_on_crit,
             weakpoint_cc_rel: panel.weakpoint_cc_rel,
@@ -3169,6 +3174,7 @@ impl Default for DummyParams {
             dot_modified_base: None,
             reload_bonus: 0.0,
             weakpoint_damage: 0.0,
+            headshot_multiplier: None,
             crit_tier_upgrade_chance: 0.0,
             slash_on_crit: 0.0,
             weakpoint_cc_rel: 0.0,
@@ -9058,10 +9064,15 @@ pub fn run_once_traced(
                     .iter()
                     .find(|p| p.is_head)
                     .map_or(1.0, |p| p.multiplier);
+                // The WEAPON may overrule what a head is worth — Tenet Arca
+                // Plasmor, "1x headshot multiplier". Its own value REPLACES the
+                // part's, and the additive brackets still pay on top of it.
+                let m = ap.headshot_multiplier.unwrap_or(m);
                 (m + 1.5 * ap.weakpoint_damage) * (1.0 + hb_head) * (1.0 + hi_head)
             };
+            let head_mult = ap.headshot_multiplier.unwrap_or(part.multiplier);
             let wp_mult = if part.is_head {
-                part.multiplier + 1.5 * ap.weakpoint_damage
+                head_mult + 1.5 * ap.weakpoint_damage
             } else {
                 part.multiplier
             };
@@ -9069,7 +9080,7 @@ pub fn run_once_traced(
             // Wiki Critical_Hit §Critical Headshots: a crit on an eligible
             // >1x location doubles cd inside the tier formula (a cd_total
             // that INCLUDES Cold's flat bonus — freeze.yaml notes).
-            let cd = if part.crit_bonus && part.multiplier > 1.0 {
+            let cd = if part.crit_bonus && head_mult > 1.0 && part.multiplier > 1.0 {
                 2.0 * cd_total
             } else {
                 cd_total
@@ -19675,6 +19686,73 @@ mod tests {
             (s.mean_damage - 6187.5).abs() < 1e-9,
             "dmg {}",
             s.mean_damage
+        );
+    }
+
+    /// A WEAPON MAY OVERRULE WHAT A HEAD IS WORTH, and the Tenet Arca Plasmor
+    /// is the roster's first: *"1x headshot multiplier (meaning it does no extra
+    /// damage)"*, on an enemy whose head is worth 3x.
+    ///
+    /// Three claims, because the field is only right if all three hold. The
+    /// enemy's multiplier is REPLACED rather than reduced; a headshot MOD still
+    /// pays on top of the replacement, which is the wiki's own next sentence
+    /// (*"this can be increased using Primary Deadhead"*); and the critical
+    /// headshot doubling goes quiet, since the rule it comes from is about a
+    /// weak point worth more than 1x and this head no longer is.
+    #[test]
+    fn a_weapon_may_overrule_what_a_head_is_worth() {
+        let head3x = |m: Option<f64>, deadhead: f64| DummyParams {
+            headshot_multiplier: m,
+            arcane: ArcaneFx { headshot_mult_bonus: deadhead, ..ArcaneFx::none() },
+            crit_tier_upgrade_chance: 0.0,
+            slash_on_crit: 0.0,
+            body_parts: vec![BodyPart {
+                name: "head".into(),
+                aim_weight: 1.0,
+                multiplier: 3.0,
+                is_head: true,
+                crit_bonus: true,
+            }],
+            ..flat_base()
+        };
+        let dmg = |p: &DummyParams| monte_carlo(p, 20, 5).mean_damage;
+
+        // 1. THE PART'S 3x IS REPLACED BY THE WEAPON'S 1x — not scaled by it,
+        //    and not left standing beside it.
+        let ordinary = dmg(&head3x(None, 0.0));
+        let flat = dmg(&head3x(Some(1.0), 0.0));
+        assert!(
+            (ordinary / flat - 3.0).abs() < 1e-9,
+            "a 1x weapon on a 3x head must be worth exactly a third: {ordinary} vs {flat}"
+        );
+
+        // 2. A HEADSHOT MOD STILL PAYS, on top of the weapon's own multiplier —
+        //    Primary Deadhead at +120% is 1 x (1 + 1.2).
+        let deadhead = dmg(&head3x(Some(1.0), 1.2));
+        assert!(
+            (deadhead / flat - 2.2).abs() < 1e-9,
+            "Deadhead must still pay on a 1x head: {deadhead} vs {flat}"
+        );
+
+        // 3. …AND THE BODY IS UNTOUCHED, which is what says the override is
+        //    scoped to the head rather than to the weapon's whole output.
+        let body = |m: Option<f64>| {
+            dmg(&DummyParams {
+                body_parts: vec![BodyPart {
+                    name: "body".into(),
+                    aim_weight: 1.0,
+                    multiplier: 1.0,
+                    is_head: false,
+                    crit_bonus: false,
+                }],
+                ..head3x(m, 0.0)
+            })
+        };
+        assert!(
+            (body(Some(1.0)) - body(None)).abs() < 1e-9,
+            "the override must not reach a body hit: {} vs {}",
+            body(Some(1.0)),
+            body(None)
         );
     }
 

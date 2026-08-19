@@ -1442,6 +1442,10 @@ pub struct WeaponBase {
     /// Additive headshot-damage bonus (Caput Mortuum), inside the headshot
     /// bracket `(1 + Σ)`. Direct hits only — a radial never headshots.
     pub headshot_damage_bonus: f64,
+    /// The WEAPON's own headshot multiplier where it overrules the enemy body
+    /// part's — see `weapons_data::WeaponSpec::headshot_multiplier`. A weapon
+    /// stat and never a mod's, so it rides the base rather than the buckets.
+    pub headshot_multiplier: Option<f64>,
     /// Devouring Attrition: `(chance, bonus)` — on an instance that did
     /// NOT crit, `chance` to multiply it by `(1 + bonus)`. Its own
     /// multiplier, applied to the direct hit and the radial alike.
@@ -2568,6 +2572,10 @@ pub struct ResolvedPanel {
     /// Σ LISTED Weak Point damage (Acuity). Sim: +1.5× this on the part
     /// multiplier of true weak points, before the headshot bracket.
     pub weakpoint_damage: f64,
+    /// The weapon's own headshot multiplier where it overrules the enemy body
+    /// part's — see `weapons_data::WeaponSpec::headshot_multiplier`. `None` on
+    /// every weapon whose head is worth what the body part says.
+    pub headshot_multiplier: Option<f64>,
     /// ABSOLUTE crit chance added on weak-point hits only (base_cc × Σ
     /// relative weak-point CC bonuses); part-conditional, all policies.
     pub weakpoint_cc_rel: f64,
@@ -3987,6 +3995,7 @@ pub fn resolve_for(
         indirect,
         faction_damage: faction_bonus,
         weakpoint_damage: wp_dmg,
+        headshot_multiplier: base.headshot_multiplier,
         // RELATIVE; direct-head only, so the sim uses the direct base.
         weakpoint_cc_rel: wp_cc,
         bodyshot_cc_mult: base.bodyshot_cc_mult,

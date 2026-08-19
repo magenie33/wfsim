@@ -1242,6 +1242,32 @@ pub struct WeaponSpec {
     /// headshot bracket the arcane and evolution bonuses use.
     #[serde(default)]
     pub headshot_damage_bonus: Option<f64>,
+    /// THE WEAPON'S OWN HEADSHOT MULTIPLIER, which REPLACES the body part's.
+    ///
+    /// A head is worth what the ENEMY's body part says it is worth, on every
+    /// weapon but a handful: the Tenet Arca Plasmor's page states *"1x headshot
+    /// multiplier"* under its disadvantages and then *"It is exceedingly easy to
+    /// perform headshots with this weapon. Although it has a 1x headshot
+    /// multiplier (meaning it does no extra damage), this can be increased using
+    /// Primary Deadhead."* So the head is still a HEAD — the shot counts as one
+    /// and Deadhead pays on it — and only the enemy's own multiplier is
+    /// overruled.
+    ///
+    /// NOT `headshot_damage_bonus`, which is the additive bracket beside
+    /// Deadhead's and which the module states this weapon's value in:
+    /// `ExtraHeadshotDmg = -2`, on seven primaries (both Alternoxes, both Arca
+    /// Plasmors, both Fulmins' semi-auto mode, Nataruk's Perfect Shot). Put
+    /// through that bracket `1 + (-2)` is NEGATIVE and a headshot would heal the
+    /// target — so the datamined figure encodes a multiplier DE applies
+    /// somewhere this engine does not, and the wiki's own sentence, "1x", is
+    /// what gets transcribed. The two fields compose: a weapon may state this
+    /// multiplier and still take every additive bonus on top of it.
+    ///
+    /// It also silences the CRITICAL HEADSHOT doubling, which the engine gates
+    /// on a part multiplier above 1x — correctly, since the wiki's rule is about
+    /// a weak point worth more than 1x and this weapon's head is not one.
+    #[serde(default)]
+    pub headshot_multiplier: Option<f64>,
     #[serde(default)]
     pub transform_group: Option<String>,
     #[serde(default)]
@@ -1827,6 +1853,18 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
             "A Status Effect has a {:.0}% chance to SET the next hit's crit chance to {:.0}% — ignoring every other crit bonus. Rolled per pellet.",
             sc.chance * 100.0,
             sc.crit_chance * 100.0
+        ));
+    }
+
+    // A HEAD THIS WEAPON DOES NOT CARE ABOUT. Said out loud because it is the
+    // one weapon stat that makes a number SMALLER than the reader expects, and
+    // an unexplained small number reads as a bug in the sim rather than as the
+    // weapon. Both halves are on the line: the multiplier is the weapon's, and
+    // a headshot mod still pays — which is what keeps Primary Deadhead worth
+    // fitting on a gun whose own head bonus is nothing.
+    if let Some(m) = s.headshot_multiplier {
+        out.push(format!(
+            "A headshot with this weapon is worth {m:.0}x rather than the enemy body part's own multiplier, so aiming for the head buys nothing by itself. Headshot mods still apply on top of it, and a critical headshot does not double its critical damage."
         ));
     }
 
@@ -2738,6 +2776,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // Evolutions ADD to this (Caput Mortuum); a weapon's innate share is
         // the module's `ExtraHeadshotDmg`.
         headshot_damage_bonus: s.headshot_damage_bonus.unwrap_or(0.0),
+        headshot_multiplier: s.headshot_multiplier,
         noncrit_bonus: None,
     }
 }
