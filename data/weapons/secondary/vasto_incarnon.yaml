@@ -97,6 +97,9 @@ attack:
     start_m: 16
     end_m: 32
     reduction: 0.9667   # fraction KEPT past end_m
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 7.5, slash: 15, puncture: 7.5 }   # total 30.0
 
 # incarnon_evolutions: see data/weapons/secondary/vasto.yaml (shared group)

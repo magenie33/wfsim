@@ -61,6 +61,9 @@ attack:
   crit_multiplier: 3
   status_chance: 0.2
   punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 28, slash: 6, puncture: 6 }   # total 40
 
 # incarnon_evolutions: see data/weapons/secondary/sicarus.yaml (shared group)

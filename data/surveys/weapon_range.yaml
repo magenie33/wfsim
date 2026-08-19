@@ -186,3 +186,19 @@ checked:
   strun_incarnon:            { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
   strun_wraith_incarnon:     { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
   strun_prime_incarnon:      { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius (the family is uniform here)' }
+  vasto:                     { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  vasto_incarnon:            { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  vasto_prime_incarnon:      { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  zylok:                     { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  zylok_prime:               { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  sicarus:                   { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  sicarus_incarnon:          { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  sicarus_prime_incarnon:    { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  zylok_incarnon:            { range: null, type: read, note: 'Incarnon Form: no Range row; its 6.0 m is the Radial Attack''s radius' }
+  zylok_prime_incarnon:      { range: null, type: read, note: 'Incarnon Form: no Range row; its 6.0 m is the Radial Attack''s radius' }
+  vulkar:                    { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
+  vulkar_wraith:             { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
+  snipetron:                 { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
+  snipetron_vandal:          { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
+  vectis_incarnon:           { range: null, type: read, note: 'Incarnon Form: the MAIN block has no Range; the 6.7 m belongs to Incarnon Form Headshot AoE and the 0.1 m to Incarnon Form Embed AoE, both radii. Re-read, because the first answer offered 6.7 m as the form''s reach' }
+  vectis_prime_incarnon:     { range: null, type: read, note: 'Incarnon Form: the MAIN block has no Range; 6.7 m and 0.1 m are both AoE sub-block radii' }

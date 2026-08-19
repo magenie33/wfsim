@@ -46,6 +46,9 @@ attack:
   status_chance: 0.16
   # THREE METRES, the deepest innate punch-through of any sniper here.
   punch_through_m: 3.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 1000.0 m", Hit-Scan
+  range_m: 1000.0
   damage: { impact: 10.0, puncture: 180.0, slash: 10.0 }   # 200 total
 unmodeled:
   - reason: sniper_combo_miss

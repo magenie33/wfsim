@@ -49,6 +49,9 @@ attack:
   status_chance: 0.25
   punch_through_m: 1.0
   # NO SLASH at all, unlike the ordinary Vulkar's 80/15/5 — this is 90/10.
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 1000.0 m", Hit-Scan
+  range_m: 1000.0
   damage: { impact: 245.7, puncture: 27.3 }   # 273 total
 unmodeled:
   - reason: sniper_combo_miss
