@@ -30,196 +30,235 @@
 #
 # `range: null` means THE PAGE STATES NONE — a fact, not a gap. `infinite` is a
 # claim the wiki has to make before we write it.
+#
+# FINISHED 2026-08-19: all 224 roster entries have had their page opened. 123
+# carry a range; 101 pages state none. `every_entry_has_had_its_range_page_opened`
+# reads this file and nothing else does, so a weapon added tomorrow fails until
+# somebody opens its page — which is a stronger guarantee than the shrinking
+# count it replaced, because a count cannot tell "the page says none" from
+# "nobody looked".
+#
+# WHAT THE PAGES ACTUALLY SAID, once all of them had been read:
+#
+#   300 m   x75   the ordinary reach — rifles, pistols, shotguns, most Arch-Guns
+#  1000 m   x11   every sniper, without exception
+#    80 m   x3    the Ballistica family's Incarnon
+#    16-70 m      the beams, and the forms that trade reach for something else
+#
+# …and 23 figures that LOOK like ranges and are AoE radii, plus two Damage
+# Falloff rows (Komorex, Sporothrix) and one Punch Through (Mandonel) that read
+# the same way. More than a fifth of the pages carry at least one number that a
+# blind transcription would have taken for a reach.
+
 
 checked:
-  braton:            { range: 300.0,  type: hit-scan,   note: 'Range: 300.0 m' }
-  boar_prime:        { range: 300.0,  type: hit-scan,   note: 'Range: 300.0 m' }
-  lex:               { range: 300.0,  type: hit-scan,   note: 'Range: 300.0 m' }
-  rubico:            { range: 1000.0, type: hit-scan,   note: 'Range: 1000.0 m; falloff 400-600 m to 50%' }
-  vectis:            { range: 1000.0, type: hit-scan,   note: 'Range: 1000.0 m' }
-  dread:             { range: null,   type: projectile, note: 'no Range row; Projectile Speed 85 m/s' }
-  kuva_bramma:       { range: null,   type: projectile, note: 'no Range row; Projectile Speed 50 m/s' }
-  grattler:          { range: 225.0,  type: projectile, note: 'ATMOSPHERE column; the Archwing column has no Range row' }
-  # …the continuous ones, already written into their weapon yamls.
-  phantasma:         { range: 20.0,  type: continuous, note: '"Limited range of 20 meters"; No Damage Falloff' }
-  phantasma_prime:   { range: 25.0,  type: continuous, note: 'Range: 25.0 m' }
-  gammacor:          { range: 25.0,  type: continuous, note: 'Range: 25.0 m' }
-  synoid_gammacor:   { range: 40.0,  type: continuous, note: 'Range: 40.0 m' }
-  ocucor:            { range: 20.0,  type: continuous, note: 'Normal Attack Range: 20.0 m (the tendrils are a separate 20 m about a separate thing)' }
-  cortege:           { range: 28.0,  type: continuous, note: 'ATMOSPHERE: "28 meters in Atmospheric Mode" (Archwing 380)' }
-  furis_incarnon:    { range: 16.0,  type: continuous, note: 'Incarnon Form Range: 16.0 m' }
-  mk1_furis_incarnon: { range: 16.0,  type: continuous, note: 'Incarnon Form Range: 16.0 m' }
-  larkspur:          { range: 40.0,  type: continuous, note: 'ATMOSPHERE column (Archwing 160)' }
-  onos_incarnon:     { range: null,  type: continuous, note: 'the Incarnon beam lists NO Range; the 3.0 m is its Charge Radial blast radius' }
-  latron_prime:      { range: 300.0, type: hit-scan, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  latron_wraith:     { range: 300.0, type: hit-scan, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  sicarus_prime:     { range: 300.0, type: hit-scan, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  kuva_grattler:     { range: 225.0, type: projectile, note: 'wiki, ATMOSPHERE column: "Range: 225.0 m", Projectile' }
-  phenmor:           { range: null, type: projectile, note: 'the page states NO Range row on either the normal attack or the Incarnon form; both are Projectile' }
-  strun_prime:       { range: 300.0, type: hit-scan, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  lato_prime:        { range: 300.0, type: hit-scan, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  vasto_prime:       { range: 300.0, type: hit-scan, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  akarius_prime:     { range: null, type: projectile, note: 'the Rocket IMPACT block states no Range; the 7.8 m is the Rocket Detonation radius. Projectile' }
-  torid:             { range: null, type: projectile, note: 'no Range row on the grenade launch; Projectile Speed 40 m/s' }
-  arbucep:           { range: null, type: projectile, note: 'ATMOSPHERE column states no Range row. Projectile' }
-  burston_prime:     { range: 300.0, type: hit-scan, note: 'Range: 300.0 m' }
-  burston:           { range: 300.0, type: hit-scan, note: 'Range: 300.0 m' }
-  braton_prime:      { range: 300.0, type: hit-scan, note: 'Range: 300.0 m' }
-  braton_vandal:     { range: 300.0, type: hit-scan, note: 'Range: 300.0 m' }
-  laetum:            { range: null, type: projectile, note: 'no Range row; Projectile' }
-  miter:             { range: null, type: projectile, note: 'no Range row; Projectile' }
-  ballistica_prime:  { range: null, type: projectile, note: 'no Range row; Projectile' }
-  felarx:            { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m" — a PROJECTILE with a range row, like the Grattler' }
-  furis:             { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan (the Incarnon form is 16 m and is its own entry)' }
-  vectis_prime:      { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
-  boltor_prime:      { range: null, type: read, note: 'no Range row; Projectile' }
-  paris_prime:       { range: null, type: read, note: 'no Range row; Projectile' }
-  cestra:            { range: null, type: read, note: 'no Range row; Projectile' }
-  stug:              { range: null, type: read, note: 'TRAP: its only Range row is 2.0 m under a block whose Projectile Type is AoE — that is the BLOB''S BLAST RADIUS, not the weapon''s reach. The reach is not stated' }
-  boar:                    { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  braton_incarnon:         { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan. The 3.0 m on the Incarnon AoE sub-block is a RADIUS' }
-  prisma_angstrum:         { range: null, type: read, note: 'the Single Rocket IMPACT block states no Range; the explosion block''s figure is a radius' }
-  coda_sporothrix:         { range: null, type: read, note: 'no Range row; Projectile' }
-  angstrum:                { range: null, type: read, note: 'impact block: no Range. Its 3.6 m sits under an AoE block and is a radius' }
-  angstrum_incarnon:       { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
-  boltor:                  { range: null, type: read, note: 'no Range row on either the normal attack or the Incarnon form; Projectile' }
-  boltor_incarnon:         { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
-  boltor_prime_incarnon:   { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
-  braton_prime_incarnon:       { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (the 3.0 m AoE sub-block is a RADIUS)' }
-  braton_vandal_incarnon:      { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (the 3.0 m AoE sub-block is a RADIUS)' }
+  akarius:                     { range: null, type: read, note: 'the Rocket IMPACT block states no Range; the 7.2 m belongs to the Rocket Detonation and is a radius' }
+  akarius_prime:               { range: null, type: projectile, note: 'the Rocket IMPACT block states no Range; the 7.8 m is the Rocket Detonation radius. Projectile' }
+  angstrum:                    { range: null, type: read, note: 'impact block: no Range. Its 3.6 m sits under an AoE block and is a radius' }
+  angstrum_incarnon:           { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
+  arbucep:                     { range: null, type: projectile, note: 'ATMOSPHERE column states no Range row. Projectile' }
+  atomos_incarnon:             { range: null, type: read, note: 'Incarnon Form: no Range row; its 7.9 m sits under the Incarnon Radial Attack (AoE) and is a radius' }
+  ballistica:                  { range: null, type: read, note: 'burst and charged blocks both state no Range; Projectile' }
   ballistica_incarnon:         { range: 80.0, type: read, note: 'wiki, Incarnon Form: "Range: 80.0 m", Projectile' }
+  ballistica_prime:            { range: null, type: projectile, note: 'no Range row; Projectile' }
   ballistica_prime_incarnon:   { range: 80.0, type: read, note: 'wiki, Incarnon Form: "Range: 80.0 m", Projectile' }
+  boar:                        { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  boar_prime:                  { range: 300.0,  type: hit-scan,   note: 'Range: 300.0 m' }
+  boltor:                      { range: null, type: read, note: 'no Range row on either the normal attack or the Incarnon form; Projectile' }
+  boltor_incarnon:             { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
+  boltor_prime:                { range: null, type: read, note: 'no Range row; Projectile' }
+  boltor_prime_incarnon:       { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
+  braton:                      { range: 300.0,  type: hit-scan,   note: 'Range: 300.0 m' }
+  braton_incarnon:             { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan. The 3.0 m on the Incarnon AoE sub-block is a RADIUS' }
+  braton_prime:                { range: 300.0, type: hit-scan, note: 'Range: 300.0 m' }
+  braton_prime_incarnon:       { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (the 3.0 m AoE sub-block is a RADIUS)' }
+  braton_vandal:               { range: 300.0, type: hit-scan, note: 'Range: 300.0 m' }
+  braton_vandal_incarnon:      { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (the 3.0 m AoE sub-block is a RADIUS)' }
   bronco:                      { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
   bronco_incarnon:             { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
   bronco_prime:                { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
   bronco_prime_incarnon:       { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
-  ballistica:                  { range: null, type: read, note: 'burst and charged blocks both state no Range; Projectile' }
-  dera_incarnon:           { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (the base Dera is a Projectile with no Range row — the form changes both)' }
-  dera_vandal_incarnon:    { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
-  cestra_incarnon:         { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
-  burst_laser:             { range: null, type: read, note: 'no Range row; Projectile' }
-  burst_laser_prime:       { range: null, type: read, note: 'no Range row; Projectile' }
-  cernos_prime:            { range: null, type: read, note: 'neither the uncharged nor the charged block states a Range; Projectile' }
-  dera:                    { range: null, type: read, note: 'no Range row; Projectile' }
-  dera_vandal:             { range: null, type: read, note: 'no Range row; Projectile' }
-  dex_sybaris:             { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  dex_sybaris_incarnon:    { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
-  gorgon:                  { range: 300.0, type: read, note: 'wiki, Fully Spooled: "Range: 300.0 m", Hit-Scan' }
-  gorgon_wraith:           { range: 300.0, type: read, note: 'wiki, Fully Spooled: "Range: 300.0 m", Hit-Scan' }
-  akarius:                 { range: null, type: read, note: 'the Rocket IMPACT block states no Range; the 7.2 m belongs to the Rocket Detonation and is a radius' }
-  atomos_incarnon:         { range: null, type: read, note: 'Incarnon Form: no Range row; its 7.9 m sits under the Incarnon Radial Attack (AoE) and is a radius' }
-  despair:                 { range: null, type: read, note: 'no Range row; Projectile' }
-  despair_incarnon:        { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
-  dread_incarnon:          { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
-  gorgon_incarnon:         { range: null, type: read, note: 'Incarnon Form: no Range row; its 5.0 m is an AoE sub-block radius' }
-  gorgon_wraith_incarnon:  { range: null, type: read, note: 'Incarnon Form: no Range row; its 5.0 m is an AoE sub-block radius' }
-  fluctus:                 { range: 54.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 54.0 m", Projectile' }
-  imperator:               { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
-  imperator_vandal:        { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
-  corvas:                  { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan on BOTH the uncharged and charged blocks (re-read to be sure, because its Prime is a Projectile at 60/70 m — the two really do differ)' }
-  corvas_prime:            { range: 60.0, type: read, note: 'wiki, ATMOSPHERE column: uncharged "Range: 60.0 m", charged 70.0 m, both Projectile. The UNCHARGED figure is taken because that is the attack this entry models' }
-  deth_machine_rifle:        { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  deth_machine_rifle_prime:  { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  karak_wraith:              { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  cryotra:                   { range: null, type: read, note: 'Direct Hit states no Range; the 1.5 m sits under the Cold Field (DoT) block and is that field''s radius' }
-  laser_rifle:               { range: null, type: read, note: 'no Range row; Projectile at 40 m/s' }
-  deconstructor:             { range: null, type: read, note: 'no Range row; Projectile' }
-  deconstructor_prime:       { range: null, type: read, note: 'no Range row; Projectile at 40 m/s' }
-  latron:                    { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  lato:                      { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  lato_incarnon:             { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
-  lato_vandal:               { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  lato_vandal_incarnon:      { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
-  lato_prime_incarnon:       { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
-  latron_incarnon:           { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
-  latron_prime_incarnon:     { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
-  latron_wraith_incarnon:    { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
-  lex_prime:                 { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  lex_prime_incarnon:        { range: 28.0, type: read, note: 'wiki, Incarnon Form: "Range: 28.0 m", Projectile — the form trades reach for what it gains' }
-  lex_incarnon:              { range: 28.0, type: read, note: 'wiki, Incarnon Form: "Range: 28 meters (affected by Projectile Speed)", Projectile' }
-  mk1_braton:                { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  mk1_braton_incarnon:       { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (its 3.0 m AoE sub-block is a RADIUS)' }
-  mk1_strun:                 { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  mk1_furis:                 { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan (the Incarnon form is 16 m and is its own entry)' }
-  mk1_strun_incarnon:        { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
-  rubico_prime:              { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
-  kunai:                     { range: null, type: read, note: 'no Range row; Projectile' }
-  kunai_incarnon:            { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
-  mk1_kunai:                 { range: null, type: read, note: 'no Range row; Projectile at 70 m/s' }
-  mk1_kunai_incarnon:        { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
-  paris:                     { range: null, type: read, note: 'neither the uncharged nor the charged block states a Range; Projectile' }
-  paris_incarnon:            { range: null, type: read, note: 'Incarnon Form charged shot: no Range row; Projectile' }
-  mk1_paris:                 { range: null, type: read, note: 'no Range row on any block; Projectile' }
-  mk1_paris_incarnon:        { range: null, type: read, note: 'Incarnon Form charged shot: no Range row; Projectile' }
-  paris_prime_incarnon:      { range: null, type: read, note: 'Incarnon Form charged shot: no Range row; Projectile' }
-  lanka:                     { range: null, type: read, note: 'neither the partial nor the full charge states a Range; Projectile' }
-  mausolon:                  { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column, Auto block: "Range: 300.0 m", Hit-Scan (its 1.8 m Auto Radial Attack is a RADIUS)' }
-  cyngas:                    { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
-  dual_decurion:             { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
-  prisma_dual_decurions:     { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
-  phaedra:                   { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
-  kuva_ayanga:               { range: null, type: read, note: 'grenade IMPACT block states no Range; the 6.0 m is the explosion''s radius' }
-  morgha:                    { range: null, type: read, note: 'the charged shot states no Range; its 3.0 m and 12.0 m are both AoE sub-block radii' }
-  prisma_gorgon:             { range: 300.0, type: read, note: 'wiki, Fully Spooled: "Range: 300.0 m", Hit-Scan' }
-  prisma_grinlok:            { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  prisma_gorgon_incarnon:    { range: null, type: read, note: 'Incarnon Form: no Range row; its 5.0 m is an AoE sub-block radius' }
-  prisma_burst_laser:        { range: null, type: read, note: 'no Range row; Projectile' }
-  prime_laser_rifle:         { range: null, type: read, note: 'no Range row; Projectile' }
-  multron:                   { range: null, type: read, note: 'the Projectile Impact block states no Range; the 3.5 m is the Radial Attack''s radius' }
-  helstrum:                  { range: null, type: read, note: 'the normal attack states no Range; the 3.0 m is the explosion''s radius' }
-  perigale:                  { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
-  perigale_prime:            { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
-  gotva_prime:               { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  komorex:                   { range: null, type: read, note: 'no row LABELLED Range; the 400/600 m figures are its Damage Falloff row, which is a ramp and already modelled. Re-read once because the first answer quoted the falloff row as the range' }
-  scourge:                   { range: null, type: read, note: 'no Range on either the primary or the thrown impact; its 1.7 m and 7.0 m are explosion radii' }
-  onos:                      { range: null, type: read, note: 'no Range row on the normal attack; Projectile' }
-  soma:                      { range: 300.0, type: read, note: 'wiki, Fully Spooled: "Range: 300.0 m", Hit-Scan' }
-  soma_incarnon:             { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
-  soma_prime:                { range: 300.0, type: read, note: 'wiki, Fully Spooled: "Range: 300.0 m", Hit-Scan' }
-  soma_prime_incarnon:       { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
-  sybaris:                   { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  sybaris_incarnon:          { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
-  sybaris_prime:             { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  sybaris_prime_incarnon:    { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
-  strun:                     { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  strun_wraith:              { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  strun_incarnon:            { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
-  strun_wraith_incarnon:     { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
-  strun_prime_incarnon:      { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius (the family is uniform here)' }
-  vasto:                     { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  vasto_incarnon:            { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
-  vasto_prime_incarnon:      { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
-  zylok:                     { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  zylok_prime:               { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  sicarus:                   { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  sicarus_incarnon:          { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
-  sicarus_prime_incarnon:    { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
-  zylok_incarnon:            { range: null, type: read, note: 'Incarnon Form: no Range row; its 6.0 m is the Radial Attack''s radius' }
-  zylok_prime_incarnon:      { range: null, type: read, note: 'Incarnon Form: no Range row; its 6.0 m is the Radial Attack''s radius' }
-  vulkar:                    { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
-  vulkar_wraith:             { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
-  snipetron:                 { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
-  snipetron_vandal:          { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
-  vectis_incarnon:           { range: null, type: read, note: 'Incarnon Form: the MAIN block has no Range; the 6.7 m belongs to Incarnon Form Headshot AoE and the 0.1 m to Incarnon Form Embed AoE, both radii. Re-read, because the first answer offered 6.7 m as the form''s reach' }
-  vectis_prime_incarnon:     { range: null, type: read, note: 'Incarnon Form: the MAIN block has no Range; 6.7 m and 0.1 m are both AoE sub-block radii' }
-  sweeper:                   { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  sweeper_prime:             { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
-  telos_boltor:              { range: null, type: read, note: 'no Range row on either block; Projectile' }
-  telos_boltor_incarnon:     { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
-  shedu:                     { range: null, type: read, note: 'no Range row; the 6.6 m is the Radial Attack''s radius' }
-  sporothrix:                { range: null, type: read, note: 'no row LABELLED Range; the 400/600 m figures are its Damage Falloff row and the 1.7 m is its AoE radius. Re-read once, because the first answer quoted the falloff row as the range' }
-  vulklok:                   { range: null, type: read, note: 'no Range row; Projectile at 100 m/s' }
-  stinger:                   { range: null, type: read, note: 'no Range row; Projectile at 65 m/s' }
-  rakta_ballistica_incarnon:   { range: 80.0, type: read, note: 'wiki, Incarnon Form: "Range: 80.0 m", Projectile — the whole Ballistica family agrees on 80' }
-  velocitus:                   { range: null, type: read, note: 'neither the uncharged nor the charged block states a Range; Projectile' }
-  vulcax:                      { range: null, type: read, note: 'no Range on the impact; the 5.0 m is the Radial Attack''s radius (and the page is a robotic companion weapon, not an Arch-Gun)' }
+  burst_laser:                 { range: null, type: read, note: 'no Range row; Projectile' }
+  burst_laser_prime:           { range: null, type: read, note: 'no Range row; Projectile' }
+  burston:                     { range: 300.0, type: hit-scan, note: 'Range: 300.0 m' }
+  burston_incarnon:            { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (its 2.0 m Radial Attack is a RADIUS)' }
+  burston_prime:               { range: 300.0, type: hit-scan, note: 'Range: 300.0 m' }
+  burston_prime_incarnon:      { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (its 2.0 m Radial Attack is a RADIUS)' }
+  cernos_prime:                { range: null, type: read, note: 'neither the uncharged nor the charged block states a Range; Projectile' }
+  cernos_prime_uncharged:      { range: null, type: read, note: 'no Range row; Projectile' }
+  cestra:                      { range: null, type: read, note: 'no Range row; Projectile' }
+  cestra_incarnon:             { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
+  coda_sporothrix:             { range: null, type: read, note: 'no Range row; Projectile' }
+  cortege:                     { range: 28.0,  type: continuous, note: 'ATMOSPHERE: "28 meters in Atmospheric Mode" (Archwing 380)' }
+  cortege_alt:                 { range: null, type: read, note: 'the grenade impact block states no Range; the 4.0 m is its Radial Attack''s radius. The BEAM form is 28 m and states its own' }
+  corvas:                      { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan on BOTH the uncharged and charged blocks (re-read to be sure, because its Prime is a Projectile at 60/70 m — the two really do differ)' }
+  corvas_prime:                { range: 60.0, type: read, note: 'wiki, ATMOSPHERE column: uncharged "Range: 60.0 m", charged 70.0 m, both Projectile. The UNCHARGED figure is taken because that is the attack this entry models' }
+  cryotra:                     { range: null, type: read, note: 'Direct Hit states no Range; the 1.5 m sits under the Cold Field (DoT) block and is that field''s radius' }
+  cyngas:                      { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
+  deconstructor:               { range: null, type: read, note: 'no Range row; Projectile' }
+  deconstructor_prime:         { range: null, type: read, note: 'no Range row; Projectile at 40 m/s' }
+  dera:                        { range: null, type: read, note: 'no Range row; Projectile' }
+  dera_incarnon:               { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (the base Dera is a Projectile with no Range row — the form changes both)' }
+  dera_vandal:                 { range: null, type: read, note: 'no Range row; Projectile' }
+  dera_vandal_incarnon:        { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  despair:                     { range: null, type: read, note: 'no Range row; Projectile' }
+  despair_incarnon:            { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
+  deth_machine_rifle:          { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  deth_machine_rifle_prime:    { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  dex_sybaris:                 { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  dex_sybaris_incarnon:        { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  dread:                       { range: null,   type: projectile, note: 'no Range row; Projectile Speed 85 m/s' }
+  dread_incarnon:              { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
+  dread_uncharged:             { range: null, type: read, note: 'no Range row; Projectile' }
+  dual_decurion:               { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
+  felarx:                      { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m" — a PROJECTILE with a range row, like the Grattler' }
+  felarx_incarnon:             { range: 56.0, type: read, note: 'wiki, Incarnon Form: "Range: 56.0 m", Projectile — a real reach, and NOT an AoE sub-block (checked, because the base Felarx is 300)' }
+  fluctus:                     { range: 54.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 54.0 m", Projectile' }
+  furis:                       { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan (the Incarnon form is 16 m and is its own entry)' }
+  furis_incarnon:              { range: 16.0,  type: continuous, note: 'Incarnon Form Range: 16.0 m' }
+  gammacor:                    { range: 25.0,  type: continuous, note: 'Range: 25.0 m' }
+  gammacor_incarnon:           { range: null, type: read, note: 'Incarnon Form: no Range row; the 5.0 m is the Incarnon Radial Attack''s radius' }
+  gorgon:                      { range: 300.0, type: read, note: 'wiki, Fully Spooled: "Range: 300.0 m", Hit-Scan' }
+  gorgon_incarnon:             { range: null, type: read, note: 'Incarnon Form: no Range row; its 5.0 m is an AoE sub-block radius' }
+  gorgon_wraith:               { range: 300.0, type: read, note: 'wiki, Fully Spooled: "Range: 300.0 m", Hit-Scan' }
+  gorgon_wraith_incarnon:      { range: null, type: read, note: 'Incarnon Form: no Range row; its 5.0 m is an AoE sub-block radius' }
+  gotva_prime:                 { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  grattler:                    { range: 225.0,  type: projectile, note: 'ATMOSPHERE column; the Archwing column has no Range row' }
+  helstrum:                    { range: null, type: read, note: 'the normal attack states no Range; the 3.0 m is the explosion''s radius' }
+  imperator:                   { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
+  imperator_vandal:            { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
+  karak_wraith:                { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  komorex:                     { range: null, type: read, note: 'no row LABELLED Range; the 400/600 m figures are its Damage Falloff row, which is a ramp and already modelled. Re-read once because the first answer quoted the falloff row as the range' }
+  kunai:                       { range: null, type: read, note: 'no Range row; Projectile' }
+  kunai_incarnon:              { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
+  kuva_ayanga:                 { range: null, type: read, note: 'grenade IMPACT block states no Range; the 6.0 m is the explosion''s radius' }
+  kuva_bramma:                 { range: null,   type: projectile, note: 'no Range row; Projectile Speed 50 m/s' }
+  kuva_grattler:               { range: 225.0, type: projectile, note: 'wiki, ATMOSPHERE column: "Range: 225.0 m", Projectile' }
+  laetum:                      { range: null, type: projectile, note: 'no Range row; Projectile' }
+  laetum_incarnon:             { range: null, type: read, note: 'Incarnon Form: no Range row; the 2.0 m is the Auto Radial Attack''s radius' }
+  lanka:                       { range: null, type: read, note: 'neither the partial nor the full charge states a Range; Projectile' }
+  lanka_uncharged:             { range: null, type: read, note: 'no Range row; Projectile' }
+  larkspur:                    { range: 40.0,  type: continuous, note: 'ATMOSPHERE column (Archwing 160)' }
+  larkspur_charged:            { range: 100.0, type: read, note: 'wiki, ATMOSPHERE column, Alt-Fire Projectile Impact: "Range: 100.0 m", Projectile (its 9.6 m explosion is a RADIUS). The BEAM is 40 m — a form states its own' }
+  larkspur_prime_charged:      { range: 100.0, type: read, note: 'wiki, ATMOSPHERE column, Alt-Fire: "Range: 100.0 m", Projectile' }
+  laser_rifle:                 { range: null, type: read, note: 'no Range row; Projectile at 40 m/s' }
+  lato:                        { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  lato_incarnon:               { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  lato_prime:                  { range: 300.0, type: hit-scan, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  lato_prime_incarnon:         { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  lato_vandal:                 { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  lato_vandal_incarnon:        { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  latron:                      { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  latron_incarnon:             { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
+  latron_prime:                { range: 300.0, type: hit-scan, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  latron_prime_incarnon:       { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
+  latron_wraith:               { range: 300.0, type: hit-scan, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  latron_wraith_incarnon:      { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
+  lex:                         { range: 300.0,  type: hit-scan,   note: 'Range: 300.0 m' }
+  lex_incarnon:                { range: 28.0, type: read, note: 'wiki, Incarnon Form: "Range: 28 meters (affected by Projectile Speed)", Projectile' }
+  lex_prime:                   { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  lex_prime_incarnon:          { range: 28.0, type: read, note: 'wiki, Incarnon Form: "Range: 28.0 m", Projectile — the form trades reach for what it gains' }
   mandonel:                    { range: null, type: read, note: 'no Range row on either block; its 2.4 m is PUNCH THROUGH, which is a third thing again' }
-  rakta_ballistica:            { range: null, type: read, note: 'neither the burst nor the charged block states a Range; Projectile' }
+  mandonel_uncharged:          { range: null, type: read, note: 'neither Mandonel block states a Range; its 2.4 m is punch through' }
+  mausolon:                    { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column, Auto block: "Range: 300.0 m", Hit-Scan (its 1.8 m Auto Radial Attack is a RADIUS)' }
   miter:                       { range: null, type: read, note: 'no Range on any of the three shot blocks; the 3.0 m is the Incarnon Radial Attack''s radius' }
   miter_incarnon:              { range: null, type: read, note: 'Incarnon Form: no Range row; its 3.0 m is the Radial Attack''s radius' }
-  felarx_incarnon:             { range: 56.0, type: read, note: 'wiki, Incarnon Form: "Range: 56.0 m", Projectile — a real reach, and NOT an AoE sub-block (checked, because the base Felarx is 300)' }
-  laetum_incarnon:             { range: null, type: read, note: 'Incarnon Form: no Range row; the 2.0 m is the Auto Radial Attack''s radius' }
+  mk1_braton:                  { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  mk1_braton_incarnon:         { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (its 3.0 m AoE sub-block is a RADIUS)' }
+  mk1_furis:                   { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan (the Incarnon form is 16 m and is its own entry)' }
+  mk1_furis_incarnon:          { range: 16.0,  type: continuous, note: 'Incarnon Form Range: 16.0 m' }
+  mk1_kunai:                   { range: null, type: read, note: 'no Range row; Projectile at 70 m/s' }
+  mk1_kunai_incarnon:          { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
+  mk1_paris:                   { range: null, type: read, note: 'no Range row on any block; Projectile' }
+  mk1_paris_incarnon:          { range: null, type: read, note: 'Incarnon Form charged shot: no Range row; Projectile' }
+  mk1_paris_uncharged:         { range: null, type: read, note: 'no Range row; Projectile' }
+  mk1_strun:                   { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  mk1_strun_incarnon:          { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
+  morgha:                      { range: null, type: read, note: 'the charged shot states no Range; its 3.0 m and 12.0 m are both AoE sub-block radii' }
+  morgha_alt:                  { range: null, type: read, note: 'the charged shot states no Range; 3.0 and 12.0 m are AoE radii' }
+  multron:                     { range: null, type: read, note: 'the Projectile Impact block states no Range; the 3.5 m is the Radial Attack''s radius' }
+  ocucor:                      { range: 20.0,  type: continuous, note: 'Normal Attack Range: 20.0 m (the tendrils are a separate 20 m about a separate thing)' }
+  onos:                        { range: null, type: read, note: 'no Range row on the normal attack; Projectile' }
+  onos_incarnon:               { range: null,  type: continuous, note: 'the Incarnon beam lists NO Range; the 3.0 m is its Charge Radial blast radius' }
+  paris:                       { range: null, type: read, note: 'neither the uncharged nor the charged block states a Range; Projectile' }
+  paris_incarnon:              { range: null, type: read, note: 'Incarnon Form charged shot: no Range row; Projectile' }
+  paris_prime:                 { range: null, type: read, note: 'no Range row; Projectile' }
+  paris_prime_incarnon:        { range: null, type: read, note: 'Incarnon Form charged shot: no Range row; Projectile' }
+  paris_prime_uncharged:       { range: null, type: read, note: 'no Range row; Projectile' }
+  paris_uncharged:             { range: null, type: read, note: 'no Range row; Projectile' }
+  perigale:                    { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
+  perigale_prime:              { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
+  phaedra:                     { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
+  phantasma:                   { range: 20.0,  type: continuous, note: '"Limited range of 20 meters"; No Damage Falloff' }
+  phantasma_charged:           { range: null, type: read, note: 'the charged shot states no Range; its 4.8 m is the plasma bomb''s falloff end, a radius' }
+  phantasma_prime:             { range: 25.0,  type: continuous, note: 'Range: 25.0 m' }
+  phantasma_prime_charged:     { range: null, type: read, note: 'the charged shot states no Range; its 4.8 m is the plasma bomb''s radius' }
+  phenmor:                     { range: null, type: projectile, note: 'the page states NO Range row on either the normal attack or the Incarnon form; both are Projectile' }
   phenmor_incarnon:            { range: null, type: read, note: 'Incarnon Form: no Range row, and no AoE sub-block either; Projectile' }
-  gammacor_incarnon:           { range: null, type: read, note: 'Incarnon Form: no Range row; the 5.0 m is the Incarnon Radial Attack''s radius' }
-  synoid_gammacor_incarnon:    { range: null, type: read, note: 'Incarnon Form: no Range row; the 5.0 m is the Incarnon Radial Attack''s radius' }
+  prime_laser_rifle:           { range: null, type: read, note: 'no Range row; Projectile' }
+  prisma_angstrum:             { range: null, type: read, note: 'the Single Rocket IMPACT block states no Range; the explosion block''s figure is a radius' }
   prisma_angstrum_incarnon:    { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile (the family''s figures are explosion radii)' }
+  prisma_burst_laser:          { range: null, type: read, note: 'no Range row; Projectile' }
+  prisma_dual_decurions:       { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
+  prisma_gorgon:               { range: 300.0, type: read, note: 'wiki, Fully Spooled: "Range: 300.0 m", Hit-Scan' }
+  prisma_gorgon_incarnon:      { range: null, type: read, note: 'Incarnon Form: no Range row; its 5.0 m is an AoE sub-block radius' }
+  prisma_grinlok:              { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  rakta_ballistica:            { range: null, type: read, note: 'neither the burst nor the charged block states a Range; Projectile' }
+  rakta_ballistica_incarnon:   { range: 80.0, type: read, note: 'wiki, Incarnon Form: "Range: 80.0 m", Projectile — the whole Ballistica family agrees on 80' }
+  rubico:                      { range: 1000.0, type: hit-scan,   note: 'Range: 1000.0 m; falloff 400-600 m to 50%' }
+  rubico_prime:                { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
+  scourge:                     { range: null, type: read, note: 'no Range on either the primary or the thrown impact; its 1.7 m and 7.0 m are explosion radii' }
+  scourge_prime:               { range: null, type: read, note: 'no Range on either the projectile impact or the spear throw; its 1.7 m and 7.0 m are explosion radii' }
+  scourge_prime_thrown:        { range: null, type: read, note: 'the spear throw states no Range; its 7.0 m is the explosion''s radius' }
+  scourge_thrown:              { range: null, type: read, note: 'the spear throw states no Range; its 7.0 m is the explosion''s radius' }
+  shedu:                       { range: null, type: read, note: 'no Range row; the 6.6 m is the Radial Attack''s radius' }
+  sicarus:                     { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  sicarus_incarnon:            { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  sicarus_prime:               { range: 300.0, type: hit-scan, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  sicarus_prime_incarnon:      { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  snipetron:                   { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
+  snipetron_vandal:            { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
+  soma:                        { range: 300.0, type: read, note: 'wiki, Fully Spooled: "Range: 300.0 m", Hit-Scan' }
+  soma_incarnon:               { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  soma_prime:                  { range: 300.0, type: read, note: 'wiki, Fully Spooled: "Range: 300.0 m", Hit-Scan' }
+  soma_prime_incarnon:         { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  sporothrix:                  { range: null, type: read, note: 'no row LABELLED Range; the 400/600 m figures are its Damage Falloff row and the 1.7 m is its AoE radius. Re-read once, because the first answer quoted the falloff row as the range' }
+  stinger:                     { range: null, type: read, note: 'no Range row; Projectile at 65 m/s' }
+  strun:                       { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  strun_incarnon:              { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
+  strun_prime:                 { range: 300.0, type: hit-scan, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  strun_prime_incarnon:        { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius (the family is uniform here)' }
+  strun_wraith:                { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  strun_wraith_incarnon:       { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }
+  stug:                        { range: null, type: read, note: 'TRAP: its only Range row is 2.0 m under a block whose Projectile Type is AoE — that is the BLOB''S BLAST RADIUS, not the weapon''s reach. The reach is not stated' }
+  stug_incarnon:               { range: null, type: read, note: 'every block on this page is Projectile Type AoE, so every figure on it is a radius (2.0 / 0.3 / 1.5 m). No reach is stated for either form' }
+  sweeper:                     { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  sweeper_prime:               { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  sybaris:                     { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  sybaris_incarnon:            { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  sybaris_prime:               { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  sybaris_prime_incarnon:      { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  synoid_gammacor:             { range: 40.0,  type: continuous, note: 'Range: 40.0 m' }
+  synoid_gammacor_incarnon:    { range: null, type: read, note: 'Incarnon Form: no Range row; the 5.0 m is the Incarnon Radial Attack''s radius' }
+  telos_boltor:                { range: null, type: read, note: 'no Range row on either block; Projectile' }
+  telos_boltor_incarnon:       { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
+  torid:                       { range: null, type: projectile, note: 'no Range row on the grenade launch; Projectile Speed 40 m/s' }
+  vadarya_prime:               { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan (its 10 m chain radius is a separate mechanic, not the reach)' }
+  vasto:                       { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  vasto_incarnon:              { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  vasto_prime:                 { range: 300.0, type: hit-scan, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  vasto_prime_incarnon:        { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
+  vectis:                      { range: 1000.0, type: hit-scan,   note: 'Range: 1000.0 m' }
+  vectis_incarnon:             { range: null, type: read, note: 'Incarnon Form: the MAIN block has no Range; the 6.7 m belongs to Incarnon Form Headshot AoE and the 0.1 m to Incarnon Form Embed AoE, both radii. Re-read, because the first answer offered 6.7 m as the form''s reach' }
+  vectis_prime:                { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
+  vectis_prime_incarnon:       { range: null, type: read, note: 'Incarnon Form: the MAIN block has no Range; 6.7 m and 0.1 m are both AoE sub-block radii' }
+  velocitus:                   { range: null, type: read, note: 'neither the uncharged nor the charged block states a Range; Projectile' }
+  velocitus_uncharged:         { range: null, type: read, note: 'neither Velocitus block states a Range' }
+  vulcax:                      { range: null, type: read, note: 'no Range on the impact; the 5.0 m is the Radial Attack''s radius (and the page is a robotic companion weapon, not an Arch-Gun)' }
+  vulkar:                      { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
+  vulkar_wraith:               { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
+  vulklok:                     { range: null, type: read, note: 'no Range row; Projectile at 100 m/s' }
+  zylok:                       { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  zylok_incarnon:              { range: null, type: read, note: 'Incarnon Form: no Range row; its 6.0 m is the Radial Attack''s radius' }
+  zylok_prime:                 { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
+  zylok_prime_incarnon:        { range: null, type: read, note: 'Incarnon Form: no Range row; its 6.0 m is the Radial Attack''s radius' }

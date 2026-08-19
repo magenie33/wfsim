@@ -67,8 +67,13 @@ attack:
   # The infobox's 1.4 m is the GEOMETRY figure and is not this.
   punch_through_m: 999.0
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
-  # wiki, ATMOSPHERE column: uncharged "Range: 60.0 m", charged 70.0 m, both Projectile. The UNCHARGED figure is taken because that is the attack this entry models
-  range_m: 60.0
+  # wiki, ATMOSPHERE column: uncharged "Range: 60.0 m", CHARGED "Range: 70.0 m",
+  # both Projectile. THIS ENTRY IS THE CHARGED SHOT (`form: charged`,
+  # `trigger: charge`), so it takes 70; `corvas_prime_uncharged` takes 60.
+  # Written the other way round first, with a comment claiming the opposite —
+  # caught by reading which attack the entry actually models rather than the
+  # sentence about it (2026-08-19).
+  range_m: 70.0
   damage: { impact: 430.0, heat: 530.0 }   # 960, and the same in Archwing
 
 unmodeled:

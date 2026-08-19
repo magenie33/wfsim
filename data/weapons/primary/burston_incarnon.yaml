@@ -110,6 +110,9 @@ attack:
   # a single target. The trade is steeper here than on the Prime: this form
   # keeps a tenth of the base damage where the Prime keeps a quarter, and
   # takes a bigger crit jump in exchange.
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (its 2.0 m Radial Attack is a RADIUS)
+  range_m: 300.0
   damage: { heat: 3.0 }
   # THE RADIAL (AoE) part — "shots exploding in a 2 meter area of effect".
   # Rules in MECHANICS §7, plus the two this entry declares for itself.

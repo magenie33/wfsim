@@ -3081,35 +3081,49 @@ mod sniper_tests {
 #[cfg(test)]
 mod tests {
 
-    /// HOW MANY ENTRIES STILL SAY NOTHING ABOUT THEIR RANGE — a ratchet.
+    /// EVERY ENTRY'S RANGE PAGE HAS BEEN OPENED, and this is what says so.
     ///
-    /// Absence means unlimited, which every entry relied on before 2026-08-19
-    /// and which most of them are wrong about: a real weapon has a real reach.
-    /// `infinite` is how an entry SAYS it has none, so "nobody looked" and
-    /// "there is no limit" stopped being the same state and a script can tell
-    /// them apart (owner: 无限射程应该是特殊的字段，这样才研究).
+    /// It began as a ratchet counting how many entries said nothing — 209 of
+    /// 224 — and a shrinking number is a poor guarantee: it cannot tell "we
+    /// read the page and it states no range" from "nobody has looked". Now that
+    /// all 224 have been read, the invariant is the stronger one and it holds
+    /// for weapons added tomorrow: an entry either STATES a range or is
+    /// RECORDED in `data/surveys/weapon_range.yaml` as having been read.
     ///
-    /// THE CEILING ONLY FALLS. Transcribe a weapon's Range from the wiki, or
-    /// write `infinite` where it genuinely has none, and lower the number.
+    /// ABSENCE STILL MEANS UNLIMITED at runtime — 101 entries' pages really do
+    /// state no reach, which is a fact about the wiki rather than a gap in us,
+    /// and `infinite` is a claim the page has to make before we write it. What
+    /// is no longer possible is an entry nobody has checked.
+    ///
+    /// The worksheet is read HERE and by nothing else, which is the same shape
+    /// `data/rivens/pools.yaml` has: the rules decide, the survey checks.
     #[test]
-    fn the_untranscribed_range_ceiling_only_falls() {
+    fn every_entry_has_had_its_range_page_opened() {
+        let raw = crate::data::file("surveys/weapon_range.yaml")
+            .expect("data/surveys/weapon_range.yaml");
+        let doc: serde_norway::Value = serde_norway::from_str(raw).expect("the worksheet parses");
+        let checked = doc
+            .get("checked")
+            .and_then(serde_norway::Value::as_mapping)
+            .expect("a `checked:` mapping");
         let silent: Vec<&str> = super::all()
             .iter()
             .filter(|s| {
-                s.attack.range_m.is_none()
-                    && !s.attack.beam.as_ref().is_some_and(|b| b.range_m.is_finite())
+                let stated = s.attack.range_m.is_some()
+                    || s.attack.beam.as_ref().is_some_and(|b| b.range_m.is_finite());
+                let read = checked.contains_key(serde_norway::Value::String(s.id.clone()));
+                !stated && !read
             })
             .map(|s| s.id.as_str())
             .collect();
-        const CEILING: usize = 109;
         assert!(
-            silent.len() <= CEILING,
-            "{} entries state neither a range nor `infinite`; the ceiling is              {CEILING} and may only go down",
+            silent.is_empty(),
+            "{} entries have neither a range nor a line in              data/surveys/weapon_range.yaml. Open the wiki page, write the number              into the weapon, or record that the page states none:
+  {}",
             silent.len(),
+            silent.join("
+  "),
         );
-        // …and the number itself, so lowering it is a visible act rather than
-        // something that drifts.
-        eprintln!("range: {} of {} entries untranscribed", silent.len(), super::all().len());
     }
 
     /// EVERY CO ANOMALY IN THE ROSTER IS ON THIS LIST, and the list is the

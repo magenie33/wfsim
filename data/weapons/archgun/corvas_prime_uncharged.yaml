@@ -36,6 +36,9 @@ attack:
   # from geometry ("innate punch through does not apply to surfaces") and this
   # arena has no geometry, so everything the ray meets is a body.
   punch_through_m: 999.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, ATMOSPHERE column, UNCHARGED block: "Range: 60.0 m" (the charged one is 70)
+  range_m: 60.0
   damage: { impact: 230.0, heat: 330.0 }   # 560, and the same in Archwing
 
 unmodeled:

@@ -62,6 +62,9 @@ attack:
   punch_through_m: 0.0
   # THE ATMOSPHERE COLUMN, like the base form's — the Archwing column is
   # 140/180/100 for 420. Every attack part doubles, impact and explosion alike.
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, ATMOSPHERE column, Alt-Fire: "Range: 100.0 m", Projectile
+  range_m: 100.0
   damage: { impact: 280.0, blast: 360.0, radiation: 200.0 }  # 840 on impact
   # The radial (AoE) part — rules in MECHANICS §7: own crit/status stats,
   # 1x body-part multiplier (an explosion never headshots and never charges a

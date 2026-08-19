@@ -104,6 +104,9 @@ attack:
   # page's own summary. 13 against the base form's 46, bought back with double
   # the rate, a 10-point crit chance, a 1.2x bigger multiplier, and the
   # explosion below, which doubles what one round puts on a single target.
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (its 2.0 m Radial Attack is a RADIUS)
+  range_m: 300.0
   damage: { heat: 13.0 }
   # THE RADIAL (AoE) part — "shots exploding in a 2 meter area of effect".
   # Rules in MECHANICS §7, plus the two this entry declares for itself.

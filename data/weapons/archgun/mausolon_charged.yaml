@@ -82,6 +82,9 @@ attack:
     effectiveness: 1.00
     stacking: adds
     radius_calculation: snapshot
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, ATMOSPHERE column, Charged Shot Laser: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
   damage: { impact: 150.0, puncture: 600.0, heat: 750.0 }   # 1500 (Archwing: 1000)
   radial:
     damage: { heat: 4500.0 }        # Archwing: 3000

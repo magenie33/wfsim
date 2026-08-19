@@ -52,6 +52,9 @@ attack:
   crit_multiplier: 2.8
   status_chance: 0.18
   punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan (its 10 m chain radius is a separate mechanic, not the reach)
+  range_m: 300.0
   damage: { electricity: 400.0 }
 unmodeled:
   - reason: sniper_combo_miss
