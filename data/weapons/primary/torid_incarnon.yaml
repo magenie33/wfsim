@@ -132,6 +132,11 @@ attack:
   # For example, Ignis or Torid Incarnon Genesis" (wiki, verbatim). So the
   # arcane is worth +240% in this weapon's BASE form and exactly nothing here —
   # one arcane, two answers, inside one Incarnon cycle. docs/CATALOGS.md §2.
+  # `stacking` BELOW IS A PLACEHOLDER, not a transcription. The catalog's
+  # Stacking column reads "Doesn't Work" for this row and the schema holds only
+  # `multiplies` / `adds`; at 0% effectiveness the arcane pays nothing whichever
+  # is written, so the field is inert and the line above is the record. Checked
+  # against the live catalog 2026-08-19, when it moved.
   compression:
     effectiveness: 0.00
     stacking: multiplies

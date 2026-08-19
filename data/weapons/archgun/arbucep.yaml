@@ -79,6 +79,11 @@ attack:
   damage: { blast: 32.0 }
   # PRIMARY COMPRESSION, verbatim from that catalog:
   #   Arbucep / Arbucep (Atmosphere) | Primary Fire + AoE | 0% | Doesn't Work
+  # `stacking` BELOW IS A PLACEHOLDER, not a transcription. The catalog's
+  # Stacking column reads "Doesn't Work" for this row and the schema holds only
+  # `multiplies` / `adds`; at 0% effectiveness the arcane pays nothing whichever
+  # is written, so the field is inert and the line above is the record. Checked
+  # against the live catalog 2026-08-19, when it moved.
   compression:
     effectiveness: 0.00
     stacking: multiplies

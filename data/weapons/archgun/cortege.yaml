@@ -66,6 +66,11 @@ attack:
   #   Cortege | Primary Fire + AoE | 0% | Doesn't Work | N/A
   # The row exists and says zero, which is a stronger statement than an absent
   # row: the arcane is TESTED as worthless here.
+  # `stacking` BELOW IS A PLACEHOLDER, not a transcription. The catalog's
+  # Stacking column reads "Doesn't Work" for this row and the schema holds only
+  # `multiplies` / `adds`; at 0% effectiveness the arcane pays nothing whichever
+  # is written, so the field is inert and the line above is the record. Checked
+  # against the live catalog 2026-08-19, when it moved.
   compression:
     effectiveness: 0.00
     stacking: multiplies

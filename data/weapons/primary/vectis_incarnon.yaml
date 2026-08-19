@@ -67,6 +67,12 @@ attack:
   damage: { cold: 5 }   # total 5
   # The radial part — rules in MECHANICS §7.
   # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): FOUR PER CENT: 0.1 m -> +8%, because it "uses embed radial instead of headshot explosion".
+  # …AND ITS STACKING COLUMN READS `N/A`, which is not an answer. Verbatim:
+  #   Vectis (Prime) | Incarnon Form + AoE | 4% | N/A | Snapshot | 0.1 m | +8%
+  # Every other row says Multiplies or Adds; this one declines. `multiplies`
+  # below is THIS REPO'S ASSUMPTION and it is live rather than inert — 4% is not
+  # 0%, so the choice moves a number. It was never transcribed at all until the
+  # catalog moved on 2026-08-19 and every row was re-read.
   compression:
     effectiveness: 0.04
     stacking: multiplies

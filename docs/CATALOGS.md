@@ -541,6 +541,36 @@ The Shedu's row in full, since it is the one the roster leans on:
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Shedu | Primary Fire + AoE | 100% | Multiplies | Snapshot | 6.6 m | +528% | *Primary Fire AoE not affected by Firestorm* | *Cannot use reload pulse radial.* | Arm-Cannon |
 
+### RE-READ 2026-08-19, when the catalog moved
+
+`fetch_catalogs.mjs --force` reported Primary Compression as MOVED, which is the
+one event that invalidates every row here, so all 28 transcribed weapons were
+compared against the live table.
+
+**The mechanics are intact.** The rank ramp is unchanged (0: +50% / +3.0%, 5:
++100% / +5.5%), every weapon this roster carries is still listed, and every
+`effectiveness` value still matches. What changed on the page was its
+ACQUISITION section — the arcane is now bought from Hunhow at Pontis Tower for
+Emerald and Crimson Talent — which is nothing this repo reads.
+
+**Two things came out of the re-read anyway**, and both are about the STACKING
+column rather than about the numbers:
+
+- Five rows carry `Doesn't Work` there (Arbucep, Cortege ×2, Kuva Ayanga, Torid
+  Incarnon) and the schema holds only `multiplies` / `adds`. Those files' yaml
+  said `multiplies`, which reads as a transcription and is not one. At 0%
+  effectiveness the field is inert, so no number moves — but each now says in
+  as many words that it is a placeholder and what the column really reads.
+- **The Vectis pair's column reads `N/A`** and had never been transcribed at
+  all. That one is NOT inert: its effectiveness is 4%, so `multiplies` against
+  `adds` is a real difference, and `multiplies` is this repo's assumption rather
+  than the catalog's answer. Both files now say so.
+
+The lesson is the one the MOVED check exists for, and it is narrower than
+"re-read everything": what drifts is not the numbers a formula reads, it is the
+columns nobody is acting on — which is exactly why the rule says to transcribe
+those too.
+
 ### SIX AXES, not one
 
 This table is why the arcane is not a formula with a weapon stat in it. Every
