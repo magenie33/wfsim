@@ -1122,6 +1122,9 @@ pub struct WeaponBase {
     /// PUNCH-THROUGH DEPTH the WEAPON brings, in metres of material — see
     /// [`crate::weapons_data::AttackSpec::punch_through_m`].
     pub punch_through_m: f64,
+    /// [`crate::weapons_data::AttackSpec::range_m`] — `INFINITY` when the
+    /// weapon declares none, which is what every weapon did before 2026-08-19.
+    pub range_m: f64,
     /// Whether this attack takes punch-through MODS — see
     /// [`crate::weapons_data::AttackSpec::punch_through_mods`]. `None` means
     /// the class rule decides.
@@ -2316,6 +2319,14 @@ pub struct ResolvedPanel {
     /// mod, riven and evolution that grants one, and ZERO on an attack that
     /// cannot use it. See [`crate::space::BODY_MATERIAL_M`].
     pub punch_through_m: f64,
+    /// HOW FAR THIS ATTACK REACHES, metres — `INFINITY` when the weapon
+    /// declares none. See [`crate::weapons_data::AttackSpec::range_m`]: past it
+    /// there is nothing, which is a different fact from `falloff`, a ramp.
+    ///
+    /// NOT SCALED BY ANY MOD. Beam Range is an `IndirectStat` — reported on the
+    /// card, not applied — and stays that way until a weapon that takes one is
+    /// transcribed with a measurement behind it.
+    pub range_m: f64,
     /// Post-hierarchy damage vector (physical × (1+bd) + combined elements).
     pub damage: DamageVector,
     /// The resolved radial (AoE) part, when the weapon has one.
@@ -3705,6 +3716,7 @@ pub fn resolve_for(
 
     ResolvedPanel {
         punch_through_m,
+        range_m: base.range_m,
         damage,
         radial,
         spread,

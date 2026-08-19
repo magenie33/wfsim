@@ -23,6 +23,8 @@ fn dual_toxocyst_baseline() -> DummyParams {
         abilities: Vec::new(),
         target_id: "e1".to_string(),
         punch_through_m: 0.0,
+        // No weapon: nothing to be out of range of.
+        range_m: f64::INFINITY,
         super_crit_on_status: None,
         enervate_stacks: 0,
         tenno: wfsim_engine::tenno_data::default_tenno().clone(),

@@ -127,7 +127,13 @@ attack:
   # the Larkspur Prime at half its damage. The arena is on the ground, so every
   # number here is the atmospheric one.
   beam:
-    range_m: 20.0
+    # 40 m is the ATMOSPHERE column; the Archwing one is 160 (wiki). This said
+    # 20 and was read by nothing, while the weapon's own unmodelled note said
+    # 40 — the two disagreed in the same file until the range was modelled and
+    # the field started deciding something (2026-08-19). Same two-column trap
+    # AGENTS.md was written about, caught this time by the file contradicting
+    # itself.
+    range_m: 40.0
     damage_radius_m: 0.0
     radius_takes_multishot: false
     chain:
@@ -144,8 +150,6 @@ attack:
 # reserve bonus are properties of the WEAPON and were always missing here.
 unmodeled:
   - reason: arch_gun_deployer_cooldown
-  - reason: beam_range
-    m: 40
   - "Hildryn's signature bonus is not modelled — carried by her it holds 300 more reserve ammo, 700 instead of 400, and this arena has no Warframe holding it"
 
 source:

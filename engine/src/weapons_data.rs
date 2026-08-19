@@ -422,6 +422,25 @@ pub struct AttackSpec {
     /// cannot have their Punch Through stat modified"*.
     #[serde(default)]
     pub punch_through_m: f64,
+    /// HOW FAR THIS ATTACK REACHES, metres — and PAST IT THERE IS NOTHING.
+    ///
+    /// The wiki's own Range stat, transcribed per weapon. A shot does not
+    /// weaken at the end of its range; it stops existing there, so a target
+    /// beyond it takes literally zero (Phantasma: *"Limited range of 20
+    /// meters"*, and *"No Damage Falloff"* — the two facts are separate, and
+    /// this is the first, which the engine had no way to express).
+    ///
+    /// NOT the same thing as `falloff:`, which is a RAMP over distance and is
+    /// already modelled. A weapon can have either, both or neither: the
+    /// Phantasma has a hard 20 m and no ramp at all.
+    ///
+    /// ABSENT MEANS UNLIMITED, which is what this engine did for everything
+    /// until 2026-08-19. It is honest rather than right — most of the roster
+    /// has a real range and the number has not been transcribed yet — so a
+    /// weapon that HAS one and lacks a number here keeps admitting it through
+    /// the `beam_range` reason in `data/unmodelled/reasons.yaml`.
+    #[serde(default)]
+    pub range_m: Option<f64>,
     /// DOES THIS ATTACK TAKE PUNCH-THROUGH MODS? A CATALOG ANSWER, and absent
     /// means ORDINARY — which for punch through is *yes*.
     ///
@@ -2581,6 +2600,19 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         multishot_beyond_range: None,
         falloff: s.attack.falloff.clone(),
         punch_through_m: s.attack.punch_through_m,
+        // ONE FACT, TWO SPELLINGS, resolved here rather than left to a reader
+        // to notice. `beam.range_m` has carried a beam's reach since the block
+        // existed — the Torid Incarnon's 37 m is asserted in this file's own
+        // tests — and was read by nothing, so it recorded the number and
+        // changed no answer. `attack.range_m` is the general form, for the
+        // weapons that have a range and no `beam:` block (the Phantasma says
+        // so in its own comment: *"What is lost by omitting it is the RANGE"*).
+        // The explicit one wins; a beam's own is the fallback.
+        range_m: s
+            .attack
+            .range_m
+            .or_else(|| s.attack.beam.as_ref().map(|b| b.range_m))
+            .unwrap_or(f64::INFINITY),
         punch_through_mods: s.attack.punch_through_mods,
         compression: s.attack.compression.clone(),
         lingering,

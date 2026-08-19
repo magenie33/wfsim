@@ -1932,6 +1932,9 @@ pub struct DummyParams {
     /// PUNCH-THROUGH DEPTH in metres of material — innate plus mods, and 0 on
     /// an attack that cannot use it. See [`crate::space::BODY_MATERIAL_M`].
     pub punch_through_m: f64,
+    /// HOW FAR THIS WEAPON REACHES, metres — `INFINITY` when it declares none.
+    /// See [`crate::weapons_data::AttackSpec::range_m`].
+    pub range_m: f64,
     pub tendril_range_m: f64,
     pub tendril_acquire_deg: f64,
     /// Sentient Surge's crit chance per ACTIVE tendril, relative to the
@@ -2872,6 +2875,7 @@ impl DummyParams {
             tendril_max: panel.tendril_max,
             target_id,
             punch_through_m: panel.punch_through_m,
+            range_m: panel.range_m,
             tendril_range_m: panel.tendril_range_m,
             tendril_acquire_deg: panel.tendril_acquire_deg,
             cc_per_tendril: panel.cc_per_tendril,
@@ -3062,6 +3066,7 @@ impl Default for DummyParams {
             // NO PUNCH THROUGH by default, so the fixture fires the one-body
             // shot every golden value was calibrated against.
             punch_through_m: 0.0,
+            range_m: f64::INFINITY,
             damage: Self::dual_toxocyst_base_vector(),
             radial: None,
             // POINT BLANK, and no falloff to notice it with — every golden
@@ -9139,7 +9144,20 @@ pub fn run_once_traced(
             // AT CONTACT THIS IS ALWAYS TRUE, at any cone width, because the
             // muzzle is then one radius from the target's centre. That is a
             // property of the geometry rather than a special case in it.
-            let pellet_lands = aim_offset <= crate::space::BODY_RADIUS_M;
+            // …AND IT HAS TO REACH. A weapon's RANGE is a wall, not a ramp:
+            // past it the shot does not exist, so a target beyond it takes
+            // literally zero — the Phantasma's page lists *"Limited range of 20
+            // meters"* as a disadvantage and *"No Damage Falloff"* in the same
+            // breath, which are two separate facts and only the second was
+            // modelled (player report, 2026-08-19).
+            //
+            // MEASURED TO THE SURFACE, like every other distance a reader is
+            // shown: `gap` is what the shot flies and what the arena prints, so
+            // "20 m" means the number on the scene rather than a centre-to-
+            // centre figure nobody sees. `INFINITY` for a weapon that declares
+            // none, which is every weapon this engine has ever fired.
+            let in_range = gap_m <= ap.range_m;
+            let pellet_lands = aim_offset <= crate::space::BODY_RADIUS_M && in_range;
             // WHERE THE ROUND WENT OFF — ONE EPICENTRE FOR THE WHOLE
             // EXPLOSION (owner, 2026-08-19).
             //
@@ -9197,6 +9215,19 @@ pub fn run_once_traced(
                 // status, charge the gauge and feed the on-kill buffs, which is
                 // what the paragraph above exists to prevent.
                 if direct && !pellet_lands {
+                    continue;
+                }
+                // OUT OF RANGE IS NOT A MISS — the round never got here at all,
+                // so the explosion does not go off either. A missed grenade
+                // lands beside the target and still detonates (the clause
+                // below); one fired past the weapon's reach does not arrive.
+                //
+                // A projectile that FALLS SHORT would really detonate at the
+                // end of its flight, which is a different model and is not
+                // invented here: no weapon in the roster declares both a
+                // `range_m` and a `radial:`, so this is the honest answer
+                // rather than the convenient one.
+                if !in_range {
                     continue;
                 }
                 // …AND THE EXPLOSION STILL GOES OFF. A missed grenade lands
@@ -11653,6 +11684,56 @@ mod tests {
     /// weapon this is asked of. Eight more bodies at 3 m, the front row's
     /// middle one aimed at — `Formation::grid`'s own arrangement, and the one
     /// MECHANICS §12 is written against.
+    /// A RANGE IS A WALL, NOT A RAMP (player report, 2026-08-19: 射程直接影响
+    /// 可信度).
+    ///
+    /// The Phantasma's page states the two facts side by side — *"Limited range
+    /// of 20 meters"* as a disadvantage and *"No Damage Falloff"* — and only
+    /// the second was modelled, so the beam reached whatever it was aimed at
+    /// however far away it stood. The number had been sitting in the weapon's
+    /// own comment since the entry was written, unread, and wrong: BOTH
+    /// Phantasma files said 25 m, which is the Prime's.
+    ///
+    /// FULL DAMAGE TO THE END AND ZERO PAST IT, with no taper in between —
+    /// asserted on both sides of the wall and one metre either way, because a
+    /// ramp would pass a test that only looked at 5 m and 50 m.
+    #[test]
+    fn a_weapon_deals_nothing_past_its_range() {
+        let at = |weapon: &str, gap: f64| {
+            let base = crate::loadout::WeaponBase::from_data(weapon, false, &[]);
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let mut arena = crate::arena::Arena::training(10.0);
+            // `gap` is surface to surface — what the shot flies and what the
+            // arena shows, so "20 m" means the number the reader is looking at.
+            arena.target_at = crate::space::Vec2::new(
+                0.0,
+                gap + crate::space::CONTACT_RANGE_M,
+            );
+            let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            run_once(&p, &mut Rng::new(0x5EED)).effective_damage
+        };
+
+        // THE BASE IS 20 m AND THE PRIME IS 25 — the wiki's own numbers, and
+        // the one edge the Prime has over it.
+        assert!(at("phantasma", 19.0) > 0.0, "19 m is inside 20");
+        assert!(at("phantasma", 20.0) > 0.0, "the wall is inclusive");
+        assert_eq!(at("phantasma", 21.0), 0.0, "21 m is past 20 and must be nothing");
+        assert!(at("phantasma_prime", 21.0) > 0.0, "the Prime reaches 25");
+        assert_eq!(at("phantasma_prime", 26.0), 0.0, "26 m is past 25");
+        // NO TAPER: the beams deal full damage right up to the wall, so the
+        // number at 1 m and at 19 m is the same one.
+        assert!(
+            (at("phantasma", 1.0) - at("phantasma", 19.0)).abs() < 1e-9,
+            "no damage falloff means no damage falloff: {} at 1 m against {} at 19 m",
+            at("phantasma", 1.0), at("phantasma", 19.0),
+        );
+        // THE NEGATIVE CONTROL. A weapon that declares no range is unlimited,
+        // which is what every weapon in this engine was until today — so this
+        // must not have quietly become a cap on the whole roster.
+        assert!(at("braton", 60.0) > 0.0, "a weapon with no declared range still reaches");
+    }
+
     /// A SHOT THAT WENT WIDE DOES NOT BLAST A BYSTANDER (owner, 2026-08-19).
     ///
     /// Reported by a player, found on the wire: the explosion had TWO

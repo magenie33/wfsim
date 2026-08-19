@@ -92,10 +92,15 @@ attack:
   # splash nor chain; writing zeroes to satisfy a schema would be inventing two
   # facts to record none.
   #
-  # What is lost by omitting it is the RANGE, so it is stated here: 25 m, which
-  # the page lists as a disadvantage and as the Prime's one edge over the base
-  # Phantasma's 20 m. "No damage fall-off" — the beams deal full damage to the
-  # end of that range and nothing past it.
+  # THE RANGE IS A WALL, NOT A RAMP, and the page states the two separately:
+  # "Limited range of 20 meters." and "No Damage Falloff". So the beams deal FULL damage to the end
+  # of that range and literally nothing past it.
+  #
+  # MODELLED as of 2026-08-19 (player report: 射程直接影响可信度). It sat in
+  # this comment, unread, from the day the entry was written — and the comment
+  # was wrong as well as unread: BOTH Phantasma files said 25 m, which is the
+  # PRIME's number, copied across.
+  range_m: 20.0
 
 # TWO FORMS: this is the beam. The ALT-FIRE is a charged plasma bomb and is a
 # second weapon entry (phantasma_prime_charged), reached for free by the other

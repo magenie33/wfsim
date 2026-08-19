@@ -45,11 +45,14 @@ attack:
   crit_multiplier: 1.5
   status_chance: 0.25
   punch_through_m: 0.0
+  # THE RANGE IS A WALL, NOT A RAMP: full damage to the end of it and
+  # literally nothing past it. Transcribed from the wiki's Range stat; it
+  # already sat in this file's `beam_range` note, which the engine could
+  # not read (2026-08-19).
+  range_m: 20.0
   damage: { electricity: 5.0 }
 unmodeled:
   - "the CHAINING is not modelled, and it is what this weapon is for — the beam jumps to up to 3 nearby enemies within 5 metres of each other, and this arena has one target for it to jump between"
-  - reason: beam_range
-    m: 20
   - reason: companion_fires_it
 
 source:
