@@ -259,6 +259,40 @@ impl ShotType {
     }
 }
 
+/// A RANGE, OR THE WORD FOR NOT HAVING ONE.
+///
+/// `range_m: 20.0` and `range_m: infinite` are both statements; leaving the
+/// field out is not one, and the difference is the whole reason this is not
+/// just an `f64` (owner, 2026-08-19: 无限射程应该是特殊的字段，这样才研究).
+///
+/// Absence has to keep meaning unlimited — 121 entries have never been
+/// transcribed and must go on working — but it now means "nobody has looked"
+/// rather than "there is no limit", and the two are separable by a script.
+/// `weapons_data`'s own ratchet counts the entries that say NEITHER, so the
+/// number can only be driven down.
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(untagged)]
+pub enum RangeSpec {
+    /// Metres, from the wiki's Range stat.
+    Metres(f64),
+    /// The literal `infinite`, and nothing else — a typo must not silently
+    /// become an unlimited weapon, which is what a bare string field would let
+    /// it do.
+    Word(String),
+}
+
+impl RangeSpec {
+    pub fn metres(&self) -> f64 {
+        match self {
+            RangeSpec::Metres(m) => *m,
+            RangeSpec::Word(w) if w == "infinite" => f64::INFINITY,
+            // Loud rather than lenient: an unrecognised word is a data error,
+            // and the alternative is a weapon that silently reaches forever.
+            RangeSpec::Word(w) => panic!("range_m must be a number or `infinite`, got `{w}`"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct AttackSpec {
     pub trigger: String,
@@ -440,7 +474,7 @@ pub struct AttackSpec {
     /// weapon that HAS one and lacks a number here keeps admitting it through
     /// the `beam_range` reason in `data/unmodelled/reasons.yaml`.
     #[serde(default)]
-    pub range_m: Option<f64>,
+    pub range_m: Option<RangeSpec>,
     /// DOES THIS ATTACK TAKE PUNCH-THROUGH MODS? A CATALOG ANSWER, and absent
     /// means ORDINARY — which for punch through is *yes*.
     ///
@@ -2611,6 +2645,8 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         range_m: s
             .attack
             .range_m
+            .as_ref()
+            .map(RangeSpec::metres)
             .or_else(|| s.attack.beam.as_ref().map(|b| b.range_m))
             .unwrap_or(f64::INFINITY),
         punch_through_mods: s.attack.punch_through_mods,
@@ -3044,6 +3080,37 @@ mod sniper_tests {
 
 #[cfg(test)]
 mod tests {
+
+    /// HOW MANY ENTRIES STILL SAY NOTHING ABOUT THEIR RANGE — a ratchet.
+    ///
+    /// Absence means unlimited, which every entry relied on before 2026-08-19
+    /// and which most of them are wrong about: a real weapon has a real reach.
+    /// `infinite` is how an entry SAYS it has none, so "nobody looked" and
+    /// "there is no limit" stopped being the same state and a script can tell
+    /// them apart (owner: 无限射程应该是特殊的字段，这样才研究).
+    ///
+    /// THE CEILING ONLY FALLS. Transcribe a weapon's Range from the wiki, or
+    /// write `infinite` where it genuinely has none, and lower the number.
+    #[test]
+    fn the_untranscribed_range_ceiling_only_falls() {
+        let silent: Vec<&str> = super::all()
+            .iter()
+            .filter(|s| {
+                s.attack.range_m.is_none()
+                    && !s.attack.beam.as_ref().is_some_and(|b| b.range_m.is_finite())
+            })
+            .map(|s| s.id.as_str())
+            .collect();
+        const CEILING: usize = 209;
+        assert!(
+            silent.len() <= CEILING,
+            "{} entries state neither a range nor `infinite`; the ceiling is              {CEILING} and may only go down",
+            silent.len(),
+        );
+        // …and the number itself, so lowering it is a visible act rather than
+        // something that drifts.
+        eprintln!("range: {} of {} entries untranscribed", silent.len(), super::all().len());
+    }
 
     /// EVERY CO ANOMALY IN THE ROSTER IS ON THIS LIST, and the list is the
     /// catalog. Nothing else may be anything but ordinary.

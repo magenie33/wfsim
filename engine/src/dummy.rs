@@ -4872,6 +4872,15 @@ enum SpreadBy {
 }
 
 impl SpreadBy {
+    /// WHICH METER ROW THIS DAMAGE IS, and the split is what the reader is
+    /// being told: an EXPLOSION is the radial attack part however many bodies
+    /// it reaches, while a chain hop, a punched body and a ricochet are the
+    /// weapon's own hit ARRIVING SOMEWHERE ELSE — the same instance, not a
+    /// second kind of damage.
+    fn meter_row(self) -> bool {
+        matches!(self, SpreadBy::Blast | SpreadBy::Echo)
+    }
+
     /// Does a kill by this mechanism spawn a tendril? Everything but a
     /// tendril's own hit — including a status a tendril applied, which kills
     /// through the DoT path rather than through this one.
@@ -4959,6 +4968,10 @@ fn spread_hit(
     }
     let sd = params.status_duration_mult;
     let mit = foe.debuffs.mitigation(t, sd, params.armor_strip_per_puncture);
+    // BEFORE `apply`, like the aimed path: breaking overguard changes which
+    // column the next read returns, and the split belongs to the hit that
+    // broke it rather than to the state it left behind.
+    let col = foe.state.incoming_column(&spec.params);
     let (eff, killed, _broke) = foe.state.apply(
         raw,
         shares,
@@ -4975,6 +4988,28 @@ fn spread_hit(
     r.effective_damage += eff;
     r.timeline.add(t, eff);
     r.note_body_damage(inst.target, eff);
+    // …AND IT REACHES THE DAMAGE METER (player report, 2026-08-19: the
+    // explosion looked overestimated).
+    //
+    // It did not, and the number was never wrong — `effective_damage`, the
+    // score and the DPS have always counted every body. What could not account
+    // for them was the METER, which is written on the aimed body's path alone
+    // (`r.sources.direct`/`.radial` at the end of the pellet loop) and was
+    // never given an arm here. So a four-body fight reported 5304 of damage by
+    // source against 15980 actually dealt, and a reader comparing the headline
+    // with the breakdown correctly concluded that one of them was made up.
+    //
+    // THE CROWD IS NOT ITS OWN ROW. An explosion that reaches nine bodies is
+    // the radial attack part nine times, not a tenth kind of damage — the
+    // meter answers "what hurt them", and a per-body split is the ROLL CALL's
+    // question, which has its own panel.
+    if by.meter_row() {
+        r.sources.radial += eff;
+        add_by_type(&mut r.sources.radial_by_type, vector, eff, &col);
+    } else {
+        r.sources.direct += eff;
+        add_by_type(&mut r.sources.direct_by_type, vector, eff, &col);
+    }
     if by.spawns_a_tendril() {
         r.note_kills(u32::from(killed), t);
     } else {
@@ -11684,6 +11719,55 @@ mod tests {
     /// weapon this is asked of. Eight more bodies at 3 m, the front row's
     /// middle one aimed at — `Formation::grid`'s own arrangement, and the one
     /// MECHANICS §12 is written against.
+    /// THE DAMAGE METER ACCOUNTS FOR EVERY BODY (player report, 2026-08-19:
+    /// the explosion looked overestimated).
+    ///
+    /// It never was. `effective_damage`, the score and the DPS have always
+    /// counted the whole formation; the METER is written on the aimed body's
+    /// path alone and had no arm in `spread_hit`, so a four-body fight
+    /// reported 5304 of damage by source against 15980 actually dealt. A
+    /// reader comparing the headline with the breakdown correctly concluded
+    /// that one of the two was invented.
+    ///
+    /// Asserted as a SHARE rather than a number: the roll call does not record
+    /// per-body damage in a fight with one body ("only worth recording once
+    /// there is more than one"), so the two totals are comparable only when
+    /// there is a crowd — which is the case this exists for.
+    #[test]
+    fn the_damage_meter_accounts_for_the_whole_formation() {
+        let base = crate::loadout::WeaponBase::from_data("akarius", false, &[]);
+        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        let mut arena = crate::arena::Arena::training(3.0);
+        arena.target_at = crate::space::Vec2::new(0.0, 5.4);
+        let at = |x: f64, y: f64| crate::formation::FoeSpec {
+            id: String::new(),
+            params: TargetParams::training_dummy(),
+            body_parts: DummyParams::humanoid_parts(),
+            at: crate::space::Vec2::new(x, y),
+        };
+        arena.others = vec![at(2.0, 5.2), at(-2.0, 5.2), at(0.0, 7.2)];
+        let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+        let r = run_once(&p, &mut Rng::new(0x5EED));
+
+        let bodies: f64 = r.damage_by_body.0.iter().sum();
+        let meter = r.sources.direct + r.sources.radial + r.sources.field
+            + r.sources.arcane_on_status + r.sources.extra_hit + r.sources.syndicate
+            + r.sources.status.iter().sum::<f64>();
+        assert!(bodies > 0.0, "the crowd took nothing at all");
+        assert!(
+            meter >= bodies * 0.95,
+            "the meter must account for what the bodies took: {meter} against {bodies}"
+        );
+        // …and the EXPLOSION is where the crowd's damage is filed, not some
+        // new row: one blast reaching four bodies is the radial part four
+        // times over.
+        assert!(
+            r.sources.radial > r.sources.direct * 3.0,
+            "radial {} against direct {}", r.sources.radial, r.sources.direct
+        );
+    }
+
     /// A RANGE IS A WALL, NOT A RAMP (player report, 2026-08-19: 射程直接影响
     /// 可信度).
     ///
