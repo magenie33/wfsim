@@ -4056,6 +4056,86 @@ pub fn resolve_for(
 
 #[cfg(test)]
 mod tests {
+
+    /// A PUNCH-THROUGH MOD REACHES THE RESOLVED PANEL — reported by a player
+    /// who asked whether Metal Auger does anything on a Burston Prime
+    /// (2026-08-19). The stats panel says "+2.1m" and the simulation behaved as
+    /// though it were zero, so the question is which of the two is lying.
+    #[test]
+    fn a_punch_through_mod_reaches_the_panel() {
+        let base = crate::loadout::WeaponBase::from_data("burston_prime", false, &[]);
+        let bare = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
+        assert_eq!(bare.punch_through_m, 0.0, "the weapon has none of its own");
+        let pool = crate::mods_data::pool_for_weapon("burston_prime");
+        let auger = pool
+            .iter()
+            .find(|m| m.id == "metal_auger")
+            .expect("metal_auger is in a Burston Prime pool");
+        let with = crate::loadout::resolve(&base, &[auger], crate::loadout::StackPolicy::Emergent);
+        // …AND UNDER THE POLICY THE APP ACTUALLY SENDS.  runs
+        // AssumedMax unless a buff is configured, and a panel that only holds
+        // under Emergent is a panel no player ever sees.
+        let assumed = crate::loadout::resolve(&base, &[auger], crate::loadout::StackPolicy::AssumedMax);
+        assert!(
+            (assumed.punch_through_m - 2.1).abs() < 1e-9,
+            "AssumedMax resolved {} where Emergent resolved {}",
+            assumed.punch_through_m, with.punch_through_m
+        );
+        assert!(
+            (with.punch_through_m - 2.1).abs() < 1e-9,
+            "Metal Auger is +2.1 m and the panel resolved {}",
+            with.punch_through_m
+        );
+
+        // …AND IT HAS TO REACH THE FIGHT, which is the half the player could
+        // see and this one could not. Four bodies in a line half a metre
+        // apart: a 2.1 m budget spends 0.5 a body (`space::BODY_MATERIAL_M`)
+        // and should strike all four.
+        let line = |p: &crate::loadout::ResolvedPanel| {
+            let mut arena = crate::arena::Arena::training(10.0);
+            arena.target_at = crate::space::Vec2::new(0.0, 5.4);
+            arena.others = [5.9, 6.4, 6.9]
+                .iter()
+                .map(|y| crate::formation::FoeSpec {
+                    id: String::new(),
+                    params: crate::dummy::TargetParams::training_dummy(),
+                    body_parts: crate::dummy::DummyParams::humanoid_parts(),
+                    at: crate::space::Vec2::new(0.0, *y),
+                })
+                .collect();
+            let dp = crate::dummy::DummyParams::from_panel(
+                p, &arena, &crate::arcanes_data::ArcaneFx::none());
+            (dp.punch_through_m, dp.struck_bodies().len())
+        };
+        assert_eq!(line(&bare), (0.0, 1), "no mod, no bodies behind");
+        assert_eq!(
+            line(&with), (2.1, 4),
+            "the mod's 2.1 m must reach the fight and strike all four"
+        );
+
+        // …AND THE BODIES BEHIND HAVE TO TAKE SOMETHING. Striking them is the
+        // geometry; being paid is the damage path, and only the second is what
+        // a player sees.
+        let took = |p: &crate::loadout::ResolvedPanel| {
+            let mut arena = crate::arena::Arena::training(10.0);
+            arena.target_at = crate::space::Vec2::new(0.0, 5.4);
+            arena.others = [5.9, 6.4, 6.9]
+                .iter()
+                .map(|y| crate::formation::FoeSpec {
+                    id: String::new(),
+                    params: crate::dummy::TargetParams::training_dummy(),
+                    body_parts: crate::dummy::DummyParams::humanoid_parts(),
+                    at: crate::space::Vec2::new(0.0, *y),
+                })
+                .collect();
+            let dp = crate::dummy::DummyParams::from_panel(
+                p, &arena, &crate::arcanes_data::ArcaneFx::none());
+            let r = crate::dummy::run_once(&dp, &mut crate::rng::Rng::new(0x5EED));
+            r.damage_by_body.0.iter().filter(|d| **d > 0.0).count()
+        };
+        assert_eq!(took(&bare), 1, "no mod: only the aimed body is paid");
+        assert_eq!(took(&with), 4, "the mod's punch through must PAY the bodies behind");
+    }
     use super::*;
     use DamageType::*;
 
