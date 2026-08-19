@@ -1,0 +1,44 @@
+id: kuva_kraken_mag_burst
+name: Kuva Kraken
+# THE MAGAZINE DUMP. "Shoots all remaining ammunition in the magazine in a quick
+# burst", at a real rate of 20 rounds a second.
+inherits: kuva_kraken
+form: alt_fire
+transform_group: kuva_kraken
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK. No row for either of
+# this weapon's, so both are ordinary Additive.
+co_behavior: additive_with_base_damage
+
+attack:
+  spread:
+    min_deg: 0.5
+    max_deg: 12
+  trigger: burst
+  # THE BURST COUNT IS THE MAGAZINE, which is the one thing this entry cannot
+  # say properly: `count` is a constant and the real number is however many
+  # rounds are left. 21 is the UNMODDED magazine, so a build carrying a
+  # magazine mod fires more rounds a pull in game than here — admitted below.
+  # 20 rounds a second is the page's own figure for the dump.
+  burst:
+    count: 21
+    delay_seconds: 0.05
+  shot_type: hit_scan
+  fire_rate: 4.17
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.21
+  crit_multiplier: 2.3
+  status_chance: 0.29
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
+  damage: { impact: 32.25, puncture: 5.375, slash: 5.375 }   # total 43
+
+unmodeled:
+  - "the burst empties the MAGAZINE and this entry fires a fixed 21 rounds a pull — the unmodded magazine. A magazine mod makes the real burst longer and this one does not grow, so a build carrying one is understated here"
+  - "the burst can be interrupted by a quick melee, a dodge roll or a weapon swap — this arena does none of those, so it always runs to the end"
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Kraken

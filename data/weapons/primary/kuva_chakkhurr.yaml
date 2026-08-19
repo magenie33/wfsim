@@ -1,0 +1,96 @@
+id: kuva_chakkhurr
+name: Kuva Chakkhurr
+slot: primary
+# A HAND CANNON: 260 Impact a shot at 1.17/s, 50% crit, and an explosion after
+# it lands. Its headshot bonus is the interesting part — this repo already knew
+# the answer for it before the weapon existed, because the Cernos Prime's file
+# names it: the wiki's note lists the Chakkhurr among the ADDITIVE sources
+# while the Cernos Prime is the multiplicative exception.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle]
+mastery_rank: 15
+# RANK 40 after 5 polarizations — 80 capacity (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 0.95
+# "Innate dual Madurai polarities."
+polarities: [madurai, madurai]
+exilus_polarity: naramon
+riven_family: Kuva Chakkhurr
+traits: [grineer, kuva_lich]
+introduced: "26"
+internal_name: /Lotus/Weapons/Grineer/LongGuns/GrnKuvaLichRifle/GrnKuvaLichRifleWeapon
+noise: alarming
+ammo_type: primary
+ammo_max: 55
+ammo_pickup: 15
+magazine: 11
+reload_seconds: 3.3
+
+# THE INNATE +50% ON HEADSHOTS. "Direct shots deal +50% headshot damage", and
+# the Notes settle the bracket outright: "The +50% bonus damage on headshots is
+# additive to other sources" like Primary Deadhead. So it joins the additive
+# bracket rather than multiplying it — the OPPOSITE of the Cernos Prime, whose
+# own file records that anomaly and names this weapon as the ordinary case.
+headshot_damage_bonus: 0.5
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-19) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — see data/weapons/primary/kuva_karak.yaml for the
+# quoted Characteristic. Seven elements, never Puncture and never Slash.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). Pinpoint.
+  spread:
+    min_deg: 0
+    max_deg: 0
+  trigger: semi_auto
+  shot_type: projectile
+  fire_rate: 1.17
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.5
+  crit_multiplier: 2.3
+  status_chance: 0.27
+  # GUARANTEED IMPACT, on the hit AND on the explosion — the page states it of
+  # both, and each applies status separately. A type that is always present is
+  # also a permanent +1 to Condition Overload's count.
+  forced_procs: [impact]
+  punch_through_m: 0.0
+  # NO RANGE ROW on the Normal Attack block — the page states none. The 2.9 m
+  # below is the explosion's RADIUS and not a reach.
+  # "Primarily Impact damage."
+  damage: { impact: 260.0 }
+  # THE EXPLOSION — rules in MECHANICS §7. "Shots explode in 2.9m radius after
+  # impact."
+  radial:
+    radius_m: 2.9
+    falloff_start_m: 0.0
+    # Linear 0.0-2.9 m, 100% -> 70%.
+    falloff_reduction: 0.3
+    crit_chance: 0.5
+    crit_multiplier: 2.3
+    status_chance: 0.27
+    forced_procs: [impact]
+    takes_multishot: false
+    # "Benefits from Firestorm/Primed Firestorm."
+    takes_blast_radius_mods: true
+    damage: { puncture: 52.0, slash: 29.0, blast: 25.0 }   # total 106
+
+unmodeled:
+  - reason: explosion_ignores_cover
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Chakkhurr

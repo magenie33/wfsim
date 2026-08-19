@@ -1,0 +1,85 @@
+id: kuva_quartakk
+name: Kuva Quartakk
+slot: primary
+# TWO MODES CHOSEN BY AIMING, not by a trigger: full-auto from the hip, four
+# simultaneous rounds down the sights. This entry is the AIMED burst, which is
+# the arsenal's own display (module `_TooltipAttackDisplay: 2`); the hip-fire
+# auto is `kuva_quartakk_auto`.
+class: rifle
+form: alt_fire
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: kuva_quartakk
+mod_pools: [primary, rifle, assault_rifle]
+mastery_rank: 13
+# RANK 40 after 5 polarizations — 80 capacity (docs/INVESTMENT.md).
+max_rank: 40
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 40.0
+disposition: 1.1
+polarities: [madurai, madurai]
+exilus_polarity: naramon
+riven_family: Quartakk
+traits: [grineer, kuva_lich]
+introduced: "26"
+internal_name: /Lotus/Weapons/Grineer/KuvaLich/LongGuns/Quartakk/KuvaQuartakk
+noise: alarming
+ammo_type: primary
+ammo_max: 880
+ammo_pickup: 80
+magazine: 88
+reload_seconds: 1.7
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-19) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+# THE PROGENITOR BONUS — see data/weapons/primary/kuva_karak.yaml for the
+# quoted Characteristic. Seven elements, never Puncture and never Slash.
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data. Tighter than the hip-fire's, which is the point of it.
+  spread:
+    min_deg: 1
+    max_deg: 1.2
+  trigger: burst
+  # FOUR ROUNDS A PULL, and `fire_rate` counts PULLS — the guard exists because
+  # a burst weapon without this block understates itself by its burst count.
+  # SIMULTANEOUS, so the delay is zero: "All four shots fire simultaneously",
+  # which the page offers as the reason the mode hits harder than four fast
+  # ones would.
+  burst:
+    count: 4
+    delay_seconds: 0.0
+  shot_type: hit_scan
+  fire_rate: 1.58
+  # FOUR ROUNDS AT ONCE. "Aimed fire shoots four rounds simultaneously in a
+  # burst", and the page adds why that is not the same as four fast shots: "All
+  # four shots fire simultaneously (reduces miss chance vs. consecutive fire)".
+  # The module carries them as a burst cadence rather than as multishot, so the
+  # damage below is one round's.
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.31
+  crit_multiplier: 2.3
+  status_chance: 0.27
+  # "Innate 0.5 meter punch through" — one whole body of material
+  # (`space::BODY_MATERIAL_M`), so this mode really does reach the enemy behind
+  # and the hip-fire one does not.
+  punch_through_m: 0.5
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
+  damage: { impact: 19.98, puncture: 15.66, slash: 18.36 }   # total 54
+
+unmodeled:
+  - reason: mode_is_the_aim_state
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Quartakk

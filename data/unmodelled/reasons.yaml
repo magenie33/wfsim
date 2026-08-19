@@ -49,6 +49,16 @@ reasons:
   # takes the rim. An entry that cannot miss (accuracy 100, or an accuracy
   # nobody has transcribed) still sits at the epicentre, which is the weapon
   # being accurate rather than the model being short.
+  # TWO WEAPONS ON THE DAY IT WAS WRITTEN (Kuva Seer, Kuva Chakkhurr) and a
+  # third the moment another explosive Kuva lands, which is what makes it a
+  # reason rather than a sentence.
+  explosion_ignores_cover:
+    text: "the explosion needs no line of sight and goes through walls — this arena has no geometry, so nothing is ever behind cover here and the perk pays nothing it would not pay anyway"
+  # A MODE THAT IS NOT A CHOICE. Some weapons switch form by AIMING rather than
+  # by a trigger, and this engine's mode is a build axis while `aiming` is the
+  # fight's own flag — so the two can be set to a pair the game cannot produce.
+  mode_is_the_aim_state:
+    text: "this mode is entered by AIMING rather than by a trigger, and the simulator treats the mode and the fight's Aiming state as two separate settings — so a run with this mode and Aiming off is a combination the game cannot produce, and every while-aiming bonus should be read as active whenever this mode is"
   auto_spool_ramp:
     text: "the AUTO-SPOOL ramp is not modelled — the page gives this trigger as Auto-Spool and the fire rate here is the spooled-up {rate}/s from the first shot, so a short burst is faster in this sim than in game"
   # THE RICOCHET ITSELF IS MODELLED (2026-08-18) — `ricochet:` on the three

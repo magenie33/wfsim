@@ -656,8 +656,16 @@ ui:
   # The money sentences stay CONCRETE on purpose: what the bill is and what
   # a donation cannot buy. "支持一下" with nothing behind it is the version
   # that reads as begging.
-  "the explosion does not need line of sight and penetrates walls — this arena has no geometry, so nothing is ever behind cover here and the perk pays nothing it would not pay anyway":
+  "the explosion needs no line of sight and goes through walls — this arena has no geometry, so nothing is ever behind cover here and the perk pays nothing it would not pay anyway":
     爆炸不需要视线，能穿墙 —— 这个战场没有几何结构，所以这里没有任何东西处在掩体后面，这个特性拿不到它本来就拿不到的东西
+  "this mode is entered by AIMING rather than by a trigger, and the simulator treats the mode and the fight's Aiming state as two separate settings — so a run with this mode and Aiming off is a combination the game cannot produce, and every while-aiming bonus should be read as active whenever this mode is":
+    这个模式是靠瞄准进入的，而不是靠扳机；模拟器把「模式」和战场的「瞄准」当成两个独立设置 —— 所以「选了这个模式但瞄准关着」是游戏里造不出来的组合，凡是「瞄准时」生效的加成，只要处在这个模式就应当视为生效
+  "the hip-fire recoil is not modelled — the page notes the burst kicks significantly harder when fired from the hip, and this arena has no recoil at all":
+    腰射后坐力尚未建模 —— 页面指出这个点射从腰间射击时后坐力明显更大，而这个战场根本没有后坐力
+  "the burst empties the MAGAZINE and this entry fires a fixed 21 rounds a pull — the unmodded magazine. A magazine mod makes the real burst longer and this one does not grow, so a build carrying one is understated here":
+    这轮爆发会打空整个弹匣，而这个条目每次扣发固定打 21 发 —— 也就是未改装的弹匣容量。装了弹匣 MOD 之后真实的爆发会更长，而这里不会变长，所以带弹匣 MOD 的配装在这里被低估了
+  "the burst can be interrupted by a quick melee, a dodge roll or a weapon swap — this arena does none of those, so it always runs to the end":
+    这轮爆发可以被快速近战、翻滚或换武器打断 —— 这个战场这三件事都不做，所以它总是打到底
   "Support": 支持
   "what WFSim costs to run": WF模拟的运营成本
   # The topbar icon's tooltip. It names the COST rather than the ask,

@@ -85,7 +85,7 @@ attack:
     damage: { corrosive: 69.0 }
 
 unmodeled:
-  - "the explosion does not need line of sight and penetrates walls — this arena has no geometry, so nothing is ever behind cover here and the perk pays nothing it would not pay anyway"
+  - reason: explosion_ignores_cover
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Seer

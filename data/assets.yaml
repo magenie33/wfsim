@@ -80,6 +80,12 @@ weapons:
   # THE KUVA BATCH (2026-08-19). The module's own `Image` field for each, which
   # is DE's asset name rather than the display name — the CDN keys on the former.
   kuva_brakk: wiki:KuvaBrakk.png
+  kuva_chakkhurr: wiki:KuvaChakkhurr.png
+  # A FORM SHOWS ITS WEAPON'S PICTURE — the same gun, two triggers.
+  kuva_kraken: wiki:KuvaKraken.png
+  kuva_kraken_mag_burst: wiki:KuvaKraken.png
+  kuva_quartakk: wiki:KuvaQuartakk.png
+  kuva_quartakk_auto: wiki:KuvaQuartakk.png
   kuva_karak: wiki:KuvaKarak.png
   kuva_seer: wiki:KuvaSeer.png
   kuva_twin_stubbas: wiki:KuvaTwinStubbas.png

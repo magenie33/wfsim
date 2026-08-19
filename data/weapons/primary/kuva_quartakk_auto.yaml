@@ -1,0 +1,33 @@
+id: kuva_quartakk_auto
+name: Kuva Quartakk
+# THE HIP-FIRE MODE. "Primarily Impact damage by small margin", fully automatic,
+# and it gives up the aimed burst's punch through and its crit.
+inherits: kuva_quartakk
+form: base
+transform_group: kuva_quartakk
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, so a form states its
+# own. No row for either of this weapon's, so both are ordinary Additive.
+co_behavior: additive_with_base_damage
+
+attack:
+  spread:
+    min_deg: 2
+    max_deg: 3
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 4.83
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.21
+  crit_multiplier: 1.9
+  status_chance: 0.33
+  # NO PUNCH THROUGH from the hip — the aimed burst's 0.5 m is that mode's.
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan
+  range_m: 300.0
+  damage: { impact: 19.98, puncture: 15.66, slash: 18.36 }   # total 54
+
+source:
+  url: https://wiki.warframe.com/w/Kuva_Quartakk
