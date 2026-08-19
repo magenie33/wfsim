@@ -660,12 +660,42 @@ pub struct ChainSpec {
     pub nodes_have_radius: bool,
 }
 
+/// WHERE AN EXPLOSION GOES OFF, which is the difference between a weapon that
+/// may be given punch through and one that may not.
+///
+/// The owner named the problem (2026-08-20): a Burston Prime Incarnon carries a
+/// blast on the card and *"actually punches through"* in game, its round going
+/// off BEHIND the enemy it passed — and its blast takes no multishot either, so
+/// he called it a FAKE AoE and asked for it to be a type rather than a pile of
+/// exceptions. This is that type.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum BlastKind {
+    /// Detonates on the first thing it touches — a grenade, a rocket, a
+    /// speargun's spear. This is a TRUE area-of-effect attack, so the punch
+    /// through page's class rule applies to it and no mod may give it any.
+    #[default]
+    Contact,
+    /// Bores through bodies while its punch-through budget lasts and detonates
+    /// where the FLIGHT ends — so it is not an area-of-effect projectile in the
+    /// sense that rule means, and punch-through mods work on it normally.
+    ///
+    /// TWO CONSEQUENCES, and the second is the surprising one. Punch through
+    /// buys more DIRECT hits, as on any other weapon; and it moves the
+    /// explosion PAST the target, which against a lone enemy loses the blast
+    /// entirely. `space::terminal_of_punch` is the geometry.
+    Terminal,
+}
+
 /// The radial (explosion) part of an attack — MECHANICS §7. Crit/status
 /// default to the direct part's when the data does not state them.
 #[derive(Debug, Clone, Deserialize)]
 pub struct RadialSpec {
     pub damage: BTreeMap<String, f64>,
     pub radius_m: f64,
+    /// See [`BlastKind`] — `contact` unless the entry says otherwise.
+    #[serde(default)]
+    pub blast_kind: BlastKind,
     /// Does the BLAST-RADIUS bucket (Firestorm, Fulmination) reach this
     /// explosion? True everywhere but the Shedu and both Trumnas, whose pages
     /// say otherwise — "Explosion cannot benefit from Firestorm (Primed)
@@ -1856,6 +1886,19 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
         ));
     }
 
+    // A BLAST THAT LANDS BEHIND WHAT YOU SHOT. Said out loud for the same
+    // reason the headshot line below is: it is the other way a number comes out
+    // SMALLER than a reader expects, and an unexplained drop reads as a bug in
+    // the sim rather than as the weapon. Both halves are on the line, because
+    // the trade is the whole point — punch through buys bodies and costs the
+    // explosion (MEASUREMENTS M53).
+    if s.attack.radial.as_ref().map(|r| r.blast_kind) == Some(BlastKind::Terminal) {
+        out.push(
+            "Its round bores THROUGH what it hits and explodes where the flight ends, so unlike other explosive weapons it takes punch-through mods normally — and pays for them: punch through carries the explosion PAST a lone enemy, which costs the blast entirely. In a crowd it buys extra direct hits and detonates deeper in the line instead."
+                .to_string(),
+        );
+    }
+
     // A HEAD THIS WEAPON DOES NOT CARE ABOUT. Said out loud because it is the
     // one weapon stat that makes a number SMALLER than the reader expects, and
     // an unexplained small number reads as a bug in the sim rather than as the
@@ -2542,6 +2585,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         }
         RadialBase {
             base_vector: v,
+            blast_kind: r.blast_kind,
             // Each stat falls back to the direct part's when unstated.
             base_crit_chance: r.crit_chance.unwrap_or(s.attack.crit_chance),
             base_crit_damage: r.crit_multiplier.unwrap_or(s.attack.crit_multiplier),

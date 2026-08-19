@@ -580,6 +580,69 @@ pub fn struck_along(muzzle: Vec2, dir: Vec2, bodies: &[Vec2], punch_through_m: f
 }
 
 
+/// WHERE A PUNCHING PROJECTILE FINALLY STOPS — the epicentre of a TERMINAL
+/// blast (`weapons_data::BlastKind::Terminal`).
+///
+/// An ordinary explosive round detonates on the first thing it touches. Some do
+/// not: they keep boring through bodies while their punch-through budget lasts
+/// and go off wherever the flight ENDS. The Tenet Ferrox states it in words —
+/// *"Shots explode in a 4 meter radius after reaching maximum punch through
+/// distance"* — and the owner measured the same on a Burston Prime Incarnon
+/// (MEASUREMENTS M50): the round passes through the target and detonates BEHIND
+/// it.
+///
+/// THE ARITHMETIC IS [`struck_along`]'s, read from the other end. That function
+/// spends [`BODY_MATERIAL_M`] per body CROSSED and the first body is free, so a
+/// budget of `p` crosses `floor(p / BODY_MATERIAL_M)` of them. The round
+/// therefore comes to rest inside body number `crossings` (0-indexed) — and if
+/// the line does not hold that many, it crossed everything and flew on.
+///
+/// `None` IS THE INTERESTING ANSWER, and it is what the measurement is about:
+/// the round left the field, so its blast reaches nobody. In a real room a wall
+/// stops it a few metres on and the blast still lands near the crowd; this
+/// arena has no geometry (docs/UNMODELLED.md), so a round that crosses every
+/// body on the line simply goes away. That makes punch through a real
+/// TRADE on this class of weapon — more direct hits, no explosion — which is
+/// exactly what was measured and is not something the model was arranged to
+/// produce.
+///
+/// With no budget at all `crossings` is 0 and the answer is the first body on
+/// the line, which is the contact detonation this engine has always fired.
+pub fn terminal_of_punch(
+    muzzle: Vec2,
+    dir: Vec2,
+    bodies: &[Vec2],
+    punch_through_m: f64,
+) -> Option<Vec2> {
+    let len = dir.x.hypot(dir.y);
+    if len <= 0.0 {
+        return None;
+    }
+    let (ux, uy) = (dir.x / len, dir.y / len);
+    let mut on_line: Vec<(f64, usize)> = bodies
+        .iter()
+        .enumerate()
+        .filter_map(|(i, b)| {
+            let (px, py) = (b.x - muzzle.x, b.y - muzzle.y);
+            let along = px * ux + py * uy;
+            if along < 0.0 {
+                return None;
+            }
+            let perp = (px * uy - py * ux).abs();
+            if perp > BODY_RADIUS_M {
+                return None;
+            }
+            let half = (BODY_RADIUS_M * BODY_RADIUS_M - perp * perp).max(0.0).sqrt();
+            Some(((along - half).max(0.0), i))
+        })
+        .collect();
+    on_line.sort_by(|a, b| {
+        a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal).then(a.1.cmp(&b.1))
+    });
+    let crossings = (punch_through_m.max(0.0) / BODY_MATERIAL_M + 1e-9).floor() as usize;
+    on_line.get(crossings).map(|(_, i)| bodies[*i])
+}
+
 /// THE CLOSEST TWO BODIES CAN STAND — twice a radius, because circles do not
 /// overlap (owner, 2026-08-15).
 ///
@@ -663,6 +726,36 @@ mod tests {
         let dir = Vec2::new(0.0, 1.0);
         let bodies = [Vec2::new(0.0, 3.0), Vec2::new(5.0, 6.0)];
         assert_eq!(struck_along(muzzle, dir, &bodies, 99.0), vec![0]);
+    }
+
+    /// WHERE A TERMINAL BLAST GOES OFF, and the case the owner measured.
+    ///
+    /// Three claims, and the middle one is the finding: with no budget the round
+    /// stops in the body it touched (so a weapon of this class with no punch
+    /// through is unchanged), with a budget and ONE body it crosses and leaves
+    /// the field, and with a budget and a QUEUE it stops in the one it could not
+    /// cross. MEASUREMENTS M53.
+    #[test]
+    fn a_terminal_blast_goes_off_where_the_flight_ends() {
+        let muzzle = Vec2::new(0.0, 0.0);
+        let dir = Vec2::new(1.0, 0.0);
+        let one = [Vec2::new(5.0, 0.0)];
+        // 1. NO BUDGET: it stops in the first body, which is the contact
+        //    detonation this engine has always fired.
+        assert_eq!(terminal_of_punch(muzzle, dir, &one, 0.0), Some(one[0]));
+        // 2. A BUDGET AND ONE BODY: it crosses and flies on — the blast reaches
+        //    nobody, which is what makes punch through a TRADE on this class.
+        assert_eq!(terminal_of_punch(muzzle, dir, &one, 2.2), None);
+        // 3. A QUEUE: 2.2 m crosses four bodies (BODY_MATERIAL_M is 0.5), so it
+        //    comes to rest in the fifth.
+        let queue: Vec<Vec2> = (0..6).map(|i| Vec2::new(5.0 + i as f64, 0.0)).collect();
+        assert_eq!(terminal_of_punch(muzzle, dir, &queue, 2.2), Some(queue[4]));
+        // …and one body short of that, it crosses the lot and is gone again.
+        assert_eq!(terminal_of_punch(muzzle, dir, &queue[..4], 2.2), None);
+        // 4. A BODY OFF THE LINE IS NOT ON THE FLIGHT PATH, so it neither stops
+        //    the round nor spends any of the budget.
+        let beside = [Vec2::new(5.0, 3.0), Vec2::new(9.0, 0.0)];
+        assert_eq!(terminal_of_punch(muzzle, dir, &beside, 0.0), Some(beside[1]));
     }
 
     /// WITH NO BUDGET IT IS `first_hit`, which is what keeps every fight this

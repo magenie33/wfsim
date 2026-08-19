@@ -1021,6 +1021,25 @@ around (decision 2026-07-31).
   `punch_through_m` had sat in all 224 entries unread since the roster began —
   the honest place for it while the arena had one body — and the 22 weapons that
   admitted it as a gap admit nothing now. MECHANICS §13 is the whole of it.
+  …AND "AN AoE ATTACK" IS TWO KINDS OF ATTACK (owner, 2026-08-20). The class
+  rule's own sentence opens *"With a very few exceptions"* and never says which,
+  so being in the exception set is precisely what it cannot tell you. A Burston
+  Prime Incarnon carries a `radial:` and PUNCHES THROUGH ANYWAY — measured in
+  game, MEASUREMENTS M53 — its round boring on and detonating BEHIND what it
+  hit. The owner named the smell before the mechanic: its blast takes no
+  multishot either, so he called it a FAKE AoE and asked for a TYPE rather than
+  a pile of per-weapon exceptions.
+  `weapons_data::BlastKind` is that type. A `contact` blast goes off on the
+  first thing it touches and is the true area-of-effect attack the rule means; a
+  `terminal` one goes off where the FLIGHT ends and takes punch-through mods
+  normally. THE SECOND CONSEQUENCE IS THE ONE NOBODY GUESSES: punch through
+  moves the explosion PAST the target, so against a lone enemy it is a pure LOSS
+  — more direct hits in a crowd, no blast on one body. `space::terminal_of_punch`
+  reads `struck_along`'s arithmetic from the other end, and with no budget it
+  answers "the first body", which is why every existing number is unmoved. The
+  Tenet Ferrox had stated the whole mechanic in words the day before — *"Shots
+  explode in a 4 meter radius after reaching maximum punch through distance"* —
+  and nothing connected the two until a player shot one.
 - **A GAP THAT REPEATS IS A REASON, NOT A SENTENCE** (2026-08-15).
   `data/unmodelled/reasons.yaml` holds each one once, with `{named}` holes, and
   a weapon references it: `- reason: innate_punch_through` / `m: 1.2`. The

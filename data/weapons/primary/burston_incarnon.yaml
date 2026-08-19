@@ -123,6 +123,10 @@ attack:
     radius_calculation: snapshot
 
   radial:
+    # A TERMINAL BLAST — it bores through and goes off where the FLIGHT ends,
+    # which is why this weapon takes punch-through mods where an ordinary
+    # explosive cannot. See `weapons_data::BlastKind` and MEASUREMENTS M53.
+    blast_kind: terminal
     damage: { heat: 3.0 }
     radius_m: 2.0
     falloff_start_m: 0.0

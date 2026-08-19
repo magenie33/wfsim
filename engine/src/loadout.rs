@@ -1953,6 +1953,10 @@ pub struct RadialBase {
     pub base_crit_chance: f64,
     pub base_crit_damage: f64,
     pub base_status_chance: f64,
+    /// Where this explosion goes off — see
+    /// [`crate::weapons_data::BlastKind`]. `Contact` on every weapon but the
+    /// handful whose round bores on through and detonates behind what it hit.
+    pub blast_kind: crate::weapons_data::BlastKind,
     /// Blast radius = the falloff `end` distance.
     pub radius_m: f64,
     /// See [`crate::weapons_data::RadialSpec::takes_blast_radius_mods`].
@@ -1995,6 +1999,10 @@ impl RadialBase {
 /// The radial part after mod resolution.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ResolvedRadial {
+    /// Where this explosion goes off — see
+    /// [`crate::weapons_data::BlastKind`]. `Contact` on every weapon but the
+    /// handful whose round bores on through and detonates behind what it hit.
+    pub blast_kind: crate::weapons_data::BlastKind,
     pub damage: DamageVector,
     pub modified_base: f64,
     pub crit_chance: f64,
@@ -3572,6 +3580,7 @@ pub fn resolve_for(
         // half of it.
         let (rd, rmb) = build(&r.base_vector.scale(charge_scale), None);
         ResolvedRadial {
+            blast_kind: r.blast_kind,
             damage: rd,
             modified_base: rmb,
             // The post-mod flat layer (Elemental Excess) is a WEAPON stat
@@ -3697,9 +3706,19 @@ pub fn resolve_for(
     // Incarnon form is a BEAM with a damage radius — no `radial:`, no
     // `lingering:` — and its own page says "Punch Through mods have no effect
     // on the behavior of the beam", which the shape alone would have missed.
+    // A TERMINAL BLAST IS NOT AN AREA-OF-EFFECT PROJECTILE for this rule. The
+    // page's sentence is about a round that goes off on contact, which is what
+    // stops it reaching anything behind; one that bores through and detonates
+    // where the FLIGHT ends is the opposite case, and DE builds Incarnon
+    // evolutions around its punch-through hits (Braton, Paris). See
+    // `weapons_data::BlastKind` and MEASUREMENTS M50.
+    let contact_blast = base
+        .radial
+        .as_ref()
+        .is_some_and(|r| r.blast_kind != crate::weapons_data::BlastKind::Terminal);
     let takes_mods = base
         .punch_through_mods
-        .unwrap_or(base.radial.is_none() && base.lingering.is_none());
+        .unwrap_or(!contact_blast && base.lingering.is_none());
     let punch_through_m = if !takes_mods {
         base.punch_through_m
     } else {
@@ -4065,6 +4084,77 @@ pub fn resolve_for(
 
 #[cfg(test)]
 mod tests {
+
+    /// A TERMINAL BLAST TAKES PUNCH THROUGH, AND PAYS FOR IT — the whole of
+    /// MEASUREMENTS M53, asserted end to end on the weapon it was measured on.
+    ///
+    /// Three claims, and the second is the one nobody would guess. The mod
+    /// REACHES a form that carries a `radial:`, which the AoE class rule refuses
+    /// on every ordinary explosive; against a LONE enemy the explosion is then
+    /// lost, because the round crosses the only body and leaves the field; and
+    /// a weapon of the same class with NO punch through is untouched, which is
+    /// what says the change is scoped to the mod rather than to the form.
+    #[test]
+    fn a_terminal_blast_takes_punch_through_and_loses_its_explosion_for_it() {
+        use crate::weapons_data::BlastKind;
+        let id = "burston_prime_incarnon";
+        let base = WeaponBase::from_data(id, true, &[]);
+        assert_eq!(
+            base.radial.as_ref().map(|r| r.blast_kind),
+            Some(BlastKind::Terminal),
+            "the form carries a terminal blast"
+        );
+
+        // 1. THE MOD REACHES IT. An ordinary radial would have refused this.
+        let pool = crate::mods_data::pool_for_build(id, &[]);
+        let auger = pool.iter().find(|m| m.id == "metal_auger").expect("metal_auger in the pool");
+        let bare = resolve(&base, &[], StackPolicy::Emergent);
+        let with = resolve(&base, &[auger], StackPolicy::Emergent);
+        assert_eq!(bare.punch_through_m, 0.0, "the form has none of its own");
+        assert!(
+            with.punch_through_m > 2.0,
+            "a terminal blast must not refuse punch through: {}",
+            with.punch_through_m
+        );
+
+        // 2. …AND THE EXPLOSION IS LOST FOR IT, against one standing enemy.
+        //    Measured through the fight rather than the panel, because where a
+        //    blast lands is geometry and not a stat.
+        let blast = |p: &ResolvedPanel| {
+            // ONE STANDING ENEMY, which is the fight the measurement was taken
+            // in and the only one where the trade is pure loss.
+            let arena = crate::arena::Arena::training(12.0);
+            let dp = crate::dummy::DummyParams::from_panel(
+                p, &arena, &crate::arcanes_data::ArcaneFx::none());
+            crate::dummy::monte_carlo(&dp, 40, 11).mean_damage
+        };
+        let (a, b) = (blast(&bare), blast(&with));
+        assert!(
+            b < a,
+            "punch through must COST this form its blast on a lone target: {a} -> {b}"
+        );
+
+        // 3. A CONTACT BLAST IS UNTOUCHED by all of it, which is what says this
+        //    is a property of the KIND rather than of having a radial at all.
+        //    The mod stays EQUIPPABLE and resolves to nothing — the card's own
+        //    honest shape, `+0m` with the mod still listed as a source.
+        let ogris_base = WeaponBase::from_data("kuva_ogris", true, &[]);
+        assert_eq!(
+            ogris_base.radial.as_ref().map(|r| r.blast_kind),
+            Some(BlastKind::Contact),
+            "the Kuva Ogris is the contact case"
+        );
+        let ogris_pool = crate::mods_data::pool_for_build("kuva_ogris", &[]);
+        let ogris_auger = ogris_pool
+            .iter()
+            .find(|m| m.id == "metal_auger")
+            .expect("the mod is still offered — it is applied at 0, not refused at the slot");
+        assert_eq!(
+            resolve(&ogris_base, &[ogris_auger], StackPolicy::Emergent).punch_through_m,
+            0.0,
+            "a contact blast must pay nothing for a punch-through mod"
+        );
+    }
 
     /// A PUNCH-THROUGH MOD REACHES THE RESOLVED PANEL — reported by a player
     /// who asked whether Metal Auger does anything on a Burston Prime

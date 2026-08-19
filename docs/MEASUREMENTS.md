@@ -3394,3 +3394,75 @@ times over, with a body walked off the map as the negative control.
 to tie-breaking — `seeds x (1 + f + … + f^hops)` — so what nobody can know
 moves damage BETWEEN bodies without changing how much the formation took. It
 decides which one dies first and nothing else.
+
+## M53 — the Burston Incarnon PUNCHES THROUGH, and its blast lands behind you ✅ (owner, 2026-08-20)
+
+Verbatim, both messages, in the order they arrived:
+
+> 我刚刚测试了一下burston是可以punch through的，子弹会传过去，然后爆炸（也就是会在别人的身后爆炸，就是穿过后飞行距离达到极限），也就是说纯单体伤害可能还会降低，你顺便也实现了
+
+> 我们给burston这种的面板带上aoe，但是实际上可以穿透的得定义一种类型（他的aoe算法还不吃多重，我认为是一种假aoe，你应该可以归类一下，这样有些计算更好处理，名字你来定）
+
+### What it overturns
+
+The night before, I told the owner that punch-through mods pay nothing on a
+Burston Prime Incarnon and that this was CORRECT — the form carries a `radial:`,
+and the punch-through page's class rule says *"weapon projectiles with an area
+of effect (AoE) component will not Punch Through enemies or level geometry at
+all"*. The card showed `+0m` and I called it honest.
+
+It is not. He went and shot one. The round passes through the enemy and
+detonates BEHIND it, at the point where the flight ends.
+
+**AN INFERENCE FROM A CLASS RULE LOST TO A MEASUREMENT**, which is the whole
+reason this file exists. The page's own sentence begins *"With a very few
+exceptions"* and never says which — so a weapon being in the exception set is
+exactly the thing the rule cannot tell you.
+
+Two pieces of published evidence agree with him, and both were reachable the
+night before:
+
+- The `Incarnon` page's changelog carries evolution perks that fire **on punch
+  through hit** — *"Paris Incarnon's Ardent Trigger Evolution (on punch through
+  hit: + 40% Fire Rate for 6s)"*, and Braton Incarnon's Evolution III is *"On
+  Punch Through Hit: 20% chance for 10% Ammo restored"*. DE does not build
+  perks around a thing the weapon cannot do.
+- The **Tenet Ferrox** states the whole mechanic in words, on its own page:
+  *"Shots explode in a 4 meter radius after reaching maximum punch through
+  distance."* It went into the roster the same night, with that sentence
+  transcribed into a comment, and I did not connect the two.
+
+### The classification he asked for
+
+He named the smell before the mechanic: the blast *"不吃多重"* — takes no
+multishot — so it is a **假 AoE**, a fake one, and it should be a TYPE rather
+than a pile of per-weapon exceptions.
+
+`weapons_data::BlastKind`, two values:
+
+| kind | detonates | punch-through mods | example |
+| --- | --- | --- | --- |
+| `contact` (default) | on the first thing it touches | **refused** — a true AoE | Tenet Envoy, Kuva Ogris, every grenade |
+| `terminal` | where the FLIGHT ends, after the punch-through budget is spent | **allowed** | Burston (Prime) Incarnon, Tenet Ferrox |
+
+### What it does to the number, and why it can go DOWN
+
+`space::terminal_of_punch` reads [`struck_along`]'s arithmetic from the other
+end: a budget of `p` crosses `floor(p / BODY_MATERIAL_M)` bodies, so the round
+comes to rest inside body number `crossings` on the line. If the line does not
+hold that many, it crossed everything and flew on.
+
+- **No punch through**: `crossings` is 0, the answer is the first body, and the
+  detonation is on its surface — byte-identical to what this engine has always
+  fired. Every golden test is unmoved.
+- **Punch through, one target**: the round crosses the only body and leaves the
+  field. The explosion reaches nobody. *"纯单体伤害可能还会降低"* — measured, and
+  now modelled.
+- **Punch through, a crowd**: more direct hits AND the blast goes off deeper in
+  the formation, on the last body the budget could not cross.
+
+**THE ARENA'S MISSING GEOMETRY IS WHAT MAKES THE LOSS TOTAL.** In a real room a
+wall stops the round a few metres on and the blast still lands near the crowd;
+this floor has none (docs/UNMODELLED.md), so a round that crosses every body
+simply goes away. That is the conservative reading and it is the one the
+single-target measurement supports.

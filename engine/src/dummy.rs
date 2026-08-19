@@ -9265,7 +9265,43 @@ pub fn run_once_traced(
             if pellet_lands {
                 landed_this_shot = true;
             }
+            // A TERMINAL BLAST GOES OFF WHERE THE FLIGHT ENDS, not on the first
+            // body the round touched — see `weapons_data::BlastKind` and
+            // MEASUREMENTS M50. With no punch through that IS the first body and
+            // nothing moves; with punch through the round bores on, and against
+            // a lone enemy it leaves the field and the explosion reaches nobody.
+            //
+            // Only on a pellet that LANDS. One that missed never touched
+            // anything to punch through, so where it ends up is the ordinary
+            // miss geometry's question and is left to it.
+            let mut det = det;
+            let mut blast_left_the_field = false;
+            if pellet_lands
+                && ap.radial.as_ref().map(|r| r.blast_kind)
+                    == Some(crate::weapons_data::BlastKind::Terminal)
+            {
+                let aim = params.aim_point();
+                let muzzle = crate::space::muzzle(params.player_at, aim);
+                let mut bodies = Vec::with_capacity(params.others.len() + 1);
+                bodies.push(params.target_at);
+                bodies.extend(params.others.iter().map(|f| f.at));
+                let dir = crate::space::Vec2::new(aim.x - muzzle.x, aim.y - muzzle.y);
+                match crate::space::terminal_of_punch(muzzle, dir, &bodies, params.punch_through_m)
+                {
+                    // THE SURFACE, not the centre — the same convention the
+                    // contact case uses, which is what keeps a terminal weapon
+                    // with no punch through byte-identical to what it was.
+                    Some(at) => {
+                        det = crate::space::Detonation {
+                            at: crate::space::detonation_point(at, params.player_at),
+                            height_m: 0.0,
+                        }
+                    }
+                    None => blast_left_the_field = true,
+                }
+            }
             let radial_stage = match ap.radial {
+                _ if blast_left_the_field => None,
                 Some(r) if !r.takes_multishot && pellet_idx > 0 => None,
                 other => other,
             };
@@ -16050,6 +16086,7 @@ mod tests {
     #[test]
     fn a_radial_takes_condition_overload_only_where_the_weapon_declares_it() {
         let radial = |takes: bool| crate::loadout::ResolvedRadial {
+            blast_kind: crate::weapons_data::BlastKind::Contact,
             damage: {
                 let mut d = DamageVector::default();
                 d.set(DamageType::Radiation, 100.0);
@@ -17147,6 +17184,7 @@ mod tests {
     #[test]
     fn the_vigilante_promotion_reaches_an_explosion_too() {
         let radial = crate::loadout::ResolvedRadial {
+            blast_kind: crate::weapons_data::BlastKind::Contact,
             damage: {
                 let mut d = DamageVector::default();
                 d.set(DamageType::Radiation, 100.0);
@@ -17987,6 +18025,7 @@ mod tests {
         let mut damage = DamageVector::default();
         damage.set(DamageType::Heat, 300.0);
         crate::loadout::ResolvedRadial {
+            blast_kind: crate::weapons_data::BlastKind::Contact,
             damage,
             modified_base: 300.0,
             crit_chance,
@@ -18107,6 +18146,7 @@ mod tests {
             let mut damage = DamageVector::default();
             damage.set(DamageType::Heat, 300.0);
             crate::loadout::ResolvedRadial {
+                blast_kind: crate::weapons_data::BlastKind::Contact,
                 damage,
                 modified_base: 300.0,
                 crit_chance: 1.0, // always crits: no crit-roll noise
@@ -18175,6 +18215,7 @@ mod tests {
     fn the_explosion_arms_an_on_hit_buff_of_its_own() {
         let mk = |with_radial: bool| {
             let radial = with_radial.then(|| crate::loadout::ResolvedRadial {
+                blast_kind: crate::weapons_data::BlastKind::Contact,
                 damage: DamageVector::default(), // 0 damage: a pure extra INSTANCE
                 modified_base: 0.0,
                 crit_chance: 0.0,

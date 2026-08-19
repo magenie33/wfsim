@@ -113,6 +113,10 @@ attack:
   # punch through distance", with a 1x body-part multiplier and no headshot
   # conditions, the engine's standing rule for every radial.
   radial:
+    # A TERMINAL BLAST — it bores through and goes off where the FLIGHT ends,
+    # which is why this weapon takes punch-through mods where an ordinary
+    # explosive cannot. See `weapons_data::BlastKind` and MEASUREMENTS M53.
+    blast_kind: terminal
     damage: { impact: 6, puncture: 42, slash: 12 }   # total 60
     radius_m: 4.0
     falloff_start_m: 0.0
