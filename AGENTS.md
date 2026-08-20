@@ -218,12 +218,29 @@ around (decision 2026-07-31).
   against `BOARD` itself so it keeps holding as the board moves. It also holds a
   case the LIVE board has never had: ONE WEAPON, TWO MODES. The board has always
   LISTED every weapon in every mode it can be played in (`benchEntries` walks
-  `w.modes`, and only the SUSTAINABLE ones reach the page), and the scorer has
-  always kept its quota per weapon AND mode — but no submission has ever named a
+  `w.modes`, and only the SUSTAINABLE ones reach the page), and the scorer draws
+  its floor per weapon AND mode — but no submission has ever named a
   second mode, so the half of a row's identity that says HOW it was played had
   never been told apart from the same weapon's other row. The check injects a
   synthetic second-mode row and asserts both are listed, both measured, and that
   the second one's link opens ITS mode, ITS ruler and ITS build (2026-08-09).
+  IT ALSO WATCHES THE ORDER, one level down. The board page lists a weapon's
+  best row per mode; the DEEPER ranks live in the builder's picker, which groups
+  them by mode and numbers each one inside its group. Both halves were right and
+  the order was not — `builtinBuilds` sorted by ruler only and inherited
+  board.json's order inside it, which is by SCORE and knows nothing about modes,
+  so two interleaved modes drew one header TWICE with the other wedged inside
+  it: the Burston Prime's two `base` rows sat at positions 93 and 94 of its 100
+  `cycle` rows, live on nine weapons (owner, 2026-08-20). The property is
+  asserted over EVERY weapon the board holds in more than one mode rather than
+  over a named one, and the DOM half picks the WORST-INTERLEAVED weapon rather
+  than the deepest — picking by depth chose the Torid, whose modes happen to be
+  contiguous anyway, so that half passed on the broken build while nine weapons
+  failed beside it. The rank assertion beside it says #1 is that mode's LEADER,
+  because counting positions is vacuous here: `builtinBuilds` numbers rows as it
+  walks them, so a position counter and its rank agree however the list is
+  ordered. Verified to bite: the old sort reddens ten, naming each weapon and
+  its block count.
   `node scripts/check_disclosure.mjs` is the EIGHTEENTH: what the app does NOT
   model is ON THE PAGE, in every family that has one — a weapon banner, an
   evolution chip, a mod line, an arcane line, an enemy caveat. The owner debugs
@@ -1031,19 +1048,21 @@ around (decision 2026-07-31).
   a pile of per-weapon exceptions.
   `weapons_data::BlastKind` is that type. A `contact` blast goes off on the
   first thing it touches and is the true area-of-effect attack the rule means; a
-  `terminal` one goes off PAST what the round hit and takes punch-through mods
-  normally. THE SECOND CONSEQUENCE IS THE ONE NOBODY GUESSES: punch through
-  moves the explosion back down the flight, so a weapon whose blast RADIUS is
-  smaller than its punch through loses it against a lone enemy. The budget is
-  read as a DISTANCE (`space::past_contact`), which is the word the Ferrox's own
-  page uses and the only reading that fits both weapons: 2.1 m clears a Burston
-  Incarnon's 2.0 m and its damage drops 1.6% at 5σ, while 1.5 m sits well inside
-  a Tenet Ferrox's 4.0 m and changes nothing measurable. The reading it replaced
-  spent the budget on BODIES and sent a round that crossed them all off the field
-  — which fits the Burston and silently cost the Ferrox 10% of its damage with no
-  mod equipped, so it was thrown away. With no budget the epicentre is the
-  contact point, which is why every existing number is unmoved. The
-  Tenet Ferrox had stated the whole mechanic in words the day before — *"Shots
+  `terminal` one goes off where the round DISSIPATES and takes punch-through
+  mods normally. THE BUDGET BUYS MATERIAL, which is the mechanic's own
+  definition and the owner's own description (2026-08-20): the round crosses
+  `space::BODY_MATERIAL_M` per body and detonates in whichever one it cannot get
+  out of, so in a crowd the blast lands DEEPER in the line — a Burston Incarnon
+  with 2.1 m strikes `1 + floor(2.1/0.5)` = 5 bodies and detonates on the fifth,
+  measured at 16,566 to 53,619 DPS on a line of seven. What is left over when it
+  clears them all is spent as flight, because this arena has no wall to stop it;
+  that is the one stand-in in the model and it is bounded by the weapon's own
+  punch through. Against a LONE enemy the blast therefore moves back and the
+  damage drops (16,584 to 16,358, about 4σ), which is what was measured. With no
+  budget the epicentre is the contact point, which is why every existing number
+  is unmoved. Two other readings were tried and both broke something — see
+  MEASUREMENTS M53, which records them so nobody re-derives them.
+    Tenet Ferrox had stated the whole mechanic in words the day before — *"Shots
   explode in a 4 meter radius after reaching maximum punch through distance"* —
   and nothing connected the two until a player shot one.
 - **A GAP THAT REPEATS IS A REASON, NOT A SENTENCE** (2026-08-15).

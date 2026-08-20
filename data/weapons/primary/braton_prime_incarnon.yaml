@@ -72,6 +72,14 @@ attack:
     radius_calculation: snapshot
 
   radial:
+    # A TERMINAL BLAST. This form carries an explosion AND an evolution that
+    # rewards punch-through hits ("Gunsmoke Pick Up — On Punch Through Hit: 20%
+    # chance for 10% Ammo restored"), so it cannot be a weapon that refuses
+    # punch through. DEFAULTED to the Burston's answer (owner, 2026-08-20)
+    # rather than measured: one shot at one enemy would confirm whether the
+    # blast lands on it or behind it. See `weapons_data::BlastKind` and
+    # MEASUREMENTS M53.
+    blast_kind: terminal
     damage: { heat: 70.0 }
     radius_m: 3.0
     falloff_start_m: 0.0

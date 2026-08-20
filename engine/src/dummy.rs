@@ -9265,13 +9265,13 @@ pub fn run_once_traced(
             if pellet_lands {
                 landed_this_shot = true;
             }
-            // A TERMINAL BLAST GOES OFF PAST WHAT THE ROUND HIT, not on it —
-            // see `weapons_data::BlastKind` and MEASUREMENTS M53. The budget is
-            // read as a DISTANCE along the flight (`space::past_contact`), so
-            // whether the target still takes the blast is decided by the
-            // weapon's own radius: 2.1 m clears a Burston Incarnon's 2.0 m and
-            // the damage drops, 1.5 m sits well inside a Tenet Ferrox's 4.0 m
-            // and its radial still lands. With no punch through nothing moves.
+            // A TERMINAL BLAST GOES OFF WHERE THE ROUND DISSIPATES, not on the
+            // first body it touched — see `weapons_data::BlastKind` and
+            // MEASUREMENTS M53. The budget buys MATERIAL (owner, 2026-08-20),
+            // so the round crosses bodies until it cannot get out of one and
+            // detonates there; what is left over when it clears them all is
+            // spent as flight, since this arena has no wall to stop it.
+            // With no punch through nothing moves.
             //
             // Only on a pellet that LANDS. One that missed never touched
             // anything to punch through, so where it ends up is the ordinary
@@ -9281,11 +9281,15 @@ pub fn run_once_traced(
                     == Some(crate::weapons_data::BlastKind::Terminal)
             {
                 let aim = params.aim_point();
+                let mut bodies = Vec::with_capacity(params.others.len() + 1);
+                bodies.push(params.target_at);
+                bodies.extend(params.others.iter().map(|f| f.at));
                 crate::space::Detonation {
-                    at: crate::space::past_contact(
+                    at: crate::space::dissipation_point(
                         det.at,
                         crate::space::muzzle(params.player_at, aim),
                         aim,
+                        &bodies,
                         params.punch_through_m,
                     ),
                     height_m: det.height_m,

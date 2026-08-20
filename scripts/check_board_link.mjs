@@ -17,6 +17,11 @@
 //
 // Asserted against `BOARD` itself rather than against a build written down
 // here, so it keeps holding as the board moves under it.
+//
+// A THIRD concern joined them on 2026-08-20, one level down: the board page
+// lists a weapon's BEST row per mode, and the deeper ranks live in the
+// builder's picker — where a rank only means something inside one way of
+// playing. See the section at the bottom.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });
@@ -207,5 +212,114 @@ check("...under the ruler it was measured on", r.otherOpenedRuler === r.rulers[0
 check("...carrying that row's build",
   JSON.stringify(r.otherOpenedMods) === JSON.stringify(r.otherWantMods),
   `${JSON.stringify(r.otherOpenedMods)} vs ${JSON.stringify(r.otherWantMods)}`);
+
+// ---- and the RANK a picker shows is a rank WITHIN a mode ---------------
+//
+// The board page lists a weapon's BEST row per mode; the deeper ranks live in
+// the builder's own picker, which groups them by mode and labels each one with
+// its rank inside that mode. Both halves were right and the ORDER was not:
+// `builtinBuilds` sorted by ruler only, and inside a ruler it inherited
+// board.json's order — which is by SCORE and knows nothing about modes. The
+// picker draws a group header where the group CHANGES, so two interleaved
+// modes drew one of them TWICE with the other wedged inside it, and the ranks
+// restarted mid-list.
+//
+// Live on nine weapons when it was found (owner, 2026-08-20): the Burston
+// Prime's two `base` rows sat at positions 93 and 94 of its 100 `cycle` rows,
+// so the picker read "Incarnon cycle #1..#92, base #1 #2, Incarnon cycle
+// #93..#100".
+//
+// TWO HALVES, because either alone passes on a page that lost the other. The
+// ORDER is asserted over every weapon the board holds in more than one mode —
+// a property, not a weapon — and the DRAWING is asserted once in the DOM,
+// since an order nothing renders is an order nobody reads.
+const pick = await evaluate(`(async () => {
+  const s = (ms) => new Promise(r => setTimeout(r, ms));
+  const out = { weapons: [] };
+  // Where the grouping is VISIBLE: a weapon this board holds in more than one
+  // mode under one ruler. Includes the synthetic row injected above, which is
+  // why this runs after it.
+  const many = (META.weapons || []).filter(w => {
+    const byRuler = {};
+    for (const r of (BOARD[w.id] || [])) {
+      (byRuler[r.benchmark] = byRuler[r.benchmark] || new Set()).add(r.mode || 'base');
+    }
+    return Object.values(byRuler).some(set => set.size > 1);
+  });
+  for (const w of many) {
+    // builtinBuilds reads the weapon on screen, so this is the one input it
+    // takes. Nothing else about the page decides its answer.
+    document.getElementById('weapon').value = w.id;
+    const ps = builtinBuilds();
+    const blocks = [];
+    const prev = {};
+    let last = null, ok = true, why = '';
+    for (const p of ps) {
+      const k = p.benchmark + '#' + p.mode;
+      if (k !== last) { blocks.push(k); last = k; }
+      // WHAT A RANK MEANS: #1 is that mode's leader. Counting positions would
+      // be vacuous — builtinBuilds numbers the rows as it walks them, so a
+      // position counter and its rank agree however the list is ordered. The
+      // falsifiable claim is that the ORDER is by score inside the mode.
+      const sc = ((p.board || {}).score) || 0;
+      if (prev[k] !== undefined && sc > prev[k] + 1e-12) {
+        ok = false;
+        why = k + ': #' + p.rank + ' scores ' + sc + ', above the row before it (' + prev[k] + ')';
+        break;
+      }
+      prev[k] = sc;
+    }
+    out.weapons.push({
+      id: w.id, rows: ps.length,
+      blocks: blocks.length, groups: new Set(blocks).size,
+      bestFirst: ok, why,
+    });
+  }
+  // THE WORST-INTERLEAVED ONE for the DOM half, not the one with the most
+  // rows. Picking by depth chose the Torid, whose modes happen to be
+  // contiguous already — so the DOM half passed on the broken build while nine
+  // weapons failed beside it, which is a check reporting the wrong thing. On a
+  // healthy board every weapon ties at zero and this falls back to depth.
+  const deep = out.weapons.slice().sort((a, b) =>
+    (b.blocks - b.groups) - (a.blocks - a.groups) || b.rows - a.rows)[0];
+  out.drawn = deep ? deep.id : null;
+  if (deep) {
+    const w = (META.weapons || []).find(x => x.id === deep.id);
+    history.pushState({}, '', '/weapons/' + wikiSlug(w)); route(); await s(3200);
+    // BY PREFIX, not by the domain's name: the row picker is the second of the
+    // benchmark bar's two dropdowns and the only one whose id starts this way.
+    const btn = document.querySelector('[id^="dd-bench-row-"]');
+    out.hasPicker = !!btn;
+    if (btn) {
+      btn.click(); await s(400);
+      const menu = document.getElementById('dd-menu');
+      out.headers = [...(menu ? menu.children : [])]
+        .filter(el => el.className.indexOf('ddgroup') >= 0)
+        .map(el => el.textContent.trim());
+    }
+  }
+  return out;
+})()`);
+
+// A BOARD WITH NO TWO-MODE WEAPON IS A REAL STATE, and it is reported rather
+// than passing in silence — the injection above means it should not happen,
+// so a zero here is a fault in the fixture and not in the picker.
+check("some weapon is on a board in more than one mode",
+  pick.weapons.length > 0, pick.weapons.map((w) => w.id).join(", "));
+for (const w of pick.weapons) {
+  check(`[${w.id}] its modes are contiguous — one block per mode, not more`,
+    w.blocks === w.groups, `${w.blocks} blocks for ${w.groups} modes`);
+  check(`[${w.id}] ...and #1 is that mode's leader, best first`,
+    w.bestFirst, w.why);
+}
+// …AND THE PICKER DRAWS IT. The order above is invisible until something
+// renders a header from it, and the header is the only thing on screen that
+// says what a rank is a rank ON.
+check(`[${pick.drawn}] the picker offers its rows`, pick.hasPicker !== false,
+  String(pick.hasPicker));
+check(`[${pick.drawn}] ...drawing each mode's header exactly once`,
+  !!pick.headers && pick.headers.length > 0
+    && pick.headers.length === new Set(pick.headers).size,
+  JSON.stringify(pick.headers));
 
 await app.finish("a board row opens the build it is about, under the ruler it is on");

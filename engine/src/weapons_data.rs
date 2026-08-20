@@ -682,8 +682,9 @@ pub enum BlastKind {
     ///
     /// TWO CONSEQUENCES, and the second is the surprising one. Punch through
     /// buys more DIRECT hits, as on any other weapon; and it moves the
-    /// explosion PAST the target, which against a lone enemy loses the blast
-    /// entirely. `space::terminal_of_punch` is the geometry.
+    /// explosion DOWN THE LINE — onto whichever body the round cannot get out
+    /// of, which in a crowd is deeper and better and against a lone enemy is
+    /// past it and worse. `space::dissipation_point` is the geometry.
     Terminal,
 }
 
@@ -1894,7 +1895,7 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
     // explosion (MEASUREMENTS M53).
     if s.attack.radial.as_ref().map(|r| r.blast_kind) == Some(BlastKind::Terminal) {
         out.push(
-            "Its round bores THROUGH what it hits and explodes further down its flight, so unlike other explosive weapons it takes punch-through mods normally — and pays for them: every metre of punch through moves the explosion another metre past what it hit, so once that distance clears this weapon's own blast radius a lone enemy stops taking the explosion at all."
+            "Its round bores THROUGH what it hits and explodes where it finally stops, so unlike other explosive weapons it takes punch-through mods normally — and they cut both ways: in a crowd the blast lands on whichever enemy the round could not get out of, deeper down the line, while against a lone enemy it is carried PAST the target and away from it."
                 .to_string(),
         );
     }
