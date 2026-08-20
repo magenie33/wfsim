@@ -1,0 +1,100 @@
+id: catabolyst
+name: Catabolyst
+slot: secondary
+# A BEAM WITH A BLAST ON THE END OF IT, and the weapon whose reload is the
+# point: it throws a grenade every time. ONE grenade, where the Coda throws
+# three — that is the adversary variant's real addition, and it is why the
+# unmodelled line below is worth as much here as it is there.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 11
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 6.3
+disposition: 1.2             # riven disposition
+polarities: [madurai]
+exilus_polarity: madurai
+riven_family: Catabolyst
+traits: [infested]
+introduced: "29.5"
+internal_name: /Lotus/Weapons/Infested/Pistols/InfBeamPistol/InfBeamPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 155
+ammo_pickup: 20
+magazine: 31
+reload_seconds: 1.7
+
+# Condition Overload: THE CATALOG NAMES TWO ATTACKS AND NEITHER IS THE BEAM.
+# Verbatim rows (docs/CATALOGS.md §1):
+#
+#   Catabolyst | Partial Reload Impact    | Projectile | 11 | 11 | 100% | Multiplying
+#   Catabolyst | Reload From Empty Impact | Projectile | 11 | 11 | 100% | Multiplying
+#
+# Both are the thrown grenade's CONTACT hit, which this roster does not model —
+# the engine has no hook that fires an attack on a reload. So the rows are
+# transcribed and neither reaches an entry: the BEAM has no row and is ordinary
+# Additive, which is what this weapon actually fires here.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). The widest cone on
+  # any beam in the roster, shared with the Coda.
+  spread:
+    min_deg: 9.0
+    max_deg: 23.0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12.0
+  multishot: 1.0
+  # "Consumes 0.5 ammo per tick of damage."
+  ammo_cost: 0.5
+  crit_chance: 0.11
+  crit_multiplier: 2.9
+  # 43%, where the Coda's beam carries 50% — one of the three numbers the
+  # variant raised on the beam itself.
+  status_chance: 0.43
+  # INNATE 0.9 m, the same as the Coda's. Just under two body-thicknesses
+  # (`space::BODY_MATERIAL_M`), so it reaches the second enemy in a line.
+  punch_through_m: 0.9
+  # "Has linear damage falloff from 100% to 1.88% from 9m to 19m target
+  # distance" — the steepest in the roster, and it ends exactly where the beam
+  # does. The module's 0.9811 is the exact figure behind that 1.88%.
+  falloff:
+    start_m: 9.0
+    end_m: 19.0
+    reduction: 0.9811
+  damage: { corrosive: 53 }   # total 53
+
+  # A BEAM THAT SPLASHES — "The zone of impact or maximum beam range has a
+  # spherical blast radius of 0.7 meters, bringing up the total range to 19.7
+  # meters before mods, allowing it to hit multiple enemies at once", and the
+  # radial damage is not affected by multishot, which is what
+  # `radius_takes_multishot: false` states. Identical to the Coda's.
+  beam:
+    range_m: 19.0
+    damage_radius_m: 0.7
+    radius_takes_multishot: false
+    chain:
+      hops: 0
+      range_m: 0.0
+      damage_per_hop: 0.0
+      origin: radius_targets
+
+# THE RAMP IS THE ENGINE'S OWN DEFAULT — "Damage ramps up from 20% to 100% over
+# 0.6 seconds when firing. After firing stops for 0.8 seconds, the damage decays
+# back to 20% over 2 seconds", which is BEAM_RAMP_SECONDS, BEAM_DECAY_DELAY and
+# the 20% floor exactly.
+
+unmodeled:
+  - "THE RELOAD GRENADE, which is most of this weapon and the whole reason it is built: every reload throws one at the reticle, exploding in a 5-7 metre radius, and reloading FROM EMPTY makes it far larger — 1,997 Corrosive in 7 metres at 31% crit and 59% status, against 203 in 5 metres at 11% and 43% on a partial reload. The engine has no hook that fires an attack ON A RELOAD, so none of it is counted and the number on screen is the beam alone. The CODA variant throws THREE of them"
+  - "the reload-from-empty penalty that pays for it: an innate -20% Reload Speed, taking the 1.7 s reload to 2.125 s. Not applied, because what it buys is not either"
+  - "Critical Mutation, the Catabolyst family's exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Catabolyst

@@ -298,3 +298,26 @@ checked:
   tenet_spirex:                { range: null, type: read, note: 'the Slug Impact block states no Range; its 2.0 m is the Explosion''s radius. Projectile at 260 m/s' }
   tenet_tetra:                 { range: null, type: read, note: 'the Normal Attack block states no Range; the 8.0 m is the Grenade AoE''s radius. Projectile at 100 m/s' }
   tenet_tetra_grenade:         { range: null, type: read, note: 'the Grenade Impact block states no Range either; the 8.0 m is the Grenade AoE''s radius. Projectile at 60 m/s' }
+  arca_plasmor:                { range: 30.0, type: read, note: 'wiki: "Range: 30.0 m", Projectile at 60 m/s — and the disadvantages agree in words, which the TENET variant''s do not' }
+  bubonico:                    { range: null, type: read, note: 'the Auto block states no Range; its 7.0 m sits under the Radial Attack and is a radius. Projectile at 57 m/s' }
+  bubonico_burst:              { range: null, type: read, note: 'the Burst block states no Range; the 7.0 m is the Radial Attack''s radius. Projectile at 25 m/s' }
+  catabolyst:                  { range: 19.0, type: read, note: 'wiki, Primary: "Range: 19.0 m", Hit-Scan beam — its falloff ends at the same 19 m' }
+  cycron:                      { range: 24.0, type: read, note: 'wiki: "Range: 24.0 m", Hit-Scan beam. The Tenet''s is 28' }
+  detron:                      { range: null, type: read, note: 'no Range row; Projectile at 150 m/s' }
+  mara_detron:                 { range: null, type: read, note: 'no Range row; Projectile at 150 m/s' }
+  ferrox:                      { range: 300.0, type: read, note: 'wiki, Charged Shot: "Range: 300.0 m", Hit-Scan. Its 3.6 m is the Radial Attack''s radius' }
+  ferrox_thrown:               { range: null, type: read, note: 'the Spear Throw block states no Range; the 10.0 m is the Attraction Field''s radius. Projectile at 90 m/s' }
+  flux_rifle:                  { range: 30.0, type: read, note: 'wiki: "Range: 30.0 m", Hit-Scan beam — where the TENET variant is a 300 m hit-scan rifle' }
+  glaxion:                     { range: 24.0, type: read, note: 'wiki: "Range: 24.0 m", Hit-Scan beam' }
+  glaxion_vandal:              { range: 28.0, type: read, note: 'wiki: "Range: 28.0 m", Hit-Scan beam, plus a 2.0 m cold blotch that is a damage RADIUS and not a reach' }
+  hema:                        { range: null, type: read, note: 'no Range row; Projectile at 150 m/s' }
+  plinx:                       { range: 100.0, type: read, note: 'wiki: "Range: 100.0 m", Hit-Scan — the same unusual figure the Tenet carries' }
+  pox:                         { range: null, type: read, note: 'the Spore Impact block states no Range; its 2.5 m is the Poison Cloud''s radius. Projectile at 30 m/s' }
+  quanta:                      { range: 50.0, type: read, note: 'wiki, Beam: "Range: 50.0 m", Hit-Scan — the longest beam in the roster' }
+  quanta_cube:                 { range: 15.0, type: read, note: 'wiki, Cube (direct hit): "Range: 15.0 m", Projectile at 25 m/s. Its 0.5 m is the Cube Explosion''s radius' }
+  quanta_vandal:               { range: 50.0, type: read, note: 'wiki, Beam: "Range: 50.0 m", Hit-Scan' }
+  quanta_vandal_cube:          { range: 15.0, type: read, note: 'wiki, Cube (direct hit): "Range: 15.0 m", Projectile at 25 m/s' }
+  synapse:                     { range: 27.0, type: read, note: 'wiki: "Range: 27.0 m", Hit-Scan beam — the Characteristics say the same ("a beam with a range of 27 meters")' }
+  tetra:                       { range: null, type: read, note: 'no Range row; Projectile at 100 m/s' }
+  prisma_tetra:                { range: null, type: read, note: 'no Range row; Projectile at 100 m/s' }
+  tysis:                       { range: null, type: read, note: 'no Range row; Projectile at 75 m/s' }

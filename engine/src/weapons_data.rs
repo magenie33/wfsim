@@ -3336,6 +3336,32 @@ mod tests {
             // "Does not apply"` — which would be `inert` and has no entry,
             // because that alt fire is a Mercy-finisher tool rather than a way
             // to fight and is recorded as a gap instead.
+            // THE NINETEEN BASE WEAPONS behind the adversary families
+            // (2026-08-20). Four of them have rows and the rest are ordinary,
+            // and the pattern does NOT follow the family: on the Arca Plasmor
+            // and the Hema both variants are named, on the Bubonico only the
+            // BASE is, and on the Ferrox only the TENET. A row is transcribed
+            // for the entry the catalog names, every time.
+            //   Arca Plasmor | Normal Attack | Projectile | 600 | 600 | 100% | Multiplying
+            ("arca_plasmor", "independent", 1.0),
+            //   Hema | Normal Attack | Projectile | 47 | 47 | 100% | Multiplying
+            ("hema", "independent", 1.0),
+            //   Bubonico | Main-fire | Projectile | 287 | 287 | 100% | Multiplying
+            //   Bubonico | Alt-fire  | Projectile |   9 |   9 | 100% | Multiplying
+            // …and the CODA Bubonico has neither, which is the asymmetry.
+            ("bubonico", "independent", 1.0),
+            ("bubonico_burst", "independent", 1.0),
+            // AND TWO THE CATALOG NAMES THAT NO ENTRY CAN TAKE:
+            //   Tysis | Normal Attack | Projectile | 49 | 49 | 100% | Adding
+            //     — Adding at 100% IS ordinary, so it is not an anomaly.
+            //   Pox   | DoT Cloud     | AoE        | 20 | 50 | 250% | Adding
+            //     — about the CLOUD, whose term reads 50 against its own 20.
+            //     There is no per-part CO fraction, so the cloud takes the
+            //     ordinary 100% and the weapon's `unmodeled:` says so.
+            //   Catabolyst | Partial Reload Impact    | 11 | 11 | 100% | Multiplying
+            //   Catabolyst | Reload From Empty Impact | 11 | 11 | 100% | Multiplying
+            //     — both name the thrown grenade's contact hit, which the
+            //     engine cannot fire because it happens on a RELOAD.
             ("coda_bassocyst", "independent", 1.0),
             //   Coda Hema | Normal Attack | Projectile | 52 | 52 | 100% | Multiplying
             ("coda_hema", "independent", 1.0),
@@ -3453,16 +3479,24 @@ mod tests {
         want.sort_unstable();
         assert_eq!(radial_co, want, "a radial takes CO only where the catalog names it");
 
-        // …and the Torid's cloud, which is a FIELD rather than an explosion —
-        // its own row ("Toxin AoE Cloud", Multiplying) and its own flag. The
-        // distinction matters here because it is why this roster has EIGHT
-        // radials taking CO and NINE AoE parts that do.
+        // …and the CLOUDS, which are FIELDS rather than explosions — each with
+        // its own catalog row and its own flag. The distinction matters here
+        // because it is why this roster has more AoE parts taking CO than it
+        // has radials.
+        //
+        //   Torid | Toxin AoE Cloud | AoE | 40 | 40 | 100% | Multiplying
+        //   Pox   | DoT Cloud       | AoE | 20 | 50 | 250% | Adding
+        //
+        // THE POX'S 250% IS NOT EXPRESSIBLE and the weapon says so: its term
+        // reads 50 against a cloud whose own base is 20, and `co_base_fraction`
+        // is one number per ENTRY whose THROW is ordinary. It takes the
+        // ordinary 100% here, which understates a status-stacking build.
         let field_co: Vec<&str> = all()
             .iter()
             .filter(|s| s.attack.lingering.as_ref().is_some_and(|f| f.takes_condition_overload))
             .map(|s| s.id.as_str())
             .collect();
-        assert_eq!(field_co, ["torid"], "a lingering field likewise");
+        assert_eq!(field_co, ["torid", "pox"], "a lingering field likewise");
     }
     /// The Larkspur Prime is the first weapon that can RUN OUT, and this is
     /// the whole data path end to end: YAML -> spec -> base -> panel -> sim.
@@ -5469,6 +5503,26 @@ mod play_mode_tests {
             ("tenet_quanta_cube", 0.40),
             ("coda_bubonico_burst", 5.60),
             ("tenet_ferrox_thrown", 0.0),
+            // THE NINETEEN BASE WEAPONS (2026-08-20). The Ferrox row is ONE row
+            // covering both variants — its base-radius cell reads
+            // "3.6 m (4.0 m)", the parenthetical being the Tenet's — which is
+            // the opposite of the CO table's rule and safe only because the
+            // cell says so.
+            //   Bubonico       | Alt-Fire + AoE     | 100% | Multiplies | 7.0 m | +560%
+            //   Ferrox         | Primary Fire + AoE | 100% | ADDS       | 3.6 m | +288%
+            //   Ferrox         | Throw + AoE        |   0% | Doesn't Work
+            //   Quanta         | Alt-Fire + AoE     | 100% / 8% | Multiplies | 0.5 m | +40%
+            //   Quanta Vandal  | Alt-Fire + AoE     | 100% / 8% | Multiplies | 0.5 m | +40%
+            //   Glaxion Vandal | Primary Fire + AoE |   0% | Doesn't Work | 2.0 m
+            // The Glaxion Vandal's is the fourth tested ZERO in the catalog and
+            // the general exclusion applied to a real radius: a beam attack
+            // with an AoE component.
+            ("bubonico_burst", 5.60),
+            ("ferrox", 2.88),
+            ("ferrox_thrown", 0.0),
+            ("quanta_cube", 0.40),
+            ("quanta_vandal_cube", 0.40),
+            ("glaxion_vandal", 0.0),
         ];
         // At rank 5 a metre is worth +100%, so the bonus IS the metres lost.
         let fx = crate::arcanes_data::for_slot("primary", "primary_compression")
@@ -5687,8 +5741,8 @@ mod play_mode_tests {
         // The Braton four, the Burston two, and BOTH Mausolon radials — its two
         // rows are the only Arch-Gun ones in the table and both print "Adds".
         assert_eq!(
-            adds, 9,
-            "the Braton four, the Burston two, the Mausolon two and the Tenet Ferrox add, and nothing else here does"
+            adds, 10,
+            "the Braton four, the Burston two, the Mausolon two and BOTH Ferroxes add, and nothing else here does"
         );
         // …and a tested ZERO is not the same as an absent row. The Torid's
         // Incarnon form has one, and its base form is 100% — one arcane, two

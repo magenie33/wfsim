@@ -1,0 +1,77 @@
+id: tysis
+name: Tysis
+slot: secondary
+# THE ORIGINAL DoT DART, and the second of the three weapons in the whole game
+# whose module carries a `ShotType: DoT` attack — the other two are its Coda
+# variant and the Synoid Simulor. Most of what it deals is that DoT, and the
+# engine has no shape for one; see the unmodelled list, which is the honest half
+# of this entry.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 9
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.45            # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Tysis
+traits: [infested]
+introduced: "11.7"
+internal_name: /Lotus/Weapons/Infested/Pistols/InfestedDartPistol/InfestedDartPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 11
+reload_seconds: 1.2
+
+# Condition Overload: THE CATALOG NAMES THIS ONE AND CALLS IT ORDINARY. Verbatim
+# row (docs/CATALOGS.md §1):
+#
+#   Weapon | Attack Name   | Projectile Type | Base Attack Damage
+#          | CO Damage Bonus at +100% | CO Damage Bonus Relative To Base Damage
+#          | Math/Behavior Type
+#   Tysis  | Normal Attack | Projectile      | 49 | 49 | 100% | Adding
+#
+# Adding at the full 100% IS the ordinary class, so this is not an anomaly and
+# does not belong on the NAMED list. The cell's 49 is this attack's own total
+# (9 + 23 + 17), which is what ties the row to this entry rather than the Coda's
+# 76. A row that says "normal" is still worth transcribing: it is the difference
+# between checked and never looked at.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). Perfect, like the
+  # Coda's.
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 75
+  fire_rate: 2.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.03
+  crit_multiplier: 1.5
+  status_chance: 0.50
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 75 m/s, and the page states no
+  # reach. See data/surveys/weapon_range.yaml.
+  #
+  # THE 49 IS THE DART ALONE, and the codex conflates it with the DoT beside it
+  # exactly as it does on the Coda. Folding the two together would get the total
+  # right and the timing, the crit rolls and the proc draws all wrong.
+  damage: { impact: 9, puncture: 23, slash: 17 }   # total 49
+
+unmodeled:
+  - "THE INNATE CORROSIVE DoT, which is 81 of this weapon's 130 damage a dart — a `ShotType: DoT` attack of 27 a tick, with each multishot pellet creating its own. Three attacks in the whole game are typed this way and two of them are this weapon's family, so it is recorded rather than built. THE NUMBER ON SCREEN IS THEREFORE ABOUT A THIRD OF THE REAL ONE against a single target"
+
+source:
+  url: https://wiki.warframe.com/w/Tysis

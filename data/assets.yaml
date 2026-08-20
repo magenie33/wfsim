@@ -286,6 +286,35 @@ weapons:
   tenet_spirex: CrpIgniterPistol.png
   tenet_tetra: CrpBETetra.png
   tenet_tetra_grenade: CrpBETetra.png
+
+  # THE NINETEEN BASE WEAPONS behind the adversary families (2026-08-20),
+  # resolved from WFCD's OWN EXPORT (`vendor/warframe-items`, the `imageName`
+  # field) rather than by asking api.warframestat.us item by item — same source,
+  # same answer, no network, and it does not touch the hand-set FORM rows the
+  # generator drops (see docs/DATA_SOURCES.md). A FORM carries its weapon's art.
+  arca_plasmor: ArcaPlasmor.png
+  bubonico: InfArmCannon.png
+  bubonico_burst: InfArmCannon.png
+  catabolyst: InfBeamPistol.png
+  cycron: Cycron.png
+  detron: Detron.png
+  mara_detron: MaraDetron.png
+  ferrox: Ferrox.png
+  ferrox_thrown: Ferrox.png
+  flux_rifle: FluxRifle.png
+  glaxion: Glaxion.png
+  glaxion_vandal: CrpFreezeRayVandal.png
+  hema: Hema.png
+  plinx: CrpBlastorWeapon.png
+  pox: Pox.png
+  quanta: Quanta.png
+  quanta_cube: Quanta.png
+  quanta_vandal: QuantaVandal.png
+  quanta_vandal_cube: QuantaVandal.png
+  synapse: Synapse.png
+  tetra: Tetra.png
+  prisma_tetra: PrismaTetra.png
+  tysis: Tysis.png
 mods:
   # A RIVEN's card, DE's own: every riven shares one image because the game
   # draws them all the same — `OmegaMod.png` is the unveiled riven mod on

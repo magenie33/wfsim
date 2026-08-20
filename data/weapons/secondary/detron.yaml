@@ -1,0 +1,72 @@
+id: detron
+name: Detron
+slot: secondary
+# SEVEN PELLETS OF RADIATION, and no Mag Burst: the Tenet Detron's magazine dump
+# is a TENET addition and this page has no alternate fire at all. What the Tenet
+# also changed is the shot itself — 10 pellets of 26 there against 7 of 40 here,
+# which is 260 either way and a completely different status profile.
+class: shotgun_sidearm
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 6
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 7.1
+disposition: 1.15            # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Detron
+traits: [corpus, baro]
+introduced: "11.5.5"
+internal_name: /Lotus/Weapons/Corpus/Pistols/CorpusHandShotgun/CorpusHandCannon
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 20
+magazine: 5
+reload_seconds: 1.05
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The TENET Detron has two rows, both
+# saying the same ordinary thing plus a Notes cell about damage falloff; this
+# weapon has neither, and absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). A wide cone, and
+  # the Mara variant's is half of it — the one real difference between them
+  # besides crit chance.
+  spread:
+    min_deg: 12.0
+    max_deg: 16.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 150
+  fire_rate: 3.33
+  # Seven pellets of 40 Radiation apiece, 280 a shot.
+  multishot: 7.0
+  ammo_cost: 1
+  crit_chance: 0.04
+  crit_multiplier: 1.5
+  status_chance: 0.1286
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 150 m/s. See
+  # data/surveys/weapon_range.yaml.
+  #
+  # "Has linear damage falloff" — the module's exact reduction is 0.6231, which
+  # is what the infobox's floor figure is computed from.
+  falloff:
+    start_m: 13.0
+    end_m: 22.0
+    reduction: 0.6231
+  damage: { radiation: 40 }   # 40 a pellet, 280 a shot
+
+unmodeled:
+  - "Thermagnetic Shells, the Detron family's exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Detron

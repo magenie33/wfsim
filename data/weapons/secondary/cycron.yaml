@@ -1,0 +1,92 @@
+id: cycron
+name: Cycron
+slot: secondary
+# THE TENET VERSION CHANGED THE ELEMENT, which is the sharpest difference in
+# this batch: this beam deals Puncture, Radiation and Slash, and the Tenet
+# Cycron deals pure Heat. It also does not CHAIN — the Tenet's two 7 m hops at
+# 60% are a Tenet addition, not a Cycron mechanic.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 8
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.2             # riven disposition
+polarities: [naramon, naramon]
+exilus_polarity: naramon
+riven_family: Cycron
+traits: [corpus]
+introduced: "20.3"
+internal_name: /Lotus/Weapons/Corpus/Pistols/CrpChargeGun/CrpChargeGun
+noise: alarming
+ammo_type: secondary
+# NO AMMO POOL — "Does not use ammo pickups; ammo regenerates over time", and
+# "Does not benefit from mods that increase maximum ammo, due to lack of an ammo
+# pool." Zero is the fact, not a gap.
+ammo_max: 0
+ammo_pickup: 0
+magazine: 40
+reload_seconds: 2.0
+
+# THE BATTERY — "Has a 1 second delay after the weapon stops firing before
+# regenerating ammo", at the module's 40 rounds a second. The TENET version's
+# delay is half of it (0.5 s), which is a real difference between them and one
+# the page states plainly on each side.
+#
+# ONE DELAY, so both fields carry it: nothing on this page tells a partial
+# battery from an empty one.
+battery:
+  regen_per_second: 40.0
+  delay_empty_seconds: 1.0
+  delay_partial_seconds: 1.0
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12.0
+  multishot: 1.0
+  ammo_cost: 0.5
+  crit_chance: 0.12
+  crit_multiplier: 1.8
+  status_chance: 0.30
+  # INNATE 1 m — "Innate 1 meter punch through", the same figure the Tenet
+  # carries and the one mechanic the two share. Two body-thicknesses
+  # (`space::BODY_MATERIAL_M`), so it reaches the second enemy in a line.
+  punch_through_m: 1.0
+  # "This weapon deals primarily Radiation damage" — a THREE-TYPE vector, where
+  # the Tenet variant is pure Heat. Nothing about the two is interchangeable.
+  damage: { puncture: 8, radiation: 10, slash: 5 }   # total 23
+
+  # A BEAM WITH NO SPLASH AND NO CHAIN. The block exists for the RANGE, which on
+  # a continuous weapon lives here rather than on the attack — 24 m against the
+  # Tenet's 28.
+  beam:
+    range_m: 24.0
+    damage_radius_m: 0.0
+    radius_takes_multishot: false
+    chain:
+      hops: 0
+      range_m: 0.0
+      damage_per_hop: 0.0
+      origin: radius_targets
+
+# THE RAMP FLOOR IS 30%, not the engine's 20% default: "Damage ramps up from 30%
+# to 100% over 0.6 seconds when firing. After firing stops for 0.8 seconds, the
+# damage decays back to 30% over 2 seconds." Identical to the Tenet's.
+beam_ramp_floor: 0.30
+
+source:
+  url: https://wiki.warframe.com/w/Cycron

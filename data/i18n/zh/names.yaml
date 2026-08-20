@@ -27,18 +27,16 @@ weapons:
   # DE's own string (WFCD i18n.json, CrpSentExperimentPistol).
   # DE's own strings (WFCD i18n.json, joined on internal name:
   # DE's own strings, from WFCD i18n.json joined on internal name
+  # DE's, read out of a DE string rather than derived from the English.
   # SapientPistol -> 阿利乌双枪, PrimeAkarius -> 阿利乌双枪 Prime).
+  # TAKEN FROM DE'S OWN CODA NAME, not translated: WFCD has no Chinese string
   # The FORM, named the way every other Incarnon form here is: DE's own
-  # named separately in the UI, so neither gets an invented suffix.
-  # translated one wearing a disguise.
-  # was unreachable the day these went in, and a remembered name is a
-  # weapon name plus our own bracket. DE ships no separate name for a form.
-  # 野猪, PrimeBoar -> 野猪 Prime). Checked rather than recalled: the CN wiki
   akarius: 阿利乌双枪
   akarius_prime: 阿利乌双枪 Prime
   angstrum: 安格斯壮
   angstrum_incarnon: 安格斯壮 (灵化形态)
   arbucep: 蕈菇
+  arca_plasmor: 弧电离子枪
   artax: 阿塔克斯
   atomos: 原子矿融炮
   atomos_incarnon: 原子矿融炮 (灵化形态)
@@ -64,12 +62,15 @@ weapons:
   bronco_incarnon: 野马 (灵化形态)
   bronco_prime: 野马 Prime
   bronco_prime_incarnon: 野马 Prime (灵化形态)
+  bubonico: 横痃重炮
+  bubonico_burst: 横痃重炮
   burst_laser: 激光点发
   burst_laser_prime: 激光点发 Prime
   burston: 伯斯顿
   burston_incarnon: 伯斯顿 (灵化形态)
   burston_prime: 伯斯顿 Prime
   burston_prime_incarnon: 伯斯顿 Prime (灵化形态)
+  catabolyst: 异化者
   cernos_prime: 西诺斯 Prime
   cernos_prime_uncharged: 西诺斯 Prime (速射)   # the tapped form, same weapon
   cestra: 锡斯特
@@ -90,6 +91,7 @@ weapons:
   corvas_prime_uncharged: 黑鸦 Prime
   corvas_uncharged: 黑鸦
   cryotra: 急冻喷枪
+  cycron: 循环离子枪
   cyngas: 合成燃气炮
   deconstructor: 分离
   deconstructor_prime: 分离 Prime
@@ -101,6 +103,7 @@ weapons:
   despair_incarnon: 绝望 (灵化形态)
   deth_machine_rifle: 死亡机枪
   deth_machine_rifle_prime: 死亡机枪 Prime
+  detron: 德特昂
   dex_sybaris: Dex 席芭莉丝
   dex_sybaris_incarnon: Dex 席芭莉丝 (灵化形态)
   dread: 恐惧
@@ -110,13 +113,20 @@ weapons:
   dual_decurion: 什长双枪
   dual_toxocyst: 毒囊双枪
   dual_toxocyst_incarnon: 毒囊双枪 (灵化形态)   # Incarnon Genesis = 灵化之源
+  # exactly (synapse 突触生化枪 / 终幕·突触生化枪, tysis, pox), so the base name is
   felarx: 逐枭
   felarx_incarnon: 逐枭 (灵化形态)
+  ferrox: 铁晶磁轨炮
+  ferrox_thrown: 铁晶磁轨炮
   fluctus: 巨浪
+  flux_rifle: 通量步枪
+  # for the base Hema, and `coda_hema` is 终幕·血肢 — the family prefix plus the
   furis: 盗贼
   furis_incarnon: 盗贼 (灵化形态)
   gammacor: 咖玛腕甲枪
   gammacor_incarnon: 咖玛腕甲枪 (灵化形态)
+  glaxion: 冷冻光束步枪
+  glaxion_vandal: 冷冻光束步枪·破坏者
   gorgon: 蛇发女妖
   gorgon_incarnon: 蛇发女妖 (灵化形态)
   gorgon_wraith: 蛇发女妖·亡魂
@@ -124,6 +134,7 @@ weapons:
   gotva_prime: 骨葬 Prime
   grattler: 葛拉特勒
   helstrum: 赫尔斯壮
+  hema: 血肢
   imperator: 凯旋将军
   imperator_vandal: 凯旋将军·破坏者
   karak_wraith: 卡拉克·亡魂
@@ -184,6 +195,7 @@ weapons:
   lex_prime_incarnon: 雷克斯 Prime (灵化形态)
   mandonel: 辐光弩炮
   mandonel_uncharged: 辐光弩炮
+  mara_detron: 苦痛·德特昂
   mausolon: 惩戒者
   mausolon_charged: 惩戒者
   miter: 米特尔
@@ -202,6 +214,7 @@ weapons:
   morgha: 置灵者
   morgha_alt: 置灵者
   multron: 多连穿甲枪
+  # named separately in the UI, so neither gets an invented suffix.
   ocucor: 视使之触
   onos: 赘骨
   onos_incarnon: 赘骨 (灵化形态)
@@ -220,6 +233,8 @@ weapons:
   phantasma_prime_charged: 幻离子 Prime
   phenmor: 凤殁
   phenmor_incarnon: 凤殁 (灵化形态)
+  plinx: 漫射者
+  pox: 脓痘
   prime_laser_rifle: 激光步枪 Prime
   prisma_angstrum: 棱晶·安格斯壮
   prisma_angstrum_incarnon: 棱晶·安格斯壮 (灵化形态)
@@ -228,6 +243,11 @@ weapons:
   prisma_gorgon: 棱晶·蛇发女妖
   prisma_gorgon_incarnon: 棱晶·蛇发女妖 (灵化形态)
   prisma_grinlok: 棱晶·葛恩火枪
+  prisma_tetra: 棱晶·特拉
+  quanta: 量子切割器
+  quanta_cube: 量子切割器
+  quanta_vandal: 量子切割器·破坏者
+  quanta_vandal_cube: 量子切割器·破坏者
   rakta_ballistica: 绯红·布里斯提卡
   rakta_ballistica_incarnon: 绯红·布里斯提卡 (灵化形态)
   rubico: 绝路
@@ -263,6 +283,7 @@ weapons:
   sybaris_incarnon: 席芭莉丝 (灵化形态)
   sybaris_prime: 席芭莉丝 Prime
   sybaris_prime_incarnon: 席芭莉丝 Prime (灵化形态)
+  synapse: 突触生化枪
   synoid_gammacor: 枢议·咖玛腕甲枪
   synoid_gammacor_incarnon: 枢议·咖玛腕甲枪 (灵化形态)
   tazicor: 泰瑟步枪
@@ -286,8 +307,11 @@ weapons:
   tenet_spirex: 信条·斯派克斯
   tenet_tetra: 信条·特拉
   tenet_tetra_grenade: 信条·特拉
+  tetra: 特拉
   torid: 托里德
   torid_incarnon: 托里德 (灵化形态)
+  # translated one wearing a disguise.
+  tysis: 啐沫者
   vadarya_prime: 瓦德雅 Prime
   vasto: 瓦斯托
   vasto_incarnon: 瓦斯托 (灵化形态)
@@ -305,10 +329,14 @@ weapons:
   vulkar: 金工火神
   vulkar_wraith: 金工火神·亡魂
   vulklok: 金工火枪
+  # was unreachable the day these went in, and a remembered name is a
+  # weapon name plus our own bracket. DE ships no separate name for a form.
+  # weapon. The three other Coda pairs in this file prove the pattern holds
   zylok: 席尔火枪
   zylok_incarnon: 席尔火枪 (灵化形态)
   zylok_prime: 席尔火枪 Prime
   zylok_prime_incarnon: 席尔火枪 Prime (灵化形态)
+  # 野猪, PrimeBoar -> 野猪 Prime). Checked rather than recalled: the CN wiki
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's

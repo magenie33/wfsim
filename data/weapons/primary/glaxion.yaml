@@ -1,0 +1,79 @@
+id: glaxion
+name: Glaxion
+slot: primary
+# THE ORDINARY COLD BEAM, and the reason to have it: the Tenet Glaxion CHAINS to
+# three enemies and this one does not chain at all. Same gun, same element, and
+# the whole difference between them in a room is a sentence the base page does
+# not have.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags BEAM, ASSAULT_AMMO
+mastery_rank: 8
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.3             # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Glaxion
+traits: [corpus]
+introduced: "14.5"
+internal_name: /Lotus/Weapons/Corpus/LongGuns/CrpFreezeRay/CrpFreezeRayRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 720
+ammo_pickup: 80
+magazine: 80
+reload_seconds: 2.2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20 for
+# the nineteen base weapons behind the adversary families) — ordinary Additive
+# at the full +100%. Absence means ORDINARY rather than unknown.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12.0
+  multishot: 1.0
+  # "Consumes 0.5 ammo per tick of damage."
+  ammo_cost: 0.5
+  crit_chance: 0.08
+  crit_multiplier: 2.0
+  status_chance: 0.34
+  punch_through_m: 0.0
+  damage: { cold: 26 }   # total 26
+
+  # A BEAM WITH NO SPLASH AND NO CHAIN, which is the whole of what separates it
+  # from the Tenet version: that one chains to 3 enemies within 8 m at 50% of
+  # the previous hop, and this page says nothing of the kind. The block exists
+  # for the RANGE, which on a continuous weapon lives here rather than on the
+  # attack — 24 m against the Tenet's 30.
+  beam:
+    range_m: 24.0
+    damage_radius_m: 0.0
+    radius_takes_multishot: false
+    chain:
+      hops: 0
+      range_m: 0.0
+      damage_per_hop: 0.0
+      origin: radius_targets
+
+# THE RAMP IS THE ENGINE'S OWN DEFAULT — "Damage ramps up from 20% to 100% over
+# 0.6 seconds when firing", which is BEAM_RAMP_SECONDS and the 20% floor
+# exactly, so no `beam_ramp_floor` override. The VANDAL states 30% and carries
+# one; three floors now live in this family's three entries.
+
+unmodeled:
+  - "Photon Overcharge, the Glaxion family's exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Glaxion

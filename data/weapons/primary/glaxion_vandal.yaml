@@ -1,0 +1,96 @@
+id: glaxion_vandal
+name: Glaxion Vandal
+slot: primary
+# THE VANDAL IS NOT A BIGGER GLAXION — it gains a mechanic the other two do not
+# have: a 2 m COLD BLOTCH at the end of the beam, which is a damage radius and
+# makes this the only member of the family that hits more than one body without
+# punch through. It is also the family's third RAMP FLOOR (30%, against the
+# base's 20%).
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags BEAM, ASSAULT_AMMO
+mastery_rank: 12
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.25            # riven disposition
+polarities: []
+exilus_polarity: madurai
+riven_family: Glaxion
+traits: [corpus, vandal]
+introduced: "25.0"
+internal_name: /Lotus/Weapons/Corpus/LongGuns/CrpFreezeRay/Vandal/CrpFreezeRayVandalRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 800
+ammo_pickup: 80
+magazine: 100
+reload_seconds: 1.8
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12.0
+  multishot: 1.0
+  ammo_cost: 0.5
+  crit_chance: 0.14
+  crit_multiplier: 2.0
+  status_chance: 0.38
+  punch_through_m: 0.0
+  damage: { cold: 29 }   # total 29
+
+  # PRIMARY COMPRESSION DOES NOT WORK ON IT, and the catalog says so outright
+  # rather than omitting the row (docs/CATALOGS.md §2):
+  #   Attack Name   Primary Fire + AoE     Base Radius   2.0 m
+  #   Effectiveness 0%                     Max @ base    N/A
+  #   Stacking      Doesn't Work           Radius calc   N/A
+  #
+  # It is the general exclusion applied to a real radius: "Does not work on
+  # Continuous Weapons or beam attacks with an AoE component", and this blotch
+  # is exactly that. A tested ZERO is a stronger statement than an absent row.
+  compression:
+    effectiveness: 0.0
+    stacking: multiplies
+    radius_calculation: doesnt_work
+
+  # THE COLD BLOTCH — "The zone of impact or maximum beam range produces a
+  # damaging cold blotch in a spherical radius of 2 meters, allowing it to hit
+  # multiple enemies at once", and "Not affected by multishot", which is what
+  # `radius_takes_multishot: false` states. It is a DAMAGE RADIUS on the beam
+  # rather than a `radial:`, so it carries no second instance and no falloff:
+  # the page says "has no Damage Falloff" of it in the same breath.
+  #
+  # NO CHAIN, like the base — the chaining Glaxion is the Tenet one.
+  beam:
+    range_m: 28.0
+    damage_radius_m: 2.0
+    radius_takes_multishot: false
+    chain:
+      hops: 0
+      range_m: 0.0
+      damage_per_hop: 0.0
+      origin: radius_targets
+
+# THE RAMP FLOOR IS 30%, not the engine's 20% default: "Damage ramps up from 30%
+# to 100%". The ordinary Glaxion states 20% and needs no override, so this
+# family alone carries two of the three floors the roster has seen.
+beam_ramp_floor: 0.30
+
+unmodeled:
+  - "Photon Overcharge, the Glaxion family's exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+  - "kills leave an EXTRA CORPSE, which the page names as a synergy with Nekros' Desecrate — a loot mechanic with nothing to drop into here"
+
+source:
+  url: https://wiki.warframe.com/w/Glaxion_Vandal

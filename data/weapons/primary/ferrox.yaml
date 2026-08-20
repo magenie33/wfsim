@@ -1,0 +1,106 @@
+id: ferrox
+name: Ferrox
+slot: primary
+# THE SPEARGUN THE TENET VERSION IS BUILT ON, and the pair the Primary
+# Compression catalog covers in ONE row with two numbers: "3.6 m (4.0 m)". The
+# parenthetical is the Tenet's, which is the catalog naming both variants in one
+# cell — the opposite of the CO table's usual rule and safe only because the
+# cell says so.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle]   # Speargun, CompatibilityTags PROJECTILE — as the Scourge
+transform_group: ferrox
+mastery_rank: 14
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 16.7
+disposition: 1.25            # riven disposition
+polarities: [madurai, vazarin]
+exilus_polarity: naramon
+riven_family: Ferrox
+traits: [corpus]
+introduced: "19.13"
+internal_name: /Lotus/Weapons/Corpus/LongGuns/Spears/Railgun/CorpusRailgun
+noise: alarming
+ammo_type: primary
+ammo_max: 100
+ammo_pickup: 20
+magazine: 10
+reload_seconds: 1.8
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The TENET Ferrox has one, for its
+# "Hitscan AoE Direct", and this weapon has none: a shared family does not make
+# two weapons one, and here the adversary variant is the anomaly.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 12.0
+  trigger: charged_auto
+  # "Charge Time: 0.50 s", where the Tenet charges in 0.40 — and neither can
+  # fire partially charged, so there is no tapped entry beside this one.
+  charge_seconds: 0.5
+  shot_type: hit_scan
+  fire_rate: 1.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.32
+  crit_multiplier: 2.8
+  status_chance: 0.10
+  # INNATE 1.5 m, the same as the Tenet's, and it is what PLACES the explosion:
+  # the shot goes off after spending its punch through. Three body-thicknesses
+  # (`space::BODY_MATERIAL_M`), so the beam reaches the third body in a line.
+  punch_through_m: 1.5
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Charged Shot: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  # "This weapon deals primarily Puncture damage" — the same 10/70/20 split the
+  # Tenet carries, at 350 rather than 200. The BASE hits harder on the direct
+  # shot; the Tenet buys crit, status and a bigger blast.
+  damage: { impact: 35, puncture: 245, slash: 70 }   # total 350
+
+  # PRIMARY COMPRESSION's row, by column (docs/CATALOGS.md §2):
+  #   Attack Name   Primary Fire + AoE     Base Radius   3.6 m (4.0 m)
+  #   Effectiveness 100%                   Max @ base    +288% (+320%)
+  #   Stacking      ADDS                   Class         Speargun
+  #   Radius calc   Snapshot
+  #
+  # `Adds` rather than `Multiplies`, the one column where this family is not
+  # ordinary — and the parenthetical figures are the Tenet's, in the same cell.
+  compression:
+    effectiveness: 1.00
+    stacking: adds
+    radius_calculation: snapshot
+
+  # THE EXPLOSION — the shot goes off after reaching maximum punch-through
+  # distance, a 1x body-part multiplier and no headshot conditions. PURE IMPACT
+  # here, where the Tenet's radial carries the charged shot's own three-way
+  # split; the two are not the same attack scaled.
+  radial:
+    # A TERMINAL BLAST — it bores through and goes off where the FLIGHT ends,
+    # which is why this weapon takes punch-through mods where an ordinary
+    # explosive cannot. See `weapons_data::BlastKind` and MEASUREMENTS M53.
+    blast_kind: terminal
+    damage: { impact: 100 }
+    radius_m: 3.6
+    falloff_start_m: 0.0
+    falloff_reduction: 0.4
+    crit_chance: 0.32
+    crit_multiplier: 2.8
+    status_chance: 0.10
+
+unmodeled:
+  - reason: explosion_ignores_cover
+  - reason: holstered_reload
+    pct: 33
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Ferrox

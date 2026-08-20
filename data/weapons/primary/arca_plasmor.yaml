@@ -1,0 +1,101 @@
+id: arca_plasmor
+name: Arca Plasmor
+slot: primary
+# THE SECOND WEAPON IN THE ROSTER WHOSE HEAD IS WORTH NOTHING — "Has a headshot
+# multiplier of 1x", stated of the DIRECT hit exactly as the Tenet version
+# states it. The module encodes both as `ExtraHeadshotDmg = -2`; see
+# `WeaponSpec::headshot_multiplier` for why the wiki's word is what is
+# transcribed rather than that number.
+#
+# ITS PAGE AND ITS ROW AGREE HERE, which the Tenet's do not: the disadvantage
+# says "Limited range of 30 meters" and the Range row says 30.0. The Tenet's
+# bullet says 36 against a row of 44.4, and only there does the row have to win.
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, shotgun]
+mastery_rank: 10
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 9.1
+disposition: 0.95            # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: madurai
+riven_family: Arca Plasmor
+traits: [corpus]
+introduced: "21.7"
+internal_name: /Lotus/Weapons/Corpus/LongGuns/CrpShotgun/CrpShotgun
+noise: alarming
+ammo_type: primary
+ammo_max: 50
+ammo_pickup: 15
+magazine: 10
+reload_seconds: 2.8
+
+# A HEAD IS WORTH 1x HERE, whatever the enemy's own body part says — "Has a
+# headshot multiplier of 1x", under this weapon's own disadvantages. The shot
+# still COUNTS as a headshot, so Primary Deadhead pays on it; only the enemy's
+# multiplier is overruled.
+headshot_multiplier: 1.0
+
+# Condition Overload: THE CATALOG NAMES THIS ONE and it is MULTIPLYING. Verbatim
+# row (docs/CATALOGS.md §1):
+#
+#   Weapon       | Attack Name   | Projectile Type | Attack Unmodded Damage
+#                | Actual CO Damage Bonus at +100% | CO Damage Bonus Relative To
+#                Base Damage | Math/Behavior Type
+#   Arca Plasmor | Normal Attack | Projectile      | 600 | 600 | 100% | Multiplying
+#
+# The Unmodded Damage cell is this attack's own 600, which is what tells the row
+# apart from the Tenet's 760 — both variants are named, separately, and both are
+# Multiplying. That is the catalog stating a family agreement rather than us
+# generalising one.
+co_behavior: independent
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). Identical to the
+  # Tenet's, which is the one stat the variant did not touch.
+  spread:
+    min_deg: 6.0
+    max_deg: 16.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 60
+  fire_rate: 1.1
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.22
+  crit_multiplier: 1.6
+  status_chance: 0.28
+  # INNATE INFINITE BODY PUNCH-THROUGH — "Innate Infinite Body Punch Through",
+  # under this weapon's Advantages, and the punch-through page's own exception
+  # list names it. Written as a number the sim can hold, and it IS the whole
+  # mechanic here: the page's qualifier separates BODIES from geometry ("does
+  # not apply to surfaces") and this arena has no geometry.
+  punch_through_m: 999.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 30.0 m", Projectile at 60 m/s — and the disadvantages say the
+  # same thing in words, which is not true of the Tenet variant.
+  range_m: 30.0
+  # "Has linear damage falloff from 100% to 33.33% from 10m to 20m target
+  # distance." The module's reduction is 0.6667, the exact figure behind that
+  # 33.33% — steeper and closer in than the Tenet's 18-36 m at a half.
+  falloff:
+    start_m: 10.0
+    end_m: 20.0
+    reduction: 0.6667
+  # "Shots have a guaranteed Impact proc to enemies up to 14 meters" — less than
+  # half the Tenet's 29 m, and the range limit is the part this cannot hold.
+  forced_procs: [impact]
+  damage: { radiation: 600 }   # total 600
+
+unmodeled:
+  - "the projectile is a WALL 3 metres thick, which with the infinite body punch through above is most of what this weapon is in a room: one shot sweeps everything in a 3 m band. This arena fires a RAY, so only the bodies on the line are struck and the width buys nothing. The Tenet variant's sheet is 4.4 m"
+  - "the guaranteed Impact proc is capped at 14 metres and is applied at every distance here, since a forced proc carries no range of its own. It overstates the shot past 14 m, where the damage is already most of the way to its falloff floor"
+  - "the innate punch through does not apply to SURFACES when the central portion of the projectile hits one, which the page says makes punch-through MODS worth fitting anyway — a geometry rule in an arena with no geometry"
+
+source:
+  url: https://wiki.warframe.com/w/Arca_Plasmor

@@ -1,0 +1,103 @@
+id: pox
+name: Pox
+slot: secondary
+# A SILENT THROWN SPORE, and the only weapon in this batch whose CLOUD takes
+# Condition Overload — at 250% of its own base, which is a catalog row nothing
+# else in the roster has. See `co_behavior` below and the unmodelled list.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 9
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.2             # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: naramon
+riven_family: Pox
+traits: [infested, syndicate]
+introduced: "The Silver Grove"
+internal_name: /Lotus/Weapons/Infested/Pistols/InfProximityStars/InfProximityStars
+noise: silent               # SILENT on the throw, and the module says so
+ammo_type: secondary
+ammo_max: 20
+ammo_pickup: 4
+magazine: 4
+reload_seconds: 1.0
+
+# Condition Overload: THE CATALOG NAMES THE CLOUD, not the throw, and it is the
+# strangest row in this batch. Verbatim (docs/CATALOGS.md §1):
+#
+#   Weapon | Attack Name | Projectile Type | Base Attack Damage
+#          | CO Damage Bonus at +100% | CO Damage Bonus Relative To Base Damage
+#          | Math/Behavior Type
+#   Pox    | DoT Cloud   | AoE             | 20 | 50 | 250% | Adding
+#
+# Two things it says. The CLOUD takes Condition Overload at all — which almost
+# no area part does — and its term is computed on 50 against a cloud whose own
+# base is 20, which is where the 250% comes from.
+#
+# THE SECOND HALF IS NOT EXPRESSIBLE HERE. There is no per-part CO fraction:
+# `co_base_fraction` is one number per ENTRY and this entry's THROW is ordinary,
+# so a 2.5 would be wrong for the half the row does not name. The cloud takes CO
+# at 100% of its own base, which understates a status-stacking build and is
+# admitted below.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 30
+  fire_rate: 2.08
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.01
+  crit_multiplier: 2.0
+  status_chance: 0.35
+  punch_through_m: 0.0
+  # NO RANGE ROW on the Spore Impact — Projectile at 30 m/s. Its 2.5 m sits
+  # under the Poison Cloud block and is a RADIUS. See
+  # data/surveys/weapon_range.yaml.
+  damage: { toxin: 50 }   # total 50
+
+  # THE CLOUD — "Spores explode in a 2.5 meter radius upon impact with a surface
+  # or enemy, lingering for 4 seconds while dealing continuous Toxin damage",
+  # with "Initial hit and spore cloud apply status separately".
+  #
+  # NO DAMAGE FALLOFF, which the page states outright and the module confirms
+  # (`Reduction: 0`) — full damage to the rim, so the zero is a transcription
+  # rather than an omission.
+  #
+  # ONE TICK A SECOND over four seconds, from the module's FireRate of 1.00 on
+  # the cloud and the page's four-second life: four ticks of 20 is 80 Toxin from
+  # one spore, against the 50 the spore itself deals.
+  lingering:
+    damage: { toxin: 20.0 }
+    tick_rate: 1.0
+    duration_seconds: 4.0
+    radius_m: 2.5
+    falloff_start_m: 0.0
+    falloff_reduction: 0.0
+    crit_chance: 0.01
+    crit_multiplier: 2.0
+    status_chance: 0.35
+    stacking: stack
+    # THE CATALOG SAYS THE CLOUD TAKES IT, which almost no area part does. The
+    # 250% half of that row is the part this cannot hold — see `co_behavior`.
+    takes_condition_overload: true
+
+unmodeled:
+  - "the cloud's CONDITION OVERLOAD term reads 50 against its own base of 20 — the catalog's 250% — and there is no per-part CO fraction, so it takes the ordinary 100% here and a status-stacking build is understated on it"
+  - "the throw is SILENT and the cloud is not, which is a stealth distinction this arena has no alarm to raise"
+  - "this weapon cannot equip Concealed Explosives, the thrown-exclusive mod — a card outside the pools this roster loads either way"
+
+source:
+  url: https://wiki.warframe.com/w/Pox

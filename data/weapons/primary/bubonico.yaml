@@ -1,0 +1,89 @@
+id: bubonico
+name: Bubonico
+slot: primary
+# THE ARM CANNON, and unlike three other weapons in this batch its adversary
+# variant did NOT add a firing mode — the Coda keeps both of these and raises
+# the numbers. What the Coda did add is 1.9 m of innate punch through and a fire
+# rate spool, neither of which this page mentions.
+#
+# ITS CLASS IS THE SAME DISPUTE the Coda entry records: Shotgun in the wiki
+# module, "officially classified as a Launcher" in its own notes, and the
+# Launcher line is a mission-restriction tag rather than a statement about mods.
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, shotgun]
+transform_group: bubonico
+mastery_rank: 13
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 25.0
+disposition: 0.75            # riven disposition
+polarities: [naramon]
+exilus_polarity: madurai
+riven_family: Bubonico
+traits: [infested]
+introduced: "29.5"
+internal_name: /Lotus/Weapons/Infested/LongGuns/InfArmCannon/InfArmCannon
+noise: alarming
+ammo_type: primary
+# NO AMMO POOL — "This weapon does not use ammo pickups; ammo regenerates over
+# time." Zero is the fact, not a gap.
+ammo_max: 0
+ammo_pickup: 0
+magazine: 27
+reload_seconds: 4.5
+
+# THE BATTERY, and its two delays are the other way round from the Shedu's —
+# empty is the FAST case, exactly as on the Coda. The module gives the same
+# regen rate and delay as the Coda's page states in words.
+battery:
+  regen_per_second: 9.0
+  delay_empty_seconds: 0.1
+  delay_partial_seconds: 1.5
+
+# Condition Overload: THE CATALOG NAMES BOTH OF THIS WEAPON'S ATTACKS and both
+# are MULTIPLYING. Verbatim rows (docs/CATALOGS.md §1):
+#
+#   Bubonico | Main-fire | Projectile | 287 | 287 | 100% | Multiplying
+#   Bubonico | Alt-fire  | Projectile |   9 |   9 | 100% | Multiplying
+#
+# The Main-fire cell's 287 is seven pellets of 41, which is what ties the row to
+# this entry. The CODA variant has NO row at all and stays ordinary Additive —
+# a shared family does not make two weapons one, and here the base is the
+# anomaly and the adversary version is not.
+co_behavior: independent
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 1.0
+    max_deg: 7.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 57
+  fire_rate: 3.83
+  # Seven pellets, 41 damage apiece, 287 a shot — the same barrage the Coda
+  # fires, and the same per-pellet vector.
+  multishot: 7.0
+  ammo_cost: 1
+  crit_chance: 0.25
+  crit_multiplier: 2.3
+  status_chance: 0.0929
+  # NO INNATE PUNCH THROUGH, where the CODA carries 1.9 m — the deepest in that
+  # batch. One of the few places an adversary variant adds a mechanic.
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 57 m/s, and the page states no
+  # reach. Its 7.0 m sits under the Radial Attack block and is a RADIUS. See
+  # data/surveys/weapon_range.yaml.
+  falloff:
+    start_m: 19.0
+    end_m: 41.0
+    reduction: 0.5
+  damage: { impact: 2, puncture: 13, slash: 19, toxin: 7 }   # 41 a pellet, 287 a shot
+
+source:
+  url: https://wiki.warframe.com/w/Bubonico

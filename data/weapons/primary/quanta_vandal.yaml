@@ -1,0 +1,76 @@
+id: quanta_vandal
+name: Quanta Vandal
+slot: primary
+# THE VANDAL BUYS THE BEAM AND NOTHING ELSE. Its cube is the ordinary Quanta's
+# to the last digit — 100 Electricity, 150 Blast, 0.5 m — while the beam gains
+# six crit points, a fifth of a multiplier and nearly double the status chance.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags PROJECTILE, BEAM, ASSAULT_AMMO
+transform_group: quanta_vandal
+mastery_rank: 10
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.4            # riven disposition
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Quanta
+traits: [corpus, vandal]
+introduced: "16.4"
+internal_name: /Lotus/Weapons/Corpus/LongGuns/CrpShockRifle/QuantaVandal
+noise: alarming
+ammo_type: primary
+ammo_max: 560
+ammo_pickup: 80
+magazine: 80
+reload_seconds: 1.8
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. Neither Quanta is named, and neither is
+# the Tenet: this is the one family in the batch the catalog says nothing about.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12.0
+  # INNATE MULTISHOT OF 2, and it is two real beams rather than a damage
+  # multiplier — the same shape the Tenet carries. `damage:` below is what ONE
+  # of them deals.
+  multishot: 2.0
+  # "Consumes 0.5 ammo per tick of damage."
+  ammo_cost: 0.5
+  crit_chance: 0.22
+  crit_multiplier: 2.4
+  status_chance: 0.45
+  punch_through_m: 0.0
+  damage: { electricity: 13 }   # 13 a beam, 26 a tick
+
+  # A BEAM WITH NO SPLASH AND NO CHAIN — the block exists for the RANGE, which
+  # on a continuous weapon lives here rather than on the attack. Fifty metres,
+  # the same reach the Tenet has and the longest beam in the roster.
+  beam:
+    range_m: 50.0
+    damage_radius_m: 0.0
+    radius_takes_multishot: false
+    chain:
+      hops: 0
+      range_m: 0.0
+      damage_per_hop: 0.0
+      origin: radius_targets
+
+# THE RAMP FLOOR IS 30%, not the engine's 20% default: "Damage ramps up from 30%
+# to 100%". The same floor all three Quantas carry.
+beam_ramp_floor: 0.30
+
+source:
+  url: https://wiki.warframe.com/w/Quanta_Vandal

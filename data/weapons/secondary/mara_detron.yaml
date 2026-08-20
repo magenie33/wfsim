@@ -1,0 +1,66 @@
+id: mara_detron
+name: Mara Detron
+slot: secondary
+# THE SAME SHOT, AIMED BETTER. Baro's Detron carries the identical seven-pellet
+# 40 Radiation payload and differs in three numbers: half the cone (6-9 degrees
+# against 12-16), double the crit chance, and a falloff window that starts and
+# ends further out. It is the family's answer to "what does a Void Trader
+# variant actually buy", and the answer is accuracy rather than damage.
+class: shotgun_sidearm
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 9
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 13.3
+disposition: 1.15            # riven disposition — shared with the ordinary Detron
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Detron
+traits: [corpus, baro]
+introduced: "15.6.3"
+internal_name: /Lotus/Weapons/VoidTrader/VTDetron
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 20
+magazine: 8
+reload_seconds: 1.05
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. A shared Detron family does not make one
+# weapon, and neither this nor the ordinary Detron is named in the catalog.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 6.0
+    max_deg: 9.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 150
+  fire_rate: 3.33
+  multishot: 7.0
+  ammo_cost: 1
+  crit_chance: 0.08
+  crit_multiplier: 1.5
+  status_chance: 0.1371
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 150 m/s. See
+  # data/surveys/weapon_range.yaml.
+  falloff:
+    start_m: 16.0
+    end_m: 30.0
+    reduction: 0.625
+  damage: { radiation: 40 }   # 40 a pellet, 280 a shot
+
+unmodeled:
+  - "Thermagnetic Shells, the Detron family's exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Mara_Detron

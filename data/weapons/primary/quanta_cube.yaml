@@ -1,0 +1,83 @@
+id: quanta_cube
+name: Quanta
+# THE CUBE. Lobbed on the alternate fire, it explodes on contact for 150 Blast
+# in half a metre — and a cube a player SHOOTS goes off for 600 in six metres
+# instead, which is the two-step play this entry is only the first step of.
+#
+# ITS NUMBERS ARE THE SAME ON ALL THREE QUANTAS. The ordinary, the Vandal and
+# the Tenet lob an identical cube; every difference between the three weapons is
+# in the beam. That is worth stating because it is the kind of thing a reader
+# assumes scales with the variant and it does not.
+inherits: quanta
+form: alt_fire
+transform_group: quanta
+
+introduced: "14.1"
+
+# NOT INHERITED — the CO catalog gives a class per ATTACK. No row for either of
+# this weapon's, so both are ordinary Additive; the explosion takes no Condition
+# Overload at all, the engine's standing rule for a radial.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). A real cone, where
+  # the beam's is zero.
+  spread:
+    min_deg: 2.0
+    max_deg: 6.0
+  trigger: semi
+  shot_type: projectile
+  projectile_speed_mps: 25
+  fire_rate: 4.0
+  multishot: 1.0
+  # "Consumes 10 rounds per shot."
+  ammo_cost: 10
+  crit_chance: 0.05
+  crit_multiplier: 1.5
+  status_chance: 0.26
+  punch_through_m: 0.0
+  # AND IT MAY NOT BE GIVEN ANY — this attack has an area-of-effect component,
+  # so the punch-through page's class rule applies and the engine refuses Shred
+  # and both Augers on it. The `radial:` block below states the shape.
+  #
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki, Cube (direct hit): "Range: 15.0 m", Projectile at 25 m/s.
+  range_m: 15.0
+  damage: { electricity: 100 }   # total 100
+
+  # PRIMARY COMPRESSION's row, by column (docs/CATALOGS.md §2):
+  #   Attack Name   Alt-Fire + AoE         Base Radius   0.5 m
+  #   Effectiveness 100% / 8%              Max @ base    +40%
+  #   Stacking      Multiplies             Class         Rifle
+  #   Radius calc   Snapshot
+  #
+  # The two effectiveness figures are the cube's TWO explosions — 100% on the
+  # 0.5 m contact blast below, 8% on the 6 m one a player shoots loose, which is
+  # unmodelled. The base-radius column agrees with the first.
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
+
+  # THE CONTACT EXPLOSION — 150 Blast in 0.5 metres, with the initial hit and
+  # the explosion applying status separately, which is why it is a second
+  # instance rather than added damage. NO DAMAGE FALLOFF: the module states
+  # `Reduction: 0` and the infobox prints "100%-100%", so the zero below is a
+  # transcription rather than an omission.
+  radial:
+    damage: { blast: 150 }
+    radius_m: 0.5
+    falloff_start_m: 0.0
+    falloff_reduction: 0.0
+    crit_chance: 0.05
+    crit_multiplier: 1.5
+    status_chance: 0.26
+
+unmodeled:
+  - "THE CUBE'S OTHER EXPLOSION, which is four times this one: a cube damaged by a player goes off in a 6 metre radius for 600 Blast. It is a two-step play — place a cube, then shoot it — and this arena fires one attack at one aim point, so the step that pays is the one it cannot take"
+  - "a cube left alone detonates after 9 seconds, which needs a miss and a clock this arena does not run"
+  - reason: explosion_ignores_cover
+
+source:
+  url: https://wiki.warframe.com/w/Quanta

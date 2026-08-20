@@ -1,0 +1,83 @@
+id: synapse
+name: Synapse
+slot: primary
+# THE HIGHEST BASE CRIT CHANCE ON A BEAM IN THE ROSTER (39%), and one of only
+# three weapons anywhere that state an innate HEADSHOT bonus in the module's
+# `ExtraHeadshotDmg` column as a real additive number rather than as the -2 that
+# means "1x" — see `WeaponSpec::headshot_multiplier` for the other reading.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags BEAM, ASSAULT_AMMO
+mastery_rank: 11
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.31            # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Synapse
+traits: [infested]
+introduced: "10.0"
+internal_name: /Lotus/Weapons/Infested/LongGuns/InfestedRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 70
+reload_seconds: 1.5
+
+# +20% ON A HEAD, ADDITIVE — "Deals 20% additional damage on headshots", the
+# same sentence and the same `ExtraHeadshotDmg: 0.2` the Coda Synapse carries.
+# It joins the bracket Primary Deadhead is in.
+headshot_damage_bonus: 0.20
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12.0
+  multishot: 1.0
+  # "Consumes 0.5 ammo per tick of damage."
+  ammo_cost: 0.5
+  crit_chance: 0.39
+  crit_multiplier: 2.7
+  status_chance: 0.13
+  # NO INNATE PUNCH THROUGH, where the CODA version carries 1.2 m — one of the
+  # few places the Coda variant adds a mechanic rather than a number.
+  punch_through_m: 0.0
+  damage: { corrosive: 20 }   # total 20
+
+  # A BEAM WITH NO SPLASH AND NO CHAIN — "Shoots a beam with a range of 27
+  # meters" and nothing else. The block exists for the RANGE, which on a
+  # continuous weapon lives here rather than on the attack.
+  beam:
+    range_m: 27.0
+    damage_radius_m: 0.0
+    radius_takes_multishot: false
+    chain:
+      hops: 0
+      range_m: 0.0
+      damage_per_hop: 0.0
+      origin: radius_targets
+
+# THE RAMP IS THE ENGINE'S OWN DEFAULT — "Damage ramps up from 20% to 100% over
+# 0.6 seconds when firing. After firing stops for 0.8 seconds, the damage decays
+# back to 20% over 2 seconds", which is BEAM_RAMP_SECONDS, BEAM_DECAY_DELAY and
+# the 20% floor exactly.
+
+unmodeled:
+  - "Necrophagic Vigor, the Synapse family's exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Synapse

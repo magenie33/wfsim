@@ -1,0 +1,64 @@
+id: prisma_tetra
+name: Prisma Tetra
+slot: primary
+# THE PRISMA IS THE TETRA, SCALED. Every stat is higher and not one mechanic is
+# new — no alternate fire, same two damage types, same cone, same projectile
+# speed. It is the control case for the Tenet: that variant gained a whole
+# firing mode, this one gained numbers.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags PROJECTILE, ASSAULT_AMMO
+mastery_rank: 4
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 18.2
+disposition: 1.45            # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Tetra
+traits: [corpus, prisma, baro]
+introduced: "17.0.5"
+internal_name: /Lotus/Weapons/Corpus/LongGuns/CorpusUMP/PrismaCorpusUMP
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 60
+reload_seconds: 2.0
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The ordinary Tetra has none either, so
+# nothing here rests on generalising one variant's row to the family.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 3.0
+    max_deg: 8.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 7.08
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.10
+  crit_multiplier: 2.0
+  status_chance: 0.24
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 100 m/s. See
+  # data/surveys/weapon_range.yaml.
+  #
+  # The same 20/80 Impact/Puncture split as the ordinary Tetra, at 38 rather
+  # than 32.
+  damage: { impact: 7.6, puncture: 30.4 }   # total 38
+
+unmodeled:
+  - "Focused Acceleration and Kinetic Ricochet, the Tetra family's exclusive mods — weapon-exclusive cards outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Prisma_Tetra

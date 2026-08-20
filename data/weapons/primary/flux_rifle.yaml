@@ -1,0 +1,98 @@
+id: flux_rifle
+name: Flux Rifle
+slot: primary
+# A BEAM WITH A BATTERY AND INNATE PUNCH THROUGH, and the entry that shows how
+# far a Tenet variant can move a weapon: the TENET Flux Rifle is an Auto
+# HIT-SCAN rifle with a 300 m reach and no punch through, where this is a 30 m
+# HELD beam with 0.5 m of it. The family name and the model are all they share.
+#
+# IT IS ALSO THE THIRD RAMP FLOOR. The roster had 20% and 30%; this page says
+# 25%, which is why `beam_ramp_floor` is a number and not an enum.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags BEAM, ASSAULT_AMMO, BATTERY
+mastery_rank: 6
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.55            # riven disposition — the highest in this batch
+polarities: []               # the infobox states none
+exilus_polarity: naramon
+riven_family: Flux Rifle
+traits: [corpus]
+introduced: "8.0"
+internal_name: /Lotus/Weapons/ClanTech/Energy/CrpLaserRifle
+noise: alarming
+ammo_type: primary
+# NO AMMO POOL — "Does not use ammo pickups; ammo regenerates over time", and
+# "Does not benefit from mods that increase maximum ammo, due to lack of an
+# ammo pool." Zero is the fact, not a gap.
+ammo_max: 0
+ammo_pickup: 0
+magazine: 50
+reload_seconds: 2.25
+
+# THE BATTERY — "Has a 1 second delay after the weapon stops firing before
+# regenerating ammo. Then, regenerates 40 ammo per second; takes 1.25 seconds to
+# regenerate a fully depleted battery excluding the delay."
+#
+# ONE DELAY, so both fields carry it: nothing on this page tells a partial
+# battery from an empty one, and inventing a difference would invent a fact.
+battery:
+  regen_per_second: 40.0
+  delay_empty_seconds: 1.0
+  delay_partial_seconds: 1.0
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12.0
+  multishot: 1.0
+  # "Consumes 0.5 ammo per tick of damage."
+  ammo_cost: 0.5
+  crit_chance: 0.10
+  crit_multiplier: 2.0
+  status_chance: 0.24
+  # INNATE 0.5 m — "Innate 0.5 meter punch through", which is exactly ONE
+  # body-thickness (`space::BODY_MATERIAL_M`), so it reaches the second enemy in
+  # a line and stops in it. The TENET version carries none at all.
+  punch_through_m: 0.5
+  # "This weapon deals primarily Slash damage" — and the split says so. The
+  # same vector the Tenet version carries, which is the one thing they share.
+  damage: { puncture: 4.84, slash: 17.16 }   # total 22
+
+  # A BEAM WITH NO SPLASH AND NO CHAIN. The block exists for the RANGE, which on
+  # a continuous weapon lives here rather than on the attack — 30 m, against the
+  # Tenet's 300 m hit-scan reach.
+  beam:
+    range_m: 30.0
+    damage_radius_m: 0.0
+    radius_takes_multishot: false
+    chain:
+      hops: 0
+      range_m: 0.0
+      damage_per_hop: 0.0
+      origin: radius_targets
+
+# THE RAMP FLOOR IS 25%, which is neither of the two the roster already had:
+# "Damage ramps up from 25% to 100%". The 0.6 s and the 0.8 s decay delay are
+# the engine's own constants and match; only the floor differs.
+beam_ramp_floor: 0.25
+
+unmodeled:
+  - "Flux Overdrive, the Flux Rifle family's exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Flux_Rifle
