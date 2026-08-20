@@ -1,0 +1,80 @@
+id: lenz
+name: Lenz
+slot: primary
+# A BOW THAT FIRES A COLD BUBBLE. The arrow itself is 50 Impact; what kills is
+# the BUBBLE COLLAPSE — 660 Blast in 7.2 metres — which is what `radial:` below
+# carries.
+class: bow
+form: charged
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, bow]   # CompatibilityTags PROJECTILE, SNIPER_AMMO, AOE, SINGLESHOT, CRPBOW
+mastery_rank: 8
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 16.7
+disposition: 1.05           # riven disposition
+polarities: [naramon, naramon]
+exilus_polarity: madurai
+riven_family: Lenz
+traits: [corpus]
+introduced: "21.3"
+internal_name: /Lotus/Weapons/Corpus/Bow/Longbow/CrpBow
+noise: alarming
+ammo_type: primary
+ammo_max: 6
+ammo_pickup: 1
+magazine: 1
+reload_seconds: 0.6
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20)
+# — ordinary Additive at the full +100%. The catalog gives a class PER
+# ATTACK and none of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 12.0
+  trigger: charge
+  shot_type: projectile
+  projectile_speed_mps: 60
+  fire_rate: 1
+  charge_seconds: 1.2
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.5
+  crit_multiplier: 2.0
+  status_chance: 0.05
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # A GUARANTEED IMPACT PROC — the module's ForcedProcs.
+  forced_procs: [impact]
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 50 }   # total 50
+  # THE EXPLOSION — rules in MECHANICS §7.
+  radial:
+    radius_m: 7.2
+    falloff_start_m: 0.0
+    falloff_reduction: 0.7
+    crit_chance: 0.5
+    crit_multiplier: 2.0
+    status_chance: 0.05
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { blast: 660 }   # total 660
+
+unmodeled:
+  - "the module gives this shot THREE attacks and this engine carries one explosion: the 660 Blast COLLAPSE is the one modelled, and the 10 Cold INITIAL BLAST that freezes the bubble's contents first is not counted"
+  - "the bubble HOLDS what it catches until it collapses (wiki) — that is crowd control, and this arena's enemies neither move nor stop"
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Lenz

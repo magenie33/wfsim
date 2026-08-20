@@ -7368,7 +7368,18 @@ mod asset_tests {
             .collect();
         assert_eq!(
             unmoddable,
-            ["deconstructor", "deconstructor_prime"],
+            [
+                // A TOME is its own weapon class in DE's data and its mods are
+                // their own pool, which this roster does not load. Offering the
+                // pistol cards a Tome cannot wear would be worse than offering
+                // none, so the entry says none and its card says why
+                // (2026-08-20).
+                "grimoire",
+                // The Deconstructor is a sentinel's GLAIVE — a melee weapon in
+                // a companion's hands — and this roster loads no melee pool.
+                "deconstructor",
+                "deconstructor_prime",
+            ],
             "a weapon with NO mod pool is a weapon this app cannot build at all —              if that is intended, add it here with its reason"
         );
     }

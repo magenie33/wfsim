@@ -1,0 +1,75 @@
+id: synoid_simulor
+name: Synoid Simulor
+slot: primary
+# CEPHALON SUDA'S SIMULOR, with a sixteen-round magazine and a SINGULARITY when
+# the orbs are fully stacked — a fourth attack this engine has no shape for.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO, AOE, PROJECTILE
+mastery_rank: 12
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 28.6
+disposition: 1.2            # riven disposition
+polarities: [madurai, vazarin, naramon]
+exilus_polarity: madurai
+riven_family: Simulor
+traits: [syndicate, cephalon_suda, cephalon]
+introduced: "17.3"
+internal_name: /Lotus/Weapons/Syndicates/CephalonSuda/LongGuns/CSSimulor
+noise: alarming
+ammo_type: primary
+ammo_max: 96
+ammo_pickup: 15
+magazine: 16
+reload_seconds: 2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20)
+# — ordinary Additive at the full +100%. The catalog gives a class PER
+# ATTACK and none of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 7.0
+  trigger: semi_auto
+  shot_type: projectile
+  fire_rate: 3.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.0
+  crit_multiplier: 1.0
+  status_chance: 0.0
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 12.0 m" on this attack.
+  range_m: 12.0
+  damage: { impact: 0 }   # total 0
+  # THE EXPLOSION — rules in MECHANICS §7.
+  radial:
+    radius_m: 5.0
+    falloff_start_m: 0.0
+    falloff_reduction: 1.0
+    crit_chance: 0.14
+    crit_multiplier: 2.0
+    status_chance: 0.35
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { magnetic: 240 }   # total 240
+
+unmodeled:
+  - "ORBS MERGE, and a fully stacked set collapses into a SINGULARITY that deals damage over time in five metres (module: two further attacks). This engine resolves each shot on its own, so neither the merge nor the singularity is counted — which is most of what this weapon is for"
+  - "the ENTROPY syndicate effect, which on a proc detonates enemies and restores the wielder's energy — it fires off a syndicate standing meter this sim does not track"
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Synoid_Simulor

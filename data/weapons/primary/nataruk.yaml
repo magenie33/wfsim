@@ -1,0 +1,67 @@
+id: nataruk
+name: Nataruk
+slot: primary
+# A ZARIMAN BOW WITH A TIMED RELEASE. This entry is the QUICK shot; the other is
+# the PERFECT one, which is what the arsenal displays
+# (`_TooltipAttackDisplay: 3`).
+class: bow
+form: base
+transform_group: nataruk
+mod_pools: [primary, rifle, bow]   # CompatibilityTags PROJECTILE, OMICRUS, BATTERY
+mastery_rank: 0
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 16.7
+disposition: 0.65           # riven disposition
+polarities: [madurai, madurai, madurai, madurai]
+exilus_polarity: naramon
+riven_family: Nataruk
+traits: [sentient]
+introduced: "31"
+internal_name: /Lotus/Weapons/Tenno/Bows/Omicrus/OmicrusPlayerWep
+noise: alarming
+ammo_type: primary
+ammo_max: 0
+ammo_pickup: 0
+magazine: 1
+reload_seconds: 0.6
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20)
+# — ordinary Additive at the full +100%. The catalog gives a class PER
+# ATTACK and none of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 12.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 140
+  fire_rate: 0.667
+  # A BOW'S CADENCE IS DRAW + NOCK, so the draw is stated even when the
+  # module gives none: a 0.0 draw paces on the nock, which is the one
+  # arrow a bow's magazine holds.
+  charge_seconds: 0.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.2
+  crit_multiplier: 1.8
+  status_chance: 0.3
+  punch_through_m: 0.0
+  # A GUARANTEED IMPACT PROC — the module's ForcedProcs.
+  forced_procs: [impact]
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { puncture: 405, slash: 45 }   # total 450
+
+unmodeled:
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Nataruk

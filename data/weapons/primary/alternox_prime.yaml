@@ -1,0 +1,65 @@
+id: alternox_prime
+name: Alternox Prime
+slot: primary
+# THE ALTERNOX AT A 42-ROUND MAGAZINE and more of everything.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: alternox_prime
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags PROJECTILE, ASSAULT_AMMO, AOE
+mastery_rank: 13
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 18.2
+disposition: 0.8            # riven disposition
+polarities: [madurai]
+exilus_polarity: madurai
+riven_family: Alternox
+traits: [tenno, prime]
+introduced: "41"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeAlternox/PrimeAlternoxWeapon
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 40
+magazine: 42
+reload_seconds: 1.8
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20)
+# — ordinary Additive at the full +100%. The catalog gives a class PER
+# ATTACK and none of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+# THE HEAD IS WORTH 1x on this attack. The module gives it
+# `ExtraHeadshotDmg: -2`, which put through the additive headshot bracket would
+# be NEGATIVE and heal the target — so what is transcribed is the wiki's own
+# sentence for the same field on the Arca Plasmor, "1x headshot multiplier". The
+# shot still counts as a HEAD (Primary Deadhead pays on it); only the enemy's
+# own multiplier is overruled, and the critical-headshot doubling goes with it.
+headshot_multiplier: 1.0
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 3.0
+    max_deg: 8.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 60
+  fire_rate: 5.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.2
+  crit_multiplier: 2.2
+  status_chance: 0.4
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { electricity: 75 }   # total 75
+
+source:
+  url: https://wiki.warframe.com/w/Alternox_Prime

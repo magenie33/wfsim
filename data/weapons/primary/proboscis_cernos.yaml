@@ -1,0 +1,76 @@
+id: proboscis_cernos
+name: Proboscis Cernos
+slot: primary
+# A BOW THAT FIRES A GRAPPLING PARASITE: 279 on the arrow and 1003 Viral in
+# seven metres, which is the largest single explosion in the primary roster.
+class: bow
+form: charged
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, bow]   # CompatibilityTags PROJECTILE, INFBOW
+mastery_rank: 15
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 16.7
+disposition: 0.9            # riven disposition
+polarities: [naramon, naramon]
+exilus_polarity: naramon
+riven_family: Proboscis Cernos
+traits: [infested]
+introduced: "29.5"
+internal_name: /Lotus/Weapons/Tenno/Bows/PrimeDerelictCernos/DerelictCernos
+noise: silent
+ammo_type: primary
+ammo_max: 7
+ammo_pickup: 1
+magazine: 1
+reload_seconds: 0.6
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20)
+# — ordinary Additive at the full +100%. The catalog gives a class PER
+# ATTACK and none of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 12.0
+  trigger: charge
+  shot_type: projectile
+  projectile_speed_mps: 45
+  fire_rate: 1
+  charge_seconds: 0.7
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.07
+  crit_multiplier: 1.9
+  status_chance: 0.43
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 103.23, puncture: 30.69, slash: 145.08 }   # total 279
+  # THE EXPLOSION — rules in MECHANICS §7.
+  radial:
+    radius_m: 7.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.5
+    crit_chance: 0.07
+    crit_multiplier: 1.9
+    status_chance: 0.43
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { viral: 1003 }   # total 1003
+
+unmodeled:
+  - "the arrow also throws APPENDAGES that grab enemies within nine metres and drag them to it, dealing 90 damage each (module) — that is crowd control plus a second damage source, and this engine carries one explosion per attack, so neither is counted"
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Proboscis_Cernos

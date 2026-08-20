@@ -1,0 +1,63 @@
+id: hystrix_prime
+name: Hystrix Prime
+slot: secondary
+# THE HYSTRIX WITH PRIME NUMBERS and the same four quills. This entry is the
+# POISON one.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 12
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 14.3
+disposition: 1              # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: naramon
+riven_family: Hystrix
+traits: [prime]
+introduced: "31.7"
+internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeHystrix/PrimeHystrixWeapon
+noise: alarming
+ammo_type: secondary
+ammo_max: 320
+ammo_pickup: 40
+magazine: 16
+reload_seconds: 1.6
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20)
+# — ordinary Additive at the full +100%. The catalog gives a class PER
+# ATTACK and none of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 5.0
+    max_deg: 9.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 80
+  fire_rate: 7
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.28
+  crit_multiplier: 2.2
+  status_chance: 0.2
+  punch_through_m: 0.0
+  # A GUARANTEED TOXIN PROC — the module's ForcedProcs.
+  forced_procs: [toxin]
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 2.76, puncture: 39.56, slash: 3.68 }   # total 46
+
+unmodeled:
+  - "the alternate fire CYCLES four quill types — Poison, Fire, Electric and Ice — and this entry carries the Poison one. The others differ in the element they apply and, on two of them, in the physical damage, so a build around a different quill is not exactly this number"
+  - "Hystrix Injection, the Hystrix-exclusive augment — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Hystrix_Prime

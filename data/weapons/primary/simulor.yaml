@@ -1,0 +1,76 @@
+id: simulor
+name: Simulor
+slot: primary
+# A RIFLE THAT LAYS GRAVITY ORBS. Each orb hangs where it lands and explodes in
+# five metres; orbs that MERGE explode harder, which is the weapon's whole point
+# and a state this engine does not track.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO, AOE, PROJECTILE
+mastery_rank: 5
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 28.6
+disposition: 1.25           # riven disposition
+polarities: [vazarin, naramon]
+exilus_polarity: madurai
+riven_family: Simulor
+traits: [cephalon]
+introduced: "16.10"
+internal_name: /Lotus/Weapons/Cephalon/Primary/CephPrimary/CephPrimary
+noise: alarming
+ammo_type: primary
+ammo_max: 72
+ammo_pickup: 15
+magazine: 8
+reload_seconds: 3
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20)
+# — ordinary Additive at the full +100%. The catalog gives a class PER
+# ATTACK and none of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 7.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 80
+  fire_rate: 3
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.12
+  crit_multiplier: 2.0
+  status_chance: 0.3
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 12.0 m" on this attack.
+  range_m: 12.0
+  damage: { impact: 0 }   # total 0
+  # THE EXPLOSION — rules in MECHANICS §7.
+  radial:
+    radius_m: 5.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.6
+    crit_chance: 0.12
+    crit_multiplier: 2.0
+    status_chance: 0.3
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { magnetic: 200 }   # total 200
+
+unmodeled:
+  - "ORBS MERGE. The module gives this weapon a second AoE — 'Orb Merging Damage' in four metres — that fires when a new orb joins one already in the air, and the explosion grows with the number merged (wiki). This engine resolves each shot on its own, so the merge is not counted at all and a player laying orbs on one spot is well ahead of this number"
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Simulor

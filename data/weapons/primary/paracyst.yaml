@@ -1,0 +1,66 @@
+id: paracyst
+name: Paracyst
+slot: primary
+# AN INFESTED BURST RIFLE with a HARPOON in its alternate fire that reels the
+# target in — crowd control this arena cannot use.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: paracyst
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags PROJECTILE, ASSAULT_AMMO
+mastery_rank: 7
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+# NO ACCURACY ROW — the module states none for this weapon.
+disposition: 1.31           # riven disposition
+polarities: [vazarin]
+exilus_polarity: naramon
+riven_family: Paracyst
+traits: [infested]
+introduced: "15.5"
+internal_name: /Lotus/Weapons/Infested/LongGuns/QuantaFullyInfested/InfQuantaRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 60
+reload_seconds: 2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20)
+# — ordinary Additive at the full +100%. The catalog gives a class PER
+# ATTACK and none of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 4.0
+  trigger: burst
+  # THE BURST. The listed `fire_rate` counts BURSTS: one pull is 3 rounds
+  # spaced by the delay below.
+  burst:
+    count: 3
+    delay_seconds: 0.05       # module BurstDelay
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 8.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.1
+  crit_multiplier: 2.0
+  status_chance: 0.3
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { toxin: 33 }   # total 33
+
+unmodeled:
+  - "Mutalist Whip, the Paracyst-exclusive augment — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Paracyst

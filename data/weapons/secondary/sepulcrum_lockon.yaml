@@ -1,0 +1,56 @@
+id: sepulcrum_lockon
+name: Sepulcrum
+# LOCK-ON MODE: homing missiles with a three-metre blast apiece.
+inherits: sepulcrum
+form: alt_fire
+transform_group: sepulcrum
+
+introduced: "29"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and none of
+# this weapon's is named. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 50.0
+    max_deg: 60.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 60
+  fire_rate: 1
+  multishot: 1.0
+  ammo_cost: 0
+  crit_chance: 0.38
+  crit_multiplier: 3.0
+  status_chance: 0.26
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # A GUARANTEED IMPACT PROC — the module's ForcedProcs.
+  forced_procs: [impact]
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 19.2, puncture: 53.76, slash: 23.04 }   # total 96
+  # THE EXPLOSION — rules in MECHANICS §7.
+  radial:
+    radius_m: 3.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.2
+    crit_chance: 0.38
+    crit_multiplier: 3.0
+    status_chance: 0.26
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { heat: 480 }   # total 480
+
+unmodeled:
+  - "lock-on mode PAINTS SEVERAL TARGETS and sends one missile at each (wiki) — this engine fires the mode at the aimed body alone, so against a crowd it is understated by however many it would have painted"
+  - "the mode is charged by DEALING DAMAGE with the primary fire, which is one mode paying for another and a shape this engine does not have"
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Sepulcrum

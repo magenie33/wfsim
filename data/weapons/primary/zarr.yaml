@@ -1,0 +1,79 @@
+id: zarr
+name: Zarr
+slot: primary
+# CANNON MODE: a mortar round with a 4.9 m blast that then throws six cluster
+# bombs. The arsenal shows it (`_TooltipAttackDisplay: 2`), and the Kuva variant
+# is this weapon rebuilt.
+class: launcher
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: zarr
+mod_pools: [primary, rifle]   # CompatibilityTags ASSAULT_AMMO, PROJECTILE, AOE, SINGLESHOT
+mastery_rank: 7
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.15           # riven disposition
+polarities: [madurai]
+exilus_polarity: madurai
+riven_family: Zarr
+traits: [grineer]
+introduced: "19"
+internal_name: /Lotus/Weapons/Grineer/LongGuns/GrnCannon/GrnCannonWeapon
+noise: alarming
+ammo_type: primary
+ammo_max: 60
+ammo_pickup: 9
+magazine: 3
+reload_seconds: 2.25
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20)
+# — ordinary Additive at the full +100%. The catalog gives a class PER
+# ATTACK and none of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 40
+  fire_rate: 1.67
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.17
+  crit_multiplier: 2.5
+  status_chance: 0.29
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 25 }   # total 25
+  # THE EXPLOSION — rules in MECHANICS §7.
+  radial:
+    radius_m: 4.9
+    falloff_start_m: 0.0
+    falloff_reduction: 0.5
+    crit_chance: 0.17
+    crit_multiplier: 2.5
+    status_chance: 0.29
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { blast: 175 }   # total 175
+
+unmodeled:
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
+  - reason: cluster_bomblets
+    n: 6
+    damage: 6 x 150 Blast
+    share: a third
+
+source:
+  url: https://wiki.warframe.com/w/Zarr

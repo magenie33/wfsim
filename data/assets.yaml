@@ -54,6 +54,10 @@ weapons:
   akvasto: Akvasto.png
   akvasto_prime: AkvastoPrime.png
   akzani: Akzani.png
+  alternox: GyreRifleWeapon.png
+  alternox_alt: GyreRifleWeapon.png
+  alternox_prime: AlternoxPrime.png
+  alternox_prime_alt: AlternoxPrime.png
   ambassador: CrpArSniper.png
   ambassador_charged: CrpArSniper.png
   amprex: Amprex.png
@@ -119,6 +123,8 @@ weapons:
   cernos_uncharged: Cernos.png
   cestra: Cestra.png
   cestra_incarnon: Cestra.png
+  cinta: DaxDuviriAsymmetricalLongBow.png
+  cinta_charged: DaxDuviriAsymmetricalLongBow.png
   convectrix: Convectrix.png
   convectrix_alt: Convectrix.png
   corinth: Corinth.png
@@ -176,6 +182,8 @@ weapons:
   gorgon_wraith: GorgonWraith.png
   gotva_prime: GrnOrokinRifle.png
   grakata: Grakata.png
+  grimoire: Grimoire.png
+  grimoire_active: Grimoire.png
   grinlok: Grinlok.png
   haalvu: TnoOctaMiniGun.png
   haalvu_alt: TnoOctaMiniGun.png
@@ -188,8 +196,12 @@ weapons:
   hikou_prime: HikouPrime.png
   hind: Hind.png
   hind_semi: Hind.png
+  hystrix: Hystrix.png
+  hystrix_prime: HystrixPrime.png
   ignis: Ignis.png
   ignis_wraith: IgnisWraith.png
+  javlok: Javlok.png
+  javlok_throw: Javlok.png
   karak: Karak.png
   karak_wraith: KarakWraith.png
   knell: Knell.png
@@ -199,6 +211,7 @@ weapons:
   kompressa: YareliPistol.png
   kompressa_prime: KompressaPrime.png
   kraken: Kraken.png
+  kulstar: Kulstar.png
   kunai: Kunai.png
   kunai_incarnon: Kunai.png
   # THE KUVA BATCH (2026-08-19). The module's own `Image` field for each, which
@@ -242,6 +255,7 @@ weapons:
   kuva_grattler: KuvaGrattler.png
   larkspur: ShieldFrameArchGun.png
   larkspur_charged: ShieldFrameArchGun.png
+  lenz: Lenz.png
   magnus: Magnus.png
   magnus_prime: MagnusPrime.png
   mandonel: TnConcreteArchgun.png
@@ -251,14 +265,22 @@ weapons:
   mausolon_charged: ThanotechLongGun.png
   morgha: ThanoTechGrenadeLauncher.png
   morgha_alt: ThanoTechGrenadeLauncher.png
+  mutalist_cernos: MutalistCernos.png
+  mutalist_cernos_uncharged: MutalistCernos.png
   mutalist_quanta: MutalistQuanta.png
   mutalist_quanta_orb: MutalistQuanta.png
   nagantaka: GarudaCrossbow.png
   nagantaka_burst: GarudaCrossbow.png
   nagantaka_prime: NagantakaPrime.png
   nagantaka_prime_burst: NagantakaPrime.png
+  nataruk: OmicrusBow.png
+  nataruk_perfect: OmicrusBow.png
   nukor: Nukor.png
   ogris: Ogris.png
+  opticor: Opticor.png
+  opticor_quick: Opticor.png
+  opticor_vandal: OpticorVandal.png
+  opticor_vandal_quick: OpticorVandal.png
   pandero: Pandero.png
   pandero_alt: Pandero.png
   pandero_prime: PanderoPrime.png
@@ -267,10 +289,14 @@ weapons:
   panthera_alt: Panthera.png
   panthera_prime: PantheraPrime.png
   panthera_prime_alt: PantheraPrime.png
+  paracyst: Paracyst.png
+  paracyst_harpoon: Paracyst.png
   penta: Penta.png
   phage: Phage.png
   prisma_grakata: PrismaGrakata.png
+  prisma_lenz: PrismaLenz.png
   prisma_twin_gremlins: PrismaTwinGremlins.png
+  proboscis_cernos: DerelictCernos.png
   purgator_1: LasrianNox.png
   pyrana: Pyrana.png
   pyrana_prime: PyranaPrime.png
@@ -292,6 +318,9 @@ weapons:
   secura_dual_cestra: SecuraDualCestra.png
   secura_penta: SecuraPenta.png
   seer: Seer.png
+  sepulcrum: ThanotechPistol.png
+  sepulcrum_lockon: ThanotechPistol.png
+  simulor: Simulor.png
   sobek: Sobek.png
   sonicor: Sonicor.png
   spectra: Spectra.png
@@ -300,6 +329,8 @@ weapons:
   spira_prime: SpiraPrime.png
   stahlta: CrpRubanRifle.png
   stahlta_charged: CrpRubanRifle.png
+  staticor: Staticor.png
+  staticor_uncharged: Staticor.png
   steflos: TnoLotusPodShotgun.png
   stradavar: Stradavar.png
   stradavar_prime: StradavarPrime.png
@@ -308,6 +339,7 @@ weapons:
   stubba: Stubba.png
   supra: Supra.png
   supra_vandal: SupraVandal.png
+  synoid_simulor: SynoidSimulor.png
   talons: Talons.png
   telos_akbolto: TelosAkbolto.png
   tenora: Tenora.png
@@ -316,9 +348,16 @@ weapons:
   tenora_prime_charged: TenoraPrime.png
   thornbak: ModQuestRifle.png
   tiberon: Tiberon.png
+  tiberon_prime: TiberonPrime.png
+  tiberon_prime_auto: TiberonPrime.png
+  tiberon_prime_semi: TiberonPrime.png
   tigris: Tigris.png
   tigris_prime: TigrisPrime.png
   tonkor: Tonkor.png
+  trumna: ThanotechRifle.png
+  trumna_grenade: ThanotechRifle.png
+  trumna_prime: TrumnaPrime.png
+  trumna_prime_grenade: TrumnaPrime.png
   twin_grakatas: TwinGrakatas.png
   twin_gremlins: TwinGremlin.png
   twin_kohmak: TwinKohmak.png
@@ -459,6 +498,8 @@ weapons:
   verglas_prime: VerglasPrime.png
   zakti: Zakti.png
   zakti_prime: ZaktiPrime.png
+  zarr: Zarr.png
+  zarr_barrage: Zarr.png
   zenith: Zenith.png
   zenith_auto: Zenith.png
   zhuge: Zhuge.png
@@ -531,6 +572,7 @@ weapons:
   tetra: Tetra.png
   prisma_tetra: PrismaTetra.png
   tysis: Tysis.png
+  zymos: InfUziWeapon.png
 mods:
   # A RIVEN's card, DE's own: every riven shares one image because the game
   # draws them all the same — `OmegaMod.png` is the unveiled riven mod on

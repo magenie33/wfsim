@@ -1,0 +1,46 @@
+id: paracyst_harpoon
+name: Paracyst
+# THE HARPOON: a 0.25 s charge and a fifty-metre reach, which drags what it hits
+# back towards the wielder.
+inherits: paracyst
+# `charged` RATHER THAN `alt_fire`: the module gives this mode a 0.25 s charge
+# trigger, and the form vocabulary reserves `charged` for exactly that — a
+# charge trigger IS the charged form and nothing else is.
+form: charged
+transform_group: paracyst
+
+introduced: "15.5"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and none of
+# this weapon's is named. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 4.0
+  trigger: charge
+  shot_type: projectile
+  projectile_speed_mps: 80
+  fire_rate: 5
+  charge_seconds: 0.25
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.0
+  crit_multiplier: 1.0
+  status_chance: 0.3
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 50.0 m" on this attack.
+  range_m: 50.0
+  damage: { toxin: 15 }   # total 15
+
+unmodeled:
+  - "the harpoon REELS the target in and holds it (wiki) — this arena's enemies are neither moved nor held, so the whole point of the mode pays nothing here"
+  - "the module gives this mode a THIRD attack, 'Infested Harpoon Contact', which is the damage dealt while the target is held — a state this engine does not track, so it is not counted"
+
+source:
+  url: https://wiki.warframe.com/w/Paracyst

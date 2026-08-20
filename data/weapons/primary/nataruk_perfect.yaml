@@ -1,0 +1,52 @@
+id: nataruk_perfect
+name: Nataruk
+# THE PERFECT SHOT: released inside a window at 0.7 s, and the arsenal's own
+# display for this weapon — which is why it is the charged form here rather than
+# the ordinary full draw.
+inherits: nataruk
+form: charged
+transform_group: nataruk
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+
+introduced: "31"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and none of
+# this weapon's is named. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+# THE HEAD IS WORTH 1x on this attack. The module gives it
+# `ExtraHeadshotDmg: -2`, which put through the additive headshot bracket would
+# be NEGATIVE and heal the target — so what is transcribed is the wiki's own
+# sentence for the same field on the Arca Plasmor, "1x headshot multiplier". The
+# shot still counts as a HEAD (Primary Deadhead pays on it); only the enemy's
+# own multiplier is overruled, and the critical-headshot doubling goes with it.
+headshot_multiplier: 1.0
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 12.0
+  trigger: charge
+  shot_type: projectile
+  projectile_speed_mps: 70
+  fire_rate: 0.667
+  charge_seconds: 0.7
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.6
+  crit_multiplier: 2.4
+  status_chance: 0.5
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { puncture: 648, slash: 252 }   # total 900
+
+unmodeled:
+  - "THIS IS THE PERFECT RELEASE, not the ordinary full draw — the arsenal displays it and this entry carries its numbers, so a player who MISTIMES the window gets the module's second attack instead (a one-second draw for less damage), which is not carried here. The form vocabulary has no word for a timing window: `charged` and `alt_fire` resolve to the same mode, so a group cannot hold both"
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Nataruk

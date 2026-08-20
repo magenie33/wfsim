@@ -503,6 +503,31 @@ weapons:
   mutalist_quanta: 异融量子枪
   panthera_prime: 猎豹 Prime
   stahlta: 钢刃步枪
+  alternox: 电幻步枪
+  alternox_prime: 电幻步枪 Prime
+  cinta: 遂心
+  grimoire: 魔典
+  hystrix: 豪猪
+  hystrix_prime: 豪猪 Prime
+  javlok: 燃焰标枪
+  kulstar: 杀星
+  lenz: 楞次弓
+  mutalist_cernos: 异融西诺斯
+  nataruk: 太始弓
+  opticor: 奥堤克光子枪
+  opticor_vandal: 奥堤克光子枪·破坏者
+  paracyst: 附肢寄生者
+  prisma_lenz: 棱晶·楞次弓
+  proboscis_cernos: 刺吸西诺斯
+  sepulcrum: 追击者
+  simulor: 重力奇点拟成枪
+  staticor: 静电能量导引枪
+  synoid_simulor: 枢议·重力奇点拟成枪
+  tiberon_prime: 狂鲨 Prime
+  trumna: 灭杀者
+  trumna_prime: 灭杀者 Prime
+  zarr: 沙皇
+  zymos: 邪莫斯
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's

@@ -1,0 +1,68 @@
+id: tiberon_prime
+name: Tiberon Prime
+slot: primary
+# THREE TRIGGERS ON ONE RIFLE, cycled with Alternate Fire — burst, semi-auto and
+# full auto. This entry is the BURST, which is the arsenal's own display, and the
+# other two are `tiberon_prime_semi` and `tiberon_prime_auto`. The same shape the
+# Kuva Hind carries.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: tiberon_prime
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
+mastery_rank: 14
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 33.33
+disposition: 1              # riven disposition
+polarities: [madurai, naramon, naramon]
+exilus_polarity: madurai
+riven_family: Tiberon
+traits: [prime, vaulted]
+introduced: "22.16.4"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeTiberon/PrimeTiberonRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 42
+reload_seconds: 2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20)
+# — ordinary Additive at the full +100%. The catalog gives a class PER
+# ATTACK and none of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 6.0
+  trigger: auto
+  # THE BURST. The listed `fire_rate` counts BURSTS: one pull is 3 rounds
+  # spaced by the delay below.
+  burst:
+    count: 3
+    delay_seconds: 0.08       # module BurstDelay
+  shot_type: hit_scan
+  fire_rate: 5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.28
+  crit_multiplier: 3.0
+  status_chance: 0.2
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  damage: { impact: 14.4, puncture: 19.2, slash: 14.4 }   # total 48
+
+unmodeled:
+  - "Critical Precision, the Tiberon-exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Tiberon_Prime

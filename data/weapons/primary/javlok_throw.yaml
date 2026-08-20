@@ -1,0 +1,56 @@
+id: javlok_throw
+name: Javlok
+# THE SPEAR THROW: the weapon itself thrown, with a six-metre explosion — and
+# the spear has to be picked up again, which this arena does not model.
+inherits: javlok
+form: alt_fire
+transform_group: javlok
+
+introduced: "19.4"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and none of
+# this weapon's is named. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 12.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 90
+  fire_rate: 1
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.2
+  crit_multiplier: 2.0
+  status_chance: 0.25
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # A GUARANTEED IMPACT PROC — the module's ForcedProcs.
+  forced_procs: [impact]
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 45, puncture: 75, slash: 30 }   # total 150
+  # THE EXPLOSION — rules in MECHANICS §7.
+  radial:
+    radius_m: 6.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.6
+    crit_chance: 0.2
+    crit_multiplier: 2.0
+    status_chance: 0.25
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { heat: 300 }   # total 300
+
+unmodeled:
+  - "the thrown spear must be RETRIEVED before the weapon can be used again (wiki) — this sim throws it on a cadence and never walks over to pick it up"
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Javlok

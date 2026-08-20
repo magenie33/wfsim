@@ -12,6 +12,14 @@ introduced: "33.6"
 # has no row for either of its two. Absence means ORDINARY.
 co_behavior: additive_with_base_damage
 
+# THE HEAD IS WORTH 1x on this attack. The module gives it
+# `ExtraHeadshotDmg: -2`, which put through the additive headshot bracket would
+# be NEGATIVE and heal the target — so what is transcribed is the wiki's own
+# sentence for the same field on the Arca Plasmor, "1x headshot multiplier". The
+# shot still counts as a HEAD (Primary Deadhead pays on it); only the enemy's
+# own multiplier is overruled, and the critical-headshot doubling goes with it.
+headshot_multiplier: 1.0
+
 attack:
   # Cone half-angle from the reticle, degrees — wiki
   # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
