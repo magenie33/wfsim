@@ -88,8 +88,6 @@ Neither survives. `engine::naming::ABBREVIATED` expands whole
 underscore-separated parts, so `cd` is caught in `cd_rel` and left alone in
 `cold_stacks`.
 
-## 4. Words are not abbreviated
-
 `damage`, not `dmg`. `multiplier`, not `mult`. `seconds`, not `secs`.
 `effectiveness`, not `eff`.
 
@@ -127,4 +125,12 @@ carries an EXEMPT list, and that list is the frozen wire names of §6 and nothin
 else — so it can only shrink, and a new name cannot join it without someone
 explaining why the name is durable.
 
-Verified to bite: renaming one field back to `crit_mult` fails it by name.
+Verified to bite: a struct carrying `cc_on_kill`, `reload_secs` and `ms_bonus`
+fails it naming all three, one per rule class.
+
+**AND THE TABLE ITSELF IS GUARDED.** The bulk rename that expanded `ms`
+everywhere also rewrote the checker's own row — `("ms", "multishot")` became
+`("multishot", "multishot")` — after which every correct name was reported as
+needing to become itself, 335 of them. `the_table_is_not_a_fixed_point` refuses
+any rule whose two halves are equal, because that failure reads as a codebase
+problem when it is a one-row checker problem.
