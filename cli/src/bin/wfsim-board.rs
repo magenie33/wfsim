@@ -59,22 +59,72 @@ struct Row {
     valence: String,
 }
 
-/// How many rows a weapon keeps per RULER and MODE. A hundred, raised from ten
-/// (owner, 2026-08-08).
+/// THE FLOOR: a row must score at least half its group's leader to be listed
+/// (owner, 2026-08-20). It replaces a COUNT — the top hundred per ruler and
+/// mode, itself raised from ten on 2026-08-08.
 ///
-/// Ten was chosen to hold real ALTERNATIVES — a build without the arcane you
-/// lack, one that costs fewer Forma — rather than ten spellings of one answer.
-/// That reasoning does not change with depth; it just runs out sooner than the
-/// board does. What made ten a CEILING was the picker: a chip row, then one
-/// dropdown holding rulers x modes x ranks, both of which stop being readable
-/// somewhere around forty entries. The bar is two dropdowns now — a ruler, then
-/// a rank inside it — so a hundred rows cost one list of a hundred and nothing
-/// else, and that list is searched and scored.
+/// A COUNT AND A FLOOR BOUND DIFFERENT THINGS. The count bounded how LONG the
+/// list could get and said nothing about whether the hundredth row was worth
+/// reading. On the board of 2026-08-19 the three groups that reached the cap
+/// had a hundredth row at 18.6%, 25.9% and 25.4% of their leader — so the list
+/// had stopped being about builds anybody would pick long before the cap cut
+/// it, and the cap was trimming the wrong end.
 ///
-/// The COST is per weapon per mode, and it is paid by the scoring job rather
-/// than by the page: `site/board.json` grows with what is actually submitted,
-/// not with this number.
-const KEEP: usize = 100;
+/// WHAT IT REMOVES IS NOT THE CHEAP BUILD. That was the objection, and this
+/// board refutes it: the rows below the line carry 8 of 8 mods exactly like the
+/// rows above, and they differ by taking the WORSE arcane (Merciless where
+/// Deadhead wins) or by spending slots on mods this fight cannot pay — Magazine
+/// Extension, Parallax Scope, Quick Reload, which docs/UNMODELLED.md already
+/// says are worth nothing against one standing target. Of 86 groups, three have
+/// ever held a row with no arcane at all, and in each of them it was the leader.
+///
+/// IT IS MECHANICAL, and that is the decision. The seed is pinned and a score
+/// reproduces to the last digit, so 50.3% and 49.5% are two different NUMBERS
+/// rather than two estimates of one — a board whose rows are exact has no tie
+/// band to grant, and the ruler separating two builds is what the ruler is for.
+///
+/// FIFTY IS A CUT LINE, not a measurement, and the file says so rather than
+/// implying otherwise. The pooled distribution of score-as-a-fraction-of-leader
+/// has no knee to sit on (the largest gap anywhere below 90% is 1.2 points), so
+/// the data cannot pick the number; what it can say is that the number is not
+/// fragile — about 12 of 1274 rows per point, so 45 or 55 would cost a few per
+/// cent rather than a shape. Against the sports that draw the same kind of line
+/// (F1's 107% rule, cycling's 3-20% time limit) half the leader is very
+/// generous, which is the intent: it marks where a build stops being a
+/// DIFFERENT answer, not where it stops being the best one.
+///
+/// THERE IS NO CEILING NOW, so a group whose builds are genuinely close keeps
+/// every one of them. A group whose leader scores zero keeps all of its rows
+/// too — every row ties it, and a ratio has nothing to separate.
+const FLOOR: f64 = 0.5;
+
+/// Best first, then everything within `FLOOR` of each WEAPON AND MODE's own
+/// leader. Returns the rows to publish and how many the floor took.
+///
+/// Ties keep the FEWER-Forma build — same fight, cheaper to own.
+///
+/// PER MODE, not per weapon: the two ways to play a Torid compete with each
+/// other for nothing, and a shared reference would let the stronger mode decide
+/// what the weaker one may show, which is the opposite of what the dimension is
+/// for. Per BOARD too, since this binary runs once per ruler.
+///
+/// A group's leader is the FIRST row of it this loop meets, because the sort is
+/// descending and global.
+fn keep_above_floor(mut rows: Vec<Row>) -> (Vec<Row>, usize) {
+    rows.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+    let mut leader: std::collections::BTreeMap<(String, String), f64> = Default::default();
+    let mut kept = Vec::new();
+    let mut below = 0usize;
+    for r in rows {
+        let top = *leader.entry((r.weapon.clone(), r.mode.clone())).or_insert(r.score);
+        if r.score >= FLOOR * top {
+            kept.push(r);
+        } else {
+            below += 1;
+        }
+    }
+    (kept, below)
+}
 
 /// A flag's value, `--name value` anywhere after the positionals.
 fn flag(name: &str) -> Option<String> {
@@ -445,23 +495,7 @@ fn main() {
         });
     }
 
-    // Best first, then the top KEEP per WEAPON AND MODE. Ties keep the
-    // FEWER-Forma build — same fight, cheaper to own.
-    //
-    // Per mode, not per weapon: the two ways to play a Torid compete with each
-    // other for nothing, and a shared quota would let the stronger mode fill
-    // the board and hide the other entirely — which is the opposite of what
-    // the dimension is for.
-    rows.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
-    let mut per: std::collections::BTreeMap<(String, String), usize> = Default::default();
-    let mut kept = Vec::new();
-    for r in rows {
-        let n = per.entry((r.weapon.clone(), r.mode.clone())).or_insert(0);
-        if *n < KEEP {
-            *n += 1;
-            kept.push(r);
-        }
-    }
+    let (mut kept, below) = keep_above_floor(rows);
     kept.sort_by(|a, b| {
         a.weapon
             .cmp(&b.weapon)
@@ -471,8 +505,14 @@ fn main() {
     // HOW MUCH OF THIS BOARD WAS KEPT rather than recomputed, said out loud. A
     // run that reuses everything and a run that scored everything look
     // identical from the outside, and the difference is an hour.
+    //
+    // AND HOW MANY THE FLOOR TOOK. A build below the line is stored, scored and
+    // then not listed, which from the submitter's side is indistinguishable
+    // from a submission that was lost — the failure this repo has already paid
+    // for twice. This log is the maintainer's half of saying so; the panel
+    // that states the rule to the player is the other.
     eprintln!(
-        "{seen} submissions, {refused} refused, {} rows ({reused} reused, {} scored here){}",
+        "{seen} submissions, {refused} refused, {} rows ({reused} reused, {} scored here, {below} below the floor){}",
         kept.len(),
         computed.len(),
         // ONLY WHEN THERE ARE ANY. A board whose every row carries its
@@ -609,6 +649,84 @@ fn wfsim_engine_webapi_simulate(v: &Value) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn row(weapon: &str, mode: &str, score: f64) -> Row {
+        Row {
+            weapon: weapon.into(),
+            mode: mode.into(),
+            score,
+            mods: vec![],
+            evolutions: vec![],
+            arcanes: vec![],
+            valence: String::new(),
+        }
+    }
+
+    fn scores(rows: &[Row], weapon: &str, mode: &str) -> Vec<f64> {
+        rows.iter()
+            .filter(|r| r.weapon == weapon && r.mode == mode)
+            .map(|r| r.score)
+            .collect()
+    }
+
+    /// THE FLOOR IS HALF THE GROUP'S LEADER, and the boundary is INCLUSIVE —
+    /// exactly half is listed. A cut line drawn with `>` would delete the one
+    /// row that is precisely on it, which is the row a reader is most likely to
+    /// go looking for.
+    #[test]
+    fn half_of_the_leader_is_kept_and_less_is_not() {
+        let (kept, below) = keep_above_floor(vec![
+            row("torid", "cycle", 80.0),
+            row("torid", "cycle", 40.0),   // exactly half
+            row("torid", "cycle", 39.999), // a hair under
+            row("torid", "cycle", 1.0),
+        ]);
+        assert_eq!(scores(&kept, "torid", "cycle"), vec![80.0, 40.0]);
+        assert_eq!(below, 2);
+    }
+
+    /// PER WEAPON AND MODE, so a strong group cannot decide what a weak one may
+    /// show. A shared reference would have let the Torid's cycle — three times
+    /// its base form here — empty the base form's list entirely, which is the
+    /// opposite of what the mode dimension is for.
+    #[test]
+    fn each_group_is_measured_against_its_own_leader() {
+        let (kept, below) = keep_above_floor(vec![
+            row("torid", "cycle", 90.0),
+            row("torid", "cycle", 50.0),
+            row("torid", "base", 30.0),
+            row("torid", "base", 20.0), // 22% of the cycle's leader, 67% of its own
+            row("lex", "base", 10.0),
+            row("lex", "base", 9.0),
+        ]);
+        assert_eq!(scores(&kept, "torid", "base"), vec![30.0, 20.0]);
+        assert_eq!(scores(&kept, "lex", "base"), vec![10.0, 9.0]);
+        assert_eq!(below, 0);
+    }
+
+    /// THERE IS NO CEILING. The count this replaced was a hundred; a group whose
+    /// builds are genuinely close keeps every one of them, however many arrive.
+    #[test]
+    fn a_close_group_keeps_everything() {
+        let rows: Vec<Row> = (0..250).map(|i| row("furis", "cycle", 100.0 - i as f64 * 0.1)).collect();
+        let (kept, below) = keep_above_floor(rows);
+        assert_eq!(kept.len(), 250);
+        assert_eq!(below, 0);
+    }
+
+    /// A LEADER OF ZERO SEPARATES NOTHING. Every row ties it, so the group is
+    /// published whole rather than emptied — a ratio has nothing to say when
+    /// there is no scale, and deleting a weapon nobody could make kill would
+    /// read as a weapon nobody had tried.
+    #[test]
+    fn a_group_that_scored_nothing_is_not_emptied() {
+        let (kept, below) = keep_above_floor(vec![
+            row("stug", "base", 0.0),
+            row("stug", "base", 0.0),
+        ]);
+        assert_eq!(kept.len(), 2);
+        assert_eq!(below, 0);
+    }
 
     fn tmpdir(tag: &str) -> std::path::PathBuf {
         let d = std::env::temp_dir().join(format!("wfsim-board-{}-{}", tag, std::process::id()));

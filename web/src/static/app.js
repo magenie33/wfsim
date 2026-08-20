@@ -11242,6 +11242,16 @@ async function offerBoardSubmit() {
   renderBoardConsent();
 }
 
+/// THE LINE THE BOARD DRAWS, said to the person it applies to. A submission
+/// below half its weapon's leading row is stored, scored and then not listed,
+/// which from the submitter's side is indistinguishable from one that was lost
+/// — and that exact silence has cost this board two migrations already. The
+/// rule is stated rather than the consequence counted: a number of hidden rows
+/// would need the scorer to publish one, while the RULE is what makes an
+/// absence readable, and it is checkable against the board on screen.
+const boardCutNote = () =>
+  tr("Only builds scoring at least half their weapon's leading row are listed — the board holds the answers, not every attempt.");
+
 function renderBoardConsent() {
   const box = $("board-consent");
   if (!box) return;
@@ -11287,6 +11297,7 @@ function renderBoardConsent() {
       // only after the consent had been chosen told the fact to everyone except
       // the person meeting the board for the first time.
       ` ${escHtml(tr("A run appears on the board within about 20 minutes, at most 40 — it is re-scored on a schedule, not the instant you send it."))}` +
+      ` ${escHtml(boardCutNote())}` +
       floorNote +
       ` <button class="ghost-btn small" id="board-no">${escHtml(tr("don't submit"))}</button>`;
     $("board-no").onclick = () => setBoardConsent("no");
@@ -11308,7 +11319,11 @@ function renderBoardConsent() {
           : tr("builds you run here are submitted — the board re-scores every 20 minutes, so a run appears there within about 20, at most 40"))
     : tr("nothing is sent from here");
   box.innerHTML =
-    `<span class="board-state">${escHtml(state)}</span>` + floorNote + ` ` +
+    `<span class="board-state">${escHtml(state)}</span>` +
+    // THE RULE FOLLOWS THE STATE, and only where it can bite: a reader who
+    // has turned submission off is not waiting for a row to appear.
+    (c === "yes" ? ` <span class="board-state">${escHtml(boardCutNote())}</span>` : "") +
+    floorNote + ` ` +
     `<button class="ghost-btn small" id="board-flip">${escHtml(c === "yes" ? tr("stop submitting") : tr("start submitting"))}</button>`;
   $("board-flip").onclick = () => setBoardConsent(c === "yes" ? "no" : "yes");
 }

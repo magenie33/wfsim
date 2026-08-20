@@ -307,6 +307,56 @@ slots.
   build against a resource the ranking cannot value. A benchmark build is 8
   slots.
 
+## How deep a board goes — the floor (owner, 2026-08-20)
+
+A row is listed when it scores **at least half its group's leader**, where a
+group is one weapon, in one mode, under one ruler. There is no count limit; a
+group whose builds are genuinely close keeps all of them.
+
+It replaces a COUNT — the top hundred per weapon and mode, itself raised from
+ten on 2026-08-08. **The two bound different things.** A count bounds how LONG
+the list gets and says nothing about whether the hundredth row is worth reading:
+on the board of 2026-08-19 the three groups that reached the cap had a hundredth
+row at **18.6%, 25.9% and 25.4%** of their leader, so the list had stopped being
+about builds anybody would pick long before the cap cut it.
+
+**What it removes is not the cheap build.** That was the objection, and the
+board refutes it — the rows below the line carry 8 of 8 mods exactly like the
+rows above, and differ by taking the worse arcane (Merciless where Deadhead
+wins) or by spending slots on mods this fight cannot pay: Magazine Extension,
+Parallax Scope, Quick Reload, all of which docs/UNMODELLED.md already says are
+worth nothing against one standing target. Of 86 groups, **three** have ever
+held a row with no arcane at all, and in each it was the leader.
+
+**It is mechanical, and that is the decision.** The seed is pinned and a score
+reproduces to the last digit, so 50.3% and 49.5% are two different NUMBERS
+rather than two estimates of one. A board whose rows are exact has no tie band
+to grant, and a ruler separating two builds is what a ruler is for.
+
+**Fifty is a cut line, not a measurement.** The pooled distribution of
+score-as-a-fraction-of-leader has no knee to sit on — the largest gap anywhere
+below 90% is 1.2 points — so the data cannot pick the number. What it can say is
+that the number is not fragile: about **12 of 1274 rows per point**, so 45 or 55
+would cost a few per cent rather than a shape. Against the sports that draw the
+same kind of line (F1's 107% qualifying rule, cycling's 3-20% time limit) half
+the leader is very generous, which is the intent — it marks where a build stops
+being a DIFFERENT answer, not where it stops being the best one.
+
+Measured over the three boards of 2026-08-19: 1274 rows become 740.
+
+**NOTHING IS DESTROYED.** The floor is a property of the published board, not of
+the store: every submission stays in KV and every board is regenerated whole, so
+a row displaced by a new leader comes back the moment that leader is displaced
+or an engine fix lowers it.
+
+**AND IT IS SAID OUT LOUD, on both sides.** A build below the line is stored,
+scored and then not listed, which from the submitter's side is indistinguishable
+from a submission that was LOST — the exact silence that cost this board `mode`
+(2026-08-09) and `valence` (2026-08-14). So `wfsim-board` reports how many fell
+below it on every run, and the submission panel states the RULE rather than a
+count of hidden rows: the rule is what makes an absence readable, and it is
+checkable against the board on screen.
+
 ## It is a Worker, not Pages
 
 That distinction is worth stating because it looks like it should not matter and
