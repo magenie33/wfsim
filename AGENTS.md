@@ -147,13 +147,21 @@ around (decision 2026-07-31).
   — unreliable to blocked from mainland China, i.e. precisely where the
   players are, so the app's own art was the least reliable thing on the page.
   Same-origin ends the question: if wfsim.app loads, its art loads. The cost
-  is 22 MB write-once over 730 files, against a 6.7 MB wasm this build rewrites
+  is 22 MB write-once over 730 files, against a 4.3 MB wasm this build rewrites
   EVERY TIME — the shape of the trade, not its size, is what settles it, and
   both figures had drifted 3-5x from the ones written here in July (re-measured
-  2026-08-20). THE WASM FIGURE IS UN-OPTIMISED: `build_site_app.py` runs
-  `wasm-opt -Oz` only "if available" and it has never been available on the
-  build machine, so the size pass has never run and the number players download
-  is the raw one.
+  2026-08-20).
+  **A SIZE CLAIM IS MADE ON THE WIRE, NOT ON DISK** (2026-08-21). Cloudflare
+  answers this file `Content-Encoding: br`, so the raw byte count is not a
+  number about any reader: a 6.7 MB wasm was **1,336 KB** downloaded, and the
+  first version of this paragraph said the opposite. Judge a change by
+  compressing both sides with the same brotli. `wasm-opt -Oz` is the lesson —
+  it takes 6.74 MB to 5.89 MB, which reads as 13% and is **-0.3% on the wire**,
+  because it shrinks CODE and 59% of this binary is DATA. What actually moved
+  it was not shipping the 43% of `data/` that is comments (`engine/build.rs`):
+  1,192 KB to 927 KB, **-22%**. wasm-opt is installed now and runs; it is worth
+  keeping for the 1.5 MB it takes off the blob this repo COMMITS every build,
+  which is a real cost and a different one.
   DE permits this: their Content Policy requires only that use of Warframe
   assets be non-commercial, and the wiki hosts the same files on the same
   basis — what it forbids is their LOGOS, so the only mark here stays ours.
