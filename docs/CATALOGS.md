@@ -752,7 +752,7 @@ between "checked" and "nobody looked".
 | `mk1_braton_incarnon` | 100% | 3 m | +240% | Adds | snapshot |
 | `morgha` | 0% | 3 m | — | Doesn't Work | doesnt_work |
 | `morgha_alt` | 0% | 12 m | — | Doesn't Work | doesnt_work |
-| `mutalist_cernos` | 0% | 0 m | — | Doesn't Work | doesnt_work |
+| `mutalist_cernos` | 0% | 2.5 m | — | Doesn't Work | doesnt_work |
 | `mutalist_quanta_orb` | 100% | 4.4 m | +352% | Multiplies | snapshot |
 | `ogris` | 100% | 7.1 m | +568% | Multiplies | snapshot |
 | `opticor` | 100% | 6 m | +480% | Adds | snapshot |

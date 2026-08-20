@@ -3,7 +3,8 @@ name: Higasa
 slot: primary
 # A GUNBRELLA. Five-round bursts of Puncture, and an alternate fire that spends
 # a GAUGE filled by kills on a 390-damage Blast laser — a form you earn rather
-# than one you can simply hold, which is why it carries a `gauge_form:`.
+# than one you can simply hold, which is why THAT ENTRY (`higasa_charged`)
+# carries the `gauge_form:` and this one does not.
 class: rifle
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)

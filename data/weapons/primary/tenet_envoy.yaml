@@ -34,10 +34,17 @@ ammo_pickup: 4
 magazine: 8
 reload_seconds: 4.0
 
-# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
-# ordinary Additive at the full +100% on the direct hit, and the explosion takes
-# none at all, which is the engine's standing rule for a radial.
-co_behavior: additive_with_base_damage
+# Condition Overload: THE CATALOG NAMES THIS ATTACK. Verbatim
+# (docs/CATALOGS.md §1):
+#
+#   Tenet Envoy | Normal Attack | Projectile | 100 | 100 | 100% |
+#   Multiplying
+#
+# THIS ENTRY READ ADDING AT 100% UNTIL 2026-08-20, which was the
+# ordinary class assumed because nobody had opened the catalog for this
+# weapon — the check was run against our own transcription of it, which
+# only ever carried the rows the roster already had.
+co_behavior: independent
 
 # THE PROGENITOR BONUS — verbatim: "Comes with an additional bonus Impact, Heat,
 # Cold, Electricity, Toxin, Magnetic, or Radiation damage, based on the Sister's

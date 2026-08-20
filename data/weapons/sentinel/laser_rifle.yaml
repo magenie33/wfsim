@@ -29,11 +29,17 @@ reload_seconds: 1.2
 # Sentinel weapons draw from an INFINITE reserve — there is no ammo pickup
 # economy to model, so no `ammo_max`. The magazine and reload are real.
 
-# No Condition Overload row for this weapon, so the ordinary class — the
-# catalog "lists only discrepant attacks. Anything not listed should be assumed
-# to be Additive with +100% bonus" (re-read 2026-08-15; no sentinel weapon
-# appears in it at all).
-co_behavior: additive_with_base_damage
+# Condition Overload: THE CATALOG NAMES THIS ATTACK. Verbatim
+# (docs/CATALOGS.md §1):
+#
+#   Laser Rifle | Normal Attack | Projectile | 45 | 45 | 100% |
+#   Multiplying
+#
+# THIS ENTRY READ ADDING AT 100% UNTIL 2026-08-20, which was the
+# ordinary class assumed because nobody had opened the catalog for this
+# weapon — the check was run against our own transcription of it, which
+# only ever carried the rows the roster already had.
+co_behavior: independent
 
 attack:
   trigger: auto

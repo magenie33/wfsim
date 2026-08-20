@@ -10,9 +10,16 @@ default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 
 introduced: "31"
 
-# NOT INHERITED — the CO catalog gives a class PER ATTACK, and none of
-# this weapon's is named. Absence means ORDINARY.
-co_behavior: additive_with_base_damage
+# Condition Overload: THE CATALOG NAMES THIS ATTACK. Verbatim
+# (docs/CATALOGS.md §1):
+#
+#   Nataruk | Charged Attack | Projectile | 900 | 900 | 100% | Multiplying
+#
+# THIS ENTRY READ ADDING AT 100% UNTIL 2026-08-20, which was the
+# ordinary class assumed because nobody had opened the catalog for this
+# weapon — the check was run against our own transcription of it, which
+# only ever carried the rows the roster already had.
+co_behavior: independent
 
 # THE HEAD IS WORTH 1x on this attack. The module gives it
 # `ExtraHeadshotDmg: -2`, which put through the additive headshot bracket would

@@ -118,6 +118,17 @@ attack:
     # explosive cannot. See `weapons_data::BlastKind` and MEASUREMENTS M53.
     blast_kind: terminal
     damage: { impact: 6, puncture: 42, slash: 12 }   # total 60
+    # THE CATALOG SAYS THIS AoE PART TAKES CONDITION OVERLOAD, which almost
+    # no area part does. Verbatim (docs/CATALOGS.md §1):
+    #
+    #   Tenet Ferrox | Hitscan AoE Direct | Hitscan | 240 | 800 | 333% | Adding
+    #
+    # The RELATIVE column is 333% and there is no per-part CO fraction —
+    # `co_base_fraction` is one number per ENTRY and this entry's direct hit
+    # has its own — so this part takes the term at 100% of its own base and
+    # the difference is admitted below. It read FALSE until 2026-08-20, which
+    # was the whole term missing rather than the fraction being off.
+    takes_condition_overload: true
     radius_m: 4.0
     falloff_start_m: 0.0
     # "Explosion has linear Damage Falloff from 100% to 70% from central
@@ -128,6 +139,7 @@ attack:
     status_chance: 0.26
 
 unmodeled:
+  - "the CATALOG gives this weapon's radial its own Condition Overload row at 333% of its base ('Tenet Ferrox | Hitscan AoE Direct | Hitscan | 240 | 800 | 333% | Adding'), and there is no per-part CO fraction here — `co_base_fraction` is one number per ENTRY. So the part takes the term at 100% of its own base and a status-stacking build is understated on it"
   - "the explosion's CONDITION OVERLOAD, which the catalog says it takes and computes on the DIRECT hit's base — 200 against the radial's own 60, a 333% term. `co_base_fraction` is one number per entry and this entry's direct hit is ordinary, so the radial takes none here and a status-stacking build is understated on it"
   - reason: explosion_ignores_cover
   - reason: holstered_reload

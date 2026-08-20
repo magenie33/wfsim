@@ -3589,6 +3589,53 @@ mod tests {
             ("corvas_prime", "independent", 1.0),
             ("corvas_prime_uncharged", "independent", 1.0),
             ("mandonel_uncharged", "independent", 1.0),
+
+            // THE 2026-08-20 SWEEP, and the reason it found so many at once:
+            // every one of these was filed ORDINARY because the check for a row
+            // had been run against docs/CATALOGS.md — our own transcription,
+            // which by construction only ever carried the rows the roster already
+            // had. Reading the WIKI PAGE instead turned up thirty-five entries the
+            // Attack Catalog names and the roster contradicted, a third of them
+            // weapons that had been here for months (the Lanka at 38%, both Laser
+            // Rifles, the Cernos family at 50%).
+            //
+            // A "Multiplying" row is `independent`; the relative column is
+            // `co_base_fraction`, and 100% leaves the field off.
+            ("acceltra", "additive_with_base_damage", 0.743),
+            ("aeolak", "independent", 1.0),
+            ("aeolak_alt", "independent", 1.0),
+            ("alternox", "independent", 1.0),
+            ("alternox_prime", "independent", 1.0),
+            ("basmu", "independent", 1.0),
+            ("battacor", "independent", 1.0),
+            ("buzlok", "independent", 1.0),
+            ("buzlok_beacon", "independent", 1.0),
+            ("cernos", "additive_with_base_damage", 0.5),
+            ("cinta", "independent", 1.0),
+            ("cinta_charged", "independent", 1.0),
+            ("daikyu_prime", "additive_with_base_damage", 0.5),
+            ("drakgoon", "additive_with_base_damage", 0.57),
+            ("epitaph", "independent", 1.0),
+            ("evensong", "additive_with_base_damage", 0.65),
+            ("exergis", "independent", 1.0),
+            ("fulmin_semi", "independent", 1.0),
+            ("harpak_harpoon", "independent", 1.0),
+            ("javlok", "independent", 1.0),
+            ("lanka", "additive_with_base_damage", 0.38),
+            ("laser_rifle", "independent", 1.0),
+            ("mutalist_cernos", "additive_with_base_damage", 0.5),
+            ("mutalist_cernos_uncharged", "independent", 1.0),
+            ("nataruk_perfect", "independent", 1.0),
+            ("paracyst_harpoon", "independent", 1.0),
+            ("prime_laser_rifle", "independent", 1.0),
+            ("quellor_alt", "independent", 1.0),
+            ("rakta_cernos", "additive_with_base_damage", 0.5),
+            ("seer", "independent", 1.0),
+            ("stahlta", "independent", 1.0),
+            ("stahlta_charged", "independent", 1.0),
+            ("steflos", "independent", 1.0),
+            ("tenet_envoy", "independent", 1.0),
+            ("trumna_grenade", "independent", 1.0),
         ];
 
         let mut unexpected = Vec::new();
@@ -3627,6 +3674,15 @@ mod tests {
             "burston_incarnon", "burston_prime_incarnon",
             // Zylok / Zylok Prime — Incarnon Form Radial Attack
             "zylok_incarnon", "zylok_prime_incarnon",
+            // THE 2026-08-20 SWEEP. Five more radials the catalog gives their
+            // own row and this roster had at `false` — which is not the
+            // fraction being off, it is the WHOLE CO term missing from an AoE
+            // that is most of the weapon. Each carries its relative column in
+            // its own comment and admits the fraction it cannot hold:
+            //   Ambassador  75%  | Ferrox      350% | Tenet Ferrox 333%
+            //   Opticor    250%  | Opt. Vandal 200% | Trumna       164%
+            "ambassador_charged", "ferrox", "tenet_ferrox",
+            "opticor", "opticor_vandal", "trumna",
         ];
         let mut radial_co: Vec<&str> = all()
             .iter()
@@ -3643,8 +3699,9 @@ mod tests {
         // because it is why this roster has more AoE parts taking CO than it
         // has radials.
         //
-        //   Torid | Toxin AoE Cloud | AoE | 40 | 40 | 100% | Multiplying
-        //   Pox   | DoT Cloud       | AoE | 20 | 50 | 250% | Adding
+        //   Torid           | Toxin AoE Cloud         | 40 |  40 |  100% | Multiplying
+        //   Pox             | DoT Cloud               | 20 |  50 |  250% | Adding
+        //   Mutalist Cernos | Charged AoE Toxin Cloud |  5 | 205 | 4100% | Adding
         //
         // THE POX'S 250% IS NOT EXPRESSIBLE and the weapon says so: its term
         // reads 50 against a cloud whose own base is 20, and `co_base_fraction`
@@ -3655,7 +3712,17 @@ mod tests {
             .filter(|s| s.attack.lingering.as_ref().is_some_and(|f| f.takes_condition_overload))
             .map(|s| s.id.as_str())
             .collect();
-        assert_eq!(field_co, ["torid", "pox"], "a lingering field likewise");
+        // THE MUTALIST CERNOS JOINED THEM ON 2026-08-20, and its 4100% is the
+        // most extreme relative column in the catalog: a cloud whose own base
+        // is 5 and whose CO term reads 205. Same shape as the Pox's 250% and
+        // the same admission — the field takes the term at 100% of its own
+        // base, which understates a status-stacking build enormously.
+        let mut field_co: Vec<&str> = field_co;
+        field_co.sort_unstable();
+        assert_eq!(
+            field_co, ["mutalist_cernos", "pox", "torid"],
+            "a lingering field likewise"
+        );
     }
     /// The Larkspur Prime is the first weapon that can RUN OUT, and this is
     /// the whole data path end to end: YAML -> spec -> base -> panel -> sim.

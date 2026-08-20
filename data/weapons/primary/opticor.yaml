@@ -78,8 +78,20 @@ attack:
     takes_multishot: false
     takes_blast_radius_mods: true
     damage: { magnetic: 400 }   # total 400
+    # THE CATALOG SAYS THIS AoE PART TAKES CONDITION OVERLOAD, which almost
+    # no area part does. Verbatim (docs/CATALOGS.md §1):
+    #
+    #   Opticor | Charged Hitscan Direct Hit Radial | Hitscan | 400 | 1000 | 250% | Adding
+    #
+    # The RELATIVE column is 250% and there is no per-part CO fraction —
+    # `co_base_fraction` is one number per ENTRY and this entry's direct hit
+    # has its own — so this part takes the term at 100% of its own base and
+    # the difference is admitted below. It read FALSE until 2026-08-20, which
+    # was the whole term missing rather than the fraction being off.
+    takes_condition_overload: true
 
 unmodeled:
+  - "the CATALOG gives this weapon's radial its own Condition Overload row at 250% of its base ('Opticor | Charged Hitscan Direct Hit Radial | Hitscan | 400 | 1000 | 250% | Adding'), and there is no per-part CO fraction here — `co_base_fraction` is one number per ENTRY. So the part takes the term at 100% of its own base and a status-stacking build is understated on it"
   - reason: explosion_ignores_cover
   - reason: self_stagger
 

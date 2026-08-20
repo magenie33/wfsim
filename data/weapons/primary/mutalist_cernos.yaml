@@ -28,10 +28,22 @@ ammo_pickup: 15
 magazine: 1
 reload_seconds: 0.6
 
-# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20)
-# — ordinary Additive at the full +100%. The catalog gives a class PER
-# ATTACK and none of this weapon's is named.
+# Condition Overload: THE CATALOG NAMES THIS ATTACK. Verbatim
+# (docs/CATALOGS.md §1):
+#
+#   Mutalist Cernos | Charged Attack | Projectile | 410 | 205 | 50% |
+#   Adding
+#
+# Notes cell:
+#   CO-bonus only applies to base (uncharged) damage; bows have innate 2x
+#   damage multiplier when fully charged
+#
+# THIS ENTRY READ ADDING AT 100% UNTIL 2026-08-20, which was the
+# ordinary class assumed because nobody had opened the catalog for this
+# weapon — the check was run against our own transcription of it, which
+# only ever carried the rows the roster already had.
 co_behavior: additive_with_base_damage
+co_base_fraction: 0.5
 
 attack:
   # Cone half-angle from the reticle, degrees — wiki
@@ -65,6 +77,17 @@ attack:
   # the cloud and the page's ten-second life: ten ticks of 5 Toxin.
   lingering:
     damage: { toxin: 5.0 }
+    # THE CATALOG SAYS THIS AoE PART TAKES CONDITION OVERLOAD, which almost
+    # no area part does. Verbatim (docs/CATALOGS.md §1):
+    #
+    #   Mutalist Cernos | Charged AoE Toxin Cloud | AoE | 5 | 205 | 4100% | Adding
+    #
+    # The RELATIVE column is 4100% and there is no per-part CO fraction —
+    # `co_base_fraction` is one number per ENTRY and this entry's direct hit
+    # has its own — so this part takes the term at 100% of its own base and
+    # the difference is admitted below. It read FALSE until 2026-08-20, which
+    # was the whole term missing rather than the fraction being off.
+    takes_condition_overload: true
     tick_rate: 1.0
     duration_seconds: 10.0
     radius_m: 2.5
@@ -90,6 +113,7 @@ attack:
   damage: { impact: 369, puncture: 20.5, slash: 20.5 }   # total 410
 
 unmodeled:
+  - "the CATALOG gives this weapon's lingering its own Condition Overload row at 4100% of its base ('Mutalist Cernos | Charged AoE Toxin Cloud | AoE | 5 | 205 | 4100% | Adding'), and there is no per-part CO fraction here — `co_base_fraction` is one number per ENTRY. So the part takes the term at 100% of its own base and a status-stacking build is understated on it"
   - "the cloud also CONFUSES the enemies standing in it, turning them on each other for its duration (wiki) — that is crowd control, and this arena's enemies neither turn nor stop"
   - reason: silent_weapon
 
