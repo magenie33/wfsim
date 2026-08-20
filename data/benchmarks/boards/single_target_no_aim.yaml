@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: f6a448ed11d2fb126560f69b9464fe74ba0fae0c
+engine: 49cbe2c31aa1ad87f701b7c9c04304ed383aaf27
 entries:
   - weapon: akarius_prime
     mode: base
