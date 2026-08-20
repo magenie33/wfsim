@@ -21,7 +21,7 @@ exilus_polarity: naramon
 riven_family: Hema
 traits: [infested]
 introduced: "19.5"
-internal_name: /Lotus/Weapons/Infested/InfWFAccompanyingPri/InfestedBurstRifle
+internal_name: /Lotus/Weapons/Infested/LongGuns/InfWFAccompanyingPri/InfestedBurstRifle
 noise: alarming
 ammo_type: primary
 # NO AMMO POOL — "This weapon does not use ammo pickups; health is converted to

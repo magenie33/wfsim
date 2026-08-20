@@ -839,6 +839,31 @@ would have caught the original bug: **every pool a weapon claims holds at least
 one mod.** Verified to bite — moving `data/mods/bow/` aside fails it with
 `cernos_prime: mod pool `bow` is empty`.
 
+### The join key itself
+
+Everything above joins our data to the export by `internal_name` ==
+`uniqueName`, never by display name. So the join key is the one field whose
+being WRONG produces no error anywhere: a key that resolves to nothing does not
+fail a sweep, it MISSES one — and a miss is indistinguishable from a weapon
+nobody has cross-checked. Every weapon yaml written since the roster began opens
+with "cross-checked against WFCD warframe-items — 0 disagreements", which a
+comparison that never ran satisfies perfectly.
+
+It had already happened. `hema` carried
+`/Lotus/Weapons/Infested/InfWFAccompanyingPri/InfestedBurstRifle` against DE's
+`/Lotus/Weapons/Infested/LongGuns/InfWFAccompanyingPri/InfestedBurstRifle` —
+ONE PATH SEGMENT SHORT — from the day it was written, and every sweep since had
+skipped it in silence (2026-08-20).
+
+`scripts/survey_internal_names.py` writes `data/surveys/internal_names.yaml`
+(213 rows, one per entry that STATES a key — a form inherits its weapon's and
+states none), read by `every_internal_name_resolves_in_the_export` and nothing
+else. Both halves refuse independently: the script will not record a key that
+joins to nothing, and the test fails when an entry states a key the survey does
+not hold. Verified to bite — reinstating the Hema's missing segment fails the
+test naming the weapon and both paths, and makes the script exit non-zero
+rather than write.
+
 ## Equippability: the wiki module is the only structured source (2026-08-02)
 
 A mod's `excludes_weapon` mirrors DE's own incompatibility tags. The WFCD
