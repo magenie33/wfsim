@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: eef0586ee353403cf69744bf76d0a010db7544e0
+engine: f6a448ed11d2fb126560f69b9464fe74ba0fae0c
 entries:
   - weapon: akarius_prime
     mode: base
@@ -3331,6 +3331,12 @@ entries:
     score: 64.22289732372994
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_lone_gun, vasto_prime_extended_volley, vasto_prime_survivors_edge]
+    arcanes: [secondary_deadhead]
+  - weapon: vasto_prime
+    mode: cycle
+    score: 41.095465559768485
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, creeping_bullseye, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_lone_gun, vasto_prime_marksmans_hand, vasto_prime_survivors_edge]
     arcanes: [secondary_deadhead]
   - weapon: vasto_prime
     mode: cycle
