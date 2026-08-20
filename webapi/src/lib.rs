@@ -8303,11 +8303,35 @@ mod card_and_sim_agree {
                     &wfsim_engine::arena::Arena::training(30.0),
                     &fx,
                 );
+                // A `tenno_scaled` arcane ARMS THE SIM AND DRAWS NO CARD, on
+                // purpose (user, 2026-08-02): its value is a Warframe STAT
+                // rather than a stack anybody earns, so a "0/1" knob for it
+                // would invite switching off a number the frame simply has. Its
+                // control is the Tenno block. So it is excluded from this
+                // direction of the check rather than being a violation of it.
+                //
+                // IT ONLY SURFACED WHEN THE NEUTRAL FRAME GOT REAL STATS
+                // (owner, 2026-08-20). While the default Tenno had 0 armor and
+                // 0 energy, every passive arcane scaled to nothing and armed
+                // nothing, so the two sides agreed by both being empty.
+                let passive: Vec<String> = a
+                    .fx(a.max_rank, StackPolicy::Emergent, base.traits, &tenno)
+                    .buffs
+                    .iter()
+                    .filter(|b| b.trigger == wfsim_engine::arcanes_data::ArcTrigger::Passive)
+                    .map(|b| {
+                        format!(
+                            "arcane:{}",
+                            if b.owner.is_empty() { a.id.clone() } else { b.owner.clone() }
+                        )
+                    })
+                    .collect();
                 let roster: Vec<String> = params
                     .buff_roster()
                     .into_iter()
                     .map(|(i, _)| i)
                     .filter(|id| id.starts_with("arcane:"))
+                    .filter(|id| !passive.contains(id))
                     .collect();
                 seen += 1;
                 for c in &cards {

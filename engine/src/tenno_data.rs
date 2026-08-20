@@ -349,17 +349,24 @@ mod tests {
     /// Tenno into the sim, THIS test is what makes the placeholder values
     /// impossible to ship by accident.
     #[test]
-    fn the_default_tenno_loads_with_placeholder_survivability() {
+    fn the_default_tenno_is_the_floor_of_every_released_frame() {
         let t = default_tenno();
         assert_eq!(t.id, "tenno");
-        // The two placeholders: non-zero so a reader cannot mistake the Tenno
-        // for dead, and obviously not a real frame's numbers.
-        assert_eq!(t.health, 1.0, "placeholder, not a Warframe stat");
-        assert_eq!(t.shield, 1.0, "placeholder, not a Warframe stat");
-        // These three ARE true unbuffed values, not placeholders.
+        // THE LOWEST ANY RELEASED FRAME HAS AT RANK 30, stat by stat (owner,
+        // 2026-08-20) — so this is not a frame, it is the floor of all of them,
+        // and a gate that opens here opens for everybody.
+        assert_eq!(t.health, 250.0, "Nokko");
+        assert_eq!(t.shield, 95.0, "Grendel and Grendel Prime");
+        assert_eq!(t.armor, 105.0, "Ash, Banshee, Gyre");
+        assert_eq!(t.energy, 150.0);
+        assert_eq!(t.sprint, 0.9, "Atlas and Qorvex");
+        // Overguard is the exception and stays zero: it is not a frame STAT,
+        // it is something an ability grants, and the neutral Tenno casts none.
         assert_eq!(t.overguard, 0.0);
-        assert_eq!(t.armor, 0.0);
-        assert_eq!(t.energy, 0.0);
+        // AND THE FLOOR DECIDES THE GATES. Fortress Salvo asks for armor over
+        // 450 and gets 105, so its punch through is off — a real answer rather
+        // than an admission, which is the whole reason these numbers are here.
+        assert!(t.armor < 450.0, "Fortress Salvo stays shut on the neutral frame");
         // The NEUTRAL state, which every scenario starts from: aiming (the
         // panel's optimistic view and the historical assumption), no ability
         // running, feet on the ground, energy full.
@@ -367,6 +374,6 @@ mod tests {
         assert!(!t.state.invisible);
         assert!(!t.state.airborne);
         assert_eq!(t.state.energy_pct, 1.0);
-        assert_eq!(t.energy_now(), 0.0, "no frame chosen: no pool to be full of");
+        assert_eq!(t.energy_now(), 150.0, "a full pool, and the pool is the floor");
     }
 }

@@ -38,30 +38,53 @@
 id: tenno
 name: Tenno
 
-# Survivability pools. Overguard sits ABOVE shields and blocks status; armor
-# mitigates health damage only. Both are 0 here because the placeholder Tenno
-# has no frame and no buffs — 0 is their true unbuffed value, unlike the two
-# placeholders above.
-health: 1
-shield: 1
+# THE WORST MAX-RANK FRAME THAT DOES NOT EXIST (owner, 2026-08-20). Every
+# field is the LOWEST value any released Warframe has at rank 30, taken stat by
+# stat — so this is not a frame, it is the floor of all of them.
+#
+# WHY THE FLOOR RATHER THAN AN AVERAGE. A weapon perk gated on a player stat
+# either pays or it does not, and there is no honest middle: the neutral Tenno
+# is the one who claims the LEAST, so a gate that opens here opens for everybody
+# and a number on the card is one nobody can fail to reproduce. It is the same
+# rule `sprint` already followed, applied to the other four.
+#
+# AND IT MAKES THE GATES DECIDE THEMSELVES. Fortress Salvo asks for armor over
+# 450 and gets 105, so its punch through is OFF and the card says so — a real
+# answer rather than an admission. Give the fight a frame and the same gate
+# opens with no code change, which is the whole point of this file.
+#
+# THREE OF THE FIVE ARE CONFIRMED against the wiki's `Module:Warframes/data`
+# (123 released frames, reading `<stat>Rank30` where it exists and the listed
+# value where it does not):
+#   armor  105  Ash, Banshee, Gyre        — armor does not scale with rank
+#   shield  95  Grendel, Grendel Prime    — the module's own `ShieldRank30: 95`
+#   sprint 0.9  Atlas, Qorvex             — sprint does not scale with rank
+# The other two are the owner's figures, and the module cannot check them: it
+# stores a rank-30 value only where a frame BREAKS the standard gain, so reading
+# the listed number as a maximum understates every frame that follows it.
+#   health 250  Nokko                     — the module lists its base 150
+#   energy 150                            — the module's lowest base is 100
+health: 250
+shield: 95
 overguard: 0
-armor: 0
+armor: 105
 
 # MAX ability energy — the pool, not what is left in it (`state.energy_pct`
 # below is that). Primary Overcharge reads both: "While at or above 90% Energy:
-# gain 35% of Max Energy as Multishot". 0 = no frame chosen, so it pays nothing.
-energy: 0
+# gain 35% of Max Energy as Multishot".
+energy: 150
 
 # Sprint multiplier (wiki `Module:Warframes/data` field `Sprint`; Loki Prime is
 # 1.25), and the first player stat a weapon perk reads: the Latron family's
 # Swift Punishment is "With Sprint Speed 1.2 or Higher: +30% Direct Damage per
 # Status Type".
 #
-# 0.9 IS THE SLOWEST A FRAME HAS (owner, 2026-08-12), and the neutral player is
-# the slowest one for the same reason every other field here is zero: with no
-# frame chosen the wielder claims nothing. 1.0 would have been a frame nobody
-# named, and it sat one tenth under a real threshold — close enough to look
-# deliberate and wrong in the same direction as guessing.
+# 0.9 IS THE SLOWEST A FRAME HAS (owner, 2026-08-12) — Atlas and Qorvex, and
+# sprint does not scale with rank so the listed figure is the rank-30 one. This
+# was the FIRST field to take the floor rule and for two years the only one;
+# the block above now applies it to the other four. 1.0 would have been a frame
+# nobody named, and it sat one tenth under a real threshold — close enough to
+# look deliberate and wrong in the same direction as guessing.
 sprint: 0.9
 
 # WHAT THE PLAYER IS DOING. A mod card gates on these in words ("while aiming",
@@ -87,7 +110,8 @@ state:
   energy_pct: 1.0
 
 source:
-  # No wiki page defines "the default Tenno" — this is our own scaffold, and
-  # the values are placeholders rather than transcribed facts. The frame stats
-  # that will replace them come from the wiki Warframe data module.
+  # No wiki page defines "the default Tenno" — the FRAME is our own construction
+  # and no such Warframe exists. Every number in it is a real frame's, though:
+  # they come from `Module:Warframes/data`, one stat at a time, and the comments
+  # above name which frame each floor belongs to.
   url: null

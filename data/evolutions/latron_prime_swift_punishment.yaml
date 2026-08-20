@@ -41,7 +41,7 @@ effects:
     # The threshold is what makes the row's OTHER note true — *"Equipping Amalgam
     # Serration will allow any Warframe to reach the threshold"* — since the
     # slowest frame reaches 0.9 x 1.25 = 1.125, which clears 1.1 and not 1.2.
-    condition: sprint_speed >= 1.1
+    condition: "sprint_speed >= 1.1"
     # THE CARD IS WRONG AND THE EFFECT IS RIGHT — see the threshold note
     # above. Declared so it reaches the perk's own card rather than living
     # only in this comment (owner, 2026-08-18).

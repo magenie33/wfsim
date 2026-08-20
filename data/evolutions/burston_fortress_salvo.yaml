@@ -51,7 +51,7 @@ effects:
   # +4; this one grants +2.)
   - kind: punch_through_bonus
     value: 2.0
-    condition: tenno_armor_over_450
+    condition: "armor > 450"
 
 source:
   url: https://wiki.warframe.com/w/Burston_Incarnon_Genesis

@@ -1183,6 +1183,7 @@ impl EvolutionDef {
                             value * 100.0
                         ),
                         G::FireRate => format!("+{:.0}% fire rate", value * 100.0),
+                        G::PunchThrough => format!("+{value}m punch through"),
                         G::Multishot => format!("+{:.0}% multishot", value * 100.0),
                         // ACCURACY narrows the cone a pellet draws inside, so
                         // the card is stated as what it does rather than as the
@@ -1396,6 +1397,24 @@ fn effect(v: &Value) -> Option<EvoEffect> {
                 v.get("stat").and_then(Value::as_str).unwrap_or("no stat")
             )),
         },
+        // A CONDITION IS NEVER IGNORED. This arm read `value` and nothing else
+        // for as long as it existed, so Fortress Salvo's "With Armor Over 450"
+        // paid out to everybody — the exact failure `gated_by_tenno` was written
+        // to prevent, on a kind that predates it (owner, 2026-08-20). The
+        // conditional form is a GATE now, so the neutral frame's 105 armor
+        // shuts it and a real frame opens it with no code change.
+        "punch_through_bonus" if v.get("condition").is_some() => {
+            match tenno_condition(v) {
+                Some(gate) => EvoEffect::GatedByTenno {
+                    gate,
+                    grant: crate::loadout::GatedGrant::PunchThrough,
+                    value: f(v, "value").unwrap_or(0.0),
+                },
+                None => EvoEffect::Inert(
+                    "punch_through_bonus with an unreadable `condition:`".into(),
+                ),
+            }
+        }
         "punch_through_bonus" => {
             EvoEffect::Indirect(crate::loadout::IndirectStat::PunchThrough, f(v, "value").unwrap_or(0.0))
         }
@@ -2975,10 +2994,15 @@ use crate::loadout::WeaponBase;
         let grip = of("boar_prime", "boar_prime_practiced_grip");
         assert_eq!(find(&grip, IndirectStat::Accuracy), Some(0.50), "{grip:?}");
 
-        // Fortress Salvo: "+4 Punch Through" (metres), alongside its +16 base
-        // damage — a mixed evolution must deliver BOTH halves.
+        // FORTRESS SALVO IS NOT HERE, and that is the fix rather than a
+        // regression (owner, 2026-08-20). Its card reads "With Armor Over 450:
+        // +4 Punch Through", and this assertion used to demand the 4 metres
+        // land in the unconditional bucket — codifying the very bug the owner
+        // reported, a perk requiring 450 armour paying out with none. It is a
+        // `GatedByTenno` grant now, so it reaches the panel only through the
+        // gate; `a_gated_perk_asks_the_frame_holding_the_gun` walks both sides.
         let salvo = of("boar_prime", "boar_prime_fortress_salvo");
-        assert_eq!(find(&salvo, IndirectStat::PunchThrough), Some(4.0), "{salvo:?}");
+        assert_eq!(find(&salvo, IndirectStat::PunchThrough), None, "{salvo:?}");
 
         // Marksman's Hand: "-50% Recoil". NEGATIVE, like the mods'.
         let hand = of("dual_toxocyst", "dual_toxocyst_marksmans_hand");
@@ -3429,6 +3453,109 @@ mod after_mods_layer_tests {
     /// So a fragment must END where its clause ends: at a sentence stop, a
     /// comma, a semicolon, or the end of the description. Anything else is a
     /// sentence taken apart in the middle, whatever the pieces then load as.
+    /// A GATED PERK ASKS THE FRAME HOLDING THE GUN — both sides of it.
+    ///
+    /// Fortress Salvo is "With Armor Over 450: +4 Punch Through", and it paid
+    /// out to everybody until 2026-08-20 because its arm read `value` and never
+    /// looked at `condition:`. The owner caught it by noticing a perk that wants
+    /// 450 armour working with none.
+    ///
+    /// THE NEUTRAL FRAME IS THE FLOOR OF EVERY RELEASED ONE (105 armour), so it
+    /// is the case a reader meets by default and the one the gate must shut on.
+    #[test]
+    fn a_gated_perk_asks_the_frame_holding_the_gun() {
+        use crate::loadout::{resolve, StackPolicy, WeaponBase};
+        let pt = |armor: f64| {
+            let mut t = crate::tenno_data::default_tenno().clone();
+            t.armor = armor;
+            let base = WeaponBase::from_data("boar_prime", true, &["boar_prime_fortress_salvo"]);
+            crate::loadout::resolve_for(&base, &[], StackPolicy::Emergent, &t).punch_through_m
+        };
+        let bare = {
+            let base = WeaponBase::from_data("boar_prime", true, &[]);
+            resolve(&base, &[], StackPolicy::Emergent).punch_through_m
+        };
+        // THE FLOOR SHUTS IT. 105 armour is the least any released frame has,
+        // so this is what the card shows until a scenario names a frame.
+        assert_eq!(pt(105.0), bare, "the neutral frame is far under 450");
+        // …and so does anything up to and including the threshold, which the
+        // card states as OVER 450 rather than at least.
+        assert_eq!(pt(450.0), bare, "\"Over 450\" is not 450");
+        // A FRAME THAT CLEARS IT OPENS THE GATE, with no code change — which is
+        // the whole reason the fight carries a Tenno.
+        assert!(
+            (pt(451.0) - bare - 4.0).abs() < 1e-9,
+            "451 armour buys the 4 m: {} vs {bare}",
+            pt(451.0)
+        );
+    }
+
+    /// A `condition:` IS NEVER IGNORED — it gates, or the effect is INERT, and
+    /// it is never granted unconditionally.
+    ///
+    /// This file already stated the rule in prose ("an unreadable `condition:`
+    /// falls to Inert rather than paying out unconditionally") and one arm had
+    /// never obeyed it: `punch_through_bonus` read `value` and nothing else, so
+    /// Fortress Salvo's "With Armor Over 450: +4 Punch Through" paid out to
+    /// every frame in the game. It was reported by the owner (2026-08-20), and
+    /// nothing here could have caught it — so this is that thing.
+    ///
+    /// IT WALKS THE DATA rather than a list of kinds. Every effect in every
+    /// evolution that declares a condition must load as one of the two honest
+    /// answers, so a kind added tomorrow is covered by nobody.
+    #[test]
+    fn no_conditional_effect_is_granted_unconditionally() {
+        use serde_norway::Value;
+        let mut bad: Vec<String> = Vec::new();
+        let mut checked = 0;
+        // THE RAW YAML, because `condition:` is consumed at load and the parsed
+        // effect no longer carries it — which is exactly how an arm could drop
+        // one without anything noticing.
+        for (path, text) in crate::data::files_under("evolutions/") {
+            if !path.ends_with(".yaml") {
+                continue;
+            }
+            let doc: Value = serde_norway::from_str(text).expect("an evolution parses");
+            let Some(effects) = doc.get("effects").and_then(Value::as_sequence) else {
+                continue;
+            };
+            for raw in effects {
+                let Some(cond) = raw.get("condition").and_then(Value::as_str) else {
+                    continue;
+                };
+                checked += 1;
+                let kind = raw.get("kind").and_then(Value::as_str).unwrap_or("?");
+                let Some(fx) = effect(raw) else {
+                    bad.push(format!("{path} / {kind} / `{cond}`: did not load at all"));
+                    continue;
+                };
+                // THE FOUR HONEST SHAPES. Gated on the Tenno; folded into a
+                // FIELD of the effect (the sprint kinds, the headshot one);
+                // folded into the effect's own TYPE, where the variant name
+                // carries the condition and no field is needed; or Inert, which
+                // says on the card that the perk does nothing.
+                let honest = match &fx {
+                    EvoEffect::GatedByTenno { .. } | EvoEffect::Inert(_) => true,
+                    // The condition IS the variant: "on empty reload".
+                    EvoEffect::ReloadSpeedOnEmptyReload { .. } => true,
+                    EvoEffect::FireRateBonus { min_sprint, .. } => *min_sprint > 0.0,
+                    EvoEffect::ConditionOverload { min_sprint, .. } => *min_sprint > 0.0,
+                    EvoEffect::InstantReloadOnHeadshot { needs_kill, .. } => *needs_kill,
+                    _ => false,
+                };
+                if !honest {
+                    bad.push(format!(
+                        "{path} / {kind} / `{cond}` loads as {fx:?} — a condition that pays out anyway"
+                    ));
+                }
+            }
+        }
+        assert!(checked >= 40, "only {checked} conditional effects found");
+        assert!(bad.is_empty(), "{} unconditional grant(s):
+  {}", bad.len(), bad.join("
+  "));
+    }
+
     #[test]
     fn a_transcribed_fragment_ends_where_its_clause_ends() {
         let mut bad: Vec<String> = Vec::new();

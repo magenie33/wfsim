@@ -1079,6 +1079,11 @@ impl TennoGate {
 pub enum GatedGrant {
     /// Per status type, into the Condition Overload rate.
     ConditionOverload,
+    /// METRES OF PUNCH THROUGH, gated on a Warframe stat — Fortress Salvo's
+    /// "With Armor Over 450: +4 Punch Through". It joins the same bucket a
+    /// punch-through MOD writes to, so the class rule that refuses those on an
+    /// area-of-effect attack refuses this too, and for the same reason.
+    PunchThrough,
     /// A fraction of the BASE fire rate, additive with fire-rate mods.
     FireRate,
     /// A fraction of the base multishot, into the multishot bucket.
@@ -3723,6 +3728,7 @@ pub fn resolve_for(
         base.punch_through_m
     } else {
         base.punch_through_m
+            + gate(GatedGrant::PunchThrough)
             + indirect
                 .iter()
                 .filter(|(s, _)| *s == IndirectStat::PunchThrough)

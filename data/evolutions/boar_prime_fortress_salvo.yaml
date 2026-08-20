@@ -10,13 +10,15 @@ selection: choose_one
 effects:
   - kind: flat_base_damage
     value: 16.0
-  # NOT LOADED: no `punch_through` arm in the evolutions loader, and the
-  # condition is on the TENNO's armour (a Warframe stat the arena carries but
-  # this loader never consults). Punch through decides nothing in a
-  # single-target arena either way.
+  # GATED ON THE WARFRAME'S ARMOUR, and the gate is real (2026-08-20). This
+  # arm read `value` and ignored `condition:` for as long as it existed, so the
+  # +4 paid out to every frame in the game — reported by the owner, who noticed
+  # a perk requiring 450 armour working with none. The neutral Tenno is the
+  # FLOOR of every released frame at 105 armour (data/tenno/default.yaml), so
+  # this is OFF unless the fight names a frame that clears 450.
   - kind: punch_through_bonus
     value: 4.0
-    condition: tenno_armor_over_450
+    condition: "armor > 450"
 
 source:
   url: https://wiki.warframe.com/w/Boar_Incarnon_Genesis

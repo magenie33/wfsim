@@ -1896,11 +1896,18 @@ mod tests {
                 .sum::<f64>()
         };
 
-        // No frame: NO buff at all, not a buff worth zero. A zero-value stack
-        // would still list in the picker and invite someone to "turn it up".
+        // THE NEUTRAL FRAME IS THE FLOOR OF EVERY RELEASED ONE, not a blank
+        // (owner, 2026-08-20), so these two arcanes now answer rather than
+        // abstaining — which is the point of pinning it.
         let neutral = crate::tenno_data::default_tenno();
+        // Bulwark pays past 1,000 armor and the floor is 105, so it is still
+        // silent — and silent means NO buff, not a buff worth zero: a zero
+        // stack would list in the picker and invite someone to turn it up.
         assert!(bulwark.fx(5, StackPolicy::Emergent, NO_TRAITS, neutral).buffs.is_empty());
-        assert!(overcharge.fx(5, StackPolicy::Emergent, NO_TRAITS, neutral).buffs.is_empty());
+        // Overcharge reads the pool itself, so 150 energy at a full pool pays
+        // 0.35 x 150 / 100 = +52.5% multishot. It is the arcane doing its job on
+        // the weakest frame in the game, and it only applies when EQUIPPED.
+        assert!((ms(neutral) - 0.525).abs() < 1e-9, "{}", ms(neutral));
 
         // Bulwark: +1% per point PAST 1,000 — so 1,000 armor still pays
         // nothing, 1,200 pays +200%, and the rank-5 cap of +500% is reached at

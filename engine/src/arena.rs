@@ -147,15 +147,17 @@ impl Arena {
 mod tests {
     use super::*;
 
-    /// The fixture is the NEUTRAL player: aiming, no frame, nothing running.
-    /// A test that measures a weapon must not be measuring an invisible Tenno
-    /// with 1,200 armor by accident.
+    /// The fixture is the NEUTRAL player: aiming, nothing running, and the
+    /// FLOOR of every released frame rather than a blank one (owner,
+    /// 2026-08-20). A test that measures a weapon must not be measuring an
+    /// invisible Tenno with 1,200 armor by accident — and the floor is the one
+    /// frame that cannot be doing that, since nothing in the game is weaker.
     #[test]
     fn the_training_arena_is_a_neutral_player_against_a_bare_dummy() {
         let a = Arena::training(10.0);
         assert!(a.tenno.state.aiming);
         assert!(!a.tenno.state.invisible);
-        assert_eq!(a.tenno.armor, 0.0);
+        assert_eq!(a.tenno.armor, 105.0, "the floor, and far under every gate");
         assert_eq!(a.target.base_armor, 0.0);
         assert_eq!(a.duration_secs, 10.0);
     }
