@@ -39,3 +39,4 @@ target-*/
 
 # one-shot data generators: they run once, and what they decided is in docs/
 .scan/
+.probe/

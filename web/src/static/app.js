@@ -7591,8 +7591,23 @@ function autoForma() {
 }
 
 // ---- render mods ----
+// WHICH POLARITIES WE SHIP ART FOR. `imgTag` hides an image that fails to load,
+// so a polarity with no icon draws NOTHING — which is exactly what an empty
+// slot draws, and the reader cannot tell "unpolarised" from "polarised in a
+// colour this page has no picture of".
+//
+// The Vinquibus is why it matters: it is "Innate one Madurai and one Aura
+// polarities", the wiki hosts no Aura_Pol.svg, and an invisible icon would put
+// the page back to claiming the slot is free when it is a +25% penalty
+// (2026-08-21). A named letter says more than a missing picture.
+const POL_ART = new Set(["Madurai", "Naramon", "Vazarin", "Umbra", "Omni"]);
+const polGlyph = (pol) => POL_ART.has(cap(pol))
+  ? imgTag(POL(cap(pol)), "pol")
+  : `<span class="pol pol-txt">${escHtml(cap(pol).slice(0, 1))}</span>`;
+
 function polBtn(pol, i) {
-  return `<button class="pol-btn" data-i="${i}" title="change polarity">${pol ? imgTag(POL(pol), "pol") : '<span class="nopol">◇</span>'}</button>`;
+  const t = pol ? `${cap(pol)} — ${tr("change polarity")}` : tr("change polarity");
+  return `<button class="pol-btn" data-i="${i}" title="${escHtml(t)}">${pol ? polGlyph(pol) : '<span class="nopol">◇</span>'}</button>`;
 }
 function renderMods() {
   // The quick-calc bar sits above this block and is measured against the same
