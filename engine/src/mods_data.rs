@@ -440,7 +440,7 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
                 to,
                 chance: max("rankMax"),
                 low_rate_threshold: threshold,
-                low_rate_mult: mult,
+                low_rate_multiplier: mult,
             }
         }
         // INDIRECT stats: outside the theoretical-DPS formula, but real
@@ -1564,8 +1564,8 @@ mod tests {
         assert!(by("pistol_acuity").effects.iter().any(|e| matches!(e, ModEffect::WeakpointDamage(v) if (*v - 3.50).abs() < 1e-9)));
         assert!(by("pistol_acuity").effects.iter().any(|e| matches!(e, ModEffect::WeakpointCritChance(v) if (*v - 3.50).abs() < 1e-9)));
         assert!(by("hemorrhage").effects.iter().any(|e| matches!(e,
-            ModEffect::ProcConversion { from: DamageType::Impact, to: DamageType::Slash, chance, low_rate_threshold, low_rate_mult }
-                if (*chance - 0.35).abs() < 1e-9 && (*low_rate_threshold - 2.5).abs() < 1e-9 && (*low_rate_mult - 2.0).abs() < 1e-9)));
+            ModEffect::ProcConversion { from: DamageType::Impact, to: DamageType::Slash, chance, low_rate_threshold, low_rate_multiplier }
+                if (*chance - 0.35).abs() < 1e-9 && (*low_rate_threshold - 2.5).abs() < 1e-9 && (*low_rate_multiplier - 2.0).abs() < 1e-9)));
         // Both of these are while-aiming too, so they arrive wrapped.
         assert!(by("sharpened_bullets").effects.iter().any(|e| matches!(e,
             ModEffect::WhileTenno(crate::loadout::TennoCondition::Aiming, inner)

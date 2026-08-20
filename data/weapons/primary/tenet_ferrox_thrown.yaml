@@ -79,7 +79,7 @@ attack:
   lingering:
     damage: { electricity: 150.0 }
     tick_rate: 0.5
-    duration_s: 30.0
+    duration_seconds: 30.0
     radius_m: 10.0
     crit_chance: 0.04
     crit_multiplier: 2.0

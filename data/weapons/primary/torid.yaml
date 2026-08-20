@@ -120,7 +120,7 @@ attack:
   # branch is per weapon, and a future one may refresh.
   #
   # The clock is measured too (M13): the first tick lands WITH the impact, so
-  # duration_s 10 at tick_rate 1 is TEN ticks, not nine.
+  # duration_seconds 10 at tick_rate 1 is TEN ticks, not nine.
   # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): 3.0 m -> +240%, on the Toxin Cloud. "Cloud radius is not reduced" - it pays nothing and collects everything.
   compression:
     effectiveness: 1.00
@@ -130,7 +130,7 @@ attack:
   lingering:
     damage: { toxin: 40.0 }
     tick_rate: 1.0
-    duration_s: 10.0
+    duration_seconds: 10.0
     radius_m: 3.0
     falloff_start_m: 0.0
     falloff_reduction: 1.0

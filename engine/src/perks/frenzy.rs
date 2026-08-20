@@ -16,7 +16,7 @@
 //!   mod order. (Recoil -75% is not a damage bucket and is omitted here.)
 //!
 //! This perk is stateless — the buff's duration/refresh lives on the [`Buff`]
-//! (its `expiry_secs`), which the [`BuffBar`] expires as time advances.
+//! (its `expiry_seconds`), which the [`BuffBar`] expires as time advances.
 
 use crate::buffs::{Buff, BuffBar, BuffScope, Contributions, InjectedElement, InjectionPosition};
 use crate::damage::DamageType;
@@ -46,7 +46,7 @@ impl Frenzy {
             id: BUFF_ID.into(),
             scope: BuffScope::Weapon,
             stacks: 1,
-            expiry_secs: None,
+            expiry_seconds: None,
             contributions: Self::buff_contributions(),
         }
     }
@@ -95,7 +95,7 @@ impl Perk for Frenzy {
             id: BUFF_ID.into(),
             scope: BuffScope::Weapon,
             stacks: 1,
-            expiry_secs: Some(t_secs + DURATION_SECS),
+            expiry_seconds: Some(t_secs + DURATION_SECS),
             contributions: Self::buff_contributions(),
         });
     }
@@ -126,7 +126,7 @@ mod tests {
 
         let buff = bar.get(BUFF_ID).expect("frenzy granted");
         assert_eq!(buff.stacks, 1);
-        assert_eq!(buff.expiry_secs, Some(3.0));
+        assert_eq!(buff.expiry_seconds, Some(3.0));
 
         let c = bar.total_contributions();
         assert!(approx(c.fire_rate_multiplier, 2.5));
@@ -178,6 +178,6 @@ mod tests {
         f.on_event(&headshot(), 2.0, &mut bar); // refreshed: expires at 5.0
         bar.expire(3.0);
         assert!(bar.get(BUFF_ID).is_some());
-        assert_eq!(bar.get(BUFF_ID).unwrap().expiry_secs, Some(5.0));
+        assert_eq!(bar.get(BUFF_ID).unwrap().expiry_seconds, Some(5.0));
     }
 }

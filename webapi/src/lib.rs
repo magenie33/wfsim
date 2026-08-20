@@ -1287,7 +1287,7 @@ pub fn meta_json() -> Value {
             .collect::<Vec<_>>(),
         "factions": factions,
         // WARFRAME ABILITY BUFFS, the catalogue the scenario's own section
-        // draws from (`data/abilities/`). `value` and `duration_s` are the
+        // draws from (`data/abilities/`). `value` and `duration_seconds` are the
         // wiki's max-rank figures at 100% strength; the page multiplies by the
         // strength you set, so the numbers it SHOWS are computed on screen from
         // exactly these two fields and nothing hidden.
@@ -1326,7 +1326,7 @@ pub fn meta_json() -> Value {
                 "family": a.family,
                 "helminth": a.helminth,
                 "value": a.value,
-                "duration_s": a.duration_s,
+                "duration_seconds": a.duration_seconds,
                 // The elements this one lets you CHOOSE (Resupply's ten), empty
                 // where it fixes one — the page draws its picker from this.
                 "elements": a.elements,
@@ -3057,13 +3057,13 @@ pub fn panel_json(v: &Value) -> Value {
             "status_damage",
             "Status Damage",
             format!("×{}", num(1.0)),
-            format!("×{}", num(panel.status_damage_mult)),
+            format!("×{}", num(panel.status_damage_multiplier)),
         );
         row(
             "status_duration",
             "Status Duration",
             format!("×{}", num(1.0)),
-            format!("×{}", num(panel.status_duration_mult)),
+            format!("×{}", num(panel.status_duration_multiplier)),
         );
         row(
             "fire_rate",
@@ -3478,11 +3478,11 @@ pub fn panel_json(v: &Value) -> Value {
                     "sources": rsrc("status_chance") }),
                 json!({ "key": "status_damage", "label": "Status Damage",
                     "base": format!("×{}", num(1.0)),
-                    "final": format!("×{}", num(panel.status_damage_mult)),
+                    "final": format!("×{}", num(panel.status_damage_multiplier)),
                     "sources": rsrc("status_damage") }),
                 json!({ "key": "status_duration", "label": "Status Duration",
                     "base": format!("×{}", num(1.0)),
-                    "final": format!("×{}", num(panel.status_duration_mult)),
+                    "final": format!("×{}", num(panel.status_duration_multiplier)),
                     "sources": rsrc("status_duration") }),
                 json!({ "key": "radius", "label": "Blast Radius",
                     "base": format!("{} m", dist(rb.radius_m)),
@@ -3562,12 +3562,12 @@ pub fn panel_json(v: &Value) -> Value {
             let dist = |x: f64| format!("{x}");
             // ✅ measured (MEASUREMENTS M13): the first tick lands WITH the
             // impact, so the count is the plain product — ten for a 10 s cloud.
-            let ticks = (fr.duration_s * fr.tick_rate).round();
+            let ticks = (fr.duration_seconds * fr.tick_rate).round();
             // Renewed Horror: the shot after an empty reload gets a longer
             // cloud. 1.0 = the evolution is not equipped, and the rows stay
             // silent about it rather than stating a boost of ×1.
             let boost = panel.field_duration_on_empty_reload;
-            let boosted = (boost > 1.0).then_some((fr.duration_s * boost, ticks * boost));
+            let boosted = (boost > 1.0).then_some((fr.duration_seconds * boost, ticks * boost));
             let mut rows = vec![
                 json!({ "key": "base_damage", "label": "Damage per Tick",
                     "base": num(fb.base_vector.total()), "final": num(fr.modified_base),
@@ -3586,11 +3586,11 @@ pub fn panel_json(v: &Value) -> Value {
                     "sources": fsrc("status_chance") }),
                 json!({ "key": "status_damage", "label": "Status Damage",
                     "base": format!("×{}", num(1.0)),
-                    "final": format!("×{}", num(panel.status_damage_mult)),
+                    "final": format!("×{}", num(panel.status_damage_multiplier)),
                     "sources": fsrc("status_damage") }),
                 json!({ "key": "status_duration", "label": "Status Duration",
                     "base": format!("×{}", num(1.0)),
-                    "final": format!("×{}", num(panel.status_duration_mult)),
+                    "final": format!("×{}", num(panel.status_duration_multiplier)),
                     "sources": fsrc("status_duration") }),
                 // The clock. Neither is mod-scaled: fire-rate mods change shots
                 // per second, not the cloud's own tick rate, and the cloud is
@@ -3598,7 +3598,7 @@ pub fn panel_json(v: &Value) -> Value {
                 json!({ "key": "tick_rate", "label": "Tick Rate", "base": "—",
                     "final": format!("{}/s", dist(fr.tick_rate)), "sources": json!([]) }),
                 json!({ "key": "field_duration", "label": "Field Duration",
-                    "base": "—", "final": format!("{} s", dist(fr.duration_s)),
+                    "base": "—", "final": format!("{} s", dist(fr.duration_seconds)),
                     "note": match boosted {
                         // The doubled cloud is one shot in `magazine`, so state
                         // both numbers rather than an average nobody can check
@@ -3669,7 +3669,7 @@ pub fn panel_json(v: &Value) -> Value {
 parts.push(json!({
                 "id": "field",
                 "label": "Lingering field",
-                "meta": format!("{} m, {} s", dist(fr.radius_m), dist(fr.duration_s)),
+                "meta": format!("{} m, {} s", dist(fr.radius_m), dist(fr.duration_seconds)),
                 "stats": rows,
                 "damage": vector_rows(&fr.damage),
                 "damage_total": num(fr.damage.total()),
@@ -4303,7 +4303,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
                     let id = e.get("id").and_then(Value::as_str)?;
                     Some(wfsim_engine::abilities_data::AbilityPick {
                         id,
-                        duration_s: e
+                        duration_seconds: e
                             .get("secs")
                             .and_then(Value::as_f64)
                             .filter(|s| *s > 0.0),
@@ -4546,7 +4546,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         // WHERE THE WEAPON POINTS. `None` is at the target, which is the fight
         // every golden value and both boards rest on.
         aim_at,
-        duration_secs: duration,
+        duration_seconds: duration,
         // WARFRAME ABILITY BUFFS — parsed HERE, in `parse_fight`, which is what
         // makes the optimizer score under them without a line of optimizer code
         // (the house rule: anything that is a property of the fight goes in the
@@ -4939,7 +4939,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         })
         .collect();
     // One-second buckets, sliced to the engagement's actual duration.
-    let nb = (s.duration_secs.ceil() as usize).clamp(1, m.timeline.0.len());
+    let nb = (s.duration_seconds.ceil() as usize).clamp(1, m.timeline.0.len());
     let pel = m.pellets.max(1) as f64;
 
     // THE REPLAY: the median engagement, re-run from the RNG state it started
@@ -5116,15 +5116,15 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         "dps_runs": series
             .effective
             .iter()
-            .map(|e| e / s.duration_secs.max(1e-9))
+            .map(|e| e / s.duration_seconds.max(1e-9))
             .collect::<Vec<f64>>(),
-        "dps_mean": s.mean_effective_damage / s.duration_secs.max(1e-9),
+        "dps_mean": s.mean_effective_damage / s.duration_seconds.max(1e-9),
         "dps_se": s.std_effective_damage
             / f64::from(runs.max(1)).sqrt()
-            / s.duration_secs.max(1e-9),
+            / s.duration_seconds.max(1e-9),
         "kills_min": s.min_kills,
         "kills_max": s.max_kills,
-        "dps": m.effective_damage / s.duration_secs.max(1e-9),
+        "dps": m.effective_damage / s.duration_seconds.max(1e-9),
         "shots": m.shots,
         "pellets": m.pellets,
         "crit_rate": m.crits as f64 / pel,
@@ -5161,7 +5161,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         "replay": replay,
         "transforms": m.transforms,
         "reloads": m.reloads,
-        "duration": s.duration_secs,
+        "duration": s.duration_seconds,
         "runs": s.runs,
         "panel": {
             "damage": damage,

@@ -34,7 +34,7 @@ helminth: true
 # VERBATIM (Energized_Munitions): "Expend 50 Energy to improve all equipped
 # weapons' Ammo Efficiency by 75%, lasting for 3 / 3.5 / 4 / 5 seconds."
 value: 0.75
-duration_s: 5
+duration_seconds: 5
 
 # ABILITY STRENGTH DOES NOT MOVE IT. The page's `misc` row states the 75% with
 # no Strength icon, where its duration row carries the Duration one — and the

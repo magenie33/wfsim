@@ -1301,6 +1301,32 @@ around (decision 2026-07-31).
 
 ## Style
 
+- **A NAME MAY BE LONG; IT MAY NOT BE VAGUE** (owner, 2026-08-20).
+  `docs/NAMING.md` is the convention and `engine::naming` enforces it. The shape
+  is `[scope_]<subject>_<aspect>[_<unit>]` — `falloff_start_m` reads as "the
+  falloff's start, in metres" to someone who has never opened the file, and that
+  is the bar. Never trade information away for brevity.
+  A UNIT IS PART OF THE NAME and has ONE spelling: `_m`, `_seconds`, `_deg`,
+  `_mps`, `_pct`. A dimensionless number declares its ROLE instead — `_chance`,
+  `_multiplier`, `_bonus`, `_rate`. Words are not abbreviated (`damage` not
+  `dmg`, `multiplier` not `mult`) except where DE abbreviates them on a card
+  (`crit`, `co`, `aoe`, `dps`).
+  THE CONVENTION WAS DERIVED, NOT INVENTED. `_m` was already perfect — 13 data
+  keys and 15 engine fields, zero exceptions — and is the model the rest were
+  made to match. Seconds was the opposite: four spellings, and three of them
+  (`duration_s`, `duration_secs`, `duration_seconds`) for ONE concept in ONE
+  crate. 465 occurrences across 51 files were renamed the day the rule landed,
+  and `one_fight` reported every answer unchanged.
+  WHAT IS FROZEN IS THE WIRE. A field inside a saved preset, a share link or a
+  board record is a durable name and stays as it is — `wf_armor`,
+  `wf_energy_pct`, `headshot_pct`, `no_resupply` — the same rule
+  `builds::BUILD_AXES` states for axes: the LIST is shared, the SPELLINGS are
+  per-protocol. `naming::FROZEN` is that list and it may only SHRINK.
+  The ratchet walks every yaml key and every engine field rather than a list of
+  names. It was itself broken on the day it was written — the field detector
+  required an uppercase type initial, so it skipped every `f64` in the crate and
+  ran green over `crit_mult` — and was caught only by sabotaging it. A ratchet
+  that cannot fail is not a ratchet; prove it bites.
 - English everywhere in the repo; all-lowercase commit subjects in the
   form `area: what changed and why it is right`, no AI attribution, no
   marketing copy — **with ONE exception: the home hero** (`.hero-h` /

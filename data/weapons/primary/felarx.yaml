@@ -48,9 +48,9 @@ reload_seconds: 3.7
 # They add up to the published total at a full magazine, which is the
 # cross-check: 0.8 + 0.4 x 6 + 0.5 = 3.7.
 reload_style: by_round
-reload_start_s: 0.8
-reload_per_shell_s: 0.4
-reload_end_s: 0.5
+reload_start_seconds: 0.8
+reload_per_shell_seconds: 0.4
+reload_end_seconds: 0.5
 
 # CONDITION OVERLOAD IS MULTIPLYING ON BOTH OF THIS WEAPON'S MODES (owner,
 # 2026-08-08). The wiki's CO catalog lists the Felarx among the Multiplying

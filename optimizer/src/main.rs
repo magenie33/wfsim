@@ -21,7 +21,7 @@ fn main() {
     let mut evo2_both = false;
     // Official default: 120 s (user, 2026-07-25) — long windows measure
     // steady-state sustain instead of window-phase burst artifacts.
-    let mut duration_secs = 120.0f64;
+    let mut duration_seconds = 120.0f64;
     let mut final_runs: Option<u32> = None;
     let mut final_round_runs: Option<u32> = None;
     let mut arcane_only: Option<String> = None;
@@ -39,7 +39,7 @@ fn main() {
         } else if arg == "evo2=both" {
             evo2_both = true;
         } else if let Some(v) = arg.strip_prefix("duration=") {
-            duration_secs = v.parse().expect("duration=<secs>");
+            duration_seconds = v.parse().expect("duration=<secs>");
         } else if let Some(v) = arg.strip_prefix("runs=") {
             // Playoff mode: skip the funnel, run every job at this count.
             final_runs = Some(v.parse().expect("runs=<n>"));
@@ -95,7 +95,7 @@ fn main() {
             // number this engine has reported was measured under.
             player_at: wfsim_engine::space::Vec2::ORIGIN,
             target_at: wfsim_engine::space::Vec2::new(0.0, wfsim_engine::space::CONTACT_RANGE_M),
-            duration_secs,
+            duration_seconds,
             // …and nothing is being cast on them either. A CLI search is a
             // statement about the WEAPON.
             abilities: Vec::new(),
@@ -124,7 +124,7 @@ fn main() {
     };
     println!(
         "[scenario] {} @9999 STEEL PATH, instant respawn, 100% headshots, {} s, REAL incarnon cycle",
-        scenario.arena.target.name, scenario.arena.duration_secs
+        scenario.arena.target.name, scenario.arena.duration_seconds
     );
     println!(
         "  pools: overguard {:.3e}, shield {:.3e}, health {:.3e}, armor {:.0}{}",

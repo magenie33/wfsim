@@ -48,11 +48,11 @@ pub struct SecondaryEnervate {
     // Configuration (from rank).
     flat_crit_per_stack: f64,
     reset_after_big_crits: u32,
-    min_trigger_interval_secs: f64,
+    min_trigger_interval_seconds: f64,
 
     // Private bookkeeping (not shown in the UI).
     big_crit_count: u32,
-    last_trigger_secs: Option<f64>,
+    last_trigger_seconds: Option<f64>,
 }
 
 impl SecondaryEnervate {
@@ -63,9 +63,9 @@ impl SecondaryEnervate {
             flat_crit_per_stack: FLAT_CRIT_PER_STACK,
             // Rank 0 -> 1 big crit to reset, ... rank 5 -> 6.
             reset_after_big_crits: rank as u32 + 1,
-            min_trigger_interval_secs: 1.0 / RATE_LIMIT_HZ,
+            min_trigger_interval_seconds: 1.0 / RATE_LIMIT_HZ,
             big_crit_count: 0,
-            last_trigger_secs: None,
+            last_trigger_seconds: None,
         }
     }
 
@@ -85,7 +85,7 @@ impl SecondaryEnervate {
             id: BUFF_ID.into(),
             scope: BuffScope::Weapon,
             stacks,
-            expiry_secs: None,
+            expiry_seconds: None,
             contributions: Contributions {
                 flat_crit_chance: stacks as f64 * self.flat_crit_per_stack,
                 ..Default::default()
@@ -95,11 +95,11 @@ impl SecondaryEnervate {
 
     /// Whether a trigger is allowed at `t_secs` given the 30/s rate cap.
     fn trigger_allowed(&self, t_secs: f64) -> bool {
-        match self.last_trigger_secs {
+        match self.last_trigger_seconds {
             None => true,
             // Small epsilon so an interval landing exactly on the cap (e.g. 8
             // ticks at 240 fps == 1/30 s) counts as allowed despite rounding.
-            Some(last) => t_secs - last >= self.min_trigger_interval_secs - 1e-9,
+            Some(last) => t_secs - last >= self.min_trigger_interval_seconds - 1e-9,
         }
     }
 }
@@ -123,7 +123,7 @@ impl Perk for SecondaryEnervate {
         if !self.trigger_allowed(t_secs) {
             return;
         }
-        self.last_trigger_secs = Some(t_secs);
+        self.last_trigger_seconds = Some(t_secs);
 
         // Read current stacks from the buff bar (0 if the buff is absent), gain
         // one on the hit, then apply the reset if this big crit fills the counter.
@@ -143,7 +143,7 @@ impl Perk for SecondaryEnervate {
                 id: BUFF_ID.into(),
                 scope: BuffScope::Weapon,
                 stacks,
-                expiry_secs: None,
+                expiry_seconds: None,
                 contributions: Contributions {
                     flat_crit_chance: stacks as f64 * self.flat_crit_per_stack,
                     ..Default::default()
@@ -186,7 +186,7 @@ mod tests {
             assert_eq!(p.reset_after_big_crits, expect.round() as u32, "rank {rank}");
             assert!(approx(p.flat_crit_per_stack, f("rank0")));
             assert!(approx(p.flat_crit_per_stack, f("rankMax")));
-            assert!(approx(p.min_trigger_interval_secs, 1.0 / f("rate_limit_hz")));
+            assert!(approx(p.min_trigger_interval_seconds, 1.0 / f("rate_limit_hz")));
         }
     }
 

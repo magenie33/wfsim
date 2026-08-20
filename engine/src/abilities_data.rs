@@ -108,7 +108,7 @@ pub struct AbilityDef {
     /// At max rank and 100% Ability Strength.
     pub value: f64,
     /// At max rank and 100% Ability Duration, in seconds.
-    pub duration_s: f64,
+    pub duration_seconds: f64,
     /// EVERY bracket this one cast grants. A list because a single ability can
     /// touch more than one — Redline sets fire rate AND reload speed off one
     /// gauge — and splitting those into two entries would let a player tick
@@ -192,7 +192,7 @@ struct AbilityFile {
     #[serde(default)]
     helminth: bool,
     value: f64,
-    duration_s: f64,
+    duration_seconds: f64,
     /// ONE effect, the shape every ability had before Redline. Kept because it
     /// is what most of them are and a list of one reads worse than a value.
     #[serde(default)]
@@ -308,7 +308,7 @@ pub fn all() -> &'static [AbilityDef] {
                 family: leak(f.family),
                 helminth: f.helminth,
                 value: f.value,
-                duration_s: f.duration_s,
+                duration_seconds: f.duration_seconds,
                 effects,
                 scales_with_strength,
                 elements: elements.iter().cloned().map(leak).collect(),
@@ -332,7 +332,7 @@ pub fn get(id: &str) -> Option<&'static AbilityDef> {
 pub struct AbilityPick<'a> {
     pub id: &'a str,
     /// Seconds, or `None` for "the whole fight".
-    pub duration_s: Option<f64>,
+    pub duration_seconds: Option<f64>,
     /// Which element, where the ability offers a choice (Resupply's gear
     /// wheel). `None` everywhere else, and on a stored pick that predates the
     /// picker — the definition's own first choice stands in.
@@ -411,7 +411,7 @@ pub fn resolve(
             .collect();
         let live = ActiveAbility {
             id: def.id,
-            ends_at: p.duration_s.unwrap_or(f64::INFINITY),
+            ends_at: p.duration_seconds.unwrap_or(f64::INFINITY),
             effects,
         };
         match best.iter_mut().find(|(f, _, _)| *f == def.family) {
@@ -551,7 +551,7 @@ mod tests {
         for d in a {
             assert!(!d.name.is_empty());
             assert!(d.value > 0.0, "{}", d.id);
-            assert!(d.duration_s > 0.0, "{}", d.id);
+            assert!(d.duration_seconds > 0.0, "{}", d.id);
             // A NUMBER WITHOUT A SOURCE IS A GUESS. Every one of these is a
             // wiki figure and the file has to name the page it came off.
             assert!(
@@ -568,8 +568,8 @@ mod tests {
     #[test]
     fn two_buffs_of_a_family_do_not_stack_and_the_stronger_wins() {
         let picks = [
-            AbilityPick { id: "roar_helminth", duration_s: None, element: None },
-            AbilityPick { id: "roar", duration_s: None, element: None },
+            AbilityPick { id: "roar_helminth", duration_seconds: None, element: None },
+            AbilityPick { id: "roar", duration_seconds: None, element: None },
         ];
         let live = resolve(&picks, 1.0, "");
         assert_eq!(live.len(), 1);
@@ -581,7 +581,7 @@ mod tests {
         // a 200%-strength Helminth Roar (0.60) beats a 100% Rhino's (0.50).
         // Same call, different strengths, is the closest this can get to two
         // players — and it is what the field means.
-        let solo = resolve(&[AbilityPick { id: "roar_helminth", duration_s: None, element: None }], 2.0, "");
+        let solo = resolve(&[AbilityPick { id: "roar_helminth", duration_seconds: None, element: None }], 2.0, "");
         assert!(faction_bonus_at(&solo, 0.0) > 0.5);
     }
 
@@ -590,11 +590,11 @@ mod tests {
     #[test]
     fn different_families_all_run_at_once() {
         let picks = [
-            AbilityPick { id: "roar", duration_s: None, element: None },
-            AbilityPick { id: "eclipse", duration_s: None, element: None },
-            AbilityPick { id: "shock_trooper", duration_s: None, element: None },
-            AbilityPick { id: "freeze_force", duration_s: None, element: None },
-            AbilityPick { id: "xatas_whisper", duration_s: None, element: None },
+            AbilityPick { id: "roar", duration_seconds: None, element: None },
+            AbilityPick { id: "eclipse", duration_seconds: None, element: None },
+            AbilityPick { id: "shock_trooper", duration_seconds: None, element: None },
+            AbilityPick { id: "freeze_force", duration_seconds: None, element: None },
+            AbilityPick { id: "xatas_whisper", duration_seconds: None, element: None },
         ];
         let live = resolve(&picks, 1.0, "");
         assert_eq!(live.len(), 5);
@@ -665,8 +665,8 @@ mod tests {
     fn a_duration_ends_the_buff_and_whole_fight_never_does() {
         let live = resolve(
             &[
-                AbilityPick { id: "roar", duration_s: Some(30.0), element: None },
-                AbilityPick { id: "eclipse", duration_s: None, element: None },
+                AbilityPick { id: "roar", duration_seconds: Some(30.0), element: None },
+                AbilityPick { id: "eclipse", duration_seconds: None, element: None },
             ],
             1.0,
             "",
@@ -715,7 +715,7 @@ mod tests {
                     continue;
                 }
                 assert!(
-                    (a.value - b.value).abs() > 1e-9 || (a.duration_s - b.duration_s).abs() > 1e-9,
+                    (a.value - b.value).abs() > 1e-9 || (a.duration_seconds - b.duration_seconds).abs() > 1e-9,
                     "{} and {} are the same buff — keep one",
                     a.id,
                     b.id
@@ -734,17 +734,17 @@ mod tests {
         //    that predates the picker.
         let def = get("resupply").expect("resupply");
         assert_eq!(def.elements.len(), 10, "the gear wheel");
-        let dflt = resolve(&[AbilityPick { id: "resupply", duration_s: None, element: None }], 1.0, "rifle");
+        let dflt = resolve(&[AbilityPick { id: "resupply", duration_seconds: None, element: None }], 1.0, "rifle");
         assert_eq!(extra_hits_at(&dflt, 0.0)[0].element, DamageType::Heat, "the first choice");
         let cold = resolve(
-            &[AbilityPick { id: "resupply", duration_s: None, element: Some("cold") }],
+            &[AbilityPick { id: "resupply", duration_seconds: None, element: Some("cold") }],
             1.0,
             "rifle",
         );
         assert_eq!(extra_hits_at(&cold, 0.0)[0].element, DamageType::Cold);
         // …and a chosen element is ignored where the ability fixes one.
         let fixed = resolve(
-            &[AbilityPick { id: "xatas_whisper", duration_s: None, element: Some("cold") }],
+            &[AbilityPick { id: "xatas_whisper", duration_seconds: None, element: Some("cold") }],
             1.0,
             "rifle",
         );
@@ -753,7 +753,7 @@ mod tests {
         // 2. A WEAPON CLASS that doubles it: 25% on a rifle, 50% on a sniper.
         let rifle = extra_hits_at(&dflt, 0.0)[0].frac;
         let sniper = extra_hits_at(
-            &resolve(&[AbilityPick { id: "resupply", duration_s: None, element: None }], 1.0, "sniper"),
+            &resolve(&[AbilityPick { id: "resupply", duration_seconds: None, element: None }], 1.0, "sniper"),
             0.0,
         )[0]
         .frac;
@@ -764,14 +764,14 @@ mod tests {
         //    (Toxin status chance)" and Resupply grants "the selected Elemental
         //    Damage and Status Effect"; Xata's rolls.
         for (id, forced) in [("toxic_lash", true), ("resupply", true), ("xatas_whisper", false)] {
-            let live = resolve(&[AbilityPick { id, duration_s: None, element: None }], 1.0, "rifle");
+            let live = resolve(&[AbilityPick { id, duration_seconds: None, element: None }], 1.0, "rifle");
             assert_eq!(extra_hits_at(&live, 0.0)[0].forced_status, forced, "{id}");
         }
 
         // …and Toxic Lash's own number, for guns: 30% Toxin, 45 s.
         let tl = get("toxic_lash").expect("toxic_lash");
         assert!((tl.value - 0.30).abs() < 1e-9);
-        assert!((tl.duration_s - 45.0).abs() < 1e-9);
+        assert!((tl.duration_seconds - 45.0).abs() < 1e-9);
         assert!(tl.effects.iter().any(|e| matches!(*e,
             AbilityEffect::ExtraHit { element: DamageType::Toxin, .. })));
     }

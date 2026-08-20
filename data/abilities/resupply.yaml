@@ -47,7 +47,7 @@ family: resupply
 helminth: false
 
 value: 0.25
-duration_s: 300
+duration_seconds: 300
 
 effect:
   kind: extra_hit

@@ -26,8 +26,8 @@ introduced: "42"
 # the block is what adds the PARTIAL case between bursts.
 battery:
   regen_per_second: 9.0
-  delay_empty_s: 0.1
-  delay_partial_s: 1.5
+  delay_empty_seconds: 0.1
+  delay_partial_seconds: 1.5
 
 # NOT INHERITED — the CO catalog gives a class per ATTACK. No row for either of
 # this weapon's, so both are ordinary Additive; the explosion takes no Condition

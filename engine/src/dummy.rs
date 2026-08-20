@@ -1629,7 +1629,7 @@ pub struct DummyParams {
     /// but the thrown spearguns.
     pub attractor_seconds: Option<f64>,
     /// Status duration multiplier (1.0 = unmodded).
-    pub status_duration_mult: f64,
+    pub status_duration_multiplier: f64,
     /// Base fire rate; multiplied live by BuffBar fire-rate multipliers
     /// (Frenzy x2.5) to schedule the next shot.
     pub fire_rate: f64,
@@ -1804,7 +1804,7 @@ pub struct DummyParams {
     /// per-stack expiry (FIFO), NOT the lose-one-reset decay.
     pub cc_stack: Option<crate::loadout::StackSpec>,
     /// (1 + status-damage bonuses): scales every status payload value.
-    pub status_damage_mult: f64,
+    pub status_damage_multiplier: f64,
     /// (element, 1 + Σ its bonuses) brackets for elemental DoT ticks.
     pub elem_dot_bonus: Vec<(DamageType, f64)>,
     /// (1 + Σ faction bonuses matching THIS target's faction) — the resolved
@@ -1812,7 +1812,7 @@ pub struct DummyParams {
     /// faction. Applied ×1 on direct hits, ×2 (squared) on DoT/status ticks
     /// (the wiki "double dip"). Computed in `from_panel` from the panel bucket
     /// + the target's faction.
-    pub faction_mult: f64,
+    pub faction_multiplier: f64,
     /// WARFRAME ABILITY BUFFS running in this fight (`data/abilities/`).
     ///
     /// A property of the FIGHT, not of the build: it arrives on the Arena and
@@ -1844,7 +1844,7 @@ pub struct DummyParams {
     pub weakpoint_cc_rel: f64,
     /// King's Gambit: MULTIPLIES a non-weak-point pellet's crit chance.
     /// 1.0 = ordinary; the card's x0 makes a body crit impossible.
-    pub bodyshot_cc_mult: f64,
+    pub bodyshot_crit_chance_multiplier: f64,
     /// Wiseman's Regard, live: `(rate, cap, what the panel already folded in)`,
     /// the first two in POST-MOD units. See the ResolvedPanel field.
     pub derived_status_from_crit: Option<(f64, f64, f64)>,
@@ -2005,7 +2005,7 @@ pub struct DummyParams {
     ///
     /// PER FORM. The Torid's cloud pays +240% and its Incarnon beam pays
     /// nothing, so the cycle's two `DummyParams` disagree on purpose.
-    pub compression_mult: f64,
+    pub compression_multiplier: f64,
     /// The same arcane's `adds` row: a flat addition to the base-damage
     /// bracket, beside a live buff's. Per form, for the same reason.
     pub compression_bd: f64,
@@ -2059,7 +2059,7 @@ pub struct DummyParams {
     /// the target's position (an explosion's epicentre, a second body).
     pub player_at: crate::space::Vec2,
     pub target_at: crate::space::Vec2,
-    pub duration_secs: f64,
+    pub duration_seconds: f64,
 }
 
 /// ONE FRAME of a replayed engagement: where the fight stood at `t`.
@@ -2564,13 +2564,13 @@ impl DummyParams {
 
     /// THE FACTION BRACKET AT `t`, Roar included.
     ///
-    /// `faction_mult` is `1 + Σ bonuses`, and Roar is a bonus in that same
+    /// `faction_multiplier` is `1 + Σ bonuses`, and Roar is a bonus in that same
     /// bucket ("considered Faction Damage Bonus, additive with other sources of
     /// Faction Damage" — wiki), so it ADDS to the sum rather than multiplying
     /// the result. Everything the bracket already does then happens to it for
     /// free, the status double-dip included.
     pub fn faction_at_time(&self, t: f64) -> f64 {
-        self.faction_mult + crate::abilities_data::faction_bonus_at(&self.abilities, t)
+        self.faction_multiplier + crate::abilities_data::faction_bonus_at(&self.abilities, t)
     }
 
     /// ECLIPSE'S OWN MULTIPLIER at `t`, or 1.0. Applied ONCE wherever it is
@@ -2724,7 +2724,7 @@ impl DummyParams {
         // (diluted by Serration, and it reaches status payloads through
         // ModifiedBase); `multiplies` is a final multiplier on the instance,
         // the slot Secondary Surge occupies.
-        let (compression_mult, compression_bd) = match panel.compression {
+        let (compression_multiplier, compression_bd) = match panel.compression {
             Some(c) => {
                 let bonus = arcane.compression_dmg_per_m * c.radius_lost;
                 if c.adds { (1.0, bonus) } else { (1.0 + bonus, 0.0) }
@@ -2743,7 +2743,7 @@ impl DummyParams {
             tenno,
             target,
             body_parts,
-            duration_secs,
+            duration_seconds,
             abilities,
             player_at,
             target_at,
@@ -2774,7 +2774,7 @@ impl DummyParams {
         };
         // Resolve the faction bucket against THIS target's faction (additive
         // within the matching faction; 1.0 vs a non-match / Unknown).
-        let faction_mult = 1.0
+        let faction_multiplier = 1.0
             + panel
                 .faction_damage
                 .iter()
@@ -2782,14 +2782,14 @@ impl DummyParams {
                 .map(|(_, v)| v)
                 .sum::<f64>();
         Self {
-            faction_mult,
+            faction_multiplier,
             // Straight off the ARENA — the one place a fight is described.
             abilities: abilities.clone(),
             damage: panel.damage,
             radial: panel.radial,
             falloff: panel.falloff,
             spread: panel.spread,
-            // Straight off the ARENA, like `abilities` and `duration_secs`.
+            // Straight off the ARENA, like `abilities` and `duration_seconds`.
             player_at,
             target_at,
             // …AND SO IS THE REST OF THE FORMATION. A fight's bodies are the
@@ -2808,7 +2808,7 @@ impl DummyParams {
             multishot_on_last_round: panel.multishot_on_last_round,
             base_multishot_on_last_round: panel.base_multishot_on_last_round,
             multishot_ammo_bonus: panel.multishot_ammo_bonus,
-            compression_mult,
+            compression_multiplier,
             compression_bd,
             bd_below_half_health: panel.bd_below_half_health,
             cc_on_undamaged: panel.cc_on_undamaged,
@@ -2857,8 +2857,8 @@ impl DummyParams {
             ms_stack: panel.ms_stack,
             cc_on_headshot: panel.cc_on_headshot,
             cc_stack: panel.cc_stack,
-            status_damage_mult: panel.status_damage_mult,
-            status_duration_mult: panel.status_duration_mult,
+            status_damage_multiplier: panel.status_damage_multiplier,
+            status_duration_multiplier: panel.status_duration_multiplier,
             elem_dot_bonus: panel.elem_dot_bonus.clone(),
             dot_modified_base: Some(panel.modified_base),
             reload_bonus: panel.reload_bonus,
@@ -2867,7 +2867,7 @@ impl DummyParams {
             crit_tier_upgrade_chance: panel.crit_tier_upgrade_chance,
             slash_on_crit: panel.slash_on_crit,
             weakpoint_cc_rel: panel.weakpoint_cc_rel,
-            bodyshot_cc_mult: panel.bodyshot_cc_mult,
+            bodyshot_crit_chance_multiplier: panel.bodyshot_crit_chance_multiplier,
             derived_status_from_crit: panel.derived_status_from_crit,
             derived_crit_from_status: panel.derived_crit_from_status,
             consecutive_hit_damage: panel.consecutive_hit_damage,
@@ -2920,7 +2920,7 @@ impl DummyParams {
             enervate_stacks: 0,
             body_parts,
             target,
-            duration_secs,
+            duration_seconds,
             locked_stats: panel.locked.clone(),
             locked_buffs: Vec::new(),
             cycle: None,
@@ -3115,7 +3115,7 @@ impl Default for DummyParams {
             multishot_on_last_round: 0.0,
             base_multishot_on_last_round: 0.0,
             multishot_ammo_bonus: 0.0,
-            compression_mult: 1.0,
+            compression_multiplier: 1.0,
             compression_bd: 0.0,
             bd_below_half_health: 0.0,
             cc_on_undamaged: 0.0,
@@ -3133,7 +3133,7 @@ impl Default for DummyParams {
             base_status_chance: 0.37,
             forced_procs: Vec::new(),
             attractor_seconds: None,
-            status_duration_mult: 1.0,
+            status_duration_multiplier: 1.0,
             fire_rate: 1.0,
             charge_seconds: None,
             charge_cadence: crate::weapons_data::ChargeCadence::DrawThenRate,
@@ -3167,9 +3167,9 @@ impl Default for DummyParams {
             ms_stack: None,
             cc_on_headshot: None,
             cc_stack: None,
-            status_damage_mult: 1.0,
+            status_damage_multiplier: 1.0,
             elem_dot_bonus: Vec::new(),
-            faction_mult: 1.0,
+            faction_multiplier: 1.0,
             abilities: Vec::new(),
             dot_modified_base: None,
             reload_bonus: 0.0,
@@ -3178,7 +3178,7 @@ impl Default for DummyParams {
             crit_tier_upgrade_chance: 0.0,
             slash_on_crit: 0.0,
             weakpoint_cc_rel: 0.0,
-            bodyshot_cc_mult: 1.0,
+            bodyshot_crit_chance_multiplier: 1.0,
             derived_status_from_crit: None,
             derived_crit_from_status: None,
             consecutive_hit_damage: None,
@@ -3223,7 +3223,7 @@ impl Default for DummyParams {
             body_parts: Self::humanoid_parts(),
             target: TargetParams::training_dummy(),
             tenno: crate::tenno_data::default_tenno().clone(),
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             // ONE BODY — a fixture, not a formation.
             others: Vec::new(),
             aim_at: None,
@@ -3382,7 +3382,7 @@ pub struct RunResult {
     /// Its mean is the number `crits / pellets` stops being once a build
     /// passes 100% crit chance: the rate saturates at 1.0 while the tier
     /// keeps climbing, and it is the tier that multiplies the damage
-    /// (`crit_mult = 1 + tier x (cd - 1)`, uncapped — red is not the top).
+    /// (`crit_multiplier = 1 + tier x (cd - 1)`, uncapped — red is not the top).
     /// Below 100% the two are the same number.
     pub crit_tier_sum: u32,
     pub headshots: u32,  // hits on an `is_head` part
@@ -3423,7 +3423,7 @@ pub struct RunResult {
     /// what a room-clear is actually paced by — a weapon that reloads for a
     /// third of the fight has two very different numbers and only one of them
     /// is on the card.
-    pub downtime_secs: f64,
+    pub downtime_seconds: f64,
     /// When the FIRST target died. `None` if none did — an honest absence
     /// rather than a zero, which would read as "instantly".
     pub first_kill_at: Option<f64>,
@@ -3462,7 +3462,7 @@ fn noncrit_mult(spec: Option<(f64, f64)>, tier: u32, rng: &mut Rng) -> f64 {
 /// A mod SET may promote a hit by one critical tier (Vigilante: 5% per
 /// equipped member). The wiki is explicit that it "triggers exclusively on
 /// critical hits" — a normal hit is never promoted, so tier 0 is untouched.
-/// The tier formula does the rest: crit_mult = 1 + tier x (cd - 1), so one
+/// The tier formula does the rest: crit_multiplier = 1 + tier x (cd - 1), so one
 /// extra tier is worth exactly one more crit-damage step.
 fn upgrade_crit_tier(tier: u32, chance: f64, rng: &mut Rng) -> u32 {
     if tier >= 1 && chance > 0.0 && rng.chance(chance) {
@@ -3730,7 +3730,7 @@ fn push_break_proc(debuffs: &mut DebuffState, params: &DummyParams, now: f64, po
         BrokenPool::Shield => params.target.max_shield(),
     };
     let frac = (0.03 * stacks as f64).min(0.30);
-    let total = frac * pool_max * params.status_damage_mult.powi(2);
+    let total = frac * pool_max * params.status_damage_multiplier.powi(2);
     debuffs.dots.push(Dot {
         next_tick: now,
         ticks_left: 6,
@@ -3780,8 +3780,8 @@ const DEPTH_PROC: u32 = 2;
 const DEPTH_DERIVED_PROC: u32 = 3;
 
 /// The faction multiplier a payload at `depth` carries.
-fn faction_at(faction_mult: f64, depth: u32) -> f64 {
-    faction_mult.powi(depth as i32)
+fn faction_at(faction_multiplier: f64, depth: u32) -> f64 {
+    faction_multiplier.powi(depth as i32)
 }
 
 /// How many stacks of a COMBINED status the target currently holds.
@@ -4052,7 +4052,7 @@ fn fire_extra_hits(
                 mb_live: extra_hit_status_base(raw, trigger_raw),
                 // Both already inside `raw`. Passing them again would square
                 // what the trigger's own procs took once.
-                crit_mult: 1.0,
+                crit_multiplier: 1.0,
                 part_factor: 1.0,
                 attrition: 1.0,
                 xh_bracket: bracket,
@@ -4174,7 +4174,7 @@ fn drain_area_procs(
             }
         }
     }
-    let sd = params.status_duration_mult;
+    let sd = params.status_duration_multiplier;
     for (from, dmg, radius_m) in blows {
         for j in near.within(from, radius_m) {
             // THE HOST IS NEVER ONE OF THEM: it took the single-target half and
@@ -4247,9 +4247,9 @@ fn settle_procs(
     // through an extra damage instance.
     depth: u32,
 ) {
-    let InstanceScale { mb_live, crit_mult, part_factor, attrition, xh_bracket } = scale;
-    let sd = params.status_duration_mult;
-    let sdm = params.status_damage_mult;
+    let InstanceScale { mb_live, crit_multiplier, part_factor, attrition, xh_bracket } = scale;
+    let sd = params.status_duration_multiplier;
+    let sdm = params.status_damage_multiplier;
     let caps = foe.stack_caps;
     let gcap = |base: usize| caps.map_or(base, |c| base.min(c.general));
     let stagger_cap = caps.map_or(STAGGER_CAP, |c| STAGGER_CAP.min(c.impact));
@@ -4263,11 +4263,11 @@ fn settle_procs(
     let immediate_ticks = ((BLEED_TICKS as f64 * sd).floor() as u32).max(1);
     // Faction is re-applied at every DERIVATION step — see `faction_at`. A
     // status the hit applied is one step past it, so depth 2 (wiki
-    // Faction_Damage_Bonus; MECHANICS §8). This was written `faction_mult *
-    // faction_mult`, which is the same number and says nothing about why.
+    // Faction_Damage_Bonus; MECHANICS §8). This was written `faction_multiplier *
+    // faction_multiplier`, which is the same number and says nothing about why.
     // AT `at`, because Roar is in this bracket and Roar ends. A status takes
     // the faction bonus that was running when it was APPLIED — the proc is a
-    // snapshot of its instance, which is why `crit_mult` is snapshotted here
+    // snapshot of its instance, which is why `crit_multiplier` is snapshotted here
     // too.
     let fm2 = faction_at(params.faction_at_time(at), depth);
     // ECLIPSE, ONCE. Not `faction_at`-style repetition: the wiki draws the
@@ -4292,7 +4292,7 @@ fn settle_procs(
                 // hit.
                 value: coeff * mb_live
                     * (bracket + params.ability_element_at(dtype, at))
-                    * sdm * crit_mult * part_factor * fm2 * attrition * ecl,
+                    * sdm * crit_multiplier * part_factor * fm2 * attrition * ecl,
                 dtype,
                 ignores_armor,
         };
@@ -4424,7 +4424,7 @@ fn settle_procs(
                     * mb_live
                     * ap.elem_bracket(DamageType::Heat)
                     * sdm
-                    * crit_mult
+                    * crit_multiplier
                     * part_factor
                     * fm2; // faction double-dip
                 let expiry = at + STATUS_DURATION * sd;
@@ -4489,7 +4489,7 @@ fn settle_procs(
                     value: BLAST_COEFFICIENT
                         * mb_live
                         * sdm
-                        * crit_mult
+                        * crit_multiplier
                         * part_factor
                         * fm2,
                     xh_bracket,
@@ -4650,7 +4650,7 @@ fn settle_procs(
                         // ModifiedBase. Same rule the ability members read from
                         // the other direction; docs/EXTRA_HIT.md.
                         mb_live: extra_hit_status_base(0.0, mb_live),
-                        crit_mult,
+                        crit_multiplier,
                         part_factor,
                         // A SECOND ATTRITION ROLL, ON TOP OF THE HIT'S — and it
                         // is a BUG of DE's, not a design (owner,
@@ -4692,7 +4692,7 @@ fn settle_procs(
                         // since the deduction came off the Felarx's
                         // Devastating Attrition. MEASUREMENTS M37.
                         //
-                        // `crit_mult` is still carried, in `InstanceScale` above:
+                        // `crit_multiplier` is still carried, in `InstanceScale` above:
                         // the parent's value is what the zero is replaced BY, and
                         // that value critted. MEASUREMENTS M37.
                         attrition: attrition * noncrit_mult(ap.noncrit_bonus, 0, rng),
@@ -4758,7 +4758,7 @@ struct InstanceScale {
     /// Live ModifiedBase (base-damage bucket applied).
     mb_live: f64,
     /// The instance's crit multiplier (1.0 when it did not crit).
-    crit_mult: f64,
+    crit_multiplier: f64,
     /// Body-part multiplier — always 1.0 for a radial or a field.
     part_factor: f64,
     /// DEVOURING/DEVASTATING ATTRITION on THIS instance, or 1.0.
@@ -4951,7 +4951,7 @@ fn spread_hit(
     // multiply its own in.
     raw_per_bucket: f64,
     shares: TypeShares,
-    crit_mult: f64,
+    crit_multiplier: f64,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -4998,7 +4998,7 @@ fn spread_hit(
     if raw <= 0.0 {
         return;
     }
-    let sd = params.status_duration_mult;
+    let sd = params.status_duration_multiplier;
     let mit = foe.debuffs.mitigation(t, sd, params.armor_strip_per_puncture);
     // BEFORE `apply`, like the aimed path: breaking overguard changes which
     // column the next read returns, and the split belongs to the hit that
@@ -5068,7 +5068,7 @@ fn spread_hit(
             // off `share`: a Slash bleed off a headshot is the same size as one
             // off a bodyshot, because a status effect reads the modded base.
             mb_live: modded_base * arc_ratio * inst.share,
-            crit_mult,
+            crit_multiplier,
             // …AND IT IS IN HERE, because Heat and Blast are computed as a
             // fraction of the HIT rather than of the base — the same two the
             // direct path multiplies by its own part factor.
@@ -5106,7 +5106,7 @@ fn spread_hit(
 struct SpreadShot {
     raw_per_bucket: f64,
     shares: TypeShares,
-    crit_mult: f64,
+    crit_multiplier: f64,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -5141,7 +5141,7 @@ fn spread_from_punch_through(
     struck: &[usize],
     raw_per_bucket: f64,
     shares: TypeShares,
-    crit_mult: f64,
+    crit_multiplier: f64,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -5191,7 +5191,7 @@ fn spread_from_punch_through(
         };
         let foe = &mut others[idx];
         spread_hit(
-            &inst, foe, fs, raw_per_bucket, shares, crit_mult, attrition, modded_base,
+            &inst, foe, fs, raw_per_bucket, shares, crit_multiplier, attrition, modded_base,
             status_chance, forced, vector, params, ap, gal, arc, r, d, t,
             SpreadBy::PunchThrough,
         );
@@ -5243,7 +5243,7 @@ fn spread_from_ricochet(
     path: &[(usize, bool)],
     raw_per_bucket: f64,
     shares: TypeShares,
-    crit_mult: f64,
+    crit_multiplier: f64,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -5273,7 +5273,7 @@ fn spread_from_ricochet(
             part_factor: if head { head_factor(fs) } else { 1.0 },
         };
         spread_hit(
-            &inst, &mut others[idx], fs, raw_per_bucket, shares, crit_mult, attrition,
+            &inst, &mut others[idx], fs, raw_per_bucket, shares, crit_multiplier, attrition,
             modded_base, status_chance, forced, vector, params, ap, gal, arc, r, d, t,
             SpreadBy::Ricochet,
         );
@@ -5307,7 +5307,7 @@ fn spread_from_echo(
     ap: &DummyParams,
     raw_per_bucket: f64,
     shares: TypeShares,
-    crit_mult: f64,
+    crit_multiplier: f64,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -5352,7 +5352,7 @@ fn spread_from_echo(
         };
         let (foe, fs) = (&mut others[i], &params.others[i]);
         spread_hit(
-            &inst, foe, fs, raw_per_bucket, shares, crit_mult, attrition, modded_base,
+            &inst, foe, fs, raw_per_bucket, shares, crit_multiplier, attrition, modded_base,
             status_chance, forced, vector, params, ap, gal, arc, r, d, t, SpreadBy::Echo,
         );
     }
@@ -5390,7 +5390,7 @@ fn spread_from_tendrils(
     live: u32,
     raw_per_bucket: f64,
     shares: TypeShares,
-    crit_mult: f64,
+    crit_multiplier: f64,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -5435,7 +5435,7 @@ fn spread_from_tendrils(
         };
         let (foe, fs) = (&mut others[i], &params.others[i]);
         spread_hit(
-            &inst, foe, fs, raw_per_bucket, shares, crit_mult, attrition, modded_base,
+            &inst, foe, fs, raw_per_bucket, shares, crit_multiplier, attrition, modded_base,
             status_chance, forced, vector, params, ap, gal, arc, r, d, t, SpreadBy::Tendril,
         );
     }
@@ -5476,7 +5476,7 @@ fn spread_from_blast(
     // out, so each body can multiply in its own of both.
     raw_per_bucket_per_falloff: f64,
     shares: TypeShares,
-    crit_mult: f64,
+    crit_multiplier: f64,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -5489,7 +5489,7 @@ fn spread_from_blast(
     t: f64,
 ) {
     blast_at(
-        det, others, params, ap, rad, raw_per_bucket_per_falloff, shares, crit_mult,
+        det, others, params, ap, rad, raw_per_bucket_per_falloff, shares, crit_multiplier,
         attrition, modded_base, status_chance, forced, vector, gal, arc, r, d, t,
         SpreadBy::Blast,
     );
@@ -5510,7 +5510,7 @@ fn blast_at(
     rad: &crate::loadout::ResolvedRadial,
     raw_per_bucket_per_falloff: f64,
     shares: TypeShares,
-    crit_mult: f64,
+    crit_multiplier: f64,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -5543,7 +5543,7 @@ fn blast_at(
             part_factor: 1.0,
         };
         spread_hit(
-            &inst, &mut others[i], spec, raw_per_bucket_per_falloff, shares, crit_mult,
+            &inst, &mut others[i], spec, raw_per_bucket_per_falloff, shares, crit_multiplier,
             attrition, modded_base, status_chance, forced, vector, params, ap, gal, arc,
             r, d, t, by,
         );
@@ -5574,7 +5574,7 @@ fn spread_from_seeds(
     beam: crate::loadout::BeamGeometry,
     raw_per_bucket: f64,
     shares: TypeShares,
-    crit_mult: f64,
+    crit_multiplier: f64,
     attrition: f64,
     modded_base: f64,
     status_chance: f64,
@@ -5634,7 +5634,7 @@ fn spread_from_seeds(
         let idx = inst.target - 1;
         let (foe, fs) = (&mut others[idx], &params.others[idx]);
         spread_hit(
-            inst, foe, fs, raw_per_bucket, shares, crit_mult, attrition, modded_base,
+            inst, foe, fs, raw_per_bucket, shares, crit_multiplier, attrition, modded_base,
             status_chance, forced, vector, params, ap, gal, arc, r, d, t, SpreadBy::Chain,
         );
     }
@@ -5663,7 +5663,7 @@ fn fire_syndicate_radial(
     rng: &mut Rng,
     at: f64,
 ) {
-    let sd = params.status_duration_mult;
+    let sd = params.status_duration_multiplier;
     let mit = debuffs.mitigation(at, sd, params.armor_strip_per_puncture);
     let amt = sy.damage * params.faction_at_time(at);
     let (eff, killed, _broke) = target.apply(
@@ -5697,7 +5697,7 @@ fn fire_syndicate_radial(
             at,
             InstanceScale {
                 mb_live: sy.damage,
-                crit_mult: 1.0,
+                crit_multiplier: 1.0,
                 part_factor: 1.0,
                 attrition: 1.0,
                 // A syndicate blast is 1000 of one element and "the build does
@@ -5807,7 +5807,7 @@ struct FieldState {
     /// carried (1.0 for the weapon's own projectile, 1+bonus for one multishot
     /// generated). Per field, because within one pull some grenades have it and
     /// some do not.
-    damage_mult: f64,
+    damage_multiplier: f64,
 }
 
 /// The attacker-side buff state a FIELD tick reads, as of the most recent
@@ -5874,11 +5874,11 @@ fn process_field_ticks(
         // Status events strictly before this tick land first.
         process_ticks(debuffs, gal, arc, at + 1e-9, target, params, ap, r, &mut d.status, &params.target, 0);
         let part = fields[i].part;
-        let dmg_mult = fields[i].damage_mult;
+        let damage_multiplier = fields[i].damage_multiplier;
         fields[i].next_tick += 1.0 / part.tick_rate;
         fields[i].ticks_left -= 1;
         let killed = field_tick(
-            &part, dmg_mult, at, ctx, debuffs, gal, arc, target, params, ap, r, d,
+            &part, damage_multiplier, at, ctx, debuffs, gal, arc, target, params, ap, r, d,
             &params.target,
         );
         // …AND EVERY OTHER BODY STANDING IN IT. The cloud is stuck to the body
@@ -5897,7 +5897,7 @@ fn process_field_ticks(
             }
             let SpreadFoe { state, debuffs: fd } = &mut others[bi];
             field_tick(
-                &part, dmg_mult * part.falloff_at(crate::space::blast_reach(dist)),
+                &part, damage_multiplier * part.falloff_at(crate::space::blast_reach(dist)),
                 at, ctx, fd, gal, arc, state, params, ap, r, d, &spec.params,
             );
         }
@@ -5940,7 +5940,7 @@ fn field_tick(
     f: &crate::loadout::ResolvedLingering,
     // Plentiful Mayhem's independent multiplier, carried from the grenade that
     // left this cloud (1.0 = the weapon's own projectile, or no such perk).
-    dmg_mult: f64,
+    damage_multiplier: f64,
     at: f64,
     ctx: &FieldCtx,
     debuffs: &mut DebuffState,
@@ -5955,7 +5955,7 @@ fn field_tick(
     // more than one (2026-08-17). Its pools, its stack caps, its immunities.
     foe: &TargetParams,
 ) -> bool {
-    let sd = params.status_duration_mult;
+    let sd = params.status_duration_multiplier;
     let mit = debuffs.mitigation(at, sd, params.armor_strip_per_puncture);
     // The field is its own attack part, so the ability elements are sized off
     // ITS ModifiedBase — same rule as the explosion's.
@@ -5973,7 +5973,7 @@ fn field_tick(
         + arc.cd_bonus(ap, at)
         + params.arcane.cd_rel;
     let cd = f.crit_damage + f.base_crit_damage * cd_rel + debuffs.cold_cd_bonus(at);
-    let crit_mult = 1.0 + tier as f64 * (cd - 1.0);
+    let crit_multiplier = 1.0 + tier as f64 * (cd - 1.0);
 
     // Damage buckets: the same live base-damage additions the direct hit reads,
     // then the GunCO bracket off the target's CURRENT status count.
@@ -6001,7 +6001,7 @@ fn field_tick(
     // the epicentre for every tick — which is exactly why the wiki calls a
     // direct hit "the maximum possible damage".
     //
-    // `dmg_mult` (Plentiful Mayhem) rides here rather than inside ModifiedBase:
+    // `damage_multiplier` (Plentiful Mayhem) rides here rather than inside ModifiedBase:
     // the wiki calls it "multiplicative to base damage bonuses like Serration",
     // i.e. its own bracket. Consequence, recorded because nothing sources it:
     // the status payloads below are left OUT of it, the same treatment the beam
@@ -6010,8 +6010,8 @@ fn field_tick(
     // `faction_at` like the other two rungs so the ladder is visible at every
     // level rather than only where it compounds.
     let raw =
-        qtotal * crit_mult * bucket * faction_at(params.faction_at_time(at), DEPTH_HIT)
-            * dmg_mult
+        qtotal * crit_multiplier * bucket * faction_at(params.faction_at_time(at), DEPTH_HIT)
+            * damage_multiplier
             * params.ability_final_at(at);
     let col = target.incoming_column(foe);
     let (effective, killed, broke) =
@@ -6050,7 +6050,7 @@ fn field_tick(
         at,
         InstanceScale {
             mb_live,
-            crit_mult,
+            crit_multiplier,
             part_factor: 1.0,
             attrition: 1.0,
             // The BASE ATTACK's, not the cloud's: a Blast stack the cloud
@@ -6223,7 +6223,7 @@ fn process_ticks(
         Blast(usize),
     }
     let p = foe;
-    let sd = params.status_duration_mult;
+    let sd = params.status_duration_multiplier;
     // A QUEUE, NOT A SCAN. This loop asks one question of every pending status
     // on the body — which of you is next — and it asked it once per EVENT.
     //
@@ -6333,7 +6333,7 @@ fn process_ticks(
         // and it may be a total of x9 (MEASUREMENTS M38).
         let value = value
             * if target.overguard > 0.0 {
-                params.arcane.overguard_mult
+                params.arcane.overguard_multiplier
             } else {
                 1.0
             };
@@ -7687,7 +7687,7 @@ pub fn run_once_traced(
     let base_variants = params.cycle.as_ref().map_or_else(Vec::new, |c| variant_pre(&c.base_form));
     let base_variant_rad =
         params.cycle.as_ref().map_or_else(Vec::new, |c| variant_rad(&c.base_form));
-    let sd = params.status_duration_mult;
+    let sd = params.status_duration_multiplier;
     // The per-unit status stack caps (Acolytes: any 4, Impact 3) and the
     // status-payload scaling now live in `settle_procs`, which every instance
     // kind shares.
@@ -7861,7 +7861,7 @@ pub fn run_once_traced(
         // frames, which is exactly what a fight with nothing happening in it
         // looks like.
         if let Some(rep) = trace.as_deref_mut() {
-            while next_frame <= t && next_frame < params.duration_secs {
+            while next_frame <= t && next_frame < params.duration_seconds {
                 let stacks = sample_stacks(
                     params, rep, next_frame, &mut arc, &mut gal, &mut buff_stacks,
                     &ch_stacks, ch_buff_expiry, fr_reload_expiry, bd_reload_expiry,
@@ -7905,7 +7905,7 @@ pub fn run_once_traced(
                 next_frame += frame_dt;
             }
         }
-        if t >= params.duration_secs {
+        if t >= params.duration_seconds {
             break;
         }
 
@@ -7933,7 +7933,7 @@ pub fn run_once_traced(
         // `delay_partial` means it never empties at all.
         if let Some(b) = params.battery {
             let idle = t - last_shot_t;
-            let delay = if magazine < 1e-9 { b.delay_empty_s } else { b.delay_partial_s };
+            let delay = if magazine < 1e-9 { b.delay_empty_seconds } else { b.delay_partial_seconds };
             if last_shot_t.is_finite() && b.regen_per_second > 0.0 && idle > delay {
                 let gained = (idle - delay) * b.regen_per_second;
                 magazine = (magazine + gained).min(mag_cap);
@@ -8125,7 +8125,7 @@ pub fn run_once_traced(
                 // also why this animation is scaled by reload speed at all.
                 let spent = rescale_reload(cy.transmute_out_seconds, cy.reload_bucket,
                     live_reload_speed(params, &cy.base_form, rs_armed, &mut buff_stacks, t));
-                r.downtime_secs += spent;
+                r.downtime_seconds += spent;
                 t += spent;
                 // …but it is NOT a reload, and one perk can tell the difference:
                 // see `ClearedBy::Reload`.
@@ -8176,7 +8176,7 @@ pub fn run_once_traced(
                 // THE OPENING WINDOW closes when the first reload STARTS, which
                 // is here — everything dealt up to this instant is what the
                 // magazine you walked in with was worth.
-                r.downtime_secs += spent;
+                r.downtime_seconds += spent;
                 t += spent;
                 magazine_refilled!();
                 r.reloads += 1;
@@ -8236,7 +8236,7 @@ pub fn run_once_traced(
             // reloads when it cannot fire — which is exactly the condition.
             let rs = live_reload_speed(params, params, rs_armed, &mut buff_stacks, t);
             let spent = live_reload_time(params, params, &mut arc, rs, t);
-            r.downtime_secs += spent;
+            r.downtime_seconds += spent;
             t += spent;
             magazine_refilled!();
             r.reloads += 1;
@@ -8261,7 +8261,7 @@ pub fn run_once_traced(
             bump_reload_only!(t, rng);
             bump_reload_from_empty!(t, rng);
             field_duration_boost = true; // reloaded from empty (Renewed Horror)
-            if t >= params.duration_secs {
+            if t >= params.duration_seconds {
                 break;
             }
         }
@@ -8986,7 +8986,7 @@ pub fn run_once_traced(
             // A bucket term could be cancelled by enough crit chance; a x0 here
             // cannot, which is the whole perk.
             let cc_pellet =
-                if part.is_head { cc_pellet } else { cc_pellet * ap.bodyshot_cc_mult };
+                if part.is_head { cc_pellet } else { cc_pellet * ap.bodyshot_crit_chance_multiplier };
             // GOTVA PRIME: an armed pellet's crit chance is SET, replacing the
             // modded value and the weak-point bonus alike — "Set Critical
             // Chance ignores all other modifiers, whether from mods or Warframe
@@ -9085,22 +9085,22 @@ pub fn run_once_traced(
             } else {
                 cd_total
             };
-            let crit_mult = 1.0 + tier as f64 * (cd - 1.0);
+            let crit_multiplier = 1.0 + tier as f64 * (cd - 1.0);
 
             // Faction bonus (System A) is a total-damage multiplier applied
             // once per instance; DoT/status ticks apply it a SECOND time
             // (fm² below) — the wiki "double dip".
             // Secondary Surge (assumed-max): a FINAL multiplier on the shot,
             // multiplicative with Hornet Strike (wiki notes). Secondary
-            // Fortifier: ×overguard_mult while the target's Overguard holds.
+            // Fortifier: ×overguard_multiplier while the target's Overguard holds.
             // Primary Compression's `multiplies` row rides the same slot, and
             // it is `ap`'s rather than `params`' — the form being fired owns
             // it, because one arcane is worth +240% in the Torid's base form
             // and nothing in its Incarnon.
-            let arc_final = params.arcane.final_mult
-                * ap.compression_mult
+            let arc_final = params.arcane.final_multiplier
+                * ap.compression_multiplier
                 * if target.overguard > 0.0 {
-                    params.arcane.overguard_mult
+                    params.arcane.overguard_multiplier
                 } else {
                     1.0
                 };
@@ -9424,8 +9424,8 @@ pub fn run_once_traced(
                 // composition is unchanged, and dividing by the scaled total
                 // understated Toxin's shield bypass by exactly that factor.
                 let shares = TypeShares::of(&qvec);
-                let crit_mult = match &rad {
-                    None => crit_mult,
+                let crit_multiplier = match &rad {
+                    None => crit_multiplier,
                     Some(r) => {
                         // No `part.crit_bonus` doubling: that is the crit-
                         // HEADSHOT rule and an explosion has no hit location.
@@ -9580,7 +9580,7 @@ pub fn run_once_traced(
                 let body_only = |x: f64| x / part_factor.max(1e-9);
                 let raw = qtotal
                     * part_factor
-                    * crit_mult
+                    * crit_multiplier
                     * bucket
                     * params.faction_at_time(t)
                     * arc_final
@@ -9643,7 +9643,7 @@ pub fn run_once_traced(
                     spread_from_blast(
                         det, &mut others, params, ap, &rr,
                         if falloff > 0.0 { body_only(raw / bucket / falloff) } else { 0.0 },
-                        shares, crit_mult, attrition, modded_base, status_chance,
+                        shares, crit_multiplier, attrition, modded_base, status_chance,
                         forced, &qvec, &mut gal, &mut arc, &mut r, d, t,
                     );
                 }
@@ -9660,7 +9660,7 @@ pub fn run_once_traced(
                             crate::space::Detonation { at: fs.at, height_m: 0.0 },
                             &mut others, params, ap, &rr,
                             if falloff > 0.0 { body_only(raw / bucket / falloff) } else { 0.0 },
-                            shares, crit_mult, attrition, modded_base, status_chance,
+                            shares, crit_multiplier, attrition, modded_base, status_chance,
                             forced, &qvec, &mut gal, &mut arc, &mut r, d, t,
                             SpreadBy::Ricochet,
                         );
@@ -9694,7 +9694,7 @@ pub fn run_once_traced(
                         shot_spread = Some(SpreadShot {
                             raw_per_bucket: body_only(raw / bucket),
                             shares,
-                            crit_mult,
+                            crit_multiplier,
                             attrition,
                             modded_base,
                             status_chance,
@@ -9708,7 +9708,7 @@ pub fn run_once_traced(
                     if let Some(path) = ric_path.as_deref() {
                         spread_from_ricochet(
                             &mut others, params, ap, path, body_only(raw / bucket), shares,
-                            crit_mult, attrition, modded_base, status_chance, forced, &qvec,
+                            crit_multiplier, attrition, modded_base, status_chance, forced, &qvec,
                             &head_factor, &mut gal, &mut arc, &mut r, d, t,
                         );
                     }
@@ -9716,7 +9716,7 @@ pub fn run_once_traced(
                     // says each one triggers it.
                     spread_from_echo(
                         &mut others, debuffs.confusion.len(), params, ap,
-                        body_only(raw / bucket), shares, crit_mult,
+                        body_only(raw / bucket), shares, crit_multiplier,
                         attrition, modded_base, status_chance, forced, &qvec,
                         &mut gal, &mut arc, &mut r, d, t,
                     );
@@ -9727,7 +9727,7 @@ pub fn run_once_traced(
                     if params.beam.is_none() {
                         spread_from_punch_through(
                             &mut others, params, ap, &struck, raw / bucket, shares,
-                            crit_mult, attrition, modded_base, status_chance,
+                            crit_multiplier, attrition, modded_base, status_chance,
                             forced, &qvec, &mut gal, &mut arc, &mut r, d, t,
                         );
                     }
@@ -9738,7 +9738,7 @@ pub fn run_once_traced(
                     if let Some(beam) = params.beam {
                         spread_from_seeds(
                             &mut others, params, ap, beam, body_only(raw / bucket), shares,
-                            crit_mult, attrition, modded_base, status_chance,
+                            crit_multiplier, attrition, modded_base, status_chance,
                             forced, &qvec, &mut gal, &mut arc, &mut r, d, t,
                             chain_layout.as_ref(), true, &struck,
                         );
@@ -9780,7 +9780,7 @@ pub fn run_once_traced(
                             base: qtotal,
                             steps: vec![
                                 ("body part", part_factor),
-                                ("critical", crit_mult),
+                                ("critical", crit_multiplier),
 
                                 ("Condition Overload bracket", bucket),
                                 ("faction", params.faction_at_time(t)),
@@ -9915,16 +9915,16 @@ pub fn run_once_traced(
                             1.0
                         };
                         let mut part = *fp;
-                        part.duration_s *= boost;
+                        part.duration_seconds *= boost;
                         let fresh = FieldState {
                             next_tick: t,
-                            ticks_left: (part.duration_s * part.tick_rate).round() as u32,
+                            ticks_left: (part.duration_seconds * part.tick_rate).round() as u32,
                             part,
                             // Plentiful Mayhem follows a GENERATED grenade into
                             // the cloud it leaves (user, 2026-07-30) — which is
                             // the whole value of the perk here, the cloud being
                             // most of this weapon's damage.
-                            damage_mult: pm_mult,
+                            damage_multiplier: pm_mult,
                         };
                         match fp.stacking {
                             crate::loadout::FieldStacking::Stack => fields.push(fresh),
@@ -10162,7 +10162,7 @@ pub fn run_once_traced(
                 if procs.contains(&pc.from) && !procs.contains(&pc.to) {
                     let chance = pc.chance
                         * if live_rate < pc.low_rate_threshold {
-                            pc.low_rate_mult
+                            pc.low_rate_multiplier
                         } else {
                             1.0
                         };
@@ -10230,7 +10230,7 @@ pub fn run_once_traced(
             if ap.independent_procs.contains(&"lifted") {
                 // A STATE, so it REFRESHES: the later expiry wins rather than
                 // the count going up.
-                let until = t + LIFTED_SECONDS * params.status_duration_mult;
+                let until = t + LIFTED_SECONDS * params.status_duration_multiplier;
                 debuffs.lifted = Some(debuffs.lifted.map_or(until, |e| e.max(until)));
             }
             settle_procs(
@@ -10238,7 +10238,7 @@ pub fn run_once_traced(
                 t,
                 // THE HIT'S ATTRITION ROLL TRAVELS WITH ITS STATUSES. A proc's
                 // magnitude is the applying instance's — which is why
-                // `crit_mult` is already here — and Devouring/Devastating
+                // `crit_multiplier` is already here — and Devouring/Devastating
                 // Attrition is a per-instance multiplier of exactly that shape,
                 // so a DoT applied by a 21x hit ticks for 21x.
                 //
@@ -10249,7 +10249,7 @@ pub fn run_once_traced(
                 // hit, so it never rolls one of its own. MEASUREMENTS M37.
                 InstanceScale {
                     mb_live,
-                    crit_mult,
+                    crit_multiplier,
                     part_factor,
                     attrition,
                     // The BASE ATTACK's, so a Blast stack this instance applies
@@ -10279,7 +10279,7 @@ pub fn run_once_traced(
         if let (Some(s), false) = (&shot_spread, others.is_empty()) {
             spread_from_tendrils(
                 &mut others, params, ap, tendrils, s.raw_per_bucket, s.shares,
-                s.crit_mult, s.attrition, s.modded_base, s.status_chance,
+                s.crit_multiplier, s.attrition, s.modded_base, s.status_chance,
                 &s.forced, &s.vector, &mut gal, &mut arc, &mut r, d, t,
             );
         }
@@ -10291,7 +10291,7 @@ pub fn run_once_traced(
         if let (Some(s), Some(beam), false) = (&shot_spread, params.beam, others.is_empty()) {
             spread_from_seeds(
                 &mut others, params, ap, beam, s.raw_per_bucket, s.shares,
-                s.crit_mult, s.attrition, s.modded_base, s.status_chance,
+                s.crit_multiplier, s.attrition, s.modded_base, s.status_chance,
                 &s.forced, &s.vector, &mut gal, &mut arc, &mut r, d, t,
                 chain_layout.as_ref(), false,
                 // THE SAME STRUCK LIST the per-pellet half used — this pass
@@ -10516,7 +10516,7 @@ pub fn run_once_traced(
                     let transformed_from_empty = !can_fire(base_mag, 1.0);
                     let spent = rescale_reload(cy.transmute_seconds, cy.reload_bucket,
                         live_reload_speed(params, &cy.base_form, rs_armed, &mut buff_stacks, t));
-                    r.downtime_secs += spent;
+                    r.downtime_seconds += spent;
                     t += spent;
                     magazine_refilled!();
                     if transformed_from_empty {
@@ -10645,7 +10645,7 @@ pub fn run_once_traced(
         &mut debuffs,
         &mut gal,
         &mut arc,
-        params.duration_secs,
+        params.duration_seconds,
         &mut target,
         params,
         field_ap,
@@ -10659,7 +10659,7 @@ pub fn run_once_traced(
         &mut debuffs,
         &mut gal,
         &mut arc,
-        params.duration_secs,
+        params.duration_seconds,
         &mut target,
         params,
         field_ap,
@@ -10734,7 +10734,7 @@ pub fn replay(params: &DummyParams, rng_state: u64, frames: usize) -> Replay {
             })
             .collect(),
         follow,
-        dt: (params.duration_secs / frames as f64).max(1e-6),
+        dt: (params.duration_seconds / frames as f64).max(1e-6),
         buffs: params.buff_roster(),
         frames: Vec::with_capacity(frames),
         accounts: Vec::new(),
@@ -10755,7 +10755,7 @@ pub struct Summary {
     /// is the weapon.
     pub mean_damage_by_body: BodyDamage,
     pub runs: u32,
-    pub duration_secs: f64,
+    pub duration_seconds: f64,
     pub mean_damage: f64,
     pub dps: f64,
     pub std_damage: f64,
@@ -11190,7 +11190,7 @@ pub fn shard(
         a.kill_progress_sq += r.kill_progress * r.kill_progress;
         a.min_kills = a.min_kills.min(r.kills);
         a.max_kills = a.max_kills.max(r.kills);
-        a.downtime += r.downtime_secs;
+        a.downtime += r.downtime_seconds;
         a.first_mag += r.first_magazine_damage;
         a.max_hit_sum += r.max_hit;
         a.biggest = a.biggest.max(r.max_hit);
@@ -11265,9 +11265,9 @@ impl Shard {
     let summary = Summary {
         mean_damage_by_body,
         runs,
-        duration_secs: params.duration_secs,
+        duration_seconds: params.duration_seconds,
         mean_damage: mean,
-        dps: mean / params.duration_secs,
+        dps: mean / params.duration_seconds,
         std_damage: variance.sqrt(),
         min_damage: if min.is_finite() { min } else { 0.0 },
         max_damage: if max.is_finite() { max } else { 0.0 },
@@ -11276,7 +11276,7 @@ impl Shard {
             let mean_e = effective / n;
             (effective_sq / n - mean_e * mean_e).max(0.0).sqrt()
         },
-        effective_dps: effective / n / params.duration_secs,
+        effective_dps: effective / n / params.duration_seconds,
         mean_dot_damage: dot / n,
         mean_procs: procs as f64 / n,
         mean_field_ticks: field_ticks as f64 / n,
@@ -11304,7 +11304,7 @@ impl Shard {
             // The time the weapon was NOT reloading, across every run. Guarded
             // at a hundredth of a second: a run that was reloading the whole
             // time has no burst to report and must not report infinity.
-            let firing = (params.duration_secs * runs as f64 - downtime).max(1e-2);
+            let firing = (params.duration_seconds * runs as f64 - downtime).max(1e-2);
             effective / firing
         },
         mean_downtime: downtime / runs as f64,
@@ -12856,7 +12856,7 @@ mod tests {
     #[test]
     fn cernos_primes_innate_headshot_bonus_multiplies_instead_of_adding() {
         let build = |mult: bool| DummyParams {
-            duration_secs: 30.0,
+            duration_seconds: 30.0,
             headshot_damage_bonus: 0.5,
             headshot_bonus_multiplicative: mult,
             arcane: crate::arcanes_data::ArcaneFx {
@@ -13023,7 +13023,7 @@ mod tests {
             fire_rate: 2.0,
             charge_seconds: Some(0.5),
             magazine_size: 1000.0, // no reload inside the window
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             body_parts: mono_body(1.0),
             ..no_status()
         };
@@ -13059,7 +13059,7 @@ mod tests {
             fire_rate: 5.0,
             burst: Some(crate::weapons_data::BurstSpec { count: 3, delay_seconds: 0.04 }),
             magazine_size: 100_000.0, // no reload inside the window
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             body_parts: mono_body(1.0),
             ..no_status()
         };
@@ -13098,7 +13098,7 @@ mod tests {
         let phenmor = DummyParams {
             fire_rate: 13.33,
             magazine_size: 100_000.0, // no reload inside the window
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             body_parts: mono_body(1.0),
             ..no_status()
         };
@@ -13145,7 +13145,7 @@ mod tests {
             fire_rate: 10.0,
             magazine_size: 10.0,
             reload_seconds: 5.0,
-            duration_secs: 30.0,
+            duration_seconds: 30.0,
             // EVERY shot into a HEAD, which is what the official ruler does
             // and what makes the perk's own rate the only variable here.
             body_parts: all_head(),
@@ -13198,7 +13198,7 @@ mod tests {
         let build = |deadhead: f64, perk: bool| DummyParams {
             fire_rate: 10.0,
             magazine_size: 1e9,
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             base_crit_chance: 0.0,
             unmodded_crit_chance: 0.0,
             body_parts: vec![BodyPart {
@@ -13252,7 +13252,7 @@ mod tests {
         let at_rate = |fire_rate: f64| DummyParams {
             fire_rate,
             magazine_size: 1e9,
-            duration_secs: 60.0,
+            duration_seconds: 60.0,
             base_crit_chance: 0.0,
             unmodded_crit_chance: 0.0,
             body_parts: all_head(),
@@ -13290,7 +13290,7 @@ mod tests {
         let build = |procs: Vec<DamageType>, perk: bool| DummyParams {
             fire_rate: 10.0,
             magazine_size: 1e9,
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             // ALWAYS crit, so crit damage is the only variable.
             base_crit_chance: 1.0,
             unmodded_crit_chance: 1.0,
@@ -13345,7 +13345,7 @@ mod tests {
             fire_rate: 10.0,
             magazine_size: 10.0,
             reload_seconds: 5.0,
-            duration_secs: 30.0,
+            duration_seconds: 30.0,
             body_parts: all_head(),
             ammo_efficiency_applies: false, // charge-backed
             target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
@@ -13382,7 +13382,7 @@ mod tests {
             fire_rate: 10.0,
             magazine_size: 10.0,
             reload_seconds: 5.0,
-            duration_secs: 30.0,
+            duration_seconds: 30.0,
             body_parts: all_head(),
             // `InstantRespawn` is the whole point and it is not a detail of
             // frailty: the DEFAULT fixture target is `InfiniteHealth`, so a
@@ -13425,7 +13425,7 @@ mod tests {
             fire_rate: 10.0,
             magazine_size: 10.0,
             reload_seconds: 2.0,
-            duration_secs: 2.5,
+            duration_seconds: 2.5,
             body_parts: mono_body(1.0),
             ..no_status()
         };
@@ -13439,7 +13439,7 @@ mod tests {
         );
 
         // …and over a long run it compounds into whole extra magazines.
-        let long = DummyParams { duration_secs: 60.0, ..p.clone() };
+        let long = DummyParams { duration_seconds: 60.0, ..p.clone() };
         let long_armed = DummyParams { rs_on_reload: 1.0, ..long.clone() };
         let a = run_once(&long, &mut Rng::new(1)).reloads;
         let b = run_once(&long_armed, &mut Rng::new(1)).reloads;
@@ -13487,7 +13487,7 @@ mod tests {
             reload_seconds: 2.0,
             burst: Some(crate::weapons_data::BurstSpec { count: 3, delay_seconds: 0.0 }),
             stacking_buffs: vec![buff],
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             ..no_status()
         };
         let mut rng = Rng::new(7);
@@ -13592,7 +13592,7 @@ mod tests {
             stacking_buffs: vec![crate::loadout::StackingBuff {
                 id: "on_empty_reload_damage", ..sb[0]
             }],
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             ..no_status()
         };
         let trace = replay(&p, Rng::new(7).state(), 600);
@@ -13617,7 +13617,7 @@ mod tests {
             magazine_size: 5.0,
             reload_seconds: 0.5,
             stacking_buffs: b,
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             ..no_status()
         };
         let z_buff = crate::loadout::StackingBuff { id: "on_empty_reload_crit_damage", ..*z };
@@ -13684,7 +13684,7 @@ mod tests {
                 transmute_seconds: 1.0,
                 reload_bucket: 0.0,
             }),
-            duration_secs: 12.0,
+            duration_seconds: 12.0,
             ..no_status()
         };
         let trace = replay(&p, Rng::new(9).state(), 900);
@@ -13733,8 +13733,8 @@ mod tests {
         assert!((with.weakpoint_cc_rel - 1.50).abs() < 1e-9,
             "the weak-point half seeds the bucket the crit mods write to: {}",
             with.weakpoint_cc_rel);
-        assert!((with.bodyshot_cc_mult - 0.0).abs() < 1e-9, "x0: {}", with.bodyshot_cc_mult);
-        assert!((panel(&[], &[]).bodyshot_cc_mult - 1.0).abs() < 1e-9, "without the perk, ordinary");
+        assert!((with.bodyshot_crit_chance_multiplier - 0.0).abs() < 1e-9, "x0: {}", with.bodyshot_crit_chance_multiplier);
+        assert!((panel(&[], &[]).bodyshot_crit_chance_multiplier - 1.0).abs() < 1e-9, "without the perk, ordinary");
 
         // ADDITIVE WITH THE MODS: Primed Pistol Gambit is +187%, so the weak
         // point sees base x (1 + 1.87 + 1.50) and the body sees base x (1+1.87)
@@ -13756,7 +13756,7 @@ mod tests {
                 name: (if head { "head" } else { "body" }).into(),
                 aim_weight: 1.0, multiplier: 1.0, is_head: head, crit_bonus: false,
             }];
-            p.duration_secs = 20.0;
+            p.duration_seconds = 20.0;
             let s = monte_carlo(&p, 8, 5);
             s.mean_crit_rate
         };
@@ -13797,7 +13797,7 @@ mod tests {
                 magazine_size: 10.0,
                 fire_rate: 5.0,
                 reload_seconds: 2.0,
-                duration_secs: 60.0,
+                duration_seconds: 60.0,
                 ..no_status()
             };
             if restore {
@@ -13836,7 +13836,7 @@ mod tests {
             magazine_size: 10.0,
             fire_rate: 5.0,
             reload_seconds: 2.0,
-            duration_secs: 60.0,
+            duration_seconds: 60.0,
             ..no_status()
         };
         let dry = monte_carlo(&cold, 12, 3).mean_reloads;
@@ -13884,7 +13884,7 @@ mod tests {
             magazine_size: 100.0,
             fire_rate: 10.0,
             stacking_buffs: vec![buff],
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             body_parts: mono_body(1.0),
             target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
             ..flat_base()
@@ -13908,7 +13908,7 @@ mod tests {
             magazine_size: 100.0,
             fire_rate: 1.0,
             stacking_buffs: p.stacking_buffs.clone(),
-            duration_secs: 30.0,
+            duration_seconds: 30.0,
             body_parts: mono_body(1.0),
             target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
             ..flat_base()
@@ -13956,7 +13956,7 @@ mod tests {
             ammo_cost: 1.0,
             fire_rate: 2.0,
             reload_seconds: 3.0,
-            duration_secs: 60.0,
+            duration_seconds: 60.0,
             instant_reload_on_kill: chance,
             body_parts: mono_body(1.0),
             target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
@@ -14004,7 +14004,7 @@ mod tests {
             ammo_cost: 1.0,
             fire_rate: 20.0,
             reload_seconds: 1.0,
-            duration_secs: 60.0,
+            duration_seconds: 60.0,
             mag_growth_on_empty_reload: growth,
             body_parts: mono_body(1.0),
             ..flat_base()
@@ -14027,7 +14027,7 @@ mod tests {
         // far past 55, and compare against one whose cap is 3 either way: the
         // only difference is the number of stacks allowed.
         let long = |max: u32| {
-            let r = run_once(&DummyParams { duration_secs: 300.0, ..build(Some((15.0, max))) },
+            let r = run_once(&DummyParams { duration_seconds: 300.0, ..build(Some((15.0, max))) },
                 &mut Rng::new(3));
             r.shots as f64 / r.reloads.max(1) as f64
         };
@@ -14045,7 +14045,7 @@ mod tests {
             let mut p = build(growth);
             p.infinite_reserve = false;
             p.reserve_ammo = 60.0;
-            p.duration_secs = 600.0;
+            p.duration_seconds = 600.0;
             run_once(&p, &mut Rng::new(3)).shots
         };
         assert_eq!(finite(None), finite(Some((15.0, 3))),
@@ -14086,7 +14086,7 @@ mod tests {
             fire_rate: 10.0,
             magazine_size: 100.0,
             stacking_buffs: vec![buff],
-            duration_secs: 5.0,
+            duration_seconds: 5.0,
             body_parts: vec![BodyPart {
                 name: "head".into(), aim_weight: 1.0, multiplier: 2.0,
                 is_head: true, crit_bonus: false,
@@ -14131,7 +14131,7 @@ mod tests {
                 stacking_buffs: if perk { all_head.stacking_buffs.clone() } else { vec![] },
                 ..all_head.clone()
             };
-            p.duration_secs = 5.0;
+            p.duration_seconds = 5.0;
             monte_carlo(&p, 1, 5).mean_damage
         };
         let (plain, with) = (dmg(1.0, false), dmg(1.0, true));
@@ -14175,7 +14175,7 @@ mod tests {
         let rate = |cc_rel: f64| {
             let mut p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
             p.arcane.cc_rel = cc_rel;
-            p.duration_secs = 60.0;
+            p.duration_seconds = 60.0;
             let s = monte_carlo(&p, 12, 4);
             s.mean_procs / s.mean_pellets.max(1.0)
         };
@@ -14241,7 +14241,7 @@ mod tests {
             magazine_size: 100.0,
             consecutive_hit_damage: if on { Some((per, cap, dur)) } else { None },
             // The window is 2s and the cadence 1/s, so the pile never lapses.
-            duration_secs: shots - 0.5,
+            duration_seconds: shots - 0.5,
             body_parts: mono_body(1.0),
             ..flat_base()
         };
@@ -15079,7 +15079,7 @@ mod tests {
                 reload_seconds: 2.0,
                 ammo_efficiency_applies: false,
                 body_parts: mono_body(1.0),
-                duration_secs: 60.0,
+                duration_seconds: 60.0,
                 cycle: Some(IncarnonCycle {
                     starts_primed: false,
                     base_form: Box::new(base_form),
@@ -15150,12 +15150,12 @@ mod tests {
             fire_rate,
             magazine_size: 7.0,
             reload_seconds: 1.25, // = 1.0 s delay + 7/28 s refill
-            duration_secs: 60.0,
+            duration_seconds: 60.0,
             body_parts: mono_body(1.0),
             battery: Some(crate::weapons_data::Battery {
                 regen_per_second: 28.0,
-                delay_empty_s: 1.0,
-                delay_partial_s: 0.4,
+                delay_empty_seconds: 1.0,
+                delay_partial_seconds: 0.4,
             }),
             ..no_status()
         };
@@ -15208,7 +15208,7 @@ mod tests {
         let gorgon = DummyParams {
             fire_rate: 12.5,
             magazine_size: 100_000.0, // one long burst: the climb, uninterrupted
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             body_parts: mono_body(1.0),
             ..no_status()
         };
@@ -15248,7 +15248,7 @@ mod tests {
                 over_shots: 51.0,
             }),
             magazine_size: 100_000.0,
-            duration_secs: 60.0, // long past the 51 shots, so the floor dominates
+            duration_seconds: 60.0, // long past the 51 shots, so the floor dominates
             body_parts: mono_body(1.0),
             ..no_status()
         };
@@ -15281,7 +15281,7 @@ mod tests {
             charge_cadence: crate::weapons_data::ChargeCadence::DrawOnly,
             magazine_size: 1.0,
             reload_seconds: 0.65,
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             body_parts: mono_body(1.0),
             ..no_status()
         };
@@ -15333,8 +15333,8 @@ mod tests {
     #[test]
     fn faction_mult_scales_direct_damage_linearly() {
         // Status off: only the direct-hit multiply applies (no DoT double-dip),
-        // and faction_mult is applied AFTER the RNG rolls, so the same seed
-        // yields damage scaled exactly by faction_mult.
+        // and faction_multiplier is applied AFTER the RNG rolls, so the same seed
+        // yields damage scaled exactly by faction_multiplier.
         let plain = single_part(BodyPart {
             name: "body".into(),
             aim_weight: 1.0,
@@ -15343,7 +15343,7 @@ mod tests {
             crit_bonus: false,
         });
         let boosted = DummyParams {
-            faction_mult: 1.30,
+            faction_multiplier: 1.30,
             ..plain.clone()
         };
         let a = monte_carlo(&plain, 3000, 7);
@@ -15404,14 +15404,14 @@ mod tests {
         let vs_grineer = DummyParams::from_panel(&panel, &arena(grineer_target, parts.clone()), &ArcaneFx::none());
         let vs_other = DummyParams::from_panel(&panel, &arena(TargetParams::training_dummy(), parts), &ArcaneFx::none());
         assert!(
-            (vs_grineer.faction_mult - 1.30).abs() < 1e-9,
+            (vs_grineer.faction_multiplier - 1.30).abs() < 1e-9,
             "grineer {}",
-            vs_grineer.faction_mult
+            vs_grineer.faction_multiplier
         );
         assert!(
-            (vs_other.faction_mult - 1.0).abs() < 1e-9,
+            (vs_other.faction_multiplier - 1.0).abs() < 1e-9,
             "unknown {}",
-            vs_other.faction_mult
+            vs_other.faction_multiplier
         );
     }
 
@@ -15512,7 +15512,7 @@ mod tests {
             // reloading into a second one, so the counts are exact.
             infinite_reserve: false,
             reserve_ammo: 0.0,
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             body_parts: mono_body(1.0),
             ..no_status()
         };
@@ -15545,7 +15545,7 @@ mod tests {
             // question about how many reloads fitted in the window.
             infinite_reserve: false,
             reserve_ammo: 0.0,
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             body_parts: mono_body(1.0),
             ..no_status()
         };
@@ -15584,7 +15584,7 @@ mod tests {
             base_crit_chance: 0.0,
             arcane: ArcaneFx { ammo_efficiency: 1.0, ..ArcaneFx::none() },
             ammo_efficiency_applies: true,
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             body_parts: mono_body(1.0),
             ..no_status()
         };
@@ -15652,7 +15652,7 @@ mod tests {
             magazine_size: 1.0,
             reload_seconds: 999.0,
             infinite_reserve: true,
-            duration_secs: 60.0,
+            duration_seconds: 60.0,
             ..no_status()
         };
         let off = monte_carlo(&p(0.0), 4, 3);
@@ -15689,7 +15689,7 @@ mod tests {
             // reloading, so the shot count is exactly what the magazine bought.
             infinite_reserve: false,
             reserve_ammo: 0.0,
-            duration_secs: 100.0,
+            duration_seconds: 100.0,
             body_parts: mono_body(1.0),
             ..no_status()
         };
@@ -15725,7 +15725,7 @@ mod tests {
             reserve_ammo: 5.0, // exactly one reload's worth, then dry
             infinite_reserve: false,
             reload_seconds: 0.001,
-            duration_secs: 100.0,
+            duration_seconds: 100.0,
             body_parts: mono_body(1.0),
             ..no_status()
         };
@@ -15770,7 +15770,7 @@ mod tests {
                 fire_rate: 4.0,
                 magazine_size: 1e9, // no reload to blur the cadence
                 body_parts: head.clone(),
-                duration_secs: 60.0,
+                duration_seconds: 60.0,
                 ..no_status()
             };
             monte_carlo(&p, 6, 5).mean_shots
@@ -15803,7 +15803,7 @@ mod tests {
                 base_multishot: 1.0,
                 magazine_size: 1e9,
                 body_parts: head.clone(),
-                duration_secs: 30.0,
+                duration_seconds: 30.0,
                 ..no_status()
             };
             // Damage stands in for the pellet count: the cadence is untouched,
@@ -15823,7 +15823,7 @@ mod tests {
                 base_multishot: 1.0,
                 magazine_size: 1e9,
                 body_parts: head.clone(),
-                duration_secs: 30.0,
+                duration_seconds: 30.0,
                 ..no_status()
             };
             monte_carlo(&p, 6, 9).mean_damage
@@ -15909,7 +15909,7 @@ mod tests {
             magazine_size: 3.0,
             infinite_reserve: false,
             reserve_ammo: 0.0, // no reserve at all: a refund would be visible
-            duration_secs: 20.0,
+            duration_seconds: 20.0,
             body_parts: mono_body(1.0),
             ..no_status()
         };
@@ -15947,7 +15947,7 @@ mod tests {
             ammo_efficiency_applies: false,
             infinite_reserve: false,
             reserve_ammo: 0.0,
-            duration_secs: 120.0,
+            duration_seconds: 120.0,
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
             arcane: ArcaneFx::none(),
@@ -16001,7 +16001,7 @@ mod tests {
             // Exactly two shots' worth of extras, so the starvation boundary
             // lands inside the window and is visible.
             reserve_ammo: 4.0,
-            duration_secs: 5.0,
+            duration_seconds: 5.0,
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
             body_parts: mono_body(1.0),
@@ -16050,7 +16050,7 @@ mod tests {
             fire_rate: 1.0,
             magazine_size: 1.0,
             reload_seconds: 999.0,
-            duration_secs: 60.0,
+            duration_seconds: 60.0,
             ..no_status()
         };
         let off = monte_carlo(&p(false), 4, 3);
@@ -16192,7 +16192,7 @@ mod tests {
             base_multishot: 1.0,
             fire_rate: 1.0,
             magazine_size: 100.0, // no reload inside the window
-            duration_secs: 8.0,   // shots at t = 0..7
+            duration_seconds: 8.0,   // shots at t = 0..7
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
             body_parts: mono_body(1.0),
@@ -16252,7 +16252,7 @@ mod tests {
             forced_procs: vec![DamageType::Heat],
             fire_rate: 1.0,
             magazine_size: 100.0,
-            duration_secs: 10.0, // pulls at t = 0..9
+            duration_seconds: 10.0, // pulls at t = 0..9
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
             body_parts: mono_body(1.0),
@@ -16291,7 +16291,7 @@ mod tests {
             magazine_size: 1.0,
             infinite_reserve: false,
             reserve_ammo: reserve,
-            duration_secs: 30.0,
+            duration_seconds: 30.0,
             body_parts: mono_body(1.0),
             ..no_status()
         };
@@ -16337,7 +16337,7 @@ mod tests {
             // so the beam ramp cancels out of the ratio.
             magazine_size: 10_000.0,
             infinite_reserve: true,
-            duration_secs: 2.0,
+            duration_seconds: 2.0,
             body_parts: mono_body(1.0),
             ..no_status()
         };
@@ -16360,7 +16360,7 @@ mod tests {
             // The charge-backed marker: no Capacity behind this magazine, so
             // the multishot surcharge comes out of the pool itself.
             ammo_efficiency_applies: false,
-            duration_secs: 60.0,
+            duration_seconds: 60.0,
             ..dmg(bonus)
         };
         let (a, b) = (monte_carlo(&ammo(0.0), 4, 3), monte_carlo(&ammo(0.6), 4, 3));
@@ -16387,7 +16387,7 @@ mod tests {
         // shots 0..11 (12), reload -> resume 14.35..25.35 (12), reload ->
         // resume 28.70, 29.70 (2) = 26 shots, 2 reloads.
         let p = DummyParams {
-            duration_secs: 30.0,
+            duration_seconds: 30.0,
             ..no_status()
         };
         let s = monte_carlo(&p, 20, 4);
@@ -16422,7 +16422,7 @@ mod tests {
             status_chance: 0.25,
             base_status_chance: 0.25,
             base_crit_chance: 0.0,
-            duration_secs: 20.0,
+            duration_seconds: 20.0,
             arcane: a,
             body_parts: part(is_head),
             ..DummyParams::default()
@@ -16468,7 +16468,7 @@ mod tests {
     #[test]
     fn primary_crux_ammo_efficiency_stretches_the_magazine() {
         let p = |a: ArcaneFx| DummyParams {
-            duration_secs: 25.0,
+            duration_seconds: 25.0,
             arcane: a,
             body_parts: vec![BodyPart {
                 name: "head".into(),
@@ -16508,7 +16508,7 @@ mod tests {
             base_crit_damage: 2.0,
             base_status_chance: 0.25,
             tick_rate: 1.0,
-            duration_s: 10.0,
+            duration_seconds: 10.0,
             radius_m: 3.0,
             falloff_start_m: 0.0,
             falloff_reduction: 1.0,
@@ -16569,7 +16569,7 @@ mod tests {
             reload_seconds: 999.0, // 3 shots at t=0,1,2 then dry
             infinite_reserve: false,
             reserve_ammo: 0.0,
-            duration_secs: 20.0,
+            duration_seconds: 20.0,
             ..no_status()
         };
         let st = monte_carlo(&mk(crate::loadout::FieldStacking::Stack), 4, 3);
@@ -16618,7 +16618,7 @@ mod tests {
             // finish, so the tick counts are exact rather than truncated.
             infinite_reserve: false,
             reserve_ammo: 1.0,
-            duration_secs: 60.0,
+            duration_seconds: 60.0,
             ..no_status()
         };
         let off = monte_carlo(&p(1.0), 4, 3);
@@ -16723,7 +16723,7 @@ mod tests {
             base_multishot: 1.0,
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
-            duration_secs: 4.0,
+            duration_seconds: 4.0,
             ..no_status()
         };
         // Doubling multishot doubles the damage either way…
@@ -16798,7 +16798,7 @@ mod tests {
                 crit_multiplier: 1.0,
                 base_crit_chance: 0.0,
                 fire_rate: 1.0,
-                duration_secs: 2.5,
+                duration_seconds: 2.5,
                 ..DummyParams::default()
             };
             // NOTHING MAY DIE and nothing may ramp: a target that dies truncates
@@ -16887,7 +16887,7 @@ mod tests {
     fn finite_reserve_stops_the_gun() {
         // Reserve off: 12 in the mag + 12 in reserve = 24 shots, then dry.
         let p = DummyParams {
-            duration_secs: 60.0,
+            duration_seconds: 60.0,
             infinite_reserve: false,
             reserve_ammo: 12.0,
             ..no_status()
@@ -17106,9 +17106,9 @@ mod tests {
             "tier 2",
         );
         // Status DURATION — its own set mate, Hunter Track, does exactly this.
-        let longer = same(pair(|p| p.status_duration_mult = 1.9), "status duration");
+        let longer = same(pair(|p| p.status_duration_multiplier = 1.9), "status duration");
         // The status DAMAGE bucket.
-        same(pair(|p| p.status_damage_mult = 1.5), "status damage");
+        same(pair(|p| p.status_damage_multiplier = 1.5), "status damage");
         // A Vigilante promotion happens BEFORE this roll reads the tier, so
         // the promoted crit is the parent.
         let promoted = same(
@@ -17152,7 +17152,7 @@ mod tests {
             to: DamageType::Slash,
             chance: 1.0,
             low_rate_threshold: 0.0, // never doubled, so the rate is irrelevant
-            low_rate_mult: 1.0,
+            low_rate_multiplier: 1.0,
         });
         // The same bleed, forced, on a weapon that cannot roll one itself.
         let mut forced = base();
@@ -17270,7 +17270,7 @@ mod tests {
                 to: DamageType::Slash,
                 chance: 0.35,
                 low_rate_threshold: 2.5,
-                low_rate_mult: 2.0,
+                low_rate_multiplier: 2.0,
             }),
             body_parts: mono_body(1.0),
             ..DummyParams::default()
@@ -17325,7 +17325,7 @@ mod tests {
             crit_multiplier: 1.0,
             forced_procs: vec![DamageType::Slash],
             body_parts: mono_body(3.0),
-            duration_secs: 2.0, // one shot at t=0 (+ t=1): first bleed ticks once at t=1...
+            duration_seconds: 2.0, // one shot at t=0 (+ t=1): first bleed ticks once at t=1...
             fire_rate: 0.5,     // single shot at t=0 in a 2 s window
             ..no_status()
         };
@@ -17342,7 +17342,7 @@ mod tests {
     fn weakened_raises_our_crit_chance() {
         // Forced Puncture, SC 0, mono 1x, cd 2.0, base cc 0:
         // shot k has Enervate 0.10k + Weakened 0.05·min(k,5) flat cc,
-        // E[crit_mult] = 1 + cc → E[total] = 75 × (10 + Σcc) = 75 × 16.25.
+        // E[crit_multiplier] = 1 + cc → E[total] = 75 × (10 + Σcc) = 75 × 16.25.
         // Σcc = 0+.15+.30+.45+.60+.75+.85+.95+1.05+1.15 = 6.25.
         let p = DummyParams {
             base_crit_chance: 0.0,
@@ -17391,7 +17391,7 @@ mod tests {
             forced_procs: vec![DamageType::Puncture],
             body_parts: mono_body(1.0),
             fire_rate: 1.0,
-            duration_secs: 5.0,
+            duration_seconds: 5.0,
             arcane: crate::arcanes_data::ArcaneFx::none(),
             target: TargetParams { base_health: 1e15, ..DummyParams::default().target },
             ..no_status()
@@ -17425,7 +17425,7 @@ mod tests {
             unmodded_crit_damage: 2.0,
             body_parts: mono_body(1.0),
             fire_rate: 1.0,
-            duration_secs: 5.0,
+            duration_seconds: 5.0,
             arcane: crate::arcanes_data::ArcaneFx::none(),
             target: TargetParams { base_health: 1e15, ..DummyParams::default().target },
             ..no_status()
@@ -17613,7 +17613,7 @@ mod tests {
             magazine_size: mag,
             reload_seconds: 0.5,
             fire_rate: 10.0,
-            duration_secs: 60.0,
+            duration_seconds: 60.0,
             body_parts: mono_body(1.0),
             target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
             // flat_base(), not no_status(): the default fixture carries an
@@ -17663,7 +17663,7 @@ mod tests {
             magazine_size: mag,
             reload_seconds: 0.5,
             fire_rate: 10.0,
-            duration_secs: 60.0,
+            duration_seconds: 60.0,
             body_parts: mono_body(1.0),
             target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
             ..flat_base()
@@ -17708,7 +17708,7 @@ mod tests {
             cc_per_hit: Some((0.01, cap)),
             magazine_size: 100_000.0,
             fire_rate: 10.0,
-            duration_secs: 60.0,
+            duration_seconds: 60.0,
             body_parts: mono_body(1.0),
             target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
             ..flat_base()
@@ -17745,7 +17745,7 @@ mod tests {
                 }),
                 magazine_size: 100_000.0,
                 fire_rate: 10.0,
-                duration_secs: 30.0,
+                duration_seconds: 30.0,
                 // A head and a body, so "aim at the head" is a choice the
                 // fixture can make rather than the only thing it can do.
                 body_parts: vec![
@@ -17812,7 +17812,7 @@ mod tests {
             magazine_size: mag,
             reload_seconds: 0.5,
             fire_rate: 10.0,
-            duration_secs: 60.0,
+            duration_seconds: 60.0,
             body_parts: mono_body(1.0),
             target: frail_target(TargetMode::InfiniteHealth, 0.0, 1e12),
             ..flat_base()
@@ -17866,7 +17866,7 @@ mod tests {
             ammo_cost: 1.0,
             fire_rate: 1.0,
             reload_seconds: 1.0,
-            duration_secs: 120.0,
+            duration_seconds: 120.0,
             mag_refill_on_kill: refill,
             body_parts: mono_body(1.0),
             target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
@@ -17937,7 +17937,7 @@ mod tests {
             syndicate_radial: radial,
             magazine_size: 100_000.0,
             fire_rate: 10.0,
-            duration_secs: secs,
+            duration_seconds: secs,
             body_parts: mono_body(1.0),
             target: t.clone(),
             ..flat_base()
@@ -18394,7 +18394,7 @@ mod tests {
                     cleared_by: crate::loadout::ClearedBy::Nothing,
                 }],
                 fire_rate,
-                duration_secs: secs,
+                duration_seconds: secs,
                 ..DummyParams::default()
             };
             // No crits and no procs, so EVERY hit is a plain hit and the buff
@@ -18411,7 +18411,7 @@ mod tests {
                     status_chance: 0.0,
                     forced_procs: Vec::new(),
                     fire_rate,
-                    duration_secs: secs,
+                    duration_seconds: secs,
                     ..DummyParams::default()
                 },
                 &mut Rng::new(11),
@@ -18618,7 +18618,7 @@ mod tests {
             target: spec
                 .target_params(9999, true, false, TargetMode::InstantRespawn)
                 .unwrap(),
-            duration_secs: 60.0,
+            duration_seconds: 60.0,
             ..DummyParams::dual_toxocyst_incarnon()
         };
         let s = monte_carlo(&p, 50, 12);
@@ -18825,7 +18825,7 @@ mod tests {
                 arcane: ArcaneFx::none(),
                 body_parts: mono_body(1.0),
                 fire_rate: 10.0,
-                duration_secs: 0.65,
+                duration_seconds: 0.65,
                 magazine_size: 100.0,
                 target: TargetParams {
                     type_mods: crate::factions_data::columns_for(key),
@@ -19055,7 +19055,7 @@ mod tests {
             }),
             ..no_status()
         };
-        let p = DummyParams { duration_secs: 12.0, ..p };
+        let p = DummyParams { duration_seconds: 12.0, ..p };
         let s = monte_carlo(&p, 5, 9);
         assert!((s.mean_damage - 650.0).abs() < 1e-9, "earned dmg {}", s.mean_damage);
         assert!((s.mean_shots - 9.0).abs() < 1e-9, "shots {}", s.mean_shots);
@@ -19334,7 +19334,7 @@ mod tests {
             arcane: arc_stacked("cascadia_flare"),
             forced_procs: vec![DamageType::Impact],
             body_parts: mono_body(1.0),
-            duration_secs: 15.0,
+            duration_seconds: 15.0,
             ..no_status()
         };
         let s = monte_carlo(&starved, 20, 5);
@@ -19372,7 +19372,7 @@ mod tests {
         // first 4 s no decay: 4 shots × 75 × 4.6 = 1380.
         let p = DummyParams {
             arcane: arc_stacked("secondary_merciless"),
-            duration_secs: 3.9,
+            duration_seconds: 3.9,
             ..flat_base()
         };
         let s = monte_carlo(&p, 20, 5);
@@ -19385,7 +19385,7 @@ mod tests {
         // Shots t0-3 @12, t4-7 @11, t8-9 @10 stacks:
         // 75 × (4×4.6 + 4×4.3 + 2×4.0) = 3270.
         let p10 = DummyParams {
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             ..p
         };
         let s10 = monte_carlo(&p10, 20, 5);
@@ -19412,7 +19412,7 @@ mod tests {
         // magazine over 20 s fits in more shots than without the arcane.
         let slow = DummyParams {
             magazine_size: 2.0,
-            duration_secs: 20.0,
+            duration_seconds: 20.0,
             forced_procs: vec![DamageType::Electricity],
             ..flat_base()
         };
@@ -19608,7 +19608,7 @@ mod tests {
                 to: DamageType::Slash,
                 chance: 0.35,
                 low_rate_threshold: 2.5,
-                low_rate_mult: 2.0,
+                low_rate_multiplier: 2.0,
             }),
             forced_procs: vec![DamageType::Impact],
             ..flat_base()
@@ -19659,7 +19659,7 @@ mod tests {
                 to: DamageType::Slash,
                 chance: 0.35,
                 low_rate_threshold: 2.5,
-                low_rate_mult: 2.0,
+                low_rate_multiplier: 2.0,
             }),
             forced_procs: forced,
             ..flat_base()
@@ -19871,7 +19871,7 @@ mod tests {
         // for 9 s after each reload fits in more shots over 20 s.
         let base = DummyParams {
             magazine_size: 2.0,
-            duration_secs: 20.0,
+            duration_seconds: 20.0,
             ..flat_base()
         };
         let with = DummyParams {
@@ -19914,7 +19914,7 @@ mod tests {
             arcane: ArcaneFx::none(),
             body_parts: mono_body(1.0),
             target: shielded_target(1000.0, 1000.0),
-            duration_secs: 1.0,
+            duration_seconds: 1.0,
             ..no_status()
         };
         let s = monte_carlo(&p, 10, 7);
@@ -19964,7 +19964,7 @@ mod tests {
             base_crit_chance: 0.0,
             arcane: ArcaneFx::none(),
             fire_rate: 20.0,
-            duration_secs: 0.2,
+            duration_seconds: 0.2,
             magazine_size: 100.0,
             body_parts: mono_body(1.0),
             target: shielded_target(100.0, 1e9),
@@ -20023,7 +20023,7 @@ mod tests {
         // shots fit the 1 s bucket -> 500 total in the 1 s run.
         let q = DummyParams {
             fire_rate: 20.0,
-            duration_secs: 1.0,
+            duration_seconds: 1.0,
             magazine_size: 100.0,
             ..p
         };
@@ -20059,7 +20059,7 @@ mod tests {
                 is_head: true,
                 crit_bonus: false,
             }],
-            duration_secs: 20.0,
+            duration_seconds: 20.0,
             ..no_status()
         };
         let s = monte_carlo(&p, 4000, 23);
@@ -20093,7 +20093,7 @@ mod tests {
             }),
             arcane: ArcaneFx::none(),
             body_parts: mono_body(1.0),
-            duration_secs: 20.0,
+            duration_seconds: 20.0,
             ..no_status()
         };
         let s = monte_carlo(&p, 4000, 21);
@@ -20114,7 +20114,7 @@ mod tests {
             crit_multiplier: 1.0,
             body_parts: mono_body(1.0),
             target: t,
-            duration_secs: 1.0,
+            duration_seconds: 1.0,
             ..no_status()
         };
         let s = monte_carlo(&p, 10, 3);
@@ -20361,7 +20361,7 @@ mod tests {
             magazine_size: 10.0,
             fire_rate: 20.0,
             reload_seconds: 0.1,
-            duration_secs: 30.0,
+            duration_seconds: 30.0,
             infinite_reserve: !finite,
             reserve_ammo: reserve,
             arcane: crate::arcanes_data::ArcaneFx::none(),
@@ -20391,7 +20391,7 @@ mod tests {
     /// multiplies the damage (user, via the QQ group, 2026-07-31).
     ///
     /// Red is NOT the ceiling: tier 4 and above are real, the game shows
-    /// them, and `crit_mult = 1 + tier x (cd - 1)` has no cap either — so
+    /// them, and `crit_multiplier = 1 + tier x (cd - 1)` has no cap either — so
     /// neither may the report.
     #[test]
     fn the_crit_tier_keeps_climbing_where_the_rate_saturates() {
@@ -20652,7 +20652,7 @@ mod tests {
     fn a_replay_reproduces_the_run_it_came_from() {
         let p = DummyParams {
             arcane: arc_stacked("secondary_merciless"),
-            duration_secs: 30.0,
+            duration_seconds: 30.0,
             ..flat_base()
         };
         let s = monte_carlo(&p, 12, 99);
@@ -20685,7 +20685,7 @@ mod tests {
     fn every_rostered_buff_is_sampled() {
         let p = DummyParams {
             arcane: arc_stacked("secondary_merciless"),
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             ..DummyParams::default()
         };
         let roster = p.buff_roster();
@@ -20794,7 +20794,7 @@ mod tests {
                 forced_procs: vec![DamageType::Viral],
                 fire_rate: 10.0,
                 // Long enough for the last shot's DoT to tick out in full.
-                duration_secs: 20.0,
+                duration_seconds: 20.0,
                 magazine_size: shots,
                 infinite_reserve: false,
                 reserve_ammo: 0.0,
@@ -20926,7 +20926,7 @@ mod tests {
             fire_rate: 10.0,
             magazine_size: 1e9,
             infinite_reserve: true,
-            faction_mult: faction,
+            faction_multiplier: faction,
             // The component bracket is what a split tick scales by; give Toxin
             // and Electricity real mod bonuses so the split has something to
             // read and the two branches are not both 1.0.
@@ -21070,14 +21070,14 @@ mod tests {
         );
         // 1 + 6.6 x 0.8 — spelled out, because clippy reads the literal 6.28
         // as an approximation of TAU and it is nothing of the sort.
-        assert!((p.compression_mult - (1.0 + 6.6 * 0.8)).abs() < 1e-9, "6.6 m -> +528%");
+        assert!((p.compression_multiplier - (1.0 + 6.6 * 0.8)).abs() < 1e-9, "6.6 m -> +528%");
         assert_eq!(p.compression_bd, 0.0);
         let braton = crate::loadout::WeaponBase::from_data("braton_incarnon", true, &[]);
         let p = DummyParams::from_panel(
             &crate::loadout::resolve(&braton, &[], crate::loadout::StackPolicy::Emergent), &arena, &fx,
         );
         assert!((p.compression_bd - 2.4).abs() < 1e-9, "3.0 m x 0.8 = +240%");
-        assert_eq!(p.compression_mult, 1.0);
+        assert_eq!(p.compression_multiplier, 1.0);
 
         // …and the fight tells them apart. Serration is +165%, so an ADDING
         // bonus keeps 1/2.65 of its relative worth and a MULTIPLYING one keeps
@@ -21445,7 +21445,7 @@ mod stream_independence_tests {
             crit_multiplier: 2.0,
             multishot: 1.6,
             base_multishot: 1.6,
-            duration_secs: 60.0,
+            duration_seconds: 60.0,
             ..DummyParams::default()
         }
     }
@@ -21800,7 +21800,7 @@ mod debilitate_attrition_tests {
     /// Which makes the comparison arithmetic rather than opinion:
     ///
     ///     not critting   E = 11 x 11         = 121
-    ///     critting       E = crit_mult x 11
+    ///     critting       E = crit_multiplier x 11
     ///
     /// **They cross at a crit multiplier of 11.** Measured here: Attrition is
     /// worth x121 with no crits and x11 with them at ANY multiplier — the same
@@ -21861,14 +21861,14 @@ mod warframe_ability_tests {
     fn params(abilities: &[(&'static str, Option<f64>)], strength: f64) -> DummyParams {
         let picks: Vec<AbilityPick<'static>> = abilities
             .iter()
-            .map(|(id, secs)| AbilityPick { id, duration_s: *secs, element: None })
+            .map(|(id, secs)| AbilityPick { id, duration_seconds: *secs, element: None })
             .collect();
         DummyParams {
             damage: DamageVector::new().with(DamageType::Impact, 100.0),
             dot_modified_base: Some(100.0),
             fire_rate: 1.0,
             magazine_size: 1e9,
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             base_crit_chance: 0.0,
             unmodded_crit_chance: 0.0,
             body_parts: vec![BodyPart {
@@ -21913,7 +21913,7 @@ mod warframe_ability_tests {
             p.co_per_type = 0.5;
             p.co_base_fraction = 1.0;
             p.magazine_size = 1e9;
-            p.duration_secs = 20.0;
+            p.duration_seconds = 20.0;
             run_once(&p, &mut crate::rng::Rng::new(17))
         };
         let off = fixture(false).sources.direct;
@@ -21953,7 +21953,7 @@ mod warframe_ability_tests {
             // counted; `params` gives 1e9 rounds, which never reloads at all.
             p.magazine_size = 4.0;
             p.reload_seconds = 1.0;
-            p.duration_secs = 120.0;
+            p.duration_seconds = 120.0;
             p.infinite_reserve = true;
             run_once(&p, &mut crate::rng::Rng::new(5))
         };
@@ -21982,7 +21982,7 @@ mod warframe_ability_tests {
             let mut p = params(&[("energized_munitions", None)], 3.0);
             p.magazine_size = 4.0;
             p.reload_seconds = 1.0;
-            p.duration_secs = 120.0;
+            p.duration_seconds = 120.0;
             p.infinite_reserve = true;
             run_once(&p, &mut crate::rng::Rng::new(5))
         };
@@ -21991,7 +21991,7 @@ mod warframe_ability_tests {
     }
 
     /// ROAR IS A BANE MOD, and this asserts exactly that and nothing more: it
-    /// lands in the bracket `faction_mult` already is, so a +50% Roar is x1.5
+    /// lands in the bracket `faction_multiplier` already is, so a +50% Roar is x1.5
     /// on the hit — and the bracket's own squaring on status follows without a
     /// line of code, which the DoT test below is for.
     #[test]
@@ -22076,7 +22076,7 @@ mod warframe_ability_tests {
             .with(DamageType::Impact, 98.0)
             .with(DamageType::Blast, 98.0 * 1.2);
         p.dot_modified_base = Some(98.0);
-        p.faction_mult = 1.55;
+        p.faction_multiplier = 1.55;
         // NO STATUS unless a test asks for it. The fixture behind `params` is a
         // real weapon and procs; a stray Blast would fold a detonation's extra
         // hit into the ratio the first two tests are about, which is exactly
@@ -22124,7 +22124,7 @@ mod warframe_ability_tests {
         // mod's damage is not part of it. That is the whole reason the
         // detonation is 30 and not 93.
         p.dot_modified_base = Some(100.0);
-        p.faction_mult = 1.55;
+        p.faction_multiplier = 1.55;
         p.status_chance = 0.0;
         p.base_status_chance = 0.0;
         p.forced_procs = Vec::new();
@@ -22137,7 +22137,7 @@ mod warframe_ability_tests {
         // ONE SHOT, so every figure below is one instance rather than a mean.
         let one = |p: &DummyParams| {
             let mut q = p.clone();
-            q.duration_secs = 0.001;
+            q.duration_seconds = 0.001;
             run_once(&q, &mut crate::rng::Rng::new(3))
         };
 
@@ -22168,7 +22168,7 @@ mod warframe_ability_tests {
         // example says "if the hit proc'd Blast" — and long enough for the fuse.
         let mut p = wiki_example();
         p.forced_procs = vec![DamageType::Blast];
-        p.duration_secs = 30.0;
+        p.duration_seconds = 30.0;
         let r = one_shot_with_fuse(&p);
         // The detonation is a status payload: 30% of the 100 ModifiedBase,
         // faction squared, and NO elemental bracket.
@@ -22284,7 +22284,7 @@ mod warframe_ability_tests {
         let mut p = measured();
         // Exactly one shot, and long enough after it for the 1.5 s fuse.
         p.fire_rate = 0.5;
-        p.duration_secs = 1.9;
+        p.duration_seconds = 1.9;
         p.status_chance = 0.0;
         p.forced_procs = vec![DamageType::Blast];
         let r = run_once(&p, &mut crate::rng::Rng::new(3));
@@ -22402,7 +22402,7 @@ mod incarnon_reload_route_tests {
             ammo_efficiency_applies: false,
             arcane: ArcaneFx::none(),
             body_parts: head,
-            duration_secs: 40.0,
+            duration_seconds: 40.0,
             cycle: Some(IncarnonCycle {
                 starts_primed: false,
                 base_form: Box::new(base_form),
@@ -22480,7 +22480,7 @@ mod incarnon_reload_route_tests {
             body_parts: head,
             fire_rate: 1.0,
             // Long enough for exactly one fill-and-transform, and no more.
-            duration_secs: 5.5,
+            duration_seconds: 5.5,
             target: TargetParams { base_health: 1e15, ..DummyParams::default().target },
             cycle: Some(IncarnonCycle {
                 starts_primed: false,
@@ -22501,7 +22501,7 @@ mod incarnon_reload_route_tests {
         // the Incarnon round is one interval after the last base shot.
         let run = |gauge: u32, secs: f64| {
             let q = DummyParams {
-                duration_secs: secs,
+                duration_seconds: secs,
                 cycle: Some(IncarnonCycle { charges_to_fill: gauge, ..p.cycle.clone().unwrap() }),
                 ..p.clone()
             };
@@ -22607,7 +22607,7 @@ mod fortifier_tick_tests {
             base_status_chance: 1.0,
             fire_rate: 1.0,
             magazine_size: 1e9,
-            duration_secs: 12.0,
+            duration_seconds: 12.0,
             base_crit_chance: 0.0,
             unmodded_crit_chance: 0.0,
             body_parts: super::tests::mono_body(1.0),
@@ -22615,7 +22615,7 @@ mod fortifier_tick_tests {
         };
         p.status_chance = 1.0;
         p.base_status_chance = 1.0;
-        p.arcane.overguard_mult = mult;
+        p.arcane.overguard_multiplier = mult;
         p.target.base_overguard = og;
         p.target.base_health = 1e15;
         p
@@ -22666,7 +22666,7 @@ mod overguard_status_tests {
             dot_modified_base: Some(100.0),
             fire_rate: 1.0,
             magazine_size: 1e9,
-            duration_secs: 10.0,
+            duration_seconds: 10.0,
             base_crit_chance: 0.0,
             unmodded_crit_chance: 0.0,
             body_parts: mono_body(1.0),

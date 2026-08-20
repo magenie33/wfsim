@@ -577,7 +577,7 @@ pub struct LingeringSpec {
     /// Ticks per second (the data module's per-attack `FireRate`).
     pub tick_rate: f64,
     /// Field lifetime in seconds (`EffectDuration`).
-    pub duration_s: f64,
+    pub duration_seconds: f64,
     pub radius_m: f64,
     #[serde(default)]
     pub crit_chance: Option<f64>,
@@ -1189,11 +1189,11 @@ pub struct WeaponSpec {
     /// missing; it only understates a PARTIAL reload, and this sim reloads
     /// from empty.
     #[serde(default)]
-    pub reload_start_s: Option<f64>,
+    pub reload_start_seconds: Option<f64>,
     #[serde(default)]
-    pub reload_per_shell_s: Option<f64>,
+    pub reload_per_shell_seconds: Option<f64>,
     #[serde(default)]
-    pub reload_end_s: Option<f64>,
+    pub reload_end_seconds: Option<f64>,
     /// The weapon's own rank ceiling — 30 for almost everything, 40 for the
     /// Kuva/Tenet/Coda families and the Paracesis. It decides CAPACITY, since
     /// capacity "correlates to their Rank" (wiki `Mod Capacity`) and a rank-40
@@ -2132,9 +2132,9 @@ pub struct Battery {
     /// The wait before regeneration starts with the battery EMPTY (1.0 s).
     /// `reload_seconds` already carries `this + magazine/rate`, so this field
     /// is what the between-shots case needs rather than a second copy of it.
-    pub delay_empty_s: f64,
+    pub delay_empty_seconds: f64,
     /// …and with rounds still in it (0.4 s).
-    pub delay_partial_s: f64,
+    pub delay_partial_seconds: f64,
 }
 
 /// A SPOOL: the rate MOVES the longer the trigger is held, and rebuilds from
@@ -2556,9 +2556,9 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
     let by_round_reload = (s.reload_style.as_deref() == Some("by_round")
         && s.pseudo_reload.is_none())
         .then(|| {
-            let start = s.reload_start_s.unwrap_or(0.0);
-            let end = s.reload_end_s.unwrap_or(0.0);
-            let per = s.reload_per_shell_s.unwrap_or_else(|| {
+            let start = s.reload_start_seconds.unwrap_or(0.0);
+            let end = s.reload_end_seconds.unwrap_or(0.0);
+            let per = s.reload_per_shell_seconds.unwrap_or_else(|| {
                 ((base_reload - start - end) / magazine_size.max(1.0)).max(0.0)
             });
             (start, per, end)
@@ -2620,7 +2620,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
             base_crit_damage: f.crit_multiplier.unwrap_or(s.attack.crit_multiplier),
             base_status_chance: f.status_chance.unwrap_or(s.attack.status_chance),
             tick_rate: f.tick_rate,
-            duration_s: f.duration_s,
+            duration_seconds: f.duration_seconds,
             radius_m: f.radius_m,
             falloff_start_m: f.falloff_start_m.unwrap_or(0.0),
             falloff_reduction: f.falloff_reduction.unwrap_or(0.0),
@@ -2752,7 +2752,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         gated: Vec::new(),
         cannot_zoom: s.cannot_zoom,
         consecutive_hit_damage: None,
-        bodyshot_cc_mult: 1.0,
+        bodyshot_crit_chance_multiplier: 1.0,
         round_restore_on_status: None,
         instant_reload_on_kill: None,
         mag_growth_on_empty_reload: None,
@@ -3819,7 +3819,7 @@ mod tests {
         let f = b.lingering.as_ref().expect("torid leaves a cloud");
         assert!((f.base_vector.get(DamageType::Toxin) - 40.0).abs() < 1e-9);
         assert!((f.tick_rate - 1.0).abs() < 1e-9);
-        assert!((f.duration_s - 10.0).abs() < 1e-9);
+        assert!((f.duration_seconds - 10.0).abs() < 1e-9);
         assert!((f.base_status_chance - 0.25).abs() < 1e-9);
         assert!((f.radius_m - 3.0).abs() < 1e-9);
         // To ZERO at the rim, unlike the Laetum radial's 0.2.

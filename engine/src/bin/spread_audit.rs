@@ -30,7 +30,7 @@ fn main() {
             how.push(format!("blast {:.1}m", r.radius_m));
         }
         if let Some(f) = &a.lingering {
-            how.push(format!("cloud {:.1}m for {:.0}s", f.radius_m, f.duration_s));
+            how.push(format!("cloud {:.1}m for {:.0}s", f.radius_m, f.duration_seconds));
         }
         // TENDRILS are the fourth mechanism and the only one that is not a
         // spread of the shot: extra BEAMS, each on a body the main one is not

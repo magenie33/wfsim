@@ -411,14 +411,14 @@ pub enum ModEffect {
     /// Hemorrhage: each `from` status APPLIED rolls `chance` to also apply
     /// one `to` status (at most one roll per damage instance, and never
     /// alongside another `to` proc in the same instance). The chance is
-    /// ×`low_rate_mult` while the weapon's LIVE fire rate is strictly below
+    /// ×`low_rate_multiplier` while the weapon's LIVE fire rate is strictly below
     /// `low_rate_threshold` (exactly at the threshold gets no bonus).
     ProcConversion {
         from: DamageType,
         to: DamageType,
         chance: f64,
         low_rate_threshold: f64,
-        low_rate_mult: f64,
+        low_rate_multiplier: f64,
     },
 }
 
@@ -781,9 +781,9 @@ impl ModEffect {
             OnReloadFireRate { bonus, duration } => {
                 format!("On Reload: {} Fire Rate, {duration}s", pct(bonus))
             }
-            ProcConversion { from, to, chance, low_rate_threshold, low_rate_mult } => {
+            ProcConversion { from, to, chance, low_rate_threshold, low_rate_multiplier } => {
                 format!(
-                    "{from:?} status: {} chance to also apply {to:?} (×{low_rate_mult} below {low_rate_threshold} fire rate)",
+                    "{from:?} status: {} chance to also apply {to:?} (×{low_rate_multiplier} below {low_rate_threshold} fire rate)",
                     pct(chance)
                 )
             }
@@ -1277,7 +1277,7 @@ pub struct WeaponBase {
     /// impossible". Its other half is additive and already has a home:
     /// "Weakpoint modifier is ADDITIVE with mods such as Pistol Gambit", which
     /// is `weakpoint_cc_rel`.
-    pub bodyshot_cc_mult: f64,
+    pub bodyshot_crit_chance_multiplier: f64,
     /// GALVANIC RELOAD: `(status, chance, rounds)` — "On hitting a target
     /// affected by an Electricity status, 40% chance to restore 1 round in the
     /// magazine from ammo pool".
@@ -1885,7 +1885,7 @@ pub struct LingeringBase {
     /// Ticks per second (the data module's `FireRate` for the part: Torid 1).
     pub tick_rate: f64,
     /// How long the field lives (`EffectDuration`: Torid 10 s).
-    pub duration_s: f64,
+    pub duration_seconds: f64,
     pub radius_m: f64,
     pub falloff_start_m: f64,
     /// Torid's cloud is `reduction 1.0` — damage falls to ZERO at the rim,
@@ -1917,7 +1917,7 @@ pub struct ResolvedLingering {
     pub base_crit_damage: f64,
     pub base_status_chance: f64,
     pub tick_rate: f64,
-    pub duration_s: f64,
+    pub duration_seconds: f64,
     /// Geometry, carried through unmodded — single-target stands at the
     /// epicentre, but the panel states it (and Firestorm enlarges it in game).
     pub radius_m: f64,
@@ -2561,9 +2561,9 @@ pub struct ResolvedPanel {
     /// ABSOLUTE crit chance; per-stack expiry semantics.
     pub cc_stack: Option<StackSpec>,
     /// (1 + Σ status damage) — multiplies status payload values.
-    pub status_damage_mult: f64,
+    pub status_damage_multiplier: f64,
     /// (1 + Σ status duration) — scales status-effect DoT durations.
-    pub status_duration_mult: f64,
+    pub status_duration_multiplier: f64,
     /// Σ chance for a CRITICAL hit to apply a Slash status (Hunter
     /// Munitions), rolled per pellet, independent of status chance.
     pub slash_on_crit: f64,
@@ -2594,7 +2594,7 @@ pub struct ResolvedPanel {
     pub weakpoint_cc_rel: f64,
     /// King's Gambit's other half: a MULTIPLIER on a non-weak-point pellet's
     /// crit chance, applied after everything else. 1.0 = ordinary.
-    pub bodyshot_cc_mult: f64,
+    pub bodyshot_crit_chance_multiplier: f64,
     /// WISEMAN'S REGARD, AS A LIVE SPEC: `(rate, cap, what the panel already
     /// folded in)`, the first two ALREADY multiplied by the status-chance mods
     /// because the card grants BASE status chance.
@@ -2759,9 +2759,9 @@ pub struct ProcConv {
     pub from: DamageType,
     pub to: DamageType,
     pub chance: f64,
-    /// Chance ×`low_rate_mult` while LIVE fire rate < this (strictly).
+    /// Chance ×`low_rate_multiplier` while LIVE fire rate < this (strictly).
     pub low_rate_threshold: f64,
-    pub low_rate_mult: f64,
+    pub low_rate_multiplier: f64,
 }
 
 /// Resolve a mod set in slot order against a weapon base.
@@ -3289,8 +3289,8 @@ pub fn resolve_for(
                 },
                 // Event mechanic — carried to the sim under every policy;
                 // contributes no static panel stat.
-                ModEffect::ProcConversion { from, to, chance, low_rate_threshold, low_rate_mult } => {
-                    proc_conv = Some(ProcConv { from, to, chance, low_rate_threshold, low_rate_mult });
+                ModEffect::ProcConversion { from, to, chance, low_rate_threshold, low_rate_multiplier } => {
+                    proc_conv = Some(ProcConv { from, to, chance, low_rate_threshold, low_rate_multiplier });
                 }
                 // Conditional buff at its assumed-max total — applied only under
                 // AssumedMax (panel/optimizer); emergent leaves it to the sim.
@@ -3636,7 +3636,7 @@ pub fn resolve_for(
             base_crit_damage: f.base_crit_damage,
             base_status_chance: f.base_status_chance,
             tick_rate: f.tick_rate,
-            duration_s: f.duration_s,
+            duration_seconds: f.duration_seconds,
             radius_m: f.radius_m * (1.0 + br),
             falloff_start_m: f.falloff_start_m * (1.0 + br),
             falloff_reduction: f.falloff_reduction,
@@ -4014,8 +4014,8 @@ pub fn resolve_for(
         ms_stack,
         cc_on_headshot,
         cc_stack,
-        status_damage_mult: 1.0 + sd,
-        status_duration_mult: 1.0 + sdur,
+        status_damage_multiplier: 1.0 + sd,
+        status_duration_multiplier: 1.0 + sdur,
         elem_dot_bonus: elem_bonus.into_iter().map(|(t, v)| (t, 1.0 + v)).collect(),
         indirect,
         faction_damage: faction_bonus,
@@ -4023,7 +4023,7 @@ pub fn resolve_for(
         headshot_multiplier: base.headshot_multiplier,
         // RELATIVE; direct-head only, so the sim uses the direct base.
         weakpoint_cc_rel: wp_cc,
-        bodyshot_cc_mult: base.bodyshot_cc_mult,
+        bodyshot_crit_chance_multiplier: base.bodyshot_crit_chance_multiplier,
         consecutive_hit_damage: consecutive_hit.or(base.consecutive_hit_damage),
         // OFF ON A CONTINUOUS WEAPON AND ON AN INCARNON FORM, both the mod's
         // own words. `base.form` is the entry being resolved, so an Incarnon
@@ -5195,7 +5195,7 @@ mod tests {
         assert!((p.multishot - 4.9).abs() < 1e-9);
         // CO assumed max: 0.4 × 3 = 1.2. No status-damage mods.
         assert!((p.co_per_type - 1.2).abs() < 1e-9);
-        assert!((p.status_damage_mult - 1.0).abs() < 1e-9);
+        assert!((p.status_damage_multiplier - 1.0).abs() < 1e-9);
         // Elemental DoT brackets: cold 1.6, electricity 1.6.
         assert!(p.elem_dot_bonus.contains(&(Cold, 1.6)));
         assert!(p.elem_dot_bonus.contains(&(Electricity, 1.6)));
@@ -5234,7 +5234,7 @@ mod tests {
         let p = resolve(&base, &refs, StackPolicy::AssumedMax);
         // Magazine capacity is +% of base, floored to whole rounds.
         assert!((p.magazine_size - (baseline * 1.60).floor()).abs() < 1e-9);
-        assert!((p.status_duration_mult - 1.40).abs() < 1e-9);
+        assert!((p.status_duration_multiplier - 1.40).abs() < 1e-9);
     }
 
     #[test]

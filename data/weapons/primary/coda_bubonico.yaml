@@ -56,8 +56,8 @@ reload_seconds: 5.5
 # that rewards it are opposite weapons to play.
 battery:
   regen_per_second: 9.0
-  delay_empty_s: 0.1
-  delay_partial_s: 1.5
+  delay_empty_seconds: 0.1
+  delay_partial_seconds: 1.5
 
 # Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
 # ordinary Additive at the full +100%. Absence means ORDINARY.

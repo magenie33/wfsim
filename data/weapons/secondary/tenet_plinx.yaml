@@ -45,8 +45,8 @@ reload_seconds: 1.3
 # fact. The ALTERNATE FIRE states its own longer wait and carries it there.
 battery:
   regen_per_second: 20.0
-  delay_empty_s: 0.8
-  delay_partial_s: 0.8
+  delay_empty_seconds: 0.8
+  delay_partial_seconds: 0.8
 
 # Condition Overload: NO row for the PRIMARY fire in the wiki's CO catalog
 # (re-read 2026-08-20) — ordinary Additive at the full +100%. The catalog names

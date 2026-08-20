@@ -67,8 +67,8 @@ reload_seconds: 1.25         # the EMPTY case: 1.0 s delay + 7/28 s refill
 # in for it.
 battery:
   regen_per_second: 28.0
-  delay_empty_s: 1.0
-  delay_partial_s: 0.4
+  delay_empty_seconds: 1.0
+  delay_partial_seconds: 0.4
 
 # CO IS MULTIPLYING, and the catalog says so in its own row — which I had
 # claimed it did not (2026-08-10, corrected the same day by actually opening the

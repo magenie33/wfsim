@@ -37,7 +37,7 @@ pub struct Arena {
     ///
     /// Two POINTS rather than one distance, because the distance is what a
     /// second body cannot be described by. They belong to the arena rather than
-    /// to the Tenno or the target for the same reason `duration_secs` does: a
+    /// to the Tenno or the target for the same reason `duration_seconds` does: a
     /// position is a fact about this engagement, not about who is in it, and
     /// the same Tenno stands somewhere else in the next fight.
     ///
@@ -79,7 +79,7 @@ pub struct Arena {
     /// Engagement length. A property of the FIGHT, not of the measurement,
     /// which is why the optimizer needs it while needing neither run count nor
     /// metric.
-    pub duration_secs: f64,
+    pub duration_seconds: f64,
     /// WARFRAME ABILITY BUFFS the player brought — Roar, Eclipse, Nourish and
     /// the four elemental augments (`data/abilities/`).
     ///
@@ -113,7 +113,7 @@ impl Arena {
     /// for 10 s. Production code never uses it — a real fight names its
     /// target — but every test that only cares about weapon numbers wants
     /// exactly this and should not have to spell it out.
-    pub fn training(duration_secs: f64) -> Self {
+    pub fn training(duration_seconds: f64) -> Self {
         Self {
             target_id: "e1".to_string(),
             tenno: crate::tenno_data::default_tenno().clone(),
@@ -135,7 +135,7 @@ impl Arena {
             // …and the weapon points AT it, which is what every golden value
             // was measured under.
             aim_at: None,
-            duration_secs,
+            duration_seconds,
             // The fixture is the NEUTRAL player, and no frame is running
             // anything for them.
             abilities: Vec::new(),
@@ -159,7 +159,7 @@ mod tests {
         assert!(!a.tenno.state.invisible);
         assert_eq!(a.tenno.armor, 105.0, "the floor, and far under every gate");
         assert_eq!(a.target.base_armor, 0.0);
-        assert_eq!(a.duration_secs, 10.0);
+        assert_eq!(a.duration_seconds, 10.0);
     }
 
     /// …AND IT STANDS ON THE TARGET. Every golden value in this engine was

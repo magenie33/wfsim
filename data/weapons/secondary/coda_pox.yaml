@@ -83,7 +83,7 @@ attack:
   lingering:
     damage: { toxin: 35.0 }
     tick_rate: 1.0
-    duration_s: 4.0
+    duration_seconds: 4.0
     radius_m: 2.8
     falloff_start_m: 0.0
     falloff_reduction: 0.0

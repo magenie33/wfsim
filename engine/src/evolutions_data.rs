@@ -295,13 +295,13 @@ enum EvoEffect {
     ///    Chance, effectively making non-headshot critical hits impossible.
     ///   *Weakpoint modifier is additive with mods such as Pistol Gambit
     ///
-    /// So `bodyshot_mult` MULTIPLIES a body pellet's chance and
+    /// So `bodyshot_multiplier` MULTIPLIES a body pellet's chance and
     /// `weakpoint_bonus` joins `weakpoint_cc_rel`, the same relative bracket
     /// Pistol Acuity uses. Both are per-PELLET, which is what keeps them out of
     /// the panel's crit chance — and that is what makes the same page's other
     /// note true for free: Wiseman's Regard, which reads "current Critical
     /// Chance", is "**Not** affected by the King's Gambit Evolution II perk".
-    CritChanceByBodyPart { bodyshot_mult: f64, weakpoint_bonus: f64 },
+    CritChanceByBodyPart { bodyshot_multiplier: f64, weakpoint_bonus: f64 },
     /// ONE STAT FROM THE OTHER, capped. `from_crit` says which way round:
     /// Wiseman's Regard reads crit and pays status, High Ground the mirror.
     DerivedStat { from_crit: bool, rate: f64, cap: f64 },
@@ -1144,8 +1144,8 @@ impl EvolutionDef {
                     "{:.0}% chance per shot to restore {rounds:.0} round from the ammo pool when the target carries a {status:?} status",
                     chance * 100.0
                 ),
-                EvoEffect::CritChanceByBodyPart { bodyshot_mult, weakpoint_bonus } => format!(
-                    "x{bodyshot_mult:.0} crit chance on body shots, +{:.0}% BASE crit chance on weak points (additive with the crit mods)",
+                EvoEffect::CritChanceByBodyPart { bodyshot_multiplier, weakpoint_bonus } => format!(
+                    "x{bodyshot_multiplier:.0} crit chance on body shots, +{:.0}% BASE crit chance on weak points (additive with the crit mods)",
                     weakpoint_bonus * 100.0
                 ),
                 EvoEffect::DerivedStat { from_crit, rate, cap } => format!(
@@ -1584,7 +1584,7 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         "crit_chance_by_body_part" => EvoEffect::CritChanceByBodyPart {
             // No defaults that pay out: a missing multiplier is 1 (ordinary),
             // a missing bonus is 0.
-            bodyshot_mult: f(v, "bodyshot_mult").unwrap_or(1.0),
+            bodyshot_multiplier: f(v, "bodyshot_multiplier").unwrap_or(1.0),
             weakpoint_bonus: f(v, "weakpoint_bonus").unwrap_or(0.0),
         },
         "status_chance_from_crit_chance" => EvoEffect::DerivedStat {
@@ -2044,11 +2044,11 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 EvoEffect::RoundRestoreOnStatusHit { status, chance, rounds } => {
                     base.round_restore_on_status = Some((*status, *chance, *rounds));
                 }
-                EvoEffect::CritChanceByBodyPart { bodyshot_mult, weakpoint_bonus } => {
+                EvoEffect::CritChanceByBodyPart { bodyshot_multiplier, weakpoint_bonus } => {
                     // MULTIPLICATIVE, so it composes rather than replaces —
                     // two such perks on one weapon would multiply, which is
                     // what "multiplicative with all sources" means.
-                    base.bodyshot_cc_mult *= *bodyshot_mult;
+                    base.bodyshot_crit_chance_multiplier *= *bodyshot_multiplier;
                     base.evo_weakpoint_cc_rel += *weakpoint_bonus;
                 }
                 EvoEffect::DerivedStat { from_crit, rate, cap } => {

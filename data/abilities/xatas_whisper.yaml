@@ -87,7 +87,7 @@ value: 0.26
 # Max rank at 100% Ability Duration, in seconds. The page lets you
 # override it — or run the whole fight, which is the honest way to
 # ask what a weapon is worth UNDER Roar rather than around it.
-duration_s: 35
+duration_seconds: 35
 
 effect:
   kind: extra_hit

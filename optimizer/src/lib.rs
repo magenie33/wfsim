@@ -1494,7 +1494,7 @@ mod tests {
                     name: "body".into(), aim_weight: 1.0, multiplier: 1.0,
                     is_head: false, crit_bonus: false,
                 }],
-                duration_secs: 2.0,
+                duration_seconds: 2.0,
                 ..Arena::training(2.0)
             },
             incarnon_cycle: false,

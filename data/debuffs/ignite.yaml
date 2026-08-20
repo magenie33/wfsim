@@ -50,7 +50,7 @@ dot:
   # Per-stack contribution (wiki Damage/Heat_Damage):
   #   tick += 0.5 x ModdedBaseDamage x (1 + HeatDamageBonuses)
   #               x (1 + FactionBonuses) x (1 + StatusDamageBonuses)
-  #               x crit_mult x part_mult
+  #               x crit_multiplier x part_mult
   #   ModdedBaseDamage = Base x (1 + BaseDamageBonuses) x (1 + FactionBonuses)
   # Faction double-dips as usual. UNLIKE Slash, Heat elemental mods
   # (Hellfire) DO scale the ticks.
@@ -70,7 +70,7 @@ dot:
   # with the best-modded weapon, then any source can feed the ramp.
   first_proc_snapshot:
     entity_context: [heat_damage_bucket, faction_damage_bucket]
-    per_contribution: [modded_base, status_damage_bucket, crit_mult, part_mult]
+    per_contribution: [modded_base, status_damage_bucket, crit_multiplier, part_mult]
 
 # Armor strip: a timed sub-effect with ramp-up and ramp-down.
 armor_strip:

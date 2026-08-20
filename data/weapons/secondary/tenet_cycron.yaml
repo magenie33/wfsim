@@ -43,8 +43,8 @@ reload_seconds: 1.5
 # difference between them would be inventing a fact.
 battery:
   regen_per_second: 40.0
-  delay_empty_s: 0.5
-  delay_partial_s: 0.5
+  delay_empty_seconds: 0.5
+  delay_partial_seconds: 0.5
 
 # Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
 # ordinary Additive at the full +100%. Absence means ORDINARY.

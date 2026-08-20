@@ -37,7 +37,7 @@ helminth: false
 # At MAX RANK and 100% Ability Strength.
 value: 0.30
 # Max rank at 100% Ability Duration, in seconds.
-duration_s: 45
+duration_seconds: 45
 
 effect:
   kind: extra_hit

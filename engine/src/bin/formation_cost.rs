@@ -5,7 +5,7 @@
 //! rulers run 1000 runs of every stored row on every push, so a fight nobody
 //! can afford is a fight nobody can score.
 //!
-//!   cargo run --release --bin formation_cost -- [spacing_m] [runs] [duration_s]
+//!   cargo run --release --bin formation_cost -- [spacing_m] [runs] [duration_seconds]
 //!
 //! It walks odd-sided grids — odd because a ruler wants an exact CENTRE to aim
 //! at — and reports ms per run, so the cost of a proposed ruler is read off

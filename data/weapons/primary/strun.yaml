@@ -48,9 +48,9 @@ reload_seconds: 3.75
 # They add up to the published total at a full magazine, which is the
 # cross-check: 0.5 + 0.5 x 6 + 0.25 = 3.75.
 reload_style: by_round
-reload_start_s: 0.5
-reload_per_shell_s: 0.5
-reload_end_s: 0.25
+reload_start_seconds: 0.5
+reload_per_shell_seconds: 0.5
+reload_end_seconds: 0.25
 
 # No CO catalog row for this attack, so the ordinary class — absence in that
 # catalog means ORDINARY rather than unknown, since it lists the anomalies.

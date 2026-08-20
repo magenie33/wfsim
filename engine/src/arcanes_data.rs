@@ -221,7 +221,7 @@ pub struct ArcaneFx {
     pub weakpoint_cc_rel: f64,
     /// Final damage multiplier on direct hits (Secondary Surge assumed-max:
     /// the cap, multiplicative with Hornet Strike). 1.0 = none.
-    pub final_mult: f64,
+    pub final_multiplier: f64,
     /// Primary Debilitate's per-instance chance to split a saturated combined
     /// status into one of its components. 0.0 = the arcane is not equipped.
     pub debilitate_chance: f64,
@@ -244,7 +244,7 @@ pub struct ArcaneFx {
     pub cold_burst_on_puncture: u32,
     /// Secondary Fortifier: total damage multiplier while the target still
     /// has Overguard (x3..x8 in-game → stored as the multiplier). 1.0 = none.
-    pub overguard_mult: f64,
+    pub overguard_multiplier: f64,
     /// Akimbo Slip Shot under assumed-max (sliding/aim-gliding not simmed):
     /// added to BuffBar ammo efficiency. Gated on the `dual_pistols` trait.
     pub ammo_efficiency: f64,
@@ -270,14 +270,14 @@ impl Default for ArcaneFx {
             cc_rel: 0.0,
             cd_rel: 0.0,
             weakpoint_cc_rel: 0.0,
-            final_mult: 1.0,
+            final_multiplier: 1.0,
             debilitate_chance: 0.0,
             per_cold_bd: 0.0,
             cold_cap: 0,
             flat_damage_on_status: 0.0,
             encumber_chance: 0.0,
             cold_burst_on_puncture: 0,
-            overguard_mult: 1.0,
+            overguard_multiplier: 1.0,
             ammo_efficiency: 0.0,
             compression_dmg_per_m: 0.0,
             compression_eff_per_m: 0.0,
@@ -335,7 +335,7 @@ impl ArcaneFx {
     ///
     /// Every field folds the way its own mechanic does:
     /// - additive buckets SUM (`cc_rel`, `reload_bonus`, …)
-    /// - multipliers MULTIPLY (`final_mult`, `overguard_mult` — 1.0 = none)
+    /// - multipliers MULTIPLY (`final_multiplier`, `overguard_multiplier` — 1.0 = none)
     /// - the buff lists CONCATENATE, each spec carrying its `owner` so a
     ///   per-buff config key still names the arcane it came from
     /// - a per-arcane PERK (`enervate_rank`) is whichever states one; no two
@@ -369,12 +369,12 @@ impl ArcaneFx {
                     out.ammo_efficiency += a.ammo_efficiency;
                     out.compression_dmg_per_m += a.compression_dmg_per_m;
                     out.compression_eff_per_m += a.compression_eff_per_m;
-                    out.final_mult *= a.final_mult;
+                    out.final_multiplier *= a.final_multiplier;
                     // One arcane grants it and a weapon seats at most one of
                     // any arcane, so this is a max rather than a sum — summing
                     // would invent a stacking rule nothing states.
                     out.debilitate_chance = out.debilitate_chance.max(a.debilitate_chance);
-                    out.overguard_mult *= a.overguard_mult;
+                    out.overguard_multiplier *= a.overguard_multiplier;
                 }
                 out
             }
@@ -904,7 +904,7 @@ impl ArcaneDef {
                 }
                 ArcEffect::FinalDamageCap(sc) => {
                     if assumed {
-                        fx.final_mult = 1.0 + sc.at(rank, self.max_rank);
+                        fx.final_multiplier = 1.0 + sc.at(rank, self.max_rank);
                     }
                 }
                 ArcEffect::CondReloadSpeed(sc) => {
@@ -956,7 +956,7 @@ impl ArcaneDef {
                             };
                 }
                 ArcEffect::OverguardDamage(sc) => {
-                    fx.overguard_mult = 1.0 + sc.at(rank, self.max_rank);
+                    fx.overguard_multiplier = 1.0 + sc.at(rank, self.max_rank);
                 }
                 ArcEffect::AmmoEfficiency(sc) => {
                     if assumed {
@@ -1367,7 +1367,7 @@ mod tests {
             id: "a".into(),
             cc_rel: 0.3,
             reload_bonus: 0.2,
-            final_mult: 2.0,
+            final_multiplier: 2.0,
             buffs: vec![ArcBuffSpec {
                 owner: "a".into(),
                 grant: ArcGrant::BaseDamage,
@@ -1384,7 +1384,7 @@ mod tests {
         let b = ArcaneFx {
             id: "b".into(),
             cc_rel: 0.5,
-            final_mult: 3.0,
+            final_multiplier: 3.0,
             enervate_rank: Some(5),
             ..ArcaneFx::none()
         };
@@ -1392,7 +1392,7 @@ mod tests {
         let m = ArcaneFx::merged(&[a.clone(), b.clone()]);
         assert!((m.cc_rel - 0.8).abs() < 1e-9, "additive buckets SUM");
         assert!((m.reload_bonus - 0.2).abs() < 1e-9);
-        assert!((m.final_mult - 6.0).abs() < 1e-9, "multipliers MULTIPLY");
+        assert!((m.final_multiplier - 6.0).abs() < 1e-9, "multipliers MULTIPLY");
         assert_eq!(m.enervate_rank, Some(5), "a perk is whichever states one");
         assert_eq!(m.buffs.len(), 1);
         assert_eq!(m.buffs[0].owner, "a", "the buff still names its arcane");
@@ -1401,7 +1401,7 @@ mod tests {
         // through a fold that could round or rename anything.
         let one = ArcaneFx::merged(&[a.clone(), ArcaneFx::none()]);
         assert_eq!(one.id, "a");
-        assert!((one.final_mult - 2.0).abs() < 1e-9);
+        assert!((one.final_multiplier - 2.0).abs() < 1e-9);
 
         // None at all is none, not an identity element with a joined name.
         assert_eq!(ArcaneFx::merged(&[]).id, "");
@@ -1410,7 +1410,7 @@ mod tests {
         // Order does not change the result.
         let rev = ArcaneFx::merged(&[b, a]);
         assert!((rev.cc_rel - m.cc_rel).abs() < 1e-9);
-        assert!((rev.final_mult - m.final_mult).abs() < 1e-9);
+        assert!((rev.final_multiplier - m.final_multiplier).abs() < 1e-9);
     }
 
     use super::*;
@@ -1772,8 +1772,8 @@ mod tests {
 
         // Surge: ×8 cap under AssumedMax, no-op under Emergent.
         let s = secondary("secondary_surge").unwrap();
-        assert_eq!(s.fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno()).final_mult, 1.0);
-        assert!((s.fx(5, StackPolicy::AssumedMax, NO_TRAITS, crate::tenno_data::default_tenno()).final_mult - 8.0).abs() < 1e-9);
+        assert_eq!(s.fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno()).final_multiplier, 1.0);
+        assert!((s.fx(5, StackPolicy::AssumedMax, NO_TRAITS, crate::tenno_data::default_tenno()).final_multiplier - 8.0).abs() < 1e-9);
     }
 
     #[test]
@@ -1796,7 +1796,7 @@ mod tests {
             .unwrap()
             .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
         // ×9, not ×8: the card's "x8" is the EXTRA (M38, owner 2026-08-09).
-        assert!((ft.overguard_mult - 9.0).abs() < 1e-9);
+        assert!((ft.overguard_multiplier - 9.0).abs() < 1e-9);
         let en = secondary("secondary_encumber")
             .unwrap()
             .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());

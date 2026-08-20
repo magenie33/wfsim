@@ -37,7 +37,7 @@ effects:
   # Wiseman's Regard reads "current Critical Chance" and is "**Not** affected by
   # the King's Gambit Evolution II perk".
   - kind: crit_chance_by_body_part
-    bodyshot_mult: 0.0
+    bodyshot_multiplier: 0.0
     weakpoint_bonus: 1.50
 
 source:

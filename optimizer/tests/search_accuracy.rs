@@ -67,7 +67,7 @@ fn scenario(duration: f64, level: u32) -> Scenario {
                     crit_bonus: b.crit_bonus,
                 })
                 .collect(),
-            duration_secs: duration,
+            duration_seconds: duration,
             // ONE BODY — a fixture, not a formation.
             others: Vec::new(),
             // …and the weapon points AT it.

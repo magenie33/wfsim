@@ -85,7 +85,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         base_status_chance: 0.37,
         forced_procs: Vec::new(),
         attractor_seconds: None,
-        status_duration_mult: 1.0,
+        status_duration_multiplier: 1.0,
         fire_rate: 1.0,
         charge_seconds: None, // not a charge weapon (that is a bow's cadence)
         frenzy: false,
@@ -107,7 +107,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         cc_per_hit_initial: 0,
         cc_per_hit_held: false,
         reserve_ammo: 72.0,
-        compression_mult: 1.0,
+        compression_multiplier: 1.0,
         compression_bd: 0.0,
         bd_below_half_health: 0.0,
         cc_on_undamaged: 0.0,
@@ -125,15 +125,15 @@ fn dual_toxocyst_baseline() -> DummyParams {
         ms_stack: None,
         cc_on_headshot: None,
         cc_stack: None,
-        status_damage_mult: 1.0,
+        status_damage_multiplier: 1.0,
         elem_dot_bonus: Vec::new(),
-        faction_mult: 1.0,
+        faction_multiplier: 1.0,
         dot_modified_base: None,
         reload_bonus: 0.0,
         weakpoint_damage: 0.0,
         headshot_multiplier: None,
         weakpoint_cc_rel: 0.0,
-        bodyshot_cc_mult: 1.0,
+        bodyshot_crit_chance_multiplier: 1.0,
         derived_status_from_crit: None,
         derived_crit_from_status: None,
         consecutive_hit_damage: None,
@@ -150,7 +150,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         },
         body_parts: DummyParams::humanoid_parts(),
         target: TargetParams::training_dummy(),
-        duration_secs: 10.0,
+        duration_seconds: 10.0,
         // ONE BODY — a fixture, not a formation.
         others: Vec::new(),
         // …and the weapon points AT it.
@@ -230,7 +230,7 @@ fn main() {
         .join(", ");
     println!(
         "perk: Secondary Enervate (max) | aim: {} | {} runs x {:.0} s",
-        parts, runs, params.duration_secs,
+        parts, runs, params.duration_seconds,
     );
     println!(
         "status sim v1: Stagger/Weakened/Bleed | Frenzy live (fire rate) | no elements yet | unverified"
@@ -244,7 +244,7 @@ fn main() {
     println!("big-crit rate:    {:.1}%", s.mean_big_crit_rate * 100.0);
     println!("headshot rate:    {:.1}%", s.mean_headshot_rate * 100.0);
     println!();
-    println!("damage / {:.0}s run:", s.duration_secs);
+    println!("damage / {:.0}s run:", s.duration_seconds);
     println!("  mean:  {:>10.1}", s.mean_damage);
     println!("  std:   {:>10.1}", s.std_damage);
     println!("  min:   {:>10.1}", s.min_damage);
@@ -336,7 +336,7 @@ fn main() {
         target: thrax
             .target_params(9999, true, false, TargetMode::InstantRespawn)
             .expect("valid thrax target"),
-        duration_secs: 60.0,
+        duration_seconds: 60.0,
         ..dual_toxocyst_incarnon_params()
     };
     let s2 = monte_carlo(&inc2, 300, seed);

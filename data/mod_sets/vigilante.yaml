@@ -6,7 +6,7 @@ name: Vigilante
 # "Enhance" is not defined on the mod pages; the set page states it: the hit's
 # critical TIER goes up by one (yellow -> orange -> red), and it "triggers
 # exclusively on critical hits" - a non-crit is never promoted. That lands
-# exactly on the engine's tier model, where crit_mult = 1 + tier x (cd - 1).
+# exactly on the engine's tier model, where crit_multiplier = 1 + tier x (cd - 1).
 #
 # It scales PER MEMBER, with no threshold: one mod already gives its share
 # (user, 2026-07-31). Six members exist but only FOUR are primary-weapon mods;

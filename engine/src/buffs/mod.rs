@@ -108,7 +108,7 @@ pub struct Buff {
     pub stacks: u32,
     /// Absolute time in seconds when the buff expires, or `None` for a buff with
     /// no time limit (persists until reset/removed, like Secondary Enervate).
-    pub expiry_secs: Option<f64>,
+    pub expiry_seconds: Option<f64>,
     /// The buff's current total contribution to the modifier buckets.
     pub contributions: Contributions,
 }
@@ -144,7 +144,7 @@ impl BuffBar {
     /// Drop every buff whose expiry is at or before `t_secs`.
     pub fn expire(&mut self, t_secs: f64) {
         self.buffs
-            .retain(|b| b.expiry_secs.is_none_or(|e| e > t_secs));
+            .retain(|b| b.expiry_seconds.is_none_or(|e| e > t_secs));
     }
 
     /// All active buffs, for display (the UI reads this).
@@ -175,7 +175,7 @@ mod tests {
             id: "frenzy".into(),
             scope: BuffScope::Weapon,
             stacks: 1,
-            expiry_secs: Some(3.0),
+            expiry_seconds: Some(3.0),
             contributions: Contributions::default(),
         });
         bar.expire(2.9);
@@ -191,7 +191,7 @@ mod tests {
             id: "x".into(),
             scope: BuffScope::Weapon,
             stacks,
-            expiry_secs: None,
+            expiry_seconds: None,
             contributions: Contributions::default(),
         };
         bar.upsert(mk(1));

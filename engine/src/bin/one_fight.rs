@@ -155,7 +155,7 @@ fn arena_for(c: &Cfg) -> Arena {
         // number and report an optimisation as a bug.
         player_at: wfsim_engine::space::Vec2::ORIGIN,
         target_at: wfsim_engine::space::Vec2::new(0.0, wfsim_engine::space::CONTACT_RANGE_M),
-        duration_secs: c.duration,
+        duration_seconds: c.duration,
         abilities: Vec::new(),
         // ONE BODY — a fixture, not a formation.
         others: Vec::new(),
