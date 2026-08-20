@@ -28,9 +28,21 @@ ammo_pickup: 20
 magazine: 15
 reload_seconds: 3
 
-# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
-# ordinary Additive at the full +100%.
-co_behavior: additive_with_base_damage
+# Condition Overload: THE CATALOG NAMES THIS ATTACK, and its answer is that
+# the direct hit does not take it at all. Verbatim (docs/CATALOGS.md §1):
+#
+#   Sonicor | Projectile Impact | Projectile | 150 | 0 | 0% | N/A
+#
+#   Notes cell: "Does not apply"
+#
+# `inert` is that row — the Stug carries the same one for its Blob Impact.
+# This entry read Adding at 100% until 2026-08-20, which gave the whole 150
+# Impact a Condition Overload term the game does not.
+#
+# THE EXPLOSION has no row of its own, and absence means ORDINARY — an AoE
+# part that is not named does not take the term, which is what
+# `takes_condition_overload: false` says below.
+co_behavior: inert
 
 attack:
   # Cone half-angle from the reticle, degrees — wiki

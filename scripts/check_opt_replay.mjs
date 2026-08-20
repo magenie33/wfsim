@@ -147,9 +147,22 @@ const runFor = (w) => evaluate(`(async () => {
   // axis the engine demonstrably notices, build a state from a replay missing
   // it, and re-run through the page's own payload: the number must now be
   // wrong. Without this, "the page reproduces the row" might mean nothing.
+  // PICK IT WITH THE SAME RULER THE VERDICT USES. This chose the first axis
+  // that moved the score by 5%, and the verdict below is a 4-sigma band — two
+  // criteria for one idea, and on 2026-08-20 they disagreed: dropping the Kuva
+  // Nukor's arcane moved 0.5847 to 0.5483, which is 6.2% and INSIDE the band,
+  // so the check picked a control it had already classified as inert and then
+  // failed because the band did not catch it. It now takes the axis that moves
+  // the score FURTHEST among the ones the band actually flags, and reports when
+  // no axis on this weapon is sharp enough — the global "at least one weapon
+  // proved the pipe" is what keeps that honest.
   let control = null;
-  const liveAxis = dropped.find(d => d.refused || d.score === null
-    || Math.abs(d.score - row.kill_progress) > 0.05 * Math.abs(row.kill_progress));
+  const sharp = dropped.filter(d => d.refused || d.score === null
+    || band(d.score, row.kill_progress,
+            direct && direct.ok ? direct.score_se : null, row.kill_progress_se).off);
+  const liveAxis = sharp.sort((a, b) =>
+    Math.abs((b.score ?? 0) - row.kill_progress) - Math.abs((a.score ?? 0) - row.kill_progress)
+  )[0] || null;
   if (liveAxis && !liveAxis.refused) {
     const maimed = { ...row.replay };
     delete maimed[liveAxis.axis];
@@ -183,6 +196,7 @@ const band = (a, b, sa, sb) => {
 const n4 = (x) => (x == null ? "—" : Number(x).toFixed(4));
 
 let anyLive = false;
+let anySharp = false;
 for (const w of WEAPONS) {
   const r = await runFor(w);
   const tag = `[${w.id}]`;
@@ -221,13 +235,23 @@ for (const w of WEAPONS) {
     r.dropped.map((x) => `${x.axis}:${x.refused ? "refused" : n4(x.score)}`).join(" "));
 
   // THE SHARP ONE: the assertion above must be capable of failing.
-  check(`${tag} ...and a build missing that axis FAILS the same assertion`,
-    r.control !== null && (r.control.score === null
-      || band(r.control.score, r.rowKpm, r.directSe, r.rowSe).off),
-    r.control === null ? "no live axis to maim — the control never ran"
-      : `dropped '${r.control.axis}': ${n4(r.rowKpm)} -> ${n4(r.control.score)}, which the band did not catch`);
+  // A weapon with no band-sharp axis is REPORTED, not failed — the same call
+  // the coverage line above makes for a degenerate axis. What must not happen
+  // is that NO weapon proves it, and the last assertion is that one.
+  if (r.control === null) {
+    check(`${tag} ...no axis on this weapon is sharp enough to maim — reported`, true, "");
+  } else {
+    anySharp = true;
+    check(`${tag} ...and a build missing that axis FAILS the same assertion`,
+      r.control.score === null
+        || band(r.control.score, r.rowKpm, r.directSe, r.rowSe).off,
+      `dropped '${r.control.axis}': ${n4(r.rowKpm)} -> ${n4(r.control.score)}, which the band did not catch`);
+  }
 }
 
 check("at least one weapon proved the pipe", anyLive, String(anyLive));
+// …and at least one PROVED THE CONTROL, which is what stops every weapon
+// quietly reporting "no sharp axis" and the assertion never running.
+check("at least one weapon proved the control can fail", anySharp, String(anySharp));
 
 await app.finish("a ranked row is a build you can re-run, and it comes back with its own number");

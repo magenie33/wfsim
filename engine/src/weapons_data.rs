@@ -3636,6 +3636,24 @@ mod tests {
             ("steflos", "independent", 1.0),
             ("tenet_envoy", "independent", 1.0),
             ("trumna_grenade", "independent", 1.0),
+            //
+            // AND A SECOND PASS THE SAME DAY. The first reconciliation matched a
+            // row to a form through a short list of attack NAMES, and the
+            // catalog names an attack the way that WEAPON's page does — so
+            // "Projectile Impact", "Direct Hit", "Lock-On Mode", "Slug Impact"
+            // and "Reload From Empty Impact" all missed silently. Nine more:
+            ("aegrit", "independent", 1.0),
+            ("catabolyst", "independent", 1.0),
+            ("cyanex", "independent", 1.0),
+            ("cyanex_burst", "independent", 1.0),
+            ("epitaph_uncharged", "independent", 1.0),
+            ("sepulcrum", "independent", 1.0),
+            ("sepulcrum_lockon", "independent", 1.0),
+            ("tenet_diplos_lock_on", "independent", 1.0),
+            // …and one that takes NO Condition Overload at all: "Sonicor |
+            // Projectile Impact | 150 | 0 | 0% | N/A | Does not apply". The Stug
+            // has carried the same row since it was written.
+            ("sonicor", "inert", 1.0),
         ];
 
         let mut unexpected = Vec::new();

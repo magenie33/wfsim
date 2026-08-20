@@ -52,6 +52,17 @@ FORMS = {
     'uncharged attack': ('base',), 'uncharged shot': ('base',),
     'incarnon mode': ('incarnon',), 'incarnon form': ('incarnon',),
     'burst shot': ('alt_fire',), 'throw': ('alt_fire',),
+    # THE SECOND PASS, 2026-08-20: the catalog names an attack the way that
+    # weapon's page does, so the vocabulary is per weapon and a short list
+    # misses whole rows silently.
+    'projectile impact': ('base',), 'direct hit': ('base',),
+    'uncharged direct hit': ('base',), 'primary-fire': ('base',),
+    'slug impact': ('base',), 'blob impact': ('base',), 'slug': ('base',),
+    'arrow direct hit': ('base',), 'rocket impact': ('base',),
+    'partial reload impact': ('base',), 'reload from empty impact': ('base',),
+    'lock-on mode': ('alt_fire',), 'burst mode': ('alt_fire',),
+    'alt fire impact': ('alt_fire', 'charged'),
+    'perfect shot': ('charged',),
 }
 
 
