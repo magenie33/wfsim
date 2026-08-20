@@ -7,6 +7,12 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 
+# build.rs parses every data/*.yaml before and after stripping its comments
+# and refuses to emit one whose meaning moved, so the guarantee is a BUILD
+# failure rather than a test somebody has to run.
+[build-dependencies]
+serde_norway.workspace = true
+
 [dependencies]
 serde.workspace = true
 serde_norway.workspace = true
