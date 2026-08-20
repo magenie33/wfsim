@@ -19,7 +19,8 @@ mastery_rank: 0
 max_rank: 30
 
 accuracy: 100.0
-disposition: 1.31
+# The module's figure; 1.31 is the card's two places.
+disposition: 1.315
 polarities: []
 riven_family: Stinger
 internal_name: /Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon

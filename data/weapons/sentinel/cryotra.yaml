@@ -18,7 +18,10 @@ mod_pools: [rifle]
 mastery_rank: 0
 max_rank: 30
 
-accuracy: 100.0
+# The module says 2.5 and this read 100.0, which is the value 17 of the 41
+# companion rows carry — a default that was never replaced. Only three
+# companions are not 100: both Sweepers at 3.33, and this.
+accuracy: 2.5
 disposition: 1.0
 polarities: [madurai]
 riven_family: Cryotra
@@ -43,7 +46,9 @@ attack:
     max_deg: 40
   trigger: semi_auto
   shot_type: projectile
-  fire_rate: 0.67
+  # The module's own figure. 0.67 is the card's two places, and every other
+  # entry in the roster carries the module's.
+  fire_rate: 0.667
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.10

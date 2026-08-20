@@ -61,8 +61,15 @@ except ImportError:
 # cannot tell the columns apart must not pretend to check them. Companion weapons
 # are unverified for the same reason and are left out until somebody reads their
 # module's shape.
+# COMPANION WEAPONS ARE IN as of 2026-08-21. The header used to say they were
+# "unverified for the same reason and left out until somebody reads their
+# module's shape" — so somebody read it: `Module:Weapons/data/companion` carries
+# ONE stat column (Accuracy, AmmoMax, Magazine, Reload, Disposition, Mastery and
+# one Attacks list), which is the primary/secondary shape and not the Arch-Gun's
+# two. There is nothing here for a checker to pick the wrong column of, which is
+# the whole of the exclusion above.
 MOD = {}
-for module in ('primary', 'secondary'):
+for module in ('primary', 'secondary', 'companion'):
     table = W.load(module)
     MOD.update(table.get('Weapons', table))
 
@@ -123,6 +130,17 @@ EXPECTED = {
     # counts shots — the reload lands in the same place either way.
     ('ballistica_prime', 'magazine'): 'expressed in SHOTS: 32 rounds / 4 a shot',
     ('ballistica_prime', 'attack.ammo_cost'): 'expressed in SHOTS: 32 rounds / 4 a shot',
+    # HALF AN AMMO A SHOT, which is the entry's own decision and is about the
+    # MAGAZINE rather than the reserve: the Verglas Prime's 80-round magazine at
+    # half a round a shot is what halves how often it reloads, and that is DPS.
+    ('verglas_prime', 'attack.ammo_cost'): 'half a round a shot; see the entry',
+    # THE DAMAGE TYPE ROTATION, AVERAGED. Both Deconstructors throw 130 of ONE
+    # type at a time, cycling Impact then Puncture then Slash, and the entry
+    # carries an equal three-way split — so no single module attack matches its
+    # vector by construction. The cost is stated on the entry's own `unmodeled:`
+    # line: total damage and status mix come out exact, ARMOUR does not.
+    ('deconstructor', 'damage'): 'the three-attack type rotation, averaged',
+    ('deconstructor_prime', 'damage'): 'the three-attack type rotation, averaged',
     # A TOME HAS NO MAGAZINE and the sim cannot fire a zero — see the entry.
     ('grimoire', 'magazine'): 'a Tome has none; 1 so the sim can fire it',
     # THE EMBEDDED DETONATION is the one modelled (the mine sticks), and it

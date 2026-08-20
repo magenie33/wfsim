@@ -19,7 +19,9 @@ mastery_rank: 0
 max_rank: 30
 
 accuracy: 100.0
-disposition: 1.46
+# The module's figure. 1.46 is the card's two places; a disposition scales
+# every riven roll, so the third place is not decoration.
+disposition: 1.455
 polarities: []
 riven_family: Deth Machine Rifle
 internal_name: /Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle

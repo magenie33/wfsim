@@ -19,7 +19,8 @@ mastery_rank: 0
 max_rank: 30
 
 accuracy: 100.0
-disposition: 1.25
+# The module's figure; 1.25 is the card's two places.
+disposition: 1.245
 polarities: []
 riven_family: Vulklok
 internal_name: /Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun
@@ -46,7 +47,9 @@ attack:
   crit_chance: 0.35
   crit_multiplier: 2.5
   status_chance: 0.25
-  punch_through_m: 0.0
+  # Module:Weapons/data, Normal Attack. Read 0.0 — an unfilled field, the
+  # same class of omission as the ten Incarnon forms fixed the same day.
+  punch_through_m: 1.5
   damage: { electricity: 175.0 }
 unmodeled:
   - reason: companion_fires_it

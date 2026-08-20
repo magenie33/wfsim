@@ -16,7 +16,9 @@ mod_pools: [rifle]
 mastery_rank: 3
 max_rank: 30
 
-accuracy: 100.0
+# The module says 18.18 and this read 100.0, the unreplaced default. See
+# the Cryotra, which had the same fault.
+accuracy: 18.18
 disposition: 1.0
 polarities: [madurai]
 riven_family: Multron
