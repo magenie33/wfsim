@@ -45,6 +45,33 @@ appeared three or more times with no numbers or with one: `silent_weapon`,
 `bolt_corpse_ragdoll`, `empty_reload_is_faster`, and the three the earlier
 batches had already earned.
 
+## WHAT IS DELIBERATELY OUT — and the reason is not "later"
+
+Two exclusions, and they are different in kind.
+
+**EXALTED weapons** — twelve of them, listed above. They are Warframe and
+Necramech ABILITIES that happen to fire, so what they cost, what they scale
+with and what a build for one even means are the Warframe layer's questions,
+which docs/UNMODELLED.md already holds open.
+
+**SELF-MADE weapons — Kitguns — are OUT, and get their own treatment**
+(owner, 2026-08-20). A Kitgun is not a weapon this roster can hold: it is a
+CHAMBER, a GRIP and a LOADER chosen independently, and the stat line is
+computed from the three rather than published for any one of them. So a Kitgun
+is not one entry, and it is not 60 entries either — it is a BUILDER, which is
+the shape of an editor that feeds the three modules (the rule in AGENTS.md that
+Rivens is the first example of), not a row in `data/weapons/`. Filing the
+chambers as weapons would ship one arbitrary grip's numbers under a name the
+player cannot reproduce, which is the opposite of "matches in-game
+measurements".
+
+They are built on VENUS (Fortuna), which is the owner's own name for them; the
+same argument applies to Cetus's ZAWS, and those are additionally MELEE and so
+out by class. None of the three families has ever been in the roster — the
+sweep below never touched them, and `spectra_vandal` is the one entry whose
+`internal_name` contains `CorpusModularPistol`, which is DE's folder for the
+Kitgun rig it shares and not a statement that the weapon is modular.
+
 ## The bottleneck is MEASUREMENT, not typing
 
 Reading a weapon out of the wiki is now mechanical —
