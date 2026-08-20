@@ -402,6 +402,12 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, lethal_torrent, anemic_agility, primed_convulsion, pathogen_rounds]
     evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
     arcanes: [secondary_deadhead]
+  - weapon: tenet_glaxion
+    mode: base
+    score: 1.9098910738629205
+    mods: [heavy_caliber, primed_shred, split_chamber, serration, rime_rounds, malignant_force, hellfire, thermite_rounds]
+    arcanes: [primary_overcharge]
+    valence: magnetic
   - weapon: torid
     mode: cycle
     score: 5.636937956402888
@@ -461,6 +467,12 @@ entries:
     score: 4.659179891871204
     mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
+    score: 4.650822812046576
+    mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, rifle_aptitude, vile_acceleration, vital_sense, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle

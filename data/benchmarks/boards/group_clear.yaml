@@ -59,8 +59,23 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: cortege
     mode: base
-    score: 219.33333333333337
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    score: 466.5840971257407
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, sabot_rounds, critical_focus, primed_ammo_chain, hollowed_bullets, polar_magazine]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: cortege
+    mode: base
+    score: 455.11742730400954
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, critical_focus, marked_target, modified_munitions, hollowed_bullets, hypothermic_shell]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: cortege
+    mode: base
+    score: 309.7267275741607
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: cortege
+    mode: base
+    score: 274.6666666666667
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, containment_breach, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: ignis_wraith
     mode: base

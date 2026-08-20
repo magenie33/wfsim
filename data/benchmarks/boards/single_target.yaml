@@ -3007,6 +3007,12 @@ entries:
     mods: [galvanized_chamber, heavy_caliber, serration, critical_delay, vital_sense, primed_cryo_rounds, infected_clip, hellfire]
     arcanes: [primary_merciless]
     valence: toxin
+  - weapon: tenet_glaxion
+    mode: base
+    score: 3.8649920387442056
+    mods: [heavy_caliber, primed_shred, split_chamber, serration, rime_rounds, malignant_force, hellfire, thermite_rounds]
+    arcanes: [primary_overcharge]
+    valence: magnetic
   - weapon: torid
     mode: cycle
     score: 29.054480073668856
