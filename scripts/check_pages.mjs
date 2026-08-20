@@ -50,7 +50,15 @@ await app.load("/", 13000);
 const weapons = await evaluate(
   `META.weapons.map((w) => ({ id: w.id, slug: (w.name_en || w.wiki_name || w.name).replace(/ /g, "_") }))`,
 );
-console.log(`sweeping ${weapons.length} weapons x 3 tabs, both languages`);
+// EVERY PAGE WAITS 1400 ms, so the sweep costs `weapons x 6 x 1.4 s` and that
+// grew with the roster: 130 entries was 18 minutes and 382 is over an hour. A
+// check that prints nothing for an hour reads as HUNG, and on 2026-08-20 it was
+// read as one — so it says where it is and what it has left.
+const total = weapons.length * 6;
+const began = Date.now();
+let done = 0;
+console.log(`sweeping ${weapons.length} weapons x 3 tabs, both languages `
+  + `— ${total} page loads at 1.4 s each, about ${Math.round(total * 1.5 / 60)} min`);
 
 for (const lang of ["en", "zh"]) {
   await app.setLang(lang, 13000);
@@ -74,6 +82,13 @@ for (const lang of ["en", "zh"]) {
       else if (v.home) problems.push(`${current} FELL HOME — ${url} resolved to no weapon`);
       else if (!v.drew) problems.push(`${current} BLANK`);
       else if (v.weapon !== w.id) problems.push(`${current} WRONG WEAPON ${v.weapon}`);
+      done += 1;
+      if (done % 120 === 0) {
+        const secs = (Date.now() - began) / 1000;
+        const left = Math.round((secs / done) * (total - done) / 60);
+        console.log(`  … ${done}/${total} pages, ${problems.length} problem(s), `
+          + `about ${left} min left`);
+      }
     }
   }
 }
