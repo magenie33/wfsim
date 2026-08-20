@@ -1,0 +1,66 @@
+id: kohmak
+name: Kohmak
+slot: secondary
+# THE KOHM'S SIDEARM: five pellets at full spool rather than twelve, at 1.67
+# shells a shot. This entry is the spooled state — and note the punch through
+# is the SINGLE-PELLET attack's alone, so the spooled shot has none.
+class: shotgun_sidearm
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]   # CompatibilityTags PROJECTILE, SECONDARYSHOTGUN
+mastery_rank: 5
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 8.0
+disposition: 1.35           # riven disposition
+polarities: [vazarin]
+exilus_polarity: naramon
+riven_family: Kohmak
+traits: [grineer]
+introduced: "16.0"
+internal_name: /Lotus/Weapons/Grineer/Pistols/GrnKohmPistol/GrnKohmPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 30
+magazine: 40
+reload_seconds: 2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 5.0
+    max_deg: 20.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 5
+  multishot: 5.0
+  ammo_cost: 1.67
+  crit_chance: 0.11
+  crit_multiplier: 2.0
+  status_chance: 0.138
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  falloff:
+    start_m: 12.0
+    end_m: 24.0
+    reduction: 0.8333
+  damage: { impact: 6, puncture: 6, slash: 18 }   # 30 a pellet, 150 a shot
+
+unmodeled:
+  - "THE PELLET COUNT SPOOLS TOO: 'each consecutive shot adds an additional pellet' up to the maximum, and this entry IS the fully spooled state — every shot here fires the full count from the first. The page publishes no ramp figures for the fire rate either, so the rate here is the settled one as well"
+  - reason: auto_spool_ramp
+    rate: 5.0
+
+source:
+  url: https://wiki.warframe.com/w/Kohmak

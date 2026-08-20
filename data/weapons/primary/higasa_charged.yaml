@@ -1,0 +1,60 @@
+id: higasa_charged
+name: Higasa
+# THE CHARGED LASER: 390 pure Blast with two metres of punch through, after a
+# one-second charge, and only with a full gauge.
+inherits: higasa
+form: charged
+transform_group: higasa
+transforms_from: higasa
+
+introduced: "37"
+
+# THE GAUGE — "cannot fire without a full gauge", and "killing an enemy with the
+# primary fire will fill 10% of the gauge", so ten kills buy one laser. Blocking
+# an attack fills it too (10% a second for two seconds) and this arena has
+# nothing to block, which is admitted below.
+#
+# THE TWO ZEROES ARE FACTS: there is no transmutation animation in either
+# direction — you hold the alt button and the one-second charge below runs.
+gauge_form:
+  gauge:
+    charge_on: kills
+    charges_to_fill: 10
+    max_rounds: 1
+  transmute_in_seconds: 0.0
+  transmute_out_seconds: 0.0
+
+# THE CHARGE POOL, not the magazine: this form fires once per fill.
+magazine: 1
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and neither of
+# this weapon's is named. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 2.0
+  trigger: charge
+  shot_type: hit_scan
+  fire_rate: 1.2
+  charge_seconds: 1
+  multishot: 1.0
+  ammo_cost: 0
+  crit_chance: 0.24
+  crit_multiplier: 2.0
+  status_chance: 0.18
+  punch_through_m: 2.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { blast: 390 }   # total 390
+
+unmodeled:
+  - "the gauge also fills by BLOCKING enemy attacks, at 10% a second for two seconds (wiki) — nothing attacks the wielder here, so the kill route is the only one modelled"
+  - "'using Alternate Fire without a full gauge still drains it completely' (wiki) — this engine only fires the form once the gauge is full, so it never wastes one"
+
+source:
+  url: https://wiki.warframe.com/w/Higasa

@@ -1,0 +1,62 @@
+id: rakta_cernos
+name: Rakta Cernos
+slot: primary
+# THE RED VEIL'S CERNOS: a quarter-second draw against the ordinary's half, and
+# 470 damage against 380. The fastest-drawing bow in the roster.
+class: bow
+form: charged
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: rakta_cernos
+mod_pools: [primary, rifle, bow]   # CompatibilityTags PROJECTILE
+mastery_rank: 12
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 16.7
+disposition: 1.25           # riven disposition
+polarities: [madurai, madurai, naramon]
+exilus_polarity: naramon
+riven_family: Cernos
+traits: [syndicate, red_veil]
+introduced: "17.3"
+internal_name: /Lotus/Weapons/Syndicates/RedVeil/Bows/RVCernos
+noise: silent
+ammo_type: primary
+ammo_max: 72
+ammo_pickup: 15
+magazine: 1
+reload_seconds: 0.6
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 12.0
+  trigger: charge
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 1
+  charge_seconds: 0.25
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.35
+  crit_multiplier: 2.0
+  status_chance: 0.15
+  punch_through_m: 1.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 423, puncture: 23.5, slash: 23.5 }   # total 470
+
+unmodeled:
+  - "the BLIGHT syndicate effect, which on a proc blinds enemies in a radius and opens them to finishers (wiki) — it fires off a syndicate standing meter this sim does not track, and blindness is crowd control this arena's enemies do not suffer"
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Rakta_Cernos

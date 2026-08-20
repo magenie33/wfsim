@@ -1,0 +1,66 @@
+id: kohm
+name: Kohm
+slot: primary
+# TWELVE PELLETS AT FULL SPOOL, four shells a shot, and 1.5 metres of innate
+# punch through — three whole bodies of material. This entry IS the spooled
+# state, which is the arsenal's own display (`_TooltipAttackDisplay: 2`).
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, shotgun]
+mastery_rank: 5
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 8.0
+disposition: 1.3            # riven disposition
+polarities: [vazarin]
+exilus_polarity: madurai
+riven_family: Kohm
+traits: [grineer]
+introduced: "15.6"
+internal_name: /Lotus/Weapons/Grineer/LongGuns/GrnSpark/GrnSparkRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 960
+ammo_pickup: 40
+magazine: 245
+reload_seconds: 2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 5.0
+    max_deg: 20.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 3.67
+  multishot: 12.0
+  ammo_cost: 4
+  crit_chance: 0.11
+  crit_multiplier: 2.3
+  status_chance: 0.0625
+  punch_through_m: 1.5
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  falloff:
+    start_m: 15.0
+    end_m: 25.0
+    reduction: 0.46667
+  damage: { impact: 6, puncture: 6, slash: 18 }   # 30 a pellet, 360 a shot
+
+unmodeled:
+  - "THE PELLET COUNT SPOOLS TOO: 'each consecutive shot adds an additional pellet' up to the maximum, and this entry IS the fully spooled state — every shot here fires the full count from the first. The page publishes no ramp figures for the fire rate either, so the rate here is the settled one as well"
+  - reason: auto_spool_ramp
+    rate: 3.67
+
+source:
+  url: https://wiki.warframe.com/w/Kohm

@@ -1,0 +1,42 @@
+id: rakta_cernos_uncharged
+name: Rakta Cernos
+# THE TAPPED SHOT: 235 damage and no punch through.
+inherits: rakta_cernos
+form: base
+transform_group: rakta_cernos
+
+introduced: "17.3"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and neither of
+# this weapon's is named. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 12.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 70
+  fire_rate: 1
+  # A BOW'S CADENCE IS DRAW + NOCK, and the module gives this shot no
+  # ChargeTime — a 0.0 draw paces on the nock.
+  charge_seconds: 0.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.35
+  crit_multiplier: 2.0
+  status_chance: 0.15
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 211.5, puncture: 11.75, slash: 11.75 }   # total 235
+
+unmodeled:
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Rakta_Cernos

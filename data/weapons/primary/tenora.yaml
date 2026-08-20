@@ -1,0 +1,70 @@
+id: tenora
+name: Tenora
+slot: primary
+# A 150-ROUND SPOOLING RIFLE with a charged alternate that spends TEN rounds on
+# a 240-damage Puncture shot at a 3x multiplier. The arsenal shows the automatic
+# fire, which is this entry.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: tenora
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
+mastery_rank: 10
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 12.5
+disposition: 1.1            # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Tenora
+traits: [tenno]
+introduced: "20.0"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/TnBardRifle/TnBardRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 900
+ammo_pickup: 80
+magazine: 150
+reload_seconds: 2.5
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 16.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 11.67
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.28
+  crit_multiplier: 2.0
+  status_chance: 0.16
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  damage: { impact: 7.2, puncture: 9.6, slash: 7.2 }   # total 24
+  # THE SPOOL, stated twice on its own page: "requires a spool-up of 9 shots
+  # before optimal fire rate is achieved" and "fire rate starts at 40% of the
+  # listed value, and increases by 7.5% per shot". 0.60 / 8 = 7.5% a shot, full
+  # from the 9th.
+  sustained_fire_rate:
+    start: 0.40
+    end: 1.00
+    over_shots: 8.0
+
+unmodeled:
+  - "'40 shots are required before optimal ACCURACY is achieved' (wiki) — this entry carries the settled cone, so a burst that would open wide here opens tight"
+  - reason: spool_rebuilds_after_reload
+
+source:
+  url: https://wiki.warframe.com/w/Tenora

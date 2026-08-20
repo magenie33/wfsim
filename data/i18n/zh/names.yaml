@@ -470,6 +470,20 @@ weapons:
   stradavar: 斯特拉迪瓦
   stradavar_prime: 斯特拉迪瓦 Prime
   zenith: 天穹之顶
+  azima: 方位角
+  castanas: 雷爆信镖
+  cernos: 西诺斯
+  daikyu_prime: 大久和弓 Prime
+  drakgoon: 龙骑兵
+  higasa: 晴日伞
+  kohm: 寇恩热能枪
+  kohmak: 寇恩霰机枪
+  rakta_cernos: 绯红·西诺斯
+  sancti_castanas: 圣洁·雷爆信镖
+  talons: 鹰爪
+  tenora: 双簧管
+  tenora_prime: 双簧管 Prime
+  twin_kohmak: 双子寇恩霰机枪
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's

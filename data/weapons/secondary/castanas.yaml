@@ -1,0 +1,70 @@
+id: castanas
+name: Castanas
+slot: secondary
+# A STICKY ELECTRIC MINE: 160 Electricity with a guaranteed Electricity proc,
+# detonated by hand in a 3.6 m radius. Silent, and six can be laid at once.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]   # CompatibilityTags PROJECTILE, DEPLOYABLE, AOE, SINGLESHOT
+mastery_rank: 3
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.4            # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: naramon
+riven_family: Castanas
+traits: [tenno]
+introduced: "12.2"
+internal_name: /Lotus/Weapons/Tenno/ThrowingWeapons/StickyBomb/StickyBombs
+noise: silent
+ammo_type: secondary
+ammo_max: 18
+ammo_pickup: 4
+magazine: 2
+reload_seconds: 1
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 60
+  fire_rate: 3.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.08
+  crit_multiplier: 1.5
+  status_chance: 0.22
+  punch_through_m: 0.0
+  # A GUARANTEED ELECTRICITY PROC — the module's ForcedProcs.
+  forced_procs: [electricity]
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 3.6 m" on this attack.
+  range_m: 3.6
+  falloff:
+    start_m: 0.0
+    end_m: 3.6
+    reduction: 0.4
+  damage: { electricity: 160 }   # total 160
+
+unmodeled:
+  - "THE EXPLOSION IS THE WHOLE WEAPON AND ITS RADIUS IS NOT MODELLED. The mine deals no contact damage at all — both of the module's attacks are the same blast resolved at two different moments (mid-flight, or after it has stuck) — so this entry carries that blast as the shot's own damage and no `radial:` beside it. Against ONE target, which is what this arena and the board's rulers fight, the number is exactly right; against a crowd it is a FLOOR, because nothing within the published radius takes anything here"
+  - "the mines are DETONATED BY HAND via Alternate Fire and several can be laid before firing them together (wiki). This sim detonates each one the moment it lands, which is the ceiling for a single mine and misses the play pattern the weapon exists for"
+  - "mines STICK to surfaces, enemies and allies, and multishot throws them in 'a very wide horizontal spread' (wiki) — so on this weapon multishot covers ground rather than stacking damage on one target, which is the opposite of what it does everywhere else"
+  - reason: silent_weapon
+  - reason: explosion_ignores_cover
+
+source:
+  url: https://wiki.warframe.com/w/Castanas

@@ -1,0 +1,48 @@
+id: daikyu_prime_quick
+name: Daikyu Prime
+# THE QUICK SHOT: 375 damage — half the drawn one — with the same three metres
+# of punch through, the same guaranteed Impact proc and the same 50% status.
+inherits: daikyu_prime
+form: base
+transform_group: daikyu_prime
+
+introduced: "38.6"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and neither of
+# this weapon's is named. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 12.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 140
+  fire_rate: 1
+  # THE QUARTER-SECOND DRAW IS REAL: the page says this weapon 'can be fired
+  # after charging for at least 25% of maximum charge', and 0.25 s is what the
+  # module carries for it. Stated rather than dropped, because a bow's cadence
+  # is draw + nock.
+  charge_seconds: 0.25
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.4
+  crit_multiplier: 2.4
+  status_chance: 0.5
+  punch_through_m: 3.0
+  # A GUARANTEED IMPACT PROC — the module's ForcedProcs.
+  forced_procs: [impact]
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 112.5, puncture: 150, slash: 112.5 }   # total 375
+
+unmodeled:
+  - reason: bolt_corpse_ragdoll
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Daikyu_Prime

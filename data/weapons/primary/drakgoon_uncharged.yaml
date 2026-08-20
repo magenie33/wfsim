@@ -1,0 +1,40 @@
+id: drakgoon_uncharged
+name: Drakgoon
+# THE TAPPED SHOT: an 80-degree wall of shrapnel — ten pellets of 40 with 1.5 m
+# of punch through, at three and a third shots a second.
+inherits: drakgoon
+form: base
+transform_group: drakgoon
+
+introduced: "11.6"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and neither of
+# this weapon's is named. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 60.0
+    max_deg: 80.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 3.33
+  multishot: 10.0
+  ammo_cost: 1
+  crit_chance: 0.05
+  crit_multiplier: 2.0
+  status_chance: 0.063
+  punch_through_m: 1.5
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 8, puncture: 8, slash: 24 }   # 40 a pellet, 400 a shot
+
+unmodeled:
+  - "shots RICOCHET once (wiki) and this arena has no walls to bounce off"
+
+source:
+  url: https://wiki.warframe.com/w/Drakgoon

@@ -1,0 +1,66 @@
+id: higasa
+name: Higasa
+slot: primary
+# A GUNBRELLA. Five-round bursts of Puncture, and an alternate fire that spends
+# a GAUGE filled by kills on a 390-damage Blast laser — a form you earn rather
+# than one you can simply hold, which is why it carries a `gauge_form:`.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: higasa
+mod_pools: [primary, rifle, assault_rifle]
+mastery_rank: 2
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.25           # riven disposition
+polarities: [vazarin]
+exilus_polarity: naramon
+riven_family: Higasa
+traits: [tenno]
+introduced: "37"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/Gunbrella/ShrineMaidenGunbrellaWeapon
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 90
+reload_seconds: 2.5
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 2.0
+  trigger: burst
+  # THE BURST. The listed `fire_rate` counts BURSTS: one pull is 5 rounds
+  # spaced by the delay below.
+  burst:
+    count: 5
+    delay_seconds: 0.1       # module BurstDelay
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 2.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.24
+  crit_multiplier: 2.0
+  status_chance: 0.18
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { puncture: 15.6, slash: 10.4 }   # total 26
+
+unmodeled:
+  - "'aiming projects a field that blocks frontal projectiles' (wiki), and the field closes on a reload or a charge — nothing shoots back in this arena, so the shield half of this weapon is worth nothing here"
+
+source:
+  url: https://wiki.warframe.com/w/Higasa

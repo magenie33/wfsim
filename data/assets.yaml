@@ -63,6 +63,7 @@ weapons:
   atomos_incarnon: Atomos.png
   attica: Attica.png
   ax_52: AK47Weapon.png
+  azima: Azima.png
   ballistica: Ballistica.png
   ballistica_prime: BallisticaPrime.png
   baza: Baza.png
@@ -95,13 +96,18 @@ weapons:
   buzlok_beacon: Buzlok.png
   cantare: TnChoirframeKunai.png
   carmine_penta: PentaCarmine.png
+  castanas: Castanas.png
+  cernos: Cernos.png
   cernos_prime: CernosPrime.png
   cernos_prime_uncharged: CernosPrime.png
+  cernos_uncharged: Cernos.png
   cestra: Cestra.png
   cestra_incarnon: Cestra.png
   convectrix: Convectrix.png
   convectrix_alt: Convectrix.png
   daikyu: Daikyu.png
+  daikyu_prime: DaikyuPrime.png
+  daikyu_prime_quick: DaikyuPrime.png
   dera: Dera.png
   dera_incarnon: Dera.png
   dera_vandal: DeraVandal.png
@@ -111,6 +117,8 @@ weapons:
   dex_furis: DexFuris.png
   dex_sybaris: DexSybaris.png
   dex_sybaris_incarnon: DexSybaris.png
+  drakgoon: Drakgoon.png
+  drakgoon_uncharged: Drakgoon.png
   dread: Dread.png
   dread_uncharged: Dread.png
   dual_cestra: DualCestras.png
@@ -142,6 +150,8 @@ weapons:
   harpak: Harpak.png
   harpak_harpoon: Harpak.png
   hek: Hek.png
+  higasa: GunbrellaWeapon.png
+  higasa_charged: GunbrellaWeapon.png
   hikou: Hikou.png
   hikou_prime: HikouPrime.png
   hind: Hind.png
@@ -152,6 +162,8 @@ weapons:
   karak_wraith: KarakWraith.png
   knell: Knell.png
   knell_prime: KnellPrime.png
+  kohm: Kohm.png
+  kohmak: Kohmak.png
   kompressa: YareliPistol.png
   kompressa_prime: KompressaPrime.png
   kraken: Kraken.png
@@ -231,10 +243,13 @@ weapons:
   quatz_burst: Amphis.png
   quellor: RailjackRifle.png
   quellor_alt: RailjackRifle.png
+  rakta_cernos: RaktaCernos.png
+  rakta_cernos_uncharged: RaktaCernos.png
   rauta: PaxDuviricusShotgun.png
   reconifex: TnBeltFedRifle.png
   riot_848: 1999EntHybridPistol.png
   sagek_prime: GrnOrokinPistol.png
+  sancti_castanas: SanctiCastanas.png
   sancti_tigris: SanctiTigris.png
   scyotid: TnOraxiaFlechette.png
   scyotid_snare: TnOraxiaFlechette.png
@@ -255,7 +270,12 @@ weapons:
   stubba: Stubba.png
   supra: Supra.png
   supra_vandal: SupraVandal.png
+  talons: Talons.png
   telos_akbolto: TelosAkbolto.png
+  tenora: Tenora.png
+  tenora_charged: Tenora.png
+  tenora_prime: TenoraPrime.png
+  tenora_prime_charged: TenoraPrime.png
   thornbak: ModQuestRifle.png
   tiberon: Tiberon.png
   tigris: Tigris.png
@@ -263,6 +283,7 @@ weapons:
   tonkor: Tonkor.png
   twin_grakatas: TwinGrakatas.png
   twin_gremlins: TwinGremlin.png
+  twin_kohmak: TwinKohmak.png
   twin_rogga: TwinRogga.png
   twin_vipers: TwinVipers.png
   twin_vipers_wraith: TwinViperWraith.png

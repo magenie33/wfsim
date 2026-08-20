@@ -1,0 +1,41 @@
+id: tenora_prime_charged
+name: Tenora Prime
+# THE CHARGED SHOT: 280 damage for ten rounds, at a 40% crit chance and a 3x
+# multiplier, with a metre of punch through.
+inherits: tenora_prime
+form: charged
+transform_group: tenora_prime
+
+introduced: "29.9"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and neither of
+# this weapon's is named. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 16.0
+  trigger: charge
+  shot_type: hit_scan
+  fire_rate: 2
+  charge_seconds: 0.8
+  multishot: 1.0
+  ammo_cost: 10
+  crit_chance: 0.4
+  crit_multiplier: 3.0
+  status_chance: 0.2
+  punch_through_m: 1.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  damage: { impact: 56, puncture: 168, slash: 56 }   # total 280
+
+unmodeled:
+  - "'charge is automatic and does not need to be held down' (wiki), which is what this sim does anyway"
+
+source:
+  url: https://wiki.warframe.com/w/Tenora_Prime

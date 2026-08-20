@@ -6011,6 +6011,12 @@ mod play_mode_tests {
             // "…a spool-up of 4 shots", "starts at 40% … increases by 20% per
             // shot" — 0.60 / 3 = 20% a shot, full from the 4th.
             ("supra_vandal", 0.40, 1.00, 3.0, 0.20, 4),
+            // "Primary fire requires a spool-up of 9 shots before optimal fire
+            // rate is achieved", and "fire rate starts at 40% of the listed
+            // value, and increases by 7.5% per shot" — 0.60 / 8 = 7.5% a shot,
+            // full from the 9th. The Prime's page prints the same two numbers.
+            ("tenora", 0.40, 1.00, 8.0, 0.075, 9),
+            ("tenora_prime", 0.40, 1.00, 8.0, 0.075, 9),
         ];
         for (id, start, end, over, per_shot, full_at) in published {
             let s = spec(id)
