@@ -147,7 +147,13 @@ around (decision 2026-07-31).
   — unreliable to blocked from mainland China, i.e. precisely where the
   players are, so the app's own art was the least reliable thing on the page.
   Same-origin ends the question: if wfsim.app loads, its art loads. The cost
-  is ~4.3 MB write-once, against a 2 MB wasm this build rewrites every time.
+  is 22 MB write-once over 730 files, against a 6.7 MB wasm this build rewrites
+  EVERY TIME — the shape of the trade, not its size, is what settles it, and
+  both figures had drifted 3-5x from the ones written here in July (re-measured
+  2026-08-20). THE WASM FIGURE IS UN-OPTIMISED: `build_site_app.py` runs
+  `wasm-opt -Oz` only "if available" and it has never been available on the
+  build machine, so the size pass has never run and the number players download
+  is the raw one.
   DE permits this: their Content Policy requires only that use of Warframe
   assets be non-commercial, and the wiki hosts the same files on the same
   basis — what it forbids is their LOGOS, so the only mark here stays ours.
