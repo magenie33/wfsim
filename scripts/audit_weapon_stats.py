@@ -99,7 +99,13 @@ ATTACK_FIELDS = [('crit_chance', 'CritChance'), ('crit_multiplier', 'CritMultipl
                  # THE CONE, which decides how much of a shot lands and which
                  # nothing else here checks.
                  ('spread.min_deg', 'MinSpread'), ('spread.max_deg', 'MaxSpread'),
-                 ('charge_seconds', 'ChargeTime')]
+                 ('charge_seconds', 'ChargeTime'),
+                 # DAMAGE FALLOFF, which nothing checked and which the arena
+                 # started reading the day it gained a distance. The module
+                 # nests it exactly as the yaml does.
+                 ('falloff.start_m', 'Falloff.StartRange'),
+                 ('falloff.end_m', 'Falloff.EndRange'),
+                 ('falloff.reduction', 'Falloff.Reduction')]
 # A transcription rounds where the module carries more places than a card does
 # (0.101429 -> 0.1014); anything past a tenth of a per cent is a disagreement.
 TOL = 2e-3
@@ -158,6 +164,27 @@ EXPECTED = {
 
 def near(a, b):
     return abs(float(a) - float(b)) <= TOL * max(1.0, abs(float(b)))
+
+
+# HOW A SHOT ARRIVES, which is behaviour rather than a number: a projectile has
+# travel time and an arc, a hit-scan does not, and modelling one as the other is
+# a real fault that no numeric field can show. Ours -> the module's spellings.
+#
+# `AoE` and `DoT` are SKIPPED rather than compared. Those are the module's
+# sub-attacks — an explosion, a cloud — which this roster carries as a `radial:`
+# or `lingering:` block on the attack that delivers them, so the entry's own
+# `shot_type` is the delivery's and comparing it to `AoE` would report every
+# grenade launcher. An UNKNOWN value is reported, never skipped: a vocabulary
+# that quietly drops what it does not recognise under-reports, which is exactly
+# how the first Condition Overload pass missed nine rows.
+SHOT_TYPES = {
+    'hit_scan': {'Hit-Scan', 'Hitscan'},
+    'projectile': {'Projectile'},
+    # The one `beam` entry: a continuous beam arrives instantly, and the module
+    # has no separate spelling for it.
+    'beam': {'Hit-Scan', 'Hitscan'},
+}
+SHOT_TYPES_SKIP = {'AoE', 'DoT'}
 
 
 def dig(d, key):
@@ -244,13 +271,24 @@ def main(only):
                 findings.append('%s: no module attack carries its damage %s' % (wid, dm))
             continue
         best = max(cands, key=lambda a: attack_score(atk, a))
+        st, mst = atk.get('shot_type'), best.get('ShotType')
+        if st is not None and mst is not None and mst not in SHOT_TYPES_SKIP:
+            want = SHOT_TYPES.get(st)
+            if want is None:
+                findings.append('%s.attack.shot_type: %r is not in SHOT_TYPES' % (wid, st))
+            elif mst not in want and (wid, 'attack.shot_type') not in EXPECTED:
+                findings.append('%s.attack.shot_type: yaml %r vs module %r (attack %r)'
+                                % (wid, st, mst, best.get('AttackName')))
         for ours, theirs in ATTACK_FIELDS:
             v = dig(atk, ours)
-            if v is None or best.get(theirs) is None:
+            # THE MODULE SIDE NESTS TOO — `Falloff.StartRange` — so the same
+            # walker reads both. A flat key is a path of one.
+            t = dig(best, theirs)
+            if v is None or t is None:
                 continue
-            if not near(v, best[theirs]) and (wid, 'attack.' + ours) not in EXPECTED:
+            if not near(v, t) and (wid, 'attack.' + ours) not in EXPECTED:
                 findings.append('%s.attack.%s: yaml %s vs module %s (attack %r)'
-                                % (wid, ours, v, best[theirs], best.get('AttackName')))
+                                % (wid, ours, v, t, best.get('AttackName')))
 
     print('%d entries re-read against the module, %d finding(s)' % (checked, len(findings)))
     for f in findings:
