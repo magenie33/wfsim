@@ -18,7 +18,11 @@ max_rank: 30
 accuracy: 100.0
 disposition: 0.5            # riven disposition
 polarities: [madurai, madurai]
-exilus_polarity: madurai
+# UNIVERSAL, not the weapon's own Madurai. The module states it and the page
+# never mentions the exilus slot, so the copied value looked right; it meant
+# every exilus mod but a Madurai one paid full drain. A universal slot
+# "matches any mod except Umbra mods" (`mods::Polarity::Universal`).
+exilus_polarity: universal
 riven_family: Haalvu
 traits: [sentient]
 introduced: "43.0.7"

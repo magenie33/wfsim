@@ -186,6 +186,26 @@ SHOT_TYPES = {
 }
 SHOT_TYPES_SKIP = {'AoE', 'DoT'}
 
+# THE WEAPON-LEVEL FIELDS THAT ARE NOT NUMBERS, and each one reaches a reader:
+# `max_rank` and the polarities are what the INVESTMENT panel costs a build in
+# capacity and Forma, `ammo_type` picks the reserve a mutation mod refills, and
+# `noise` is on the card. `near()` cannot compare any of them, so they were
+# outside this tool entirely.
+#
+# ours -> the module's spelling. A value on either side that this table does not
+# know is REPORTED, never skipped.
+WEAPON_ENUMS = {
+    'ammo_type': ('AmmoType', {'primary': 'Primary', 'secondary': 'Secondary'}),
+    'exilus_polarity': ('ExilusPolarity',
+                        {'madurai': 'Madurai', 'naramon': 'Naramon',
+                         'vazarin': 'Vazarin', 'zenurik': 'Zenurik',
+                         'unairu': 'Unairu', 'penjaga': 'Penjaga',
+                         'umbra': 'Umbra', 'universal': 'Universal'}),
+}
+POLARITY = {'madurai': 'Madurai', 'naramon': 'Naramon', 'vazarin': 'Vazarin',
+            'zenurik': 'Zenurik', 'unairu': 'Unairu', 'penjaga': 'Penjaga',
+            'umbra': 'Umbra', 'universal': 'Universal'}
+
 
 def dig(d, key):
     """`spread.min_deg` reads through the nested block; a plain key is itself."""
@@ -261,6 +281,34 @@ def main(only):
                 if not near(d[ours], row[theirs]) and (wid, ours) not in EXPECTED:
                     findings.append('%s.%s: yaml %s vs module %s'
                                     % (wid, ours, d[ours], row[theirs]))
+
+        if weapon_level:
+            # MAX RANK, which is 30 or 40 and decides the capacity a build has
+            # to spend before any Forma at all.
+            if d.get('max_rank') is not None and row.get('MaxRank') is not None:
+                if int(d['max_rank']) != int(row['MaxRank'])                         and (wid, 'max_rank') not in EXPECTED:
+                    findings.append('%s.max_rank: yaml %s vs module %s'
+                                    % (wid, d['max_rank'], row['MaxRank']))
+            for ours, (theirs, table) in WEAPON_ENUMS.items():
+                v, t = d.get(ours), row.get(theirs)
+                if v is None or t in (None, '', 'None'):
+                    continue
+                if v not in table:
+                    findings.append("%s.%s: %r is not in this tool table" % (wid, ours, v))
+                elif table[v] != t and (wid, ours) not in EXPECTED:
+                    findings.append('%s.%s: yaml %r vs module %r' % (wid, ours, v, t))
+            # POLARITIES ARE A MULTISET: two Madurai is not one, and the ORDER
+            # is a slot layout nobody has transcribed, so it is sorted away.
+            ours_p, theirs_p = d.get('polarities'), row.get('Polarities')
+            if ours_p is not None and theirs_p is not None:
+                unknown = [x for x in ours_p if x not in POLARITY]
+                if unknown:
+                    findings.append("%s.polarities: %r not in this tool table" % (wid, unknown))
+                else:
+                    a = sorted(POLARITY[x] for x in ours_p)
+                    b = sorted(theirs_p)
+                    if a != b and (wid, 'polarities') not in EXPECTED:
+                        findings.append('%s.polarities: yaml %s vs module %s' % (wid, a, b))
 
         atk = d.get('attack') or {}
         dm = {k.lower(): float(v) for k, v in (atk.get('damage') or {}).items()}

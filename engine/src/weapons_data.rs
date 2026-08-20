@@ -1851,6 +1851,19 @@ pub fn polarity(name: &str) -> Polarity {
         "naramon" => Polarity::Naramon,
         "vazarin" => Polarity::Vazarin,
         "umbra" => Polarity::Umbra,
+        // THE WHOLE ENUM, because a weapon may ship any of them and this
+        // panicked on four it could not spell. The Haalvu is the one that found
+        // it: its EXILUS slot is Universal — the module says so and the page
+        // does not mention the slot at all — and this roster had copied the
+        // weapon's own Madurai into it, so the exilus mod was charged full
+        // drain unless it happened to be Madurai (2026-08-21).
+        "zenurik" => Polarity::Zenurik,
+        "unairu" => Polarity::Unairu,
+        "penjaga" => Polarity::Penjaga,
+        // A SLOT polarity only — no mod carries it, and the enum spells it `Omni`
+        // after the Forma that grants it. `mods::slot_drain` already
+        // knew about it; only this parser did not.
+        "universal" => Polarity::Omni,
         other => panic!("unknown polarity in weapon data: {other}"),
     }
 }
