@@ -49,7 +49,7 @@ modifier_conditions:
   # the 1999 heavies).
   parazon_mercy_threshold: mercy_eligible_units_only
 
-cc_effects:
+crit_chance_effects:
   - kind: stagger
     # note: >-
     # Target flinches and recoils backwards; more stacks -> bigger/longer

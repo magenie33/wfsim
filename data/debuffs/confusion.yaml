@@ -63,7 +63,7 @@ on_player:
 # Overguard holders can RECEIVE stacks but are immune to the effects
 # until the buffer is removed (stacks pre-loaded behind Overguard).
 
-cc_effects: []                 # not CC in the stagger sense; AI retargeting
+crit_chance_effects: []                 # not CC in the stagger sense; AI retargeting
 # on_kill_cosmetic: purple substance coating
 
 # railjack_variant: >-

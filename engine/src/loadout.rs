@@ -15,7 +15,7 @@
 pub struct Compression {
     /// Metres of blast radius surrendered while aiming — the MODDED radius
     /// times this weapon's row, times the four fifths the arcane takes.
-    pub radius_lost: f64,
+    pub radius_lost_m: f64,
     /// The row's Stacking Behavior: true = the bonus joins the base-damage
     /// bucket, false = it multiplies beside it.
     pub adds: bool,
@@ -989,7 +989,7 @@ pub struct TimedBuff {
     /// [`NO_TIMEOUT`] when the buff card is locked, so the window a trigger
     /// opens never closes again.
     pub duration: f64,
-    /// Active at t = 0? (per-buff seed — cc_on_headshot starts active, the
+    /// Active at t = 0? (per-buff seed — crit_chance_on_headshot starts active, the
     /// on-kill/on-reload buffs start inactive under today's defaults).
     pub initial_active: bool,
 }
@@ -1001,7 +1001,7 @@ pub struct TimedBuff {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CoBehavior {
     /// Joins the base-damage bucket (additive with Hornet Strike):
-    /// direct hit × (1 + bd + co × types) / (1 + bd).
+    /// direct hit × (1 + base_damage + co × types) / (1 + base_damage).
     AdditiveWithBaseDamage,
     /// A free-standing final multiplier on direct hits:
     /// direct hit × (1 + co × types).
@@ -1195,7 +1195,7 @@ pub struct WeaponBase {
     /// stacks are PERMANENT (no timer, cleared only by death) and their
     /// trigger (ability cast) cannot fire in the sim — so the count is a
     /// static per-buff CHOICE, full by default. 0 = no such buff.
-    pub buff_ms_max_stacks: u32,
+    pub buff_multishot_max_stacks: u32,
     pub magazine_size: f64,
     /// Base reserve rounds (wiki "Ammo Max"), before mods.
     pub ammo_reserve: f64,
@@ -1276,7 +1276,7 @@ pub struct WeaponBase {
     /// Critical Chance, effectively making non-headshot critical hits
     /// impossible". Its other half is additive and already has a home:
     /// "Weakpoint modifier is ADDITIVE with mods such as Pistol Gambit", which
-    /// is `weakpoint_cc_rel`.
+    /// is `weakpoint_crit_chance_relative`.
     pub bodyshot_crit_chance_multiplier: f64,
     /// GALVANIC RELOAD: `(status, chance, rounds)` — "On hitting a target
     /// affected by an Electricity status, 40% chance to restore 1 round in the
@@ -1286,7 +1286,7 @@ pub struct WeaponBase {
     /// once per enemy hit", and this is a shotgun family where the difference is
     /// tenfold. The rounds come FROM THE AMMO POOL, so a dry reserve restores
     /// nothing — and a refill is not a reload, the same rule
-    /// `mag_refill_on_kill` follows.
+    /// `magazine_refill_on_kill` follows.
     pub round_restore_on_status: Option<(crate::damage::DamageType, f64, f64)>,
     /// Exact Penance: the chance a KILL — from anywhere, including a status
     /// kill — reloads instantly. See the ResolvedPanel field for why it is not
@@ -1301,11 +1301,11 @@ pub struct WeaponBase {
     /// Increase Base Magazine Capacity by +N. Stacks up to Nx", in the card's
     /// own units so `resolve` can scale it: the card says BASE capacity, which
     /// is the number a magazine mod multiplies.
-    pub mag_growth_on_empty_reload: Option<(f64, u32)>,
+    pub magazine_growth_on_empty_reload: Option<(f64, u32)>,
     /// King's Gambit's weak-point half, held on the WEAPON so it can seed the
     /// same bucket the mods write to — "Weakpoint modifier is additive with
     /// mods such as Pistol Gambit". Same shape as `evo_reload_bonus`.
-    pub evo_weakpoint_cc_rel: f64,
+    pub evo_weakpoint_crit_chance_relative: f64,
     /// Double Tap: `(per stack, max stacks, seconds)`. See
     /// [`ModEffect::ConsecutiveHitDamage`].
     pub consecutive_hit_damage: Option<(f64, u32, f64)>,
@@ -1335,7 +1335,7 @@ pub struct WeaponBase {
     /// already scaled so that the perk's OWN flat base damage is excluded from
     /// what it multiplies — resolved at the end of `apply`, which is the first
     /// moment the evolved base exists.
-    pub bd_below_half_health: f64,
+    pub base_damage_below_half_health: f64,
     /// Vicious Promise: "+40% Base Critical Chance / +2x Base Critical Damage
     /// Multiplier ON UNDAMAGED ENEMIES".
     ///
@@ -1345,9 +1345,9 @@ pub struct WeaponBase {
     /// the same — `flat x (1 + mods)` — for the same reason the flat
     /// base-damage buff does: the panel resolves crit once, and a live grant
     /// has to land in the bracket the card names.
-    pub cc_on_undamaged: f64,
+    pub crit_chance_on_undamaged: f64,
     /// The other half of the same card. See above.
-    pub cd_on_undamaged: f64,
+    pub crit_damage_on_undamaged: f64,
     /// This weapon's Condition Overload behavior class.
     pub co_behavior: CoBehavior,
     /// CO base effectiveness = `original_base / evolved_base`, i.e. how much of
@@ -1434,12 +1434,12 @@ pub struct WeaponBase {
     /// SPITEFUL DEFILEMENT: `(threshold, bonus)` — add `bonus` to the crit
     /// DAMAGE, after mods and flat, while the target carries fewer than
     /// `threshold` distinct status types.
-    pub cd_below_status_count: Option<(u32, f64)>,
+    pub crit_damage_below_status_count: Option<(u32, f64)>,
     /// Prelude of Might: `(bonus, threshold)` — add `bonus` to the crit damage
     /// MULTIPLIER while the resolved crit chance stays under `threshold`.
     /// Resolved late for that reason: it is the only evolution whose condition
     /// reads the panel rather than the fight.
-    pub crit_mult_below_cc: Option<(f64, f64)>,
+    pub crit_multiplier_below_crit_chance: Option<(f64, f64)>,
     /// FLAT crit/status chance added AFTER mods (Elemental Excess) — a
     /// different layer from the base-stat one `base_crit_chance` carries.
     pub post_mod_crit_chance: f64,
@@ -1647,7 +1647,7 @@ pub enum BuffGrant {
     /// `per_stack` therefore CHANGES UNITS at `resolve`, the way
     /// [`BuffGrant::FireRate`]'s does: the flat number on [`WeaponBase`], and
     /// on [`ResolvedPanel`] the share of the bucket that is worth exactly the
-    /// same — `flat * (1 + bd) / base`, which the mods make a constant. That
+    /// same — `flat * (1 + base_damage) / base`, which the mods make a constant. That
     /// keeps ONE live-base-damage path in the sim instead of a second bracket
     /// that would have to be kept in step with it.
     FlatBaseDamage,
@@ -2344,7 +2344,7 @@ pub struct ResolvedPanel {
     /// card, not applied — and stays that way until a weapon that takes one is
     /// transcribed with a measurement behind it.
     pub range_m: f64,
-    /// Post-hierarchy damage vector (physical × (1+bd) + combined elements).
+    /// Post-hierarchy damage vector (physical × (1+base_damage) + combined elements).
     pub damage: DamageVector,
     /// The resolved radial (AoE) part, when the weapon has one.
     pub radial: Option<ResolvedRadial>,
@@ -2414,8 +2414,8 @@ pub struct ResolvedPanel {
     /// perk is granted here and the SIM takes it back on any hit that has
     /// climbed over the line. `None` when the perk is not installed, or when
     /// the panel alone already fails the condition and there is nothing to
-    /// take back. See [`WeaponBase::crit_mult_below_cc`].
-    pub crit_mult_below_cc: Option<(f64, f64)>,
+    /// take back. See [`WeaponBase::crit_multiplier_below_crit_chance`].
+    pub crit_multiplier_below_crit_chance: Option<(f64, f64)>,
     pub status_chance: f64,
     /// UNMODDED crit and status stats of the DIRECT part — the bases a
     /// RELATIVE live buff multiplies, the counterpart of `base_multishot`.
@@ -2502,16 +2502,16 @@ pub struct ResolvedPanel {
     /// unmodded base — "Additive to other crit chance and status chance mods"
     /// (wiki), so it joins the same bucket Pistol Gambit does rather than
     /// forming one of its own.
-    pub cc_per_tendril: f64,
+    pub crit_chance_per_tendril: f64,
     /// Its status half, same bucket rule.
     pub sc_per_tendril: f64,
     /// HATA-SATYA under Emergent: relative crit chance per hit and the cap,
     /// spent in the sim because the pile's size is a fact about the fight.
     /// `None` under the other policies — AssumedMax has already folded it into
     /// `crit_chance`, and BaseOnly refuses conditionals.
-    pub cc_per_hit: Option<(f64, u32)>,
+    pub crit_chance_per_hit: Option<(f64, u32)>,
     /// Fraction of the magazine returned on each kill, from the reserve.
-    pub mag_refill_on_kill: f64,
+    pub magazine_refill_on_kill: f64,
     /// The syndicate radial this build's augment grants, if any.
     pub syndicate_radial: Option<crate::syndicates_data::SyndicateDef>,
     pub reload_seconds: f64,
@@ -2520,13 +2520,13 @@ pub struct ResolvedPanel {
     pub reload_bonus: f64,
     /// Σ base-damage bonuses (needed live when CO joins this bucket).
     pub base_damage_bonus: f64,
-    /// See [`WeaponBase::bd_below_half_health`] — carried through unchanged,
+    /// See [`WeaponBase::base_damage_below_half_health`] — carried through unchanged,
     /// already corrected for the granting perk's own flat base damage.
-    pub bd_below_half_health: f64,
-    /// See [`WeaponBase::cc_on_undamaged`] — converted to the post-mod number.
-    pub cc_on_undamaged: f64,
-    /// See [`WeaponBase::cd_on_undamaged`] — converted to the post-mod number.
-    pub cd_on_undamaged: f64,
+    pub base_damage_below_half_health: f64,
+    /// See [`WeaponBase::crit_chance_on_undamaged`] — converted to the post-mod number.
+    pub crit_chance_on_undamaged: f64,
+    /// See [`WeaponBase::crit_damage_on_undamaged`] — converted to the post-mod number.
+    pub crit_damage_on_undamaged: f64,
     /// Σ (CO per_stack × stacks) under `AssumedMax` (0 under
     /// `Emergent` — see `co_stack`) — applied per this weapon's
     /// [`CoBehavior`] × `co_base_fraction`, DIRECT HITS ONLY.
@@ -2553,13 +2553,13 @@ pub struct ResolvedPanel {
     pub co_stack: Option<StackSpec>,
     /// Live on-kill multishot stacks (Emergent policy); per_stack is
     /// already × base pellets.
-    pub ms_stack: Option<StackSpec>,
+    pub multishot_stack: Option<StackSpec>,
     /// Crosshairs' on-headshot buff (Emergent): ABSOLUTE crit chance
     /// (base_cc × bonus) as a timed buff (starts active).
-    pub cc_on_headshot: Option<TimedBuff>,
+    pub crit_chance_on_headshot: Option<TimedBuff>,
     /// Crosshairs' on-headshot-kill stacks (Emergent): per_stack is
     /// ABSOLUTE crit chance; per-stack expiry semantics.
-    pub cc_stack: Option<StackSpec>,
+    pub crit_chance_stack: Option<StackSpec>,
     /// (1 + Σ status damage) — multiplies status payload values.
     pub status_damage_multiplier: f64,
     /// (1 + Σ status duration) — scales status-effect DoT durations.
@@ -2591,7 +2591,7 @@ pub struct ResolvedPanel {
     pub headshot_multiplier: Option<f64>,
     /// ABSOLUTE crit chance added on weak-point hits only (base_cc × Σ
     /// relative weak-point CC bonuses); part-conditional, all policies.
-    pub weakpoint_cc_rel: f64,
+    pub weakpoint_crit_chance_relative: f64,
     /// King's Gambit's other half: a MULTIPLIER on a non-weak-point pellet's
     /// crit chance, applied after everything else. 1.0 = ordinary.
     pub bodyshot_crit_chance_multiplier: f64,
@@ -2631,22 +2631,22 @@ pub struct ResolvedPanel {
     /// a Magazine Warp build gets more out of every stack. Same units
     /// conversion `BuffGrant::FlatBaseDamage` and `FireRate` take, and for the
     /// same reason: the sim adds it to a number the mods are already inside.
-    pub mag_growth_on_empty_reload: Option<(f64, u32)>,
+    pub magazine_growth_on_empty_reload: Option<(f64, u32)>,
     /// Sharpened Bullets under Emergent: ABSOLUTE crit-damage add as a timed
     /// buff (starts inactive), granted/refreshed on every kill.
-    pub cd_on_kill: Option<TimedBuff>,
+    pub crit_damage_on_kill: Option<TimedBuff>,
     /// Pressurized Magazine under Emergent: ABSOLUTE fire-rate add as a timed
     /// buff (starts inactive), granted on every reload.
-    pub fr_on_reload: Option<TimedBuff>,
+    pub fire_rate_on_reload: Option<TimedBuff>,
     /// Deadly Efficiency's window — see [`ModEffect::OnReloadDamage`]. Its
     /// `value` is the RELATIVE bonus, because it joins the base-damage bucket
     /// rather than replacing a rate.
-    pub bd_on_reload: Option<TimedBuff>,
+    pub base_damage_on_reload: Option<TimedBuff>,
     /// EXIMUS ADVANTAGE's window — see [`ModEffect::OnEximusWeakpointDamage`].
     /// Its `value` is RELATIVE, joining the base-damage bucket beside Hornet
     /// Strike's, which is what the card's "Stacks additively with base damage
     /// bonuses" says it should do.
-    pub bd_on_eximus_weakpoint: Option<TimedBuff>,
+    pub base_damage_on_eximus_weakpoint: Option<TimedBuff>,
     /// READY RETALIATION's window — see
     /// [`crate::evolutions_data::EvoEffect::ReloadSpeedOnEmptyReload`]. It joins
     /// the reload bucket the mods and `evo_reload_bonus` feed, but only while
@@ -2671,9 +2671,9 @@ pub struct ResolvedPanel {
     /// every policy: whether the streak ever arms is a property of the FIGHT
     /// (a body-shot engagement never does), not something a panel can assume.
     pub headshot_streak: Option<HeadshotStreak>,
-    /// SPITEFUL DEFILEMENT — see [`WeaponBase::cd_below_status_count`]. Also
+    /// SPITEFUL DEFILEMENT — see [`WeaponBase::crit_damage_below_status_count`]. Also
     /// carried: its condition is the TARGET's live status count.
-    pub cd_below_status_count: Option<(u32, f64)>,
+    pub crit_damage_below_status_count: Option<(u32, f64)>,
     /// Hemorrhage's status-conversion roll (an event mechanic — active under
     /// every policy; contributes no static panel stat).
     pub proc_conversion: Option<ProcConv>,
@@ -2681,9 +2681,9 @@ pub struct ResolvedPanel {
     /// its FULL contribution is already inside `multishot`; the per-buff
     /// config rescales via this spec (no in-sim trigger, no decay — the
     /// stack count is a static choice, full by default).
-    pub evo_ms: Option<EvoMsBuff>,
+    pub evo_multishot: Option<EvoMsBuff>,
     /// The evolution's PERMANENT flat base damage (Reified Bane), if any.
-    pub evo_bd: Option<EvoBdBuff>,
+    pub evo_base_damage: Option<EvoBdBuff>,
     /// Stats an equipped mod has LOCKED at the weapon's default (`disables`):
     /// `multishot` for the Acuity pair, `fire_rate` for the Cannonades.
     ///
@@ -2895,7 +2895,7 @@ pub fn resolve_for(
     // and a fight bonus is in it — which is right: "set to its default ignoring
     // other bonuses" does not make an exception for where the bonus came from.
     let fb = &tenno.bonuses;
-    let (mut bd, mut ms, mut cc, mut cd, mut sc, mut fr, mut sd) = (
+    let (mut base_damage, mut multishot, mut cc, mut cd, mut sc, mut fr, mut status_damage) = (
         fb.base_damage,
         fb.multishot,
         fb.crit_chance,
@@ -2958,9 +2958,9 @@ pub fn resolve_for(
             .sum()
     };
     let mut co = base.innate_co_per_type + gate(GatedGrant::ConditionOverload);
-    let (mut co_stack, mut ms_stack): (Option<StackSpec>, Option<StackSpec>) = (None, None);
-    let mut cc_on_headshot: Option<TimedBuff> = None;
-    let mut cc_stack: Option<StackSpec> = None;
+    let (mut co_stack, mut multishot_stack): (Option<StackSpec>, Option<StackSpec>) = (None, None);
+    let mut crit_chance_on_headshot: Option<TimedBuff> = None;
+    let mut crit_chance_stack: Option<StackSpec> = None;
     // …and the weak-point crit bucket starts at the EVOLUTION's, not at zero,
     // because the card says it is additive with the mods that write here.
     let mut consecutive_hit: Option<(f64, u32, f64)> = None;
@@ -2976,12 +2976,12 @@ pub fn resolve_for(
     // Degrees of cone added AFTER the accuracy divisor — see
     // `ModEffect::AddedSpread`.
     let mut added_spread = 0.0f64;
-    let (mut wp_dmg, mut wp_cc) = (0.0, base.evo_weakpoint_cc_rel);
-    let mut cd_on_kill: Option<TimedBuff> = None;
-    let mut fr_on_reload: Option<TimedBuff> = None;
-    let mut bd_on_reload: Option<TimedBuff> = None;
-    let mut bd_on_eximus_weakpoint: Option<TimedBuff> = None;
-    let mut cc_per_hit: Option<(f64, u32)> = None;
+    let (mut wp_dmg, mut wp_cc) = (0.0, base.evo_weakpoint_crit_chance_relative);
+    let mut crit_damage_on_kill: Option<TimedBuff> = None;
+    let mut fire_rate_on_reload: Option<TimedBuff> = None;
+    let mut base_damage_on_reload: Option<TimedBuff> = None;
+    let mut base_damage_on_eximus_weakpoint: Option<TimedBuff> = None;
+    let mut crit_chance_per_hit: Option<(f64, u32)> = None;
     // READY RETALIATION arrives on the BASE (an evolution wrote it there),
     // unlike the two above which arrive from mods — so the policy split is
     // here rather than in the mod loop.
@@ -3074,8 +3074,8 @@ pub fn resolve_for(
                 ModEffect::ConsecutiveHitDamage { per_stack, max_stacks, duration } => {
                     consecutive_hit = Some((per_stack, max_stacks, duration));
                 }
-                ModEffect::BaseDamage(v) => bd += v,
-                ModEffect::Multishot(v) => ms += v,
+                ModEffect::BaseDamage(v) => base_damage += v,
+                ModEffect::Multishot(v) => multishot += v,
                 ModEffect::CritChance(v) => cc += v,
                 // The per-tendril halves do NOT join `cc`/`sc` here: their
                 // size depends on how many tendrils are up, which is a fact
@@ -3092,7 +3092,7 @@ pub fn resolve_for(
                 // show, because the card publishes one (500%).
                 ModEffect::CritChancePerHit { per_stack, max_stacks } => match policy {
                     StackPolicy::AssumedMax => cc += per_stack * f64::from(max_stacks),
-                    StackPolicy::Emergent => cc_per_hit = Some((per_stack, max_stacks)),
+                    StackPolicy::Emergent => crit_chance_per_hit = Some((per_stack, max_stacks)),
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
                 },
                 ModEffect::MagazineRefillOnKill(v) => mag_refill += v,
@@ -3111,7 +3111,7 @@ pub fn resolve_for(
                 // bow x2, which belongs to fire-rate mods and not to this.
                 ModEffect::ChargeRate(v) => cr += v,
                 ModEffect::ReloadSpeed(v) => rl += v,
-                ModEffect::StatusDamage(v) => sd += v,
+                ModEffect::StatusDamage(v) => status_damage += v,
                 // Independent of everything else: it is its own roll on a
                 // crit, so it is its own bucket rather than joining status.
                 ModEffect::SlashOnCrit(v) => slash_on_crit += v,
@@ -3136,9 +3136,9 @@ pub fn resolve_for(
                     max_stacks,
                     duration,
                 } => match policy {
-                    StackPolicy::AssumedMax => ms += per_stack * max_stacks as f64,
+                    StackPolicy::AssumedMax => multishot += per_stack * max_stacks as f64,
                     StackPolicy::Emergent => {
-                        ms_stack = Some(StackSpec {
+                        multishot_stack = Some(StackSpec {
                             per_stack: base.base_multishot * per_stack,
                             max_stacks,
                             duration,
@@ -3166,7 +3166,7 @@ pub fn resolve_for(
                 ModEffect::OnHeadshotCritChance { bonus, duration } => match policy {
                     StackPolicy::AssumedMax => cc += bonus,
                     StackPolicy::Emergent => {
-                        cc_on_headshot = Some(TimedBuff {
+                        crit_chance_on_headshot = Some(TimedBuff {
                             // RELATIVE, deliberately: `cc += bonus` is what
                             // the AssumedMax arm does, and that bonus reaches
                             // EVERY attack part through the bucket. Resolving
@@ -3186,8 +3186,8 @@ pub fn resolve_for(
                 } => match policy {
                     StackPolicy::AssumedMax => cc += per_stack * max_stacks as f64,
                     StackPolicy::Emergent => {
-                        cc_stack = Some(StackSpec {
-                            per_stack, // RELATIVE — see cc_on_headshot above
+                        crit_chance_stack = Some(StackSpec {
+                            per_stack, // RELATIVE — see crit_chance_on_headshot above
                             max_stacks,
                             duration,
                             initial_stacks: 0, // EARNED — docs/BUFFS.md §Activation policy
@@ -3238,8 +3238,8 @@ pub fn resolve_for(
                 ModEffect::OnKillCritDamage { bonus, duration } => match policy {
                     StackPolicy::AssumedMax => cd += bonus,
                     StackPolicy::Emergent => {
-                        cd_on_kill = Some(TimedBuff {
-                            value: bonus, // RELATIVE — see cc_on_headshot above
+                        crit_damage_on_kill = Some(TimedBuff {
+                            value: bonus, // RELATIVE — see crit_chance_on_headshot above
                             duration,
                             initial_active: false, // Sharpened Bullets seeds inactive
                         })
@@ -3247,9 +3247,9 @@ pub fn resolve_for(
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
                 },
                 ModEffect::OnReloadDamage { bonus, duration } => match policy {
-                    StackPolicy::AssumedMax => bd += bonus,
+                    StackPolicy::AssumedMax => base_damage += bonus,
                     StackPolicy::Emergent => {
-                        bd_on_reload = Some(TimedBuff {
+                        base_damage_on_reload = Some(TimedBuff {
                             // RELATIVE: the sim adds it into the base-damage
                             // bucket alongside Serration, which is where the
                             // card's "+X% Damage" belongs.
@@ -3266,9 +3266,9 @@ pub fn resolve_for(
                 // TARGET's half — a fight against a non-Eximus never opens the
                 // window at all, and the panel has no target to ask.
                 ModEffect::OnEximusWeakpointDamage { bonus, duration } => match policy {
-                    StackPolicy::AssumedMax => bd += bonus,
+                    StackPolicy::AssumedMax => base_damage += bonus,
                     StackPolicy::Emergent => {
-                        bd_on_eximus_weakpoint = Some(TimedBuff {
+                        base_damage_on_eximus_weakpoint = Some(TimedBuff {
                             value: bonus,
                             duration,
                             initial_active: false, // no weak point has been hit yet
@@ -3279,7 +3279,7 @@ pub fn resolve_for(
                 ModEffect::OnReloadFireRate { bonus, duration } => match policy {
                     StackPolicy::AssumedMax => fr += bonus,
                     StackPolicy::Emergent => {
-                        fr_on_reload = Some(TimedBuff {
+                        fire_rate_on_reload = Some(TimedBuff {
                             value: base.base_fire_rate * bonus,
                             duration,
                             initial_active: false, // Pressurized Magazine seeds inactive
@@ -3297,12 +3297,12 @@ pub fn resolve_for(
                 ModEffect::CondBuff(bucket, v) => {
                     if policy == StackPolicy::AssumedMax {
                         match bucket {
-                            CondBucket::BaseDamage => bd += v,
-                            CondBucket::Multishot => ms += v,
+                            CondBucket::BaseDamage => base_damage += v,
+                            CondBucket::Multishot => multishot += v,
                             CondBucket::CritChance => cc += v,
                             CondBucket::CritDamage => cd += v,
                             CondBucket::StatusChance => sc += v,
-                            CondBucket::StatusDamage => sd += v,
+                            CondBucket::StatusDamage => status_damage += v,
                             CondBucket::FireRate => fr += v,
                             CondBucket::ReloadSpeed => rl += v,
                         }
@@ -3332,7 +3332,7 @@ pub fn resolve_for(
     } else {
         base.buff_multishot_bonus + gate(GatedGrant::Multishot)
     };
-    let evo_ms_stacks = if locked_stat("multishot") { 0 } else { base.buff_ms_max_stacks };
+    let evo_ms_stacks = if locked_stat("multishot") { 0 } else { base.buff_multishot_max_stacks };
     let ms_last_round = if locked_stat("multishot") { 0.0 } else { base.multishot_on_last_round };
     let evo_fr_bonus = if locked_stat("fire_rate") {
         0.0
@@ -3371,36 +3371,36 @@ pub fn resolve_for(
 
     let resolved_cc =
         ((base.base_crit_chance + cc_from_sc) * (1.0 + cc) + (base.post_mod_crit_chance + scope_post_cc)).max(0.0);
-    let prelude_cd = match base.crit_mult_below_cc {
+    let prelude_cd = match base.crit_multiplier_below_crit_chance {
         Some((bonus, below)) if resolved_cc < below => bonus,
         _ => 0.0,
     };
     for &d in &disabled {
         match d {
             "multishot" => {
-                ms = 0.0;
-                ms_stack = None;
+                multishot = 0.0;
+                multishot_stack = None;
             }
             "fire_rate" => {
                 fr = 0.0;
-                fr_on_reload = None;
+                fire_rate_on_reload = None;
             }
             "crit_chance" => {
                 cc = 0.0;
-                cc_on_headshot = None;
-                cc_stack = None;
-                cc_per_hit = None;
+                crit_chance_on_headshot = None;
+                crit_chance_stack = None;
+                crit_chance_per_hit = None;
                 wp_cc = 0.0;
             }
             "crit_damage" => {
                 cd = 0.0;
-                cd_on_kill = None;
+                crit_damage_on_kill = None;
             }
             "status_chance" => sc = 0.0,
             "base_damage" => {
-                bd = 0.0;
-                bd_on_reload = None;
-                bd_on_eximus_weakpoint = None;
+                base_damage = 0.0;
+                base_damage_on_reload = None;
+                base_damage_on_eximus_weakpoint = None;
             }
             // A LOCK TAKES THE WINDOW TOO. "Set to its default ignoring other
             // bonuses" cannot mean the static half only — that was the bug the
@@ -3456,8 +3456,8 @@ pub fn resolve_for(
     // per METRE, the weapon brings the radius those metres come off and its own
     // row in the published table (docs/CATALOGS.md §2).
     //
-    //   radius_lost  = radius_considered × (1 − 0.2)     # continuous
-    //   damage_bonus = damage_per_metre(rank) × radius_lost
+    //   radius_lost_m  = radius_considered × (1 − 0.2)     # continuous
+    //   damage_bonus = damage_per_metre(rank) × radius_lost_m
     //
     // MODDED, not base: the table's Primed Firestorm column is exactly 1.44×
     // its base column on every row that can take the mod, which is the same
@@ -3484,7 +3484,7 @@ pub fn resolve_for(
             .reads_radius_m
             .unwrap_or(attack_radius * c.effectiveness);
         compression = Some(Compression {
-            radius_lost: considered * (1.0 - COMPRESSION_RADIUS_KEPT),
+            radius_lost_m: considered * (1.0 - COMPRESSION_RADIUS_KEPT),
             // THE ROW'S OTHER COLUMN, and the same split Condition Overload
             // has: `adds` joins the base-damage bucket and is diluted by
             // Serration, `multiplies` stands beside it. Most weapons multiply;
@@ -3497,8 +3497,8 @@ pub fn resolve_for(
     let build = |base_vector: &DamageVector,
                      elem_bonus: Option<&mut Vec<(DamageType, f64)>>|
      -> (DamageVector, f64) {
-        let modified_base = base_vector.total() * (1.0 + bd);
-        let scale = 1.0 + bd;
+        let modified_base = base_vector.total() * (1.0 + base_damage);
+        let scale = 1.0 + base_damage;
         let mut physical = DamageVector::new();
         let mut input = ElementalInput::default();
         for (t, v) in base_vector.iter_nonzero() {
@@ -3789,8 +3789,8 @@ pub fn resolve_for(
         // What the line above added, in the same post-mod units, so the sim
         // subtracts exactly what was granted — including through a crit-damage
         // LOCK, which zeroes `cd` for both expressions at once.
-        crit_mult_below_cc: base
-            .crit_mult_below_cc
+        crit_multiplier_below_crit_chance: base
+            .crit_multiplier_below_crit_chance
             .filter(|_| prelude_cd > 0.0)
             .map(|(_, below)| (prelude_cd * (1.0 + cd), below)),
         // No upper clamp: status chance ABOVE 100% is meaningful (a
@@ -3887,14 +3887,14 @@ pub fn resolve_for(
                     // …and the same trick for a FLAT base-damage add, which
                     // arrives as the number on the card and leaves as the share
                     // of the base-damage bucket worth the same thing. The mods
-                    // are in by now, so `(1 + bd) / base` is a constant — and it
+                    // are in by now, so `(1 + base_damage) / base` is a constant — and it
                     // is what preserves the one difference that matters: this
                     // is not diluted by Serration, because the equivalent share
-                    // grows with `bd` exactly as fast as the bucket does.
+                    // grows with `base_damage` exactly as fast as the bucket does.
                     BuffGrant::FlatBaseDamage => {
                         let unmodded = base.base_vector.total();
                         if unmodded > 0.0 {
-                            b.per_stack * (1.0 + bd) / unmodded
+                            b.per_stack * (1.0 + base_damage) / unmodded
                         } else {
                             0.0
                         }
@@ -3928,7 +3928,7 @@ pub fn resolve_for(
                 ..*b
             })
             .collect(),
-        multishot: base.base_multishot * (1.0 + evo_ms_bonus + ms),
+        multishot: base.base_multishot * (1.0 + evo_ms_bonus + multishot),
         base_multishot: base.base_multishot,
         // Magazine capacity: +% of base, floored to whole rounds (in-game).
         // A charge-backed Incarnon magazine is a fixed resource OUTSIDE the
@@ -3983,10 +3983,10 @@ pub fn resolve_for(
         tendril_range_m: base.tendril_range_m,
         tendril_acquire_deg: base.tendril_acquire_deg,
         sniper_combo: if tenno.state.aiming { base.sniper_combo } else { None },
-        cc_per_tendril: per_tendril_cc,
-        cc_per_hit,
+        crit_chance_per_tendril: per_tendril_cc,
+        crit_chance_per_hit,
         sc_per_tendril: per_tendril_sc,
-        mag_refill_on_kill: mag_refill,
+        magazine_refill_on_kill: mag_refill,
         syndicate_radial,
         // A BY-ROUND RELOAD IS PAID PER SHELL, so it grows with the modded
         // magazine. `mag_size` is the same number the magazine field above
@@ -3996,25 +3996,25 @@ pub fn resolve_for(
             None => base.base_reload / (1.0 + rl),
         },
         reload_bonus: rl,
-        base_damage_bonus: bd,
+        base_damage_bonus: base_damage,
         // A LOCKED base damage takes this with it, the same rule the live
         // buffs follow: a lock is "set to its default ignoring other bonuses".
-        bd_below_half_health: if locked_stat("base_damage") { 0.0 } else { base.bd_below_half_health },
+        base_damage_below_half_health: if locked_stat("base_damage") { 0.0 } else { base.base_damage_below_half_health },
         // CONVERTED, and each by its OWN bucket: "+40% Base Critical Chance" is
         // multiplied by the crit-chance mods and "+2x Base Critical Damage
         // Multiplier" by the crit-damage ones, exactly as the unconditional
         // `flat_base_crit_*` grants beside them are.
-        cc_on_undamaged: if locked_stat("critical_chance") { 0.0 } else { base.cc_on_undamaged * (1.0 + cc) },
-        cd_on_undamaged: if locked_stat("critical_damage") { 0.0 } else { base.cd_on_undamaged * (1.0 + cd) },
+        crit_chance_on_undamaged: if locked_stat("critical_chance") { 0.0 } else { base.crit_chance_on_undamaged * (1.0 + cc) },
+        crit_damage_on_undamaged: if locked_stat("critical_damage") { 0.0 } else { base.crit_damage_on_undamaged * (1.0 + cd) },
         co_behavior: base.co_behavior,
         compression,
         co_base_fraction: base.co_base_fraction(),
         co_per_type: co,
         co_stack,
-        ms_stack,
-        cc_on_headshot,
-        cc_stack,
-        status_damage_multiplier: 1.0 + sd,
+        multishot_stack,
+        crit_chance_on_headshot,
+        crit_chance_stack,
+        status_damage_multiplier: 1.0 + status_damage,
         status_duration_multiplier: 1.0 + sdur,
         elem_dot_bonus: elem_bonus.into_iter().map(|(t, v)| (t, 1.0 + v)).collect(),
         indirect,
@@ -4022,7 +4022,7 @@ pub fn resolve_for(
         weakpoint_damage: wp_dmg,
         headshot_multiplier: base.headshot_multiplier,
         // RELATIVE; direct-head only, so the sim uses the direct base.
-        weakpoint_cc_rel: wp_cc,
+        weakpoint_crit_chance_relative: wp_cc,
         bodyshot_crit_chance_multiplier: base.bodyshot_crit_chance_multiplier,
         consecutive_hit_damage: consecutive_hit.or(base.consecutive_hit_damage),
         // OFF ON A CONTINUOUS WEAPON AND ON AN INCARNON FORM, both the mod's
@@ -4050,32 +4050,32 @@ pub fn resolve_for(
             .map(|(rate, cap)| (rate * (1.0 + cc), cap * (1.0 + cc), cc_from_sc * (1.0 + cc))),
         round_restore_on_status: base.round_restore_on_status,
         instant_reload_on_kill: base.instant_reload_on_kill,
-        mag_growth_on_empty_reload: base.mag_growth_on_empty_reload.map(|(per, max)| {
+        magazine_growth_on_empty_reload: base.magazine_growth_on_empty_reload.map(|(per, max)| {
             // A charge-backed Incarnon magazine is outside the ammo system and
             // the mods never scale it — the same exception `mag_size` makes two
             // hundred lines up, so the grant follows the magazine it grows.
             let scaled = if base.gauge_form.is_some() { per } else { per * (1.0 + mag) };
             (scaled, max)
         }),
-        cd_on_kill,
-        fr_on_reload,
+        crit_damage_on_kill,
+        fire_rate_on_reload,
         rs_on_reload,
         armor_strip_per_puncture: base.armor_strip_per_puncture,
         instant_reload: base.instant_reload_on_headshot,
         headshot_streak: base.headshot_streak,
-        cd_below_status_count: base.cd_below_status_count,
-        bd_on_reload,
-        bd_on_eximus_weakpoint,
+        crit_damage_below_status_count: base.crit_damage_below_status_count,
+        base_damage_on_reload,
+        base_damage_on_eximus_weakpoint,
         proc_conversion: proc_conv,
         // Reified Bane: the vector already carries the +14 (evolutions apply
         // before mods), so the buff opens FULL and the card scales it back.
-        evo_bd: (base.reload_damage_buff > 0.0).then_some(EvoBdBuff {
+        evo_base_damage: (base.reload_damage_buff > 0.0).then_some(EvoBdBuff {
             full: base.reload_damage_buff,
             without: (base.base_vector.total() - base.reload_damage_buff).max(0.0),
             max_stacks: 1,
             stacks: 1,
         }),
-        evo_ms: (evo_ms_bonus > 0.0 && evo_ms_stacks > 0).then_some(
+        evo_multishot: (evo_ms_bonus > 0.0 && evo_ms_stacks > 0).then_some(
             EvoMsBuff {
                 full: base.base_multishot * evo_ms_bonus,
                 max_stacks: evo_ms_stacks,
@@ -4710,9 +4710,9 @@ mod tests {
         // …AND A LOCK STILL WINS. "Set to its default ignoring other bonuses"
         // makes no exception for where a bonus came from, and the fight is not
         // a loophole in a rule the mods obey.
-        let mut ms = neutral.clone();
-        ms.bonuses.multishot = 5.0;
-        let locked = resolve_for(&base, &[by("primary_acuity")], StackPolicy::Emergent, &ms);
+        let mut multishot = neutral.clone();
+        multishot.bonuses.multishot = 5.0;
+        let locked = resolve_for(&base, &[by("primary_acuity")], StackPolicy::Emergent, &multishot);
         let unlocked = resolve_for(&base, &[], StackPolicy::Emergent, neutral);
         assert!((locked.multishot - unlocked.multishot).abs() < 1e-9,
             "a locked multishot ignores a fight bonus too: {} vs {}",
@@ -5023,10 +5023,10 @@ mod tests {
         // bucket. It used to survive the lock, so an Acuity build on Dual
         // Toxocyst kept the evolution's pellets (user, 2026-08-04).
         let lock = m_req("acuity", None, vec!["multishot"], vec![]);
-        let ms_mod = m("ms", vec![ModEffect::Multishot(1.0)]);
+        let ms_mod = m("multishot", vec![ModEffect::Multishot(1.0)]);
         let locked = resolve(&base, &[&ms_mod, &lock], StackPolicy::AssumedMax);
         assert!((locked.multishot - base.base_multishot).abs() < 1e-9, "the weapon's default");
-        assert!(locked.evo_ms.is_none(), "and the evolution's buff card goes with it");
+        assert!(locked.evo_multishot.is_none(), "and the evolution's buff card goes with it");
         // ...and the evolution IS worth something without the lock, so the line
         // above is not passing because it contributes nothing.
         assert!(p0.multishot > base.base_multishot + 1e-9, "Fevered Frenzy pays unlocked");
@@ -5375,7 +5375,7 @@ mod tests {
         );
         let p = resolve(&verglas_prime(), &[&gchamber], StackPolicy::BaseOnly);
         assert!((p.multishot - 1.55).abs() < 1e-9);
-        assert!(p.ms_stack.is_none());
+        assert!(p.multishot_stack.is_none());
     }
     /// A BIGGER MAGAZINE COSTS RELOAD TIME on a by-round reloader, and it is
     /// free on everything else.
@@ -5536,11 +5536,11 @@ mod tests {
         let pool = crate::mods_data::pool_for_weapon("phantasma_prime_charged");
         let shot = |want: &[&str]| {
             let b = WeaponBase::from_data("phantasma_prime_charged", true, &[]);
-            let ms: Vec<_> = want
+            let multishot: Vec<_> = want
                 .iter()
                 .filter_map(|m| pool.iter().find(|d| d.id == *m))
                 .collect();
-            resolve(&b, &ms, StackPolicy::Emergent)
+            resolve(&b, &multishot, StackPolicy::Emergent)
         };
         // STOCK is the arsenal's own line, and nothing about it moved: 11 in
         // the magazine, one second at eleven a second, 15 + 73.
@@ -5576,11 +5576,11 @@ mod tests {
         let pool = crate::mods_data::pool_for_weapon("cernos_prime");
         let shot = |want: &[&str]| {
             let b = WeaponBase::from_data("cernos_prime", true, &[]);
-            let ms: Vec<_> = want
+            let multishot: Vec<_> = want
                 .iter()
                 .filter_map(|m| pool.iter().find(|d| d.id == *m))
                 .collect();
-            resolve(&b, &ms, StackPolicy::Emergent)
+            resolve(&b, &multishot, StackPolicy::Emergent)
         };
         let a = shot(&[]);
         let b = shot(&["primed_fast_hands"]);

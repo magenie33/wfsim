@@ -46,7 +46,7 @@ stack_cap_modifiers:
 # 100% armor removal at 10 stacks. Applies to Corrosive procs from ANY
 # source once Hydroid has damaged the enemy.
 
-cc_effects: []
+crit_chance_effects: []
 # on_kill_cosmetic: corpse partially corroded and dissolved; faint green
 # electricity-like coating while afflicted
 

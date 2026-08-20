@@ -76,7 +76,7 @@ on_player:
   # total over 3 s; a status cleanse stops both drain and static
   # note: Player Overguard grants status immunity, so no extra break damage.
 
-cc_effects: []
+crit_chance_effects: []
 # on_kill_cosmetic: blue rings sweeping the target top to bottom
 
 # railjack_variant: >-

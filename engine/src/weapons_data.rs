@@ -128,12 +128,12 @@ pub fn apply_valence(base: &mut WeaponBase, id: &str, element: &str, bonus: f64)
         return;
     }
     let Some(ty) = crate::damage::DamageType::from_name(element) else { return };
-    let frac = bonus.clamp(s.min, s.max);
+    let fraction = bonus.clamp(s.min, s.max);
     let total = base.base_vector.total();
-    if total <= 0.0 || frac <= 0.0 {
+    if total <= 0.0 || fraction <= 0.0 {
         return;
     }
-    let add = total * frac;
+    let add = total * fraction;
     base.base_vector = base.base_vector.with(ty, base.base_vector.get(ty) + add);
     // THE RADIAL TOO, on a weapon that has one: the bonus is base damage, and a
     // radial's base is base damage. None of today's adversary weapons in this
@@ -142,7 +142,7 @@ pub fn apply_valence(base: &mut WeaponBase, id: &str, element: &str, bonus: f64)
     if let Some(r) = base.radial.as_mut() {
         let rt = r.base_vector.total();
         if rt > 0.0 {
-            let radd = rt * frac;
+            let radd = rt * fraction;
             r.base_vector = r.base_vector.with(ty, r.base_vector.get(ty) + radd);
         }
     }
@@ -2715,7 +2715,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         fire_rate_mod_multiplier: if s.class == "bow" { 2.0 } else { 1.0 },
         base_multishot: s.attack.multishot,
         buff_multishot_bonus: 0.0,
-        buff_ms_max_stacks: 0,
+        buff_multishot_max_stacks: 0,
         magazine_size,
         // The reserve the sim may spend, and the two facts about it. HAVING
         // one is `ammo_max` — derived, because a weapon that states a reserve
@@ -2755,13 +2755,13 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         bodyshot_crit_chance_multiplier: 1.0,
         round_restore_on_status: None,
         instant_reload_on_kill: None,
-        mag_growth_on_empty_reload: None,
-        evo_weakpoint_cc_rel: 0.0,
+        magazine_growth_on_empty_reload: None,
+        evo_weakpoint_crit_chance_relative: 0.0,
         base_status_from_crit: None,
         base_crit_from_status: None,
-        bd_below_half_health: 0.0,
-        cc_on_undamaged: 0.0,
-        cd_on_undamaged: 0.0,
+        base_damage_below_half_health: 0.0,
+        crit_chance_on_undamaged: 0.0,
+        crit_damage_on_undamaged: 0.0,
         co_behavior,
         // THE ORIGINAL BASE, absolute. A weapon may DECLARE a fraction of its
         // own base here (0.5 on a bow's charged entry) and that is the only
@@ -2829,9 +2829,9 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         armor_strip_per_puncture: 0.0,
         instant_reload_on_headshot: None,
         headshot_streak: None,
-        cd_below_status_count: None,
+        crit_damage_below_status_count: None,
         // Set by Prelude of Might at `evolutions_data::apply`, read in `resolve`.
-        crit_mult_below_cc: None,
+        crit_multiplier_below_crit_chance: None,
         // Set by Headcracker at `evolutions_data::apply`.
         // Filled by `evolutions_data::apply`; see `StackingBuff`.
         stacking_buffs: Vec::new(),
@@ -3410,12 +3410,12 @@ mod tests {
         let mut wrong = Vec::new();
         for s in all() {
             let beh = s.co_behavior.as_deref().unwrap_or("additive_with_base_damage");
-            let frac = s.co_base_fraction.unwrap_or(1.0);
-            let ordinary = beh == "additive_with_base_damage" && (frac - 1.0).abs() < 1e-9;
+            let fraction = s.co_base_fraction.unwrap_or(1.0);
+            let ordinary = beh == "additive_with_base_damage" && (fraction - 1.0).abs() < 1e-9;
             match NAMED.iter().find(|(id, ..)| *id == s.id) {
-                None if !ordinary => unexpected.push(format!("{} = {beh} x{frac}", s.id)),
-                Some((_, b, f)) if beh != *b || (frac - f).abs() > 1e-9 => {
-                    wrong.push(format!("{}: {beh} x{frac}, catalog says {b} x{f}", s.id));
+                None if !ordinary => unexpected.push(format!("{} = {beh} x{fraction}", s.id)),
+                Some((_, b, f)) if beh != *b || (fraction - f).abs() > 1e-9 => {
+                    wrong.push(format!("{}: {beh} x{fraction}, catalog says {b} x{f}", s.id));
                 }
                 _ => {}
             }
@@ -4225,11 +4225,11 @@ mod tests {
         // Dual Toxocyst + Carnage Reign (Perk 1, +60 on a 75 base) = the
         // catalog's "100% or 56%" row: a +100% CO adds 75, never 135.
         for form in ["dual_toxocyst", "dual_toxocyst_incarnon"] {
-            let dt = WeaponBase::from_data(form, false, &["dual_toxocyst_carnage_reign"]);
+            let frame_seconds = WeaponBase::from_data(form, false, &["dual_toxocyst_carnage_reign"]);
             assert!(
-                (dt.co_base_fraction() - 75.0 / 135.0).abs() < 1e-9,
+                (frame_seconds.co_base_fraction() - 75.0 / 135.0).abs() < 1e-9,
                 "{form}: expected 75/135 = 0.5556, got {}",
-                dt.co_base_fraction()
+                frame_seconds.co_base_fraction()
             );
         }
         // …AND SO DOES PERK 2, WHICH THE CATALOG DOES NOT LIST. Fevered Frenzy
@@ -4539,8 +4539,8 @@ mod laetum_tests {
         assert_eq!((g.charges_to_fill / (1.0 + g.charge_rate)).ceil() as u32, 8);
 
         // Dual Toxocyst keeps its own numbers.
-        let dt = WeaponBase::from_data("dual_toxocyst_incarnon", true, &[]);
-        let d = dt.gauge_form.expect("incarnon economy");
+        let frame_seconds = WeaponBase::from_data("dual_toxocyst_incarnon", true, &[]);
+        let d = frame_seconds.gauge_form.expect("incarnon economy");
         assert_eq!(d.charges_to_fill, 9.0);
         assert_eq!(d.transmute_in, 2.35);
     }
@@ -5029,18 +5029,18 @@ mod burston_incarnon_radial_tests {
         assert!(bare.direct > 0.0 && bare.radial > 0.0, "both instances land: {bare:?}");
 
         let split = pool.iter().find(|m| m.id == "split_chamber").expect("split_chamber");
-        let ms = sim(&[split]);
+        let multishot = sim(&[split]);
         assert!(
-            ms.direct > bare.direct * 1.5,
+            multishot.direct > bare.direct * 1.5,
             "+90% multishot must grow the direct hit: {} -> {}",
             bare.direct,
-            ms.direct
+            multishot.direct
         );
         assert!(
-            (ms.radial / bare.radial - 1.0).abs() < 0.1,
+            (multishot.radial / bare.radial - 1.0).abs() < 0.1,
             "the explosion must not follow it: {} -> {}",
             bare.radial,
-            ms.radial
+            multishot.radial
         );
     }
 }
@@ -5126,12 +5126,12 @@ mod play_mode_tests {
     #[test]
     fn every_weapon_has_a_base_mode_and_it_is_always_rankable() {
         for w in roster() {
-            let ms = play_modes(&w.id);
-            let base = ms.iter().find(|m| m.mode == PlayMode::Base);
+            let multishot = play_modes(&w.id);
+            let base = multishot.iter().find(|m| m.mode == PlayMode::Base);
             let base = base.unwrap_or_else(|| panic!("{}: no base mode", w.id));
             assert!(base.sustainable, "{}: its own arsenal form is not rankable", w.id);
             assert_eq!(
-                ms.iter().filter(|m| m.mode == PlayMode::Base).count(),
+                multishot.iter().filter(|m| m.mode == PlayMode::Base).count(),
                 1,
                 "{}: more than one base mode", w.id
             );
@@ -5149,10 +5149,10 @@ mod play_mode_tests {
     fn a_gauge_gives_a_cycle_and_costs_the_alternate_its_rank() {
         for w in roster() {
             let forms = forms_of(&w.id);
-            let ms = play_modes(&w.id);
+            let multishot = play_modes(&w.id);
             let alt = forms.iter().find(|f| !f.is_default);
             let Some(alt) = alt else {
-                assert_eq!(ms.len(), 1, "{}: one form, so one mode", w.id);
+                assert_eq!(multishot.len(), 1, "{}: one form, so one mode", w.id);
                 continue;
             };
             let _ = alt;
@@ -5162,13 +5162,13 @@ mod play_mode_tests {
             let alts: Vec<_> = forms.iter().filter(|f| !f.is_default).collect();
             let gauged = |f: &FormRef| spec(f.weapon_id).is_some_and(|s| s.gauge_form.is_some());
             let any_gauged = alts.iter().any(|f| gauged(f));
-            let has = |m: PlayMode| ms.iter().any(|x| x.mode == m);
-            let rankable = |m: PlayMode| ms.iter().any(|x| x.mode == m && x.sustainable);
+            let has = |m: PlayMode| multishot.iter().any(|x| x.mode == m);
+            let rankable = |m: PlayMode| multishot.iter().any(|x| x.mode == m && x.sustainable);
 
             assert_eq!(
-                ms.len(), 1 + alts.len() + usize::from(any_gauged),
+                multishot.len(), 1 + alts.len() + usize::from(any_gauged),
                 "{}: {} forms should give base + one mode each + a cycle: {:?}",
-                w.id, forms.len(), ms.iter().map(|m| m.id).collect::<Vec<_>>()
+                w.id, forms.len(), multishot.iter().map(|m| m.id).collect::<Vec<_>>()
             );
             assert_eq!(has(PlayMode::Cycle), any_gauged, "{}: cycle iff gauge", w.id);
             assert_eq!(has(PlayMode::Transformed), any_gauged, "{}: gauge-fed mode iff gauge", w.id);
@@ -5178,7 +5178,7 @@ mod play_mode_tests {
             );
             // …and the ids are DISTINCT, which is the whole reason the gauged
             // one is its own mode: a build names a mode by id.
-            let mut ids: Vec<&str> = ms.iter().map(|m| m.id).collect();
+            let mut ids: Vec<&str> = multishot.iter().map(|m| m.id).collect();
             let n = ids.len();
             ids.sort_unstable();
             ids.dedup();
@@ -5474,11 +5474,11 @@ mod play_mode_tests {
         let fx = crate::arcanes_data::for_slot("primary", "primary_compression")
             .expect("the arcane is in the primary pool")
             .fx(5, crate::loadout::StackPolicy::Emergent, &[], crate::tenno_data::default_tenno());
-        assert_eq!(fx.compression_dmg_per_m, 1.0, "+100% per metre at max rank");
+        assert_eq!(fx.compression_damage_per_m, 1.0, "+100% per metre at max rank");
         for (id, expected) in table {
             let base = crate::loadout::WeaponBase::from_data(id, true, &[]);
             let p = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
-            let bonus = p.compression.map_or(0.0, |c| c.radius_lost) * fx.compression_dmg_per_m;
+            let bonus = p.compression.map_or(0.0, |c| c.radius_lost_m) * fx.compression_damage_per_m;
             assert!(
                 (bonus - expected).abs() < 5e-3,
                 "{id}: the table says +{}%, this build pays +{:.1}%",
@@ -5628,7 +5628,7 @@ mod play_mode_tests {
         let hip = crate::loadout::resolve_for(
             &base, &[], crate::loadout::StackPolicy::Emergent, &hipfire,
         );
-        assert!(aimed.compression.is_some_and(|c| c.radius_lost > 5.27));
+        assert!(aimed.compression.is_some_and(|c| c.radius_lost_m > 5.27));
         assert!(hip.compression.is_none(), "no aim, no trade, no bonus");
     }
 

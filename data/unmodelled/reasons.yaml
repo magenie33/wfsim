@@ -68,7 +68,7 @@ reasons:
   # is stated here rather than modelled. Two on the day it was written (Kuva
   # Bramma, Kuva Zarr) and the shape is shared by the Kulstar family.
   cluster_bomblets:
-    text: "the shot also throws {n} bomblets that explode again for {dmg} between them, and this engine gives an attack ONE explosion — so everything below is the main blast alone and this weapon is understated by roughly {share} of its damage. The wiki's Condition Overload catalog gives those bomblets a rule of their own (their CO term reads the PARENT projectile's damage), which consequently does not apply here either"
+    text: "the shot also throws {n} bomblets that explode again for {damage} between them, and this engine gives an attack ONE explosion — so everything below is the main blast alone and this weapon is understated by roughly {share} of its damage. The wiki's Condition Overload catalog gives those bomblets a rule of their own (their CO term reads the PARENT projectile's damage), which consequently does not apply here either"
   auto_spool_ramp:
     text: "the AUTO-SPOOL ramp is not modelled — the page gives this trigger as Auto-Spool and the fire rate here is the spooled-up {rate}/s from the first shot, so a short burst is faster in this sim than in game"
   # THE RICOCHET ITSELF IS MODELLED (2026-08-18) — `ricochet:` on the three

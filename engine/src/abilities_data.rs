@@ -79,7 +79,7 @@ pub enum AbilityEffect {
     ///   downstream has to know what a sniper is.
     ExtraHit {
         element: DamageType,
-        frac: f64,
+        fraction: f64,
         forced_status: bool,
     },
     /// AMMO EFFICIENCY (Energized Munitions). Not a damage bracket at all — it
@@ -143,14 +143,14 @@ pub struct ActiveAbility {
     pub id: &'static str,
     /// When it stops, in seconds from the start of the engagement.
     /// `f64::INFINITY` = the whole fight (the page's "whole fight" button).
-    pub ends_at: f64,
+    pub ends_at_seconds: f64,
     pub effects: Vec<AbilityEffect>,
 }
 
 impl ActiveAbility {
     /// Is it running at `t`? Half-open, so a 30s Roar is gone at exactly 30.
     pub fn live_at(&self, t: f64) -> bool {
-        t < self.ends_at
+        t < self.ends_at_seconds
     }
 }
 
@@ -289,7 +289,7 @@ pub fn all() -> &'static [AbilityDef] {
                             } else {
                                 element("extra_hit")
                             },
-                            frac: v,
+                            fraction: v,
                             forced_status: ef.forced_status,
                         },
                         other => panic!("{path}: unknown ability effect kind {other}"),
@@ -391,7 +391,7 @@ pub fn resolve(
                 AbilityEffect::FinalDamage(v) => AbilityEffect::FinalDamage(scale(v)),
                 AbilityEffect::AddElement(t, v) => AbilityEffect::AddElement(t, scale(v)),
                 AbilityEffect::AmmoEfficiency(v) => AbilityEffect::AmmoEfficiency(scale(v)),
-                AbilityEffect::ExtraHit { element, frac, forced_status } => {
+                AbilityEffect::ExtraHit { element, fraction, forced_status } => {
                     AbilityEffect::ExtraHit {
                         // THE PICK'S element wins where the ability offers a
                         // choice.
@@ -400,7 +400,7 @@ pub fn resolve(
                             .and_then(DamageType::from_name)
                             .filter(|_| !def.elements.is_empty())
                             .unwrap_or(element),
-                        frac: scale(frac)
+                        fraction: scale(fraction)
                             * def
                                 .class_bonus
                                 .map_or(1.0, |(c, x)| if c == weapon_class { x } else { 1.0 }),
@@ -411,7 +411,7 @@ pub fn resolve(
             .collect();
         let live = ActiveAbility {
             id: def.id,
-            ends_at: p.duration_seconds.unwrap_or(f64::INFINITY),
+            ends_at_seconds: p.duration_seconds.unwrap_or(f64::INFINITY),
             effects,
         };
         match best.iter_mut().find(|(f, _, _)| *f == def.family) {
@@ -482,8 +482,8 @@ pub fn extra_hits_at(list: &[ActiveAbility], t: f64) -> Vec<ExtraHitLive> {
         .filter(|a| a.live_at(t))
         .flat_map(|a| a.effects.iter())
         .filter_map(|e| match *e {
-            AbilityEffect::ExtraHit { element, frac, forced_status } => {
-                Some(ExtraHitLive { element, frac, forced_status })
+            AbilityEffect::ExtraHit { element, fraction, forced_status } => {
+                Some(ExtraHitLive { element, fraction, forced_status })
             }
             _ => None,
         })
@@ -516,7 +516,7 @@ pub fn ammo_efficiency_at(list: &[ActiveAbility], t: f64) -> f64 {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ExtraHitLive {
     pub element: DamageType,
-    pub frac: f64,
+    pub fraction: f64,
     /// Toxic Lash is "100% (Toxin status chance)" and Resupply grants "the
     /// selected Elemental Damage and Status Effect"; Xata's rolls the weapon's
     /// own. The difference is per member, so it travels with the member.
@@ -532,8 +532,8 @@ pub struct ExtraHitLive {
 pub fn checkpoints(list: &[ActiveAbility]) -> Vec<f64> {
     let mut out = vec![0.0];
     for a in list {
-        if a.ends_at.is_finite() && a.ends_at > 0.0 && !out.contains(&a.ends_at) {
-            out.push(a.ends_at);
+        if a.ends_at_seconds.is_finite() && a.ends_at_seconds > 0.0 && !out.contains(&a.ends_at_seconds) {
+            out.push(a.ends_at_seconds);
         }
     }
     out.sort_by(|a, b| a.partial_cmp(b).expect("no NaN in checkpoints"));
@@ -609,7 +609,7 @@ mod tests {
         let xh = extra_hits_at(&live, 0.0);
         assert_eq!(xh.len(), 1);
         assert_eq!(xh[0].element, DamageType::Void);
-        assert!((xh[0].frac - 0.26).abs() < 1e-9);
+        assert!((xh[0].fraction - 0.26).abs() < 1e-9);
     }
 
     /// THE SUBSUMED COPY IS THE WHOLE ABILITY, and that is why there is only
@@ -751,12 +751,12 @@ mod tests {
         assert_eq!(extra_hits_at(&fixed, 0.0)[0].element, DamageType::Void);
 
         // 2. A WEAPON CLASS that doubles it: 25% on a rifle, 50% on a sniper.
-        let rifle = extra_hits_at(&dflt, 0.0)[0].frac;
+        let rifle = extra_hits_at(&dflt, 0.0)[0].fraction;
         let sniper = extra_hits_at(
             &resolve(&[AbilityPick { id: "resupply", duration_seconds: None, element: None }], 1.0, "sniper"),
             0.0,
         )[0]
-        .frac;
+        .fraction;
         assert!((rifle - 0.25).abs() < 1e-9, "{rifle}");
         assert!((sniper - 0.50).abs() < 1e-9, "{sniper}");
 

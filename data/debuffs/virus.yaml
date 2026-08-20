@@ -50,7 +50,7 @@ immunities:
   fully_immune:                # immune to Viral damage AND status
     [Demolisher Charger, Demolisher Juggernaut]
 
-cc_effects: []
+crit_chance_effects: []
 # on_kill_cosmetic: flowing miasma in the inflicting weapon's energy color
 
 # railjack_variant: >-

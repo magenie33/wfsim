@@ -1299,9 +1299,9 @@ mod tests {
     #[test]
     fn the_reading_is_the_cards_precision_and_the_maths_is_not() {
         let by = |id: &str| pool("rifle").iter().find(|x| x.id == id).unwrap();
-        let ms = by("multishot");
-        assert_eq!(ms.decimals(), 1);
-        assert_eq!(ms.print(1.447_87), "+144.8% Multishot");
+        let multishot = by("multishot");
+        assert_eq!(multishot.decimals(), 1);
+        assert_eq!(multishot.print(1.447_87), "+144.8% Multishot");
         assert_eq!(by("damage_to_corpus").decimals(), 2, "the card's own two");
 
         // The value behind it is untouched: `shown` is exact and the roll a
@@ -1310,10 +1310,10 @@ mod tests {
         // clamp — the band moves with shape and disposition, so it is asked
         // for rather than written down.
         let s = spec(&["multishot", "damage"], None, 8);
-        let (lo, hi) = s.bounds_of(ms, true, 1.3);
-        let reading = (ms.shown((lo + hi) / 2.0) * 10.0).round() / 10.0;
-        let r = s.roll_for_value(ms, true, 1.3, ms.from_shown(reading));
-        assert!((ms.shown(s.value_of(ms, r, true, 1.3)) - reading).abs() < 1e-9);
+        let (lo, hi) = s.bounds_of(multishot, true, 1.3);
+        let reading = (multishot.shown((lo + hi) / 2.0) * 10.0).round() / 10.0;
+        let r = s.roll_for_value(multishot, true, 1.3, multishot.from_shown(reading));
+        assert!((multishot.shown(s.value_of(multishot, r, true, 1.3)) - reading).abs() < 1e-9);
         assert!(r > ROLL_MIN && r < ROLL_MAX, "an ordinary roll, not an end: {r}");
     }
 

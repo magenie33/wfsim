@@ -829,7 +829,7 @@ pub struct RoundNote {
     /// Best score under the round's own metric (kill progress on kill
     /// rounds, mean effective damage on screen rounds).
     pub best: f64,
-    pub ms: u64,
+    pub multishot: u64,
 }
 
 /// Self-scaling successive-halving schedule with the historical defaults
@@ -1132,7 +1132,7 @@ impl Ord for Scored {
 
 /// Round wall-clock, compiled out on wasm32: `std::time::Instant` does not
 /// exist on wasm32-unknown-unknown (it would panic at runtime), so there
-/// `ms()` reports 0 — progress display simply shows no round timing.
+/// `multishot()` reports 0 — progress display simply shows no round timing.
 struct RoundTimer {
     #[cfg(not(target_arch = "wasm32"))]
     t: std::time::Instant,
@@ -1145,7 +1145,7 @@ impl RoundTimer {
             t: std::time::Instant::now(),
         }
     }
-    fn ms(&self) -> u64 {
+    fn multishot(&self) -> u64 {
         #[cfg(not(target_arch = "wasm32"))]
         {
             self.t.elapsed().as_millis() as u64
@@ -1419,7 +1419,7 @@ pub fn run_funnel(
                 runs,
                 if by_kills { "kills" } else { "eff dmg" },
                 scored.len(),
-                t.ms() as f64 / 1000.0,
+                t.multishot() as f64 / 1000.0,
                 if by_kills {
                     format!("{:.2} kill score", scored[0].1.mean_kill_progress)
                 } else {
@@ -1440,7 +1440,7 @@ pub fn run_funnel(
                 by_kills,
                 kept: scored.len(),
                 best,
-                ms: t.ms(),
+                multishot: t.multishot(),
             });
         }
         alive = scored.iter().map(|(j, _)| *j).collect();

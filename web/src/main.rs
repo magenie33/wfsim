@@ -329,7 +329,7 @@ fn optimize_status(v: &Value) -> Value {
         .map(|n| {
             json!({
                 "round": n.round, "jobs": n.jobs, "runs": n.runs,
-                "by_kills": n.by_kills, "kept": n.kept, "best": n.best, "ms": n.ms,
+                "by_kills": n.by_kills, "kept": n.kept, "best": n.best, "multishot": n.multishot,
             })
         })
         .collect();

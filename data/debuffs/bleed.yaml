@@ -57,7 +57,7 @@ dot:
   # - finisher mods (Finishing Touch etc. - Cinematic is not a finisher)
   # - target armor (ignored by the tick even though it reduced the hit)
 
-cc_effects: []
+crit_chance_effects: []
 # on_kill_cosmetic: blood bursts at the hit location (oil on Machinery/Robotic)
 
 # railjack_variant: >-

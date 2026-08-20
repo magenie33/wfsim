@@ -336,8 +336,8 @@ impl EnemySpec {
             health_curve: self.scaling_faction.health_curve(),
             shield_curve: self.scaling_faction.shield_curve(),
             attenuation: self.attenuation.map(|a| Attenuation {
-                instance_frac: a.max_instance_fraction_of_health,
-                dps_frac: a.max_dps_fraction_of_health,
+                instance_fraction: a.max_instance_fraction_of_health,
+                dps_fraction: a.max_dps_fraction_of_health,
             }),
             stack_caps: self.status_stack_caps.map(|c| StackCaps {
                 general: c.general,
@@ -757,7 +757,7 @@ body_parts: [ { name: body, multiplier: 1.0 } ]
         assert_eq!(t.base_shield, 50.0);
         assert!((t.max_shield() - 50.0).abs() < 1e-9);
         let a = t.attenuation.unwrap();
-        assert!((a.instance_frac - 0.05).abs() < 1e-12);
+        assert!((a.instance_fraction - 0.05).abs() < 1e-12);
         let c = t.stack_caps.unwrap();
         assert_eq!((c.general, c.impact), (4, 3));
     }

@@ -53,7 +53,7 @@ dot:
 # faction_damage: [Bane mods, Roar]
 # status_damage: [Rifle Elementalist, "Emerald Archon Shard (Toxin option)"]
 
-cc_effects: []
+crit_chance_effects: []
 # on_kill_cosmetic: green sickly substance leaking from the body
 
 # railjack_variant: >-

@@ -89,7 +89,7 @@ armor_strip:
   #               x (1 - 0.18 x corrosive_projections)
   stacking_with_other_strips: multiplicative
 
-cc_effects:
+crit_chance_effects:
   - kind: panic
     # note: >-
     # Ignited enemies panic and flail, unable to act: ~4 s humanoids,

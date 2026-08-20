@@ -41,7 +41,7 @@ modifier_conditions:
   # MECHANICS.md §7.
   crit_chance_received: weapon_direct_damage_only
 
-cc_effects: []                 # no CC component; victims get a yellow aura
+crit_chance_effects: []                 # no CC component; victims get a yellow aura
 
 # on_kill_cosmetic: large bloody hole at the killing-blow location
 

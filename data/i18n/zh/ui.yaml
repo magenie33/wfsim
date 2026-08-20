@@ -946,7 +946,7 @@ ui:
   "the scenario the simulator is set to": 模拟器当前选中的场景
   "the search ranks by kills — the scenario's DPS measure applies to the simulator": 搜索按击杀排名——场景里的 DPS 指标只作用于模拟器
   "the self-stagger on its own explosion is not modelled — the grenade staggers the firer at close range and deals them no damage, and nothing in this arena can be inconvenienced": 自身被爆炸踉跄的效果尚未建模 —— 近距离开火时榴弹会让射手踉跄但不造成伤害，而这个战场里没有任何东西会被影响
-  "the shot also throws {n} bomblets that explode again for {dmg} between them, and this engine gives an attack ONE explosion — so everything below is the main blast alone and this weapon is understated by roughly {share} of its damage. The wiki's Condition Overload catalog gives those bomblets a rule of their own (their CO term reads the PARENT projectile's damage), which consequently does not apply here either":
+  "the shot also throws {n} bomblets that explode again for {damage} between them, and this engine gives an attack ONE explosion — so everything below is the main blast alone and this weapon is understated by roughly {share} of its damage. The wiki's Condition Overload catalog gives those bomblets a rule of their own (their CO term reads the PARENT projectile's damage), which consequently does not apply here either":
   "the sim does not model this yet, so its number against this target is optimistic": 模拟还没有实现这条机制，所以对这个目标算出的数字偏高
   "the simulator does not reproduce the search's own score for this build — the build shown may not be the one that was scored": 模拟器复现不出搜索给这套配装打的分 —— 屏幕上这套可能不是被评分的那一套
   "the simulator refused this build — see the build's own card": 模拟器拒绝了这套配装 —— 看它自己的卡片
@@ -1071,7 +1071,7 @@ ui:
     给仓库点个 Star，或者把一个配装链接发给还在手算的人。
     而如果你自己的游戏内实测和它对不上，那么以实测为准。那是一份关于现实的 bug 报告，也是唯一能改变这个引擎的东西。
     腰射后坐力尚未建模 —— 页面指出这个点射从腰间射击时后坐力明显更大，而这个战场根本没有后坐力
-    这一发还会抛出 {n} 颗子炸弹，它们合计再炸出 {dmg} 伤害，而这个引擎每次攻击只有一次爆炸 —— 所以下面的一切只算主爆炸，这把武器在这里被低估了大约 {share} 的伤害。维基的 Condition Overload 目录给这些子炸弹单独定了一条规则（它们的 CO 项读的是母弹体的伤害），因此那条规则在这里同样没有生效
+    这一发还会抛出 {n} 颗子炸弹，它们合计再炸出 {damage} 伤害，而这个引擎每次攻击只有一次爆炸 —— 所以下面的一切只算主爆炸，这把武器在这里被低估了大约 {share} 的伤害。维基的 Condition Overload 目录给这些子炸弹单独定了一条规则（它们的 CO 项读的是母弹体的伤害），因此那条规则在这里同样没有生效
     这个引擎还模拟另外 {n} 种异常状态，本场一次都没上，因此没有画出来
     这个模式是靠瞄准进入的，而不是靠扳机；模拟器把「模式」和战场的「瞄准」当成两个独立设置 —— 所以「选了这个模式但瞄准关着」是游戏里造不出来的组合，凡是「瞄准时」生效的加成，只要处在这个模式就应当视为生效
     这轮爆发会打空整个弹匣，而这个条目每次扣发固定打 21 发 —— 也就是未改装的弹匣容量。装了弹匣 MOD 之后真实的爆发会更长，而这里不会变长，所以带弹匣 MOD 的配装在这里被低估了

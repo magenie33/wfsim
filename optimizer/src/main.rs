@@ -135,8 +135,8 @@ fn main() {
         match scenario.arena.target.attenuation {
             Some(a) => format!(
                 " | attenuation: instance {:.0}% / dps {:.0}% of max HP (ESTIMATES)",
-                a.instance_frac * 100.0,
-                a.dps_frac * 100.0
+                a.instance_fraction * 100.0,
+                a.dps_fraction * 100.0
             ),
             None => String::new(),
         }
@@ -304,7 +304,7 @@ fn main() {
             (None, co) if co > 0.0 => format!("CO/type +{:.0}%", co * 100.0),
             _ => "no CO".into(),
         };
-        let ms_desc = match &c.panel.ms_stack {
+        let ms_desc = match &c.panel.multishot_stack {
             Some(s) => format!(
                 "{:.2}+{:.1}x{} earned",
                 c.panel.multishot, s.per_stack, s.max_stacks
@@ -312,7 +312,7 @@ fn main() {
             None => format!("{:.2}", c.panel.multishot),
         };
         println!(
-            "    panel: {} | cc {:.1}% cd {:.2}x sc {:.1}% fr {:.2} ms {} | {} | {} forma, {}/60",
+            "    panel: {} | cc {:.1}% cd {:.2}x sc {:.1}% fr {:.2} multishot {} | {} | {} forma, {}/60",
             vec_desc.join(" / "),
             c.panel.crit_chance * 100.0,
             c.panel.crit_damage,

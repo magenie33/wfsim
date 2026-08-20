@@ -52,7 +52,7 @@ use crate::space::Vec2;
 /// assumed: `RunResult` is `Copy` and carries a `[f64; MAX_BODIES + 1]`, so the
 /// worry was a fixed cost paid by every fight including the single-target ones
 /// the board already runs. Measured at 400 against 50, a one-body engagement
-/// costs 0.538 ms against 0.533 — inside the noise of the machine. The array is
+/// costs 0.538 multishot against 0.533 — inside the noise of the machine. The array is
 /// 3.2 KB and a run produces one.
 ///
 /// 400 rather than 289: a 19x19 is 361, and that is the size the measurement

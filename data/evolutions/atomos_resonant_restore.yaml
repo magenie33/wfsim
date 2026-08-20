@@ -29,7 +29,7 @@ effects:
   #
   # THE MAGAZINE GROWS, IT DOES NOT FILL. A reload still draws from the reserve
   # as it always did; what the stack buys is room for the next draw to use.
-  - kind: mag_growth_on_empty_reload
+  - kind: magazine_growth_on_empty_reload
     per_stack: 5.0
     max_stacks: 7
 

@@ -79,7 +79,7 @@ on_player:
   # The Optimism Peely Pix (Temporal Archimedea) can accumulate 10 stacks
   # on players with progressively stronger slow and the Frozen state.
 
-cc_effects:
+crit_chance_effects:
   - kind: slow
     # note: See action_speed_reduction table; Frozen at 10 stacks.
 

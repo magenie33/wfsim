@@ -50,7 +50,7 @@ body_parts:
 
 # Raw wiki text, not yet modeled in the engine.
 mechanics:
-  overguard_cc_immunity: true
+  overguard_crowd_control_immunity: true
   # spectral_form: >-
   # Destroying the physical form reverts it into a spectral form with 40% of
   # the physical form's health. Void damage deals 10x damage to the spectral

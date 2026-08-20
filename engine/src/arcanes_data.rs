@@ -196,7 +196,7 @@ pub struct ArcaneFx {
     /// ally), where assumed-max is the house reading and is disclosed as such.
     /// This one is a debuff the engine has tracked since it had statuses at
     /// all, so assuming it was never "we cannot know" — it was not looking.
-    pub echo_needs_radiation: u32,
+    pub echo_needs_radiation_stacks: u32,
     pub id: String,
     /// Emergent stacking buffs (kill/status families).
     pub buffs: Vec<ArcBuffSpec>,
@@ -204,7 +204,7 @@ pub struct ArcaneFx {
     pub enervate_rank: Option<u8>,
     /// Deadhead rank 5: joins the additive headshot bracket that multiplies
     /// the part multiplier.
-    pub headshot_mult_bonus: f64,
+    pub headshot_multiplier_bonus: f64,
     /// Static reload-speed bucket addition (Merciless rank 5).
     pub reload_bonus: f64,
     /// Σ RELATIVE crit-chance bonuses from assumed-max conditionals
@@ -212,13 +212,13 @@ pub struct ArcaneFx {
     /// attack part multiplies its OWN unmodded base by this. Kept relative all
     /// the way into the sim on purpose: resolving it against the direct part's
     /// base here is what silently excluded the explosion.
-    pub cc_rel: f64,
-    /// Σ RELATIVE crit-damage bonuses (Outburst) — same rule as `cc_rel`.
-    pub cd_rel: f64,
+    pub crit_chance_relative: f64,
+    /// Σ RELATIVE crit-damage bonuses (Outburst) — same rule as `crit_chance_relative`.
+    pub crit_damage_relative: f64,
     /// Σ RELATIVE crit chance on weak-point hits only (Cascadia Accuracy,
     /// assumed-max). Direct hits only — a radial never hits a weak point — so
     /// the sim multiplies it by the DIRECT part's base.
-    pub weakpoint_cc_rel: f64,
+    pub weakpoint_crit_chance_relative: f64,
     /// Final damage multiplier on direct hits (Secondary Surge assumed-max:
     /// the cap, multiplicative with Hornet Strike). 1.0 = none.
     pub final_multiplier: f64,
@@ -228,7 +228,7 @@ pub struct ArcaneFx {
     /// Secondary Shiver: +per per ACTIVE Cold status on the target (cap
     /// `cold_cap`), a GunCO-family source — applied per the weapon's
     /// CoBehavior bracket alongside Condition Overload.
-    pub per_cold_bd: f64,
+    pub per_cold_base_damage: f64,
     pub cold_cap: u32,
     /// Cascadia Empowered: each status proc adds a flat damage instance of
     /// the proc's type (unaffected by mods/crit/parts; faction once; enemy
@@ -241,7 +241,7 @@ pub struct ArcaneFx {
     /// Secondary Cryogenic: Cold statuses applied to the target on each
     /// Puncture status (single-target: the radius burst collapses onto the
     /// main target, which the wiki confirms is also hit).
-    pub cold_burst_on_puncture: u32,
+    pub cold_bursts_on_puncture: u32,
     /// Secondary Fortifier: total damage multiplier while the target still
     /// has Overguard (x3..x8 in-game → stored as the multiplier). 1.0 = none.
     pub overguard_multiplier: f64,
@@ -252,8 +252,8 @@ pub struct ArcaneFx {
     /// They are not bonuses yet: what they are worth is the weapon's modded
     /// radius times its own row in the arcane's per-weapon table, so
     /// `loadout::resolve_for` spends them and the panel carries the answer.
-    pub compression_dmg_per_m: f64,
-    pub compression_eff_per_m: f64,
+    pub compression_damage_per_m: f64,
+    pub compression_effectiveness_per_m: f64,
 }
 
 impl Default for ArcaneFx {
@@ -264,23 +264,23 @@ impl Default for ArcaneFx {
             enervate_rank: None,
             echo_share: 0.0,
             echo_radius_m: 0.0,
-            echo_needs_radiation: 0,
-            headshot_mult_bonus: 0.0,
+            echo_needs_radiation_stacks: 0,
+            headshot_multiplier_bonus: 0.0,
             reload_bonus: 0.0,
-            cc_rel: 0.0,
-            cd_rel: 0.0,
-            weakpoint_cc_rel: 0.0,
+            crit_chance_relative: 0.0,
+            crit_damage_relative: 0.0,
+            weakpoint_crit_chance_relative: 0.0,
             final_multiplier: 1.0,
             debilitate_chance: 0.0,
-            per_cold_bd: 0.0,
+            per_cold_base_damage: 0.0,
             cold_cap: 0,
             flat_damage_on_status: 0.0,
             encumber_chance: 0.0,
-            cold_burst_on_puncture: 0,
+            cold_bursts_on_puncture: 0,
             overguard_multiplier: 1.0,
             ammo_efficiency: 0.0,
-            compression_dmg_per_m: 0.0,
-            compression_eff_per_m: 0.0,
+            compression_damage_per_m: 0.0,
+            compression_effectiveness_per_m: 0.0,
         }
     }
 }
@@ -334,7 +334,7 @@ impl ArcaneFx {
     /// have more than one; it reads one `ArcaneFx`, as it always has.
     ///
     /// Every field folds the way its own mechanic does:
-    /// - additive buckets SUM (`cc_rel`, `reload_bonus`, …)
+    /// - additive buckets SUM (`crit_chance_relative`, `reload_bonus`, …)
     /// - multipliers MULTIPLY (`final_multiplier`, `overguard_multiplier` — 1.0 = none)
     /// - the buff lists CONCATENATE, each spec carrying its `owner` so a
     ///   per-buff config key still names the arcane it came from
@@ -356,19 +356,19 @@ impl ArcaneFx {
                 for a in live {
                     out.buffs.extend(a.buffs.iter().cloned());
                     out.enervate_rank = out.enervate_rank.or(a.enervate_rank);
-                    out.headshot_mult_bonus += a.headshot_mult_bonus;
+                    out.headshot_multiplier_bonus += a.headshot_multiplier_bonus;
                     out.reload_bonus += a.reload_bonus;
-                    out.cc_rel += a.cc_rel;
-                    out.cd_rel += a.cd_rel;
-                    out.weakpoint_cc_rel += a.weakpoint_cc_rel;
-                    out.per_cold_bd += a.per_cold_bd;
+                    out.crit_chance_relative += a.crit_chance_relative;
+                    out.crit_damage_relative += a.crit_damage_relative;
+                    out.weakpoint_crit_chance_relative += a.weakpoint_crit_chance_relative;
+                    out.per_cold_base_damage += a.per_cold_base_damage;
                     out.cold_cap = out.cold_cap.max(a.cold_cap);
                     out.flat_damage_on_status += a.flat_damage_on_status;
                     out.encumber_chance += a.encumber_chance;
-                    out.cold_burst_on_puncture += a.cold_burst_on_puncture;
+                    out.cold_bursts_on_puncture += a.cold_bursts_on_puncture;
                     out.ammo_efficiency += a.ammo_efficiency;
-                    out.compression_dmg_per_m += a.compression_dmg_per_m;
-                    out.compression_eff_per_m += a.compression_eff_per_m;
+                    out.compression_damage_per_m += a.compression_damage_per_m;
+                    out.compression_effectiveness_per_m += a.compression_effectiveness_per_m;
                     out.final_multiplier *= a.final_multiplier;
                     // One arcane grants it and a weapon seats at most one of
                     // any arcane, so this is a max rather than a sum — summing
@@ -879,22 +879,22 @@ impl ArcaneDef {
                 }
                 ArcEffect::CondCritChance(sc) => {
                     if assumed {
-                        fx.cc_rel += sc.at(rank, self.max_rank);
+                        fx.crit_chance_relative += sc.at(rank, self.max_rank);
                     }
                 }
                 ArcEffect::CondCritChanceStacked { scale, max_stacks } => {
                     if assumed {
-                        fx.cc_rel += scale.at(rank, self.max_rank) * *max_stacks as f64;
+                        fx.crit_chance_relative += scale.at(rank, self.max_rank) * *max_stacks as f64;
                     }
                 }
                 ArcEffect::CondCritDamageStacked { scale, max_stacks } => {
                     if assumed {
-                        fx.cd_rel += scale.at(rank, self.max_rank) * *max_stacks as f64;
+                        fx.crit_damage_relative += scale.at(rank, self.max_rank) * *max_stacks as f64;
                     }
                 }
                 ArcEffect::WeakpointCritChance(sc) => {
                     if assumed {
-                        fx.weakpoint_cc_rel += sc.at(rank, self.max_rank);
+                        fx.weakpoint_crit_chance_relative += sc.at(rank, self.max_rank);
                     }
                 }
                 ArcEffect::Debilitate(sc) => {
@@ -914,7 +914,7 @@ impl ArcaneDef {
                 }
                 ArcEffect::HeadshotMultiplier { value, unlocks_at } => {
                     if rank >= *unlocks_at {
-                        fx.headshot_mult_bonus += value;
+                        fx.headshot_multiplier_bonus += value;
                     }
                 }
                 ArcEffect::ReloadSpeed { value, unlocks_at } => {
@@ -923,7 +923,7 @@ impl ArcaneDef {
                     }
                 }
                 ArcEffect::PerColdDamage { scale, max_stacks } => {
-                    fx.per_cold_bd = scale.at(rank, self.max_rank);
+                    fx.per_cold_base_damage = scale.at(rank, self.max_rank);
                     fx.cold_cap = *max_stacks;
                 }
                 ArcEffect::FlatDamageOnStatus(sc) => {
@@ -933,7 +933,7 @@ impl ArcaneDef {
                     fx.encumber_chance = sc.at(rank, self.max_rank);
                 }
                 ArcEffect::ColdBurst { scale, .. } => {
-                    fx.cold_burst_on_puncture = scale.at(rank, self.max_rank).round() as u32;
+                    fx.cold_bursts_on_puncture = scale.at(rank, self.max_rank).round() as u32;
                 }
                 // Team-context / out-of-scope — no sim payload.
                 ArcEffect::PerAllyCritChance(_)
@@ -946,7 +946,7 @@ impl ArcaneDef {
                 // Xm"*, and there are enemies now.
                 ArcEffect::AoeEcho { scale, radius0, radius1, needs_radiation } => {
                     fx.echo_share = scale.at(rank, self.max_rank);
-                    fx.echo_needs_radiation = *needs_radiation;
+                    fx.echo_needs_radiation_stacks = *needs_radiation;
                     fx.echo_radius_m = radius0
                         + (radius1 - radius0)
                             * if self.max_rank == 0 {
@@ -969,10 +969,10 @@ impl ArcaneDef {
                 // would have to watch — so there is nothing here for Emergent
                 // to hold back, unlike a stacking buff that has to be earned.
                 ArcEffect::CompressionDamage(sc) => {
-                    fx.compression_dmg_per_m += sc.at(rank, self.max_rank);
+                    fx.compression_damage_per_m += sc.at(rank, self.max_rank);
                 }
                 ArcEffect::CompressionAmmoEfficiency(sc) => {
-                    fx.compression_eff_per_m += sc.at(rank, self.max_rank);
+                    fx.compression_effectiveness_per_m += sc.at(rank, self.max_rank);
                 }
                 ArcEffect::Inert(_) | ArcEffect::Elsewhere(_) => {}
             }
@@ -1365,7 +1365,7 @@ mod tests {
     fn two_arcanes_fold_into_one_effect_set() {
         let a = ArcaneFx {
             id: "a".into(),
-            cc_rel: 0.3,
+            crit_chance_relative: 0.3,
             reload_bonus: 0.2,
             final_multiplier: 2.0,
             buffs: vec![ArcBuffSpec {
@@ -1383,14 +1383,14 @@ mod tests {
         };
         let b = ArcaneFx {
             id: "b".into(),
-            cc_rel: 0.5,
+            crit_chance_relative: 0.5,
             final_multiplier: 3.0,
             enervate_rank: Some(5),
             ..ArcaneFx::none()
         };
 
         let m = ArcaneFx::merged(&[a.clone(), b.clone()]);
-        assert!((m.cc_rel - 0.8).abs() < 1e-9, "additive buckets SUM");
+        assert!((m.crit_chance_relative - 0.8).abs() < 1e-9, "additive buckets SUM");
         assert!((m.reload_bonus - 0.2).abs() < 1e-9);
         assert!((m.final_multiplier - 6.0).abs() < 1e-9, "multipliers MULTIPLY");
         assert_eq!(m.enervate_rank, Some(5), "a perk is whichever states one");
@@ -1409,7 +1409,7 @@ mod tests {
 
         // Order does not change the result.
         let rev = ArcaneFx::merged(&[b, a]);
-        assert!((rev.cc_rel - m.cc_rel).abs() < 1e-9);
+        assert!((rev.crit_chance_relative - m.crit_chance_relative).abs() < 1e-9);
         assert!((rev.final_multiplier - m.final_multiplier).abs() < 1e-9);
     }
 
@@ -1506,12 +1506,12 @@ mod tests {
             "per stack {} vs 0.036",
             cd.per_stack
         );
-        let ms = fx
+        let multishot = fx
             .buffs
             .iter()
             .find(|b| b.grant == ArcGrant::Multishot)
             .expect("multishot grant");
-        assert!((ms.per_stack - 0.018).abs() < 1e-9, "multishot stays a ratio");
+        assert!((multishot.per_stack - 0.018).abs() < 1e-9, "multishot stays a ratio");
     }
 
     /// Primary Crux: two grants on a weak-point HIT, 10 stacks, all-drop.
@@ -1588,7 +1588,7 @@ mod tests {
         assert!((b.per_stack - 1.20).abs() < 1e-9);
         assert_eq!((b.max_stacks, b.all_drop), (3, false));
         assert!((b.duration - 24.0).abs() < 1e-9);
-        assert!((d.headshot_mult_bonus - 0.30).abs() < 1e-9);
+        assert!((d.headshot_multiplier_bonus - 0.30).abs() < 1e-9);
 
         let fl = secondary("cascadia_flare")
             .unwrap()
@@ -1623,7 +1623,7 @@ mod tests {
         // 1,1,2,2,3,3 — rank 3 must be 2, not a lerp of 1..3.
         let c = secondary("secondary_cryogenic").unwrap();
         assert_eq!(
-            c.fx(3, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno()).cold_burst_on_puncture,
+            c.fx(3, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno()).cold_bursts_on_puncture,
             2
         );
     }
@@ -1747,7 +1747,7 @@ mod tests {
                         }
                     }
                     ArcCondition::TargetRadiationStacks(n) => assert_eq!(
-                        em.echo_needs_radiation, n,
+                        em.echo_needs_radiation_stacks, n,
                         "{path}: a target-state condition must be the SIM's gate"
                     ),
                     ArcCondition::Unknown(s) => {
@@ -1765,10 +1765,10 @@ mod tests {
     fn assumed_max_only_conditionals_are_emergent_noops() {
         let o = secondary("cascadia_overcharge").unwrap();
         let em = o.fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
-        assert_eq!(em.cc_rel, 0.0);
+        assert_eq!(em.crit_chance_relative, 0.0);
         let am = o.fx(5, StackPolicy::AssumedMax, NO_TRAITS, crate::tenno_data::default_tenno());
         // RELATIVE now: +300% of whichever part's base the sim resolves.
-        assert!((am.cc_rel - 3.0).abs() < 1e-9);
+        assert!((am.crit_chance_relative - 3.0).abs() < 1e-9);
 
         // Surge: ×8 cap under AssumedMax, no-op under Emergent.
         let s = secondary("secondary_surge").unwrap();
@@ -1790,7 +1790,7 @@ mod tests {
         let sh = secondary("secondary_shiver")
             .unwrap()
             .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::tenno_data::default_tenno());
-        assert!((sh.per_cold_bd - 0.45).abs() < 1e-9);
+        assert!((sh.per_cold_base_damage - 0.45).abs() < 1e-9);
         assert_eq!(sh.cold_cap, 10);
         let ft = secondary("secondary_fortifier")
             .unwrap()
@@ -1879,7 +1879,7 @@ mod tests {
             t.state.energy_pct = pct;
             t
         };
-        let bd = |t: &crate::tenno_data::Tenno| {
+        let base_damage = |t: &crate::tenno_data::Tenno| {
             bulwark
                 .fx(5, StackPolicy::Emergent, NO_TRAITS, t)
                 .buffs
@@ -1887,7 +1887,7 @@ mod tests {
                 .map(|b| b.per_stack)
                 .sum::<f64>()
         };
-        let ms = |t: &crate::tenno_data::Tenno| {
+        let multishot = |t: &crate::tenno_data::Tenno| {
             overcharge
                 .fx(5, StackPolicy::Emergent, NO_TRAITS, t)
                 .buffs
@@ -1907,15 +1907,15 @@ mod tests {
         // Overcharge reads the pool itself, so 150 energy at a full pool pays
         // 0.35 x 150 / 100 = +52.5% multishot. It is the arcane doing its job on
         // the weakest frame in the game, and it only applies when EQUIPPED.
-        assert!((ms(neutral) - 0.525).abs() < 1e-9, "{}", ms(neutral));
+        assert!((multishot(neutral) - 0.525).abs() < 1e-9, "{}", multishot(neutral));
 
         // Bulwark: +1% per point PAST 1,000 — so 1,000 armor still pays
         // nothing, 1,200 pays +200%, and the rank-5 cap of +500% is reached at
         // 1,500 and never exceeded.
         assert!(bulwark.fx(5, StackPolicy::Emergent, NO_TRAITS, &frame(1000.0, 0.0, 1.0)).buffs.is_empty());
-        assert!((bd(&frame(1200.0, 0.0, 1.0)) - 2.0).abs() < 1e-9);
-        assert!((bd(&frame(1500.0, 0.0, 1.0)) - 5.0).abs() < 1e-9);
-        assert!((bd(&frame(9000.0, 0.0, 1.0)) - 5.0).abs() < 1e-9, "capped at +500%");
+        assert!((base_damage(&frame(1200.0, 0.0, 1.0)) - 2.0).abs() < 1e-9);
+        assert!((base_damage(&frame(1500.0, 0.0, 1.0)) - 5.0).abs() < 1e-9);
+        assert!((base_damage(&frame(9000.0, 0.0, 1.0)) - 5.0).abs() < 1e-9, "capped at +500%");
         // It is a BASE DAMAGE grant, pinned at its one stack: a Warframe stat
         // does not decay mid-fight, and no event grants it.
         let b = &bulwark.fx(5, StackPolicy::Emergent, NO_TRAITS, &frame(1200.0, 0.0, 1.0)).buffs[0];
@@ -1927,11 +1927,11 @@ mod tests {
         // Overcharge: 35% of MAX energy, and the gate is on how FULL the pool
         // is — 300 energy at 100% pays +105%, the same frame at 50% pays
         // nothing, and the cap needs 1,000 energy.
-        assert!((ms(&frame(0.0, 300.0, 1.0)) - 1.05).abs() < 1e-9);
-        assert!((ms(&frame(0.0, 300.0, 0.9)) - 1.05).abs() < 1e-9, "at exactly 90%");
+        assert!((multishot(&frame(0.0, 300.0, 1.0)) - 1.05).abs() < 1e-9);
+        assert!((multishot(&frame(0.0, 300.0, 0.9)) - 1.05).abs() < 1e-9, "at exactly 90%");
         assert!(overcharge.fx(5, StackPolicy::Emergent, NO_TRAITS, &frame(0.0, 300.0, 0.5)).buffs.is_empty());
-        assert!((ms(&frame(0.0, 1000.0, 1.0)) - 3.5).abs() < 1e-9);
-        assert!((ms(&frame(0.0, 5000.0, 1.0)) - 3.5).abs() < 1e-9, "capped at +350%");
+        assert!((multishot(&frame(0.0, 1000.0, 1.0)) - 3.5).abs() < 1e-9);
+        assert!((multishot(&frame(0.0, 5000.0, 1.0)) - 3.5).abs() < 1e-9, "capped at +350%");
         assert_eq!(
             overcharge.fx(5, StackPolicy::Emergent, NO_TRAITS, &frame(0.0, 300.0, 1.0)).buffs[0].grant,
             ArcGrant::Multishot

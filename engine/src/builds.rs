@@ -421,7 +421,7 @@ fn normalize(weapon: &str, mods: &[String], evolutions: &[String]) -> (Vec<Strin
         .filter(|id| pool.iter().any(|m| m.id == id.as_str()))
         .cloned()
         .collect();
-    let ms = canonical_mods(weapon, &kept);
+    let multishot = canonical_mods(weapon, &kept);
 
     // The ladder: tier N is only open when the tiers below it are filled, so a
     // set is trimmed to its longest legal prefix. One option per tier.
@@ -441,7 +441,7 @@ fn normalize(weapon: &str, mods: &[String], evolutions: &[String]) -> (Vec<Strin
             None => break, // the ladder stops at the first empty rung
         }
     }
-    (ms, evos)
+    (multishot, evos)
 }
 
 /// THE BOARD'S ADMISSION RULE: a legal build, and the shape THIS BENCHMARK asks
@@ -563,13 +563,13 @@ pub fn validate(
     if uniq.len() != mods.len() {
         return Err(format!("{} of {} mods are listed twice", mods.len() - uniq.len(), mods.len()));
     }
-    let (ms, evos) = normalize(weapon, mods, evolutions);
-    if ms.len() != mods.len() {
+    let (multishot, evos) = normalize(weapon, mods, evolutions);
+    if multishot.len() != mods.len() {
         // Loud, because a silently dropped mod is a build the submitter did not
         // send being scored under their name.
         return Err(format!(
             "{} of {} mods are not in {}'s pool",
-            mods.len() - ms.len(),
+            mods.len() - multishot.len(),
             mods.len(),
             spec.name
         ));
@@ -578,7 +578,7 @@ pub fn validate(
     let def = |id: &str| pool.iter().find(|m| m.id == id).expect("normalised into the pool");
 
     // FAMILIES. Two mods of one family cannot be equipped together.
-    let mut fams: Vec<&str> = ms.iter().filter_map(|id| def(id).family).collect();
+    let mut fams: Vec<&str> = multishot.iter().filter_map(|id| def(id).family).collect();
     fams.sort_unstable();
     for w in fams.windows(2) {
         if w[0] == w[1] {
@@ -600,8 +600,8 @@ pub fn validate(
     // AT MOST eight. Whether a build must be FULL is a board policy and not a
     // legality fact — four mods is a legal build in the game — so it lives in
     // `validate_for_board` rather than here.
-    if ms.len() > MAIN_SLOTS {
-        return Err(format!("{} mods, and a benchmark build has {MAIN_SLOTS}", ms.len()));
+    if multishot.len() > MAIN_SLOTS {
+        return Err(format!("{} mods, and a benchmark build has {MAIN_SLOTS}", multishot.len()));
     }
 
     // CAPACITY, with Forma unlimited. `plan_forma` answers both halves at once:
@@ -627,7 +627,7 @@ pub fn validate(
     let mut innate: Vec<Option<crate::mods::Polarity>> =
         crate::weapons_data::innate_slots(weapon).to_vec();
     innate.push(crate::weapons_data::exilus_polarity(weapon));
-    let planned: Vec<PlannedMod> = ms
+    let planned: Vec<PlannedMod> = multishot
         .iter()
         .map(|id| {
             let m = def(id);
@@ -708,7 +708,7 @@ pub fn validate(
 
     Ok(ValidBuild {
         weapon: weapon.to_string(),
-        mods: ms,
+        mods: multishot,
         evolutions: evos,
         arcanes: arcs,
         forma: plan.cost.total(),

@@ -7899,11 +7899,11 @@ function renderPanel(r) {
     // `3.3 × (1 - 0.20) = 3.3` would be a false equation printed in the one
     // place that exists to show the real one.
     if (row.locked_by) return "";
-    if (src.length < 2 || !src.every((x) => typeof x.frac === "number")) return "";
+    if (src.length < 2 || !src.every((x) => typeof x.fraction === "number")) return "";
     const base = String(row.base || "").replace(/[^0-9.\-]/g, "");
     if (!base || row.base === "—") return "";
     const terms = src
-      .map((x) => `<span class="bterm" title="${escHtml(x.mod)}">${x.frac.toFixed(2)}</span>`)
+      .map((x) => `<span class="bterm" title="${escHtml(x.mod)}">${x.fraction.toFixed(2)}</span>`)
       .join(" + ");
     return `<div class="sbucket">${escHtml(base)} × ( 1 + ${terms} ) = <b>${escHtml(row.final)}</b>` +
       ` <span class="bhint" title="${escHtml(
@@ -12082,7 +12082,7 @@ function replayMarkup(r) {
     const iFull = b.uncapped ? -1 : s.findIndex((v) => v >= b.max);
     const ramp = iFull < 0
       ? tr("never full")
-      : `${tr("full at")} ${(iFull * rp.dt).toFixed(2)}s`;
+      : `${tr("full at")} ${(iFull * rp.frame_seconds).toFixed(2)}s`;
     // WHERE IT WAS OFF. A buff at zero is not a low buff, it is an absent one,
     // and a flat line along the axis says that far too quietly — the run that
     // never earned a stack and the run that lost them all draw the same
@@ -12390,7 +12390,7 @@ function wireReplay(r) {
     // browser paints: 5x is five seconds of fight per second of watching.
     const dtms = st.last ? now - st.last : 16;
     st.last = now;
-    st.pos += (dtms / 1000) * st.speed / rp.dt;
+    st.pos += (dtms / 1000) * st.speed / rp.frame_seconds;
     if (st.pos >= rp.t.length - 1) { st.pos = rp.t.length - 1; stop(); }
     draw();
     if (st.playing) st.raf = requestAnimationFrame(tick);

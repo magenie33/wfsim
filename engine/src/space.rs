@@ -450,7 +450,7 @@ pub const AREA_MAX_M: f64 = 6.0 + BODY_RADIUS_M;
 /// A gas cloud, a Tesla arc and a Blast detonation each hand a payload to every
 /// body within a radius of the one that produced it. Asked directly that is
 /// `O(bodies)` per proc, and a dense grid produces thousands of procs a second:
-/// the Phantasma Prime on a 19x19 ruler went from 88 ms a run to 9,551 —
+/// the Phantasma Prime on a 19x19 ruler went from 88 multishot a run to 9,551 —
 /// 108x — entirely on that scan (measured 2026-08-18).
 ///
 /// The question is a CONSTANT. This answers it once per run: per body, its

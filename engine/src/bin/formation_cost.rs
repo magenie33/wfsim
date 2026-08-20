@@ -8,7 +8,7 @@
 //!   cargo run --release --bin formation_cost -- [spacing_m] [runs] [duration_seconds]
 //!
 //! It walks odd-sided grids — odd because a ruler wants an exact CENTRE to aim
-//! at — and reports ms per run, so the cost of a proposed ruler is read off
+//! at — and reports multishot per run, so the cost of a proposed ruler is read off
 //! rather than argued about. `bodies` is how many the weapon actually reached,
 //! which is the other thing a size has to buy: a grid whose extra rows are
 //! never touched is paying for nothing.
@@ -103,7 +103,7 @@ fn main() {
     );
     println!(
         "{:>7}{:>9}{:>9}{:>11}{:>11}{:>12}",
-        "grid", "placed", "touched", "ms/run", "vs 1x1", "1000 runs"
+        "grid", "placed", "touched", "multishot/run", "vs 1x1", "1000 runs"
     );
 
     let mut baseline = 0.0f64;
@@ -144,18 +144,18 @@ fn main() {
             let out = run_once(&p, &mut Rng::new(0x5EED ^ u64::from(r)));
             touched = touched.max(out.bodies_touched());
         }
-        let ms = t0.elapsed().as_secs_f64() * 1000.0 / f64::from(runs);
+        let multishot = t0.elapsed().as_secs_f64() * 1000.0 / f64::from(runs);
         if n == 1 {
-            baseline = ms;
+            baseline = multishot;
         }
         println!(
             "{:>7}{:>9}{:>9}{:>11.3}{:>11}{:>12}",
             format!("{n}x{n}"),
             cells,
             touched,
-            ms,
-            format!("{:.1}x", ms / baseline.max(1e-9)),
-            format!("{:.1} s", ms * 1000.0 / 1000.0)
+            multishot,
+            format!("{:.1}x", multishot / baseline.max(1e-9)),
+            format!("{:.1} s", multishot * 1000.0 / 1000.0)
         );
     }
 }

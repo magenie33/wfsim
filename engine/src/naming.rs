@@ -35,6 +35,45 @@ const FORBIDDEN: &[(&str, &str)] = &[
     ("_eff", "_effectiveness"),
 ];
 
+/// AN ABBREVIATED SUBJECT, anywhere in a name — the class the owner asked about
+/// second (2026-08-20), and a worse one than a mis-spelled unit: a reader of
+/// `bd_eximus_expiry` has to ALREADY KNOW that `bd` is base damage before the
+/// name tells them anything at all.
+///
+/// Matched on whole underscore-separated PARTS, so `cd` is caught in `cd_rel`
+/// and `bodyshot_cd` while `cold` and `radius` are left alone. This is the rule
+/// that cannot be a suffix table, because the abbreviation is usually at the
+/// front.
+///
+/// `multishot` IS THE ONE THAT PROVES THE RULE. It meant MULTISHOT in the engine and
+/// MILLISECONDS in `one_fight` — one two-letter name, two units, in one
+/// codebase. Neither use survives.
+/// A BULK RENAME ONCE ATE THIS TABLE (2026-08-20): a sweep that expanded `ms`
+/// everywhere rewrote the LEFT column too, turning `("ms", "multishot")` into
+/// `("multishot", "multishot")` — after which every name containing `multishot`
+/// was reported as needing to become `multishot`. `the_table_is_not_a_fixed_point`
+/// below is the guard, because the failure reads as 335 violations rather than
+/// as a broken checker.
+const ABBREVIATED: &[(&str, &str)] = &[
+    ("bd", "base_damage"),
+    ("cc", "crit_chance"),
+    ("cd", "crit_damage"),
+    ("sd", "status_damage"),
+    ("ms", "multishot"),
+    ("fr", "fire_rate"),
+    ("pt", "punch_through"),
+    ("dt", "frame_seconds"),
+    ("dmg", "damage"),
+    ("mult", "multiplier"),
+    ("frac", "fraction"),
+    ("mag", "magazine"),
+    ("amt", "amount"),
+    ("val", "value"),
+    ("cnt", "count"),
+    ("eff", "effectiveness"),
+    ("rel", "relative"),
+];
+
 /// Names that break a rule and STAY — the frozen wire and stored-preset
 /// spellings of `docs/NAMING.md` §6, and nothing else.
 ///
@@ -63,6 +102,27 @@ const FROZEN: &[&str] = &[
 pub fn forbidden(name: &str) -> Option<String> {
     if FROZEN.contains(&name) {
         return None;
+    }
+    // AN ABBREVIATED PART FIRST, because it is usually at the front and the
+    // suffix rules below cannot see it.
+    let parts: Vec<&str> = name.split('_').collect();
+    if let Some(fixed) = parts
+        .iter()
+        .any(|p| ABBREVIATED.iter().any(|(a, _)| a == p))
+        .then(|| {
+            parts
+                .iter()
+                .map(|p| {
+                    ABBREVIATED
+                        .iter()
+                        .find(|(a, _)| a == p)
+                        .map_or(*p, |(_, full)| *full)
+                })
+                .collect::<Vec<_>>()
+                .join("_")
+        })
+    {
+        return Some(fixed);
     }
     let mut out = name.to_string();
     // Bounded rather than `loop`: every rule lengthens the name, so it settles
@@ -107,6 +167,24 @@ mod tests {
         let mut bad: Vec<String> = Vec::new();
         let mut seen = 0usize;
 
+        // AN ID IS A NAME, NOT A FIELD, and the convention does not govern it.
+        // `tainted_mag` is DE's own mod, `tenet_detron_magazine_burst` would be
+        // a rename of a weapon id that sits in every stored preset and every
+        // share link already posted. Collected from the data itself rather than
+        // listed, so a weapon added tomorrow exempts its own id.
+        let mut ids: std::collections::BTreeSet<String> = Default::default();
+        for (path, text) in crate::data::files_under("") {
+            if !path.ends_with(".yaml") {
+                continue;
+            }
+            for line in text.lines() {
+                if let Some(v) = line.trim_start().strip_prefix("id:") {
+                    ids.insert(v.trim().trim_matches('"').to_string());
+                }
+            }
+        }
+        assert!(ids.len() > 400, "only {} ids collected", ids.len());
+
         // 1. EVERY `data/` YAML KEY. The i18n overlays are skipped: their keys
         //    are English SENTENCES, not identifiers.
         for (path, text) in crate::data::files_under("") {
@@ -121,6 +199,9 @@ mod tests {
                 let Some((key, _)) = t.split_once(':') else { continue };
                 let key = key.trim_start_matches("- ").trim();
                 if key.is_empty() || !key.chars().all(|c| c.is_ascii_lowercase() || c == '_' || c.is_ascii_digit()) {
+                    continue;
+                }
+                if ids.contains(key) {
                     continue;
                 }
                 seen += 1;
@@ -201,6 +282,19 @@ mod tests {
         );
     }
 
+    /// NO RULE MAY BE ITS OWN ANSWER. An entry whose two halves are equal is a
+    /// table a bulk rename has walked over, and it turns the checker into a
+    /// machine that reports every correct name as wrong.
+    #[test]
+    fn the_table_is_not_a_fixed_point() {
+        for (bad, good) in ABBREVIATED {
+            assert_ne!(bad, good, "`{bad}` expands to itself");
+        }
+        for (bad, good) in FORBIDDEN {
+            assert_ne!(bad, good, "`{bad}` corrects to itself");
+        }
+    }
+
     /// THE RULES THEMSELVES, so the checker cannot quietly stop checking.
     #[test]
     fn the_convention_says_what_it_means() {
@@ -218,6 +312,15 @@ mod tests {
         assert_eq!(forbidden("pellets"), None);
         assert_eq!(forbidden("stacks"), None);
         assert_eq!(forbidden("hops"), None);
+        // AN ABBREVIATED PART, wherever it sits in the name.
+        assert_eq!(forbidden("bd_eximus_expiry").as_deref(), Some("base_damage_eximus_expiry"));
+        assert_eq!(forbidden("cc_rel").as_deref(), Some("crit_chance_relative"));
+        assert_eq!(forbidden("ms_per_run").as_deref(), Some("multishot_per_run"));
+        // …and a word that merely CONTAINS one is not an abbreviation: only
+        // whole underscore-separated parts count.
+        assert_eq!(forbidden("cold_stacks"), None);
+        assert_eq!(forbidden("radius_m"), None);
+        assert_eq!(forbidden("compression_multiplier"), None);
         // THE FROZEN NAMES pass, and only because they are listed.
         assert_eq!(forbidden("headshot_pct"), None);
         assert_eq!(forbidden("no_resupply"), None);

@@ -1308,7 +1308,7 @@ pub fn meta_json() -> Value {
                     AE::FinalDamage(v) => ("final_damage", v, None),
                     AE::AddElement(t, v) => ("add_element", v, Some(t.name())),
                     AE::AmmoEfficiency(v) => ("ammo_efficiency", v, None),
-                    AE::ExtraHit { element, frac, .. } => ("extra_hit", frac, Some(element.name())),
+                    AE::ExtraHit { element, fraction, .. } => ("extra_hit", fraction, Some(element.name())),
                 };
                 json!({ "kind": kind, "value": v, "element": element })
             }).collect();
@@ -2951,18 +2951,18 @@ pub fn panel_json(v: &Value) -> Value {
                         *k == key && tag.is_none_or(|t| note.as_deref() == Some(t))
                     })
                     .map(|(_, name, v, note)| {
-                        // `frac` is the RAW fraction beside the formatted text,
+                        // `fraction` is the RAW fraction beside the formatted text,
                         // so the panel can show the arithmetic — `40 × (1 +
                         // 1.65 + 0.60)` — instead of only its answer. Everything
                         // in one bracket is one multiplicative bucket, and that
                         // shape teaches the bucket better than any sentence.
                         //
-                        // Evolution sources carry no `frac` on purpose: several
+                        // Evolution sources carry no `fraction` on purpose: several
                         // are FLAT additions rather than percentages, so an
                         // expression built from them would assert arithmetic
                         // that is not what the engine did. The page draws the
                         // line only when every term in the row is a fraction.
-                        json!({ "mod": name, "value": fpct(*v), "frac": v,
+                        json!({ "mod": name, "value": fpct(*v), "fraction": v,
                             "note": if tag.is_some() { Value::Null } else { json!(note) } })
                     }),
             )
@@ -3275,26 +3275,26 @@ pub fn panel_json(v: &Value) -> Value {
         // source, so its row carries the SAME per-weapon caveat as the CO row.
         let tenno = tenno_from(v, info);
         // Cascadia Accuracy's weak-point crit joins Acuity's in the sim
-        // (`ap.weakpoint_cc_rel + params.arcane.weakpoint_cc_rel`), so the row
+        // (`ap.weakpoint_crit_chance_relative + params.arcane.weakpoint_crit_chance_relative`), so the row
         // below has to add it or it would state less than the sim applies.
         let mut arcane_wp_cc = 0.0;
         for (pool, aid, want_rank) in arcane_choices(v, info) {
             if let Some(def) = wfsim_engine::arcanes_data::for_slot(&pool, &aid) {
                 let rank = want_rank.unwrap_or(def.max_rank).min(def.max_rank);
                 let fx = def.fx(rank, policy, base.traits, &tenno);
-                arcane_wp_cc += fx.weakpoint_cc_rel;
-                if fx.per_cold_bd > 0.0 {
+                arcane_wp_cc += fx.weakpoint_crit_chance_relative;
+                if fx.per_cold_base_damage > 0.0 {
                     stats.push(json!({ "key": "shiver", "label": "Per Cold Status (Shiver)",
                     "base": "—",
                     "final": format!("{} damage per Cold status on target (cap {})",
-                        fpct(fx.per_cold_bd), fx.cold_cap),
+                        fpct(fx.per_cold_base_damage), fx.cold_cap),
                     // The SAME per-weapon rule, because Shiver is a GunCO
                     // source: it reads the same base and joins the same
                     // bracket, so it states the same three slots.
                     "rule": co_rule.clone(),
                     "note": "GunCO family — the weapon's Condition Overload rule applies to this too",
                     "sources": [json!({ "mod": format!("{} (arcane, rank {rank})", def.name),
-                        "value": fpct(fx.per_cold_bd), "note": "per Cold stack; Frozen counts as the full 10" })] }));
+                        "value": fpct(fx.per_cold_base_damage), "note": "per Cold stack; Frozen counts as the full 10" })] }));
                 }
             }
         }
@@ -3306,7 +3306,7 @@ pub fn panel_json(v: &Value) -> Value {
         // conditional on where the bullet lands, and the number a reader can
         // act on is the one that holds THERE — stated next to the plain one,
         // never in place of it.
-        let wp_cc_total = panel.weakpoint_cc_rel + arcane_wp_cc;
+        let wp_cc_total = panel.weakpoint_crit_chance_relative + arcane_wp_cc;
         if wp_cc_total > 0.0 {
             stats.push(json!({ "key": "weakpoint_cc", "label": "Weak Point Crit Chance",
             "base": pc(panel.crit_chance),
@@ -4881,7 +4881,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         "True",
         "Void",
     ];
-    let sd = &m.sources;
+    let status_damage = &m.sources;
     // A WEAPON-damage row expands into the vector that dealt it — a status
     // row is already one type, which is what a proc is. Parts are ordered
     // biggest-first, the same rule the rows themselves follow.
@@ -4902,29 +4902,29 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             .collect::<Vec<Value>>()))
     };
     let mut sources: Vec<(String, f64, Option<Value>)> = vec![
-        ("direct".to_string(), sd.direct, by_type(&sd.direct_by_type)),
-        ("radial".to_string(), sd.radial, by_type(&sd.radial_by_type)),
+        ("direct".to_string(), status_damage.direct, by_type(&status_damage.direct_by_type)),
+        ("radial".to_string(), status_damage.radial, by_type(&status_damage.radial_by_type)),
         // The lingering FIELD is its own bucket — on the Torid it is most of the
         // output, and leaving it out silently lost it from the damage meter.
-        ("field".to_string(), sd.field, by_type(&sd.field_by_type)),
+        ("field".to_string(), status_damage.field, by_type(&status_damage.field_by_type)),
         // Cascadia Empowered's instance matches the PROC's type, so this row
         // expands like the weapon-damage ones (user's rule for the direct row,
         // 2026-08-01: the damage has elements, so the meter should say which).
-        ("arcane".to_string(), sd.arcane_on_status, by_type(&sd.arcane_by_type)),
+        ("arcane".to_string(), status_damage.arcane_on_status, by_type(&status_damage.arcane_by_type)),
         // A SYNDICATE RADIAL is its own row for the same reason the field is:
         // it is neither the weapon's hit nor a status tick, it lands on its own
         // clock, and folding it into "direct" would credit the build for damage
         // no mod on it scaled.
-        ("syndicate".to_string(), sd.syndicate, by_type(&sd.syndicate_by_type)),
+        ("syndicate".to_string(), status_damage.syndicate, by_type(&status_damage.syndicate_by_type)),
         // AN EXTRA HIT is its own row too, and it is the one row the build
         // cannot move directly: Xata's Whisper takes a percentage of everything
         // else on this list, so a player tuning mods watches it follow. Folding
         // it into "direct" would hide that a fifth of the output is an ability's
         // and vanishes when the buff does.
-        ("extra hit".to_string(), sd.extra_hit, by_type(&sd.extra_hit_by_type)),
+        ("extra hit".to_string(), status_damage.extra_hit, by_type(&status_damage.extra_hit_by_type)),
     ];
     sources.extend(
-        sd.status
+        status_damage.status
             .iter()
             .enumerate()
             .map(|(i, &v)| (TYPE_NAMES[i].to_string(), v, None)),
@@ -5007,7 +5007,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             })
             .collect();
         json!({
-            "dt": rep.dt,
+            "frame_seconds": rep.frame_seconds,
             // Ids are the buff cards' own — the client joins on them for names.
             "buffs": rep.buffs.iter().map(|(id, max)| json!({ "id": id, "max": max }))
                 .collect::<Vec<_>>(),
@@ -5140,7 +5140,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // what a room-clear is paced by. TTK carries its spread because a mean
         // alone reads as a promise.
         "burst_dps": s.burst_dps,
-        "downtime": s.mean_downtime,
+        "downtime": s.mean_downtime_seconds,
         "ttk": { "mean": s.ttk_mean, "median": s.ttk_median, "p90": s.ttk_p90, "runs": s.ttk_runs },
         "first_magazine": s.mean_first_magazine,
         "max_hit": s.max_hit,
@@ -7532,10 +7532,10 @@ mod arcane_slot_tests {
         assert!(!one.id.is_empty(), "the primary alone resolves");
         assert!(two.id.contains('+'), "two folded: {}", two.id);
         assert!(
-            two.cc_rel > one.cc_rel,
+            two.crit_chance_relative > one.crit_chance_relative,
             "the secondary's crit chance joined: {} vs {}",
-            two.cc_rel,
-            one.cc_rel
+            two.crit_chance_relative,
+            one.crit_chance_relative
         );
 
         // SWAPPED: each id is now in the other's slot, so neither is
@@ -7555,7 +7555,7 @@ mod arcane_slot_tests {
 
         let listed = fx(json!({ "arcane": ["primary_deadhead"], "arcane_rank": [5] }));
         assert_eq!(listed.id, "primary_deadhead");
-        assert!(listed.headshot_mult_bonus > 0.0);
+        assert!(listed.headshot_multiplier_bonus > 0.0);
 
         // A bare value is not a shape: it resolves to nothing rather than
         // being quietly accepted as a second way to say the same thing.

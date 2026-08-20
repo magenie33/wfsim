@@ -84,7 +84,7 @@ attack:
 unmodeled:
   - reason: cluster_bomblets
     n: 3
-    dmg: "45 on contact and 150 in 3 m explosions"
+    damage: "45 on contact and 150 in 3 m explosions"
     share: "a fifth"
   - reason: explosion_ignores_cover
   - reason: self_stagger

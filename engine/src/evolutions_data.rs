@@ -296,7 +296,7 @@ enum EvoEffect {
     ///   *Weakpoint modifier is additive with mods such as Pistol Gambit
     ///
     /// So `bodyshot_multiplier` MULTIPLIES a body pellet's chance and
-    /// `weakpoint_bonus` joins `weakpoint_cc_rel`, the same relative bracket
+    /// `weakpoint_bonus` joins `weakpoint_crit_chance_relative`, the same relative bracket
     /// Pistol Acuity uses. Both are per-PELLET, which is what keeps them out of
     /// the panel's crit chance — and that is what makes the same page's other
     /// note true for free: Wiseman's Regard, which reads "current Critical
@@ -1561,7 +1561,7 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         // bracket, so a multishot gate and a crit-damage gate cannot be
         // confused for one another, and an unreadable `condition:` falls to
         // Inert rather than paying out unconditionally.
-        "mag_growth_on_empty_reload" => EvoEffect::MagGrowthOnEmptyReload {
+        "magazine_growth_on_empty_reload" => EvoEffect::MagGrowthOnEmptyReload {
             per_stack: f(v, "per_stack").unwrap_or(0.0),
             max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(1) as u32,
         },
@@ -2009,7 +2009,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 EvoEffect::MultishotConsumesAmmo(v) => base.multishot_ammo_bonus = *v,
                 EvoEffect::AssumedMaxMultishot { total, max_stacks } => {
                     base.buff_multishot_bonus += total;
-                    base.buff_ms_max_stacks = base.buff_ms_max_stacks.max(*max_stacks);
+                    base.buff_multishot_max_stacks = base.buff_multishot_max_stacks.max(*max_stacks);
                 }
                 // CARRIED, NOT SPENT, when the perk states a speed: `apply`
                 // works on the raw weapon and the player is not here — the
@@ -2029,14 +2029,14 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // player is not here. Answered in `resolve_for`, exactly like
                 // the Condition Overload gate beside it.
                 EvoEffect::CritOnUndamaged { crit_chance, crit_multiplier } => {
-                    base.cc_on_undamaged += crit_chance;
-                    base.cd_on_undamaged += crit_multiplier;
+                    base.crit_chance_on_undamaged += crit_chance;
+                    base.crit_damage_on_undamaged += crit_multiplier;
                 }
                 EvoEffect::GatedByTenno { gate, grant, value } => {
                     base.gated.push((*gate, *grant, *value));
                 }
                 EvoEffect::MagGrowthOnEmptyReload { per_stack, max_stacks } => {
-                    base.mag_growth_on_empty_reload = Some((*per_stack, *max_stacks));
+                    base.magazine_growth_on_empty_reload = Some((*per_stack, *max_stacks));
                 }
                 EvoEffect::InstantReloadOnKill { chance } => {
                     base.instant_reload_on_kill = Some(*chance);
@@ -2049,7 +2049,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     // two such perks on one weapon would multiply, which is
                     // what "multiplicative with all sources" means.
                     base.bodyshot_crit_chance_multiplier *= *bodyshot_multiplier;
-                    base.evo_weakpoint_cc_rel += *weakpoint_bonus;
+                    base.evo_weakpoint_crit_chance_relative += *weakpoint_bonus;
                 }
                 EvoEffect::DerivedStat { from_crit, rate, cap } => {
                     if *from_crit {
@@ -2089,7 +2089,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     });
                 }
                 EvoEffect::CritDamageBelowStatusCount { threshold, value } => {
-                    base.cd_below_status_count = Some((*threshold, *value));
+                    base.crit_damage_below_status_count = Some((*threshold, *value));
                 }
                 EvoEffect::ReloadSpeedOnEmptyReload { value } => {
                     base.rs_on_empty_reload = *value;
@@ -2099,7 +2099,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // does not exist until `resolve` runs — and not even there in
                 // full, since the live half only exists once a shot lands.
                 EvoEffect::CritMultiplierBelowCritChance { value, below } => {
-                    base.crit_mult_below_cc = Some((*value, *below));
+                    base.crit_multiplier_below_crit_chance = Some((*value, *below));
                 }
                 EvoEffect::StackingGrant {
                     trigger, grant, per_stack, max_stacks, duration, chance, decay, cleared_by,
@@ -2248,7 +2248,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
     // the rate is the card's.
     if half_hp_rate != 0.0 {
         let evolved = original_total + flat;
-        base.bd_below_half_health += if evolved > 0.0 {
+        base.base_damage_below_half_health += if evolved > 0.0 {
             half_hp_rate - half_hp_rate_own / evolved
         } else {
             half_hp_rate
@@ -2589,8 +2589,8 @@ mod tests {
 
     #[test]
     fn loads_the_dt_evolution_pool() {
-        let dt: Vec<_> = pool().iter().filter(|e| e.weapon == "dual_toxocyst").collect();
-        assert!(dt.len() >= 9, "expected the 9 DT evolutions, got {}", dt.len());
+        let frame_seconds: Vec<_> = pool().iter().filter(|e| e.weapon == "dual_toxocyst").collect();
+        assert!(frame_seconds.len() >= 9, "expected the 9 DT evolutions, got {}", frame_seconds.len());
         assert_eq!(options("dual_toxocyst", 2).len(), 2); // the EVO II choice
         // Broken evolutions carry the wiki flag.
         assert!(get("dual_toxocyst_ready_retaliation").unwrap().currently_broken);

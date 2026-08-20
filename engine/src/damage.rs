@@ -322,14 +322,14 @@ mod tests {
         assert!((mono.get(DamageType::Heat) - 57.3).abs() < 1e-12);
         // Dual Toxocyst base 7.5/60/7.5: quantizes to 7.03125/60.9375/7.03125
         // - components shift but the total stays exactly 75.
-        let dt = DamageVector::new()
+        let frame_seconds = DamageVector::new()
             .with(DamageType::Impact, 7.5)
             .with(DamageType::Puncture, 60.0)
             .with(DamageType::Slash, 7.5)
             .quantized();
-        assert_eq!(dt.get(DamageType::Impact), 7.03125);
-        assert_eq!(dt.get(DamageType::Puncture), 60.9375);
-        assert_eq!(dt.total(), 75.0);
+        assert_eq!(frame_seconds.get(DamageType::Impact), 7.03125);
+        assert_eq!(frame_seconds.get(DamageType::Puncture), 60.9375);
+        assert_eq!(frame_seconds.total(), 75.0);
         // Empty vector: no-op.
         assert_eq!(DamageVector::new().quantized().total(), 0.0);
     }

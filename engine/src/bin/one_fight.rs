@@ -91,7 +91,7 @@ const BASELINE: &str = "target/one_fight.baseline";
 
 struct Shape {
     weapon: String,
-    ms_per_run: f64,
+    milliseconds_per_run: f64,
     ns_per_shot: f64,
     /// The spread across repeats, as a fraction of the best. The noise floor
     /// this machine is offering today.
@@ -202,7 +202,7 @@ fn measure(weapon: &str, c: &Cfg) -> Shape {
     let s = last.expect("at least one repeat");
     Shape {
         weapon: weapon.to_string(),
-        ms_per_run: best / f64::from(runs) * 1e3,
+        milliseconds_per_run: best / f64::from(runs) * 1e3,
         ns_per_shot: best / f64::from(runs) / s.mean_shots.max(1.0) * 1e9,
         spread: if best > 0.0 { (worst - best) / best } else { 0.0 },
         shots: s.mean_shots,
@@ -292,7 +292,7 @@ fn ablate(weapon: &str, c: &Cfg) {
         "{weapon} · {:.0} s · {} runs · fixed-length fight — where the time goes",
         c.duration, c.runs
     );
-    println!("  whole fight                        {whole:>8.3} ms/run");
+    println!("  whole fight                        {whole:>8.3} multishot/run");
     for (name, p) in [
         ("status and everything it starts", &no_status),
         ("critical hits", &no_crit),
@@ -316,7 +316,7 @@ fn ablate(weapon: &str, c: &Cfg) {
                 "  without {name:<32} — not an ablation: {shots:.0} shots against {whole_shots:.0}"
             );
         } else if share < -1.0 {
-            println!("  without {name:<32} — not an ablation: it costs MORE ({t:.3} ms/run)");
+            println!("  without {name:<32} — not an ablation: it costs MORE ({t:.3} multishot/run)");
         } else {
             println!(
                 "  without {name:<32} {t:>8.3}   at most {share:>5.1}% is here{}",
@@ -342,7 +342,7 @@ fn write_baseline(cfg: &str, shapes: &[Shape]) -> std::io::Result<()> {
         // answer column fired on the tool's own writing.
         body.push_str(&format!(
             "{}\t{:.6}\t{:.3}\t{:?}\t{:?}\n",
-            s.weapon, s.ms_per_run, s.ns_per_shot, s.kill_progress, s.damage
+            s.weapon, s.milliseconds_per_run, s.ns_per_shot, s.kill_progress, s.damage
         ));
     }
     std::fs::write(BASELINE, body)
@@ -468,7 +468,7 @@ fn main() -> std::process::ExitCode {
     }
     let has_base = !base.is_empty() && !save && same_fight;
     let col = if has_base { "vs base" } else { "noise" };
-    println!("{:<14} {:>9} {:>10} {col:>9}  answer", "shape", "ms/run", "ns/shot");
+    println!("{:<14} {:>9} {:>10} {col:>9}  answer", "shape", "multishot/run", "ns/shot");
 
     let mut moved = 0usize;
     let (mut sum_now, mut sum_was) = (0.0f64, 0.0f64);
@@ -500,9 +500,9 @@ fn main() -> std::process::ExitCode {
         };
         let delta = match prior {
             Some(b) if has_base => {
-                sum_now += s.ms_per_run;
+                sum_now += s.milliseconds_per_run;
                 sum_was += b.1;
-                let d = (s.ms_per_run - b.1) / b.1;
+                let d = (s.milliseconds_per_run - b.1) / b.1;
                 // A DELTA UNDER THE MACHINE'S OWN SPREAD IS NOT A RESULT, and
                 // saying "−1.8%" for it invites a conclusion the measurement
                 // cannot support.
@@ -516,7 +516,7 @@ fn main() -> std::process::ExitCode {
         };
         println!(
             "{:<14} {:>9.3} {:>10.0} {:>9}  {}",
-            s.weapon, s.ms_per_run, s.ns_per_shot, delta, answer
+            s.weapon, s.milliseconds_per_run, s.ns_per_shot, delta, answer
         );
     }
     if verbose {

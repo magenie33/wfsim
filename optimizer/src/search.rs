@@ -95,7 +95,7 @@ impl Default for SearchConfig {
         // Thrax Lv 9999 SP, graded against ground truth at 500 and 1000
         // screen evaluations):
         //
-        //   frac  500 evals            1000 evals
+        //   fraction  500 evals            1000 evals
         //   0.15  rank 1, recall 60%   rank 1, recall  90%
         //   0.30  rank 1, recall 60%   rank 1, recall 100%
         //   0.45  rank 8, regret 2.3%  rank 1, recall  80%

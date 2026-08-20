@@ -70,6 +70,24 @@ each, no abbreviations:
 longer one won every time such a pair came up, and that is the tie-break rule:
 **when two spellings mean one thing, the one that spells it out wins.**
 
+## 4. Words are not abbreviated — AND TWO OF THEM MEANT TWO THINGS
+
+This is the rule the owner asked for second, and it is the one that cost the
+most: a reader of `bd_eximus_expiry` has to already know that `bd` is base
+damage before the name tells them anything at all.
+
+**`ms` MEANT MULTISHOT AND MILLISECONDS.** One two-letter name, two units, one
+codebase — `evo_ms` in the engine and `ms_per_run` in `one_fight`.
+
+**`cc` MEANT CRIT CHANCE AND CROWD CONTROL.** `cc_on_headshot` is a crit chance;
+`overguard_cc_immunity` is immunity to crowd control, because that is what
+Overguard grants. The checker confidently proposed renaming the second one to
+`overguard_crit_chance_immunity`, which would have been wrong and silent.
+
+Neither survives. `engine::naming::ABBREVIATED` expands whole
+underscore-separated parts, so `cd` is caught in `cd_rel` and left alone in
+`cold_stacks`.
+
 ## 4. Words are not abbreviated
 
 `damage`, not `dmg`. `multiplier`, not `mult`. `seconds`, not `secs`.

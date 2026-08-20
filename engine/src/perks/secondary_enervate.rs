@@ -233,11 +233,11 @@ mod tests {
         // 30/s at 240 fps == one trigger every 8 ticks.
         let mut bar = BuffBar::new();
         let mut e = SecondaryEnervate::default();
-        let dt = 1.0 / 240.0;
+        let frame_seconds = 1.0 / 240.0;
         e.on_event(&Event::Hit(Hit::default()), 0.0, &mut bar); // stack 1
-        e.on_event(&Event::Hit(Hit::default()), 7.0 * dt, &mut bar); // too soon
+        e.on_event(&Event::Hit(Hit::default()), 7.0 * frame_seconds, &mut bar); // too soon
         assert_eq!(stacks(&bar), 1);
-        e.on_event(&Event::Hit(Hit::default()), 8.0 * dt, &mut bar); // on cap
+        e.on_event(&Event::Hit(Hit::default()), 8.0 * frame_seconds, &mut bar); // on cap
         assert_eq!(stacks(&bar), 2);
     }
 

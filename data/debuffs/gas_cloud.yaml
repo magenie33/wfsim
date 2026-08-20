@@ -61,7 +61,7 @@ dot:
     headshot_multiplier: 1.0
     headshot_multiplier_boostable: true
 
-cc_effects: []
+crit_chance_effects: []
 # on_kill_cosmetic: brief dark green cloud on the afflicted
 
 # railjack_variant: >-

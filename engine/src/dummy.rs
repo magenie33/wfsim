@@ -130,7 +130,7 @@ impl ArcState {
 struct ArcRuntime {
     states: Vec<ArcState>,
     /// Sharpened Bullets' single refreshable on-kill buff expiry.
-    cd_kill_expiry: f64,
+    crit_damage_kill_expiry_seconds: f64,
     /// The current DAMAGE INSTANCE, counted from 1. A trigger pull is ONE
     /// instance however many pellets it puts out — which is the whole point,
     /// since Cascadia Flare's rule names multishot as the case that must not
@@ -157,8 +157,8 @@ impl ArcRuntime {
             // is `now` before the window's end — and a locked buff simply has
             // no end, so a locked buff that has not fired yet is still off,
             // which is what the label promises.
-            cd_kill_expiry: params
-                .cd_on_kill
+            crit_damage_kill_expiry_seconds: params
+                .crit_damage_on_kill
                 .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 }),
             instance: 0,
         }
@@ -166,8 +166,8 @@ impl ArcRuntime {
 
     /// Sharpened Bullets' on-kill window end — the replay reads it to say
     /// whether that buff is up.
-    fn cd_kill_expiry(&self) -> f64 {
-        self.cd_kill_expiry
+    fn crit_damage_kill_expiry_seconds(&self) -> f64 {
+        self.crit_damage_kill_expiry_seconds
     }
 
     /// Live stacks of whichever specs belong to `owner`. They share one count
@@ -228,16 +228,16 @@ impl ArcRuntime {
     /// ANY kill: arcane on-kill buffs stack; Sharpened Bullets refreshes.
     fn on_kill(&mut self, params: &DummyParams, now: f64) {
         self.bump_trigger(&params.arcane.buffs, ArcTrigger::Kill, now);
-        if let Some(b) = params.cd_on_kill {
-            self.cd_kill_expiry = now + b.duration;
+        if let Some(b) = params.crit_damage_on_kill {
+            self.crit_damage_kill_expiry_seconds = now + b.duration;
         }
     }
 
     /// Sharpened Bullets' live RELATIVE crit-damage addition (it joins the
     /// crit-damage bucket, so each attack part scales its own base by it).
     fn cd_bonus(&self, params: &DummyParams, now: f64) -> f64 {
-        match params.cd_on_kill {
-            Some(b) if now < self.cd_kill_expiry => b.value,
+        match params.crit_damage_on_kill {
+            Some(b) if now < self.crit_damage_kill_expiry_seconds => b.value,
             _ => 0.0,
         }
     }
@@ -312,9 +312,9 @@ pub enum TargetMode {
 #[derive(Debug, Clone, Copy)]
 pub struct Attenuation {
     /// Max effective damage per damage instance / max health.
-    pub instance_frac: f64,
+    pub instance_fraction: f64,
     /// Max effective damage per second / max health.
-    pub dps_frac: f64,
+    pub dps_fraction: f64,
 }
 
 /// Per-unit status stack caps (Acolytes: any status 4, Impact 3).
@@ -691,8 +691,8 @@ impl TargetState {
                 self.atten_window_damage = 0.0;
             }
             let hp = p.max_health();
-            let allowed = (a.instance_frac * hp)
-                .min(a.dps_frac * hp - self.atten_window_damage)
+            let allowed = (a.instance_fraction * hp)
+                .min(a.dps_fraction * hp - self.atten_window_damage)
                 .max(0.0);
             if effective > allowed {
                 let k = if effective > 0.0 {
@@ -791,7 +791,7 @@ struct DebuffState {
     ///
     /// `process_ticks` runs once per SHOT per BODY — a 19x19 ruler is ~300,000
     /// calls a run — so building a fresh heap each time cost more than the scan
-    /// it replaced (measured: 444 ms a run -> 772). It lives here rather than in
+    /// it replaced (measured: 444 multishot a run -> 772). It lives here rather than in
     /// a local because the capacity is what is worth keeping, and a body's
     /// schedule is the same size from one shot to the next.
     ///
@@ -1104,7 +1104,7 @@ impl DebuffState {
     fn push_capped(list: &mut Vec<f64>, expiry: f64, cap: usize, now: f64) {
         list.retain(|&e| e > now); // lazy prune of expired stacks
         // A STACK THAT IS ALREADY DEAD IS NOT APPLIED. Unreachable in the
-        // roster — a status lasts `STATUS_DURATION * sd` and both are positive
+        // roster — a status lasts `STATUS_DURATION * status_damage` and both are positive
         // — and stated rather than left to chance, because it is the one thing
         // that could put an expired entry in a list `prune` has been told it
         // may skip (see [`Self::prune`]).
@@ -1262,7 +1262,7 @@ impl DebuffState {
         self.weakened.len()
     }
 
-    fn prune(&mut self, now: f64, sd: f64) {
+    fn prune(&mut self, now: f64, status_damage: f64) {
         // ONCE PER INSTANT. `mitigation` prunes, and mitigation is asked once
         // per DAMAGE INSTANCE — so a shot that lands nine procs pruned ten
         // times at the same clock reading. Measured on the build that started
@@ -1303,7 +1303,7 @@ impl DebuffState {
                 // out — so this is a rule either way and is written down as
                 // one rather than made to look like a consequence.
                 self.frozen_until = None;
-                self.freeze = vec![f + STATUS_DURATION * sd; FROZEN_RESET_STACKS];
+                self.freeze = vec![f + STATUS_DURATION * status_damage; FROZEN_RESET_STACKS];
                 self.freeze.retain(|&e| e > now); // long-idle prune
             }
         }
@@ -1313,12 +1313,12 @@ impl DebuffState {
             if h.expiry < now {
                 // Begin the armor-strip ramp-down from the strip level the
                 // entity had reached when it died.
-                self.heat_decay = Some((h.expiry, self.heat_ramp_up(h.expiry, sd)));
+                self.heat_decay = Some((h.expiry, self.heat_ramp_up(h.expiry, status_damage)));
                 self.heat = None;
             }
         }
         if let Some((t0, s0)) = self.heat_decay {
-            let steps = ((now - t0) / (HEAT_STRIP_DECAY_INTERVAL * sd)).floor() as usize;
+            let steps = ((now - t0) / (HEAT_STRIP_DECAY_INTERVAL * status_damage)).floor() as usize;
             let start = HEAT_STRIP_DECAY
                 .iter()
                 .position(|&s| s <= s0 + 1e-9)
@@ -1410,7 +1410,7 @@ impl DebuffState {
     fn apply_cold_proc(
         &mut self,
         t: f64,
-        sd: f64,
+        status_damage: f64,
         under_overguard: bool,
         caps: Option<StackCaps>,
         no_frozen: bool,
@@ -1437,7 +1437,7 @@ impl DebuffState {
             (false, Some(c)) => c.general,
             (false, None) => TEN_STACK_CAP,
         };
-        DebuffState::push_capped(&mut self.freeze, t + STATUS_DURATION * sd, cap, t);
+        DebuffState::push_capped(&mut self.freeze, t + STATUS_DURATION * status_damage, cap, t);
         // FROZEN IS A STATE, NOT A STACK. It is tripped by the tenth chill and
         // it suppresses further chill for its 3 s (the early return above);
         // the chill itself stays, pinned at ten, which is what the game shows.
@@ -1447,16 +1447,16 @@ impl DebuffState {
         // four, an Acolyte's four — makes `len() >= TEN_STACK_CAP` unreachable
         // by arithmetic, and a unit that is simply immune says so once.
         if !no_frozen && self.freeze.len() >= TEN_STACK_CAP {
-            self.frozen_until = Some(t + FROZEN_DURATION * sd);
+            self.frozen_until = Some(t + FROZEN_DURATION * status_damage);
         }
         true
     }
 
     /// Heat armor-strip ramp-UP: 15/30/40/50% at 0.5 s steps after the
     /// FIRST proc (steps scaled by status duration).
-    fn heat_ramp_up(&self, now: f64, sd: f64) -> f64 {
+    fn heat_ramp_up(&self, now: f64, status_damage: f64) -> f64 {
         let Some(h) = &self.heat else { return 0.0 };
-        let steps = ((now - h.born) / (0.5 * sd)).floor();
+        let steps = ((now - h.born) / (0.5 * status_damage)).floor();
         match steps as i64 {
             i64::MIN..=0 => 0.0,
             1 => 0.15,
@@ -1468,11 +1468,11 @@ impl DebuffState {
 
     /// Total Heat armor strip: the live entity's ramp-up, or the dead
     /// entity's ramp-down tail (whichever strips more if both exist).
-    fn heat_strip(&self, now: f64, sd: f64) -> f64 {
-        let up = self.heat_ramp_up(now, sd);
+    fn heat_strip(&self, now: f64, status_damage: f64) -> f64 {
+        let up = self.heat_ramp_up(now, status_damage);
         let down = match self.heat_decay {
             Some((t0, s0)) if now >= t0 => {
-                let steps = ((now - t0) / (HEAT_STRIP_DECAY_INTERVAL * sd)).floor() as usize;
+                let steps = ((now - t0) / (HEAT_STRIP_DECAY_INTERVAL * status_damage)).floor() as usize;
                 let start = HEAT_STRIP_DECAY
                     .iter()
                     .position(|&s| s <= s0 + 1e-9)
@@ -1503,8 +1503,8 @@ impl DebuffState {
     }
 
     /// Prune and compute the live mitigation snapshot for `now`.
-    fn mitigation(&mut self, now: f64, sd: f64, puncture_strip_per: f64) -> Mitigation {
-        self.prune(now, sd);
+    fn mitigation(&mut self, now: f64, status_damage: f64, puncture_strip_per: f64) -> Mitigation {
+        self.prune(now, status_damage);
         Mitigation {
             disrupt_amp: ten_stack_amp(self.disrupt.len()),
             virus_amp: ten_stack_amp(self.virus.len()),
@@ -1513,7 +1513,7 @@ impl DebuffState {
             // did, rather than sharing a bucket: each removes a share of what
             // is LEFT, which is what "remove 20% of enemy Armor" means when
             // something else already removed some.
-            armor_multiplier: (1.0 - self.heat_strip(now, sd))
+            armor_multiplier: (1.0 - self.heat_strip(now, status_damage))
                 * (1.0 - self.corrosive_strip())
                 * (1.0 - self.puncture_strip(puncture_strip_per)),
         }
@@ -1608,11 +1608,11 @@ pub struct DummyParams {
     /// PRELUDE OF MIGHT's live gate — `(the part of `crit_multiplier` this
     /// perk is, the crit-chance threshold)`. Carried rather than settled
     /// because the condition is read at the moment of the hit; see
-    /// [`crate::loadout::ResolvedPanel::crit_mult_below_cc`]. Per FORM, which
+    /// [`crate::loadout::ResolvedPanel::crit_multiplier_below_crit_chance`]. Per FORM, which
     /// is what a cycle needs: the Furis's base form sits at 5% and its
     /// Incarnon form at 26%, so the same Weakened stacks push one over the
     /// 40% line and leave the other under it.
-    pub crit_mult_below_cc: Option<(f64, f64)>,
+    pub crit_multiplier_below_crit_chance: Option<(f64, f64)>,
     /// UNMODDED crit stats of the DIRECT part — the bases a RELATIVE live crit
     /// buff multiplies (the radial carries its own pair on `ResolvedRadial`).
     pub unmodded_crit_chance: f64,
@@ -1790,19 +1790,19 @@ pub struct DummyParams {
     /// rescales it by the configured stacks ("evo_multishot"). No live
     /// machinery — the trigger (ability cast) cannot fire in the sim and the
     /// stacks never decay, so the count is static for the whole run.
-    pub evo_ms: Option<crate::loadout::EvoMsBuff>,
+    pub evo_multishot: Option<crate::loadout::EvoMsBuff>,
     /// The evolution's PERMANENT flat base damage (Reified Bane): the vector
     /// already carries it, and `apply_buff_config` scales it back out.
-    pub evo_bd: Option<crate::loadout::EvoBdBuff>,
+    pub evo_base_damage: Option<crate::loadout::EvoBdBuff>,
     /// Live on-kill CO stacks, live per StackSpec (Emergent policy).
     pub co_stack: Option<crate::loadout::StackSpec>,
     /// Live on-kill multishot stacks, earned from zero.
-    pub ms_stack: Option<crate::loadout::StackSpec>,
+    pub multishot_stack: Option<crate::loadout::StackSpec>,
     /// Crosshairs on-headshot buff: absolute crit chance as a timed buff.
-    pub cc_on_headshot: Option<crate::loadout::TimedBuff>,
+    pub crit_chance_on_headshot: Option<crate::loadout::TimedBuff>,
     /// Crosshairs on-headshot-kill stacks: absolute cc per stack,
     /// per-stack expiry (FIFO), NOT the lose-one-reset decay.
-    pub cc_stack: Option<crate::loadout::StackSpec>,
+    pub crit_chance_stack: Option<crate::loadout::StackSpec>,
     /// (1 + status-damage bonuses): scales every status payload value.
     pub status_damage_multiplier: f64,
     /// (element, 1 + Σ its bonuses) brackets for elemental DoT ticks.
@@ -1841,7 +1841,7 @@ pub struct DummyParams {
     /// every weapon whose head is worth what the body part says.
     pub headshot_multiplier: Option<f64>,
     /// ABSOLUTE crit chance added on weak-point pellets only (Acuity).
-    pub weakpoint_cc_rel: f64,
+    pub weakpoint_crit_chance_relative: f64,
     /// King's Gambit: MULTIPLIES a non-weak-point pellet's crit chance.
     /// 1.0 = ordinary; the card's x0 makes a body crit impossible.
     pub bodyshot_crit_chance_multiplier: f64,
@@ -1866,33 +1866,33 @@ pub struct DummyParams {
     /// Resonant Restore: `(per stack, max stacks)` — the magazine GROWS on each
     /// reload from empty, up to the cap. `per_stack` arrives already scaled by
     /// the magazine mods.
-    pub mag_growth_on_empty_reload: Option<(f64, u32)>,
+    pub magazine_growth_on_empty_reload: Option<(f64, u32)>,
     /// Sharpened Bullets (Emergent): ABSOLUTE crit-damage add as a timed buff
     /// (starts inactive), granted/refreshed on every kill.
-    pub cd_on_kill: Option<crate::loadout::TimedBuff>,
+    pub crit_damage_on_kill: Option<crate::loadout::TimedBuff>,
     /// Pressurized Magazine (Emergent): ABSOLUTE fire-rate add as a timed buff
     /// (starts inactive), granted on every reload.
-    pub fr_on_reload: Option<crate::loadout::TimedBuff>,
+    pub fire_rate_on_reload: Option<crate::loadout::TimedBuff>,
     /// Deadly Efficiency: a RELATIVE base-damage bonus whose window opens when
     /// the reload COMPLETES (owner, 2026-08-01), not when the magazine empties.
-    pub bd_on_reload: Option<crate::loadout::TimedBuff>,
+    pub base_damage_on_reload: Option<crate::loadout::TimedBuff>,
     /// EXIMUS ADVANTAGE: a RELATIVE base-damage bonus whose window is opened
     /// by a weak-point hit on an EXIMUS and refreshed by the next one. The
     /// target-side half of the trigger is read HERE rather than at `resolve`,
     /// because the panel has no target to ask — see
     /// [`crate::loadout::ModEffect::OnEximusWeakpointDamage`].
-    pub bd_on_eximus_weakpoint: Option<crate::loadout::TimedBuff>,
+    pub base_damage_on_eximus_weakpoint: Option<crate::loadout::TimedBuff>,
     /// HATA-SATYA: relative crit chance per HIT, and how many stacks fit. The
     /// pile has no clock — a RELOAD is what takes it — so it is a rate and a
-    /// cap here rather than a `TimedBuff`, the same shape `cc_per_tendril`
+    /// cap here rather than a `TimedBuff`, the same shape `crit_chance_per_tendril`
     /// carries one field down.
-    pub cc_per_hit: Option<(f64, u32)>,
+    pub crit_chance_per_hit: Option<(f64, u32)>,
     /// The stacks Hata-Satya's card OPENS with, and whether an event may take
     /// them — the same two knobs the tendrils carry, and for the same reason:
     /// a pile that costs hits is unmeasurable against a target that dies before
     /// it builds, so the card is where a player states what they walk in with.
-    pub cc_per_hit_initial: u32,
-    pub cc_per_hit_held: bool,
+    pub crit_chance_per_hit_initial_stacks: u32,
+    pub crit_chance_per_hit_held: bool,
     /// READY RETALIATION's window: STARTING a reload from empty opens
     /// `duration` seconds of `value` extra reload speed, and the reload that
     /// opened it is the first thing that spends it — the trigger is the reload
@@ -1921,8 +1921,8 @@ pub struct DummyParams {
     /// per PELLET that lands in a head, like every other on-hit trigger here.
     pub headshot_streak: Option<crate::loadout::HeadshotStreak>,
     /// SPITEFUL DEFILEMENT: `(threshold, bonus)` — see
-    /// [`crate::loadout::ResolvedPanel::cd_below_status_count`].
-    pub cd_below_status_count: Option<(u32, f64)>,
+    /// [`crate::loadout::ResolvedPanel::crit_damage_below_status_count`].
+    pub crit_damage_below_status_count: Option<(u32, f64)>,
     /// A syndicate augment's radial (Gilded Truth grants Truth) — armed by
     /// AFFINITY this weapon earns, fired on its own cooldown.
     pub syndicate_radial: Option<crate::syndicates_data::SyndicateDef>,
@@ -1969,7 +1969,7 @@ pub struct DummyParams {
     pub tendril_acquire_deg: f64,
     /// Sentient Surge's crit chance per ACTIVE tendril, relative to the
     /// unmodded base (it joins the crit-chance bucket).
-    pub cc_per_tendril: f64,
+    pub crit_chance_per_tendril: f64,
     /// ...and its status half, same bucket.
     pub sc_per_tendril: f64,
     /// The tendrils the run OPENS with — Sentient Surge's buff card, seeded
@@ -1985,7 +1985,7 @@ pub struct DummyParams {
     /// where the card sets it and still climbs on every kill.
     pub tendrils_held: bool,
     /// ...and the fraction of the magazine a kill puts back.
-    pub mag_refill_on_kill: f64,
+    pub magazine_refill_on_kill: f64,
     /// GOTVA PRIME'S PASSIVE: a pellet that lands a status has `chance` to arm
     /// the NEXT landing pellet's crit chance to `crit_chance`, exactly — the
     /// modded value and every crit bonus are ignored, because the card says
@@ -2008,15 +2008,15 @@ pub struct DummyParams {
     pub compression_multiplier: f64,
     /// The same arcane's `adds` row: a flat addition to the base-damage
     /// bracket, beside a live buff's. Per form, for the same reason.
-    pub compression_bd: f64,
-    /// See [`crate::loadout::ResolvedPanel::bd_below_half_health`]. Per ATTACK
+    pub compression_base_damage: f64,
+    /// See [`crate::loadout::ResolvedPanel::base_damage_below_half_health`]. Per ATTACK
     /// PART, like every other bracket here, so a radial that the catalog
     /// exempts can carry a different number than the direct hit.
-    pub bd_below_half_health: f64,
-    /// See [`crate::loadout::ResolvedPanel::cc_on_undamaged`].
-    pub cc_on_undamaged: f64,
-    /// See [`crate::loadout::ResolvedPanel::cd_on_undamaged`].
-    pub cd_on_undamaged: f64,
+    pub base_damage_below_half_health: f64,
+    /// See [`crate::loadout::ResolvedPanel::crit_chance_on_undamaged`].
+    pub crit_chance_on_undamaged: f64,
+    /// See [`crate::loadout::ResolvedPanel::crit_damage_on_undamaged`].
+    pub crit_damage_on_undamaged: f64,
     /// Secondary Enervate's stack count at t = 0. Its own field because the
     /// ramp lives in a PERK rather than in `arcane.buffs`, so the ordinary
     /// per-buff seeding never reached it — the arcane simply always started
@@ -2108,7 +2108,7 @@ pub struct Frame {
 }
 
 /// A replay of one engagement: the buff roster it was fought with, and a frame
-/// every `dt` seconds.
+/// every `frame_seconds` seconds.
 ///
 /// Sampling costs ONE extra run, not one per Monte Carlo iteration: `Rng` is
 /// SplitMix64 with a single `u64` of state, so a run records the state it
@@ -2131,7 +2131,7 @@ pub struct Replay {
     /// an index is the engine's business and a name is everyone else's.
     pub(crate) follow: Vec<usize>,
     /// Seconds between frames.
-    pub dt: f64,
+    pub frame_seconds: f64,
     /// (buff id, max stacks) — ids are the SAME vocabulary as [`BuffConfig`]
     /// and the web's buff cards, because they come from one place:
     /// [`DummyParams::buff_roster`].
@@ -2224,8 +2224,8 @@ impl DummyParams {
         if self.frenzy {
             out.push(("frenzy".into(), 1));
         }
-        if let Some(ms) = self.evo_ms {
-            out.push(("evo_multishot".into(), ms.max_stacks));
+        if let Some(multishot) = self.evo_multishot {
+            out.push(("evo_multishot".into(), multishot.max_stacks));
         }
         // UNCAPPED — 0 means "no ceiling", which the api and the UI both read
         // as such rather than as a maximum of zero.
@@ -2235,10 +2235,10 @@ impl DummyParams {
         if let Some(s) = &self.co_stack {
             out.push(("condition_overload".into(), s.max_stacks));
         }
-        if let Some(s) = &self.ms_stack {
+        if let Some(s) = &self.multishot_stack {
             out.push(("on_kill_multishot".into(), s.max_stacks));
         }
-        if self.evo_bd.is_some() {
+        if self.evo_base_damage.is_some() {
             out.push(("evo_reload_damage".into(), 1));
         }
         // READY RETALIATION HAS NO CARD any more. It was one while it was a
@@ -2250,7 +2250,7 @@ impl DummyParams {
         if self.headshot_streak.is_some() {
             out.push(("evo_headshot_streak".into(), 1));
         }
-        if let Some(s) = &self.cc_stack {
+        if let Some(s) = &self.crit_chance_stack {
             out.push(("on_headshot_kill_cc".into(), s.max_stacks));
         }
         // THE SHOT COMBO COUNTER — a buff by the same three tests: it is
@@ -2279,7 +2279,7 @@ impl DummyParams {
         // READS it, because the count buys nothing on its own (the tendrils'
         // own damage is cosmetic on the beam's target) — a card for it with
         // no Sentient Surge equipped would move no number.
-        if self.tendril_max > 0 && (self.cc_per_tendril > 0.0 || self.sc_per_tendril > 0.0) {
+        if self.tendril_max > 0 && (self.crit_chance_per_tendril > 0.0 || self.sc_per_tendril > 0.0) {
             out.push(("tendrils".into(), self.tendril_max));
         }
         // EVERY stacking buff, by construction. A new one appears on the
@@ -2287,26 +2287,26 @@ impl DummyParams {
         for b in &self.stacking_buffs {
             out.push((b.id.into(), b.max_stacks));
         }
-        if self.cc_on_headshot.is_some() {
+        if self.crit_chance_on_headshot.is_some() {
             out.push(("on_headshot_cc".into(), 1));
         }
-        if self.cd_on_kill.is_some() {
+        if self.crit_damage_on_kill.is_some() {
             out.push(("on_kill_cd".into(), 1));
         }
-        if self.bd_on_reload.is_some() {
+        if self.base_damage_on_reload.is_some() {
             out.push(("on_reload_bd".into(), 1));
         }
-        if self.bd_on_eximus_weakpoint.is_some() {
+        if self.base_damage_on_eximus_weakpoint.is_some() {
             out.push(("on_eximus_weakpoint_bd".into(), 1));
         }
         // HATA-SATYA's pile — a buff by the same three tests the tendrils pass
         // (gained on a trigger, lost on one, capped), with the trigger being a
         // hit rather than a kill. Its cap is the MOD's, not the weapon's, which
         // is why it rides the rate rather than being looked up.
-        if let Some((_, cap)) = self.cc_per_hit {
+        if let Some((_, cap)) = self.crit_chance_per_hit {
             out.push(("crit_per_hit".into(), cap));
         }
-        if self.fr_on_reload.is_some() {
+        if self.fire_rate_on_reload.is_some() {
             out.push(("on_reload_fr".into(), 1));
         }
         // One entry per ARCANE, not per grant — the same rule the cards
@@ -2368,15 +2368,15 @@ impl DummyParams {
                 self.enervate_stacks = stacks;
             }
         }
-        if let Some(bd) = self.evo_bd {
+        if let Some(base_damage) = self.evo_base_damage {
             if let Some(&(stacks, _)) = cfg.get("evo_reload_damage") {
-                let stacks = stacks.min(bd.max_stacks);
+                let stacks = stacks.min(base_damage.max_stacks);
                 // ONE RATIO on the resolved vector. Flat base damage is added
                 // pro-rata BEFORE mods, so the bonus rides the whole chain
                 // multiplicatively and removing it needs no re-resolve — the
                 // same argument `evo_multishot` makes for its scalar.
-                let frac = f64::from(stacks) / f64::from(bd.max_stacks);
-                let (now, want) = (bd.without + bd.full, bd.without + bd.full * frac);
+                let fraction = f64::from(stacks) / f64::from(base_damage.max_stacks);
+                let (now, want) = (base_damage.without + base_damage.full, base_damage.without + base_damage.full * fraction);
                 if now > 0.0 && want < now {
                     let k = want / now;
                     self.damage = self.damage.scale(k);
@@ -2384,17 +2384,17 @@ impl DummyParams {
                         *d *= k;
                     }
                 }
-                if let Some(b) = self.evo_bd.as_mut() {
+                if let Some(b) = self.evo_base_damage.as_mut() {
                     b.stacks = stacks;
                 }
             }
         }
-        if let Some(ms) = self.evo_ms {
+        if let Some(multishot) = self.evo_multishot {
             if let Some(&(stacks, _)) = cfg.get("evo_multishot") {
-                let stacks = stacks.min(ms.max_stacks);
-                let frac = f64::from(stacks) / f64::from(ms.max_stacks);
-                self.multishot -= ms.full * (1.0 - frac);
-                if let Some(m) = self.evo_ms.as_mut() {
+                let stacks = stacks.min(multishot.max_stacks);
+                let fraction = f64::from(stacks) / f64::from(multishot.max_stacks);
+                self.multishot -= multishot.full * (1.0 - fraction);
+                if let Some(m) = self.evo_multishot.as_mut() {
                     m.stacks = stacks;
                 }
             }
@@ -2402,10 +2402,10 @@ impl DummyParams {
         if let Some(s) = self.co_stack.as_mut() {
             set_stack(s, cfg, "condition_overload");
         }
-        if let Some(s) = self.ms_stack.as_mut() {
+        if let Some(s) = self.multishot_stack.as_mut() {
             set_stack(s, cfg, "on_kill_multishot");
         }
-        if let Some(s) = self.cc_stack.as_mut() {
+        if let Some(s) = self.crit_chance_stack.as_mut() {
             set_stack(s, cfg, "on_headshot_kill_cc");
         }
         // The combo the run opens with. `locked` is the same reading the
@@ -2432,31 +2432,31 @@ impl DummyParams {
                 b.duration = clock(b.duration, locked);
             }
         }
-        if let Some(b) = self.cc_on_headshot.as_mut() {
+        if let Some(b) = self.crit_chance_on_headshot.as_mut() {
             set_timed(b, cfg, "on_headshot_cc");
         }
-        if let Some(b) = self.cd_on_kill.as_mut() {
+        if let Some(b) = self.crit_damage_on_kill.as_mut() {
             set_timed(b, cfg, "on_kill_cd");
         }
-        if let Some(b) = self.fr_on_reload.as_mut() {
+        if let Some(b) = self.fire_rate_on_reload.as_mut() {
             set_timed(b, cfg, "on_reload_fr");
         }
         // Deadly Efficiency. It is in `buff_roster` and it gets a card, so
         // this arm is what makes that card mean anything — without it both
         // knobs were read, drawn, and dropped.
-        if let Some(b) = self.bd_on_reload.as_mut() {
+        if let Some(b) = self.base_damage_on_reload.as_mut() {
             set_timed(b, cfg, "on_reload_bd");
         }
-        if let Some(b) = self.bd_on_eximus_weakpoint.as_mut() {
+        if let Some(b) = self.base_damage_on_eximus_weakpoint.as_mut() {
             set_timed(b, cfg, "on_eximus_weakpoint_bd");
         }
         // The pile's opening count, seeded like the tendrils' — `locked` cannot
         // be a duration here either, because this buff has no clock: what ends
         // it is the reload.
-        if let Some((_, cap)) = self.cc_per_hit {
+        if let Some((_, cap)) = self.crit_chance_per_hit {
             if let Some(&(stacks, locked)) = cfg.get("crit_per_hit") {
-                self.cc_per_hit_initial = stacks.min(cap);
-                self.cc_per_hit_held = locked;
+                self.crit_chance_per_hit_initial_stacks = stacks.min(cap);
+                self.crit_chance_per_hit_held = locked;
             }
         }
         // Keyed off the buff's OWN arcane — not the merged set's id, because a
@@ -2610,8 +2610,8 @@ impl DummyParams {
             return qvec;
         }
         let mut out = qvec;
-        for (ty, frac) in added {
-            out.add(ty, stage_mb * frac);
+        for (ty, fraction) in added {
+            out.add(ty, stage_mb * fraction);
         }
         out.quantized()
     }
@@ -2724,9 +2724,9 @@ impl DummyParams {
         // (diluted by Serration, and it reaches status payloads through
         // ModifiedBase); `multiplies` is a final multiplier on the instance,
         // the slot Secondary Surge occupies.
-        let (compression_multiplier, compression_bd) = match panel.compression {
+        let (compression_multiplier, compression_base_damage) = match panel.compression {
             Some(c) => {
-                let bonus = arcane.compression_dmg_per_m * c.radius_lost;
+                let bonus = arcane.compression_damage_per_m * c.radius_lost_m;
                 if c.adds { (1.0, bonus) } else { (1.0 + bonus, 0.0) }
             }
             None => (1.0, 0.0),
@@ -2735,7 +2735,7 @@ impl DummyParams {
             let mut fx = arcane.clone().without_locked(&panel.locked);
             fx.ammo_efficiency += panel
                 .compression
-                .map_or(0.0, |c| arcane.compression_eff_per_m * c.radius_lost);
+                .map_or(0.0, |c| arcane.compression_effectiveness_per_m * c.radius_lost_m);
             fx
         };
         let crate::arena::Arena {
@@ -2809,10 +2809,10 @@ impl DummyParams {
             base_multishot_on_last_round: panel.base_multishot_on_last_round,
             multishot_ammo_bonus: panel.multishot_ammo_bonus,
             compression_multiplier,
-            compression_bd,
-            bd_below_half_health: panel.bd_below_half_health,
-            cc_on_undamaged: panel.cc_on_undamaged,
-            cd_on_undamaged: panel.cd_on_undamaged,
+            compression_base_damage,
+            base_damage_below_half_health: panel.base_damage_below_half_health,
+            crit_chance_on_undamaged: panel.crit_chance_on_undamaged,
+            crit_damage_on_undamaged: panel.crit_damage_on_undamaged,
             arcane,
             headshot_damage_bonus: panel.headshot_damage_bonus,
             headshot_bonus_multiplicative: panel.headshot_bonus_multiplicative,
@@ -2820,7 +2820,7 @@ impl DummyParams {
             stacking_buffs: panel.stacking_buffs.clone(),
             base_crit_chance: panel.crit_chance,
             crit_multiplier: panel.crit_damage,
-            crit_mult_below_cc: panel.crit_mult_below_cc,
+            crit_multiplier_below_crit_chance: panel.crit_multiplier_below_crit_chance,
             unmodded_crit_chance: panel.base_crit_chance,
             unmodded_crit_damage: panel.base_crit_damage,
             status_chance: panel.status_chance,
@@ -2847,16 +2847,16 @@ impl DummyParams {
             ammo_efficiency_applies: panel.gauge_form.is_none(),
             multishot: panel.multishot + lone_bonus,
             base_multishot: panel.base_multishot,
-            evo_ms: panel.evo_ms,
-            evo_bd: panel.evo_bd,
+            evo_multishot: panel.evo_multishot,
+            evo_base_damage: panel.evo_base_damage,
             base_damage_bonus: panel.base_damage_bonus,
             co_per_type: panel.co_per_type,
             co_behavior: panel.co_behavior,
             co_base_fraction: panel.co_base_fraction,
             co_stack: panel.co_stack,
-            ms_stack: panel.ms_stack,
-            cc_on_headshot: panel.cc_on_headshot,
-            cc_stack: panel.cc_stack,
+            multishot_stack: panel.multishot_stack,
+            crit_chance_on_headshot: panel.crit_chance_on_headshot,
+            crit_chance_stack: panel.crit_chance_stack,
             status_damage_multiplier: panel.status_damage_multiplier,
             status_duration_multiplier: panel.status_duration_multiplier,
             elem_dot_bonus: panel.elem_dot_bonus.clone(),
@@ -2866,7 +2866,7 @@ impl DummyParams {
             headshot_multiplier: panel.headshot_multiplier,
             crit_tier_upgrade_chance: panel.crit_tier_upgrade_chance,
             slash_on_crit: panel.slash_on_crit,
-            weakpoint_cc_rel: panel.weakpoint_cc_rel,
+            weakpoint_crit_chance_relative: panel.weakpoint_crit_chance_relative,
             bodyshot_crit_chance_multiplier: panel.bodyshot_crit_chance_multiplier,
             derived_status_from_crit: panel.derived_status_from_crit,
             derived_crit_from_status: panel.derived_crit_from_status,
@@ -2875,20 +2875,20 @@ impl DummyParams {
             first_round_damage: panel.first_round_damage,
             round_restore_on_status: panel.round_restore_on_status,
             instant_reload_on_kill: panel.instant_reload_on_kill,
-            mag_growth_on_empty_reload: panel.mag_growth_on_empty_reload,
-            cd_on_kill: panel.cd_on_kill,
-            fr_on_reload: panel.fr_on_reload,
-            bd_on_reload: panel.bd_on_reload,
-            bd_on_eximus_weakpoint: panel.bd_on_eximus_weakpoint,
-            cc_per_hit: panel.cc_per_hit,
+            magazine_growth_on_empty_reload: panel.magazine_growth_on_empty_reload,
+            crit_damage_on_kill: panel.crit_damage_on_kill,
+            fire_rate_on_reload: panel.fire_rate_on_reload,
+            base_damage_on_reload: panel.base_damage_on_reload,
+            base_damage_on_eximus_weakpoint: panel.base_damage_on_eximus_weakpoint,
+            crit_chance_per_hit: panel.crit_chance_per_hit,
             // A fight in contact has not built a pile; the card moves it.
-            cc_per_hit_initial: 0,
-            cc_per_hit_held: false,
+            crit_chance_per_hit_initial_stacks: 0,
+            crit_chance_per_hit_held: false,
             rs_on_reload: panel.rs_on_reload,
             armor_strip_per_puncture: panel.armor_strip_per_puncture,
             instant_reload: panel.instant_reload,
             headshot_streak: panel.headshot_streak,
-            cd_below_status_count: panel.cd_below_status_count,
+            crit_damage_below_status_count: panel.crit_damage_below_status_count,
             super_crit_on_status: panel.super_crit_on_status,
             beam_ramp_floor: panel.beam_ramp_floor,
             applies_microwave: panel.applies_microwave,
@@ -2909,13 +2909,13 @@ impl DummyParams {
             range_m: panel.range_m,
             tendril_range_m: panel.tendril_range_m,
             tendril_acquire_deg: panel.tendril_acquire_deg,
-            cc_per_tendril: panel.cc_per_tendril,
+            crit_chance_per_tendril: panel.crit_chance_per_tendril,
             sc_per_tendril: panel.sc_per_tendril,
             // EARNED, like every other timed buff: a fight that has not been
             // in contact has no tendrils up. The card moves it.
             tendrils_initial: 0,
             tendrils_held: false,
-            mag_refill_on_kill: panel.mag_refill_on_kill,
+            magazine_refill_on_kill: panel.magazine_refill_on_kill,
             proc_conversion: panel.proc_conversion,
             enervate_stacks: 0,
             body_parts,
@@ -3116,17 +3116,17 @@ impl Default for DummyParams {
             base_multishot_on_last_round: 0.0,
             multishot_ammo_bonus: 0.0,
             compression_multiplier: 1.0,
-            compression_bd: 0.0,
-            bd_below_half_health: 0.0,
-            cc_on_undamaged: 0.0,
-            cd_on_undamaged: 0.0,
+            compression_base_damage: 0.0,
+            base_damage_below_half_health: 0.0,
+            crit_chance_on_undamaged: 0.0,
+            crit_damage_on_undamaged: 0.0,
             headshot_damage_bonus: 0.0,
             headshot_bonus_multiplicative: false,
             noncrit_bonus: None,
             stacking_buffs: Vec::new(),
             base_crit_chance: 0.05,
             crit_multiplier: 2.0,
-            crit_mult_below_cc: None,
+            crit_multiplier_below_crit_chance: None,
             unmodded_crit_chance: 0.05,
             unmodded_crit_damage: 2.0,
             status_chance: 0.37,
@@ -3143,7 +3143,7 @@ impl Default for DummyParams {
             armor_strip_per_puncture: 0.0,
             instant_reload: None,
             headshot_streak: None,
-            cd_below_status_count: None,
+            crit_damage_below_status_count: None,
             burst: None,
             frenzy: false,
             locked_buffs: Vec::new(),
@@ -3156,17 +3156,17 @@ impl Default for DummyParams {
             ammo_efficiency_applies: true,
             multishot: 1.0,
             base_multishot: 1.0,
-            evo_ms: None,
-            evo_bd: None,
+            evo_multishot: None,
+            evo_base_damage: None,
             locked_stats: Vec::new(),
             base_damage_bonus: 0.0,
             co_per_type: 0.0,
             co_behavior: crate::loadout::CoBehavior::AdditiveWithBaseDamage,
             co_base_fraction: 1.0,
             co_stack: None,
-            ms_stack: None,
-            cc_on_headshot: None,
-            cc_stack: None,
+            multishot_stack: None,
+            crit_chance_on_headshot: None,
+            crit_chance_stack: None,
             status_damage_multiplier: 1.0,
             elem_dot_bonus: Vec::new(),
             faction_multiplier: 1.0,
@@ -3177,7 +3177,7 @@ impl Default for DummyParams {
             headshot_multiplier: None,
             crit_tier_upgrade_chance: 0.0,
             slash_on_crit: 0.0,
-            weakpoint_cc_rel: 0.0,
+            weakpoint_crit_chance_relative: 0.0,
             bodyshot_crit_chance_multiplier: 1.0,
             derived_status_from_crit: None,
             derived_crit_from_status: None,
@@ -3186,14 +3186,14 @@ impl Default for DummyParams {
             first_round_damage: 0.0,
             round_restore_on_status: None,
             instant_reload_on_kill: None,
-            mag_growth_on_empty_reload: None,
-            cd_on_kill: None,
-            fr_on_reload: None,
-            bd_on_reload: None,
-            bd_on_eximus_weakpoint: None,
-            cc_per_hit: None,
-            cc_per_hit_initial: 0,
-            cc_per_hit_held: false,
+            magazine_growth_on_empty_reload: None,
+            crit_damage_on_kill: None,
+            fire_rate_on_reload: None,
+            base_damage_on_reload: None,
+            base_damage_on_eximus_weakpoint: None,
+            crit_chance_per_hit: None,
+            crit_chance_per_hit_initial_stacks: 0,
+            crit_chance_per_hit_held: false,
             super_crit_on_status: None,
             beam_ramp_floor: BEAM_RAMP_FLOOR,
             applies_microwave: false,
@@ -3207,11 +3207,11 @@ impl Default for DummyParams {
             tendril_max: 0,
             tendril_range_m: 0.0,
             tendril_acquire_deg: 0.0,
-            cc_per_tendril: 0.0,
+            crit_chance_per_tendril: 0.0,
             sc_per_tendril: 0.0,
             tendrils_initial: 0,
             tendrils_held: false,
-            mag_refill_on_kill: 0.0,
+            magazine_refill_on_kill: 0.0,
             proc_conversion: None,
             // Secondary Enervate at max rank — the historical calibration
             // profile's arcane (the ramp/reset mechanic is the perk).
@@ -3701,7 +3701,7 @@ impl LiveStacks {
 #[derive(Default)]
 struct GalStacks {
     co: LiveStacks,
-    ms: LiveStacks,
+    multishot: LiveStacks,
 }
 
 impl GalStacks {
@@ -3709,8 +3709,8 @@ impl GalStacks {
         if let Some(spec) = &params.co_stack {
             self.co.on_kill(now, spec);
         }
-        if let Some(spec) = &params.ms_stack {
-            self.ms.on_kill(now, spec);
+        if let Some(spec) = &params.multishot_stack {
+            self.multishot.on_kill(now, spec);
         }
     }
 }
@@ -3729,8 +3729,8 @@ fn push_break_proc(debuffs: &mut DebuffState, params: &DummyParams, now: f64, po
         BrokenPool::Overguard => params.target.overguard(),
         BrokenPool::Shield => params.target.max_shield(),
     };
-    let frac = (0.03 * stacks as f64).min(0.30);
-    let total = frac * pool_max * params.status_damage_multiplier.powi(2);
+    let fraction = (0.03 * stacks as f64).min(0.30);
+    let total = fraction * pool_max * params.status_damage_multiplier.powi(2);
     debuffs.dots.push(Dot {
         next_tick: now,
         ticks_left: 6,
@@ -3990,8 +3990,8 @@ fn fire_extra_hits(
         return false;
     }
     let f = params.faction_at_time(at);
-    for crate::abilities_data::ExtraHitLive { element: ty, frac, forced_status } in hits {
-        let raw = trigger_raw * frac * bracket * part_again * f;
+    for crate::abilities_data::ExtraHitLive { element: ty, fraction, forced_status } in hits {
+        let raw = trigger_raw * fraction * bracket * part_again * f;
         let (eff, killed, broke) = target.apply(
             raw,
             TypeShares::single(ty),
@@ -4112,7 +4112,7 @@ fn drain_area_procs(
     params: &DummyParams,
     // WHO IS NEAR WHOM, built once per run — see `space::Neighbours`. Asking
     // per proc is `O(bodies)` and a dense grid produces thousands of procs a
-    // second: the Phantasma Prime on a 19x19 ruler was 9,551 ms a run against
+    // second: the Phantasma Prime on a 19x19 ruler was 9,551 multishot a run against
     // 88 with the spread off, entirely on that scan (2026-08-18).
     near: &crate::space::Neighbours,
     r: &mut RunResult,
@@ -4174,7 +4174,7 @@ fn drain_area_procs(
             }
         }
     }
-    let sd = params.status_duration_multiplier;
+    let status_damage = params.status_duration_multiplier;
     for (from, dmg, radius_m) in blows {
         for j in near.within(from, radius_m) {
             // THE HOST IS NEVER ONE OF THEM: it took the single-target half and
@@ -4190,7 +4190,7 @@ fn drain_area_procs(
                     None => continue,
                 }
             };
-            let mit = dbf.mitigation(at_now, sd, params.armor_strip_per_puncture);
+            let mit = dbf.mitigation(at_now, status_damage, params.armor_strip_per_puncture);
             let (eff, killed, _broke) = state.apply(
                 dmg,
                 TypeShares::single(DamageType::Blast),
@@ -4248,7 +4248,7 @@ fn settle_procs(
     depth: u32,
 ) {
     let InstanceScale { mb_live, crit_multiplier, part_factor, attrition, xh_bracket } = scale;
-    let sd = params.status_duration_multiplier;
+    let status_damage = params.status_duration_multiplier;
     let sdm = params.status_damage_multiplier;
     let caps = foe.stack_caps;
     let gcap = |base: usize| caps.map_or(base, |c| base.min(c.general));
@@ -4259,8 +4259,8 @@ fn settle_procs(
     // (1 + element bonuses) × (1 + status damage) × crit/part
     // snapshot. Delay-1 DoTs tick at +1..+6 s; delay-0 (Electricity/
     // Gas) at 0..+5 s (the +6 s event is a dud).
-    let delayed_ticks = ((BLEED_TICKS as f64 * sd - BLEED_DELAY).floor() as u32) + 1;
-    let immediate_ticks = ((BLEED_TICKS as f64 * sd).floor() as u32).max(1);
+    let delayed_ticks = ((BLEED_TICKS as f64 * status_damage - BLEED_DELAY).floor() as u32) + 1;
+    let immediate_ticks = ((BLEED_TICKS as f64 * status_damage).floor() as u32).max(1);
     // Faction is re-applied at every DERIVATION step — see `faction_at`. A
     // status the hit applied is one step past it, so depth 2 (wiki
     // Faction_Damage_Bonus; MECHANICS §8). This was written `faction_multiplier *
@@ -4317,14 +4317,14 @@ fn settle_procs(
         match proc {
             DamageType::Impact => DebuffState::push_capped(
                 &mut debuffs.stagger,
-                at + STAGGER_DURATION * sd,
+                at + STAGGER_DURATION * status_damage,
                 stagger_cap,
                 at,
             ),
             DamageType::Puncture => {
                 DebuffState::push_capped(
                     &mut debuffs.weakened,
-                    at + WEAKENED_DURATION * sd,
+                    at + WEAKENED_DURATION * status_damage,
                     gcap(WEAKENED_CAP),
                     at,
                 );
@@ -4333,8 +4333,8 @@ fn settle_procs(
                 // single-target arena collapses that onto the main
                 // target (the wiki confirms it is included). The
                 // Cold procs scale with Status Duration.
-                for _ in 0..params.arcane.cold_burst_on_puncture {
-                    debuffs.apply_cold_proc(at, sd, target.overguard > 0.0, caps, foe.cannot_be_frozen);
+                for _ in 0..params.arcane.cold_bursts_on_puncture {
+                    debuffs.apply_cold_proc(at, status_damage, target.overguard > 0.0, caps, foe.cannot_be_frozen);
                 }
             }
             DamageType::Slash => { push_dot(
@@ -4427,7 +4427,7 @@ fn settle_procs(
                     * crit_multiplier
                     * part_factor
                     * fm2; // faction double-dip
-                let expiry = at + STATUS_DURATION * sd;
+                let expiry = at + STATUS_DURATION * status_damage;
                 debuffs.apply_heat(at, contrib, expiry, heat_cap);
             }
             DamageType::Cold => {
@@ -4440,31 +4440,31 @@ fn settle_procs(
                 // exists (user, 2026-08-02). Frozen lasts 3 s against a 12 s
                 // buff, so it never showed as the arcane going dark — it
                 // showed as it never quite decaying.
-                if debuffs.apply_cold_proc(at, sd, target.overguard > 0.0, caps, foe.cannot_be_frozen) {
+                if debuffs.apply_cold_proc(at, status_damage, target.overguard > 0.0, caps, foe.cannot_be_frozen) {
                     arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ColdStatus, at);
                 }
             }
             DamageType::Magnetic => DebuffState::push_capped(
                 &mut debuffs.disrupt,
-                at + STATUS_DURATION * sd,
+                at + STATUS_DURATION * status_damage,
                 gcap(TEN_STACK_CAP),
                 at,
             ),
             DamageType::Viral => DebuffState::push_capped(
                 &mut debuffs.virus,
-                at + STATUS_DURATION * sd,
+                at + STATUS_DURATION * status_damage,
                 gcap(TEN_STACK_CAP),
                 at,
             ),
             DamageType::Corrosive => DebuffState::push_capped(
                 &mut debuffs.corrosion,
-                at + CORROSION_DURATION * sd,
+                at + CORROSION_DURATION * status_damage,
                 gcap(TEN_STACK_CAP),
                 at,
             ),
             DamageType::Radiation => DebuffState::push_capped(
                 &mut debuffs.confusion,
-                at + STATUS_DURATION * sd,
+                at + STATUS_DURATION * status_damage,
                 gcap(TEN_STACK_CAP),
                 at,
             ),
@@ -4474,7 +4474,7 @@ fn settle_procs(
             // counter and nothing else — see `DebuffState::attractor`.
             DamageType::Void => DebuffState::push_capped(
                 &mut debuffs.attractor,
-                at + ATTRACTOR_DURATION * sd,
+                at + ATTRACTOR_DURATION * status_damage,
                 1,
                 at,
             ),
@@ -4485,7 +4485,7 @@ fn settle_procs(
                     }
                 }
                 debuffs.blast.push(BlastStack {
-                    fuse: at + BLAST_FUSE * sd,
+                    fuse: at + BLAST_FUSE * status_damage,
                     value: BLAST_COEFFICIENT
                         * mb_live
                         * sdm
@@ -4516,7 +4516,7 @@ fn settle_procs(
                     // an expiring Nourish between the first and the tenth would
                     // make their brackets differ.
                     let xh_total: f64 = fired.iter().map(|b| b.value * b.xh_bracket).sum();
-                    let mit = debuffs.mitigation(at, sd, params.armor_strip_per_puncture);
+                    let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture);
                     let (eff, killed, broke) =
                         target.apply(
                             total,
@@ -4805,10 +4805,10 @@ fn gunco_bucket(
     debuffs: &mut DebuffState,
     gal: &mut GalStacks,
     at: f64,
-    bd: f64,
-    arc_bd: f64,
+    base_damage: f64,
+    arcane_base_damage: f64,
     arc_ratio: f64,
-    // The below-half-health bonus, routed HERE rather than into `arc_bd`
+    // The below-half-health bonus, routed HERE rather than into `arcane_base_damage`
     // because its bracket is the weapon's CO bracket — see the call site.
     half_hp: f64,
     // Which fraction of the EVOLVED base CO multiplies. The direct hit's lives
@@ -4826,7 +4826,7 @@ fn gunco_bucket(
         .min(params.arcane.cold_cap);
     let gunco_total = [
         (co_rate, debuffs.distinct_statuses() as u32),
-        (params.arcane.per_cold_bd, cold),
+        (params.arcane.per_cold_base_damage, cold),
     ]
     .iter()
     .map(|(rate, count)| rate * *count as f64)
@@ -4844,11 +4844,11 @@ fn gunco_bucket(
         // Joins the base-damage bucket: diluted by Hornet Strike, sharing the
         // bracket with the arcane's bonus.
         crate::loadout::CoBehavior::AdditiveWithBaseDamage => {
-            (1.0 + bd + arc_bd + gunco_total + half_hp) / (1.0 + bd)
+            (1.0 + base_damage + arcane_base_damage + gunco_total + half_hp) / (1.0 + base_damage)
         }
         crate::loadout::CoBehavior::Independent => arc_ratio * (1.0 + gunco_total + half_hp),
         // No CO bracket to join, so the ordinary one: the base-damage bucket.
-        crate::loadout::CoBehavior::Inert => arc_ratio * (1.0 + bd + half_hp) / (1.0 + bd),
+        crate::loadout::CoBehavior::Inert => arc_ratio * (1.0 + base_damage + half_hp) / (1.0 + base_damage),
     }
 }
 
@@ -4968,13 +4968,13 @@ fn spread_hit(
     // changes is which kills spawn another tendril.
     by: SpreadBy,
 ) {
-    let bd = ap.base_damage_bonus;
-    let arc_bd = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t);
-    let arc_ratio = (1.0 + bd + arc_bd) / (1.0 + bd);
+    let base_damage = ap.base_damage_bonus;
+    let arcane_base_damage = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t);
+    let arc_ratio = (1.0 + base_damage + arcane_base_damage) / (1.0 + base_damage);
     let half_hp = if spec.params.max_health() > 0.0
         && foe.state.health < 0.5 * spec.params.max_health()
     {
-        ap.bd_below_half_health
+        ap.base_damage_below_half_health
     } else {
         0.0
     };
@@ -4984,8 +4984,8 @@ fn spread_hit(
         &mut foe.debuffs,
         gal,
         t,
-        bd,
-        arc_bd,
+        base_damage,
+        arcane_base_damage,
         arc_ratio,
         half_hp,
         ap.co_base_fraction,
@@ -4998,8 +4998,8 @@ fn spread_hit(
     if raw <= 0.0 {
         return;
     }
-    let sd = params.status_duration_multiplier;
-    let mit = foe.debuffs.mitigation(t, sd, params.armor_strip_per_puncture);
+    let status_damage = params.status_duration_multiplier;
+    let mit = foe.debuffs.mitigation(t, status_damage, params.armor_strip_per_puncture);
     // BEFORE `apply`, like the aimed path: breaking overguard changes which
     // column the next read returns, and the split belongs to the hit that
     // broke it rather than to the state it left behind.
@@ -5333,7 +5333,7 @@ fn spread_from_echo(
     // values and never `condition:` (a player reported it). Radiation's stacks
     // have been tracked as `confusion` since the engine had statuses, so this
     // was never a thing the sim could not know.
-    if hit_radiation_stacks < params.arcane.echo_needs_radiation as usize {
+    if hit_radiation_stacks < params.arcane.echo_needs_radiation_stacks as usize {
         return;
     }
     // FROM THE BODY THAT WAS HIT, at the surface the round met — the same
@@ -5663,8 +5663,8 @@ fn fire_syndicate_radial(
     rng: &mut Rng,
     at: f64,
 ) {
-    let sd = params.status_duration_multiplier;
-    let mit = debuffs.mitigation(at, sd, params.armor_strip_per_puncture);
+    let status_damage = params.status_duration_multiplier;
+    let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture);
     let amt = sy.damage * params.faction_at_time(at);
     let (eff, killed, _broke) = target.apply(
         amt,
@@ -5826,9 +5826,9 @@ struct FieldCtx {
     /// Attacker BuffBar flat crit chance — ABSOLUTE, lands on every part.
     flat_crit: f64,
     /// Σ RELATIVE crit-chance bonuses from MOD buffs.
-    cc_rel_mods: f64,
+    crit_chance_relative_mods: f64,
     /// Σ live base-damage bucket additions from MOD/evolution buffs.
-    bd_add_mods: f64,
+    base_damage_add_mods: f64,
 }
 
 /// Settle every FIELD tick due strictly before `until`, oldest first.
@@ -5955,8 +5955,8 @@ fn field_tick(
     // more than one (2026-08-17). Its pools, its stack caps, its immunities.
     foe: &TargetParams,
 ) -> bool {
-    let sd = params.status_duration_multiplier;
-    let mit = debuffs.mitigation(at, sd, params.armor_strip_per_puncture);
+    let status_damage = params.status_duration_multiplier;
+    let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture);
     // The field is its own attack part, so the ability elements are sized off
     // ITS ModifiedBase — same rule as the explosion's.
     let qvec = params.with_ability_elements(f.damage.quantized(), f.modified_base, at);
@@ -5966,20 +5966,20 @@ fn field_tick(
     // Crit: the field's OWN base stats. Relative bonuses scale its base,
     // absolute ones land flat (MECHANICS §7) — and no `part.crit_bonus`
     // doubling, which is the crit-HEADSHOT rule.
-    let cc_rel = ctx.cc_rel_mods + params.arcane.cc_rel;
-    let cc = f.crit_chance + ctx.flat_crit + f.base_crit_chance * cc_rel;
+    let crit_chance_relative = ctx.crit_chance_relative_mods + params.arcane.crit_chance_relative;
+    let cc = f.crit_chance + ctx.flat_crit + f.base_crit_chance * crit_chance_relative;
     let tier = upgrade_crit_tier(roll_crit_tier(cc, &mut d.spine), ap.crit_tier_upgrade_chance, &mut d.spine);
-    let cd_rel = arc.total(&params.arcane.buffs, ArcGrant::CritDamage, at)
+    let crit_damage_relative = arc.total(&params.arcane.buffs, ArcGrant::CritDamage, at)
         + arc.cd_bonus(ap, at)
-        + params.arcane.cd_rel;
-    let cd = f.crit_damage + f.base_crit_damage * cd_rel + debuffs.cold_cd_bonus(at);
+        + params.arcane.crit_damage_relative;
+    let cd = f.crit_damage + f.base_crit_damage * crit_damage_relative + debuffs.cold_cd_bonus(at);
     let crit_multiplier = 1.0 + tier as f64 * (cd - 1.0);
 
     // Damage buckets: the same live base-damage additions the direct hit reads,
     // then the GunCO bracket off the target's CURRENT status count.
-    let bd = ap.base_damage_bonus;
-    let arc_bd = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, at) + ctx.bd_add_mods;
-    let arc_ratio = (1.0 + bd + arc_bd) / (1.0 + bd);
+    let base_damage = ap.base_damage_bonus;
+    let arcane_base_damage = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, at) + ctx.base_damage_add_mods;
+    let arc_ratio = (1.0 + base_damage + arcane_base_damage) / (1.0 + base_damage);
     // CO on an AoE part is the EXCEPTION, not the default. What the mods say is
     // direct hits only — which is why the radial path never takes it — and the
     // Torid's cloud is an anomaly the CO catalog gives its own row (user,
@@ -5991,7 +5991,7 @@ fn field_tick(
         // the Torid's cloud on the same base as its main fire.
         // A FIELD TICK carries no half-health term: the bonus is a DIRECT-hit
         // bonus like CO itself, and nothing in the catalog says otherwise.
-        gunco_bucket(params, ap, debuffs, gal, at, bd, arc_bd, arc_ratio, 0.0, ap.co_base_fraction)
+        gunco_bucket(params, ap, debuffs, gal, at, base_damage, arcane_base_damage, arc_ratio, 0.0, ap.co_base_fraction)
     } else {
         arc_ratio
     };
@@ -6223,7 +6223,7 @@ fn process_ticks(
         Blast(usize),
     }
     let p = foe;
-    let sd = params.status_duration_multiplier;
+    let status_damage = params.status_duration_multiplier;
     // A QUEUE, NOT A SCAN. This loop asks one question of every pending status
     // on the body — which of you is next — and it asked it once per EVENT.
     //
@@ -6241,7 +6241,7 @@ fn process_ticks(
     // three DoTs and one event due, the scan wins outright — and a formation is
     // mostly those: this runs PER BODY, so a 19x19 ruler is ~300,000 calls a
     // run, almost all of them finding one event or none. Building a heap for
-    // each cost more than the scan it replaced (measured: 444 ms a run -> 831).
+    // each cost more than the scan it replaced (measured: 444 multishot a run -> 831).
     //
     // So the shape of the state picks the path, and the two are one loop with
     // two ways of asking for the next event — `scan_next` is the ORDER's
@@ -6268,7 +6268,7 @@ fn process_ticks(
             _ => (k.t, Ev::Blast(k.index as usize)),
         };
 
-        let mit = debuffs.mitigation(now, sd, params.armor_strip_per_puncture);
+        let mit = debuffs.mitigation(now, status_damage, params.armor_strip_per_puncture);
         // A tick is one damage type — which is also the type the
         // vulnerability column reads. Bleed is the exception: it is stored
         // under Slash (that is the proc that made it) but the damage is
@@ -6531,12 +6531,12 @@ fn sample_stacks(
     buff_stacks: &mut [LiveStacks],
     ch_stacks: &[f64],
     ch_buff_expiry: f64,
-    fr_reload_expiry: f64,
-    bd_reload_expiry: f64,
-    bd_eximus_expiry: f64,
+    fire_rate_reload_expiry_seconds: f64,
+    base_damage_reload_expiry_seconds: f64,
+    base_damage_eximus_expiry_seconds: f64,
     streak_expiry: f64,
     tendrils: u32,
-    cc_hit_stacks: u32,
+    crit_chance_hit_stacks: u32,
     bar: &BuffBar,
     combo: u32,
 ) -> Vec<u16> {
@@ -6552,11 +6552,11 @@ fn sample_stacks(
             // PERMANENT (no trigger, no decay): whatever it was configured to,
             // for the whole run. `multishot` already carries it, so the count
             // is reconstructed from the fraction that survived the config.
-            "evo_multishot" => params.evo_ms.map_or(0, |ms| cap(ms.stacks)),
+            "evo_multishot" => params.evo_multishot.map_or(0, |multishot| cap(multishot.stacks)),
             // Permanent like the one above: whatever it was configured to.
-            "evo_reload_damage" => params.evo_bd.map_or(0, |bd| cap(bd.stacks)),
+            "evo_reload_damage" => params.evo_base_damage.map_or(0, |base_damage| cap(base_damage.stacks)),
             "condition_overload" => cap(gal.co.current(now, dur(&params.co_stack))),
-            "on_kill_multishot" => cap(gal.ms.current(now, dur(&params.ms_stack))),
+            "on_kill_multishot" => cap(gal.multishot.current(now, dur(&params.multishot_stack))),
             "on_headshot_kill_cc" => cap(ch_stacks.iter().filter(|&&e| e > now).count() as u32),
 
             // THE WHOLE STACKING FAMILY, by id. The roster pushed these ids
@@ -6574,13 +6574,13 @@ fn sample_stacks(
             // u16: this is the first buff whose honest count runs past 255.
             "sniper_combo" => cap(combo),
             "on_headshot_cc" => live(now < ch_buff_expiry),
-            "on_kill_cd" => live(now < arc.cd_kill_expiry()),
-            "on_reload_bd" => live(now < bd_reload_expiry),
-            "on_eximus_weakpoint_bd" => live(now < bd_eximus_expiry),
+            "on_kill_cd" => live(now < arc.crit_damage_kill_expiry_seconds()),
+            "on_reload_bd" => live(now < base_damage_reload_expiry_seconds),
+            "on_eximus_weakpoint_bd" => live(now < base_damage_eximus_expiry_seconds),
             // Off the loop's own counter, like the tendrils: only the fight
             // knows how many hits are in the pile.
-            "crit_per_hit" => cap(cc_hit_stacks),
-            "on_reload_fr" => live(now < fr_reload_expiry),
+            "crit_per_hit" => cap(crit_chance_hit_stacks),
+            "on_reload_fr" => live(now < fire_rate_reload_expiry_seconds),
             "evo_headshot_streak" => live(now < streak_expiry),
             // The perk keeps its stacks on the BAR, not in `arcane.buffs`.
             "arcane:secondary_enervate" => {
@@ -7363,7 +7363,7 @@ pub fn run_once_traced(
     // a shot passes through are the same for every pellet of every shot.
     let struck = params.struck_bodies();
     let mut next_frame = 0.0f64;
-    let frame_dt = trace.as_ref().map_or(f64::INFINITY, |r| r.dt);
+    let frame_dt = trace.as_ref().map_or(f64::INFINITY, |r| r.frame_seconds);
     let mut bar = BuffBar::new();
     let mut enervate = params
         .arcane
@@ -7408,8 +7408,8 @@ pub fn run_once_traced(
     if let Some(s) = &params.co_stack {
         gal.co = LiveStacks::seed(s.initial_stacks, s.max_stacks, s.duration);
     }
-    if let Some(s) = &params.ms_stack {
-        gal.ms = LiveStacks::seed(s.initial_stacks, s.max_stacks, s.duration);
+    if let Some(s) = &params.multishot_stack {
+        gal.multishot = LiveStacks::seed(s.initial_stacks, s.max_stacks, s.duration);
     }
     // Overwhelming Attrition's stacks are EARNED in the run — the default
     // config seeds 0 so no trigger is invented at t = 0 — but a configured
@@ -7585,7 +7585,7 @@ pub fn run_once_traced(
             // the stack count is the only thing that stops it. The magazine
             // GROWS but does not fill — a reload draws from the reserve as it
             // always did, and the extra room is what the next draw can use.
-            if let Some((per, max)) = params.mag_growth_on_empty_reload {
+            if let Some((per, max)) = params.magazine_growth_on_empty_reload {
                 if mag_growth_stacks < max {
                     mag_growth_stacks += 1;
                     mag_cap += per;
@@ -7638,18 +7638,18 @@ pub fn run_once_traced(
     let mut arc = ArcRuntime::init(params);
     // Pressurized Magazine's on-reload fire-rate buff clock (seeded active
     // only if configured so; defaults inactive).
-    let mut fr_reload_expiry: f64 = params
-        .fr_on_reload
+    let mut fire_rate_reload_expiry_seconds: f64 = params
+        .fire_rate_on_reload
         .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
     // Crosshairs (per-stack expiry FIFO + one refreshable buff); the on-head
     // buff seeds active per its `initial_active` (default on).
     let mut ch_buff_expiry: f64 = params
-        .cc_on_headshot
+        .crit_chance_on_headshot
         .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
     // Crosshairs keeps a per-stack expiry rather than one clock — and takes
     // an infinite duration exactly like the rest.
     let mut ch_stacks: Vec<f64> = params
-        .cc_stack
+        .crit_chance_stack
         .as_ref()
         .map_or(Vec::new(), |s| vec![s.duration; s.initial_stacks as usize]);
 
@@ -7687,7 +7687,7 @@ pub fn run_once_traced(
     let base_variants = params.cycle.as_ref().map_or_else(Vec::new, |c| variant_pre(&c.base_form));
     let base_variant_rad =
         params.cycle.as_ref().map_or_else(Vec::new, |c| variant_rad(&c.base_form));
-    let sd = params.status_duration_multiplier;
+    let status_damage = params.status_duration_multiplier;
     // The per-unit status stack caps (Acolytes: any 4, Impact 3) and the
     // status-payload scaling now live in `settle_procs`, which every instance
     // kind shares.
@@ -7739,7 +7739,7 @@ pub fn run_once_traced(
     // nothing but a landing shot spends it.
     let mut super_crit_armed = false;
     // Deadly Efficiency's window. Opens at reload COMPLETION — `t` is already
-    // past the reload when this is set, the same as `fr_reload_expiry` — and
+    // past the reload when this is set, the same as `fire_rate_reload_expiry_seconds` — and
     // seeded from its card exactly like its three siblings.
     // READY RETALIATION's open window, or -inf while it is shut. Unlike the two
     // beside it this is not only read at a shot: it changes how long the NEXT
@@ -7751,13 +7751,13 @@ pub fn run_once_traced(
     // matter, because a streak is the LAST `hits` inside `within`.
     let mut head_times: Vec<f64> = Vec::new();
     let mut streak_expiry: f64 = f64::NEG_INFINITY;
-    let mut bd_reload_expiry: f64 = params
-        .bd_on_reload
+    let mut base_damage_reload_expiry_seconds: f64 = params
+        .base_damage_on_reload
         .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
     // EXIMUS ADVANTAGE's window, the same clock as the one above with a
     // different key. It never opens at all unless the target is an Eximus.
-    let mut bd_eximus_expiry: f64 = params
-        .bd_on_eximus_weakpoint
+    let mut base_damage_eximus_expiry_seconds: f64 = params
+        .base_damage_on_eximus_weakpoint
         .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 });
     // Incarnon cycle state. The engagement opens in the BASE form and earns
     // its way in — see `IncarnonCycle::starts_primed` for why, and for the
@@ -7818,8 +7818,8 @@ pub fn run_once_traced(
     let mut cc_hit_mark = 0u32;
     let mut cc_hit_reload_mark = 0u32;
     let mut cc_hit_transform_mark = 0u32;
-    let mut cc_hit_seed = params.cc_per_hit.map_or(0, |(_, cap)| params.cc_per_hit_initial.min(cap));
-    let mut cc_hit_stacks = cc_hit_seed;
+    let mut cc_hit_seed = params.crit_chance_per_hit.map_or(0, |(_, cap)| params.crit_chance_per_hit_initial_stacks.min(cap));
+    let mut crit_chance_hit_stacks = cc_hit_seed;
     // THE SHOT COMBO COUNTER: the count as of the last landing hit, and when
     // that was. `combo_at` turns the pair into the count at any later moment.
     // The seed is in hand at t = 0, so the clock starts there rather than at
@@ -7864,8 +7864,8 @@ pub fn run_once_traced(
             while next_frame <= t && next_frame < params.duration_seconds {
                 let stacks = sample_stacks(
                     params, rep, next_frame, &mut arc, &mut gal, &mut buff_stacks,
-                    &ch_stacks, ch_buff_expiry, fr_reload_expiry, bd_reload_expiry,
-                    bd_eximus_expiry, streak_expiry, tendrils, cc_hit_stacks, &bar,
+                    &ch_stacks, ch_buff_expiry, fire_rate_reload_expiry_seconds, base_damage_reload_expiry_seconds,
+                    base_damage_eximus_expiry_seconds, streak_expiry, tendrils, crit_chance_hit_stacks, &bar,
                     combo_at(combo_spec, params.combo_held, combo_count,
                         combo_last_hit, next_frame),
                 );
@@ -8000,7 +8000,7 @@ pub fn run_once_traced(
 
         // TENDRILS and the magazine they keep alive, both re-derived from the
         // counters above before anything decides to reload.
-        if params.tendril_max > 0 || params.mag_refill_on_kill > 0.0 {
+        if params.tendril_max > 0 || params.magazine_refill_on_kill > 0.0 {
             // A reload — or an empty magazine, which in this sim always leads
             // to one — clears every tendril. "Tendrils disappear upon
             // reloading or emptying the magazine."
@@ -8035,9 +8035,9 @@ pub fn run_once_traced(
             // pairs with this passive — the wiki says it from the other side,
             // "Magazine refill effects such as ... kills with Sentient Surge
             // ... will PREVENT the tendrils from disappearing."
-            if params.mag_refill_on_kill > 0.0 && r.kills > refill_kill_mark {
+            if params.magazine_refill_on_kill > 0.0 && r.kills > refill_kill_mark {
                 let earned = f64::from(r.kills - refill_kill_mark)
-                    * params.mag_refill_on_kill
+                    * params.magazine_refill_on_kill
                     * mag_cap;
                 refill_kill_mark = r.kills;
                 // Capped at the magazine: a refill tops up, it does not bank.
@@ -8064,7 +8064,7 @@ pub fn run_once_traced(
         //
         // Read at the START of the shot, so the hit that earns a stack does not
         // carry it. That is the rule every other trigger in this loop follows.
-        if let Some((_, cap)) = params.cc_per_hit {
+        if let Some((_, cap)) = params.crit_chance_per_hit {
             // WHAT TAKES THE PILE: "Resets upon reloading or holstering", and
             // "Swapping to Incarnon Form counts as reloading the Soma Prime and
             // will therefore end the bonus" — so the transform is the second
@@ -8074,13 +8074,13 @@ pub fn run_once_traced(
             // The seed dies with the earned stacks: it is the same buff.
             let cleared = r.reloads != cc_hit_reload_mark
                 || r.transforms != cc_hit_transform_mark;
-            if cleared && !params.cc_per_hit_held {
+            if cleared && !params.crit_chance_per_hit_held {
                 cc_hit_reload_mark = r.reloads;
                 cc_hit_transform_mark = r.transforms;
                 cc_hit_mark = r.pellets;
                 cc_hit_seed = 0;
             }
-            cc_hit_stacks = (cc_hit_seed + (r.pellets - cc_hit_mark)).min(cap);
+            crit_chance_hit_stacks = (cc_hit_seed + (r.pellets - cc_hit_mark)).min(cap);
         }
 
         // THE SYNDICATE GAUGE. Affinity the WEAPON earned, which is half of
@@ -8180,11 +8180,11 @@ pub fn run_once_traced(
                 t += spent;
                 magazine_refilled!();
                 r.reloads += 1;
-                if let Some(b) = cy.base_form.fr_on_reload {
-                    fr_reload_expiry = t + b.duration;
+                if let Some(b) = cy.base_form.fire_rate_on_reload {
+                    fire_rate_reload_expiry_seconds = t + b.duration;
                 }
-                if let Some(b) = cy.base_form.bd_on_reload {
-                    bd_reload_expiry = t + b.duration;
+                if let Some(b) = cy.base_form.base_damage_on_reload {
+                    base_damage_reload_expiry_seconds = t + b.duration;
                 }
                 // Same whole-rounds rule as the plain reload below (M14), and
                 // the same shared reserve: a short draw is a short magazine.
@@ -8240,11 +8240,11 @@ pub fn run_once_traced(
             t += spent;
             magazine_refilled!();
             r.reloads += 1;
-            if let Some(b) = params.fr_on_reload {
-                fr_reload_expiry = t + b.duration;
+            if let Some(b) = params.fire_rate_on_reload {
+                fire_rate_reload_expiry_seconds = t + b.duration;
             }
-            if let Some(b) = params.bd_on_reload {
-                bd_reload_expiry = t + b.duration;
+            if let Some(b) = params.base_damage_on_reload {
+                base_damage_reload_expiry_seconds = t + b.duration;
             }
             // Whole rounds only, and `+=` not `=` — both measured (M14). The
             // draw covers the overdraw debt for free: the counter is in (−1, 0]
@@ -8418,25 +8418,25 @@ pub fn run_once_traced(
         // Relative, shared by every stage: Crosshairs' on-headshot buff and
         // its per-stack-expiry kill stacks (assumes constant aiming), plus the
         // arcane's assumed-max conditionals (Overcharge/Outburst).
-        let cc_rel = params.cc_on_headshot.map_or(0.0, |b| {
+        let crit_chance_relative = params.crit_chance_on_headshot.map_or(0.0, |b| {
             if t < ch_buff_expiry {
                 b.value
             } else {
                 0.0
             }
-        }) + params.cc_stack.as_ref().map_or(0.0, |s| {
+        }) + params.crit_chance_stack.as_ref().map_or(0.0, |s| {
             ch_stacks.retain(|&e| e > t);
             s.per_stack * ch_stacks.len() as f64
-        }) + params.arcane.cc_rel
+        }) + params.arcane.crit_chance_relative
             // SENTIENT SURGE: "Additive to other crit chance and status chance
             // mods", so it belongs in the RELATIVE bucket beside Pistol
             // Gambit's — multiplying the unmodded base, not the modded one.
-            + params.cc_per_tendril * f64::from(tendrils)
+            + params.crit_chance_per_tendril * f64::from(tendrils)
             // HATA-SATYA: "additive with similar mods. For example, a max rank,
             // max bonus Hata-Satya and Point Strike will have a 30% × (1 + 500%
             // + 150%) critical chance" — the wiki does the bracket for us, and
             // it is the same one Point Strike is in.
-            + params.cc_per_hit.map_or(0.0, |(per, _)| per * f64::from(cc_hit_stacks));
+            + params.crit_chance_per_hit.map_or(0.0, |(per, _)| per * f64::from(crit_chance_hit_stacks));
         // VICIOUS PROMISE, both halves of it. VERBATIM (wiki, Paris Incarnon
         // Genesis): "Enemies are undamaged as long as their health and shield
         // have not been damaged. Damaging Overguard is not taken into account."
@@ -8447,7 +8447,7 @@ pub fn run_once_traced(
         // Read per SHOT beside `effective_cc`, which is where the weapon's crit
         // chance is decided; the grants are already converted by `resolve` into
         // the post-mod numbers the card's "Base" wording earns.
-        let undamaged = (ap.cc_on_undamaged > 0.0 || ap.cd_on_undamaged > 0.0)
+        let undamaged = (ap.crit_chance_on_undamaged > 0.0 || ap.crit_damage_on_undamaged > 0.0)
             && target_undamaged(&target, &params.target);
         // THE ARCANE'S STATUS BONUS, hoisted to SHOT level so a derived stat can
         // read the live status chance the same way it reads the live crit one.
@@ -8469,15 +8469,15 @@ pub fn run_once_traced(
         let effective_cc = ap.base_crit_chance
             + flat_crit
             + weakened_cc
-            + ap.unmodded_crit_chance * cc_rel
+            + ap.unmodded_crit_chance * crit_chance_relative
             + derived_cc
-            + if undamaged { ap.cc_on_undamaged } else { 0.0 };
+            + if undamaged { ap.crit_chance_on_undamaged } else { 0.0 };
 
         // Live fire rate (base + Pressurized Magazine's on-reload buff, ×
         // the BuffBar multiplier) — schedules shots below and gates
         // Hemorrhage's below-2.5 doubled chance.
-        let fr_reload_add = match ap.fr_on_reload {
-            Some(b) if t < fr_reload_expiry => b.value,
+        let fr_reload_add = match ap.fire_rate_on_reload {
+            Some(b) if t < fire_rate_reload_expiry_seconds => b.value,
             _ => 0.0,
         };
         // A LOCKED fire rate is the weapon's default and nothing else: not
@@ -8489,15 +8489,15 @@ pub fn run_once_traced(
         };
         // Deadly Efficiency's live share of the BASE-DAMAGE bucket. Zero until
         // a reload has finished, and zero again when the window closes.
-        let bd_reload_add = match ap.bd_on_reload {
-            Some(b) if t < bd_reload_expiry => b.value,
+        let bd_reload_add = match ap.base_damage_on_reload {
+            Some(b) if t < base_damage_reload_expiry_seconds => b.value,
             _ => 0.0,
         };
         // …and Eximus Advantage's share of the same bucket. "Stacks additively
         // with base damage bonuses like Hornet Strike", so it joins here rather
         // than forming a factor of its own.
-        let bd_eximus_add = match ap.bd_on_eximus_weakpoint {
-            Some(b) if t < bd_eximus_expiry => b.value,
+        let bd_eximus_add = match ap.base_damage_on_eximus_weakpoint {
+            Some(b) if t < base_damage_eximus_expiry_seconds => b.value,
             _ => 0.0,
         };
 
@@ -8513,9 +8513,9 @@ pub fn run_once_traced(
         let ms_locked = params.locks("multishot");
         let ms_eff = ap.multishot
             + params
-                .ms_stack
+                .multishot_stack
                 .as_ref()
-                .map_or(0.0, |s| s.per_stack * gal.ms.current(t, s.duration) as f64)
+                .map_or(0.0, |s| s.per_stack * gal.multishot.current(t, s.duration) as f64)
             + if ms_locked {
                 0.0
             } else {
@@ -8753,10 +8753,10 @@ pub fn run_once_traced(
         // Field ticks due before this shot, with the buff state as of now.
         field_ctx = FieldCtx {
             flat_crit,
-            cc_rel_mods: cc_rel - params.arcane.cc_rel,
-            bd_add_mods: bd_reload_add
+            crit_chance_relative_mods: crit_chance_relative - params.arcane.crit_chance_relative,
+            base_damage_add_mods: bd_reload_add
                 + bd_eximus_add
-                + ap.compression_bd
+                + ap.compression_base_damage
                 + buff_total!(ap, crate::loadout::BuffGrant::BaseDamage, t)
                 + buff_total!(ap, crate::loadout::BuffGrant::FlatBaseDamage, t),
         };
@@ -8806,7 +8806,7 @@ pub fn run_once_traced(
             // Live target-side state for THIS pellet (earlier pellets'
             // procs already count): mitigation amps, Cold's flat crit
             // damage received, and Condition Overload's type count.
-            let mit = debuffs.mitigation(t, sd, ap.armor_strip_per_puncture);
+            let mit = debuffs.mitigation(t, status_damage, ap.armor_strip_per_puncture);
             // Crit damage: resolved multiplier + Cold's flat bonus received
             // + Sharpened Bullets' live on-kill buff + the arcane's
             // assumed-max conditional (Outburst).
@@ -8814,12 +8814,12 @@ pub fn run_once_traced(
             // already resolved to an ABSOLUTE per-stack value against the
             // weapon's base crit damage (ArcaneDef::fx), so it adds straight
             // into the same total as Cold's flat bonus.
-            // Same split as crit chance above: `cd_rel` is a bucket bonus every
+            // Same split as crit chance above: `crit_damage_relative` is a bucket bonus every
             // stage scales by its OWN base crit damage; `cd_abs` is a flat add
             // every stage takes as-is.
-            let cd_rel = arc.total(&params.arcane.buffs, ArcGrant::CritDamage, t)
+            let crit_damage_relative = arc.total(&params.arcane.buffs, ArcGrant::CritDamage, t)
                 + arc.cd_bonus(ap, t)
-                + params.arcane.cd_rel;
+                + params.arcane.crit_damage_relative;
             // SPITEFUL DEFILEMENT rides the same after-mods FLAT bucket Cold's
             // received bonus does — "Bonus is added after mods as a flat value"
             // (wiki, supplied by the owner 2026-08-10), so it is added to the
@@ -8831,7 +8831,7 @@ pub fn run_once_traced(
             // Condition Overload's counter, read here rather than recomputed,
             // so the anti-CO perk and CO can never disagree about the number
             // they are both reading.
-            let spiteful = match params.cd_below_status_count {
+            let spiteful = match params.crit_damage_below_status_count {
                 Some((threshold, bonus))
                     if (debuffs.distinct_statuses() as u32) < threshold =>
                 {
@@ -8860,12 +8860,12 @@ pub fn run_once_traced(
             // Nothing to take back when the perk is absent, and nothing to take
             // back when the panel already failed the condition — `resolve` then
             // never granted it and leaves this `None`.
-            let prelude_lost = match ap.crit_mult_below_cc {
+            let prelude_lost = match ap.crit_multiplier_below_crit_chance {
                 Some((granted, below)) if effective_cc >= below => granted,
                 _ => 0.0,
             };
             let cd_total = ap.crit_multiplier - prelude_lost
-                + ap.unmodded_crit_damage * cd_rel
+                + ap.unmodded_crit_damage * crit_damage_relative
                 + cd_abs
                 // Mauler's Magazine, earned inside the fight — a BASE grant,
                 // already multiplied by the crit-damage mods at `resolve`, the
@@ -8874,7 +8874,7 @@ pub fn run_once_traced(
                 // …and the other half of the same condition, decided by the
                 // same shot: an absolute add, already multiplied by the
                 // crit-damage mods at `resolve`.
-                + if undamaged { ap.cd_on_undamaged } else { 0.0 };
+                + if undamaged { ap.crit_damage_on_undamaged } else { 0.0 };
             // Live BASE-DAMAGE bucket additions, evaluated per instance:
             //  - arcane stacks (Merciless/Deadhead/Dexterity/Cascadia Flare)
             //  - Overwhelming Attrition's earned stacks — VERBATIM (wiki
@@ -8886,13 +8886,13 @@ pub fn run_once_traced(
             // The stacks read here are the ones EARNED so far; the hit that
             // grants a stack does not benefit from it (the bump happens
             // after the status roll below).
-            let arc_bd = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t)
+            let arcane_base_damage = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t)
                 + bd_reload_add
                 + bd_eximus_add
                 // Primary Compression's `adds` row: the same bracket a live
                 // base-damage buff joins, so Serration dilutes it exactly as
                 // the wiki's "additive with damage bonuses" says it should.
-                + ap.compression_bd
+                + ap.compression_base_damage
                 + buff_total!(ap, crate::loadout::BuffGrant::BaseDamage, t)
                 // Striking Succession, already converted by `resolve` into the
                 // share of this bucket its flat number is worth — so it lands
@@ -8917,12 +8917,12 @@ pub fn run_once_traced(
             let half_hp = if params.target.max_health() > 0.0
                 && target.health < 0.5 * params.target.max_health()
             {
-                ap.bd_below_half_health
+                ap.base_damage_below_half_health
             } else {
                 0.0
             };
-            let bd = ap.base_damage_bonus;
-            let arc_ratio = (1.0 + bd + arc_bd) / (1.0 + bd);
+            let base_damage = ap.base_damage_bonus;
+            let arc_ratio = (1.0 + base_damage + arcane_base_damage) / (1.0 + base_damage);
             let mb_live = modded_base * arc_ratio;
             // GunCO family — ONE machinery (wiki CO catalog; user
             // 2026-07-27): every source contributes rate × TARGET-COUNTER
@@ -8934,7 +8934,7 @@ pub fn run_once_traced(
             //     rate since they share it) → distinct status TYPES;
             //   Secondary Shiver → live Cold STACKS (Frozen counts as 10).
             let co_mult = gunco_bucket(
-                params, ap, &mut debuffs, &mut gal, t, bd, arc_bd, arc_ratio,
+                params, ap, &mut debuffs, &mut gal, t, base_damage, arcane_base_damage, arc_ratio,
                 half_hp,
                 ap.co_base_fraction,
             );
@@ -8950,7 +8950,7 @@ pub fn run_once_traced(
                 // AN EXPLOSION carries no half-health term either — a
                 // DIRECT-hit bonus, like the CO it rides beside.
                 Some(r) if r.takes_condition_overload => gunco_bucket(
-                    params, ap, &mut debuffs, &mut gal, t, bd, arc_bd, arc_ratio, 0.0,
+                    params, ap, &mut debuffs, &mut gal, t, base_damage, arcane_base_damage, arc_ratio, 0.0,
                     r.co_base_fraction,
                 ),
                 _ => arc_ratio,
@@ -8974,7 +8974,7 @@ pub fn run_once_traced(
                     // Weak-point-only crit chance is relative too, and it is
                     // DIRECT-only, so the direct part's base is the right one.
                     ap.unmodded_crit_chance
-                        * (ap.weakpoint_cc_rel + params.arcane.weakpoint_cc_rel)
+                        * (ap.weakpoint_crit_chance_relative + params.arcane.weakpoint_crit_chance_relative)
                 } else {
                     0.0
                 };
@@ -9042,10 +9042,10 @@ pub fn run_once_traced(
             // here. Split out rather than duplicated so the two can never say
             // different things.
             let (hb_head, hi_head) = if ap.headshot_bonus_multiplicative {
-                (params.arcane.headshot_mult_bonus + streak_bonus, ap.headshot_damage_bonus)
+                (params.arcane.headshot_multiplier_bonus + streak_bonus, ap.headshot_damage_bonus)
             } else {
                 (
-                    params.arcane.headshot_mult_bonus + streak_bonus + ap.headshot_damage_bonus,
+                    params.arcane.headshot_multiplier_bonus + streak_bonus + ap.headshot_damage_bonus,
                     0.0,
                 )
             };
@@ -9384,7 +9384,7 @@ pub fn run_once_traced(
                         // Effect damage, so it does not get it — the lingering
                         // field never did, and the radial's copy of this line
                         // was the odd one out.
-                        let rcc = r.crit_chance + flat_crit + r.base_crit_chance * cc_rel;
+                        let rcc = r.crit_chance + flat_crit + r.base_crit_chance * crit_chance_relative;
                         // The set promotes a critical hit "from Primary
                         // Weapons" with no qualifier about which attack part
                         // made it, and the direct hit and the lingering field
@@ -9429,7 +9429,7 @@ pub fn run_once_traced(
                     Some(r) => {
                         // No `part.crit_bonus` doubling: that is the crit-
                         // HEADSHOT rule and an explosion has no hit location.
-                        let rcd = r.crit_damage + r.base_crit_damage * cd_rel + cd_abs;
+                        let rcd = r.crit_damage + r.base_crit_damage * crit_damage_relative + cd_abs;
                         1.0 + tier as f64 * (rcd - 1.0)
                     }
                 };
@@ -9947,7 +9947,7 @@ pub fn run_once_traced(
                     // Crosshairs' on-HEADSHOT buff refreshes on every head
                     // hit (kills only matter for its stacks).
                     if part.is_head {
-                        if let Some(b) = params.cc_on_headshot {
+                        if let Some(b) = params.crit_chance_on_headshot {
                             ch_buff_expiry = t + b.duration;
                         }
                         // EXIMUS ADVANTAGE — the WEAK POINT is the trigger
@@ -9958,8 +9958,8 @@ pub fn run_once_traced(
                         // the whole reason the mod is not a plain on-headshot
                         // buff. It REFRESHES rather than stacking.
                         if params.target.eximus {
-                            if let Some(b) = params.bd_on_eximus_weakpoint {
-                                bd_eximus_expiry = t + b.duration;
+                            if let Some(b) = params.base_damage_on_eximus_weakpoint {
+                                base_damage_eximus_expiry_seconds = t + b.duration;
                             }
                         }
                         // Lethal Rearmament: every headshot grants a stack —
@@ -9999,7 +9999,7 @@ pub fn run_once_traced(
                         // HEADSHOT kills grant/refresh its stacks.
                         arc.bump_trigger(&params.arcane.buffs, ArcTrigger::HeadshotKill, t);
                         // Crosshairs stacks: headshot kills, per-stack FIFO.
-                        if let Some(s) = &params.cc_stack {
+                        if let Some(s) = &params.crit_chance_stack {
                             DebuffState::push_capped(
                                 &mut ch_stacks,
                                 t + s.duration,
@@ -10430,7 +10430,7 @@ pub fn run_once_traced(
         //
         // "FROM AMMO POOL", so a dry reserve restores nothing: the round is
         // drawn like any other. And a restore is NOT a reload — nothing that
-        // watches reloads sees it, the same rule `mag_refill_on_kill` follows.
+        // watches reloads sees it, the same rule `magazine_refill_on_kill` follows.
         if let Some((st, chance, rounds)) = ap.round_restore_on_status {
             if has_status(&debuffs, st) && d.extra.chance(chance) {
                 let room = (mag_cap - magazine).max(0.0);
@@ -10559,8 +10559,8 @@ pub fn run_once_traced(
         // granted/refreshed counts immediately), plus Pressurized
         // Magazine's live on-reload fire-rate buff.
         bar.expire(t);
-        let mut fr_add = match ap.fr_on_reload {
-            Some(b) if t < fr_reload_expiry => b.value,
+        let mut fr_add = match ap.fire_rate_on_reload {
+            Some(b) if t < fire_rate_reload_expiry_seconds => b.value,
             _ => 0.0,
         };
         // THE SAME BUCKET fire-rate mods and a static `fire_rate_bonus`
@@ -10734,7 +10734,7 @@ pub fn replay(params: &DummyParams, rng_state: u64, frames: usize) -> Replay {
             })
             .collect(),
         follow,
-        dt: (params.duration_seconds / frames as f64).max(1e-6),
+        frame_seconds: (params.duration_seconds / frames as f64).max(1e-6),
         buffs: params.buff_roster(),
         frames: Vec::with_capacity(frames),
         accounts: Vec::new(),
@@ -10808,7 +10808,7 @@ pub struct Summary {
     /// very different numbers and only one of them is on any card.
     pub burst_dps: f64,
     /// Seconds a run spent not firing, averaged.
-    pub mean_downtime: f64,
+    pub mean_downtime_seconds: f64,
     /// TIME TO THE FIRST KILL — mean, median and the 90th percentile over the
     /// runs that killed anything, and how many did. A mean alone would read as
     /// a promise; the spread is what says whether it is one.
@@ -10878,7 +10878,7 @@ pub fn monte_carlo(params: &DummyParams, runs: u32, seed: u64) -> Summary {
 /// …REPORTING HOW FAR IT HAS GOT, for a caller that has to wait.
 ///
 /// `on_run` is handed the number of completed runs. A single-target fight is
-/// ~1 ms a run and nobody needs this; a 361-body one is tens of milliseconds,
+/// ~1 multishot a run and nobody needs this; a 361-body one is tens of milliseconds,
 /// so the rulers' 1000 runs is a minute in the browser and a button that says
 /// "Simulating…" for a minute reads as a hang (owner, 2026-08-18).
 ///
@@ -10968,7 +10968,7 @@ pub struct Shard {
     min_kills: u32,
     max_kills: u32,
     downtime: f64,
-    first_mag: f64,
+    first_magazine: f64,
     max_hit_sum: f64,
     biggest: f64,
     ttks: Vec<f64>,
@@ -11016,7 +11016,7 @@ impl Default for Shard {
             min_kills: u32::MAX,
             max_kills: 0,
             downtime: 0.0,
-            first_mag: 0.0,
+            first_magazine: 0.0,
             max_hit_sum: 0.0,
             biggest: 0.0,
             ttks: Vec::new(),
@@ -11060,7 +11060,7 @@ impl Shard {
         self.min_kills = self.min_kills.min(o.min_kills);
         self.max_kills = self.max_kills.max(o.max_kills);
         self.downtime += o.downtime;
-        self.first_mag += o.first_mag;
+        self.first_magazine += o.first_magazine;
         self.max_hit_sum += o.max_hit_sum;
         self.biggest = self.biggest.max(o.biggest);
         self.ttks.extend_from_slice(&o.ttks);
@@ -11191,7 +11191,7 @@ pub fn shard(
         a.min_kills = a.min_kills.min(r.kills);
         a.max_kills = a.max_kills.max(r.kills);
         a.downtime += r.downtime_seconds;
-        a.first_mag += r.first_magazine_damage;
+        a.first_magazine += r.first_magazine_damage;
         a.max_hit_sum += r.max_hit;
         a.biggest = a.biggest.max(r.max_hit);
         if let Some(at) = r.first_kill_at {
@@ -11230,8 +11230,8 @@ impl Shard {
         let (kills, kills_sq) = (self.kills, self.kills_sq);
         let (kill_progress, kill_progress_sq) = (self.kill_progress, self.kill_progress_sq);
         let (min_kills, max_kills) = (self.min_kills, self.max_kills);
-        let (downtime, first_mag, max_hit_sum, biggest) =
-            (self.downtime, self.first_mag, self.max_hit_sum, self.biggest);
+        let (downtime, first_magazine, max_hit_sum, biggest) =
+            (self.downtime, self.first_magazine, self.max_hit_sum, self.biggest);
         // A PERCENTILE OVER WHAT ACTUALLY HAPPENED. Sorted here rather than by
         // the caller: an unsorted percentile is a number that looks right. It
         // is also why the shard carries the raw list — a merge cannot recover a
@@ -11307,12 +11307,12 @@ impl Shard {
             let firing = (params.duration_seconds * runs as f64 - downtime).max(1e-2);
             effective / firing
         },
-        mean_downtime: downtime / runs as f64,
+        mean_downtime_seconds: downtime / runs as f64,
         ttk_mean: if ttks.is_empty() { 0.0 } else { ttks.iter().sum::<f64>() / ttks.len() as f64 },
         ttk_median: pct(&ttks, 0.5),
         ttk_p90: pct(&ttks, 0.9),
         ttk_runs: ttks.len() as u32,
-        mean_first_magazine: first_mag / runs as f64,
+        mean_first_magazine: first_magazine / runs as f64,
         max_hit: biggest,
         mean_max_hit: max_hit_sum / runs as f64,
         damage_per_shot: effective / (total_shots as f64).max(1.0),
@@ -12191,7 +12191,7 @@ mod tests {
         let p = build(Vec::new(), true, false);
         assert!(p.arcane.echo_share > 0.0, "the echo has a payload");
         assert_eq!(
-            p.arcane.echo_needs_radiation, 10,
+            p.arcane.echo_needs_radiation_stacks, 10,
             "…and the card's own price, read from `condition:` rather than dropped"
         );
 
@@ -12361,7 +12361,7 @@ mod tests {
             ("max_hit", part.max_hit, whole.max_hit),
             ("mean_max_hit", part.mean_max_hit, whole.mean_max_hit),
             ("damage_per_pellet", part.damage_per_pellet, whole.damage_per_pellet),
-            ("mean_downtime", part.mean_downtime, whole.mean_downtime),
+            ("mean_downtime_seconds", part.mean_downtime_seconds, whole.mean_downtime_seconds),
             ("source.direct", part.source_damage.direct, whole.source_damage.direct),
             ("source.field", part.source_damage.field, whole.source_damage.field),
         ] {
@@ -12860,7 +12860,7 @@ mod tests {
             headshot_damage_bonus: 0.5,
             headshot_bonus_multiplicative: mult,
             arcane: crate::arcanes_data::ArcaneFx {
-                headshot_mult_bonus: 0.3,
+                headshot_multiplier_bonus: 0.3,
                 ..crate::arcanes_data::ArcaneFx::none()
             },
             body_parts: vec![BodyPart {
@@ -12905,10 +12905,10 @@ mod tests {
             "boar_prime", true, &["boar_prime_evo1_incarnon_form", "boar_prime_reified_bane"],
         );
         let panel = resolve(&with, &[], StackPolicy::Emergent);
-        let bd = panel.evo_bd.expect("reified bane grants the evo bd buff");
-        assert_eq!(bd.max_stacks, 1);
-        assert_eq!(bd.stacks, 1, "it opens ON");
-        assert!((bd.full - 14.0).abs() < 1e-9, "the empty-reload half is +14, got {}", bd.full);
+        let base_damage = panel.evo_base_damage.expect("reified bane grants the evo base_damage buff");
+        assert_eq!(base_damage.max_stacks, 1);
+        assert_eq!(base_damage.stacks, 1, "it opens ON");
+        assert!((base_damage.full - 14.0).abs() < 1e-9, "the empty-reload half is +14, got {}", base_damage.full);
 
         // It is ANNOUNCED, or no card is drawn for it.
         let params = DummyParams::from_panel(&panel, &crate::arena::Arena::training(10.0), &ArcaneFx::none());
@@ -12929,9 +12929,9 @@ mod tests {
         };
         assert!(off.damage.total() < params.damage.total(), "0 stacks changed nothing");
         let ratio = off.damage.total() / params.damage.total();
-        let want = bd.without / (bd.without + bd.full);
+        let want = base_damage.without / (base_damage.without + base_damage.full);
         assert!((ratio - want).abs() < 1e-9, "scaled by {ratio}, expected {want}");
-        assert_eq!(off.evo_bd.expect("still declared").stacks, 0);
+        assert_eq!(off.evo_base_damage.expect("still declared").stacks, 0);
     }
 
     #[test]
@@ -12946,9 +12946,9 @@ mod tests {
             &["dual_toxocyst_evo1_incarnon_form", "dual_toxocyst_fevered_frenzy"],
         );
         let panel = resolve(&base, &[], StackPolicy::Emergent);
-        let ms = panel.evo_ms.expect("fevered frenzy grants the evo ms buff");
-        assert_eq!(ms.max_stacks, 20);
-        assert!((ms.full - 1.0).abs() < 1e-12, "1 pellet × +100% = 1.0");
+        let multishot = panel.evo_multishot.expect("fevered frenzy grants the evo multishot buff");
+        assert_eq!(multishot.max_stacks, 20);
+        assert!((multishot.full - 1.0).abs() < 1e-12, "1 pellet × +100% = 1.0");
 
         let mk = |stacks: u32, locked: bool| {
             let mut p = DummyParams::from_panel(&panel, &crate::arena::Arena::training(10.0), &ArcaneFx::none());
@@ -13210,7 +13210,7 @@ mod tests {
             }],
             headshot_streak: perk.then_some(streak),
             arcane: crate::arcanes_data::ArcaneFx {
-                headshot_mult_bonus: deadhead,
+                headshot_multiplier_bonus: deadhead,
                 ..crate::arcanes_data::ArcaneFx::none()
             },
             target: TargetParams { base_health: 1e15, ..DummyParams::default().target },
@@ -13300,7 +13300,7 @@ mod tests {
             status_chance: 0.0,
             base_status_chance: 0.0,
             body_parts: mono_body(1.0),
-            cd_below_status_count: perk.then_some((3, 1.0)),
+            crit_damage_below_status_count: perk.then_some((3, 1.0)),
             // `no_status()` inherits the default fixture's ARCANE, which has
             // crit terms of its own — they would land inside the ratio and make
             // "+1.0 flat" unmeasurable. Neutralised so the only crit-damage
@@ -13518,7 +13518,7 @@ mod tests {
         // one frame per 1/60 s the cap lands around frame 30. Per ROUND instead
         // of per burst would have reached it in a third of that.
         let first_cap = series.iter().position(|&v| v == 5).expect("reaches 5");
-        let at = first_cap as f64 * trace.dt;
+        let at = first_cap as f64 * trace.frame_seconds;
         assert!(
             at > 0.45 && at < 0.56,
             "five bursts at ten bursts a second is 0.5 s: capped at {at:.3} s (frame {first_cap})"
@@ -13730,9 +13730,9 @@ mod tests {
         let with = panel(&perk, &[]);
         assert!((bare.crit_chance - with.crit_chance).abs() < 1e-9,
             "the panel's crit chance does not move: {} vs {}", bare.crit_chance, with.crit_chance);
-        assert!((with.weakpoint_cc_rel - 1.50).abs() < 1e-9,
+        assert!((with.weakpoint_crit_chance_relative - 1.50).abs() < 1e-9,
             "the weak-point half seeds the bucket the crit mods write to: {}",
-            with.weakpoint_cc_rel);
+            with.weakpoint_crit_chance_relative);
         assert!((with.bodyshot_crit_chance_multiplier - 0.0).abs() < 1e-9, "x0: {}", with.bodyshot_crit_chance_multiplier);
         assert!((panel(&[], &[]).bodyshot_crit_chance_multiplier - 1.0).abs() < 1e-9, "without the perk, ordinary");
 
@@ -14005,7 +14005,7 @@ mod tests {
             fire_rate: 20.0,
             reload_seconds: 1.0,
             duration_seconds: 60.0,
-            mag_growth_on_empty_reload: growth,
+            magazine_growth_on_empty_reload: growth,
             body_parts: mono_body(1.0),
             ..flat_base()
         };
@@ -14172,9 +14172,9 @@ mod tests {
         assert!((panel.crit_chance - 0.25).abs() < 1e-9, "{}", panel.crit_chance);
 
         let arena = crate::arena::Arena::training(60.0);
-        let rate = |cc_rel: f64| {
+        let rate = |crit_chance_relative: f64| {
             let mut p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
-            p.arcane.cc_rel = cc_rel;
+            p.arcane.crit_chance_relative = crit_chance_relative;
             p.duration_seconds = 60.0;
             let s = monte_carlo(&p, 12, 4);
             s.mean_procs / s.mean_pellets.max(1.0)
@@ -14218,10 +14218,10 @@ mod tests {
     /// inside it, and a pull's hits are its pellets.
     #[test]
     fn double_tap_pays_the_cards_own_worked_example() {
-        let dt = crate::mods_data::class_pool("rifle")
+        let frame_seconds = crate::mods_data::class_pool("rifle")
             .into_iter().find(|m| m.id == "double_tap").expect("double_tap in the rifle pool");
-        assert_eq!(dt.effects.len(), 1, "one effect on the card: {:?}", dt.effects);
-        let (per, cap, dur) = match dt.effects[0] {
+        assert_eq!(frame_seconds.effects.len(), 1, "one effect on the card: {:?}", frame_seconds.effects);
+        let (per, cap, dur) = match frame_seconds.effects[0] {
             crate::loadout::ModEffect::ConsecutiveHitDamage { per_stack, max_stacks, duration } =>
                 (per_stack, max_stacks, duration),
             ref other => panic!("wrong kind: {other:?}"),
@@ -14233,10 +14233,10 @@ mod tests {
 
         // A fixture where nothing but Double Tap moves the number: no crit, no
         // status, one body part, and a target that cannot die.
-        let build = |ms: f64, on: bool, shots: f64| DummyParams {
+        let build = |multishot: f64, on: bool, shots: f64| DummyParams {
             damage: DamageVector::new().with(DamageType::Impact, 100.0),
-            multishot: ms,
-            base_multishot: ms,
+            multishot,
+            base_multishot: multishot,
             fire_rate: 1.0,
             magazine_size: 100.0,
             consecutive_hit_damage: if on { Some((per, cap, dur)) } else { None },
@@ -14245,8 +14245,8 @@ mod tests {
             body_parts: mono_body(1.0),
             ..flat_base()
         };
-        let dmg = |ms: f64, on: bool, shots: f64|
-            monte_carlo(&build(ms, on, shots), 1, 3).mean_damage;
+        let dmg = |multishot: f64, on: bool, shots: f64|
+            monte_carlo(&build(multishot, on, shots), 1, 3).mean_damage;
 
         // WITHOUT MULTISHOT the first shot pays nothing — 20% x (1-1) = 0.
         assert!((dmg(1.0, true, 1.0) - dmg(1.0, false, 1.0)).abs() < 1e-6,
@@ -14288,9 +14288,9 @@ mod tests {
         // THE CONVERSION: "+40% BASE crit chance" with no mods is 0.40, and the
         // grant is the post-mod number so an unmodded panel carries it whole.
         let p = panel(&perk);
-        assert!((p.cc_on_undamaged - 0.40).abs() < 1e-9, "{}", p.cc_on_undamaged);
-        assert!((p.cd_on_undamaged - 2.0).abs() < 1e-9, "{}", p.cd_on_undamaged);
-        assert_eq!(panel(&[]).cc_on_undamaged, 0.0, "no perk, no grant");
+        assert!((p.crit_chance_on_undamaged - 0.40).abs() < 1e-9, "{}", p.crit_chance_on_undamaged);
+        assert!((p.crit_damage_on_undamaged - 2.0).abs() < 1e-9, "{}", p.crit_damage_on_undamaged);
+        assert_eq!(panel(&[]).crit_chance_on_undamaged, 0.0, "no perk, no grant");
 
         // …AND IT REACHES THE FIGHT.
         let crit = |evo: &[&str]| {
@@ -14345,7 +14345,7 @@ mod tests {
             "kunai_incarnon", true, &["kunai_swift_conclusion"]);
         assert_eq!(base.co_behavior, crate::loadout::CoBehavior::AdditiveWithBaseDamage);
         assert_eq!(inc.co_behavior, crate::loadout::CoBehavior::Independent);
-        assert!(base.bd_below_half_health > 1.0 && inc.bd_below_half_health > 1.0);
+        assert!(base.base_damage_below_half_health > 1.0 && inc.base_damage_below_half_health > 1.0);
 
         // A target that is ALWAYS below half health, so the term is always on,
         // and a mod bucket big enough to tell the two brackets apart.
@@ -14355,11 +14355,11 @@ mod tests {
             // THE POOL IS THE BASE WEAPON'S. An Incarnon FORM entry has none
             // of its own — a mod is equipped on the weapon, not on the form.
             let pool = crate::mods_data::pool_for_weapon("kunai");
-            let ms: Vec<&crate::loadout::ModDef> = mods
+            let multishot: Vec<&crate::loadout::ModDef> = mods
                 .iter()
                 .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("no mod {m}")))
                 .collect();
-            let panel = crate::loadout::resolve(&b, &ms, crate::loadout::StackPolicy::Emergent);
+            let panel = crate::loadout::resolve(&b, &multishot, crate::loadout::StackPolicy::Emergent);
             let mut p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
             // A POOL THE RUN CHEWS THROUGH SLOWLY. The condition is a live one
             // — health below half — so the fixture has to actually get there:
@@ -14428,17 +14428,17 @@ mod tests {
         let evolved = base_total + own_flat;
         let expected = 0.40 - 0.40 * own_flat / evolved;
         assert!(
-            (with.bd_below_half_health - expected).abs() < 1e-9,
+            (with.base_damage_below_half_health - expected).abs() < 1e-9,
             "corrected rate {:.6}, expected {expected:.6} (card 0.40, own flat {own_flat}, evolved base {evolved})",
-            with.bd_below_half_health
+            with.base_damage_below_half_health
         );
         assert!(
-            with.bd_below_half_health < 0.40,
+            with.base_damage_below_half_health < 0.40,
             "…and it is strictly less than the card's number, which is the whole correction"
         );
 
         // A LOCK TAKES IT, like every other base-damage bonus.
-        assert_eq!(bare.bd_below_half_health, 0.0, "no perk, no bonus");
+        assert_eq!(bare.base_damage_below_half_health, 0.0, "no perk, no bonus");
     }
 
     /// EVERY "WITH <player stat>" PERK GOES THROUGH ONE GATE, and each still
@@ -14678,11 +14678,11 @@ mod tests {
         let dmg = |evo: &[&str], mods: &[&str]| {
             let base = crate::loadout::WeaponBase::from_data("paris_prime", true, evo);
             let pool = crate::mods_data::pool_for_weapon("paris_prime");
-            let ms: Vec<&crate::loadout::ModDef> = mods
+            let multishot: Vec<&crate::loadout::ModDef> = mods
                 .iter()
                 .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("no mod {m}")))
                 .collect();
-            let panel = crate::loadout::resolve(&base, &ms, crate::loadout::StackPolicy::Emergent);
+            let panel = crate::loadout::resolve(&base, &multishot, crate::loadout::StackPolicy::Emergent);
             let p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
             let s = monte_carlo(&p, 8, 0x5017);
             s.mean_damage / s.mean_pellets.max(1e-9)
@@ -14720,11 +14720,11 @@ mod tests {
         let pellets = |evo: &[&str], mods: &[&str]| {
             let base = crate::loadout::WeaponBase::from_data("strun_prime", true, evo);
             let pool = crate::mods_data::pool_for_weapon("strun_prime");
-            let ms: Vec<&crate::loadout::ModDef> = mods
+            let multishot: Vec<&crate::loadout::ModDef> = mods
                 .iter()
                 .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("no mod {m}")))
                 .collect();
-            let panel = crate::loadout::resolve(&base, &ms, crate::loadout::StackPolicy::Emergent);
+            let panel = crate::loadout::resolve(&base, &multishot, crate::loadout::StackPolicy::Emergent);
             let p = DummyParams::from_panel(&panel, &arena, &ArcaneFx::none());
             let s = monte_carlo(&p, 12, 0xB1A2);
             s.mean_pellets / s.mean_shots
@@ -15795,7 +15795,7 @@ mod tests {
             .expect("primary_overcharge");
         let fx = over.fx(5, crate::loadout::StackPolicy::Emergent, &[], &tenno);
         assert!(!fx.buffs.is_empty(), "a 1,000-energy frame arms it");
-        let ms = |locked: bool| {
+        let multishot = |locked: bool| {
             let p = DummyParams {
                 arcane: fx.clone(),
                 locked_stats: if locked { vec!["multishot"] } else { Vec::new() },
@@ -15810,7 +15810,7 @@ mod tests {
             // so a run's damage is proportional to the pellets each pull rolls.
             monte_carlo(&p, 6, 9).mean_damage
         };
-        let (open, locked) = (ms(false), ms(true));
+        let (open, locked) = (multishot(false), multishot(true));
         assert!(open > locked * 2.0, "+350% multishot is 4.5 pellets a pull: {open} vs {locked}");
         // The locked run is the weapon's DEFAULT pellet count — the same number a
         // build with no arcane at all fires.
@@ -15935,10 +15935,10 @@ mod tests {
         // (ticks per second, trigger "held").
         const CHARGES: f64 = 170.0;
         const TICK_RATE: f64 = 8.0;
-        let p = |ms: f64, bonus: f64| DummyParams {
+        let p = |multishot: f64, bonus: f64| DummyParams {
             continuous: true,
             fire_rate: TICK_RATE,
-            multishot: ms,
+            multishot,
             base_multishot: 1.0,
             multishot_ammo_bonus: bonus,
             magazine_size: CHARGES,
@@ -15956,29 +15956,29 @@ mod tests {
         };
         // Without the perk the window is multishot-independent: a merged beam
         // still bills ONE charge a tick however many beams it merges.
-        for ms in [1.0, 2.0, 5.0] {
-            let s = monte_carlo(&p(ms, 0.0), 4, 3);
+        for multishot in [1.0, 2.0, 5.0] {
+            let s = monte_carlo(&p(multishot, 0.0), 4, 3);
             assert!(
                 (s.mean_shots - CHARGES).abs() < 1e-9,
-                "no perk at {ms}x: expected {CHARGES} ticks, got {}",
+                "no perk at {multishot}x: expected {CHARGES} ticks, got {}",
                 s.mean_shots
             );
         }
         // With it, every projectile bills a charge, so the window divides.
-        for ms in [1.0, 2.0, 5.0] {
-            let s = monte_carlo(&p(ms, 0.6), 4, 3);
-            let want = CHARGES / ms;
+        for multishot in [1.0, 2.0, 5.0] {
+            let s = monte_carlo(&p(multishot, 0.6), 4, 3);
+            let want = CHARGES / multishot;
             assert!(
                 (s.mean_shots - want).abs() < 1e-9,
-                "{ms}x multishot: expected {want} ticks, got {}",
+                "{multishot}x multishot: expected {want} ticks, got {}",
                 s.mean_shots
             );
             // …and that is the user's 170/8/multishot, stated as seconds.
             let seconds = s.mean_shots / TICK_RATE;
             assert!(
-                (seconds - CHARGES / TICK_RATE / ms).abs() < 1e-9,
-                "{ms}x multishot: expected {} s, got {seconds}",
-                CHARGES / TICK_RATE / ms
+                (seconds - CHARGES / TICK_RATE / multishot).abs() < 1e-9,
+                "{multishot}x multishot: expected {} s, got {seconds}",
+                CHARGES / TICK_RATE / multishot
             );
         }
     }
@@ -16716,10 +16716,10 @@ mod tests {
     /// crit is off so the damage assertion is arithmetic.
     #[test]
     fn a_beam_merges_its_multishot_into_one_instance() {
-        let mk = |continuous, ms: f64| DummyParams {
+        let mk = |continuous, multishot: f64| DummyParams {
             damage: DamageVector::new().with(DamageType::Toxin, 50.0),
             continuous,
-            multishot: ms,
+            multishot,
             base_multishot: 1.0,
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
@@ -16786,11 +16786,11 @@ mod tests {
     /// flatten the very effect being measured.
     #[test]
     fn a_beams_dot_scales_with_multishot_squared() {
-        let mk = |continuous, ms: f64, forced: bool| {
+        let mk = |continuous, multishot: f64, forced: bool| {
             let mut p = DummyParams {
                 damage: DamageVector::new().with(DamageType::Toxin, 50.0),
                 continuous,
-                multishot: ms,
+                multishot,
                 base_multishot: 1.0,
                 status_chance: if forced { 0.0 } else { 1.0 },
                 base_status_chance: if forced { 0.0 } else { 1.0 },
@@ -16822,7 +16822,7 @@ mod tests {
             }];
             p
         };
-        let run = |c, ms, f| monte_carlo(&mk(c, ms, f), 8, 11);
+        let run = |c, multishot, f| monte_carlo(&mk(c, multishot, f), 8, 11);
         let close = |a: f64, b: f64| (a - b).abs() < 0.02 * b;
 
         for m in [2.0_f64, 3.0] {
@@ -16857,8 +16857,8 @@ mod tests {
     #[test]
     fn a_beam_ramps_from_a_fifth_to_full_over_point_six_seconds() {
         let mut ramp = BeamRamp::default();
-        let dt = 0.1; // 10 ticks/s
-        let mults: Vec<f64> = (0..8).map(|i| ramp.tick(i as f64 * dt, dt, BEAM_RAMP_FLOOR)).collect();
+        let frame_seconds = 0.1; // 10 ticks/s
+        let mults: Vec<f64> = (0..8).map(|i| ramp.tick(i as f64 * frame_seconds, frame_seconds, BEAM_RAMP_FLOOR)).collect();
         assert!((mults[0] - 0.20).abs() < 1e-9, "first tick {}", mults[0]);
         // Each held tick adds 0.1/0.6 of the way from 20% to 100%.
         assert!((mults[1] - (0.2 + 0.8 / 6.0)).abs() < 1e-9, "second {}", mults[1]);
@@ -16871,16 +16871,16 @@ mod tests {
         // 1.9 s gap is 1.8 s idle, 1.0 s of it past the delay = half the ramp.
         let mut r2 = BeamRamp::default();
         for i in 0..8 {
-            r2.tick(i as f64 * dt, dt, BEAM_RAMP_FLOOR);
+            r2.tick(i as f64 * frame_seconds, frame_seconds, BEAM_RAMP_FLOOR);
         }
-        let after = r2.tick(0.7 + 1.9, dt, BEAM_RAMP_FLOOR);
+        let after = r2.tick(0.7 + 1.9, frame_seconds, BEAM_RAMP_FLOOR);
         assert!((after - (0.2 + 0.8 * 0.5)).abs() < 1e-9, "after a gap {after}");
         // And a long enough gap returns it all the way to the floor.
         let mut r3 = BeamRamp::default();
         for i in 0..8 {
-            r3.tick(i as f64 * dt, dt, BEAM_RAMP_FLOOR);
+            r3.tick(i as f64 * frame_seconds, frame_seconds, BEAM_RAMP_FLOOR);
         }
-        assert!((r3.tick(0.7 + 3.0, dt, BEAM_RAMP_FLOOR) - 0.20).abs() < 1e-9);
+        assert!((r3.tick(0.7 + 3.0, frame_seconds, BEAM_RAMP_FLOOR) - 0.20).abs() < 1e-9);
     }
 
     #[test]
@@ -17386,7 +17386,7 @@ mod tests {
             base_crit_chance: 0.32,
             unmodded_crit_chance: 0.32,
             crit_multiplier: 5.0,
-            crit_mult_below_cc: Some((3.0, 0.40)),
+            crit_multiplier_below_crit_chance: Some((3.0, 0.40)),
             unmodded_crit_damage: 2.0,
             forced_procs: vec![DamageType::Puncture],
             body_parts: mono_body(1.0),
@@ -17421,7 +17421,7 @@ mod tests {
             base_crit_chance: 0.32,
             unmodded_crit_chance: 0.32,
             crit_multiplier: 5.0,
-            crit_mult_below_cc: Some((3.0, 0.32)),
+            crit_multiplier_below_crit_chance: Some((3.0, 0.32)),
             unmodded_crit_damage: 2.0,
             body_parts: mono_body(1.0),
             fire_rate: 1.0,
@@ -17462,7 +17462,7 @@ mod tests {
 
         let (bare_off, _, mag) = pellets(&[], &[]);
         let (bare_on, _, _) = pellets(&["burston_prime_forceful_finality"], &[]);
-        let (mod_off, ms, _) = pellets(&[], &mods);
+        let (mod_off, multishot, _) = pellets(&[], &mods);
         let (mod_on, _, _) = pellets(&["burston_prime_forceful_finality"], &mods);
         let (bare_gain, mod_gain) = (bare_on - bare_off, mod_on - mod_off);
 
@@ -17473,8 +17473,8 @@ mod tests {
         // says is that the same +5 is multiplied by the multishot bonuses, so
         // the two gains stand in exactly that ratio however many bursts landed.
         assert!(
-            (mod_gain / bare_gain - ms).abs() < 0.05,
-            "a BASE grant scales with the bucket: x{:.2} of the bare gain, bucket is x{ms:.2}              ({bare_gain:.3} -> {mod_gain:.3} pellets a shot)",
+            (mod_gain / bare_gain - multishot).abs() < 0.05,
+            "a BASE grant scales with the bucket: x{:.2} of the bare gain, bucket is x{multishot:.2}              ({bare_gain:.3} -> {mod_gain:.3} pellets a shot)",
             mod_gain / bare_gain
         );
         // …and it is worth roughly the whole burst, which is what says the
@@ -17609,7 +17609,7 @@ mod tests {
             unmodded_crit_chance: 1.0, // the base a relative bonus multiplies
             crit_multiplier: 2.0,
             tendril_max: 4,
-            cc_per_tendril: per_tendril,
+            crit_chance_per_tendril: per_tendril,
             magazine_size: mag,
             reload_seconds: 0.5,
             fire_rate: 10.0,
@@ -17659,7 +17659,7 @@ mod tests {
             base_crit_chance: 0.0,
             unmodded_crit_chance: 1.0, // the base a relative bonus multiplies
             crit_multiplier: 2.0,
-            cc_per_hit: Some((per_hit, 416)),
+            crit_chance_per_hit: Some((per_hit, 416)),
             magazine_size: mag,
             reload_seconds: 0.5,
             fire_rate: 10.0,
@@ -17705,7 +17705,7 @@ mod tests {
             // 1% a stack, so `cap` stacks is exactly `cap`% — and a crit rate
             // is clamped at 1.0, so the cap has to bite BELOW that to be
             // visible at all.
-            cc_per_hit: Some((0.01, cap)),
+            crit_chance_per_hit: Some((0.01, cap)),
             magazine_size: 100_000.0,
             fire_rate: 10.0,
             duration_seconds: 60.0,
@@ -17738,7 +17738,7 @@ mod tests {
     fn eximus_advantage_needs_an_eximus_and_a_weak_point() {
         let build = |eximus: bool, head_weight: f64| {
             let mut p = DummyParams {
-                bd_on_eximus_weakpoint: Some(crate::loadout::TimedBuff {
+                base_damage_on_eximus_weakpoint: Some(crate::loadout::TimedBuff {
                     value: 6.0,
                     duration: 10.0,
                     initial_active: false,
@@ -17806,7 +17806,7 @@ mod tests {
             unmodded_crit_chance: 1.0,
             crit_multiplier: 2.0,
             tendril_max: 4,
-            cc_per_tendril: 0.25,
+            crit_chance_per_tendril: 0.25,
             tendrils_initial: stacks,
             tendrils_held: held,
             magazine_size: mag,
@@ -17867,7 +17867,7 @@ mod tests {
             fire_rate: 1.0,
             reload_seconds: 1.0,
             duration_seconds: 120.0,
-            mag_refill_on_kill: refill,
+            magazine_refill_on_kill: refill,
             body_parts: mono_body(1.0),
             target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
             ..flat_base()
@@ -17904,7 +17904,7 @@ mod tests {
             base_crit_chance: 0.0,
             unmodded_crit_chance: 1.0,
             tendril_max: 4,
-            cc_per_tendril: 0.25,
+            crit_chance_per_tendril: 0.25,
             ..build(0.20)
         };
         let r = run_once(&surging, &mut Rng::new(3));
@@ -18306,8 +18306,8 @@ mod tests {
         // One params carrying every configurable buff at once.
         let params = DummyParams {
             co_stack: Some(stack(0.2)),
-            ms_stack: Some(stack(0.3)),
-            cc_stack: Some(stack(0.1)),
+            multishot_stack: Some(stack(0.3)),
+            crit_chance_stack: Some(stack(0.1)),
             stacking_buffs: vec![crate::loadout::StackingBuff {
                 id: "on_plain_hit_damage",
                 trigger: crate::loadout::BuffTrigger::PlainHit,
@@ -18335,14 +18335,14 @@ mod tests {
                 per_shell: false,
                 cleared_by: crate::loadout::ClearedBy::Nothing,
             }],
-            cc_on_headshot: Some(timed(0.5)),
-            cd_on_kill: Some(timed(0.6)),
-            fr_on_reload: Some(timed(0.7)),
-            bd_on_reload: Some(timed(0.8)),
+            crit_chance_on_headshot: Some(timed(0.5)),
+            crit_damage_on_kill: Some(timed(0.6)),
+            fire_rate_on_reload: Some(timed(0.7)),
+            base_damage_on_reload: Some(timed(0.8)),
             // Both halves, for the same reason the replay fixture carries
             // them: the tendril card exists only where a mod reads the count.
             tendril_max: 4,
-            cc_per_tendril: 0.1,
+            crit_chance_per_tendril: 0.1,
             ..DummyParams::default()
         };
 
@@ -19246,7 +19246,7 @@ mod tests {
             initial_stacks: 0,
         };
         let p = DummyParams {
-            ms_stack: Some(spec),
+            multishot_stack: Some(spec),
             target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
             arcane: ArcaneFx::none(),
             crit_multiplier: 1.0,
@@ -19263,7 +19263,7 @@ mod tests {
         // Initial-full (the user's default): every shot fires 3 pellets
         // from t = 0 (kills keep the stacks refreshed) -> 30 pellets.
         let full = DummyParams {
-            ms_stack: Some(crate::loadout::StackSpec {
+            multishot_stack: Some(crate::loadout::StackSpec {
                 initial_stacks: 2,
                 ..spec
             }),
@@ -19279,7 +19279,7 @@ mod tests {
 
     #[test]
     fn co_base_fraction_scales_the_co_bonus() {
-        // Additive class, bd 0, fraction 0.6, one active type:
+        // Additive class, base_damage 0, fraction 0.6, one active type:
         // 75 × (1 + 9 × (1 + 0.6)) = 75 × 15.4 = 1155.
         let p = DummyParams {
             co_per_type: 1.0,
@@ -19296,8 +19296,8 @@ mod tests {
 
     #[test]
     fn deadhead_adds_base_damage_stacks_and_headshot_bonus() {
-        // Deadhead full stacks (initial): arc bd = 3 × 1.2 = 3.6 -> ratio
-        // 4.6 (bd 0). Headshot bonuses multiply the base multiplier via an
+        // Deadhead full stacks (initial): arc base_damage = 3 × 1.2 = 3.6 -> ratio
+        // 4.6 (base_damage 0). Headshot bonuses multiply the base multiplier via an
         // additive bracket (Enemy_Body_Parts verbatim: 3 × (1 + 30% + …)):
         // this 3x head becomes 3.9x.
         // 10 shots × 75 × 3.9 × 4.6 = 13,455. No kills: no decay in 10 s.
@@ -19368,7 +19368,7 @@ mod tests {
 
     #[test]
     fn merciless_stacks_join_the_base_damage_bucket_and_decay_one_by_one() {
-        // Full 12 stacks × 30% = +360% -> ratio 4.6 (bd 0). Within the
+        // Full 12 stacks × 30% = +360% -> ratio 4.6 (base_damage 0). Within the
         // first 4 s no decay: 4 shots × 75 × 4.6 = 1380.
         let p = DummyParams {
             arcane: arc_stacked("secondary_merciless"),
@@ -19434,7 +19434,7 @@ mod tests {
     fn shiver_adds_damage_per_cold_status_on_the_target() {
         // Forced Cold procs land AFTER each shot and last 6 s each: shot k
         // sees min(k, 5) live stacks (older procs lapse), Σ = 35. GunCO
-        // bracket on the additive-with-bd weapon:
+        // bracket on the additive-with-base_damage weapon:
         // 75 × Σ(1 + 0.45 × stacks) = 75 × 25.75 = 1931.25.
         let p = DummyParams {
             arcane: arc("secondary_shiver"),
@@ -19740,7 +19740,7 @@ mod tests {
     fn a_weapon_may_overrule_what_a_head_is_worth() {
         let head3x = |m: Option<f64>, deadhead: f64| DummyParams {
             headshot_multiplier: m,
-            arcane: ArcaneFx { headshot_mult_bonus: deadhead, ..ArcaneFx::none() },
+            arcane: ArcaneFx { headshot_multiplier_bonus: deadhead, ..ArcaneFx::none() },
             crit_tier_upgrade_chance: 0.0,
             slash_on_crit: 0.0,
             body_parts: vec![BodyPart {
@@ -19800,7 +19800,7 @@ mod tests {
         // 10 × 75 × 2 = 1500.
         let head = DummyParams {
             // RELATIVE now: 1.0 x a base of 1.0 = +100% absolute.
-            weakpoint_cc_rel: 1.0,
+            weakpoint_crit_chance_relative: 1.0,
             unmodded_crit_chance: 1.0,
             crit_multiplier: 2.0,
             base_crit_chance: 0.0,
@@ -19848,7 +19848,7 @@ mod tests {
             ..no_status()
         };
         let with = DummyParams {
-            cd_on_kill: Some(crate::loadout::TimedBuff {
+            crit_damage_on_kill: Some(crate::loadout::TimedBuff {
                 value: 1.0,
                 duration: 9.0,
                 initial_active: false,
@@ -19875,7 +19875,7 @@ mod tests {
             ..flat_base()
         };
         let with = DummyParams {
-            fr_on_reload: Some(crate::loadout::TimedBuff {
+            fire_rate_on_reload: Some(crate::loadout::TimedBuff {
                 value: 1.0,
                 duration: 9.0,
                 initial_active: false,
@@ -20002,8 +20002,8 @@ mod tests {
         t.base_health = 1000.0;
         t.mode = TargetMode::InfiniteHealth;
         t.attenuation = Some(Attenuation {
-            instance_frac: 0.05,
-            dps_frac: 0.50,
+            instance_fraction: 0.05,
+            dps_fraction: 0.50,
         });
         let p = DummyParams {
             crit_multiplier: 1.0,
@@ -20046,7 +20046,7 @@ mod tests {
             // scales each part's own base). A base of 1.0 makes 0.12 land as
             // +12% absolute, leaving the arithmetic above unchanged.
             unmodded_crit_chance: 1.0,
-            cc_on_headshot: Some(crate::loadout::TimedBuff {
+            crit_chance_on_headshot: Some(crate::loadout::TimedBuff {
                 value: 0.12,
                 duration: 12.0,
                 initial_active: true,
@@ -20080,12 +20080,12 @@ mod tests {
         let p = DummyParams {
             base_crit_chance: 0.1,
             unmodded_crit_chance: 1.0, // relative buff values — see above
-            cc_on_headshot: Some(crate::loadout::TimedBuff {
+            crit_chance_on_headshot: Some(crate::loadout::TimedBuff {
                 value: 0.12,
                 duration: 12.0,
                 initial_active: true,
             }),
-            cc_stack: Some(crate::loadout::StackSpec {
+            crit_chance_stack: Some(crate::loadout::StackSpec {
                 per_stack: 0.04,
                 max_stacks: 5,
                 duration: 12.0,
@@ -20212,12 +20212,12 @@ mod tests {
             }),
             ..Default::default()
         };
-        // sd = 2.0: steps at 1.0 s intervals.
+        // status_damage = 2.0: steps at 1.0 s intervals.
         assert_eq!(d.heat_strip(0.9, 2.0), 0.0);
         assert_eq!(d.heat_strip(1.1, 2.0), 0.15);
         assert_eq!(d.heat_strip(3.9, 2.0), 0.40);
         assert_eq!(d.heat_strip(4.1, 2.0), 0.50);
-        // sd = 0.5: full strip already at 1.0 s.
+        // status_damage = 0.5: full strip already at 1.0 s.
         assert_eq!(d.heat_strip(1.1, 0.5), 0.50);
     }
 
@@ -20658,7 +20658,7 @@ mod tests {
         let s = monte_carlo(&p, 12, 99);
         let rep = replay(&p, s.median_run.rng_state, 60);
         assert_eq!(rep.frames.len(), 60, "one frame per slot, gaps filled");
-        assert!((rep.dt - 0.5).abs() < 1e-9, "30 s over 60 frames");
+        assert!((rep.frame_seconds - 0.5).abs() < 1e-9, "30 s over 60 frames");
 
         // Re-running from the same state gives the identical RunResult.
         let again = run_once(&p, &mut Rng::new(s.median_run.rng_state));
@@ -21071,12 +21071,12 @@ mod tests {
         // 1 + 6.6 x 0.8 — spelled out, because clippy reads the literal 6.28
         // as an approximation of TAU and it is nothing of the sort.
         assert!((p.compression_multiplier - (1.0 + 6.6 * 0.8)).abs() < 1e-9, "6.6 m -> +528%");
-        assert_eq!(p.compression_bd, 0.0);
+        assert_eq!(p.compression_base_damage, 0.0);
         let braton = crate::loadout::WeaponBase::from_data("braton_incarnon", true, &[]);
         let p = DummyParams::from_panel(
             &crate::loadout::resolve(&braton, &[], crate::loadout::StackPolicy::Emergent), &arena, &fx,
         );
-        assert!((p.compression_bd - 2.4).abs() < 1e-9, "3.0 m x 0.8 = +240%");
+        assert!((p.compression_base_damage - 2.4).abs() < 1e-9, "3.0 m x 0.8 = +240%");
         assert_eq!(p.compression_multiplier, 1.0);
 
         // …and the fight tells them apart. Serration is +165%, so an ADDING
@@ -21120,7 +21120,7 @@ mod tests {
             // for a reason that has nothing to do with the passive.
             arcane: crate::arcanes_data::ArcaneFx::none(),
             crit_tier_upgrade_chance: 0.0,
-            weakpoint_cc_rel: 0.0,
+            weakpoint_crit_chance_relative: 0.0,
             body_parts: vec![BodyPart {
                 name: "body".into(),
                 aim_weight: 1.0,
@@ -21159,7 +21159,7 @@ mod tests {
         // way a head pellet could out-crit a body pellet is if the bonus
         // survived the set. It does not.
         let aimed = |head: bool| DummyParams {
-            weakpoint_cc_rel: 3.5, // Acuity rank 10
+            weakpoint_crit_chance_relative: 3.5, // Acuity rank 10
             body_parts: vec![BodyPart {
                 name: if head { "head".into() } else { "body".into() },
                 aim_weight: 1.0,
@@ -21533,22 +21533,22 @@ mod replay_reads_every_buff_tests {
         };
         let mut params = DummyParams {
             co_stack: Some(stack(0.2)),
-            ms_stack: Some(stack(0.3)),
-            cc_stack: Some(stack(0.1)),
+            multishot_stack: Some(stack(0.3)),
+            crit_chance_stack: Some(stack(0.1)),
             stacking_buffs: vec![
                 buff("on_plain_hit_damage", crate::loadout::BuffGrant::BaseDamage,
                      crate::loadout::BuffTrigger::PlainHit),
                 buff("on_headshot_reload_speed", crate::loadout::BuffGrant::ReloadSpeed,
                      crate::loadout::BuffTrigger::Headshot),
             ],
-            cc_on_headshot: Some(timed(0.5)),
-            cd_on_kill: Some(timed(0.6)),
-            fr_on_reload: Some(timed(0.7)),
-            bd_on_reload: Some(timed(0.8)),
+            crit_chance_on_headshot: Some(timed(0.5)),
+            crit_damage_on_kill: Some(timed(0.6)),
+            fire_rate_on_reload: Some(timed(0.7)),
+            base_damage_on_reload: Some(timed(0.8)),
             // Rostered only where a mod reads the count, so the fixture
             // carries both halves — the passive and the mod that pays for it.
             tendril_max: 4,
-            cc_per_tendril: 0.1,
+            crit_chance_per_tendril: 0.1,
             ..DummyParams::default()
         };
 

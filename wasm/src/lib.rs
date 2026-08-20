@@ -117,7 +117,7 @@ fn status_json(state: &FunnelState, phase: &str, counts: Option<(usize, usize)>,
         .map(|n| {
             serde_json::json!({
                 "round": n.round, "jobs": n.jobs, "runs": n.runs,
-                "by_kills": n.by_kills, "kept": n.kept, "best": n.best, "ms": n.ms,
+                "by_kills": n.by_kills, "kept": n.kept, "best": n.best, "multishot": n.multishot,
             })
         })
         .collect();

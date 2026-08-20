@@ -53,7 +53,7 @@ dot:
     headshot_multiplier: 1.0
     headshot_multiplier_boostable: true
 
-cc_effects:
+crit_chance_effects:
   - kind: stun
     duration_seconds: 3
     # note: >-

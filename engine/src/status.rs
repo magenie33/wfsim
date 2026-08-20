@@ -3,7 +3,7 @@
 //! Rules (wiki `Status_Effect`; docs/MECHANICS.md §6 — unverified until
 //! golden-tested):
 //! - The listed status chance `SC` rolls **per pellet/hit**. `SC > 100%`
-//!   gives `floor(SC)` guaranteed rolls plus a `frac(SC)` chance of one more.
+//!   gives `floor(SC)` guaranteed rolls plus a `fraction(SC)` chance of one more.
 //! - Only a successful roll draws a **type**, weighted by the hit's (modded)
 //!   damage vector: `P(type) = damage / total`. Draws are independent — the
 //!   same type can repeat within one hit.

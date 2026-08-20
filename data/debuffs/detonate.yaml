@@ -71,7 +71,7 @@ delayed_burst:
   # count resets to 0 and the cycle restarts.
   detonation_consumes_all_stacks: true
 
-cc_effects:
+crit_chance_effects:
   - kind: stagger
     # note: The early-detonation explosion staggers enemies caught in it
     # (in-game description).
