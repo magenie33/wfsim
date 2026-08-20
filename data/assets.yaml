@@ -44,12 +44,15 @@ weapons:
   akvasto: Akvasto.png
   akvasto_prime: AkvastoPrime.png
   akzani: Akzani.png
+  amprex: Amprex.png
   angstrum: Angstrum.png
   atomos: Atomos.png
   atomos_incarnon: Atomos.png
+  attica: Attica.png
   ax_52: AK47Weapon.png
   ballistica: Ballistica.png
   ballistica_prime: BallisticaPrime.png
+  baza: Baza.png
   baza_prime: BazaPrime.png
   boar: Boar.png
   boar_incarnon: Boar.png
@@ -78,6 +81,7 @@ weapons:
   cernos_prime_uncharged: CernosPrime.png
   cestra: Cestra.png
   cestra_incarnon: Cestra.png
+  daikyu: Daikyu.png
   dera: Dera.png
   dera_incarnon: Dera.png
   dera_vandal: DeraVandal.png
@@ -100,6 +104,12 @@ weapons:
   gorgon: Gorgon.png
   gorgon_wraith: GorgonWraith.png
   gotva_prime: GrnOrokinRifle.png
+  grakata: Grakata.png
+  grinlok: Grinlok.png
+  hek: Hek.png
+  ignis: Ignis.png
+  ignis_wraith: IgnisWraith.png
+  karak: Karak.png
   karak_wraith: KarakWraith.png
   knell_prime: KnellPrime.png
   kunai: Kunai.png
@@ -153,20 +163,32 @@ weapons:
   morgha: ThanoTechGrenadeLauncher.png
   morgha_alt: ThanoTechGrenadeLauncher.png
   phage: Phage.png
+  prisma_grakata: PrismaGrakata.png
   prisma_twin_gremlins: PrismaTwinGremlins.png
+  purgator_1: LasrianNox.png
+  quartakk: Quartakk.png
   rauta: PaxDuviricusShotgun.png
   reconifex: TnBeltFedRifle.png
   sagek_prime: GrnOrokinPistol.png
+  sancti_tigris: SanctiTigris.png
   secura_dual_cestra: SecuraDualCestra.png
+  sobek: Sobek.png
   spectra_vandal: CorpusLaserPistolVandal.png
   steflos: TnoLotusPodShotgun.png
+  supra: Supra.png
+  supra_vandal: SupraVandal.png
   telos_akbolto: TelosAkbolto.png
   thornbak: ModQuestRifle.png
+  tiberon: Tiberon.png
+  tigris: Tigris.png
+  tigris_prime: TigrisPrime.png
   twin_grakatas: TwinGrakatas.png
   twin_gremlins: TwinGremlin.png
   twin_rogga: TwinRogga.png
   twin_vipers: TwinVipers.png
   twin_vipers_wraith: TwinViperWraith.png
+  vaykor_hek: VaykorHek.png
+  veldt: Veldt.png
   velocitus: Velocitus.png
   velocitus_uncharged: Velocitus.png
   artax: Artax.png
@@ -294,6 +316,7 @@ weapons:
   vectis: Vectis.png
   vectis_prime: VectisPrime.png
   verglas_prime: VerglasPrime.png
+  zhuge: Zhuge.png
   zylok: ConclaveLeverPistol.png
   zylok_prime: ZylokPrime.png
 

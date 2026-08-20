@@ -1,0 +1,63 @@
+id: baza
+name: Baza
+slot: primary
+# THE ORDINARY BAZA. Same damage per shot as the Prime and the same 16.67 rounds
+# a second; what the Prime bought is crit chance, status, twenty more rounds, a
+# faster reload and a falloff window that starts 8 m further out.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
+mastery_rank: 7
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 80.0
+disposition: 1.05           # riven disposition
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Baza
+traits: [tenno]
+introduced: "22.4"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/TnSMG/TnSMGWeapon
+noise: silent
+ammo_type: primary
+ammo_max: 800
+ammo_pickup: 80
+magazine: 40
+reload_seconds: 1.4
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 1.0
+    max_deg: 1.5
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 16.67
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.26
+  crit_multiplier: 3.0
+  status_chance: 0.1
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  falloff:
+    start_m: 22.0
+    end_m: 34.0
+    reduction: 0.5
+  damage: { impact: 5.76, puncture: 6.72, slash: 3.52 }   # total 16
+
+unmodeled:
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Baza

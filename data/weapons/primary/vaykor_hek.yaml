@@ -1,0 +1,64 @@
+id: vaykor_hek
+name: Vaykor Hek
+slot: primary
+# STEEL MERIDIAN'S HEK: eight rounds instead of four, 3 rounds a second instead
+# of 2.17, and a crit chance raised from 10% to 25%. The pellets and their
+# damage are the ordinary Hek's, unchanged.
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, shotgun]   # CompatibilityTags SYNDICATEMODBLOCKED, SEMI_AUTO
+mastery_rank: 12
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 9.1
+disposition: 1.15           # riven disposition
+polarities: [vazarin, madurai]
+exilus_polarity: naramon
+riven_family: Hek
+traits: [syndicate, steel_meridian]
+introduced: "17.3"
+internal_name: /Lotus/Weapons/Syndicates/SteelMeridian/LongGuns/SMHek
+noise: alarming
+ammo_type: primary
+ammo_max: 120
+ammo_pickup: 15
+magazine: 8
+reload_seconds: 2.25
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 6.0
+    max_deg: 16.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 3
+  multishot: 7.0
+  ammo_cost: 1
+  crit_chance: 0.25
+  crit_multiplier: 2.0
+  status_chance: 0.107
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  falloff:
+    start_m: 10.0
+    end_m: 25.0
+    reduction: 0.7333
+  damage: { impact: 11.25, puncture: 48.75, slash: 15 }   # 75 a pellet, 525 a shot
+
+unmodeled:
+  - "the JUSTICE syndicate effect, which on a proc detonates a radial blast and heals the wielder — it fires off a syndicate standing meter this sim does not track, and the blast is not counted here"
+  - "this weapon CANNOT use Scattered Justice, which its page states outright — so unlike the ordinary Hek it is missing nothing from the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Vaykor_Hek

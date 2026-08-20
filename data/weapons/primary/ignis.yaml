@@ -1,0 +1,74 @@
+id: ignis
+name: Ignis
+slot: primary
+# A FLAMETHROWER WITH A THREE-METRE SPHERE AT THE END OF IT. The beam reaches
+# 20 m and detonates a 3 m blast where it lands, which is what the AOE tag on
+# this weapon means — and, like every AoE continuous weapon, that radius takes
+# NO multishot.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags BEAM, ASSAULT_AMMO, AOE
+mastery_rank: 5
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 0.7            # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: naramon
+riven_family: Ignis
+traits: [grineer]
+introduced: "8.0"
+internal_name: /Lotus/Weapons/ClanTech/Chemical/FlameThrower
+noise: alarming
+ammo_type: primary
+ammo_max: 150
+ammo_pickup: 40
+magazine: 150
+reload_seconds: 2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+# WHERE THE RAMP STARTS. "Damage ramps up from 35% to 100% over 0.6 seconds when
+# firing. After firing stops for 0.8 seconds, the damage decays back to 35% over
+# 2 seconds" — a stated exception to the 20% most beams get.
+beam_ramp_floor: 0.35
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 8
+  multishot: 1.0
+  ammo_cost: 0.5
+  crit_chance: 0.11
+  crit_multiplier: 2.0
+  status_chance: 0.27
+  punch_through_m: 0.0
+  # THE BEAM AND ITS SPHERE. "The zone of impact or maximum beam range has a
+  # spherical blast radius of 3 meters, allowing it to hit multiple enemies at
+  # once", and it benefits from Firestorm. NO chain.
+  beam:
+    range_m: 20.0
+    damage_radius_m: 3.0
+    radius_takes_multishot: false
+    chain:
+      hops: 0
+      range_m: 0.0
+      damage_per_hop: 0.0
+      origin: radius_targets
+  # THE REACH IS THE BEAM'S and lives in the `beam:` block above —
+  # wiki: "Range: 20.0 m". A continuous weapon carries it there rather
+  # than on the attack, because the radius and the chain read it too.
+  damage: { heat: 33 }   # total 33
+
+source:
+  url: https://wiki.warframe.com/w/Ignis

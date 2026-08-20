@@ -1,0 +1,62 @@
+id: zhuge
+name: Zhuge
+slot: primary
+# A SILENT REPEATING CROSSBOW AT A HUNDRED DAMAGE A BOLT AND 35% STATUS. Like
+# the Attica it "counts as a bow in regards to fire rate mods" and like the
+# Attica it does not charge, which is exactly the split `class: crossbow`
+# carries.
+class: crossbow
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, bow]   # CompatibilityTags PROJECTILE, ZHUGE, CROSSBOW
+mastery_rank: 10
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 40.0
+disposition: 1.2            # riven disposition
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Zhuge
+traits: []
+introduced: "18.6"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/RepeatingCrossbow/RepeatingCrossbow
+noise: silent
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 20
+reload_seconds: 2.5
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 5.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 90
+  fire_rate: 4.17
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.2
+  crit_multiplier: 2.0
+  status_chance: 0.35
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 90 m/s. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 5, puncture: 75, slash: 20 }   # total 100
+
+unmodeled:
+  - "the bow-exclusive Thunderbolt mod is outside the pools this roster loads — on this weapon it turns every bolt into a grenade, which is a whole second damage source"
+  - reason: bolt_corpse_ragdoll
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Zhuge

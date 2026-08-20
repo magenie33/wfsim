@@ -1,0 +1,63 @@
+id: tigris_prime
+name: Tigris Prime
+slot: primary
+# EIGHT PELLETS OF 195 — 1560 a shell against the ordinary Tigris's 1050 — out
+# of the same two-round duplex magazine, with a shallower falloff. The pellet
+# count is the whole of the Prime.
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, shotgun]   # CompatibilityTags SINGLESHOT
+mastery_rank: 13
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 9.1
+disposition: 0.95           # riven disposition
+polarities: [madurai, naramon]
+exilus_polarity: naramon
+riven_family: Tigris
+traits: [prime, vaulted]
+introduced: "Hotfix: The Silver Grove 3"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeTigris/PrimeTigris
+noise: alarming
+ammo_type: primary
+ammo_max: 120
+ammo_pickup: 15
+magazine: 2
+reload_seconds: 1.8
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 6.0
+    max_deg: 16.0
+  trigger: duplex
+  shot_type: hit_scan
+  fire_rate: 2
+  multishot: 8.0
+  ammo_cost: 1
+  crit_chance: 0.1
+  crit_multiplier: 2.0
+  status_chance: 0.1125
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  falloff:
+    start_m: 10.0
+    end_m: 20.0
+    reduction: 0.4872
+  damage: { impact: 19.5, puncture: 19.5, slash: 156 }   # 195 a pellet, 1560 a shot
+
+unmodeled:
+  - "Combat Reload, the Tigris-exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Tigris_Prime

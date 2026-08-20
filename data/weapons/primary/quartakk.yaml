@@ -1,0 +1,62 @@
+id: quartakk
+name: Quartakk
+slot: primary
+# FOUR BARRELS FIRED AT ONCE. The module gives a burst of 4 with a delay of
+# ZERO, which is the page's own "uniquely fires all four shots simultaneously
+# instead of consecutively" — so a pull is 196 damage in one instant, and half a
+# metre of punch through carries each of the four into a second body.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
+mastery_rank: 10
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 90.9
+disposition: 1.25           # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: madurai
+riven_family: Quartakk
+traits: [grineer]
+introduced: "22"
+internal_name: /Lotus/Weapons/Grineer/LongGuns/GrnFourBarrelRifle/GrnFourBarrelRifleWeapon
+noise: alarming
+ammo_type: primary
+ammo_max: 840
+ammo_pickup: 80
+magazine: 84
+reload_seconds: 1.9
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 1.0
+    max_deg: 1.2
+  trigger: burst
+  # THE BURST. The listed `fire_rate` counts BURSTS: one pull is 4 rounds
+  # fired at once (the module gives a delay of zero).
+  burst:
+    count: 4
+    delay_seconds: 0.0       # module BurstDelay
+  shot_type: hit_scan
+  fire_rate: 1.58
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.19
+  crit_multiplier: 2.3
+  status_chance: 0.27
+  punch_through_m: 0.5
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 18.13, puncture: 14.21, slash: 16.66 }   # total 49
+
+source:
+  url: https://wiki.warframe.com/w/Quartakk

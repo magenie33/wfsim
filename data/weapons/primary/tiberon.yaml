@@ -1,0 +1,63 @@
+id: tiberon
+name: Tiberon
+slot: primary
+# A THREE-ROUND BURST AT 44 A ROUND, 26% crit and a 2.4x multiplier. The Prime
+# is the same weapon with a fire-mode selector; this one is the burst alone.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
+mastery_rank: 10
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 33.33
+disposition: 1.1            # riven disposition
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Tiberon
+traits: [tenno]
+introduced: "14.9"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/DrakeRifle/DrakeRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 30
+reload_seconds: 2.26
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 6.0
+  trigger: burst
+  # THE BURST. The listed `fire_rate` counts BURSTS: one pull is 3 rounds
+  # spaced by the delay below.
+  burst:
+    count: 3
+    delay_seconds: 0.06       # module BurstDelay
+  shot_type: hit_scan
+  fire_rate: 6.67
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.26
+  crit_multiplier: 2.4
+  status_chance: 0.16
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 11, puncture: 22, slash: 11 }   # total 44
+
+unmodeled:
+  - "Critical Precision, the Tiberon-exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Tiberon

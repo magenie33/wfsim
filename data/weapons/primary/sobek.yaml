@@ -1,0 +1,62 @@
+id: sobek
+name: Sobek
+slot: primary
+# TWENTY ROUNDS OUT OF A SHOTGUN, five pellets of 70 apiece, and a falloff
+# window that only starts at 20 m — the longest in this batch's shotguns.
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, shotgun]
+mastery_rank: 7
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 9.1
+disposition: 1.33           # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: naramon
+riven_family: Sobek
+traits: [grineer]
+introduced: "9.0"
+internal_name: /Lotus/Weapons/Tenno/Shotgun/DoubleBarrelShotgun
+noise: alarming
+ammo_type: primary
+ammo_max: 240
+ammo_pickup: 15
+magazine: 20
+reload_seconds: 2.7
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 6.0
+    max_deg: 16.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 2.5
+  multishot: 5.0
+  ammo_cost: 1
+  crit_chance: 0.11
+  crit_multiplier: 2.0
+  status_chance: 0.162
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  falloff:
+    start_m: 20.0
+    end_m: 30.0
+    reduction: 0.5
+  damage: { impact: 52.5, puncture: 8.75, slash: 8.75 }   # 70 a pellet, 350 a shot
+
+unmodeled:
+  - "Shattering Justice, Acid Shells and Clip Delegation, the Sobek-exclusive mods — weapon-exclusive cards outside the pools this roster loads. Acid Shells in particular detonates corpses for a share of their health, which is a whole second damage source"
+
+source:
+  url: https://wiki.warframe.com/w/Sobek

@@ -1,0 +1,69 @@
+id: daikyu
+name: Daikyu
+slot: primary
+# SEVEN HUNDRED DAMAGE AN ARROW AND THREE METRES OF PUNCH THROUGH, the deepest
+# of any bow — six bodies' worth at `space::BODY_MATERIAL_M`. It cannot be
+# half-drawn, so every shot carries it, and every shot carries a guaranteed
+# Impact proc.
+class: bow
+form: charged
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, bow]   # CompatibilityTags PROJECTILE, DAIKYU
+mastery_rank: 10
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 16.7
+disposition: 1.3            # riven disposition
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Daikyu
+traits: [tenno]
+introduced: "16.5"
+internal_name: /Lotus/Weapons/Tenno/Bows/AsymetricalBow/AsymetricalBow
+noise: silent
+ammo_type: primary
+ammo_max: 72
+ammo_pickup: 15
+magazine: 1
+reload_seconds: 0.6
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 12.0
+  trigger: charge
+  shot_type: projectile
+  projectile_speed_mps: 140
+  fire_rate: 1
+  charge_seconds: 1
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.34
+  crit_multiplier: 2.0
+  status_chance: 0.46
+  punch_through_m: 3.0
+  # ONE GUARANTEED IMPACT PROC an arrow — the module's ForcedProcs, and the page
+  # states it as a characteristic. It is what makes Internal Bleeding a real
+  # card on this weapon.
+  forced_procs: [impact]
+  # NO RANGE ROW on this attack — Projectile at 140 m/s. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 210, puncture: 280, slash: 210 }   # total 700
+
+unmodeled:
+  - "'Fire rate mods apply double their bonuses' is MODELLED (`class: bow`), but this weapon's real cost is the other half of its page: it can only be fired FULLY CHARGED, so a player who releases early gets nothing at all. This sim always charges fully, which is the ceiling and is what a careful player does anyway"
+  - "Spring-Loaded Broadhead, Amalgam Daikyu Target Acquired and the bow-exclusive Thunderbolt are outside the pools this roster loads"
+  - reason: bolt_corpse_ragdoll
+  - reason: silent_weapon
+  - reason: zoom_steps
+
+source:
+  url: https://wiki.warframe.com/w/Daikyu

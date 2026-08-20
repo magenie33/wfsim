@@ -2743,8 +2743,18 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         // weapon CLASS, not on a per-weapon flag: the cards say "for Bows",
         // and the wiki's rank tables carry a whole "Fire Rate (Bows)" column
         // at exactly twice the rifle one.
+        //
+        // A CROSSBOW IS A BOW FOR THIS ONE RULE. DE files it as its own class
+        // and the Attica's and the Zhuge's pages both say, word for word,
+        // "Counts as a bow in regards to fire rate mods, doubling the fire rate
+        // bonus" — so the match is a SET rather than an equality, and the rest
+        // of what `class == "bow"` decides (the draw-only charge cadence) stays
+        // the bows' alone, since a crossbow does not charge (2026-08-20).
         independent_procs: independent_procs_for(s),
-        fire_rate_mod_multiplier: if s.class == "bow" { 2.0 } else { 1.0 },
+        fire_rate_mod_multiplier: match s.class.as_str() {
+            "bow" | "crossbow" => 2.0,
+            _ => 1.0,
+        },
         base_multishot: s.attack.multishot,
         buff_multishot_bonus: 0.0,
         buff_multishot_max_stacks: 0,
@@ -5985,6 +5995,14 @@ mod play_mode_tests {
             // increases by 11.67% per shot" — 0.70 / 6 = 11.67% a shot, full
             // from the 7th, so the two published sentences reconcile exactly.
             ("coda_bubonico", 0.30, 1.00, 6.0, 0.11667, 7),
+            // "Requires a spool-up of 5 shots before optimal fire rate is
+            // achieved", and "fire rate starts at 10% of the listed value, and
+            // increases by 22.5% per shot" — 0.90 / 4 = 22.5% a shot, full from
+            // the 5th. The lowest opening rate in the roster.
+            ("supra", 0.10, 1.00, 4.0, 0.225, 5),
+            // "…a spool-up of 4 shots", "starts at 40% … increases by 20% per
+            // shot" — 0.60 / 3 = 20% a shot, full from the 4th.
+            ("supra_vandal", 0.40, 1.00, 3.0, 0.20, 4),
         ];
         for (id, start, end, over, per_shot, full_at) in published {
             let s = spec(id)

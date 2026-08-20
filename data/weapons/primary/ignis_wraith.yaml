@@ -1,0 +1,79 @@
+id: ignis_wraith
+name: Ignis Wraith
+slot: primary
+# THE IGNIS AT 27 METRES AND 200 ROUNDS, with half again the crit chance. Its
+# beam is 0.15 m thick — the widest of any continuous weapon — and the 3 m
+# sphere at the end takes the total reach to 30 m, which is the number its own
+# page quotes.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags BEAM, ASSAULT_AMMO, AOE
+mastery_rank: 9
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 0.65           # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Ignis
+traits: [wraith, grineer]
+introduced: "19.12"
+internal_name: /Lotus/Weapons/ClanTech/Chemical/FlameThrowerWraith
+noise: alarming
+ammo_type: primary
+ammo_max: 200
+ammo_pickup: 40
+magazine: 200
+reload_seconds: 1.7
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+# WHERE THE RAMP STARTS. "Damage ramps up from 35% to 100% over 0.6 seconds when
+# firing. After firing stops for 0.8 seconds, the damage decays back to 35% over
+# 2 seconds" — the same floor as the ordinary Ignis, and a stated exception to
+# the 20% most beams get.
+beam_ramp_floor: 0.35
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 8
+  multishot: 1.0
+  ammo_cost: 0.5
+  crit_chance: 0.17
+  crit_multiplier: 2.5
+  status_chance: 0.29
+  punch_through_m: 0.0
+  # THE BEAM AND ITS SPHERE. Same 3 m radius as the ordinary Ignis, on a beam
+  # that reaches 27 m rather than 20 — "+3m blast radius at the endpoint
+  # resulting in a total range of 30m" is the page's own arithmetic. NO chain.
+  beam:
+    range_m: 27.0
+    damage_radius_m: 3.0
+    radius_takes_multishot: false
+    chain:
+      hops: 0
+      range_m: 0.0
+      damage_per_hop: 0.0
+      origin: radius_targets
+  # THE REACH IS THE BEAM'S and lives in the `beam:` block above —
+  # wiki: "Range: 27.0 m". A continuous weapon carries it there rather
+  # than on the attack, because the radius and the chain read it too.
+  damage: { heat: 35 }   # total 35
+
+unmodeled:
+  - "the BEAM'S THICKNESS, 0.15 m and the largest of any continuous weapon, is not modelled — this arena's beam is a ray, so a build that would clip an enemy with the edge of the beam misses here, and Heavy Caliber's accuracy penalty costs more in this sim than it does in game"
+  - "the area of effect CAN headshot, which the page marks as a BUG — this sim applies its headshot percentage to the direct hit alone, so the blast is never a head here"
+
+source:
+  url: https://wiki.warframe.com/w/Ignis_Wraith

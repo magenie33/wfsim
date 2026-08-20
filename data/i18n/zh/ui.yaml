@@ -195,6 +195,9 @@ ui:
   "'Chamber Cascade': a hit or a damaging status has a 4% chance to grant 100% ammo efficiency for 4 seconds (wiki). Ammo economy pays nothing here — reserves are infinite by default because this sim does not model ammo pickups — so the passive is real and worth nothing to this number": "「Chamber Cascade」：命中或造成伤害类异常状态时，有 4% 概率获得 100% 弹药效率、持续 4 秒（维基）。弹药经济在这里不产生任何收益 —— 本模拟不建模弹药拾取，所以备弹默认无限 —— 所以这个被动是真实存在的，但对这个数字毫无影响"
   "'Critical Hits have a 6% chance to set the next shot's Status Chance to 500%' (wiki). A SET ignores mods the way Gotva Prime's crit lock does, and this engine has that shape for a status-triggered CRIT lock and not for a crit-triggered STATUS one — so this weapon procs at the 1% on its card and never at the 500% it was built around. It is the larger half of the weapon": "「暴击有 6% 概率把下一发的触发几率设为 500%」（维基）。这种「设为」和 Gotva Prime 的暴击锁一样会无视 MOD，而本引擎有的是「异常状态触发暴击锁」那个形状，没有「暴击触发异常状态锁」的 —— 所以这把武器只按卡面上的 1% 触发，永远打不出它被设计出来的那个 500%。这是这把武器更大的那一半"
   "'DEATH KNELL', and it is most of the weapon: a weak-point hit grants 100% ammo efficiency, +0.5x final critical multiplier and +20% final status chance, stacking to 3, each stack lasting 2 seconds and refreshed by the next weak-point hit (wiki). This engine has no headshot-TRIGGERED buff — a crit is rolled for a hit and the body part is drawn beside it — so none of the three is applied, and the ammo half in particular is what makes a one-round magazine playable. Read this number as the weapon with its passive switched off": "「DEATH KNELL」，而且它就是这把武器的大部分：命中弱点会获得 100% 弹药效率、最终暴击倍率 +0.5x、最终触发几率 +20%，可叠加 3 层，每层持续 2 秒，并可被下一次弱点命中刷新（维基）。本引擎没有「爆头触发」的增益 —— 暴击是为这一次命中掷的，命中部位是在旁边另外抽的 —— 所以这三项一项都没有生效，而其中弹药那一半正是让一发弹匣能打得下去的原因。请把这个数字读作「关掉被动的这把武器」"
+  "'Enemies directly killed by Purgator 1 leave behind 1 Gas status effect stack', and 'the gas cloud deals damage each tick equal to HALF of the killing shot's damage' (wiki). It is an Extra Hit keyed on a KILL rather than on a hit, it takes the killing shot's crit tier and faction bonuses and no multishot, and this engine has no shape for a hit that only exists once something has died. Against anything that dies, this weapon is understated by roughly a third of its real output": "「被 Purgator 1 直接击杀的敌人会留下 1 层毒气异常状态」，而且「毒气云每一跳造成的伤害等于致命一击伤害的一半」（维基）。这是一次以「击杀」而不是以「命中」为触发条件的额外伤害，它继承致命一击的暴击层级和派系加成、不吃多重射击，而本引擎没有「只有在某个目标死掉之后才存在的命中」这种形状。只要目标会死，这把武器在这里就被低估了大约三分之一的真实输出"
+  "'Enemy corpses will still allow the beam to connect to nearby enemies' (wiki) — a chain in game can route through something already dead, and a body that dies here leaves the formation, so a long fight chains through fewer links than it would in a real room": "「敌人的尸体仍然可以让光束连到附近的敌人」（维基）—— 游戏里的连锁可以经由一具已经死掉的身体继续跳，而在这里死掉的身体会离开阵型，所以一场长时间的战斗在这里跳过的节点比在真实房间里少"
+  "'Fire rate mods apply double their bonuses' is MODELLED (`class: bow`), but this weapon's real cost is the other half of its page: it can only be fired FULLY CHARGED, so a player who releases early gets nothing at all. This sim always charges fully, which is the ceiling and is what a careful player does anyway": "「射速 MOD 的加成翻倍」这一条是已建模的（`class: bow`），但这把武器真正的代价在页面的另一半：它只能在完全蓄力后发射，提前松手什么都打不出来。本模拟永远蓄满，这是上限，也正是一个谨慎的玩家会做的事"
   "+30% Movement Speed while aiming, and the explosion's self-stagger: neither is a number this arena reads": 瞄准时 +30% 移动速度，以及爆炸对自身的踉跄：这两项都不是这个战场会读取的数字
   "+{n} more took damage and are not followed": 另有 {n} 个吃到伤害但没有被跟踪
   ", ": "、"
@@ -257,6 +260,7 @@ ui:
   "Biotic Rounds, the AX-52-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Biotic Rounds」，AX-52 的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Blast Radius": 爆炸半径
   "Body parts": 身体部位
+  "Brain Storm and Wild Frenzy, the Grakata-exclusive mods — weapon-exclusive cards outside the pools this roster loads": "「Brain Storm」和「Wild Frenzy」，Grakata 家族的专属 MOD——这是武器专属卡，不在本武器库载入的卡池里"
   "Buff coverage": 增益覆盖
   "Buffs": 增益
   "Build": 当前配装
@@ -271,6 +275,7 @@ ui:
   "Cloudflare — the bandwidth and build minutes that serve the app and its art from one origin.":
     Cloudflare：让应用和它的全部素材从同一个源站发出所需的带宽与构建时长。
   "Cold never converts on this unit, so the stacks climb to their cap and STAY — the bonus is up all fight instead of being spent on a 3-second Frozen window": 冷冻在这个单位上永远不会转化,所以层数会一路叠到上限并保持 —— 加成全程有效,而不是被 3 秒的冰冻窗口消耗掉
+  "Combat Reload, the Tigris-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Combat Reload」，Tigris 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Condition Overload bracket": 异常超载档
   "Condition Overload computes on this weapon's ORIGINAL base damage — this perk's added base is excluded, so every status type is worth less than the card implies": 异况超载按这把武器的原始基础伤害计算——这个进化增加的基础伤害不计入，所以每一种异常的价值都低于卡面看起来的样子
   "Cores": 算力
@@ -282,6 +287,7 @@ ui:
   "Critical Chance": 暴击几率
   "Critical Damage": 暴击伤害
   "Critical Mutation, the Catabolyst family's exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Critical Mutation」，Catabolyst 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
+  "Critical Precision, the Tiberon-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Critical Precision」，Tiberon 的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Ctrl+Z undoes the last change": Ctrl+Z 撤销上一步改动
   "DPS over time": DPS 曲线
   "DPS": DPS
@@ -295,10 +301,12 @@ ui:
   Damage: 伤害
   "Damzav-Vati, the Akbronco Prime-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Damzav-Vati」，Akbronco Prime 的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Deadly Maneuvers, the Magnus-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Deadly Maneuvers」，Magnus 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
+  "Deadly Sequence, the Grinlok-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Deadly Sequence」，Grinlok 的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Debuff coverage": 异常覆盖
   Detail: 明细
   "Direct hit": 直击
   "Direct hits": 直接命中
+  "Directed Convergence and Entropy Burst, the Supra-exclusive mods — weapon-exclusive cards outside the pools this roster loads": "「Directed Convergence」和「Entropy Burst」，Supra 家族的专属 MOD——这是武器专属卡，不在本武器库载入的卡池里"
   "Dodge Speed": 闪避速度
   "Double Jumps": 二段跳
   "Drain": 消耗
@@ -352,6 +360,7 @@ ui:
   "Hildryn's signature bonus is not modelled — carried by her it holds 300 more reserve ammo, 700 instead of 400, and this arena has no Warframe holding it": Hildryn 的专属加成尚未建模 —— 由她携带时备弹上限多 300（700 而不是 400），而这个战场里没有战甲持有它
   "Holstered Reload/s": 收枪装填/秒
   "How the weapon is PLAYED belongs to the entry, not to this ruler: a weapon with an Incarnon form is ranked twice, once through its cycle and once never transmuting.": 武器怎么打属于参赛条目，而不属于这把尺子：有灵化形态的武器会上榜两次，一次走灵化循环，一次全程不转变。
+  "INFINITE BODY PUNCH THROUGH: the page grants this weapon 1.1 m of punch through AND unlimited penetration of BODIES specifically. The 1.1 m is transcribed and spends `space::BODY_MATERIAL_M` a body like every other weapon's, so the slug stops after two enemies here where in game it would cross the whole line": "无限穿透身体：页面给这把武器 1.1 米穿透，并且额外给了对「身体」的无限穿透。这里录入的是那 1.1 米，并且和其他武器一样每穿过一个身体扣掉 `space::BODY_MATERIAL_M`，所以这颗弹丸在这里穿过两个敌人就停了，而在游戏里它会穿过一整排"
   "Incarnon Form": 灵化形态
   "Incarnon Genesis": 灵化之源
   "Incarnon cycle": 灵化循环
@@ -456,6 +465,7 @@ ui:
   "Runs here are added to the official board.": 在这里运行的配装会被加入官方榜单。
   "Runs": 次数
   "SEVEN OF THE EIGHT TARGETS. The mode locks \"up to 8 enemies within 60 meters on the reticle\" and fires a 2-round burst at each; this entry fires the burst ONE enemy receives, because the engine aims at a place and never picks targets. Against a lone enemy that is the whole attack and correct; in a crowd this weapon does up to eight times what is shown": "八个目标里的七个。该模式会锁定「准星上 60 米内最多 8 个敌人」，并对每个打出一轮 2 发连射；本条目打出的是「一个」敌人所承受的那一轮，因为引擎瞄准的是一个位置，从不挑选目标。对着孤立的一个敌人，这就是攻击的全部，且是正确的；在人群里，这把武器最多能做到屏幕上数字的八倍"
+  "Scattered Justice, the Hek-exclusive mod (+200% multishot) — a weapon-exclusive card outside the pools this roster loads, and the single largest thing missing from this weapon's real numbers": "「Scattered Justice」，Hek 的专属 MOD（+200% 多重射击）——这是一张武器专属卡，不在本武器库载入的卡池里，也是这把武器真实数值里缺得最多的一项"
   "Scenario": 场景
   "Scenarios": 场景
   "Scoped in, consecutive hits build a Shot Combo Counter: 1 landing hit multiply damage by 1.5x, and every threefold count past that adds another 0.5x. It drops by one for every 2 s without a hit, and it pays nothing at all from the hip.": 瞄准状态下连续命中会累积射击连击：命中 1 次即让伤害 ×1.5，此后每当连击数翻到三倍就再 +0.5。每 2 秒没有命中就掉 1 层，腰射则完全不生效。
@@ -470,6 +480,7 @@ ui:
   "Sentient": 意识体
   "Sentinel Weapons": 守护武器
   "Sequence Burn, the Spectra-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Sequence Burn」，Spectra 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
+  "Shattering Justice, Acid Shells and Clip Delegation, the Sobek-exclusive mods — weapon-exclusive cards outside the pools this roster loads. Acid Shells in particular detonates corpses for a share of their health, which is a whole second damage source": "「Shattering Justice」「Acid Shells」和「Clip Delegation」，Sobek 的专属 MOD——这些是武器专属卡，不在本武器库载入的卡池里。尤其是「Acid Shells」，它会按尸体生命值的一定比例引爆尸体，那是一整个第二伤害来源"
   "Shield": 护盾
   Shield: 护盾
   Shield: 护盾
@@ -481,6 +492,8 @@ ui:
   "Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM": 单体 · 凶魂百夫长 9999 钢铁 · 180 秒 · KPM
   "Sometimes it says the number is right and the game is wrong, and names the bug a hotfix would take away.":
   "Sort": 排序
+  "Spring-Loaded Broadhead and the bow-exclusive Thunderbolt are outside the pools this roster loads — Thunderbolt in particular turns every bolt into a grenade, which is a whole second damage source": "「Spring-Loaded Broadhead」以及弓专属的「Thunderbolt」都不在本武器库载入的卡池里 —— 尤其是「Thunderbolt」，它把每一发弩箭变成一颗手雷，那是一整个第二伤害来源"
+  "Spring-Loaded Broadhead, Amalgam Daikyu Target Acquired and the bow-exclusive Thunderbolt are outside the pools this roster loads": "「Spring-Loaded Broadhead」「Amalgam Daikyu Target Acquired」以及弓专属的「Thunderbolt」都不在本武器库载入的卡池里"
   "Sprint Speed": 冲刺速度
   "Stagger Resist (aiming)": 抗击退（瞄准时）
   Stalker: 追猎者
@@ -857,11 +870,13 @@ ui:
   "the 5% Life Steal on headshots, which is the other side of the same trade and equally invisible with nothing to heal from": "爆头附带的 5% 吸血，是同一笔交易的另一面，在没有东西可回复的情况下同样看不见"
   "the 8-degree spread is not modelled — this arena has one target at zero distance, so all six missiles always land on it": 8 度的散布尚未建模 —— 这个战场只有一个零距离的目标，所以六枚导弹永远全部命中
   "the ACCURACY improves during the spool as well (wiki), which is the half of it the page does state — this entry carries the settled cone, so a burst that would open wide here opens tight": "转膛过程中命中率也会提升（维基），这是页面确实写出来的那一半 —— 本条目带的是转满之后的散布，所以一段在游戏里会打得很散的点射，在这里一开始就是收紧的"
+  "the ALTERNATE FIRE adjusts the ZOOM and nothing else (wiki), so this weapon has one attack and no mode — there is nothing for the builder's Mode control to offer, and this arena has no field of view to trade anyway": "副攻击只调整倍率，别的什么都不做（维基），所以这把武器只有一种攻击、没有模式 —— 配装页的模式控件没有东西可选，而且这个战场本来也没有视野可以拿来换"
   "the ARCHWING column of this weapon is not offered — in space it is a single 440-damage Impact/Heat projectile with a 13% status chance instead of eleven hit-scan pellets at 1.3%, which is a different weapon rather than a restated one": 这把武器的太空数据列没有提供 —— 在太空里它是一发 440 伤害的冲击/火焰弹道、触发率 13%，而不是十一颗触发率 1.3% 的即时命中弹丸；那是另一把武器，不是同一把的另一组数字
   "the AUTO-SPOOL ramp is not modelled — the page gives this trigger as Auto-Spool and the fire rate here is the spooled-up {rate}/s from the first shot, so a short burst is faster in this sim than in game": 转膛加速尚未建模 —— 页面给的触发方式是 Auto-Spool，而这里从第一发就按转满的 {rate}/秒 计算，所以短点射在模拟里比游戏里快
   "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing": "空战枪投放器的五分钟冷却尚未建模 —— 备弹打空后，真实任务里这把枪整局就没了，而这个战场只是停火"
   'the BATTERY DISCHARGE that fires when the magazine empties: a 20 m pulse for 100 Impact. It is now fully SPECIFIED and merely unbuilt — the page states its whole scaling rule and I had declared it unknowable: "This is affected by base damage, Faction Damage Bonus, and Firestorm / Primed Firestorm; but not by elemental or multishot bonuses." So: the base-damage bucket and the faction column reach it, elements and multishot do not, and its RADIUS takes the blast-radius mods the shot''s own explosion refuses. Its status is a 100% CHANCE rather than a forced proc, so status mods push it past one proc and a negative-status riven makes it miss': 弹匣打空时释放的电池放电：20 米范围、100 点冲击。它现在是完全有据可依、只是还没实现 —— 页面把整条缩放规则都写明了，而我曾判定它不可知：「受基础伤害、派系伤害加成、以及烈火风暴／至尊烈火风暴影响；但不受元素或多重射击加成影响」。也就是说：基础伤害桶和派系列会作用到它，元素和多重射击不会，而它的半径吃这发子弹自己的爆炸所拒绝的爆炸半径 mod。它的触发是 100% 几率而不是强制触发，所以触发 mod 能把它推到一次以上，而负触发的紫卡会让它落空
   "the BEAM'S CONE is not modelled — the wiki says the primary fire `deals radial damage varying from of 1 to 4 meters in a cone shape`, and publishes no damage figure for it anywhere; only the direct beam damage is applied here, so this weapon reads low against anything the cone would have caught": 光束的锥形范围伤害尚未建模 —— wiki 写明主射击「造成 1 到 4 米不等的锥形范围伤害」，但任何地方都没有公布它的伤害数值；这里只应用了光束的直接伤害，所以面对本会被锥形覆盖到的目标时，这把武器的数字偏低
+  "the BEAM'S THICKNESS, 0.15 m and the largest of any continuous weapon, is not modelled — this arena's beam is a ray, so a build that would clip an enemy with the edge of the beam misses here, and Heavy Caliber's accuracy penalty costs more in this sim than it does in game": "光束的粗细（0.15 米，所有连续武器里最粗的）没有建模 —— 这个战场里的光束是一条射线，所以在游戏里用光束边缘擦到敌人的情况在这里算作射空，「Heavy Caliber」的精度惩罚在本模拟里的代价因此比游戏里更大"
   "the Blob Explosion is not modelled — this entry carries only the Blob Embed": Blob Explosion 尚未建模 —— 这个条目只装了 Blob Embed
   "the Bullet Attractor itself — it deals no damage, and what it is actually worth (redirecting enemy fire, letting one punch-through round hit twice) needs enemies that shoot back and a second target": 虚空异常的子弹吸引力场本身——它不造成伤害，它真正的价值（把敌人的子弹引开、让一发穿透弹命中同一个敌人两次）需要会还击的敌人和第二个目标才能体现
   "the Burst Shot is not modelled — this entry carries only the Charged Shot": Burst Shot 尚未建模 —— 这个条目只装了 Charged Shot
@@ -883,6 +898,7 @@ ui:
   "the Incarnon form's CHARGED arm-cannon shot is not modelled — this entry carries its held beam, and the charged shot is a second attack with its own explosion": 灵化形态的蓄力臂炮射击尚未建模 —— 这个条目装的是它的持续光束，蓄力射击是另一个攻击，还带自己的爆炸
   "the Incarnon form's bouncing secondary projectiles are not modelled — a stacked shot releases 2 to 5 of them, each exploding on up to 3 bounces": 灵化形态的弹跳次级投射物尚未建模 —— 叠层越高的一发放出 2 到 5 个，每个最多弹 3 次并各自爆炸
   "the Incarnon form's route to stacks is not modelled — entering grants 1 and leaving grants one per shell that was missing, on top of a free magazine refill, and played to the edge that is 2 x magazine - 1 stacks in one cycle": 灵化形态那条攒层路线尚未建模 —— 进形态给 1 层，出形态按进去时缺的每一发再给 1 层，还外送一次装满弹匣；打到极限是一个循环 2×弹匣−1 层
+  "the JUSTICE syndicate effect, which on a proc detonates a radial blast and heals the wielder — it fires off a syndicate standing meter this sim does not track, and the blast is not counted here": "「Justice」集团特效：触发时引爆一次范围爆炸并治疗持有者 —— 它由一条本模拟不跟踪的集团能量槽驱动，而那次爆炸在这里没有被计入"
   "the LIFTED SYNERGY is not modelled — the wiki gives this weapon `up to 13 additional instances of direct hit damage` against a Lifted enemy, and its own alt-fire is a guaranteed Lifted proc, so a real engagement alternates between lifting and cashing in; the sim applies the Lifted status (Condition Overload counts it) and none of the extra instances, which makes the primary read LOW for as long as the target is lifted": Lifted 联动尚未建模 —— wiki 写明这把武器打浮空目标时会造成「最多 13 次额外的直击伤害」，而它自己的副射击必定触发浮空，所以实战里是「浮空 → 兑现」来回循环；模拟只应用了浮空状态本身（异常状态过载会计入），额外的伤害实例一次都没有算，所以只要目标处于浮空，主射击的数字就偏低
   "the LINGERING FLAMES the grenades leave are not modelled — the page gives them 11 seconds of continuous damage and no per-tick number this intake could find, so the ground fire contributes nothing here and this weapon reads low": 榴弹留下的持续火焰尚未建模 —— 页面只说它持续 11 秒造成伤害，本次录入找不到每跳的数值，所以地面火焰在这里不贡献任何伤害，这把武器的数字偏低
   "the LOADOUT, not what the wielder is doing: off means a full one, which is what the board is scored under. On, this weapon is the only one carried — the Vasto's Lone Gun pays its \"With No Primary Equipped\" half, and every \"On Equip from Primary\" or \"while Holstered\" clause becomes impossible rather than merely unmodelled": 配装本身，而不是使用者在做什么：关闭时表示带着完整的一套武器，榜单也是按这个跑分的。开启后这把枪就是身上唯一的武器——瓦斯托的「孤枪」会付出它「未装备主武器时」的那一半，而所有「从主武器切换时」「收枪状态下」的词条则从「没做建模」变成「根本不可能触发」
@@ -891,6 +907,7 @@ ui:
   "the Normal Shot is not modelled — this entry carries only the Charged Shot": Normal Shot 尚未建模 —— 这个条目只装了 Charged Shot
   "the PARTIAL CHARGE is a separate entry (`lanka_uncharged`) — in game the two are the same trigger released at different moments, and picking between them here is a form choice rather than something the fight decides": 半蓄力射击是一个独立条目（`lanka_uncharged`）—— 游戏里两者是同一个扳机在不同时刻松开，而这里在两者之间选择是一个形态选项，不是战斗自己决定的
   "the PELLET COUNT spools from 1 to 12 and this entry fires 12 from the first shot — the fire-rate spool is modelled and the multishot one is not, so a short burst puts more pellets downrange here than in game":
+  "the PURITY syndicate effect, which on a proc heals the wielder and nearby allies and cleanses status from them — the wielder is not a body in this arena and there are no allies, so it pays nothing": "「Purity」集团特效：触发时治疗持有者与附近队友并清除他们身上的异常状态 —— 这个战场里持有者不是一个身体，也没有队友，所以它一分不值"
   "the SECOND ZOOM LEVEL is not modelled, and on this weapon it is a stat TRADE rather than a buff — 3.5x gives +100% damage, +3 m explosion radius and -75% fire rate, which is half the sustained DPS for a much bigger single hit. Choosing it is a mode, and this entry is the first level": 第二档变焦尚未建模，而且在这把武器上它是一次属性交易而不是加成 —— 3.5x 给 +100% 伤害、+3 米爆炸半径和 −75% 射速，也就是用一半的持续 DPS 换一发大得多的单发。选它是一个模式，而这个条目是第一档
   "the SEQUENCE syndicate effect, which converts damage dealt into shields for the wielder and nearby allies on a proc — the wielder is not a body in this arena and there are no allies, so it pays nothing": "「Sequence」集团特效：触发时把造成的伤害转化为持有者与附近队友的护盾 —— 这个战场里持有者不是一个身体，也没有队友，所以它一分不值"
   "the Sentient / Shadow Stalker damage-adaptation reset the Void proc performs": 虚空异常对 Sentient 与暗影 Stalker 伤害适应的重置
@@ -902,6 +919,7 @@ ui:
   "the alt fire cannot be reloaded manually to skip its delay, and Kinetic Ricochet does not affect its projectile — two cadence rules this arena has no reload interruption for": "交替射击不能靠手动换弹来跳过它的延迟，「动能跳弹」也不影响它的弹体——这两条都是节奏规则，而本场没有换弹打断可言"
   "the alt-fire needs four rounds in the magazine and reloads instead when it has fewer — this sim fires it whenever the mode is chosen, so a magazine that has run down does not force the reload here that it would in game":
   "the alternate fire detonates the arrow in mid-flight — this sim fires the shot and lets it land, so the choice of WHEN to burst it, which is most of how this weapon is aimed, is not a decision here":
+  "the area of effect CAN headshot, which the page marks as a BUG — this sim applies its headshot percentage to the direct hit alone, so the blast is never a head here": "范围伤害可以打出爆头，页面把这一条标注为 BUG —— 本模拟只把爆头比例应用在直接命中上，所以这里的爆炸永远不会算作爆头"
   "the atmospheric beam's INNATE INFINITE BODY PUNCH THROUGH is not modelled — it passes through a body to reach whatever is behind it, and this arena has one target with nothing behind it": 大气形态光束自带的无限躯体穿透尚未建模 —— 它会穿过一个身体打到后面的目标，而这个战场只有一个目标，后面什么都没有
   "the barb's 0.9 s ERUPTION DELAY is not modelled — in game the explosion lands nearly a second after the shot, and here the two arrive together, so a short engagement gets its damage sooner than it should": "倒刺 0.9 秒的爆发延迟没有建模——游戏里爆炸在开火将近一秒后才落地，这里两者同时到达，所以短交战拿到伤害的时间比实际更早"
   "the barb's 0.9 s ERUPTION DELAY is not modelled — in game the explosion lands nearly a second after the shot, and here the two arrive together, so a short engagement gets its damage sooner than it should": 倒刺 0.9 秒的爆发延迟尚未建模 —— 游戏里爆炸比命中晚将近一秒，这里两者同时到达，所以短交战拿到伤害的时间比实际更早
@@ -912,6 +930,7 @@ ui:
   "the board would not take this build, so nothing was sent": 榜单不会收这套配装，所以没有提交
   "the body the weapon was on": 武器瞄准的那一具
   "the bonus this copy came out of its Lich with — added as the weapon's own BASE damage, so elemental mods and status scale with it": 这把枪从它的 Lich 那里带出来的加成——作为武器自身的基础伤害加上去，所以元素 mod 和异常都会跟着放大
+  "the bow-exclusive Thunderbolt mod is outside the pools this roster loads — on this weapon it turns every bolt into a grenade, which is a whole second damage source": "弓专属的「Thunderbolt」MOD 不在本武器库载入的卡池里 —— 装在这把武器上它会把每一发弩箭变成一颗手雷，那是一整个第二伤害来源"
   "the build and its rivens — no fight and no measurement, so opening it leaves the reader's own scenario untouched":
   "the burst can be cancelled with a quick melee, which is a way to spend less than a full magazine and this arena never takes": "这轮连射可以用快速近战取消，那是一种「少花一整个弹匣」的打法，而本场从不这么做"
   "the burst can be interrupted by a quick melee, a dodge roll or a weapon swap — this arena does none of those, so it always runs to the end":
@@ -1033,6 +1052,7 @@ ui:
   "this target nullifies Warframe abilities — it pulses every 5 seconds and dispels everything in range, so none of these are running and the sim scores it that way": 这个目标会驱散战甲技能 —— 它每 5 秒脉冲一次、清除范围内的一切,所以下面勾选的都没有生效,模拟也是按没有生效来算的
   "this unit's faction takes more or less of these damage types, whatever its armor and shields do": 这个单位所属阵营对这些伤害类型更脆弱或更抗性，与它的护甲和护盾无关
   "this weapon CANNOT BE MODDED here — it uses melee and thrown melee mods (Pressure Point, Fury, Whirlwind, Power Throw) and this app models guns, so it has no pool to draw from. Its base numbers are real; a build is not": 这把武器在这里无法配装 —— 它使用近战与投掷近战 mod（压迫点、狂怒、旋风、强力投掷），而这个 app 建模的是枪械，没有任何池子可供它抽取。它的基础数值是真实的，配装不是
+  "this weapon CANNOT use Scattered Justice, which its page states outright — so unlike the ordinary Hek it is missing nothing from the pools this roster loads": "这把武器不能装备「Scattered Justice」，页面直接写明了这一点 —— 所以和普通 Hek 不同，它并没有因为卡池而少掉任何东西"
   "this weapon cannot be resupplied — once its reserve is gone it is removed for five minutes, so the setting has nothing to stand in for": 这把武器无法补给——储备打光后会被收回，五分钟后才能再次召唤，所以这个选项没有可代表的东西
   "this weapon cannot equip Concealed Explosives, the thrown-exclusive mod — a card outside the pools this roster loads either way": "这把武器装不了投掷专属 MOD「隐藏炸药」——那张卡本来也不在本武器库载入的卡池里"
   "this weapon does NOT inflict self-stagger, which is a real advantage over every other explosive in this batch and is worth nothing here, because the arena never charges any of them for it either": "这把武器「不会」自我踉跄，这相对本批次其它每一件爆炸武器都是实打实的优势，但在这里一文不值，因为本场对它们所有人都不收这笔账"

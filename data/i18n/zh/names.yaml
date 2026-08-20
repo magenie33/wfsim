@@ -384,6 +384,29 @@ weapons:
   twin_rogga: 双子罗格
   twin_vipers: 双子蝰蛇
   twin_vipers_wraith: 双子蝰蛇·亡魂
+  amprex: 安培克斯
+  attica: 阿提卡
+  baza: 苍鹰
+  daikyu: 大久和弓
+  grakata: 葛拉卡达
+  grinlok: 葛恩火枪
+  hek: 海克
+  ignis: 伊格尼斯
+  ignis_wraith: 伊格尼斯·亡魂
+  karak: 卡拉克
+  prisma_grakata: 棱晶·葛拉卡达
+  purgator_1: 净化者 1
+  quartakk: 夸塔克
+  sancti_tigris: 圣洁·猛虎
+  sobek: 鳄神
+  supra: 苏普拉
+  supra_vandal: 苏普拉·破坏者
+  tiberon: 狂鲨
+  tigris: 猛虎
+  tigris_prime: 猛虎 Prime
+  vaykor_hek: 勇气·海克
+  veldt: 草原猎手
+  zhuge: 诸葛连弩
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's

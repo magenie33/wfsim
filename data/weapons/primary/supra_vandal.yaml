@@ -1,0 +1,68 @@
+id: supra_vandal
+name: Supra Vandal
+slot: primary
+# THE SUPRA'S SHOT OUT OF THREE HUNDRED ROUNDS, and a spool that starts four
+# times higher: 40% of the listed rate rather than 10%, full from the fourth
+# round rather than the fifth.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags PROJECTILE, ASSAULT_AMMO
+mastery_rank: 14
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 28.6
+disposition: 1              # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: madurai
+riven_family: Supra
+traits: [corpus, vandal]
+introduced: "20.4"
+internal_name: /Lotus/Weapons/Corpus/LongGuns/Machinegun/SupraVandal
+noise: alarming
+ammo_type: primary
+ammo_max: 1600
+ammo_pickup: 80
+magazine: 300
+reload_seconds: 3
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 3.0
+    max_deg: 4.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 12.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.16
+  crit_multiplier: 2.0
+  status_chance: 0.3
+  punch_through_m: 0.0
+  # THE SPOOL, stated twice on its own page: "requires a spool-up of 4 shots
+  # before optimal fire rate is achieved" and "fire rate starts at 40% of the
+  # listed value, and increases by 20% per shot". 0.60 / 3 = 20% a shot, full
+  # from the 4th.
+  sustained_fire_rate:
+    start: 0.40
+    end: 1.00
+    over_shots: 3.0
+  # NO RANGE ROW on this attack — Projectile at 100 m/s. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 4, puncture: 30, slash: 6 }   # total 40
+
+unmodeled:
+  - "Directed Convergence and Entropy Burst, the Supra-exclusive mods — weapon-exclusive cards outside the pools this roster loads"
+  - reason: spool_rebuilds_after_reload
+
+source:
+  url: https://wiki.warframe.com/w/Supra_Vandal

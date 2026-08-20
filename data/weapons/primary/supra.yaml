@@ -1,0 +1,68 @@
+id: supra
+name: Supra
+slot: primary
+# A HUNDRED AND EIGHTY ROUNDS AT 12.5 A SECOND — once it gets there. It starts
+# at a TENTH of its listed rate and climbs 22.5% a shot, so it is full from the
+# fifth round and the first four are the slowest in the roster.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags PROJECTILE, ASSAULT_AMMO
+mastery_rank: 12
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 14.3
+disposition: 1.1            # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: naramon
+riven_family: Supra
+traits: [corpus]
+introduced: "8.0"
+internal_name: /Lotus/Weapons/ClanTech/Energy/CrpHeavyRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 1080
+ammo_pickup: 80
+magazine: 180
+reload_seconds: 3
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 6.0
+    max_deg: 8.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 12.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.12
+  crit_multiplier: 1.8
+  status_chance: 0.3
+  punch_through_m: 0.0
+  # THE SPOOL, and its page states it TWICE: "requires a spool-up of 5 shots
+  # before optimal fire rate is achieved" and "fire rate starts at 10% of the
+  # listed value, and increases by 22.5% per shot". 0.90 / 4 = 22.5% a shot,
+  # full from the 5th — the two sentences reconcile exactly.
+  sustained_fire_rate:
+    start: 0.10
+    end: 1.00
+    over_shots: 4.0
+  # NO RANGE ROW on this attack — Projectile at 100 m/s. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 4, puncture: 30, slash: 6 }   # total 40
+
+unmodeled:
+  - "Directed Convergence and Entropy Burst, the Supra-exclusive mods — weapon-exclusive cards outside the pools this roster loads"
+  - reason: spool_rebuilds_after_reload
+
+source:
+  url: https://wiki.warframe.com/w/Supra

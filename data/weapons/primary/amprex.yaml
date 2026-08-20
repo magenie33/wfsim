@@ -1,0 +1,81 @@
+id: amprex
+name: Amprex
+slot: primary
+# THE CHAIN LIGHTNING RIFLE. Its beam reaches 18 m and then jumps: three
+# enemies, 10 m apart, each hop at half the last one's damage — and a body
+# reached by PUNCH THROUGH starts a chain of its own, which is the wiki's own
+# rule and falls out of `chain::resolve` taking the struck bodies as seeds.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags BEAM, ASSAULT_AMMO, AOE
+mastery_rank: 10
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 12.5
+disposition: 0.85           # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: naramon
+riven_family: Amprex
+traits: [corpus]
+introduced: "13.1"
+internal_name: /Lotus/Weapons/Corpus/LongGuns/ChainLightningGun/ChainLightningRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 700
+ammo_pickup: 60
+magazine: 100
+reload_seconds: 2.6
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+# WHERE THE RAMP STARTS. "Damage ramps up from 30% to 100% over 0.6 seconds when
+# firing. After firing stops for 0.8 seconds, the damage decays back to 30% over
+# 2 seconds" — a stated exception to the 20% most beams get.
+beam_ramp_floor: 0.30
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 8.0
+    max_deg: 8.0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12
+  multishot: 1.0
+  ammo_cost: 0.5
+  crit_chance: 0.32
+  crit_multiplier: 2.2
+  status_chance: 0.22
+  punch_through_m: 0.0
+  # THE BEAM AND ITS CHAIN. "Beam can chain up to 3 nearby enemies within 10
+  # meters of each other, with each chain doing 50% of the previous chain's
+  # damage", and "each enemy hit by the main beam from Punch Through can
+  # generate a new set of 3 chains" — the second sentence needs no arrangement
+  # here: `chain::resolve` seeds from the struck bodies and each keeps its own
+  # `seen`. NO damage radius: the AOE tag on this weapon is the chain, and the
+  # page states no blast.
+  beam:
+    range_m: 18.0
+    damage_radius_m: 0.0
+    radius_takes_multishot: false
+    chain:
+      hops: 3
+      range_m: 10.0
+      damage_per_hop: 0.5
+      origin: beam_target
+  # THE REACH IS THE BEAM'S and lives in the `beam:` block above —
+  # wiki: "Range: 18.0 m". A continuous weapon carries it there rather
+  # than on the attack, because the radius and the chain read it too.
+  damage: { electricity: 22 }   # total 22
+
+unmodeled:
+  - "'Enemy corpses will still allow the beam to connect to nearby enemies' (wiki) — a chain in game can route through something already dead, and a body that dies here leaves the formation, so a long fight chains through fewer links than it would in a real room"
+
+source:
+  url: https://wiki.warframe.com/w/Amprex

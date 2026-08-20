@@ -1,0 +1,63 @@
+id: purgator_1
+name: Purgator 1
+slot: primary
+# A LAUNCHER WITH NO EXPLOSION. The module gives it one attack and no radial at
+# all: it is a 781-damage single-target slug with a guaranteed Impact proc, and
+# what it leaves behind is a GAS cloud on the bodies it KILLS — a mechanic keyed
+# on a death, which this engine has no shape for. See the admission.
+class: launcher
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags PROJECTILE, ASSAULT_AMMO
+mastery_rank: 14
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.15           # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: naramon
+riven_family: Purgator 1
+traits: [scaldra]
+introduced: "38.5"
+internal_name: /Lotus/Weapons/Lasria/LasGrenadeLauncher/LasrianNoxPlayerWeapon
+noise: alarming
+ammo_type: primary
+ammo_max: 20
+ammo_pickup: 2
+magazine: 9
+reload_seconds: 2.7
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 200
+  fire_rate: 1.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.31
+  crit_multiplier: 2.3
+  status_chance: 0.19
+  punch_through_m: 1.1
+  # ONE GUARANTEED IMPACT PROC a slug — the module's ForcedProcs.
+  forced_procs: [impact]
+  # NO RANGE ROW on this attack — Projectile at 200 m/s. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 351.45, puncture: 429.55 }   # total 781
+
+unmodeled:
+  - "'Enemies directly killed by Purgator 1 leave behind 1 Gas status effect stack', and 'the gas cloud deals damage each tick equal to HALF of the killing shot's damage' (wiki). It is an Extra Hit keyed on a KILL rather than on a hit, it takes the killing shot's crit tier and faction bonuses and no multishot, and this engine has no shape for a hit that only exists once something has died. Against anything that dies, this weapon is understated by roughly a third of its real output"
+  - "INFINITE BODY PUNCH THROUGH: the page grants this weapon 1.1 m of punch through AND unlimited penetration of BODIES specifically. The 1.1 m is transcribed and spends `space::BODY_MATERIAL_M` a body like every other weapon's, so the slug stops after two enemies here where in game it would cross the whole line"
+
+source:
+  url: https://wiki.warframe.com/w/Purgator_1
