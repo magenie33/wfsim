@@ -35,6 +35,7 @@ const r = await evaluate(`(async () => {
   const armor = box.querySelector('[data-k="wf_armor"]');
   armor.value = '1500'; armor.dispatchEvent(new Event('change'));
   await sleep(2500);
+  const armorAfterTyping = sim.wf_armor;
   const after = conds();
 
   // …AND A FRAME FILLS ALL THREE AT ONCE. Sprint is the one that matters most
@@ -61,8 +62,19 @@ const r = await evaluate(`(async () => {
   const e2 = box.querySelector('[data-k="wf_energy"]');
   e2.value = '900'; e2.dispatchEvent(new Event('change'));
   await sleep(1200);
+  // …AND THE ARMOR AGAIN, ON PURPOSE. Picking the frame overwrote the 1500
+  // typed above with Valkyr Prime's own 1000 — which is the control working —
+  // so the number that must travel is one typed AFTER the pick. A frame's own
+  // armor proves nothing about the payload: the recipient derives it from
+  // the frame field either way (2026-08-20).
+  const a2 = box.querySelector('[data-k="wf_armor"]');
+  a2.value = '1500'; a2.dispatchEvent(new Event('change'));
+  await sleep(1200);
 
-  return { keys, editable, nFrames, picked, overridden: sim.wf_energy, simArmor: 1500,
+  return { keys, editable, nFrames, picked, overridden: sim.wf_energy,
+           // THE STATE, not a literal: this read simArmor: 1500 and the
+           // assertion below compared 1500 to 1500, which is not a check.
+           typedArmor: armorAfterTyping, simArmor: sim.wf_armor,
            before: before.replace(/\s+/g,' ').trim().slice(0,120),
            after: after.replace(/\s+/g,' ').trim().slice(0,120),
            url: await shareUrl() };
@@ -85,7 +97,11 @@ check("picking one fills armor, max energy AND sprint",
   JSON.stringify(r.picked));
 check("...and they stay editable — no frame reaches the 700-energy gate",
   r.overridden === 900, String(r.overridden));
-check("typing armor reaches the scenario state", r.simArmor === 1500, String(r.simArmor));
+// READ AT THE MOMENT IT WAS TYPED. This read a literal 1500 the page-side body
+// returned, so it compared 1500 to 1500 and could not fail; the assertion above
+// is what actually covers a frame pick overwriting it (owner rule: prove it
+// bites). 2026-08-20.
+check("typing armor reaches the scenario state", r.typedArmor === 1500, String(r.typedArmor));
 check("no frame: Bulwark says nothing", !/Bulwark/i.test(r.before), r.before || "(no conditionals)");
 check("1,500 armor: the panel states Bulwark's +500%", /Bulwark/i.test(r.after) && /500/.test(r.after), r.after || "(no conditionals)");
 

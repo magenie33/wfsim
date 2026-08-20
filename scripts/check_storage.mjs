@@ -45,6 +45,18 @@ const r = await evaluate(`(async () => {
   // A scenario of our own — an official ruler is pinned — with a CROWD on it,
   // because a replay follows up to REPLAY_TRACKED bodies and one target is
   // the cheapest case rather than the representative one.
+  // A BUILD OF OUR OWN, FIRST. This check is about what a saved result COSTS,
+  // and nothing is saved without something to save it into: since
+  // "nothing is owned until it is made" (2026-08-19) a first-time visitor has
+  // NO build, activePreset is blank, and saveSimResult returns having written
+  // neither disk nor resultMem. That state is real and has its own check
+  // (check_zero_presets.mjs); it is simply not the one this file is about, and
+  // the file failed here rather than reporting it.
+  const bbar = document.querySelector('#preset-bar-builder-builds');
+  const badd = bbar && bbar.querySelector('.pchip.add');
+  if (badd) { badd.click(); await sleep(1200); }
+  out.hasBuild = loadPresetList(BUILDS).length > 0 && !!activePreset;
+
   const bar0 = document.querySelector('#preset-bar-simulator-scenarios');
   const add = bar0 && bar0.querySelector('.pchip.add');
   if (add) { add.click(); await sleep(1200); }
@@ -63,6 +75,7 @@ const r = await evaluate(`(async () => {
 
   // WHAT IT WOULD HAVE COST, so the assertion carries its own evidence.
   const mem = [...resultMem.values()][0];
+  out.memEntries = resultMem.size;
   out.replayChars = JSON.stringify((mem && mem.r && mem.r.replay) || null).length;
   out.summaryChars = JSON.stringify({ ...(mem && mem.r), replay: null }).length;
   out.memHasReplay = !!(mem && mem.r && mem.r.replay);
@@ -98,7 +111,10 @@ const r = await evaluate(`(async () => {
   localStorage.clear();
   const k2 = 'wfsim-presets-boar_prime-builder-builds';
   localStorage.setItem(k2, JSON.stringify(
-    [{ name: 'b1', state: {}, lastResult: { at: 1, key: 'x', r: { ...mem.r } } }]));
+    // GUARDED, so a missing precondition FAILS the assertion above instead of
+    // throwing an unread TypeError out of the page-side body. A check that
+    // crashes says less than one that fails (2026-08-20).
+    [{ name: 'b1', state: {}, lastResult: { at: 1, key: 'x', r: { ...((mem && mem.r) || {}) } } }]));
   out.beforeReclaim = localStorage.getItem(k2).length;
   out.freed = reclaimStoredReplays();
   out.afterReclaim = localStorage.getItem(k2).length;
@@ -107,6 +123,12 @@ const r = await evaluate(`(async () => {
 })()`);
 
 check("the run produced a result", r.ran === true, JSON.stringify(r.ran));
+// The precondition, stated: without a build there is nothing to save into, and
+// every measurement below would be measuring zero. It threw an unread
+// TypeError instead until 2026-08-20.
+check("...into a build of our own, which is what a result is saved against",
+  r.hasBuild === true && r.memEntries === 1,
+  `build ${r.hasBuild}, resultMem ${r.memEntries}`);
 check(`a replay is ${Math.round(r.replayChars / 1024)} KB against a `
   + `${Math.round(r.summaryChars / 1024 * 10) / 10} KB summary — `
   + `${Math.round(r.replayChars / r.summaryChars)}x`,
