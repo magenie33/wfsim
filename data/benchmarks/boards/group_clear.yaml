@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-engine: 23b54c340d6953b78359408319db181b16afff7a
+engine: b458594732eeb241780a56795fe55997dcdab554
 entries:
   - weapon: akarius_prime
     mode: base
@@ -151,7 +151,7 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: miter
     mode: cycle
-    score: 58.28938520092788
+    score: 57.87310066317312
     mods: [galvanized_chamber, serration, galvanized_aptitude, galvanized_scope, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [miter_evo1_incarnon_form, miter_plentiful_mayhem, miter_ready_retaliation, miter_commodores_fortune]
     arcanes: [primary_deadhead]

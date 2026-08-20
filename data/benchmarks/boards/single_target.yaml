@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 23b54c340d6953b78359408319db181b16afff7a
+engine: b458594732eeb241780a56795fe55997dcdab554
 entries:
   - weapon: akarius_prime
     mode: base
@@ -961,6 +961,24 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, creeping_bullseye, magnetic_might, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [cestra_evo1_incarnon_form, cestra_fortress_salvo, cestra_rapid_reinforcement, cestra_deathtrap_trigger]
     arcanes: [secondary_deadhead]
+  - weapon: coda_bubonico
+    mode: base
+    score: 20.38134574310723
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, laser_sight, shrapnel_shot, primed_charged_shell]
+    arcanes: [primary_deadhead]
+    valence: magnetic
+  - weapon: coda_bubonico
+    mode: base
+    score: 20.019985848813672
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shrapnel_shot, vigilante_armaments, primed_charged_shell]
+    arcanes: [primary_deadhead]
+    valence: magnetic
+  - weapon: coda_bubonico
+    mode: base
+    score: 18.23897192084793
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
+    arcanes: [primary_deadhead]
+    valence: magnetic
   - weapon: coda_sporothrix
     mode: base
     score: 24.55987121880847
@@ -1630,6 +1648,18 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    score: 17.97147349582813
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: heat
+  - weapon: kuva_nukor
+    mode: base
+    score: 17.75136938408459
+    mods: [galvanized_diffusion, hornet_strike, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge, scorch]
+    arcanes: [secondary_enervate]
+    valence: heat
   - weapon: kuva_nukor
     mode: base
     score: 17.122644133066306
@@ -2392,7 +2422,7 @@ entries:
     arcanes: [primary_crux, secondary_encumber]
   - weapon: miter
     mode: cycle
-    score: 10.00005862523384
+    score: 10.293367042410372
     mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, bladed_rounds, vile_acceleration, vital_sense, magnetic_capacity]
     evolutions: [miter_evo1_incarnon_form, miter_plentiful_mayhem, miter_ready_retaliation, miter_commodores_fortune]
     arcanes: [primary_crux]
