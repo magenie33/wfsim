@@ -6968,8 +6968,29 @@ const builtinBuilds = () => {
     const i = benchList().findIndex((b) => b.id === id);
     return i < 0 ? 99 : i;
   };
+  // …AND THEN BY MODE, IN THE WEAPON'S OWN ORDER, because the picker draws a
+  // group header only where the group CHANGES. board.json is sorted by SCORE
+  // inside a ruler and knows nothing about modes, so the two ways to play one
+  // weapon arrive interleaved: the Burston Prime's two `base` rows sit at
+  // positions 93 and 94 of its 100 `cycle` rows, which drew the Incarnon group
+  // twice with the base group wedged inside it and every rank out of order
+  // (owner, 2026-08-20). A rank only means something within one way of playing,
+  // and a list that says so has to keep them contiguous.
+  //
+  // `w.modes` is the order the builder's own Mode control offers — base first —
+  // so the picker and the control agree without either naming a mode.
+  const modeOrder = (m) => {
+    const i = (w.modes || []).indexOf(m || "base");
+    return i < 0 ? 99 : i;
+  };
   const rows = (BOARD[w.id] || []).slice()
-    .sort((a, b) => order(a.benchmark) - order(b.benchmark));
+    .sort((a, b) =>
+      order(a.benchmark) - order(b.benchmark)
+      || modeOrder(a.mode) - modeOrder(b.mode)
+      // Best first inside a mode. board.json already arrives this way; stating
+      // it here is what makes `#1` the leader rather than a bet on the scorer's
+      // write order.
+      || (b.score || 0) - (a.score || 0));
   const many = ((w.modes || []).length > 1);
   const rank = {};
   return rows.map((row) => {
