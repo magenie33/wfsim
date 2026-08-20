@@ -411,52 +411,31 @@ pub fn first_hit(muzzle: Vec2, dir: Vec2, bodies: &[Vec2]) -> Option<(usize, f64
 /// reaches it is the model's choice, and docs/MEASUREMENTS.md carries the
 /// experiment that would confirm it: a counted number of pellets, a known
 /// range, a weapon of known spread, count what lands.
-pub const BODY_RADIUS_M: f64 = 0.2;
+pub const BODY_RADIUS_M: f64 = 0.25;
 
-/// WHAT A BODY COSTS A PUNCH-THROUGH BUDGET, in metres of material — and it is
-/// NOT twice [`BODY_RADIUS_M`], because the two are different quantities with
-/// different sources.
+/// A WHOLE BODY'S WORTH OF MATERIAL — the DIAMETER, because a body is a circle.
 ///
-/// The radius above is MEASURED (M46): walking into an enemy stops at 0.4 m
-/// centre to centre, so a body occupies 0.2 m of floor. This one is PUBLISHED,
-/// and the wiki's Punch Through page gives it twice over:
+/// DERIVED, NOT DECLARED (owner, 2026-08-20). This was its own constant at
+/// 0.5 m with its own source, sitting beside a radius of 0.2 m, and this file
+/// argued at length that the two were different quantities that must not be
+/// confused. They are the same quantity — how much of a body a shot goes
+/// through — and what made them look different was the radius being wrong.
 ///
-/// - *"The torso hitbox of three butchers combined adds up to over 1.2m of
-///   material"* — so over 0.4 m each; and
-/// - the "Minimum Mod Ranks for Penetration" table, which is the sharp one.
+/// THE PUBLISHED TABLE WAS ALWAYS A MEASUREMENT OF THE RADIUS. The wiki's
+/// "Minimum Mod Ranks for Penetration" brackets a humanoid to `(0.4, 0.5]`:
+/// 0.4 m fails on three independent mods and 0.5 m works on Vigilante Offense.
+/// That is `a_body_costs_what_the_wiki_table_says`, thirteen cells with no
+/// exceptions. A radius of 0.2 gives a diameter of 0.4 and is EXCLUDED by it;
+/// 0.25 gives exactly 0.5. The table was being read as evidence about a
+/// separate constant when it is evidence about this one.
 ///
-/// THE TABLE PINS IT. Every one of its thirteen humanoid cells is reproduced by
-/// a single threshold of 0.5 m, and the table brackets the value from both
-/// sides — the largest rank that FAILS is 0.4 and the smallest that WORKS is
-/// 0.5, so the true figure is in (0.4, 0.5] and 0.5 is the only round number
-/// in it:
-///
-/// | mod                          | largest ✗ | smallest ✓ |
-/// |------------------------------|-----------|------------|
-/// | Shred / Seeking Fury         | 0.4       | 0.6        |
-/// | Primed Shred                 | 0.4       | 0.6        |
-/// | Vigilante Offense            | 0.25      | **0.5**    |
-/// | Power Throw                  | 0.3       | 0.7        |
-/// | Metal Auger / Seeker         | 0.4       | 0.7        |
-///
-/// `a_body_costs_what_the_wiki_table_says` asserts the whole table.
-///
-/// WHY NOT MOVE THE RADIUS INSTEAD. Deriving this from the radius would mean
-/// raising it to 0.25 m, which overwrites an in-game measurement the owner took
-/// himself with a table whose own note says *"Average data, result will differ
-/// due to width variances"* — and would move every distance-dependent number on
-/// the board by 0.05 m for the privilege. Two facts about one body, each kept
-/// at its own source. The property that motivated the question survives either
-/// way: crossing a body costs 0.5, so 0.5 m of punch-through reaches the SECOND
-/// of two adjacent enemies, which is exactly what the table says.
-///
-/// A FLAT COST, not a chord. The table publishes ONE number per enemy type and
-/// warns that the real thing varies with width; charging a chord would be a
-/// geometry this engine invented, and it would contradict the table for every
-/// shot that is not dead centre. QUADRUPEDS are out of scope — the table's own
-/// rows for them disagree with each other (Power Throw's 0.7 penetrates where
-/// Vigilante Offense's 0.75 does not), which is that caveat showing.
-pub const BODY_MATERIAL_M: f64 = 0.5;
+/// IT AMENDS M47, which derived 0.2 by walking into an enemy and stopping at
+/// 0.4 m centre to centre. That step assumes the stop distance is exactly the
+/// sum of two radii with no push-out margin between the capsules, and nothing
+/// measured that. Two independent sources now say 0.25 — the owner's own figure
+/// for both the Tenno and an enemy, and a published table that excludes 0.4 —
+/// against one derivation that needed an assumption to get to 0.2.
+pub const BODY_MATERIAL_M: f64 = 2.0 * BODY_RADIUS_M;
 
 /// THE FURTHEST ANY AREA EFFECT REACHES — a gas cloud at full stacks (6 m) plus
 /// a body radius, which is more than the Tesla chain's 3 m and the Blast
@@ -529,32 +508,29 @@ impl Neighbours {
     }
 }
 
-/// WHAT CROSSING ONE BODY COSTS, at a ray that passes `perp` from its centre.
+/// THE MATERIAL A RAY CROSSES THROUGH A CIRCLE, exactly — the CHORD.
 ///
-/// Punch through is spent on MATERIAL, so a round that clips the edge of an
-/// enemy pays for the sliver it actually crossed and one through the middle
-/// pays for the whole width. The body is a circle of [`BODY_RADIUS_M`], so the
-/// chord it crosses is `2·sqrt(r² − perp²)` and the cost is that chord as a
-/// FRACTION of the widest one.
+/// `2·sqrt(r² − perp²)`, and there is nothing else to it: a body is a circle, a
+/// ray passing `perp` from its centre crosses that much of it, and one that
+/// misses crosses none. Through the centre it is the diameter, which is
+/// [`BODY_MATERIAL_M`] — so the published penetration table and this formula are
+/// the same statement, which is why there is one constant here and not two.
 ///
-/// THE PUBLISHED FIGURE IS THE CENTRE SHOT and stays exactly that: at `perp = 0`
-/// this is [`BODY_MATERIAL_M`] to the last bit, which is what the wiki's
-/// "Minimum Mod Ranks for Penetration" table measures and what calibrates it.
-/// Every number the roster already had is aimed at a body's centre, so none of
-/// them moves; what changes is the body BEHIND, clipped off-axis, which used to
-/// be charged a full width for a graze.
-///
-/// It is scaled rather than computed as a raw chord because the two constants
-/// are deliberately not the same thing (AGENTS.md): `BODY_RADIUS_M` is MEASURED
-/// and governs the hit test, `BODY_MATERIAL_M` is PUBLISHED and governs this.
-/// A raw `2·sqrt(r² − perp²)` would silently overwrite the published 0.5 m with
-/// 0.4 m and move every punch-through number in the roster.
-pub fn material_at(perp: f64) -> f64 {
-    let r = BODY_RADIUS_M;
-    if perp >= r {
+/// IT TAKES THE RADIUS AS AN ARGUMENT because bodies will not all be one size
+/// (owner, 2026-08-20). Whatever a Bombard or an Eximus turns out to measure, it
+/// is still a circle and this is still the formula; only the number changes, and
+/// it changes in one place.
+pub fn material_through(radius: f64, perp: f64) -> f64 {
+    if radius <= 0.0 || perp >= radius {
         return 0.0;
     }
-    BODY_MATERIAL_M * (r * r - perp * perp).sqrt() / r
+    2.0 * (radius * radius - perp * perp).sqrt()
+}
+
+/// What crossing one body of the standard size costs, at a ray passing `perp`
+/// from its centre — [`material_through`] at [`BODY_RADIUS_M`].
+pub fn material_at(perp: f64) -> f64 {
+    material_through(BODY_RADIUS_M, perp)
 }
 
 /// What one shot met on its way down the line — see [`traverse`].
@@ -994,7 +970,7 @@ mod tests {
         assert!(!caught_by_blast(3.0 + BODY_RADIUS_M + 0.01, 3.0));
 
         // …AND FALLOFF READS THE BEST POINT, which is the nearest one.
-        assert!((blast_reach(3.0) - 2.8).abs() < 1e-12);
+        assert!((blast_reach(3.0) - (3.0 - BODY_RADIUS_M)).abs() < 1e-12);
         // A body standing ON the epicentre reaches zero rather than negative.
         assert_eq!(blast_reach(0.0), 0.0);
         assert_eq!(blast_reach(BODY_RADIUS_M * 0.5), 0.0);
@@ -1045,8 +1021,9 @@ mod tests {
         let foe = Vec2::new(0.0, CONTACT_RANGE_M);
         assert_eq!(you.distance(foe), CONTACT_RANGE_M);
         assert_eq!(gap(you, foe), 0.0);
-        // …and a gap is what you set: 20 m apart is 20.4 m between centres.
-        assert!((gap(you, Vec2::new(0.0, 20.4)) - 20.0).abs() < 1e-12);
+        // …and a gap is what you set: 20 m apart is two radii more between
+        //    centres. Derived, so the radius can move without editing a test.
+        assert!((gap(you, Vec2::new(0.0, 20.0 + CONTACT_RANGE_M)) - 20.0).abs() < 1e-12);
     }
 
     /// THE SHOT LEAVES THE FRONT, and the front is wherever you are aiming.
@@ -1057,7 +1034,10 @@ mod tests {
         let foe = Vec2::new(6.0, 8.0);
         let m = muzzle(you, foe);
         assert!((you.distance(m) - BODY_RADIUS_M).abs() < 1e-12);
-        assert!((m.x - 0.12).abs() < 1e-12 && (m.y - 0.16).abs() < 1e-12);
+        assert!(
+            (m.x - 0.6 * BODY_RADIUS_M).abs() < 1e-12
+                && (m.y - 0.8 * BODY_RADIUS_M).abs() < 1e-12
+        );
         // …and the test's leg is to the CENTRE, one radius in from the ten
         // metres between them — while the FLIGHT is the gap, two radii in.
         assert!((range_to_centre(you, foe) - (10.0 - BODY_RADIUS_M)).abs() < 1e-12);

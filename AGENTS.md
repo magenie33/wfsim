@@ -1015,19 +1015,34 @@ around (decision 2026-07-31).
   bodies down their centres and all 7 when it clips them at 0.9 of a radius,
   53,619 DPS against 72,311. `traverse` is ONE walk with two readers
   (`struck_along` and `dissipation_point`) so they cannot disagree about where a
-  round stopped. THAT CONSTANT IS NOT TWICE THE RADIUS, and keeping the two apart is the
-  decision: `BODY_RADIUS_M = 0.2` is MEASURED (M46, walking into an enemy stops
-  at 0.4 m centre to centre) and governs spacing, the hit test and blast reach;
-  `BODY_MATERIAL_M = 0.5` is PUBLISHED, by the wiki's "Minimum Mod Ranks for
-  Penetration" table, whose thirteen humanoid cells are reproduced by that one
-  threshold and which brackets it from both sides (0.4 fails on three
-  independent mods, 0.5 works on Vigilante Offense). Raising the radius instead
-  would overwrite an in-game measurement with a table whose own note says
-  *"Average data, result will differ due to width variances"*, and move every
-  distance-dependent number on the board for the privilege — while the property
-  that motivates the question holds either way: 0.5 m reaches the SECOND of two
-  adjacent enemies.
-  A PUNCHED BODY IS A DIRECT HIT — full damage, multishot, and it may HEADSHOT
+  round stopped. THERE IS ONE NUMBER, AND IT IS THE RADIUS (owner, 2026-08-20).
+  `BODY_RADIUS_M = 0.25` for a Tenno and for an enemy alike, and
+  `BODY_MATERIAL_M` is DERIVED from it — `2r`, the diameter, because a body is a
+  circle and the material a shot crosses through the middle of one IS its width.
+  This file used to argue the opposite at length: that the two were different
+  quantities with different sources, a measured 0.2 m radius beside a published
+  0.5 m of material. They are the same quantity, and what made them look
+  different was the radius.
+  THE PUBLISHED TABLE WAS ALWAYS A MEASUREMENT OF THE RADIUS. The wiki's
+  "Minimum Mod Ranks for Penetration" brackets a humanoid to `(0.4, 0.5]` — 0.4
+  fails on three independent mods, 0.5 works on Vigilante Offense — which is
+  thirteen cells with no exceptions, asserted by
+  `a_body_costs_what_the_wiki_table_says`. A radius of 0.2 gives a diameter of
+  0.4 and is EXCLUDED by that table; 0.25 gives exactly 0.5. The table was being
+  read as evidence about a second constant when it is evidence about the first.
+  It AMENDS M47, which derived 0.2 from walking into an enemy and stopping at
+  0.4 m centre to centre — a step that assumes the stop distance is exactly two
+  radii with no push-out margin between the capsules, which nothing measured.
+  NOTHING MOVED: `one_fight` reports every answer unchanged on all three shapes,
+  and every golden value holds, because the hit test at contact is `r / 2r` for
+  ANY radius. What changes is only past contact, where a body is now the easier
+  target M47's own arithmetic describes — a 2 degree cone reaches one to about
+  7 m rather than 5.7 m.
+  AND THE FORMULA TAKES A RADIUS, so this survives bodies of other sizes:
+  `space::material_through(r, perp)` is `2·sqrt(r² − perp²)` and nothing else.
+  When a Bombard turns out to measure something different it is still a circle,
+  and only the number changes.
+    A PUNCHED BODY IS A DIRECT HIT — full damage, multishot, and it may HEADSHOT
   (owner, 2026-08-17) — and on a chaining weapon it STARTS ITS OWN CHAIN, which
   is the wiki's own rule: *"Each enemy hit by the main beam from Punch Through
   can generate a new set of 3 chains"*, independently, and *"the chain from the

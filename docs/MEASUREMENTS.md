@@ -2939,6 +2939,33 @@ now has a measurement under it rather than a shrug.
 - BEYOND CONTACT a smaller body is a harder target. The same 2 degree cone that
   missed a 0.25 m body past about 7 m misses a 0.2 m one past about 5.7 m.
 
+### AMENDED 2026-08-20 — the radius is 0.25 after all, and there is only one number
+
+The owner: the Tenno's radius and an enemy's are both **0.25 m**, and
+`BODY_RADIUS_M` and `BODY_MATERIAL_M` *"就应该是一个数字"* — should be one number.
+They now are: the material is `2r`, the diameter, because a body is a circle.
+
+**THE PENETRATION TABLE IS WHAT DECIDES IT, and it was in the repo the whole
+time.** `a_body_costs_what_the_wiki_table_says` brackets a humanoid's material to
+`(0.4, 0.5]` across thirteen published cells — 0.4 m fails on three independent
+mods, 0.5 m works on Vigilante Offense. Under one constant the material IS the
+diameter, so 0.2 m of radius gives 0.4 and is **excluded by that table**, while
+0.25 gives exactly 0.5. The table was being read as evidence about a separate
+constant when it is evidence about this one; that reading is what forced the
+split in the first place.
+
+**WHAT THIS MEASUREMENT ASSUMED.** The derivation above is "two bodies of the
+same size touching at 0.4 m makes each of them 0.2 m" — which requires the walk-in
+stop distance to be exactly the sum of two radii, with no push-out margin between
+the capsules. Nothing measured that step. Two independent sources now say 0.25
+against one derivation that needed an assumption.
+
+**WHAT IT MOVES: still nothing at contact.** `one_fight` reports every answer
+unchanged on all three shapes and every golden value holds, for the reason this
+entry already gives — the hit test at contact is `r / 2r` for any radius. Past
+contact the effect is this entry's own arithmetic read the other way: a 2 degree
+cone reaches a body to about 7 m again rather than 5.7 m.
+
 **STILL OPEN: whether the HIT TEST should read this radius.** What is measured
 is how much FLOOR a body occupies — which is what decides where two of them can
 stand. That the same number decides whether a pellet reaches one is the model's
