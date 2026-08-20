@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-engine: 50bfb1be5da64229c9e04d7ae01b3ebdb3a2e65a
+engine: aa0e00138b02dfd365fba2e66eae6a7173cb4a45
 entries:
   - weapon: akarius_prime
     mode: base
@@ -18,7 +18,7 @@ entries:
     arcanes: [secondary_fortifier]
   - weapon: arbucep
     mode: base
-    score: 83.91076980757306
+    score: 84.35807515275577
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_deadly_efficiency, marked_target, magnetized_cycle, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_fortifier]
   - weapon: ballistica_prime
@@ -82,6 +82,11 @@ entries:
     score: 236.61341264724769
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, marked_target, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: cycron
+    mode: base
+    score: 3.574434617085213
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
   - weapon: ignis_wraith
     mode: base
     score: 17.35042620419893
@@ -153,7 +158,7 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
   - weapon: lato_prime
     mode: cycle
-    score: 117.42793924816678
+    score: 141.3283168834148
     mods: [pistol_acuity, merciless_gunfight, seeker, primed_target_cracker, galvanized_shot, semi_pistol_cannonade, magnetic_might, primed_heated_charge]
     evolutions: [lato_prime_evo1_incarnon_form, lato_prime_reified_bane, lato_prime_exact_penance, lato_prime_carnage_reign]
     arcanes: [secondary_fortifier]
@@ -194,12 +199,12 @@ entries:
     arcanes: [secondary_irradiate]
   - weapon: phantasma_prime
     mode: base
-    score: 97.16295281059828
+    score: 150.42518059651897
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
   - weapon: phantasma_prime
     mode: alternate
-    score: 0.022418124568048887
+    score: 0.03684555430021267
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
   - weapon: phenmor
@@ -228,7 +233,7 @@ entries:
     arcanes: [primary_debilitate]
   - weapon: stug
     mode: cycle
-    score: 53.710598389474974
+    score: 61.64050543810812
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, lethal_torrent, frostbite, pistol_pestilence, primed_convulsion]
     evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
     arcanes: [secondary_deadhead]
@@ -244,6 +249,12 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
     arcanes: [secondary_deadhead]
+  - weapon: tenet_cycron
+    mode: base
+    score: 24.037521838232433
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
   - weapon: torid
     mode: cycle
     score: 251.07840169283384
