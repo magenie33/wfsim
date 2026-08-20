@@ -7601,12 +7601,16 @@ function autoForma() {
 // the page back to claiming the slot is free when it is a +25% penalty
 // (2026-08-21). A named letter says more than a missing picture.
 const POL_ART = new Set(["Madurai", "Naramon", "Vazarin", "Umbra", "Omni"]);
-const polGlyph = (pol) => POL_ART.has(cap(pol))
-  ? imgTag(POL(cap(pol)), "pol")
-  : `<span class="pol pol-txt">${escHtml(cap(pol).slice(0, 1))}</span>`;
+// ITS OWN, because `cap` is a LOCAL helper inside two other functions and using
+// it here threw `cap is not defined` on every render (caught by
+// check_debuff_coverage, 2026-08-21).
+const polCap = (s) => String(s || "").replace(/^./, (c) => c.toUpperCase());
+const polGlyph = (pol) => POL_ART.has(polCap(pol))
+  ? imgTag(POL(polCap(pol)), "pol")
+  : `<span class="pol pol-txt">${escHtml(polCap(pol).slice(0, 1))}</span>`;
 
 function polBtn(pol, i) {
-  const t = pol ? `${cap(pol)} — ${tr("change polarity")}` : tr("change polarity");
+  const t = pol ? `${polCap(pol)} — ${tr("change polarity")}` : tr("change polarity");
   return `<button class="pol-btn" data-i="${i}" title="${escHtml(t)}">${pol ? polGlyph(pol) : '<span class="nopol">◇</span>'}</button>`;
 }
 function renderMods() {
@@ -11852,7 +11856,14 @@ function renderStoredSimResult() {
 const REPLAY_SPEEDS = [1, 2, 5, 20];
 // An UNCAPPED buff has no maximum to draw against, so the curve scales to the
 // highest it actually reached and the readout says so.
-const rpCap = (b) => (b.uncapped ? "∞" : b.max);
+// NO CEILING IS EITHER SPELLING: the buff roster has always said it with a
+// max of 0 (`DummyParams::buff_roster`: "0 means no ceiling, which the api
+// and the UI both read as such") and the debuff roster now says it the same
+// way. Reading only the flag printed a bare "0" for every uncapped BUFF and
+// scaled its chart to 1 — an uncapped row drawn as though it were full from
+// the first stack (2026-08-21).
+const rpUncapped = (b) => !!b.uncapped || Number(b.max) === 0;
+const rpCap = (b) => (rpUncapped(b) ? "∞" : b.max);
 let replayState = null; // { data, i, playing, speed, raf }
 
 // ---- EVERY BLOCK FOLDS -------------------------------------------------
@@ -12079,7 +12090,7 @@ function replayMarkup(r) {
   const W = 600, H = 28;
   const curveRows = (roster, series, name, kind) => roster.map((b, i) => {
     const s = series[i] || [];
-    const max = Math.max(1, b.uncapped ? Math.max(...s) : b.max);
+    const max = Math.max(1, rpUncapped(b) ? Math.max(...s) : b.max);
     const px = (j) => (j / (s.length - 1)) * W;
     const py = (v) => H - 1 - (v / max) * (H - 2);
     const pts = s.map((v, j) => `${px(j).toFixed(1)},${py(v).toFixed(1)}`).join(" ");
@@ -12094,7 +12105,7 @@ function replayMarkup(r) {
     const offPct = (100 - up * 100).toFixed(2);
     // ...and the thing the 100% was hiding: how long the ramp took. This is
     // the answer to "初始肯定要花时间" as a number rather than a rounding.
-    const iFull = b.uncapped ? -1 : s.findIndex((v) => v >= b.max);
+    const iFull = rpUncapped(b) ? -1 : s.findIndex((v) => v >= b.max);
     const ramp = iFull < 0
       ? tr("never full")
       : `${tr("full at")} ${(iFull * rp.frame_seconds).toFixed(2)}s`;
