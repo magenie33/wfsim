@@ -19,6 +19,16 @@ pub enum Polarity {
     Unairu,
     Penjaga,
     Umbra,
+    /// AURA'S polarity on a WEAPON slot — a slot polarity only, like Omni, and
+    /// unlike Omni it matches NOTHING: no weapon mod carries it, so a mod put
+    /// there always pays the +25% mismatch. `slot_drain`'s ordinary
+    /// `Some(_)` arm is already that rule.
+    ///
+    /// Weapons really do ship one. The Vinquibus is *"Innate one Madurai and
+    /// one Aura polarities"* (its page), and this roster had recorded only the
+    /// Madurai — which reads as one polarised slot where the truth is two, one
+    /// of them a penalty (2026-08-21).
+    Aura,
     /// OMNI FORMA's universal polarity — a SLOT polarity only; no mod has it.
     /// "Matches any mod except Umbra mods" (wiki `Omni Forma`), which is why
     /// [`slot_drain`] tests the mod's polarity rather than just comparing.

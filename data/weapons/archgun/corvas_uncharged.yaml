@@ -12,9 +12,15 @@ co_behavior: additive_with_base_damage
 attack:
   # Cone half-angle from the reticle, degrees — wiki
   # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # THE ATMOSPHERE ROW, which is the column this arena is in. This read the
+  # ARCHWING one (0/0) until 2026-08-21 — the same two-column trap
+  # data/README.md records against WFCD's export, in the SPREAD column,
+  # which is the one that decides how much of a shot lands. The module has
+  # BOTH rows ('<Name>' and '<Name> (Atmosphere)') and this tool now reads
+  # the ground one.
   spread:
-    min_deg: 0.0
-    max_deg: 0.0
+    min_deg: 6.0
+    max_deg: 16.0
   trigger: semi_auto
   # NO CHARGE. An uncharged shot has no draw at all, and `charge_seconds: 0.0`
   # is refused outright — "a 0.0 charge outside a bow is just a fire rate".

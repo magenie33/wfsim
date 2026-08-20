@@ -59,9 +59,14 @@ co_behavior: additive_with_base_damage
 attack:
   # Cone half-angle from the reticle, degrees — wiki
   # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # THE ATMOSPHERE ROW's, which is zero: this fires a flat cone on the
+  # ground and what its page complains about instead is RECOIL — "notable
+  # recoil which throws off accuracy at medium-long range shooting" — which
+  # is a different mechanic and one docs/UNMODELLED.md already holds open.
+  # It read the ARCHWING row's 7/9 until 2026-08-21.
   spread:
-    min_deg: 7
-    max_deg: 9
+    min_deg: 0.0
+    max_deg: 0.0
   trigger: auto
   shot_type: hit_scan
   fire_rate: 10.42

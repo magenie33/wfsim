@@ -1864,6 +1864,8 @@ pub fn polarity(name: &str) -> Polarity {
         // after the Forma that grants it. `mods::slot_drain` already
         // knew about it; only this parser did not.
         "universal" => Polarity::Omni,
+        // …and the other slot-only one, which matches nothing at all.
+        "aura" => Polarity::Aura,
         other => panic!("unknown polarity in weapon data: {other}"),
     }
 }

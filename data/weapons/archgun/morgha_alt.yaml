@@ -39,7 +39,8 @@ attack:
   # because there the draw IS the cycle and the magazine is one arrow.
   shot_type: projectile
   projectile_speed_mps: 60
-  fire_rate: 0.83
+  # The module's figure; 0.83 is the card's two places.
+  fire_rate: 0.833
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.40

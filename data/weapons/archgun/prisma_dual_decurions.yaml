@@ -60,9 +60,14 @@ co_behavior: additive_with_base_damage
 attack:
   # Cone half-angle from the reticle, degrees — wiki
   # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  # THE ATMOSPHERE ROW's, which is zero: this fires a flat cone on the
+  # ground and what its page complains about instead is RECOIL — "notable
+  # recoil which throws off accuracy at medium-long range shooting" — which
+  # is a different mechanic and one docs/UNMODELLED.md already holds open.
+  # It read the ARCHWING row's 0.5/12 until 2026-08-21.
   spread:
-    min_deg: 0.5
-    max_deg: 12
+    min_deg: 0.0
+    max_deg: 0.0
   trigger: auto
   shot_type: hit_scan
   fire_rate: 12.5
@@ -73,7 +78,9 @@ attack:
   status_chance: 0.24
   # 1.4 m, not the ordinary Dual Decurion's 1.2 — the page lists the Prisma
   # separately and higher, and this entry had copied its sibling's (2026-08-17).
-  punch_through_m: 1.4
+  # Both module columns say 1.2 — the Archwing row and the Atmosphere one —
+  # so 1.4 was neither.
+  punch_through_m: 1.2
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan
   range_m: 300.0

@@ -25,7 +25,11 @@ disposition: 0.7             # riven disposition
 # weapon mod carries one, so an Aura slot matches nothing a gun can wear — the
 # conservative reading is an UNPOLARISED second slot (full drain) rather than a
 # guessed colour that would halve some mod's cost. Stated in `unmodeled:`.
-polarities: [madurai]
+# TWO SLOTS, and the second is an AURA polarity: "Innate one Madurai and one
+# Aura polarities" (the page). No weapon mod carries Aura, so that slot is a
+# +25% penalty rather than a discount — recording only the Madurai read as
+# one polarised slot where the truth is two.
+polarities: [madurai, aura]
 # NO EXILUS POLARITY — the module states none.
 riven_family: Vinquibus
 traits: []

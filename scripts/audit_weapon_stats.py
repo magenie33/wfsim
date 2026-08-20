@@ -68,20 +68,59 @@ except ImportError:
 # one Attacks list), which is the primary/secondary shape and not the Arch-Gun's
 # two. There is nothing here for a checker to pick the wrong column of, which is
 # the whole of the exclusion above.
+# ARCH-GUNS ARE IN, ON EVERY FIELD, because the module has BOTH columns.
+#
+# The exclusion was total and rested on a premise nobody had checked: that an
+# Arch-Gun's page carries two stat columns and the module carries only the
+# Archwing one. It carries BOTH — `Module:Weapons/data/archwing` has a separate
+# row per weapon named "<Name> (Atmosphere)", twenty of them, with the ground
+# figures this roster actually ships. So there is no column to pick wrongly and
+# nothing to skip: an Arch-Gun is checked on every field like any other weapon.
+#
+# It was worth reading rather than assuming. Every one of the thirty entries
+# turned out to carry the ATMOSPHERE damage already — the fault data/README.md
+# records against WFCD's export was never in this roster — and the four-field
+# subset this comment used to describe was leaving the other twenty unverified
+# for a reason that did not exist.
+
 MOD = {}
+ARCHGUN_NAMES = set()
 for module in ('primary', 'secondary', 'companion'):
     table = W.load(module)
     MOD.update(table.get('Weapons', table))
+_aw = W.load('archwing')
+ARCHGUN_NAMES = set(_aw)
+MOD.update(_aw)
 
 # A CASE DIFFERENCE IS NOT A DIFFERENT WEAPON, and one silently excluded a whole
 # family: this roster writes "MK1-Braton" and the module writes "Mk1-Braton", so
 # every MK1 entry was reported UNCHECKED and nobody read the word (2026-08-21).
 # It hid a real error — the MK1-Kunai's Incarnon multishot.
 MOD_CI = {k.casefold(): k for k in MOD}
+# …AND THE JOIN KEY THE REPO ACTUALLY MANDATES. data/README.md: join the two by
+# `internal_name` == `uniqueName`, NEVER by name. This tool matched on the
+# display name for weeks and paid for it twice — every MK1 weapon went unchecked
+# over a capital K, and the Vinquibus over the module's "(Primary)" suffix.
+# 442 of the 444 module rows carry `InternalName`, so the name is the FALLBACK
+# now rather than the rule.
+_seen = {}
+for _r in MOD.values():
+    _k = _r.get('InternalName')
+    if _k:
+        _seen.setdefault(_k, []).append(_r)
+# AN AMBIGUOUS KEY IS NO KEY. Eighteen module internal names are shared by more
+# than one row — an Arch-Gun's Archwing and Atmosphere rows carry the same one,
+# and `/Lotus/…/LaunchGrenade/ArchCannon` is on the Corvas, its Atmosphere row
+# AND the Corvas Prime. Keeping the last would have silently joined the Corvas
+# to its Prime and reported four disagreements that were the lookup's fault.
+MOD_BY_INTERNAL = {k: v[0] for k, v in _seen.items() if len(v) == 1}
 
 
-def module_row(name):
-    """The module's row for a display name, tolerating case."""
+def module_row(name, internal=None):
+    """The module's row: by internal name where both sides have one, else by
+    display name, tolerating case."""
+    if internal and internal in MOD_BY_INTERNAL:
+        return MOD_BY_INTERNAL[internal]
     if name in MOD:
         return MOD[name]
     key = MOD_CI.get(name.casefold())
@@ -132,6 +171,30 @@ EXPECTED = {
     # column cannot.
     ('lex_incarnon', 'attack.punch_through_m'): 'infinite BODY punch through; the 1.4 is surfaces',
     ('lex_prime_incarnon', 'attack.punch_through_m'): 'infinite BODY punch through; the 1.4 is surfaces',
+    # …and the Arch-Guns the same page's exception list names. Each entry cites
+    # it by name and adds the qualifier that goes with it — the innate figure is
+    # BODIES, and the module's number is the surface one where it has one.
+    ('cortege', 'attack.punch_through_m'): 'infinite body punch through',
+    ('corvas', 'attack.punch_through_m'): 'infinite BODY punch through; the 2.4 is surfaces',
+    ('corvas_uncharged', 'attack.punch_through_m'): 'infinite BODY punch through; the 2.4 is surfaces',
+    ('corvas_prime', 'attack.punch_through_m'): 'infinite BODY punch through; the 1.4 is surfaces',
+    ('corvas_prime_uncharged', 'attack.punch_through_m'): 'infinite BODY punch through; the 1.4 is surfaces',
+    ('kuva_grattler', 'attack.punch_through_m'): 'infinite body punch through',
+    ('mandonel', 'attack.punch_through_m'): 'infinite body punch through, unqualified on the list',
+    ('velocitus', 'attack.punch_through_m'): 'infinite BODY punch through; the 5 is surfaces',
+    ('velocitus_uncharged', 'attack.punch_through_m'): 'infinite BODY punch through; the 5 is surfaces',
+    # SIX MISSILES AS ONE ATTACK. The module lists the Arbucep's six as six
+    # attacks of one multishot each, one element apiece; this roster carries
+    # them as ONE attack of multishot 6 with `pellet_elements`, which is what
+    # lets a single entry fire them together.
+    ('arbucep', 'attack.multishot'): 'six missiles modelled as one attack of 6',
+    # A SUB-ATTACK COSTS NOTHING BECAUSE ITS PARENT PAID. The module bills the
+    # shot once and gives the explosion or the second stage 0; each of these is
+    # a standalone ENTRY here, so it has to charge for the shot it fires or the
+    # weapon would never run dry.
+    ('cortege_alt', 'attack.ammo_cost'): 'a standalone entry pays for its own shot',
+    ('mausolon_charged', 'attack.ammo_cost'): 'a standalone entry pays for its own shot',
+    ('morgha_alt', 'attack.ammo_cost'): 'a standalone entry pays for its own shot',
     # THE MAGAZINE IN SHOTS. 32 rounds at 4 a shot is 8 shots, and the entry
     # counts shots — the reload lands in the same place either way.
     ('ballistica_prime', 'magazine'): 'expressed in SHOTS: 32 rounds / 4 a shot',
@@ -195,7 +258,10 @@ SHOT_TYPES_SKIP = {'AoE', 'DoT'}
 # ours -> the module's spelling. A value on either side that this table does not
 # know is REPORTED, never skipped.
 WEAPON_ENUMS = {
-    'ammo_type': ('AmmoType', {'primary': 'Primary', 'secondary': 'Secondary'}),
+    # `Heavy` is the module's word for an Arch-Gun's reserve; this roster calls
+    # the slot `archgun`.
+    'ammo_type': ('AmmoType', {'primary': 'Primary', 'secondary': 'Secondary',
+                               'archgun': 'Heavy'}),
     'exilus_polarity': ('ExilusPolarity',
                         {'madurai': 'Madurai', 'naramon': 'Naramon',
                          'vazarin': 'Vazarin', 'zenurik': 'Zenurik',
@@ -204,7 +270,9 @@ WEAPON_ENUMS = {
 }
 POLARITY = {'madurai': 'Madurai', 'naramon': 'Naramon', 'vazarin': 'Vazarin',
             'zenurik': 'Zenurik', 'unairu': 'Unairu', 'penjaga': 'Penjaga',
-            'umbra': 'Umbra', 'universal': 'Universal'}
+            'umbra': 'Umbra', 'universal': 'Universal',
+            # A weapon really can ship one — the Vinquibus does.
+            'aura': 'Aura'}
 
 
 def dig(d, key):
@@ -244,10 +312,10 @@ def main(only):
             if parent is None:
                 findings.append('%s: inherits %r, which is not an entry' % (wid, d['inherits']))
                 continue
-            row = module_row(parent['name'])
+            row = module_row(parent['name'], parent.get('internal_name'))
             weapon_level = False
         else:
-            row = module_row(d['name'])
+            row = module_row(d['name'], d.get('internal_name'))
             weapon_level = True
         if row is None:
             # A FORM THAT DID NOT DECLARE `inherits`. 88 roster entries are form
@@ -274,6 +342,12 @@ def main(only):
             continue
         checked += 1
 
+        # THE GROUND ROW, where the weapon has one. This roster is an arena on
+        # the ground and ships the Atmosphere column, so that is the row to
+        # compare against — not a reason to skip the weapon.
+        atmo = MOD.get(str(row.get('Name')) + ' (Atmosphere)')
+        if atmo is not None:
+            row = atmo
         if weapon_level:
             for ours, theirs in WEAPON_FIELDS:
                 if ours not in d or row.get(theirs) is None:
