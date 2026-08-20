@@ -36,3 +36,6 @@ target-*/
 # wrangler's local state cache — written by any `wrangler kv`/`dev` run,
 # machine-local and never part of a deploy (the deploy is a push to main).
 .wrangler/
+
+# one-shot data generators: they run once, and what they decided is in docs/
+.scan/
