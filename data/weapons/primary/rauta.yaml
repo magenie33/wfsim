@@ -1,0 +1,64 @@
+id: rauta
+name: Rauta
+slot: primary
+# A MELEE COMBO BATTERY WEARING A SHOTGUN'S BODY. Eight pellets of 130, and its
+# published reason to exist is that each pellet adds 2 to the MELEE combo count
+# — which is worth exactly nothing in an arena with no melee in it. What is left
+# is a slow, hard-hitting Slash shotgun.
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, shotgun]
+mastery_rank: 8
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 4.0
+disposition: 1.1             # riven disposition
+polarities: [vazarin]
+exilus_polarity: naramon
+riven_family: Rauta
+traits: [tenno]
+introduced: "33.5"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/PaxDuviricusShotgun/PaxDuviricusShotgun
+noise: alarming
+ammo_type: primary
+ammo_max: 120
+ammo_pickup: 15
+magazine: 4
+reload_seconds: 1.2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). Thirty degrees at
+  # its widest, which is what an accuracy of 4 reads as.
+  spread:
+    min_deg: 12.0
+    max_deg: 30.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 0.8
+  multishot: 8.0
+  ammo_cost: 1
+  crit_chance: 0.06
+  crit_multiplier: 2.0
+  status_chance: 0.12
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the module states none for it, which is a
+  # fact rather than a gap. See data/surveys/weapon_range.yaml.
+  falloff:
+    start_m: 10.0
+    end_m: 20.0
+    reduction: 0.8
+  damage: { impact: 26, puncture: 26, slash: 78 }   # 130 a pellet, 1040 a shot
+
+unmodeled:
+  - "EACH PELLET ADDS 2 TO THE MELEE COMBO COUNT, capped at 28 a shot, and equipping it on Kullervo gives his melee +7 s of combo duration (wiki). This arena has no melee weapon for any of that to land on, so the weapon's published reason to exist pays nothing here"
+
+source:
+  url: https://wiki.warframe.com/w/Rauta

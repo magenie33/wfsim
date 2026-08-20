@@ -24,11 +24,18 @@ weapons:
   # file of its own, and the two guns do not look alike.
   akarius: SapientPistol.png
   akarius_prime: AkariusPrime.png
+  akbronco: Akbronco.png
+  akbronco_prime: AkbroncoPrime.png
+  akjagara_prime: AkjagaraPrime.png
+  akmagnus_prime: AkmagnusPrime.png
+  aksomati_prime: AksomatiPrime.png
   angstrum: Angstrum.png
   atomos: Atomos.png
   atomos_incarnon: Atomos.png
+  ax_52: AK47Weapon.png
   ballistica: Ballistica.png
   ballistica_prime: BallisticaPrime.png
+  baza_prime: BazaPrime.png
   boar: Boar.png
   boar_incarnon: Boar.png
   boar_prime: BoarPrime.png
@@ -51,6 +58,7 @@ weapons:
   burston_incarnon: Burston.png
   burston_prime: BurstonPrime.png
   burston_prime_incarnon: BurstonPrime.png
+  cantare: TnChoirframeKunai.png
   cernos_prime: CernosPrime.png
   cernos_prime_uncharged: CernosPrime.png
   cestra: Cestra.png
@@ -67,6 +75,7 @@ weapons:
   dread_uncharged: Dread.png
   dual_toxocyst: DualToxocyst.png
   dual_toxocyst_incarnon: DualToxocyst.png
+  exergis: CrpShapeBlastShotgun.png
   felarx: ZarimanPumpShotgun.png
   furis: Furis.png
   furis_incarnon: Furis.png
@@ -75,6 +84,7 @@ weapons:
   gorgon_wraith: GorgonWraith.png
   gotva_prime: GrnOrokinRifle.png
   karak_wraith: KarakWraith.png
+  knell_prime: KnellPrime.png
   kunai: Kunai.png
   kunai_incarnon: Kunai.png
   # THE KUVA BATCH (2026-08-19). The module's own `Image` field for each, which
@@ -118,12 +128,20 @@ weapons:
   kuva_grattler: KuvaGrattler.png
   larkspur: ShieldFrameArchGun.png
   larkspur_charged: ShieldFrameArchGun.png
+  magnus_prime: MagnusPrime.png
   mandonel: TnConcreteArchgun.png
   mandonel_uncharged: TnConcreteArchgun.png
   mausolon: ThanotechLongGun.png
   mausolon_charged: ThanotechLongGun.png
   morgha: ThanoTechGrenadeLauncher.png
   morgha_alt: ThanoTechGrenadeLauncher.png
+  phage: Phage.png
+  rauta: PaxDuviricusShotgun.png
+  reconifex: TnBeltFedRifle.png
+  sagek_prime: GrnOrokinPistol.png
+  spectra_vandal: CorpusLaserPistolVandal.png
+  steflos: TnoLotusPodShotgun.png
+  thornbak: ModQuestRifle.png
   velocitus: Velocitus.png
   velocitus_uncharged: Velocitus.png
   artax: Artax.png
@@ -142,7 +160,11 @@ weapons:
   stinger: Stinger.png
   sweeper: Sweeper.png
   sweeper_prime: SweeperPrime.png
+  velox: OdaliskSmgWeapon.png
+  velox_prime: VeloxPrime.png
   verglas: SentinelFreezeRayRifle.png
+  vesper_77: LasSilencedPistolWeapon.png
+  vinquibus: TnBayonetRifle.png
   vulklok: Vulklok.png
   helstrum: Helstrum.png
   multron: Multron.png

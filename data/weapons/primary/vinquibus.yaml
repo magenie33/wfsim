@@ -1,0 +1,68 @@
+id: vinquibus
+name: Vinquibus
+slot: primary
+# A BAYONET RIFLE THAT TAKES THE MELEE SLOT WITH IT, and the only entry in the
+# roster whose published polarities include one this engine's polarity set does
+# not have. Both are admitted below; what is here is the rifle half, which is a
+# 400-damage semi-auto with the highest crit multiplier of any assault rifle in
+# the roster.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
+mastery_rank: 14
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 33.6
+disposition: 0.7             # riven disposition
+# THE MODULE PUBLISHES TWO, `['Madurai', 'Aura']`, and only one of them is
+# transcribed. There is no Aura polarity in `engine::mods::Polarity` and no
+# weapon mod carries one, so an Aura slot matches nothing a gun can wear — the
+# conservative reading is an UNPOLARISED second slot (full drain) rather than a
+# guessed colour that would halve some mod's cost. Stated in `unmodeled:`.
+polarities: [madurai]
+# NO EXILUS POLARITY — the module states none.
+riven_family: Vinquibus
+traits: []
+introduced: "41"
+internal_name: /Lotus/Weapons/Tenno/Bayonet/TnBayonetRifleWeapon
+noise: alarming
+ammo_type: primary
+ammo_max: 80
+ammo_pickup: 8
+magazine: 8
+reload_seconds: 3.0
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 2.0
+    max_deg: 5.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 1.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.40
+  crit_multiplier: 3.2
+  status_chance: 0.20
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { puncture: 280, slash: 120 }   # total 400
+
+unmodeled:
+  - "the second INNATE POLARITY the wiki publishes for this weapon is an AURA one, and no weapon mod carries an Aura polarity — so this entry gives that slot no colour at all, which costs a build the discount a matching slot would have paid. Capacity here is therefore a FLOOR: whatever that slot does in game, it cannot be worse than unpolarised"
+  - "EQUIPPING THIS WEAPON OCCUPIES THE MELEE SLOT TOO, so a Vinquibus loadout gives up a melee weapon entirely — a cost this arena cannot price, because it has no melee to give up"
+  - "headshots grant 2 stacks (max 16) of 'Vinquibus Precision', increasing MELEE damage by 250% — the buff is real and lands on a weapon this sim does not fire, so it is worth nothing here and a great deal to the player it was designed for"
+
+source:
+  url: https://wiki.warframe.com/w/Vinquibus

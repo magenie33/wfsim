@@ -1,0 +1,69 @@
+id: vesper_77
+name: Vesper 77
+slot: secondary
+# A SILENCED 1999 PISTOL WITH A LASER SIGHT, and the first entry in the roster
+# whose aim bonus has no zoom level attached to it: aiming grants +40% critical
+# damage and the page publishes no magnification at all. That is what `scope:`
+# says here, and why its `magnification` is absent rather than invented.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 14
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 16.0
+disposition: 0.8             # riven disposition
+polarities: [madurai, naramon]
+# NO EXILUS POLARITY — the module states none.
+riven_family: Vesper 77
+traits: []
+introduced: "38.0"
+internal_name: /Lotus/Weapons/Lasria/LasSilencedPistol/LasSilencedPistolWeapon
+noise: silent               # the module's IsSilent, and the page's suppressor
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 60
+magazine: 8
+reload_seconds: 2.35
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+# "Aiming highlights weak points indicated by crosshairs and grants +40%
+# Critical Damage" (wiki). It is the same bucket a sniper scope's crit-multiplier
+# bonus lands in and it is gated the same way — on the fight's Aiming state —
+# so it is a `scope:` even though the weapon has no scope on it.
+scope:
+  crit_multiplier: 0.4
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.5
+    max_deg: 12.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 2.08
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.24
+  crit_multiplier: 2.6
+  status_chance: 0.26
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 72, puncture: 108 }   # total 180
+
+unmodeled:
+  - reason: silent_weapon
+  - "the laser sight also HIGHLIGHTS weak points on screen, which is an aiming aid rather than a damage bonus — this sim draws its head hits from the fight's headshot percentage and cannot be helped to aim"
+  - "Leaded Gas, the Vesper 77-exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Vesper_77

@@ -1,0 +1,64 @@
+id: ax_52
+name: AX-52
+slot: primary
+# A 1999 ASSAULT RIFLE WHOSE WHOLE IDENTITY IS A CHOICE THE ARENA CANNOT MAKE.
+# Its page states one bonus for hip-firing and a different one for aiming, and
+# this arena aims by default — so the aimed half is the one that applies, and
+# the aimed half is a HEADSHOT-conditional crit chance the engine has no bucket
+# for. Both are admitted below rather than half-applied.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
+mastery_rank: 12
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 133.33
+disposition: 0.85            # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: madurai
+riven_family: AX-52
+traits: []
+introduced: "36.0.5"
+internal_name: /Lotus/Weapons/Lasria/AK47/TC2024AK47Weapon
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 40
+reload_seconds: 2.0
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.5
+    max_deg: 1.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 10.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.26
+  crit_multiplier: 2.4
+  status_chance: 0.18
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan — the ordinary reach.
+  range_m: 300.0
+  # "This weapon deals pure Puncture damage" — one type, and the page says so.
+  damage: { puncture: 40 }
+
+unmodeled:
+  - "WHEN AIMING, headshots take '+400% critical chance', additive with Point Strike (wiki). The engine has no headshot-CONDITIONAL crit bucket — a crit is rolled for the hit, and the body part it lands on is drawn beside it — so this arena's crit chance is the unaimed one. It is the larger half of the weapon: against a headshot-heavy fight the number here is well under the real one"
+  - "the HIP-FIRE half of the same passive, '+60% ammo efficiency' — this arena aims, and ammo economy pays nothing against infinite reserves either way"
+  - "Biotic Rounds, the AX-52-exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/AX-52

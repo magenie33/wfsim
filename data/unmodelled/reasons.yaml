@@ -84,5 +84,10 @@ reasons:
   # a reason its place.
   holstered_reload:
     text: "it reloads {pct}% of its magazine a second while HOLSTERED or deployed, which is free ammunition bought by putting the weapon away — this arena never holsters it, so the reload here is always the full one"
+  # SILENCE. Six weapons in the roster are silent and each said so in its own
+  # words; the sentence carries no numbers at all, which is what makes it a
+  # reason rather than prose.
+  silent_weapon:
+    text: "this weapon is SILENT, and this arena has nobody to alert — no alarm, no reinforcements, no enemy that has not already seen you. Stealth is worth exactly nothing here and worth a great deal in a real mission"
   spool_rebuilds_after_reload:
     text: "the spool rebuilds after every reload: the page says burst firing MAINTAINS it, so a player whose pauses are short enough keeps more of the listed rate than this sim does — here the only pauses are the reloads the weapon forces. The spool itself IS modelled"

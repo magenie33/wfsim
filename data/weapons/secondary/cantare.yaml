@@ -1,0 +1,69 @@
+id: cantare
+name: Cantare
+slot: secondary
+# THROWN BLADES THAT COME BACK, and the return is the weapon: reloading pulls
+# the lodged blades home through anything in their path at a critical chance SET
+# to 300%. This engine reloads without firing anything, so what is here is the
+# throw — 90 damage with 1.4 m of innate punch through, which is the deepest in
+# the secondary roster.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]         # CompatibilityTags PROJECTILE, THROWN
+mastery_rank: 10
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.05            # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: madurai
+riven_family: Cantare
+traits: [tenno]
+introduced: "36"
+internal_name: /Lotus/Weapons/Tenno/ThrowingWeapons/TnChoirframeKunai/TnChoirframeKunai
+noise: silent               # the module's IsSilent
+ammo_type: secondary
+# NO AMMO POOL — the module gives this weapon no ammo type and a reserve of
+# zero: the blades ARE the ammunition and a reload is what fetches them back.
+ammo_max: 0
+ammo_pickup: 0
+magazine: 6
+reload_seconds: 1.2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). Perfect, which is
+  # what an accuracy of 100 reads as.
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 70
+  fire_rate: 3.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.18
+  crit_multiplier: 2.0
+  status_chance: 0.22
+  # 1.4 m — the module's PunchThrough on this attack. One body costs
+  # `space::BODY_MATERIAL_M` (0.5 m), so a thrown blade crosses two enemies and
+  # reaches a third.
+  punch_through_m: 1.4
+  # NO RANGE ROW on this attack — Projectile at 70 m/s. See
+  # data/surveys/weapon_range.yaml.
+  damage: { puncture: 27, slash: 63 }   # total 90
+
+unmodeled:
+  - "THE RETURN, which is half the weapon: 'upon reloading, the blades return and damage anything in their path as they fly back to the wielder, with an enhanced Critical Chance set to 300%' (wiki). A reload here loads the magazine and fires nothing, so none of that damage is counted and neither is the set — the number below is the throw alone"
+  - "'Cantare Chorale': striking enemies with the returning reload grants +20% reload speed for 30 seconds to all allies in affinity range (wiki). It rides on a return this sim does not fire, and this arena has no allies to grant it to"
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Cantare

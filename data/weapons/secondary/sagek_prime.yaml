@@ -1,0 +1,64 @@
+id: sagek_prime
+name: Sagek Prime
+slot: secondary
+# A PRIME WITH NO ORDINARY VERSION IN THIS ROSTER and a status chance of ONE
+# PERCENT — which is deliberate, because its passive is a status BURST: a crit
+# has a 6% chance to set the next shot's status chance to 500%. That set is not
+# modelled, so what is left is a 30% crit machine pistol that procs almost never.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 14
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 15.33
+disposition: 0.8             # riven disposition
+polarities: [madurai, naramon]
+exilus_polarity: naramon
+# THE MODULE STATES NO RIVEN FAMILY for this weapon (`Family: nil`), which on a
+# weapon with no variants means it is its own family.
+riven_family: Sagek Prime
+traits: [prime]
+introduced: "41.0"
+internal_name: /Lotus/Weapons/Grineer/Pistols/GrnOrokinPistol/GrnOrokinPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 450
+ammo_pickup: 60
+magazine: 75
+reload_seconds: 1.6
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 1.5
+    max_deg: 11.5
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 12.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.30
+  crit_multiplier: 2.2
+  # ONE PERCENT, and it is not a typo: the weapon's status comes from the passive
+  # below rather than from this number.
+  status_chance: 0.01
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 6.112, puncture: 8.246, slash: 11.642 }   # total 26
+
+unmodeled:
+  - "'Critical Hits have a 6% chance to set the next shot's Status Chance to 500%' (wiki). A SET ignores mods the way Gotva Prime's crit lock does, and this engine has that shape for a status-triggered CRIT lock and not for a crit-triggered STATUS one — so this weapon procs at the 1% on its card and never at the 500% it was built around. It is the larger half of the weapon"
+
+source:
+  url: https://wiki.warframe.com/w/Sagek_Prime

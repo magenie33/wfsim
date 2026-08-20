@@ -1,0 +1,66 @@
+id: baza_prime
+name: Baza Prime
+slot: primary
+# THE FASTEST-FIRING SILENT RIFLE, and the reason its falloff is worth reading:
+# a hit-scan weapon almost never carries one, and this one starts losing damage
+# at 30 m. See `falloff` below.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
+mastery_rank: 10
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 80.0
+disposition: 1.0             # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: naramon
+riven_family: Baza
+traits: [prime]
+introduced: "27.0.4"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeBaza/PrimeBazaGun
+noise: silent               # the module's IsSilent, and the page states it
+ammo_type: primary
+ammo_max: 840
+ammo_pickup: 80
+magazine: 60
+reload_seconds: 1.1
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 1.0
+    max_deg: 1.5
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 16.67
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.28
+  crit_multiplier: 3.0
+  status_chance: 0.14
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  # "Shorter Damage Falloff distance for a hit-scan Weapon" — the page lists it
+  # among the disadvantages, which is what makes it worth transcribing: half
+  # damage from 60 m out.
+  falloff:
+    start_m: 30.0
+    end_m: 60.0
+    reduction: 0.5
+  damage: { impact: 5.76, puncture: 6.72, slash: 3.52 }   # total 16
+
+unmodeled:
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Baza_Prime

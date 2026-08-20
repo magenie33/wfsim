@@ -1,0 +1,70 @@
+id: akjagara_prime
+name: Akjagara Prime
+slot: secondary
+# A TWO-ROUND BURST WITH NO DELAY BETWEEN THE ROUNDS — the module gives
+# BurstDelay 0, so both barrels land in the same instant and the listed fire
+# rate of 5 is 10 rounds a second. It also carries a fifth of a metre of innate
+# punch through, which is not enough to reach a second body but is transcribed
+# because it is published.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 12
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 33.33
+disposition: 1.0             # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: naramon
+riven_family: Akjagara
+traits: [prime, vaulted]
+introduced: "24.2.2"
+internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeAkjagara/AkJagaraPrime
+noise: alarming
+ammo_type: secondary
+ammo_max: 320
+ammo_pickup: 40
+magazine: 40
+reload_seconds: 1.4
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 2.0
+    max_deg: 4.0
+  trigger: burst
+  # THE BURST. The listed `fire_rate` counts BURSTS and the delay between the
+  # two rounds is ZERO, so a pull is 2 rounds at once and the effective rate is
+  # 2 / (1/5) = 10 rounds/s.
+  burst:
+    count: 2
+    delay_seconds: 0.0       # module BurstDelay
+  shot_type: hit_scan
+  fire_rate: 5.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.18
+  crit_multiplier: 2.2
+  status_chance: 0.32
+  # A fifth of a metre — the module's PunchThrough on this attack. One body
+  # costs `space::BODY_MATERIAL_M` (0.5 m), so this reaches nothing behind the
+  # first: it is real, published, and worth nothing against bodies.
+  punch_through_m: 0.2
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 3.8, puncture: 3.8, slash: 30.4 }   # total 38
+
+unmodeled:
+  - "Range Advantage, the Akjagara-exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Akjagara_Prime

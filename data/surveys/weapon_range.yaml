@@ -85,6 +85,7 @@ checked:
   burston_incarnon:            { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (its 2.0 m Radial Attack is a RADIUS)' }
   burston_prime:               { range: 300.0, type: hit-scan, note: 'Range: 300.0 m' }
   burston_prime_incarnon:      { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (its 2.0 m Radial Attack is a RADIUS)' }
+  cantare:                     { range: null, type: projectile, note: 'the Blade Throw block states no Range; Projectile at 70 m/s' }
   cernos_prime:                { range: null, type: read, note: 'neither the uncharged nor the charged block states a Range; Projectile' }
   cernos_prime_uncharged:      { range: null, type: read, note: 'no Range row; Projectile' }
   cestra:                      { range: null, type: read, note: 'no Range row; Projectile' }
@@ -112,6 +113,7 @@ checked:
   dread_incarnon:              { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
   dread_uncharged:             { range: null, type: read, note: 'no Range row; Projectile' }
   dual_decurion:               { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
+  exergis:                     { range: null, type: projectile, note: 'the Normal Attack block states no Range; Projectile at 100 m/s' }
   felarx:                      { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m" — a PROJECTILE with a range row, like the Grattler' }
   felarx_incarnon:             { range: 56.0, type: read, note: 'wiki, Incarnon Form: "Range: 56.0 m", Projectile — a real reach, and NOT an AoE sub-block (checked, because the base Felarx is 300)' }
   fluctus:                     { range: 54.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 54.0 m", Projectile' }
@@ -214,6 +216,7 @@ checked:
   prisma_grinlok:              { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
   rakta_ballistica:            { range: null, type: read, note: 'neither the burst nor the charged block states a Range; Projectile' }
   rakta_ballistica_incarnon:   { range: 80.0, type: read, note: 'wiki, Incarnon Form: "Range: 80.0 m", Projectile — the whole Ballistica family agrees on 80' }
+  rauta:                       { range: null, type: read, note: 'Hit-Scan and the page states NO Range row — unusual for a hit-scan shotgun, and read rather than assumed' }
   rubico:                      { range: 1000.0, type: hit-scan,   note: 'Range: 1000.0 m; falloff 400-600 m to 50%' }
   rubico_prime:                { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
   scourge:                     { range: null, type: read, note: 'no Range on either the primary or the thrown impact; its 1.7 m and 7.0 m are explosion radii' }
@@ -232,6 +235,7 @@ checked:
   soma_prime:                  { range: 300.0, type: read, note: 'wiki, Fully Spooled: "Range: 300.0 m", Hit-Scan' }
   soma_prime_incarnon:         { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan' }
   sporothrix:                  { range: null, type: read, note: 'no row LABELLED Range; the 400/600 m figures are its Damage Falloff row and the 1.7 m is its AoE radius. Re-read once, because the first answer quoted the falloff row as the range' }
+  steflos:                     { range: null, type: projectile, note: 'the Normal Attack block states no Range; Projectile at 20 m/s' }
   stinger:                     { range: null, type: read, note: 'no Range row; Projectile at 65 m/s' }
   strun:                       { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
   strun_incarnon:              { range: null, type: read, note: 'Incarnon Form: no Range row; its 4.0 m is an AoE sub-block radius' }

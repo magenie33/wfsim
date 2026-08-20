@@ -1,0 +1,65 @@
+id: exergis
+name: Exergis
+slot: primary
+# ONE SHELL IN THE CHAMBER AND 540 DAMAGE IN IT — three pellets of 180 across
+# four damage types, one of them Radiation, and then a reload. It also carries
+# half a metre of innate punch through, which the arena has had something to
+# spend since the formation landed.
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, shotgun]
+mastery_rank: 8
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 15.4
+disposition: 1.1             # riven disposition
+polarities: [vazarin]
+exilus_polarity: madurai
+riven_family: Exergis
+traits: [corpus]
+introduced: "24.2"
+internal_name: /Lotus/Weapons/Corpus/LongGuns/CrpShapeBlast/CrpShapeBlastShotgun
+noise: alarming
+ammo_type: primary
+ammo_max: 47
+ammo_pickup: 15
+magazine: 1
+reload_seconds: 1.6
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 5.0
+    max_deg: 8.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 3.33
+  # "Innate multishot of 3 pellets", 180 apiece.
+  multishot: 3.0
+  ammo_cost: 1
+  crit_chance: 0.08
+  crit_multiplier: 1.4
+  status_chance: 0.36
+  # Innate half a metre — the module's PunchThrough on this attack. One body
+  # costs `space::BODY_MATERIAL_M`, so it reaches the second of two enemies
+  # standing against each other.
+  punch_through_m: 0.5
+  # NO RANGE ROW on this attack — Projectile at 100 m/s. See
+  # data/surveys/weapon_range.yaml.
+  falloff:
+    start_m: 30.0
+    end_m: 60.0
+    reduction: 0.508
+  damage: { impact: 20, puncture: 120, radiation: 140, slash: 260 }   # 540 a pellet, 1620 a shot
+
+source:
+  url: https://wiki.warframe.com/w/Exergis

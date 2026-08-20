@@ -1,0 +1,64 @@
+id: steflos
+name: Steflos
+slot: primary
+# A SEED POD THAT GETS BIGGER THE MORE IT HITS. 320 damage a shot, mostly Heat,
+# on a projectile with a 0.6-second life that grows by half on every enemy it
+# touches — a travel mechanic this engine has no clock for, admitted below.
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, shotgun]   # CompatibilityTags PROJECTILE, ASSAULT_AMMO
+mastery_rank: 8
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.25            # riven disposition
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Steflos
+traits: [tenno]
+introduced: "32.3"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/TnoLotusPodShotgun/TnoLotusPodShotgun
+noise: alarming
+ammo_type: primary
+ammo_max: 36
+ammo_pickup: 15
+magazine: 12
+reload_seconds: 2.4
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). Perfect, which is
+  # what an accuracy of 100 reads as.
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 20
+  fire_rate: 3.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.14
+  crit_multiplier: 2.2
+  status_chance: 0.22
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 20 m/s, which is slow enough
+  # that the flight is visible. See data/surveys/weapon_range.yaml.
+  falloff:
+    start_m: 8.0
+    end_m: 16.0
+    reduction: 0.96875
+  damage: { heat: 190, impact: 130 }   # total 320
+
+unmodeled:
+  - "the projectile has a LIFESPAN of 0.6 seconds and grows in size and duration as it hits enemies — each enemy hit adds 50% to its life, up to 10 seconds (wiki). This engine resolves a projectile at the body it strikes and has no clock for what it does afterwards, so a pod that would keep travelling and keep hitting stops at the first thing it reaches"
+
+source:
+  url: https://wiki.warframe.com/w/Steflos

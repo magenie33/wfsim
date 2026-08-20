@@ -1,0 +1,60 @@
+id: magnus_prime
+name: Magnus Prime
+slot: secondary
+# THE SINGLE, and the Akmagnus Prime is this shot fired from two hands: same 98
+# damage, same 28% crit and status, half the magazine and a tighter cone. The
+# "Chamber Cascade" passive is shared and pays nothing here for the same reason.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 14
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 16.0
+disposition: 1.25            # riven disposition
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Magnus
+traits: [prime]
+introduced: "30.7"
+internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeMagnus/PrimeMagnusWeapon
+noise: alarming
+ammo_type: secondary
+ammo_max: 160
+ammo_pickup: 40
+magazine: 8
+reload_seconds: 1.6
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.5
+    max_deg: 12.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 5.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.28
+  crit_multiplier: 2.8
+  status_chance: 0.28
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 44.1, puncture: 26.95, slash: 26.95 }   # total 98
+
+unmodeled:
+  - "'Chamber Cascade': a hit or a damaging status has a 4% chance to grant 100% ammo efficiency for 4 seconds (wiki). Ammo economy pays nothing here — reserves are infinite by default because this sim does not model ammo pickups — so the passive is real and worth nothing to this number"
+  - "Deadly Maneuvers, the Magnus-exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Magnus_Prime

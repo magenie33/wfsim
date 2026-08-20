@@ -1946,11 +1946,38 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
         ));
     }
     if let Some(z) = s.scope {
-        out.push(format!(
-            "Its scope's top zoom ({:.1}x) grants +{:.0}% headshot damage while aiming, additive with headshot mods. This arena has no field of view to trade for magnification, so the scope is always at that level.",
-            z.magnification,
-            z.headshot_damage * 100.0
-        ));
+        // THE SENTENCE NAMES WHAT THE SCOPE ACTUALLY PAYS. It printed
+        // `headshot_damage` whatever the grant was, so eight of the ten scoped
+        // weapons in the roster read "+0% headshot damage" on a scope granting
+        // +50% critical damage (2026-08-20). A scope grants exactly ONE of the
+        // four fields — that is why they are four fields — so the first
+        // non-zero one is the grant.
+        let (fraction, granted) = if z.headshot_damage != 0.0 {
+            (z.headshot_damage, "headshot damage, additive with headshot mods")
+        } else if z.crit_multiplier != 0.0 {
+            (z.crit_multiplier, "critical damage")
+        } else if z.crit_chance != 0.0 {
+            (z.crit_chance, "critical chance, relative to the unmodded base")
+        } else {
+            (
+                z.crit_chance_post_mod,
+                "critical chance, applied after mods",
+            )
+        };
+        // A MAGNIFICATION IS ONLY QUOTED WHEN THE PAGE PUBLISHES ONE. The
+        // Vesper 77's aim bonus rides a laser sight and its page states no zoom
+        // level at all, so the clause about trading field of view for
+        // magnification has nothing to be about.
+        out.push(match z.magnification {
+            Some(magnification) => format!(
+                "Its scope's top zoom ({magnification:.1}x) grants +{:.0}% {granted} while aiming. This arena has no field of view to trade for magnification, so the scope is always at that level.",
+                fraction * 100.0
+            ),
+            None => format!(
+                "Aiming grants +{:.0}% {granted}. The page publishes no zoom level for it, and this arena aims by default.",
+                fraction * 100.0
+            ),
+        });
     }
 
     // THE SPOOL, which is the one passive that makes the stat above it WRONG
@@ -2316,7 +2343,12 @@ impl SniperCombo {
 #[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
 pub struct ScopeSpec {
     /// The top zoom level's magnification, carried for the card's sentence.
-    pub magnification: f64,
+    ///
+    /// `None` where the page publishes none — the Vesper 77's laser sight is an
+    /// aim bonus with no stated zoom level, and inventing a 1.0 for it would put
+    /// a number on the card that no source ever wrote.
+    #[serde(default)]
+    pub magnification: Option<f64>,
     /// ...and its headshot-damage bonus at that level, as a fraction. The
     /// Vectis family's kind.
     #[serde(default)]
@@ -3214,9 +3246,27 @@ mod sniper_tests {
         let scope = |id: &str| spec(id).and_then(|w| w.scope);
         assert_eq!(scope("vectis").map(|z| z.headshot_damage), Some(0.5));
         assert_eq!(scope("vectis_prime").map(|z| z.headshot_damage), Some(0.6));
+        // THE COMBO IS THE SNIPER'S; THE SCOPE IS NOT. A Shot Combo Counter is
+        // keyed on the class in game — the wiki's rule opens "Scoped in" and
+        // the mechanic exists on no other family — so a combo outside the class
+        // is a leak. A `scope:` is keyed on the fight's AIMING state and on
+        // nothing else, which is why the Vesper 77's laser sight (+40%
+        // critical damage while aiming, no published magnification) is one on a
+        // pistol: same bucket, same gate, no scope on the gun (2026-08-20).
         for w in all() {
-            if w.sniper_combo.is_some() || w.scope.is_some() {
+            if w.sniper_combo.is_some() {
                 assert_eq!(w.class, "sniper", "{} is not a sniper rifle", w.id);
+            }
+        }
+        // …and every scope is either a sniper's or names itself in prose, so a
+        // scope that turns up on an ordinary weapon by accident is still caught.
+        for w in all() {
+            if let Some(z) = w.scope {
+                assert!(
+                    w.class == "sniper" || z.magnification.is_none(),
+                    "{}: a non-sniper scope must be an aim bonus with no published zoom",
+                    w.id
+                );
             }
         }
     }

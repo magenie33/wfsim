@@ -337,6 +337,28 @@ weapons:
   zylok_prime: 席尔火枪 Prime
   zylok_prime_incarnon: 席尔火枪 Prime (灵化形态)
   # 野猪, PrimeBoar -> 野猪 Prime). Checked rather than recalled: the CN wiki
+  akbronco: 野马双枪
+  akbronco_prime: 野马双枪 Prime
+  akjagara_prime: 觉醒双枪 Prime
+  akmagnus_prime: 麦格努斯双枪 Prime
+  aksomati_prime: 轻灵月神双枪 Prime
+  ax_52: AX-52
+  baza_prime: 苍鹰 Prime
+  cantare: 歌颂
+  exergis: 晶能放射器
+  knell_prime: 丧钟 Prime
+  magnus_prime: 麦格努斯 Prime
+  phage: 噬菌者
+  rauta: 锐铁
+  reconifex: 侦察者
+  sagek_prime: 杀格 Prime
+  spectra_vandal: 光谱切割器·破坏者
+  steflos: 石晶之花
+  thornbak: 棘背
+  velox: 逐电
+  velox_prime: 逐电 Prime
+  vesper_77: 夜语者 77
+  vinquibus: 制胜者
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's

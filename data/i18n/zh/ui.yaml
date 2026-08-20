@@ -191,6 +191,10 @@ ui:
   # 真理密语 admits four gaps and one live bug. Long sentences, so they are here
   # 还没建模的是它"更好爆头"的那一半——见 docs/UNMODELLED.md。
   "$5 to start, and after that whatever you think it is worth. There is no tier and no target — this is what the bill is, not a price list.":
+  "'Cantare Chorale': striking enemies with the returning reload grants +20% reload speed for 30 seconds to all allies in affinity range (wiki). It rides on a return this sim does not fire, and this arena has no allies to grant it to": "「Cantare Chorale」：用回收的刀刃击中敌人，会给亲和范围内的所有队友 +20% 装填速度、持续 30 秒（维基）。它挂在这个模拟不会发射的回收上，而且这个战场也没有队友可以接受它"
+  "'Chamber Cascade': a hit or a damaging status has a 4% chance to grant 100% ammo efficiency for 4 seconds (wiki). Ammo economy pays nothing here — reserves are infinite by default because this sim does not model ammo pickups — so the passive is real and worth nothing to this number": "「Chamber Cascade」：命中或造成伤害类异常状态时，有 4% 概率获得 100% 弹药效率、持续 4 秒（维基）。弹药经济在这里不产生任何收益 —— 本模拟不建模弹药拾取，所以备弹默认无限 —— 所以这个被动是真实存在的，但对这个数字毫无影响"
+  "'Critical Hits have a 6% chance to set the next shot's Status Chance to 500%' (wiki). A SET ignores mods the way Gotva Prime's crit lock does, and this engine has that shape for a status-triggered CRIT lock and not for a crit-triggered STATUS one — so this weapon procs at the 1% on its card and never at the 500% it was built around. It is the larger half of the weapon": "「暴击有 6% 概率把下一发的触发几率设为 500%」（维基）。这种「设为」和 Gotva Prime 的暴击锁一样会无视 MOD，而本引擎有的是「异常状态触发暴击锁」那个形状，没有「暴击触发异常状态锁」的 —— 所以这把武器只按卡面上的 1% 触发，永远打不出它被设计出来的那个 500%。这是这把武器更大的那一半"
+  "'DEATH KNELL', and it is most of the weapon: a weak-point hit grants 100% ammo efficiency, +0.5x final critical multiplier and +20% final status chance, stacking to 3, each stack lasting 2 seconds and refreshed by the next weak-point hit (wiki). This engine has no headshot-TRIGGERED buff — a crit is rolled for a hit and the body part is drawn beside it — so none of the three is applied, and the ammo half in particular is what makes a one-round magazine playable. Read this number as the weapon with its passive switched off": "「DEATH KNELL」，而且它就是这把武器的大部分：命中弱点会获得 100% 弹药效率、最终暴击倍率 +0.5x、最终触发几率 +20%，可叠加 3 层，每层持续 2 秒，并可被下一次弱点命中刷新（维基）。本引擎没有「爆头触发」的增益 —— 暴击是为这一次命中掷的，命中部位是在旁边另外抽的 —— 所以这三项一项都没有生效，而其中弹药那一半正是让一发弹匣能打得下去的原因。请把这个数字读作「关掉被动的这把武器」"
   "+30% Movement Speed while aiming, and the explosion's self-stagger: neither is a number this arena reads": 瞄准时 +30% 移动速度，以及爆炸对自身的踉跄：这两项都不是这个战场会读取的数字
   "+{n} more took damage and are not followed": 另有 {n} 个吃到伤害但没有被跟踪
   ", ": "、"
@@ -250,6 +254,7 @@ ui:
   "Benchmark scenarios": 基准场景
   "Benchmark": 基准榜
   "Biggest hit": 单发最高
+  "Biotic Rounds, the AX-52-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Biotic Rounds」，AX-52 的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Blast Radius": 爆炸半径
   "Body parts": 身体部位
   "Buff coverage": 增益覆盖
@@ -288,6 +293,8 @@ ui:
   "Damage ×1.5 at 1 hit, +0.5 every ×3": 连击 1 时伤害 ×1.5，之后每翻三倍再 +0.5
   "Damage ×1.5 at 5 hits, +0.5 every ×3": 连击 5 时伤害 ×1.5，之后每翻三倍再 +0.5
   Damage: 伤害
+  "Damzav-Vati, the Akbronco Prime-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Damzav-Vati」，Akbronco Prime 的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
+  "Deadly Maneuvers, the Magnus-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Deadly Maneuvers」，Magnus 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Debuff coverage": 异常覆盖
   Detail: 明细
   "Direct hit": 直击
@@ -296,6 +303,8 @@ ui:
   "Double Jumps": 二段跳
   "Drain": 消耗
   "Duration (s)": 时长（秒）
+  "EACH PELLET ADDS 2 TO THE MELEE COMBO COUNT, capped at 28 a shot, and equipping it on Kullervo gives his melee +7 s of combo duration (wiki). This arena has no melee weapon for any of that to land on, so the weapon's published reason to exist pays nothing here": "每一颗弹丸给近战连击数 +2，单发上限 28；装备在 Kullervo 身上时他的近战还会 +7 秒连击持续时间（维基）。这个战场没有近战武器可以承接这一切，所以这把武器公开宣称的存在理由在这里一分不值"
+  "EQUIPPING THIS WEAPON OCCUPIES THE MELEE SLOT TOO, so a Vinquibus loadout gives up a melee weapon entirely — a cost this arena cannot price, because it has no melee to give up": "装备这把武器会同时占掉近战槽位，所以一套 Vinquibus 配装等于彻底放弃一把近战武器 —— 这个代价这个战场无法计价，因为它本来就没有近战可以放弃"
   "Each way costs an animation — {in}s in, {out}s out, both scaled by reload speed.": 两个方向各有一段动作 —— 进入 {in} 秒、退出 {out} 秒，都会被装填速度缩放。
   "Effective Fire Rate": 实际射速
   "Element": 元素
@@ -317,6 +326,7 @@ ui:
   "Extra hit (ability)": 技能附加伤害
   "Extra stats": 额外属性
   Faction: 派系
+  "FIRING FROM THE HIP throws the seven beams in a spread and aiming focuses them on the crosshairs (wiki). This arena aims, so all seven land — which is the ceiling. A player firing from the hip covers more ground and lands fewer of them on one enemy": "腰射会把七道光束打成一个散布，瞄准则会把它们汇聚到准星上（维基）。这个战场是瞄准状态，所以七道全部命中 —— 这是上限。腰射的玩家覆盖面更大，但打在同一个敌人身上的更少"
   "Final-round runs": 最终轮次数
   Finalists: 优胜名额
   "Fire Rate": 射速
@@ -367,6 +377,7 @@ ui:
   "KPM": KPM
   Kills: 击杀
   "LIFTED's crowd control is not modelled — the explosion suspends what it hits, and this arena has no movement to interrupt; what IS modelled is the 1 s status itself, which Condition Overload counts like any other": Lifted 的控制效果尚未建模 —— 爆炸会把命中的目标浮空，而这个战场没有可以被打断的移动；已经建模的是那 1 秒的状态本身，异常状态过载会像统计其他状态一样把它算进去
+  "Leaded Gas, the Vesper 77-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Leaded Gas」，Vesper 77 的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Level scaling": 等级缩放
   "Limits": 限制
   "Lingering field": 持续云雾
@@ -430,6 +441,7 @@ ui:
   "Radial (AoE)": 范围伤害
   "Radial explosion": 范围爆炸
   "Range": 射程
+  "Range Advantage, the Akjagara-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Range Advantage」，Akjagara 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Read it against the aimed board rather than alone. A weapon high on both is strong; one high there and low here is being carried by precision, and the gap between its two positions is how much of it is your aim.": 请和瞄准榜对照着看，不要单独看。两个榜都靠前的是真强；那边高、这边低的，是被你的准头抬着的——两个名次之间的差距，就是这把武器有多少是你的瞄准。
   "Recoil": 后坐力
   "Reload": 装填时间
@@ -456,6 +468,7 @@ ui:
   "Self-Stagger Reduction": 自我击退减免
   "Sentient": 意识体
   "Sentinel Weapons": 守护武器
+  "Sequence Burn, the Spectra-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Sequence Burn」，Spectra 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Shield": 护盾
   Shield: 护盾
   Shield: 护盾
@@ -483,6 +496,7 @@ ui:
   "Support WFSim": 支持 WFSim
   "Support": 支持
   "Sustained DPS": 持续 DPS
+  "THE ACTIVE RELOAD: pressing reload again 22-38% of the way through one cuts the reload to 1 second and gives the magazine Heat rounds dealing '+25% more damage with guaranteed status' (wiki). It is a TIMED INPUT and this sim has no player pressing buttons — every reload here is the full 5 seconds and every round is the ordinary Puncture one, so a player who hits the window is far ahead of this number": "主动装填：在装填进行到 22%-38% 之间再按一次装填键，装填时间会缩短到 1 秒，并让这一匣变成热能弹、伤害 +25% 且必定触发（维基）。这是一个有时机的按键输入，而这个模拟没有一个在按键的玩家 —— 这里每一次装填都是完整的 5 秒，每一发都是普通的穿刺弹，所以能抓住这个窗口的玩家远高于这个数字"
   "THE ALTERNATE FIRE, which is a Mercy-finisher tool rather than a way to fight: it \"launches a mite that latches up to 6 enemies, highlighting their heads for 5 seconds while dealing Impact and Magnetic damage and status effects per second for 10 seconds\", and against an enemy already opened to a Mercy it teleports the player in for an execution instead. Three things put it out of reach here — it needs a target within 25 m to fire at all, its payload is a ten-second damage-over-time the engine has no shape for, and its real use is the finisher, which this arena has no execution threshold for. The CO catalog's own row for it reads `Does not apply`": "交替射击，它是一件「慈悲处决」的工具而不是一种战斗方式：它「发射一只寄生虫，附着最多 6 个敌人，标记它们的头部 5 秒，同时在 10 秒内每秒造成冲击与磁力伤害及异况」；若目标已可被慈悲处决，则改为把玩家传送过去直接处决。三件事让它在这里够不着——它必须有 25 米内的目标才发得出去，它的载荷是一段十秒的持续伤害而引擎没有这种形状，而它真正的用途是处决，本场没有处决血线。异况超载目录给它的那一行写的是 `Does not apply`（不适用）"
   "THE CUBE'S OTHER EXPLOSION, which is four times this one: \"If damaged by any player (e.g. nearby cube explosion), cube explodes in 6 meter radius\" for 600 Blast. It is a two-step play — place a cube, then shoot it — and this arena fires one attack at one aim point, so the step that pays is the one it cannot take": "方块的「另一次」爆炸，是这次的四倍：「若被任何玩家造成伤害（例如附近方块的爆炸），方块会在 6 米半径内爆炸」，造成 600 爆炸伤害。这是一套两步操作——先放一个方块，再打它——而本场只对一个瞄准点打出一次攻击，所以真正兑现的那一步正是它做不到的那一步"
   "THE CUBE'S OTHER EXPLOSION, which is four times this one: a cube damaged by a player goes off in a 6 metre radius for 600 Blast. It is a two-step play — place a cube, then shoot it — and this arena fires one attack at one aim point, so the step that pays is the one it cannot take": "方块的「另一次」爆炸，是这次的四倍：被玩家打到的方块会在 6 米半径内爆炸，造成 600 爆炸伤害。这是一套两步操作——先放一个方块，再打它——而本场只对一个瞄准点打出一次攻击，所以真正兑现的那一步正是它做不到的那一步"
@@ -493,6 +507,7 @@ ui:
   "THE PULL, which is the field's other half and the reason it is thrown: it draws enemies within 10 metres toward itself for thirty seconds. Gathering a room into one place is worth an enormous amount to every AoE weapon the player carries and nothing at all to a damage number measured against bodies that do not move": "牵引力，它是这个力场的另一半，也是这支矛被扔出去的理由：它会在三十秒内持续把 10 米内的敌人拉向自己。把一整个房间聚到一处，对玩家身上每一件范围武器来说价值都极大，而对一个以「不会移动的身体」为基准量出来的伤害数字来说，价值为零"
   "THE RELOAD GRENADE, which is most of this weapon and the whole reason it is built: every reload throws one at the reticle, exploding in a 5-7 metre radius, and reloading FROM EMPTY makes it far larger — 1,997 Corrosive in 7 metres at 31% crit and 59% status, against 203 in 5 metres at 11% and 43% on a partial reload. The engine has no hook that fires an attack ON A RELOAD, so none of it is counted and the number on screen is the beam alone. The CODA variant throws THREE of them": "换弹榴弹，它才是这把武器的主体，也是它被拿来配装的全部理由：每次换弹都会朝准星扔出一枚，在 5–7 米半径内爆炸；而「空匣换弹」会让它大得多——7 米内 1997 腐蚀、31% 暴击率、59% 异况，对比非空匣换弹的 5 米内 203 伤害、11% 与 43%。引擎没有「在换弹时触发一次攻击」的挂载点，所以这部分一点都没算，屏幕上的数字只是光束本身。终幕版本一次扔三枚"
   "THE RELOAD GRENADES, which are most of this weapon and the whole reason it is built: \"Reload throws 3 grenades at a 45 degree angle towards the reticle that explodes in 3-5 meter radius on impact\", and reloading FROM EMPTY makes them far larger — 658 Corrosive apiece in 5 metres at 31% crit and 59% status, against 74 in 3 metres at 11% and 43% on a partial reload. Three of the from-empty grenades is 1,974 damage, which dwarfs the beam that earned them. The engine has no hook that fires an attack ON A RELOAD, so none of it is counted and the number on screen is the beam alone": "换弹榴弹，它才是这把武器的主体，也是它被拿来配装的全部理由：「换弹时朝准星方向以 45 度抛出 3 枚榴弹，命中后在 3–5 米半径内爆炸」，而「空匣换弹」会让它们大得多——每枚 5 米内 658 腐蚀、31% 暴击率、59% 异况，对比非空匣换弹的 3 米内 74 伤害、11% 与 43%。三枚空匣榴弹是 1974 点伤害，把挣来它们的那道光束衬得微不足道。引擎没有「在换弹时触发一次攻击」的挂载点，所以这部分一点都没算，屏幕上的数字只是光束本身"
+  "THE RETURN, which is half the weapon: 'upon reloading, the blades return and damage anything in their path as they fly back to the wielder, with an enhanced Critical Chance set to 300%' (wiki). A reload here loads the magazine and fires nothing, so none of that damage is counted and neither is the set — the number below is the throw alone": "回收，它是这把武器的一半：「装填时刀刃会飞回持有者手中，并对沿途的一切造成伤害，暴击率被设为 300%」（维基）。这里的装填只是把弹匣装满、不会发射任何东西，所以这部分伤害和那个「设为」都没有被计入 —— 下面这个数字只是投掷本身"
   "THE SPORES, which are most of what this weapon is: \"Enemies hit by Dual Coda Torxica and then killed from any source will spread spores to 3 enemies within 20 meters with the closest being prioritized, inflicting guaranteed Cold status per second and 50% Damage Vulnerability lasting for 20 seconds\". Three things have to line up for it to pay and this arena has none of them — the trigger is a KILL, the payload lands on OTHER enemies, and the vulnerability applies only to this weapon's own damage. Against one standing target it is worth exactly nothing; in a room it roughly doubles the weapon": "孢子，它才是这把武器的主体：「被 Dual Coda Torxica 命中、随后被任何来源击杀的敌人，会把孢子扩散给 20 米内的 3 个敌人（优先最近的），每秒必定造成一次冰冻异况，并附加 50% 易伤，持续 20 秒」。要让它兑现需要三件事同时成立，而本场一件都没有——触发条件是「击杀」，载荷落在「其它」敌人身上，而那份易伤只对这把武器自己的伤害生效。对着一个站桩目标它的价值恰好是零；在一个房间里它大致能让这把武器翻倍"
   "Technique": 手法
   "Tendrils": 卷须
@@ -518,6 +533,7 @@ ui:
   "Transmute Out": 灵化切出
   "Valence bonus": 效价加成幅度
   "Valence": 效价加成
+  "Velox Conclusion, the Velox-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Velox Conclusion」，Velox 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Voruna's signature bonus is not modelled — carried by her the ammo pool doubles to 48, and this arena has no Warframe holding it": Voruna 的专属加成尚未建模 —— 由她携带时备弹翻倍到 48，而这个战场里没有战甲持有它
   "Voruna's signature bonus is not modelled — carried by her the ammo pool grows to 56, and this arena has no Warframe holding it": Voruna 的专属加成尚未建模 —— 由她携带时备弹增至 56，而这个战场里没有战甲持有它
   "WF Sprint": 战甲冲刺速度
@@ -525,6 +541,7 @@ ui:
   "WFSim is free software, licensed AGPL-3.0. Building, simulating and optimizing are the whole of this site, and they are the same for everyone: no account, no payment, no part held back.":
   "WFSim is the ultimate Warframe calculator — builder, simulator, optimizer. True to in-game numbers, down to the last proc. Theorycrafting, solved.": WF模拟是终极的 Warframe 计算器 —— 配装器、模拟器、优化器。与游戏内数值完全一致，精确到每一次触发。理论配装，已解。
     WF模拟是自由软件，采用 AGPL-3.0 授权。构建、模拟、优化——这三件事就是这个站点的全部，而且对所有人完全一致：不需要账号，不需要付费，没有哪一部分是留着不给的。
+  "WHEN AIMING, headshots take '+400% critical chance', additive with Point Strike (wiki). The engine has no headshot-CONDITIONAL crit bucket — a crit is rolled for the hit, and the body part it lands on is drawn beside it — so this arena's crit chance is the unaimed one. It is the larger half of the weapon: against a headshot-heavy fight the number here is well under the real one": "瞄准时，爆头获得「+400% 暴击率」，与 Point Strike 加算（维基）。本引擎没有「以爆头为条件」的暴击池 —— 暴击是为这一次命中掷的，命中部位是在旁边另外抽的 —— 所以这个战场用的是不带这一条的暴击率。它是这把武器更大的那一半：在一场以爆头为主的战斗里，这里的数字远低于真实值"
   "Warframe ability": 战甲技能
   "Warframe buffs": 战甲增益
   "Warframe": 战甲
@@ -656,6 +673,7 @@ ui:
   head: 头部
   head: 头部
   "headshots": 爆头
+  "headshots grant 2 stacks (max 16) of 'Vinquibus Precision', increasing MELEE damage by 250% — the buff is real and lands on a weapon this sim does not fire, so it is worth nothing here and a great deal to the player it was designed for": "爆头会给予 2 层（上限 16 层）「Vinquibus Precision」，近战伤害 +250% —— 这个增益是真实的，但它落在一把本模拟不会开火的武器上，所以在这里一分不值，而对它设计的那个玩家价值极大"
   "held": 持续
   "hip-fire": 腰射
   "how big the roll was, as a share of base damage — a Lich rolls it randomly and Valence Fusion raises it, capping at the number on the right": 这次roll出来多大，按基础伤害的比例算——Lich 随机给，效价融合可以往上提，上限就是右边那个数
@@ -678,6 +696,7 @@ ui:
   "in this build": 仅当前配装
   inactive: 未在场
   "install the previous tier first": 需要先安装上一层
+  "it 'reloads 50% faster from a fully depleted magazine' (wiki), and this engine carries ONE reload time per weapon. This sim holds the trigger until the magazine is dry, which is exactly the case that reload applies to — so the 2.6 s here is the SLOW reload for a fight that would always earn the fast one, and the weapon is understated": "它「在弹匣完全打空时装填速度快 50%」（维基），而本引擎每把武器只带一个装填时间。这个模拟会一直扣扳机直到弹匣打空，而那正是这个装填生效的情况 —— 所以这里的 2.6 秒是慢的那一次装填，用在一场本来永远该拿到快装填的战斗上，武器被低估了"
   "it needs the same trigger on every firing mode": 它要求武器的每种开火模式都是同一种扳机
   "it reloads {pct}% of its magazine a second while HOLSTERED or deployed, which is free ammunition bought by putting the weapon away — this arena never holsters it, so the reload here is always the full one": "收枪或架设状态下每秒自动装填 {pct}% 弹匣，等于把枪收起来就能白拿弹药——本场从不收枪，所以这里的换弹永远是完整的一次"
   "its added base does not feed Condition Overload": 它增加的基础伤害不计入异况超载
@@ -835,6 +854,7 @@ ui:
   "the 20-40 degree spread is not modelled — this arena has one target at zero distance, so all six pellets always land on it": 20-40 度的散布尚未建模 —— 这个战场只有一个零距离的目标，所以六颗弹丸永远全部命中
   "the 5% Life Steal on headshots, which is the other side of the same trade and equally invisible with nothing to heal from": "爆头附带的 5% 吸血，是同一笔交易的另一面，在没有东西可回复的情况下同样看不见"
   "the 8-degree spread is not modelled — this arena has one target at zero distance, so all six missiles always land on it": 8 度的散布尚未建模 —— 这个战场只有一个零距离的目标，所以六枚导弹永远全部命中
+  "the ACCURACY improves during the spool as well (wiki), which is the half of it the page does state — this entry carries the settled cone, so a burst that would open wide here opens tight": "转膛过程中命中率也会提升（维基），这是页面确实写出来的那一半 —— 本条目带的是转满之后的散布，所以一段在游戏里会打得很散的点射，在这里一开始就是收紧的"
   "the ARCHWING column of this weapon is not offered — in space it is a single 440-damage Impact/Heat projectile with a 13% status chance instead of eleven hit-scan pellets at 1.3%, which is a different weapon rather than a restated one": 这把武器的太空数据列没有提供 —— 在太空里它是一发 440 伤害的冲击/火焰弹道、触发率 13%，而不是十一颗触发率 1.3% 的即时命中弹丸；那是另一把武器，不是同一把的另一组数字
   "the AUTO-SPOOL ramp is not modelled — the page gives this trigger as Auto-Spool and the fire rate here is the spooled-up {rate}/s from the first shot, so a short burst is faster in this sim than in game": 转膛加速尚未建模 —— 页面给的触发方式是 Auto-Spool，而这里从第一发就按转满的 {rate}/秒 计算，所以短点射在模拟里比游戏里快
   "the Arch-Gun Deployer's five-minute cooldown is not modelled — when the reserve runs dry the weapon is gone for the rest of a real mission, and this arena simply stops firing": "空战枪投放器的五分钟冷却尚未建模 —— 备弹打空后，真实任务里这把枪整局就没了，而这个战场只是停火"
@@ -853,6 +873,7 @@ ui:
   "the FIVE-KILL GATE is not modelled — in game this alt-fire has to be earned with five kills from the primary fire before it can be used at all, and this entry fires it from the first second": 五杀解锁条件尚未建模 —— 游戏里这个副射击必须先用主射击拿到五个击杀才能使用，而这个条目从第一秒就能开火
   "the HEALTH COST, which is the whole of this weapon's drawback: \"health is converted to ammo\", scaling with the ammo restored up to 5% of the user's max health. Nothing shoots back here and the Tenno has no health pool to spend, so the sim shows this rifle with its price removed": "生命代价，它就是这把武器全部的缺点：「生命值被转换为弹药」，按补充的弹药量换算，最多消耗使用者最大生命的 5%。本场没有任何东西会还击，Tenno 也没有一条可以花的血条，所以模拟器展示的是这把步枪去掉标价之后的样子"
   "the HEALTH COST, which is the whole of this weapon's drawback: \"health is converted to ammo\". Nothing shoots back here and the Tenno has no health pool to spend, so the sim shows this rifle with its price removed": "生命代价，它就是这把武器全部的缺点：「生命值被转换为弹药」。本场没有任何东西会还击，Tenno 也没有一条可以花的血条，所以模拟器展示的是这把步枪去掉标价之后的样子"
+  "the HIP-FIRE half of the same passive, '+60% ammo efficiency' — this arena aims, and ammo economy pays nothing against infinite reserves either way": "同一个被动的腰射那一半，「+60% 弹药效率」—— 这个战场是瞄准状态，而且面对无限备弹时弹药经济本来也不产生收益"
   "the Incarnon Form Bounce Explosion is not modelled — this form has more parts than this entry carries": Incarnon Form Bounce Explosion 尚未建模 —— 这个形态的部件比一个条目装得下的多
   "the Incarnon Form Charge Attack is not modelled — this form has more parts than this entry carries": Incarnon Form Charge Attack 尚未建模 —— 这个形态的部件比一个条目装得下的多
   "the Incarnon Form Charge Radial Attack is not modelled — this form has more parts than this entry carries": Incarnon Form Charge Radial Attack 尚未建模 —— 这个形态的部件比一个条目装得下的多
@@ -935,6 +956,7 @@ ui:
   "the innate punch through does not apply to SURFACES when the central portion of the projectile hits one, which the page says makes punch-through MODS worth fitting anyway — a geometry rule in an arena with no geometry": "当弹体中央部分打在表面上时，自带穿透对「表面」不生效——页面说正因如此，穿透 MOD 在这把枪上仍然值得带。这是一条关于场景几何的规则，而本场没有几何"
   "the innate reload while holstered or deployed (33% of the magazine per second) — this arena never holsters the weapon": 收枪或长枪插在场上时的自动装填（每秒 33% 弹匣）——本场从不收枪
   "the innate {m} m punch-through is not modelled — this arena has one target, so it changes no number": 自带的 {m} 米穿透尚未建模 —— 这个战场只有一个目标，所以它不改变任何数字
+  "the laser sight also HIGHLIGHTS weak points on screen, which is an aiming aid rather than a damage bonus — this sim draws its head hits from the fight's headshot percentage and cannot be helped to aim": "激光瞄具还会在屏幕上高亮弱点，这是一个瞄准辅助而不是伤害加成 —— 本模拟的爆头是从战斗的爆头比例里抽的，没法被帮着瞄准"
   "the link carries the build, its rivens, the fight it was measured in and the measurement — opening it saves a new copy of each": 链接带上了配装、它装的裂罅、测它用的那场仗，以及测出的数字——对方打开会各存一份新的，不会覆盖他原有的
   "the missiles HOME, and homing is not modelled — this arena has one target at zero distance, so a guided missile and a straight one land the same": 导弹的追踪尚未建模 —— 这个战场只有一个零距离的目标，所以制导弹和直飞弹落点相同
   "the official rulers — the same fight on every weapon": 官方标尺 —— 每把武器都是同一场战斗
@@ -942,6 +964,7 @@ ui:
   "the player does not move or aim by hand here": 这里的玩家不移动，也不手动瞄准
   "the progenitor element — pool = searched, req = pin one": 始祖元素——pool 表示纳入搜索，req 表示钉死一个
   "the projectile does not bounce off TERRAIN — it ricochets off ENEMIES here, and in game a wall or the floor is a surface too. So every bounce needs another body to find: against a single target the projectile stops at the first collision, where in game it would keep going off the scenery, and this number is a FLOOR for any fight with cover in it": "弹体不会从地形上弹开 —— 这里它只在敌人之间跳弹，而游戏里墙壁和地面同样是可以弹的表面。所以每次跳弹都得找到另一具身体：面对单个目标时弹体在第一次碰撞后就停了，而在游戏里它还会继续从场景上弹开，因此在有掩体的战斗里这个数字是下限"
+  "the projectile has a LIFESPAN of 0.6 seconds and grows in size and duration as it hits enemies — each enemy hit adds 50% to its life, up to 10 seconds (wiki). This engine resolves a projectile at the body it strikes and has no clock for what it does afterwards, so a pod that would keep travelling and keep hitting stops at the first thing it reaches": "弹丸的存在时间为 0.6 秒，并且每命中一个敌人就变大一点、存在时间 +50%，最长 10 秒（维基）。本引擎在弹丸击中的那个身体上就把它结算掉了，之后它做什么没有时钟去跟 —— 所以一颗本该继续飞、继续命中的种荚，在这里停在它碰到的第一个东西上"
   "the projectile has a stated THICKNESS the page leaves blank (\"Projectiles have a thickness of ? meters\") — this arena fires a ray, so a wide sheet strikes only the bodies on the line either way": "弹体有一个页面自己都没填的「厚度」（原文写的是「Projectiles have a thickness of ? meters」）——本场射出的是一条射线，所以无论多宽的一片，也只打到线上的那些身体"
   "the projectile is a WALL 3 metres thick, which with the infinite body punch through above is most of what this weapon is in a room: one shot sweeps everything in a 3 m band. This arena fires a RAY, so only the bodies on the line are struck and the width buys nothing. The Tenet variant's sheet is 4.4 m": "弹体是一面 3 米厚的墙，配上上面那条无限穿体，这才是这把武器在房间里的主体：一发扫掉 3 米宽带内的一切。本场射出的是一条射线，所以只有线上的身体会被打到，宽度什么也买不到。Tenet 版本的那面墙是 4.4 米"
   "the projectile is a WALL 4.4 metres thick, which with the infinite body punch through above is most of what this weapon is in a room: one shot sweeps everything in a 4.4 m band. This arena fires a RAY, so only the bodies on the line are struck and the width buys nothing": "弹体是一面 4.4 米厚的墙，配上上面那条无限穿体，这才是这把武器在房间里的主体：一发扫掉 4.4 米宽带内的一切。本场射出的是一条射线，所以只有线上的身体会被打到，宽度什么也买不到"
@@ -957,6 +980,7 @@ ui:
   "the same fight on every weapon, so results can be compared. It cannot be edited: use ⧉ on its chip to copy it into a scenario of your own.": 每把武器都是同一场战斗，所以结果之间可以比较。它不可编辑：点它标签上的 ⧉ 复制成一份你自己的场景。
   "the scenario the simulator is set to": 模拟器当前选中的场景
   "the search ranks by kills — the scenario's DPS measure applies to the simulator": 搜索按击杀排名——场景里的 DPS 指标只作用于模拟器
+  "the second INNATE POLARITY the wiki publishes for this weapon is an AURA one, and no weapon mod carries an Aura polarity — so this entry gives that slot no colour at all, which costs a build the discount a matching slot would have paid. Capacity here is therefore a FLOOR: whatever that slot does in game, it cannot be worse than unpolarised": "维基为这把武器公布的第二个固有极性是「光环」极性，而没有任何武器 MOD 带光环极性 —— 所以本条目干脆不给那个槽位任何颜色，这让配装少拿了一个对位槽本该给的折扣。因此这里的容量是一个下限：无论那个槽在游戏里做什么，都不会比无极性更差"
   "the self-stagger on its own explosion is not modelled — the grenade staggers the firer at close range and deals them no damage, and nothing in this arena can be inconvenienced": 自身被爆炸踉跄的效果尚未建模 —— 近距离开火时榴弹会让射手踉跄但不造成伤害，而这个战场里没有任何东西会被影响
   "the shot also throws {n} bomblets that explode again for {damage} between them, and this engine gives an attack ONE explosion — so everything below is the main blast alone and this weapon is understated by roughly {share} of its damage. The wiki's Condition Overload catalog gives those bomblets a rule of their own (their CO term reads the PARENT projectile's damage), which consequently does not apply here either":
   "the sim does not model this yet, so its number against this target is optimistic": 模拟还没有实现这条机制，所以对这个目标算出的数字偏高
@@ -1008,6 +1032,7 @@ ui:
   "this weapon cannot equip Concealed Explosives, the thrown-exclusive mod — a card outside the pools this roster loads either way": "这把武器装不了投掷专属 MOD「隐藏炸药」——那张卡本来也不在本武器库载入的卡池里"
   "this weapon does NOT inflict self-stagger, which is a real advantage over every other explosive in this batch and is worth nothing here, because the arena never charges any of them for it either": "这把武器「不会」自我踉跄，这相对本批次其它每一件爆炸武器都是实打实的优势，但在这里一文不值，因为本场对它们所有人都不收这笔账"
   "this weapon has no ammo reserve to run out of": 这把武器没有会耗尽的备弹
+  "this weapon is SILENT, and this arena has nobody to alert — no alarm, no reinforcements, no enemy that has not already seen you. Stealth is worth exactly nothing here and worth a great deal in a real mission": "这把武器是静音的，而这个战场没有任何人可以惊动 —— 没有警报，没有增援，没有还没发现你的敌人。潜行在这里的价值恰好是零，而在真实的任务里价值极大"
   "this weapon is never holstered during the fight": 战斗中这把武器从不收起
   "this weapon will never reload on its own and must be reloaded manually — a habit cost this arena does not charge": "这把武器永远不会自动换弹，必须手动换——这是一笔操作习惯上的成本，本场不收"
   "this weapon's passive is not modelled yet — the numbers below are a floor, not its full output": 这把武器的被动尚未建模——下面的数字是下限，不是它的完整输出

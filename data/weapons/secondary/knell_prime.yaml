@@ -1,0 +1,61 @@
+id: knell_prime
+name: Knell Prime
+slot: secondary
+# ONE ROUND IN THE MAGAZINE AND A TWO-SECOND RELOAD, bought back entirely by a
+# passive this engine cannot fire: a weak-point hit grants 100% ammo efficiency
+# (so the round is free and the reload never happens), +0.5x critical multiplier
+# and +20% status, up to three stacks. Without it the weapon is one shot every
+# two seconds, which is the number here. See the admission.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 14
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 32.0
+disposition: 0.85            # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: madurai
+riven_family: Knell
+traits: [tenno, prime]
+introduced: "31"
+internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeKnell/PrimeKnellWeapon
+noise: alarming
+ammo_type: secondary
+ammo_max: 20
+ammo_pickup: 40
+magazine: 1
+reload_seconds: 2.0
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.25
+    max_deg: 6.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 5.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.40
+  crit_multiplier: 2.0
+  status_chance: 0.10
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 75.6, puncture: 82.8, slash: 21.6 }   # total 180
+
+unmodeled:
+  - "'DEATH KNELL', and it is most of the weapon: a weak-point hit grants 100% ammo efficiency, +0.5x final critical multiplier and +20% final status chance, stacking to 3, each stack lasting 2 seconds and refreshed by the next weak-point hit (wiki). This engine has no headshot-TRIGGERED buff — a crit is rolled for a hit and the body part is drawn beside it — so none of the three is applied, and the ammo half in particular is what makes a one-round magazine playable. Read this number as the weapon with its passive switched off"
+
+source:
+  url: https://wiki.warframe.com/w/Knell_Prime

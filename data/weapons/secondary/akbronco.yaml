@@ -1,0 +1,61 @@
+id: akbronco
+name: Akbronco
+slot: secondary
+# TWO BRONCOS, ONE TRIGGER. Seven pellets of 42 apiece from each pull, and a
+# status chance of 3.14% that is the lowest in the roster — the Prime's is four
+# times it off the same shot.
+class: dual_shotguns
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]         # CompatibilityTags SECONDARYSHOTGUN
+mastery_rank: 2
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 3.7
+disposition: 1.35            # riven disposition
+polarities: [madurai]
+exilus_polarity: madurai
+riven_family: Akbronco
+traits: [tenno]
+introduced: "8.0"
+internal_name: /Lotus/Weapons/Tenno/Akimbo/AkimboShotGun
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 20
+magazine: 4
+reload_seconds: 2.0
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). Thirty-six degrees
+  # at its widest, which is what an accuracy of 3.7 reads as.
+  spread:
+    min_deg: 18.0
+    max_deg: 36.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 5.0
+  multishot: 7.0
+  ammo_cost: 1
+  crit_chance: 0.06
+  crit_multiplier: 2.0
+  status_chance: 0.0314
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  falloff:
+    start_m: 7.0
+    end_m: 14.0
+    reduction: 0.75
+  damage: { impact: 33.6, puncture: 4.2, slash: 4.2 }   # 42 a pellet, 294 a shot
+
+source:
+  url: https://wiki.warframe.com/w/Akbronco

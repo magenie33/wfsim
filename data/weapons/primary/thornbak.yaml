@@ -1,0 +1,65 @@
+id: thornbak
+name: Thornbak
+slot: primary
+# A FOUR-ROUND BURST WITH EQUAL PHYSICAL DAMAGE and no mastery requirement at
+# all — the module gives MR 0, which no other rifle in this roster does.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
+mastery_rank: 0
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 25.0
+disposition: 1.1             # riven disposition
+polarities: [naramon]
+# NO EXILUS POLARITY — the module states none, which is a fact rather than a
+# gap: most of the roster carries one and this weapon does not.
+riven_family: Thornbak
+traits: [tenno]
+introduced: "40"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/TnModQuestRifle/TnModQuestRifleWeapon
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 52
+reload_seconds: 1.8
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 8.0
+  trigger: burst
+  # THE BURST. The listed `fire_rate` counts BURSTS: one pull is 4 rounds
+  # 0.066 s apart and then a wait, so the effective rate is
+  # 4 / (1/6 + 3 x 0.066) = 4 / 0.3647 = 10.97 rounds/s.
+  burst:
+    count: 4
+    delay_seconds: 0.066     # module BurstDelay
+  shot_type: hit_scan
+  fire_rate: 6.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.06
+  crit_multiplier: 1.4
+  status_chance: 0.36
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  # "This weapon deals equal physical damage" — and the module's thirds are not
+  # quite equal (9.3324 / 9.3324 / 9.3352), which is DE's own rounding of 28
+  # into three and is transcribed rather than tidied.
+  damage: { impact: 9.3324, puncture: 9.3324, slash: 9.3352 }   # total 28
+
+source:
+  url: https://wiki.warframe.com/w/Thornbak

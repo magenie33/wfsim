@@ -1,0 +1,69 @@
+id: phage
+name: Phage
+slot: primary
+# SEVEN BEAMS AT ONCE, and the roster's FOURTH beam ramp floor: this one starts
+# at 70% of its damage rather than the 20% "most weapons" get. See
+# `beam_ramp_floor` below — it is the one number on this page a class rule would
+# have got wrong.
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, shotgun]   # CompatibilityTags BEAM
+mastery_rank: 11
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 50.0
+disposition: 1.46            # riven disposition
+polarities: [naramon]
+# NO EXILUS POLARITY — the module states none.
+riven_family: Phage
+traits: [infested]
+introduced: "12.0"
+internal_name: /Lotus/Weapons/Infested/LongGuns/Tentacluster/InfestedShotgun
+noise: alarming
+ammo_type: primary
+ammo_max: 720
+ammo_pickup: 80
+magazine: 90
+reload_seconds: 2.0
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+# WHERE THE RAMP STARTS. "Damage ramps up from 70% to 100% over 0.6 seconds when
+# firing. After firing stops for 0.8 seconds, the damage decays back to 70% over
+# 2 seconds" — the wiki's beam page lists this weapon among the exceptions to
+# the 20% every other beam gets, and 70% is the highest floor in the roster.
+beam_ramp_floor: 0.70
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). It is the HIP
+  # cone; aiming converges the seven beams on the reticle, and this arena aims.
+  spread:
+    min_deg: 2.0
+    max_deg: 2.0
+  trigger: held                 # continuous: `fire_rate` is TICKS per second
+  shot_type: hit_scan
+  fire_rate: 12.0
+  # "Innate multishot of 7 beams", 5 Viral apiece.
+  multishot: 7.0
+  ammo_cost: 0.5
+  crit_chance: 0.19
+  crit_multiplier: 2.0
+  status_chance: 0.155
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 25.0 m", Hit-Scan — a beam's reach, and short even for one.
+  range_m: 25.0
+  # "This weapon deals Viral damage" — one type, before any mod.
+  damage: { viral: 5 }   # 5 a beam, 35 a tick
+
+unmodeled:
+  - "FIRING FROM THE HIP throws the seven beams in a spread and aiming focuses them on the crosshairs (wiki). This arena aims, so all seven land — which is the ceiling. A player firing from the hip covers more ground and lands fewer of them on one enemy"
+
+source:
+  url: https://wiki.warframe.com/w/Phage

@@ -1,0 +1,64 @@
+id: reconifex
+name: Reconifex
+slot: primary
+# A TWO-HUNDRED-ROUND BELT WITH A FIVE-SECOND RELOAD, and an ACTIVE RELOAD that
+# is the whole point of carrying it: hitting the button inside a window turns
+# the reload into one second AND makes the magazine Heat with guaranteed status.
+# The engine has no timed reload input, so this entry is the passive half of the
+# weapon — see the admission below.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
+mastery_rank: 14
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 13.3
+disposition: 1.0             # riven disposition
+polarities: [vazarin, madurai]
+exilus_polarity: naramon
+riven_family: Reconifex
+traits: [tenno]
+introduced: "38.0"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/TnBeltFedRifle/TnBeltFedRifleWeapon
+noise: alarming
+ammo_type: primary
+ammo_max: 1000
+ammo_pickup: 80
+magazine: 200
+reload_seconds: 5.0
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). A five-degree
+  # cone, which is what an accuracy of 13.3 reads as.
+  spread:
+    min_deg: 1.0
+    max_deg: 5.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 8.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.28
+  crit_multiplier: 2.8
+  status_chance: 0.16
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 1000.0 m", Hit-Scan — a SNIPER's reach on a belt-fed rifle,
+  # which is the module's own figure and not a transcription of the 300 m every
+  # other rifle in the roster carries.
+  range_m: 1000.0
+  damage: { impact: 16, puncture: 24 }   # total 40
+
+unmodeled:
+  - "THE ACTIVE RELOAD: pressing reload again 22-38% of the way through one cuts the reload to 1 second and gives the magazine Heat rounds dealing '+25% more damage with guaranteed status' (wiki). It is a TIMED INPUT and this sim has no player pressing buttons — every reload here is the full 5 seconds and every round is the ordinary Puncture one, so a player who hits the window is far ahead of this number"
+
+source:
+  url: https://wiki.warframe.com/w/Reconifex

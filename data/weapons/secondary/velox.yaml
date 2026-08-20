@@ -1,0 +1,60 @@
+id: velox
+name: Velox
+slot: secondary
+# A SIXTY-TWO ROUND MACHINE PISTOL that reloads half again as fast when it is
+# run completely dry — a mechanic that rewards emptying the magazine, and one
+# this engine's single reload time cannot express. See the admission.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 8
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 25.0
+disposition: 1.25            # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: madurai
+riven_family: Velox
+traits: [tenno]
+introduced: "28"
+internal_name: /Lotus/Weapons/Tenno/Pistols/TnOdaliskSmg/TnOdaliskSmgPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 434
+ammo_pickup: 40
+magazine: 62
+reload_seconds: 2.6
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 2.0
+    max_deg: 6.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 15.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.14
+  crit_multiplier: 1.8
+  status_chance: 0.22
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 4.32, puncture: 8.16, slash: 11.52 }   # total 24
+
+unmodeled:
+  - "it 'reloads 50% faster from a fully depleted magazine' (wiki), and this engine carries ONE reload time per weapon. This sim holds the trigger until the magazine is dry, which is exactly the case that reload applies to — so the 2.6 s here is the SLOW reload for a fight that would always earn the fast one, and the weapon is understated"
+  - "Velox Conclusion, the Velox-exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Velox

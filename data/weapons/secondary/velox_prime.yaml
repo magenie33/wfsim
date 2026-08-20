@@ -1,0 +1,60 @@
+id: velox_prime
+name: Velox Prime
+slot: secondary
+# THE VELOX WITH A THIRD MORE STATUS AND TWO MORE ROUNDS A SECOND — 32% against
+# 22%, 17/s against 15/s — out of a smaller magazine. The empty-reload passive is
+# the same and is admitted for the same reason.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 13
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 25.0
+disposition: 0.85            # riven disposition
+polarities: [madurai, madurai, naramon]
+exilus_polarity: madurai
+riven_family: Velox
+traits: [tenno]
+introduced: "35.5.9"
+internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeVelox/PrimeVeloxPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 520
+ammo_pickup: 40
+magazine: 70
+reload_seconds: 2.6
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 2.0
+    max_deg: 6.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 17.0
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.14
+  crit_multiplier: 2.0
+  status_chance: 0.32
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 6.48, puncture: 7.56, slash: 12.96 }   # total 27
+
+unmodeled:
+  - "it 'reloads 50% faster from a fully depleted magazine' (wiki), and this engine carries ONE reload time per weapon. This sim holds the trigger until the magazine is dry, which is exactly the case that reload applies to — so the 2.6 s here is the SLOW reload for a fight that would always earn the fast one, and the weapon is understated"
+  - "Velox Conclusion, the Velox-exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Velox_Prime
