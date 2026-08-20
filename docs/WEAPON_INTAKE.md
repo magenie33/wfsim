@@ -8,6 +8,43 @@ and secondary comes first. What one weapon costs, and the READ THE PAGE rule,
 apply to all of it; batches A and B below are the backlog behind that program,
 and batch C (sniper) is part of it (Vectis).
 
+## DONE — every non-Exalted gun is in (2026-08-20)
+
+The backlog this file was written to plan is EMPTY. Every primary and secondary
+the wiki's weapon module holds is in `data/weapons/` except twelve EXALTED
+weapons, which are Warframe and Necramech abilities rather than guns: Artemis
+Bow and its Prime, Lizzie, Neutralizer, both Balefire Chargers, both Dex Pixias,
+Glory, Noctua, and both Regulators. Arch-Guns finished on 2026-08-15 and the
+companion weapons before that.
+
+The batches below (A, B, C) are the historical plan and are all complete; they
+are kept because the REASONING in them — which pools a class unlocks, what a
+measurement session is for — is still the reasoning for the next weapon DE
+ships.
+
+**What the sweep found that no earlier pass could.** Nine intake batches over
+one day, ~250 entries, and the guards caught more than the reading did:
+
+- `hema` had carried an `internal_name` one path segment short since the roster
+  began, so every cross-check had silently SKIPPED it. That is what
+  `scripts/survey_internal_names.py` and its ratchet now make impossible.
+- Every per-damage-type array in the engine was written `[f64; 15]` against an
+  enum with SEVENTEEN variants. Nothing noticed until the HAALVU became the
+  first player weapon to deal TAU.
+- The scope card printed "+0% headshot damage" on eight of the ten scoped
+  weapons in the roster, because the sentence named one grant and the field was
+  another.
+- A `Falloff` whose `Reduction` is ZERO is the module saying there is NONE, and
+  `falloff.reduction` here is the fraction KEPT — so a blind transcription
+  deletes the attack past its start range.
+- An attack NAME is not a trigger. "Air Burst" is semi-auto; "Auto Mode" on the
+  Zenith is the mode the arsenal does NOT show.
+
+**Six new admission reasons** came out of it, each because the same sentence
+appeared three or more times with no numbers or with one: `silent_weapon`,
+`bolt_corpse_ragdoll`, `empty_reload_is_faster`, and the three the earlier
+batches had already earned.
+
 ## The bottleneck is MEASUREMENT, not typing
 
 Reading a weapon out of the wiki is now mechanical —

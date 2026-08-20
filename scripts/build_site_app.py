@@ -48,11 +48,33 @@ def roster() -> list[dict]:
     (engine::weapons_data::roster does the same filter) — a bow's tapped shot
     and an Incarnon form are forms of a weapon, not separate pages.
     """
-    out = []
+    # A FORM MAY BE THE DEFAULT, and a form states only what DIFFERS from its
+    # weapon (`weapons_data::INHERITED`). The Nataruk is the case: its arsenal
+    # shows the PERFECT shot, so `default_form` sits on an entry that inherits
+    # its class, slot and mastery rank — and this loader read the yaml raw and
+    # died on the missing `class` (2026-08-20). The engine merges before it
+    # reads; so does this now.
+    inherited = (
+        "slot", "class", "mod_pools", "mastery_rank", "max_rank", "accuracy",
+        "disposition", "polarities", "exilus_polarity", "riven_family",
+        "internal_name", "noise", "magazine", "reload_seconds", "ammo_type",
+        "ammo_max", "ammo_pickup", "traits", "deployment", "no_resupply",
+    )
+    specs = {}
     for f in sorted((ROOT / "data" / "weapons").rglob("*.yaml")):
         spec = yaml.safe_load(f.read_text(encoding="utf-8"))
-        if spec.get("default_form"):
-            out.append(spec)
+        specs[spec["id"]] = spec
+    out = []
+    for spec in specs.values():
+        if not spec.get("default_form"):
+            continue
+        parent = specs.get(spec.get("inherits"))
+        if parent:
+            spec = dict(spec)
+            for k in inherited:
+                if k not in spec and k in parent:
+                    spec[k] = parent[k]
+        out.append(spec)
     return sorted(out, key=lambda s: s["name"])
 
 

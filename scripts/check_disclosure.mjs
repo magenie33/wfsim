@@ -137,12 +137,22 @@ for (const lang of ["en", "zh"]) {
         .querySelector('.bgap').title.slice(0, 60) : '';
     // …and the mark means something: the weapons with gaps are exactly the
     // weapons marked.
-    const gapNames = (META.weapons || []).filter(w => (w.unmodeled || []).length)
-        .map(w => w.name);
+    // MATCH THE LONGEST NAME, not any prefix. A row's label carries the weapon
+    // and then its mode, so a prefix test is the only way to find the weapon —
+    // and a some(startsWith) over the GAPPED names alone is wrong the moment
+    // one weapon's name is a prefix of another's. That became false on
+    // 2026-08-20: Baza / Baza Prime, Ignis / Ignis Wraith, Knell / Knell Prime,
+    // Corinth / Corinth Prime, Tigris / Tigris Prime and a dozen more, so a
+    // CLEAN Prime read as gapped because its ordinary version has a gap. The
+    // row's weapon is the longest roster name its label starts with, and the
+    // question is whether THAT weapon has gaps.
+    const byLength = (META.weapons || []).slice()
+        .sort((a, b) => b.name.length - a.name.length);
     out.markedRight = rows.every(r => {
         const name = (r.querySelector('.bname') || {}).textContent || '';
         const marked = !!r.querySelector('.bgap');
-        return marked === gapNames.some(n => name.startsWith(n));
+        const w = byLength.find(x => name.startsWith(x.name));
+        return marked === !!(w && (w.unmodeled || []).length);
       });
 
     // 7b. THE TODO CHIP, on a weapon that still has one.
