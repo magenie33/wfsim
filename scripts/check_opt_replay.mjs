@@ -156,10 +156,17 @@ const runFor = (w) => evaluate(`(async () => {
   // the score FURTHEST among the ones the band actually flags, and reports when
   // no axis on this weapon is sharp enough — the global "at least one weapon
   // proved the pipe" is what keeps that honest.
+  //
+  // THE BAND IS INLINED because this whole function runs PAGE-SIDE: band is a
+  // node-side const and calling it here throws 'band is not defined' inside the
+  // browser, which is exactly what the first attempt at this did. Same
+  // arithmetic, one copy each side — the node side reports it, this side only
+  // picks with it.
   let control = null;
-  const sharp = dropped.filter(d => d.refused || d.score === null
-    || band(d.score, row.kill_progress,
-            direct && direct.ok ? direct.score_se : null, row.kill_progress_se).off);
+  const se = Math.sqrt(((direct && direct.ok ? direct.score_se : 0) || 0) ** 2
+                       + ((row.kill_progress_se) || 0) ** 2) || 1e-9;
+  const offBand = (x) => Math.abs(x - row.kill_progress) > 4 * se;
+  const sharp = dropped.filter(d => d.refused || d.score === null || offBand(d.score));
   const liveAxis = sharp.sort((a, b) =>
     Math.abs((b.score ?? 0) - row.kill_progress) - Math.abs((a.score ?? 0) - row.kill_progress)
   )[0] || null;
