@@ -73,7 +73,11 @@ WEAPON_FIELDS = [('mastery_rank', 'Mastery'), ('disposition', 'Disposition'),
 ATTACK_FIELDS = [('crit_chance', 'CritChance'), ('crit_multiplier', 'CritMultiplier'),
                  ('status_chance', 'StatusChance'), ('fire_rate', 'FireRate'),
                  ('multishot', 'Multishot'), ('punch_through_m', 'PunchThrough'),
-                 ('projectile_speed_mps', 'ShotSpeed'), ('ammo_cost', 'AmmoCost')]
+                 ('projectile_speed_mps', 'ShotSpeed'), ('ammo_cost', 'AmmoCost'),
+                 # THE CONE, which decides how much of a shot lands and which
+                 # nothing else here checks.
+                 ('spread.min_deg', 'MinSpread'), ('spread.max_deg', 'MaxSpread'),
+                 ('charge_seconds', 'ChargeTime')]
 # A transcription rounds where the module carries more places than a card does
 # (0.101429 -> 0.1014); anything past a tenth of a per cent is a disagreement.
 TOL = 2e-3
@@ -117,11 +121,22 @@ def near(a, b):
     return abs(float(a) - float(b)) <= TOL * max(1.0, abs(float(b)))
 
 
+def dig(d, key):
+    """`spread.min_deg` reads through the nested block; a plain key is itself."""
+    cur = d
+    for part in key.split('.'):
+        if not isinstance(cur, dict) or part not in cur:
+            return None
+        cur = cur[part]
+    return cur
+
+
 def attack_score(ours, theirs):
     """How many attack fields agree — the tie-break when damage is shared."""
     n = 0
     for k, m in ATTACK_FIELDS:
-        if k in ours and theirs.get(m) is not None and near(ours[k], theirs[m]):
+        v = dig(ours, k)
+        if v is not None and theirs.get(m) is not None and near(v, theirs[m]):
             n += 1
     return n
 
@@ -174,11 +189,12 @@ def main(only):
             continue
         best = max(cands, key=lambda a: attack_score(atk, a))
         for ours, theirs in ATTACK_FIELDS:
-            if ours not in atk or best.get(theirs) is None:
+            v = dig(atk, ours)
+            if v is None or best.get(theirs) is None:
                 continue
-            if not near(atk[ours], best[theirs]) and (wid, 'attack.' + ours) not in EXPECTED:
+            if not near(v, best[theirs]) and (wid, 'attack.' + ours) not in EXPECTED:
                 findings.append('%s.attack.%s: yaml %s vs module %s (attack %r)'
-                                % (wid, ours, atk[ours], best[theirs], best.get('AttackName')))
+                                % (wid, ours, v, best[theirs], best.get('AttackName')))
 
     print('%d entries re-read against the module, %d finding(s)' % (checked, len(findings)))
     for f in findings:

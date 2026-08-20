@@ -60,7 +60,10 @@ attack:
   shot_type: projectile
   projectile_speed_mps: 100
   fire_rate: 2.5
-  charge_seconds: 0.8
+  # 0.75 s, the wiki module's ChargeTime for this attack. It read 0.8 until
+  # 2026-08-20 — a rounding somebody carried in by hand, and a bow's cadence
+  # is draw + nock, so a wrong draw is a wrong fire rate.
+  charge_seconds: 0.75
   charge_cadence: draw_then_rate
   multishot: 1.0
   ammo_cost: 1
