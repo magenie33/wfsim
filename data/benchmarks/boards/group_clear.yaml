@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-engine: b458594732eeb241780a56795fe55997dcdab554
+engine: 50bfb1be5da64229c9e04d7ae01b3ebdb3a2e65a
 entries:
   - weapon: akarius_prime
     mode: base
@@ -76,6 +76,11 @@ entries:
     mode: base
     score: 274.6666666666667
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, containment_breach, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: cortege
+    mode: base
+    score: 236.61341264724769
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, marked_target, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: ignis_wraith
     mode: base
