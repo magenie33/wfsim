@@ -263,7 +263,6 @@ ui:
   "Arcanes": 赋能
   "Arch-Guns": 空战武器
   "Archwing": 空战
-  "Armor": 护甲
   Armor: 护甲
   "Atmosphere": 地面
   "BULLSEYE RELOAD, this weapon's own passive: \"Landing a successful headshot grants the 'Bullseye Reload' buff, increasing reload speed by 25% and can stack up to 2 times to a total of 50%. The buff lasts 4 seconds and can be refreshed on subsequent headshots.\" It is worth a shorter reload in proportion to how often a head is hit, and it is not applied here": "「Bullseye Reload」，这把武器自己的被动：「成功爆头会获得『Bullseye Reload』增益，换弹速度 +25%，最多叠 2 层共 +50%。增益持续 4 秒，可由后续爆头刷新。」它值多少换弹时间，与爆头频率成正比，而这里没有施加"
@@ -380,8 +379,6 @@ ui:
   "Headshot %": 爆头率 %
   "Headshot rate": 爆头率
   "Headshot": 爆头
-  "Health": 生命
-  Health: 生命
   Health: 生命
   "Hildryn's signature bonus is not modelled — carried by her it holds 300 more reserve ammo, 700 instead of 400, and this arena has no Warframe holding it": Hildryn 的专属加成尚未建模 —— 由她携带时备弹上限多 300（700 而不是 400），而这个战场里没有战甲持有它
   "Holstered Reload/s": 收枪装填/秒
@@ -390,7 +387,6 @@ ui:
   "INFINITE BODY PUNCH THROUGH: the page grants this weapon 1.1 m of punch through AND unlimited penetration of BODIES specifically. The 1.1 m is transcribed and spends `space::BODY_MATERIAL_M` a body like every other weapon's, so the slug stops after two enemies here where in game it would cross the whole line": "无限穿透身体：页面给这把武器 1.1 米穿透，并且额外给了对「身体」的无限穿透。这里录入的是那 1.1 米，并且和其他武器一样每穿过一个身体扣掉 `space::BODY_MATERIAL_M`，所以这颗弹丸在这里穿过两个敌人就停了，而在游戏里它会穿过一整排"
   "Incarnon Form": 灵化形态
   "Incarnon Genesis": 灵化之源
-  "Incarnon cycle": 灵化循环
   "Incarnon cycle": 灵化循环
   "Infested": 感染者
   "Infinite ammo": 无限弹药
@@ -462,9 +458,7 @@ ui:
   "Orange+": 橙暴以上
   Orokin: 堕落者
   "Other": 其他
-  "Overguard": 超宏护盾
-  Overguard: 超护盾
-  Overguard: 超载护盾
+  Overguard: 超宏护盾
   Pace: 节奏
   "PRIMARY COMPRESSION's row for this attack is not transcribed. The published table reads '127% / Both / Merged' — the effectiveness is over 100%, the stacking is BOTH brackets at once, and the radius calculation is a fourth kind ('Alt-Fire gains the damage % bonus from primary fire's radius and a unique multiplier'). `stacking` here is one of two values and `radius_calculation` one of four, so a shape the vocabulary cannot hold is left out rather than flattened — and the arcane is therefore worth NOTHING on this form here, where in game it is worth more than on the primary fire": "这次攻击的 Primary Compression 行没有录入。published 表写的是「127% / Both / Merged」——效能超过 100%，堆叠方式是两个区间同时生效，而半径计算方式是第四种（「副攻击从主攻击的半径拿到伤害加成百分比，外加一个独有的乘数」）。这里的 `stacking` 只有两个取值、`radius_calculation` 只有四个，所以一个词表装不下的形状被留在外面而不是压平 —— 因此这枚 arcane 在这个形态上在这里一分不值，而在游戏里它比在主攻击上更值钱"
   "Pan": "平移"
@@ -514,8 +508,6 @@ ui:
   "Sentinel Weapons": 守护武器
   "Sequence Burn, the Spectra-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Sequence Burn」，Spectra 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Shattering Justice, Acid Shells and Clip Delegation, the Sobek-exclusive mods — weapon-exclusive cards outside the pools this roster loads. Acid Shells in particular detonates corpses for a share of their health, which is a whole second damage source": "「Shattering Justice」「Acid Shells」和「Clip Delegation」，Sobek 的专属 MOD——这些是武器专属卡，不在本武器库载入的卡池里。尤其是「Acid Shells」，它会按尸体生命值的一定比例引爆尸体，那是一整个第二伤害来源"
-  "Shield": 护盾
-  Shield: 护盾
   Shield: 护盾
   "Shot Combo Counter": 射击连击计数
   "Shots": 射击次数
@@ -604,7 +596,6 @@ ui:
   "Warframe": 战甲
   "Weapon passive: Frenzy — see its buff card (grants +1 toxin while active).": 武器被动：狂乱 —— 详见它的增益卡（生效期间提供 +1 毒素）。
   "Weapons": 武器
-  "Weapons": 武器
   "What a donation never buys": 捐助永远买不到什么
   "What each mode is": 每种输出方式分别是什么
   "What is sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself). The board takes a weapon built as far as it goes: every main slot filled, exilus not counted.": 发送的内容：武器及其 mod、进化、赋能。仅此而已——没有账号、没有标识符、没有你起的任何名字，也没有分数（榜单自己跑分）。榜单收的是这把武器的最努力配置：8 个主槽位全部装满，exilus 不计。
@@ -660,7 +651,6 @@ ui:
   "best run": 最好的一场
   "body part": 身体部位
   body: 身体
-  "build": 配装
   "build": 配装
   "builds you run here are submitted — the board re-scores every 20 minutes, so a run appears there within about 20, at most 40": 你在这里跑的配装会上传——榜单每 20 分钟重算一次，所以一次跑分大约 20 分钟内会出现在榜上，最多 40 分钟
   "builds you run here are submitted": 你在这里跑的配装会被提交
@@ -731,7 +721,6 @@ ui:
   "full at": 满层于
   "fully automatic": 全自动
   "has an Eximus variant": 存在精英变体
-  head: 头部
   head: 头部
   "headshots": 爆头
   "headshots grant 2 stacks (max 16) of 'Vinquibus Precision', increasing MELEE damage by 250% — the buff is real and lands on a weapon this sim does not fire, so it is worth nothing here and a great deal to the player it was designed for": "爆头会给予 2 层（上限 16 层）「Vinquibus Precision」，近战伤害 +250% —— 这个增益是真实的，但它落在一把本模拟不会开火的武器上，所以在这里一分不值，而对它设计的那个玩家价值极大"
@@ -831,7 +820,6 @@ ui:
   "one firing mode": 只有一种开火方式
   "only": 单独        # "<form> only" — one form, no cycle
   "only five grenades may be live at once, and multishot counts towards that limit (wiki) — so on this weapon a multishot mod buys fewer shots rather than more damage per shot, which is the one place multishot is not simply good. This sim resolves each shot on its own and never hits the cap": "同时最多只能有五颗榴弹在场，而且多重射击产生的弹丸也占这个额度（维基）—— 所以在这把武器上多重射击买到的是更少的发射次数而不是每发更高的伤害，这是多重射击唯一不是单纯变强的地方。本模拟逐发结算，永远碰不到这个上限"
-  "open a slot to rank its mods by effect": 打开任一槽位，按效果排序
   "open a slot to rank its mods by effect": 打开任一槽位，按效果排序它的 mod
   "open the wiki page": 打开维基页面
   "orange crit": 橙色暴击
@@ -877,7 +865,6 @@ ui:
   "req pins the slot — the pool marks give way": 必带会钉死这个槽位 —— 候选标记随之清除
   "req pins the tier — the pool marks give way": 必带会钉死这一层 —— 候选标记随之清除
   "req": 必带
-  "riven": 裂罅
   "rockets aim for the torso, so a high headshot percentage is not reachable in play even though this entry will honour whatever is set": 火箭瞄准躯干，所以实战中达不到高爆头率，尽管这个条目会照你设定的数值计算
   "rolls": 区间
   "running {n} simulations…": 正在跑 {n} 次模拟…
@@ -997,7 +984,6 @@ ui:
   "the area of effect CAN headshot, which the page marks as a BUG — this sim applies its headshot percentage to the direct hit alone, so the blast is never a head here": "范围伤害可以打出爆头，页面把这一条标注为 BUG —— 本模拟只把爆头比例应用在直接命中上，所以这里的爆炸永远不会算作爆头"
   "the arrow also throws APPENDAGES that grab enemies within nine metres and drag them to it, dealing 90 damage each (module) — that is crowd control plus a second damage source, and this engine carries one explosion per attack, so neither is counted": "这支箭还会甩出触手，抓住九米内的敌人并把他们拖过来，每个造成 90 点伤害（模块）—— 那既是控制效果又是第二伤害来源，而本引擎每次攻击只带一次爆炸，所以两者都没有被计入"
   "the atmospheric beam's INNATE INFINITE BODY PUNCH THROUGH is not modelled — it passes through a body to reach whatever is behind it, and this arena has one target with nothing behind it": 大气形态光束自带的无限躯体穿透尚未建模 —— 它会穿过一个身体打到后面的目标，而这个战场只有一个目标，后面什么都没有
-  "the barb's 0.9 s ERUPTION DELAY is not modelled — in game the explosion lands nearly a second after the shot, and here the two arrive together, so a short engagement gets its damage sooner than it should": "倒刺 0.9 秒的爆发延迟没有建模——游戏里爆炸在开火将近一秒后才落地，这里两者同时到达，所以短交战拿到伤害的时间比实际更早"
   "the barb's 0.9 s ERUPTION DELAY is not modelled — in game the explosion lands nearly a second after the shot, and here the two arrive together, so a short engagement gets its damage sooner than it should": 倒刺 0.9 秒的爆发延迟尚未建模 —— 游戏里爆炸比命中晚将近一秒，这里两者同时到达，所以短交战拿到伤害的时间比实际更早
   "the beacon's whole purpose is the +50% absolute critical chance and the homing it grants the PRIMARY fire, neither of which this engine can carry from one mode to another. Fired on its own it is a three-damage dart": "信标的全部意义是它给主攻击带来的 +50% 绝对暴击率和追踪，而这两样本引擎都没法从一个模式带到另一个模式。单独开火时它只是一根 3 点伤害的飞镖"
   "the beam CHAINS to 2 more enemies within 9 m at 50% of the main beam's damage each — one target here, so it is worth exactly nothing (UNMODELLED.md §one target). It is the largest thing this weapon does in a room and the reason it was nerfed from 4 chains to 2": 光束会连锁到 9 米内另外 2 个敌人，各承受主光束 50% 的伤害 —— 这里只有一个目标，所以它的价值恰好为零（UNMODELLED.md §单目标）。这是这把武器在一个房间里最大的作用，也是它从 4 段连锁被削到 2 段的原因
@@ -1049,7 +1035,7 @@ ui:
   "the explosion's forced RAGDOLL, and the alt fire's forced KNOCKDOWN on embed — both are crowd control, which is worth time and safety rather than damage. Nothing shoots back here and a body does not move, so neither pays": "爆炸自带的强制布娃娃，以及交替射击嵌入时自带的强制击倒——两者都是控场，换来的是时间和安全而不是伤害。本场没有任何东西还击，身体也不会移动，所以两者都不兑现"
   "the extra hit off a lingering FIELD tick (Torid's cloud): neither wiki says whether a cloud tick triggers one, so it does not here — MEASUREMENTS M40": 持续伤害力场每一跳（如 Torid 的毒云）是否也会触发附加伤害：两个 wiki 都没有说，所以这里不触发——见 MEASUREMENTS M40
   "the fan has a 'very wide spread' (wiki) and the module gives this attack a cone of ZERO, which cannot both be true — the module's figure is transcribed rather than a number invented for the sentence, so every knife lands on the reticle here": "扇形投掷「散布非常宽」（维基），而模块给这次攻击的散布是零，两者不可能同时成立 —— 这里录入的是模块的数字，而不是为了让句子成立而编出来的数字，所以每一把刀都落在准星上"
-  "the field is DISABLED OUTRIGHT against some enemies and the page states it as a bug: \"For enemies with both Shield and Armor, or with Overguard, the Attraction Field is completely disabled, including damage and traction effects\". Against such a target the 2,250 above is zero": "对某些敌人这个力场会被「完全禁用」，页面把它列为一个 bug：「对同时拥有护盾与护甲的敌人，或拥有超卫的敌人，吸引力场会被完全禁用，包括伤害与牵引效果」。对这类目标，上面那 2250 点就是零"
+  "the field is DISABLED OUTRIGHT against some enemies and the page states it as a bug: \"For enemies with both Shield and Armor, or with Overguard, the Attraction Field is completely disabled, including damage and traction effects\". Against such a target the 2,250 above is zero": "对某些敌人这个力场会被「完全禁用」，页面把它列为一个 bug：「对同时拥有护盾与护甲的敌人，或拥有超宏护盾的敌人，吸引力场会被完全禁用，包括伤害与牵引效果」。对这类目标，上面那 2250 点就是零"
   "the fight has one target, so this pays nothing": 战斗只有一个目标，所以这一条毫无收益
   "the fight these numbers are measured in — the quick calc runs the Simulator's own scenario, so switch it there and every chip follows": 这些数字是在哪场战斗里测出来的 —— 快速计算跑的就是模拟器当前的场景，去那边切换，每个标签都会跟着变
   "the fight": "这场仗"
