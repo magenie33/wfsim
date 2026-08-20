@@ -768,6 +768,21 @@ struct HeatEntity {
     /// (FIFO) when a new proc lands, exactly like every other capped status.
     /// Empty when uncapped (contributions just fold into `value`).
     recent: Vec<f64>,
+    /// HOW MANY PROCS ARE IN `value`, which is the number a reader wants and
+    /// the one thing the accumulator used to throw away.
+    ///
+    /// Heat is the only status DoT that CONSOLIDATES: every proc folds into one
+    /// entity whose tick grows linearly and whose single clock is refreshed
+    /// (data/debuffs/ignite.yaml, `dot_model: singleton_accumulator`). The
+    /// damage was always right; what the debuff table reported was
+    /// `heat.is_some()` — 0 or 1 — so a player watching a ten-stack burn was
+    /// told it was one stack, and had no way to see the ramp that is most of
+    /// what Heat does (player report via owner, 2026-08-21).
+    ///
+    /// UNCAPPED, because the spec says so: `max_stacks: null`, *"indefinite
+    /// ramp while kept refreshed"*. Under a per-unit cap it holds at the cap,
+    /// since the oldest contribution is dropped as the new one lands.
+    stacks: u32,
 }
 
 /// A Blast (Detonate) stack: the fuse fires a single-target hit; the 10th
@@ -1001,32 +1016,38 @@ fn ten_stack_amp(stacks: usize) -> f64 {
 /// stack goes with it — so a respawn shows as the series dropping to zero and
 /// climbing again, and `uptime` counts that gap against you. That is the point
 /// (owner).
-pub const DEBUFF_ROSTER: [(&str, u32); 17] = [
+/// `None` is UNCAPPED and the chart draws it as `∞`, scaling to whatever the
+/// run reached. Four rows changed to it on 2026-08-21: a stated cap the fight
+/// routinely exceeds is worse than no cap, because the chart pins at the
+/// stated one and the reader is told a pile of 22 is a pile of 10.
+pub const DEBUFF_ROSTER: [(&str, Option<u32>); 17] = [
     // The 10-stack families, and the three that are not.
-    ("virus", TEN_STACK_CAP as u32),
-    ("corrosion", TEN_STACK_CAP as u32),
-    ("disrupt", TEN_STACK_CAP as u32),
-    ("confusion", TEN_STACK_CAP as u32),
-    ("blast", TEN_STACK_CAP as u32),
+    ("virus", Some(TEN_STACK_CAP as u32)),
+    ("corrosion", Some(TEN_STACK_CAP as u32)),
+    ("disrupt", Some(TEN_STACK_CAP as u32)),
+    ("confusion", Some(TEN_STACK_CAP as u32)),
+    ("blast", Some(TEN_STACK_CAP as u32)),
     // Cold is ONE STATUS in two rows: `freeze` is the stack ladder and counts
     // for Condition Overload, `frozen` is the STATE its tenth stack trips and
     // counts for nothing. They are LIVE AT THE SAME TIME — the chill stays,
     // pinned at ten, which is what the game shows — so the two series rising
     // together is the mechanic (owner, 2026-08-16).
-    ("freeze", TEN_STACK_CAP as u32),
-    ("frozen", 1),
-    ("stagger", STAGGER_CAP as u32),
-    ("weakened", WEAKENED_CAP as u32),
+    ("freeze", Some(TEN_STACK_CAP as u32)),
+    ("frozen", Some(1)),
+    ("stagger", Some(STAGGER_CAP as u32)),
+    ("weakened", Some(WEAKENED_CAP as u32)),
     // The Bullet Attractor is a FIELD, not a pile: a re-proc moves it rather
     // than adding a second one.
-    ("attractor", 1),
-    // The DoT families, counted as live instances of that type. Heat is a
-    // singleton entity rather than a stack list, so its row is 0 or 1 — what a
-    // reader wants from it is when it was burning, and the strip ramp is the
-    // part `heat_decay` owns.
-    ("bleed", TEN_STACK_CAP as u32),
-    ("poison", TEN_STACK_CAP as u32),
-    ("ignite", 1),
+    ("attractor", Some(1)),
+    // The DoT families, counted as live instances of that type — and all four
+    // of them are UNCAPPED, which is the wiki's own answer for three of them
+    // and the reason `dot_family_cap` exists. Heat is the odd one: it is a
+    // singleton accumulator rather than a list, so its count is the number of
+    // procs folded into the one entity (`HeatEntity::stacks`). Its row read 0
+    // or 1 until 2026-08-21 and a ten-stack burn was drawn as one stack.
+    ("bleed", None),
+    ("poison", None),
+    ("ignite", None),
     // …AND THE OTHER TWO DoT FAMILIES, which had no row at all until a player
     // reported that their DoTs were on the enemy and not on the chart
     // (2026-08-19). FOUR damage types reach `push_dot` — Slash, Toxin,
@@ -1039,12 +1060,12 @@ pub const DEBUFF_ROSTER: [(&str, u32); 17] = [
     // On or off, and off only because the target died. It is drawn like every
     // other row so the replay can show WHEN this weapon's invisible status
     // landed — which is the only place a reader can see it at all.
-    ("microwave", 1),
+    ("microwave", Some(1)),
     // ...and the other invisible one, which unlike Microwave ENDS. A row of
     // its own for the same reason: it is a status the target is carrying that
     // no damage type explains, so a reader comparing a Condition Overload
     // number against the vector has to be able to see it.
-    ("lifted", 1),
+    ("lifted", Some(1)),
     // …AND THE OTHER TWO DoT FAMILIES, which had no row at all until a player
     // reported that their DoTs were on the enemy and not on the chart
     // (2026-08-19). FOUR damage types reach `push_dot` — Slash, Toxin,
@@ -1054,8 +1075,11 @@ pub const DEBUFF_ROSTER: [(&str, u32); 17] = [
     // APPENDED, NOT INSERTED beside the other DoTs: a series is read by INDEX,
     // so a row added in the middle would relabel every chart drawn from a
     // replay stored before it.
-    ("tesla", TEN_STACK_CAP as u32),
-    ("gas", TEN_STACK_CAP as u32),
+    ("tesla", None),
+    // …AND THE ONE DoT FAMILY THAT REALLY IS CAPPED. The Gas page states a
+    // STACK cap where the other three state a DISPLAY one — see
+    // `dot_family_cap` for all four sentences.
+    ("gas", Some(TEN_STACK_CAP as u32)),
 ];
 
 impl DebuffState {
@@ -1085,7 +1109,8 @@ impl DebuffState {
             live(&self.attractor),
             dots_of(DamageType::Slash),
             dots_of(DamageType::Toxin),
-            u16::from(self.heat.is_some()),
+            // THE COUNT, not "is it burning". See `HeatEntity::stacks`.
+            self.heat.as_ref().map_or(0, |h| h.stacks.min(u32::from(u16::MAX)) as u16),
             u16::from(self.microwave),
             u16::from(self.lifted.is_some_and(|e| e > now)),
             // POSITIONALLY MATCHING `DEBUFF_ROSTER`, which is why these two sit
@@ -1236,8 +1261,14 @@ impl DebuffState {
                         }
                         h.recent.push(contrib);
                         h.value += contrib;
+                        // The list IS the count under a cap, so it cannot drift
+                        // from `value` however many procs are dropped.
+                        h.stacks = h.recent.len() as u32;
                     }
-                    None => h.value += contrib,
+                    None => {
+                        h.value += contrib;
+                        h.stacks += 1;
+                    }
                 }
                 h.expiry = expiry; // refresh regardless
             }
@@ -1252,6 +1283,7 @@ impl DebuffState {
                     next_tick: t + 1.0,
                     value: contrib,
                     recent,
+                    stacks: 1,
                 });
             }
         }
@@ -4101,8 +4133,57 @@ fn fire_extra_hits(
 /// `process_ticks` walks it once per body per shot — so a spread that hands a
 /// DoT to a dozen neighbours thousands of times a second turns a linear cost
 /// quadratic (2026-08-18).
-fn dot_cap_for(p: &TargetParams) -> Option<usize> {
-    Some(p.stack_caps.map_or(TEN_STACK_CAP, |c| c.general))
+fn dot_cap_for(p: &TargetParams, dtype: DamageType) -> Option<usize> {
+    // THE UNIT'S OWN CAP, where it declares one — that is a property of the
+    // enemy and applies to everything it carries.
+    let unit = p.stack_caps.map(|c| c.general);
+    // …AND THE FAMILY'S, which is GAS AND ONLY GAS. See `dot_family_cap`.
+    match (dot_family_cap(dtype), unit) {
+        (Some(a), Some(b)) => Some(a.min(b)),
+        (Some(a), None) => Some(a),
+        (None, u) => u,
+    }
+}
+
+/// HOW MANY INSTANCES OF ONE DoT FAMILY A BODY CAN CARRY — and the answer is
+/// only ever "ten" for GAS.
+///
+/// This was TEN for all four families, generalised from the Gas page's *"Up to
+/// 10 instances of the effect can stack on the same target"*. That sentence is
+/// the one place the number is a STACK cap; the other three pages say the
+/// opposite in as many words, and the ten they mention is a DISPLAY limit on
+/// the game's floating damage numbers (re-read 2026-08-21):
+///
+///   Slash:       *"Multiple instances of the effect can stack on the same
+///                target, with each instance having its own timer, but only up
+///                to 10 tick numbers are actually SHOWN, the rest are hidden to
+///                save performance."*
+///   Toxin:       *"Multiple instances … can stack on the same target, with
+///                each instance having its own timer. To preserve game
+///                performance, a maximum of 10 tick numbers are SHOWN at once."*
+///   Electricity: *"Multiple instances of the effect can stack with each
+///                instance having its own timer."* — no cap stated at all.
+///   Gas:         *"Up to 10 instances of the effect can stack on the same
+///                target … Any instances after the 10th will REPLACE THE
+///                OLDEST."* — a real cap, and FIFO, which is what
+///                `push_dot_capped` already does.
+///
+/// It is the Condition Overload lesson in another mechanic: a rule read off ONE
+/// page and applied to a class. The two halves were wrong in opposite
+/// directions — the area path capped all four at ten, and the direct path
+/// capped none of them, so a Torid carried 34 live Gas instances where the game
+/// allows 10.
+///
+/// COST: the cap was also what bounded the work, since `process_ticks` walks a
+/// body's list once per shot. Gas is the family that AREA-spreads to every
+/// neighbour, so it is the one whose list could grow fastest — and it is the
+/// one that keeps its cap. The other three are handed out per hit, which is
+/// already bounded by the fire rate.
+fn dot_family_cap(dtype: DamageType) -> Option<usize> {
+    match dtype {
+        DamageType::Gas => Some(TEN_STACK_CAP),
+        _ => None,
+    }
 }
 
 fn drain_area_procs(
@@ -4159,10 +4240,10 @@ fn drain_area_procs(
                 continue;
             }
             let (dbf, cap) = if j == 0 {
-                (&mut *debuffs, dot_cap_for(&params.target))
+                (&mut *debuffs, dot_cap_for(&params.target, dot.dtype))
             } else {
                 match others.get_mut(j - 1) {
-                    Some(f) => (&mut f.debuffs, dot_cap_for(&params.others[j - 1].params)),
+                    Some(f) => (&mut f.debuffs, dot_cap_for(&params.others[j - 1].params, dot.dtype)),
                     None => continue,
                 }
             };
@@ -4254,7 +4335,17 @@ fn settle_procs(
     let gcap = |base: usize| caps.map_or(base, |c| base.min(c.general));
     let stagger_cap = caps.map_or(STAGGER_CAP, |c| STAGGER_CAP.min(c.impact));
     let heat_cap: Option<usize> = caps.map(|c| c.general);
-    let dot_cap: Option<usize> = caps.map(|c| c.general);
+    // PER FAMILY, not one number for all four — see `dot_family_cap`. This read
+    // `caps.map(|c| c.general)`, which is None for every published enemy, so
+    // the direct path capped nothing and a Gas build stacked past the ten the
+    // game allows.
+    let dot_cap_of = |dtype: DamageType| -> Option<usize> {
+        match (dot_family_cap(dtype), caps.map(|c| c.general)) {
+            (Some(a), Some(b)) => Some(a.min(b)),
+            (Some(a), None) => Some(a),
+            (None, u) => u,
+        }
+    };
     // Elemental DoT tick (data/debuffs): 0.5 × ModifiedBase ×
     // (1 + element bonuses) × (1 + status damage) × crit/part
     // snapshot. Delay-1 DoTs tick at +1..+6 s; delay-0 (Electricity/
@@ -4296,7 +4387,7 @@ fn settle_procs(
                 dtype,
                 ignores_armor,
         };
-        debuffs.push_dot_capped(dot, dot_cap);
+        debuffs.push_dot_capped(dot, dot_cap_of(dtype));
         dot
     };
     // MICROWAVE, landed with this weapon's own procs and never taken off.
@@ -4386,7 +4477,7 @@ fn settle_procs(
                 debuffs.post_area(
                     Dot { value: dot.value / part_factor.max(1e-9), ..dot },
                     TESLA_RADIUS_M,
-                    dot_cap,
+                    dot_cap_of(DamageType::Electricity),
                 );
             }
             DamageType::Gas => {
@@ -4408,7 +4499,7 @@ fn settle_procs(
                 debuffs.post_area(
                     Dot { value: dot.value / part_factor.max(1e-9), ..dot },
                     radius_m,
-                    dot_cap,
+                    dot_cap_of(DamageType::Gas),
                 );
             }
             DamageType::Heat => {
@@ -20188,6 +20279,7 @@ mod tests {
                 next_tick: 1.0,
                 value: 1.0,
                 recent: Vec::new(),
+                stacks: 1,
             }),
             ..Default::default()
         };
@@ -20218,6 +20310,7 @@ mod tests {
                 next_tick: 1.0,
                 value: 1.0,
                 recent: Vec::new(),
+                stacks: 1,
             }),
             ..Default::default()
         };
@@ -20249,6 +20342,57 @@ mod tests {
         let h = d.heat.as_ref().unwrap();
         assert_eq!(h.recent, vec![3.0, 4.0, 5.0]);
         assert_eq!(h.value, 12.0);
+    }
+
+    /// GAS IS THE ONLY DoT FAMILY WITH A STACK CAP, and the other three say so
+    /// in as many words — see `dot_family_cap` for all four wiki sentences.
+    ///
+    /// The engine had it wrong in BOTH directions at once until 2026-08-21: the
+    /// area path capped every family at ten, the direct path capped none, and a
+    /// Torid carried 34 live Gas instances where the game allows 10.
+    #[test]
+    fn only_gas_has_a_dot_stack_cap() {
+        assert_eq!(dot_family_cap(DamageType::Gas), Some(TEN_STACK_CAP));
+        for open in [DamageType::Slash, DamageType::Toxin, DamageType::Electricity] {
+            assert_eq!(dot_family_cap(open), None, "{open:?} is uncapped on its own page");
+        }
+        // …and the ROSTER agrees, because the chart's stated cap is what a
+        // reader compares a pile against: a row that says /10 and routinely
+        // reaches 22 pins at the top and misinforms.
+        let row = |id: &str| DEBUFF_ROSTER.iter().find(|(k, _)| *k == id).expect(id).1;
+        assert_eq!(row("gas"), Some(TEN_STACK_CAP as u32));
+        for open in ["bleed", "poison", "tesla", "ignite"] {
+            assert_eq!(row(open), None, "{open} is drawn as uncapped");
+        }
+    }
+
+    /// A BURN REPORTS HOW MANY PROCS ARE IN IT.
+    ///
+    /// Heat is the one status DoT that CONSOLIDATES — every proc folds into a
+    /// single entity whose tick grows linearly — so there is no list to count
+    /// and the debuff row read `heat.is_some()`, which is 0 or 1. A player
+    /// watching a twenty-stack burn was told it was one stack, and the ramp is
+    /// most of what Heat does (report via owner, 2026-08-21).
+    #[test]
+    fn a_heat_pile_reports_its_depth_and_not_just_that_it_is_burning() {
+        let ignite = DEBUFF_ROSTER.iter().position(|(k, _)| *k == "ignite").expect("ignite");
+        let mut d = DebuffState::default();
+        for _ in 0..7 {
+            d.apply_heat(0.0, 3.0, 6.0, None);
+        }
+        assert_eq!(d.sample(1.0)[ignite], 7, "seven procs, seven stacks");
+        // The DAMAGE was always right — this is the number that was thrown away.
+        assert!((d.heat.as_ref().expect("burning").value - 21.0).abs() < 1e-9);
+        // UNDER A CAP it holds at the cap, because the oldest contribution is
+        // dropped as the new one lands.
+        let mut c = DebuffState::default();
+        for _ in 0..7 {
+            c.apply_heat(0.0, 3.0, 6.0, Some(3));
+        }
+        assert_eq!(c.sample(1.0)[ignite], 3);
+        // …and an expired burn is no stacks at all rather than a stale count.
+        c.prune(99.0, 1.0);
+        assert_eq!(c.sample(99.0)[ignite], 0);
     }
 
     #[test]

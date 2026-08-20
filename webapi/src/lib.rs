@@ -5060,7 +5060,18 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             // which is the answer to "was Corrosive ever up".
             "debuffs": wfsim_engine::dummy::DEBUFF_ROSTER
                 .iter()
-                .map(|(id, cap)| json!({ "id": id, "max": cap }))
+                // `uncapped` IS THE FIELD THE CHART READS, and it has to be
+                // sent rather than inferred: the renderer falls back to `max`
+                // otherwise, and a null max scales the row to 1 — which draws a
+                // 22-stack burn as a line pinned at the top from the first
+                // proc. The buff roster has carried the same flag since it was
+                // written; the debuff half simply never had a row that needed
+                // it (2026-08-21).
+                .map(|(id, cap)| json!({
+                    "id": id,
+                    "max": cap.unwrap_or(0),
+                    "uncapped": cap.is_none(),
+                }))
                 .collect::<Vec<_>>(),
             // ONE TABLE PER BODY THE REPLAY FOLLOWED, and the first is the
             // aimed one. `dstacks` was a single body's until 2026-08-17, which
