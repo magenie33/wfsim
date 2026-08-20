@@ -1,0 +1,64 @@
+id: pyrana_prime
+name: Pyrana Prime
+slot: secondary
+# TEN PELLETS OF TWENTY-FOUR, and a passive that summons a SECOND PYRANA: three
+# kills inside two seconds each doubles the magazine and multiplies the fire
+# rate by 1.4x for six seconds. That is a kill-counting buff this engine has no
+# shape for, and it is most of what the Prime is worth.
+class: shotgun_sidearm
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]         # CompatibilityTags SECONDARYSHOTGUN
+mastery_rank: 13
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 6.1
+disposition: 0.65           # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: naramon
+riven_family: Pyrana
+traits: [prime, vaulted]
+introduced: "23.0.3"
+internal_name: /Lotus/Weapons/Tenno/Pistols/PrimePyrana/PrimePyranaPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 20
+magazine: 12
+reload_seconds: 1.6
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 14.0
+    max_deg: 19.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 4
+  multishot: 10.0
+  ammo_cost: 1
+  crit_chance: 0.24
+  crit_multiplier: 2.2
+  status_chance: 0.036
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  falloff:
+    start_m: 18.0
+    end_m: 36.0
+    reduction: 0.75
+  damage: { impact: 1.92, puncture: 1.92, slash: 20.16 }   # 24 a pellet, 240 a shot
+
+unmodeled:
+  - "'3 kills each within 2 seconds of the previous kill summons a second Pyrana Prime for 6 seconds, doubling its magazine size and increasing its fire rate by 1.4x' (wiki). It is a KILL-counting buff — a chain of three, each inside a two-second window — and this engine has no shape for one, so the number here is the weapon before its second gun ever appears. Against a crowd that dies quickly, that is a very large understatement"
+
+source:
+  url: https://wiki.warframe.com/w/Pyrana_Prime

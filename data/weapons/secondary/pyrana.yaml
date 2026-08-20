@@ -1,0 +1,60 @@
+id: pyrana
+name: Pyrana
+slot: secondary
+# TWELVE PELLETS OF TWENTY-TWO out of ten rounds at 4.17 a second — 264 a pull,
+# 84% of it Slash. The Prime trades two pellets for more damage on each and a
+# real passive.
+class: shotgun_sidearm
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]         # CompatibilityTags SECONDARYSHOTGUN
+mastery_rank: 12
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 5.0
+disposition: 0.95           # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Pyrana
+traits: [tenno]
+introduced: "13.6"
+internal_name: /Lotus/Weapons/Tenno/Pistols/SawnOffShotgun/TennoHandShotgun
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 20
+magazine: 10
+reload_seconds: 2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 18.0
+    max_deg: 22.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 4.17
+  multishot: 12.0
+  ammo_cost: 1
+  crit_chance: 0.2
+  crit_multiplier: 2.0
+  status_chance: 0.025
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  falloff:
+    start_m: 15.0
+    end_m: 30.0
+    reduction: 0.7273
+  damage: { impact: 2.2, puncture: 2.2, slash: 17.6 }   # 22 a pellet, 264 a shot
+
+source:
+  url: https://wiki.warframe.com/w/Pyrana

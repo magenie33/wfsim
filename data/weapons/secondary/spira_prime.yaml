@@ -1,0 +1,61 @@
+id: spira_prime
+name: Spira Prime
+slot: secondary
+# THE SPIRA AT A 3x CRITICAL MULTIPLIER and a 0.75-second reload, with almost
+# all of its 60 damage in Puncture. Same 30% crit chance, nearly double the
+# status.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]         # CompatibilityTags PROJECTILE, THROWN
+mastery_rank: 10
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.25           # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: madurai
+riven_family: Spira
+traits: [prime, vaulted]
+introduced: "18.4.12"
+internal_name: /Lotus/Weapons/Tenno/ThrowingWeapons/PrimeLiDagger/PrimeLiDagger
+noise: silent
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 12
+reload_seconds: 0.75
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 70
+  fire_rate: 3.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.3
+  crit_multiplier: 3.0
+  status_chance: 0.14
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 70 m/s. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 6, puncture: 48, slash: 6 }   # total 60
+
+unmodeled:
+  - "the thrown-exclusive Concealed Explosives is outside the pools this roster loads"
+  - reason: bolt_corpse_ragdoll
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Spira_Prime

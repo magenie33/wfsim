@@ -1,0 +1,60 @@
+id: arca_scisco
+name: Arca Scisco
+slot: secondary
+# A SCOPED CORPUS PISTOL WHOSE WHOLE IDENTITY IS A STACKING BUFF THIS ENGINE
+# CANNOT FIRE: every shot adds 4 flat points of critical AND status chance, to
+# five stacks. What is here is the weapon on its first shot, every shot.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 10
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 32.0
+disposition: 1.1            # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: naramon
+riven_family: Arca Scisco
+traits: [corpus]
+introduced: "21.7"
+internal_name: /Lotus/Weapons/Corpus/Pistols/SniperPistol/CrpScopeGun
+noise: alarming
+ammo_type: secondary
+ammo_max: 288
+ammo_pickup: 40
+magazine: 36
+reload_seconds: 2.2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.25
+    max_deg: 6.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 4.667
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.18
+  crit_multiplier: 1.6
+  status_chance: 0.26
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { puncture: 36, slash: 24 }   # total 60
+
+unmodeled:
+  - "'TARGET ANALYSIS': every shot grants +4% flat critical chance and +4% flat status chance, stacking to five for +20% of each, lasting 2 seconds and refreshed by the next shot (wiki). This engine has no shot-COUNTING buff of its own, and the two bonuses are FLAT — added to the finished number rather than scaled off the base — so a build here fires at 18%/26% where a player holding the trigger sits at 38%/46%. It is the larger half of the weapon"
+  - reason: zoom_steps
+
+source:
+  url: https://wiki.warframe.com/w/Arca_Scisco

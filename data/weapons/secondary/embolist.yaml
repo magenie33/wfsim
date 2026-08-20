@@ -1,0 +1,76 @@
+id: embolist
+name: Embolist
+slot: secondary
+# A NINE-METRE TOXIN SPRAY WITH A ONE-METRE SPHERE AT THE END OF IT, and a 41%
+# status chance that is the highest in this batch. The shortest reach of any
+# weapon in the roster, and the ramp floor to match it: 45%, the highest of any
+# beam but the Phage's.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]         # CompatibilityTags BEAM, AOE
+mastery_rank: 9
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.4            # riven disposition
+polarities: [naramon]
+exilus_polarity: naramon
+riven_family: Embolist
+traits: [infested]
+introduced: "10.0"
+internal_name: /Lotus/Weapons/Infested/Pistols/InfestedPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 33
+reload_seconds: 1.3
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+# WHERE THE RAMP STARTS. "Damage ramps up from 45% to 100% over 0.6 seconds when
+# firing. After firing stops for 0.8 seconds, the damage decays back to 45% over
+# 2 seconds" — a stated exception to the 20% most beams get.
+beam_ramp_floor: 0.45
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: held                 # continuous: `fire_rate` is TICKS per second
+  shot_type: hit_scan
+  fire_rate: 8
+  multishot: 1.0
+  ammo_cost: 0.5
+  crit_chance: 0.03
+  crit_multiplier: 1.5
+  status_chance: 0.41
+  punch_through_m: 0.0
+  # THE BEAM AND ITS SPHERE. "The zone of impact or maximum beam range produces
+  # a spherical blast radius of 1 meter, allowing it to hit multiple enemies at
+  # once", and "the radial damage is not affected by multishot". NO chain.
+  beam:
+    range_m: 9.0
+    damage_radius_m: 1.0
+    radius_takes_multishot: false
+    chain:
+      hops: 0
+      range_m: 0.0
+      damage_per_hop: 0.0
+      origin: radius_targets
+  # THE REACH IS THE BEAM'S and lives in the `beam:` block above —
+  # wiki: "Range: 9.0 m".
+  damage: { toxin: 35 }   # total 35
+
+unmodeled:
+  - "Eroding Blight and Vile Discharge, the Embolist-exclusive mods — weapon-exclusive cards outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Embolist

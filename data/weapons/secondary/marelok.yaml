@@ -1,0 +1,58 @@
+id: marelok
+name: Marelok
+slot: secondary
+# A LEVER-ACTION GRINEER PISTOL AT 160 A SHOT AND 30% STATUS out of six rounds.
+# The Vaykor variant is this weapon with ten rounds and a fifth more damage.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 7
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 10.0
+disposition: 1.2            # riven disposition
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Marelok
+traits: [grineer]
+introduced: "12.3"
+internal_name: /Lotus/Weapons/Grineer/Pistols/GrineerLeverActionPistol/GLAPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 6
+reload_seconds: 1.667
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 5.0
+    max_deg: 15.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 2
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.15
+  crit_multiplier: 1.5
+  status_chance: 0.3
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 80, puncture: 16, slash: 64 }   # total 160
+
+unmodeled:
+  - "Shrapnel Rounds, the Marelok-exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Marelok

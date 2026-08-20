@@ -1,0 +1,60 @@
+id: hikou
+name: Hikou
+slot: secondary
+# THROWN STARS AT 6.67 A SECOND WITH A 0.75-SECOND RELOAD — twenty-six damage a
+# star, silent, and perfectly accurate. The Prime is the same weapon with nearly
+# double the damage and almost triple the status.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]         # CompatibilityTags PROJECTILE, THROWN
+mastery_rank: 2
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.3            # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: naramon
+riven_family: Hikou
+traits: [tenno]
+introduced: "9.0"
+internal_name: /Lotus/Weapons/Tenno/ThrowingWeapons/TennoStars
+noise: silent
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 20
+reload_seconds: 0.75
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 70
+  fire_rate: 6.67
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.04
+  crit_multiplier: 1.6
+  status_chance: 0.1
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 70 m/s. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 2.6, puncture: 15.6, slash: 7.8 }   # total 26
+
+unmodeled:
+  - "the thrown-exclusive Concealed Explosives is outside the pools this roster loads — on a weapon with this fire rate it is a whole second damage source, which is exactly what its own page recommends it for"
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Hikou

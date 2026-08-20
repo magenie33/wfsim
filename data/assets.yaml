@@ -22,6 +22,7 @@ weapons:
   # name and the page URL stay the bare name either way.
   # WFCD gives the MK1-Braton the plain Braton's `imageName`; the wiki has a
   # file of its own, and the two guns do not look alike.
+  acrid: Acrid.png
   afuris: Afuris.png
   afuris_prime: AfurisPrime.png
   akarius: SapientPistol.png
@@ -46,6 +47,7 @@ weapons:
   akzani: Akzani.png
   amprex: Amprex.png
   angstrum: Angstrum.png
+  arca_scisco: ArcaScisco.png
   atomos: Atomos.png
   atomos_incarnon: Atomos.png
   attica: Attica.png
@@ -58,10 +60,12 @@ weapons:
   boar_incarnon: Boar.png
   boar_prime: BoarPrime.png
   boar_prime_incarnon: BoarPrime.png
+  bolto: Bolto.png
   boltor: Boltor.png
   boltor_incarnon: Boltor.png
   boltor_prime: BoltorPrime.png
   boltor_prime_incarnon: BoltorPrime.png
+  brakk: Brakk.png
   braton: Braton.png
   braton_incarnon: Braton.png
   braton_prime: BratonPrime.png
@@ -96,6 +100,7 @@ weapons:
   dual_cestra: DualCestras.png
   dual_toxocyst: DualToxocyst.png
   dual_toxocyst_incarnon: DualToxocyst.png
+  embolist: Embolist.png
   exergis: CrpShapeBlastShotgun.png
   felarx: ZarimanPumpShotgun.png
   furis: Furis.png
@@ -107,11 +112,15 @@ weapons:
   grakata: Grakata.png
   grinlok: Grinlok.png
   hek: Hek.png
+  hikou: Hikou.png
+  hikou_prime: HikouPrime.png
   ignis: Ignis.png
   ignis_wraith: IgnisWraith.png
   karak: Karak.png
   karak_wraith: KarakWraith.png
+  knell: Knell.png
   knell_prime: KnellPrime.png
+  kraken: Kraken.png
   kunai: Kunai.png
   kunai_incarnon: Kunai.png
   # THE KUVA BATCH (2026-08-19). The module's own `Image` field for each, which
@@ -155,26 +164,36 @@ weapons:
   kuva_grattler: KuvaGrattler.png
   larkspur: ShieldFrameArchGun.png
   larkspur_charged: ShieldFrameArchGun.png
+  magnus: Magnus.png
   magnus_prime: MagnusPrime.png
   mandonel: TnConcreteArchgun.png
   mandonel_uncharged: TnConcreteArchgun.png
+  marelok: Marelok.png
   mausolon: ThanotechLongGun.png
   mausolon_charged: ThanotechLongGun.png
   morgha: ThanoTechGrenadeLauncher.png
   morgha_alt: ThanoTechGrenadeLauncher.png
+  nukor: Nukor.png
   phage: Phage.png
   prisma_grakata: PrismaGrakata.png
   prisma_twin_gremlins: PrismaTwinGremlins.png
   purgator_1: LasrianNox.png
+  pyrana: Pyrana.png
+  pyrana_prime: PyranaPrime.png
   quartakk: Quartakk.png
   rauta: PaxDuviricusShotgun.png
   reconifex: TnBeltFedRifle.png
   sagek_prime: GrnOrokinPistol.png
   sancti_tigris: SanctiTigris.png
   secura_dual_cestra: SecuraDualCestra.png
+  seer: Seer.png
   sobek: Sobek.png
+  spectra: Spectra.png
   spectra_vandal: CorpusLaserPistolVandal.png
+  spira: Spira.png
+  spira_prime: SpiraPrime.png
   steflos: TnoLotusPodShotgun.png
+  stubba: Stubba.png
   supra: Supra.png
   supra_vandal: SupraVandal.png
   telos_akbolto: TelosAkbolto.png
@@ -188,6 +207,7 @@ weapons:
   twin_vipers: TwinVipers.png
   twin_vipers_wraith: TwinViperWraith.png
   vaykor_hek: VaykorHek.png
+  vaykor_marelok: VaykorMarelok.png
   veldt: Veldt.png
   velocitus: Velocitus.png
   velocitus_uncharged: Velocitus.png
@@ -212,6 +232,8 @@ weapons:
   verglas: SentinelFreezeRayRifle.png
   vesper_77: LasSilencedPistolWeapon.png
   vinquibus: TnBayonetRifle.png
+  viper: Viper.png
+  viper_wraith: ViperWraith.png
   vulklok: Vulklok.png
   helstrum: Helstrum.png
   multron: Multron.png

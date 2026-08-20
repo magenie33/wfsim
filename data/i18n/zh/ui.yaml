@@ -191,6 +191,7 @@ ui:
   # 真理密语 admits four gaps and one live bug. Long sentences, so they are here
   # 还没建模的是它"更好爆头"的那一半——见 docs/UNMODELLED.md。
   "$5 to start, and after that whatever you think it is worth. There is no tier and no target — this is what the bill is, not a price list.":
+  "'3 kills each within 2 seconds of the previous kill summons a second Pyrana Prime for 6 seconds, doubling its magazine size and increasing its fire rate by 1.4x' (wiki). It is a KILL-counting buff — a chain of three, each inside a two-second window — and this engine has no shape for one, so the number here is the weapon before its second gun ever appears. Against a crowd that dies quickly, that is a very large understatement": "「连续 3 次击杀、每次都在上一次击杀后 2 秒内，会召唤出第二把 Pyrana Prime，持续 6 秒，弹匣翻倍且射速 x1.4」（维基）。这是一个按「击杀」累计的增益 —— 三连，每一次都要在两秒的窗口内 —— 而本引擎没有这种形状，所以这里的数字是第二把枪从未出现过的那把武器。面对一群会很快死掉的敌人，这是一个非常大的低估"
   "'Cantare Chorale': striking enemies with the returning reload grants +20% reload speed for 30 seconds to all allies in affinity range (wiki). It rides on a return this sim does not fire, and this arena has no allies to grant it to": "「Cantare Chorale」：用回收的刀刃击中敌人，会给亲和范围内的所有队友 +20% 装填速度、持续 30 秒（维基）。它挂在这个模拟不会发射的回收上，而且这个战场也没有队友可以接受它"
   "'Chamber Cascade': a hit or a damaging status has a 4% chance to grant 100% ammo efficiency for 4 seconds (wiki). Ammo economy pays nothing here — reserves are infinite by default because this sim does not model ammo pickups — so the passive is real and worth nothing to this number": "「Chamber Cascade」：命中或造成伤害类异常状态时，有 4% 概率获得 100% 弹药效率、持续 4 秒（维基）。弹药经济在这里不产生任何收益 —— 本模拟不建模弹药拾取，所以备弹默认无限 —— 所以这个被动是真实存在的，但对这个数字毫无影响"
   "'Critical Hits have a 6% chance to set the next shot's Status Chance to 500%' (wiki). A SET ignores mods the way Gotva Prime's crit lock does, and this engine has that shape for a status-triggered CRIT lock and not for a crit-triggered STATUS one — so this weapon procs at the 1% on its card and never at the 500% it was built around. It is the larger half of the weapon": "「暴击有 6% 概率把下一发的触发几率设为 500%」（维基）。这种「设为」和 Gotva Prime 的暴击锁一样会无视 MOD，而本引擎有的是「异常状态触发暴击锁」那个形状，没有「暴击触发异常状态锁」的 —— 所以这把武器只按卡面上的 1% 触发，永远打不出它被设计出来的那个 500%。这是这把武器更大的那一半"
@@ -198,6 +199,7 @@ ui:
   "'Enemies directly killed by Purgator 1 leave behind 1 Gas status effect stack', and 'the gas cloud deals damage each tick equal to HALF of the killing shot's damage' (wiki). It is an Extra Hit keyed on a KILL rather than on a hit, it takes the killing shot's crit tier and faction bonuses and no multishot, and this engine has no shape for a hit that only exists once something has died. Against anything that dies, this weapon is understated by roughly a third of its real output": "「被 Purgator 1 直接击杀的敌人会留下 1 层毒气异常状态」，而且「毒气云每一跳造成的伤害等于致命一击伤害的一半」（维基）。这是一次以「击杀」而不是以「命中」为触发条件的额外伤害，它继承致命一击的暴击层级和派系加成、不吃多重射击，而本引擎没有「只有在某个目标死掉之后才存在的命中」这种形状。只要目标会死，这把武器在这里就被低估了大约三分之一的真实输出"
   "'Enemy corpses will still allow the beam to connect to nearby enemies' (wiki) — a chain in game can route through something already dead, and a body that dies here leaves the formation, so a long fight chains through fewer links than it would in a real room": "「敌人的尸体仍然可以让光束连到附近的敌人」（维基）—— 游戏里的连锁可以经由一具已经死掉的身体继续跳，而在这里死掉的身体会离开阵型，所以一场长时间的战斗在这里跳过的节点比在真实房间里少"
   "'Fire rate mods apply double their bonuses' is MODELLED (`class: bow`), but this weapon's real cost is the other half of its page: it can only be fired FULLY CHARGED, so a player who releases early gets nothing at all. This sim always charges fully, which is the ceiling and is what a careful player does anyway": "「射速 MOD 的加成翻倍」这一条是已建模的（`class: bow`），但这把武器真正的代价在页面的另一半：它只能在完全蓄力后发射，提前松手什么都打不出来。本模拟永远蓄满，这是上限，也正是一个谨慎的玩家会做的事"
+  "'TARGET ANALYSIS': every shot grants +4% flat critical chance and +4% flat status chance, stacking to five for +20% of each, lasting 2 seconds and refreshed by the next shot (wiki). This engine has no shot-COUNTING buff of its own, and the two bonuses are FLAT — added to the finished number rather than scaled off the base — so a build here fires at 18%/26% where a player holding the trigger sits at 38%/46%. It is the larger half of the weapon": "「Target Analysis」：每一发给 +4% 固定暴击率和 +4% 固定触发几率，最多叠 5 层共 +20%，持续 2 秒，下一发可刷新（维基）。本引擎没有「按发数累计」的增益，而且这两项都是固定值 —— 直接加在算完的数字上，而不是按基础值缩放 —— 所以这里的配装按 18%/26% 开火，而一个持续扣扳机的玩家坐在 38%/46% 上。这是这把武器更大的那一半"
   "+30% Movement Speed while aiming, and the explosion's self-stagger: neither is a number this arena reads": 瞄准时 +30% 移动速度，以及爆炸对自身的踉跄：这两项都不是这个战场会读取的数字
   "+{n} more took damage and are not followed": 另有 {n} 个吃到伤害但没有被跟踪
   ", ": "、"
@@ -318,8 +320,10 @@ ui:
   "Element": 元素
   Enemies: 敌人
   "Enemy": 敌人
+  "Entropy Spike, the Bolto-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Entropy Spike」，Bolto 的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Environment": 环境
   "Erase": "擦除"
+  "Eroding Blight and Vile Discharge, the Embolist-exclusive mods — weapon-exclusive cards outside the pools this roster loads": "「Eroding Blight」和「Vile Discharge」，Embolist 的专属 MOD——这是武器专属卡，不在本武器库载入的卡池里"
   "Every formula in the engine cites its source — a wiki page, a datamine, or a measurement — and every golden test is calibrated against a real in-game run.":
   "Every hit, sorted": 每一次命中，分类
   "Every main slot filled, every evolution tier the weapon has, every arcane seat it has. Exilus is never counted.": 主槽位全部装满，武器有几层进化就点几层，有几个赋能位就装几个。Exilus 一律不计。
@@ -486,10 +490,12 @@ ui:
   Shield: 护盾
   "Shot Combo Counter": 射击连击计数
   "Shots": 射击次数
+  "Shrapnel Rounds, the Marelok-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Shrapnel Rounds」，Marelok 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Sim": 模拟
   "Simulator": 模拟器
   "Single Target · No Aim · Thrax Centurion Lv 9999 SP · 180 s · KPM": 单体 · 无瞄准不爆头 · 凶魂百夫长 9999 钢铁 · 180 秒 · KPM
   "Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM": 单体 · 凶魂百夫长 9999 钢铁 · 180 秒 · KPM
+  "Skull Shots and Stinging Truth, the Viper-exclusive mods — weapon-exclusive cards outside the pools this roster loads": "「Skull Shots」和「Stinging Truth」，Viper 家族的专属 MOD——这是武器专属卡，不在本武器库载入的卡池里"
   "Sometimes it says the number is right and the game is wrong, and names the bug a hotfix would take away.":
   "Sort": 排序
   "Spring-Loaded Broadhead and the bow-exclusive Thunderbolt are outside the pools this roster loads — Thunderbolt in particular turns every bolt into a grenade, which is a whole second damage source": "「Spring-Loaded Broadhead」以及弓专属的「Thunderbolt」都不在本武器库载入的卡池里 —— 尤其是「Thunderbolt」，它把每一发弩箭变成一颗手雷，那是一整个第二伤害来源"
@@ -542,6 +548,7 @@ ui:
   "Time: new weapons, new mechanics, and the in-game measurements every golden test is calibrated against.":
   "Toggle light / dark": 切换亮色 / 暗色
   "Tools": "工具"
+  "Toxic Sequence, the Acrid-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Toxic Sequence」，Acrid 的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Transforms": 形态切换
   "Transmute In": 灵化切入
   "Transmute Out": 灵化切出
@@ -904,6 +911,7 @@ ui:
   "the LOADOUT, not what the wielder is doing: off means a full one, which is what the board is scored under. On, this weapon is the only one carried — the Vasto's Lone Gun pays its \"With No Primary Equipped\" half, and every \"On Equip from Primary\" or \"while Holstered\" clause becomes impossible rather than merely unmodelled": 配装本身，而不是使用者在做什么：关闭时表示带着完整的一套武器，榜单也是按这个跑分的。开启后这把枪就是身上唯一的武器——瓦斯托的「孤枪」会付出它「未装备主武器时」的那一半，而所有「从主武器切换时」「收枪状态下」的词条则从「没做建模」变成「根本不可能触发」
   "the LOWER zoom levels are not modelled — this arena has no field of view to trade for magnification, so the scope always sits at its top level and its best buff": "较低的变焦档位尚未建模 —— 这个战场没有视野可以用来换倍率，所以瞄准镜永远停在最高档、吃它最好的加成"
   "the MERCY KILL BUFF that alt fire exists to earn: \"Performing a Mercy Kill grants +100% damage and Multishot for 20 seconds\", refreshed on every Mercy. A doubling of the weapon, gated behind a finisher this arena cannot perform": "交替射击存在的意义就是去换取的那个「慈悲击杀」增益：「完成一次慈悲击杀获得 +100% 伤害与多重射击，持续 20 秒」，每次慈悲都会刷新。这是把武器翻一倍，而它的门槛是一次本场做不到的处决"
+  "the MICROWAVE status effect, which enlarges the body part that was shot (wiki). It is a unique proc with no damage of its own and this engine's status roster has no entry for it — what it does in game is make the enlarged part easier to hit again, which is an aiming aid this sim cannot use": "「微波」异常状态：把被击中的身体部位胀大（维基）。这是一个自身不造成伤害的独有触发效果，本引擎的异常状态表里没有它 —— 它在游戏里的作用是让那个部位更容易再次被打中，而那是一个本模拟用不上的瞄准辅助"
   "the Normal Shot is not modelled — this entry carries only the Charged Shot": Normal Shot 尚未建模 —— 这个条目只装了 Charged Shot
   "the PARTIAL CHARGE is a separate entry (`lanka_uncharged`) — in game the two are the same trigger released at different moments, and picking between them here is a form choice rather than something the fight decides": 半蓄力射击是一个独立条目（`lanka_uncharged`）—— 游戏里两者是同一个扳机在不同时刻松开，而这里在两者之间选择是一个形态选项，不是战斗自己决定的
   "the PELLET COUNT spools from 1 to 12 and this entry fires 12 from the first shot — the fire-rate spool is modelled and the multishot one is not, so a short burst puts more pellets downrange here than in game":
@@ -1019,6 +1027,8 @@ ui:
   "the target's armour, column and attenuation": 目标的护甲、易伤列与衰减
   "the throw is SILENT and the cloud is not, which is a stealth distinction this arena has no alarm to raise": "投掷本身是静默的，而毒云不是。这是一个潜行上的区别，而本场没有警报可拉"
   "the throw's forced KNOCKDOWN, which is crowd control — worth time and safety rather than damage, and this arena charges for neither": "投掷自带的强制击倒，这是控场——它换来的是时间和安全而不是伤害，而本场这两样都不计价"
+  "the thrown-exclusive Concealed Explosives is outside the pools this roster loads": "投掷专属的「Concealed Explosives」不在本武器库载入的卡池里"
+  "the thrown-exclusive Concealed Explosives is outside the pools this roster loads — on a weapon with this fire rate it is a whole second damage source, which is exactly what its own page recommends it for": "投掷专属的「Concealed Explosives」不在本武器库载入的卡池里 —— 装在一把射速这么高的武器上，它是一整个第二伤害来源，而这正是它自己的页面推荐它的理由"
   "the very heavy side-to-side recoil the page calls out, which is what makes the listed pinpoint accuracy \"only effective for the first shot\". Recoil is a hand-aim cost and this arena has no hand": "页面特别点名的、非常重的左右后坐力，正是它让标称的「针尖级精准」变成「只对第一发有效」。后坐力是一笔手动瞄准的成本，而本场没有手"
   "the wave's vertical hitbox is not modelled — it is a wide flat projectile rather than a point, which this arena has no geometry to express": 波形弹体的纵向判定尚未建模 —— 它是一片宽而扁的弹体而不是一个点，这个战场没有几何概念可以表达
   "the weapon's printed panel": 就是武器面板上印的那样

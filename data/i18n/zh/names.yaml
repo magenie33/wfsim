@@ -407,6 +407,28 @@ weapons:
   vaykor_hek: 勇气·海克
   veldt: 草原猎手
   zhuge: 诸葛连弩
+  acrid: 阿克里德
+  arca_scisco: 弧电探知者
+  bolto: 螺钉手枪
+  brakk: 布拉克
+  embolist: 安柏勒斯
+  hikou: 飞扬
+  hikou_prime: 飞扬 Prime
+  knell: 丧钟
+  kraken: 北海巨妖
+  magnus: 麦格努斯
+  marelok: 玛瑞火枪
+  nukor: 努寇微波枪
+  pyrana: 食人鱼
+  pyrana_prime: 食人鱼 Prime
+  seer: 预言者
+  spectra: 光谱切割器
+  spira: 旋刃飞刀
+  spira_prime: 旋刃飞刀 Prime
+  stubba: 史度巴
+  vaykor_marelok: 勇气·玛瑞火枪
+  viper: 蝰蛇
+  viper_wraith: 蝰蛇·亡魂
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's

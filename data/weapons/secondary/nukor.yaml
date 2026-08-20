@@ -1,0 +1,64 @@
+id: nukor
+name: Nukor
+slot: secondary
+# THE ORDINARY NUKOR, and the one thing it does NOT have is the Kuva variant's
+# chain: this beam reaches 25 m and stops at what it hits. A 4x critical
+# multiplier off a 3% chance, which is the shape the whole family is built on.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]         # CompatibilityTags BEAM
+mastery_rank: 4
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.45           # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Nukor
+traits: [grineer]
+introduced: "14.5"
+internal_name: /Lotus/Weapons/Grineer/Pistols/GrineerMicrowavegun/GrnMicrowavePistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 20
+magazine: 50
+reload_seconds: 2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+# WHERE THE RAMP STARTS. "Damage ramps up from 30% to 100% over 0.6 seconds when
+# firing. After firing stops for 0.8 seconds, the damage decays back to 30% over
+# 2 seconds" — the same floor the Kuva Nukor carries.
+beam_ramp_floor: 0.30
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: held                 # continuous: `fire_rate` is TICKS per second
+  shot_type: hit_scan
+  fire_rate: 10
+  multishot: 1.0
+  ammo_cost: 0.5
+  crit_chance: 0.03
+  crit_multiplier: 4.0
+  status_chance: 0.29
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 25.0 m", Hit-Scan.
+  range_m: 25.0
+  damage: { radiation: 22 }   # total 22
+
+unmodeled:
+  - "the MICROWAVE status effect, which enlarges the body part that was shot (wiki). It is a unique proc with no damage of its own and this engine's status roster has no entry for it — what it does in game is make the enlarged part easier to hit again, which is an aiming aid this sim cannot use"
+
+source:
+  url: https://wiki.warframe.com/w/Nukor

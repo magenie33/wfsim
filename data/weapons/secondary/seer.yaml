@@ -1,0 +1,56 @@
+id: seer
+name: Seer
+slot: secondary
+# EQUAL PHYSICAL DAMAGE, three times 33.67, on a projectile at 200 m/s. A
+# Mastery Rank 0 Grineer pistol, and one of the three highest riven dispositions
+# in the roster's secondaries.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]         # CompatibilityTags PROJECTILE
+mastery_rank: 0
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 16.0
+disposition: 1.5            # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Seer
+traits: [grineer]
+introduced: "9.0"
+internal_name: /Lotus/Weapons/Grineer/GrineerPistol/GrnScopedPistolPlayer
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 8
+reload_seconds: 2.8
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.5
+    max_deg: 12.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 200
+  fire_rate: 2
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.05
+  crit_multiplier: 1.5
+  status_chance: 0.13
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 200 m/s. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 33.67, puncture: 33.67, slash: 33.67 }   # total 101.01
+
+source:
+  url: https://wiki.warframe.com/w/Seer

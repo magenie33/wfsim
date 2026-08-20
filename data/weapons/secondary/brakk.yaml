@@ -1,0 +1,59 @@
+id: brakk
+name: Brakk
+slot: secondary
+# TEN PELLETS OF TWENTY, five rounds, and a one-second reload — the Grineer hand
+# cannon, and the shortest reload of any shotgun sidearm in the roster.
+class: shotgun_sidearm
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]         # CompatibilityTags SECONDARYSHOTGUN, SINGLESHOT
+mastery_rank: 6
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 7.7
+disposition: 1.25           # riven disposition
+polarities: [naramon, madurai]
+exilus_polarity: naramon
+riven_family: Brakk
+traits: [grineer]
+introduced: "10.6"
+internal_name: /Lotus/Weapons/Grineer/Pistols/GrineerHandShotgun/GrineerHandCannon
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 20
+magazine: 5
+reload_seconds: 1.05
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 9.0
+    max_deg: 17.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 5
+  multishot: 10.0
+  ammo_cost: 1
+  crit_chance: 0.17
+  crit_multiplier: 2.0
+  status_chance: 0.051
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  falloff:
+    start_m: 11.0
+    end_m: 22.0
+    reduction: 0.6
+  damage: { impact: 9, puncture: 5, slash: 6 }   # 20 a pellet, 200 a shot
+
+source:
+  url: https://wiki.warframe.com/w/Brakk
