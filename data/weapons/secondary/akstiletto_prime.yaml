@@ -1,0 +1,58 @@
+id: akstiletto_prime
+name: Akstiletto Prime
+slot: secondary
+# THE AKSTILETTO SLOWED DOWN AND HIT HARDER: 36 a shot against 28, at 7.08
+# rounds a second against 10, with the status chance raised from 18% to 30%.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 10
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 23.5
+disposition: 0.85           # riven disposition
+polarities: [naramon, madurai]
+exilus_polarity: madurai
+riven_family: Akstiletto
+traits: [prime]
+introduced: "18.12"
+internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeAkstiletto/PrimeAkstiletto
+noise: alarming
+ammo_type: secondary
+ammo_max: 400
+ammo_pickup: 40
+magazine: 40
+reload_seconds: 1.1
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 1.5
+    max_deg: 7.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 7.08
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.15
+  crit_multiplier: 2.0
+  status_chance: 0.3
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 21.6, puncture: 3.6, slash: 10.8 }   # total 36
+
+unmodeled:
+  - "Zazvat-Kar, the Akstiletto Prime-exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Akstiletto_Prime

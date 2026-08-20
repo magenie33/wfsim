@@ -1,0 +1,56 @@
+id: twin_vipers_wraith
+name: Twin Vipers Wraith
+slot: secondary
+# THE SAME TWENTY-FIVE ROUNDS A SECOND out of forty rounds instead of
+# twenty-eight, at 18 damage against 17 — and almost all of the Wraith's is
+# Impact where the ordinary spreads it. Lower status, higher crit.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 7
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 11.1
+disposition: 1.41           # riven disposition
+polarities: [naramon]
+exilus_polarity: madurai
+riven_family: Twin Vipers
+traits: [wraith, invasion_reward, grineer]
+introduced: "11.5"
+internal_name: /Lotus/Weapons/Grineer/Pistols/WraithTwinVipers/WraithTwinVipers
+noise: alarming
+ammo_type: secondary
+ammo_max: 440
+ammo_pickup: 40
+magazine: 40
+reload_seconds: 2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 5.0
+    max_deg: 13.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 25
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.19
+  crit_multiplier: 2.0
+  status_chance: 0.09
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 14.4, puncture: 1.8, slash: 1.8 }   # total 18
+
+source:
+  url: https://wiki.warframe.com/w/Twin_Vipers_Wraith

@@ -87,6 +87,11 @@ reasons:
   # SILENCE. Six weapons in the roster are silent and each said so in its own
   # words; the sentence carries no numbers at all, which is what makes it a
   # reason rather than prose.
+  # THE BOLT FAMILY'S OWN TRICK, on five weapons and counting (both Akboltos,
+  # the Telos, both Gremlins) — the sentence carries no numbers, which is what
+  # earns it a template rather than five spellings.
+  bolt_corpse_ragdoll:
+    text: "ON KILL THE BODY FOLLOWS THE BOLT, damaging anyone in its path and pinning the corpse to walls (wiki). It is a second damage source that only exists once something has died, and this engine has no ragdoll and no wall for it to pin against — so a bolt weapon fighting a crowd is understated by however much that corpse would have hit on the way past"
   silent_weapon:
     text: "this weapon is SILENT, and this arena has nobody to alert — no alarm, no reinforcements, no enemy that has not already seen you. Stealth is worth exactly nothing here and worth a great deal in a real mission"
   spool_rebuilds_after_reload:

@@ -1,0 +1,56 @@
+id: afuris_prime
+name: Afuris Prime
+slot: secondary
+# THE AFURIS WITH TRIPLE THE CRIT AND TWO AND A HALF TIMES THE STATUS off the
+# same fire rate, and a cone less than half as wide. The reload nearly halves
+# too, which is where most of the sustained gain actually comes from.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 12
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 28.6
+disposition: 1.1            # riven disposition
+polarities: [naramon, madurai, madurai]
+exilus_polarity: naramon
+riven_family: Afuris
+traits: [prime]
+introduced: "32.2.5"
+internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeAfuris/PrimeAFurisWeapon
+noise: alarming
+ammo_type: secondary
+ammo_max: 400
+ammo_pickup: 40
+magazine: 80
+reload_seconds: 1.2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 2.0
+    max_deg: 5.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 12.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.16
+  crit_multiplier: 2.0
+  status_chance: 0.3
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 3.9, puncture: 18.2, slash: 3.9 }   # total 26
+
+source:
+  url: https://wiki.warframe.com/w/Afuris_Prime

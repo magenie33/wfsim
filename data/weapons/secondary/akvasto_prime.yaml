@@ -1,0 +1,56 @@
+id: akvasto_prime
+name: Akvasto Prime
+slot: secondary
+# THE SAME 110 A SHOT AS THE AKVASTO IS NOT — it is 110 against 90, and 70% of
+# it is Slash where the ordinary is 50%. Same twelve rounds, same fire rate,
+# a tighter cone and a faster reload.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 12
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 16.0
+disposition: 1.2            # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: madurai
+riven_family: Akvasto
+traits: [prime, baro]
+introduced: "24.0.6"
+internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeVasto/AkPrimeVasto/AkPrimeVastoPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 12
+reload_seconds: 1.4
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.5
+    max_deg: 12.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 3.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.22
+  crit_multiplier: 2.4
+  status_chance: 0.22
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 16.5, puncture: 16.5, slash: 77 }   # total 110
+
+source:
+  url: https://wiki.warframe.com/w/Akvasto_Prime

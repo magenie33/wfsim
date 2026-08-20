@@ -1,0 +1,60 @@
+id: telos_akbolto
+name: Telos Akbolto
+slot: secondary
+# THE ARBITERS' AKBOLTO: 70 a bolt against the ordinary's 64, at 5 rounds a
+# second against 4.5, with the status chance raised from 2.2% to 29% — which is
+# more than a tenfold change and the real difference between them.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]         # CompatibilityTags PROJECTILE
+mastery_rank: 11
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 26.7
+disposition: 1.25           # riven disposition
+polarities: [vazarin, naramon]
+exilus_polarity: madurai
+riven_family: Akbolto
+traits: [syndicate, arbiters_of_hexis]
+introduced: "15.5"
+internal_name: /Lotus/Weapons/Syndicates/ArbitersOfHexis/Pistols/AHAkbolto
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 30
+reload_seconds: 2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.5
+    max_deg: 7.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 75
+  fire_rate: 5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.13
+  crit_multiplier: 2.0
+  status_chance: 0.29
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 75 m/s. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 7, puncture: 63 }   # total 70
+
+unmodeled:
+  - reason: bolt_corpse_ragdoll
+  - "the TRUTH syndicate effect, which on a proc detonates a radial blast that also strips a portion of enemy armour — it fires off a syndicate standing meter this sim does not track, and the blast is not counted here"
+
+source:
+  url: https://wiki.warframe.com/w/Telos_Akbolto

@@ -1,0 +1,56 @@
+id: twin_grakatas
+name: Twin Grakatas
+slot: secondary
+# THE ONLY WEAPON IN THE FAMILY THAT FIRES TWO BULLETS AND SPENDS TWO ROUNDS
+# FOR THEM — innate multishot 2 at an ammo cost of 2, which is a real cost
+# rather than free extra pellets, and the reason its reserve is 1200.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 9
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 28.6
+disposition: 1.2            # riven disposition
+polarities: [naramon]
+exilus_polarity: madurai
+riven_family: Twin Grakatas
+traits: [grineer]
+introduced: "17.0"
+internal_name: /Lotus/Weapons/Grineer/LongGuns/GrineerAssaultRifle/TwinGrakatas
+noise: alarming
+ammo_type: secondary
+ammo_max: 1200
+ammo_pickup: 60
+magazine: 120
+reload_seconds: 3
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 2.0
+    max_deg: 5.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 20
+  multishot: 2.0
+  ammo_cost: 2
+  crit_chance: 0.25
+  crit_multiplier: 2.7
+  status_chance: 0.165
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 4, puncture: 3.33, slash: 2.67 }   # 10 a pellet, 20 a shot
+
+source:
+  url: https://wiki.warframe.com/w/Twin_Grakatas

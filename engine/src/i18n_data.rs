@@ -200,9 +200,14 @@ mod tests {
             }
             for (wid, line) in want {
                 if !spec.ui.contains_key(&line) {
+                    // BY CHARACTERS, NOT BYTES. An admission is prose and
+                    // prose has em dashes in it, so a byte slice lands inside
+                    // one and the test PANICS on the message rather than
+                    // failing with it — which reads as a broken test on the
+                    // day somebody adds a weapon (2026-08-20).
                     missing.push(format!(
                         "[{code}] {wid}: {}",
-                        &line[..line.len().min(70)]
+                        line.chars().take(70).collect::<String>()
                     ));
                 }
             }

@@ -1,0 +1,56 @@
+id: aklato
+name: Aklato
+slot: secondary
+# THE STARTER AKIMBO. Forty damage a shot, mostly Slash, out of the widest cone
+# in the family — and the highest riven disposition in the roster's secondaries,
+# which is the game's own verdict on it.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 3
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 11.1
+disposition: 1.52           # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Aklato
+traits: []
+introduced: "Vanilla"
+internal_name: /Lotus/Weapons/Tenno/Akimbo/AkimboPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 30
+reload_seconds: 2.4
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 4.0
+    max_deg: 14.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.1
+  crit_multiplier: 1.8
+  status_chance: 0.06
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 6, puncture: 10, slash: 24 }   # total 40
+
+source:
+  url: https://wiki.warframe.com/w/Aklato

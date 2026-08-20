@@ -1,0 +1,56 @@
+id: akstiletto
+name: Akstiletto
+slot: secondary
+# TWENTY-EIGHT ROUNDS AND A 1.1-SECOND RELOAD, which is the fastest in the
+# family. Mostly Impact, and the Prime is the same gun with a lower fire rate
+# and two thirds again the damage.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 8
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 23.5
+disposition: 0.95           # riven disposition
+polarities: [naramon]
+exilus_polarity: madurai
+riven_family: Akstiletto
+traits: [tenno]
+introduced: "12.0"
+internal_name: /Lotus/Weapons/Tenno/Pistols/TennoUzi/TennoUzi
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 28
+reload_seconds: 1.1
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 1.5
+    max_deg: 7.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 10
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.18
+  crit_multiplier: 1.8
+  status_chance: 0.18
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 16.8, puncture: 2.8, slash: 8.4 }   # total 28
+
+source:
+  url: https://wiki.warframe.com/w/Akstiletto

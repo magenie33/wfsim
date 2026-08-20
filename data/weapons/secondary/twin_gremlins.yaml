@@ -1,0 +1,58 @@
+id: twin_gremlins
+name: Twin Gremlins
+slot: secondary
+# EQUAL PHYSICAL DAMAGE, three times 12.33, on a bolt at 90 m/s. The Prisma is
+# the same weapon rebuilt around a faster reload and a tighter cone.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]         # CompatibilityTags PROJECTILE
+mastery_rank: 5
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 16.7
+disposition: 1.2            # riven disposition
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Twin Gremlins
+traits: [grineer]
+introduced: "9.5"
+internal_name: /Lotus/Weapons/Grineer/GrineerPistol/GrineerAkimboPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 30
+reload_seconds: 1.1
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 4.0
+    max_deg: 8.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 90
+  fire_rate: 5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.15
+  crit_multiplier: 1.5
+  status_chance: 0.15
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 90 m/s. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 12.33, puncture: 12.33, slash: 12.33 }   # total 36.99
+
+unmodeled:
+  - reason: bolt_corpse_ragdoll
+
+source:
+  url: https://wiki.warframe.com/w/Twin_Gremlins

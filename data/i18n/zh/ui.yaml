@@ -409,6 +409,7 @@ ui:
   "Not firing": 未开火
   "Not now": 暂不
   "Nothing is spent to be in it, so it can be held forever — a ruler ranks it.": 待在这个形态不需要付出任何代价，所以可以一直保持 —— 官方标尺会给它排名。
+  "ON KILL THE BODY FOLLOWS THE BOLT, damaging anyone in its path and pinning the corpse to walls (wiki). It is a second damage source that only exists once something has died, and this engine has no ragdoll and no wall for it to pin against — so a bolt weapon fighting a crowd is understated by however much that corpse would have hit on the way past": "击杀时尸体会跟着钉住它的螺钉飞出去，沿途对挡路的敌人造成伤害，并把尸体钉在墙上（维基）。这是一个「必须先死一个」才存在的第二伤害来源，而本引擎既没有布娃娃物理，也没有可以钉的墙 —— 所以一把螺钉武器在人堆里被低估的量，正好是那具尸体在飞行途中本该打出的伤害"
   "Official test scenario": 官方测试场景
   "One Thrax Centurion at level 9999 on Steel Path, for 180 seconds. A single target, so nothing here rewards clearing a room.": 一只凶魂百夫长，9999 级，钢铁之路，打 180 秒。单体目标，所以清场能力在这里换不到任何分数。
   "One ruler, every weapon. A score is a build measured by this engine under the benchmark's own pinned terms — nobody submits a number. An empty row is a weapon nobody has measured yet.": 一把尺子，量全部武器。榜上的分数是由本引擎在该基准自己钉死的条件下跑出来的——没有人提交数字。空着的一行，就是还没有人测过的武器。
@@ -557,6 +558,7 @@ ui:
   "Where the damage went": 伤害落在哪里
   "Which means no Incarnon, for all but one weapon: eight of the nine Incarnon forms charge their gauge on weak-point hits, so at this rate they never fill it. The Torid charges on direct hits and still cycles.": 这也意味着除一把之外都进不了灵化：九个灵化形态里有八个靠弱点命中充能，在这个爆头率下永远填不满。托里德靠直接命中充能，照常循环。
   "Why you can check it": 为什么你可以检验它
+  "Zazvat-Kar, the Akstiletto Prime-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Zazvat-Kar」，Akstiletto Prime 的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Zoom": 变焦
   "a MISSED shot drops the combo counter and this entry cannot miss — the only thing that misses here is SPREAD, and this one lands on the reticle, so nothing but its {seconds} s timer ever takes a stack off. A player who pulls the shot loses the combo and this sim never pulls one": 打空一枪会掉连击，而这把在这里打不空 —— 这里唯一会失手的是散布，而它弹着点就在准星上，所以除了 {seconds} 秒计时之外没有任何东西会拿走一层。手抖打偏的玩家会掉连击，而这个模拟不会手抖
   "a benchmark build — measured under": 基准配装 —— 测试标准
@@ -890,9 +892,11 @@ ui:
   "the PARTIAL CHARGE is a separate entry (`lanka_uncharged`) — in game the two are the same trigger released at different moments, and picking between them here is a form choice rather than something the fight decides": 半蓄力射击是一个独立条目（`lanka_uncharged`）—— 游戏里两者是同一个扳机在不同时刻松开，而这里在两者之间选择是一个形态选项，不是战斗自己决定的
   "the PELLET COUNT spools from 1 to 12 and this entry fires 12 from the first shot — the fire-rate spool is modelled and the multishot one is not, so a short burst puts more pellets downrange here than in game":
   "the SECOND ZOOM LEVEL is not modelled, and on this weapon it is a stat TRADE rather than a buff — 3.5x gives +100% damage, +3 m explosion radius and -75% fire rate, which is half the sustained DPS for a much bigger single hit. Choosing it is a mode, and this entry is the first level": 第二档变焦尚未建模，而且在这把武器上它是一次属性交易而不是加成 —— 3.5x 给 +100% 伤害、+3 米爆炸半径和 −75% 射速，也就是用一半的持续 DPS 换一发大得多的单发。选它是一个模式，而这个条目是第一档
+  "the SEQUENCE syndicate effect, which converts damage dealt into shields for the wielder and nearby allies on a proc — the wielder is not a body in this arena and there are no allies, so it pays nothing": "「Sequence」集团特效：触发时把造成的伤害转化为持有者与附近队友的护盾 —— 这个战场里持有者不是一个身体，也没有队友，所以它一分不值"
   "the Sentient / Shadow Stalker damage-adaptation reset the Void proc performs": 虚空异常对 Sentient 与暗影 Stalker 伤害适应的重置
   "the Single Rocket Explosion is not modelled — this entry carries only the Single Rocket Impact": Single Rocket Explosion 尚未建模 —— 这个条目只装了 Single Rocket Impact
   "the TOXIN EMBED is not modelled — the page gives this weapon a second attack that deals its damage over 3 seconds on top of the hit, and this entry carries only the hit": 毒素嵌入尚未建模 —— 页面给了这把武器第二段攻击，在命中之外再用 3 秒时间打出同等伤害，而这个条目只包含命中本身
+  "the TRUTH syndicate effect, which on a proc detonates a radial blast that also strips a portion of enemy armour — it fires off a syndicate standing meter this sim does not track, and the blast is not counted here": "「Truth」集团特效：触发时引爆一次范围爆炸，并削去敌人一部分护甲 —— 它由一条本模拟不跟踪的集团能量槽驱动，而那次爆炸在这里没有被计入"
   "the Uncharged Shot is not modelled — this entry carries only the Charged Shot": Uncharged Shot 尚未建模 —— 这个条目只装了 Charged Shot
   "the aimed target": "被瞄准的目标"
   "the alt fire cannot be reloaded manually to skip its delay, and Kinetic Ricochet does not affect its projectile — two cadence rules this arena has no reload interruption for": "交替射击不能靠手动换弹来跳过它的延迟，「动能跳弹」也不影响它的弹体——这两条都是节奏规则，而本场没有换弹打断可言"
@@ -961,6 +965,7 @@ ui:
   "the missiles HOME, and homing is not modelled — this arena has one target at zero distance, so a guided missile and a straight one land the same": 导弹的追踪尚未建模 —— 这个战场只有一个零距离的目标，所以制导弹和直飞弹落点相同
   "the official rulers — the same fight on every weapon": 官方标尺 —— 每把武器都是同一场战斗
   "the official test scenario — the same fight on every weapon, so results compare": 官方测试场景 —— 每把武器都是同一场战斗，结果之间可以比较
+  "the page states the spool as a COUNT and not as a starting fraction — 'requires a spool-up of 6 shots before optimal fire rate is achieved' — and the roster's spool field needs both halves to reconcile, so it is left off rather than half-guessed": "页面把转膛写成一个「发数」而不是一个起始比例 ——「需要 6 发的转膛才能达到最佳射速」—— 而本武器库的转膛字段需要两半互相印证，所以这里干脆不填，而不是猜一半"
   "the player does not move or aim by hand here": 这里的玩家不移动，也不手动瞄准
   "the progenitor element — pool = searched, req = pin one": 始祖元素——pool 表示纳入搜索，req 表示钉死一个
   "the projectile does not bounce off TERRAIN — it ricochets off ENEMIES here, and in game a wall or the floor is a surface too. So every bounce needs another body to find: against a single target the projectile stops at the first collision, where in game it would keep going off the scenery, and this number is a FLOOR for any fight with cover in it": "弹体不会从地形上弹开 —— 这里它只在敌人之间跳弹，而游戏里墙壁和地面同样是可以弹的表面。所以每次跳弹都得找到另一具身体：面对单个目标时弹体在第一次碰撞后就停了，而在游戏里它还会继续从场景上弹开，因此在有掩体的战斗里这个数字是下限"

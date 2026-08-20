@@ -1,0 +1,56 @@
+id: twin_vipers
+name: Twin Vipers
+slot: secondary
+# TWENTY-FIVE ROUNDS A SECOND, the fastest fire rate in the roster, out of
+# twenty-eight rounds — so the magazine is gone in a little over a second and
+# the two-second reload is most of the fight.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 5
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 15.4
+disposition: 1.45           # riven disposition
+polarities: [naramon]
+exilus_polarity: madurai
+riven_family: Twin Vipers
+traits: [grineer]
+introduced: "7.7.3"
+internal_name: /Lotus/Weapons/Tenno/Akimbo/AkimboViperPistols
+noise: alarming
+ammo_type: secondary
+ammo_max: 420
+ammo_pickup: 40
+magazine: 28
+reload_seconds: 2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 5.0
+    max_deg: 8.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 25
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.15
+  crit_multiplier: 1.5
+  status_chance: 0.11
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 10.2, puncture: 1.7, slash: 5.1 }   # total 17
+
+source:
+  url: https://wiki.warframe.com/w/Twin_Vipers

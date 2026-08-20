@@ -1,0 +1,56 @@
+id: aklex
+name: Aklex
+slot: secondary
+# TWO LEX, ONE TRIGGER: 130 Puncture a shot at 1.58 rounds a second from a
+# twelve-round magazine with a three-second reload. Almost all of it is one
+# damage type, which is what makes the Lex family read the way it does.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 4
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 9.8
+disposition: 1.05           # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Aklex
+traits: [tenno]
+introduced: "11.1"
+internal_name: /Lotus/Weapons/Tenno/Akimbo/AkLexPistols
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 12
+reload_seconds: 3
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.5
+    max_deg: 20.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 1.58
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.2
+  crit_multiplier: 2.0
+  status_chance: 0.1
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 13, puncture: 104, slash: 13 }   # total 130
+
+source:
+  url: https://wiki.warframe.com/w/Aklex

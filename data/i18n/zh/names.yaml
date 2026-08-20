@@ -359,6 +359,31 @@ weapons:
   velox_prime: 逐电 Prime
   vesper_77: 夜语者 77
   vinquibus: 制胜者
+  afuris: 盗贼双枪
+  afuris_prime: 盗贼双枪 Prime
+  akbolto: 螺钉双枪
+  akbolto_prime: 螺钉双枪 Prime
+  akjagara: 觉醒双枪
+  aklato: 拉托双枪
+  aklex: 雷克斯双枪
+  aklex_prime: 雷克斯双枪 Prime
+  akmagnus: 麦格努斯双枪
+  aksomati: 轻灵月神双枪
+  akstiletto: 史提托双枪
+  akstiletto_prime: 史提托双枪 Prime
+  akvasto: 瓦斯托双枪
+  akvasto_prime: 瓦斯托双枪 Prime
+  akzani: 荒谬双枪
+  dex_furis: Dex 盗贼双枪
+  dual_cestra: 锡斯特双枪
+  prisma_twin_gremlins: 棱晶·双子小精灵
+  secura_dual_cestra: 保障·锡斯特双枪
+  telos_akbolto: 终极·螺钉双枪
+  twin_grakatas: 双子葛拉卡达
+  twin_gremlins: 双子小精灵
+  twin_rogga: 双子罗格
+  twin_vipers: 双子蝰蛇
+  twin_vipers_wraith: 双子蝰蛇·亡魂
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's

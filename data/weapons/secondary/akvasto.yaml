@@ -1,0 +1,55 @@
+id: akvasto
+name: Akvasto
+slot: secondary
+# NINETY DAMAGE A SHOT OUT OF TWELVE ROUNDS, half of it Slash. The Prime keeps
+# the ninety and moves it: 77 Slash of it, against this one's 45.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 8
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 11.1
+disposition: 1.25           # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Akvasto
+traits: [tenno]
+introduced: "9.7"
+internal_name: /Lotus/Weapons/Tenno/Akimbo/DualVastos
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 12
+reload_seconds: 1.6
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 4.0
+    max_deg: 14.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 3.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.16
+  crit_multiplier: 1.8
+  status_chance: 0.12
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 22.5, puncture: 22.5, slash: 45 }   # total 90
+
+source:
+  url: https://wiki.warframe.com/w/Akvasto

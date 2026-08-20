@@ -1,0 +1,59 @@
+id: akbolto_prime
+name: Akbolto Prime
+slot: secondary
+# A 36% CRIT BOLT PISTOL — more than double the ordinary Akbolto's, at a
+# slightly lower damage per bolt and a faster projectile (100 m/s against 75).
+# Four innate polarities, which is the most in the secondary roster.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]         # CompatibilityTags PROJECTILE
+mastery_rank: 13
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 26.7
+disposition: 1.2            # riven disposition
+polarities: [naramon, madurai, madurai, madurai]
+exilus_polarity: naramon
+riven_family: Akbolto
+traits: [prime, vaulted]
+introduced: "22.7"
+internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeAkbolto/PrimeAkBoltoWeapon
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 40
+reload_seconds: 1.3
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.5
+    max_deg: 7.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.36
+  crit_multiplier: 2.8
+  status_chance: 0.14
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 100 m/s. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 4.4, puncture: 37.84, slash: 1.76 }   # total 44
+
+unmodeled:
+  - reason: bolt_corpse_ragdoll
+
+source:
+  url: https://wiki.warframe.com/w/Akbolto_Prime

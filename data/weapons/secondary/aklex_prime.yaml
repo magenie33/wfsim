@@ -1,0 +1,56 @@
+id: aklex_prime
+name: Aklex Prime
+slot: secondary
+# THE AKLEX AT 150 A SHOT AND NEARLY DOUBLE THE FIRE RATE, with two and a half
+# times the status chance. The cone, the reload and the crit multiplier are
+# untouched.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 15
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 9.8
+disposition: 0.95           # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Aklex
+traits: [prime, baro]
+introduced: "19.8.1"
+internal_name: /Lotus/Weapons/Tenno/Akimbo/AkLexPrimePistols
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 40
+magazine: 16
+reload_seconds: 3
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.5
+    max_deg: 20.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 2.67
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.25
+  crit_multiplier: 2.0
+  status_chance: 0.25
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 15, puncture: 120, slash: 15 }   # total 150
+
+source:
+  url: https://wiki.warframe.com/w/Aklex_Prime

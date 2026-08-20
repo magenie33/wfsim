@@ -22,13 +22,28 @@ weapons:
   # name and the page URL stay the bare name either way.
   # WFCD gives the MK1-Braton the plain Braton's `imageName`; the wiki has a
   # file of its own, and the two guns do not look alike.
+  afuris: Afuris.png
+  afuris_prime: AfurisPrime.png
   akarius: SapientPistol.png
   akarius_prime: AkariusPrime.png
+  akbolto: Akbolto.png
+  akbolto_prime: AkboltoPrime.png
   akbronco: Akbronco.png
   akbronco_prime: AkbroncoPrime.png
+  akjagara: Akjagara.png
   akjagara_prime: AkjagaraPrime.png
+  aklato: Aklato.png
+  aklex: Aklex.png
+  aklex_prime: AklexPrime.png
+  akmagnus: Akmagnus.png
   akmagnus_prime: AkmagnusPrime.png
+  aksomati: Aksomati.png
   aksomati_prime: AksomatiPrime.png
+  akstiletto: Akstileto.png
+  akstiletto_prime: AkstiletoPrime.png
+  akvasto: Akvasto.png
+  akvasto_prime: AkvastoPrime.png
+  akzani: Akzani.png
   angstrum: Angstrum.png
   atomos: Atomos.png
   atomos_incarnon: Atomos.png
@@ -69,10 +84,12 @@ weapons:
   dera_vandal_incarnon: DeraVandal.png
   despair: Despair.png
   despair_incarnon: Despair.png
+  dex_furis: DexFuris.png
   dex_sybaris: DexSybaris.png
   dex_sybaris_incarnon: DexSybaris.png
   dread: Dread.png
   dread_uncharged: Dread.png
+  dual_cestra: DualCestras.png
   dual_toxocyst: DualToxocyst.png
   dual_toxocyst_incarnon: DualToxocyst.png
   exergis: CrpShapeBlastShotgun.png
@@ -136,12 +153,20 @@ weapons:
   morgha: ThanoTechGrenadeLauncher.png
   morgha_alt: ThanoTechGrenadeLauncher.png
   phage: Phage.png
+  prisma_twin_gremlins: PrismaTwinGremlins.png
   rauta: PaxDuviricusShotgun.png
   reconifex: TnBeltFedRifle.png
   sagek_prime: GrnOrokinPistol.png
+  secura_dual_cestra: SecuraDualCestra.png
   spectra_vandal: CorpusLaserPistolVandal.png
   steflos: TnoLotusPodShotgun.png
+  telos_akbolto: TelosAkbolto.png
   thornbak: ModQuestRifle.png
+  twin_grakatas: TwinGrakatas.png
+  twin_gremlins: TwinGremlin.png
+  twin_rogga: TwinRogga.png
+  twin_vipers: TwinVipers.png
+  twin_vipers_wraith: TwinViperWraith.png
   velocitus: Velocitus.png
   velocitus_uncharged: Velocitus.png
   artax: Artax.png

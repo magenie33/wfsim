@@ -1,0 +1,58 @@
+id: prisma_twin_gremlins
+name: Prisma Twin Gremlins
+slot: secondary
+# THE TWIN GREMLINS WITH A 0.9-SECOND RELOAD, half again the crit chance and a
+# cone a quarter as wide. It is the tightest-shooting weapon in this batch.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]         # CompatibilityTags PROJECTILE
+mastery_rank: 11
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 36.4
+disposition: 1.15           # riven disposition
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Twin Gremlins
+traits: [grineer]
+introduced: "23.4.2"
+internal_name: /Lotus/Weapons/Grineer/Pistols/GrineerBulbousSMG/Prisma/PrismaTwinGremlinsWeapon
+noise: alarming
+ammo_type: secondary
+ammo_max: 600
+ammo_pickup: 40
+magazine: 70
+reload_seconds: 0.9
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 2.0
+    max_deg: 3.5
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 90
+  fire_rate: 8.83
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.23
+  crit_multiplier: 1.9
+  status_chance: 0.23
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — Projectile at 90 m/s. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 2.97, puncture: 12.69, slash: 11.34 }   # total 27
+
+unmodeled:
+  - reason: bolt_corpse_ragdoll
+
+source:
+  url: https://wiki.warframe.com/w/Prisma_Twin_Gremlins

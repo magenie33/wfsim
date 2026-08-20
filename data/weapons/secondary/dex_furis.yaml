@@ -1,0 +1,56 @@
+id: dex_furis
+name: Dex Furis
+slot: secondary
+# THE AFURIS AT TWENTY ROUNDS A SECOND, out of a hundred-round magazine, with
+# more than double the status chance. An anniversary weapon, and the family's
+# third member.
+class: dual_pistols
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 10
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 15.4
+disposition: 1.39           # riven disposition
+polarities: [naramon]
+exilus_polarity: naramon
+riven_family: Afuris
+traits: [tenno]
+introduced: "12.6"
+internal_name: /Lotus/Weapons/Tenno/Pistols/DexFuris/DexFuris
+noise: alarming
+ammo_type: secondary
+ammo_max: 400
+ammo_pickup: 40
+magazine: 100
+reload_seconds: 2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 5.0
+    max_deg: 8.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 20
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.14
+  crit_multiplier: 2.0
+  status_chance: 0.28
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m", Hit-Scan.
+  range_m: 300.0
+  damage: { impact: 2.4, puncture: 11.2, slash: 2.4 }   # total 16
+
+source:
+  url: https://wiki.warframe.com/w/Dex_Furis
