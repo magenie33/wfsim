@@ -341,6 +341,9 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
 .pol-btn{flex:none;width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--plane);border:1px solid var(--line);border-radius:6px;cursor:pointer;padding:0}
 .pol-btn:hover{border-color:var(--accent)}
 .pol-btn .nopol{color:var(--muted);font-size:13px}
+/* A polarity we ship no icon for — the Vinquibus's Aura slot. A LETTER,
+   because an invisible image reads as an unpolarised slot. */
+.pol-txt{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;font-size:11px;font-weight:700;line-height:1;color:var(--muted);border:1px solid var(--line);border-radius:3px}
 .slot .mod{width:34px;height:34px;border-radius:6px;object-fit:cover;border:1px solid var(--rar,var(--line));flex:none}
 .slot.filled{border-left:3px solid var(--rar,var(--line))}
 /* Cards grew a description block: icon/polarity/dots align with the TOP
