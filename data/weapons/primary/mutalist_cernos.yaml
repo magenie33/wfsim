@@ -53,6 +53,28 @@ attack:
   punch_through_m: 1.0
   # NO RANGE ROW on this attack — the page states none. See
   # data/surveys/weapon_range.yaml.
+  # THE SPORE CLOUD — "on contact with surfaces, arrows spawn a small Toxin
+  # cloud that deals damage over 2.5 meters and has a chance to apply a Toxin
+  # proc every second for 10 seconds" (wiki), and "initial hit and spore cloud
+  # apply status separately".
+  #
+  # NO DAMAGE FALLOFF: the module carries a window with a reduction of ZERO,
+  # which is its way of saying there is none — full damage to the rim.
+  #
+  # ONE TICK A SECOND for ten seconds, from the module's FireRate of 1.00 on
+  # the cloud and the page's ten-second life: ten ticks of 5 Toxin.
+  lingering:
+    damage: { toxin: 5.0 }
+    tick_rate: 1.0
+    duration_seconds: 10.0
+    radius_m: 2.5
+    falloff_start_m: 0.0
+    falloff_reduction: 0.0
+    crit_chance: 0.15
+    crit_multiplier: 2.0
+    status_chance: 0.49
+    stacking: stack
+
   # PRIMARY COMPRESSION — the published table names this attack. Verbatim
   # (docs/CATALOGS.md §2):
   #

@@ -44,6 +44,7 @@ attack:
     damage: { heat: 1150 }   # total 1150
 
 unmodeled:
+  - "PRIMARY COMPRESSION's row for this attack is not transcribed. The published table reads '127% / Both / Merged' — the effectiveness is over 100%, the stacking is BOTH brackets at once, and the radius calculation is a fourth kind ('Alt-Fire gains the damage % bonus from primary fire's radius and a unique multiplier'). `stacking` here is one of two values and `radius_calculation` one of four, so a shape the vocabulary cannot hold is left out rather than flattened — and the arcane is therefore worth NOTHING on this form here, where in game it is worth more than on the primary fire"
   - "the grenades are earned by DEALING DAMAGE with the primary fire — the alternate cannot be used until the meter is full (wiki) — and this engine has no shape for one mode paying for another, so this entry fires on a cadence with no meter at all"
   - reason: explosion_ignores_cover
   - reason: self_stagger

@@ -466,6 +466,7 @@ ui:
   Overguard: 超护盾
   Overguard: 超载护盾
   Pace: 节奏
+  "PRIMARY COMPRESSION's row for this attack is not transcribed. The published table reads '127% / Both / Merged' — the effectiveness is over 100%, the stacking is BOTH brackets at once, and the radius calculation is a fourth kind ('Alt-Fire gains the damage % bonus from primary fire's radius and a unique multiplier'). `stacking` here is one of two values and `radius_calculation` one of four, so a shape the vocabulary cannot hold is left out rather than flattened — and the arcane is therefore worth NOTHING on this form here, where in game it is worth more than on the primary fire": "这次攻击的 Primary Compression 行没有录入。published 表写的是「127% / Both / Merged」——效能超过 100%，堆叠方式是两个区间同时生效，而半径计算方式是第四种（「副攻击从主攻击的半径拿到伤害加成百分比，外加一个独有的乘数」）。这里的 `stacking` 只有两个取值、`radius_calculation` 只有四个，所以一个词表装不下的形状被留在外面而不是压平 —— 因此这枚 arcane 在这个形态上在这里一分不值，而在游戏里它比在主攻击上更值钱"
   "Pan": "平移"
   "Pellets crit": 暴击弹丸占比
   "Per shot": 每次射击
