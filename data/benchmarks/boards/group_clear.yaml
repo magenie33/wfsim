@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-engine: 49cbe2c31aa1ad87f701b7c9c04304ed383aaf27
+engine: 23b54c340d6953b78359408319db181b16afff7a
 entries:
   - weapon: akarius_prime
     mode: base
@@ -88,7 +88,7 @@ entries:
     valence: heat
   - weapon: kuva_nukor
     mode: base
-    score: 43.70902823817085
+    score: 37.23799523048803
     mods: [seeker, galvanized_diffusion, hornet_strike, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
@@ -246,7 +246,7 @@ entries:
     arcanes: [primary_merciless]
   - weapon: vectis_prime
     mode: base
-    score: 35.50952665425438
+    score: 130.81123554537112
     mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, hellfire]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_crux]

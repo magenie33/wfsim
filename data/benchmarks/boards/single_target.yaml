@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 49cbe2c31aa1ad87f701b7c9c04304ed383aaf27
+engine: 23b54c340d6953b78359408319db181b16afff7a
 entries:
   - weapon: akarius_prime
     mode: base
@@ -48,7 +48,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: angstrum
     mode: cycle
-    score: 10.869171377163118
+    score: 12.782186005286832
     mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [angstrum_evo1_incarnon_form, angstrum_paladin_virtue, angstrum_rapid_reinforcement, angstrum_critical_parallel]
     arcanes: [secondary_deadhead]
@@ -1532,7 +1532,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: gammacor
     mode: base
-    score: 1.2336372641376745
+    score: 1.2854058291947406
     mods: [galvanized_diffusion, primed_expel_grineer, primed_target_cracker, galvanized_shot, magnetic_might, jolt, pistol_pestilence, scorch]
     evolutions: [gammacor_evo1_incarnon_form, gammacor_infused_shots, gammacor_extended_volley, gammacor_elemental_balance]
     arcanes: [secondary_enervate]
@@ -1621,19 +1621,19 @@ entries:
     valence: magnetic
   - weapon: kuva_nukor
     mode: base
-    score: 21.964663273835196
+    score: 20.34449191288956
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
   - weapon: kuva_nukor
     mode: base
-    score: 17.79476294902068
+    score: 17.122644133066306
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge, scorch]
     arcanes: [secondary_enervate]
     valence: magnetic
   - weapon: kuva_nukor
     mode: base
-    score: 11.441849350781448
+    score: 10.41106092506262
     mods: [hornet_strike, barrel_diffusion, lethal_torrent, pistol_elementalist, target_cracker, magnetic_might, frostbite, pistol_pestilence]
     arcanes: [secondary_enervate]
     valence: heat
@@ -2656,61 +2656,61 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: prisma_angstrum
     mode: cycle
-    score: 36.15882789876916
+    score: 36.333333333333336
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
     arcanes: [secondary_deadhead]
   - weapon: prisma_angstrum
     mode: cycle
-    score: 33.143958320633665
+    score: 33.23139259225929
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
     arcanes: [secondary_deadhead]
   - weapon: prisma_angstrum
     mode: cycle
-    score: 30.486596125546495
+    score: 30.54384228107905
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
     arcanes: [cascadia_flare]
   - weapon: prisma_angstrum
     mode: cycle
-    score: 28.89653703037851
+    score: 28.76524810267763
     mods: [galvanized_diffusion, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
     arcanes: [secondary_deadhead]
   - weapon: prisma_angstrum
     mode: cycle
-    score: 28.69490273261899
+    score: 28.736300335188464
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, deep_freeze, pistol_pestilence, primed_heated_charge]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
     arcanes: [cascadia_flare]
   - weapon: prisma_angstrum
     mode: cycle
-    score: 23.060725851456816
+    score: 27.732332926377595
     mods: [pistol_acuity, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_survivors_edge]
     arcanes: [cascadia_flare]
   - weapon: prisma_angstrum
     mode: cycle
-    score: 22.92003810719836
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, accelerated_isotope, magnetic_might, primed_heated_charge]
-    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
-    arcanes: [cascadia_flare]
-  - weapon: prisma_angstrum
-    mode: cycle
-    score: 21.951232035889117
+    score: 27.214142101922153
     mods: [pistol_acuity, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
     arcanes: [secondary_deadhead]
   - weapon: prisma_angstrum
     mode: cycle
-    score: 21.33659445740204
+    score: 22.910516235803183
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, accelerated_isotope, magnetic_might, primed_heated_charge]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
+    arcanes: [cascadia_flare]
+  - weapon: prisma_angstrum
+    mode: cycle
+    score: 21.33188703890116
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
     arcanes: [secondary_encumber]
   - weapon: prisma_angstrum
     mode: cycle
-    score: 19.28416025823655
+    score: 19.33595642001821
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_heated_charge]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
     arcanes: [secondary_deadhead]

@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: 49cbe2c31aa1ad87f701b7c9c04304ed383aaf27
+engine: 23b54c340d6953b78359408319db181b16afff7a
 entries:
   - weapon: akarius_prime
     mode: base
@@ -129,43 +129,43 @@ entries:
     valence: impact
   - weapon: kuva_nukor
     mode: base
-    score: 6.34737427654317
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    arcanes: [secondary_enervate]
-    valence: heat
-  - weapon: kuva_nukor
-    mode: base
-    score: 6.188591324516646
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
-    arcanes: [secondary_enervate]
-    valence: impact
-  - weapon: kuva_nukor
-    mode: base
-    score: 6.15692624285377
+    score: 5.770152766422319
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, ice_storm, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
   - weapon: kuva_nukor
     mode: base
-    score: 6.102019918853644
+    score: 5.720611177679204
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, ice_storm, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
   - weapon: kuva_nukor
     mode: base
-    score: 5.859730470421208
+    score: 5.6017986935793225
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: impact
+  - weapon: kuva_nukor
+    mode: base
+    score: 5.498668611346261
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: heat
+  - weapon: kuva_nukor
+    mode: base
+    score: 5.342370976013157
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: cold
   - weapon: kuva_nukor
     mode: base
-    score: 4.145397906463131
+    score: 3.6666666666666665
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence]
     arcanes: [secondary_enervate]
     valence: heat
   - weapon: kuva_nukor
     mode: base
-    score: 3.439999013082063
+    score: 3.3841991674838843
     mods: [hornet_strike, barrel_diffusion, lethal_torrent, pistol_elementalist, target_cracker, magnetic_might, frostbite, pistol_pestilence]
     arcanes: [secondary_enervate]
     valence: heat
@@ -366,13 +366,13 @@ entries:
     arcanes: [primary_debilitate]
   - weapon: prisma_angstrum
     mode: cycle
-    score: 2.163132208469111
+    score: 2.208517943857321
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, primed_pistol_gambit, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_swift_deliverance, prisma_angstrum_critical_parallel]
     arcanes: [cascadia_flare]
   - weapon: prisma_angstrum
     mode: cycle
-    score: 1.6472608157121846
+    score: 1.65314599874948
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, primed_pistol_gambit, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_rapid_reinforcement, prisma_angstrum_survivors_edge]
     arcanes: [cascadia_flare]
