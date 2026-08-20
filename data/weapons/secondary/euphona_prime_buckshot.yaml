@@ -1,0 +1,41 @@
+id: euphona_prime_buckshot
+name: Euphona Prime
+# THE BUCKSHOT: ten pellets of 88, 880 a shot at point blank and almost nothing
+# past twelve metres, at a 2% crit chance against the slug's 30%.
+inherits: euphona_prime
+form: alt_fire
+transform_group: euphona_prime
+
+introduced: "19.11.5"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
+# has no row for either of its two. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 21.0
+    max_deg: 41.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 1.5
+  multishot: 10.0
+  ammo_cost: 1
+  crit_chance: 0.02
+  crit_multiplier: 2.0
+  status_chance: 0.09
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  falloff:
+    start_m: 6.0
+    end_m: 12.0
+    reduction: 0.9886
+  damage: { impact: 4.4, puncture: 17.6, slash: 66 }   # 88 a pellet, 880 a shot
+
+source:
+  url: https://wiki.warframe.com/w/Euphona_Prime

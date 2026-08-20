@@ -1,0 +1,62 @@
+id: quatz
+name: Quatz
+slot: secondary
+# HIP-FIRE IS AUTOMATIC AND AIMED FIRE IS A FOUR-ROUND BURST — the mode is the
+# AIM STATE rather than a trigger, which is a combination this simulator can be
+# set to in a way the game cannot. The arsenal shows the automatic.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: quatz
+mod_pools: [pistol]   # CompatibilityTags PROJECTILE, SECONDARYSHOTGUN
+mastery_rank: 9
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 40.0
+disposition: 1.2            # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Quatz
+traits: []
+introduced: "25.4.0"
+internal_name: /Lotus/Weapons/Grineer/Pistols/GrnAmphisPistol/GrnAmphisPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 504
+ammo_pickup: 40
+magazine: 72
+reload_seconds: 2.7
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+# and neither of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 2.0
+    max_deg: 3.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 15
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.13
+  crit_multiplier: 1.5
+  status_chance: 0.27
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  damage: { electricity: 11, impact: 9, puncture: 2, slash: 7 }   # total 29
+
+unmodeled:
+  - "reloading from a FULLY DEPLETED magazine produces an 8 m shockwave dealing 10 Electricity at 100% status plus a forced Electricity proc (wiki). It is a reload-triggered explosion this engine has no shape for, and this sim always empties the magazine — so it would fire on every reload here and is not counted at all"
+
+source:
+  url: https://wiki.warframe.com/w/Quatz

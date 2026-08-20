@@ -4864,33 +4864,29 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     // the kills and the handling stats all line up). The cross-run
     // spread (min–max ±σ) stays as explicit spread stats.
     let m = &s.median_run;
-    const TYPE_NAMES: [&str; 15] = [
-        "Impact",
-        "Puncture",
-        "Slash",
-        "Cold",
-        "Electricity",
-        "Heat",
-        "Toxin",
-        "Blast",
-        "Corrosive",
-        "Gas",
-        "Magnetic",
-        "Radiation",
-        "Viral",
-        "True",
-        "Void",
-    ];
+    // THE NAMES ARE DERIVED, not listed. This was a hand-written table of
+    // fifteen that had to stay in `DamageType`'s declaration order, and the
+    // enum has seventeen variants — so the day a weapon first dealt TAU
+    // (the Haalvu, 2026-08-20) every per-type array in the engine went out of
+    // range and this table would have named the wrong types if it had not.
+    let type_name = |i: usize| -> String {
+        let n = wfsim_engine::damage::DamageType::ALL[i].name();
+        let mut c = n.chars();
+        match c.next() {
+            Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+            None => String::new(),
+        }
+    };
     let status_damage = &m.sources;
     // A WEAPON-damage row expands into the vector that dealt it — a status
     // row is already one type, which is what a proc is. Parts are ordered
     // biggest-first, the same rule the rows themselves follow.
-    let by_type = |split: &[f64; 15]| -> Option<Value> {
-        let mut parts: Vec<(&str, f64)> = split
+    let by_type = |split: &[f64; wfsim_engine::damage::DamageType::ALL.len()]| -> Option<Value> {
+        let mut parts: Vec<(String, f64)> = split
             .iter()
             .enumerate()
             .filter(|(_, v)| **v > 0.0)
-            .map(|(i, &v)| (TYPE_NAMES[i], v))
+            .map(|(i, &v)| (type_name(i), v))
             .collect();
         if parts.is_empty() {
             return None;
@@ -4927,7 +4923,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         status_damage.status
             .iter()
             .enumerate()
-            .map(|(i, &v)| (TYPE_NAMES[i].to_string(), v, None)),
+            .map(|(i, &v)| (type_name(i), v, None)),
     );
     sources.retain(|(_, v, _)| *v > 0.0);
     sources.sort_by(|a, b| b.1.total_cmp(&a.1));
@@ -4969,7 +4965,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // only ever grows, so the last frame names all of them and an earlier
         // frame simply reads zero there.
         let last = rep.frames.last().cloned().unwrap_or_default();
-        let pick = |f: &wfsim_engine::dummy::Frame, k: &str| -> (f64, [f64; 15]) {
+        let pick = |f: &wfsim_engine::dummy::Frame, k: &str| -> (f64, [f64; wfsim_engine::damage::DamageType::ALL.len()]) {
             match k {
                 "direct" => (f.sources.direct, f.sources.direct_by_type),
                 "radial" => (f.sources.radial, f.sources.radial_by_type),
@@ -4978,8 +4974,10 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
                 "syndicate" => (f.sources.syndicate, f.sources.syndicate_by_type),
                 "extra hit" => (f.sources.extra_hit, f.sources.extra_hit_by_type),
                 other => {
-                    let i = TYPE_NAMES.iter().position(|n| *n == other).unwrap_or(0);
-                    (f.sources.status[i], [0.0; 15])
+                    let i = (0..wfsim_engine::damage::DamageType::ALL.len())
+                        .position(|i| type_name(i) == other)
+                        .unwrap_or(0);
+                    (f.sources.status[i], [0.0; wfsim_engine::damage::DamageType::ALL.len()])
                 }
             }
         };
@@ -4993,7 +4991,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
                         .filter(|&i| pick(&last, name).1[i] > 0.0)
                         .map(|i| {
                             json!({
-                                "type": TYPE_NAMES[i],
+                                "type": type_name(i),
                                 "dmg": rep.frames.iter()
                                     .map(|f| pick(f, name).1[i].round())
                                     .collect::<Vec<_>>(),

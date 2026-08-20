@@ -1,0 +1,47 @@
+id: fulmin_prime_semi
+name: Fulmin Prime
+# 550 DAMAGE FOR TEN ROUNDS, on a faster projectile (120 m/s against 100) with a
+# falloff window that starts and ends further out.
+inherits: fulmin_prime
+form: semi_auto
+transform_group: fulmin_prime
+
+introduced: "33.6"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
+# has no row for either of its two. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 6.0
+    max_deg: 16.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 120
+  fire_rate: 2.17
+  multishot: 1.0
+  ammo_cost: 10
+  crit_chance: 0.3
+  crit_multiplier: 2.2
+  status_chance: 0.22
+  punch_through_m: 0.0
+  # A GUARANTEED IMPACT PROC — the module's ForcedProcs.
+  forced_procs: [impact]
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  falloff:
+    start_m: 12.0
+    end_m: 24.0
+    reduction: 0.6666
+  damage: { electricity: 440, impact: 110 }   # total 550
+
+unmodeled:
+  - "the guaranteed Impact proc only reaches enemies within 9 metres, and the distance scales with Projectile Speed (wiki) — this entry applies it at every range, so a shot fired further out is overstated by one forced proc"
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Fulmin_Prime

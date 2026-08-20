@@ -1,0 +1,43 @@
+id: scyotid_snare
+name: Scyotid
+# THE SNARE: 40 Toxin, and the damage is the least of it — it paralyses and
+# GROUPS up to eight enemies within fifteen metres, which is crowd control this
+# arena cannot use. See the admissions.
+inherits: scyotid
+form: semi_auto
+transform_group: scyotid
+
+introduced: "39"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
+# has no row for either of its two. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 1.0
+    max_deg: 3.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 1.6
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.08
+  crit_multiplier: 2.4
+  status_chance: 0.32
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { toxin: 40 }   # total 40
+
+unmodeled:
+  - "the snare 'damages, paralyzes for ~6 seconds, and groups up to 8 enemies within 15 meters', and the number pulled is multiplied by Multishot (wiki). This engine resolves it on the aimed body alone: no pull, no paralysis, no crowd — so the 40 Toxin here is the whole of what a mechanic built entirely around crowd control pays"
+  - "its damage 'is NOT affected by mods, nor does it combine with or inflict modded elements' (wiki), and this engine scales every attack by the build — so a modded Scyotid overstates this mode by the whole of its damage bracket"
+  - "the radius is 'NOT affected by Fulmination' (wiki), which is a mod this entry has no radius for anyway"
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Scyotid

@@ -3295,16 +3295,16 @@ pub struct SourceDamage {
     pub extra_hit: f64,
     /// …split by type, kept parallel to the others. One type per instance
     /// today (Void), because one ability grants extra hits here.
-    pub extra_hit_by_type: [f64; 15],
+    pub extra_hit_by_type: [f64; DamageType::ALL.len()],
     /// A SYNDICATE RADIAL's explosion (Truth, Justice, …) — its own bucket
     /// because it is neither weapon damage nor a status tick: a flat 1000 of
     /// the syndicate's element, unscaled by anything the build does.
     pub syndicate: f64,
     /// The syndicate blast split by type — one entry in practice, since a
     /// blast is a single element, kept parallel to the other buckets.
-    pub syndicate_by_type: [f64; 15],
+    pub syndicate_by_type: [f64; DamageType::ALL.len()],
     /// Indexed by `DamageType as usize` (15 variants).
-    pub status: [f64; 15],
+    pub status: [f64; DamageType::ALL.len()],
     /// The three WEAPON-damage buckets above, each split across the damage
     /// VECTOR that dealt them (same indexing as `status`).
     ///
@@ -3312,14 +3312,14 @@ pub struct SourceDamage {
     /// hit is not: "direct 3.1 G" hides that it was Corrosive and Magnetic in
     /// a 76/24 split, which is the part of a build a player actually tunes
     /// (user, 2026-08-01).
-    pub direct_by_type: [f64; 15],
-    pub radial_by_type: [f64; 15],
-    pub field_by_type: [f64; 15],
+    pub direct_by_type: [f64; DamageType::ALL.len()],
+    pub radial_by_type: [f64; DamageType::ALL.len()],
+    pub field_by_type: [f64; DamageType::ALL.len()],
     /// `arcane_on_status` split the same way. Cascadia Empowered's instance
     /// takes the PROC's damage type ("matching the Damage Type of the Status
     /// Effect"), so this row has a vector too — it is just a vector of one
     /// type per instance rather than a mixed one.
-    pub arcane_by_type: [f64; 15],
+    pub arcane_by_type: [f64; DamageType::ALL.len()],
 }
 
 impl SourceDamage {
@@ -3350,7 +3350,7 @@ impl SourceDamage {
 /// when Impact actually did 60% of the damage, which is exactly the number a
 /// reader consults to decide what to add next.
 fn add_by_type(
-    dst: &mut [f64; 15],
+    dst: &mut [f64; DamageType::ALL.len()],
     v: &DamageVector,
     effective: f64,
     col: &crate::factions_data::Column,
@@ -18744,13 +18744,13 @@ mod tests {
             .with(DamageType::Impact, 50.0)
             .with(DamageType::Slash, 50.0);
         let grineer = crate::factions_data::column("grineer");
-        let mut dst = [0.0f64; 15];
+        let mut dst = [0.0f64; DamageType::ALL.len()];
         // 125 effective is what 50 Impact ×1.5 + 50 Slash ×1.0 comes to.
         add_by_type(&mut dst, &v, 125.0, &grineer);
         assert!((dst[DamageType::Impact as usize] - 75.0).abs() < 1e-9, "{dst:?}");
         assert!((dst[DamageType::Slash as usize] - 50.0).abs() < 1e-9, "{dst:?}");
         // Neutral: the plain proportional split it always was.
-        let mut flat = [0.0f64; 15];
+        let mut flat = [0.0f64; DamageType::ALL.len()];
         add_by_type(&mut flat, &v, 100.0, &crate::factions_data::Column::NEUTRAL);
         assert!((flat[DamageType::Impact as usize] - 50.0).abs() < 1e-9);
     }

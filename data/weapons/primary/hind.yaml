@@ -1,0 +1,64 @@
+id: hind
+name: Hind
+slot: primary
+# THE ORDINARY HIND: a five-round burst and a semi-auto, cycled with Alternate
+# Fire. The Kuva variant added a THIRD mode; this one has two, and the arsenal
+# shows the burst.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: hind
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
+mastery_rank: 0
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+# NO ACCURACY ROW — the module states none for this weapon.
+disposition: 1.42           # riven disposition
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Hind
+traits: [grineer]
+introduced: "9.6"
+internal_name: /Lotus/Weapons/Grineer/LongGuns/BurstRifle/GrnBurstRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 65
+reload_seconds: 2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+# and neither of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 6.0
+  trigger: burst
+  # THE BURST. The listed `fire_rate` counts BURSTS: one pull is 5 rounds
+  # spaced by the delay below.
+  burst:
+    count: 5
+    delay_seconds: 0.12       # module BurstDelay
+  shot_type: hit_scan
+  fire_rate: 5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.07
+  crit_multiplier: 1.5
+  status_chance: 0.15
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  damage: { impact: 7.5, puncture: 7.5, slash: 15 }   # total 30
+
+source:
+  url: https://wiki.warframe.com/w/Hind

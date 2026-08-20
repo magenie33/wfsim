@@ -1,0 +1,49 @@
+id: fulmin_semi
+name: Fulmin
+# THE SEMI-AUTO SHOTGUN HALF: 500 damage on a silent projectile for ten rounds
+# of the battery, with a guaranteed Impact proc inside 9 metres and a falloff
+# window from 10 to 20 m.
+inherits: fulmin
+form: semi_auto
+transform_group: fulmin
+
+introduced: "25.0"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
+# has no row for either of its two. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 6.0
+    max_deg: 16.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 2.17
+  multishot: 1.0
+  ammo_cost: 10
+  crit_chance: 0.3
+  crit_multiplier: 2.2
+  status_chance: 0.16
+  punch_through_m: 0.0
+  # A GUARANTEED IMPACT PROC — the module's ForcedProcs.
+  forced_procs: [impact]
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  falloff:
+    start_m: 10.0
+    end_m: 20.0
+    reduction: 0.6666
+  damage: { electricity: 400, impact: 100 }   # total 500
+
+unmodeled:
+  - "the guaranteed Impact proc only reaches enemies within 9 metres, and the distance scales with Projectile Speed (wiki) — this entry applies it at every range, so a shot fired further out is overstated by one forced proc"
+  - "the projectiles are 1 METRE THICK (wiki), which is a hit volume this arena's ray has no width for"
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Fulmin

@@ -1,0 +1,36 @@
+id: hind_semi
+name: Hind
+# SEMI-AUTO: 60 a shot against the burst's 30, at 2.5 a second, with double the
+# crit chance and two thirds of the status.
+inherits: hind
+form: semi_auto
+transform_group: hind
+
+introduced: "9.6"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
+# has no row for either of its two. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 7.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 2.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.15
+  crit_multiplier: 2.0
+  status_chance: 0.1
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 12, puncture: 12, slash: 36 }   # total 60
+
+source:
+  url: https://wiki.warframe.com/w/Hind

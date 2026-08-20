@@ -1,0 +1,37 @@
+id: zenith_auto
+name: Zenith
+# AUTO MODE: 30 a shot at 10.83 a second with a 34% status chance — the volume
+# half of the weapon, and the one you are in until the disc is deployed.
+inherits: zenith
+form: auto
+transform_group: zenith
+
+introduced: "20.2"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
+# has no row for either of its two. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 2.0
+    max_deg: 4.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 10.83
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.1
+  crit_multiplier: 2.0
+  status_chance: 0.34
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  damage: { impact: 4.5, puncture: 6, slash: 19.5 }   # total 30
+
+source:
+  url: https://wiki.warframe.com/w/Zenith

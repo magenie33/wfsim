@@ -1,0 +1,64 @@
+id: argonak
+name: Argonak
+slot: primary
+# TWO TRIGGERS, ONE DAMAGE FIGURE. The Argonak's semi-auto and full-auto modes
+# deal exactly the same 57 a shot and differ in everything else: 27% crit at
+# 4.33 a second against 9% at 6, and the status chance runs the other way. The
+# arsenal shows the semi-auto, which is this entry.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: argonak
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
+mastery_rank: 7
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 28.6
+disposition: 1.25           # riven disposition
+polarities: [madurai, naramon]
+exilus_polarity: madurai
+riven_family: Argonak
+traits: [grineer]
+introduced: "22"
+internal_name: /Lotus/Weapons/Grineer/LongGuns/LaserAimRifle/LaserAimRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 473
+ammo_pickup: 80
+magazine: 43
+reload_seconds: 2.4
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+# and neither of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 7.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 4.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.27
+  crit_multiplier: 2.3
+  status_chance: 0.19
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  damage: { impact: 24.51, puncture: 6.27, slash: 26.22 }   # total 57
+
+unmodeled:
+  - "aiming highlights enemies within 100 m through the weapon's energy colour (wiki) — an aiming aid this sim cannot use"
+  - "Amalgam Argonak Metal Auger, the Argonak-exclusive mod — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Argonak

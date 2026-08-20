@@ -1,0 +1,67 @@
+id: harpak
+name: Harpak
+slot: primary
+# A THREE-ROUND HARPOON BURST, and an alternate fire that throws ONE harpoon with
+# a guaranteed Puncture proc and reels the target in. The pull is the weapon's
+# reason to exist and it is a crowd-control effect this arena cannot use.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: harpak
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags PROJECTILE, ASSAULT_AMMO
+mastery_rank: 7
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+# NO ACCURACY ROW — the module states none for this weapon.
+disposition: 1.55           # riven disposition
+polarities: [madurai]
+exilus_polarity: madurai
+riven_family: Harpak
+traits: [grineer]
+introduced: "17.0"
+internal_name: /Lotus/Weapons/Grineer/LongGuns/GrnHarpoonGun/GrnHarpoonGun
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 45
+reload_seconds: 2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+# and neither of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 3.0
+    max_deg: 8.0
+  trigger: burst
+  # THE BURST. The listed `fire_rate` counts BURSTS: one pull is 3 rounds
+  # spaced by the delay below.
+  burst:
+    count: 3
+    delay_seconds: 0.1       # module BurstDelay
+  shot_type: projectile
+  projectile_speed_mps: 80
+  fire_rate: 5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.2
+  crit_multiplier: 2.3
+  status_chance: 0.17
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 5, puncture: 37.5, slash: 7.5 }   # total 50
+
+unmodeled:
+  - "'bolts fired stick to their target, and will fling bodies on kill. The body will damage targets in its path' (wiki) — this engine has no ragdoll and no wall to pin against, so the corpse damage a crowd would take is not counted"
+
+source:
+  url: https://wiki.warframe.com/w/Harpak

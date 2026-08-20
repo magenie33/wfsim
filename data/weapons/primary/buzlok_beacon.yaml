@@ -1,0 +1,40 @@
+id: buzlok_beacon
+name: Buzlok
+# THE BEACON: three Puncture on a 200 m/s tracer, no crit, no status. It is
+# fired to mark rather than to hurt.
+inherits: buzlok
+form: alt_fire
+transform_group: buzlok
+
+introduced: "14.7"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
+# has no row for either of its two. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 12.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 200
+  fire_rate: 1.67
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.0
+  crit_multiplier: 1.0
+  status_chance: 0.0
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { puncture: 3 }   # total 3
+
+unmodeled:
+  - "the beacon's whole purpose is the +50% absolute critical chance and the homing it grants the PRIMARY fire, neither of which this engine can carry from one mode to another. Fired on its own it is a three-damage dart"
+
+source:
+  url: https://wiki.warframe.com/w/Buzlok

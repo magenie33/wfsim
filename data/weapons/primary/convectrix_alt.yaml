@@ -1,0 +1,40 @@
+id: convectrix_alt
+name: Convectrix
+# ALTERNATE FIRE SPREADS THE BEAMS OUTWARD and sweeps them back and forth: nine
+# damage a tick each rather than twelve, at 16 ticks a second rather than 12.
+inherits: convectrix
+form: alt_fire
+transform_group: convectrix
+
+introduced: "17.5"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
+# has no row for either of its two. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 2.0
+    max_deg: 2.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 16
+  multishot: 2.0
+  ammo_cost: 0.5
+  crit_chance: 0.16
+  crit_multiplier: 2.4
+  status_chance: 0.45
+  punch_through_m: 0.6
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 30.0 m" on this attack.
+  range_m: 30.0
+  damage: { impact: 0.9, puncture: 0.9, slash: 7.2 }   # 9 a pellet, 18 a shot
+
+unmodeled:
+  - "the alternate fire SWEEPS the two beams back and forth across the front of the weapon (wiki) — this arena fires a fixed ray at one point, so the sweep neither misses the aimed body nor catches the ones beside it. Against one target this is the ceiling; against a line it is a floor"
+
+source:
+  url: https://wiki.warframe.com/w/Convectrix

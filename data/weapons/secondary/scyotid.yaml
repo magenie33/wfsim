@@ -1,0 +1,61 @@
+id: scyotid
+name: Scyotid
+slot: secondary
+# A FOUR-FLECHETTE TOXIN THROWER with 1.6 metres of innate punch through — three
+# bodies' worth — and an alternate fire that is a SNARE rather than a shot.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: scyotid
+mod_pools: [pistol]   # CompatibilityTags PROJECTILE
+mastery_rank: 12
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 0.7            # riven disposition
+polarities: [naramon]
+exilus_polarity: naramon
+riven_family: Scyotid
+traits: []
+introduced: "39"
+internal_name: /Lotus/Weapons/Tenno/ThrowingWeapons/TnOraxiaFlechette/TnOraxiaFlechette
+noise: silent
+ammo_type: secondary
+ammo_max: 320
+ammo_pickup: 80
+magazine: 40
+reload_seconds: 1.6
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+# and neither of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 1.0
+    max_deg: 3.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 60
+  fire_rate: 2.4
+  multishot: 4.0
+  ammo_cost: 1
+  crit_chance: 0.24
+  crit_multiplier: 2.4
+  status_chance: 0.18
+  punch_through_m: 1.6
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { puncture: 8, toxin: 32 }   # 40 a pellet, 160 a shot
+
+unmodeled:
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Scyotid

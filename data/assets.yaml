@@ -51,8 +51,14 @@ weapons:
   amprex: Amprex.png
   angstrum: Angstrum.png
   arca_scisco: ArcaScisco.png
+  argonak: Argonak.png
+  argonak_auto: Argonak.png
   astilla: Astilla.png
   astilla_prime: AstillaPrime.png
+  athodai: TnJetTurbinePistolWeapon.png
+  athodai_alt: TnJetTurbinePistolWeapon.png
+  athodai_prime: AthodaiPrime.png
+  athodai_prime_alt: AthodaiPrime.png
   atomos: Atomos.png
   atomos_incarnon: Atomos.png
   attica: Attica.png
@@ -85,12 +91,16 @@ weapons:
   burston_incarnon: Burston.png
   burston_prime: BurstonPrime.png
   burston_prime_incarnon: BurstonPrime.png
+  buzlok: Buzlok.png
+  buzlok_beacon: Buzlok.png
   cantare: TnChoirframeKunai.png
   carmine_penta: PentaCarmine.png
   cernos_prime: CernosPrime.png
   cernos_prime_uncharged: CernosPrime.png
   cestra: Cestra.png
   cestra_incarnon: Cestra.png
+  convectrix: Convectrix.png
+  convectrix_alt: Convectrix.png
   daikyu: Daikyu.png
   dera: Dera.png
   dera_incarnon: Dera.png
@@ -106,20 +116,36 @@ weapons:
   dual_cestra: DualCestras.png
   dual_toxocyst: DualToxocyst.png
   dual_toxocyst_incarnon: DualToxocyst.png
+  efv_5_jupiter: LasGooAK.png
+  efv_5_jupiter_buckshot: LasGooAK.png
   embolist: Embolist.png
+  euphona_prime: EuphonaPrime.png
+  euphona_prime_buckshot: EuphonaPrime.png
   exergis: CrpShapeBlastShotgun.png
   felarx: ZarimanPumpShotgun.png
+  fulmin: TnWispRifle.png
+  fulmin_prime: FulminPrime.png
+  fulmin_prime_semi: FulminPrime.png
+  fulmin_semi: TnWispRifle.png
   furis: Furis.png
   furis_incarnon: Furis.png
+  fusilai: Fusilai.png
+  fusilai_fan: Fusilai.png
   gammacor: Gammacor.png
   gorgon: Gorgon.png
   gorgon_wraith: GorgonWraith.png
   gotva_prime: GrnOrokinRifle.png
   grakata: Grakata.png
   grinlok: Grinlok.png
+  haalvu: TnoOctaMiniGun.png
+  haalvu_alt: TnoOctaMiniGun.png
+  harpak: Harpak.png
+  harpak_harpoon: Harpak.png
   hek: Hek.png
   hikou: Hikou.png
   hikou_prime: HikouPrime.png
+  hind: Hind.png
+  hind_semi: Hind.png
   ignis: Ignis.png
   ignis_wraith: IgnisWraith.png
   karak: Karak.png
@@ -181,8 +207,18 @@ weapons:
   mausolon_charged: ThanotechLongGun.png
   morgha: ThanoTechGrenadeLauncher.png
   morgha_alt: ThanoTechGrenadeLauncher.png
+  nagantaka: GarudaCrossbow.png
+  nagantaka_burst: GarudaCrossbow.png
+  nagantaka_prime: NagantakaPrime.png
+  nagantaka_prime_burst: NagantakaPrime.png
   nukor: Nukor.png
   ogris: Ogris.png
+  pandero: Pandero.png
+  pandero_alt: Pandero.png
+  pandero_prime: PanderoPrime.png
+  pandero_prime_alt: PanderoPrime.png
+  panthera: Panthera.png
+  panthera_alt: Panthera.png
   penta: Penta.png
   phage: Phage.png
   prisma_grakata: PrismaGrakata.png
@@ -191,11 +227,17 @@ weapons:
   pyrana: Pyrana.png
   pyrana_prime: PyranaPrime.png
   quartakk: Quartakk.png
+  quatz: Amphis.png
+  quatz_burst: Amphis.png
+  quellor: RailjackRifle.png
+  quellor_alt: RailjackRifle.png
   rauta: PaxDuviricusShotgun.png
   reconifex: TnBeltFedRifle.png
   riot_848: 1999EntHybridPistol.png
   sagek_prime: GrnOrokinPistol.png
   sancti_tigris: SanctiTigris.png
+  scyotid: TnOraxiaFlechette.png
+  scyotid_snare: TnOraxiaFlechette.png
   secura_dual_cestra: SecuraDualCestra.png
   secura_penta: SecuraPenta.png
   seer: Seer.png
@@ -206,6 +248,10 @@ weapons:
   spira: Spira.png
   spira_prime: SpiraPrime.png
   steflos: TnoLotusPodShotgun.png
+  stradavar: Stradavar.png
+  stradavar_prime: StradavarPrime.png
+  stradavar_prime_semi: StradavarPrime.png
+  stradavar_semi: Stradavar.png
   stubba: Stubba.png
   supra: Supra.png
   supra_vandal: SupraVandal.png
@@ -354,6 +400,8 @@ weapons:
   verglas_prime: VerglasPrime.png
   zakti: Zakti.png
   zakti_prime: ZaktiPrime.png
+  zenith: Zenith.png
+  zenith_auto: Zenith.png
   zhuge: Zhuge.png
   zhuge_prime: ZhugePrime.png
   zylok: ConclaveLeverPistol.png

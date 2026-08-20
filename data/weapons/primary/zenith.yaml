@@ -1,0 +1,67 @@
+id: zenith
+name: Zenith
+slot: primary
+# THE ARSENAL SHOWS THE SEMI-AUTO, which is this entry — the module's
+# `_TooltipAttackDisplay` is 2, and this is one of the few weapons in the roster
+# where the default form is not the first attack. It costs three rounds a shot
+# for 150 damage and carries INFINITE punch through.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: zenith
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
+mastery_rank: 10
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 33.33
+disposition: 1.1            # riven disposition
+polarities: [naramon, madurai]
+exilus_polarity: madurai
+riven_family: Zenith
+traits: [tenno]
+introduced: "20.2"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/LoginPrimary/SundialRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 90
+reload_seconds: 1.6
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+# and neither of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 2.0
+    max_deg: 4.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 3
+  multishot: 1.0
+  ammo_cost: 3
+  crit_chance: 0.35
+  crit_multiplier: 2.5
+  status_chance: 0.08
+  # INFINITE PUNCH THROUGH, which the module spells as 99999 and the page
+  # states in words. `space::traverse` spends `space::BODY_MATERIAL_M` a
+  # body, so a budget this size crosses every body on the line — which is
+  # exactly the mechanic rather than a stand-in for it.
+  punch_through_m: 99999.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  damage: { impact: 15, puncture: 120, slash: 15 }   # total 150
+
+unmodeled:
+  - "the semi-auto mode is entered by DEPLOYING A DISC that 'lasts until the Zenith is reloaded, highlighting enemy heads within 20 meters through walls' (wiki). The highlight is an aiming aid this sim cannot use, and the disc's lifetime is a reload clock this engine does not run — so this mode is available here from the first shot"
+
+source:
+  url: https://wiki.warframe.com/w/Zenith

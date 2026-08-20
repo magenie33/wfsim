@@ -1,0 +1,48 @@
+id: nagantaka_prime_burst
+name: Nagantaka Prime
+# THE MAGAZINE DUMP: eleven bolts at 0.11 s apart, and silent.
+inherits: nagantaka_prime
+form: alt_fire
+transform_group: nagantaka_prime
+
+introduced: "31.3"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
+# has no row for either of its two. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 5.0
+  trigger: burst
+  # THE BURST. The listed `fire_rate` counts BURSTS: one pull is 11 rounds
+  # spaced by the delay below.
+  burst:
+    count: 11
+    delay_seconds: 0.11       # module BurstDelay
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.25
+  crit_multiplier: 2.3
+  status_chance: 0.39
+  punch_through_m: 0.0
+  # A GUARANTEED IMPACT PROC — the module's ForcedProcs.
+  forced_procs: [impact]
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 1.7, puncture: 15.6, slash: 155.7 }   # total 173
+
+unmodeled:
+  - "the burst empties the MAGAZINE and this entry fires a fixed count — the unmodded magazine. The page states that magazine mods lengthen it, so a build carrying one is understated here"
+  - reason: bolt_corpse_ragdoll
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Nagantaka_Prime

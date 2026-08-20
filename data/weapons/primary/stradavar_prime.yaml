@@ -1,0 +1,60 @@
+id: stradavar_prime
+name: Stradavar Prime
+slot: primary
+# THE STRADAVAR WITH A 2.6x MULTIPLIER on full auto and a semi-auto that costs
+# TWO rounds a shot for 80 damage, a metre of punch through and a 2.8x
+# multiplier. The two modes are further apart on the Prime than on any other
+# weapon in this batch.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: stradavar_prime
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
+mastery_rank: 12
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+# NO ACCURACY ROW — the module states none for this weapon.
+disposition: 1.1            # riven disposition
+polarities: [madurai, madurai, madurai]
+exilus_polarity: madurai
+riven_family: Stradavar
+traits: [prime, vaulted]
+introduced: "24.5.8"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeStradavar/PrimeStradavarGun
+noise: alarming
+ammo_type: primary
+ammo_max: 720
+ammo_pickup: 80
+magazine: 90
+reload_seconds: 2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+# and neither of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 3.0
+    max_deg: 5.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 10
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.24
+  crit_multiplier: 2.6
+  status_chance: 0.12
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  damage: { impact: 10.5, puncture: 10.5, slash: 9 }   # total 30
+
+source:
+  url: https://wiki.warframe.com/w/Stradavar_Prime

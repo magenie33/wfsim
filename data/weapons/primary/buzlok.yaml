@@ -1,0 +1,64 @@
+id: buzlok
+name: Buzlok
+slot: primary
+# A HOMING RIFLE WHOSE ALTERNATE FIRE IS A TRACER, not a weapon: three damage,
+# and it makes every following round home on what it stuck to AND grants +50%
+# ABSOLUTE critical chance for twenty seconds. That buff is most of the weapon
+# and it is not modelled — see the admission.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: buzlok
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags PROJECTILE, ASSAULT_AMMO
+mastery_rank: 11
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 16.7
+disposition: 1.45           # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: naramon
+riven_family: Buzlok
+traits: [grineer]
+introduced: "14.7"
+internal_name: /Lotus/Weapons/Grineer/LongGuns/GrnGorgSniperRifle/GrnGorgSniperRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 50
+reload_seconds: 3
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+# and neither of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 12.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 80
+  fire_rate: 6.25
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.23
+  crit_multiplier: 2.5
+  status_chance: 0.21
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 30, puncture: 24, slash: 6 }   # total 60
+
+unmodeled:
+  - "'successfully landing a tracer round grants a 20 second buff that adds 50% ABSOLUTE critical chance. This buff is retained on target death, and is not affected by mods' (wiki). It is a flat addition to the finished crit chance, granted by the OTHER firing mode, and this engine has no shape for a buff one mode grants another — so this entry fires at its own 23% where a player who has landed a beacon sits at 73%. It is the larger half of the weapon"
+  - "the primary fire HOMES on a beaconed target for 20 seconds (wiki) — this arena's shots already go where they are aimed, so the homing buys nothing here and buys a great deal in a real room"
+
+source:
+  url: https://wiki.warframe.com/w/Buzlok

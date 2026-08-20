@@ -48,9 +48,12 @@ resolved:
   arbucep:                       /Lotus/Weapons/Tenno/Archwing/Primary/NokkoArchGun/NokkoArchGun
   arca_plasmor:                  /Lotus/Weapons/Corpus/LongGuns/CrpShotgun/CrpShotgun
   arca_scisco:                   /Lotus/Weapons/Corpus/Pistols/SniperPistol/CrpScopeGun
+  argonak:                       /Lotus/Weapons/Grineer/LongGuns/LaserAimRifle/LaserAimRifle
   artax:                         /Lotus/Types/Sentinels/SentinelWeapons/Gremlin
   astilla:                       /Lotus/Weapons/Tenno/LongGuns/TnGlassShotgun/TnGlassShotgunGun
   astilla_prime:                 /Lotus/Weapons/Tenno/LongGuns/PrimeAstilla/AstillaPrimeWeapon
+  athodai:                       /Lotus/Weapons/Tenno/Pistols/TnJetTurbine/TnJetTurbinePistolWeapon
+  athodai_prime:                 /Lotus/Weapons/Tenno/Pistols/PrimeAthodai/PrimeAthodaiPistolWeapon
   atomos:                        /Lotus/Weapons/Grineer/Pistols/HeatGun/GrnHeatGun
   attica:                        /Lotus/Weapons/Tenno/LongGuns/TnoPrmryXbow/TnoPrmryXbowWeapon
   ax_52:                         /Lotus/Weapons/Lasria/AK47/TC2024AK47Weapon
@@ -74,6 +77,7 @@ resolved:
   burst_laser_prime:             /Lotus/Types/Sentinels/SentinelWeapons/PrimeBurstLaserPistol
   burston:                       /Lotus/Weapons/Tenno/Rifle/BurstRifle
   burston_prime:                 /Lotus/Weapons/Tenno/LongGuns/PrimeBurston/PrimeBurston
+  buzlok:                        /Lotus/Weapons/Grineer/LongGuns/GrnGorgSniperRifle/GrnGorgSniperRifle
   cantare:                       /Lotus/Weapons/Tenno/ThrowingWeapons/TnChoirframeKunai/TnChoirframeKunai
   carmine_penta:                 /Lotus/Weapons/Corpus/LongGuns/GrenadeLauncher/CarminePenta
   catabolyst:                    /Lotus/Weapons/Infested/Pistols/InfBeamPistol/InfBeamPistol
@@ -87,6 +91,7 @@ resolved:
   coda_sporothrix:               /Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaSporothrix
   coda_synapse:                  /Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaSynapse
   coda_tysis:                    /Lotus/Weapons/Infested/InfestedLich/Pistols/CodaTysis
+  convectrix:                    /Lotus/Weapons/Corpus/LongGuns/CrpSplitLaser/CrpSplitLaser
   cortege:                       /Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechArchGun/ThanoTechArchGun
   corvas:                        /Lotus/Weapons/Tenno/Archwing/Primary/LaunchGrenade/ArchCannon
   corvas_prime:                  /Lotus/Weapons/Tenno/Archwing/Primary/PrimeCorvas/PrimeCorvasWeapon
@@ -109,13 +114,18 @@ resolved:
   dual_coda_torxica:             /Lotus/Weapons/Infested/InfestedLich/Pistols/1999InfSporePistol/1999InfSporePistolWeapon
   dual_decurion:                 /Lotus/Weapons/Tenno/Archwing/Primary/ArchwingHeavyPistols/ArchHeavyPistols
   dual_toxocyst:                 /Lotus/Weapons/Infested/Pistols/InfVomitGun/InfVomitGunWep
+  efv_5_jupiter:                 /Lotus/Weapons/Lasria/LasGooAK/LasGooAKPlayerWeapon
   embolist:                      /Lotus/Weapons/Infested/Pistols/InfestedPistol
+  euphona_prime:                 /Lotus/Weapons/Tenno/Pistols/AllNew1hSG/AllNew1hSG
   exergis:                       /Lotus/Weapons/Corpus/LongGuns/CrpShapeBlast/CrpShapeBlastShotgun
   felarx:                        /Lotus/Weapons/Tenno/Zariman/LongGuns/PumpShotgun/ZarimanPumpShotgun
   ferrox:                        /Lotus/Weapons/Corpus/LongGuns/Spears/Railgun/CorpusRailgun
   fluctus:                       /Lotus/Weapons/Tenno/Archwing/Primary/RocketArtillery/ArchRocketCrossbow
   flux_rifle:                    /Lotus/Weapons/ClanTech/Energy/CrpLaserRifle
+  fulmin:                        /Lotus/Weapons/Tenno/LongGuns/TnWispRifle/TnWispRifle
+  fulmin_prime:                  /Lotus/Weapons/Tenno/LongGuns/PrimeFulmin/PrimeFulmin
   furis:                         /Lotus/Weapons/Tenno/Pistol/AutoPistol
+  fusilai:                       /Lotus/Weapons/Tenno/ThrowingWeapons/GlassKunai/GlassKunaiWeapon
   gammacor:                      /Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSDroidArray
   glaxion:                       /Lotus/Weapons/Corpus/LongGuns/CrpFreezeRay/CrpFreezeRayRifle
   glaxion_vandal:                /Lotus/Weapons/Corpus/LongGuns/CrpFreezeRay/Vandal/CrpFreezeRayVandalRifle
@@ -125,11 +135,14 @@ resolved:
   grakata:                       /Lotus/Weapons/Grineer/LongGuns/GrineerAssaultRifle/GrnAssaultRifle
   grattler:                      /Lotus/Weapons/Tenno/Archwing/Primary/RepurposedGrineerAntiAircraftGun/ArchGRNAAGun
   grinlok:                       /Lotus/Weapons/Grineer/LongGuns/GrineerLeverActionRifle/GLARifle
+  haalvu:                        /Lotus/Weapons/Sentients/SentOctaMiniGun/SentOctaMiniGun
+  harpak:                        /Lotus/Weapons/Grineer/LongGuns/GrnHarpoonGun/GrnHarpoonGun
   hek:                           /Lotus/Weapons/Tenno/Shotgun/QuadShotgun
   helstrum:                      /Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon
   hema:                          /Lotus/Weapons/Infested/LongGuns/InfWFAccompanyingPri/InfestedBurstRifle
   hikou:                         /Lotus/Weapons/Tenno/ThrowingWeapons/TennoStars
   hikou_prime:                   /Lotus/Weapons/Tenno/ThrowingWeapons/PrimeThrowingStar/PrimeHikou
+  hind:                          /Lotus/Weapons/Grineer/LongGuns/BurstRifle/GrnBurstRifle
   ignis:                         /Lotus/Weapons/ClanTech/Chemical/FlameThrower
   ignis_wraith:                  /Lotus/Weapons/ClanTech/Chemical/FlameThrowerWraith
   imperator:                     /Lotus/Weapons/Tenno/Archwing/Primary/FoldingMachineGun/ArchMachineGun
@@ -189,10 +202,15 @@ resolved:
   mk1_strun:                     /Lotus/Weapons/MK1Series/MK1Strun
   morgha:                        /Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechGrenadeLaunch/ThanoTechGrenadeLauncher
   multron:                       /Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon
+  nagantaka:                     /Lotus/Weapons/Tenno/LongGuns/GarudaCrossbow/GarudaCrossbow
+  nagantaka_prime:               /Lotus/Weapons/Tenno/LongGuns/PrimeNagantaka/PrimeNagantakaWeapon
   nukor:                         /Lotus/Weapons/Grineer/Pistols/GrineerMicrowavegun/GrnMicrowavePistol
   ocucor:                        /Lotus/Weapons/Corpus/Pistols/CrpSentExperimentPistol/CrpSentExperimentPistol
   ogris:                         /Lotus/Weapons/ClanTech/Chemical/RocketLauncher
   onos:                          /Lotus/Weapons/Thanotech/EntratiWristGun/EntratiWristGunWeapon
+  pandero:                       /Lotus/Weapons/Tenno/Pistols/TnBardPistol/TnBardPistolGun
+  pandero_prime:                 /Lotus/Weapons/Tenno/Pistols/PrimePandero/PanderoPrimeWeapon
+  panthera:                      /Lotus/Weapons/Tenno/LongGuns/Miter/TnoMiter
   paris:                         /Lotus/Weapons/Tenno/Bows/HuntingBow
   paris_prime:                   /Lotus/Weapons/Tenno/Bows/PrimeHuntingBow
   penta:                         /Lotus/Weapons/Corpus/LongGuns/GrenadeLauncher/GrenadeLauncher
@@ -220,6 +238,8 @@ resolved:
   quanta:                        /Lotus/Weapons/Corpus/LongGuns/CrpShockRifle/CrpShockRifle
   quanta_vandal:                 /Lotus/Weapons/Corpus/LongGuns/CrpShockRifle/QuantaVandal
   quartakk:                      /Lotus/Weapons/Grineer/LongGuns/GrnFourBarrelRifle/GrnFourBarrelRifleWeapon
+  quatz:                         /Lotus/Weapons/Grineer/Pistols/GrnAmphisPistol/GrnAmphisPistol
+  quellor:                       /Lotus/Weapons/Tenno/LongGuns/TnRailjackRifle/RailjackRifleGun
   rakta_ballistica:              /Lotus/Weapons/Syndicates/RedVeil/Pistols/RVBallistica
   rauta:                         /Lotus/Weapons/Tenno/LongGuns/PaxDuviricusShotgun/PaxDuviricusShotgun
   reconifex:                     /Lotus/Weapons/Tenno/LongGuns/TnBeltFedRifle/TnBeltFedRifleWeapon
@@ -230,6 +250,7 @@ resolved:
   sancti_tigris:                 /Lotus/Weapons/Syndicates/NewLoka/LongGuns/NLTigris
   scourge:                       /Lotus/Weapons/Tenno/LongGuns/TnPriestSpear/TnPriestSpearGun
   scourge_prime:                 /Lotus/Weapons/Tenno/LongGuns/PrimeScourge/PrimeScourgeWeapon
+  scyotid:                       /Lotus/Weapons/Tenno/ThrowingWeapons/TnOraxiaFlechette/TnOraxiaFlechette
   secura_dual_cestra:            /Lotus/Weapons/Syndicates/PerrinSequence/Pistols/PSDualCestra
   secura_penta:                  /Lotus/Weapons/Syndicates/PerrinSequence/LongGuns/PSPenta
   seer:                          /Lotus/Weapons/Grineer/GrineerPistol/GrnScopedPistolPlayer
@@ -249,6 +270,8 @@ resolved:
   sporothrix:                    /Lotus/Weapons/Infested/LongGuns/InfSniperRifle/InfSniperRifle
   steflos:                       /Lotus/Weapons/Tenno/LongGuns/TnoLotusPodShotgun/TnoLotusPodShotgun
   stinger:                       /Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon
+  stradavar:                     /Lotus/Weapons/Tenno/LongGuns/TennoTommyGun/TennoTommyGunRifle
+  stradavar_prime:               /Lotus/Weapons/Tenno/LongGuns/PrimeStradavar/PrimeStradavarGun
   strun:                         /Lotus/Weapons/Tenno/Shotgun/Shotgun
   strun_prime:                   /Lotus/Weapons/Tenno/LongGuns/PrimeStrun/PrimeStrunWeapon
   strun_wraith:                  /Lotus/Weapons/Tenno/Shotgun/ShotgunVandal
@@ -313,6 +336,7 @@ resolved:
   vulklok:                       /Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun
   zakti:                         /Lotus/Weapons/Tenno/Pistols/TnGuandoPistol/TnGuandoPistolGun
   zakti_prime:                   /Lotus/Weapons/Tenno/Pistols/PrimeZakti/PrimeZaktiPistol
+  zenith:                        /Lotus/Weapons/Tenno/LongGuns/LoginPrimary/SundialRifle
   zhuge:                         /Lotus/Weapons/Tenno/LongGuns/RepeatingCrossbow/RepeatingCrossbow
   zhuge_prime:                   /Lotus/Weapons/Tenno/LongGuns/PrimeZhuge/PrimeZhugeCrossbow
   zylok:                         /Lotus/Weapons/Tenno/Pistols/ConclaveLeverPistol/ConclaveLeverPistol

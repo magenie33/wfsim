@@ -1,0 +1,58 @@
+id: efv_5_jupiter
+name: EFV-5 Jupiter
+slot: primary
+# A 1999 ASSAULT RIFLE WITH A SHOTGUN IN ITS ALTERNATE FIRE: a one-second charge
+# spends fifteen rounds on eleven pellets of 127, each with a guaranteed
+# Corrosive proc.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: efv_5_jupiter
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO
+mastery_rank: 14
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 133.33
+disposition: 1.05           # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: madurai
+riven_family: EFV-5Jupiter
+traits: [scaldra]
+introduced: "38.5"
+internal_name: /Lotus/Weapons/Lasria/LasGooAK/LasGooAKPlayerWeapon
+noise: alarming
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 65
+reload_seconds: 2.5
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+# and neither of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.5
+    max_deg: 1.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 7.8334
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.21
+  crit_multiplier: 2.3
+  status_chance: 0.25
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { corrosive: 7, puncture: 31, slash: 23 }   # total 61
+
+source:
+  url: https://wiki.warframe.com/w/EFV-5_Jupiter

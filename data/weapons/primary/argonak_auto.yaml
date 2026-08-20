@@ -1,0 +1,37 @@
+id: argonak_auto
+name: Argonak
+# FULL AUTO: the same 57 a shot at six rounds a second, trading two thirds of
+# the crit chance for a status chance half again as high.
+inherits: argonak
+form: auto
+transform_group: argonak
+
+introduced: "22"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
+# has no row for either of its two. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 2.0
+    max_deg: 5.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 6
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.09
+  crit_multiplier: 1.5
+  status_chance: 0.27
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  damage: { impact: 24.51, puncture: 6.27, slash: 26.22 }   # total 57
+
+source:
+  url: https://wiki.warframe.com/w/Argonak

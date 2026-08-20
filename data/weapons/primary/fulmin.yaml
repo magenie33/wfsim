@@ -1,0 +1,73 @@
+id: fulmin
+name: Fulmin
+slot: primary
+# A BATTERY RIFLE WITH TWO COMPLETELY DIFFERENT GUNS IN IT. Full auto is a
+# 33-damage hit-scan at 9.33 a second; semi-auto is a 500-damage silent
+# projectile that costs TEN rounds and forces an Impact proc. The arsenal shows
+# the automatic mode, which is this entry.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: fulmin
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO, PROJECTILE, BATTERY
+mastery_rank: 8
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 9.1
+disposition: 1              # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: madurai
+riven_family: Fulmin
+traits: []
+introduced: "25.0"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/TnWispRifle/TnWispRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 0
+ammo_pickup: 0
+magazine: 60
+reload_seconds: 3
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+# and neither of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+# THE BATTERY — "does not use ammo pickups; ammo regenerates over time. Has a 1
+# second delay after the weapon stops firing before regenerating ammo. Then,
+# regenerates 30 ammo per second; takes 2 seconds to regenerate a fully depleted
+# battery excluding the delay."
+battery:
+  regen_per_second: 30.0
+  delay_empty_seconds: 1.0
+  delay_partial_seconds: 1.0
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.8
+    max_deg: 1.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 9.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.28
+  crit_multiplier: 2.4
+  status_chance: 0.1
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  damage: { electricity: 25, puncture: 8 }   # total 33
+
+unmodeled:
+  - "switching modes takes ONE SECOND of animation (0.5 s on Wisp) and this sim never switches — each mode is measured as if it were the whole weapon"
+  - "it 'does not receive benefit from reload-triggered mods such as Spring-Loaded Chamber' (wiki), because a battery never reloads"
+
+source:
+  url: https://wiki.warframe.com/w/Fulmin

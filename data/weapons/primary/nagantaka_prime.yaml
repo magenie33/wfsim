@@ -1,0 +1,67 @@
+id: nagantaka_prime
+name: Nagantaka Prime
+slot: primary
+# THE NAGANTAKA AT 173 A BOLT AND 25% CRIT, out of eleven rounds rather than
+# nine, with a tighter burst delay. Silent in BOTH modes, which the ordinary is
+# not.
+class: crossbow
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: nagantaka_prime
+mod_pools: [primary, rifle, bow]   # CompatibilityTags PROJECTILE, ZHUGE, CROSSBOW
+mastery_rank: 12
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 40.0
+disposition: 1.15           # riven disposition
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Nagantaka
+traits: [tenno, prime]
+introduced: "31.3"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeNagantaka/PrimeNagantakaWeapon
+noise: silent
+ammo_type: primary
+ammo_max: 540
+ammo_pickup: 80
+magazine: 11
+reload_seconds: 2.3
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+# and neither of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 5.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 100
+  fire_rate: 2.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.25
+  crit_multiplier: 2.3
+  status_chance: 0.39
+  punch_through_m: 0.0
+  # A GUARANTEED IMPACT PROC — the module's ForcedProcs.
+  forced_procs: [impact]
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 1.7, puncture: 15.6, slash: 155.7 }   # total 173
+
+unmodeled:
+  - "'headshot kills from direct bolt damage boost reload speed by 50%' (wiki) — a kill-triggered buff this engine has no shape for"
+  - "it gains a metre of innate punch through when used by GARUDA (wiki) — a Warframe-specific grant this arena does not model"
+  - reason: bolt_corpse_ragdoll
+  - reason: silent_weapon
+
+source:
+  url: https://wiki.warframe.com/w/Nagantaka_Prime

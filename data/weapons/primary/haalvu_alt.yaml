@@ -1,0 +1,46 @@
+id: haalvu_alt
+name: Haalvu
+# BURST MODE: the barrels split into miniature rifles firing two-round bursts,
+# 1.5 ammo a shot per target, at a higher status chance and a lower crit.
+inherits: haalvu
+form: alt_fire
+transform_group: haalvu
+
+introduced: "43.0.7"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
+# has no row for either of its two. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: burst
+  # THE BURST. The listed `fire_rate` counts BURSTS: one pull is 2 rounds
+  # spaced by the delay below.
+  burst:
+    count: 2
+    delay_seconds: 0.05       # module BurstDelay
+  shot_type: hit_scan
+  fire_rate: 12
+  multishot: 1.0
+  ammo_cost: 1.5
+  crit_chance: 0.2
+  crit_multiplier: 1.8
+  status_chance: 0.26
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  damage: { tau: 34 }   # total 34
+
+unmodeled:
+  - "TAU DAMAGE's status effect is not modelled. Tau is neutral to every health type, which this engine applies correctly — but its proc is STATUS CHANCE VULNERABILITY, raising the status chance the target receives from every other source by 10% a stack to ten stacks (wiki), and there is no debuff for it here. On a build stacking other statuses this weapon is understated"
+  - "the miniature rifles LOCK ONTO UP TO FOUR ENEMIES within 40 degrees and 10 m of the player, and the ammo cost is per target (wiki). This engine fires the mode at the aimed body alone, so against a crowd it is understated by up to fourfold — and against one enemy it is right"
+
+source:
+  url: https://wiki.warframe.com/w/Haalvu

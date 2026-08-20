@@ -1,0 +1,44 @@
+id: efv_5_jupiter_buckshot
+name: EFV-5 Jupiter
+# THE BUCKSHOT: eleven pellets of 127 for fifteen rounds, after a one-second
+# charge, with a guaranteed Corrosive proc and a falloff that costs 99% of the
+# damage by ten metres.
+inherits: efv_5_jupiter
+form: alt_fire
+transform_group: efv_5_jupiter
+
+introduced: "38.5"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
+# has no row for either of its two. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 24.0
+    max_deg: 42.0
+  trigger: charged_auto
+  shot_type: hit_scan
+  fire_rate: 7.8334
+  charge_seconds: 1
+  multishot: 11.0
+  ammo_cost: 15
+  crit_chance: 0.21
+  crit_multiplier: 2.1
+  status_chance: 0.0573
+  punch_through_m: 0.0
+  # A GUARANTEED CORROSIVE PROC — the module's ForcedProcs.
+  forced_procs: [corrosive]
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  falloff:
+    start_m: 5.0
+    end_m: 10.0
+    reduction: 0.9921
+  damage: { corrosive: 35, puncture: 57, slash: 35 }   # 127 a pellet, 1397 a shot
+
+source:
+  url: https://wiki.warframe.com/w/EFV-5_Jupiter

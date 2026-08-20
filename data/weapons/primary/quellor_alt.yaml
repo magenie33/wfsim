@@ -1,0 +1,53 @@
+id: quellor_alt
+name: Quellor
+# THE CHARGED SHOT: 1400 damage for fifty rounds after 1.2 seconds, with a
+# guaranteed Impact proc inside 18 m and infinite BODY punch through.
+inherits: quellor
+# NOT `charged`, which the form vocabulary reserves for a `charge` TRIGGER: the
+# module gives this attack `Auto Charge`, the same trigger the Ferrox carries,
+# and the page says the shot cannot be held once charged. So it is the weapon's
+# ALTERNATE FIRE that happens to charge, rather than the charged form of it.
+form: alt_fire
+transform_group: quellor
+
+introduced: "27.0"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
+# has no row for either of its two. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: charged_auto
+  shot_type: projectile
+  projectile_speed_mps: 200
+  fire_rate: 1
+  charge_seconds: 1.2
+  multishot: 1.0
+  ammo_cost: 50
+  crit_chance: 0.4
+  crit_multiplier: 2.2
+  status_chance: 0.1
+  punch_through_m: 0.0
+  # A GUARANTEED IMPACT PROC — the module's ForcedProcs.
+  forced_procs: [impact]
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  falloff:
+    start_m: 9.0
+    end_m: 18.0
+    reduction: 0.6657
+  damage: { cold: 800, impact: 600 }   # total 1400
+
+unmodeled:
+  - "the charged shot carries INFINITE BODY PUNCH THROUGH and travels 26 metres (wiki). This entry states neither — the punch through is left at zero rather than guessed at a distance, so against a line of enemies it reaches only the first"
+  - "the guaranteed Impact proc only reaches enemies within 18 metres (wiki) and this entry applies it at every range, so a shot fired further out is overstated by one forced proc"
+  - "'inability to hold charge' (wiki) — the shot fires the moment it is charged, which is what this sim does anyway"
+
+source:
+  url: https://wiki.warframe.com/w/Quellor

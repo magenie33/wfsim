@@ -1,0 +1,46 @@
+id: quatz_burst
+name: Quatz
+# THE AIMED BURST: four rounds fired simultaneously, at double the crit chance
+# and a 2.5x multiplier, in a small square around the reticle.
+inherits: quatz
+form: alt_fire
+transform_group: quatz
+
+introduced: "25.4.0"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
+# has no row for either of its two. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 1.0
+    max_deg: 1.2
+  trigger: burst
+  # THE BURST. The listed `fire_rate` counts BURSTS: one pull is 4 rounds
+  # fired at once (the module gives a delay of zero).
+  burst:
+    count: 4
+    delay_seconds: 0.0       # module BurstDelay
+  shot_type: hit_scan
+  fire_rate: 2.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.27
+  crit_multiplier: 2.5
+  status_chance: 0.19
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  damage: { electricity: 11, impact: 9, puncture: 2, slash: 7 }   # total 29
+
+unmodeled:
+  - "'each shot lands in a small square formation around where the user is aiming instead of directly on the crosshair, which may lead to misses against smaller targets' (wiki) — this entry carries the module's 1-1.2 degree cone, which is that square described as a spread"
+  - reason: mode_is_the_aim_state
+
+source:
+  url: https://wiki.warframe.com/w/Quatz

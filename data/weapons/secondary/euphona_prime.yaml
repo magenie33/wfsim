@@ -1,0 +1,59 @@
+id: euphona_prime
+name: Euphona Prime
+slot: secondary
+# TWO WEAPONS IN ONE HAND. The primary fire is a 325-damage slug at a 30% crit
+# chance and no falloff — the highest base damage of any non-shotgun secondary —
+# and the alternate is ten pellets of 88 that lose 99% of it by twelve metres.
+class: shotgun_sidearm
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: euphona_prime
+mod_pools: [pistol]   # CompatibilityTags PROJECTILE, SECONDARYSHOTGUN, SINGLESHOT
+mastery_rank: 14
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 0.95           # riven disposition
+polarities: [madurai, madurai, madurai]
+exilus_polarity: madurai
+riven_family: Euphona Prime
+traits: [prime, vaulted]
+introduced: "19.11.5"
+internal_name: /Lotus/Weapons/Tenno/Pistols/AllNew1hSG/AllNew1hSG
+noise: alarming
+ammo_type: secondary
+ammo_max: 40
+ammo_pickup: 20
+magazine: 5
+reload_seconds: 2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+# and neither of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 2.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 500
+  fire_rate: 1.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.3
+  crit_multiplier: 2.5
+  status_chance: 0.02
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 292.5, puncture: 16.25, slash: 16.25 }   # total 325
+
+source:
+  url: https://wiki.warframe.com/w/Euphona_Prime

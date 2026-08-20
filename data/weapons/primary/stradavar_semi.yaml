@@ -1,0 +1,37 @@
+id: stradavar_semi
+name: Stradavar
+# SEMI-AUTO: 50 a shot, mostly Puncture, at five rounds a second with a tighter
+# cone and a third more crit chance.
+inherits: stradavar
+form: semi_auto
+transform_group: stradavar
+
+introduced: "18.11"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
+# has no row for either of its two. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 7.0
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.28
+  crit_multiplier: 2.0
+  status_chance: 0.16
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  damage: { impact: 7.5, puncture: 30, slash: 12.5 }   # total 50
+
+source:
+  url: https://wiki.warframe.com/w/Stradavar

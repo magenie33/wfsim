@@ -446,6 +446,30 @@ weapons:
   zakti: 毒芽
   zakti_prime: 毒芽 Prime
   zhuge_prime: 诸葛连弩 Prime
+  argonak: 氩格纳克
+  athodai: 阿索代
+  athodai_prime: 阿索代 Prime
+  buzlok: 巴兹火枪
+  convectrix: 导热聚焦枪
+  efv_5_jupiter: 艾弗旺-5 木星
+  euphona_prime: 悦音 Prime
+  fulmin: 雷霆
+  fulmin_prime: 雷霆 Prime
+  fusilai: 齐射玻刃
+  haalvu: 哈尔武
+  harpak: 哈帕克
+  hind: 雌鹿
+  nagantaka: 噬蛇弩
+  nagantaka_prime: 噬蛇弩 Prime
+  pandero: 手鼓
+  pandero_prime: 手鼓 Prime
+  panthera: 猎豹
+  quatz: 夸兹
+  quellor: 压制者
+  scyotid: 镰刃刺
+  stradavar: 斯特拉迪瓦
+  stradavar_prime: 斯特拉迪瓦 Prime
+  zenith: 天穹之顶
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's
