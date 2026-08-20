@@ -14,7 +14,10 @@ mastery_rank: 14
 max_rank: 30
 
 # Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# against WFCD warframe-items, which DISAGREES on one field:
+# WFCD holds an older DISPOSITION. The wiki wins (data/README.md), and
+# `scripts/audit_weapon_stats.py` carries the divergence with its reason
+# so it cannot be mistaken for a transcription error.
 accuracy: 33.6
 disposition: 0.7             # riven disposition
 # THE MODULE PUBLISHES TWO, `['Madurai', 'Aura']`, and only one of them is

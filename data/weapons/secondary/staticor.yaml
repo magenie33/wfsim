@@ -12,7 +12,10 @@ mastery_rank: 10
 max_rank: 30
 
 # Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# against WFCD warframe-items, which DISAGREES on one field:
+# WFCD's magazine is in SHOTS (48 rounds = 12 at 4 apiece). The wiki wins (data/README.md), and
+# `scripts/audit_weapon_stats.py` carries the divergence with its reason
+# so it cannot be mistaken for a transcription error.
 accuracy: 16.7
 disposition: 0.9            # riven disposition
 polarities: [naramon]

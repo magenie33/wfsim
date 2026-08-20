@@ -99,5 +99,5 @@ perks:
 # options: [dual_toxocyst_commodores_fortune, dual_toxocyst_neurotoxin, dual_toxocyst_ripper_rounds] }
 
 source:
-  url: https://wiki.warframe.com/w/Module:Weapons/data/secondary
+  url: https://wiki.warframe.com/w/Dual_Toxocyst
   # note: Stats from the wiki's structured Lua data module.

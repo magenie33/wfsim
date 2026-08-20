@@ -130,7 +130,7 @@ perks:
 # incarnon_evolutions: see data/weapons/dual_toxocyst.yaml (shared group)
 
 source:
-  url: https://wiki.warframe.com/w/Module:Weapons/data/secondary
+  url: https://wiki.warframe.com/w/Dual_Toxocyst
   # note: Stats from the wiki's structured Lua data module; economy from the
   # Incarnon Genesis page.
 

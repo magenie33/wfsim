@@ -67,6 +67,14 @@ attack:
   # 1.6 m is that form's, and it has no explosion.
   punch_through_m: 0.0
   # NO RANGE ROW on the Cannon Mode Projectile block — the page states none.
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Zarr (Kuva Zarr) | Cannon Mode + AoE | 100% | Multiplies | Snapshot
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
   damage: { impact: 50.0 }   # total 50
   # THE SHELL'S EXPLOSION — rules in MECHANICS §7, and it is 13x the shell.
   radial:

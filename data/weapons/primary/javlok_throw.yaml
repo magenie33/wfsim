@@ -34,6 +34,14 @@ attack:
   forced_procs: [impact]
   # NO RANGE ROW on this attack — the page states none. See
   # data/surveys/weapon_range.yaml.
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Javlok | Throw + AoE | 100% | Multiplies | Snapshot
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
   damage: { impact: 45, puncture: 75, slash: 30 }   # total 150
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:

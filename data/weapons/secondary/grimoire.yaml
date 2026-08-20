@@ -13,7 +13,10 @@ mastery_rank: 10
 max_rank: 30
 
 # Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# against WFCD warframe-items, which DISAGREES on one field:
+# a Tome does not reload; WFCD's 0.01 s is a floor. The wiki wins (data/README.md), and
+# `scripts/audit_weapon_stats.py` carries the divergence with its reason
+# so it cannot be mistaken for a transcription error.
 accuracy: 100.0
 disposition: 0.6            # riven disposition
 polarities: [madurai, naramon]

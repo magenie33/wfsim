@@ -31,6 +31,14 @@ attack:
   punch_through_m: 0.0
   # NO RANGE ROW on this attack — the page states none. See
   # data/surveys/weapon_range.yaml.
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Cedo (Cedo Prime) | Alt-Fire + AoE | 100% | Multiplies | Snapshot
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
   damage: { slash: 20 }   # total 20
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:

@@ -69,6 +69,18 @@ attack:
   # THE REACH IS THE BEAM'S and lives in the `beam:` block above —
   # wiki: "Range: 27.0 m". A continuous weapon carries it there rather
   # than on the attack, because the radius and the chain read it too.
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Ignis (Ignis Wraith) | Primary Fire + AoE | 0% | Doesn't Work | N/A
+  #
+  # ZERO IS A ROW, NOT AN OMISSION: the arcane does not apply to this
+  # attack at all, and saying so is the difference between "checked" and
+  # "nobody looked".
+  compression:
+    effectiveness: 0.00
+    stacking: multiplies
+    radius_calculation: doesnt_work
   damage: { heat: 35 }   # total 35
 
 unmodeled:

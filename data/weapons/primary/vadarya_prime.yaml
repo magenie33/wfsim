@@ -55,6 +55,18 @@ attack:
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki: "Range: 300.0 m", Hit-Scan (its 10 m chain radius is a separate mechanic, not the reach)
   range_m: 300.0
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Vadarya Prime | Lightning Strikes | 0% | Doesn't work | N/A
+  #
+  # ZERO IS A ROW, NOT AN OMISSION: the arcane does not apply to this
+  # attack at all, and saying so is the difference between "checked" and
+  # "nobody looked".
+  compression:
+    effectiveness: 0.00
+    stacking: multiplies
+    radius_calculation: doesnt_work
   damage: { electricity: 400.0 }
 unmodeled:
   - reason: sniper_combo_miss

@@ -63,6 +63,14 @@ attack:
   punch_through_m: 0.0
   # NO RANGE ROW on the Rocket Impact block — the page states none. The 7.9 m
   # below is the explosion's RADIUS and not a reach.
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Ogris (Kuva Ogris) | Primary Fire + AoE | 100% | Multiplies | Snapshot
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
   damage: { impact: 18.9, puncture: 8.1 }   # total 27
   # THE EXPLOSION — rules in MECHANICS §7, and it is 25x the rocket.
   radial:

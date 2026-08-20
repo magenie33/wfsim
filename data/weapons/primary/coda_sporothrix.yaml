@@ -53,6 +53,15 @@ attack:
   crit_multiplier: 3.0
   status_chance: 0.55
   punch_through_m: 0.0
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Sporothrix (Coda Sporothrix) | Primary Fire + AoE | 100% | Multiplies
+  #   | Snapshot
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
   damage: { impact: 101.52, puncture: 116.56, slash: 157.92 }   # 376 total
   radial:
     damage: { slash: 25.0, viral: 23.0 }   # 48 at the centre

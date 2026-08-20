@@ -34,6 +34,14 @@ attack:
   range_m: 2.0
   # NO DAMAGE FALLOFF — the module carries a window with a reduction of
   # ZERO for this attack, which is its way of saying there is none.
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Mutalist Quanta | Orb Explosion AoE | 100% | Multiplies | Snapshot
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
   damage: { radiation: 20 }   # total 20
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:

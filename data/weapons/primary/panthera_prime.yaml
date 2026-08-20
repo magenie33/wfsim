@@ -12,7 +12,10 @@ mastery_rank: 14
 max_rank: 30
 
 # Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
-# against WFCD warframe-items — 0 disagreements).
+# against WFCD warframe-items, which DISAGREES on one field:
+# WFCD's magazine is in SHOTS (80 rounds = 40 at 2 apiece). The wiki wins (data/README.md), and
+# `scripts/audit_weapon_stats.py` carries the divergence with its reason
+# so it cannot be mistaken for a transcription error.
 accuracy: 80.0
 disposition: 1.25           # riven disposition
 polarities: [madurai, naramon]
@@ -53,6 +56,15 @@ attack:
   punch_through_m: 0.0
   # NO RANGE ROW on this attack — the page states none. See
   # data/surveys/weapon_range.yaml.
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Panthera (Panthera Prime) | Primary Fire + AoE | 100% | Multiplies |
+  #   Snapshot
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
   damage: { impact: 20, puncture: 10, slash: 70 }   # total 100
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:

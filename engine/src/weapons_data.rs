@@ -5682,6 +5682,84 @@ mod play_mode_tests {
             ("quanta_cube", 0.40),
             ("quanta_vandal_cube", 0.40),
             ("glaxion_vandal", 0.0),
+
+            // THE 2026-08-20 SWEEP. The published table named FIFTY-NINE more
+            // roster attacks than the roster had transcribed — most of them from
+            // this month's intake, and a dozen that had been here far longer. An
+            // attack with no `compression:` pays the arcane NOTHING (
+            // `loadout::resolve` reads `Some(c)` or nothing at all), so every one
+            // of them was silently worth zero to a build carrying it.
+            //
+            // Each figure below is OUR radius x 0.8, which is what the arcane
+            // takes. Where that disagrees with the table's own Max Damage Bonus
+            // column the line says so, and there are exactly three:
+            //
+            //   lenz / prisma_lenz — 7.2 m x 0.8 is 5.76 and the table rounds its
+            //     own arithmetic to +575%.
+            //   secura_penta — the table gives the three Pentas ONE row at 4.0 m,
+            //     and this weapon's own module row is 6.0 m. The weapon wins.
+            //   battacor_charged — the table's radius column says 3.4 m and its
+            //     bonus column says +208%, which is 2.6 m. The table disagrees
+            //     with ITSELF there; ours follows its radius column.
+            ("acceltra", 3.20),
+            ("acceltra_prime", 4.00),
+            ("aeolak_alt", 5.60),
+            ("afentis", 2.40),
+            ("afentis_prime", 4.40),
+            ("alternox_alt", 4.80),
+            ("alternox_prime_alt", 4.80),
+            ("ambassador_charged", 4.80),
+            ("astilla", 1.92),
+            ("astilla_prime", 1.92),
+            ("basmu", 1.36),
+            ("battacor_charged", 2.72),   // table prints +208%
+            ("carmine_penta", 3.20),
+            ("cedo_alt", 4.80),
+            ("cedo_prime_alt", 4.80),
+            ("coda_sporothrix", 1.60),
+            ("corinth_airburst", 7.52),
+            ("corinth_prime_airburst", 7.84),
+            ("enkaus_alt", 0.0),
+            ("evensong", 3.20),
+            ("grattler", 0.0),
+            ("ignis", 0.0),
+            ("ignis_wraith", 0.0),
+            ("javlok", 1.92),
+            ("javlok_throw", 4.80),
+            ("komorex", 0.0),
+            ("kuva_bramma", 6.64),
+            ("kuva_chakkhurr", 2.32),
+            ("kuva_grattler", 0.0),
+            ("kuva_ogris", 6.32),
+            ("kuva_tonkor", 5.60),
+            ("kuva_zarr", 5.60),
+            ("larkspur_charged", 0.0),
+            ("larkspur_prime_charged", 0.0),
+            ("lenz", 5.76),   // table prints +575%
+            ("morgha", 0.0),
+            ("morgha_alt", 0.0),
+            ("mutalist_cernos", 0.0),
+            ("mutalist_quanta_orb", 3.52),
+            ("ogris", 5.68),
+            ("opticor", 4.80),
+            ("opticor_quick", 4.80),
+            ("opticor_vandal", 3.68),
+            ("opticor_vandal_quick", 3.68),
+            ("panthera_prime", 1.28),
+            ("penta", 3.20),
+            ("prisma_lenz", 5.76),   // table prints +575%
+            ("proboscis_cernos", 5.60),
+            ("secura_penta", 4.80),   // table prints +320%
+            ("simulor", 4.00),
+            ("sporothrix", 1.36),
+            ("stahlta_charged", 0.0),
+            ("synoid_simulor", 4.00),
+            ("tonkor", 5.60),
+            ("trumna", 1.28),
+            ("trumna_prime", 1.28),
+            ("vadarya_prime", 0.0),
+            ("zarr", 3.92),
+            ("zhuge_prime", 2.08),
         ];
         // At rank 5 a metre is worth +100%, so the bonus IS the metres lost.
         let fx = crate::arcanes_data::for_slot("primary", "primary_compression")
@@ -5894,14 +5972,39 @@ mod play_mode_tests {
                 adds += 1;
             }
         }
-        assert!(rows >= 20, "only {rows} rows transcribed");
+        assert!(rows >= 80, "only {rows} rows transcribed");
         // THE MINORITY IS REAL, and it is the half of the table most likely to
-        // be flattened by a copy: every Braton and Burston Incarnon ADDS.
-        // The Braton four, the Burston two, and BOTH Mausolon radials — its two
-        // rows are the only Arch-Gun ones in the table and both print "Adds".
+        // be flattened by a copy. Eighteen rows print "Adds": every Braton and
+        // Burston Incarnon (six), BOTH Mausolon radials — its two rows are the
+        // only Arch-Gun ones in the table and both print it — both Ferroxes,
+        // and the eight the 2026-08-20 sweep brought in (the Ambassador's
+        // charge, the Battacor's, both Opticors in both forms, and both
+        // Trumnas' primary fire).
         assert_eq!(
-            adds, 10,
-            "the Braton four, the Burston two, the Mausolon two and BOTH Ferroxes add, and nothing else here does"
+            adds, 18,
+            "the Adds minority moved — count it against the table before changing this"
+        );
+        // …and every one of them is named, so a row that quietly changes
+        // bracket is a failure rather than a number that still adds up.
+        let adders: std::collections::BTreeSet<&str> = all()
+            .iter()
+            .filter(|w| w.attack.compression.as_ref().is_some_and(|c| c.stacking == "adds"))
+            .map(|w| w.id.as_str())
+            .collect();
+        assert_eq!(
+            adders,
+            [
+                "ambassador_charged", "battacor_charged",
+                "braton_incarnon", "braton_prime_incarnon", "braton_vandal_incarnon",
+                "burston_incarnon", "burston_prime_incarnon",
+                "ferrox", "tenet_ferrox",
+                "mausolon", "mausolon_charged",
+                "mk1_braton_incarnon",
+                "opticor", "opticor_quick", "opticor_vandal", "opticor_vandal_quick",
+                "trumna", "trumna_prime",
+            ]
+            .into_iter()
+            .collect::<std::collections::BTreeSet<_>>()
         );
         // …and a tested ZERO is not the same as an absent row. The Torid's
         // Incarnon form has one, and its base form is 100% — one arcane, two

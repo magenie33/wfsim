@@ -54,6 +54,18 @@ attack:
   crit_multiplier: 2.1
   status_chance: 0.35
   punch_through_m: 0.0
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Komorex | Primary Fire + AoE | 0% | Doesn't Work | N/A
+  #
+  # ZERO IS A ROW, NOT AN OMISSION: the arcane does not apply to this
+  # attack at all, and saying so is the difference between "checked" and
+  # "nobody looked".
+  compression:
+    effectiveness: 0.00
+    stacking: multiplies
+    radius_calculation: doesnt_work
   damage: { impact: 9.7, puncture: 40.74, slash: 46.56 }   # 97 total
   # A VIRAL explosion on every shot, 53 at the first zoom level and 106 at the
   # second — the second is not carried, see above.

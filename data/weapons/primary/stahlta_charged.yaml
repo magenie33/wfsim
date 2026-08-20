@@ -34,6 +34,18 @@ attack:
   forced_procs: [impact]
   # NO RANGE ROW on this attack — the page states none. See
   # data/surveys/weapon_range.yaml.
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Stahlta | Alt-Fire + AoE | 0% | Doesn't Work | N/A
+  #
+  # ZERO IS A ROW, NOT AN OMISSION: the arcane does not apply to this
+  # attack at all, and saying so is the difference between "checked" and
+  # "nobody looked".
+  compression:
+    effectiveness: 0.00
+    stacking: multiplies
+    radius_calculation: doesnt_work
   damage: { impact: 120, puncture: 180, slash: 300 }   # total 600
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:

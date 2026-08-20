@@ -46,6 +46,19 @@ attack:
   crit_multiplier: 3.0
   status_chance: 0.50
   punch_through_m: 0.0
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Morgha | Alt-Fire + AoE | 0% | Doesn't Work | N/A | "Archguns cannot
+  #   equip mod"
+  #
+  # ZERO IS A ROW, NOT AN OMISSION: the arcane does not apply to this
+  # attack at all, and saying so is the difference between "checked" and
+  # "nobody looked".
+  compression:
+    effectiveness: 0.00
+    stacking: multiplies
+    radius_calculation: doesnt_work
   damage: { impact: 200.0 }        # Archwing: 100
   radial:
     damage: { impact: 1200.0, puncture: 1600.0, slash: 2000.0, blast: 2400.0 }  # 7200

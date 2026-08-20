@@ -57,6 +57,15 @@ attack:
     start_m: 40.0
     end_m: 60.0
     reduction: 0.5
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Astilla (Astilla Prime) | Primary Fire + AoE | 100% | Multiplies |
+  #   Snapshot | 2.4 m | +192% | "Shotguns cannot equip mod"
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
   damage: { impact: 70 }   # total 70
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:

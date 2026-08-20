@@ -55,6 +55,15 @@ attack:
   forced_procs: [impact]
   # NO RANGE ROW on this attack — the page states none. See
   # data/surveys/weapon_range.yaml.
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Lenz (Prisma Lenz) | Charged Shot + AoE | 100% | Multiplies | Snapshot
+  #   | 7.2 m | +575%
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
   damage: { impact: 56 }   # total 56
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:

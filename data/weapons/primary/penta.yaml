@@ -54,6 +54,15 @@ attack:
   punch_through_m: 0.0
   # NO RANGE ROW on the direct-hit block — the 4.0 m below is the
   # explosion's RADIUS and not a reach. See data/surveys/weapon_range.yaml.
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Penta (Secura Penta, Carmine Penta) | Primary Fire + AoE | 100% |
+  #   Multiplies | Snapshot
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
   damage: { impact: 75 }   # total 75
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:

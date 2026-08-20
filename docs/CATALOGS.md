@@ -676,57 +676,126 @@ one the engine gets WRONG today, and it is recorded on the weapon's radial.
 
 ### Rows the ROSTER carries
 
-Only ours, so this stays diffable. The full table lives on the wiki.
+Only ours, so this stays diffable. The full table lives on the wiki, and
+`scripts/audit_weapon_stats.py` is not what checks it —
+`the_roster_reproduces_primary_compressions_published_column` is, by
+re-deriving the wiki's own Max Damage Bonus column from each entry's radius.
 
-| our entry | eff | base radius | max bonus | stacking | note |
+RE-READ 2026-08-20, when the roster finished its primary/secondary intake.
+The published table named **fifty-nine** more of our attacks than we carried,
+and an attack with no `compression:` pays the arcane NOTHING — so every one
+of them was silently worth zero to a build holding Primary Compression. Half
+the additions are a tested **0%** ("Archguns cannot equip", the beam
+exclusion), which is a ROW and not an omission: saying so is the difference
+between "checked" and "nobody looked".
+
+103 rows.
+
+| our entry | eff | base radius | max bonus | stacking | radius calc |
 | --- | --- | --- | --- | --- | --- |
-| Shedu | 100% | 6.6 m | +528% | Multiplies | AoE **not affected by Firestorm**; cannot use the reload pulse radial |
-| Torid — Toxin Cloud | 100% | 3.0 m | +240% | Multiplies | cloud radius **not reduced** — pays nothing, collects everything |
-| Torid — Incarnon | 0% | 2.3 m | — | Doesn't Work | the continuous-beam exclusion |
-| Braton / Prime / Vandal / Mk1 — Incarnon | 100% | 3.0 m | +240% | **Adds** | |
-| Burston / Prime — Incarnon | 100% | 2.0 m | +160% | **Adds** | |
-| Gorgon / Prisma / Wraith — Incarnon | 100% | 5.0 m | +400% | Multiplies | |
-| Latron / Prime — Incarnon | 100% | 4.0 m | +320% | Multiplies | |
-| Miter — charged shot | 100% | 0.2 m | +16% | Multiplies | "wide projectile, not traditional AoE" |
-| Miter — Incarnon | 100% | 3.0 m | +240% | Multiplies | |
-| Strun / Prime / Wraith — Incarnon | 100% | 4.0 m | +320% | Multiplies | "Shotguns cannot equip" |
-| Phantasma / Prime — Alt-Fire | 100% | 4.8 m | +384% | Multiplies | "Shotguns cannot equip"; bomblets do not benefit |
-| Vectis / Prime — Incarnon | **4%** | 0.1 m | +8% | N/A | uses the embed radial, not the headshot explosion |
-| Scourge (Prime) — Primary Fire + AoE | 100% | 1.7 m | +136% | Multiplies | Speargun |
-| Scourge (Prime) — **Throw + AoE** | 100% | 7.0 m | +560% | Multiplies | Speargun; the biggest radius the pair has |
-| Larkspur Prime | Untested / 0% | 9.6 m | — | — | "Archguns cannot equip" |
-| Tenet Envoy — Primary Fire + AoE | 100% | 8.0 m | +640% | Multiplies | Launcher; joint-largest radius in the batch |
-| Tenet Tetra — Alt-Fire + AoE | 100% | 8.0 m | +640% | Multiplies | Rifle; the other half of that pair |
-| Tenet Ferrox — Primary Fire + AoE | 100% | 4.0 m | +320% | **Adds** | Speargun — and the only `Adds` outside the Braton/Burston/Mausolon set |
-| Tenet Ferrox — **Throw + AoE** | **0%** | — | — | Doesn't Work | *"Pull radial tick damage can benefit from Compression while aiming"* |
-| Tenet Quanta — Alt-Fire + AoE | **100% / 8%** | 0.5 m | +40% | Multiplies | the two figures are the cube's TWO explosions |
-| Coda Bubonico — Alt-Fire + AoE | 100% | 7.0 m | +560% | Multiplies | Shotgun |
-| Coda Sporothrix — Primary Fire + AoE | **100% / 33% / 42%** | 2.0 m | +160% | Multiplies | Sniper |
-
-**THE SPEARGUNS' SPLIT REPEATS, AND FLIPS.** The Scourge pair's two rows are
-1.7 m and 7.0 m, both ordinary; the Tenet Ferrox's are 4.0 m **Adds** and a
-tested **zero** on the throw. Same weapon class, same two firing modes, and the
-arcane is worth four times more on one pair's alt-fire and *nothing at all* on
-the other's. Two rows for one weapon is the shape; which way they fall is not
-something a class can tell you.
-
-**THE QUANTA'S TWO EFFECTIVENESS FIGURES** are its cube's two explosions —
-100% on the 0.5 m contact blast the roster fires, 8% on the 6 m one a player
-shoots loose, which is unmodelled. The base-radius column agrees with the first
-(0.5 m → +40%), so the single figure the entry carries is right for what it
-actually fires.
-
-**The spearguns are TWO ROWS FOR ONE WEAPON**, split by firing mode the way §1's
-CO rows are, and the Weapon cell reads `Scourge (Scourge Prime)` — one row that
-names both variants, which is the opposite of the CO rule's usual bite and only
-safe because the cell says so. Ordinary in every column, so the whole finding is
-the pair of radii: 1.7 m on the primary fire against 7.0 m on the throw makes the
-arcane worth **four times as much** on the alt-fire, on a weapon where both modes
-are one build. The Primed Firestorm column is the same arithmetic at ×1.44
-(2.448 m → +195.84%, 10.08 m → +806.4%), which is a second check on the radii.
-
-**General exclusion, verbatim:** *"Does not work on Continuous Weapons or beam
-attacks with an AoE component. For example, Ignis or Torid Incarnon Genesis."*
+| `acceltra` | 100% | 4 m | +320% | Multiplies | snapshot |
+| `acceltra_prime` | 100% | 5 m | +400% | Multiplies | snapshot |
+| `aeolak_alt` | 100% | 7 m | +560% | Multiplies | snapshot |
+| `afentis` | 100% | 3 m | +240% | Multiplies | snapshot |
+| `afentis_prime` | 100% | 5.5 m | +440% | Multiplies | snapshot |
+| `alternox_alt` | 100% | 6 m | +480% | Multiplies | snapshot |
+| `alternox_prime_alt` | 100% | 6 m | +480% | Multiplies | snapshot |
+| `ambassador_charged` | 100% | 6 m | +480% | Adds | snapshot |
+| `arbucep` | 0% | 4 m | — | Doesn't Work | doesnt_work |
+| `astilla` | 100% | 2.4 m | +192% | Multiplies | snapshot |
+| `astilla_prime` | 100% | 2.4 m | +192% | Multiplies | snapshot |
+| `basmu` | 100% | 1.7 m | +136% | Multiplies | snapshot |
+| `battacor_charged` | 100% | 3.4 m | +272% | Adds | constant_check |
+| `braton_incarnon` | 100% | 3 m | +240% | Adds | snapshot |
+| `braton_prime_incarnon` | 100% | 3 m | +240% | Adds | snapshot |
+| `braton_vandal_incarnon` | 100% | 3 m | +240% | Adds | snapshot |
+| `bubonico_burst` | 100% | 7 m | +560% | Multiplies | snapshot |
+| `burston_incarnon` | 100% | 2 m | +160% | Adds | snapshot |
+| `burston_prime_incarnon` | 100% | 2 m | +160% | Adds | snapshot |
+| `carmine_penta` | 100% | 4 m | +320% | Multiplies | snapshot |
+| `cedo_alt` | 100% | 6 m | +480% | Multiplies | snapshot |
+| `cedo_prime_alt` | 100% | 6 m | +480% | Multiplies | snapshot |
+| `coda_bubonico_burst` | 100% | 7 m | +560% | Multiplies | snapshot |
+| `coda_sporothrix` | 100% | 2 m | +160% | Multiplies | snapshot |
+| `corinth_airburst` | 100% | 9.4 m | +752% | Multiplies | snapshot |
+| `corinth_prime_airburst` | 100% | 9.8 m | +784% | Multiplies | snapshot |
+| `cortege` | 0% | 0 m | — | Doesn't Work | doesnt_work |
+| `cortege_alt` | 0% | 4 m | — | Doesn't Work | doesnt_work |
+| `enkaus_alt` | 0% | 8 m | — | Doesn't Work | doesnt_work |
+| `evensong` | 100% | 4 m | +320% | Multiplies | snapshot |
+| `ferrox` | 100% | 3.6 m | +288% | Adds | snapshot |
+| `ferrox_thrown` | 0% | 10 m | — | Doesn't Work | doesnt_work |
+| `glaxion_vandal` | 0% | 2 m | — | Doesn't Work | doesnt_work |
+| `gorgon_incarnon` | 100% | 5 m | +400% | Multiplies | snapshot |
+| `gorgon_wraith_incarnon` | 100% | 5 m | +400% | Multiplies | snapshot |
+| `grattler` | 0% | 9 m | — | Doesn't Work | doesnt_work |
+| `ignis` | 0% | 3 m | — | Doesn't Work | doesnt_work |
+| `ignis_wraith` | 0% | 3 m | — | Doesn't Work | doesnt_work |
+| `javlok` | 100% | 2.4 m | +192% | Multiplies | snapshot |
+| `javlok_throw` | 100% | 6 m | +480% | Multiplies | snapshot |
+| `komorex` | 0% | 3.5 m | — | Doesn't Work | doesnt_work |
+| `kuva_ayanga` | 0% | 6 m | — | Doesn't Work | doesnt_work |
+| `kuva_bramma` | 100% | 8.3 m | +664% | Multiplies | snapshot |
+| `kuva_chakkhurr` | 100% | 2.9 m | +232% | Multiplies | snapshot |
+| `kuva_grattler` | 0% | 9 m | — | Doesn't Work | doesnt_work |
+| `kuva_ogris` | 100% | 7.9 m | +632% | Multiplies | snapshot |
+| `kuva_tonkor` | 100% | 7 m | +560% | Multiplies | snapshot |
+| `kuva_zarr` | 100% | 7 m | +560% | Multiplies | snapshot |
+| `larkspur_charged` | 0% | 9.6 m | — | Doesn't Work | doesnt_work |
+| `larkspur_prime_charged` | 0% | 9.6 m | — | Doesn't Work | doesnt_work |
+| `latron_incarnon` | 100% | 4 m | +320% | Multiplies | snapshot |
+| `latron_prime_incarnon` | 100% | 4 m | +320% | Multiplies | snapshot |
+| `lenz` | 100% | 7.2 m | +576% | Multiplies | snapshot |
+| `mausolon` | 100% | 1.8 m | +144% | Adds | stolen |
+| `mausolon_charged` | 100% | 8 m | +640% | Adds | snapshot |
+| `miter_incarnon` | 100% | 3 m | +240% | Multiplies | snapshot |
+| `mk1_braton_incarnon` | 100% | 3 m | +240% | Adds | snapshot |
+| `morgha` | 0% | 3 m | — | Doesn't Work | doesnt_work |
+| `morgha_alt` | 0% | 12 m | — | Doesn't Work | doesnt_work |
+| `mutalist_cernos` | 0% | 0 m | — | Doesn't Work | doesnt_work |
+| `mutalist_quanta_orb` | 100% | 4.4 m | +352% | Multiplies | snapshot |
+| `ogris` | 100% | 7.1 m | +568% | Multiplies | snapshot |
+| `opticor` | 100% | 6 m | +480% | Adds | snapshot |
+| `opticor_quick` | 100% | 6 m | +480% | Adds | snapshot |
+| `opticor_vandal` | 100% | 4.6 m | +368% | Adds | snapshot |
+| `opticor_vandal_quick` | 100% | 4.6 m | +368% | Adds | snapshot |
+| `panthera_prime` | 100% | 1.6 m | +128% | Multiplies | snapshot |
+| `penta` | 100% | 4 m | +320% | Multiplies | snapshot |
+| `phantasma_charged` | 100% | 4.8 m | +384% | Multiplies | snapshot |
+| `phantasma_prime_charged` | 100% | 4.8 m | +384% | Multiplies | snapshot |
+| `prisma_gorgon_incarnon` | 100% | 5 m | +400% | Multiplies | snapshot |
+| `prisma_lenz` | 100% | 7.2 m | +576% | Multiplies | snapshot |
+| `proboscis_cernos` | 100% | 7 m | +560% | Multiplies | snapshot |
+| `quanta_cube` | 100% | 0.5 m | +40% | Multiplies | snapshot |
+| `quanta_vandal_cube` | 100% | 0.5 m | +40% | Multiplies | snapshot |
+| `scourge` | 100% | 1.7 m | +136% | Multiplies | snapshot |
+| `scourge_prime` | 100% | 1.7 m | +136% | Multiplies | snapshot |
+| `scourge_prime_thrown` | 100% | 7 m | +560% | Multiplies | snapshot |
+| `scourge_thrown` | 100% | 7 m | +560% | Multiplies | snapshot |
+| `secura_penta` | 100% | 6 m | +480% | Multiplies | snapshot |
+| `shedu` | 100% | 6.6 m | +528% | Multiplies | snapshot |
+| `simulor` | 100% | 5 m | +400% | Multiplies | snapshot |
+| `sporothrix` | 100% | 1.7 m | +136% | Multiplies | snapshot |
+| `stahlta_charged` | 0% | 7.2 m | — | Doesn't Work | doesnt_work |
+| `strun_incarnon` | 100% | 4 m | +320% | Multiplies | snapshot |
+| `strun_prime_incarnon` | 100% | 4 m | +320% | Multiplies | snapshot |
+| `strun_wraith_incarnon` | 100% | 4 m | +320% | Multiplies | snapshot |
+| `synoid_simulor` | 100% | 5 m | +400% | Multiplies | snapshot |
+| `tenet_envoy` | 100% | 8 m | +640% | Multiplies | snapshot |
+| `tenet_ferrox` | 100% | 4 m | +320% | Adds | snapshot |
+| `tenet_ferrox_thrown` | 0% | 10 m | — | Doesn't Work | doesnt_work |
+| `tenet_quanta_cube` | 100% | 0.5 m | +40% | Multiplies | snapshot |
+| `tenet_tetra_grenade` | 100% | 8 m | +640% | Multiplies | snapshot |
+| `tonkor` | 100% | 7 m | +560% | Multiplies | snapshot |
+| `torid` | 100% | 3 m | +240% | Multiplies | snapshot |
+| `torid_incarnon` | 0% | 2.3 m | — | Doesn't Work | doesnt_work |
+| `trumna` | 100% | 1.6 m | +128% | Adds | snapshot |
+| `trumna_prime` | 100% | 1.6 m | +128% | Adds | snapshot |
+| `vadarya_prime` | 0% | 0 m | — | Doesn't Work | doesnt_work |
+| `vectis_incarnon` | 4% | 6.7 m | +8% | Multiplies | snapshot |
+| `vectis_prime_incarnon` | 4% | 6.7 m | +8% | Multiplies | snapshot |
+| `zarr` | 100% | 4.9 m | +392% | Multiplies | snapshot |
+| `zhuge_prime` | 100% | 2.6 m | +208% | Multiplies | snapshot |
 
 ### Status — MODELLED (2026-08-11)
 

@@ -53,6 +53,15 @@ attack:
   forced_procs: [impact]
   # NO RANGE ROW on the direct-hit block — the 5.0 m below is the
   # explosion's RADIUS and not a reach. See data/surveys/weapon_range.yaml.
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Acceltra (Acceltra Prime) | Primary Fire + AoE | 100% | Multiplies |
+  #   Snapshot | 5.0 m | +400%
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
   damage: { impact: 44 }   # total 44
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:

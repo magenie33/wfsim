@@ -33,6 +33,15 @@ attack:
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki: "Range: 300.0 m" on this attack.
   range_m: 300.0
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Ambassador | Alt-Fire + AoE | 100% | Adds | Snapshot | 6.0 m | +480% |
+  #   "Loses no AoE radius but gains the expected damage bonus."
+  compression:
+    effectiveness: 1.00
+    stacking: adds
+    radius_calculation: snapshot
   damage: { electricity: 600 }   # total 600
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:

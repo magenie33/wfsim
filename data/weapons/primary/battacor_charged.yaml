@@ -37,6 +37,14 @@ attack:
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki: "Range: 300.0 m" on this attack.
   range_m: 300.0
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Battacor | Alt-Fire + AoE | 100% | Adds | Constant Check
+  compression:
+    effectiveness: 1.00
+    stacking: adds
+    radius_calculation: constant_check
   damage: { radiation: 208 }   # total 208
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:

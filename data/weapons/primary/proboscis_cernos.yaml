@@ -53,6 +53,16 @@ attack:
   punch_through_m: 0.0
   # NO RANGE ROW on this attack — the page states none. See
   # data/surveys/weapon_range.yaml.
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Proboscis Cernos | Charged Shot + AoE | 100% | Multiplies | Snapshot |
+  #   7.0 m | +560% | "Pull radius is not reduced. Damage bonus is not
+  #   granted to tendril tick damage."
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
   damage: { impact: 103.23, puncture: 30.69, slash: 145.08 }   # total 279
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:

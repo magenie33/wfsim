@@ -62,6 +62,15 @@ attack:
   punch_through_m: 0.0
   # NO RANGE ROW on the Charged Shot block — the page states none. The 8.3 m
   # below is the explosion's RADIUS and not a reach.
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Kuva Bramma | Charged Shot + AoE | 100% | Multiplies | Snapshot | 8.3
+  #   m | +664%
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
   damage: { impact: 187.0 }   # total 187
   # THE MAIN EXPLOSION — rules in MECHANICS §7.
   radial:

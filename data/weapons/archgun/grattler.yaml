@@ -73,6 +73,19 @@ attack:
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, ATMOSPHERE column: "Range: 225.0 m". A PROJECTILE with a range row, where the Dread and the Kuva Bramma have none — the case that killed the class rule
   range_m: 225.0
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Grattler (Kuva Grattler) | Primary Fire + AoE | 0% | Doesn't Work |
+  #   N/A | "Archguns cannot equip mod"
+  #
+  # ZERO IS A ROW, NOT AN OMISSION: the arcane does not apply to this
+  # attack at all, and saying so is the difference between "checked" and
+  # "nobody looked".
+  compression:
+    effectiveness: 0.00
+    stacking: multiplies
+    radius_calculation: doesnt_work
   damage: { impact: 22.5, puncture: 180.0, slash: 22.5 }   # 225 (Archwing: 150)
   radial:
     damage: { blast: 310.0 }         # Archwing: 205

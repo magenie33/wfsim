@@ -46,6 +46,20 @@ attack:
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, ATMOSPHERE column, Alt-Fire Projectile Impact: "Range: 100.0 m", Projectile (its 9.6 m explosion is a RADIUS). The BEAM is 40 m — a form states its own
   range_m: 100.0
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Larkspur (Atmosphere) | Charged Shot + AoE | 0% | Doesn't Work | N/A |
+  #   "Archguns cannot equip mod" — the ARCHWING row is 'Untested', and this
+  #   roster ships the ATMOSPHERE column
+  #
+  # ZERO IS A ROW, NOT AN OMISSION: the arcane does not apply to this
+  # attack at all, and saying so is the difference between "checked" and
+  # "nobody looked".
+  compression:
+    effectiveness: 0.00
+    stacking: multiplies
+    radius_calculation: doesnt_work
   damage: { impact: 280.0, blast: 360.0, radiation: 200.0 }  # 840 (Archwing: 420)
   radial:
     damage: { blast: 800.0, radiation: 800.0 }   # 1600 at the centre (Archwing: 800)

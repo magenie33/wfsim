@@ -31,6 +31,15 @@ attack:
   punch_through_m: 0.0
   # NO RANGE ROW on this attack — the page states none. See
   # data/surveys/weapon_range.yaml.
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Alternox (Alternox Prime) | Alt-Fire + AoE | 100% | Multiplies |
+  #   Snapshot | 6.0 m | +480%
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
   damage: { impact: 7, puncture: 52.5, slash: 10.5 }   # total 70
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:

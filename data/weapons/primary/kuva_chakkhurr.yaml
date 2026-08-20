@@ -72,6 +72,14 @@ attack:
   # NO RANGE ROW on the Normal Attack block — the page states none. The 2.9 m
   # below is the explosion's RADIUS and not a reach.
   # "Primarily Impact damage."
+  # PRIMARY COMPRESSION — the published table names this attack. Verbatim
+  # (docs/CATALOGS.md §2):
+  #
+  #   Kuva Chakkhurr | Primary Fire + AoE | 100% | Multiplies | Snapshot
+  compression:
+    effectiveness: 1.00
+    stacking: multiplies
+    radius_calculation: snapshot
   damage: { impact: 260.0 }
   # THE EXPLOSION — rules in MECHANICS §7. "Shots explode in 2.9m radius after
   # impact."
