@@ -33,6 +33,14 @@ introduced: "32.2"
 magazine: 1
 reload_seconds: 2.5
 
+# AND DELIBERATELY NO `battery:`, where the primary-fire entry has one. This
+# form's wait is stated whole by the page — "must fully recharge for every shot"
+# plus a "reload delay of 2 seconds" — and the module gives the attack its own
+# Reload of 2.5 s to say it. Carrying the weapon's battery here would model the
+# same wait a second time and get it wrong: 20 rounds a second would put one
+# round back 0.05 s after the 0.8 s delay, which is 0.85 s against the 2.5 s
+# the page states.
+
 # NOT INHERITED — the CO catalog gives a class per ATTACK, and it names THIS one
 # where the primary fire has no row. Verbatim (docs/CATALOGS.md §1):
 #

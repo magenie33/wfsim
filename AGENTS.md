@@ -1031,12 +1031,18 @@ around (decision 2026-07-31).
   a pile of per-weapon exceptions.
   `weapons_data::BlastKind` is that type. A `contact` blast goes off on the
   first thing it touches and is the true area-of-effect attack the rule means; a
-  `terminal` one goes off where the FLIGHT ends and takes punch-through mods
+  `terminal` one goes off PAST what the round hit and takes punch-through mods
   normally. THE SECOND CONSEQUENCE IS THE ONE NOBODY GUESSES: punch through
-  moves the explosion PAST the target, so against a lone enemy it is a pure LOSS
-  — more direct hits in a crowd, no blast on one body. `space::terminal_of_punch`
-  reads `struck_along`'s arithmetic from the other end, and with no budget it
-  answers "the first body", which is why every existing number is unmoved. The
+  moves the explosion back down the flight, so a weapon whose blast RADIUS is
+  smaller than its punch through loses it against a lone enemy. The budget is
+  read as a DISTANCE (`space::past_contact`), which is the word the Ferrox's own
+  page uses and the only reading that fits both weapons: 2.1 m clears a Burston
+  Incarnon's 2.0 m and its damage drops 1.6% at 5σ, while 1.5 m sits well inside
+  a Tenet Ferrox's 4.0 m and changes nothing measurable. The reading it replaced
+  spent the budget on BODIES and sent a round that crossed them all off the field
+  — which fits the Burston and silently cost the Ferrox 10% of its damage with no
+  mod equipped, so it was thrown away. With no budget the epicentre is the
+  contact point, which is why every existing number is unmoved. The
   Tenet Ferrox had stated the whole mechanic in words the day before — *"Shots
   explode in a 4 meter radius after reaching maximum punch through distance"* —
   and nothing connected the two until a player shot one.

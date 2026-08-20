@@ -580,67 +580,44 @@ pub fn struck_along(muzzle: Vec2, dir: Vec2, bodies: &[Vec2], punch_through_m: f
 }
 
 
-/// WHERE A PUNCHING PROJECTILE FINALLY STOPS — the epicentre of a TERMINAL
-/// blast (`weapons_data::BlastKind::Terminal`).
+/// WHERE A TERMINAL BLAST GOES OFF — `weapons_data::BlastKind::Terminal`.
 ///
 /// An ordinary explosive round detonates on the first thing it touches. Some do
-/// not: they keep boring through bodies while their punch-through budget lasts
-/// and go off wherever the flight ENDS. The Tenet Ferrox states it in words —
-/// *"Shots explode in a 4 meter radius after reaching maximum punch through
-/// distance"* — and the owner measured the same on a Burston Prime Incarnon
-/// (MEASUREMENTS M50): the round passes through the target and detonates BEHIND
-/// it.
+/// not: they bore on and go off further down the line. The Tenet Ferrox states
+/// it in words — *"Shots explode in a 4 meter radius after reaching maximum
+/// punch through distance"* — and the owner measured the same on a Burston
+/// Prime Incarnon (MEASUREMENTS M53): the round passes through the target and
+/// detonates BEHIND it.
 ///
-/// THE ARITHMETIC IS [`struck_along`]'s, read from the other end. That function
-/// spends [`BODY_MATERIAL_M`] per body CROSSED and the first body is free, so a
-/// budget of `p` crosses `floor(p / BODY_MATERIAL_M)` of them. The round
-/// therefore comes to rest inside body number `crossings` (0-indexed) — and if
-/// the line does not hold that many, it crossed everything and flew on.
+/// THE PUNCH-THROUGH FIGURE IS READ AS A DISTANCE HERE, which is the word the
+/// Ferrox's own page uses, and it is what makes ONE rule fit BOTH weapons:
 ///
-/// `None` IS THE INTERESTING ANSWER, and it is what the measurement is about:
-/// the round left the field, so its blast reaches nobody. In a real room a wall
-/// stops it a few metres on and the blast still lands near the crowd; this
-/// arena has no geometry (docs/UNMODELLED.md), so a round that crosses every
-/// body on the line simply goes away. That makes punch through a real
-/// TRADE on this class of weapon — more direct hits, no explosion — which is
-/// exactly what was measured and is not something the model was arranged to
-/// produce.
+/// - Burston Prime Incarnon, blast radius 2.0 m. With a 2.1 m mod the
+///   detonation clears its own radius, the target takes nothing from it, and the
+///   damage DROPS — which is the measurement.
+/// - Tenet Ferrox, blast radius 4.0 m and 1.5 m of INNATE punch through. The
+///   detonation lands well inside its own radius, so the target still takes the
+///   blast at its falloff value — which is how that weapon is described and
+///   priced (its Primary Compression row is worth +320%).
 ///
-/// With no budget at all `crossings` is 0 and the answer is the first body on
-/// the line, which is the contact detonation this engine has always fired.
-pub fn terminal_of_punch(
-    muzzle: Vec2,
-    dir: Vec2,
-    bodies: &[Vec2],
-    punch_through_m: f64,
-) -> Option<Vec2> {
-    let len = dir.x.hypot(dir.y);
-    if len <= 0.0 {
-        return None;
+/// The reading it replaced spent the budget on BODIES and sent a round that
+/// crossed them all off the field entirely. That fits the Burston and is wrong
+/// about the Ferrox, whose radial it silently killed against a lone target with
+/// no mod equipped at all — 2674 DPS to 2416, a change no measurement asked for.
+/// A rule that explains one weapon and breaks another is not the rule.
+///
+/// WITH NO BUDGET THE ANSWER IS THE CONTACT POINT, unchanged, which is what
+/// keeps every weapon of this class byte-identical until a mod moves it.
+pub fn past_contact(contact: Vec2, muzzle: Vec2, aim_at: Vec2, punch_through_m: f64) -> Vec2 {
+    let (dx, dy) = (aim_at.x - muzzle.x, aim_at.y - muzzle.y);
+    let len = dx.hypot(dy);
+    if len <= 0.0 || punch_through_m <= 0.0 {
+        return contact;
     }
-    let (ux, uy) = (dir.x / len, dir.y / len);
-    let mut on_line: Vec<(f64, usize)> = bodies
-        .iter()
-        .enumerate()
-        .filter_map(|(i, b)| {
-            let (px, py) = (b.x - muzzle.x, b.y - muzzle.y);
-            let along = px * ux + py * uy;
-            if along < 0.0 {
-                return None;
-            }
-            let perp = (px * uy - py * ux).abs();
-            if perp > BODY_RADIUS_M {
-                return None;
-            }
-            let half = (BODY_RADIUS_M * BODY_RADIUS_M - perp * perp).max(0.0).sqrt();
-            Some(((along - half).max(0.0), i))
-        })
-        .collect();
-    on_line.sort_by(|a, b| {
-        a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal).then(a.1.cmp(&b.1))
-    });
-    let crossings = (punch_through_m.max(0.0) / BODY_MATERIAL_M + 1e-9).floor() as usize;
-    on_line.get(crossings).map(|(_, i)| bodies[*i])
+    Vec2::new(
+        contact.x + dx / len * punch_through_m,
+        contact.y + dy / len * punch_through_m,
+    )
 }
 
 /// THE CLOSEST TWO BODIES CAN STAND — twice a radius, because circles do not
@@ -728,34 +705,33 @@ mod tests {
         assert_eq!(struck_along(muzzle, dir, &bodies, 99.0), vec![0]);
     }
 
-    /// WHERE A TERMINAL BLAST GOES OFF, and the case the owner measured.
+    /// WHERE A TERMINAL BLAST GOES OFF, and why ONE rule has to fit two weapons.
     ///
-    /// Three claims, and the middle one is the finding: with no budget the round
-    /// stops in the body it touched (so a weapon of this class with no punch
-    /// through is unchanged), with a budget and ONE body it crosses and leaves
-    /// the field, and with a budget and a QUEUE it stops in the one it could not
-    /// cross. MEASUREMENTS M53.
+    /// MEASUREMENTS M53. The budget is read as a DISTANCE along the flight, so
+    /// whether the target still takes the blast is decided by the weapon's own
+    /// radius rather than by an all-or-nothing.
     #[test]
-    fn a_terminal_blast_goes_off_where_the_flight_ends() {
+    fn a_terminal_blast_goes_off_past_what_it_hit() {
         let muzzle = Vec2::new(0.0, 0.0);
-        let dir = Vec2::new(1.0, 0.0);
-        let one = [Vec2::new(5.0, 0.0)];
-        // 1. NO BUDGET: it stops in the first body, which is the contact
-        //    detonation this engine has always fired.
-        assert_eq!(terminal_of_punch(muzzle, dir, &one, 0.0), Some(one[0]));
-        // 2. A BUDGET AND ONE BODY: it crosses and flies on — the blast reaches
-        //    nobody, which is what makes punch through a TRADE on this class.
-        assert_eq!(terminal_of_punch(muzzle, dir, &one, 2.2), None);
-        // 3. A QUEUE: 2.2 m crosses four bodies (BODY_MATERIAL_M is 0.5), so it
-        //    comes to rest in the fifth.
-        let queue: Vec<Vec2> = (0..6).map(|i| Vec2::new(5.0 + i as f64, 0.0)).collect();
-        assert_eq!(terminal_of_punch(muzzle, dir, &queue, 2.2), Some(queue[4]));
-        // …and one body short of that, it crosses the lot and is gone again.
-        assert_eq!(terminal_of_punch(muzzle, dir, &queue[..4], 2.2), None);
-        // 4. A BODY OFF THE LINE IS NOT ON THE FLIGHT PATH, so it neither stops
-        //    the round nor spends any of the budget.
-        let beside = [Vec2::new(5.0, 3.0), Vec2::new(9.0, 0.0)];
-        assert_eq!(terminal_of_punch(muzzle, dir, &beside, 0.0), Some(beside[1]));
+        let aim = Vec2::new(10.0, 0.0);
+        let contact = Vec2::new(5.0, 0.0);
+        // 1. NO BUDGET: the contact point, unchanged — which is what keeps this
+        //    class byte-identical until a mod moves it.
+        assert_eq!(past_contact(contact, muzzle, aim, 0.0), contact);
+        // 2. THE BURSTON'S CASE: 2.1 m past a 2.0 m blast radius clears it, so
+        //    the target takes nothing from the explosion and the damage drops.
+        let d = past_contact(contact, muzzle, aim, 2.1);
+        assert!((d.x - 7.1).abs() < 1e-9 && d.y.abs() < 1e-9, "{d:?}");
+        // 3. THE FERROX'S CASE: 1.5 m is well inside a 4.0 m radius, so its
+        //    radial still lands — the reading this replaced killed it outright.
+        let d = past_contact(contact, muzzle, aim, 1.5);
+        let gap = |a: Vec2, b: Vec2| (a.x - b.x).hypot(a.y - b.y);
+        assert!(gap(contact, d) < 4.0, "the Ferrox keeps its blast");
+        // 4. IT FOLLOWS THE AIM, not an axis: the same budget on a diagonal
+        //    moves the epicentre the same distance along that line.
+        let diag = Vec2::new(3.0, 4.0); // length 5
+        let d = past_contact(contact, muzzle, diag, 2.5);
+        assert!((gap(contact, d) - 2.5).abs() < 1e-9, "{d:?}");
     }
 
     /// WITH NO BUDGET IT IS `first_hit`, which is what keeps every fight this

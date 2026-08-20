@@ -1894,7 +1894,7 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
     // explosion (MEASUREMENTS M53).
     if s.attack.radial.as_ref().map(|r| r.blast_kind) == Some(BlastKind::Terminal) {
         out.push(
-            "Its round bores THROUGH what it hits and explodes where the flight ends, so unlike other explosive weapons it takes punch-through mods normally — and pays for them: punch through carries the explosion PAST a lone enemy, which costs the blast entirely. In a crowd it buys extra direct hits and detonates deeper in the line instead."
+            "Its round bores THROUGH what it hits and explodes further down its flight, so unlike other explosive weapons it takes punch-through mods normally — and pays for them: every metre of punch through moves the explosion another metre past what it hit, so once that distance clears this weapon's own blast radius a lone enemy stops taking the explosion at all."
                 .to_string(),
         );
     }

@@ -3447,25 +3447,39 @@ than a pile of per-weapon exceptions.
 
 ### What it does to the number, and why it can go DOWN
 
-`space::terminal_of_punch` reads [`struck_along`]'s arithmetic from the other
-end: a budget of `p` crosses `floor(p / BODY_MATERIAL_M)` bodies, so the round
-comes to rest inside body number `crossings` on the line. If the line does not
-hold that many, it crossed everything and flew on.
+`space::past_contact` puts the epicentre `punch_through_m` metres further along
+the flight than the point the round touched. **The budget is read as a DISTANCE**,
+which is the word the Ferrox's own page uses, and it is what makes ONE rule fit
+BOTH weapons rather than one of them:
 
-- **No punch through**: `crossings` is 0, the answer is the first body, and the
-  detonation is on its surface — byte-identical to what this engine has always
-  fired. Every golden test is unmoved.
-- **Punch through, one target**: the round crosses the only body and leaves the
-  field. The explosion reaches nobody. *"纯单体伤害可能还会降低"* — measured, and
-  now modelled.
-- **Punch through, a crowd**: more direct hits AND the blast goes off deeper in
-  the formation, on the last body the budget could not cross.
+| weapon | blast radius | punch through | epicentre lands | result |
+| --- | --- | --- | --- | --- |
+| Burston Prime Incarnon | 2.0 m | 0 | on contact | unchanged |
+| Burston Prime Incarnon | 2.0 m | +2.1 m (Metal Auger) | past its own radius | **damage DROPS** |
+| Tenet Ferrox | 4.0 m | 1.5 m innate | well inside its radius | radial still lands |
 
-**THE ARENA'S MISSING GEOMETRY IS WHAT MAKES THE LOSS TOTAL.** In a real room a
-wall stops the round a few metres on and the blast still lands near the crowd;
-this floor has none (docs/UNMODELLED.md), so a round that crosses every body
-simply goes away. That is the conservative reading and it is the one the
-single-target measurement supports.
+Measured on the wire afterwards, level 100, one standing enemy, 200 runs, with
+the server's own standard error:
+
+    Burston Prime Incarnon   Serration      16584.5 ± 38.4
+                             + Metal Auger  16320.3 ± 37.6     -1.6%, about 5σ
+    Tenet Ferrox             Serration       2658.8 ± 17.8
+                             + Metal Auger   2649.7 ± 17.8     no measurable change
+
+**THE FIRST READING WAS WRONG AND IS WORTH RECORDING.** It spent the budget on
+BODIES — `struck_along`'s own arithmetic, read from the other end — so a round
+that crossed every body on the line left the field and its blast reached nobody.
+That fits the Burston and is *wrong about the Ferrox*, whose 1.5 m of INNATE
+punch through would have killed its radial against a lone target with no mod
+equipped at all: 2674 DPS to 2416, a change no measurement asked for and which
+would have made a published Primary Compression row worth +320% pay nothing. A
+rule that explains one weapon and breaks another is not the rule.
+
+**THE DIRECTION IS MEASURED; THE MAGNITUDE IS NOT.** The owner reported that
+single-target damage *"可能还会降低"* — may even decrease — and did not give a
+number, so what is pinned here is that it drops and that the weapon's own radius
+decides by how much. A figure from in game would tighten it; nothing in the
+model would have to move to accept one.
 
 ### OPEN — the four Braton Incarnons, and why they were NOT changed with this
 

@@ -14,6 +14,21 @@ transform_group: coda_bubonico
 
 introduced: "42"
 
+# THE AMMO SYSTEM IS THE WEAPON'S, so this form carries it too — "This weapon
+# does not use ammo pickups; ammo regenerates over time" is a weapon-level
+# Characteristic and both firing modes draw on the same battery. `battery:` is
+# not in `weapons_data::INHERITED` (it is not a scalar a form can partially
+# take), so it is restated rather than inherited; the values are the base
+# entry's and the comment there explains why empty is the FAST delay.
+#
+# The inherited `reload_seconds: 5.5` is the same fact from the other end —
+# 36 rounds at 9 a second is 4 s, plus the 1.5 s delay — so the two agree and
+# the block is what adds the PARTIAL case between bursts.
+battery:
+  regen_per_second: 9.0
+  delay_empty_s: 0.1
+  delay_partial_s: 1.5
+
 # NOT INHERITED — the CO catalog gives a class per ATTACK. No row for either of
 # this weapon's, so both are ordinary Additive; the explosion takes no Condition
 # Overload at all, which is the engine's standing rule for a radial.

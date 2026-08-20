@@ -9265,43 +9265,35 @@ pub fn run_once_traced(
             if pellet_lands {
                 landed_this_shot = true;
             }
-            // A TERMINAL BLAST GOES OFF WHERE THE FLIGHT ENDS, not on the first
-            // body the round touched — see `weapons_data::BlastKind` and
-            // MEASUREMENTS M50. With no punch through that IS the first body and
-            // nothing moves; with punch through the round bores on, and against
-            // a lone enemy it leaves the field and the explosion reaches nobody.
+            // A TERMINAL BLAST GOES OFF PAST WHAT THE ROUND HIT, not on it —
+            // see `weapons_data::BlastKind` and MEASUREMENTS M53. The budget is
+            // read as a DISTANCE along the flight (`space::past_contact`), so
+            // whether the target still takes the blast is decided by the
+            // weapon's own radius: 2.1 m clears a Burston Incarnon's 2.0 m and
+            // the damage drops, 1.5 m sits well inside a Tenet Ferrox's 4.0 m
+            // and its radial still lands. With no punch through nothing moves.
             //
             // Only on a pellet that LANDS. One that missed never touched
             // anything to punch through, so where it ends up is the ordinary
             // miss geometry's question and is left to it.
-            let mut det = det;
-            let mut blast_left_the_field = false;
-            if pellet_lands
+            let det = if pellet_lands
                 && ap.radial.as_ref().map(|r| r.blast_kind)
                     == Some(crate::weapons_data::BlastKind::Terminal)
             {
                 let aim = params.aim_point();
-                let muzzle = crate::space::muzzle(params.player_at, aim);
-                let mut bodies = Vec::with_capacity(params.others.len() + 1);
-                bodies.push(params.target_at);
-                bodies.extend(params.others.iter().map(|f| f.at));
-                let dir = crate::space::Vec2::new(aim.x - muzzle.x, aim.y - muzzle.y);
-                match crate::space::terminal_of_punch(muzzle, dir, &bodies, params.punch_through_m)
-                {
-                    // THE SURFACE, not the centre — the same convention the
-                    // contact case uses, which is what keeps a terminal weapon
-                    // with no punch through byte-identical to what it was.
-                    Some(at) => {
-                        det = crate::space::Detonation {
-                            at: crate::space::detonation_point(at, params.player_at),
-                            height_m: 0.0,
-                        }
-                    }
-                    None => blast_left_the_field = true,
+                crate::space::Detonation {
+                    at: crate::space::past_contact(
+                        det.at,
+                        crate::space::muzzle(params.player_at, aim),
+                        aim,
+                        params.punch_through_m,
+                    ),
+                    height_m: det.height_m,
                 }
-            }
+            } else {
+                det
+            };
             let radial_stage = match ap.radial {
-                _ if blast_left_the_field => None,
                 Some(r) if !r.takes_multishot && pellet_idx > 0 => None,
                 other => other,
             };
