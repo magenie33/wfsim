@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: 42c4f5ed7b06ebe2b8c2d131f64cf735c8caae74
+engine: eef0586ee353403cf69744bf76d0a010db7544e0
 entries:
   - weapon: akarius_prime
     mode: base
@@ -196,9 +196,19 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: larkspur_prime
     mode: base
+    score: 5.963999725632757
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, hypothermic_shell, contamination_casing, combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, secondary_fortifier]
+  - weapon: larkspur_prime
+    mode: base
     score: 5.923636251477879
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, combustion_rounds]
     arcanes: [primary_debilitate, secondary_fortifier]
+  - weapon: larkspur_prime
+    mode: base
+    score: 4.959871267550331
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, hypothermic_shell, contamination_casing, combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, cascadia_flare]
   - weapon: larkspur_prime
     mode: base
     score: 4.865973965109466
