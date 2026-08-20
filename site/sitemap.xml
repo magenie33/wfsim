@@ -25,7 +25,14 @@
   <url><loc>https://wfsim.app/weapons/Burston_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Cernos_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Cestra</loc></url>
+  <url><loc>https://wfsim.app/weapons/Coda_Bassocyst</loc></url>
+  <url><loc>https://wfsim.app/weapons/Coda_Bubonico</loc></url>
+  <url><loc>https://wfsim.app/weapons/Coda_Catabolyst</loc></url>
+  <url><loc>https://wfsim.app/weapons/Coda_Hema</loc></url>
+  <url><loc>https://wfsim.app/weapons/Coda_Pox</loc></url>
   <url><loc>https://wfsim.app/weapons/Coda_Sporothrix</loc></url>
+  <url><loc>https://wfsim.app/weapons/Coda_Synapse</loc></url>
+  <url><loc>https://wfsim.app/weapons/Coda_Tysis</loc></url>
   <url><loc>https://wfsim.app/weapons/Cortege</loc></url>
   <url><loc>https://wfsim.app/weapons/Corvas</loc></url>
   <url><loc>https://wfsim.app/weapons/Corvas_Prime</loc></url>
@@ -40,6 +47,7 @@
   <url><loc>https://wfsim.app/weapons/Deth_Machine_Rifle_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Dex_Sybaris</loc></url>
   <url><loc>https://wfsim.app/weapons/Dread</loc></url>
+  <url><loc>https://wfsim.app/weapons/Dual_Coda_Torxica</loc></url>
   <url><loc>https://wfsim.app/weapons/Dual_Decurion</loc></url>
   <url><loc>https://wfsim.app/weapons/Dual_Toxocyst</loc></url>
   <url><loc>https://wfsim.app/weapons/Felarx</loc></url>
@@ -139,6 +147,18 @@
   <url><loc>https://wfsim.app/weapons/Synoid_Gammacor</loc></url>
   <url><loc>https://wfsim.app/weapons/Tazicor</loc></url>
   <url><loc>https://wfsim.app/weapons/Telos_Boltor</loc></url>
+  <url><loc>https://wfsim.app/weapons/Tenet_Arca_Plasmor</loc></url>
+  <url><loc>https://wfsim.app/weapons/Tenet_Cycron</loc></url>
+  <url><loc>https://wfsim.app/weapons/Tenet_Detron</loc></url>
+  <url><loc>https://wfsim.app/weapons/Tenet_Diplos</loc></url>
+  <url><loc>https://wfsim.app/weapons/Tenet_Envoy</loc></url>
+  <url><loc>https://wfsim.app/weapons/Tenet_Ferrox</loc></url>
+  <url><loc>https://wfsim.app/weapons/Tenet_Flux_Rifle</loc></url>
+  <url><loc>https://wfsim.app/weapons/Tenet_Glaxion</loc></url>
+  <url><loc>https://wfsim.app/weapons/Tenet_Plinx</loc></url>
+  <url><loc>https://wfsim.app/weapons/Tenet_Quanta</loc></url>
+  <url><loc>https://wfsim.app/weapons/Tenet_Spirex</loc></url>
+  <url><loc>https://wfsim.app/weapons/Tenet_Tetra</loc></url>
   <url><loc>https://wfsim.app/weapons/Torid</loc></url>
   <url><loc>https://wfsim.app/weapons/Vadarya_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Vasto</loc></url>
