@@ -81,6 +81,11 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, bladed_rounds, speed_trigger, vile_acceleration, vital_sense, thermite_rounds]
     arcanes: [primary_crux]
     valence: magnetic
+  - weapon: cortege
+    mode: base
+    score: 1.6666666666666667
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
   - weapon: dual_toxocyst
     mode: cycle
     score: 2.2053525202113966
@@ -164,6 +169,12 @@ entries:
     mods: [hornet_strike, barrel_diffusion, lethal_torrent, pistol_elementalist, target_cracker, magnetic_might, frostbite, pistol_pestilence]
     arcanes: [secondary_enervate]
     valence: heat
+  - weapon: kuva_zarr
+    mode: base
+    score: 0.062324016701054
+    mods: [galvanized_chamber, heavy_caliber, primed_firestorm, serration, galvanized_aptitude, rifle_elementalist, primed_cryo_rounds, infected_clip]
+    arcanes: [primary_merciless]
+    valence: toxin
   - weapon: laetum
     mode: cycle
     score: 4.241704305282842
