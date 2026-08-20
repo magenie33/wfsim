@@ -3654,6 +3654,14 @@ mod tests {
             // Projectile Impact | 150 | 0 | 0% | N/A | Does not apply". The Stug
             // has carried the same row since it was written.
             ("sonicor", "inert", 1.0),
+            // …and the CASTANAS FAMILY, whose every attack carries the same
+            // 0% row: "Castanas | Normal Attack | AoE | 160 | 0 | 0% | N/A |
+            // Does not apply", and the Sancti's two detonations likewise. On a
+            // mine whose damage IS the blast that was the whole weapon taking a
+            // term the game does not give it. The Talons has NO row, and
+            // absence means ordinary.
+            ("castanas", "inert", 1.0),
+            ("sancti_castanas", "inert", 1.0),
         ];
 
         let mut unexpected = Vec::new();

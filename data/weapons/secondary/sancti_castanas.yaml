@@ -28,9 +28,19 @@ ammo_pickup: 4
 magazine: 2
 reload_seconds: 1
 
-# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
-# ordinary Additive at the full +100%.
-co_behavior: additive_with_base_damage
+# Condition Overload: THE CATALOG NAMES BOTH OF THIS WEAPON'S ATTACKS, and
+# gives both the same answer. Verbatim (docs/CATALOGS.md §1):
+#
+#   Sancti Castanas | Mid-Flight Detonation | AoE | 300 | 0 | 0% | N/A
+#   Sancti Castanas | Embedded Detonation   | AoE | 300 | 0 | 0% | N/A
+#
+#   Notes cell on both: "Does not apply"
+#
+# `inert` is that pair. The entry carries the EMBEDDED detonation as its
+# own damage (see the admission below), and the catalog says neither
+# detonation takes the term — so the class is the same whichever one is
+# modelled. It read Adding at 100% until 2026-08-20.
+co_behavior: inert
 
 attack:
   # Cone half-angle from the reticle, degrees — wiki

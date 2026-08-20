@@ -885,6 +885,39 @@ known ones.
 
 It needs `private/scripts/wiki_weapons.py` and therefore does not run in CI.
 
+### The catalogs, read from the SOURCE — `scripts/audit_condition_overload.py`
+
+**A method error worth naming.** Every weapon yaml written in August 2026 opened
+with *"NO row in the wiki's CO catalog (re-read 2026-08-20)"*, and that check had
+been run against **docs/CATALOGS.md** — our own transcription, which by
+construction carries only "rows the roster already has". Asking it whether a NEW
+weapon has a row can only ever answer no.
+
+Reading the WIKI PAGE instead found **forty-six** entries the Attack Catalog
+names and the roster contradicted, a third of them weapons that had been here for
+months: the Lanka reading Adding at 100% against its row's 38%, both Laser
+Rifles, the whole Cernos family, the Catabolyst, and the Castanas pair taking a
+Condition Overload term the catalog says outright does not apply. Condition
+Overload is on most builds, so each was a wrong DAMAGE NUMBER.
+
+`the_only_condition_overload_anomalies_are_the_ones_the_catalog_names` is the
+CI-side guard and protects a different thing — that OUR data does not drift from
+OUR list. Only this tool can see the wiki GAIN a row.
+
+**It took two passes, and the second lesson is sharper than the first.** The
+first reconciliation matched a row to a form through a short list of attack
+NAMES. The catalog names an attack the way that WEAPON's page does, so
+"Projectile Impact", "Direct Hit", "Lock-On Mode", "Slug Impact", "Burst Mode"
+and "Reload From Empty Impact" matched nothing and were skipped in SILENCE. The
+tool now REPORTS an attack name it cannot place instead of passing over it: a
+narrow vocabulary does not fail, it under-reports.
+
+The same shape applies to Primary Compression, which the same sweep found had
+**fifty-nine** roster attacks named in the published table and undeclared here —
+where an undeclared attack pays the arcane nothing at all. That one is checked by
+`the_roster_reproduces_primary_compressions_published_column`, which re-derives
+the wiki's own Max Damage Bonus column from each entry's radius.
+
 ### The join key itself
 
 Everything above joins our data to the export by `internal_name` ==
