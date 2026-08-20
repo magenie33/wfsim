@@ -50,7 +50,8 @@ attack:
   shot_type: hit_scan
   fire_rate: 12
   multishot: 1.0
-  ammo_cost: 1
+  # HALF A ROUND A TICK, which is what every beam in the module costs.
+  ammo_cost: 0.5
   crit_chance: 0.08
   crit_multiplier: 1.8
   status_chance: 0.2

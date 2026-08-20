@@ -8,7 +8,7 @@ mod_pools: [primary, rifle, sniper]
 mastery_rank: 8
 max_rank: 30
 
-accuracy: 100.0
+accuracy: 833.3
 disposition: 1.15
 polarities: [madurai, madurai]
 exilus_polarity: madurai
@@ -19,7 +19,7 @@ magazine: 12
 reload_seconds: 3.0
 ammo_type: primary
 ammo_max: 24
-ammo_pickup: 15
+ammo_pickup: 12
 
 # No CO catalog row, so the ordinary class (absence means ORDINARY).
 co_behavior: additive_with_base_damage

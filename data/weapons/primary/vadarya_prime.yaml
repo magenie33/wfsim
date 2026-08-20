@@ -22,7 +22,7 @@ magazine: 16
 reload_seconds: 2.6
 ammo_type: primary
 ammo_max: 72
-ammo_pickup: 15
+ammo_pickup: 80
 
 # No CO catalog row, so the ordinary class (absence means ORDINARY).
 co_behavior: additive_with_base_damage

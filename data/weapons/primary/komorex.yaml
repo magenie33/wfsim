@@ -8,7 +8,7 @@ mod_pools: [primary, rifle, sniper]
 mastery_rank: 8
 max_rank: 30
 
-accuracy: 100.0
+accuracy: 20.0
 disposition: 1.15
 polarities: []
 exilus_polarity: naramon

@@ -95,7 +95,9 @@ attack:
   multishot: 1.0
   # "Consumes 0.5 ammo per tick of damage" — half a round a tick, which is what
   # makes a 77-round magazine last 15 seconds of held fire.
-  ammo_cost: 0.5
+  # A WHOLE ROUND A TICK, which is the module's figure for THIS beam and
+  # twice what the ordinary Nukor pays. Beams usually cost half.
+  ammo_cost: 1
   crit_chance: 0.07
   # THE HIGHEST CRITICAL MULTIPLIER OF ALL WEAPONS IN THE GAME, and the reason
   # this weapon is built the way it is: 7% crit chance is nothing on its own, so

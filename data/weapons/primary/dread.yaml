@@ -61,7 +61,10 @@ attack:
   crit_chance: 0.5
   crit_multiplier: 2
   status_chance: 0.2
-  punch_through_m: 0.0
+  # 2.5 m on the charged shot — the wiki module's figure for this attack.
+  # The page's Characteristics do not list it; the infobox above them renders
+  # from the same module row, so it is on the page either way.
+  punch_through_m: 2.5
   damage: { impact: 16.8, slash: 302.4, puncture: 16.8 }   # total 336.0
 
 # incarnon_evolutions: definitions live in data/evolutions/dread_*.yaml.

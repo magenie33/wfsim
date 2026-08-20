@@ -71,7 +71,8 @@ attack:
   crit_chance: 0.2
   crit_multiplier: 2
   status_chance: 0.15
-  punch_through_m: 0.0
+  # "Charged shots have 1 meter Punch Through" (wiki).
+  punch_through_m: 1.0
   damage: { impact: 3.8, slash: 30.4, puncture: 41.8 }   # total 76.0
 
 # incarnon_evolutions: definitions live in data/evolutions/ballistica_prime_*.yaml.

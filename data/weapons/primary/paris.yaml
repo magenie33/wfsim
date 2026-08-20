@@ -61,7 +61,8 @@ attack:
   crit_chance: 0.3
   crit_multiplier: 2
   status_chance: 0.1
-  punch_through_m: 0.0
+  # "its charged shots have 2 meters of punch through" (wiki).
+  punch_through_m: 2.0
   damage: { impact: 16, slash: 48, puncture: 256 }   # total 320
 
 # incarnon_evolutions: definitions live in data/evolutions/paris_*.yaml.

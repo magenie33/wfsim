@@ -34,7 +34,7 @@ internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeZylok/ZylokPrimePistol
 noise: alarming
 ammo_type: secondary
 ammo_max: 210
-ammo_pickup: 40
+ammo_pickup: 60
 magazine: 12
 reload_seconds: 1.2
 

@@ -25,7 +25,11 @@ attack:
   fire_rate: 1.0
   multishot: 1.0
   ammo_cost: 1
-  crit_chance: 0.25
+  # THE PARTIAL CHARGE CRITS LESS. "Can be fired after charging for at least
+  # 33% of maximum charge, but with reduced damage AND CRITICAL CHANCE"
+  # (wiki) — 20% here against the full draw's 25%. It carried the full
+  # draw's figure until 2026-08-20.
+  crit_chance: 0.2
   crit_multiplier: 2.0
   status_chance: 0.25
   # INNATE INFINITE BODY PUNCH-THROUGH — the punch-through page's own exception

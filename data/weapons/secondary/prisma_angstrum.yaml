@@ -40,7 +40,9 @@ noise: alarming
 ammo_type: secondary
 ammo_max: 18
 ammo_pickup: 3
-magazine: 1
+# THREE ROCKETS TO A MAGAZINE, and this entry is the SINGLE one — see the
+# ordinary Angstrum.
+magazine: 3
 reload_seconds: 1.8
 
 # ORDINARY HERE, AND THE CATALOG SAYS SO BY NAMING THE OTHER FORM. The row is

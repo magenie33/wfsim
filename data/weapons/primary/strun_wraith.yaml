@@ -23,7 +23,7 @@ transforms_to: strun_wraith_incarnon
 # yet and say so on their own tile.
 unmodeled:
   - reason: reload_never_interrupted
-accuracy: 6.67
+accuracy: 6.7
 disposition: 1.35
 polarities: [naramon]
 exilus_polarity: madurai

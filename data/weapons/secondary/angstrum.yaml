@@ -40,7 +40,12 @@ noise: alarming
 ammo_type: secondary
 ammo_max: 18
 ammo_pickup: 3
-magazine: 1
+# THREE ROCKETS TO A MAGAZINE, and this entry is the SINGLE one: "can be
+# charged to unload more of the weapon's magazine and fire extra
+# projectiles", and a full charge spends all three. So an uncharged shot
+# costs one of three, not one of one — it read as a reload after every
+# rocket until 2026-08-20.
+magazine: 3
 reload_seconds: 2.5
 
 # ORDINARY HERE, AND THE CATALOG SAYS SO BY NAMING THE OTHER FORM. The row is

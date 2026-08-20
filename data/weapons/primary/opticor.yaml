@@ -49,8 +49,12 @@ attack:
   crit_chance: 0.2
   crit_multiplier: 2.5
   status_chance: 0.2
-  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
-  punch_through_m: 0.0
+  # THE WEAPON'S OWN PUNCH THROUGH. An AoE attack takes no punch-through
+  # MODS (MECHANICS §13), which `loadout::resolve` decides from the attack's
+  # shape — the INNATE metres are the weapon's and are kept. They were a zero
+  # here until 2026-08-20, which was the mod rule applied to the wrong half.
+  # "Innate 1 meter punch through" (wiki).
+  punch_through_m: 1.0
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki: "Range: 300.0 m" on this attack.
   range_m: 300.0

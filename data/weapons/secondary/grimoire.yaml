@@ -26,6 +26,12 @@ noise: alarming
 ammo_type: secondary
 ammo_max: 0
 ammo_pickup: 10
+# THE MODULE GIVES THIS WEAPON A MAGAZINE OF ZERO, which is a fact about a
+# Tome — it has no clip and no reload in the sense every gun here does. The
+# sim cannot fire a magazine of zero, so this states ONE: every attack is
+# its own 'magazine' and the reload below is the cadence the module gives.
+# Written down because it is the only number in this entry that is not the
+# module's own (2026-08-20).
 magazine: 1
 reload_seconds: 0
 

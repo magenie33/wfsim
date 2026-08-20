@@ -8,7 +8,7 @@ mod_pools: [primary, rifle, sniper]
 mastery_rank: 3
 max_rank: 30
 
-accuracy: 100.0
+accuracy: 13.3
 disposition: 1.45
 polarities: []
 exilus_polarity: madurai

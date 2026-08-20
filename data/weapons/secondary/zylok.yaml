@@ -34,7 +34,7 @@ internal_name: /Lotus/Weapons/Tenno/Pistols/ConclaveLeverPistol/ConclaveLeverPis
 noise: alarming
 ammo_type: secondary
 ammo_max: 210
-ammo_pickup: 40
+ammo_pickup: 20
 magazine: 8
 reload_seconds: 1.2
 

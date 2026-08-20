@@ -35,7 +35,7 @@ scope:
   magnification: 4.5
   headshot_damage: 0.5
 
-accuracy: 13.33
+accuracy: 13.3
 disposition: 1.15
 polarities: [madurai]
 exilus_polarity: madurai
@@ -76,7 +76,8 @@ attack:
   crit_chance: 0.25
   crit_multiplier: 2
   status_chance: 0.3
-  punch_through_m: 0.0
+  # "Innate 1 meter punch through" (wiki).
+  punch_through_m: 1.0
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki: "Range: 1000.0 m", Hit-Scan
   range_m: 1000.0

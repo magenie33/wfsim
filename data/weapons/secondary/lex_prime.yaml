@@ -32,7 +32,7 @@ internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeLex/PrimeLex
 noise: alarming
 ammo_type: secondary
 ammo_max: 210
-ammo_pickup: 40
+ammo_pickup: 60
 magazine: 8
 reload_seconds: 2.35
 

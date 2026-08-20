@@ -839,6 +839,52 @@ would have caught the original bug: **every pool a weapon claims holds at least
 one mod.** Verified to bite — moving `data/mods/bow/` aside fails it with
 `cernos_prime: mod pool `bow` is empty`.
 
+### Re-reading the numbers back — `scripts/audit_weapon_stats.py`
+
+Every guard in the repo checks a SHAPE: that a burst declares its count, that a
+falloff spans, that a range page was opened. **A field transcribed into the
+wrong slot satisfies all of them.** This tool asks the other question — does the
+number in the yaml equal the number in the wiki's own weapon module? — and it is
+the only one that does.
+
+Run over the whole roster on 2026-08-20 it found, in entries written months
+apart and never by the same hand:
+
+- **eleven entries carrying a zero for an INNATE punch through the wiki
+  publishes** — Dread 2.5, Miter 2.5, Paris 2, Paris Prime 3, Strun Prime 0.8,
+  both Vectis 1, Ballistica Prime 1, both Opticors 1, Battacor 2, Enkaus 1. Four
+  of those had zeroed it on purpose, under the rule that an AoE attack takes no
+  punch through — but `loadout::resolve` gates only the MODS on the attack's
+  shape and always keeps the innate metres, so the rule had been applied to the
+  wrong half. It cost nothing while the arena held one body and costs a lot
+  since the formation landed.
+- **the Lanka's partial charge crit at 25% where its page says the partial
+  charge crits LESS** (20%) — the one finding that moved a damage number.
+- **the Angstrum's magazine at 1 where the module says 3**, so it reloaded after
+  every rocket.
+- eight wrong ammo pickups, eleven wrong accuracies, three wrong ammo costs.
+
+**How an entry is matched to its attack.** A module row holds several attacks
+and an entry carries ONE without recording which, so the match is by VALUE: the
+candidates are the attacks whose damage vector is the entry's, and among them
+the one that also agrees on crit, status, fire rate and multishot wins. The
+Kohm's Single Pellet and Fully Spooled rows share their damage and differ in
+everything else, and the entry deliberately carries the spooled one.
+
+**PRIMARY AND SECONDARY ONLY, and that is the point.** An Arch-Gun's page has
+TWO stat columns and the roster ships the ATMOSPHERE one; the module's row is
+the ARCHWING column, so every Arch-Gun would report a disagreement and every one
+of them would be us being right. A checker that cannot tell the columns apart
+must not pretend to check them.
+
+**Deliberate divergences are a TABLE with reasons** (`EXPECTED`), not a silent
+pass: infinite punch through written as 999, the Ballistica Prime's magazine
+counted in shots, the Tenet Plinx alt-fire's damage being its magazine times its
+per-round figure. A new disagreement stands out instead of being lost among the
+known ones.
+
+It needs `private/scripts/wiki_weapons.py` and therefore does not run in CI.
+
 ### The join key itself
 
 Everything above joins our data to the export by `internal_name` ==
