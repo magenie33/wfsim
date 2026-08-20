@@ -28,7 +28,11 @@ ammo_type: secondary
 ammo_max: 210
 ammo_pickup: 60
 magazine: 15
-reload_seconds: 1.2
+reload_seconds: 1.7  # module: Reload
+# Was 1.2 until 2026-08-21, caught by scripts/audit_weapon_stats.py. The
+# module says 1.7 and it is the only source that has this weapon at all —
+# WFCD's export does not carry it, so nothing cross-checked the first
+# transcription.
 
 # Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
 # ordinary Additive at the full +100%. The catalog gives a class PER ATTACK

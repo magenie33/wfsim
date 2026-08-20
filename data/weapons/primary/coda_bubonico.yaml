@@ -29,7 +29,10 @@ max_rank: 40
 # Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
 # against WFCD warframe-items — the one disagreement is the class above).
 accuracy: 25.0
-disposition: 0.5             # riven disposition
+disposition: 0.55            # riven disposition
+# Was 0.5 until 2026-08-21, caught by scripts/audit_weapon_stats.py. Both
+# sources say 0.55 and they are independent: the wiki module's Disposition
+# column, and WFCD's `omegaAttenuation` (0.55000001).
 polarities: [naramon, madurai, naramon]
 exilus_polarity: madurai
 riven_family: Bubonico
