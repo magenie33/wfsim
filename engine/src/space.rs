@@ -529,29 +529,69 @@ impl Neighbours {
     }
 }
 
-/// EVERY BODY A SHOT PASSES THROUGH, in the order the ray meets them.
+/// WHAT CROSSING ONE BODY COSTS, at a ray that passes `perp` from its centre.
+///
+/// Punch through is spent on MATERIAL, so a round that clips the edge of an
+/// enemy pays for the sliver it actually crossed and one through the middle
+/// pays for the whole width. The body is a circle of [`BODY_RADIUS_M`], so the
+/// chord it crosses is `2·sqrt(r² − perp²)` and the cost is that chord as a
+/// FRACTION of the widest one.
+///
+/// THE PUBLISHED FIGURE IS THE CENTRE SHOT and stays exactly that: at `perp = 0`
+/// this is [`BODY_MATERIAL_M`] to the last bit, which is what the wiki's
+/// "Minimum Mod Ranks for Penetration" table measures and what calibrates it.
+/// Every number the roster already had is aimed at a body's centre, so none of
+/// them moves; what changes is the body BEHIND, clipped off-axis, which used to
+/// be charged a full width for a graze.
+///
+/// It is scaled rather than computed as a raw chord because the two constants
+/// are deliberately not the same thing (AGENTS.md): `BODY_RADIUS_M` is MEASURED
+/// and governs the hit test, `BODY_MATERIAL_M` is PUBLISHED and governs this.
+/// A raw `2·sqrt(r² − perp²)` would silently overwrite the published 0.5 m with
+/// 0.4 m and move every punch-through number in the roster.
+pub fn material_at(perp: f64) -> f64 {
+    let r = BODY_RADIUS_M;
+    if perp >= r {
+        return 0.0;
+    }
+    BODY_MATERIAL_M * (r * r - perp * perp).sqrt() / r
+}
+
+/// What one shot met on its way down the line — see [`traverse`].
+#[derive(Debug, Clone, PartialEq)]
+pub struct Traversal {
+    /// Every body the round reached, in the order the ray met them.
+    pub struck: Vec<usize>,
+    /// The body it could not get out of, if there was one. `None` means it
+    /// crossed every body on the line and carried on.
+    pub stopped_in: Option<usize>,
+    /// Budget still unspent once it had crossed everything (`0` if it stopped).
+    pub left_m: f64,
+}
+
+/// EVERY BODY A SHOT PASSES THROUGH, and where it ran out — ONE walk, because
+/// two readers of it must not be able to disagree.
 ///
 /// The generalisation of [`first_hit`] to a weapon that does not stop at the
 /// first body: *"the total distance of material (object or enemy) that a
 /// weapon's projectile, bullet or beam can pass through before dissipating"*.
-/// Each body crossed spends [`BODY_MATERIAL_M`] of the budget, so `n` bodies
-/// are struck where `n - 1` crossings fit — a budget of zero is the ordinary
-/// one-body shot this engine has always fired, and `first_hit` is this function
-/// with no budget.
+/// The first body is free — it is the contact the shot was going to make anyway
+/// — and each one after it is paid for by crossing the one in front, at
+/// [`material_at`] of wherever the ray crossed it.
 ///
 /// THE ARENA HAS NO COVER, which is what makes the model complete rather than
 /// approximate here: the page's one qualifier on innate punch-through — *"does
 /// not apply to surfaces"* — separates bodies from geometry, and this floor has
 /// no geometry. Everything the ray meets is a body.
-pub fn struck_along(muzzle: Vec2, dir: Vec2, bodies: &[Vec2], punch_through_m: f64) -> Vec<usize> {
+pub fn traverse(muzzle: Vec2, dir: Vec2, bodies: &[Vec2], punch_through_m: f64) -> Traversal {
     let len = dir.x.hypot(dir.y);
     if len <= 0.0 {
-        return Vec::new();
+        return Traversal { struck: Vec::new(), stopped_in: None, left_m: 0.0 };
     }
     let (ux, uy) = (dir.x / len, dir.y / len);
     // Everything on the line, nearest first — the same test `first_hit` makes,
     // asked of every body rather than of the best one.
-    let mut on_line: Vec<(f64, usize)> = bodies
+    let mut on_line: Vec<(f64, usize, f64)> = bodies
         .iter()
         .enumerate()
         .filter_map(|(i, b)| {
@@ -565,20 +605,33 @@ pub fn struck_along(muzzle: Vec2, dir: Vec2, bodies: &[Vec2], punch_through_m: f
                 return None;
             }
             let half = (BODY_RADIUS_M * BODY_RADIUS_M - perp * perp).max(0.0).sqrt();
-            Some(((along - half).max(0.0), i))
+            Some(((along - half).max(0.0), i, perp))
         })
         .collect();
     // By entry distance, then by index — the same determinism rule the chain
     // follows, for the same reason: a tie the game breaks in world-space order
     // is not reproducible, and a fixed order is.
-    on_line.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal).then(a.1.cmp(&b.1)));
-    // HOW MANY THE BUDGET REACHES. The first is free — it is the contact the
-    // shot was going to make anyway — and each one after it is paid for by
-    // crossing the one in front.
-    let reach = 1 + (punch_through_m.max(0.0) / BODY_MATERIAL_M + 1e-9).floor() as usize;
-    on_line.into_iter().take(reach).map(|(_, i)| i).collect()
+    on_line.sort_by(|a, b| {
+        a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal).then(a.1.cmp(&b.1))
+    });
+    let mut budget = punch_through_m.max(0.0);
+    let mut struck = Vec::with_capacity(on_line.len());
+    for (_, i, perp) in &on_line {
+        struck.push(*i);
+        let cost = material_at(*perp);
+        if budget + 1e-9 < cost {
+            return Traversal { struck, stopped_in: Some(*i), left_m: 0.0 };
+        }
+        budget -= cost;
+    }
+    Traversal { struck, stopped_in: None, left_m: budget }
 }
 
+/// Every body a shot passes through — [`traverse`]'s first answer, kept as its
+/// own name because most callers want only this.
+pub fn struck_along(muzzle: Vec2, dir: Vec2, bodies: &[Vec2], punch_through_m: f64) -> Vec<usize> {
+    traverse(muzzle, dir, bodies, punch_through_m).struck
+}
 
 /// WHERE A TERMINAL BLAST GOES OFF — `weapons_data::BlastKind::Terminal`.
 ///
@@ -620,42 +673,18 @@ pub fn dissipation_point(
         return contact;
     }
     let (ux, uy) = (dx / len, dy / len);
-    // Everything on the line, nearest first — `struck_along`'s own test.
-    let mut on_line: Vec<(f64, usize)> = bodies
-        .iter()
-        .enumerate()
-        .filter_map(|(i, b)| {
-            let (px, py) = (b.x - muzzle.x, b.y - muzzle.y);
-            let along = px * ux + py * uy;
-            if along < 0.0 {
-                return None;
-            }
-            let perp = (px * uy - py * ux).abs();
-            if perp > BODY_RADIUS_M {
-                return None;
-            }
-            let half = (BODY_RADIUS_M * BODY_RADIUS_M - perp * perp).max(0.0).sqrt();
-            Some(((along - half).max(0.0), i))
-        })
-        .collect();
-    on_line.sort_by(|a, b| {
-        a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal).then(a.1.cmp(&b.1))
-    });
-    if on_line.is_empty() {
-        return contact;
-    }
-    let crossings = (punch_through_m / BODY_MATERIAL_M + 1e-9).floor() as usize;
-    if let Some((_, i)) = on_line.get(crossings) {
+    let t = traverse(muzzle, Vec2::new(dx, dy), bodies, punch_through_m);
+    if let Some(i) = t.stopped_in {
         // IT RAN OUT INSIDE THIS ONE. The epicentre is its surface facing the
         // shooter — the convention the contact case uses, so a round that
         // crosses nothing lands exactly where it always did.
-        let b = bodies[*i];
+        let b = bodies[i];
         return Vec2::new(b.x - ux * BODY_RADIUS_M, b.y - uy * BODY_RADIUS_M);
     }
+    let Some(&last) = t.struck.last() else { return contact };
     // IT GOT THROUGH EVERY ONE. What is left is spent as flight past the last.
-    let last = bodies[on_line[on_line.len() - 1].1];
-    let left = (punch_through_m - on_line.len() as f64 * BODY_MATERIAL_M).max(0.0);
-    Vec2::new(last.x + ux * left, last.y + uy * left)
+    let b = bodies[last];
+    Vec2::new(b.x + ux * t.left_m, b.y + uy * t.left_m)
 }
 
 /// THE CLOSEST TWO BODIES CAN STAND — twice a radius, because circles do not
@@ -741,6 +770,52 @@ mod tests {
         let dir = Vec2::new(0.0, 1.0);
         let bodies = [Vec2::new(0.0, 3.0), Vec2::new(5.0, 6.0)];
         assert_eq!(struck_along(muzzle, dir, &bodies, 99.0), vec![0]);
+    }
+
+    /// A GRAZE COSTS A SLIVER, NOT A WHOLE BODY (owner, 2026-08-20).
+    ///
+    /// Punch through buys MATERIAL, so what a body costs depends on where the
+    /// ray crossed it. It used to be a flat [`BODY_MATERIAL_M`] however the
+    /// round went through — the walk even computed the half-chord to place the
+    /// entry point and then threw it away — so a body clipped at the very edge
+    /// ate as much budget as one shot through the middle.
+    #[test]
+    fn a_body_costs_what_the_ray_actually_crossed() {
+        // 1. THE CENTRE SHOT IS THE PUBLISHED FIGURE, to the last bit. This is
+        //    the calibration the wiki's penetration table sets and the reason
+        //    no existing number in the roster moves.
+        assert!((material_at(0.0) - BODY_MATERIAL_M).abs() < 1e-12);
+        // 2. A GRAZE AT THE RIM COSTS NOTHING, and past it there is no body.
+        assert!(material_at(BODY_RADIUS_M) < 1e-12);
+        assert!(material_at(BODY_RADIUS_M * 2.0) < 1e-12);
+        // 3. AND IT FALLS OFF AS THE CHORD DOES — half the radius out is
+        //    sqrt(3)/2 of the width, not half of it.
+        let half = material_at(BODY_RADIUS_M / 2.0);
+        assert!((half - BODY_MATERIAL_M * 3f64.sqrt() / 2.0).abs() < 1e-12, "{half}");
+
+        // 4. WHICH MEANS A CLIPPING SHOT REACHES FURTHER. Two identical lines
+        //    of six, one down the centres and one grazing them at 0.9 of the
+        //    radius, on a budget that stops after five in the middle.
+        let muzzle = Vec2::new(0.0, 0.0);
+        let dir = Vec2::new(1.0, 0.0);
+        let centred: Vec<Vec2> = (0..6).map(|i| Vec2::new(3.0 + 1.5 * i as f64, 0.0)).collect();
+        let clipped: Vec<Vec2> = (0..6)
+            .map(|i| Vec2::new(3.0 + 1.5 * i as f64, BODY_RADIUS_M * 0.9))
+            .collect();
+        let a = struck_along(muzzle, dir, &centred, 2.1);
+        let b = struck_along(muzzle, dir, &clipped, 2.1);
+        assert_eq!(a.len(), 5, "a centred 2.1 m still reaches five: {a:?}");
+        assert_eq!(b.len(), 6, "the same budget grazing them reaches them all: {b:?}");
+
+        // 5. ONE WALK, TWO READERS: where the round stopped and which bodies it
+        //    struck come from the same traversal, so they cannot disagree.
+        let t = traverse(muzzle, dir, &centred, 2.1);
+        assert_eq!(t.struck, a);
+        assert_eq!(t.stopped_in, Some(4), "it ran out inside the fifth");
+        assert!(t.left_m == 0.0);
+        let t = traverse(muzzle, dir, &clipped, 2.1);
+        assert_eq!(t.stopped_in, None, "it got out of all six");
+        assert!(t.left_m > 0.0, "and had budget left: {}", t.left_m);
     }
 
     /// WHERE A TERMINAL BLAST GOES OFF, and it is the mechanic's own accounting:

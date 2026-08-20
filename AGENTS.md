@@ -1001,9 +1001,21 @@ around (decision 2026-07-31).
   holds no list at all.
 - **PUNCH THROUGH IS METRES OF MATERIAL, NOT FREE FLIGHT** (2026-08-17).
   *"The total distance of material (object or enemy) that a weapon's projectile,
-  bullet or beam can pass through before dissipating"* — so a body costs a fixed
-  `space::BODY_MATERIAL_M` and `space::struck_along` walks the aim ray spending
-  it. THAT CONSTANT IS NOT TWICE THE RADIUS, and keeping the two apart is the
+  bullet or beam can pass through before dissipating"* — so `space::traverse`
+  walks the aim ray spending it, body by body.
+  …AND WHAT A BODY COSTS IS WHAT THE RAY ACTUALLY CROSSED (owner, 2026-08-20).
+  It was a flat `space::BODY_MATERIAL_M` however the round went through, so a
+  body clipped at the very edge ate as much budget as one shot through the
+  middle — and the walk even computed the half-chord to place the entry point
+  and then threw it away. `space::material_at` scales the cost by the chord,
+  `BODY_MATERIAL_M · sqrt(r² − perp²) / r`: the published figure at dead centre,
+  nothing at the rim. NO EXISTING NUMBER MOVED, because every scenario aims at a
+  body's CENTRE and that case is the calibration; what changed is the body
+  BEHIND, and it changes a lot — a Burston Incarnon with 2.1 m reaches 5 of six
+  bodies down their centres and all 7 when it clips them at 0.9 of a radius,
+  53,619 DPS against 72,311. `traverse` is ONE walk with two readers
+  (`struck_along` and `dissipation_point`) so they cannot disagree about where a
+  round stopped. THAT CONSTANT IS NOT TWICE THE RADIUS, and keeping the two apart is the
   decision: `BODY_RADIUS_M = 0.2` is MEASURED (M46, walking into an enemy stops
   at 0.4 m centre to centre) and governs spacing, the hit test and blast reach;
   `BODY_MATERIAL_M = 0.5` is PUBLISHED, by the wiki's "Minimum Mod Ranks for
