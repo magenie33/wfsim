@@ -5103,6 +5103,15 @@ fn spread_hit(
 /// alternative — rolling a fresh crit for the spread — would be inventing an
 /// instance the game does not describe, so the shot it actually belongs to is
 /// the honest source.
+///
+/// …EXCEPT WHERE IT DOES DESCRIBE ONE, and one member's page does: Secondary
+/// Irradiate's notes say its spread *"will roll a separate critical hit chance
+/// per enemy"* (re-read 2026-08-21). Inheriting is still what happens, so every
+/// body in that radius crits together or not at all. The MEAN is unaffected
+/// either way; the CORRELATION is not, and a kill count reads correlation where
+/// a damage total does not. Recorded rather than changed, because re-rolling
+/// moves the seeded draw stream and therefore every golden value after it —
+/// which is the owner's call and needs a measurement, not a wiki line.
 struct SpreadShot {
     raw_per_bucket: f64,
     shares: TypeShares,
