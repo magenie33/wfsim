@@ -75,6 +75,22 @@ around (decision 2026-07-31).
   verbatim, the rows the roster holds, and where it has already gone wrong —
   the Shedu was filed as `Adding` on the reasoning that it had no row, and it
   has one saying Multiplying (2026-08-10).
+  **"ABSENCE" MEANS ABSENT FROM THE WIKI, NOT FROM THIS FILE** (2026-08-20).
+  Every weapon added in August opened with "no row in the CO catalog", and that
+  check had been run against `docs/CATALOGS.md` — which by construction carries
+  only "the rows the roster already holds", so asking it about a NEW weapon can
+  only ever answer no. Reading the PAGE found **forty-six** CO entries and
+  **fifty-nine** Primary Compression attacks the catalogs name and the roster
+  contradicted, a third of them weapons that had been here for months (the Lanka
+  at 38%, both Laser Rifles, the whole Cernos family, the Castanas pair taking a
+  term the catalog says does not apply). Both mechanics are on most builds, so
+  each was a wrong DAMAGE NUMBER rather than a wrong comment.
+  `scripts/audit_condition_overload.py` is that check, executed; the compression
+  half is `the_roster_reproduces_primary_compressions_published_column`, which
+  re-derives the wiki's own bonus column from each entry's radius. And the tool
+  REPORTS a row it cannot place rather than skipping it — the first pass matched
+  rows to forms through a short list of attack names and under-reported nine in
+  silence, because the catalog names an attack the way that WEAPON's page does.
 - `docs/UNMODELLED.md` — the EDGES, by reason rather than by perk: one target,
   no distance, no movement, no holster, infinite ammo, nobody shoots back, and
   the Warframe layer. Written so "why is this perk worth nothing" is a lookup
