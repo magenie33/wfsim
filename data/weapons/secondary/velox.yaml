@@ -53,7 +53,8 @@ attack:
   damage: { impact: 4.32, puncture: 8.16, slash: 11.52 }   # total 24
 
 unmodeled:
-  - "it 'reloads 50% faster from a fully depleted magazine' (wiki), and this engine carries ONE reload time per weapon. This sim holds the trigger until the magazine is dry, which is exactly the case that reload applies to — so the 2.6 s here is the SLOW reload for a fight that would always earn the fast one, and the weapon is understated"
+  - reason: empty_reload_is_faster
+    seconds: 2.6
   - "Velox Conclusion, the Velox-exclusive mod — a weapon-exclusive card outside the pools this roster loads"
 
 source:

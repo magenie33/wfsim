@@ -1,0 +1,74 @@
+id: zakti_prime
+name: Zakti Prime
+slot: secondary
+# THE ZAKTI AT EIGHT ROUNDS, four times the crit chance and twice the status —
+# 42% — with a 100-damage cloud in 3.8 m. The status chance is what the Prime is
+# actually for: a Gas cloud that procs is worth more than one that does not.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]   # CompatibilityTags PROJECTILE, AOE
+mastery_rank: 14
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 26.7
+disposition: 1.1            # riven disposition
+polarities: [naramon, naramon, madurai]
+exilus_polarity: madurai
+riven_family: Zakti
+traits: [prime]
+introduced: "29.3"
+internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeZakti/PrimeZaktiPistol
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 20
+magazine: 8
+reload_seconds: 1
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 2.5
+    max_deg: 5.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 140
+  fire_rate: 5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.08
+  crit_multiplier: 1.8
+  status_chance: 0.42
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # A GUARANTEED IMPACT PROC on every direct hit — the module's ForcedProcs.
+  forced_procs: [impact]
+  # NO RANGE ROW on the direct-hit block — the 3.8 m below is the
+  # explosion's RADIUS and not a reach. See data/surveys/weapon_range.yaml.
+  damage: { impact: 12, puncture: 18 }   # total 30
+  # THE EXPLOSION — rules in MECHANICS §7.
+  radial:
+    radius_m: 3.8
+    falloff_start_m: 0.0
+    falloff_reduction: 0.0   # the page states NO damage falloff
+    crit_chance: 0.08
+    crit_multiplier: 1.8
+    status_chance: 0.42
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { gas: 100 }   # total 100
+
+unmodeled:
+  - "the cloud arrives ONE SECOND after the dart lands (wiki) — this engine resolves it at the point of impact immediately, so nothing walks out of one here"
+  - reason: explosion_ignores_cover
+
+source:
+  url: https://wiki.warframe.com/w/Zakti_Prime

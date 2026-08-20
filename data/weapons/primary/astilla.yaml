@@ -1,0 +1,78 @@
+id: astilla
+name: Astilla
+slot: primary
+# A SHOTGUN THAT FIRES ONE SLUG. Seventy Impact with a guaranteed proc, and then
+# the slug shatters into a 2.4 m glass explosion worth 120 — so almost two
+# thirds of the weapon is the part that goes off after it lands.
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, shotgun]   # CompatibilityTags PROJECTILE
+mastery_rank: 10
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 25.0
+disposition: 1.3            # riven disposition
+polarities: [madurai, naramon]
+exilus_polarity: madurai
+riven_family: Astilla
+traits: [tenno]
+introduced: "22.0"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/TnGlassShotgun/TnGlassShotgunGun
+noise: alarming
+ammo_type: primary
+ammo_max: 112
+ammo_pickup: 40
+magazine: 16
+reload_seconds: 2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 2.0
+    max_deg: 6.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 120
+  fire_rate: 4.33
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.17
+  crit_multiplier: 1.9
+  status_chance: 0.33
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # A GUARANTEED IMPACT PROC on every direct hit — the module's ForcedProcs.
+  forced_procs: [impact]
+  # NO RANGE ROW on the direct-hit block — the 2.4 m below is the
+  # explosion's RADIUS and not a reach. See data/surveys/weapon_range.yaml.
+  falloff:
+    start_m: 40.0
+    end_m: 60.0
+    reduction: 0.5
+  damage: { impact: 70 }   # total 70
+  # THE EXPLOSION — rules in MECHANICS §7.
+  radial:
+    radius_m: 2.4
+    falloff_start_m: 0.0
+    falloff_reduction: 0.3
+    crit_chance: 0.17
+    crit_multiplier: 1.9
+    status_chance: 0.33
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { puncture: 42, slash: 78 }   # total 120
+
+unmodeled:
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Astilla

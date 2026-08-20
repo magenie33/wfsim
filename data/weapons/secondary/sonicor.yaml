@@ -1,0 +1,79 @@
+id: sonicor
+name: Sonicor
+slot: secondary
+# A CONCUSSION CANNON: 150 Impact that ragdolls whatever it touches, and a 5 m
+# blast with NO falloff at all. Its projectile has zero crit chance and zero
+# status — every point of both belongs to the explosion.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]   # CompatibilityTags PROJECTILE
+mastery_rank: 2
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.15           # riven disposition
+polarities: [vazarin]
+exilus_polarity: naramon
+riven_family: Sonicor
+traits: [corpus]
+introduced: "17.5"
+internal_name: /Lotus/Weapons/Corpus/Pistols/CrpAirPistol/CrpAirPistolArray
+noise: alarming
+ammo_type: secondary
+ammo_max: 150
+ammo_pickup: 20
+magazine: 15
+reload_seconds: 3
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 80
+  fire_rate: 1.25
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.0
+  crit_multiplier: 1.0
+  status_chance: 0.0
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 15.0 m" on the direct hit.
+  range_m: 15.0
+  falloff:
+    start_m: 0.0
+    end_m: 20.0
+    reduction: 0.8333
+  damage: { impact: 150 }   # total 150
+  # THE EXPLOSION — rules in MECHANICS §7.
+  radial:
+    radius_m: 5.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.0   # the page states NO damage falloff
+    crit_chance: 0.1
+    crit_multiplier: 2.0
+    status_chance: 0.25
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { impact: 50 }   # total 50
+
+unmodeled:
+  - "the projectile explodes 'on impact OR travelling 15 metres' (wiki), so past 15 m it goes off in mid-air and the direct hit never lands. This entry carries the 15 m as a reach, which stops the direct hit correctly and stops the EXPLOSION with it — so a shot fired past 15 m is worth nothing here where in game it would still blast whatever it went off beside"
+  - "'Projectiles guarantee knockback against enemies; most are ragdolled and launched' (wiki), and the module gives the impact a forced Ragdoll proc. A ragdoll is not a damage type and this engine's proc list holds only damage types, so it is not applied — which is the whole reason a player carries this weapon"
+  - "'Projectiles reflect off of solid objects and surfaces' (wiki) — this arena has no walls to bounce off"
+  - reason: explosion_ignores_cover
+
+source:
+  url: https://wiki.warframe.com/w/Sonicor

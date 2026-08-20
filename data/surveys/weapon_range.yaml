@@ -53,7 +53,10 @@
 
 
 checked:
+  acceltra:                    { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 70 m/s. Its 4.0 m is the explosion RADIUS, not a reach' }
+  acceltra_prime:              { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 70 m/s. Its 5.0 m is the explosion RADIUS, not a reach' }
   acrid:                       { range: null, type: projectile, note: 'the Normal Attack block states no Range; Projectile at 65 m/s' }
+  aegrit:                      { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 30 m/s. Its 9.0 m is the explosion RADIUS, not a reach' }
   akarius:                     { range: null, type: read, note: 'the Rocket IMPACT block states no Range; the 7.2 m belongs to the Rocket Detonation and is a radius' }
   akarius_prime:               { range: null, type: projectile, note: 'the Rocket IMPACT block states no Range; the 7.8 m is the Rocket Detonation radius. Projectile' }
   akbolto:                     { range: null, type: projectile, note: 'the Normal Attack block states no Range; Projectile at 75 m/s' }
@@ -61,6 +64,8 @@ checked:
   angstrum:                    { range: null, type: read, note: 'impact block: no Range. Its 3.6 m sits under an AoE block and is a radius' }
   angstrum_incarnon:           { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
   arbucep:                     { range: null, type: projectile, note: 'ATMOSPHERE column states no Range row. Projectile' }
+  astilla:                     { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 120 m/s. Its 2.4 m is the explosion RADIUS, not a reach' }
+  astilla_prime:               { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 120 m/s. Its 2.4 m is the explosion RADIUS, not a reach' }
   atomos_incarnon:             { range: null, type: read, note: 'Incarnon Form: no Range row; its 7.9 m sits under the Incarnon Radial Attack (AoE) and is a radius' }
   attica:                      { range: null, type: projectile, note: 'the Normal Attack block states no Range; Projectile at 90 m/s' }
   ballistica:                  { range: null, type: read, note: 'burst and charged blocks both state no Range; Projectile' }
@@ -91,6 +96,7 @@ checked:
   burston_prime:               { range: 300.0, type: hit-scan, note: 'Range: 300.0 m' }
   burston_prime_incarnon:      { range: 300.0, type: read, note: 'wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan (its 2.0 m Radial Attack is a RADIUS)' }
   cantare:                     { range: null, type: projectile, note: 'the Blade Throw block states no Range; Projectile at 70 m/s' }
+  carmine_penta:               { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 20 m/s. Its 4.0 m is the explosion RADIUS, not a reach' }
   cernos_prime:                { range: null, type: read, note: 'neither the uncharged nor the charged block states a Range; Projectile' }
   cernos_prime_uncharged:      { range: null, type: read, note: 'no Range row; Projectile' }
   cestra:                      { range: null, type: read, note: 'no Range row; Projectile' }
@@ -141,6 +147,8 @@ checked:
   imperator_vandal:            { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
   karak_wraith:                { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
   komorex:                     { range: null, type: read, note: 'no row LABELLED Range; the 400/600 m figures are its Damage Falloff row, which is a ramp and already modelled. Re-read once because the first answer quoted the falloff row as the range' }
+  kompressa:                   { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 40 m/s. Its 2.4 m is the explosion RADIUS, not a reach' }
+  kompressa_prime:             { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 40 m/s. Its 2.8 m is the explosion RADIUS, not a reach' }
   kunai:                       { range: null, type: read, note: 'no Range row; Projectile' }
   kunai_incarnon:              { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
   kuva_ayanga:                 { range: null, type: read, note: 'grenade IMPACT block states no Range; the 6.0 m is the explosion''s radius' }
@@ -198,6 +206,7 @@ checked:
   morgha_alt:                  { range: null, type: read, note: 'the charged shot states no Range; 3.0 and 12.0 m are AoE radii' }
   multron:                     { range: null, type: read, note: 'the Projectile Impact block states no Range; the 3.5 m is the Radial Attack''s radius' }
   ocucor:                      { range: 20.0,  type: continuous, note: 'Normal Attack Range: 20.0 m (the tendrils are a separate 20 m about a separate thing)' }
+  ogris:                       { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 60 m/s. Its 7.1 m is the explosion RADIUS, not a reach' }
   onos:                        { range: null, type: read, note: 'no Range row on the normal attack; Projectile' }
   onos_incarnon:               { range: null,  type: continuous, note: 'the Incarnon beam lists NO Range; the 3.0 m is its Charge Radial blast radius' }
   paris:                       { range: null, type: read, note: 'neither the uncharged nor the charged block states a Range; Projectile' }
@@ -206,6 +215,7 @@ checked:
   paris_prime_incarnon:        { range: null, type: read, note: 'Incarnon Form charged shot: no Range row; Projectile' }
   paris_prime_uncharged:       { range: null, type: read, note: 'no Range row; Projectile' }
   paris_uncharged:             { range: null, type: read, note: 'no Range row; Projectile' }
+  penta:                       { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 20 m/s. Its 4.0 m is the explosion RADIUS, not a reach' }
   perigale:                    { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
   perigale_prime:              { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
   phaedra:                     { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
@@ -228,6 +238,7 @@ checked:
   rakta_ballistica:            { range: null, type: read, note: 'neither the burst nor the charged block states a Range; Projectile' }
   rakta_ballistica_incarnon:   { range: 80.0, type: read, note: 'wiki, Incarnon Form: "Range: 80.0 m", Projectile — the whole Ballistica family agrees on 80' }
   rauta:                       { range: null, type: read, note: 'Hit-Scan and the page states NO Range row — unusual for a hit-scan shotgun, and read rather than assumed' }
+  riot_848:                    { range: null, type: projectile, note: 'the Normal Attack block states no Range; Projectile at 120 m/s. Its 1.5 m belongs to the RELOAD explosion, which is not an on-impact radial and is not carried here' }
   rubico:                      { range: 1000.0, type: hit-scan,   note: 'Range: 1000.0 m; falloff 400-600 m to 50%' }
   rubico_prime:                { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
   scourge:                     { range: null, type: read, note: 'no Range on either the primary or the thrown impact; its 1.7 m and 7.0 m are explosion radii' }
@@ -235,6 +246,7 @@ checked:
   scourge_prime_thrown:        { range: null, type: read, note: 'the spear throw states no Range; its 7.0 m is the explosion''s radius' }
   scourge_thrown:              { range: null, type: read, note: 'the spear throw states no Range; its 7.0 m is the explosion''s radius' }
   secura_dual_cestra:          { range: null, type: projectile, note: 'the Normal Attack block states no Range; Projectile at 100 m/s' }
+  secura_penta:                { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 25 m/s. Its 6.0 m is the explosion RADIUS, not a reach' }
   seer:                        { range: null, type: projectile, note: 'the Normal Attack block states no Range; Projectile at 200 m/s' }
   shedu:                       { range: null, type: read, note: 'no Range row; the 6.6 m is the Radial Attack''s radius' }
   sicarus:                     { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
@@ -273,6 +285,7 @@ checked:
   telos_akbolto:               { range: null, type: projectile, note: 'the Normal Attack block states no Range; Projectile at 75 m/s' }
   telos_boltor:                { range: null, type: read, note: 'no Range row on either block; Projectile' }
   telos_boltor_incarnon:       { range: null, type: read, note: 'Incarnon Form: no Range row; Projectile' }
+  tonkor:                      { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 40 m/s. Its 7.0 m is the explosion RADIUS, not a reach' }
   torid:                       { range: null, type: projectile, note: 'no Range row on the grenade launch; Projectile Speed 40 m/s' }
   twin_gremlins:               { range: null, type: projectile, note: 'the Normal Attack block states no Range; Projectile at 90 m/s' }
   vadarya_prime:               { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan (its 10 m chain radius is a separate mechanic, not the reach)' }
@@ -290,7 +303,10 @@ checked:
   vulkar:                      { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
   vulkar_wraith:               { range: 1000.0, type: read, note: 'wiki: "Range: 1000.0 m", Hit-Scan' }
   vulklok:                     { range: null, type: read, note: 'no Range row; Projectile at 100 m/s' }
+  zakti:                       { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 80 m/s. Its 3.5 m is the explosion RADIUS, not a reach' }
+  zakti_prime:                 { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 140 m/s. Its 3.8 m is the explosion RADIUS, not a reach' }
   zhuge:                       { range: null, type: projectile, note: 'the Normal Attack block states no Range; Projectile at 90 m/s' }
+  zhuge_prime:                 { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 80 m/s. Its 2.6 m is the explosion RADIUS, not a reach' }
   zylok:                       { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }
   zylok_incarnon:              { range: null, type: read, note: 'Incarnon Form: no Range row; its 6.0 m is the Radial Attack''s radius' }
   zylok_prime:                 { range: 300.0, type: read, note: 'wiki: "Range: 300.0 m", Hit-Scan' }

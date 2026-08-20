@@ -1,0 +1,75 @@
+id: tonkor
+name: Tonkor
+slot: primary
+# 650 BLAST IN SEVEN METRES out of a one-round magazine, at a 25% crit chance.
+# The Kuva variant is this weapon rebuilt; what this one still has is the 7.5 m
+# arming distance the Kuva's page says it dropped.
+class: launcher
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [primary, rifle]   # CompatibilityTags PROJECTILE, AOE
+mastery_rank: 5
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.3            # riven disposition
+polarities: []               # the infobox states none
+exilus_polarity: naramon
+riven_family: Tonkor
+traits: [grineer]
+introduced: "16.4"
+internal_name: /Lotus/Weapons/Grineer/LongGuns/GrnGrenadeLauncher/GrnGrenadeLauncher
+noise: alarming
+ammo_type: primary
+ammo_max: 30
+ammo_pickup: 3
+magazine: 1
+reload_seconds: 1.7
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 40
+  fire_rate: 3.17
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.25
+  crit_multiplier: 2.5
+  status_chance: 0.1
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # NO RANGE ROW on the direct-hit block — the 7.0 m below is the
+  # explosion's RADIUS and not a reach. See data/surveys/weapon_range.yaml.
+  damage: { puncture: 75 }   # total 75
+  # THE EXPLOSION — rules in MECHANICS §7.
+  radial:
+    radius_m: 7.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.7
+    crit_chance: 0.25
+    crit_multiplier: 2.5
+    status_chance: 0.1
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { blast: 650 }   # total 650
+
+unmodeled:
+  - "the grenades have a MINIMUM ARMING DISTANCE of 7.5 metres (wiki) and deal 'much less damage' when they hit without exploding. This arena applies the explosion at every range, so a fight staged inside 7.5 m is overstated here by the whole explosion — which is 90% of this weapon"
+  - "a direct hit forces a KNOCKDOWN whether or not the grenade explodes (wiki) — this arena's enemies are not knocked down, so the crowd control that makes this weapon safe to fire up close pays nothing here"
+  - "Precision Strike and the launcher-exclusive Adhesive Blast are outside the pools this roster loads"
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Tonkor

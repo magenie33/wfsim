@@ -92,6 +92,11 @@ reasons:
   # earns it a template rather than five spellings.
   bolt_corpse_ragdoll:
     text: "ON KILL THE BODY FOLLOWS THE BOLT, damaging anyone in its path and pinning the corpse to walls (wiki). It is a second damage source that only exists once something has died, and this engine has no ragdoll and no wall for it to pin against — so a bolt weapon fighting a crowd is understated by however much that corpse would have hit on the way past"
+  # THREE WEAPONS AND THREE DIFFERENT RELOAD TIMES (both Veloxes, the Zhuge
+  # Prime) — one sentence with one number in it, which is exactly the shape a
+  # reason exists for.
+  empty_reload_is_faster:
+    text: "it 'reloads 50% faster from a fully depleted magazine' (wiki), and this engine carries ONE reload time per weapon. This sim holds the trigger until the magazine is dry, which is exactly the case that reload applies to — so the {seconds} s here is the SLOW reload for a fight that would always earn the fast one, and the weapon is understated"
   silent_weapon:
     text: "this weapon is SILENT, and this arena has nobody to alert — no alarm, no reinforcements, no enemy that has not already seen you. Stealth is worth exactly nothing here and worth a great deal in a real mission"
   spool_rebuilds_after_reload:

@@ -1,0 +1,75 @@
+id: zakti
+name: Zakti
+slot: secondary
+# A THREE-DART GAS PISTOL. Thirty on impact with a guaranteed Impact proc, and
+# then 80 Gas in a 3.5 m radius one second later with NO falloff — full damage
+# to the rim. A 0.8-second reload, which is what makes three rounds workable.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]   # CompatibilityTags PROJECTILE, AOE, SINGLESHOT
+mastery_rank: 10
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 26.7
+disposition: 1.25           # riven disposition
+polarities: [naramon, naramon]
+exilus_polarity: madurai
+riven_family: Zakti
+traits: [tenno]
+introduced: "21.1"
+internal_name: /Lotus/Weapons/Tenno/Pistols/TnGuandoPistol/TnGuandoPistolGun
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 20
+magazine: 3
+reload_seconds: 0.8
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 2.5
+    max_deg: 5.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 80
+  fire_rate: 5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.02
+  crit_multiplier: 1.5
+  status_chance: 0.2
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # A GUARANTEED IMPACT PROC on every direct hit — the module's ForcedProcs.
+  forced_procs: [impact]
+  # NO RANGE ROW on the direct-hit block — the 3.5 m below is the
+  # explosion's RADIUS and not a reach. See data/surveys/weapon_range.yaml.
+  damage: { impact: 12, puncture: 18 }   # total 30
+  # THE EXPLOSION — rules in MECHANICS §7.
+  radial:
+    radius_m: 3.5
+    falloff_start_m: 0.0
+    falloff_reduction: 0.0   # the page states NO damage falloff
+    crit_chance: 0.02
+    crit_multiplier: 1.5
+    status_chance: 0.2
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { gas: 80 }   # total 80
+
+unmodeled:
+  - "the cloud arrives ONE SECOND after the dart lands (wiki) — this engine resolves it at the point of impact immediately, so nothing walks out of one here"
+  - "the explosion STAGGERS enemies, opening them to melee finishers and stealth multipliers (wiki) — this arena has no melee and no stealth state, so that half of the weapon pays nothing"
+  - reason: explosion_ignores_cover
+
+source:
+  url: https://wiki.warframe.com/w/Zakti

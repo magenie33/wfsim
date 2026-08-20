@@ -22,7 +22,10 @@ weapons:
   # name and the page URL stay the bare name either way.
   # WFCD gives the MK1-Braton the plain Braton's `imageName`; the wiki has a
   # file of its own, and the two guns do not look alike.
+  acceltra: SapientPrimaryWeapon.png
+  acceltra_prime: AcceltraPrime.png
   acrid: Acrid.png
+  aegrit: GrnVorStickyBomb.png
   afuris: Afuris.png
   afuris_prime: AfurisPrime.png
   akarius: SapientPistol.png
@@ -48,6 +51,8 @@ weapons:
   amprex: Amprex.png
   angstrum: Angstrum.png
   arca_scisco: ArcaScisco.png
+  astilla: Astilla.png
+  astilla_prime: AstillaPrime.png
   atomos: Atomos.png
   atomos_incarnon: Atomos.png
   attica: Attica.png
@@ -81,6 +86,7 @@ weapons:
   burston_prime: BurstonPrime.png
   burston_prime_incarnon: BurstonPrime.png
   cantare: TnChoirframeKunai.png
+  carmine_penta: PentaCarmine.png
   cernos_prime: CernosPrime.png
   cernos_prime_uncharged: CernosPrime.png
   cestra: Cestra.png
@@ -120,6 +126,8 @@ weapons:
   karak_wraith: KarakWraith.png
   knell: Knell.png
   knell_prime: KnellPrime.png
+  kompressa: YareliPistol.png
+  kompressa_prime: KompressaPrime.png
   kraken: Kraken.png
   kunai: Kunai.png
   kunai_incarnon: Kunai.png
@@ -174,6 +182,8 @@ weapons:
   morgha: ThanoTechGrenadeLauncher.png
   morgha_alt: ThanoTechGrenadeLauncher.png
   nukor: Nukor.png
+  ogris: Ogris.png
+  penta: Penta.png
   phage: Phage.png
   prisma_grakata: PrismaGrakata.png
   prisma_twin_gremlins: PrismaTwinGremlins.png
@@ -183,11 +193,14 @@ weapons:
   quartakk: Quartakk.png
   rauta: PaxDuviricusShotgun.png
   reconifex: TnBeltFedRifle.png
+  riot_848: 1999EntHybridPistol.png
   sagek_prime: GrnOrokinPistol.png
   sancti_tigris: SanctiTigris.png
   secura_dual_cestra: SecuraDualCestra.png
+  secura_penta: SecuraPenta.png
   seer: Seer.png
   sobek: Sobek.png
+  sonicor: Sonicor.png
   spectra: Spectra.png
   spectra_vandal: CorpusLaserPistolVandal.png
   spira: Spira.png
@@ -201,6 +214,7 @@ weapons:
   tiberon: Tiberon.png
   tigris: Tigris.png
   tigris_prime: TigrisPrime.png
+  tonkor: Tonkor.png
   twin_grakatas: TwinGrakatas.png
   twin_gremlins: TwinGremlin.png
   twin_rogga: TwinRogga.png
@@ -338,7 +352,10 @@ weapons:
   vectis: Vectis.png
   vectis_prime: VectisPrime.png
   verglas_prime: VerglasPrime.png
+  zakti: Zakti.png
+  zakti_prime: ZaktiPrime.png
   zhuge: Zhuge.png
+  zhuge_prime: ZhugePrime.png
   zylok: ConclaveLeverPistol.png
   zylok_prime: ZylokPrime.png
 

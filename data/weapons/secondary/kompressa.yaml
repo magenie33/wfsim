@@ -1,0 +1,73 @@
+id: kompressa
+name: Kompressa
+slot: secondary
+# FOUR BUBBLES A SHOT, each worth 2 Viral on contact and 42 more in a 2.4 m
+# radius. The direct hit is almost nothing and the explosion is the weapon,
+# which is why its cone is 30 degrees wide and it does not matter.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]   # CompatibilityTags PROJECTILE, AOE
+mastery_rank: 8
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 3.8
+disposition: 1.15           # riven disposition
+polarities: [vazarin]
+exilus_polarity: madurai
+riven_family: Kompressa
+traits: [tenno]
+introduced: "30.5"
+internal_name: /Lotus/Weapons/Tenno/Pistols/TnYareliPistol/TnYareliPistolWeapon
+noise: alarming
+ammo_type: secondary
+ammo_max: 144
+ammo_pickup: 20
+magazine: 12
+reload_seconds: 1.8
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 23.0
+    max_deg: 30.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 40
+  fire_rate: 3.33
+  multishot: 4.0
+  ammo_cost: 1
+  crit_chance: 0.06
+  crit_multiplier: 1.8
+  status_chance: 0.3
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # NO RANGE ROW on the direct-hit block — the 2.4 m below is the
+  # explosion's RADIUS and not a reach. See data/surveys/weapon_range.yaml.
+  damage: { viral: 2 }   # 2 a pellet, 8 a shot
+  # THE EXPLOSION — rules in MECHANICS §7.
+  radial:
+    radius_m: 2.4
+    falloff_start_m: 0.0
+    falloff_reduction: 0.2
+    crit_chance: 0.06
+    crit_multiplier: 1.8
+    status_chance: 0.3
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { viral: 42 }   # total 42
+
+unmodeled:
+  - "the bubbles explode 0.6-0.8 SECONDS after they land, which the page says 'may allow enemies to move out of the explosion range if not directly hit' — this engine resolves the blast at the point of impact immediately, so nothing ever escapes one here"
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Kompressa

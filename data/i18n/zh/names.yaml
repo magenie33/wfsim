@@ -429,6 +429,23 @@ weapons:
   vaykor_marelok: 勇气·玛瑞火枪
   viper: 蝰蛇
   viper_wraith: 蝰蛇·亡魂
+  acceltra: 迅发电浆炮
+  acceltra_prime: 迅发电浆炮 Prime
+  aegrit: 骇敌榴弹
+  astilla: 碎裂者
+  astilla_prime: 碎裂者 Prime
+  carmine_penta: 嫣红·潘塔
+  kompressa: 卡帕压力枪
+  kompressa_prime: 卡帕压力枪 Prime
+  ogris: 食人女魔
+  penta: 潘塔
+  riot_848: 暴乱-848
+  secura_penta: 保障·潘塔
+  sonicor: 超音波冲击枪
+  tonkor: 征服榴炮
+  zakti: 毒芽
+  zakti_prime: 毒芽 Prime
+  zhuge_prime: 诸葛连弩 Prime
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's

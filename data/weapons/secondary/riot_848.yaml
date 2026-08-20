@@ -1,0 +1,61 @@
+id: riot_848
+name: Riot-848
+slot: secondary
+# BULLETS THAT LODGE AND COME BACK. The primary fire is 12 pure Puncture; the
+# 48-damage Blast in the module is what happens ON RELOAD, when up to 32
+# embedded rounds go off and fly home — so it is NOT an on-impact explosion and
+# there is no `radial:` here. See the admission.
+class: pistol
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+mod_pools: [pistol]
+mastery_rank: 14
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 23.53
+disposition: 1              # riven disposition
+polarities: [madurai]
+# NO EXILUS POLARITY — the module states none.
+riven_family: Riot-848
+traits: [tenno, entrati]
+introduced: "38.5"
+internal_name: /Lotus/Weapons/Tenno/Pistols/1999EntHybridPistolWeapon/1999EntHybridPistolWeapon
+noise: alarming
+ammo_type: secondary
+ammo_max: 0
+ammo_pickup: 0
+magazine: 16
+reload_seconds: 1.2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack).
+  spread:
+    min_deg: 1.5
+    max_deg: 7.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 120
+  fire_rate: 8
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.26
+  crit_multiplier: 2.2
+  status_chance: 0.26
+  punch_through_m: 0.0
+  # NO RANGE ROW on the direct-hit block — the 1.5 m below is the
+  # explosion's RADIUS and not a reach. See data/surveys/weapon_range.yaml.
+  damage: { puncture: 12 }   # total 12
+
+unmodeled:
+  - "THE EXPLOSION IS A RELOAD, not an impact: 'bullets lodge into surfaces. Upon reloading, the bullets explode in a 1.5 meter radius before flying back to the wielder', up to 32 at a time (wiki). This engine's `radial:` goes off where the shot lands, which would fire it on every hit and at the wrong time — so the 48 Blast a round is NOT counted at all, and against anything that survives a magazine this weapon is understated by roughly four fifths of its real output"
+  - "it 'does not use ammo pickups' — the module gives it a reserve of zero, and this sim assumes infinite reserves anyway, so the constraint the weapon is built around does not exist here"
+
+source:
+  url: https://wiki.warframe.com/w/Riot-848
