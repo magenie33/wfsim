@@ -38,6 +38,7 @@ import glob
 import io
 import json
 import os
+import re
 import sys
 
 import yaml
@@ -64,6 +65,20 @@ MOD = {}
 for module in ('primary', 'secondary'):
     table = W.load(module)
     MOD.update(table.get('Weapons', table))
+
+# A CASE DIFFERENCE IS NOT A DIFFERENT WEAPON, and one silently excluded a whole
+# family: this roster writes "MK1-Braton" and the module writes "Mk1-Braton", so
+# every MK1 entry was reported UNCHECKED and nobody read the word (2026-08-21).
+# It hid a real error — the MK1-Kunai's Incarnon multishot.
+MOD_CI = {k.casefold(): k for k in MOD}
+
+
+def module_row(name):
+    """The module's row for a display name, tolerating case."""
+    if name in MOD:
+        return MOD[name]
+    key = MOD_CI.get(name.casefold())
+    return MOD[key] if key else None
 
 # (our field, the module's) — weapon level, then attack level.
 WEAPON_FIELDS = [('mastery_rank', 'Mastery'), ('disposition', 'Disposition'),
@@ -98,6 +113,12 @@ EXPECTED = {
     ('phantasma_prime', 'attack.punch_through_m'): 'infinite body punch through',
     ('lanka', 'attack.punch_through_m'): 'infinite BODY punch through; the 5 m is surfaces',
     ('lanka_uncharged', 'attack.punch_through_m'): 'infinite BODY punch through',
+    # …and the two the punch-through page's own EXCEPTION LIST names as
+    # "Lex (Incarnon Form)". The module carries 1.4, which is the SURFACE
+    # figure; the prose is what says the body case is unlimited, and an export
+    # column cannot.
+    ('lex_incarnon', 'attack.punch_through_m'): 'infinite BODY punch through; the 1.4 is surfaces',
+    ('lex_prime_incarnon', 'attack.punch_through_m'): 'infinite BODY punch through; the 1.4 is surfaces',
     # THE MAGAZINE IN SHOTS. 32 rounds at 4 a shot is 8 shots, and the entry
     # counts shots — the reload lands in the same place either way.
     ('ballistica_prime', 'magazine'): 'expressed in SHOTS: 32 rounds / 4 a shot',
@@ -158,11 +179,28 @@ def main(only):
             if parent is None:
                 findings.append('%s: inherits %r, which is not an entry' % (wid, d['inherits']))
                 continue
-            row = MOD.get(parent['name'])
+            row = module_row(parent['name'])
             weapon_level = False
         else:
-            row = MOD.get(d['name'])
+            row = module_row(d['name'])
             weapon_level = True
+        if row is None:
+            # A FORM THAT DID NOT DECLARE `inherits`. 88 roster entries are form
+            # siblings and most say so; the ones written before that rule stand
+            # alone with a name like "Torid (Incarnon Form)", which is not a
+            # module key. The module carries the form as an ATTACK on the parent
+            # ("Incarnon Form" in Torid's Attacks list), so stripping the
+            # parenthetical finds the right row — and only the ATTACK fields may
+            # be compared, because magazine, reload and disposition belong to
+            # the weapon and the form only restates what differs.
+            #
+            # This rescued 59 of the 106 names that were reported UNCHECKED on
+            # 2026-08-21, which is every Incarnon form in the roster. The 47 that
+            # remain are companion and Arch-Gun weapons, which this tool excludes
+            # on purpose (see the header).
+            bare = re.sub(r'\s*\([^)]*\)$', '', d['name'])
+            if bare != d['name'] and module_row(bare) is not None:
+                row, weapon_level = module_row(bare), False
         if row is None:
             # A display name that is not a module key is a WIKI PAGE name we
             # chose (the module calls the Vinquibus "Vinquibus (Primary)"), not

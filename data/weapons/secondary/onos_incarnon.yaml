@@ -58,7 +58,11 @@ attack:
   crit_chance: 0.14
   crit_multiplier: 1.6
   status_chance: 0.18
-  punch_through_m: 0.0
+  # Module:Weapons/data, this form's own attack row (Incarnon Form Held Damage). It read 0.0
+  # until 2026-08-21 — not a measurement, an unfilled field, and one that
+  # was harmless while the arena had a single body and stopped being so
+  # when `space::traverse` started spending it (AGENTS.md, punch through).
+  punch_through_m: 5.0
   damage: { radiation: 30 }   # total 30
 
 # incarnon_evolutions: see data/weapons/secondary/onos.yaml (shared group)

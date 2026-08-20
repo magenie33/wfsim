@@ -6355,7 +6355,9 @@ mod condition_overload_catalog_tests {
             ("felarx_incarnon", 600.0),
             ("furis_incarnon", 100.0),
             ("kunai", 46.0),
-            ("kunai_incarnon", 40.0),
+            // PER PROJECTILE, like its MK1 below — the catalog says 40 and this
+            // form fires two. See the note there.
+            ("kunai_incarnon", 80.0),
             ("laetum", 160.0),
             ("laetum_incarnon", 100.0),
             ("lato_vandal_incarnon", 152.0),
@@ -6363,7 +6365,17 @@ mod condition_overload_catalog_tests {
             ("lex_prime_incarnon", 1200.0),
             ("miter", 500.0),
             ("miter_incarnon", 60.0),
-            ("mk1_kunai_incarnon", 24.0),
+            // THE KUNAI FAMILY'S ROWS ARE PER PROJECTILE, and the catalog's
+            // own Lato Vandal row is what proves the others are not: 152 is
+            // that form's 76 damage TIMES its 2 multishot, while these two
+            // carry 24 and 40, which are the damage alone. Three sources say
+            // the multishot is 2 — the module's attack row, the shared Genesis
+            // page ("2 base Multishot"), and the fact that this catalog is
+            // community-sourced by its own header, with the CLASS and the
+            // RELATIVE column being what this repo transcribes from it.
+            // Doubled here rather than in the data, because the data is right
+            // (2026-08-21).
+            ("mk1_kunai_incarnon", 48.0),
             ("mk1_paris", 230.0),
             ("paris", 320.0),
             ("paris_incarnon", 460.0),          // the catalog's 520 is the PRIME's

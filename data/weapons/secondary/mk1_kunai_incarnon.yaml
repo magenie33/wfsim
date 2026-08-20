@@ -55,7 +55,14 @@ attack:
   shot_type: projectile
   projectile_speed_mps: 70
   fire_rate: 3.33
-  multishot: 1.0
+  # TWO BASE MULTISHOT, like the Kunai's own Incarnon form: the shared Genesis
+  # page says "2 base Multishot" and the module's attack row agrees. It read
+  # 1.0 until 2026-08-21, halving every number this form produces.
+  multishot: 2.0
+  # …AND NO PUNCH-THROUGH MODS, same page: "Punch Through is ignored in
+  # Incarnon Form and will not cause projectiles to home in on additional
+  # targets."
+  punch_through_mods: false
   ammo_cost: 1                  # of the 20-round charge pool
   crit_chance: 0.14
   crit_multiplier: 2

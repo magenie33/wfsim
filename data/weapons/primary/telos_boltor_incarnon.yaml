@@ -62,7 +62,11 @@ attack:
   crit_chance: 0.36
   crit_multiplier: 3.2
   status_chance: 0.1067
-  punch_through_m: 0.0
+  # Module:Weapons/data, this form's own attack row (Incarnon Form). It read 0.0
+  # until 2026-08-21 — not a measurement, an unfilled field, and one that
+  # was harmless while the arena had a single body and stopped being so
+  # when `space::traverse` started spending it (AGENTS.md, punch through).
+  punch_through_m: 0.6
   damage: { impact: 2.0, puncture: 6.0, slash: 12.0 }   # total 20 per projectile
   # NO RADIAL. This form is a spread of bolts, not an explosion — the only
   # Incarnon in this batch without one.

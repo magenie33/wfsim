@@ -54,7 +54,11 @@ attack:
   crit_chance: 0.16
   crit_multiplier: 2.6
   status_chance: 0.06
-  punch_through_m: 0.0
+  # Module:Weapons/data, this form's own attack row (Incarnon Form). It read 0.0
+  # until 2026-08-21 — not a measurement, an unfilled field, and one that
+  # was harmless while the arena had a single body and stopped being so
+  # when `space::traverse` started spending it (AGENTS.md, punch through).
+  punch_through_m: 0.4
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, Incarnon Form: "Range: 300.0 m", Hit-Scan
   range_m: 300.0

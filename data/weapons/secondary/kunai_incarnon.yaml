@@ -55,7 +55,19 @@ attack:
   shot_type: projectile
   projectile_speed_mps: 70
   fire_rate: 3.33
-  multishot: 1.0
+  # TWO BASE MULTISHOT, which the Genesis page states in as many words:
+  # "Incarnon Form grants its projectiles head-homing properties, with
+  # increased base damage weighted towards Slash, Critical Chance, and
+  # Critical Multiplier, and 2 base Multishot." It read 1.0 until
+  # 2026-08-21, which halved every number this form produces.
+  multishot: 2.0
+  # …AND IT TAKES NO PUNCH-THROUGH MODS. Same page, the line under it:
+  # "Punch Through is ignored in Incarnon Form and will not cause
+  # projectiles to home in on additional targets." The shape fallback
+  # would have let it hold Primed Shred — this form is neither `radial:`
+  # nor `lingering:` — so it has to be said per entry, which is what the
+  # field is for (the Torid's Incarnon beam is the other one).
+  punch_through_mods: false
   ammo_cost: 1                  # of the 20-round charge pool
   crit_chance: 0.18
   crit_multiplier: 2

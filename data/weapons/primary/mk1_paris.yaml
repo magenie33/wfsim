@@ -61,7 +61,12 @@ attack:
   crit_chance: 0.3
   crit_multiplier: 2
   status_chance: 0.15
-  punch_through_m: 0.0
+  # Module:Weapons/data, Charged Shot. Read 0.0 until 2026-08-21 while both
+  # siblings carried theirs — the Paris 2.0 and the Prime 3.0 — which is what
+  # an omission looks like rather than a decision. It was invisible because
+  # the audit spells this family MK1- and the module spells it Mk1-, so every
+  # MK1 weapon was reported UNCHECKED and never compared.
+  punch_through_m: 2.0
   damage: { impact: 11.5, slash: 34.5, puncture: 184 }   # total 230.0
 
 # incarnon_evolutions: definitions live in data/evolutions/mk1_paris_*.yaml.
