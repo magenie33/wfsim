@@ -972,6 +972,11 @@ entries:
     score: 14.666666666666666
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: cyanex
+    mode: base
+    score: 2.218888816012036
+    mods: [pistol_acuity, primed_target_cracker, pistol_elementalist, pressurized_magazine, magnetic_might, sure_shot, primed_heated_charge, scorch]
+    arcanes: [cascadia_flare]
   - weapon: dera_vandal
     mode: cycle
     score: 22.056317594387497

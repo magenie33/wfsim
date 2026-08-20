@@ -62,6 +62,16 @@ entries:
     score: 219.33333333333337
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: ignis_wraith
+    mode: base
+    score: 17.35042620419893
+    mods: [galvanized_chamber, primed_shred, serration, critical_delay, hammer_shot, vital_sense, hellfire, thermite_rounds]
+    arcanes: [primary_crux]
+  - weapon: ignis_wraith
+    mode: base
+    score: 8.873245272572374
+    mods: [galvanized_chamber, primed_shred, hammer_shot, point_strike, vile_acceleration, vital_sense, hellfire, thermite_rounds]
+    arcanes: [primary_merciless]
   - weapon: kuva_grattler
     mode: base
     score: 265.1685068535702
