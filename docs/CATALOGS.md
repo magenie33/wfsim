@@ -148,6 +148,85 @@ in yaml comments instead. That is how five of them came to be wrong.
 | Braton family | Incarnon Form Radial | 95% | Adding | derived: 70 + 4 = 74, 70/74 |
 | Burston / Burston Prime | Incarnon Form Radial | 24% | Adding | derived: 13 + 42 = 55, 13/55 |
 
+
+### THE 2026-08-20 SWEEP — forty-four entries the catalog named and the roster contradicted
+
+**A method error, and it is the useful part of this entry.** Every weapon yaml
+written this month opened with *"NO row in the wiki's CO catalog (re-read
+2026-08-20)"*. That check was run against **THIS FILE** — our own transcription,
+which by construction carries only "rows the roster already has". Asking it
+whether a NEW weapon has a row can only ever answer no. The check has to read
+the WIKI PAGE, and when it finally did it found forty-four disagreements.
+
+**Not all of them were new.** The Lanka has read Adding at 100% since it was
+written and its row says 38%; both Laser Rifles, the whole Cernos family and the
+Catabolyst are the same story. Condition Overload is on most builds, so each of
+these was a wrong damage number rather than a wrong comment.
+
+**And it took TWO passes, for a reason worth writing down.** The first
+reconciliation matched a row to a form through a short list of attack NAMES —
+"Normal Attack", "Alt-fire", "Charged Attack". The catalog names an attack the
+way that WEAPON's page does, so "Projectile Impact", "Direct Hit", "Lock-On
+Mode", "Slug Impact", "Burst Mode" and "Reload From Empty Impact" matched
+nothing and were skipped in silence. A narrow vocabulary does not fail, it
+under-reports.
+
+| our entry | behaviour | co_base_fraction |
+| --- | --- | --- |
+| `acceltra` | additive_with_base_damage | 74.3% |
+| `aegrit` | independent | 100% |
+| `aeolak` | independent | 100% |
+| `aeolak_alt` | independent | 100% |
+| `alternox` | independent | 100% |
+| `alternox_prime` | independent | 100% |
+| `basmu` | independent | 100% |
+| `battacor` | independent | 100% |
+| `buzlok` | independent | 100% |
+| `buzlok_beacon` | independent | 100% |
+| `catabolyst` | independent | 100% |
+| `cernos` | additive_with_base_damage | 50% |
+| `cinta` | independent | 100% |
+| `cinta_charged` | independent | 100% |
+| `cyanex` | independent | 100% |
+| `cyanex_burst` | independent | 100% |
+| `daikyu_prime` | additive_with_base_damage | 50% |
+| `drakgoon` | additive_with_base_damage | 57% |
+| `epitaph` | independent | 100% |
+| `epitaph_uncharged` | independent | 100% |
+| `evensong` | additive_with_base_damage | 65% |
+| `exergis` | independent | 100% |
+| `fulmin_semi` | independent | 100% |
+| `harpak_harpoon` | independent | 100% |
+| `javlok` | independent | 100% |
+| `lanka` | additive_with_base_damage | 38% |
+| `laser_rifle` | independent | 100% |
+| `mutalist_cernos` | additive_with_base_damage | 50% |
+| `mutalist_cernos_uncharged` | independent | 100% |
+| `nataruk_perfect` | independent | 100% |
+| `paracyst_harpoon` | independent | 100% |
+| `prime_laser_rifle` | independent | 100% |
+| `quellor_alt` | independent | 100% |
+| `rakta_cernos` | additive_with_base_damage | 50% |
+| `seer` | independent | 100% |
+| `sepulcrum` | independent | 100% |
+| `sepulcrum_lockon` | independent | 100% |
+| `sonicor` | inert | 100% |
+| `stahlta` | independent | 100% |
+| `stahlta_charged` | independent | 100% |
+| `steflos` | independent | 100% |
+| `tenet_diplos_lock_on` | independent | 100% |
+| `tenet_envoy` | independent | 100% |
+| `trumna_grenade` | independent | 100% |
+
+**Seven AoE PARTS** were reading `takes_condition_overload: false` where the
+catalog gives them their own row — not a fraction being off, the WHOLE term
+missing from an explosion that is most of the weapon: the Ambassador's radial
+(75%), both Ferroxes (350% / 333%), both Opticors (250% / 200%), the Trumna's
+main fire (164%), and the Mutalist Cernos's charged cloud at **4100%**, which is
+the most extreme relative column in the catalog. The per-part fraction is still
+not expressible — `co_base_fraction` is one number per ENTRY — and each says so
+on its card, which is the call the Pox has carried since its own 250% row.
+
 ### "CO-bonus does not use base damage increase Evolution" — eleven rows
 
 This is the `co_base_excludes_this_evolution` flag, and it is a PERK's, not a
