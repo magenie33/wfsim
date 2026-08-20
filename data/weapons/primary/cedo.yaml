@@ -1,0 +1,62 @@
+id: cedo
+name: Cedo
+slot: primary
+# A SHOTGUN THAT THROWS A GLAIVE. The primary fire is a hit-scan spread; the
+# alternate throws a disc that explodes in six metres.
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: cedo
+mod_pools: [primary, shotgun]   # CompatibilityTags PROJECTILE
+mastery_rank: 8
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 20.0
+disposition: 0.65           # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: madurai
+riven_family: Cedo
+traits: [tenno]
+introduced: "29.6"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/TnAlchemistShotgun/TnAlchemistShotgun
+noise: alarming
+ammo_type: primary
+ammo_max: 200
+ammo_pickup: 15
+magazine: 40
+reload_seconds: 2.2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+# and none of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 2.0
+    max_deg: 8.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 3.83
+  multishot: 6.0
+  ammo_cost: 1
+  crit_chance: 0.2
+  crit_multiplier: 2.4
+  status_chance: 0.003
+  punch_through_m: 0.8
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  falloff:
+    start_m: 26.0
+    end_m: 52.0
+    reduction: 0.9667
+  damage: { puncture: 30 }   # 30 a pellet, 180 a shot
+
+source:
+  url: https://wiki.warframe.com/w/Cedo

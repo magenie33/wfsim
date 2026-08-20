@@ -1,0 +1,55 @@
+id: epitaph_uncharged
+name: Epitaph
+# THE UNCHARGED SHOT: a smaller projectile with an EIGHT-METRE explosion behind
+# it, which the charged shot does not have.
+inherits: epitaph
+form: base
+transform_group: epitaph
+
+introduced: "30"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and none of this
+# weapon's is named. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 1.0
+    max_deg: 1.5
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 50
+  fire_rate: 1.5
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.02
+  crit_multiplier: 1.2
+  status_chance: 0.5
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # A GUARANTEED IMPACT PROC — the module's ForcedProcs.
+  forced_procs: [impact]
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 40, puncture: 30, slash: 30 }   # total 100
+  # THE EXPLOSION — rules in MECHANICS §7.
+  radial:
+    radius_m: 8.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.8
+    crit_chance: 0.02
+    crit_multiplier: 1.2
+    status_chance: 0.5
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { blast: 20 }   # total 20
+
+unmodeled:
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Epitaph

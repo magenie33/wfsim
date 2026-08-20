@@ -1,0 +1,62 @@
+id: corinth
+name: Corinth
+slot: primary
+# A PUMP SHOTGUN WITH AN AIR-BURST GRENADE. The buckshot is this entry; the
+# alternate lobs a round that detonates in a 9.4 m radius.
+class: shotgun
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: corinth
+mod_pools: [primary, shotgun]   # CompatibilityTags PROJECTILE
+mastery_rank: 8
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 9.1
+disposition: 1.15           # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: madurai
+riven_family: Corinth
+traits: [tenno]
+introduced: "22.8"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/TnHeavyShotgun/TnHeavyShotgunGun
+noise: alarming
+ammo_type: primary
+ammo_max: 135
+ammo_pickup: 15
+magazine: 5
+reload_seconds: 2.3
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+# and none of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 6.0
+    max_deg: 16.0
+  trigger: auto
+  shot_type: hit_scan
+  fire_rate: 1.17
+  multishot: 6.0
+  ammo_cost: 1
+  crit_chance: 0.3
+  crit_multiplier: 2.8
+  status_chance: 0.06
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  falloff:
+    start_m: 18.0
+    end_m: 36.0
+    reduction: 0.6667
+  damage: { impact: 25.2, puncture: 37.8, slash: 27 }   # 90 a pellet, 540 a shot
+
+source:
+  url: https://wiki.warframe.com/w/Corinth

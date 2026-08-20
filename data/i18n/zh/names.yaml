@@ -484,6 +484,25 @@ weapons:
   tenora: 双簧管
   tenora_prime: 双簧管 Prime
   twin_kohmak: 双子寇恩霰机枪
+  aeolak: 风鸣
+  afentis: 圣英
+  afentis_prime: 圣英 Prime
+  ambassador: 使节
+  basmu: 巴什穆
+  battacor: 武使之力
+  cedo: 塞多
+  cedo_prime: 塞多 Prime
+  corinth: 科林斯
+  corinth_prime: 科林斯 Prime
+  cyanex: 氰毒
+  efv_8_mars: 艾弗旺-8 火星
+  enkaus: 绘墨
+  epitaph: 葬铭
+  epitaph_prime: 葬铭 Prime
+  evensong: 晚祷
+  mutalist_quanta: 异融量子枪
+  panthera_prime: 猎豹 Prime
+  stahlta: 钢刃步枪
 
 enemies:
   # demolisher_devourer: NOT NAMED. DE's string could not be reached — WFCD's

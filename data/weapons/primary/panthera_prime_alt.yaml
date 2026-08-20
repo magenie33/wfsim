@@ -1,0 +1,40 @@
+id: panthera_prime_alt
+name: Panthera Prime
+# THE DEPLOYED SAWBLADE: six metres out, grinding continuously.
+inherits: panthera_prime
+form: alt_fire
+transform_group: panthera_prime
+
+introduced: "28.2"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and none of this
+# weapon's is named. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 2
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.26
+  crit_multiplier: 2.0
+  status_chance: 0.38
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 6.0 m" on this attack.
+  range_m: 6.0
+  damage: { slash: 100 }   # total 100
+
+unmodeled:
+  - "the sawblade is DEPLOYED six metres in front of the wielder and stays there — it is not a beam fired at a target, and this engine models it as one, so a fight where the enemy is not standing on that spot is overstated here"
+  - "Disarming Purity, the Panthera-exclusive augment — a weapon-exclusive card outside the pools this roster loads"
+
+source:
+  url: https://wiki.warframe.com/w/Panthera_Prime

@@ -1,0 +1,36 @@
+id: afentis_prime_throw
+name: Afentis Prime
+# THE SPEAR THROW: the heavy silent throw, with no explosion.
+inherits: afentis_prime
+form: alt_fire
+transform_group: afentis_prime
+
+introduced: "43"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and none of this
+# weapon's is named. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 90
+  fire_rate: 1
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.4
+  crit_multiplier: 3.0
+  status_chance: 0.3
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 330, puncture: 165, slash: 55 }   # total 550
+
+source:
+  url: https://wiki.warframe.com/w/Afentis_Prime

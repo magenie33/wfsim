@@ -26,6 +26,12 @@ weapons:
   acceltra_prime: AcceltraPrime.png
   acrid: Acrid.png
   aegrit: GrnVorStickyBomb.png
+  aeolak: TnRifleErsatzWeapon.png
+  aeolak_alt: TnRifleErsatzWeapon.png
+  afentis: TnHopliteSpear.png
+  afentis_prime: AfentisPrime.png
+  afentis_prime_throw: AfentisPrime.png
+  afentis_throw: TnHopliteSpear.png
   afuris: Afuris.png
   afuris_prime: AfurisPrime.png
   akarius: SapientPistol.png
@@ -48,6 +54,8 @@ weapons:
   akvasto: Akvasto.png
   akvasto_prime: AkvastoPrime.png
   akzani: Akzani.png
+  ambassador: CrpArSniper.png
+  ambassador_charged: CrpArSniper.png
   amprex: Amprex.png
   angstrum: Angstrum.png
   arca_scisco: ArcaScisco.png
@@ -66,6 +74,10 @@ weapons:
   azima: Azima.png
   ballistica: Ballistica.png
   ballistica_prime: BallisticaPrime.png
+  basmu: SentRifleNewWarGun.png
+  basmu_beam: SentRifleNewWarGun.png
+  battacor: CrpSentExperimentRifle.png
+  battacor_charged: CrpSentExperimentRifle.png
   baza: Baza.png
   baza_prime: BazaPrime.png
   boar: Boar.png
@@ -97,6 +109,10 @@ weapons:
   cantare: TnChoirframeKunai.png
   carmine_penta: PentaCarmine.png
   castanas: Castanas.png
+  cedo: Cedo.png
+  cedo_alt: Cedo.png
+  cedo_prime: CedoPrime.png
+  cedo_prime_alt: CedoPrime.png
   cernos: Cernos.png
   cernos_prime: CernosPrime.png
   cernos_prime_uncharged: CernosPrime.png
@@ -105,6 +121,12 @@ weapons:
   cestra_incarnon: Cestra.png
   convectrix: Convectrix.png
   convectrix_alt: Convectrix.png
+  corinth: Corinth.png
+  corinth_airburst: Corinth.png
+  corinth_prime: CorinthPrime.png
+  corinth_prime_airburst: CorinthPrime.png
+  cyanex: CrpSentAmalgPistol.png
+  cyanex_burst: CrpSentAmalgPistol.png
   daikyu: Daikyu.png
   daikyu_prime: DaikyuPrime.png
   daikyu_prime_quick: DaikyuPrime.png
@@ -126,9 +148,19 @@ weapons:
   dual_toxocyst_incarnon: DualToxocyst.png
   efv_5_jupiter: LasGooAK.png
   efv_5_jupiter_buckshot: LasGooAK.png
+  efv_8_mars: LasGooPistolWeapon.png
+  efv_8_mars_alt: LasGooPistolWeapon.png
   embolist: Embolist.png
+  enkaus: TnInkRifleWeapon.png
+  enkaus_alt: TnInkRifleWeapon.png
+  epitaph: TnWraithSidearmWeapon.png
+  epitaph_prime: EpitaphPrime.png
+  epitaph_prime_uncharged: EpitaphPrime.png
+  epitaph_uncharged: TnWraithSidearmWeapon.png
   euphona_prime: EuphonaPrime.png
   euphona_prime_buckshot: EuphonaPrime.png
+  evensong: TnChoirBow.png
+  evensong_quick: TnChoirBow.png
   exergis: CrpShapeBlastShotgun.png
   felarx: ZarimanPumpShotgun.png
   fulmin: TnWispRifle.png
@@ -219,6 +251,8 @@ weapons:
   mausolon_charged: ThanotechLongGun.png
   morgha: ThanoTechGrenadeLauncher.png
   morgha_alt: ThanoTechGrenadeLauncher.png
+  mutalist_quanta: MutalistQuanta.png
+  mutalist_quanta_orb: MutalistQuanta.png
   nagantaka: GarudaCrossbow.png
   nagantaka_burst: GarudaCrossbow.png
   nagantaka_prime: NagantakaPrime.png
@@ -231,6 +265,8 @@ weapons:
   pandero_prime_alt: PanderoPrime.png
   panthera: Panthera.png
   panthera_alt: Panthera.png
+  panthera_prime: PantheraPrime.png
+  panthera_prime_alt: PantheraPrime.png
   penta: Penta.png
   phage: Phage.png
   prisma_grakata: PrismaGrakata.png
@@ -262,6 +298,8 @@ weapons:
   spectra_vandal: CorpusLaserPistolVandal.png
   spira: Spira.png
   spira_prime: SpiraPrime.png
+  stahlta: CrpRubanRifle.png
+  stahlta_charged: CrpRubanRifle.png
   steflos: TnoLotusPodShotgun.png
   stradavar: Stradavar.png
   stradavar_prime: StradavarPrime.png

@@ -1,0 +1,58 @@
+id: stahlta
+name: Stahlta
+slot: primary
+# A CORPUS RAILGUN RIFLE: automatic bolts, and a 1.6-second charge that fires a
+# lance with a 7.2 m explosion.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: stahlta
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO, PROJECTILE, AOE
+mastery_rank: 10
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 50.0
+disposition: 1.05           # riven disposition
+polarities: [madurai]
+exilus_polarity: naramon
+riven_family: Stahlta
+traits: [corpus]
+introduced: "28"
+internal_name: /Lotus/Weapons/Corpus/LongGuns/CrpRubanRifle/CrpRubanRifle
+noise: alarming
+ammo_type: primary
+ammo_max: 300
+ammo_pickup: 40
+magazine: 40
+reload_seconds: 1.4
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+# and none of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 1.0
+    max_deg: 3.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 120
+  fire_rate: 6
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.24
+  crit_multiplier: 1.8
+  status_chance: 0.22
+  punch_through_m: 1.2
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 7.28, puncture: 16.64, slash: 28.08 }   # total 52
+
+source:
+  url: https://wiki.warframe.com/w/Stahlta

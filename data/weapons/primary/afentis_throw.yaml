@@ -1,0 +1,37 @@
+id: afentis_throw
+name: Afentis
+# THE SPEAR THROW: 400 damage at a 30% crit chance and a 3x multiplier, silent,
+# and with no explosion — the arsenal's own display for this weapon.
+inherits: afentis
+form: alt_fire
+transform_group: afentis
+
+introduced: "32"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and none of this
+# weapon's is named. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 90
+  fire_rate: 1
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.3
+  crit_multiplier: 3.0
+  status_chance: 0.2
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 240, puncture: 120, slash: 40 }   # total 400
+
+source:
+  url: https://wiki.warframe.com/w/Afentis

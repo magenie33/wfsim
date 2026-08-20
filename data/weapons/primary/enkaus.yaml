@@ -1,0 +1,63 @@
+id: enkaus
+name: Enkaus
+slot: primary
+# A 36-METRE BEAM with a grenade in its alternate fire — the arsenal shows the
+# ALT (`_TooltipAttackDisplay: 2`), and this entry is the beam it is not.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: enkaus
+mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags BEAM
+mastery_rank: 12
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 1.0
+disposition: 0.7            # riven disposition
+polarities: [naramon]
+exilus_polarity: naramon
+riven_family: Enkaus
+traits: [tenno]
+introduced: "42"
+# THE MODULE CARRIES NO InternalName FOR THIS WEAPON, so this key comes from
+# WFCD's export joined on the display name — which is the join this roster
+# forbids everywhere else, and is stated because it is an exception. It is
+# safe here because the export holds exactly ONE Enkaus (checked 2026-08-20);
+# the rule exists for names the export carries twice.
+internal_name: /Lotus/Weapons/Tenno/LongGuns/TnInkRifle/TnInkRifleWeapon
+noise: alarming
+ammo_type: primary
+ammo_max: 60
+ammo_pickup: 1
+magazine: 60
+reload_seconds: 2.2
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+# and none of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 1.0
+    max_deg: 1.0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.16
+  crit_multiplier: 1.8
+  status_chance: 0.32
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 36.0 m" on this attack.
+  range_m: 36.0
+  damage: { corrosive: 20, puncture: 8 }   # total 28
+
+source:
+  url: https://wiki.warframe.com/w/Enkaus

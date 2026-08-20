@@ -1,0 +1,53 @@
+id: battacor_charged
+name: Battacor
+# THE SECONDARY FIRE: a 0.4 s charge, hit-scan, with an explosion in 3.4 m.
+inherits: battacor
+form: charged
+transform_group: battacor
+
+introduced: "24"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and none of this
+# weapon's is named. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: charge
+  shot_type: hit_scan
+  fire_rate: 5
+  charge_seconds: 0.4
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.34
+  crit_multiplier: 3.0
+  status_chance: 0.08
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # wiki: "Range: 300.0 m" on this attack.
+  range_m: 300.0
+  damage: { radiation: 208 }   # total 208
+  # THE EXPLOSION — rules in MECHANICS §7.
+  radial:
+    radius_m: 3.4
+    falloff_start_m: 0.0
+    falloff_reduction: 0.4
+    crit_chance: 0.34
+    crit_multiplier: 3.0
+    status_chance: 0.5
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { radiation: 208 }   # total 208
+
+unmodeled:
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Battacor

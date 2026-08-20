@@ -1,0 +1,76 @@
+id: afentis
+name: Afentis
+slot: primary
+# A SPEARGUN WHOSE SPEARS EXPLODE: 100 on impact and 800 Blast in three metres.
+# The arsenal shows the THROW (`_TooltipAttackDisplay: 2`), which is the other
+# entry.
+class: rifle
+form: base
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: afentis
+mod_pools: [primary, rifle]   # CompatibilityTags PROJECTILE, IMPACTEXPLODE
+mastery_rank: 8
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/primary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 100.0
+disposition: 1.05           # riven disposition
+polarities: [naramon, madurai, madurai]
+exilus_polarity: madurai
+riven_family: Afentis
+traits: [tenno]
+introduced: "32"
+internal_name: /Lotus/Weapons/Tenno/LongGuns/TnHopliteSpear/TnHopliteSpearGunWeapon
+noise: alarming
+ammo_type: primary
+ammo_max: 12
+ammo_pickup: 4
+magazine: 4
+reload_seconds: 1.8
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+# and none of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+  trigger: semi_auto
+  shot_type: projectile
+  projectile_speed_mps: 90
+  fire_rate: 0.833
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.26
+  crit_multiplier: 2.2
+  status_chance: 0.24
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 20, puncture: 60, slash: 20 }   # total 100
+  # THE EXPLOSION — rules in MECHANICS §7.
+  radial:
+    radius_m: 3.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.2
+    crit_chance: 0.26
+    crit_multiplier: 2.2
+    status_chance: 0.1
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { blast: 800 }   # total 800
+
+unmodeled:
+  - "a direct hit forces a KNOCKDOWN and the explosion a RAGDOLL (module ForcedProcs) — neither is a damage type and this arena's enemies are neither knocked down nor thrown"
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Afentis

@@ -1,0 +1,61 @@
+id: epitaph_prime
+name: Epitaph Prime
+slot: secondary
+# THE EPITAPH WITH A TEN-METRE UNCHARGED BLAST and more of everything. The
+# charged shot is the arsenal's own and is this entry.
+class: pistol
+form: charged
+default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: epitaph_prime
+mod_pools: [pistol]   # CompatibilityTags PROJECTILE, SINGLESHOT, AOE
+mastery_rank: 14
+max_rank: 30
+
+# Weapon-level metadata (wiki Module:Weapons/data/secondary, cross-checked
+# against WFCD warframe-items — 0 disagreements).
+accuracy: 80.0
+disposition: 0.55           # riven disposition
+polarities: [madurai, madurai]
+exilus_polarity: naramon
+riven_family: Epitaph
+traits: []
+introduced: "36.1"
+internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeEpitaph/PrimeEpitaphSidearmWeapon
+noise: alarming
+ammo_type: secondary
+ammo_max: 40
+ammo_pickup: 20
+magazine: 1
+reload_seconds: 0.6
+
+# Condition Overload: NO row in the wiki's CO catalog (re-read 2026-08-20) —
+# ordinary Additive at the full +100%. The catalog gives a class PER ATTACK
+# and none of this weapon's is named.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 1.0
+    max_deg: 1.5
+  trigger: charge
+  shot_type: projectile
+  projectile_speed_mps: 300
+  fire_rate: 1.75
+  charge_seconds: 0.36
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.5
+  crit_multiplier: 3.0
+  status_chance: 0.14
+  punch_through_m: 2.0
+  # A GUARANTEED IMPACT PROC — the module's ForcedProcs.
+  forced_procs: [impact, cold]
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 126, puncture: 47.25, slash: 141.75 }   # total 315
+
+source:
+  url: https://wiki.warframe.com/w/Epitaph_Prime

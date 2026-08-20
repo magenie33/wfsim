@@ -1,0 +1,45 @@
+id: cyanex_burst
+name: Cyanex
+# BURST MODE: the magazine fired in one pull.
+inherits: cyanex
+form: alt_fire
+transform_group: cyanex
+
+introduced: "25.0"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and none of this
+# weapon's is named. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 1.0
+    max_deg: 1.5
+  trigger: burst
+  shot_type: projectile
+  projectile_speed_mps: 60
+  fire_rate: 4.67
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.08
+  crit_multiplier: 1.4
+  status_chance: 0.32
+  punch_through_m: 0.5
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { impact: 2.88, puncture: 30.24, slash: 38.88 }   # total 72
+  # THE BURST COUNT IS THE MAGAZINE, which is the one thing this entry cannot
+  # say properly: `count` is a constant and the real number is however many
+  # rounds are left. 11 is the UNMODDED magazine — the Tenet Detron's call.
+  burst:
+    count: 11
+    delay_seconds: 0.08     # module BurstDelay
+
+unmodeled:
+  - "the burst empties the MAGAZINE and this entry fires a fixed count — the unmodded magazine. The page states that magazine mods lengthen it, so a build carrying one is understated here"
+
+source:
+  url: https://wiki.warframe.com/w/Cyanex

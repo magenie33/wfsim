@@ -1,0 +1,36 @@
+id: basmu_beam
+name: Basmu
+# THE HELD BEAM: a continuous discharge, and the half of the weapon the primary
+# fire's magazine pays for.
+inherits: basmu
+form: alt_fire
+transform_group: basmu
+
+introduced: "27.3"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and none of this
+# weapon's is named. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 24.0
+    max_deg: 42.0
+  trigger: held
+  shot_type: hit_scan
+  fire_rate: 12
+  multishot: 2.0
+  ammo_cost: 1
+  crit_chance: 0.02
+  crit_multiplier: 4.8
+  status_chance: 0.3
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { electricity: 12 }   # 12 a pellet, 24 a shot
+
+source:
+  url: https://wiki.warframe.com/w/Basmu

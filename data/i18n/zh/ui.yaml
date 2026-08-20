@@ -611,6 +611,7 @@ ui:
   "a benchmark build — measured under": 基准配装 —— 测试标准
   "a bigger magazine makes the reload LONGER here and the sim does not know it — shells are loaded one at a time, so Ammo Stock buys capacity and pays for it in reload": 弹匣越大装填越慢，模拟不知道这件事 —— 子弹是一发一发上的，所以弹药储存换来的容量要拿装填时间去付
   "a cube left alone detonates after 9 seconds, which needs a miss and a clock this arena does not run": "无人理会的方块会在 9 秒后自行引爆，这需要一次打偏和一个本场并不运行的计时"
+  "a direct hit forces a KNOCKDOWN and the explosion a RAGDOLL (module ForcedProcs) — neither is a damage type and this arena's enemies are neither knocked down nor thrown": "直接命中必定造成击倒、爆炸必定造成布娃娃（模块 ForcedProcs）—— 两者都不是伤害类型，而这个战场里的敌人既不会被击倒也不会被抛飞"
   "a direct hit forces a KNOCKDOWN whether or not the grenade explodes (wiki) — this arena's enemies are not knocked down, so the crowd control that makes this weapon safe to fire up close pays nothing here": "无论榴弹是否爆炸，直接命中都会造成击倒（维基）—— 这个战场里的敌人不会被击倒，所以那个让这把武器可以贴脸开火的控制效果在这里一分不值"
   "a direct hit forces a knockdown whatever the explosion does — this arena's enemies are not knocked down, so the crowd control that makes this weapon safe to fire up close pays nothing here":
   "a per-PELLET aim weight, not a whole-spread promise — the landing spot is rolled for each pellet": 这是逐弹丸的瞄准权重，不是整片弹丸都爆头 —— 落点对每颗弹丸单独掷点
@@ -1058,6 +1059,7 @@ ui:
   "the missiles HOME, and homing is not modelled — this arena has one target at zero distance, so a guided missile and a straight one land the same": 导弹的追踪尚未建模 —— 这个战场只有一个零距离的目标，所以制导弹和直飞弹落点相同
   "the official rulers — the same fight on every weapon": 官方标尺 —— 每把武器都是同一场战斗
   "the official test scenario — the same fight on every weapon, so results compare": 官方测试场景 —— 每把武器都是同一场战斗，结果之间可以比较
+  "the orb HANGS IN PLACE and damages what walks into it, and the primary fire can be shot THROUGH it for bonus damage (wiki) — a two-step interaction between the two modes, and this engine fires each mode on its own": "那颗球会停在原地并伤害走进去的敌人，而主攻击可以打穿它获得额外伤害（维基）—— 这是两个模式之间的两步联动，而本引擎是各自独立地发射每一个模式"
   "the page states the spool as a COUNT and not as a starting fraction — 'requires a spool-up of 6 shots before optimal fire rate is achieved' — and the roster's spool field needs both halves to reconcile, so it is left off rather than half-guessed": "页面把转膛写成一个「发数」而不是一个起始比例 ——「需要 6 发的转膛才能达到最佳射速」—— 而本武器库的转膛字段需要两半互相印证，所以这里干脆不填，而不是猜一半"
   "the player does not move or aim by hand here": 这里的玩家不移动，也不手动瞄准
   "the primary fire HOMES on a beaconed target for 20 seconds (wiki) — this arena's shots already go where they are aimed, so the homing buys nothing here and buys a great deal in a real room": "主攻击会在 20 秒内追踪被信标标记的目标（维基）—— 这个战场里的子弹本来就打在瞄准的地方，所以追踪在这里买不到任何东西，而在真实的房间里价值极大"
@@ -1069,6 +1071,7 @@ ui:
   "the projectile is a WALL 3 metres thick, which with the infinite body punch through above is most of what this weapon is in a room: one shot sweeps everything in a 3 m band. This arena fires a RAY, so only the bodies on the line are struck and the width buys nothing. The Tenet variant's sheet is 4.4 m": "弹体是一面 3 米厚的墙，配上上面那条无限穿体，这才是这把武器在房间里的主体：一发扫掉 3 米宽带内的一切。本场射出的是一条射线，所以只有线上的身体会被打到，宽度什么也买不到。Tenet 版本的那面墙是 4.4 米"
   "the projectile is a WALL 4.4 metres thick, which with the infinite body punch through above is most of what this weapon is in a room: one shot sweeps everything in a 4.4 m band. This arena fires a RAY, so only the bodies on the line are struck and the width buys nothing": "弹体是一面 4.4 米厚的墙，配上上面那条无限穿体，这才是这把武器在房间里的主体：一发扫掉 4.4 米宽带内的一切。本场射出的是一条射线，所以只有线上的身体会被打到，宽度什么也买不到"
   "the projectiles BOUNCE OFF WALLS like a thrown glaive, and this arena has no walls to bounce off": 弹体会像投掷战刃一样从墙上弹开，而这个战场没有墙可以弹
+  "the projectiles HOME on enemies (wiki) — this arena's shots already go where they are aimed, so the homing buys nothing here": "弹丸会追踪敌人（维基）—— 这个战场里的子弹本来就打在瞄准的地方，所以追踪在这里买不到任何东西"
   "the projectiles arc heavily and travel slowly, so at range the burst has to be led — an aiming cost this arena has no hand to pay": "弹道抛物线很陡且飞得慢，所以远距离必须打提前量——这是一笔瞄准成本，而本场没有手去付"
   "the projectiles are 1 METRE THICK (wiki), which is a hit volume this arena's ray has no width for": "弹丸有 1 米厚（维基），而这个战场的射线没有宽度可以承载它"
   "the radial's falloff is not modelled — this arena has one target at the centre, so it always takes the full 72 and never the 58 at the rim": 范围伤害的距离衰减尚未建模 —— 这个战场只有一个位于中心的目标，所以它永远吃满 72，而不会是边缘的 58

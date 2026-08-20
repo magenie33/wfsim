@@ -1,0 +1,52 @@
+id: cedo_alt
+name: Cedo
+# THE GLAIVE: a thrown disc with a six-metre explosion behind it.
+inherits: cedo
+form: alt_fire
+transform_group: cedo
+
+introduced: "29.6"
+
+# NOT INHERITED — the CO catalog gives a class PER ATTACK, and none of this
+# weapon's is named. Absence means ORDINARY.
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — wiki
+  # Module:Weapons/data (MinSpread/MaxSpread on this attack). An ATTACK is
+  # never inherited, so every form states its own.
+  spread:
+    min_deg: 1.0
+    max_deg: 1.5
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 60
+  fire_rate: 1
+  multishot: 1.0
+  ammo_cost: 0
+  crit_chance: 0.02
+  crit_multiplier: 1.4
+  status_chance: 0.5
+  # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
+  punch_through_m: 0.0
+  # NO RANGE ROW on this attack — the page states none. See
+  # data/surveys/weapon_range.yaml.
+  damage: { slash: 20 }   # total 20
+  # THE EXPLOSION — rules in MECHANICS §7.
+  radial:
+    radius_m: 6.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.0   # the module states NO damage falloff
+    crit_chance: 0.02
+    crit_multiplier: 1.4
+    status_chance: 0.5
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { blast: 10 }   # total 10
+
+unmodeled:
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Cedo
