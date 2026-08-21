@@ -976,6 +976,12 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, creeping_bullseye, magnetic_might, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [cestra_evo1_incarnon_form, cestra_fortress_salvo, cestra_rapid_reinforcement, cestra_deathtrap_trigger]
     arcanes: [secondary_deadhead]
+  - weapon: coda_bassocyst
+    mode: base
+    score: 8.510663378751648
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, incendiary_coat, blaze]
+    arcanes: [primary_crux]
+    valence: magnetic
   - weapon: coda_bubonico
     mode: base
     score: 20.38134574310723
@@ -994,12 +1000,36 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, vigilante_armaments, atomic_fallout, primed_charged_shell]
     arcanes: [primary_deadhead]
     valence: magnetic
+  - weapon: coda_bubonico
+    mode: base
+    score: 15.389189211837415
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shrapnel_shot, primed_charged_shell, contagious_spread]
+    arcanes: [primary_deadhead]
+    valence: cold
+  - weapon: coda_hema
+    mode: base
+    score: 15.76860828508098
+    mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, hellfire]
+    arcanes: [primary_crux]
+    valence: magnetic
   - weapon: coda_sporothrix
     mode: base
     score: 24.55987121880847
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, bladed_rounds, speed_trigger, vile_acceleration, vital_sense, thermite_rounds]
     arcanes: [primary_crux]
     valence: magnetic
+  - weapon: coda_synapse
+    mode: base
+    score: 17.409052295238922
+    mods: [primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    arcanes: [primary_deadhead]
+    valence: electricity
+  - weapon: coda_synapse
+    mode: base
+    score: 11.987653418061806
+    mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds]
+    arcanes: [primary_crux]
+    valence: electricity
   - weapon: corinth_prime
     mode: base
     score: 6.887754069657817
