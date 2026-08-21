@@ -1138,10 +1138,18 @@ mod tests {
     /// is the union.
     #[test]
     fn a_free_alt_fire_counts_toward_the_physical_share() {
-        let l = excluded_for("larkspur_prime");
-        assert!(!l.contains(&"impact"), "the alt-fire is 33% Impact: {l:?}");
-        // Nothing else is invented: neither form deals Puncture or Slash.
-        assert!(l.contains(&"puncture") && l.contains(&"slash"), "{l:?}");
+        // BOTH ENTRIES, because the report came back on the OTHER one. This
+        // asserted `larkspur_prime` alone — the card the owner relayed — and a
+        // player reported the plain Larkspur refusing negative Impact a
+        // fortnight later (owner, 2026-08-21). It was already right, and a
+        // family where one member is pinned and its twin is not is precisely
+        // how a fixed bug gets re-reported: there is nothing to point at.
+        for id in ["larkspur", "larkspur_prime"] {
+            let l = excluded_for(id);
+            assert!(!l.contains(&"impact"), "{id}: the alt-fire is 33% Impact: {l:?}");
+            // Nothing else is invented: neither form deals Puncture or Slash.
+            assert!(l.contains(&"puncture") && l.contains(&"slash"), "{id}: {l:?}");
+        }
 
         // The OTHER rule is the flight one, and here the derivation is only
         // the fallback. Phantasma Prime's plasma bomb genuinely flies at
@@ -1156,6 +1164,84 @@ mod tests {
             let e = excluded_for(id);
             assert!(e.contains(&"projectile_speed"), "{id} is hit-scan in every form: {e:?}");
         }
+    }
+
+
+    /// AN INCARNON FORM DOES NOT WIDEN THE POOL, and this is what counting it
+    /// would cost — in real cards, per family, rather than in argument.
+    ///
+    /// The rule above reads the union of the forms a weapon fires FOR FREE, and
+    /// the question the union raises is where "for free" stops. A gauge-switched
+    /// form is paid for with evolutions and a riven's pool is fixed when it
+    /// drops, which is the reasoning; the reasoning is not what settles it.
+    ///
+    /// Removing the `is_adapter_form` filter moves 25 weapons, and seven of
+    /// them would gain a PHYSICAL stat that the survey of live listings records
+    /// **zero** times:
+    ///
+    /// | family | stat the Incarnon form would unlock | cards carrying it |
+    /// | --- | --- | --- |
+    /// | Boltor | Slash | 0 of 500 |
+    /// | Latron | Impact | 0 of 500 |
+    /// | Atomos | Impact | 0 of 500 |
+    /// | Lex | Impact | 0 of 500 |
+    /// | Dual Toxocyst | Slash | 0 of 500 |
+    /// | Kunai | Slash | 0 of 430 |
+    /// | Bronco | Slash | 0 of 309 |
+    ///
+    /// About 3,200 listings, not one of them carrying a stat the wider rule
+    /// would offer. That is the same shape of evidence the flight rule already
+    /// rests on (the Latron, Lex and Atomos Incarnon forms all fire a literal
+    /// travelling projectile and their families show 0, 4 and 0 Projectile
+    /// Speed cards) — so it is not two arguments, it is one finding on both
+    /// halves of the derivation.
+    ///
+    /// THE SURVEY IS EVIDENCE AND NOT A LAW, and `data/rivens/pools.yaml` says
+    /// so itself: *"absence in 500 listings is strong evidence and not a
+    /// guarantee. An in-game card that contradicts a `never` here beats the
+    /// file."* One real card carrying negative Slash on a Boltor settles this
+    /// the other way, and the way to record it is an entry in
+    /// `exceptions.yaml` — the same route the Furis took (2026-08-08).
+    ///
+    /// This test exists so that flipping the rule is a decision with a price
+    /// tag on it rather than a one-line edit that quietly reddens nothing.
+    #[test]
+    fn an_incarnon_form_does_not_widen_the_physical_pool() {
+        // Each pair is (weapon, the stat its Incarnon form would unlock). The
+        // assertion is that the stat is still EXCLUDED — that is, that the
+        // gauge-switched form was not counted.
+        for (id, stat, cards) in [
+            ("boltor", "slash", 500),
+            ("boltor_prime", "slash", 500),
+            ("telos_boltor", "slash", 500),
+            ("latron", "impact", 500),
+            ("latron_prime", "impact", 500),
+            ("latron_wraith", "impact", 500),
+            ("atomos", "impact", 500),
+            ("lex", "impact", 500),
+            ("lex_prime", "impact", 500),
+            ("dual_toxocyst", "slash", 500),
+            ("kunai", "slash", 430),
+            ("mk1_kunai", "slash", 430),
+            ("bronco", "slash", 309),
+        ] {
+            let e = excluded_for(id);
+            assert!(
+                e.contains(&stat),
+                "{id}: counting the Incarnon form would offer {stat}, which \
+                 0 of {cards} real cards in this family carry — {e:?}"
+            );
+        }
+        // …AND THE NEGATIVE CONTROL, which is what keeps this from being a test
+        // that would pass on a derivation that excluded everything: the same
+        // weapons still roll the physical stats their BASE form earns.
+        let lex = excluded_for("lex");
+        assert!(!lex.contains(&"puncture"), "the Lex is 88% Puncture: {lex:?}");
+        let kunai = excluded_for("kunai");
+        assert!(!kunai.contains(&"puncture"), "the Kunai is 90% Puncture: {kunai:?}");
+        // …and the FREE alt-fire is still counted, which is the rule this one
+        // bounds rather than replaces.
+        assert!(!excluded_for("larkspur").contains(&"impact"));
     }
 
     /// AN EXCEPTION OVERRIDES THE RULES, and only an exception does.
