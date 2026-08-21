@@ -606,6 +606,17 @@ def main() -> None:
     if stamped == flagged:
         sys.exit("index.html: build-stamp placeholder not found")
     flagged = stamped
+    # …AND THE SAME STAMP IN app.js, so the two can check they are one build.
+    # They are separate files with separate caches, and a browser holding an old
+    # page with a new script looks for markup that page never had — which is
+    # what an iPhone reported on 2026-08-21 (`renderOpt` on `#opt-modes-sect`,
+    # an element added ten days earlier). `checkBuildMatches` is the reader.
+    app_js = (APP / "app.js").read_text(encoding="utf-8")
+    marked = app_js.replace('const BUILD_ID = "dev";',
+                            f'const BUILD_ID = "{build_stamp()}";', 1)
+    if marked == app_js:
+        sys.exit("app.js: BUILD_ID placeholder not found")
+    (APP / "app.js").write_text(marked, encoding="utf-8", newline=chr(10))
     (APP / "index.html").write_text(flagged, encoding="utf-8", newline="\n")
     ship_art()
     write_board()

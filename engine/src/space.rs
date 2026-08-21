@@ -679,8 +679,194 @@ pub fn dissipation_point(
 pub const CONTACT_RANGE_M: f64 = 2.0 * BODY_RADIUS_M;
 
 
+/// A BOUNCE PATH — specular reflection, which is the wiki's own rule.
+///
+/// `Bounce` (the PROJECTILE mechanic, and not `Ricochet`, which is hitscan and
+/// seeks a target inside a range): *"Bouncing projectiles will reflect off
+/// surfaces at the same angle of incidence (i.e. the angle at which a
+/// projectile moves away from a surface equals the angle at which they enter).
+/// Bouncing projectiles will also lose velocity after collisions."*
+///
+/// So a bounce is GEOMETRY. It was a nearest-first walk over the CHAIN's
+/// neighbour lists until 2026-08-21 — the mechanic for a ricochet, and for a
+/// bounce an approximation that kept every hop inside the crowd it started in.
+/// On the group-clear ruler that was worth 9.9x on the Latron Prime, with six
+/// 4 m explosions landing on one cluster of 30 bodies out of 361.
+///
+/// EVERY BOUNCE AFTER THE FIRST IS DETERMINED. The impact point fixes the
+/// normal, the normal fixes the outgoing ray, and the ray fixes what it meets.
+/// There is exactly ONE assumption in here and it is the first impact:
+///
+/// **WHERE ON THE FIRST BODY THE SHOT LANDS.** This arena aims a ray at a
+/// body's CENTRE, and a ray through the centre reflects straight back the way
+/// it came — every bounce would fly behind the shooter and hit nothing, which
+/// is true of a dead-centre hit and false of the weapon. A real shot lands
+/// somewhere on the target, so `impact_offset` is where: a fraction of the
+/// radius, drawn uniformly across the body's width by the caller. Uniform is
+/// the assumption; the plane being the model is not (see `BODY_RADIUS_M` —
+/// the geometry answers "did it reach", `headshot_pct` answers "where").
+///
+/// A BODY MAY BE HIT TWICE, which the nearest-first walk forbade with a global
+/// `seen`. A reflected projectile can come back, and only the body it is
+/// LEAVING is excluded — it is standing on that surface, so the next thing it
+/// meets is something else.
+///
+/// Velocity loss is not modelled and costs nothing: this engine gives a
+/// projectile no travel time, so a slower bounce arrives at the same instant.
+/// `muzzle` is where the shot came from, so the first impact's incoming
+/// direction is real. `first` is the body it has just struck — that collision
+/// is already resolved and is not in the returned path. `impact_offset` is that
+/// impact's distance from the body's centre in [-1, 1] of the radius: THE ONE
+/// ASSUMPTION, and everything after it is geometry.
+pub fn bounce_path(
+    muzzle: Vec2,
+    bodies: &[Vec2],
+    first: usize,
+    bounces: u32,
+    impact_offset: f64,
+) -> Vec<usize> {
+    let mut out = Vec::new();
+    let Some(&hit) = bodies.get(first) else { return out };
+    let inc = Vec2::new(hit.x - muzzle.x, hit.y - muzzle.y);
+    let len = inc.x.hypot(inc.y);
+    if len <= 1e-9 || bounces == 0 {
+        return out;
+    }
+    let mut dir = Vec2::new(inc.x / len, inc.y / len);
+    // The entry point: `impact_offset` across the body's width, then back along
+    // the ray to the surface — the same near-intersection `first_hit` uses.
+    let perp = impact_offset.clamp(-1.0, 1.0) * BODY_RADIUS_M;
+    let half = (BODY_RADIUS_M * BODY_RADIUS_M - perp * perp).max(0.0).sqrt();
+    let side = Vec2::new(-dir.y, dir.x);
+    let mut at = Vec2::new(
+        hit.x + side.x * perp - dir.x * half,
+        hit.y + side.y * perp - dir.y * half,
+    );
+    let mut cur = first;
+    for _ in 0..bounces {
+        // REFLECT about the surface: n is the outward normal at the impact.
+        let c = bodies[cur];
+        let n = Vec2::new(at.x - c.x, at.y - c.y);
+        let nl = n.x.hypot(n.y);
+        if nl <= 1e-9 {
+            break; // dead centre: no surface to reflect about
+        }
+        let n = Vec2::new(n.x / nl, n.y / nl);
+        let dot = dir.x * n.x + dir.y * n.y;
+        dir = Vec2::new(dir.x - 2.0 * dot * n.x, dir.y - 2.0 * dot * n.y);
+        // …and fly, ignoring only the body being left.
+        let Some((next, dist)) = first_hit_excluding(at, dir, bodies, cur) else {
+            break; // off into the open: the remaining bounces are never spent
+        };
+        out.push(next);
+        at = Vec2::new(at.x + dir.x * dist, at.y + dir.y * dist);
+        cur = next;
+    }
+    out
+}
+
+/// [`first_hit`], skipping the body the projectile is standing on.
+fn first_hit_excluding(from: Vec2, dir: Vec2, bodies: &[Vec2], skip: usize) -> Option<(usize, f64)> {
+    let len = dir.x.hypot(dir.y);
+    if len <= 0.0 {
+        return None;
+    }
+    let (ux, uy) = (dir.x / len, dir.y / len);
+    let mut best: Option<(usize, f64)> = None;
+    for (i, b) in bodies.iter().enumerate() {
+        if i == skip {
+            continue;
+        }
+        let (px, py) = (b.x - from.x, b.y - from.y);
+        let along = px * ux + py * uy;
+        if along < 0.0 {
+            continue;
+        }
+        let perp = (px * uy - py * ux).abs();
+        if perp > BODY_RADIUS_M {
+            continue;
+        }
+        let half = (BODY_RADIUS_M * BODY_RADIUS_M - perp * perp).max(0.0).sqrt();
+        let entry = (along - half).max(0.0);
+        if best.is_none_or(|(_, d)| entry < d) {
+            best = Some((i, entry));
+        }
+    }
+    best
+}
+
 #[cfg(test)]
 mod tests {
+
+    /// A BOUNCE OBEYS THE REFLECTION LAW, which is the wiki's whole statement
+    /// about it: *"reflect off surfaces at the same angle of incidence"*.
+    ///
+    /// The two ends of the impact parameter are the two ends of that law and
+    /// they are opposite, which is what makes this checkable: a shot through
+    /// the CENTRE comes straight back, and a GRAZING one carries almost
+    /// straight on. Anything that seeks a target instead — which is what this
+    /// replaced — passes neither.
+    #[test]
+    fn a_bounce_reflects_at_the_angle_it_arrived() {
+        // A CROWD ON BOTH SIDES of the struck body, dense enough that whichever
+        // way the projectile leaves it meets something. The assertion is the
+        // DIRECTION it left in — which half of the field the next body is in —
+        // because that is the claim, and naming one body would be fitting the
+        // test to the arithmetic.
+        let mut bodies = vec![Vec2::new(0.0, 5.0)]; // 0: struck
+        for i in -12..=12 {
+            for j in -12..=12 {
+                let (x, y) = (i as f64 * 0.45, 5.0 + j as f64 * 0.45);
+                if (y - 5.0).abs() < 1e-9 && x.abs() < 1e-9 {
+                    continue;
+                }
+                bodies.push(Vec2::new(x, y));
+            }
+        }
+        let muzzle = Vec2::ORIGIN;
+        // DEAD CENTRE reverses — the next body is BEHIND the one it struck.
+        let back = bounce_path(muzzle, &bodies, 0, 1, 0.0);
+        let b0 = bodies[*back.first().expect("a centre hit finds the crowd behind it")];
+        assert!(b0.y < 5.0, "a centre hit comes straight back: landed at {b0:?}");
+        // GRAZING carries on — the next body is BEYOND it.
+        let on = bounce_path(muzzle, &bodies, 0, 1, 0.999);
+        let o0 = bodies[*on.first().expect("a graze finds the crowd ahead of it")];
+        // NOT BACKWARD. A graze leaves almost tangentially, so where it lands
+        // is level with the body it clipped or past it — never behind, which is
+        // the half a centre hit owns.
+        assert!(o0.y >= 5.0, "a graze does not come back: landed at {o0:?}");
+    }
+
+    /// IT STOPS WHEN IT LEAVES, rather than teleporting to whatever is nearest.
+    ///
+    /// The bounce COUNT is a ceiling and not a promise — the old nearest-first
+    /// walk spent every bounce however far away the next body was, which is
+    /// what let six explosions land on one cluster (2026-08-21).
+    #[test]
+    fn a_bounce_that_finds_nothing_spends_no_more() {
+        let bodies = [Vec2::new(0.0, 5.0)];
+        // Five bounces available, nothing to hit: the path is empty.
+        assert!(bounce_path(Vec2::ORIGIN, &bodies, 0, 5, 0.5).is_empty());
+        // …and a path is never longer than the count allows.
+        let line: Vec<Vec2> = (0..40).map(|i| Vec2::new(0.0, 5.0 + i as f64 * 0.6)).collect();
+        assert!(bounce_path(Vec2::ORIGIN, &line, 0, 3, 0.999).len() <= 3);
+    }
+
+    /// A BODY MAY BE HIT TWICE. Only the surface it is standing on is excluded,
+    /// because a reflected projectile can come back — the walk this replaced
+    /// carried a global `seen` and could not.
+    #[test]
+    fn a_bounce_may_return_to_a_body_it_already_hit() {
+        // Two bodies facing each other with the shooter off to one side, so a
+        // near-tangential first hit sends the projectile between them.
+        let bodies = [Vec2::new(0.0, 5.0), Vec2::new(0.0, 5.6)];
+        let path = bounce_path(Vec2::ORIGIN, &bodies, 0, 6, 0.999);
+        // Whatever it visits, it is allowed to name a body more than once; what
+        // it may never do is name the body it is leaving as the very next hop.
+        for w in path.windows(2) {
+            assert_ne!(w[0], w[1], "a bounce cannot re-enter the surface it left: {path:?}");
+        }
+    }
     use super::*;
 
     /// THE WHOLE "Minimum Mod Ranks for Penetration" TABLE, humanoid rows.

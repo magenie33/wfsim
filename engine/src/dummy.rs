@@ -7416,6 +7416,17 @@ pub fn run_once_traced(
     // constant being asked once per shot. Its own layout because its RANGE is
     // its own — ordinarily unbounded, where a chain's is a published metre
     // figure.
+    // WHERE EVERY BODY IS, built once. The SEEKING path reads the neighbour
+    // layout below; the REFLECTING one reads these positions, because a bounce
+    // is geometry and a neighbour list has thrown the geometry away.
+    let bounce_bodies: Vec<crate::space::Vec2> = if params.ricochet.is_some() {
+        let mut v = Vec::with_capacity(params.others.len() + 1);
+        v.push(params.target_at);
+        v.extend(params.others.iter().map(|f| f.at));
+        v
+    } else {
+        Vec::new()
+    };
     let ricochet_layout = match (params.ricochet, params.others.is_empty()) {
         (Some(rc), false) => {
             let mut bodies = Vec::with_capacity(params.others.len() + 1);
@@ -9771,12 +9782,39 @@ pub fn run_once_traced(
                 // (direct part) and the explosion (radial part) are two passes
                 // over the same flight and must not disagree about it.
                 if direct && ric_path.is_none() {
-                    if let (Some(rc), Some(layout)) = (params.ricochet, ricochet_layout.as_ref()) {
+                    if let Some(rc) = params.ricochet {
                         let from = struck.first().copied().unwrap_or(0);
                         let n = params.others.len() + 1;
+                        // TWO MECHANICS, and the field each wiki page publishes
+                        // is what tells them apart (MECHANICS §Bounce).
+                        //
+                        //   · RICOCHET is hitscan and SEEKS: it "redirects to
+                        //     hit another enemy" inside a stated `range_m`.
+                        //     The neighbour walk IS that mechanic.
+                        //   · BOUNCE is a projectile and REFLECTS at the angle
+                        //     of incidence, with no range at all. It gets the
+                        //     geometry.
+                        // `range_m` is INFINITY when the data states none, and
+                        // stating none is exactly what a BOUNCE weapon does.
+                        let hops = if rc.range_m.is_finite() {
+                            ricochet_layout
+                                .as_ref()
+                                .map(|l| crate::chain::bounce_path(l, n, from, rc.bounces))
+                                .unwrap_or_default()
+                        } else {
+                            crate::space::bounce_path(
+                                params.player_at,
+                                &bounce_bodies,
+                                from,
+                                rc.bounces,
+                                // WHERE ON THE FIRST BODY IT LANDED, uniform
+                                // across the width. The one assumption in the
+                                // path; see `space::bounce_path`.
+                                d.spine.next_f64() * 2.0 - 1.0,
+                            )
+                        };
                         ric_path = Some(
-                            crate::chain::bounce_path(layout, n, from, rc.bounces)
-                                .into_iter()
+                            hops.into_iter()
                                 // ONE ROLL PER ARRIVAL, off the same stream the
                                 // aimed pellet's body part comes from — a place
                                 // the shot landed is a place the shot landed.
@@ -14965,17 +15003,43 @@ mod tests {
     /// `headshot_pct` stays 0, so the AIMED pellet is always a body shot and
     /// the only head in the fight is one a bounce found.
     #[cfg(test)]
+    /// A CROWD, not a line, and the change is the mechanic's. A bounce
+    /// REFLECTS (`space::bounce_path`), so where it goes next is geometry: off
+    /// a lone body strung out at 5 m intervals it flies into the open and the
+    /// path ends. Density is what a bounce weapon needs, which is the same
+    /// thing the community says about this family — it wants a tight corridor.
+    ///
+    /// `n` is the number of OTHER bodies, packed around the aimed one.
     fn latron_incarnon_in_a_line(n: usize, head_chance: f64) -> DummyParams {
         let base = crate::loadout::WeaponBase::from_data("latron_prime_incarnon", false, &[]);
         let refs: Vec<&crate::loadout::ModDef> = Vec::new();
         let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
         let mut arena = crate::arena::Arena::training(10.0);
-        arena.others = (1..=n)
-            .map(|i| crate::formation::FoeSpec {
+        // A SQUARE around the aimed body at 0.6 m, which is just over a body's
+        // width — the packing a reflected projectile can actually travel in.
+        let side = (n as f64).sqrt().ceil() as i32;
+        let mut at = Vec::with_capacity(n);
+        'fill: for j in -side..=side {
+            for i in -side..=side {
+                if i == 0 && j == 0 {
+                    continue;
+                }
+                at.push(crate::space::Vec2::new(
+                    i as f64 * 0.6,
+                    arena.target_at.y + j as f64 * 0.6,
+                ));
+                if at.len() == n {
+                    break 'fill;
+                }
+            }
+        }
+        arena.others = at
+            .into_iter()
+            .map(|p| crate::formation::FoeSpec {
                 id: String::new(),
                 params: TargetParams::training_dummy(),
                 body_parts: DummyParams::humanoid_parts(),
-                at: crate::space::Vec2::new(5.0 * i as f64, arena.target_at.y),
+                at: p,
             })
             .collect();
         let mut p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
@@ -15009,24 +15073,24 @@ mod tests {
     /// size, and that a formation of ONE bounces nowhere, which is the case the
     /// weapon's own admission is about (no terrain here).
     #[test]
-    fn a_ricochet_reaches_five_more_bodies_and_one_reaches_none() {
-        let line = |n: usize| {
+    fn a_bounce_needs_a_crowd_and_one_body_bounces_nowhere() {
+        let crowd = |n: usize| {
             let p = latron_incarnon_in_a_line(n, 0.5);
             let out = run_once(&p, &mut Rng::new(0x5EED));
             (out.bodies_touched(), out.effective_damage)
         };
-        let (one, dmg_one) = line(0);
+        let (one, dmg_one) = crowd(0);
         assert_eq!(one, 1, "a formation of one bounces nowhere — no terrain here");
-        // …and every extra body is another arrival, until the bounce count runs
-        // out. SIX BODIES TOUCHED at five bounces, not seven.
-        let (five, dmg_five) = line(6);
-        assert_eq!(five, 6, "the aimed body plus five bounces, and no more");
-        assert!(dmg_five > dmg_one * 2.0,
-            "a crowd takes far more than one body: {dmg_one:.0} -> {dmg_five:.0}");
-        // THE COUNT IS THE LIMIT, not the formation: a longer line is the same
-        // six bodies.
-        let (still_five, _) = line(9);
-        assert_eq!(still_five, 6, "a tenth body is out of bounces, not out of range");
+        // …AND A CROWD IS WHERE IT LIVES. The claim is not a body count: the
+        // 4 m explosion reaches bodies the bounce never touched, so what is
+        // countable here is that a packed formation takes far more than one
+        // body does. The bounce COUNT is a ceiling and it is asserted where it
+        // is decided, in `space::tests` — this level cannot see it, because
+        // the blast and the bounce reach the same bodies.
+        let (many, dmg_many) = crowd(24);
+        assert!(many > 1, "a crowd is reached: {many} bodies");
+        assert!(dmg_many > dmg_one * 2.0,
+            "a crowd takes far more than one body: {dmg_one:.0} -> {dmg_many:.0}");
     }
 
     /// …AND IT MAY LAND ON A HEAD, which no other spread in this engine can.
@@ -15049,12 +15113,20 @@ mod tests {
                 .mean_effective_damage
         };
         let (body, half, head) = (at(0.0), at(0.5), at(1.0));
-        assert!(head > body * 1.2, "a head is worth 3x: {body:.0} -> {head:.0}");
+        // A SMALL SHARE, and deliberately so. A bounce needs a CROWD to have
+        // anywhere to go and the explosion reaches 4 m, so in any fixture where
+        // bounces happen the blast — which never headshots — is most of the
+        // damage. What the chance moves is the collision beside it, and the
+        // assertion is scaled to that rather than to the whole number: the
+        // fault it exists to catch is a chance stored and never applied, which
+        // would make all three equal.
+        assert!(head > body * 1.01, "a head is worth 3x: {body:.0} -> {head:.0}");
         assert!(half > body && half < head,
             "half the bounces: {body:.0} < {half:.0} < {head:.0}");
-        // …and it really is about HALF, inside the noise of 60 engagements.
+        // …and it really is about HALF — within a quarter of the gap, which is
+        // the only scale this means anything on.
         let want = 0.5 * (body + head);
-        assert!((half - want).abs() / want < 0.10,
+        assert!((half - want).abs() < 0.25 * (head - body),
             "half should sit near the midpoint {want:.0}, got {half:.0}");
     }
 

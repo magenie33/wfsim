@@ -3,6 +3,52 @@
 // official polarity icons from the wiki, art from WFCD.
 
 const $ = (id) => document.getElementById(id);
+// WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
+// the dev server ships `dev`, which is the right answer there.
+const BUILD_ID = "dev";
+/// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
+///
+/// They are deployed as separate files and cached separately, so a browser can
+/// hold an old `index.html` and a new `app.js` — and then the app looks for
+/// markup that the page it is running in has never had. Reported from an
+/// iPhone on 2026-08-21: `renderOpt` threw on `#opt-modes-sect`, an element
+/// added to index.html on 2026-08-11, with an app.js whose line numbers were
+/// current to the minute. The banner said "WFSim could not start" and printed
+/// a stack, which is nothing a reader can act on.
+///
+/// TRUNCATION WAS THE OTHER SUSPECT AND IS RULED OUT: `<script src="/app.js">`
+/// is the last line of the document, so an app.js that RAN is an app.js whose
+/// whole page was parsed.
+///
+/// ONE reload, carrying the query with it — a share link is `?b=<code>` and
+/// dropping it would turn a stale page into a lost build. If the reload comes
+/// back stale too, say so plainly rather than looping.
+/// IT THROWS RATHER THAN RETURNING FALSE, and that is not a style choice: an
+/// `init` that RETURNS resolves, and the `.then` on it marks the boot ready and
+/// REMOVES the banner — so a message written here would be wiped by the very
+/// success path it is meant to replace. Caught while proving this bites.
+let bootReported = false;
+function checkBuildMatches() {
+  const el = document.getElementById("build-stamp");
+  const page = el ? (el.textContent || "").trim() : "";
+  if (BUILD_ID === "dev" || !page || page === "dev" || page === BUILD_ID) return;
+  const url = new URL(location.href);
+  if (url.searchParams.get("_v") === BUILD_ID) {
+    // A FRESH FETCH CAME BACK STALE TOO. Reloading again would loop, so this is
+    // where it stops and says something a reader can act on.
+    if (window.__wfsimBootFailed) {
+      bootReported = true;
+      window.__wfsimBootFailed(
+        "This page is cached from an older version. Clear the site data and reload. / 本页是旧版本的缓存，请清除站点数据后刷新。",
+        `page ${page}, script ${BUILD_ID}`,
+      );
+    }
+    throw new Error(`stale page: ${page} vs ${BUILD_ID}`);
+  }
+  url.searchParams.set("_v", BUILD_ID);
+  location.replace(url.toString());
+  throw new Error("reloading for a page from this build");
+}
 // THE dropdown's registry. Declared here rather than beside the rest of the
 // component because the topbar's language control is drawn by an IIFE that
 // runs at load — a `const` further down the file is in its temporal dead zone
@@ -1342,6 +1388,9 @@ applyCommunityOrder();
 })();
 
 async function init() {
+  // BEFORE ANYTHING TOUCHES THE DOM: a page from another build has markup
+  // this file does not know, and the failure that produces is unreadable.
+  checkBuildMatches();
   META = await api("/api/meta");
   {
     let all = null;
@@ -7333,7 +7382,27 @@ const evoOpenTo = () => {
   return n + 1; // the deepest tier that may be chosen
 };
 const modById = (id) => poolWithRivens().find((m) => m.id === id);
-const show = (id, on) => { const el = $(id); if (on) el.removeAttribute("hidden"); else el.setAttribute("hidden", ""); };
+// A SECTION THAT IS NOT THERE IS NOT A DEAD APP (2026-08-21).
+//
+// This threw on a null element, and the throw is upstream of everything:
+// `init` -> `applyWeapon` -> `renderOpt` -> here, so ONE missing id put
+// "WFSim could not start" on the whole page. Reported from an iPhone with the
+// stack ending at this line — `#opt-modes-sect` sits at byte 42,939 of a
+// 52,687-byte document, which is exactly the tail a truncated mobile response
+// loses.
+//
+// LOUD, NOT SILENT. Swallowing it would hide a real markup fault, so the
+// missing id is named in the console and the app carries on: a page with one
+// section unstyled is worth more than a page that will not open.
+const show = (id, on) => {
+  const el = $(id);
+  if (!el) {
+    console.warn(`show(${id}): no such element — section skipped`);
+    return;
+  }
+  if (on) el.removeAttribute("hidden");
+  else el.setAttribute("hidden", "");
+};
 // Where (other than exceptIdx) this mod is currently slotted, or -1.
 const placedAt = (id, exceptIdx) => slots.findIndex((s, i) => i !== exceptIdx && s.mod === id);
 
@@ -14196,6 +14265,8 @@ init()
     if (b) b.remove();
   })
   .catch((e) => {
+    // …unless the reason already put its own, better sentence on the page.
+    if (bootReported) return;
     if (window.__wfsimBootFailed) {
       window.__wfsimBootFailed(
         "WFSim could not start. / WFSim 启动失败。",
