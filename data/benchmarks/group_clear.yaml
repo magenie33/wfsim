@@ -11,10 +11,10 @@
 # `benchmarks_data.rs` refuses it any weapon, mod, arcane or evolution id.
 id: group_clear
 
-name: "Group Clear · 19x19 at 1.5 m · Thrax Centurion Lv 9999 SP · 180 s · KPM"
+name: "Group Clear · 19x19 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM"
 
 rules:
-  - "The target is a formation of 361 Thrax Centurions at level 9999 on Steel Path, a 19 by 19 grid spaced 1.5 metres centre to centre. The fight lasts 180 seconds."
+  - "The target is a formation of 361 Thrax Centurions at level 9999 on Steel Path, a 19 by 19 grid spaced 3 metres centre to centre. The fight lasts 180 seconds."
   - "The shooter stands at contact with the middle body of the front rank, and fires along the line that rank faces."
   - "Every shot is aimed and lands on the weak point of whatever it strikes directly, including anything it punches through. A chain hop and a damage cloud cannot be a weak point hit. A BLAST detonation can: it carries the weak-point and critical multipliers of the hit that applied the stack, out to everything its 5 m sphere reaches — measured in game (MEASUREMENTS M54)."
   - "The score is kills per minute across the whole formation, counting the fraction of each target already gone."

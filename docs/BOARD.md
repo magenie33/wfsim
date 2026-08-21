@@ -444,6 +444,14 @@ than from the clock.
 A weapon with neither mechanic touches 1 body at every size and costs what it
 always did, so the ruler is free for most of the roster.
 
+> **THE RULER MOVED TO 3 m ON 2026-08-22** and the analysis below is kept as it
+> was measured. It is evidence about SATURATION — which mechanism stops growing
+> at which grid size — and that question is unchanged; what changed is the
+> spacing, and why is in  and MEASUREMENTS
+> M54. The one conclusion here that the move overturns is the last section's:
+> 1.5 m separates all three steps of a radius mod and 3 m does not, which is
+> the cost the move pays on purpose.
+
 ### At 1.5 m, and where each mechanism stops growing
 
 Measured across four weapons, one per mechanism, 180 s, per 1000 runs:

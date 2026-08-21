@@ -384,4 +384,59 @@ mod tests {
         // never handed out.
         assert!(s("buffs").is_none(), "each buff opens where docs/BUFFS.md says");
     }
+
+    /// A RULER'S PROSE QUOTES ITS OWN NUMBERS.
+    ///
+    /// The spacing is written THREE times in `group_clear.yaml` — the machine
+    /// field `spacing_m`, the ruler's NAME, and the rule sentence a reader is
+    /// shown — and on 2026-08-22 the field moved from 1.5 m to 3 m and the
+    /// other two did not. The board went on saying "19x19 at 1.5 m" over a
+    /// fight that was 3 m, which is the worst kind of wrong: every number on
+    /// the page was right and the page said what produced them was something
+    /// else. The owner caught it by reading the board.
+    ///
+    /// So the prose is CHECKED against the field rather than kept in step by
+    /// hand. It reads the grid before expansion, which is why this lives beside
+    /// `expand_formation_grid`: once expanded there is no spacing left to
+    /// compare, only 361 positions.
+    ///
+    /// It is deliberately not a template. A ruler's name is written for a
+    /// reader and generating it would flatten every one of them into the same
+    /// sentence; what has to hold is that the numbers in it are this ruler's.
+    #[test]
+    fn a_rulers_name_and_rules_quote_its_own_spacing() {
+        // THE RAW YAML, because `all()` expands the grid away: after
+        // `expand_formation_grid` there is no spacing left to compare against,
+        // only 361 positions.
+        let mut checked = 0;
+        for (path, text) in crate::data::files_under("benchmarks/") {
+            if !path.ends_with(".yaml") || path["benchmarks/".len()..].contains('/') {
+                continue;
+            }
+            let raw: serde_norway::Value =
+                serde_norway::from_str(text).unwrap_or_else(|e| panic!("{path}: {e}"));
+            let Some(g) = raw.get("scenario").and_then(|s| s.get("formation_grid")) else {
+                continue;
+            };
+            let spacing = g.get("spacing_m").and_then(|v| v.as_f64()).expect("spacing_m");
+            let id = raw.get("id").and_then(|v| v.as_str()).expect("id");
+            let b = get(id).expect("every ruler loads");
+            checked += 1;
+            // `{:g}`-style: 3.0 reads as "3" and 1.5 as "1.5", which is how a
+            // person writes it and therefore how the prose has it.
+            let token = if (spacing.fract()).abs() < 1e-9 {
+                format!("{}", spacing as i64)
+            } else {
+                format!("{spacing}")
+            };
+            let prose = format!("{} {}", b.name, b.rules.join(" "));
+            assert!(
+                prose.contains(&format!("{token} m")) || prose.contains(&format!("{token} metres")),
+                "{id}: the grid is {spacing} m and neither the name nor the rules say so.\n  \
+                 name:  {}\n  This is the drift that put '19x19 at 1.5 m' over a 3 m fight.",
+                b.name
+            );
+        }
+        assert!(checked > 0, "at least one ruler lays a grid, or this checks nothing");
+    }
 }
