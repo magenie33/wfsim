@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 8c5363ac4680bd806a4cac9ca23012daca2593b9
+engine: 8bdfa16070039bfa497ccb4725db1cfe063e90bc
 entries:
   - weapon: akarius_prime
     mode: base
@@ -54,7 +54,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: arbucep
     mode: base
-    score: 11.984811276633163
+    score: 11.961226493533788
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_deadly_efficiency, marked_target, magnetized_cycle, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_fortifier]
   - weapon: artax
@@ -92,16 +92,16 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: atomos
     mode: base
+    score: 8.639334621302673
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_resonant_restore, atomos_survivors_edge]
+    arcanes: [secondary_encumber]
+  - weapon: atomos
+    mode: base
     score: 8.62978284500626
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
     arcanes: [cascadia_flare]
-  - weapon: atomos
-    mode: base
-    score: 8.552774329299904
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
-    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_resonant_restore, atomos_survivors_edge]
-    arcanes: [secondary_encumber]
   - weapon: atomos
     mode: cycle
     score: 8.027218377975537
@@ -116,7 +116,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: atomos
     mode: base
-    score: 5.925730973912901
+    score: 5.925488967375548
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, primed_heated_charge, scorch]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_resonant_restore, atomos_survivors_edge]
     arcanes: [secondary_encumber]
@@ -368,12 +368,6 @@ entries:
     arcanes: [primary_crux]
   - weapon: boar_prime
     mode: cycle
-    score: 9.286549639165964
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage]
-    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
-    arcanes: [primary_debilitate]
-  - weapon: boar_prime
-    mode: cycle
     score: 8.957776247933825
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, incendiary_coat, blaze]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
@@ -386,22 +380,16 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: boar_prime
     mode: cycle
-    score: 8.81524651917091
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, toxic_barrage]
-    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
-    arcanes: [primary_debilitate]
-  - weapon: boar_prime
-    mode: cycle
-    score: 8.73859236782108
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage]
-    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
-    arcanes: [primary_debilitate]
-  - weapon: boar_prime
-    mode: cycle
     score: 8.699952202720258
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_barrage, frigid_blast, toxic_barrage, incendiary_coat]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
     arcanes: [shotgun_vendetta]
+  - weapon: boar_prime
+    mode: cycle
+    score: 8.693248944954053
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
+    arcanes: [primary_debilitate]
   - weapon: boar_prime
     mode: cycle
     score: 8.66793911812192
@@ -422,21 +410,9 @@ entries:
     arcanes: [primary_merciless]
   - weapon: boar_prime
     mode: cycle
-    score: 8.417699446595472
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_elementalist, magnetic_strafe, primed_chilling_grasp, toxic_barrage]
-    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
-    arcanes: [primary_debilitate]
-  - weapon: boar_prime
-    mode: cycle
-    score: 8.411911197357783
-    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, critical_deceleration, magnetic_strafe, ravage, frigid_blast, toxic_barrage]
-    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
-    arcanes: [primary_debilitate]
-  - weapon: boar_prime
-    mode: cycle
-    score: 8.002141673708158
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_elementalist, magnetic_strafe, primed_chilling_grasp, toxic_barrage]
-    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
+    score: 8.333333333333334
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
     arcanes: [primary_debilitate]
   - weapon: boar_prime
     mode: cycle
@@ -446,21 +422,27 @@ entries:
     arcanes: [primary_crux]
   - weapon: boar_prime
     mode: cycle
+    score: 7.913554257251214
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: boar_prime
+    mode: cycle
     score: 7.765455630024907
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, scattering_inferno]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_survivors_edge]
     arcanes: [shotgun_vendetta]
   - weapon: boar_prime
     mode: cycle
-    score: 7.5638408858246065
-    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, scattering_inferno]
-    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
+    score: 7.333912881096203
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_elementalist, magnetic_strafe, primed_chilling_grasp, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: boar_prime
     mode: cycle
-    score: 7.1103252028601025
-    mods: [galvanized_hell, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, incendiary_coat, blaze]
-    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_practiced_grip, boar_prime_elemental_balance]
+    score: 7.3080954482702625
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, critical_deceleration, magnetic_strafe, ravage, frigid_blast, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_debilitate]
   - weapon: boar_prime
     mode: cycle
@@ -480,6 +462,12 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, frigid_blast, toxic_barrage, blaze]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [shotgun_vendetta]
+  - weapon: boar_prime
+    mode: cycle
+    score: 6.947146698206767
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, scattering_inferno]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
+    arcanes: [primary_debilitate]
   - weapon: boar_prime
     mode: cycle
     score: 6.904672453350747
@@ -1020,13 +1008,13 @@ entries:
     valence: magnetic
   - weapon: coda_synapse
     mode: base
-    score: 18.72521817864096
+    score: 18.69021525290332
     mods: [primary_acuity, serration, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     arcanes: [primary_deadhead]
     valence: electricity
   - weapon: coda_synapse
     mode: base
-    score: 17.409052295238922
+    score: 17.363502045117432
     mods: [primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     arcanes: [primary_deadhead]
     valence: electricity
@@ -1053,7 +1041,7 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
   - weapon: cyanex
     mode: base
-    score: 2.218888816012036
+    score: 2.222756330707006
     mods: [pistol_acuity, primed_target_cracker, pistol_elementalist, pressurized_magazine, magnetic_might, sure_shot, primed_heated_charge, scorch]
     arcanes: [cascadia_flare]
   - weapon: dera_vandal
@@ -1136,7 +1124,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: dual_toxocyst
     mode: cycle
-    score: 71.20411473697946
+    score: 71.25413636814879
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_encumber]
@@ -1172,13 +1160,13 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: dual_toxocyst
     mode: cycle
-    score: 56.7935677851281
+    score: 56.88087522243181
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_encumber]
   - weapon: dual_toxocyst
     mode: cycle
-    score: 49.38399575976614
+    score: 49.34640018385356
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_encumber]
@@ -1202,7 +1190,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: dual_toxocyst
     mode: cycle
-    score: 45.2941280059438
+    score: 45.40598266036254
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, jolt]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_encumber]
@@ -1214,7 +1202,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: dual_toxocyst
     mode: cycle
-    score: 44.86250543323441
+    score: 44.76399247543714
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, anemic_agility, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_encumber]
@@ -1298,7 +1286,7 @@ entries:
     arcanes: [primary_crux]
   - weapon: felarx
     mode: cycle
-    score: 34.31011786594592
+    score: 33.753447046437564
     mods: [galvanized_hell, galvanized_savvy, shotgun_barrage, shotgun_elementalist, magnetic_strafe, primed_chilling_grasp, contagious_spread, primed_charged_shell]
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_deadhead]
@@ -1549,7 +1537,7 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
-    score: 32.98657892834449
+    score: 33.01229826127916
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, creeping_bullseye, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
     arcanes: [secondary_encumber]
@@ -1579,7 +1567,7 @@ entries:
     arcanes: [secondary_outburst]
   - weapon: furis
     mode: cycle
-    score: 27.65814451472845
+    score: 27.740016673306616
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_elemental_balance]
     arcanes: [secondary_encumber]
@@ -1914,16 +1902,16 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
+    score: 50.935966230818664
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
+    arcanes: [secondary_encumber]
+  - weapon: laetum
+    mode: cycle
     score: 50.912805329567426
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_incarnon_efficiency, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
-  - weapon: laetum
-    mode: cycle
-    score: 50.90383540180165
-    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
-    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
-    arcanes: [secondary_encumber]
   - weapon: laetum
     mode: cycle
     score: 50.20929212883713
@@ -2034,7 +2022,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: laetum
     mode: cycle
-    score: 43.90279960050385
+    score: 43.93436062710887
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
     arcanes: [secondary_encumber]
@@ -2112,7 +2100,7 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
-    score: 38.51155956330606
+    score: 38.427164324512646
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, frostbite, pistol_pestilence, heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_marksmans_hand, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [secondary_encumber]
@@ -2148,7 +2136,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: laetum
     mode: cycle
-    score: 36.25395842928521
+    score: 36.201105588423815
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, accelerated_isotope, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [secondary_encumber]
@@ -2166,13 +2154,19 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
+    score: 35.56190873502778
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, accelerated_isotope, primed_convulsion, pathogen_rounds]
+    evolutions: [laetum_evo1_incarnon_form, laetum_marksmans_hand, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [secondary_encumber]
+  - weapon: laetum
+    mode: cycle
     score: 35.53908626588279
     mods: [pistol_acuity, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_deadhead]
   - weapon: laetum
     mode: cycle
-    score: 34.56613601781105
+    score: 34.55694361304351
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, accelerated_isotope, magnetic_might, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
     arcanes: [secondary_encumber]
@@ -2423,14 +2417,14 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
-    score: 11.666666666666666
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
-    arcanes: [primary_debilitate, cascadia_flare]
-  - weapon: larkspur_prime
-    mode: base
     score: 11.495802293852744
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, ammo_chain, hollowed_bullets, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    score: 11.333333333333334
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_debilitate, cascadia_flare]
   - weapon: larkspur_prime
     mode: base
     score: 11.266205744144772
@@ -2525,7 +2519,7 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: mausolon
     mode: base
-    score: 15.545989543149568
+    score: 15.512890681609973
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, critical_focus, hollowed_bullets, magnetized_cycle, parallax_scope, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_encumber]
   - weapon: miter
@@ -2602,7 +2596,7 @@ entries:
     arcanes: [secondary_fortifier]
   - weapon: ocucor
     mode: base
-    score: 6.172380341280572
+    score: 6.172457314605878
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, pistol_elementalist, pressurized_magazine, magnetic_might, primed_heated_charge]
     arcanes: [secondary_encumber]
   - weapon: ocucor
@@ -2643,7 +2637,7 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
   - weapon: phantasma
     mode: base
-    score: 12.257044516900304
+    score: 10.974071016036788
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, vigilante_armaments, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
   - weapon: phantasma
@@ -2663,14 +2657,14 @@ entries:
     arcanes: [shotgun_vendetta]
   - weapon: phantasma
     mode: base
-    score: 9.872069939821705
-    mods: [galvanized_hell, galvanized_savvy, shotgun_barrage, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, blaze]
-    arcanes: [primary_debilitate]
-  - weapon: phantasma
-    mode: base
     score: 9.691786542435755
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, vigilante_armaments, magnetic_strafe, frigid_blast, toxic_barrage, incendiary_coat]
     arcanes: [primary_crux]
+  - weapon: phantasma
+    mode: base
+    score: 8.934793339591126
+    mods: [galvanized_hell, galvanized_savvy, shotgun_barrage, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, blaze]
+    arcanes: [primary_debilitate]
   - weapon: phantasma
     mode: base
     score: 7.995306080632801
@@ -2678,33 +2672,18 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: phantasma
     mode: base
-    score: 7.773289188578516
+    score: 7.312242243084453
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, vigilante_armaments, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
     arcanes: [primary_crux]
   - weapon: phantasma_prime
     mode: base
-    score: 15.235642265082634
-    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
-    arcanes: [primary_debilitate]
-  - weapon: phantasma_prime
-    mode: base
-    score: 15.043391264648267
+    score: 13.647796214618152
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, chilling_reload, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
   - weapon: phantasma_prime
     mode: base
-    score: 14.569812686092272
-    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
-    arcanes: [primary_debilitate]
-  - weapon: phantasma_prime
-    mode: base
-    score: 14.344780459260088
-    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, vigilante_armaments, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
-    arcanes: [primary_debilitate]
-  - weapon: phantasma_prime
-    mode: base
-    score: 13.908700988410732
-    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, primed_chilling_grasp, toxic_barrage, primed_charged_shell]
+    score: 13.647422338980858
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
   - weapon: phantasma_prime
     mode: base
@@ -2713,13 +2692,23 @@ entries:
     arcanes: [primary_crux]
   - weapon: phantasma_prime
     mode: base
-    score: 13.06382245229856
-    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, magnetic_strafe, primed_chilling_grasp, toxic_barrage, primed_charged_shell]
+    score: 13.048853949526784
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
   - weapon: phantasma_prime
     mode: base
-    score: 11.818011103514769
-    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, frigid_blast, toxic_barrage, blaze]
+    score: 13.013269730160117
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, vigilante_armaments, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
+    arcanes: [primary_debilitate]
+  - weapon: phantasma_prime
+    mode: base
+    score: 12.743729061700252
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, primed_chilling_grasp, toxic_barrage, primed_charged_shell]
+    arcanes: [primary_debilitate]
+  - weapon: phantasma_prime
+    mode: base
+    score: 11.745546979546452
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, magnetic_strafe, primed_chilling_grasp, toxic_barrage, primed_charged_shell]
     arcanes: [primary_debilitate]
   - weapon: phantasma_prime
     mode: base
@@ -2728,22 +2717,27 @@ entries:
     arcanes: [primary_crux]
   - weapon: phantasma_prime
     mode: base
+    score: 11.092907129308092
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, frigid_blast, toxic_barrage, blaze]
+    arcanes: [primary_debilitate]
+  - weapon: phantasma_prime
+    mode: base
     score: 10.826961976343156
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, incendiary_coat]
     arcanes: [primary_crux]
   - weapon: phantasma_prime
     mode: base
-    score: 10.165854981257372
-    mods: [galvanized_hell, galvanized_savvy, shotgun_elementalist, vigilante_armaments, magnetic_strafe, primed_chilling_grasp, toxic_barrage, scattering_inferno]
-    arcanes: [primary_debilitate]
-  - weapon: phantasma_prime
-    mode: base
-    score: 9.992764745860972
+    score: 9.290760286525837
     mods: [galvanized_hell, galvanized_savvy, shotgun_elementalist, vigilante_armaments, magnetic_strafe, chilling_reload, toxic_barrage, incendiary_coat]
     arcanes: [primary_debilitate]
   - weapon: phantasma_prime
     mode: base
-    score: 9.14885091999794
+    score: 9.041531328829729
+    mods: [galvanized_hell, galvanized_savvy, shotgun_elementalist, vigilante_armaments, magnetic_strafe, primed_chilling_grasp, toxic_barrage, scattering_inferno]
+    arcanes: [primary_debilitate]
+  - weapon: phantasma_prime
+    mode: base
+    score: 8.555825662406468
     mods: [galvanized_hell, primed_point_blank, shotgun_elementalist, vigilante_armaments, magnetic_strafe, chilling_reload, toxic_barrage, incendiary_coat]
     arcanes: [primary_debilitate]
   - weapon: phantasma_prime
@@ -2806,13 +2800,13 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: phenmor
     mode: cycle
-    score: 26.669168725709728
+    score: 26.16437145919622
     mods: [galvanized_chamber, galvanized_aptitude, vile_acceleration, magnetic_capacity, primed_cryo_rounds, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_ready_retaliation, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_debilitate]
   - weapon: phenmor
     mode: cycle
-    score: 24.232864767276578
+    score: 24.023578342524523
     mods: [galvanized_chamber, serration, galvanized_aptitude, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip, stormbringer]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_deadhead]
@@ -2872,7 +2866,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: prisma_angstrum
     mode: cycle
-    score: 21.33188703890116
+    score: 21.456398101426956
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
     arcanes: [secondary_encumber]
@@ -2947,12 +2941,12 @@ entries:
     arcanes: [primary_crux]
   - weapon: shedu
     mode: base
-    score: 10.261917593494822
+    score: 10.142138364540273
     mods: [primary_acuity, serration, galvanized_aptitude, hammer_shot, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip]
     arcanes: [primary_compression]
   - weapon: shedu
     mode: base
-    score: 5.673897487666583
+    score: 5.670726449565372
     mods: [primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     arcanes: [primary_crux]
   - weapon: sicarus_prime
@@ -3106,7 +3100,7 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: sybaris_prime
     mode: cycle
-    score: 13.93703414057077
+    score: 13.7131807954644
     mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, stormbringer]
     evolutions: [sybaris_prime_evo1_incarnon_form, sybaris_prime_blazing_barrel, sybaris_prime_ready_retaliation, sybaris_prime_survivors_edge]
     arcanes: [primary_deadhead]
@@ -3513,7 +3507,7 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: vadarya_prime
     mode: base
-    score: 9.293817661692971
+    score: 9.192603716069604
     mods: [heavy_caliber, primary_acuity, serration, hunter_munitions, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     arcanes: [primary_deadhead]
   - weapon: vasto_prime
@@ -3644,7 +3638,7 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: vectis_prime
     mode: cycle
-    score: 6.94652040444706
+    score: 6.720330894048438
     mods: [heavy_caliber, primary_acuity, galvanized_aptitude, cautious_shot, vile_acceleration, vital_sense, radiated_reload, infected_clip]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_deadhead]
