@@ -65,6 +65,14 @@ chambers as weapons would ship one arbitrary grip's numbers under a name the
 player cannot reproduce, which is the opposite of "matches in-game
 measurements".
 
+**The design is `docs/KITGUNS.md`** (2026-08-21), and it changes the price
+rather than the decision: the wiki generates those 1,200 stat rows from
+`Module:Modular/data`, a structured table of the same kind as
+`Module:Weapons/data`, so a Kitgun costs **42 part records and one exact
+composition rule** instead of a transcription. It is still not a row in
+`data/weapons/` — it is a CUSTOM that produces a `WeaponSpec`, the way a
+riven produces a mod.
+
 They are built on VENUS (Fortuna), which is the owner's own name for them; the
 same argument applies to Cetus's ZAWS, and those are additionally MELEE and so
 out by class. None of the three families has ever been in the roster — the
