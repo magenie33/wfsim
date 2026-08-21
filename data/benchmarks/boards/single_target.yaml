@@ -3019,6 +3019,12 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_pistol_gambit, lethal_torrent, pistol_elementalist, deep_freeze, pistol_pestilence, primed_heated_charge]
     evolutions: [synoid_gammacor_evo1_incarnon_form, synoid_gammacor_sages_resolve, synoid_gammacor_extended_volley, synoid_gammacor_critical_parallel]
     arcanes: [cascadia_flare]
+  - weapon: tenet_arca_plasmor
+    mode: base
+    score: 1.267775278762406
+    mods: [galvanized_hell, magnetic_welt, semi_shotgun_cannonade, primed_charged_shell, contagious_spread, incendiary_coat, blaze, scattering_inferno]
+    arcanes: [primary_crux]
+    valence: toxin
   - weapon: tenet_envoy
     mode: base
     score: 0.3230131698358319
