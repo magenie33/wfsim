@@ -301,12 +301,33 @@ struct PoolFile {
 /// hit-scan in both forms and a player's card carries Projectile Speed anyway
 /// (owner, 2026-08-08).
 pub fn derived_for(weapon_id: &str) -> Vec<&'static str> {
+    let Some(s) = crate::weapons_data::spec(weapon_id) else { return Vec::new() };
+    // A RIVEN BELONGS TO A FAMILY, so the pool is the family's (owner,
+    // 2026-08-21). One card equips on every member — a Ballistica riven is a
+    // Ballistica Prime riven and a Rakta Ballistica riven — so a pool derived
+    // from ONE member describes a card that does not exist. Fifteen families
+    // disagreed with themselves before this: a real card carrying negative
+    // Slash rolls legally on the Ballistica Prime (18% Slash on its charged
+    // shot) and was refused as "not a legal riven" on the other two.
+    //
+    // The members, then each member's own free FORMS, and the shot rules read
+    // the union of all of it — which is the same argument the alt-fire rule
+    // already makes (2026-08-07), one level up.
+    let family: Vec<&'static crate::weapons_data::WeaponSpec> = match &s.riven_family {
+        Some(f) => crate::weapons_data::all()
+            .iter()
+            .filter(|w| w.riven_family.as_deref() == Some(f.as_str()))
+            .collect(),
+        // A weapon with no family answers for itself, which is what it means.
+        None => vec![s],
+    };
     // `s` is the entry the caller named — what the rules that read the WEAPON
     // (its ammo pool, its class) go to. `forms` is what the rules that read a
-    // SHOT go to, and there can be more than one of those.
-    let Some(s) = crate::weapons_data::spec(weapon_id) else { return Vec::new() };
-    let forms: Vec<_> = crate::weapons_data::forms_of(weapon_id)
-        .into_iter()
+    // SHOT go to, and there can be more than one of those, on more than one
+    // member.
+    let forms: Vec<_> = family
+        .iter()
+        .flat_map(|w| crate::weapons_data::forms_of(&w.id))
         .filter(|f| !f.kind.is_adapter_form())
         .filter_map(|f| crate::weapons_data::spec(f.weapon_id))
         .collect();
@@ -330,12 +351,15 @@ pub fn derived_for(weapon_id: &str) -> Vec<&'static str> {
     }
     // The player never aims a sentinel weapon, so it has neither stat. Same
     // `class.contains("sentinel")` test the exilus and arcane rules use.
-    if s.class.contains("sentinel") {
+    //
+    // ASKED OF EVERY MEMBER, like the shot rules above: a stat is inert only if
+    // it is inert on the whole family, because one card covers the whole family.
+    if family.iter().all(|w| w.class.contains("sentinel")) {
         out.push("zoom");
         out.push("weapon_recoil");
     }
     // No ammo pool at all — a percentage of infinity is not a stat.
-    if s.ammo_max.is_none() {
+    if family.iter().all(|w| w.ammo_max.is_none()) {
         out.push("ammo_maximum");
     }
     // NOTHING FOR FLIGHT SPEED TO ACT ON — and there are TWO ways to give it
@@ -1166,6 +1190,76 @@ mod tests {
         }
     }
 
+
+
+    /// A RIVEN FAMILY AGREES WITH ITSELF, because a riven belongs to the family
+    /// and not to a member of it.
+    ///
+    /// One card equips on every member — a Ballistica riven IS a Ballistica
+    /// Prime riven and a Rakta Ballistica riven, which is what `riven_family`
+    /// means and why the exception table and the survey are both keyed on it.
+    /// So a pool derived from one member describes a card that cannot exist,
+    /// and the app tells a player holding the real thing that it is "not a
+    /// legal riven" (owner, 2026-08-21, relaying a screenshot).
+    ///
+    /// FIFTEEN FAMILIES DISAGREED WITH THEMSELVES. The sharpest is the
+    /// Ballistica: the Prime's charged shot is over the 25% Slash line and the
+    /// other two members are under it, so the same card was legal on one entry
+    /// and refused on the other two. The Ogris was the widest — the Kuva
+    /// variant rolled Impact and Puncture that the ordinary one refused.
+    ///
+    /// ASSERTED OVER EVERY FAMILY rather than over the fifteen. A list of names
+    /// cannot report the sixteenth, and the sixteenth arrives the day a weapon
+    /// joins a family with a damage split of its own — which is a thing DE does
+    /// (the Tenet and Kuva variants in this list are all exactly that).
+    #[test]
+    fn a_riven_family_agrees_with_itself() {
+        use std::collections::BTreeMap;
+        let mut by_family: BTreeMap<&str, Vec<(&str, Vec<&'static str>)>> = BTreeMap::new();
+        for w in crate::weapons_data::all() {
+            let Some(f) = w.riven_family.as_deref() else { continue };
+            let mut e = excluded_for(&w.id);
+            e.sort_unstable();
+            by_family.entry(f).or_default().push((w.id.as_str(), e));
+        }
+        assert!(by_family.len() > 200, "every family is asked: {}", by_family.len());
+        let mut split = Vec::new();
+        for (f, members) in &by_family {
+            if members.iter().any(|(_, e)| *e != members[0].1) {
+                split.push(format!(
+                    "{f}: {}",
+                    members
+                        .iter()
+                        .map(|(id, e)| format!("{id}{e:?}"))
+                        .collect::<Vec<_>>()
+                        .join(" vs ")
+                ));
+            }
+        }
+        assert!(
+            split.is_empty(),
+            "a riven equips on every member of its family, so the pool cannot \
+             differ between members — {} families disagree:\n  {}",
+            split.len(),
+            split.join("\n  ")
+        );
+
+        // …AND THE FAMILY IS THE UNION, not the intersection. A test that only
+        // asserted agreement would pass just as well on a derivation that
+        // refused everything to everybody, so this names what the union WON:
+        // the Ballistica Prime's charged shot is 18% Slash on a 44% Puncture
+        // body, over the line, and all three members roll it now.
+        for id in ["ballistica", "ballistica_prime", "rakta_ballistica"] {
+            let e = excluded_for(id);
+            assert!(!e.contains(&"slash"), "{id}: the Prime's charge earns Slash: {e:?}");
+            // Nothing is invented: no member is over the line on Impact.
+            assert!(e.contains(&"impact"), "{id}: no member deals 25% Impact: {e:?}");
+        }
+        // The Ogris is the other direction of the same rule — the KUVA member
+        // is the one over the line, and the ordinary one inherits it.
+        assert!(!excluded_for("ogris").contains(&"impact"));
+        assert!(!excluded_for("ogris").contains(&"puncture"));
+    }
 
     /// AN INCARNON FORM DOES NOT WIDEN THE POOL, and this is what counting it
     /// would cost — in real cards, per family, rather than in argument.
