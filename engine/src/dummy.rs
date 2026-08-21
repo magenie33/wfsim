@@ -5099,8 +5099,15 @@ fn spread_hit(
         raw,
         shares,
         // THE SHIELD GATE'S QUESTION, and the only thing this bool decides: a
-        // headshot goes through a gated shield. False for every mechanism but
-        // the ricochet, which is the one spread that can land on a head.
+        // headshot goes through a gated shield.
+        //
+        // TWO MECHANISMS SET IT, and for opposite reasons. A RICOCHET arrives
+        // at a new angle, so it rolls its own. PUNCH THROUGH is the same round
+        // still flying in a straight line at one height, so it CARRIES the
+        // aimed pellet's answer — a round that entered a head enters the head
+        // of whatever is behind it, and a body shot stays a body shot all the
+        // way down the line (owner, 2026-08-21). It read `true` unconditionally
+        // until then, so a body shot punched THROUGH a shield gate.
         inst.headshot,
         t,
         &spec.params,
@@ -5247,6 +5254,10 @@ fn spread_from_punch_through(
     status_chance: f64,
     forced: &[DamageType],
     vector: &DamageVector,
+    // WHETHER THE AIMED PELLET FOUND A HEAD. Carried rather than re-rolled;
+    // the head's MULTIPLIER needs no parameter because it is already inside
+    // `raw_per_bucket` — see the instance below.
+    head_direct: bool,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
@@ -5286,7 +5297,27 @@ fn spread_from_punch_through(
             // THE WHOLE SHOT, undiminished — except by the distance it flew.
             share: ratio,
             multishot: true,
-            headshot: true,
+            // A HEADSHOT IS CARRIED, NOT RE-ROLLED, and this is the one spread
+            // where that is right (owner, 2026-08-21). Punch through is the
+            // SAME round still flying in a STRAIGHT LINE: this plane holds it
+            // at one height, so a round that entered a head enters the head of
+            // whatever is behind, and one that entered a body enters bodies.
+            // A BOUNCE is the opposite — it leaves at a new angle, so where it
+            // lands next is independent and gets its own roll. Conflating the
+            // two is what this fixes.
+            //
+            // It read `headshot: true, part_factor: 1.0`, which was wrong in
+            // both directions at once: every punched body counted as a headshot
+            // for the conditions that read one even when the shot was a body
+            // hit, and none of them took the head's MULTIPLIER when it was.
+            headshot: head_direct,
+            // ONE, AND THE MULTIPLIER IS STILL CARRIED. `raw` is built as
+            // `qtotal * part_factor * ...`, and punch through is handed
+            // `raw / bucket` rather than `body_only(raw / bucket)` — so the
+            // aimed pellet's head factor is ALREADY inside it, which is the
+            // propagation itself. Setting it here as well multiplies it twice;
+            // that was tried on 2026-08-21 and caught by the test below refusing
+            // to fail on the old code.
             part_factor: 1.0,
         };
         let foe = &mut others[idx];
@@ -9866,7 +9897,8 @@ pub fn run_once_traced(
                         spread_from_punch_through(
                             &mut others, params, ap, &struck, raw / bucket, shares,
                             crit_multiplier, attrition, modded_base, status_chance,
-                            forced, &qvec, &mut gal, &mut arc, &mut r, d, t,
+                            forced, &qvec, head_direct,
+                            &mut gal, &mut arc, &mut r, d, t,
                         );
                     }
                     // THE AIMED SEED'S CHAINS take multishot by firing per
@@ -12717,6 +12749,75 @@ mod tests {
         // every DoT it has.
         let r = run_once(&build("toxin"), &mut Rng::new(0x5EED));
         assert_eq!(r.bodies_touched(), 1, "{:?}", &r.damage_by_body.0[..5]);
+    }
+
+    /// A PUNCHED HEADSHOT IS CARRIED; A BOUNCE'S IS ROLLED.
+    ///
+    /// The two are different mechanics and this is where they differ most
+    /// (owner, 2026-08-21). Punch through is the SAME round still flying in a
+    /// STRAIGHT LINE, and this plane holds it at one height — so a round that
+    /// entered a head enters the head of whatever is behind it, and one that
+    /// entered a body enters bodies. A BOUNCE leaves at a new angle, so where
+    /// it lands next is independent and gets its own roll.
+    ///
+    /// It read `headshot: true, part_factor: 1.0`, wrong in both directions at
+    /// once: every punched body counted as a headshot for the conditions that
+    /// read one even when the shot was a body hit, and none of them took the
+    /// head's MULTIPLIER when it was.
+    #[test]
+    fn a_punched_body_inherits_the_headshot_and_a_bounce_does_not() {
+        let build = |head: bool| {
+            let base = crate::loadout::WeaponBase::from_data("braton_prime", false, &[]);
+            let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let mut arena = crate::arena::Arena::training(10.0);
+            arena.others = (1..=3)
+                .map(|i| crate::formation::FoeSpec {
+                    id: String::new(),
+                    params: TargetParams::training_dummy(),
+                    body_parts: DummyParams::humanoid_parts(),
+                    at: crate::space::Vec2::new(
+                        0.0,
+                        crate::space::CONTACT_RANGE_M * (1.0 + i as f64),
+                    ),
+                })
+                .collect();
+            let mut p =
+                DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            p.punch_through_m = 2.0;
+            // THE AIMED PELLET, pinned: one part, head or body, so the only
+            // thing moving between the two runs is what the round entered.
+            p.body_parts = vec![BodyPart {
+                name: if head { "head".into() } else { "body".into() },
+                aim_weight: 1.0,
+                multiplier: if head { 3.0 } else { 1.0 },
+                is_head: head,
+                crit_bonus: false,
+            }];
+            p
+        };
+        let dmg = |head: bool| {
+            let r = run_once(&build(head), &mut Rng::new(0x5EED));
+            // EVERY BODY BUT THE AIMED ONE: the aimed body's own multiplier is
+            // the thing being pinned, so counting it would measure the pin.
+            (r.damage_by_body.0[1..4].iter().sum::<f64>(), r.bodies_touched())
+        };
+        let (body, nb) = dmg(false);
+        let (heads, nh) = dmg(true);
+        assert_eq!((nb, nh), (4, 4), "the same four bodies either way");
+        // A 3x HEAD, CARRIED. Not exactly 3x — the punched bodies also take
+        // their own falloff and their own mitigation — but far past the noise,
+        // and it must be a RISE rather than the 1.0 the old code pinned them to.
+        assert!(heads > body * 2.0,
+            "a punched body inherits the head: {body:.0} -> {heads:.0}");
+        // THE OTHER HALF IS NOT COVERED HERE, and saying so is the point. The
+        // instance also carries a headshot FLAG, and the only thing it decides
+        // is whether the hit passes a gated SHIELD — which needs a shielded
+        // target, and varying the aimed part changes `raw` at the same time, so
+        // one engagement cannot separate the two. The flag was `true`
+        // unconditionally until 2026-08-21; it is `head_direct` now on the same
+        // reasoning as the multiplier above.
     }
 
     /// PUNCH THROUGH REACHES THE BODY BEHIND, and the budget decides how many.
