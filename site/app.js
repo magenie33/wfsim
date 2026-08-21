@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "9ab9c785+ · 2026-08-21 16:52Z";
+const BUILD_ID = "a065820a+ · 2026-08-21 17:33Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -4002,6 +4002,16 @@ function mountArena(host, s, en, opts) {
     // page scrollable through the scene; `none` hands every gesture here.
     const svg = host.querySelector(".ar-svg");
     if (svg) svg.style.touchAction = analysis || !arenaTouchDrag ? "pan-y" : "none";
+    // THE SCENE, ADDRESSABLE — the same contract the canvas mount publishes on
+    // `host.__arena`, so anything that needs to point AT a body reads the map
+    // the renderer used rather than guessing from a DOM box. This one answers
+    // in the SVG's viewBox, which is what `arenaSvg` draws in; a caller that
+    // wants pixels converts through the svg's own client rect.
+    host.__arena = {
+      vb: arenaGeom(ARENA_VW, ARENA_VH, s.player_at, ...arenaBodies(s), arenaAim(s)).px,
+      vw: ARENA_VW,
+      vh: ARENA_VH,
+    };
   };
   paint();
   if (opts.readonly) {
@@ -12664,8 +12674,17 @@ function wireReplay(r) {
   replayState = st;
 
   const draw = () => {
+    const was = st.i;
     st.i = Math.max(0, Math.min(rp.t.length - 1, Math.round(st.pos)));
     replayApply(rp, st.i);
+    // THE NUMBERS, and only when the frame actually changed. `tick` runs at the
+    // browser's refresh rate and the clock at 1x advances a frame every 300 ms,
+    // so spawning per paint would draw the same twelve numbers twenty times.
+    if (st.playing) {
+      if (st.i !== was) popsDraw(rp, st.i, true);
+    } else {
+      popsDraw(rp, st.i, false);
+    }
   };
   const stop = () => {
     st.playing = false; st.last = 0;
@@ -12727,6 +12746,13 @@ function wireReplay(r) {
         if (k >= 0) pickFoe(k);
       },
     });
+    // THE LAYER THE NUMBERS FLOAT IN, appended AFTER the mount and not before:
+    // `mountArena` takes the host over and rewrites its contents, so a layer
+    // created first is wiped by the scene it was meant to sit on. It survives
+    // the arena's own repaints because those redraw the CANVAS, not the host.
+    const layer = document.createElement("div");
+    layer.className = "rp-pops";
+    scene.appendChild(layer);
   }
   $("rp-play").onclick = () => {
     if (st.playing) { stop(); return; }
@@ -12749,6 +12775,108 @@ function wireReplay(r) {
     };
   });
   draw();
+}
+
+// THE NUMBERS A FIGHT POPS, over the bodies they landed on.
+//
+// Everything else the replay draws is a CURVE — a pool falling, a stack count,
+// a damage total. This is the one thing that is an EVENT: a discrete number
+// that happened at a place at a time, which is how the game itself reports
+// damage and the only view where "one big hit" and "twenty small ones" look
+// different rather than reading the same as an average (owner, 2026-08-22).
+//
+// THE ENGINE DECIDES WHAT POPS, not this. `Replay.pops` is one entry per frame
+// carrying the twelve BIGGEST numbers of that frame and a count of the rest —
+// the game caps its own display the same way ("a maximum of 10 tick numbers are
+// shown at once"), so the cap is faithful rather than a shortcut, and the
+// dropped count is shown rather than swallowed.
+//
+// A DOM OVERLAY RATHER THAN THE CANVAS. The arena repaints itself on every
+// resize and every heat change, so anything drawn onto it is erased by the next
+// paint; and a number wants a CSS animation, which a canvas would have to
+// re-implement per frame. The overlay is `pointer-events: none`, so the scene
+// underneath still picks.
+const POP_KIND_CLASS = {
+  direct: "p-direct", crit: "p-crit", head: "p-head", head_crit: "p-headcrit",
+  status: "p-status", blast: "p-blast", blast_area: "p-area",
+  field: "p-field", extra: "p-extra", arcane: "p-arcane",
+};
+
+// WHERE A BODY STANDS, in the scene's own metres. Index 0 is the aimed body and
+// `i + 1` is `formation[i]` — the same numbering `damage_by_body`, the roll
+// call and the heat map use, so a number lands on the body the rest of the
+// panel is talking about.
+const popBodyAt = (i) => (i === 0
+  ? (sim.target_at || [0, 0.5])
+  : (((sim.formation || [])[i - 1] || {}).at || null));
+
+/// Spawn one frame's numbers over the scene.
+///
+/// `live` distinguishes PLAYING from SCRUBBING: playing spawns each frame once
+/// as the clock passes it, scrubbing replaces what is on screen with the frame
+/// you landed on. Without that distinction a scrub would either stack hundreds
+/// of numbers or show none.
+function popsDraw(rp, i, live) {
+  const scene = $("rp-scene");
+  const host = scene && scene.querySelector(".rp-pops");
+  if (!host || !rp || !rp.pops) return;
+  // VIEWBOX TO PIXELS. The result's scene is the SVG mount, which draws in a
+  // fixed coordinate space and lets the browser fit it to the box — so a
+  // number's place is that map's answer put through the same fit. Doing the
+  // arithmetic here rather than reading a DOM box keeps ONE geometry: whatever
+  // `__arena` says is where the body was drawn.
+  const ar = scene.__arena;
+  const svg = scene.querySelector(".ar-svg");
+  if (!ar || !ar.vb || !svg) return;
+  const sb = svg.getBoundingClientRect();
+  if (!sb.width || !sb.height) return;
+  // `xMidYMid meet`, which is the default and what `arenaSvg` relies on.
+  const k = Math.min(sb.width / ar.vw, sb.height / ar.vh);
+  const ox = (sb.width - ar.vw * k) / 2;
+  const oy = (sb.height - ar.vh * k) / 2;
+  const map = (m) => {
+    const [vx, vy] = ar.vb(m);
+    return [ox + vx * k, oy + vy * k];
+  };
+  if (!live) host.textContent = "";
+  const frame = rp.pops[i];
+  if (!frame) return;
+  const box = scene.getBoundingClientRect();
+  const dx = sb.left - box.left;
+  const dy = sb.top - box.top;
+  for (const [t, body, amount, dtype, kind] of (frame.v || [])) {
+    const at = popBodyAt(body);
+    if (!at) continue;
+    const [x, y] = map(at);
+    const el = document.createElement("span");
+    el.className = `rp-pop ${POP_KIND_CLASS[kind] || "p-direct"}`;
+    // A JITTER, because ten numbers on one body at one instant would stack into
+    // an unreadable pile. Derived from the value itself rather than random so a
+    // re-scrub to the same frame draws the same picture.
+    const jx = ((Math.round(amount) % 37) - 18) * 1.4;
+    const jy = ((Math.round(amount * 7) % 23) - 11) * 1.1;
+    el.style.left = `${dx + x + jx}px`;
+    el.style.top = `${dy + y + jy}px`;
+    const c = dtColor(dtype);
+    if (c) el.style.setProperty("--pop-dt", c);
+    el.textContent = Math.round(amount).toLocaleString();
+    el.title = `${DT(dtype)} · ${tr(kind)}`;
+    host.appendChild(el);
+    el.addEventListener("animationend", () => el.remove());
+  }
+  // …AND WHAT DID NOT FIT. Never silent: a cap nobody is told about reads as
+  // "that is all of them", which is the one thing it must not.
+  if (frame.n > 0) {
+    const more = document.createElement("span");
+    more.className = "rp-pop p-more";
+    const [mx, my] = map(popBodyAt(0) || [0, 0.5]);
+    more.style.left = `${dx + mx}px`;
+    more.style.top = `${dy + my - 26}px`;
+    more.textContent = `+${frame.n}`;
+    more.title = tr("more numbers than fit — the biggest twelve are shown");
+    host.appendChild(more);
+    more.addEventListener("animationend", () => more.remove());
+  }
 }
 
 /// WHAT IS ON SCREEN RIGHT NOW, and the ONLY thing a redraw reads.

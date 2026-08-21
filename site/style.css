@@ -1629,3 +1629,41 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .sq-none{font-size:12px; color:var(--dim)}
 .sq-add{display:flex}
 .sq-add > .dd{flex:1 1 auto}
+
+/* THE NUMBERS A FIGHT POPS. A DOM overlay over the result's arena, not paint on
+   its canvas: the scene repaints on every resize and every heat change, and a
+   number wants a CSS animation rather than a per-frame redraw. It never eats a
+   click — the scene underneath still picks a body. */
+.rp-pops{position:absolute; inset:0; pointer-events:none; overflow:hidden}
+.rp-pop{
+  position:absolute; transform:translate(-50%,-50%);
+  font-variant-numeric:tabular-nums; font-weight:700; font-size:12px;
+  white-space:nowrap; color:var(--pop-dt, var(--fg));
+  /* READABLE OVER ANY BODY. The scene's floor and its bodies are both mid-tone,
+     so a plain colour vanishes on one of them; the shadow is what makes an
+     element colour usable as text at all. */
+  text-shadow:0 1px 2px #000, 0 0 6px #000;
+  animation:pop-float 1.1s ease-out forwards;
+}
+@keyframes pop-float{
+  0%{opacity:0; transform:translate(-50%,-50%) scale(.7)}
+  12%{opacity:1; transform:translate(-50%,-60%) scale(1.08)}
+  30%{transform:translate(-50%,-72%) scale(1)}
+  100%{opacity:0; transform:translate(-50%,-140%) scale(.95)}
+}
+/* WHAT KIND OF NUMBER, at a glance — the same distinction the game draws with
+   size and colour. A crit is bigger, a headcrit bigger again and gold; a status
+   tick is small and takes its element's colour; a blast radial is dimmer than
+   the detonation that threw it, because it is the same event seen from further
+   away. */
+.rp-pop.p-crit{font-size:15px}
+.rp-pop.p-head{font-size:14px}
+.rp-pop.p-headcrit{font-size:19px; color:var(--gold, #e8c46a)}
+.rp-pop.p-status{font-size:11px; opacity:.92}
+.rp-pop.p-blast{font-size:13px}
+.rp-pop.p-area{font-size:11px; opacity:.8}
+.rp-pop.p-field,.rp-pop.p-extra,.rp-pop.p-arcane{font-size:11px; opacity:.9}
+/* …AND WHAT DID NOT FIT, said rather than swallowed. */
+.rp-pop.p-more{font-size:11px; font-weight:600; color:var(--dim); opacity:.85}
+/* THE SCENE HAS TO BE A POSITIONING CONTEXT for any of the above to land. */
+#rp-scene{position:relative}

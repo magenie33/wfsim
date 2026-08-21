@@ -398,6 +398,19 @@ pub struct TargetParams {
 pub struct TypeShares([f64; DamageType::ALL.len()]);
 
 impl TypeShares {
+    /// THE BIGGEST SHARE — which type a mixed instance reads AS, for DISPLAY
+    /// only. Same contract as `DamageVector::dominant`, and nothing in the
+    /// damage path reads either.
+    pub fn dominant(&self) -> DamageType {
+        let mut best = 0;
+        for i in 1..self.0.len() {
+            if self.0[i] > self.0[best] {
+                best = i;
+            }
+        }
+        DamageType::ALL[best]
+    }
+
     /// An instance that is entirely one type — a DoT tick, a Blast
     /// detonation, an arcane's flat instance.
     pub fn single(t: DamageType) -> Self {
@@ -2172,6 +2185,11 @@ pub struct DummyParams {
 #[derive(Debug, Clone, Default)]
 pub struct Frame {
     pub t: f64,
+    /// The numbers that popped since the previous frame, biggest kept — see
+    /// [`PopBuf`]. `pops_dropped` is how many more there were, stated rather
+    /// than swallowed.
+    pub pops: Vec<Pop>,
+    pub pops_dropped: u32,
     /// The target's pools as they stood. A respawn (InstantRespawn) shows as
     /// them jumping back up, which is the truth of that scenario.
     pub overguard: f64,
@@ -2244,6 +2262,133 @@ pub struct Replay {
     /// explosion, which is enough to check both paths and cheap enough to do
     /// inside the shot loop.
     pub accounts: Vec<HitAccount>,
+}
+
+/// WHAT KIND OF NUMBER THIS IS, so a reader can tell a crit from a tick at a
+/// glance — the same distinction the game draws with colour and size.
+///
+/// It is not the damage TYPE (that travels beside it): a Heat DoT tick and a
+/// Heat direct hit are the same type and different numbers.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PopKind {
+    /// A hit that landed on the body.
+    Direct,
+    /// …and was a critical.
+    Crit,
+    /// …on a weak point.
+    Head,
+    /// …both, which is the game's own "headcrit" and its own number.
+    HeadCrit,
+    /// A status settling: a Slash bleed, a Toxin/Electricity/Gas/Heat tick.
+    Status,
+    /// A Blast stack's single-target detonation, on the body that carried it.
+    Blast,
+    /// The 5 m radial a detonation throws at everything around it.
+    BlastArea,
+    /// A lingering field's tick (the Torid's cloud) — weapon damage on its own
+    /// clock, which is neither a hit nor a status.
+    Field,
+    /// An EXTRA HIT (docs/EXTRA_HIT.md) — a second instance beside a hit.
+    Extra,
+    /// An arcane's own instance, and a syndicate proc's.
+    Arcane,
+}
+
+/// ONE DAMAGE NUMBER, as the game pops it above a body.
+///
+/// This is the one output that is an EVENT rather than an aggregate. Every
+/// other thing the replay carries is a curve or a total; a floating number is a
+/// discrete thing that happened at a place at a time, and nothing else here can
+/// be turned into one after the fact.
+/// NOT serde-derived: `DamageType` is not `Serialize`, and the wire wants its
+/// NAME rather than whatever a derive would pick. `webapi` writes the tuple by
+/// hand, which is also what keeps the payload as short as it is.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Pop {
+    /// Seconds into the engagement.
+    pub t: f32,
+    /// Which body: 0 is the aimed one, 1.. index the formation, exactly as
+    /// `damage_by_body` and `Replay::follow` do.
+    pub body: u16,
+    pub amount: f32,
+    /// The type it read as. A mixed hit carries its DOMINANT component — see
+    /// `DamageVector::dominant` — because "what colour is this number" has no
+    /// exact answer for a vector. Carried as the TYPE and not as an index into
+    /// it: an index would couple the wire to `DamageType::ALL`'s order.
+    pub dtype: DamageType,
+    pub kind: PopKind,
+}
+
+/// HOW MANY NUMBERS ONE FRAME MAY CARRY.
+///
+/// The game caps its own display — the wiki says so for Toxin in as many words,
+/// "a maximum of 10 tick numbers are shown at once" — so a cap here is faithful
+/// rather than a shortcut. It is also unavoidable: the Larkspur Prime lands
+/// ~1,800 status procs a second on the group ruler and no screen shows 1,800
+/// numbers.
+///
+/// TWELVE, AND THE BIGGEST WIN. Keeping the first twelve of a frame would be
+/// arbitrary — which twelve depends on the order the engine happened to settle
+/// them in. A reader's eye goes to the big number, so that is what survives,
+/// and the count of what did not is kept beside it: an absence that is not
+/// stated reads as "that is everyone", which is this repo's own rule about
+/// caps.
+pub const POPS_PER_FRAME: usize = 12;
+
+/// The current frame's numbers, drained by the sampler.
+///
+/// A FIXED ARRAY because `RunResult` is `Copy` and is copied per run — the same
+/// reason `damage_by_body` is one. It holds ONE frame, never the engagement, so
+/// it cannot grow with the fight's length.
+#[derive(Debug, Clone, Copy)]
+pub struct PopBuf {
+    pops: [Pop; POPS_PER_FRAME],
+    len: u8,
+    /// How many this frame had beyond the twelve kept.
+    dropped: u32,
+}
+
+impl Default for PopBuf {
+    fn default() -> Self {
+        Self {
+            pops: [Pop { t: 0.0, body: 0, amount: 0.0,
+                dtype: DamageType::Impact, kind: PopKind::Direct };
+                POPS_PER_FRAME],
+            len: 0,
+            dropped: 0,
+        }
+    }
+}
+
+impl PopBuf {
+    /// Keep it if it is bigger than the smallest one held.
+    fn push(&mut self, p: Pop) {
+        if (self.len as usize) < POPS_PER_FRAME {
+            self.pops[self.len as usize] = p;
+            self.len += 1;
+            return;
+        }
+        self.dropped += 1;
+        let mut min_i = 0;
+        for i in 1..POPS_PER_FRAME {
+            if self.pops[i].amount < self.pops[min_i].amount {
+                min_i = i;
+            }
+        }
+        if p.amount > self.pops[min_i].amount {
+            self.pops[min_i] = p;
+        }
+    }
+
+    /// Take this frame's numbers and reset for the next one.
+    fn drain(&mut self) -> (Vec<Pop>, u32) {
+        let out = self.pops[..self.len as usize].to_vec();
+        let dropped = self.dropped;
+        self.len = 0;
+        self.dropped = 0;
+        (out, dropped)
+    }
 }
 
 /// ONE DAMAGE INSTANCE, FULLY DECOMPOSED — the account of a single hit.
@@ -3175,6 +3320,25 @@ impl RunResult {
         self.note_kills(killed, at);
     }
 
+    /// RECORD ONE FLOATING NUMBER. Cheap and dead when no replay is tracing.
+    ///
+    /// Called beside `timeline.add` at every site where damage lands, which is
+    /// what makes the log complete: the timeline is the aggregate view of the
+    /// same nine events and the two cannot drift apart without one of the two
+    /// calls being dropped.
+    fn pop(&mut self, t: f64, body: usize, amount: f64, dtype: DamageType, kind: PopKind) {
+        if !self.pops_on || amount <= 0.0 {
+            return;
+        }
+        self.pops.push(Pop {
+            t: t as f32,
+            body: body.min(u16::MAX as usize) as u16,
+            amount: amount as f32,
+            dtype,
+            kind,
+        });
+    }
+
     /// Record what a body took, growing the list as bodies appear in it.
     fn note_body_damage(&mut self, body: usize, eff: f64) {
         if let Some(slot) = self.damage_by_body.0.get_mut(body) {
@@ -3482,6 +3646,14 @@ fn add_by_type(
 /// Result of a single engagement.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct RunResult {
+    /// THE NUMBERS THIS FRAME POPPED — see [`PopBuf`]. Filled only while a
+    /// replay is being traced (`pops_on`), because it is the one thing here
+    /// that no aggregate can be turned back into and the one thing no other
+    /// consumer wants.
+    pub pops: PopBuf,
+    /// Whether to fill it at all. Off for the 999 runs nobody replays, so an
+    /// ordinary run pays one branch per damage instance and nothing else.
+    pub pops_on: bool,
     /// Raw damage dealt (pre-mitigation), direct hits + DoT ticks.
     pub total_damage: f64,
     /// Damage after target mitigation (overguard neutrality / armor DR).
@@ -4121,6 +4293,7 @@ fn fire_extra_hits(
         r.sources.extra_hit += eff;
         r.sources.extra_hit_by_type[ty as usize] += eff;
         r.timeline.add(at, eff);
+        r.pop(at, 0, eff, ty, PopKind::Extra);
         r.note_kills(u32::from(killed), at);
         if let Some(pool) = broke {
             push_break_proc(debuffs, params, at, pool);
@@ -4370,6 +4543,7 @@ fn drain_area_procs(
             r.note_body_damage(j, eff);
             r.sources.add_status(DamageType::Blast, eff);
             r.timeline.add(at_now, eff);
+            r.pop(at_now, j, eff, DamageType::Blast, PopKind::BlastArea);
             r.note_kills(u32::from(killed), at_now);
             if killed {
                 dbf.on_death();
@@ -4729,6 +4903,7 @@ fn settle_procs(
                     r.dot_damage += eff;
                     r.sources.add_status(DamageType::Blast, eff);
                     r.timeline.add(at, eff);
+                    r.pop(at, 0, eff, DamageType::Blast, PopKind::Blast);
                     r.note_kills(killed as u32, at);
                     if let Some(pool) = broke {
                         push_break_proc(debuffs, params, at, pool);
@@ -4936,6 +5111,7 @@ fn settle_procs(
             r.sources.arcane_on_status += eff;
             r.sources.arcane_by_type[proc as usize] += eff;
             r.timeline.add(at, eff);
+            r.pop(at, 0, eff, proc, PopKind::Arcane);
             r.note_kills(killed as u32, at);
             if let Some(pool) = broke {
                 push_break_proc(debuffs, params, at, pool);
@@ -5223,6 +5399,12 @@ fn spread_hit(
     r.total_damage += raw;
     r.effective_damage += eff;
     r.timeline.add(t, eff);
+    // A SPREAD INSTANCE IS A WHOLE VECTOR, so the number reads as its biggest
+    // component — see `DamageVector::dominant`. Computed only while tracing.
+    if r.pops_on {
+        r.pop(t, inst.target, eff, shares.dominant(),
+            if inst.headshot { PopKind::Head } else { PopKind::Direct });
+    }
     r.note_body_damage(inst.target, eff);
     // …AND IT REACHES THE DAMAGE METER (player report, 2026-08-19: the
     // explosion looked overestimated).
@@ -5917,6 +6099,7 @@ fn fire_syndicate_radial(
     r.sources.syndicate += eff;
     r.sources.syndicate_by_type[sy.element as usize] += eff;
     r.timeline.add(at, eff);
+    r.pop(at, 0, eff, sy.element, PopKind::Arcane);
     r.note_kills(u32::from(killed), at);
     // GUARANTEED, for five of the six — Justice stuns instead of applying
     // Blast, the one place these effects differ in kind rather than in element.
@@ -6258,6 +6441,7 @@ fn field_tick(
     r.sources.field += effective;
     add_by_type(&mut r.sources.field_by_type, &qvec, effective, &col);
     r.timeline.add(at, effective);
+    r.pop(at, 0, effective, DamageType::Cinematic, PopKind::Field);
     r.field_ticks += 1;
     r.note_kills(killed as u32, at);
     if let Some(pool) = broke {
@@ -6633,6 +6817,8 @@ fn process_ticks(
         r.note_body_damage(body, effective);
         r.sources.add_status(src, effective);
         r.timeline.add(now, effective);
+        r.pop(now, body, effective, src,
+            if src == DamageType::Blast { PopKind::Blast } else { PopKind::Status });
         r.dot_ticks += is_dot_tick as u32;
         r.note_kills(killed as u32, now);
         if let Some(pool) = broke {
@@ -7732,7 +7918,15 @@ pub fn run_once_traced(
     // 0 reloads in the median run, 4.4 s of downtime, and an opening magazine
     // reading zero. The refill is the moment, whichever event caused it.
     let mut opening_closed = false;
-    let mut r = RunResult { rng_state: started_at, ..Default::default() };
+    let mut r = RunResult {
+        rng_state: started_at,
+        // THE NUMBERS ARE ONLY COLLECTED FOR THE ONE RUN THAT IS REPLAYED.
+        // 999 of a thousand runs are summed and thrown away, and a floating
+        // number is the one output nobody sums — so the collector is off for
+        // them and an ordinary instance pays a single branch.
+        pops_on: trace.is_some(),
+        ..Default::default()
+    };
     // ROUNDS FIRED SINCE THE MAGAZINE WAS FILLED, which is what says when a
     // BURST completes: Reaver's Rapture wants a full burst, and a burst is
     // `burst.count` consecutive rounds out of one magazine. It restarts with
@@ -8159,8 +8353,15 @@ pub fn run_once_traced(
                     combo_at(combo_spec, params.combo_held, combo_count,
                         combo_last_hit, next_frame),
                 );
+                // THE FRAME TAKES THIS FRAME'S NUMBERS AND EMPTIES THE
+                // BUFFER. Drained HERE, at the one place that advances time,
+                // so a number belongs to the frame it happened in and cannot
+                // be counted twice.
+                let (pops, pops_dropped) = r.pops.drain();
                 rep.frames.push(Frame {
                     t: next_frame,
+                    pops,
+                    pops_dropped,
                     overguard: target.overguard,
                     shield: target.shield,
                     health: target.health,
@@ -10147,6 +10348,17 @@ pub fn run_once_traced(
                     add_by_type(&mut r.sources.radial_by_type, &qvec, effective, &col);
                 }
                 r.timeline.add(t, effective);
+                // THE ONE SITE THAT KNOWS ALL FOUR SHAPES: a hit is plain, a
+                // crit, a weak point, or both — and "both" is its own number in
+                // game, not a crit with a multiplier on it.
+                if r.pops_on {
+                r.pop(t, 0, effective, qvec.dominant(), match (part.is_head, tier > 0) {
+                    (true, true) => PopKind::HeadCrit,
+                    (true, false) => PopKind::Head,
+                    (false, true) => PopKind::Crit,
+                    (false, false) => PopKind::Direct,
+                });
+                }
                 r.note_kills(killed as u32, t);
                 // EXECUTIONER'S FORTUNE. Rolled HERE and nowhere else, because
                 // this is the only place that knows both halves of its
@@ -19434,6 +19646,71 @@ mod tests {
     /// version of this did, passing identically with the guard removed.
     ///
     /// Measured: 48,000 with the guard, 47,400 without — sixteen burnt ticks.
+    /// EVERY DAMAGE SITE POPS A NUMBER, and the log cannot drift from the
+    /// curve.
+    ///
+    /// A `pop` sits beside every `timeline.add` — nine of them — because the
+    /// timeline is the AGGREGATE view of exactly the same nine events. So a
+    /// tenth damage site added later without a `pop` shows up here as damage
+    /// that moved a curve and popped nothing.
+    ///
+    /// It cannot be an equality: the buffer keeps the twelve BIGGEST numbers a
+    /// frame and counts the rest, which is what the game itself does ("a
+    /// maximum of 10 tick numbers are shown at once"). So the property is
+    /// COVERAGE — every frame that gained damage popped or dropped something —
+    /// and it is exact in the direction that matters.
+    #[test]
+    fn every_frame_that_took_damage_popped_a_number() {
+        // A build that exercises several of the nine at once: a direct hit, a
+        // crit, a weak point, a Slash bleed and a Heat tick.
+        let mut p = DummyParams {
+            forced_procs: vec![DamageType::Slash, DamageType::Heat],
+            ..bare(DamageType::Slash)
+        };
+        p.base_crit_chance = 0.5;
+        p.crit_multiplier = 2.0;
+        let rep = replay(&p, 0, 60);
+
+        let mut frames_with_damage = 0;
+        let mut frames_with_pops = 0;
+        let mut prev = 0.0;
+        for f in &rep.frames {
+            let gained = f.damage - prev;
+            prev = f.damage;
+            if gained <= 1e-9 {
+                continue;
+            }
+            frames_with_damage += 1;
+            if !f.pops.is_empty() || f.pops_dropped > 0 {
+                frames_with_pops += 1;
+            }
+        }
+        assert!(frames_with_damage > 5, "the fixture deals damage: {frames_with_damage}");
+        assert_eq!(
+            frames_with_damage, frames_with_pops,
+            "{} frames gained damage and {} popped a number — a damage site \
+             without a `pop` beside its `timeline.add`",
+            frames_with_damage, frames_with_pops
+        );
+
+        // …AND THE KINDS ARE TOLD APART. A run with crits, weak points and a
+        // DoT must produce more than one kind, or the classifier is a constant.
+        let kinds: std::collections::BTreeSet<PopKind> =
+            rep.frames.iter().flat_map(|f| f.pops.iter().map(|p| p.kind)).collect();
+        assert!(kinds.len() >= 2, "a fight has more than one kind of number: {kinds:?}");
+        assert!(
+            kinds.contains(&PopKind::Status),
+            "a Slash bleed and a Heat tick are statuses: {kinds:?}"
+        );
+
+        // …AND NOTHING POPS WHEN NOBODY IS WATCHING. The collector is off for
+        // the 999 runs that are summed and thrown away, which is what keeps it
+        // free — asserted because "it is only on while tracing" is exactly the
+        // kind of claim that quietly stops being true.
+        let plain = run_once(&p, &mut Rng::new(0));
+        assert!(!plain.pops_on, "an untraced run collects nothing");
+    }
+
     #[test]
     fn a_dense_electricity_fight_pays_each_stack_once() {
         let dense = DummyParams {

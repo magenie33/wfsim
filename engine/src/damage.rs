@@ -200,6 +200,23 @@ impl DamageVector {
         self.amounts[t as usize] += amount;
     }
 
+    /// THE BIGGEST COMPONENT — which type a mixed hit reads AS.
+    ///
+    /// A direct hit is a whole vector, not one type, so "what colour is this
+    /// number" has no exact answer. The dominant component is the honest
+    /// approximation and it is only ever asked for DISPLAY: nothing in the
+    /// damage path reads it. Ties go to the lower index, which is
+    /// `DamageType::ALL`'s own order, so the answer is stable.
+    pub fn dominant(&self) -> DamageType {
+        let mut best = 0;
+        for i in 1..self.amounts.len() {
+            if self.amounts[i] > self.amounts[best] {
+                best = i;
+            }
+        }
+        DamageType::ALL[best]
+    }
+
     /// Panel damage: the sum of all components.
     pub fn total(&self) -> f64 {
         self.amounts.iter().sum()
