@@ -65,7 +65,24 @@ env:
   # HOW MANY WAYS THE SCORING SPLITS. Actions minutes are not metered on a
   # public repo, so the only cost of a wider fan-out is the fixed ~30 s each job
   # spends checking out and restoring the cache.
-  SHARDS: 8
+  #
+  # EIGHT STARVED THE BOARD AGAIN (2026-08-21), the same way and for a new
+  # reason. Eight was measured when 67 minutes of scoring became ~9 a shard;
+  # the roster then doubled — 556 entries, 773 stored rows — and shards came in
+  # at 15 to 35 minutes with one at 55. The schedule fires every TWENTY, and a
+  # concurrency group keeps only one PENDING run, so any run slower than the
+  # interval has its successor discarded and the board stops moving. The board
+  # had not updated for hours and the owner noticed before any check did.
+  #
+  # It gets worse before it gets better: a reflecting bounce reaches 361 bodies
+  # on the group-clear ruler where the old walk reached 30, and that ruler's
+  # rows are the expensive ones.
+  #
+  # 32 is chosen against the INTERVAL rather than against the old figure — the
+  # run has to finish inside twenty minutes or it starves itself, and four times
+  # the fan-out puts the worst shard at ~14. The ceiling is GitHub's 256-job
+  # matrix, so there is room to raise it again when the roster doubles again.
+  SHARDS: 32
 
 jobs:
   # ---- 1. what is there to score ----------------------------------------
@@ -78,8 +95,19 @@ jobs:
     outputs:
       wired: ${{ steps.wired.outputs.yes }}
       engine: ${{ steps.fp.outputs.engine }}
+      shards: ${{ steps.shards.outputs.list }}
     steps:
       - uses: actions/checkout@v4
+
+      # THE MATRIX IS DERIVED FROM `SHARDS`, and it has to be. The scorer is
+      # told `--shards N` from the env while the matrix was a hand-written
+      # [0..7], so raising one without the other tells eight jobs they are one
+      # of thirty-two — and three quarters of the board is silently never
+      # scored. Nothing would have failed; the rows would simply keep their old
+      # numbers (2026-08-21).
+      - id: shards
+        run: |
+          python3 -c "import json;print('list='+json.dumps(list(range($SHARDS))))" >> "$GITHUB_OUTPUT"
 
       # WHAT A SCORE DEPENDS ON THAT IS NOT THE BUILD, as one hash: the code
       # that simulates, the data it simulates with, and the rulers. `data/`
@@ -165,7 +193,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+        shard: ${{ fromJSON(needs.submissions.outputs.shards) }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
