@@ -4,6 +4,22 @@ How to get game data efficiently instead of transcribing pages by hand. The
 official wiki is backed by **structured Lua data modules**, and they are the
 authoritative datamined values (the same source WFCD tooling uses).
 
+## THE WIKI IS `wiki.warframe.com`, AND ONLY THAT (owner, 2026-08-21)
+
+`warframe.fandom.com` is the LEGACY mirror. It is not a second opinion and it
+is not a fallback — it is an older copy, and reading a number off it is reading
+a number from before whatever changed. Nothing in `data/` cites it (1,587
+citations, all to the official host, checked 2026-08-21) and nothing should.
+
+It has to be said out loud because SEARCH DOES NOT AGREE: the Fandom copy
+outranks the official wiki for most weapon queries, so "search for the wiki
+page" lands there by default. That is how it got reached during the
+2026-08-21 Latron investigation.
+
+The one other host that is a source is `warframe.huijiwiki.com`, and only for
+one thing: DE's own CHINESE card text, which the English wiki does not carry.
+See the transcription rule in AGENTS.md.
+
 ## THE WIKI WINS (owner, 2026-08-14)
 
 Use the wiki wherever it can answer. WFCD's `warframe-items` export is the
