@@ -12838,44 +12838,73 @@ function popsDraw(rp, i, live) {
     const [vx, vy] = ar.vb(m);
     return [ox + vx * k, oy + vy * k];
   };
+  // THE MODE IS ON THE LAYER, because it decides the ANIMATION and a CSS class
+  // is the only thing that can. Parked numbers rise and hold; playing ones
+  // float away.
+  host.classList.toggle("live", !!live);
   if (!live) host.textContent = "";
   const frame = rp.pops[i];
   if (!frame) return;
   const box = scene.getBoundingClientRect();
   const dx = sb.left - box.left;
   const dy = sb.top - box.top;
-  for (const [t, body, amount, dtype, kind] of (frame.v || [])) {
+  // FANNED, NOT JITTERED. Several numbers land on ONE body in the same instant —
+  // a hit, its crit, three status ticks — and scattering them by a hash of their
+  // own value still piles them up as often as not. Counting per BODY and
+  // stepping each one out along a fixed fan is readable at any count and
+  // identical every time the same frame is drawn, which is what a scrub needs.
+  //
+  // BIGGEST NEAREST THE BODY, because that is the one the reader came for; the
+  // rest step outward and up from it.
+  const perBody = new Map();
+  const ordered = [...(frame.v || [])].sort((a, b) => b[2] - a[2]);
+  for (const [t, body, amount, dtype, kind] of ordered) {
     const at = popBodyAt(body);
     if (!at) continue;
     const [x, y] = map(at);
+    const seen = perBody.get(body) || 0;
+    perBody.set(body, seen + 1);
+    // A RISING COLUMN, not a fan. A fan needs to clear the number's WIDTH and a
+    // five-figure number is 45 px wide, so anything narrow enough to look tidy
+    // still overlaps; stacking upward only has to clear the line height. The
+    // small left/right alternation is there to break the column's edge so two
+    // equal numbers are still visibly two.
+    const fx = seen === 0 ? 0 : (seen % 2 ? 11 : -11);
+    // The step clears the LARGEST line here: a headcrit is set at 19 px, so 17
+    // put two of them on top of each other. Starting at -32 clears the body's
+    // own name and distance labels rather than landing in them.
+    const fy = -32 - seen * 21;
     const el = document.createElement("span");
     el.className = `rp-pop ${POP_KIND_CLASS[kind] || "p-direct"}`;
-    // A JITTER, because ten numbers on one body at one instant would stack into
-    // an unreadable pile. Derived from the value itself rather than random so a
-    // re-scrub to the same frame draws the same picture.
-    const jx = ((Math.round(amount) % 37) - 18) * 1.4;
-    const jy = ((Math.round(amount * 7) % 23) - 11) * 1.1;
-    el.style.left = `${dx + x + jx}px`;
-    el.style.top = `${dy + y + jy}px`;
+    el.style.left = `${dx + x + fx}px`;
+    el.style.top = `${dy + y + fy}px`;
     const c = dtColor(dtype);
     if (c) el.style.setProperty("--pop-dt", c);
     el.textContent = Math.round(amount).toLocaleString();
     el.title = `${DT(dtype)} · ${tr(kind)}`;
     host.appendChild(el);
-    el.addEventListener("animationend", () => el.remove());
+    if (live) el.addEventListener("animationend", () => el.remove());
   }
   // …AND WHAT DID NOT FIT. Never silent: a cap nobody is told about reads as
   // "that is all of them", which is the one thing it must not.
   if (frame.n > 0) {
     const more = document.createElement("span");
     more.className = "rp-pop p-more";
-    const [mx, my] = map(popBodyAt(0) || [0, 0.5]);
+    // ABOVE THE TALLEST COLUMN, computed rather than guessed: the aimed body
+    // carries the most numbers and a fixed offset lands the chip inside them.
+    let tall = 0, at0 = 0;
+    for (const [b, n] of perBody) {
+      const [, by] = map(popBodyAt(b) || [0, 0.5]);
+      const top = by - 32 - (n - 1) * 21;
+      if (!tall || top < tall) { tall = top; at0 = b; }
+    }
+    const [mx] = map(popBodyAt(at0) || [0, 0.5]);
     more.style.left = `${dx + mx}px`;
-    more.style.top = `${dy + my - 26}px`;
+    more.style.top = `${dy + tall - 20}px`;
     more.textContent = `+${frame.n}`;
     more.title = tr("more numbers than fit — the biggest twelve are shown");
     host.appendChild(more);
-    more.addEventListener("animationend", () => more.remove());
+    if (live) more.addEventListener("animationend", () => more.remove());
   }
 }
 

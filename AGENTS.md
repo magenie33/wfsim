@@ -1017,6 +1017,103 @@ around (decision 2026-07-31).
   hand list, so it passed. It serializes the merged spec now and asks the
   question of every field there is, including one added tomorrow by somebody who
   never read the file. Verified to bite in both directions.
+- **A STATUS HAS THREE MODELS, NOT TWO** (owner, 2026-08-22). Slash and Toxin are
+  PER INSTANCE — each stack its own clock, its own timer, its own number. Heat is
+  a SINGLETON that every proc refreshes and that pays one consolidated tick.
+  Electricity and Gas are the third and the engine did not have it: *"multiple
+  procs on an enemy no longer deal their respective damage separately, like
+  current Slash statuses, but once per second, similar to Heat status. However,
+  they still maintain each own timer and will not refresh, unlike Heat"* (wiki
+  `Damage/Electricity Damage`, **Update 33.6**), and Gas is the same shape,
+  confirmed in game where the wiki does not say. `push_dot_capped` moves a
+  joining instance onto its family's clock and `Ev::Dot` pays every live one of
+  them as ONE instance.
+  THE CLOCK ALONE IS HALF THE RULE. Sharing the clock and still settling ten
+  stacks separately gives the right total and the wrong fight: an instance is the
+  unit attenuation clamps, a shield gate multiplies by 5%, and overkill is
+  measured against, so ten small ones and one large one differ on any target that
+  has those. The merge is tick-count neutral by arithmetic — an instance with `k`
+  ticks joining a clock `φ < 1` ahead fires `ceil(k − φ) = k` times — so it is
+  fidelity rather than a rebalance.
+  THE HEAP GOES STALE AND THE SCAN CANNOT. `process_ticks` picks its path by live
+  DoT count, and advancing a whole family leaves heap keys for ticks already
+  paid; the scan reads `next_tick` live and never produces one. Without the guard
+  a stale key advances its Dot again and BURNS a tick, so the damage comes out
+  LOW rather than double. The fixture that proves it had to be made dense enough
+  to leave the scan path at all — the first version forced one proc a shot, never
+  crossed `TICK_QUEUE_MIN`, and passed identically with the guard removed.
+- **A DoT'S WEAK-POINT RULE IS PER STATUS, AND A BLAST IS NOT A DoT**
+  (owner, 2026-08-22, MEASUREMENTS M54). A Toxin tick does NOT inherit the weak
+  point of the hit that applied it — measured in game, against a wiki page that
+  says it does — so `dot_takes_weakpoint` names Toxin and nothing else. Every
+  other DoT is UNMEASURED and keeps the wiki's answer rather than inheriting a
+  rule from one case.
+  A BLAST GOES THE OTHER WAY AND IT WAS MEASURED EXACTLY: ten stacks applied by
+  BODY hits reach a neighbour for 1050, by HEAD hits for 3150, **3.000** with no
+  remainder, and `1050 / 10.5 = 100` confirms the published 10× between the
+  radial and single-target halves. The engine was already right; the group
+  ruler's own rule TEXT said "nothing a chain, a blast or a cloud reaches can be
+  a weak point hit" and was wrong about the blast, worth 14.8× on that board row.
+  The lesson is the one `docs/CATALOGS.md` keeps teaching in another domain: four
+  mechanics that sound like one family do not share a rule, and the only way to
+  know is to measure each.
+- **THE SPACING IS THE GROUP RULER'S ANSWER, NOT ITS ARRANGEMENT** (owner,
+  2026-08-22). A 5 m Blast sphere holds `π·25/spacing²` bodies — 35 at 1.5 m, 5
+  at 4 m — so the grid's spacing decides the whole splash-versus-single-target
+  ordering before a weapon is read. Measured on one weapon with one build per
+  element and everything else pinned, Blast swings **71×** across 1.5–6 m while
+  Heat is FLAT (58–72), because Heat is a DoT on one body and does not care how
+  close the crowd stands. At 1.5 m the board said Blast beat Heat 4.7×; in game
+  at level 200 Heat killed visibly faster. It stands at **3 m**, the near edge of
+  the crossover band.
+  IT COSTS SOMETHING REAL AND IT IS PAID ON PURPOSE: 1.5 m was the only spacing
+  that separated all three steps of a radius mod (6/9/13 bodies) and 3 m does
+  not. A ruler that ranks a radius mod's steps but ranks the wrong ELEMENT is
+  measuring the wrong thing.
+  AND 3 IS FITTED, NOT MEASURED. It was chosen to make the ORDERING match the
+  owner's play, which is weaker evidence than measuring the parameter — the file
+  says so. The quantity to measure is not the spacing but what it sets: **how
+  many enemies one blast detonation actually reaches in a real fight** (~9 at 3 m,
+  ~20 at 2 m, ~5 at 4 m), because real enemies are not on a grid at all and the
+  grid is a stand-in either way.
+  A RULER'S PROSE QUOTES ITS OWN NUMBERS. The spacing is written three times —
+  the field, the ruler's NAME, and the rule sentence — and the first change moved
+  one of them, so the board said "19x19 at 1.5 m" over a 3 m fight. Every number
+  on the page was right and the page said something else produced them. A test
+  reads the RAW yaml (the grid is expanded into 361 positions at load) and
+  asserts the prose quotes the field.
+- **A FIGHT POPS NUMBERS, AND THEY ARE EVENTS** (owner, 2026-08-22). Everything
+  else a replay carries is a CURVE — a pool falling, a stack count, a running
+  total — and an aggregate cannot tell one hit for 400,000 from twenty for
+  20,000. `Replay.pops` is the one output that is a discrete thing that happened
+  at a place at a time, which is why it is carried rather than derived.
+  A `pop` SITS BESIDE EVERY `timeline.add`, all nine of them, because the
+  timeline is the aggregate view of exactly those nine events — so the log and
+  the curve cannot drift without one of the two calls being dropped, and a tenth
+  damage site added later shows up as damage that moved a curve and popped
+  nothing.
+  BOUNDED BY THE GAME'S OWN CAP. Twelve a frame, biggest kept, and the count of
+  what did not fit — DE caps its display the same way ("a maximum of 10 tick
+  numbers are shown at once"), so the cap is faithful rather than a shortcut, and
+  it is unavoidable besides: a dense fight deals ~320,000 instances against 600
+  frames. Keeping the FIRST twelve would be arbitrary — which twelve depends on
+  the order the engine settled them in — so the BIGGEST survive, and the dropped
+  count is on screen because a cap nobody is told about reads as "that is
+  everyone".
+  IT COSTS THE OTHER 999 RUNS ONE BRANCH. `pops_on` is set only for the run that
+  is replayed; `PopBuf` is a fixed array because `RunResult` is `Copy`, and it
+  holds ONE frame, drained by the sampler at the only place that advances time.
+  ON THE PAGE it is a DOM overlay appended AFTER `mountArena`, never before —
+  the mount takes the host over and rewrites it, so a layer created first is
+  wiped by the scene it was meant to sit on. The analysis mount publishes
+  `host.__arena` the way the canvas one always has, and the overlay puts that
+  viewBox through the svg's own fit: ONE geometry, whatever the map says is where
+  the body was drawn.
+  `node scripts/check_damage_pops.mjs` is the THIRTY-SIXTH check and it is
+  written against the one thing that makes this feature easy to fake: a layer
+  floating plausible numbers would look exactly right and mean nothing. Every
+  drawn number must be one the replay's own `pops` carries. Verified to bite —
+  nudging the text by 1% reddens it.
 - **Golden values only change with an in-game measurement** justifying
   it. New mechanics need golden tests; a faithful-looking implementation
   without a measurement is not correct.
