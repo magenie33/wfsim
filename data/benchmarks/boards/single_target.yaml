@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 1027518ce112b6019ab6a6b854ed333bfd2ec16a
+engine: b544988a9f5eeb0b8bcd66c480c3a4dea6fce5d6
 entries:
   - weapon: akarius_prime
     mode: base
@@ -1020,6 +1020,12 @@ entries:
     valence: magnetic
   - weapon: coda_synapse
     mode: base
+    score: 18.72521817864096
+    mods: [primary_acuity, serration, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
+    arcanes: [primary_deadhead]
+    valence: electricity
+  - weapon: coda_synapse
+    mode: base
     score: 17.409052295238922
     mods: [primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     arcanes: [primary_deadhead]
@@ -1313,6 +1319,11 @@ entries:
     score: 23.603678730309092
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_charged_shell, toxic_barrage]
     evolutions: [felarx_evo1_incarnon_form, felarx_frictionless_flight, felarx_evolved_autoloader, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+  - weapon: fulmin_prime
+    mode: base
+    score: 4.286677648521877
+    mods: [primary_acuity, serration, galvanized_aptitude, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, infected_clip]
     arcanes: [primary_deadhead]
   - weapon: furis
     mode: cycle
@@ -1691,6 +1702,12 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, parallax_scope, primed_electrified_barrel, contamination_casing, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
     valence: impact
+  - weapon: kuva_drakgoon
+    mode: base
+    score: 5.885458830721126
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_barrage, magnetic_strafe, incendiary_coat, blaze]
+    arcanes: [primary_crux]
+    valence: heat
   - weapon: kuva_grattler
     mode: base
     score: 14.05398263379217
