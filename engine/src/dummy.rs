@@ -6499,6 +6499,18 @@ fn process_ticks(
             debuffs.scan_next(until)
         };
         let Some(k) = next else { break };
+        // A STALE KEY. A consolidated family advances EVERY one of its live
+        // instances when the first of them fires, so the queue still holds
+        // entries for ticks that have already been paid. The scan path never
+        // produces one — it reads `next_tick` live — which is why this guard is
+        // here rather than inside `refill_tick_queue`: both paths must answer
+        // identically, and only one of them can go stale.
+        if k.class == 0 {
+            match debuffs.dots.get(k.index as usize) {
+                Some(d) if (d.next_tick - k.t).abs() < 1e-9 => {}
+                _ => continue,
+            }
+        }
         let (now, ev) = match k.class {
             0 => (k.t, Ev::Dot(k.index as usize)),
             1 => (k.t, Ev::Heat),
@@ -6518,16 +6530,46 @@ fn process_ticks(
         // triggered by blast Detonations, no other extra hit will").
         let (value, ignores_armor, is_dot_tick, hit_type, src, xh) = match &ev {
             Ev::Dot(i) => {
-                let d = &mut debuffs.dots[*i];
-                d.next_tick += 1.0;
-                d.ticks_left -= 1;
-                let d = &debuffs.dots[*i];
-                let hit_type = if d.ignores_armor {
+                let dtype = debuffs.dots[*i].dtype;
+                let ignores_armor = debuffs.dots[*i].ignores_armor;
+                // A CONSOLIDATED FAMILY PAYS ONCE — one damage instance for
+                // every live stack, which is the number the game pops.
+                //
+                // The clock was already shared (`push_dot_capped`); this is the
+                // other half of the same rule, and without it ten Electricity
+                // stacks landed as ten instances at one instant where the game
+                // shows one. It is NOT bookkeeping: an instance is the unit
+                // that attenuation clamps, that a shield gate multiplies, and
+                // that overkill is measured against, so ten small ones and one
+                // large one are different fights on any target that has those.
+                //
+                // wiki `Damage/Electricity Damage`, U33.6: "no longer deal
+                // their respective damage separately ... but once per second".
+                let value = if matches!(dtype, DamageType::Electricity | DamageType::Gas) {
+                    let mut sum = 0.0;
+                    for d in debuffs.dots.iter_mut() {
+                        if d.dtype == dtype
+                            && d.ticks_left > 0
+                            && (d.next_tick - now).abs() < 1e-9
+                        {
+                            d.next_tick += 1.0;
+                            d.ticks_left -= 1;
+                            sum += d.value;
+                        }
+                    }
+                    sum
+                } else {
+                    let d = &mut debuffs.dots[*i];
+                    d.next_tick += 1.0;
+                    d.ticks_left -= 1;
+                    d.value
+                };
+                let hit_type = if ignores_armor {
                     DamageType::Cinematic
                 } else {
-                    d.dtype
+                    dtype
                 };
-                (d.value, d.ignores_armor, true, hit_type, d.dtype, None)
+                (value, ignores_armor, true, hit_type, dtype, None)
             }
             Ev::Heat => {
                 let h = debuffs.heat.as_mut().expect("heat event needs entity");
@@ -19372,6 +19414,39 @@ mod tests {
         ] {
             assert!(dot_takes_weakpoint(t), "{t:?} is unmeasured and keeps the wiki's answer");
         }
+    }
+
+    /// A CONSOLIDATED FAMILY PAYS ONCE, and the HEAP path pays the same as the
+    /// scan.
+    ///
+    /// `process_ticks` has two ways of asking for the next event — a linear
+    /// SCAN under `TICK_QUEUE_MIN` live DoTs and a heap over it. The merge
+    /// advances EVERY live instance of a family when the first of them fires,
+    /// which leaves keys in the heap for ticks already paid; the scan can never
+    /// produce one, because it reads `next_tick` live. Without the guard that
+    /// skips them a stale key advances its Dot a second time and BURNS a tick,
+    /// so the damage comes out LOW rather than double.
+    ///
+    /// The density is what makes this test worth having: eight forced procs a
+    /// shot at 10/s holds hundreds of stacks, well past the 32 that switches
+    /// paths. At one proc a shot the fixture never leaves the scan and the
+    /// guard is dead code the test cannot see — which is exactly what the first
+    /// version of this did, passing identically with the guard removed.
+    ///
+    /// Measured: 48,000 with the guard, 47,400 without — sixteen burnt ticks.
+    #[test]
+    fn a_dense_electricity_fight_pays_each_stack_once() {
+        let dense = DummyParams {
+            fire_rate: 10.0,
+            forced_procs: vec![DamageType::Electricity; 8],
+            ..bare(DamageType::Electricity)
+        };
+        let s = monte_carlo(&dense, 20, 5);
+        assert!(
+            (s.mean_dot_damage - 48_000.0).abs() < 1e-9,
+            "dot {} — 47,400 is the answer with the stale-key guard removed",
+            s.mean_dot_damage
+        );
     }
 
     #[test]
