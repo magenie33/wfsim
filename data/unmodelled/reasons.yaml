@@ -75,6 +75,13 @@ reasons:
   # Latron Incarnon entries, five bounces each dealing the collision and the
   # explosion in full. This is what is LEFT of it: the page says enemies *and
   # terrain*, and this arena has no walls.
+  # TWO ASSUMPTIONS IN THE BOUNCE MODEL, both on the page rather than only in a
+  # comment, because a player deciding whether to trust this weapon's number
+  # cannot read a yaml (2026-08-21).
+  bounce_seeks_nearest:
+    text: "a bounce here SEEKS the nearest body it has not hit yet, and in game it is geometry: the wiki's Bounce page says a bouncing projectile \"will reflect off surfaces at the same angle of incidence\" and lose velocity, so it keeps flying in a direction the impact decided rather than looking for a target. Seeking keeps every bounce inside the crowd it started in, which on a dense formation stacks the explosions on one cluster instead of spreading them along a line — so this number is HIGH where enemies are packed, and the approximation is the engine's rather than the game's"
+  bounce_headshot_assumed:
+    text: "how often a bounce lands on a weak point is ASSUMED, not transcribed. A rebounding hit really can headshot — the wiki's Hit Mechanic page says a ReboundPtr counts as a main hit — but where it lands is geometry this arena does not model and DE publishes no rate, so this roster uses a flat 50% (owner). It is a decision to argue with, not a measurement"
   ricochet_terrain:
     text: "the projectile does not bounce off TERRAIN — it ricochets off ENEMIES here, and in game a wall or the floor is a surface too. So every bounce needs another body to find: against a single target the projectile stops at the first collision, where in game it would keep going off the scenery, and this number is a FLOOR for any fight with cover in it"
   reload_never_interrupted:

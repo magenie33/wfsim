@@ -1319,6 +1319,8 @@ ui:
   # THE LEAST-KNOWN RULE IN THE FORMA MODEL (owner, 2026-08-16), stated beside
   # the exilus slot because every capacity number on the page assumes it.
   "A polarity can be swapped between this slot and a main one — the slot stays Exilus. So its polarity counts toward any build, even one that leaves it empty.": 极性可以在这个槽和主槽之间对调 —— 槽位本身仍然是 Exilus。所以它的极性对任何配装都算数，哪怕这个槽空着。
+  "a bounce here SEEKS the nearest body it has not hit yet, and in game it is geometry: the wiki's Bounce page says a bouncing projectile \"will reflect off surfaces at the same angle of incidence\" and lose velocity, so it keeps flying in a direction the impact decided rather than looking for a target. Seeking keeps every bounce inside the crowd it started in, which on a dense formation stacks the explosions on one cluster instead of spreading them along a line — so this number is HIGH where enemies are packed, and the approximation is the engine's rather than the game's": "这里的弹跳会**寻找**尚未命中过的最近身体，而游戏里它是几何：wiki 的 Bounce 页写明弹跳抛射物「以入射角同角反射」并逐次减速，也就是说它沿着撞击决定的方向继续飞，而不是去找目标。「找最近的」会让每一次弹跳都留在它出发的那堆敌人里，在密集阵型下就把多次爆炸叠在同一小撮身体上、而不是沿一条线铺开 —— 所以敌人越密，这个数字越偏高。这是引擎的近似，不是游戏的行为"
+  "how often a bounce lands on a weak point is ASSUMED, not transcribed. A rebounding hit really can headshot — the wiki's Hit Mechanic page says a ReboundPtr counts as a main hit — but where it lands is geometry this arena does not model and DE publishes no rate, so this roster uses a flat 50% (owner). It is a decision to argue with, not a measurement": "弹跳落点打中弱点的比例是**假设**，不是转录。弹跳命中确实可以爆头 —— wiki 的 Hit Mechanic 页写明 ReboundPtr 算作主命中 —— 但它落在哪个部位是本战场不建模的几何，而 DE 没有公布任何比例，所以本名册统一取 50%（由 owner 决定）。这是一个可以争论的决定，不是一次测量"
 
 effect_phrases:
   - ['Ammo Pickup Conversion', '弹药拾取转换']

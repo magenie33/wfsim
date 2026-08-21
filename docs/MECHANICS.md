@@ -1046,6 +1046,58 @@ Incarnon 10-12 m, ...); Neutralizer's range scales with Ability Range and
 prioritizes weak points. DT-specific: ricochets can headshot and trigger
 Frenzy; ragdolled enemies cannot be ricochet targets.
 
+**Bounce** (wiki `Bounce` — the PROJECTILE half, and a different mechanic
+from Ricochet above however often the community uses one word for both:
+*"Bounce, sometimes unofficially referred to as 'ricochet' by the community,
+is a property of Projectiles… Unlike true Ricochet, bouncing only happens with
+projectiles, not with hitscan weapons."*).
+
+**IT IS GEOMETRY, NOT TARGET-SEEKING**, and that is the whole difference:
+*"Bouncing projectiles will **reflect off surfaces at the same angle of
+incidence** (i.e. the angle at which a projectile moves away from a surface
+equals the angle at which they enter). Bouncing projectiles will also lose
+velocity after collisions."* A ricochet REDIRECTS to an enemy inside a stated
+range; a bounce keeps flying in a direction the impact decided, and whatever
+that line meets next is what it hits. Neither page gives the other's rule —
+Ricochet publishes a RANGE per weapon and no direction, Bounce publishes a
+DIRECTION and no range.
+
+A rebound landing is a full hit, not a fraction of one: `Hit Mechanic`
+§"Rebound and Bouncing Hits" — *"ReboundPtr counts as a MainPtr"*, and it
+*"inherits the Extra Hit bonuses of its MainPtr"*.
+
+The wiki's Bounce tables name the counts: the Latron family's Incarnon Form 6,
+Miter 5, Panthera 5 (Prime 3), Mutalist Quanta / Quanta / Quanta Vandal
+alt-fire 12, Trumna alt-fire 7, the Tetra family with Kinetic Ricochet 6,
+Drakgoon 2/3 (6/7 with Fomorian Accelerant), Tenet Arca Plasmor 4, Azima
+alt-fire 100, Angstrum Incarnon 1, Cyanex 1, Sporelacer 3, Mandonel 2,
+Velocitus ∞ (Archwing only), and twelve throwing melees at 3.
+
+**WHAT THIS ENGINE DOES, AND THE TWO ASSUMPTIONS IN IT.** Both mechanics run
+through one `ricochet:` block and `chain::bounce_path`, which walks to the
+NEAREST body not yet hit.
+
+- For a true RICOCHET that is the mechanic: it seeks enemies, and `range_m`
+  is the published bound.
+- For a BOUNCE it is an **APPROXIMATION AND A GENEROUS ONE**. Nearest-first
+  keeps the projectile inside the crowd it started in, so on a dense
+  formation every bounce lands near the last one and a weapon that explodes
+  per bounce stacks its spheres on one cluster. Measured on the group-clear
+  ruler 2026-08-21: the Latron Prime's five bounces are worth **9.9x**
+  (1295 kpm against 131 with none), and only 30 of 361 bodies took any
+  damage — the signature of six 4 m spheres landing on top of each other.
+  Reflection would spread them along a line instead. **The owner's reading is
+  that a bounce should carry straight on in one direction** (2026-08-21),
+  which is the wiki's rule; implementing it is a geometry decision that has
+  not been taken.
+- **`headshot_chance` IS AN OWNER ASSUMPTION, NOT A TRANSCRIPTION** (owner,
+  2026-08-18, re-searched 2026-08-21). A rebound hit CAN headshot — it counts
+  as a MainPtr — but where it lands is geometry this arena does not model, and
+  **no source states a rate**. The whole roster uses **0.5**. The one published
+  remark anywhere near it is the Neutralizer's *"Ricochets prioritize Weak
+  Points"*, which is written as that weapon's NOTE and so is evidence that
+  prioritising is the exception rather than the rule.
+
 **Damage instance classes.** Every damage instance carries a source class —
 **direct** (projectile/hitscan contact), **aoe_radial** (the explosion), or
 **ability** — because several rules key off it:

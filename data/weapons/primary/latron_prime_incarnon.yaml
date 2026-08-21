@@ -60,6 +60,8 @@ co_behavior: independent
 # next body instead. So a fight against ONE body still bounces nowhere, which is
 # the case the admission below is about.
 unmodeled:
+  - reason: bounce_headshot_assumed
+  - reason: bounce_seeks_nearest
   - reason: ricochet_terrain
 
 attack:

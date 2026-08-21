@@ -129,6 +129,12 @@ perks:
 
 # incarnon_evolutions: see data/weapons/dual_toxocyst.yaml (shared group)
 
+# ITS RICOCHET IS THE REAL ONE — a hitscan redirect inside a published 5 m,
+# so seeking the nearest enemy IS the mechanic here and needs no admission.
+# What is still assumed is where the redirected hit LANDS.
+unmodeled:
+  - reason: bounce_headshot_assumed
+
 source:
   url: https://wiki.warframe.com/w/Dual_Toxocyst
   # note: Stats from the wiki's structured Lua data module; economy from the

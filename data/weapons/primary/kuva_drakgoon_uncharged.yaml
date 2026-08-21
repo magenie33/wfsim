@@ -34,6 +34,8 @@ attack:
   damage: { impact: 4.6, puncture: 4.6, slash: 13.8 }   # 23 per pellet
 
 unmodeled:
+  - reason: bounce_headshot_assumed
+  - reason: bounce_seeks_nearest
   - reason: ricochet_terrain
 
 source:
