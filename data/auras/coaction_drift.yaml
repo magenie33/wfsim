@@ -1,0 +1,23 @@
+# Coaction Drift — an AURA, which is the SQUAD's mod rather than the weapon's.
+#
+# Auras are on the WARFRAME, so this file is read into the fight's Tenno beside
+# armour and energy — the block that becomes a real frame when frames are built
+# (owner, 2026-08-21). Nothing here is a weapon stat and nothing belongs in a
+# build: two players with the same gun and different squads are two fights.
+#
+# +15% AURA STRENGTH — it multiplies the other auras rather than doing
+# anything itself, which is why it is its own kind.
+id: coaction_drift
+name: Coaction Drift
+polarity: naramon
+base_drain: 9
+max_rank: 5
+# STACKS ACROSS THE SQUAD: the count is how many teammates run it, 0-4.
+squad_stacking: true
+
+effects:
+  - kind: aura_strength_bonus
+    rankMax: 0.15
+
+source:
+  url: https://wiki.warframe.com/w/Coaction_Drift

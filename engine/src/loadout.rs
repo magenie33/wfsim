@@ -1387,6 +1387,11 @@ pub struct WeaponBase {
     /// Weapon traits a mod's `requires` is checked against (e.g. `semi_auto`,
     /// `beam`). A mod requiring a trait the weapon lacks is inert.
     pub traits: &'static [&'static str],
+    /// THE WEAPON'S CLASS — `rifle`, `pistol`, `shotgun`, `sniper`. A trait
+    /// answers "how does it fire"; this answers "what IS it", and the Amp auras
+    /// are the first thing to ask: Rifle Amp pays a rifle and nothing else
+    /// (2026-08-21).
+    pub class: &'static str,
     /// Incarnon-form transformation economy. `Some` marks this form's
     /// magazine as CHARGE-BACKED (a fixed "Max Charges" resource fed by the
     /// weakpoint gauge, entirely outside the ammo system): magazine mods and
@@ -2332,6 +2337,13 @@ impl WeaponBase {
 /// The resolved panel: everything the dummy sim needs from layers [1]+[2].
 #[derive(Debug, Clone)]
 pub struct ResolvedPanel {
+    /// WHICH WEAPON THIS IS. The panel is everything the sim needs from the
+    /// build, and until 2026-08-21 that did not include the weapon's own name —
+    /// which is fine while every question is about resolved numbers and stops
+    /// being fine the moment something asks a question about the WEAPON. The
+    /// Amp auras are the first: Rifle Amp pays a rifle and nothing else, so
+    /// somebody has to know the class.
+    pub class: &'static str,
     /// PUNCH-THROUGH DEPTH, in metres of material — the weapon's own plus every
     /// mod, riven and evolution that grants one, and ZERO on an attack that
     /// cannot use it. See [`crate::space::BODY_MATERIAL_M`].
@@ -3748,6 +3760,7 @@ pub fn resolve_for(
     });
 
     ResolvedPanel {
+        class: base.class,
         punch_through_m,
         range_m: base.range_m,
         damage,

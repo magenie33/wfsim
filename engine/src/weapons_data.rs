@@ -2835,6 +2835,8 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         co_base: vector.total() * s.co_base_fraction.unwrap_or(1.0),
         injected_elements,
         traits: traits_for(s),
+        // LEAKED ONCE, so the panel can answer "what is this" without a lookup.
+        class: Box::leak(s.class.clone().into_boxed_str()),
         gauge_form,
         radial,
         spread: s.attack.spread,

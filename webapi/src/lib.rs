@@ -364,7 +364,31 @@ fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
             fire_rate: g("fire_rate"),
             reload_speed: g("reload_speed"),
             magazine: g("magazine"),
+            // THE BUCKET THE PANEL HAD NO BOX FOR. The engine has always had
+            // the quantity — several arcanes grant it — so this is the reader
+            // finally able to say it (owner, 2026-08-21).
+            ammo_efficiency: g("ammo_efficiency"),
         };
+    }
+    // WHAT THE WARFRAME BRINGS. Auras are the SQUAD's and shards are the
+    // FRAME's, and both are on the Tenno rather than in the build for the same
+    // reason `data/abilities/` is: two players with the same gun and different
+    // squads are two fights. That placement is also what carries them into the
+    // optimizer for free — and what keeps them off the BOARD, which is scored
+    // under the neutral player.
+    if let Some(a) = v.get("auras").and_then(Value::as_array) {
+        t.auras = a
+            .iter()
+            .filter_map(|x| serde_json::from_value(x.clone()).ok())
+            .collect();
+    }
+    if let Some(a) = v.get("shards").and_then(Value::as_array) {
+        // FIVE SOCKETS, and a sixth is a typo rather than a build.
+        t.shards = a
+            .iter()
+            .filter_map(|x| serde_json::from_value(x.clone()).ok())
+            .take(5)
+            .collect();
     }
     // The WARFRAME behind the gun. Armor and energy are the two stats a weapon
     // arcane reads (Primary Bulwark, Primary Overcharge); 0 means "no frame

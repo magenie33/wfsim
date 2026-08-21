@@ -1,0 +1,43 @@
+# Topaz Archon Shard — an ARCHON SHARD, one of five sockets on a Warframe.
+#
+# A SHARD IS A PICK, not a mod: the socket holds ONE of the effects below, and a
+# TAUFORGED shard of the same colour grants the larger number ("50% higher stat
+# bonuses"). So a Warframe carries up to five (colour, effect, tauforged) picks.
+#
+# It rides on the fight's Tenno for the same reason an aura does — it is the
+# WARFRAME's, not the weapon's (owner, 2026-08-21).
+#
+# EVERY EFFECT IS LISTED, including the ones this simulator cannot pay. A shard
+# that is absent reads as a shard that does nothing, and the reader cannot tell
+# that from one that was never transcribed.
+id: topaz_archon_shard
+name: Topaz Archon Shard
+colour: topaz
+
+effects:
+  - id: blast_kill_health
+    text: "Max Health per Blast kill"
+    kind: out_of_scope
+    applies_to: nobody shoots back
+    value: 1
+    tauforged: 2
+  - id: blast_kill_shield
+    text: "Shield regenerated per Blast kill"
+    kind: out_of_scope
+    applies_to: nobody shoots back
+    value: 5
+    tauforged: 7.5
+  - id: heat_kill_crit
+    text: "Secondary Critical Chance per Heat-status kill"
+    kind: crit_chance_on_heat_kill
+    applies_to: secondary
+    value: 0.01
+    tauforged: 0.015
+  - id: radiation_ability_damage
+    text: "Ability Damage on Radiation-affected enemies"
+    kind: ability_damage
+    value: 0.1
+    tauforged: 0.15
+
+source:
+  url: https://wiki.warframe.com/w/Archon_Shard

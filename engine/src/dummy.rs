@@ -1535,7 +1535,19 @@ impl DebuffState {
     }
 
     /// Prune and compute the live mitigation snapshot for `now`.
-    fn mitigation(&mut self, now: f64, status_damage: f64, puncture_strip_per: f64) -> Mitigation {
+    /// `aura_armor` is Corrosive Projection's term — a multiplier on the
+    /// target's armour that the SQUAD brings, negative and additive across up
+    /// to four teammates. It multiplies with the strips rather than adding to
+    /// them, which is the formula this engine has documented since it was
+    /// written: `x (1 - 0.18 x corrosive_projections)` in
+    /// data/debuffs/ignite.yaml, named and never fed a value until 2026-08-21.
+    fn mitigation(
+        &mut self,
+        now: f64,
+        status_damage: f64,
+        puncture_strip_per: f64,
+        aura_armor: f64,
+    ) -> Mitigation {
         self.prune(now, status_damage);
         Mitigation {
             disrupt_amp: ten_stack_amp(self.disrupt.len()),
@@ -1547,7 +1559,10 @@ impl DebuffState {
             // something else already removed some.
             armor_multiplier: (1.0 - self.heat_strip(now, status_damage))
                 * (1.0 - self.corrosive_strip())
-                * (1.0 - self.puncture_strip(puncture_strip_per)),
+                * (1.0 - self.puncture_strip(puncture_strip_per))
+                // …AND THE SQUAD'S, which is not a strip: an aura is up from
+                // the first shot and owes nothing to a proc.
+                * (1.0 + aura_armor).max(0.0),
         }
     }
 
@@ -1624,6 +1639,11 @@ pub struct BodyPart {
 /// Parameters of the dummy engagement.
 #[derive(Debug, Clone)]
 pub struct DummyParams {
+    /// WHAT THE WARFRAME BRINGS, resolved from the Tenno's auras and shards.
+    /// Computed once in `from_panel` rather than re-derived per shot, and read
+    /// wherever a squad effect lands — the armour multiplier at mitigation, the
+    /// stack ceiling at the proc (owner, 2026-08-21).
+    pub squad: crate::tenno_data::SquadEffects,
     /// The weapon's (modded) base damage vector. Quantized once per run for
     /// dealing damage and proc-type weighting.
     pub damage: DamageVector,
@@ -2768,6 +2788,12 @@ impl DummyParams {
             fx.ammo_efficiency += panel
                 .compression
                 .map_or(0.0, |c| arcane.compression_effectiveness_per_m * c.radius_lost_m);
+            // …AND THE PLAYER'S OWN. The engine has always had the quantity and
+            // the panel had no box for it, so a reader who wanted to try an
+            // ammo-efficiency source could not say so (owner, 2026-08-21). It
+            // joins the arcane's in the same additive bucket, which is where a
+            // second source of one quantity belongs.
+            fx.ammo_efficiency += arena.tenno.bonuses.ammo_efficiency;
             fx
         };
         let crate::arena::Arena {
@@ -2815,6 +2841,11 @@ impl DummyParams {
                 .sum::<f64>();
         Self {
             faction_multiplier,
+            // RESOLVED ONCE. The picks are the state and this is a view of them,
+            // so a pick can never disagree with its effect. The weapon's CLASS
+            // is passed because the Amp family pays one class and nothing to
+            // any other.
+            squad: tenno.squad(panel.class),
             // Straight off the ARENA — the one place a fight is described.
             abilities: abilities.clone(),
             damage: panel.damage,
@@ -3124,6 +3155,8 @@ impl Default for DummyParams {
     /// the engine.
     fn default() -> Self {
         Self {
+            // A FIXTURE BRINGS NO WARFRAME: no auras, no shards.
+            squad: crate::tenno_data::SquadEffects::default(),
             enervate_stacks: 0,
             target_id: "e1".to_string(),
             // NO PUNCH THROUGH by default, so the fixture fires the one-body
@@ -4271,7 +4304,7 @@ fn drain_area_procs(
                     None => continue,
                 }
             };
-            let mit = dbf.mitigation(at_now, status_damage, params.armor_strip_per_puncture);
+            let mit = dbf.mitigation(at_now, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
             let (eff, killed, _broke) = state.apply(
                 dmg,
                 TypeShares::single(DamageType::Blast),
@@ -4333,6 +4366,7 @@ fn settle_procs(
     let sdm = params.status_damage_multiplier;
     let caps = foe.stack_caps;
     let gcap = |base: usize| caps.map_or(base, |c| base.min(c.general));
+    let corrosion_cap_bonus = params.squad.cap_bonus("corrosion");
     let stagger_cap = caps.map_or(STAGGER_CAP, |c| STAGGER_CAP.min(c.impact));
     let heat_cap: Option<usize> = caps.map(|c| c.general);
     // PER FAMILY, not one number for all four — see `dot_family_cap`. This read
@@ -4550,7 +4584,17 @@ fn settle_procs(
             DamageType::Corrosive => DebuffState::push_capped(
                 &mut debuffs.corrosion,
                 at + CORROSION_DURATION * status_damage,
-                gcap(TEN_STACK_CAP),
+                // THE ONE CEILING A PLAYER CAN MOVE. An Emerald Archon Shard is
+                // "+2 (+3) max stacks of Corrosion", and its page is explicit
+                // that a WEAPON's corrosion may exceed ten because of it. Five
+                // Tauforged sockets are +15, and `corrosive_strip` is
+                // `0.20 + 0.06 x stacks` capped at 1.0 — so this is the
+                // difference between stripping 80% of armour and all of it.
+                //
+                // `gcap` still mins with the ENEMY's own cap, and that is
+                // right: "No Status Effect will exceed a maximum of 4 stacks"
+                // is a hard rule on the Acolytes, not a bonus to out-bid.
+                gcap(TEN_STACK_CAP + corrosion_cap_bonus),
                 at,
             ),
             DamageType::Radiation => DebuffState::push_capped(
@@ -4607,7 +4651,7 @@ fn settle_procs(
                     // an expiring Nourish between the first and the tenth would
                     // make their brackets differ.
                     let xh_total: f64 = fired.iter().map(|b| b.value * b.xh_bracket).sum();
-                    let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture);
+                    let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
                     let (eff, killed, broke) =
                         target.apply(
                             total,
@@ -5090,7 +5134,7 @@ fn spread_hit(
         return;
     }
     let status_damage = params.status_duration_multiplier;
-    let mit = foe.debuffs.mitigation(t, status_damage, params.armor_strip_per_puncture);
+    let mit = foe.debuffs.mitigation(t, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
     // BEFORE `apply`, like the aimed path: breaking overguard changes which
     // column the next read returns, and the split belongs to the hit that
     // broke it rather than to the state it left behind.
@@ -5795,7 +5839,7 @@ fn fire_syndicate_radial(
     at: f64,
 ) {
     let status_damage = params.status_duration_multiplier;
-    let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture);
+    let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
     let amt = sy.damage * params.faction_at_time(at);
     let (eff, killed, _broke) = target.apply(
         amt,
@@ -6087,7 +6131,7 @@ fn field_tick(
     foe: &TargetParams,
 ) -> bool {
     let status_damage = params.status_duration_multiplier;
-    let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture);
+    let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
     // The field is its own attack part, so the ability elements are sized off
     // ITS ModifiedBase — same rule as the explosion's.
     let qvec = params.with_ability_elements(f.damage.quantized(), f.modified_base, at);
@@ -6399,7 +6443,7 @@ fn process_ticks(
             _ => (k.t, Ev::Blast(k.index as usize)),
         };
 
-        let mit = debuffs.mitigation(now, status_damage, params.armor_strip_per_puncture);
+        let mit = debuffs.mitigation(now, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
         // A tick is one damage type — which is also the type the
         // vulnerability column reads. Bleed is the exception: it is stored
         // under Slash (that is the proc that made it) but the damage is
@@ -8948,7 +8992,7 @@ pub fn run_once_traced(
             // Live target-side state for THIS pellet (earlier pellets'
             // procs already count): mitigation amps, Cold's flat crit
             // damage received, and Condition Overload's type count.
-            let mit = debuffs.mitigation(t, status_damage, ap.armor_strip_per_puncture);
+            let mit = debuffs.mitigation(t, status_damage, ap.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
             // Crit damage: resolved multiplier + Cold's flat bonus received
             // + Sharpened Bullets' live on-kill buff + the arcane's
             // assumed-max conditional (Outburst).
@@ -12749,6 +12793,81 @@ mod tests {
         // every DoT it has.
         let r = run_once(&build("toxin"), &mut Rng::new(0x5EED));
         assert_eq!(r.bodies_touched(), 1, "{:?}", &r.damage_by_body.0[..5]);
+    }
+
+    /// WHAT THE WARFRAME BRINGS REACHES THE NUMBER — both halves, and they are
+    /// different kinds of thing.
+    ///
+    /// CORROSIVE PROJECTION is a bonus: a multiplier on the target's armour
+    /// that is up from the first shot and owes nothing to a proc. The engine's
+    /// armour formula named the term the day it was written and was never fed a
+    /// value (data/debuffs/ignite.yaml).
+    ///
+    /// THE EMERALD SHARD IS A CEILING, and that is the sharp one. `+2 (+3) max
+    /// stacks of Corrosion`, and `corrosive_strip` is `0.20 + 0.06 x stacks`
+    /// capped at 1.0 — so ten stacks take 80% of armour and fourteen take all
+    /// of it. It is the only thing in this family that changes what a build CAN
+    /// DO rather than how much it does (owner, 2026-08-21).
+    #[test]
+    fn auras_and_shards_reach_the_damage() {
+        use crate::auras_data::AuraPick;
+        use crate::shards_data::ShardPick;
+        let build = |tenno: crate::tenno_data::Tenno| {
+            let base = crate::loadout::WeaponBase::from_data("braton_prime", false, &[]);
+            // CORROSIVE, AND ENOUGH STATUS TO STACK IT. A ceiling cannot be
+            // measured by a build that never reaches the old one: the first
+            // version of this test ran an unmodded rifle, which procs no
+            // Corrosive at all, and both sides came back 16,296.
+            let pool = crate::mods_data::pool_for_weapon("braton_prime");
+            let refs: Vec<&crate::loadout::ModDef> = ["infected_clip", "stormbringer",
+                "rifle_aptitude", "high_voltage", "malignant_force"]
+                .iter()
+                .filter_map(|id| pool.iter().find(|m| m.id == *id))
+                .collect();
+            let panel =
+                crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            let mut arena = crate::arena::Arena::training(20.0);
+            // AN ARMOURED TARGET, because every effect here is about armour.
+            arena.target.base_armor = 500.0;
+            arena.tenno = tenno;
+            DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none())
+        };
+        let neutral = crate::tenno_data::default_tenno().clone();
+        let dmg = |t: crate::tenno_data::Tenno| {
+            monte_carlo(&build(t), 40, 0x5EED).mean_effective_damage
+        };
+        let plain = dmg(neutral.clone());
+
+        // ONE Corrosive Projection is -18% armour; FOUR is -72%, which the
+        // aura's own page states as the squad maximum.
+        let mut solo = neutral.clone();
+        solo.auras = vec![AuraPick { id: "corrosive_projection".into(), count: 1 }];
+        let mut squad = neutral.clone();
+        squad.auras = vec![AuraPick { id: "corrosive_projection".into(), count: 4 }];
+        let (one, four) = (dmg(solo), dmg(squad));
+        assert!(one > plain, "one projection helps: {plain:.0} -> {one:.0}");
+        assert!(four > one, "four help more: {one:.0} -> {four:.0}");
+
+        // …AND THE CEILING. Five Tauforged Emeralds are +15 stacks, which takes
+        // the cap from 10 to 25 — past the 14 that strips all of the armour.
+        let mut shards = neutral.clone();
+        shards.shards = (0..5)
+            .map(|_| ShardPick {
+                shard: "emerald_archon_shard".into(),
+                effect: "corrosion_stack_cap".into(),
+                tauforged: true,
+            })
+            .collect();
+        let capped = dmg(shards);
+        assert!(capped > plain,
+            "a raised corrosion ceiling strips more armour: {plain:.0} -> {capped:.0}");
+
+        // THE NEGATIVE CONTROL, and it is the one that matters: the NEUTRAL
+        // player brings none of this, which is the fight the board is scored
+        // under. A default that quietly carried an aura would move every stored
+        // row and nothing would say so.
+        assert!(neutral.auras.is_empty() && neutral.shards.is_empty(),
+            "the neutral player brings no Warframe");
     }
 
     /// A PUNCHED HEADSHOT IS CARRIED; A BOUNCE'S IS ROLLED.

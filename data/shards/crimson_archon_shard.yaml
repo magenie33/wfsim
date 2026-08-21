@@ -1,0 +1,48 @@
+# Crimson Archon Shard — an ARCHON SHARD, one of five sockets on a Warframe.
+#
+# A SHARD IS A PICK, not a mod: the socket holds ONE of the effects below, and a
+# TAUFORGED shard of the same colour grants the larger number ("50% higher stat
+# bonuses"). So a Warframe carries up to five (colour, effect, tauforged) picks.
+#
+# It rides on the fight's Tenno for the same reason an aura does — it is the
+# WARFRAME's, not the weapon's (owner, 2026-08-21).
+#
+# EVERY EFFECT IS LISTED, including the ones this simulator cannot pay. A shard
+# that is absent reads as a shard that does nothing, and the reader cannot tell
+# that from one that was never transcribed.
+id: crimson_archon_shard
+name: Crimson Archon Shard
+colour: crimson
+
+effects:
+  - id: melee_crit_damage
+    text: "Melee Critical Damage"
+    kind: out_of_scope
+    applies_to: no melee in this arena
+    value: 0.25
+    tauforged: 0.375
+  - id: primary_status_chance
+    text: "Primary Status Chance"
+    kind: status_chance
+    applies_to: primary
+    value: 0.25
+    tauforged: 0.375
+  - id: secondary_crit_chance
+    text: "Secondary Critical Chance"
+    kind: crit_chance
+    applies_to: secondary
+    value: 0.25
+    tauforged: 0.375
+  - id: ability_strength
+    text: "Ability Strength"
+    kind: ability_strength
+    value: 0.1
+    tauforged: 0.15
+  - id: ability_duration
+    text: "Ability Duration"
+    kind: ability_duration
+    value: 0.1
+    tauforged: 0.15
+
+source:
+  url: https://wiki.warframe.com/w/Archon_Shard

@@ -66,6 +66,129 @@ pub struct Tenno {
     /// weapon is getting nothing it did not earn.
     #[serde(default)]
     pub bonuses: StatBonuses,
+    /// THE SQUAD'S AURAS. On the Tenno rather than the build, because an aura
+    /// is the WARFRAME's: two players with the same gun and different squads
+    /// are two fights, which is the rule `data/abilities/` already follows —
+    /// and it is why an aura can no more reach the BOARD than Roar can
+    /// (owner, 2026-08-21).
+    #[serde(default)]
+    pub auras: Vec<crate::auras_data::AuraPick>,
+    /// …AND THE FRAME'S ARCHON SHARDS, up to five sockets. Same placement and
+    /// the same reason: this block is what becomes a real Warframe when frames
+    /// are built, so everything put here transfers rather than moves.
+    #[serde(default)]
+    pub shards: Vec<crate::shards_data::ShardPick>,
+}
+
+/// WHAT THE WARFRAME BRINGS, resolved — auras and shards folded into the shapes
+/// the engine already reads, plus the two things that are genuinely new.
+///
+/// It is computed rather than stored so a pick can never disagree with its
+/// effect: the picks are the state, this is a view of them.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct SquadEffects {
+    /// Corrosive Projection's term. A MULTIPLIER on the target's armour, and
+    /// the engine's armour formula has named it since it was written —
+    /// `x (1 - 0.18 x corrosive_projections)` in data/debuffs/ignite.yaml,
+    /// documented and never fed a value until now.
+    pub enemy_armor_multiplier: f64,
+    /// Shield Disruption / EMP Aura, the same shape on shields.
+    pub enemy_shield_multiplier: f64,
+    /// THE CEILING, per status id. Emerald: *"Increase max stacks of Corrosion
+    /// Status by +2 (+3)"*, and the page is explicit that a WEAPON's corrosion
+    /// may exceed ten because of it. Five Tauforged sockets are +15, and the
+    /// armour formula is `1 - (0.20 + 0.06 x stacks)` — so this is the only
+    /// entry here that changes what a build CAN DO rather than how much it does.
+    pub stack_cap_bonus: Vec<(String, f64)>,
+    /// Flat additions to the two Warframe stats a weapon arcane reads.
+    pub armor: f64,
+    pub energy: f64,
+}
+
+impl SquadEffects {
+    /// How many extra stacks of `status` the sockets are worth.
+    pub fn cap_bonus(&self, status: &str) -> usize {
+        self.stack_cap_bonus
+            .iter()
+            .filter(|(k, _)| k == status)
+            .map(|(_, v)| *v)
+            .sum::<f64>()
+            .max(0.0) as usize
+    }
+}
+
+impl Tenno {
+    /// Fold the picks into effects. `class` is the weapon's own class, because
+    /// the Amp family pays ONE class and nothing to any other.
+    pub fn squad(&self, class: &str) -> SquadEffects {
+        use crate::auras_data::AuraEffect;
+        use crate::shards_data::ShardEffect;
+        let mut out = SquadEffects::default();
+        // COACTION DRIFT FIRST: it multiplies the other auras and does nothing
+        // itself, so it has to be known before any of them is added.
+        let strength = 1.0
+            + self
+                .auras
+                .iter()
+                .filter_map(|p| crate::auras_data::by_id(&p.id))
+                .filter_map(|d| match d.effect {
+                    AuraEffect::AuraStrength(v) => Some(v),
+                    _ => None,
+                })
+                .sum::<f64>();
+        for pick in &self.auras {
+            let Some(d) = crate::auras_data::by_id(&pick.id) else { continue };
+            // A SQUAD-STACKING AURA IS ADDITIVE WITH ITSELF, 1 to 4; one that is
+            // not ignores the count rather than multiplying by it.
+            let n = if d.squad_stacking { pick.count.clamp(1, 4) as f64 } else { 1.0 };
+            match d.effect {
+                AuraEffect::EnemyArmor(v) => out.enemy_armor_multiplier += v * n * strength,
+                AuraEffect::EnemyShield(v) => out.enemy_shield_multiplier += v * n * strength,
+                AuraEffect::WeaponDamage(_) => {}
+                AuraEffect::AuraStrength(_) => {}
+            }
+        }
+        for pick in &self.shards {
+            match crate::shards_data::resolve(pick) {
+                Some(ShardEffect::Armor(v)) => out.armor += v,
+                Some(ShardEffect::EnergyMax(v)) => out.energy += v,
+                Some(ShardEffect::StatusStackCap(v, which)) => {
+                    out.stack_cap_bonus.push((which, v));
+                }
+                _ => {}
+            }
+        }
+        let _ = class;
+        out
+    }
+
+    /// The base-damage bonus the AMP family grants a weapon of `class`, which
+    /// is the one aura effect that lands in a mod bucket.
+    pub fn aura_damage_bonus(&self, class: &str) -> f64 {
+        use crate::auras_data::AuraEffect;
+        let strength = 1.0
+            + self
+                .auras
+                .iter()
+                .filter_map(|p| crate::auras_data::by_id(&p.id))
+                .filter_map(|d| match d.effect {
+                    AuraEffect::AuraStrength(v) => Some(v),
+                    _ => None,
+                })
+                .sum::<f64>();
+        self.auras
+            .iter()
+            .filter_map(|p| crate::auras_data::by_id(&p.id))
+            .filter_map(|d| match (&d.effect, d.requires.as_deref()) {
+                // NO CLASS NAMED IS NO PAYMENT. An amp with a missing
+                // `requires` would pay every weapon, which the aura test
+                // refuses to let happen.
+                (AuraEffect::WeaponDamage(v), Some(c)) if c == class => Some(*v),
+                _ => None,
+            })
+            .sum::<f64>()
+            * strength
+    }
 }
 
 /// 0.9 — the slowest sprint any Warframe has. See [`Tenno::sprint`].
@@ -200,6 +323,10 @@ pub struct StatBonuses {
     /// Speed Trigger's. A weapon whose fire rate is LOCKED ignores it, the same
     /// way it ignores a fire-rate mod.
     pub fire_rate: f64,
+    /// AMMO EFFICIENCY, and it was the one bucket the panel had no box for
+    /// (owner, 2026-08-21). The engine has always had the quantity — several
+    /// arcanes grant it — so this is the reader finally being able to say it.
+    pub ammo_efficiency: f64,
     /// Fast Hands' — `time = base / (1 + bucket)`.
     pub reload_speed: f64,
     /// Magazine Warp's, as a fraction of the base magazine.

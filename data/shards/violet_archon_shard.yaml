@@ -1,0 +1,43 @@
+# Violet Archon Shard — an ARCHON SHARD, one of five sockets on a Warframe.
+#
+# A SHARD IS A PICK, not a mod: the socket holds ONE of the effects below, and a
+# TAUFORGED shard of the same colour grants the larger number ("50% higher stat
+# bonuses"). So a Warframe carries up to five (colour, effect, tauforged) picks.
+#
+# It rides on the fight's Tenno for the same reason an aura does — it is the
+# WARFRAME's, not the weapon's (owner, 2026-08-21).
+#
+# EVERY EFFECT IS LISTED, including the ones this simulator cannot pay. A shard
+# that is absent reads as a shard that does nothing, and the reader cannot tell
+# that from one that was never transcribed.
+id: violet_archon_shard
+name: Violet Archon Shard
+colour: violet
+
+effects:
+  - id: electricity_ability_damage
+    text: "Ability Damage on Electricity-affected enemies"
+    kind: ability_damage
+    value: 0.1
+    tauforged: 0.15
+  - id: primary_electricity_damage
+    text: "Primary Electricity Damage"
+    kind: element_damage_of_type
+    applies_to: electricity
+    value: 0.3
+    tauforged: 0.45
+  - id: melee_crit_damage
+    text: "Melee Critical Damage"
+    kind: out_of_scope
+    applies_to: no melee in this arena
+    value: 0.25
+    tauforged: 0.375
+  - id: orb_conversion
+    text: "Health pickups give Energy and vice versa"
+    kind: out_of_scope
+    applies_to: pickups
+    value: 0.2
+    tauforged: 0.3
+
+source:
+  url: https://wiki.warframe.com/w/Archon_Shard

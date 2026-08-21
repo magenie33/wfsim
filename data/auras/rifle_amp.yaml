@@ -1,0 +1,25 @@
+# Rifle Amp — an AURA, which is the SQUAD's mod rather than the weapon's.
+#
+# Auras are on the WARFRAME, so this file is read into the fight's Tenno beside
+# armour and energy — the block that becomes a real frame when frames are built
+# (owner, 2026-08-21). Nothing here is a weapon stat and nothing belongs in a
+# build: two players with the same gun and different squads are two fights.
+#
+# +27% RIFLE damage. It is a base-damage bonus like Serration, which is
+# why it belongs in that bucket rather than as a final multiplier.
+id: rifle_amp
+name: Rifle Amp
+polarity: madurai
+base_drain: 9
+max_rank: 5
+# STACKS ACROSS THE SQUAD: the count is how many teammates run it, 0-4.
+squad_stacking: true
+
+effects:
+  - kind: weapon_damage_bonus
+    rankMax: 0.27
+    # THE WEAPON CLASS IT PAYS, and it pays nothing to any other.
+    requires: rifle
+
+source:
+  url: https://wiki.warframe.com/w/Rifle_Amp

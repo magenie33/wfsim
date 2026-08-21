@@ -1,0 +1,28 @@
+# Corrosive Projection — an AURA, which is the SQUAD's mod rather than the weapon's.
+#
+# Auras are on the WARFRAME, so this file is read into the fight's Tenno beside
+# armour and energy — the block that becomes a real frame when frames are built
+# (owner, 2026-08-21). Nothing here is a weapon stat and nothing belongs in a
+# build: two players with the same gun and different squads are two fights.
+#
+# It reduces the ARMOUR of every enemy in the mission, and the engine's
+# own armour formula has carried the term since it was written —
+# `x (1 - 0.18 x corrosive_projections)`, documented in
+# data/debuffs/ignite.yaml and never fed a value. This is the value.
+#
+# IT STACKS WITH ITSELF ACROSS THE SQUAD: "reducing enemy armor up to
+# 72% with a 4-player squad", so the count is 0-4 rather than a flag.
+id: corrosive_projection
+name: Corrosive Projection
+polarity: naramon
+base_drain: 9
+max_rank: 5
+# STACKS ACROSS THE SQUAD: the count is how many teammates run it, 0-4.
+squad_stacking: true
+
+effects:
+  - kind: enemy_armor_multiplier
+    rankMax: -0.18
+
+source:
+  url: https://wiki.warframe.com/w/Corrosive_Projection
