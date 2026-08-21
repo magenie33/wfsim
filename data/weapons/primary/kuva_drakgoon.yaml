@@ -87,7 +87,6 @@ attack:
 
 unmodeled:
   - reason: bounce_headshot_assumed
-  - reason: bounce_seeks_nearest
   - reason: ricochet_terrain
 
 source:

@@ -53,7 +53,7 @@ reasons:
   # third the moment another explosive Kuva lands, which is what makes it a
   # reason rather than a sentence.
   explosion_ignores_cover:
-    text: "the explosion needs no line of sight and goes through walls — this arena has no geometry, so nothing is ever behind cover here and the perk pays nothing it would not pay anyway"
+    text: "the blast needs no line of sight and goes through walls — this arena has no geometry, so nothing is ever behind cover and the perk pays nothing extra"
   # A MODE THAT IS NOT A CHOICE. Some weapons switch form by AIMING rather than
   # by a trigger, and this engine's mode is a build axis while `aiming` is the
   # fight's own flag — so the two can be set to a pair the game cannot produce.
@@ -62,7 +62,7 @@ reasons:
   # SELF-STAGGER, which every modern AoE weapon carries and none of them can
   # suffer here — the wielder is not a body in this arena.
   self_stagger:
-    text: "the explosion staggers the WIELDER, harder the closer they are to it — this arena has no body for the player, so nothing here is ever knocked about by its own shot and a build that would be unplayable in a corridor costs nothing"
+    text: "the blast staggers the WIELDER in game — this arena gives the player no body, so a build that would be unplayable in a corridor costs nothing here"
   # A SECOND EXPLOSION FROM ONE SHOT. An attack carries ONE `radial:`, and the
   # cluster weapons throw bomblets that explode again — so their contribution
   # is stated here rather than modelled. Two on the day it was written (Kuva
@@ -78,12 +78,10 @@ reasons:
   # TWO ASSUMPTIONS IN THE BOUNCE MODEL, both on the page rather than only in a
   # comment, because a player deciding whether to trust this weapon's number
   # cannot read a yaml (2026-08-21).
-  bounce_seeks_nearest:
-    text: "a bounce here SEEKS the nearest body it has not hit yet, and in game it is geometry: the wiki's Bounce page says a bouncing projectile \"will reflect off surfaces at the same angle of incidence\" and lose velocity, so it keeps flying in a direction the impact decided rather than looking for a target. Seeking keeps every bounce inside the crowd it started in, which on a dense formation stacks the explosions on one cluster instead of spreading them along a line — so this number is HIGH where enemies are packed, and the approximation is the engine's rather than the game's"
   bounce_headshot_assumed:
-    text: "how often a bounce lands on a weak point is ASSUMED, not transcribed. A rebounding hit really can headshot — the wiki's Hit Mechanic page says a ReboundPtr counts as a main hit — but where it lands is geometry this arena does not model and DE publishes no rate, so this roster uses a flat 50% (owner). It is a decision to argue with, not a measurement"
+    text: "how often a bounce lands on a weak point is ASSUMED — a flat 50%. It can headshot (the wiki's Hit Mechanic page counts a rebound as a main hit), but where it lands is geometry this arena does not model and DE publishes no rate"
   ricochet_terrain:
-    text: "the projectile does not bounce off TERRAIN — it ricochets off ENEMIES here, and in game a wall or the floor is a surface too. So every bounce needs another body to find: against a single target the projectile stops at the first collision, where in game it would keep going off the scenery, and this number is a FLOOR for any fight with cover in it"
+    text: "a bounce here reflects off ENEMIES only — in game a wall or the floor is a surface too, so with cover this number is a FLOOR"
   reload_never_interrupted:
     text: "this run never INTERRUPTS a reload — in game you can fire mid-reload and keep the shells already loaded, and a player who does is trading stacks and a full magazine for uptime. Decided rather than missing (2026-08-10): a listed reload is a whole reload, and the alternative is not a more accurate model, it is a different player"
   # THREE USES ON THE DAY IT WAS WRITTEN (Tenet Envoy, Tenet Diplos, Tenet
@@ -105,6 +103,6 @@ reasons:
   empty_reload_is_faster:
     text: "it 'reloads 50% faster from a fully depleted magazine' (wiki), and this engine carries ONE reload time per weapon. This sim holds the trigger until the magazine is dry, which is exactly the case that reload applies to — so the {seconds} s here is the SLOW reload for a fight that would always earn the fast one, and the weapon is understated"
   silent_weapon:
-    text: "this weapon is SILENT, and this arena has nobody to alert — no alarm, no reinforcements, no enemy that has not already seen you. Stealth is worth exactly nothing here and worth a great deal in a real mission"
+    text: "this weapon is SILENT and this arena has nobody to alert — stealth is worth nothing here and a great deal in a real mission"
   spool_rebuilds_after_reload:
     text: "the spool rebuilds after every reload: the page says burst firing MAINTAINS it, so a player whose pauses are short enough keeps more of the listed rate than this sim does — here the only pauses are the reloads the weapon forces. The spool itself IS modelled"
