@@ -18,7 +18,7 @@ accuracy: 133.33
 disposition: 1.05           # riven disposition
 polarities: [madurai, madurai]
 exilus_polarity: madurai
-riven_family: EFV-5Jupiter
+riven_family: EFV-5 Jupiter
 traits: [scaldra]
 introduced: "38.5"
 internal_name: /Lotus/Weapons/Lasria/LasGooAK/LasGooAKPlayerWeapon

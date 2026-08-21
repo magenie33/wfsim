@@ -255,6 +255,41 @@ struct PoolFile {
 /// The pool is per CLASS, but two rifles do not roll the same stats: DE does
 /// not hand a weapon an attribute for a stat the weapon does not have.
 ///
+/// # WHAT ACTUALLY GENERATES A POOL (established 2026-08-21)
+///
+/// The 25% rule below is an APPROXIMATION of DE's data, not the mechanism, and
+/// three findings pin down what the mechanism is:
+///
+/// 1. **A riven belongs to a FAMILY, and DE names it.** The weekly trade dump
+///    carries `compatibility`, documented as *"Name of item/family of items it
+///    can be equipped on"* — `Boltor` with no `Boltor Prime`, `Ballistica` with
+///    no `Rakta Ballistica`, `Lex` with no `Lex Prime`. The wiki says the same
+///    in words (*"assigned to a single weapon (and its variants) per Riven
+///    mod"*) and DE treats compatibility narrowing to one variant as a BUG they
+///    reverted. `data/rivens/de_families.yaml` is that list.
+///    DISPOSITION IS THE EXCEPTION AND PROVES IT: it is per VARIANT (the Boltor
+///    is 1.30, its Prime and the Telos are 1.20) while compatibility is per
+///    family. Two different keys on the same card.
+/// 2. **DE maintains the pool per family, by hand.** *"Fixed issue where
+///    weapons could end up with Rivens that aren't compatible (ex: Projectile
+///    Flight Speed on Vadarya Prime Rivens)"* — an incompatible stat is a bug
+///    DE fixes per weapon, which is only possible over explicit data. That is
+///    why the wiki's rule says *"usually"* and *"exceptions exist on a case by
+///    case basis"*: it is the community's best fit to a table, not the table.
+/// 3. **A FAMILY'S POOL IS THE UNION OVER ITS MEMBERS, not the intersection.**
+///    Both readings are consistent with the rule, and the surveyed families
+///    settle it: seven (family, stat) pairs have members that disagree under
+///    the 25% line, and real cards say the stat ROLLS in five of them — Boar
+///    Slash, Braton Impact, Braton Puncture, Karak Slash, Sybaris Puncture,
+///    each earned by ONE member being over the line. The two that go the other
+///    way are one family, the Sicarus, and it is already an exception carrying
+///    its own count (0 of 500 for both Puncture and Slash).
+///
+/// So: UNION over the family's members, UNION over each member's free forms,
+/// then the exceptions — which is exactly the order below. An exception is not
+/// a patch on a broken rule; it is the one place DE's actual table is recorded,
+/// and the rule is what fills in for a family nobody has a card from.
+///
 /// THREE SOURCES, IN THIS ORDER, and the derivation is the LAST of them
 /// (2026-08-08). What a weapon can roll is DE's own per-weapon table, it is
 /// published nowhere, and a survey of ~12 000 live riven listings says it is
@@ -414,6 +449,28 @@ pub fn excluded_for(weapon_id: &str) -> Vec<&'static str> {
         }
     }
     out
+}
+
+/// DE's OWN riven family names — `data/rivens/de_families.yaml`, written by
+/// `scripts/survey_riven_families.py` from the weekly trade dump's
+/// `compatibility` field.
+///
+/// It is ONE WEEK of trades, so it CONFIRMS a name and can never refute one: a
+/// family absent from it is a family nobody traded that week.
+pub fn de_families() -> &'static [String] {
+    use std::sync::OnceLock;
+    static F: OnceLock<Vec<String>> = OnceLock::new();
+    F.get_or_init(|| {
+        #[derive(Deserialize)]
+        struct File {
+            families: Vec<String>,
+        }
+        let (p, text) = crate::data::files_under("rivens/")
+            .find(|(p, _)| p.ends_with("de_families.yaml"))
+            .expect("data/rivens/de_families.yaml");
+        let f: File = serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}"));
+        f.families
+    })
 }
 
 /// One riven family's surveyed pool — `data/rivens/pools.yaml`.
@@ -1192,6 +1249,74 @@ mod tests {
 
 
 
+    /// A FAMILY IS CALLED WHAT DE CALLS IT.
+    ///
+    /// `riven_family` decides three things — which weapons share a pool, which
+    /// weapons an `exceptions.yaml` entry covers, and whether the family can be
+    /// surveyed at all, since the market is queried by that name. So a name
+    /// nobody else uses is not a typo: it silently makes the family a singleton
+    /// and silently makes the survey come back empty.
+    ///
+    /// It did, six times. The rule had been read as "strip the variant prefix",
+    /// which is right for a Prime, a Vandal, a Wraith, a Prisma, a Rakta or a
+    /// Telos — DE's list holds `Boltor` and no `Boltor Prime`, `Ballistica` and
+    /// no `Rakta Ballistica` — and WRONG for a weapon with no ordinary
+    /// counterpart, where the prefix is the name: `Kuva Ayanga`, `Gotva Prime`,
+    /// `Vadarya Prime`, `Coda Bassocyst`, `Dual Coda Torxica`, `EFV-5 Jupiter`.
+    /// One of those is why `pools.yaml` records "Gotva: NOT SURVEYED (the API
+    /// refused)" — the API did not refuse; it was asked about a weapon that
+    /// does not exist (2026-08-21).
+    ///
+    /// THE SNAPSHOT CONFIRMS AND NEVER REFUTES. `de_families.yaml` is one week
+    /// of trades, so a family absent from it is a family nobody traded, not a
+    /// family that does not exist. This asserts the names DE DOES know and
+    /// reports the rest.
+    #[test]
+    fn every_riven_family_is_spelled_the_way_de_spells_it() {
+        let de: std::collections::HashSet<&str> =
+            de_families().iter().map(String::as_str).collect();
+        assert!(de.len() > 300, "the snapshot loaded: {}", de.len());
+        let mut families: std::collections::BTreeMap<&str, Vec<&str>> = Default::default();
+        for w in crate::weapons_data::all() {
+            if let Some(f) = w.riven_family.as_deref() {
+                families.entry(f).or_default().push(w.id.as_str());
+            }
+        }
+        // A CASE-FOLDED MATCH IS STILL A MISMATCH, and it is the interesting
+        // one: the schema says "in all capital case" and the dump is title
+        // case, so a spelling that differs only in capitalisation is a sign the
+        // name came from somewhere other than DE.
+        let folded: std::collections::HashMap<String, &str> =
+            de.iter().map(|x| (x.to_lowercase(), *x)).collect();
+        let mut wrong = Vec::new();
+        let mut untraded = 0;
+        for (f, members) in &families {
+            if de.contains(f) {
+                continue;
+            }
+            match folded.get(&f.to_lowercase()) {
+                Some(right) => wrong.push(format!("{f:?} should be {right:?} ({members:?})")),
+                None => untraded += 1,
+            }
+        }
+        assert!(
+            wrong.is_empty(),
+            "{} family names disagree with DE's own `compatibility`:\n  {}",
+            wrong.len(),
+            wrong.join("\n  ")
+        );
+        // …AND THE COVERAGE IS ASSERTED, not merely printed. Every family in
+        // this roster was traded in the surveyed week, so an untraded one is
+        // new information — a weapon so obscure nobody trades its rivens, or a
+        // name that is wrong in a way case-folding cannot see. Either is worth
+        // being told about rather than discovering later.
+        assert_eq!(
+            untraded, 0,
+            "{untraded} of {} families are not in DE's snapshot at all",
+            families.len()
+        );
+    }
+
     /// A RIVEN FAMILY AGREES WITH ITSELF, because a riven belongs to the family
     /// and not to a member of it.
     ///
@@ -1259,6 +1384,75 @@ mod tests {
         // is the one over the line, and the ordinary one inherits it.
         assert!(!excluded_for("ogris").contains(&"impact"));
         assert!(!excluded_for("ogris").contains(&"puncture"));
+    }
+
+    /// THE FAMILY POOL IS THE UNION, and these are the cards that say so.
+    ///
+    /// A riven equips on every member of its family, so a family whose members
+    /// disagree under the 25% line has two readings and the rule cannot choose
+    /// between them: UNION (one member over the line earns it for all) or
+    /// INTERSECTION (every member must be over it). The question is not
+    /// answerable from the rule — only from cards.
+    ///
+    /// Seven (family, stat) pairs among the SURVEYED families disagree, and the
+    /// listings answer five of them UNION and two INTERSECTION:
+    ///
+    /// | family | stat | who is over the line | cards |
+    /// | --- | --- | --- | --- |
+    /// | Boar | Slash | the Boar, not its Prime | ROLLS |
+    /// | Braton | Impact | the Braton and the Vandal | ROLLS |
+    /// | Braton | Puncture | the Braton and its Prime | ROLLS |
+    /// | Karak | Slash | the Kuva Karak alone | ROLLS |
+    /// | Sybaris | Puncture | the Sybaris and its Prime | ROLLS |
+    /// | Sicarus | Puncture | the Prime alone | never |
+    /// | Sicarus | Slash | the Prime alone | never |
+    ///
+    /// Five to two, and the two are ONE FAMILY that is already an exception
+    /// carrying its own count. So the union is the rule and the Sicarus is the
+    /// exception — which is the shape this whole file is built on, arrived at
+    /// from the other end.
+    ///
+    /// EACH HALF IS ASSERTED ON ITS OWN CALL, and the first version was not.
+    /// Four of the five UNION families are also in `exceptions.yaml` — the same
+    /// survey answered the question and wrote those entries — so `excluded_for`
+    /// returns the exception's answer whatever the rule does, and the test
+    /// passed on a derivation sabotaged to take the INTERSECTION. The union
+    /// half asks `derived_for`, which is the rule alone; the Sicarus half asks
+    /// `excluded_for`, which is the rule plus the exception that overrules it.
+    #[test]
+    fn a_family_pool_is_the_union_and_the_sicarus_is_the_exception() {
+        // The five the cards earn through ONE member being over the line —
+        // against the RULE, so an intersection here cannot hide behind an
+        // exception written from the same survey.
+        for (id, stat) in [
+            ("boar", "slash"),
+            ("boar_prime", "slash"),
+            ("braton", "impact"),
+            ("braton_prime", "impact"),
+            ("mk1_braton", "impact"),
+            ("braton_vandal", "puncture"),
+            ("karak", "slash"),
+            ("karak_wraith", "slash"),
+            ("kuva_karak", "slash"),
+            ("dex_sybaris", "puncture"),
+        ] {
+            let e = derived_for(id);
+            assert!(
+                !e.contains(&stat),
+                "{id} rolls {stat} — a family member is over the line and real \
+                 cards carry it, so the RULE must be the union: {e:?}"
+            );
+        }
+        // …and the two the cards refuse, on BOTH members, through the
+        // exception rather than through the derivation.
+        for id in ["sicarus", "sicarus_prime"] {
+            let e = excluded_for(id);
+            assert!(
+                e.contains(&"puncture") && e.contains(&"slash"),
+                "{id}: 0 of 500 live listings carry either, which is what the \
+                 exception records — {e:?}"
+            );
+        }
     }
 
     /// AN INCARNON FORM DOES NOT WIDEN THE POOL, and this is what counting it

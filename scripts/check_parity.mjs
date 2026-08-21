@@ -61,10 +61,14 @@ const PROBE = `(async () => {
 // kind of failure that gets read as a real one.
 const applied = (id) => `(() => {
   const el = document.getElementById("weapon");
-  // …AND THE PANEL IT DREW, not just the picker's value: the value is set
-  // before the render, so a weapon can be "current" with the previous one's
-  // blocks still on screen.
-  return !!el && el.value === ${JSON.stringify(id)} && !document.body.classList.contains("busy");
+  const v = (x) => { const e = document.getElementById(x); return !!e && !e.hidden; };
+  // THE VALUE AND WHAT IS ON SCREEN. The value alone is not enough: it is set
+  // synchronously and the blocks below are drawn once /api/panel answers, so a
+  // weapon that follows one WITH evolutions reads the previous page's block.
+  return !!el && el.value === ${JSON.stringify(id)}
+    ? [v("exilus-block"), v("arcane-block"), v("evo-block"),
+       v("opt-exilus-sect"), v("opt-arcanes-sect"), v("opt-evos-sect")].join(",")
+    : null;
 })()`;
 
 const VISIBLE = `(() => {
@@ -86,14 +90,15 @@ let bad = 0;
 // than the answer. A timeout is reported through the assertion it breaks — the
 // check must not paper over a page that never settles.
 const settled = async (id) => {
-  for (let i = 0; i < 40; i++) {
-    if (await evaluate(applied(id))) {
-      // One more frame: `hidden` is written by the same render that sets the
-      // value, and reading in the same tick can catch it half-done.
-      await sleep(60);
-      return true;
-    }
-    await sleep(100);
+  // QUIESCENCE, not a guess and not the answer: the same flags twice in a row.
+  // Waiting for the page to stop changing cannot mask a real disagreement the
+  // way waiting for an expected value would.
+  let last = null;
+  for (let i = 0; i < 60; i++) {
+    const now = await evaluate(applied(id));
+    if (now !== null && now === last) return true;
+    last = now;
+    await sleep(250);
   }
   return false;
 };

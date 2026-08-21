@@ -21,7 +21,7 @@ accuracy: 100
 disposition: 0.85            # riven disposition
 polarities: [madurai, madurai, naramon]
 exilus_polarity: naramon
-riven_family: Gotva
+riven_family: Gotva Prime
 traits: [prime]
 introduced: "33.6.6"
 internal_name: /Lotus/Weapons/Grineer/LongGuns/GrnOrokinRifle/GrnOrokinRifleWeapon

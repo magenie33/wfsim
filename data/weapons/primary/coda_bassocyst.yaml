@@ -26,7 +26,7 @@ accuracy: 100.0
 disposition: 0.55            # riven disposition
 polarities: [madurai]
 exilus_polarity: madurai
-riven_family: Bassocyst
+riven_family: Coda Bassocyst
 traits: [infested, coda]
 introduced: "38.5"
 internal_name: /Lotus/Weapons/Infested/InfestedLich/LongGuns/1999InfShotgun/1999InfShotgunWeapon

@@ -27,7 +27,10 @@ accuracy: 16.7               # the page prints "Very High" for this number
 disposition: 1.25            # riven disposition (●●●●○)
 polarities: [madurai, madurai]
 exilus_polarity: naramon
-riven_family: Cernos         # shared with Cernos / Rakta / Mutalist Cernos
+# Cernos, Rakta Cernos and this. NOT the Mutalist or the Proboscis: the wiki is
+# explicit that those are entirely separate weapons whose rivens do not fit the
+# ordinary Cernos, and DE lists all three as their own compatibility names.
+riven_family: Cernos
 traits: [prime, never_vaulted]
 introduced: "19.0.7"         # Hotfix 19.0.7 (2016-11-22)
 internal_name: /Lotus/Weapons/Tenno/Bows/PrimeCernos/PrimeCernos

@@ -753,6 +753,11 @@ mods:
   point_blank: ShotgunDamageAmountMod.jpg
   point_strike: RifleCritChanceMod.jpg
   polar_magazine: ArchwingWeaponFreezeDamageModRifle.jpg
+  # HAND-WRITTEN, and `wiki:` because the CDN has nothing: the mod was released
+  # 2026-08-21 and WFCD's export has no entry for it yet, so gen_assets.py
+  # cannot see it. The name is the module's own `Image` field. Once the export
+  # catches up the generator will produce this line by itself.
+  primed_polar_magazine: wiki:PrimedPolarMagazineMod.png
   pressurized_magazine: FireRateWhileAimingMods.jpg
   primary_acuity: WeaponWeakpointCriticalChanceMod.jpg
   primed_ammo_chain: ArchwingRifleAmmoMaxMod.jpg

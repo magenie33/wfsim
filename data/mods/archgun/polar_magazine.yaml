@@ -13,5 +13,10 @@ effects:
     rank0: 0.2
     rankMax: 1.2
 
+# The Baro version arrived 2026-08-21. Declared from BOTH sides, the way the
+# wiki module states it: neither may be equipped beside the other.
+family: polar_magazine
+incompatible_with: [primed_polar_magazine]
+
 source:
   url: https://wiki.warframe.com/w/Polar_Magazine
