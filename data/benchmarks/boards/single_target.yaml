@@ -1147,6 +1147,12 @@ entries:
     arcanes: [secondary_encumber]
   - weapon: dual_toxocyst
     mode: cycle
+    score: 44.96139838804183
+    mods: [merciless_gunfight, galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+  - weapon: dual_toxocyst
+    mode: cycle
     score: 44.86250543323441
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, anemic_agility, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -3021,9 +3027,9 @@ entries:
     valence: toxin
   - weapon: tenet_glaxion
     mode: base
-    score: 3.8649920387442056
-    mods: [heavy_caliber, primed_shred, split_chamber, serration, rime_rounds, malignant_force, hellfire, thermite_rounds]
-    arcanes: [primary_overcharge]
+    score: 11.022533996065505
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    arcanes: [primary_deadhead]
     valence: magnetic
   - weapon: torid
     mode: cycle
