@@ -61,6 +61,11 @@ entries:
     mode: base
     score: 0.19669739095344096
     mods: [heavy_caliber, serration, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, wildfire, thermite_rounds]
+  - weapon: astilla_prime
+    mode: base
+    score: 3.587383038837475
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_barrage, magnetic_strafe, incendiary_coat, blaze]
+    arcanes: [primary_crux]
   - weapon: atomos
     mode: base
     score: 10.645501029204851
@@ -913,6 +918,16 @@ entries:
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: cedo_prime
+    mode: base
+    score: 5.944731543019869
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, accelerated_blast, critical_deceleration, magnetic_strafe, incendiary_coat]
+    arcanes: [primary_deadhead]
+  - weapon: cedo_prime
+    mode: base
+    score: 5.85899778872196
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, incendiary_coat]
+    arcanes: [primary_deadhead]
   - weapon: cestra
     mode: cycle
     score: 22.091481349354407
@@ -985,6 +1000,16 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, bladed_rounds, speed_trigger, vile_acceleration, vital_sense, thermite_rounds]
     arcanes: [primary_crux]
     valence: magnetic
+  - weapon: corinth_prime
+    mode: base
+    score: 6.887754069657817
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, incendiary_coat]
+    arcanes: [primary_crux]
+  - weapon: corinth_prime
+    mode: base
+    score: 5.047606490076342
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, semi_shotgun_cannonade, magnetic_strafe, incendiary_coat, blaze]
+    arcanes: [primary_crux]
   - weapon: cortege
     mode: base
     score: 14.666666666666666
