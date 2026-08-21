@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-engine: 5162a9e75a119eef05d5b4bd62dbe2006d9be2be
+engine: 51446d535d8fd94114fac68c15144aac0240f8bd
 entries:
   - weapon: akarius_prime
     mode: base
@@ -99,28 +99,28 @@ entries:
     arcanes: [primary_merciless]
   - weapon: kuva_grattler
     mode: base
+    score: 454.86516816409545
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, marked_target, hollowed_bullets, hypothermic_shell, primed_combustion_rounds, charged_bullets]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: toxin
+  - weapon: kuva_grattler
+    mode: base
+    score: 319.36683403872706
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, marked_target, hollowed_bullets, quick_reload, hypothermic_shell, primed_combustion_rounds, charged_bullets]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: toxin
+  - weapon: kuva_grattler
+    mode: base
     score: 265.1685068535702
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, primed_ammo_chain, hollowed_bullets, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_deadhead, secondary_enervate]
     valence: heat
-  - weapon: kuva_grattler
+  - weapon: kuva_nukor
     mode: base
-    score: 187.60889198751732
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, hollowed_bullets, magnetized_cycle, polar_magazine, primed_venomous_clip, primed_combustion_rounds]
-    arcanes: [primary_deadhead, secondary_enervate]
+    score: 62.144548810834934
+    mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
     valence: magnetic
-  - weapon: kuva_grattler
-    mode: base
-    score: 174
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, hollowed_bullets, magnetized_cycle, polar_magazine, primed_venomous_clip, primed_combustion_rounds]
-    arcanes: [primary_deadhead, secondary_enervate]
-    valence: heat
-  - weapon: kuva_grattler
-    mode: base
-    score: 167.66666666666666
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, critical_focus, hollowed_bullets, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
-    arcanes: [primary_crux, secondary_enervate]
-    valence: heat
   - weapon: kuva_nukor
     mode: base
     score: 37.23799523048803
@@ -131,12 +131,6 @@ entries:
     mode: base
     score: 36.90735854753613
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, frostbite, primed_heated_charge]
-    arcanes: [secondary_enervate]
-    valence: magnetic
-  - weapon: kuva_nukor
-    mode: base
-    score: 30.137644436816835
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
   - weapon: kuva_zarr
@@ -170,25 +164,25 @@ entries:
     arcanes: [secondary_fortifier]
   - weapon: latron_prime
     mode: cycle
-    score: 5946.321434032482
-    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
-    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_flensing_spikes]
-    arcanes: [primary_deadhead]
-  - weapon: latron_prime
-    mode: cycle
-    score: 5895.539774586136
+    score: 1487.2438317108572
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
     arcanes: [primary_deadhead]
+  - weapon: latron_prime
+    mode: cycle
+    score: 1377.2958385157167
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_flensing_spikes]
+    arcanes: [primary_deadhead]
   - weapon: latron_wraith
     mode: cycle
-    score: 2242.6929633029977
+    score: 469.85141996535464
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [latron_wraith_evo1_incarnon_form, latron_wraith_riddled_target, latron_wraith_extended_volley, latron_wraith_flensing_spikes]
     arcanes: [primary_deadhead]
   - weapon: latron_wraith
     mode: cycle
-    score: 1540.955333134561
+    score: 350.1176498852849
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [latron_wraith_evo1_incarnon_form, latron_wraith_riddled_target, latron_wraith_extended_volley, latron_wraith_deadhead]
     arcanes: [primary_deadhead]

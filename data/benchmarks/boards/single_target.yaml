@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 5162a9e75a119eef05d5b4bd62dbe2006d9be2be
+engine: 51446d535d8fd94114fac68c15144aac0240f8bd
 entries:
   - weapon: akarius_prime
     mode: base
@@ -2357,25 +2357,25 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
   - weapon: latron_prime
     mode: cycle
-    score: 58.59674617658
+    score: 58.3555748728198
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
     arcanes: [primary_deadhead]
   - weapon: latron_prime
     mode: cycle
-    score: 47.58297704116034
+    score: 47.53938074998541
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, semi_rifle_cannonade, high_voltage, infected_clip, primed_cryo_rounds]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
     arcanes: [primary_frostbite]
   - weapon: latron_prime
     mode: cycle
-    score: 47.14143942624088
+    score: 47.262355572556835
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
     arcanes: [primary_deadhead]
   - weapon: latron_prime
     mode: cycle
-    score: 34.246107089818345
+    score: 34.232201901206885
     mods: [galvanized_chamber, serration, double_tap, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
     arcanes: [primary_deadhead]
@@ -2387,7 +2387,7 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: latron_wraith
     mode: cycle
-    score: 40.333333333333336
+    score: 40.448946825174176
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
     evolutions: [latron_wraith_evo1_incarnon_form, latron_wraith_riddled_target, latron_wraith_extended_volley, latron_wraith_deadhead]
     arcanes: [primary_deadhead]
