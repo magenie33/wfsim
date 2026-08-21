@@ -19,24 +19,29 @@ effects:
     text: "Ability Damage on Electricity-affected enemies"
     kind: ability_damage
     value: 0.1
+    unit: pct
     tauforged: 0.15
   - id: primary_electricity_damage
     text: "Primary Electricity Damage"
     kind: element_damage_of_type
     applies_to: electricity
+    slot: primary
     value: 0.3
+    unit: pct
     tauforged: 0.45
   - id: melee_crit_damage
     text: "Melee Critical Damage"
     kind: out_of_scope
     applies_to: no melee in this arena
     value: 0.25
+    unit: pct
     tauforged: 0.375
   - id: orb_conversion
     text: "Health pickups give Energy and vice versa"
     kind: out_of_scope
     applies_to: pickups
     value: 0.2
+    unit: pct
     tauforged: 0.3
 
 source:

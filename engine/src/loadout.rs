@@ -1392,6 +1392,14 @@ pub struct WeaponBase {
     /// are the first thing to ask: Rifle Amp pays a rifle and nothing else
     /// (2026-08-21).
     pub class: &'static str,
+    /// …AND THE POOLS IT DRAWS, because three of the four amps ask THAT
+    /// rather than the class: Rifle Amp "also affects bows, sniper rifles
+    /// and launchers", which is the `rifle` pool and not any one class.
+    pub mod_pools: &'static [&'static str],
+    /// …AND THE EQUIPMENT SLOT, which is narrower than the class and wider than
+    /// a pool. It is the gate an ARCHON SHARD names: Crimson's "Primary Status
+    /// Chance" pays a bow and a shotgun alike.
+    pub slot: &'static str,
     /// Incarnon-form transformation economy. `Some` marks this form's
     /// magazine as CHARGE-BACKED (a fixed "Max Charges" resource fed by the
     /// weakpoint gauge, entirely outside the ammo system): magazine mods and
@@ -2344,6 +2352,14 @@ pub struct ResolvedPanel {
     /// Amp auras are the first: Rifle Amp pays a rifle and nothing else, so
     /// somebody has to know the class.
     pub class: &'static str,
+    /// …AND THE POOLS IT DRAWS, because three of the four amps ask THAT
+    /// rather than the class: Rifle Amp "also affects bows, sniper rifles
+    /// and launchers", which is the `rifle` pool and not any one class.
+    pub mod_pools: &'static [&'static str],
+    /// …AND THE EQUIPMENT SLOT, which is narrower than the class and wider than
+    /// a pool. It is the gate an ARCHON SHARD names: Crimson's "Primary Status
+    /// Chance" pays a bow and a shotgun alike.
+    pub slot: &'static str,
     /// PUNCH-THROUGH DEPTH, in metres of material — the weapon's own plus every
     /// mod, riven and evolution that grants one, and ZERO on an attack that
     /// cannot use it. See [`crate::space::BODY_MATERIAL_M`].
@@ -2907,12 +2923,25 @@ pub fn resolve_for(
     // and a fight bonus is in it — which is right: "set to its default ignoring
     // other bonuses" does not make an exception for where the bonus came from.
     let fb = &tenno.bonuses;
+    // …AND THE ARCHON SHARDS, which land in the SAME buckets a mod of that stat
+    // feeds — the two Crimson ones are the whole family that does, and
+    // `unmodelled_reason` names why each of the others does not. Added into
+    // `fb`'s own terms rather than beside them, so every lock, every panel line
+    // and the optimizer's scoring treat a socket as one more card.
+    let shards = tenno.shard_bonuses(base.slot);
     let (mut base_damage, mut multishot, mut cc, mut cd, mut sc, mut fr, mut status_damage) = (
-        fb.base_damage,
+        // THE AMP AURAS JOIN THIS BUCKET, which is where their own page puts
+        // them: "Rifle Amp adds to the base damage as Serration and Heavy
+        // Caliber do", with the formula spelled out —
+        // `Base x (1 + Serration + Heavy Caliber + Rifle Amp)`. So the amps are
+        // worth LESS the more Serration is already in the sum, which is the
+        // whole reason a reader wants to see them in it rather than as a final
+        // multiplier (2026-08-21).
+        fb.base_damage + tenno.aura_damage_bonus(base.class, base.mod_pools),
         fb.multishot,
-        fb.crit_chance,
+        fb.crit_chance + shards.crit_chance,
         fb.crit_damage,
-        fb.status_chance,
+        fb.status_chance + shards.status_chance,
         // NOT doubled by `fire_rate_mod_multiplier`: the bow x2 is printed on
         // the CARD of a fire-rate mod, and a fight bonus has no card.
         fb.fire_rate,
@@ -3761,6 +3790,8 @@ pub fn resolve_for(
 
     ResolvedPanel {
         class: base.class,
+        slot: base.slot,
+        mod_pools: base.mod_pools,
         punch_through_m,
         range_m: base.range_m,
         damage,

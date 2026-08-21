@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "529fb6f5+ · 2026-08-21 05:55Z";
+const BUILD_ID = "ed1ce413+ · 2026-08-21 12:21Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -1042,6 +1042,14 @@ function defaultScenario() {
     // THE FIGHT'S OWN STAT BONUSES — see `EXTRA_STAT_KEYS`. Empty is a fight
     // that hands this weapon nothing it did not earn, which is every ruler.
     extra_stats: { ...(d.extra_stats || {}) },
+    // WHAT THE WARFRAME BRINGS. Both are the frame's rather than the weapon's,
+    // so they travel with the fight exactly as `abilities` does — and empty is
+    // a squad running no aura and a frame with bare sockets, which is every
+    // ruler and every scenario stored before they existed.
+    auras: (d.auras || []).map((a) => ({ id: a.id, count: a.count || 1 })),
+    shards: (d.shards || []).map((x) => ({
+      shard: x.shard, effect: x.effect, tauforged: !!x.tauforged,
+    })),
   };
 }
 
@@ -1078,7 +1086,7 @@ let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: nul
   // comparison against the board is not a puzzle (owner, 2026-08-10). Only the
   // DEFAULT — a saved scenario carries its own duration and keeps it.
   infinite_ammo: true, metric: "kpm", duration: 180, buffs: {},
-  ability_strength: 1, abilities: [], extra_stats: {} };
+  ability_strength: 1, abilities: [], extra_stats: {}, auras: [], shards: [] };
 // The current build's configurable buffs (from the last /api/panel response).
 let buffList = [];
 // Damage-meter rows the player has expanded into their per-type split, kept
@@ -7727,7 +7735,7 @@ function renderMods() {
 // sim never ran, and hid a contribution the sim was paying. One player, both
 // answers (user, 2026-08-02). The scenario fields that describe the
 // PLAYER rather than the fight.
-const TENNO_KEYS = ["aiming", "invisible", "airborne", "overshields", "channeling", "solo_weapon", "frame", "wf_armor", "wf_energy", "wf_sprint", "extra_stats"];
+const TENNO_KEYS = ["aiming", "invisible", "airborne", "overshields", "channeling", "solo_weapon", "frame", "wf_armor", "wf_energy", "wf_sprint", "extra_stats", "auras", "shards"];
 
 // THE FIGHT'S OWN STAT BONUSES: what this weapon is handed by something that is
 // not its build — a squad buff, a Warframe ability, an arcane on another weapon.
@@ -7750,6 +7758,11 @@ const EXTRA_STAT_KEYS = [
   ["fire_rate", "Fire Rate"],
   ["reload_speed", "Reload Speed"],
   ["magazine", "Magazine Capacity"],
+  // AMMO EFFICIENCY is the odd one and belongs here anyway: it is not a damage
+  // bucket, it is a chance for a shot to cost NOTHING, and half a dozen sources
+  // outside a build grant it (owner, 2026-08-21). Worth zero under Infinite
+  // ammo, which the Limits block above already says out loud.
+  ["ammo_efficiency", "Ammo Efficiency"],
 ];
 
 /// THE WARFRAME ROSTER, and what picking one means: it fills armor, max energy
@@ -10496,6 +10509,12 @@ function renderScenarioFields(ids, opts = {}) {
       <label title="${escHtml(tr("your Warframe's sprint speed — several Incarnon perks pay only at 1.2 or higher, and the slowest frame is 0.9"))}">${escHtml(tr("WF Sprint"))} <input type="number" data-k="wf_sprint" min="0" max="3" step="0.05" value="${sim.wf_sprint ?? 0.9}"></label>`;
   }
 
+  // ---- 2b. WHAT THE WARFRAME BRINGS ------------------------------------
+  // Its own renderer because it is a LIST rather than a field: two of them, one
+  // capped at five, each row a control with its own remove. It sits in the
+  // wielder block because that is whose it is.
+  if (ids.squad) renderSquad(ids.squad, w, sim, opts);
+
   // ---- 3. LIMITS: what the simulation is allowed to assume -------------
   // Infinite ammo is NOT a technique (user, 2026-08-02) — nobody plays it. It
   // is a statement about what this run does not model, and the things that
@@ -10607,6 +10626,179 @@ function renderScenarioFields(ids, opts = {}) {
         if (opts.after) opts.after();
       });
     }));
+}
+
+// WHAT THE WARFRAME BRINGS: the squad's AURA and the frame's ARCHON SHARDS.
+//
+// Neither is the weapon's and neither is the build's, which is why they are
+// drawn inside the wielder block and travel with the FIGHT — the same place
+// and the same reason as the ability buffs. An aura can no more reach the
+// board than Roar can.
+//
+// THEY ARE OFFERED, NEVER TYPED. The Extra stats grid above already accepts any
+// number a player wants into any bucket; what it cannot do is say WHERE the
+// number came from. A named shard has a source that can be checked against the
+// wiki and updated when DE moves it; a typed +45% has nothing behind it
+// (owner, 2026-08-21).
+const AURAS = () => (META && META.auras) || [];
+const SHARDS = () => (META && META.shards) || [];
+// FIVE SOCKETS. The frame has five and no amount of anything adds a sixth.
+const SHARD_SLOTS = 5;
+// A SOCKET IS ONE CHOICE, not two. `shard/effect` in one dropdown, grouped by
+// colour, because "which colour" is never the question a player has — they know
+// the effect they want and the colour follows from it.
+const shardKey = (x) => `${x.shard}/${x.effect}`;
+
+// WHY AN AURA IS GREY, said on the row that OFFERS it rather than after it is
+// picked. The amp family is the whole reason: three of them are gated on a mod
+// POOL and Dead Eye on a CLASS, so "this is a rifle, why is Dead Eye dead" is a
+// question the list has to answer where it is asked.
+const paidHint = (a, paid) => (paid.has(a.id) ? null : tr("pays this weapon nothing"));
+
+// THE NUMBER IS PRINTED, NOT TRANSLATED. A card reads "+25% (+37.5%)" and the
+// bracket is the TAUFORGED value, which is how both the wiki and the game
+// present it — so a value DE moves costs zero translation, and the pair is
+// visible before the checkbox is ticked.
+const shardValue = (o) => {
+  const f = (v) => (o.unit === "pct" ? `${r3(v * 100)}%` : String(r3(v)));
+  return `+${f(o.value)} (+${f(o.tauforged)})`;
+};
+
+function shardItems() {
+  const out = [];
+  SHARDS().forEach((d) => d.options.forEach((o) => out.push({
+    value: `${d.id}/${o.id}`,
+    label: `${shardValue(o)} ${LN("shards", `${d.id}/${o.id}`, o.text)}`,
+    group: LN("shards", d.id, d.name),
+    // WHAT IT PAYS HERE, on the row, because twenty of the twenty-seven pay
+    // nothing in this arena and a socket that quietly does nothing is worse
+    // than one that says so.
+    hint: o.modelled ? null : `${tr("not modelled")} — ${tr(o.why_not || "")}`,
+  })));
+  return out;
+}
+
+const shardOption = (key) => {
+  const [sid, eid] = String(key || "").split("/");
+  const d = SHARDS().find((x) => x.id === sid);
+  return d && d.options.find((o) => o.id === eid);
+};
+
+function renderSquad(host, w, sim, opts) {
+  const box = $(host);
+  if (!box || !META) return;
+  const auras = sim.auras || [];
+  const shards = sim.shards || [];
+  // WHICH AURAS PAY THIS WEAPON is the ENGINE's answer, served per weapon — the
+  // amp family does not share one gate, so nothing here re-derives it.
+  const paid = new Set((w && w.auras) || []);
+  const taken = new Set(auras.map((a) => a.id));
+
+  const auraRow = (a, i) => {
+    const d = AURAS().find((x) => x.id === a.id);
+    if (!d) return "";
+    const pays = paid.has(d.id);
+    return `<div class="sq-row${pays ? "" : " sq-dead"}">
+      ${ddButton(`sq-aura-${i}`, {
+        value: d.id, data: { sqaura: i }, search: true,
+        items: AURAS().filter((x) => x.id === d.id || !taken.has(x.id))
+          .map((x) => ({ value: x.id, label: LN("auras", x.id, x.name),
+            hint: paidHint(x, paid) })),
+      })}
+      ${d.squad_stacking
+        ? `<label class="sq-n" title="${escHtml(tr("how many of the squad are running it — Corrosive Projection reaches 72% four-handed"))}">&times;<input type="number" min="1" max="4" step="1" value="${a.count || 1}" data-sqcount="${i}"></label>`
+        : `<span class="sq-n sq-mute" title="${escHtml(tr("this aura does not stack with itself across the squad"))}">&times;1</span>`}
+      <button type="button" class="ghost-btn small" data-sqdrop="${i}" title="${escHtml(tr("remove"))}">&#10005;</button>
+      ${pays ? "" : `<span class="sq-why">${escHtml(tr("pays this weapon nothing"))}</span>`}
+    </div>`;
+  };
+
+  const shardRow = (x, i) => {
+    const o = shardOption(shardKey(x));
+    return `<div class="sq-row${o && !o.modelled ? " sq-dead" : ""}">
+      ${ddButton(`sq-shard-${i}`, {
+        value: shardKey(x), data: { sqshard: i }, search: true, items: shardItems(),
+      })}
+      <label class="check sq-tau" title="${escHtml(tr("a TAUFORGED shard of the same colour grants 50% higher stat bonuses"))}"><input type="checkbox" data-sqtau="${i}"${x.tauforged ? " checked" : ""}> ${escHtml(tr("Tauforged"))}</label>
+      <button type="button" class="ghost-btn small" data-sqshdrop="${i}" title="${escHtml(tr("remove"))}">&#10005;</button>
+      ${o && !o.modelled ? `<span class="sq-why">${escHtml(tr(o.why_not || ""))}</span>` : ""}
+    </div>`;
+  };
+
+  const free = AURAS().filter((x) => !taken.has(x.id));
+  box.innerHTML = `
+    <div class="sq-h">${escHtml(tr("Squad aura"))} <span class="sim-hint">${escHtml(tr("the squad's mod — it is the fight's, never the build's, so it cannot reach the board"))}</span></div>
+    ${auras.map(auraRow).join("") || `<div class="sq-none">${escHtml(tr("none — nobody in the squad is running an aura"))}</div>`}
+    ${free.length ? `<div class="sq-add">${ddButton("sq-aura-add", {
+      value: "", placeholder: `+ ${tr("add an aura")}`, search: true, data: { sqadd: "1" },
+      items: free.map((x) => ({ value: x.id, label: LN("auras", x.id, x.name),
+        hint: paidHint(x, paid) })),
+    })}</div>` : ""}
+    <div class="sq-h">${escHtml(tr("Archon shards"))} <span class="sim-hint">${escHtml(tr("five sockets on your Warframe — a Tauforged shard of the same colour is worth half again"))}</span></div>
+    ${shards.map(shardRow).join("") || `<div class="sq-none">${escHtml(tr("none — the sockets are empty"))}</div>`}
+    ${shards.length < SHARD_SLOTS ? `<div class="sq-add">${ddButton("sq-shard-add", {
+      value: "", placeholder: `+ ${tr("socket a shard")} (${shards.length}/${SHARD_SLOTS})`,
+      search: true, data: { sqshadd: "1" }, items: shardItems(),
+    })}</div>` : `<div class="sq-none">${escHtml(tr("all five sockets are filled"))}</div>`}`;
+
+  if (opts && opts.readonly) {
+    box.querySelectorAll("button,input").forEach((el) => {
+      el.disabled = true;
+      el.title = tr("edit this in the Simulator");
+    });
+    return;
+  }
+  // A CHANGE HERE IS A CHANGE TO THE FIGHT, and to what the BUILD is worth — an
+  // aura lands in the base-damage bucket beside Serration and a shard in the
+  // crit one — so the panel is asked again exactly as a Tenno field does.
+  const touched = () => {
+    renderSquad(host, w, sim, opts);
+    refreshPanel();
+    markScenarioDirty();
+    if (opts && opts.after) opts.after();
+  };
+  const num = (el, k) => {
+    const i = Number(el.dataset[k]);
+    return Number.isFinite(i) ? i : -1;
+  };
+  box.querySelectorAll("[data-sqaura]").forEach((el) => el.addEventListener("change", () => {
+    const i = num(el, "sqaura");
+    if (i >= 0 && sim.auras[i]) { sim.auras[i] = { ...sim.auras[i], id: el.value }; touched(); }
+  }));
+  box.querySelectorAll("[data-sqcount]").forEach((el) => el.addEventListener("change", () => {
+    const i = num(el, "sqcount");
+    // 1-4: a squad is four people, and a count of zero is the remove button.
+    const n = Math.min(4, Math.max(1, Math.round(Number(el.value) || 1)));
+    if (i >= 0 && sim.auras[i]) { sim.auras[i] = { ...sim.auras[i], count: n }; touched(); }
+  }));
+  box.querySelectorAll("[data-sqdrop]").forEach((el) => el.addEventListener("click", () => {
+    sim.auras = auras.filter((_, k) => k !== num(el, "sqdrop"));
+    touched();
+  }));
+  box.querySelectorAll("[data-sqadd]").forEach((el) => el.addEventListener("change", () => {
+    if (!el.value) return;
+    sim.auras = auras.concat([{ id: el.value, count: 1 }]);
+    touched();
+  }));
+  box.querySelectorAll("[data-sqshard]").forEach((el) => el.addEventListener("change", () => {
+    const i = num(el, "sqshard");
+    const [shard, effect] = String(el.value).split("/");
+    if (i >= 0 && sim.shards[i]) { sim.shards[i] = { ...sim.shards[i], shard, effect }; touched(); }
+  }));
+  box.querySelectorAll("[data-sqtau]").forEach((el) => el.addEventListener("change", () => {
+    const i = num(el, "sqtau");
+    if (i >= 0 && sim.shards[i]) { sim.shards[i] = { ...sim.shards[i], tauforged: el.checked }; touched(); }
+  }));
+  box.querySelectorAll("[data-sqshdrop]").forEach((el) => el.addEventListener("click", () => {
+    sim.shards = shards.filter((_, k) => k !== num(el, "sqshdrop"));
+    touched();
+  }));
+  box.querySelectorAll("[data-sqshadd]").forEach((el) => el.addEventListener("change", () => {
+    if (!el.value || shards.length >= SHARD_SLOTS) return;
+    const [shard, effect] = String(el.value).split("/");
+    sim.shards = shards.concat([{ shard, effect, tauforged: false }]);
+    touched();
+  }));
 }
 
 // The unit's portrait, or NOTHING — never an empty box holding its place.
@@ -11102,7 +11294,7 @@ function renderSim() {
   const enemies = allEnemies();
   const en = enemies.find((e) => e.id === sim.enemy) || enemies[0];
   renderScenarioFields({ target: "sim-target", technique: "sim-technique",
-    limits: "sim-limits", extra: "sim-extra", run: "sim-run" });
+    limits: "sim-limits", extra: "sim-extra", run: "sim-run", squad: "sim-squad" });
   renderSimRuns();
   renderWfBuffs("sim-wfbuffs", false);
   // …AND THE OPTIMIZER'S COPY, from the same call. It shows the SIMULATOR's
@@ -12992,7 +13184,7 @@ function renderOptEnemy() {
   renderWfBuffs("opt-wfbuffs", true);
   renderScenarioFields(
     { target: "opt-target", technique: "opt-technique", limits: "opt-limits",
-      extra: "opt-extra" },
+      extra: "opt-extra", squad: "opt-squad" },
     { readonly: true },
   );
   // Which fight, and where it is edited. Not a preset bar: that bar can

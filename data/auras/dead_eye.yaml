@@ -17,8 +17,10 @@ squad_stacking: true
 effects:
   - kind: weapon_damage_bonus
     rankMax: 0.525
-    # THE WEAPON CLASS IT PAYS, and it pays nothing to any other.
-    requires: sniper
+    # THE CLASS, and this one really is narrower than a pool: "only affects
+    # actual sniper rifles ... even though bows and launchers draw from the
+    # sniper ammo pool, they are not affected by this mod".
+    requires_class: sniper
 
 source:
   url: https://wiki.warframe.com/w/Dead_Eye

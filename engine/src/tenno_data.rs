@@ -162,9 +162,42 @@ impl Tenno {
         out
     }
 
+    /// THE SHARD BONUSES THAT LAND IN A MOD BUCKET, for a weapon in this SLOT.
+    ///
+    /// Two of the twenty-seven do, exactly: Crimson's *"+25% Primary Status
+    /// Chance"* and *"+25% Secondary Critical Chance"* are the same quantity a
+    /// mod of that stat feeds, so they go in the same bucket and every lock,
+    /// every panel line and the optimizer's scoring treat them as one more
+    /// card. The rest either pay a different layer or are narrower than any
+    /// bucket here, and [`ShardEffect::unmodelled_reason`] is what says which.
+    ///
+    /// [`ShardEffect::unmodelled_reason`]: crate::shards_data::ShardEffect::unmodelled_reason
+    pub fn shard_bonuses(&self, slot: &str) -> StatBonuses {
+        use crate::shards_data::ShardEffect;
+        let mut out = StatBonuses::default();
+        for pick in &self.shards {
+            // THE SLOT GATE IS THE OPTION's, not the effect's: "Primary
+            // Electricity Damage" names an element AND a slot, so the two are
+            // separate fields and this reads the one it needs.
+            let Some(d) = crate::shards_data::all().iter().find(|x| x.id == pick.shard) else {
+                continue;
+            };
+            let Some(o) = d.options.iter().find(|o| o.id == pick.effect) else { continue };
+            if o.slot.as_deref().is_some_and(|s| s != slot) {
+                continue;
+            }
+            match o.at(pick.tauforged) {
+                ShardEffect::StatusChance(v, _) => out.status_chance += v,
+                ShardEffect::CritChance(v, _) => out.crit_chance += v,
+                _ => {}
+            }
+        }
+        out
+    }
+
     /// The base-damage bonus the AMP family grants a weapon of `class`, which
     /// is the one aura effect that lands in a mod bucket.
-    pub fn aura_damage_bonus(&self, class: &str) -> f64 {
+    pub fn aura_damage_bonus(&self, class: &str, pools: &[&str]) -> f64 {
         use crate::auras_data::AuraEffect;
         let strength = 1.0
             + self
@@ -179,11 +212,11 @@ impl Tenno {
         self.auras
             .iter()
             .filter_map(|p| crate::auras_data::by_id(&p.id))
-            .filter_map(|d| match (&d.effect, d.requires.as_deref()) {
-                // NO CLASS NAMED IS NO PAYMENT. An amp with a missing
-                // `requires` would pay every weapon, which the aura test
-                // refuses to let happen.
-                (AuraEffect::WeaponDamage(v), Some(c)) if c == class => Some(*v),
+            .filter_map(|d| match d.effect {
+                // `pays` IS THE GATE, and it asks two different questions: a
+                // POOL for the three amps that follow mod compatibility, a
+                // CLASS for Dead Eye, which is narrower than any pool.
+                AuraEffect::WeaponDamage(v) if d.pays(class, pools) => Some(v),
                 _ => None,
             })
             .sum::<f64>()
@@ -502,5 +535,133 @@ mod tests {
         assert!(!t.state.airborne);
         assert_eq!(t.state.energy_pct, 1.0);
         assert_eq!(t.energy_now(), 150.0, "a full pool, and the pool is the floor");
+    }
+
+    /// THE AMP FAMILY DOES NOT SHARE ONE GATE, and the four weapons below are
+    /// the four answers.
+    ///
+    /// Rifle Amp asks a MOD POOL — *"also affects bows, sniper rifles and
+    /// launchers"* — so a bow is paid and a shotgun is not, and no CLASS draws
+    /// that line. Dead Eye asks a CLASS and is narrower than any pool:
+    /// *"only affects actual sniper rifles … even though bows and launchers
+    /// draw from the sniper ammo pool, they are not affected"*.
+    ///
+    /// It is asserted through `WeaponBase`'s own `class`/`mod_pools` rather
+    /// than through typed strings, because the fault this catches is a weapon
+    /// whose pools never reached the panel — which reads exactly like an aura
+    /// that pays nothing.
+    #[test]
+    fn an_amp_pays_the_weapons_its_own_page_names_and_no_others() {
+        use crate::auras_data::AuraPick;
+        let mut t = crate::tenno_data::default_tenno().clone();
+        let bonus = |t: &crate::tenno_data::Tenno, id: &str| {
+            let b = crate::loadout::WeaponBase::from_data(id, false, &[]);
+            t.aura_damage_bonus(b.class, b.mod_pools)
+        };
+        // A NEUTRAL PLAYER BRINGS NOTHING. The negative control first, because
+        // every assertion below is a difference from it.
+        for w in ["braton_prime", "boar_prime", "cernos_prime", "rubico_prime", "lex_prime"] {
+            assert_eq!(bonus(&t, w), 0.0, "{w}: no aura, no bonus");
+        }
+
+        t.auras = vec![AuraPick { id: "rifle_amp".into(), count: 1 }];
+        assert_eq!(bonus(&t, "braton_prime"), 0.27, "a rifle is the obvious one");
+        assert_eq!(bonus(&t, "cernos_prime"), 0.27, "a BOW draws the rifle pool and is paid");
+        assert_eq!(bonus(&t, "rubico_prime"), 0.27, "so does a sniper");
+        assert_eq!(bonus(&t, "boar_prime"), 0.0, "a shotgun is NOT paid by Rifle Amp");
+        assert_eq!(bonus(&t, "lex_prime"), 0.0, "nor a pistol");
+
+        t.auras = vec![AuraPick { id: "dead_eye".into(), count: 1 }];
+        assert_eq!(bonus(&t, "rubico_prime"), 0.525, "Dead Eye pays an actual sniper");
+        assert_eq!(bonus(&t, "cernos_prime"), 0.0,
+            "…and NOT a bow, which draws sniper ammo and is named as excluded");
+        assert_eq!(bonus(&t, "braton_prime"), 0.0, "nor an assault rifle");
+
+        t.auras = vec![AuraPick { id: "shotgun_amp".into(), count: 1 }];
+        assert_eq!(bonus(&t, "boar_prime"), 0.18, "the shotgun amp is the SMALLER number");
+        assert_eq!(bonus(&t, "braton_prime"), 0.0);
+
+        t.auras = vec![AuraPick { id: "pistol_amp".into(), count: 1 }];
+        assert_eq!(bonus(&t, "lex_prime"), 0.27);
+        assert_eq!(bonus(&t, "braton_prime"), 0.0);
+
+        // COACTION DRIFT MULTIPLIES THE OTHERS AND DOES NOTHING ITSELF — so it
+        // is worth zero alone and +15% of whatever it is carried with.
+        t.auras = vec![AuraPick { id: "coaction_drift".into(), count: 1 }];
+        assert_eq!(bonus(&t, "braton_prime"), 0.0, "it grants no damage of its own");
+        t.auras.push(AuraPick { id: "rifle_amp".into(), count: 1 });
+        assert!((bonus(&t, "braton_prime") - 0.27 * 1.15).abs() < 1e-9,
+            "…and lifts the amp it is carried with");
+    }
+
+    /// AN ARCHON SHARD LANDS IN THE BUCKET A MOD OF THAT STAT FEEDS, and only
+    /// for the SLOT its card names.
+    ///
+    /// Two of the twenty-seven do — Crimson's *"+25% Primary Status Chance"*
+    /// and *"+25% Secondary Critical Chance"* — and the slot gate is the thing
+    /// worth asserting: the two live on the same shard, so a build that read
+    /// the colour instead of the option would pay both to everything.
+    ///
+    /// The other twenty-five are covered from the other side: every one of them
+    /// must be able to SAY why it pays nothing.
+    #[test]
+    fn a_shard_pays_its_own_slot_and_the_rest_say_why_they_do_not() {
+        use crate::shards_data::ShardPick;
+        let mut t = crate::tenno_data::default_tenno().clone();
+        assert_eq!(t.shard_bonuses("primary"), crate::tenno_data::StatBonuses::default());
+
+        t.shards = vec![ShardPick {
+            shard: "crimson_archon_shard".into(),
+            effect: "primary_status_chance".into(),
+            tauforged: false,
+        }];
+        assert_eq!(t.shard_bonuses("primary").status_chance, 0.25);
+        assert_eq!(t.shard_bonuses("secondary").status_chance, 0.0,
+            "a PRIMARY shard pays nothing to a secondary");
+        // TAUFORGED IS HALF AGAIN, and it is the same socket.
+        t.shards[0].tauforged = true;
+        assert_eq!(t.shard_bonuses("primary").status_chance, 0.375);
+
+        t.shards = vec![ShardPick {
+            shard: "crimson_archon_shard".into(),
+            effect: "secondary_crit_chance".into(),
+            tauforged: false,
+        }];
+        assert_eq!(t.shard_bonuses("secondary").crit_chance, 0.25);
+        assert_eq!(t.shard_bonuses("primary").crit_chance, 0.0);
+
+        // FIVE SOCKETS ARE ADDITIVE with themselves — nothing here caps a
+        // repeat, which is what the game does.
+        t.shards = (0..5)
+            .map(|_| ShardPick {
+                shard: "crimson_archon_shard".into(),
+                effect: "secondary_crit_chance".into(),
+                tauforged: false,
+            })
+            .collect();
+        assert!((t.shard_bonuses("secondary").crit_chance - 1.25).abs() < 1e-9);
+
+        // …AND EVERY OTHER EFFECT SAYS WHY IT PAYS NOTHING. Derived from the
+        // roster rather than from a list of ids: an effect added tomorrow that
+        // is neither applied nor explained fails here, which a hand list could
+        // never report (2026-08-18).
+        for d in crate::shards_data::all() {
+            for o in &d.options {
+                let paid = !matches!(
+                    o.at(false),
+                    crate::shards_data::ShardEffect::StatusChance(..)
+                        | crate::shards_data::ShardEffect::CritChance(..)
+                        | crate::shards_data::ShardEffect::Armor(_)
+                        | crate::shards_data::ShardEffect::EnergyMax(_)
+                        | crate::shards_data::ShardEffect::StatusStackCap(..)
+                );
+                assert_eq!(
+                    paid,
+                    o.at(false).unmodelled_reason().is_some(),
+                    "{}/{}: an effect is APPLIED or it SAYS WHY NOT, never neither and never both",
+                    d.id, o.id
+                );
+            }
+        }
     }
 }

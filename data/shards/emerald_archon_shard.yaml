@@ -20,23 +20,27 @@ effects:
     kind: status_damage_of_type
     applies_to: toxin
     value: 0.3
+    unit: pct
     tauforged: 0.45
   - id: toxin_health_steal
     text: "Health recovered per Toxin Status tick"
     kind: out_of_scope
     applies_to: nobody shoots back
     value: 2
+    unit: flat
     tauforged: 3
   - id: corrosion_ability_damage
     text: "Ability Damage on Corrosion-affected enemies"
     kind: ability_damage
     value: 0.1
+    unit: pct
     tauforged: 0.15
   - id: corrosion_stack_cap
     text: "Increase max stacks of Corrosion Status"
     kind: status_stack_cap
     applies_to: corrosion
     value: 2
+    unit: flat
     tauforged: 3
 
 source:

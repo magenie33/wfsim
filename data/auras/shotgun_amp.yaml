@@ -17,8 +17,8 @@ squad_stacking: true
 effects:
   - kind: weapon_damage_bonus
     rankMax: 0.18
-    # THE WEAPON CLASS IT PAYS, and it pays nothing to any other.
-    requires: shotgun
+    # The shotgun pool.
+    requires_pool: shotgun
 
 source:
   url: https://wiki.warframe.com/w/Shotgun_Amp

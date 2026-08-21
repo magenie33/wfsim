@@ -252,7 +252,6 @@ ui:
   "Alt fire": 次要开火
   "Alternate Fire": 副射击
   "Amalgam Argonak Metal Auger, the Argonak-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Amalgam Argonak Metal Auger」，Argonak 的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
-  "Ammo Efficiency": 弹药效率
   "Ammo Pickup Conversion": 弹药拾取转换
   "Ammo Reserve": 备弹
   "Ammo pickups are modelled, because a real player is being resupplied over three minutes. A weapon that cannot be resupplied runs on its real reserve.": 弹药拾取是计入的，因为三分钟里真实玩家一直在补给。而无法补给的武器，用的就是它真实的备弹。
@@ -1320,6 +1319,38 @@ ui:
   "the blast needs no line of sight and goes through walls — this arena has no geometry, so nothing is ever behind cover and the perk pays nothing extra": "爆炸不需要视线、能穿墙 — 本战场没有地形，没有任何东西躲在掩体后，所以这个特性在这里不额外产生价值"
   "this weapon is SILENT and this arena has nobody to alert — stealth is worth nothing here and a great deal in a real mission": "这把武器是**静音**的，而本战场没有可惊动的人 — 潜行在这里毫无价值，在真实任务里价值极大"
   "a bounce here reflects off ENEMIES only — in game a wall or the floor is a surface too, so with cover this number is a FLOOR": "这里的弹跳只从**敌人**身上反射 — 游戏里墙面和地面也是可反射的表面，所以在有掩体的战斗里这个数字是**下限**"
+
+  # WHAT THE WARFRAME BRINGS: the squad aura and archon shard panel. The
+  # aura and shard NAMES are not here — those are ids and live in names.yaml.
+  "Ammo Efficiency": "弹药效率"
+  "Squad aura": "小队光环"
+  "the squad's mod — it is the fight's, never the build's, so it cannot reach the board": "小队的光环 mod —— 它属于**战斗**，不属于配装，所以它进不了排行榜"
+  "none — nobody in the squad is running an aura": "无 —— 小队里没有人带光环"
+  "add an aura": "添加光环"
+  "how many of the squad are running it — Corrosive Projection reaches 72% four-handed": "小队里有几个人带着它 —— 腐蚀投射四人满编时可达 72%"
+  "this aura does not stack with itself across the squad": "这个光环在小队内不与自身叠加"
+  "pays this weapon nothing": "对这把武器没有任何加成"
+  "Archon shards": "执刑官源力石"
+  "five sockets on your Warframe — a Tauforged shard of the same colour is worth half again": "战甲上的五个插槽 —— 同色的 Tau 融造版数值是普通版的 1.5 倍"
+  "none — the sockets are empty": "无 —— 插槽是空的"
+  "socket a shard": "装入一颗源力石"
+  "all five sockets are filled": "五个插槽都满了"
+  "Tauforged": "Tau 融造"
+  "a TAUFORGED shard of the same colour grants 50% higher stat bonuses": "同色的 **Tau 融造**版源力石，属性加成高 50%"
+  "not modelled": "未建模"
+  "nobody shoots back": "本战场没有人向你开火"
+  "no melee in this arena": "本战场没有近战"
+  "pickups": "拾取物"
+  "energy economy": "能量循环"
+  "movement": "移动"
+  "the Warframe layer": "战甲层"
+  "Ability Strength — the Warframe layer": "技能强度 —— 战甲层"
+  "Ability Duration — the Warframe layer": "技能持续时间 —— 战甲层"
+  "Ability Damage — the Warframe layer": "技能伤害 —— 战甲层"
+  "not a weapon-damage quantity": "不是武器伤害相关的量"
+  "status damage for ONE element — this engine's status-damage bucket is global": "只加**单一元素**的异常伤害 —— 本引擎的异常伤害加成桶是全局的"
+  "damage for ONE element — this engine has no per-element damage bucket": "只加**单一元素**的伤害 —— 本引擎没有按元素分开的伤害加成桶"
+  "earned per kill — not built as a stacking buff yet": "靠击杀累积 —— 还没有做成可叠加的增益"
 
 effect_phrases:
   - ['Ammo Pickup Conversion', '弹药拾取转换']

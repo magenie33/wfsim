@@ -67,6 +67,77 @@ The **page infobox** (the `<div class="row"><div class="label left">…</div>
 <div class="value right">…</div></div>` rows) is the human-rendered view of the
 same data; parse label/value pairs if the module is unavailable.
 
+## `Weapon Comparison/CSV` — every gun in one fetch (owner, 2026-08-21)
+
+`https://wiki.warframe.com/w/Weapon_Comparison/CSV?action=raw` — 740 KB, **877
+gun-attack rows over 508 weapons**, one comma-separated line per ATTACK, with
+`InternalName` on 876 of them. It is `Module:Weapons/data` rendered flat, so it
+needs no Lua parsing, no bench tool and no page-per-weapon fetching:
+`scripts/wiki_weapon_csv.py` is the reader and it runs for anybody who has
+cloned the repo, where `scripts/audit_weapon_stats.py` needs the gitignored
+`private/scripts/wiki_weapons.py`.
+
+    python scripts/wiki_weapon_csv.py coverage   # what the game has that we do not
+    python scripts/wiki_weapon_csv.py check      # cross-check what we do have
+    python scripts/wiki_weapon_csv.py --refresh …
+
+The columns are the ones a weapon entry needs: every damage type, crit chance
+and multiplier, status chance, forced procs, multishot, fire rate, burst count
+and delay, charge time, disposition, mastery, magazine, ammo pickup/max/**cost**,
+reload, shot type, shot speed, punch through, accuracy, slot, class, ammo type,
+range, falloff start/end/reduction, spread, and `IsSilent`.
+
+**FOUR THINGS ABOUT IT THAT DECIDE WHAT IT CAN CLAIM.** Every one was found by
+running the tool, and every one silently corrupts a coverage count if missed:
+
+1. **It is not live.** The page carries a "Manual Update" section: the CSV is a
+   dump somebody pastes, not a render. It LAGS — thirteen of this roster's
+   primaries and secondaries are newer than it (the Afentis Prime, the Coda
+   Bubonico, the Enkaus, the Haalvu, the Perigale Prime, the Tenet Quanta).
+   **`Module:Weapons/data` stays the authority**; this is the convenient view.
+2. **It holds no Arch-Guns and no melee.** The gun table is Primary / Secondary
+   / Robotic / Amp / Railjack only — Arch-Guns are a separate tab
+   (`Weapon Comparison/Archgun`). So "nothing missing" is a claim about those
+   slots and no others, and the tool prints which they are rather than letting
+   the reader assume.
+3. **The header repeats INSIDE the block, five times.** Reading from the last
+   occurrence gives 425 rows of 877 — a coverage report that is wrong and looks
+   fine.
+4. **Ten rows do not parse, and they must be reported.** `ForcedProcs` can hold
+   rendered HTML (a damage-type tooltip) containing commas AND double quotes,
+   so no quoting convention recovers them; the surplus fields are folded back
+   into that one column and the result is VALIDATED against the known slot names
+   rather than trusted. A row that still does not line up is printed and dropped,
+   never dropped quietly — a parser that skips silently reports better coverage
+   than it has.
+
+**MULTIPLE ROWS PER WEAPON IS NORMAL, NOT AMBIGUITY.** The module audit's rule —
+an internal name shared by two rows is no key — is right THERE, where a row is a
+weapon; here a row is an ATTACK and a Kuva weapon has four. Importing that rule
+threw away 211 of the 355 joins. What ambiguity means here is decided per FIELD:
+a weapon-level value is used when every attack row agrees and is counted as
+unchecked when they do not.
+
+### What it said the first time it ran (2026-08-21)
+
+**Coverage: nothing missing.** 355 of the 508 weapons are in the roster and the
+other 153 are out of scope by a decision with a document behind it — melee and
+modular (`docs/KITGUNS.md`), Amps, Railjack armaments, and Exalted weapons,
+which are the Warframe layer `docs/UNMODELLED.md` holds open.
+
+**Cross-check: 1,652 values compared, four disagree.** They are recorded here
+rather than written into the data, which is this file's own rule — a
+disagreement is a prompt to read the weapon's PAGE, never a licence to bulk-write
+a table's number over ours:
+
+| entry | field | ours | CSV | read |
+| --- | --- | --- | --- | --- |
+| `ballistica_prime` | magazine | 8 | 32 | **ours is right, and the reserve is not.** The page: *"Consumes 4 ammo per shot … resulting in an 8-shot magazine"*. DE books a 32-ammo magazine at cost 4; we book 8 shots at cost 1, which agrees on shots per magazine and NOT on the reserve — `ammo_max: 210` is 52 shots for DE and 210 for us. Worth nothing under Infinite ammo and wrong without it. |
+| `efv_8_mars` | reload | 1.7 s | 1.2 s | unread |
+| `grimoire` | magazine | 1 | 0 | a tome has no magazine; the CSV's 0 is probably its way of saying so |
+| `scyotid` | ammo_max | 320 | 1 | the CSV's 1 looks like a dump artefact on a 1999 weapon |
+
+
 ## Weapon entry schema (observed)
 
 Each weapon maps name → a table like (Dual Toxocyst, verbatim keys):

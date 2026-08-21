@@ -20,30 +20,35 @@ effects:
     kind: out_of_scope
     applies_to: energy economy
     value: 0.3
+    unit: pct
     tauforged: 0.45
   - id: health_orbs
     text: "Effectiveness on Health Orbs"
     kind: out_of_scope
     applies_to: pickups
     value: 1
+    unit: pct
     tauforged: 1.5
   - id: energy_orbs
     text: "Effectiveness on Energy Orbs"
     kind: out_of_scope
     applies_to: pickups
     value: 0.5
+    unit: pct
     tauforged: 0.75
   - id: casting_speed
     text: "Casting Speed"
     kind: out_of_scope
     applies_to: the Warframe layer
     value: 0.25
+    unit: pct
     tauforged: 0.375
   - id: parkour_velocity
     text: "Parkour Velocity"
     kind: out_of_scope
     applies_to: movement
     value: 0.15
+    unit: pct
     tauforged: 0.225
 
 source:

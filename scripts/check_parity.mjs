@@ -52,6 +52,21 @@ const PROBE = `(async () => {
   }
   return out; })()`;
 
+// THE PAGE SAYS WHICH WEAPON IT HAS APPLIED, so the check asks instead of
+// betting on a duration. A fixed sleep after a navigation lost the same bet
+// twice: four weapons of 355 answered with the PREVIOUS page's blocks still up
+// and reported a visibility mismatch that no product change could cause or fix
+// (2026-08-21). Deterministic, because those four are simply the ones whose
+// apply happens to straddle the window on this machine — which is exactly the
+// kind of failure that gets read as a real one.
+const applied = (id) => `(() => {
+  const el = document.getElementById("weapon");
+  // …AND THE PANEL IT DREW, not just the picker's value: the value is set
+  // before the render, so a weapon can be "current" with the previous one's
+  // blocks still on screen.
+  return !!el && el.value === ${JSON.stringify(id)} && !document.body.classList.contains("busy");
+})()`;
+
 const VISIBLE = `(() => {
   const v = (id) => { const e = document.getElementById(id); return !!e && !e.hidden; };
   return { exilus: v("exilus-block"), arcanes: v("arcane-block"), evolutions: v("evo-block") };
@@ -67,6 +82,21 @@ const app = await openApp({ base: process.argv[2] });
 const { send, evaluate, sleep } = app;
 const url = app.BASE;
 let bad = 0;
+// Poll for the applied weapon, with the old fixed wait as the CEILING rather
+// than the answer. A timeout is reported through the assertion it breaks — the
+// check must not paper over a page that never settles.
+const settled = async (id) => {
+  for (let i = 0; i < 40; i++) {
+    if (await evaluate(applied(id))) {
+      // One more frame: `hidden` is written by the same render that sets the
+      // value, and reading in the same tick can catch it half-done.
+      await sleep(60);
+      return true;
+    }
+    await sleep(100);
+  }
+  return false;
+};
 {
   const rows = await evaluate(PROBE);
   for (const r of rows) {
@@ -77,10 +107,10 @@ let bad = 0;
     }
     // The two modules render their own visibility; read BOTH pages for real.
     await send("Page.navigate", { url: `${url}/weapons/${r.weapon}` });
-    await sleep(1500);
+    await settled(r.weapon);
     const shownBuilder = await evaluate(VISIBLE);
     await send("Page.navigate", { url: `${url}/weapons/${r.weapon}/optimizer` });
-    await sleep(1500);
+    await settled(r.weapon);
     const shownOpt = await evaluate(VISIBLE_OPT);
     const diffs = Object.keys(shownBuilder)
       .filter((k) => shownBuilder[k] !== shownOpt[k])

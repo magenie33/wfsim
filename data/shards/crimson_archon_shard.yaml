@@ -20,28 +20,33 @@ effects:
     kind: out_of_scope
     applies_to: no melee in this arena
     value: 0.25
+    unit: pct
     tauforged: 0.375
   - id: primary_status_chance
     text: "Primary Status Chance"
     kind: status_chance
-    applies_to: primary
+    slot: primary
     value: 0.25
+    unit: pct
     tauforged: 0.375
   - id: secondary_crit_chance
     text: "Secondary Critical Chance"
     kind: crit_chance
-    applies_to: secondary
+    slot: secondary
     value: 0.25
+    unit: pct
     tauforged: 0.375
   - id: ability_strength
     text: "Ability Strength"
     kind: ability_strength
     value: 0.1
+    unit: pct
     tauforged: 0.15
   - id: ability_duration
     text: "Ability Duration"
     kind: ability_duration
     value: 0.1
+    unit: pct
     tauforged: 0.15
 
 source:

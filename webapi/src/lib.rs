@@ -758,6 +758,11 @@ pub fn i18n_json() -> Value {
                 "arcanes": l.arcanes,
                 "evolutions": l.evolutions,
                 "abilities": l.abilities,
+                // WHAT THE WARFRAME BRINGS. `shards` is keyed BOTH by a
+                // colour's id and by `<shard>/<effect>`, which is why the page
+                // looks a socket up by the same composite key it sends.
+                "auras": l.auras,
+                "shards": l.shards,
                 "ui": l.ui,
                 "effect_phrases": l.effect_phrases,
                 // DE's OWN card text, per rank — what the UI shows instead of
@@ -1014,6 +1019,17 @@ pub fn meta_json() -> Value {
                 // above). The engine answers "what does picking this cost you",
                 // and the picker just subtracts.
                 "evo_forbids": evo_forbids(w),
+                // WHICH AURAS PAY THIS WEAPON — the CONSEQUENCE, computed by
+                // the engine, for the same reason `evo_forbids` is: the amp
+                // family does not share one gate (Rifle Amp is a MOD POOL and
+                // reaches bows and launchers, Dead Eye is a CLASS and does
+                // not), and a page that re-derived that rule would go stale the
+                // first time an aura arrived with a third kind of gate.
+                "auras": wfsim_engine::auras_data::all().iter()
+                    .filter(|a| wfsim_engine::weapons_data::spec(&w.id)
+                        .is_some_and(|s| a.pays(&s.class,
+                            &s.mod_pools.iter().map(|p| p.as_str()).collect::<Vec<_>>())))
+                    .map(|a| a.id.clone()).collect::<Vec<_>>(),
                 "mod_class": w.mod_pools.last().cloned().unwrap_or_default(),
                 "subtype": w.subtype,
                 // The RAW class, beside the display one. An arcane's
@@ -1300,6 +1316,35 @@ pub fn meta_json() -> Value {
             .map(|c| (c.to_string(), json!(mods_json(&wfsim_engine::mods_data::class_pool(c)))))
             .collect::<serde_json::Map<String, Value>>(),
         "enemies": enemies,
+        // WHAT THE WARFRAME BRINGS, so the page can OFFER it rather than make
+        // the reader type a number. That is the whole argument for naming these
+        // instead of folding them into the custom bonuses: a named shard has a
+        // source that can be checked and updated with the wiki; a typed +45%
+        // has nothing (owner, 2026-08-21).
+        "auras": wfsim_engine::auras_data::all().iter().map(|a| json!({
+            "id": a.id,
+            "name": a.name,
+            "squad_stacking": a.squad_stacking,
+        })).collect::<Vec<_>>(),
+        "shards": wfsim_engine::shards_data::all().iter().map(|d| json!({
+            "id": d.id,
+            "name": d.name,
+            "colour": d.colour,
+            "options": d.options.iter().map(|o| json!({
+                "id": o.id,
+                "text": o.text,
+                "value": o.value,
+                "tauforged": o.tauforged,
+                "unit": o.unit,
+                // WHETHER IT PAYS ANYTHING HERE, and the ENGINE answers —
+                // three of these are in scope, transcribed correctly, and still
+                // not applied, so `OutOfScope` alone would have offered them as
+                // working. A socket that quietly does nothing is worse than one
+                // that says so.
+                "modelled": o.at(false).unmodelled_reason().is_none(),
+                "why_not": o.at(false).unmodelled_reason(),
+            })).collect::<Vec<_>>(),
+        })).collect::<Vec<_>>(),
         // THE WIELDER'S ROSTER. Three numbers a weapon perk can ask about; the
         // panel fills its fields from whichever is picked.
         "frames": wfsim_engine::tenno_data::frames()

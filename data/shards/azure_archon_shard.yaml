@@ -20,28 +20,33 @@ effects:
     kind: out_of_scope
     applies_to: nobody shoots back
     value: 150
+    unit: flat
     tauforged: 225
   - id: shield_capacity
     text: "Shield Capacity"
     kind: out_of_scope
     applies_to: nobody shoots back
     value: 150
+    unit: flat
     tauforged: 225
   - id: energy_max
     text: "Energy Max"
     kind: wf_energy
     value: 50
+    unit: flat
     tauforged: 75
   - id: armor
     text: "Armor"
     kind: wf_armor
     value: 150
+    unit: flat
     tauforged: 225
   - id: health_regen
     text: "Health per second Regenerated"
     kind: out_of_scope
     applies_to: nobody shoots back
     value: 5
+    unit: flat
     tauforged: 7.5
 
 source:

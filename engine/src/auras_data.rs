@@ -40,7 +40,9 @@ struct RawEffect {
     #[serde(rename = "rankMax")]
     rank_max: f64,
     #[serde(default)]
-    requires: Option<String>,
+    requires_pool: Option<String>,
+    #[serde(default)]
+    requires_class: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -61,8 +63,26 @@ pub struct AuraDef {
     /// *"reducing enemy armor up to 72% with a 4-player squad"*.
     pub squad_stacking: bool,
     pub effect: AuraEffect,
-    /// The weapon class it pays, and it pays nothing to any other.
-    pub requires: Option<String>,
+    /// WHAT IT PAYS, and the family does not agree on the question. Three of
+    /// the four amps match a MOD POOL — Rifle Amp "also affects bows, sniper
+    /// rifles and launchers" and not shotguns, which is the `rifle` pool
+    /// exactly. Dead Eye matches a CLASS and is narrower than any pool:
+    /// *"only affects actual sniper rifles … even though bows and launchers
+    /// draw from the sniper ammo pool, they are not affected"*.
+    pub requires_pool: Option<String>,
+    pub requires_class: Option<String>,
+}
+
+impl AuraDef {
+    /// Does this aura pay a weapon of this class, drawing these pools?
+    pub fn pays(&self, class: &str, pools: &[&str]) -> bool {
+        match (&self.requires_pool, &self.requires_class) {
+            (None, None) => true,
+            (Some(p), _) if pools.contains(&p.as_str()) => true,
+            (_, Some(c)) if c == class => true,
+            _ => false,
+        }
+    }
 }
 
 /// THE PICK: which aura, at what rank, and how many of the squad run it.
@@ -104,7 +124,8 @@ pub fn all() -> &'static [AuraDef] {
                     name: r.name,
                     squad_stacking: r.squad_stacking,
                     effect: parse_effect(e),
-                    requires: e.requires.clone(),
+                    requires_pool: e.requires_pool.clone(),
+                    requires_class: e.requires_class.clone(),
                 }
             })
             .collect()
@@ -133,11 +154,20 @@ mod tests {
         let cp = by_id("corrosive_projection").expect("Corrosive Projection");
         assert_eq!(cp.effect, AuraEffect::EnemyArmor(-0.18));
         assert!(cp.squad_stacking, "it stacks to 72% four-handed");
-        // A CLASS-GATED ONE NAMES ITS CLASS. An amp with no `requires` would pay
-        // every weapon, which is the one way this family can be wrong.
+        // A GATED ONE NAMES ITS GATE. An amp with neither would pay every
+        // weapon, which is the one way this family can be wrong.
+        //
+        // …AND THE TWO GATES ARE DIFFERENT QUESTIONS. Dead Eye is the control:
+        // it is the only amp that names a CLASS, because it is narrower than
+        // any pool — bows draw sniper ammo and are not paid.
+        assert_eq!(by_id("dead_eye").unwrap().requires_class.as_deref(), Some("sniper"));
+        assert_eq!(by_id("rifle_amp").unwrap().requires_pool.as_deref(), Some("rifle"));
         for id in ["rifle_amp", "pistol_amp", "shotgun_amp", "dead_eye"] {
             let d = by_id(id).unwrap_or_else(|| panic!("{id}"));
-            assert!(d.requires.is_some(), "{id} must name the class it pays");
+            assert!(
+                d.requires_pool.is_some() || d.requires_class.is_some(),
+                "{id} must name what it pays — an amp with neither pays everything"
+            );
             assert!(matches!(d.effect, AuraEffect::WeaponDamage(_)));
         }
     }

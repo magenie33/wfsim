@@ -8,6 +8,19 @@ and secondary comes first. What one weapon costs, and the READ THE PAGE rule,
 apply to all of it; batches A and B below are the backlog behind that program,
 and batch C (sniper) is part of it (Vectis).
 
+## …AND IT IS CHECKED BY A TOOL NOW, not by a claim (2026-08-21)
+
+`python scripts/wiki_weapon_csv.py coverage` answers "what does the game have
+that we do not" from the wiki's own `Weapon Comparison/CSV` — 508 weapons in one
+fetch, joined on `internal_name`. It reports **nothing missing**: 355 held, 153
+out of scope by a documented decision (melee, modular, Amps, Railjack, Exalted).
+
+The section below said the same thing by hand on 2026-08-20 and could not stay
+true on its own — a weapon DE ships tomorrow makes it wrong, silently. Read
+`docs/DATA_SOURCES.md` §"`Weapon Comparison/CSV`" first: the dump is MANUALLY
+pasted and lags the module, and it holds no Arch-Guns, so "nothing missing" is a
+claim about the slots the tool prints and no others.
+
 ## DONE — every non-Exalted gun is in (2026-08-20)
 
 The backlog this file was written to plan is EMPTY. Every primary and secondary

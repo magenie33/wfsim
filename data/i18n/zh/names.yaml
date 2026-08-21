@@ -949,3 +949,61 @@ abilities:
   # HELMINTH'S OWN, off `/Lotus/Powersuits/PowersuitAbilities/Helminth`'s ability
   # list in WFCD's i18n.json — DE's Chinese client, not a translation of ours.
   energized_munitions: 充沛军需
+
+# AURAS — DE's own client strings (WFCD i18n.json, joined on the aura's
+# internal name). Seven of the eight; EMP Aura is NOT in the export and is
+# deliberately absent rather than derived from the English, which is the house
+# rule: if a source cannot be reached, leave it empty and say so.
+auras:
+  corrosive_projection: 腐蚀投射
+  shield_disruption: 护盾瓦解
+  rifle_amp: 步枪增幅
+  pistol_amp: 手枪增幅
+  shotgun_amp: 霰弹枪增幅
+  dead_eye: 死亡之眼
+  # DE's Chinese is not literal here — "协力窜升" for Coaction Drift — which is
+  # exactly why it is transcribed and not translated.
+  coaction_drift: 协力窜升
+  # emp_aura: NOT IN DE's EXPORT. Falls back to English on purpose.
+
+# ARCHON SHARDS — transcribed from the CN wiki (执刑官源力石), which is the
+# second source data/README.md names and the only one that has these: a shard
+# is a RESOURCE and DE's export carries no entity for it.
+#
+# Keys are `<shard>` for the colour and `<shard>/<effect>` for one socket's
+# line. The numbers are NOT in these strings: the page prints them from the
+# effect's own `value`/`tauforged`, so a value DE moves costs no translation.
+shards:
+  crimson_archon_shard: 深红执刑官源力石
+  amber_archon_shard: 琥珀执刑官源力石
+  azure_archon_shard: 蔚蓝执刑官源力石
+  emerald_archon_shard: 翡翠执刑官源力石
+  topaz_archon_shard: 黄玉执刑官源力石
+  violet_archon_shard: 紫晶执刑官源力石
+  crimson_archon_shard/melee_crit_damage: 近战暴击伤害
+  crimson_archon_shard/primary_status_chance: 主要武器触发几率
+  crimson_archon_shard/secondary_crit_chance: 次要武器暴击几率
+  crimson_archon_shard/ability_strength: 技能强度
+  crimson_archon_shard/ability_duration: 技能持续时间
+  amber_archon_shard/energy_on_spawn: 初始能量
+  amber_archon_shard/health_orbs: 生命球效果
+  amber_archon_shard/energy_orbs: 能量球效果
+  amber_archon_shard/casting_speed: 技能施放速度
+  amber_archon_shard/parkour_velocity: 跑酷速度
+  azure_archon_shard/max_health: 生命值
+  azure_archon_shard/shield_capacity: 护盾值
+  azure_archon_shard/energy_max: 能量上限
+  azure_archon_shard/armor: 护甲
+  azure_archon_shard/health_regen: 每秒生命回复
+  emerald_archon_shard/toxin_status_damage: Toxin 异常状态伤害
+  emerald_archon_shard/toxin_health_steal: 每次 Toxin 异常伤害恢复生命值
+  emerald_archon_shard/corrosion_ability_damage: 对 Corrosive 异常敌人的技能伤害
+  emerald_archon_shard/corrosion_stack_cap: Corrosive 异常最高堆叠层数
+  topaz_archon_shard/blast_kill_health: 每次 Blast 击杀增加生命上限
+  topaz_archon_shard/blast_kill_shield: 每次 Blast 击杀恢复护盾
+  topaz_archon_shard/heat_kill_crit: 每次 Heat 异常击杀增加次要武器暴击几率
+  topaz_archon_shard/radiation_ability_damage: 对 Radiation 异常敌人的技能伤害
+  violet_archon_shard/electricity_ability_damage: 对 Electricity 异常敌人的技能伤害
+  violet_archon_shard/primary_electricity_damage: 主要武器 Electricity 伤害
+  violet_archon_shard/melee_crit_damage: 近战暴击伤害
+  violet_archon_shard/orb_conversion: 拾取生命球得能量、拾取能量球得生命

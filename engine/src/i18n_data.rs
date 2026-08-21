@@ -27,7 +27,7 @@ use std::sync::OnceLock;
 
 use serde::Deserialize;
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Deserialize, serde::Serialize)]
 pub struct LocaleSpec {
     #[serde(default)]
     pub weapons: BTreeMap<String, String>,
@@ -52,6 +52,23 @@ pub struct LocaleSpec {
     /// word DE did not write.
     #[serde(default)]
     pub abilities: BTreeMap<String, String>,
+    /// AURAS (`data/auras/`), keyed by id — DE's OWN client strings, joined on
+    /// the aura's `internal_name`. An aura IS a mod in the export, so seven of
+    /// the eight came straight out of `i18n.json`; EMP Aura is not in it and is
+    /// deliberately absent rather than derived (data/i18n/zh/names.yaml says
+    /// so).
+    #[serde(default)]
+    pub auras: BTreeMap<String, String>,
+    /// ARCHON SHARDS, keyed by `<shard_id>` for the colour's own name and by
+    /// `<shard_id>/<effect_id>` for one socket's card line. Two key shapes in
+    /// one map because they are one family and the effect has no id of its own
+    /// outside its colour.
+    ///
+    /// TRANSCRIBED FROM THE CN WIKI, which is the source `data/README.md`
+    /// names for what DE's export has no entity for — a shard is a RESOURCE
+    /// and `i18n.json` carries none of them.
+    #[serde(default)]
+    pub shards: BTreeMap<String, String>,
     /// UI strings keyed by the English source string.
     #[serde(default)]
     pub ui: BTreeMap<String, String>,
@@ -124,6 +141,9 @@ impl LocaleSpec {
         maps(&mut self.arcanes, other.arcanes, path, "arcanes");
         maps(&mut self.evolutions, other.evolutions, path, "evolutions");
         maps(&mut self.abilities, other.abilities, path, "abilities");
+        maps(&mut self.auras, other.auras, path, "auras");
+        maps(&mut self.shards, other.shards, path, "shards");
+
         maps(&mut self.ui, other.ui, path, "ui");
         maps(&mut self.evolution_descriptions, other.evolution_descriptions, path, "evolution_descriptions");
         lists(&mut self.mod_descriptions, other.mod_descriptions, path, "mod_descriptions");
@@ -315,6 +335,29 @@ mod tests {
             }
             for id in spec.arcanes.keys().chain(spec.arcane_descriptions.keys()) {
                 assert!(known_arcane(id).is_some(), "i18n/{code}: unknown arcane id '{id}'");
+            }
+            for id in spec.auras.keys() {
+                assert!(
+                    crate::auras_data::by_id(id.as_str()).is_some(),
+                    "i18n/{code}: unknown aura id '{id}'"
+                );
+            }
+            // TWO KEY SHAPES, and both are checked: a colour's own name, and
+            // `<shard>/<effect>` for one socket's line. A typo on either half
+            // of the second is the one an English fallback hides forever.
+            for id in spec.shards.keys() {
+                let (shard, effect) = match id.split_once('/') {
+                    Some((a, b)) => (a, Some(b)),
+                    None => (id.as_str(), None),
+                };
+                let d = crate::shards_data::all().iter().find(|x| x.id == shard);
+                assert!(d.is_some(), "i18n/{code}: unknown shard id '{shard}'");
+                if let Some(e) = effect {
+                    assert!(
+                        d.unwrap().options.iter().any(|o| o.id == e),
+                        "i18n/{code}: unknown shard effect '{id}'"
+                    );
+                }
             }
             for id in spec.evolutions.keys().chain(spec.evolution_descriptions.keys()) {
                 assert!(
@@ -580,16 +623,26 @@ mod tests {
             .find(|(c, _)| c == "zh")
             .map(|(_, s)| s)
             .expect("zh locale");
-        for (name, n) in [
-            ("weapons", zh.weapons.len()),
-            ("enemies", zh.enemies.len()),
-            ("mods", zh.mods.len()),
-            ("arcanes", zh.arcanes.len()),
-            ("evolutions", zh.evolutions.len()),
-            ("abilities", zh.abilities.len()),
-            ("ui", zh.ui.len()),
-        ] {
+        // DERIVED FROM THE STRUCT, not listed. This test caught a table
+        // declared and never folded in — and then failed to catch the next two
+        // (`auras`, `shards`), because a hand list cannot report what is not on
+        // it. Serializing the merged spec asks the question of every field
+        // there is, including one added tomorrow by somebody who never read
+        // this file (2026-08-21).
+        let v = serde_norway::to_value(zh).expect("the locale serializes");
+        let serde_norway::Value::Mapping(m) = v else { panic!("a locale is a mapping") };
+        let mut checked = 0;
+        for (k, val) in &m {
+            let name = k.as_str().unwrap_or("?");
+            // `effect_phrases` is a LIST and is allowed to be empty in a locale
+            // that needs no fallback substitutions; every keyed TABLE is not.
+            let n = match val {
+                serde_norway::Value::Mapping(x) => x.len(),
+                _ => continue,
+            };
+            checked += 1;
             assert!(n > 0, "the zh locale's `{name}` table came out empty");
         }
+        assert!(checked >= 10, "every table was asked about: {checked}");
     }
 

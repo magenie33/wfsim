@@ -17,8 +17,8 @@ squad_stacking: true
 effects:
   - kind: weapon_damage_bonus
     rankMax: 0.27
-    # THE WEAPON CLASS IT PAYS, and it pays nothing to any other.
-    requires: pistol
+    # The pistol pool, the same rule as Rifle Amp.
+    requires_pool: pistol
 
 source:
   url: https://wiki.warframe.com/w/Pistol_Amp

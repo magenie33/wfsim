@@ -1603,3 +1603,29 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    not for a reader. */
 .build-stamp{color:var(--dim); font-size:11px; font-variant-numeric:tabular-nums;
   user-select:all; cursor:text}
+
+/* WHAT THE WARFRAME BRINGS — the squad's aura and the frame's archon shards.
+   A LIST of rows rather than a field grid, because each row is a control with
+   its own count, its own Tauforged flag and its own remove; a `1fr` grid would
+   floor every track at min-content and hang the removes off a phone, which is
+   `check_mobile.mjs`'s own lesson (2026-08-05). */
+.sq-h{font-size:12px; letter-spacing:.04em; text-transform:uppercase;
+  color:var(--dim); margin-top:4px}
+.sq-h .sim-hint{text-transform:none; letter-spacing:0}
+.sq-row{display:flex; flex-wrap:wrap; align-items:center; gap:8px}
+/* The dropdown is the row: it takes what is left after the small controls, and
+   never less than a name's worth. */
+.sq-row > .dd{flex:1 1 200px; min-width:0}
+.sq-n{display:inline-flex; align-items:center; gap:4px; color:var(--dim);
+  font-size:12px; white-space:nowrap}
+.sq-n input{width:44px}
+.sq-mute{opacity:.55}
+.sq-tau{white-space:nowrap}
+/* PAYS NOTHING HERE, and it reads that way — dimmed, with the reason beside it.
+   Never hidden: a socket that quietly does nothing is worse than one that says
+   so, which is docs/UNMODELLED.md's own rule. */
+.sq-dead > .dd, .sq-dead .sq-tau{opacity:.55}
+.sq-why{font-size:11px; color:var(--dim); flex:1 1 100%}
+.sq-none{font-size:12px; color:var(--dim)}
+.sq-add{display:flex}
+.sq-add > .dd{flex:1 1 auto}

@@ -2689,6 +2689,17 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
     });
 
     WeaponBase {
+        // LEAKED ONCE so the panel can answer "what is this" and "what does it
+        // draw" without a lookup — the two questions the Amp auras ask.
+        class: Box::leak(s.class.clone().into_boxed_str()),
+        slot: Box::leak(s.slot.clone().into_boxed_str()),
+        mod_pools: Box::leak(
+            s.mod_pools
+                .iter()
+                .map(|p| &*Box::leak(p.clone().into_boxed_str()))
+                .collect::<Vec<&'static str>>()
+                .into_boxed_slice(),
+        ),
         form: FormKind::parse(&s.form),
         // Empty until an evolution writes into it (evolutions_data::apply).
         indirect: Vec::new(),
@@ -2835,8 +2846,6 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
         co_base: vector.total() * s.co_base_fraction.unwrap_or(1.0),
         injected_elements,
         traits: traits_for(s),
-        // LEAKED ONCE, so the panel can answer "what is this" without a lookup.
-        class: Box::leak(s.class.clone().into_boxed_str()),
         gauge_form,
         radial,
         spread: s.attack.spread,

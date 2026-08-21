@@ -42,8 +42,11 @@ pub enum ShardEffect {
     /// Crit chance earned per kill on a target carrying a status. A stacking
     /// buff, which the engine has the shape for and this does not yet build.
     CritOnStatusKill(f64, String),
-    /// Real, and about a layer this simulator does not have.
-    OutOfScope(&'static str),
+    /// Real, and about a layer this simulator does not have. It carries the
+    /// entry's OWN reason: five of these are five different admissions
+    /// ("no melee in this arena", "nobody shoots back", "pickups"), and a
+    /// single fixed sentence for all of them says none of the five.
+    OutOfScope(String),
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -53,8 +56,17 @@ struct RawEffect {
     kind: String,
     #[serde(default)]
     applies_to: Option<String>,
+    /// THE EQUIPMENT SLOT this effect pays, or every slot when absent. It is
+    /// its own field because `applies_to` already carries the ELEMENT, and
+    /// "Primary Electricity Damage" names both.
+    #[serde(default)]
+    slot: Option<String>,
     value: f64,
     tauforged: f64,
+    /// `pct` or `flat`. DECLARED rather than derived: the obvious rule ("under
+    /// 1 is a percent") is wrong on Amber's *"+100% Health Orb Effectiveness"*,
+    /// whose value is exactly 1.0.
+    unit: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -75,6 +87,8 @@ pub struct ShardOption {
     pub tauforged: f64,
     pub kind_of: fn(f64, Option<&str>) -> ShardEffect,
     pub applies_to: Option<String>,
+    pub slot: Option<String>,
+    pub unit: String,
 }
 
 impl ShardOption {
@@ -118,11 +132,45 @@ fn kind_fn(kind: &str) -> fn(f64, Option<&str>) -> ShardEffect {
         // NAMED, not silent: each of these is a real effect about a layer this
         // simulator does not have, and saying which layer is the whole value of
         // listing it at all.
-        "ability_strength" => |_, _| ShardEffect::OutOfScope("Ability Strength — the Warframe layer"),
-        "ability_duration" => |_, _| ShardEffect::OutOfScope("Ability Duration — the Warframe layer"),
-        "ability_damage" => |_, _| ShardEffect::OutOfScope("Ability Damage — the Warframe layer"),
-        "out_of_scope" => |_, _| ShardEffect::OutOfScope("not a weapon-damage quantity"),
+        "ability_strength" => |_, _| ShardEffect::OutOfScope("Ability Strength — the Warframe layer".into()),
+        "ability_duration" => |_, _| ShardEffect::OutOfScope("Ability Duration — the Warframe layer".into()),
+        "ability_damage" => |_, _| ShardEffect::OutOfScope("Ability Damage — the Warframe layer".into()),
+        "out_of_scope" => |_, a| ShardEffect::OutOfScope(
+            a.unwrap_or("not a weapon-damage quantity").into()),
         other => panic!("unknown shard effect kind: {other}"),
+    }
+}
+
+impl ShardEffect {
+    /// WHY THIS PAYS NOTHING HERE, or `None` when it does pay.
+    ///
+    /// `OutOfScope` alone could not answer this. Three effects below are real
+    /// weapon-damage quantities, transcribed correctly, and STILL not applied —
+    /// each because the bucket they need is narrower than any this engine has.
+    /// A page that read `OutOfScope` as the whole answer would have offered
+    /// them as working, which is exactly the failure `arc_condition` was
+    /// written to end: a rule stated and not applied reads, to anyone auditing,
+    /// as a rule being applied (2026-08-18).
+    pub fn unmodelled_reason(&self) -> Option<String> {
+        match self {
+            ShardEffect::OutOfScope(w) => Some(w.clone()),
+            // The bucket is GLOBAL status damage; this shard pays ONE element,
+            // so feeding it would overpay every other status on the build.
+            ShardEffect::StatusDamageOfType(..) => {
+                Some("status damage for ONE element — this engine's status-damage bucket is global".into())
+            }
+            // Same shape on the damage side: there is no per-element damage
+            // bucket, only the elemental MODS, and this is not one.
+            ShardEffect::ElementDamageOfType(..) => {
+                Some("damage for ONE element — this engine has no per-element damage bucket".into())
+            }
+            // A stacking buff earned per KILL. The engine has the shape and
+            // this does not build one yet.
+            ShardEffect::CritOnStatusKill(..) => {
+                Some("earned per kill — not built as a stacking buff yet".into())
+            }
+            _ => None,
+        }
     }
 }
 
@@ -148,6 +196,8 @@ pub fn all() -> &'static [ShardDef] {
                             value: e.value,
                             tauforged: e.tauforged,
                             applies_to: e.applies_to,
+                            slot: e.slot,
+                            unit: e.unit,
                         })
                         .collect(),
                 }

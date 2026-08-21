@@ -20,23 +20,27 @@ effects:
     kind: out_of_scope
     applies_to: nobody shoots back
     value: 1
+    unit: flat
     tauforged: 2
   - id: blast_kill_shield
     text: "Shield regenerated per Blast kill"
     kind: out_of_scope
     applies_to: nobody shoots back
     value: 5
+    unit: flat
     tauforged: 7.5
   - id: heat_kill_crit
     text: "Secondary Critical Chance per Heat-status kill"
     kind: crit_chance_on_heat_kill
-    applies_to: secondary
+    slot: secondary
     value: 0.01
+    unit: pct
     tauforged: 0.015
   - id: radiation_ability_damage
     text: "Ability Damage on Radiation-affected enemies"
     kind: ability_damage
     value: 0.1
+    unit: pct
     tauforged: 0.15
 
 source:

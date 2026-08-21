@@ -18,8 +18,10 @@ squad_stacking: true
 effects:
   - kind: weapon_damage_bonus
     rankMax: 0.27
-    # THE WEAPON CLASS IT PAYS, and it pays nothing to any other.
-    requires: rifle
+    # THE MOD POOL, not the class. Its page: it "also affects bows, sniper
+    # rifles and launchers" and shotguns do NOT benefit — which is the `rifle`
+    # pool exactly, and not any class.
+    requires_pool: rifle
 
 source:
   url: https://wiki.warframe.com/w/Rifle_Amp

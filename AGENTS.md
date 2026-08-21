@@ -969,6 +969,54 @@ around (decision 2026-07-31).
   filled it, so `reclaimStoredReplays` strips every replay written under the old
   rule on the way in. `scripts/check_storage.mjs` holds all four and bites —
   making `stripReplays` a no-op reddens two of them.
+- **WHAT THE WARFRAME BRINGS IS THE FIGHT'S** (owner, 2026-08-21). A squad AURA
+  (`data/auras/`) and an ARCHON SHARD (`data/shards/`) belong to neither the
+  weapon nor the build, so they ride on the fight's `Tenno` exactly as
+  `data/abilities/` does — which is what carries them into the simulator AND the
+  optimizer through `parse_fight` alone, and what keeps them off the BOARD,
+  scored under the neutral player.
+  THEY ARE OFFERED, NEVER TYPED. The Extra stats grid already accepts any number
+  into any bucket; what it cannot do is say WHERE the number came from. A named
+  shard has a source that can be checked against the wiki and updated when DE
+  moves it; a typed +45% has nothing behind it.
+  THE AMP FAMILY DOES NOT SHARE ONE GATE, and that is the whole reason
+  `AuraDef::pays` is a function rather than a field comparison. Rifle Amp asks a
+  MOD POOL — *"also affects bows, sniper rifles and launchers"*, which is the
+  `rifle` pool and reaches no shotgun — while Dead Eye asks a CLASS and is
+  narrower than any pool: *"only affects actual sniper rifles … even though bows
+  and launchers draw from the sniper ammo pool, they are not affected"*. The
+  ENGINE decides and `/api/meta` states the CONSEQUENCE per weapon (`auras: [id]`
+  on the weapon), which is `evo_forbids`' own pattern — a page that re-derived
+  the rule would go stale the first time an aura arrived with a third gate.
+  THE AMPS LAND IN SERRATION'S BUCKET, which is where their own page puts them:
+  *"adds to the base damage as Serration and Heavy Caliber do"*, formula spelled
+  out. So an amp is worth LESS the more Serration is already in the sum, and a
+  reader wants to see it in there rather than as a final multiplier.
+  AN EFFECT IS APPLIED OR IT SAYS WHY NOT, never neither and never both. Twenty
+  of the twenty-seven shard effects pay nothing in this arena, and THREE of those
+  are real weapon-damage quantities transcribed correctly and still not paid —
+  each because the bucket they need is narrower than any this engine has (status
+  damage for ONE element, damage for ONE element, a crit stack earned per kill).
+  `OutOfScope` alone could not tell those from the ones that work, so
+  `ShardEffect::unmodelled_reason` is the one answer and the page prints it. The
+  test that holds it is DERIVED from the roster, so an effect added tomorrow that
+  is neither applied nor explained fails on the day it lands.
+  `node scripts/check_squad.mjs` is the THIRTY-FIFTH check and every assertion in
+  it is either ON THE WIRE or on a real `/api/simulate` in the shipping wasm
+  build — a panel that drew every card correctly and sent nothing would read as a
+  working feature, which is `check_opt_modes`' own lesson. Its damage assertion
+  had to learn one thing the hard way: THE FIGHT HAS TO MAKE ARMOUR THE BINDING
+  CONSTRAINT. At the default level an unmodded rifle never gets a target off its
+  shields, so the armour term is never read and the two runs come back
+  byte-identical — a working engine and a failing assertion. It measures kill
+  PROGRESS, because dps is what the weapon puts out and armour decides what
+  arrives. Verified to bite: dropping `auras` from `theFight()` reddens it.
+  A LOCALE'S TABLES ARE NO LONGER A HAND LIST. Adding these two families broke
+  `LocaleSpec::merge` the way it had been broken before — a table declared and
+  never folded in — and the test that exists to catch exactly that was itself a
+  hand list, so it passed. It serializes the merged spec now and asks the
+  question of every field there is, including one added tomorrow by somebody who
+  never read the file. Verified to bite in both directions.
 - **Golden values only change with an in-game measurement** justifying
   it. New mechanics need golden tests; a faithful-looking implementation
   without a measurement is not correct.
@@ -1370,7 +1418,11 @@ around (decision 2026-07-31).
   is two-tone: "WF" + gold "Sim". Logo: `web/src/static/logo.svg`. In
   Chinese PROSE the product is **WF模拟** (user, 2026-07-31) — the
   wordmark itself is never translated, so the topbar and `<title>` stay
-  WFSim while the zh footer says WF模拟.
+  WFSim while the zh footer says WF模拟. 沃肥模拟 — the phonetic reading of
+  WF — is the COMMUNITY NICKNAME and stays out of the product entirely
+  (reaffirmed 2026-08-21): it belongs in Bilibili titles and the QQ group,
+  where being sayable and being a joke are both assets, and nowhere under
+  `data/i18n/zh/`, where the claim being made is accuracy.
 - Match the surrounding code's comment density and idiom; comments state
   constraints/sources, not narration.
 - **A COMMENT NEVER QUOTES THE OWNER** (owner, 2026-08-13). A decision is
