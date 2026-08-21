@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-engine: b544988a9f5eeb0b8bcd66c480c3a4dea6fce5d6
+engine: fa2d2fcf2340cf92d8dc54748a5aa852a1e50f38
 entries:
   - weapon: akarius_prime
     mode: base
@@ -192,6 +192,16 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_aptitude, galvanized_scope, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
     evolutions: [miter_evo1_incarnon_form, miter_plentiful_mayhem, miter_ready_retaliation, miter_commodores_fortune]
     arcanes: [primary_deadhead]
+  - weapon: nataruk_perfect
+    mode: base
+    score: 66.37479121291094
+    mods: [primary_acuity, primed_shred, metal_auger, serration, galvanized_aptitude, vital_sense, magnetic_capacity, hellfire]
+    arcanes: [primary_crux]
+  - weapon: nataruk_perfect
+    mode: base
+    score: 55.22882753983131
+    mods: [heavy_caliber, primary_acuity, primed_shred, serration, galvanized_aptitude, vital_sense, magnetic_capacity, hellfire]
+    arcanes: [primary_crux]
   - weapon: ocucor
     mode: base
     score: 65.69724032436756
@@ -313,6 +323,11 @@ entries:
     mods: [galvanized_chamber, heavy_caliber, critical_delay, vital_sense, magnetic_capacity, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_merciless]
+  - weapon: trumna_prime
+    mode: base
+    score: 21.939475664223313
+    mods: [heavy_caliber, primary_acuity, serration, hammer_shot, point_strike, vile_acceleration, vital_sense, primed_cryo_rounds]
+    arcanes: [primary_crux]
   - weapon: vectis_prime
     mode: base
     score: 130.81123554537112
