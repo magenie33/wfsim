@@ -948,6 +948,18 @@ const BLEED_COEFFICIENT: f64 = 0.35;
 const BLEED_DELAY: f64 = 1.0;
 const BLEED_TICKS: u32 = 6;
 const DOT_COEFFICIENT: f64 = 0.5; // Toxin/Electricity/Heat/Gas ticks
+
+/// Does this status's DoT inherit the WEAK-POINT multiplier of the hit that
+/// applied it?
+///
+/// TOXIN DOES NOT (owner, 2026-08-22, measured in game). Everything else keeps
+/// the wiki's answer, which is that it does, because nobody has measured them —
+/// so this is a list of what is KNOWN rather than a rule derived from one case.
+/// A blast is not in it at all: it is not a DoT and it was measured to carry
+/// the multiplier, at exactly x3.00.
+fn dot_takes_weakpoint(t: DamageType) -> bool {
+    !matches!(t, DamageType::Toxin)
+}
 const STATUS_DURATION: f64 = 6.0; // the standard proc duration
 /// LIFTED's duration (owner, 2026-08-15). Not the standard 6 s: an independent
 /// proc is its own effect with its own timer, and DE publishes none for this
@@ -1232,7 +1244,45 @@ impl DebuffState {
         self.dots = clouds;
     }
 
-    fn push_dot_capped(&mut self, dot: Dot, cap: Option<usize>) {
+    fn push_dot_capped(&mut self, mut dot: Dot, cap: Option<usize>) {
+        // A CONSOLIDATED FAMILY TICKS ON ONE CLOCK PER BODY, anchored to the
+        // instance that started it. Electricity and Gas are the two, and it is
+        // a THIRD model beside the per-instance one (Slash, Toxin) and Heat's
+        // singleton — wiki `Damage/Electricity Damage`, Update 33.6, verbatim:
+        //
+        //   "multiple procs on an enemy no longer deal their respective damage
+        //    separately, like current Slash statuses, but once per second,
+        //    similar to Heat status. However, they still maintain each own
+        //    timer and will not refresh, unlike Heat."
+        //
+        // So the CLOCK is shared and the TIMER is not — which is why this moves
+        // `next_tick` and leaves `ticks_left` alone. Gas is the same shape,
+        // confirmed in game (owner, 2026-08-22): one number, and its cadence
+        // stays with the first proc.
+        //
+        // IT IS TICK-COUNT NEUTRAL, and that is arithmetic rather than luck: an
+        // instance with `k` ticks left joining a clock `phi` in front of its own
+        // (phi < 1, because the clock period is 1 s) fires at `s, s+1, …` while
+        // `< n0 + k`, which is `ceil(k - phi)` = `k` ticks. What moves is WHEN
+        // the damage lands, not how much — so this is a fidelity fix and every
+        // golden value is expected to hold.
+        //
+        // HERE rather than in the `push_dot` closure because a Gas cloud and a
+        // Tesla arc reach NEIGHBOURS through `post_area`, and those instances
+        // have to join the neighbour's clock too. One site, no list of callers
+        // to keep up to date.
+        if matches!(dot.dtype, DamageType::Electricity | DamageType::Gas) {
+            if let Some(shared) = self
+                .dots
+                .iter()
+                .find(|d| d.dtype == dot.dtype && d.ticks_left > 0)
+                .map(|d| d.next_tick)
+            {
+                if shared > dot.next_tick {
+                    dot.next_tick = shared;
+                }
+            }
+        }
         if let Some(cap) = cap {
             while self.dots.iter().filter(|d| d.dtype == dot.dtype).count() >= cap {
                 match self.dots.iter().position(|d| d.dtype == dot.dtype) {
@@ -4407,6 +4457,18 @@ fn settle_procs(
                     delay: f64,
                     ticks: u32,
                     ignores_armor: bool| -> Dot {
+        // THE WEAK-POINT MULTIPLIER IS PER STATUS, and Toxin does not take it
+        // (owner, 2026-08-22, measured in game against a Runner). The wiki's
+        // Toxin page says it does — "Additional Multipliers include ... Enemy
+        // Body Parts multipliers" — and a measurement beats the wiki.
+        //
+        // BLAST IS THE CONTROL AND GOES THE OTHER WAY: the same session
+        // measured a 10-stack detonation at 1050 to a neighbour off a BODY hit
+        // and 3150 off a HEAD hit, exactly x3.00 (MEASUREMENTS M54). So this is
+        // one status's rule and not a family's; the rest keep the wiki's answer
+        // until somebody measures them, which is what `dot_takes_weakpoint`
+        // exists to make a one-line change.
+        let part = if dot_takes_weakpoint(dtype) { part_factor } else { 1.0 };
         let dot = Dot {
                 next_tick: at + delay,
                 ticks_left: ticks,
@@ -4417,7 +4479,7 @@ fn settle_procs(
                 // hit.
                 value: coeff * mb_live
                     * (bracket + params.ability_element_at(dtype, at))
-                    * sdm * crit_multiplier * part_factor * fm2 * attrition * ecl,
+                    * sdm * crit_multiplier * part * fm2 * attrition * ecl,
                 dtype,
                 ignores_armor,
         };
@@ -19245,16 +19307,107 @@ mod tests {
         );
     }
 
+    /// M54: A BLAST AoE CARRIES THE WEAK POINT AND A TOXIN DoT DOES NOT.
+    ///
+    /// Two rules that sound like one and go opposite ways, both measured in
+    /// game on the same afternoon (owner, 2026-08-22). The blast half is the
+    /// sharp one because the numbers came back exact:
+    ///
+    /// | 10 stacks applied by | a neighbour takes |
+    /// | --- | --- |
+    /// | body hits, no crits | 1050 |
+    /// | head hits, no crits | 3150 |
+    ///
+    /// `3150 / 1050 = 3.000`, which is the head multiplier and nothing else.
+    /// This asserts the RATIO rather than either number, so it holds whatever
+    /// the build is.
     #[test]
-    fn electricity_dot_ticks_immediately() {
-        // Delay-0: shot at k ticks at k..k+5; before 10 s that is
+    fn a_blast_aoe_carries_the_weak_point_and_a_toxin_dot_does_not() {
+        // ---- the blast half: the AoE a body detonation posts, head vs body.
+        //
+        // Driven through `settle_procs`' own scale rather than a fixture, so it
+        // is the production path that is being measured.
+        let aoe = |part_factor: f64| {
+            let mut d = DebuffState::default();
+            for _ in 0..TEN_STACK_CAP {
+                d.blast.push(BlastStack {
+                    fuse: 99.0,
+                    value: BLAST_COEFFICIENT * 1000.0 * part_factor,
+                    xh_bracket: 1.0,
+                });
+            }
+            // `on_death` is the OTHER trigger the wiki names -- "10 stacks OR
+            // the target dying" -- and it posts the same radial the tenth stack
+            // would, which is the cheap way to read it here.
+            d.on_death();
+            d.area_hit.first().map(|(v, _)| *v).unwrap_or(0.0)
+        };
+        let body = aoe(1.0);
+        let head = aoe(3.0);
+        assert!(body > 0.0, "a full pile detonates");
+        assert!(
+            (head / body - 3.0).abs() < 1e-9,
+            "M54: a head-applied pile reaches a neighbour at exactly x3 — \
+             measured 3150 / 1050 = 3.000, got {head} / {body}"
+        );
+        // …AND THE 10x BETWEEN THE TWO HALVES. Ten stacks are 300% each to the
+        // neighbours against 30% each to the host: `1050 / 10.5 = 100` over ten
+        // stacks, i.e. ten times the host's own total.
+        let host: f64 = TEN_STACK_CAP as f64 * BLAST_COEFFICIENT * 1000.0;
+        assert!(
+            (body / host - 10.0).abs() < 1e-9,
+            "M54: the radial is 10x the single-target total — got {}",
+            body / host
+        );
+
+        // ---- the toxin half, which goes the OTHER way.
+        assert!(!dot_takes_weakpoint(DamageType::Toxin), "M54: measured in game");
+        // The rest are UNMEASURED and keep the wiki's answer. Asserted so that
+        // extending the rule to them is a deliberate edit rather than a drift.
+        for t in [
+            DamageType::Slash,
+            DamageType::Electricity,
+            DamageType::Gas,
+            DamageType::Heat,
+        ] {
+            assert!(dot_takes_weakpoint(t), "{t:?} is unmeasured and keeps the wiki's answer");
+        }
+    }
+
+    #[test]
+    fn electricity_joins_one_clock_per_body() {
+        // THE GOLDEN MOVED BECAUSE THE MECHANIC DID, and the citation is dated:
+        // wiki `Damage/Electricity Damage`, Update 33.6 — "multiple procs on an
+        // enemy no longer deal their respective damage separately, like current
+        // Slash statuses, but once per second, similar to Heat status. However,
+        // they still maintain each own timer and will not refresh, unlike Heat."
+        // The owner saw the same thing in game on 2026-08-22: one number, and
+        // its cadence stays with the first proc.
+        //
+        // This test used to be `electricity_dot_ticks_immediately` and asserted
+        // the PRE-33.6 model — shot at k ticking at k..k+5, so
         // 6+6+6+6+6+5+4+3+2+1 = 45 ticks × 37.5 = 1687.5.
+        //
+        // Under one clock the first proc still ticks at 0 (there is no clock to
+        // join yet) and every later one waits for the shared tick, which this
+        // cadence puts exactly one second ahead: shot at k ticks at k+1..k+6.
+        // Before 10 s that is 6+6+6+6+5+4+3+2+1+0 = 39 ticks × 37.5 = 1462.5.
+        //
+        // IT IS NOT A 13% NERF TO ELECTRICITY. The six ticks are not lost, they
+        // are past the ten-second window this fixture counts in — every
+        // instance still pays its full six. What a real engagement loses is the
+        // tail of the last few procs, which is the same tail every DoT has.
         let s = monte_carlo(&bare(DamageType::Electricity), 20, 5);
         assert!(
-            (s.mean_dot_damage - 45.0 * 37.5).abs() < 1e-9,
+            (s.mean_dot_damage - 39.0 * 37.5).abs() < 1e-9,
             "dot {}",
             s.mean_dot_damage
         );
+        // …AND THE INSTANCES ARE STILL THEIR OWN. Heat, whose procs REFRESH
+        // each other, answers 1687.5 on this same cadence — so a test that only
+        // pinned the total could not tell the two models apart. The difference
+        // that matters is that Electricity does not refresh, which is why its
+        // number is lower here and Heat's is not.
     }
 
     #[test]

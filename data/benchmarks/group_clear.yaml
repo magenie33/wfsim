@@ -16,7 +16,7 @@ name: "Group Clear · 19x19 at 1.5 m · Thrax Centurion Lv 9999 SP · 180 s · K
 rules:
   - "The target is a formation of 361 Thrax Centurions at level 9999 on Steel Path, a 19 by 19 grid spaced 1.5 metres centre to centre. The fight lasts 180 seconds."
   - "The shooter stands at contact with the middle body of the front rank, and fires along the line that rank faces."
-  - "Every shot is aimed and lands on the weak point of whatever it strikes directly. Nothing a chain, a blast or a cloud reaches can be a weak point hit."
+  - "Every shot is aimed and lands on the weak point of whatever it strikes directly, including anything it punches through. A chain hop and a damage cloud cannot be a weak point hit. A BLAST detonation can: it carries the weak-point and critical multipliers of the hit that applied the stack, out to everything its 5 m sphere reaches — measured in game (MEASUREMENTS M54)."
   - "The score is kills per minute across the whole formation, counting the fraction of each target already gone."
   - "A body that dies respawns where it stood, so the arrangement is the same at the end as at the start and the score is a rate rather than a race to the last body."
   - "The grid is stated as three numbers rather than as 361 positions, so its terms can be read and argued with."
@@ -65,16 +65,40 @@ scenario:
   # resolves against a precomputed neighbour list, so 361 bodies cost 21.2 s per
   # 1000 runs against 19.5 s for 49. The size is settled by saturation alone.
   #
-  # 1.5 m SPACING, also measured: it is the only spacing tested that separates
-  # all three of a radius mod's steps. At 2 m the ordinary Firestorm and the
-  # Primed one seed the same six bodies and the board cannot tell them apart;
-  # at 2.5 m neither is worth anything; at 1.5 m they are 6 / 9 / 13. It is not
-  # a number fitted to that mod pair either — 1.45 m gives the same three-way
-  # split, so the answer is a band and 1.5 sits in it.
+  # 3 m SPACING, and it is the single most consequential number in this file
+  # (owner, 2026-08-22). It decides the whole splash-versus-single-target
+  # ordering, because a 5 m Blast sphere holds `pi * 25 / spacing^2` bodies —
+  # 35 at 1.5 m, 13 at 2.5 m, 5 at 4 m. Measured on the Larkspur Prime with one
+  # build per element and everything else pinned:
+  #
+  #   spacing | in 5 m | Blast KPM | Heat KPM | winner
+  #   1.5 m   |   35   |   305.9   |   64.5   | Blast
+  #   2.5 m   |   13   |   112.0   |   71.9   | Blast
+  #   4.0 m   |    5   |    41.1   |   62.1   | Heat
+  #   6.0 m   |    2   |     4.3   |   58.5   | Heat
+  #
+  # HEAT IS FLAT — it is a DoT on ONE body and does not care how close the
+  # crowd stands — while Blast swings 71x across that range. So the spacing was
+  # not a detail of the arrangement; it was the answer.
+  #
+  # 1.5 m WAS CHOSEN FOR A DIFFERENT QUESTION and it answered that one well: it
+  # is the only spacing tested that separates all three steps of a radius mod
+  # (ordinary Firestorm / Primed / neither seed 6 / 9 / 13 bodies at 1.5 m, and
+  # the two Firestorms are indistinguishable at 2 m). That is a real cost of
+  # this change and it is paid on purpose: a ruler that can rank a radius mod's
+  # steps but ranks the wrong ELEMENT is measuring the wrong thing. The owner
+  # played the same fight at level 200 and Heat killed visibly faster than
+  # Blast, which is what 1.5 m could not reproduce and 3-4 m does.
+  #
+  # WHY 3 AND NOT 4: it is the near edge of the band where the two cross over
+  # (between 2.5 m and 4 m), so it keeps a crowd that is genuinely a crowd —
+  # bodies are 0.25 m in radius, so 3 m leaves 2.5 m of gap — while no longer
+  # handing a 5 m sphere three dozen targets. A number in the crossover band is
+  # a choice; that it must be in the band is not.
   formation_grid:
     cols: 19
     rows: 19
-    spacing_m: 1.5
+    spacing_m: 3.0
 
   # NO `aim_at`: the weapon points at the body it is in contact with, which is
   # what an absent aim point means. A ruler that aimed at bare floor would be

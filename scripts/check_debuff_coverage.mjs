@@ -31,7 +31,13 @@ const r = await evaluate(`(async () => {
   await go('/simulator');
   // A LEVEL THE TORID CAN KILL AT: the point of this fight is the respawn, and
   // an unmodded gun kills nothing at 9999 Steel Path.
-  sim.duration = 60; sim.runs = 30; sim.level = 30; sim.steel_path = false; sim.eximus = false;
+  // LEVEL 5, not 30. The point of this fight is the RESPAWN, so the gun has to
+  // kill; it inherited the official group scenario's grid, and when that grid's
+  // spacing went from 1.5 m to 3 m (2026-08-22) an unmodded Torid's blast
+  // stopped reaching a second body and the kill count fell to one. The bodies
+  // are left alone — the assertions below are about WHICH body a row belongs
+  // to — and the target is softened instead.
+  sim.duration = 60; sim.runs = 30; sim.level = 5; sim.steel_path = false; sim.eximus = false;
   // The result is captured off the wire rather than out of a global: the page
   // stores it inside the active scenario preset, which is a longer reach than
   // this check needs.
