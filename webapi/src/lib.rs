@@ -4987,7 +4987,13 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
                 let dmg: Vec<f64> =
                     rep.frames.iter().map(|f| pick(f, name).0.round()).collect();
                 let types: Vec<Value> = if by.is_some() {
-                    (0..15)
+                    // SIZED FROM THE ENUM, never a literal. This read `0..15`
+                    // while `DamageType::ALL` has seventeen, so the last two —
+                    // Tau and Cinematic — could never appear in a replay's
+                    // per-type breakdown however much of them a weapon dealt.
+                    // Same fault class as the `[f64; 15]` arrays in `dummy`,
+                    // found the same way: by counting (2026-08-21).
+                    (0..wfsim_engine::damage::DamageType::ALL.len())
                         .filter(|&i| pick(&last, name).1[i] > 0.0)
                         .map(|i| {
                             json!({
