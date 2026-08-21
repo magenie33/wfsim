@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-engine: fa2d2fcf2340cf92d8dc54748a5aa852a1e50f38
+engine: 8c5363ac4680bd806a4cac9ca23012daca2593b9
 entries:
   - weapon: akarius_prime
     mode: base
@@ -321,6 +321,12 @@ entries:
     mode: cycle
     score: 133.67816111080072
     mods: [galvanized_chamber, heavy_caliber, critical_delay, vital_sense, magnetic_capacity, rime_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_merciless]
+  - weapon: torid
+    mode: cycle
+    score: 130.6746290672913
+    mods: [galvanized_chamber, heavy_caliber, point_strike, vital_sense, magnetic_capacity, cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_merciless]
   - weapon: trumna_prime

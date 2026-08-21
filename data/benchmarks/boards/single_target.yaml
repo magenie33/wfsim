@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: fa2d2fcf2340cf92d8dc54748a5aa852a1e50f38
+engine: 8c5363ac4680bd806a4cac9ca23012daca2593b9
 entries:
   - weapon: akarius_prime
     mode: base
@@ -3508,9 +3508,9 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: trumna_prime
     mode: base
-    score: 0.8997062191984491
-    mods: [heavy_caliber, primary_acuity, serration, hammer_shot, point_strike, vile_acceleration, vital_sense, primed_cryo_rounds]
-    arcanes: [primary_crux]
+    score: 14.071894130503493
+    mods: [primary_acuity, galvanized_aptitude, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
+    arcanes: [primary_deadhead]
   - weapon: vadarya_prime
     mode: base
     score: 9.293817661692971
