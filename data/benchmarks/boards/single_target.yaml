@@ -80,6 +80,12 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: atomos
     mode: base
+    score: 10.448667993700818
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_survivors_edge]
+    arcanes: [secondary_enervate]
+  - weapon: atomos
+    mode: base
     score: 8.939458108671001
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, pistol_elementalist, magnetic_might, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_commodores_fortune]
@@ -1724,6 +1730,12 @@ entries:
     mode: base
     score: 8.255411843897807
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, hunter_munitions, shotgun_elementalist, magnetic_strafe, frigid_blast]
+    arcanes: [shotgun_vendetta]
+    valence: toxin
+  - weapon: kuva_hek
+    mode: alternate
+    score: 8.077418982869956
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, primed_ammo_stock, critical_deceleration, semi_shotgun_cannonade, vigilante_armaments, primed_charged_shell]
     arcanes: [shotgun_vendetta]
     valence: toxin
   - weapon: kuva_kohm
