@@ -143,6 +143,7 @@ fn indirect_grant(grants: &str) -> Option<IndirectStat> {
         "punch_through" => IndirectStat::PunchThrough,
         "range" => IndirectStat::Range,
         "beam_range" => IndirectStat::BeamRange,
+        "beam_range_percent" => IndirectStat::BeamRangePercent,
         "movement_speed" => IndirectStat::MovementSpeed,
         "sprint_speed" => IndirectStat::SprintSpeed,
         _ => return None,
@@ -472,6 +473,11 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         // SINGLE-TARGET damage, which is what `Indirect` is for.
         "range_bonus" => ModEffect::Indirect(IndirectStat::Range, max("rankMax")),
         "beam_range_bonus" => ModEffect::Indirect(IndirectStat::BeamRange, max("rankMax")),
+        // …and the PERCENTAGE half, which is a different bucket because it
+        // lands in a different place — see `range_m` in `loadout::resolve`.
+        "beam_range_percent" => {
+            ModEffect::Indirect(IndirectStat::BeamRangePercent, max("rankMax"))
+        }
         "movement_speed_bonus" => ModEffect::Indirect(IndirectStat::MovementSpeed, max("rankMax")),
         "sprint_speed_bonus" => ModEffect::Indirect(IndirectStat::SprintSpeed, max("rankMax")),
         "ammo_conversion" => ModEffect::Indirect(IndirectStat::AmmoConversion, max("rankMax")),

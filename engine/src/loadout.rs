@@ -452,6 +452,12 @@ pub enum IndirectStat {
     /// Beam LENGTH in metres, flat (Sinister Reach +12 m, Ruinous Extension
     /// +8 m). A separate stat from `Range`: different unit, different weapons.
     BeamRange,
+    /// Beam LENGTH as a fraction (Galvanized Acceleration +30%). Its own stat
+    /// rather than a second number in `BeamRange`, because the two are
+    /// different units AND they land in different places: the flat one is
+    /// added AFTER the percentage (see `range_m` in `resolve`), so a single
+    /// bucket could not express the order even if the units agreed.
+    BeamRangePercent,
     /// Movement speed while AIMING (Agile Aim).
     MovementSpeed,
     /// Sprint speed — a WARFRAME stat the weapon carries (Amalgam Serration),
@@ -494,7 +500,7 @@ impl IndirectStat {
             IndirectStat::PunchThrough => "Punch Through",
             IndirectStat::Zoom => "Zoom",
             IndirectStat::Range => "Range",
-            IndirectStat::BeamRange => "Beam Range",
+            IndirectStat::BeamRange | IndirectStat::BeamRangePercent => "Beam Range",
             IndirectStat::MovementSpeed => "Movement Speed (aiming)",
             IndirectStat::SprintSpeed => "Sprint Speed",
             IndirectStat::AmmoConversion => "Ammo Pickup Conversion",
@@ -513,6 +519,9 @@ impl IndirectStat {
     pub fn unit(&self) -> &'static str {
         match self {
             IndirectStat::PunchThrough | IndirectStat::BeamRange => "m",
+            // …and the percentage half of the same stat reads as one, which is
+            // why they are two variants: one label, two units.
+            IndirectStat::BeamRangePercent => "%",
             IndirectStat::DoubleJump => "x",
             IndirectStat::KillExplosion => "",
             _ => "%",
@@ -3839,6 +3848,37 @@ pub fn resolve_for(
         }
     });
 
+    // BEAM LENGTH: the weapon's reach, and the ONE bracket the wiki states for
+    // it — VERBATIM (Galvanized Acceleration, Notes): *"Sinister Reach will not
+    // be affected by this mod as it gives a flat beam length increase AFTER
+    // percent bonuses."* So the flat metres land outside the percentage, which
+    // is the opposite of how every damage bucket in this engine works and is
+    // worth 3.6 m on a 20 m beam carrying both.
+    //
+    // INFINITY IS THE ORDINARY CASE and needs no arm of its own: a weapon that
+    // declares no range keeps one under any bonus, which is also what makes
+    // "only affects the Panthera's alt-fire" and "only the Phantasma's primary
+    // fire" fall out of the data rather than being transcribed — the entry
+    // those notes exclude is the one with no range to extend.
+    //
+    // A CHAIN IS NOT THE BEAM. "Weapon Range Mods (like Sinister Reach) no
+    // longer affect the distance of chains for chainable Beam weapons (like the
+    // Amprex). Main Beam distance is still affected by them" (Update 22.14), and
+    // `chain_range_m` is a separate field this never touches.
+    let beam_range_m = {
+        let flat: f64 = indirect
+            .iter()
+            .filter(|(s, _)| *s == IndirectStat::BeamRange)
+            .map(|(_, v)| *v)
+            .sum();
+        let pct: f64 = indirect
+            .iter()
+            .filter(|(s, _)| *s == IndirectStat::BeamRangePercent)
+            .map(|(_, v)| *v)
+            .sum();
+        (base.range_m * (1.0 + pct) + flat).max(0.0)
+    };
+
     // PUNCH THROUGH: the weapon's own plus every grant, in metres of material.
     //
     // AN AoE ATTACK GETS NEITHER, and that is a catalog rule rather than a
@@ -3907,7 +3947,7 @@ pub fn resolve_for(
         slot: base.slot,
         mod_pools: base.mod_pools,
         punch_through_m,
-        range_m: base.range_m,
+        range_m: beam_range_m,
         damage,
         radial,
         spread,
@@ -4249,6 +4289,125 @@ pub fn resolve_for(
 
 #[cfg(test)]
 mod tests {
+
+    /// BEAM LENGTH: a flat mod adds AFTER a percentage, and the wiki says so
+    /// exactly once — on the other mod's page.
+    ///
+    /// VERBATIM (Galvanized Acceleration, Notes): *"Sinister Reach will not be
+    /// affected by this mod as it gives a flat beam length increase after
+    /// percent bonuses."* That is the opposite of how every damage bucket here
+    /// works, and it is worth 3.6 m on a 20 m beam carrying both: 38 rather
+    /// than 41.6.
+    ///
+    /// The Phantasma is the whole reason the order is testable — it is the one
+    /// weapon in the roster that can hold a flat beam mod and the percentage
+    /// one at the same time, being a continuous SHOTGUN.
+    #[test]
+    fn beam_length_takes_the_flat_metres_after_the_percentage() {
+        // Off the PHANTASMA's own pool, which is the assertion's other half:
+        // a mod it could not equip could not be measured on it either.
+        let pool = crate::mods_data::pool_for_build("phantasma", &[]);
+        let by_id = |id: &str| {
+            pool.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("{id} is in the pool"))
+        };
+        let reach = by_id("sinister_reach");
+        let accel = by_id("galvanized_acceleration");
+        let base = super::WeaponBase::from_data("phantasma", false, &[]);
+        assert!((base.range_m - 20.0).abs() < 1e-9, "the Phantasma's own reach: {}", base.range_m);
+        let range = |mods: &[&_]| super::resolve(&base, mods, super::StackPolicy::Emergent).range_m;
+        assert!((range(&[reach]) - 32.0).abs() < 1e-9, "flat alone: {}", range(&[reach]));
+        // The percentage is +90%: the card's own +30% plus its on-kill half at
+        // the assumed max every indirect buff grant is read at, two stacks of
+        // +30%. 20 x 1.9 = 38.
+        assert!((range(&[accel]) - 38.0).abs() < 1e-9, "percent alone: {}", range(&[accel]));
+        // …and BOTH is 20 x 1.9 + 12, never (20 + 12) x 1.9 = 60.8. The two
+        // readings are 10.8 m apart on this weapon, which is three ranks of the
+        // group ruler's grid.
+        let both = range(&[reach, accel]);
+        assert!((both - 50.0).abs() < 1e-9, "the flat metres land outside the percentage: {both}");
+        assert!((both - (base.range_m + 12.0) * 1.9).abs() > 1.0, "and not inside it");
+        // AN ATTACK THAT STATES NO REACH KEEPS NONE under either bonus, which
+        // is what makes the page's per-attack notes need no transcription —
+        // "only affects Panthera's Alt-fire", "only affects Phantasma's primary
+        // fire" exclude exactly the entries with nothing to extend.
+        let no_reach = super::WeaponBase { range_m: f64::INFINITY, ..base.clone() };
+        for mods in [&[reach][..], &[accel][..], &[reach, accel][..]] {
+            assert!(
+                super::resolve(&no_reach, mods, super::StackPolicy::Emergent)
+                    .range_m
+                    .is_infinite(),
+                "no reach stays no reach"
+            );
+        }
+    }
+
+    /// …AND THE METRES REACH THE FIGHT, which is the only assertion here that
+    /// could not have passed before 2026-08-19.
+    ///
+    /// A range is a WALL (`gap_m <= ap.range_m`), so a beam short of its target
+    /// deals literally nothing and the same beam extended past it deals its
+    /// whole output. That is the widest a mod's effect gets in this engine, and
+    /// it is why beam range stopped being an indirect stat: at 27 m an Ignis is
+    /// worth zero and an Ignis carrying Sinister Reach is worth a build.
+    #[test]
+    fn a_beam_that_reaches_deals_damage_and_one_that_does_not_deals_none() {
+        let reach = crate::mods_data::pool_for_build("ignis", &[])
+            .into_iter()
+            .find(|m| m.id == "sinister_reach")
+            .expect("the Ignis is on the catalog");
+        let base = super::WeaponBase::from_data("ignis", false, &[]);
+        assert!((base.range_m - 20.0).abs() < 1e-9, "the Ignis reaches 20 m");
+        // And it BITES both ways round: the sabotage that would hide this bug
+        // is a wall that never applies, which the first two assertions catch,
+        // and one the mod cannot move, which the third does.
+
+        // 27 m: past the weapon's own wall, inside the modded one (20 + 12).
+        // `training` stands the two bodies at CONTACT; the gap is set here, and
+        // it is measured surface to surface the way the scene prints it.
+        let at = |mods: &[&_], gap: f64| {
+            let panel = super::resolve(&base, mods, super::StackPolicy::Emergent);
+            let mut arena = crate::arena::Arena::training(5.0);
+            arena.target_at =
+                crate::space::Vec2::new(0.0, gap + crate::space::CONTACT_RANGE_M);
+            let p = crate::dummy::DummyParams::from_panel(
+                &panel, &arena, &crate::arcanes_data::ArcaneFx::none(),
+            );
+            crate::dummy::monte_carlo(&p, 3, 11).mean_damage
+        };
+        assert!(at(&[], 5.0) > 0.0, "inside its own reach it fires normally");
+        assert_eq!(at(&[], 27.0), 0.0, "past the wall a beam deals nothing at all");
+        assert!(
+            at(&[&reach], 27.0) > 0.0,
+            "and the mod moves the wall — this is the whole point of modelling it"
+        );
+    }
+
+    /// …AND WHO MAY EQUIP ONE IS A CATALOG, not a property of the weapon.
+    ///
+    /// DE gates both flat mods on a hidden `BEAM` compatibility tag the export
+    /// does not carry, so the wiki's per-weapon list is the source. The two
+    /// halves asserted here are the ones a "is this weapon continuous" test got
+    /// wrong in both directions: the Furis's Incarnon form is a beam and cannot
+    /// take it — *"Despite its Incarnon form being a beam weapon, Furis cannot
+    /// equip this mod"*, the same base-form rule the Torid taught — and the
+    /// Ocucor is a beam that is simply not on the list.
+    #[test]
+    fn a_beam_range_mod_goes_only_where_the_catalog_says() {
+        let offered = |weapon: &str, id: &str| {
+            crate::mods_data::pool_for_build(weapon, &[]).iter().any(|m| m.id == id)
+        };
+        assert!(offered("nukor", "ruinous_extension"), "the Nukor is on the list");
+        assert!(offered("ignis", "sinister_reach"), "and the Ignis is on the other");
+        assert!(!offered("ocucor", "ruinous_extension"), "the Ocucor is not on the list");
+        assert!(!offered("furis_incarnon", "ruinous_extension"),
+            "a beam FORM of a weapon that is not on the list stays off it");
+        assert!(!offered("torid_incarnon", "sinister_reach"),
+            "and so does the Torid's, which is the case that killed the old rule");
+        // …and a weapon that is NOT a beam at all can be on the list: the
+        // page says so in as many words.
+        assert!(offered("tenet_spirex", "ruinous_extension"),
+            "Tenet Spirex carries the BEAM tag despite not being a beam weapon");
+    }
 
     /// A TERMINAL BLAST TAKES PUNCH THROUGH, AND PAYS FOR IT — the whole of
     /// MEASUREMENTS M53, asserted end to end on the weapon it was measured on.

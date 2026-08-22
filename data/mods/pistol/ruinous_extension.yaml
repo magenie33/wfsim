@@ -8,29 +8,38 @@ exilus: true
 internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponBeamDistanceMod
 description: "+Xm Beam Range"
 
+# WHICH WEAPONS MAY EQUIP IT — a CATALOG, and DE's own rule is a hidden tag we
+# cannot read: "this mod can only be equipped on secondaries with the hidden
+# BEAM Compatibility Tag". The export does not carry it (WFCD says `Pistol`), so
+# the wiki's list is the source and it is transcribed rather than derived. The
+# two exceptions are why no property test could stand in for it:
+#   · "Despite its Incarnon form being a beam weapon, Furis cannot equip this
+#     mod" — the same rule the Torid already taught us, that modding is decided
+#     on the BASE form;
+#   · "Tenet Spirex can equip this mod since it has the BEAM tag despite it not
+#     being a beam weapon" — a weapon on the list that is not a beam at all.
+# The Ocucor is NOT on the list, and `requires_weapon: continuous` was offering
+# it this mod until now.
+#
+# LISTED BY GROUP, so an Incarnon form counts as the weapon it belongs to. The
+# per-attack notes on the page — "only affects Atomos' initial beam", "does not
+# affect throwing grenades when reloading" — need no transcription: a chain
+# reads `chain_range_m` and a thrown grenade has no beam range, so neither is
+# reachable from here.
+exclusive_to: [atomos, catabolyst, coda_catabolyst, cycron, tenet_cycron,
+               embolist, gammacor, synoid_gammacor, nukor, kuva_nukor,
+               spectra, spectra_vandal, tenet_spirex]
+
 effects:
-  # Two separate reasons it buys no damage TODAY: beam range is inert on a
-  # non-continuous weapon (no beam to extend), and the arena is single-target
-  # at a fixed distance, so range buys nothing even on a beam. It LOADS now
-  # (2026-08-01) as an indirect stat — the metres are real and stated, and the
-  # day the 2D world scores reach they are already there to read.
-  # …AND IT SAYS SO ON THE CARD (2026-08-19). `unmodeled` rides ALONGSIDE the
-  # real effect rather than replacing it — replacing it is what threw the number
-  # away — so the reader sees the metres AND the "not modelled yet" badge.
-  #
-  # IT BECAME A REAL DISCREPANCY on the day range was modelled. Before that the
-  # sim had no reach at all, so a mod that extends one changed nothing and was
-  # right to say nothing. Now a range is a WALL, this mod moves it in game, and
-  # it does not here: measured on an Ocucor (20 m) with Ruinous Extension
-  # (+8 m) against a target at 25 m — 0 damage with the mod and 0 without.
-  #
-  # NOT IMPLEMENTED YET because the BRACKET is unsourced. The flat mods are
-  # unambiguous on their own (+8, +12 metres) and so is the percentage on its
-  # own (+30%), but the Phantasma can hold Sinister Reach AND Galvanized
-  # Acceleration at once, and neither Sinister Reach's page, Beam Length nor
-  # Continuous Weapon states whether flat and percent add or multiply. A
-  # faithful-looking formula without a measurement is not correct.
-  - kind: unmodeled
+  # THE METRES ARE REAL NOW (2026-08-22). Beam range became a WALL on
+  # 2026-08-19 (`gap_m <= ap.range_m`), and this mod moves it — measured on an
+  # Ocucor at the time: 0 damage at 25 m with the mod and 0 without, because
+  # the mod did nothing. What was missing was never the metres, it was the
+  # BRACKET, and the wiki does state it — on Galvanized Acceleration's page
+  # rather than on this one: "Sinister Reach will not be affected by this mod
+  # as it gives a flat beam length increase AFTER percent bonuses." So a flat
+  # add lands outside the percentage, and `loadout::resolve` computes
+  # `range x (1 + percent) + flat`.
   - kind: beam_range_bonus
     rank0: 2.0
     rankMax: 8.0

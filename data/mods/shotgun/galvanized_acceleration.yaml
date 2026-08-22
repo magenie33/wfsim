@@ -12,24 +12,22 @@ effects:
   - kind: projectile_speed_bonus
     rank0: 0.0273
     rankMax: 0.3
-  # …AND IT SAYS SO ON THE CARD (2026-08-19). `unmodeled` rides ALONGSIDE the
-  # real effect rather than replacing it — replacing it is what threw the number
-  # away — so the reader sees the metres AND the "not modelled yet" badge.
+  # A PERCENTAGE, and therefore its own kind: `beam_range_bonus` is METRES
+  # (Sinister Reach's +12), this is a fraction, and the two land in different
+  # places. It rode the metres bucket until 2026-08-22, so the panel offered to
+  # read +30% as "+0.3 m Beam Range" and the sim read it as nothing at all.
   #
-  # IT BECAME A REAL DISCREPANCY on the day range was modelled. Before that the
-  # sim had no reach at all, so a mod that extends one changed nothing and was
-  # right to say nothing. Now a range is a WALL, this mod moves it in game, and
-  # it does not here: measured on an Ocucor (20 m) with Ruinous Extension
-  # (+8 m) against a target at 25 m — 0 damage with the mod and 0 without.
+  # THE BRACKET IS ON THIS PAGE, which is why it took so long to find — it is
+  # stated about the OTHER mod, in this one's Notes: "Sinister Reach will not be
+  # affected by this mod as it gives a flat beam length increase AFTER percent
+  # bonuses." So `loadout::resolve` computes `range x (1 + percent) + flat`, and
+  # the Phantasma — the one weapon that can hold both — is 38 m rather than
+  # 41.6 m on a 20 m beam.
   #
-  # NOT IMPLEMENTED YET because the BRACKET is unsourced. The flat mods are
-  # unambiguous on their own (+8, +12 metres) and so is the percentage on its
-  # own (+30%), but the Phantasma can hold Sinister Reach AND Galvanized
-  # Acceleration at once, and neither Sinister Reach's page, Beam Length nor
-  # Continuous Weapon states whether flat and percent add or multiply. A
-  # faithful-looking formula without a measurement is not correct.
-  - kind: unmodeled
-  - kind: beam_range_bonus
+  # NO EQUIP LIST HERE, unlike the two flat mods: this is an ordinary shotgun
+  # mod whose other half works on any shotgun. On a shotgun with no beam the
+  # term is a percentage of INFINITY, which is INFINITY.
+  - kind: beam_range_percent
     rank0: 0.0273
     rankMax: 0.3
   # TWO grants off ONE trigger, the way Primary Frostbite grants crit damage
@@ -43,9 +41,21 @@ effects:
     max_stacks: 2
     duration: 10
     decay: lose_one_and_reset
+  # THE ON-KILL HALF IS READ AT ASSUMED MAX, which is the house reading every
+  # `kind: buff` with an indirect grant already takes ("a build carrying this
+  # mod is played at its cap" — see `added_spread`), and which its
+  # projectile-speed twin above has always taken.
+  #
+  # IT IS LOAD-BEARING HERE in a way it never was for a display stat, so the
+  # reason it is still right is worth writing down: reach only decides anything
+  # in a fight with DISTANCE in it, and the only such fight this app runs is the
+  # group ruler, where 361 bodies die continuously and the buff is up. The
+  # single-target ruler stands the two bodies at CONTACT, so no wall of any
+  # length is ever read there. The assumption and the fights it applies to do
+  # not overlap with the fights that would expose it.
   - kind: buff
     trigger: on_kill
-    grants: beam_range
+    grants: beam_range_percent
     rank0: 0.0273
     rankMax: 0.3
     max_stacks: 2

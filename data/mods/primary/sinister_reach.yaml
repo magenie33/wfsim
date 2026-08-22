@@ -8,37 +8,40 @@ exilus: true
 internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponBeamDistanceMod
 description: "+Xm Beam Range"
 
-# CONTINUOUS WEAPONS ONLY - an EQUIP restriction, not an inert effect. WFCD
-# tags it PRIMARY, which is not the whole rule: the Torid cannot install it
-# (user, 2026-07-31), and DE's own internal name is WeaponBeamDistanceMod.
+# WHICH WEAPONS MAY EQUIP IT — a CATALOG, and DE's own rule is a hidden tag we
+# cannot read: "the mod can only be equipped on weapons with the hidden BEAM
+# compatibility tag". The export does not carry it (WFCD says `PRIMARY`, which
+# is not the whole rule), so the wiki's list is the source and it is
+# transcribed rather than derived from "is this weapon continuous".
 #
-# The Torid is the case that shows where the line is drawn: its INCARNON form
-# is a continuous beam, and it still cannot take this mod. Modding is decided
-# on the BASE form, which is a semi-auto grenade launcher.
-requires_weapon: continuous
+# THAT PROPERTY TEST WAS WRONG IN BOTH DIRECTIONS, which is why it is gone. The
+# Torid's Incarnon form is a continuous beam and cannot take it (modding is
+# decided on the BASE form, which is a grenade launcher — user, 2026-07-31), and
+# the page names the other end of the same error: "Does not currently work with
+# continuous Robotic beam weapons like: Artax, Tazicor, Verglas".
+#
+# LISTED BY GROUP, so an Incarnon form counts as the weapon it belongs to. The
+# per-attack notes on the page — "only affects Amprex's initial beam, does not
+# affect beam chains", "only affects Panthera's Alt-fire", "only affects
+# Phantasma's primary fire" — need no transcription: a chain reads
+# `chain_range_m`, and an attack that states no range keeps INFINITY under any
+# bonus, so the entries those notes exclude are exactly the ones with nothing to
+# extend.
+#
+# NOT IN THE ROSTER YET, from the same list: Lizzie, and primary Gaze kitguns.
+exclusive_to: [amprex, convectrix, flux_rifle, glaxion, glaxion_vandal,
+               tenet_glaxion, ignis, ignis_wraith, phage, quanta, quanta_vandal,
+               tenet_quanta, synapse, coda_synapse, panthera, panthera_prime,
+               phantasma, phantasma_prime]
 
-# NOT MODELED: the engine carries `beam.range_m` but has no mod kind that
-# scales it. Nothing in the roster can equip this today anyway.
 effects:
-  # 2D groundwork (2026-08-01): a real stat with no SINGLE-TARGET damage
-  # payload. It used to be `kind: unmodeled`, which threw the number away.
-  # …AND IT SAYS SO ON THE CARD (2026-08-19). `unmodeled` rides ALONGSIDE the
-  # real effect rather than replacing it — replacing it is what threw the number
-  # away — so the reader sees the metres AND the "not modelled yet" badge.
-  #
-  # IT BECAME A REAL DISCREPANCY on the day range was modelled. Before that the
-  # sim had no reach at all, so a mod that extends one changed nothing and was
-  # right to say nothing. Now a range is a WALL, this mod moves it in game, and
-  # it does not here: measured on an Ocucor (20 m) with Ruinous Extension
-  # (+8 m) against a target at 25 m — 0 damage with the mod and 0 without.
-  #
-  # NOT IMPLEMENTED YET because the BRACKET is unsourced. The flat mods are
-  # unambiguous on their own (+8, +12 metres) and so is the percentage on its
-  # own (+30%), but the Phantasma can hold Sinister Reach AND Galvanized
-  # Acceleration at once, and neither Sinister Reach's page, Beam Length nor
-  # Continuous Weapon states whether flat and percent add or multiply. A
-  # faithful-looking formula without a measurement is not correct.
-  - kind: unmodeled
+  # THE METRES ARE REAL NOW (2026-08-22). Beam range became a WALL on
+  # 2026-08-19 (`gap_m <= ap.range_m`), and this mod moves it. What was missing
+  # was never the metres, it was the BRACKET — and the wiki does state it, on
+  # Galvanized Acceleration's page rather than on this one: "Sinister Reach will
+  # not be affected by this mod as it gives a flat beam length increase AFTER
+  # percent bonuses." So a flat add lands outside the percentage, and
+  # `loadout::resolve` computes `range x (1 + percent) + flat`.
   - kind: beam_range_bonus
     rank0: 3.0
     rankMax: 12.0
