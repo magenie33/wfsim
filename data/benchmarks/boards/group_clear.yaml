@@ -13,24 +13,9 @@ engine: 53f2320ffd55866b29b4914561076b4c8b70d8d5
 entries:
   - weapon: afentis_prime
     mode: base
-    score: 0.5235486082055661
-    mods: [galvanized_chamber, serration, critical_delay, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
-    arcanes: [primary_merciless]
-  - weapon: afentis_prime
-    mode: base
-    score: 0.5070772342506786
-    mods: [galvanized_chamber, serration, critical_delay, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
-    arcanes: [primary_merciless]
-  - weapon: afentis_prime
-    mode: base
-    score: 0.4050736059514203
-    mods: [galvanized_chamber, serration, critical_delay, hunter_munitions, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, malignant_force]
-    arcanes: [primary_merciless]
-  - weapon: afentis_prime
-    mode: base
-    score: 0.2887844844062828
-    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, malignant_force]
-    arcanes: [primary_merciless]
+    score: 3.492701098867385
+    mods: [heavy_caliber, primary_acuity, critical_delay, hammer_shot, semi_rifle_cannonade, vital_sense, hellfire, thermite_rounds]
+    arcanes: [primary_compression]
   - weapon: akarius_prime
     mode: base
     score: 52.47173607197614

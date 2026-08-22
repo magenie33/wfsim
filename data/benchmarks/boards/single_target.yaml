@@ -11,6 +11,11 @@ benchmark: single_target
 source: submissions
 engine: 53f2320ffd55866b29b4914561076b4c8b70d8d5
 entries:
+  - weapon: afentis_prime
+    mode: base
+    score: 3.552587644848053
+    mods: [heavy_caliber, primary_acuity, critical_delay, hammer_shot, semi_rifle_cannonade, vital_sense, hellfire, thermite_rounds]
+    arcanes: [primary_compression]
   - weapon: akarius_prime
     mode: base
     score: 10.775906643535498
