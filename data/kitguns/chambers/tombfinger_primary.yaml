@@ -16,10 +16,13 @@
 # MODE and they are different facts: 'Tombfinger, primary, charged' is one
 # entry and 'Tombfinger, secondary, charged' is another.
 #
-# ITS `AOE` TAG HAS NO NUMBERS HERE. The module marks it AOE and publishes
-# no radius and no radial damage, so the blast is NOT modelled from this
-# file — it has to be read off the weapon's own page before this chamber is
-# worth simulating. Said here rather than discovered later.
+# ITS `AOE` TAG HAS NUMBERS, AND THEY ARE NOT THE MODULE'S. The module marks
+# this chamber AOE and publishes no radius and no radial damage at all, so the
+# whole `blast:` block at the foot of this file is off the WEAPON's page. That
+# is the ordinary rule here — the wiki wins — but it is worth saying out loud
+# for a family whose every other number comes from one machine-readable table:
+# an AOE Kitgun cannot be transcribed from the module alone, and one that is
+# will silently simulate as a weapon with no explosion.
 id: tombfinger_primary
 name: Tombfinger
 chamber: tombfinger
@@ -82,6 +85,56 @@ magazine:
   med: 19
   megahighest: 35
   superhighest: 31
+
+# ================= THE EXPLOSION =================
+#
+# The module marks this chamber AOE and publishes NO radius and NO radial
+# damage, so every number below is off Tombfinger's own page. It states them
+# PER GRIP, the same way the module states damage per grip, because the grip is
+# what sets the charge — and the charge is what the explosion is.
+#
+# TWO EXPLOSIONS, NOT ONE. A quick shot and a fully charged shot are different
+# sizes and different numbers, which is why this entry has a `charged` form
+# beside it: "Quick shots have a base explosion radius of 1.7 meters, while
+# fully charged shots have a base explosion radius of 6.2 meters."
+#
+# AN EXPLOSION IS NEVER A WEAK POINT HIT, in DE's own words: "All explosions
+# have a headshot multiplier of 1x and cannot trigger headshot conditions."
+# That is the engine's `body_only` rule stated by the page rather than derived,
+# and it is the same rule the group ruler writes for a chain and a cloud.
+#
+# "Initial hit and explosion apply status separately" — two rolls, not one.
+blast:
+  # A PRIMARY's radius mod is Firestorm; the page names it and its Primed
+  # version, and Cautious Shot for the self-damage this arena does not model.
+  radius_mods: [firestorm]
+  # It staggers the WIELDER, which this arena gives no body to stagger.
+  self_stagger: true
+  # ONE ENTRY PER FIRING FORM, keyed by the form it belongs to.
+  forms:
+  # THE QUICK SHOT: fired before the charge completes.
+    quick:
+      radius_m: 1.7
+      # 100% at the centre to 75% at the rim — a shallow falloff, because the
+      # radius is small.
+      falloff_to: 0.75
+      damage:
+        brash: { radiation: 30 }
+        palmaris: { radiation: 35 }
+        shrewd: { radiation: 40 }
+        steadyslam: { radiation: 79 }
+        tremor: { radiation: 108 }
+    # THE FULL CHARGE: an order of magnitude more damage over three and a half
+    # times the radius, and a much steeper falloff.
+    charged:
+      radius_m: 6.2
+      falloff_to: 0.30
+      damage:
+        brash: { radiation: 412 }
+        palmaris: { radiation: 417 }
+        shrewd: { radiation: 422 }
+        steadyslam: { radiation: 461 }
+        tremor: { radiation: 490 }
 
 source:
   url: https://wiki.warframe.com/w/Tombfinger

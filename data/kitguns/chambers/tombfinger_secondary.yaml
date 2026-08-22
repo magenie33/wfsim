@@ -11,15 +11,18 @@
 # slots are two stat blocks in DE's own module and the difference reaches the
 # damage TYPE. A flag could not carry that; two files can. See README.md.
 #
-# A CHARGED TRIGGER, and the GRIP sets the charge time (0.5 s on Brash to
-# 1.4 s on Tremor). So a Tombfinger row on the board carries a SLOT and a
-# MODE and they are different facts: 'Tombfinger, primary, charged' is one
-# entry and 'Tombfinger, secondary, charged' is another.
+# THIS SLOT DOES NOT CHARGE. The primary Tombfinger is a Charge trigger whose
+# charge time comes from the grip; this one is Semi-Auto and has no charge at
+# all, which is why it has one explosion where the primary has two. The two
+# slots are two stat blocks and this is the sharpest place they differ.
 #
-# ITS `AOE` TAG HAS NO NUMBERS HERE. The module marks it AOE and publishes
-# no radius and no radial damage, so the blast is NOT modelled from this
-# file — it has to be read off the weapon's own page before this chamber is
-# worth simulating. Said here rather than discovered later.
+# ITS `AOE` TAG HAS NUMBERS, AND THEY ARE NOT THE MODULE'S. The module marks
+# this chamber AOE and publishes no radius and no radial damage at all, so the
+# whole `blast:` block at the foot of this file is off the WEAPON's page. That
+# is the ordinary rule here — the wiki wins — but it is worth saying out loud
+# for a family whose every other number comes from one machine-readable table:
+# an AOE Kitgun cannot be transcribed from the module alone, and one that is
+# will silently simulate as a weapon with no explosion.
 id: tombfinger_secondary
 name: Tombfinger
 chamber: tombfinger
@@ -74,6 +77,49 @@ magazine:
   med: 19
   megahighest: 35
   superhighest: 31
+
+# ================= THE EXPLOSION =================
+#
+# Off the weapon's own page; the module marks the chamber AOE and publishes
+# neither radius nor radial damage.
+#
+# NO CHARGE HERE. The secondary is Semi-Auto and has ONE explosion: "Upon
+# impact, the projectile explodes in a 1.9 meter radius in a reverse-cone
+# shape, dealing damage to enemies in front of the original target." The cone
+# is not modelled — this arena has no facing for a splash — and a sphere is the
+# generous reading of it, which is written down rather than left to be noticed.
+#
+# AN EXPLOSION IS NEVER A WEAK POINT HIT: "Explosion has a headshot multiplier
+# of 1x and cannot trigger headshot conditions."
+blast:
+  # A SECONDARY's radius mod is Fulmination, not Firestorm. The page names it.
+  radius_mods: [fulmination]
+  self_stagger: true
+  # ONE ENTRY PER FIRING FORM. This slot has exactly one.
+  forms:
+   impact:
+    radius_m: 1.9
+    falloff_to: 0.70
+    # THE SPLIT IS A SHARE OF THE CHAMBER'S OWN DAMAGE, not a separate table —
+    # this is the one Kitgun explosion that is carved out of the shot rather
+    # than added to it. The page: "The Impact, Puncture and ~19.5% of the
+    # Radiation damage make up the direct hit, the remaining ~80.5% of Radiation
+    # damage is assigned to the explosion."
+    #
+    # THE PAGE CONTRADICTS ITS OWN WORKED EXAMPLE and this is UNSETTLED. The
+    # example is "a kitgun built with Tombfinger with 180 base damage deals 91
+    # on direct hit and 89 with the splash" — 180 is the Haymaker row exactly
+    # (Impact 32 + Puncture 25 + Radiation 123). The stated RULE gives
+    # 32 + 25 + 0.195x123 = 81 direct and 99 splash; the EXAMPLE gives 91 and
+    # 89, which needs 27.6% of the Radiation on the direct hit. Both halves sum
+    # to 180, so one of the two is wrong and no arithmetic here can say which.
+    #
+    # The RULE is transcribed because it is stated as the mechanic and the
+    # example reads like a stale measurement — and this comment exists so that
+    # is a decision somebody made rather than a number nobody questioned. One
+    # in-game reading of a Haymaker Tombfinger settles it.
+    splash_share_of: radiation
+    splash_share: 0.805
 
 source:
   url: https://wiki.warframe.com/w/Tombfinger

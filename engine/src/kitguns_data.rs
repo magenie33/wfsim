@@ -75,6 +75,86 @@ pub struct Chamber {
     pub charge_seconds: BTreeMap<String, f64>,
     /// Size class -> rounds. The loader names the class.
     pub magazine: BTreeMap<String, f64>,
+    /// AN AOE CHAMBER'S EXPLOSION, and the one part of a Kitgun the module does
+    /// not publish — it marks a chamber `AOE` and states neither a radius nor a
+    /// radial damage, so this is off the weapon's own page. `None` means the
+    /// chamber does not explode; a chamber that carries the tag and nothing
+    /// here is a transcription that stopped early, which
+    /// `an_aoe_chamber_states_its_explosion` refuses.
+    #[serde(default)]
+    pub blast: Option<Blast>,
+}
+
+/// An explosion, per chamber.
+#[derive(Debug, Clone, Deserialize)]
+pub struct Blast {
+    /// Which radius-mod family reaches it. The SLOT does not settle this on its
+    /// own — a launcher and a shotgun are both primaries — so it is transcribed
+    /// from the page that names the mod.
+    #[serde(default)]
+    pub radius_mods: Vec<String>,
+    /// It staggers the WIELDER. This arena gives no body to stagger, so it is
+    /// recorded and not paid; see docs/UNMODELLED.md.
+    #[serde(default)]
+    pub self_stagger: bool,
+    /// ONE ENTRY PER FIRING FORM. A Tombfinger primary explodes differently on
+    /// a quick shot and on a full charge, and those are two forms of one
+    /// trigger rather than two weapons.
+    pub forms: BTreeMap<String, BlastForm>,
+}
+
+/// One firing form's explosion. It gets its damage in exactly ONE of two ways
+/// and the two are a real distinction rather than a spelling: an ADDED
+/// explosion has a table of its own beside the shot, a CARVED one moves a share
+/// of the shot's own damage out of the direct hit. `assemble` refuses a form
+/// that claims both or neither.
+#[derive(Debug, Clone, Deserialize)]
+pub struct BlastForm {
+    pub radius_m: f64,
+    /// The share still paid at the RIM — 1.0 is no falloff at all. An
+    /// explosion's falloff is centre-to-rim and therefore needs no distances,
+    /// which is why this is not the `Falloff` a shot carries.
+    pub falloff_to: f64,
+    /// ADDED: its own vector, per grip, exactly as the chamber's damage is.
+    #[serde(default)]
+    pub damage: BTreeMap<String, BTreeMap<String, f64>>,
+    /// CARVED: which of the shot's damage types the split is taken out of.
+    #[serde(default)]
+    pub splash_share_of: Option<String>,
+    /// CARVED: how much of it goes to the explosion.
+    #[serde(default)]
+    pub splash_share: Option<f64>,
+}
+
+impl BlastForm {
+    /// This form's explosion for one grip, given the shot it accompanies —
+    /// and what is LEFT of that shot. Returns `(explosion, direct)`.
+    ///
+    /// A CARVED explosion changes both halves, which is why one function
+    /// answers for both: computing them apart is how a share gets counted
+    /// twice or lost.
+    pub fn resolve(
+        &self,
+        grip_id: &str,
+        shot: &BTreeMap<String, f64>,
+    ) -> Option<(BTreeMap<String, f64>, BTreeMap<String, f64>)> {
+        match (&self.splash_share_of, self.splash_share) {
+            (Some(t), Some(share)) => {
+                if !self.damage.is_empty() {
+                    return None; // added AND carved is not a thing
+                }
+                let mut direct = shot.clone();
+                let whole = *direct.get(t)?;
+                direct.insert(t.clone(), whole * (1.0 - share));
+                Some((BTreeMap::from([(t.clone(), whole * share)]), direct))
+            }
+            (None, None) => {
+                let d = self.damage.get(grip_id)?.clone();
+                Some((d, shot.clone()))
+            }
+            _ => None, // half a carve says nothing
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
@@ -260,6 +340,23 @@ pub struct Assembled {
     pub spread: Spread,
     pub forced_procs: Vec<String>,
     pub falloff: Option<Falloff>,
+    /// THE EXPLOSION, resolved for this grip: form id -> what it deals and how
+    /// far. Empty when the chamber does not explode.
+    pub blasts: BTreeMap<String, AssembledBlast>,
+    /// Which radius-mod family the explosions take. Empty with no explosion.
+    pub blast_radius_mods: Vec<String>,
+}
+
+/// One firing form's explosion, resolved for a grip.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AssembledBlast {
+    pub radius_m: f64,
+    pub falloff_to: f64,
+    /// What the explosion deals.
+    pub damage: BTreeMap<String, f64>,
+    /// What is LEFT of the direct hit. Equal to the shot for an ADDED
+    /// explosion; short of it by the carve for a CARVED one.
+    pub direct: BTreeMap<String, f64>,
 }
 
 /// THE COMPOSITION RULE, and the whole of it.
@@ -277,12 +374,15 @@ pub fn assemble(a: &Assembly) -> Option<Assembled> {
     if g.slot != c.slot {
         return None;
     }
+    // THE SHOT, before any explosion is carved out of it. A CARVED explosion
+    // needs it and so does the direct hit, which is why it is read once.
+    let shot = c.damage.get(&g.id)?;
     Some(Assembled {
         name: c.name.clone(),
         slot: if c.slot == "secondary" { "secondary" } else { "primary" },
         // PER GRIP, published. `base` is the picker's preview and is not a
         // grip's answer, so it is never reachable here: the key is the grip's id.
-        damage: c.damage.get(&g.id)?.clone(),
+        damage: shot.clone(),
         fire_rate: *c.fire_rate.get(&g.id)?,
         charge_seconds: c.charge_seconds.get(&g.id).copied(),
         // THE LOADER NAMES A SIZE CLASS AND THE CHAMBER PRICES IT.
@@ -307,6 +407,26 @@ pub fn assemble(a: &Assembly) -> Option<Assembled> {
         spread: c.spread,
         forced_procs: c.forced_procs.clone(),
         falloff: c.falloff,
+        blasts: match &c.blast {
+            None => BTreeMap::new(),
+            Some(b) => {
+                let mut out = BTreeMap::new();
+                for (form, f) in &b.forms {
+                    let (damage, direct) = f.resolve(&g.id, shot)?;
+                    out.insert(
+                        form.clone(),
+                        AssembledBlast {
+                            radius_m: f.radius_m,
+                            falloff_to: f.falloff_to,
+                            damage,
+                            direct,
+                        },
+                    );
+                }
+                out
+            }
+        },
+        blast_radius_mods: c.blast.as_ref().map(|b| b.radius_mods.clone()).unwrap_or_default(),
     })
 }
 
@@ -449,4 +569,115 @@ mod tests {
         }
         assert_eq!(n, 400, "2 chambers x 2 slots x 5 grips x 20 loaders");
     }
+    /// A chamber DE tags `AOE` explodes, and this file has to say how. The
+    /// module publishes neither a radius nor a radial damage for any of them,
+    /// so a transcription that reads the module alone produces a weapon with a
+    /// silent hole in it — which is exactly what the first pass at Tombfinger
+    /// did, and this is what stops the next one.
+    #[test]
+    fn an_aoe_chamber_states_its_explosion() {
+        for c in chambers() {
+            let tagged = c.tags.iter().any(|t| t == "AOE");
+            assert_eq!(
+                tagged,
+                c.blast.is_some(),
+                "{}: tagged AOE {tagged} but blast {}",
+                c.id,
+                c.blast.is_some()
+            );
+        }
+    }
+
+    /// An explosion gets its damage in exactly ONE of two ways, and a form that
+    /// claims both or half of one is a transcription that lost its thread.
+    #[test]
+    fn an_explosion_is_added_or_carved_and_never_both() {
+        for c in chambers() {
+            let Some(b) = &c.blast else { continue };
+            assert!(!b.forms.is_empty(), "{}: a blast with no form", c.id);
+            for (name, f) in &b.forms {
+                let added = !f.damage.is_empty();
+                let carved = f.splash_share_of.is_some();
+                assert_ne!(added, carved, "{}/{name}: added {added}, carved {carved}", c.id);
+                assert_eq!(
+                    carved,
+                    f.splash_share.is_some(),
+                    "{}/{name}: half a carve",
+                    c.id
+                );
+                assert!(f.radius_m > 0.0, "{}/{name}: radius {}", c.id, f.radius_m);
+                assert!(
+                    f.falloff_to > 0.0 && f.falloff_to <= 1.0,
+                    "{}/{name}: falloff_to {}",
+                    c.id,
+                    f.falloff_to
+                );
+                // AN ADDED EXPLOSION PRICES EVERY GRIP. Its table is per grip
+                // exactly as the chamber's damage is, and a grip it skips is a
+                // grip that composes to nothing at all rather than to a weapon
+                // without an explosion.
+                if added {
+                    for g in grips().iter().filter(|g| g.slot == c.slot) {
+                        assert!(
+                            f.damage.contains_key(&g.id),
+                            "{}/{name}: no explosion for grip {}",
+                            c.id,
+                            g.id
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /// The Tombfinger, both slots, transcribed off its own page — and the two
+    /// halves of a CARVE add back up to the shot, which is the property that
+    /// distinguishes it from an added explosion and the one a share is easiest
+    /// to get wrong in.
+    #[test]
+    fn the_tombfinger_explodes_and_a_carve_conserves_the_shot() {
+        // PRIMARY: two forms, ADDED, and the charge is the bigger one in both
+        // radius and damage.
+        let a = assemble(&Assembly {
+            chamber: "tombfinger".into(),
+            grip: "tremor".into(),
+            loader: "thunderdrum".into(),
+        })
+        .expect("tremor tombfinger");
+        let quick = &a.blasts["quick"];
+        let charged = &a.blasts["charged"];
+        assert_eq!(quick.radius_m, 1.7);
+        assert_eq!(charged.radius_m, 6.2);
+        assert_eq!(quick.damage["radiation"], 108.0);
+        assert_eq!(charged.damage["radiation"], 490.0);
+        // ADDED: the direct hit is the whole shot, untouched.
+        assert_eq!(quick.direct, a.damage);
+        assert_eq!(a.blast_radius_mods, vec!["firestorm".to_string()]);
+
+        // SECONDARY: one form, CARVED out of the Radiation. Haymaker is the
+        // page's own worked example's 180 (32 + 25 + 123).
+        let b = assemble(&Assembly {
+            chamber: "tombfinger".into(),
+            grip: "haymaker".into(),
+            loader: "thunderdrum".into(),
+        })
+        .expect("haymaker tombfinger");
+        assert_eq!(b.slot, "secondary");
+        let imp = &b.blasts["impact"];
+        assert_eq!(imp.radius_m, 1.9);
+        // 80.5% of 123 to the explosion, 19.5% left on the direct hit.
+        assert!((imp.damage["radiation"] - 99.015).abs() < 1e-9, "{:?}", imp.damage);
+        assert!((imp.direct["radiation"] - 23.985).abs() < 1e-9, "{:?}", imp.direct);
+        // THE CARVE CONSERVES: every type, explosion plus direct, is the shot.
+        for (t, whole) in &b.damage {
+            let got = imp.direct.get(t).copied().unwrap_or(0.0)
+                + imp.damage.get(t).copied().unwrap_or(0.0);
+            assert!((got - whole).abs() < 1e-9, "{t}: {got} != {whole}");
+        }
+        // The types it does NOT carve are untouched on the direct hit.
+        assert_eq!(imp.direct["impact"], 32.0);
+        assert_eq!(imp.direct["puncture"], 25.0);
+        assert_eq!(b.blast_radius_mods, vec!["fulmination".to_string()]);
+    }
+
 }
