@@ -148,7 +148,11 @@ pub const BUILD_AXES: &[BuildAxis] = &[
     // A RIVEN IS A MOD, and rides in `mods` as an id — but the item itself
     // exists only on the machine that rolled it, so the request carries its
     // definition too and no public record can ever hold one.
-    BuildAxis { id: "rivens", request_field: "rivens", on_board: false },
+    // ON THE BOARD SINCE 2026-08-22, as a SHAPE. The item still exists on one
+    // machine and still cannot identify a public row — what a row holds is
+    // which stats it rolled and which is the malus, scored at that shape's own
+    // ceiling. Two players who rolled the same stats submitted the same build.
+    BuildAxis { id: "rivens", request_field: "rivens", on_board: true },
 ];
 
 /// A build that passed, and what it costs to actually own.

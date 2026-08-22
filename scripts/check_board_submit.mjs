@@ -61,6 +61,11 @@ const PAYLOAD = {
   evolutions: [],
   arcanes: ["secondary_deadhead"],
   valence: "magnetic",
+  // STATED AND EMPTY, exactly as the page sends them on a build with no riven.
+  // The rule the endpoint applies to both is `valence`'s: an empty optional
+  // axis is ABSENT rather than empty, so neither reaches storage here.
+  riven_pos: [],
+  riven_neg: "",
 };
 
 console.log("the board's submission endpoint\n");
@@ -101,11 +106,19 @@ console.log("the board's submission endpoint\n");
   check("...and exactly one record is written", kv.rows.size === 1, String(kv.rows.size));
   const rec = [...kv.rows.values()][0];
   // DERIVED, not listed: whatever the page sends is what has to arrive.
+  //
+  // AN EMPTY AXIS IS EXPECTED TO BE ABSENT, which is the endpoint's own rule
+  // and not a concession — a record should no more carry an empty riven than
+  // an empty valence, and the assertion below is the other half of it.
+  const said = (v) => (Array.isArray(v) ? v.length > 0 : v !== "" && v != null);
   const lost = Object.keys(PAYLOAD).filter(
-    (k) => JSON.stringify(rec[k]) !== JSON.stringify(PAYLOAD[k]),
+    (k) => said(PAYLOAD[k]) && JSON.stringify(rec[k]) !== JSON.stringify(PAYLOAD[k]),
   );
   check("every axis the page sends is written down", lost.length === 0,
     `lost: ${lost.join(", ")} — stored ${JSON.stringify(rec)}`);
+  const kept_empty = Object.keys(PAYLOAD).filter((k) => !said(PAYLOAD[k]) && k in rec);
+  check("...and an axis it has nothing for is absent, not empty",
+    kept_empty.length === 0, `stored empty: ${kept_empty.join(", ")}`);
 }
 
 // ---- 2. THE KEY TELLS TWO BUILDS APART ------------------------------------
@@ -123,6 +136,11 @@ console.log("the board's submission endpoint\n");
     // The ORDER is the build: the same mods in two orders combine to two
     // different elements, so this must key differently too.
     mods: [PAYLOAD.mods[1], PAYLOAD.mods[0], ...PAYLOAD.mods.slice(2)],
+    // A RIVEN'S SHAPE. Two players who rolled different stats did not submit
+    // the same build, and a key that could not tell them apart would file the
+    // second under the first's number — the failure this file exists for.
+    riven_pos: ["critical_damage", "multishot"],
+    riven_neg: "recoil",
   };
   for (const [axis, value] of Object.entries(variants)) {
     const kv = store();

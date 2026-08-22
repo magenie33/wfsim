@@ -1314,6 +1314,11 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 /* ---- the board -------------------------------------------------------- */
 .bench-sub{max-width:70ch;margin:0 0 14px;color:var(--text-2);font-size:13px;line-height:1.55}
 #bench-picker{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+/* WHICH BUILDS, under WHICH FIGHT — the second row reads as subordinate to the
+   first because it is: a ruler is the standard, this only narrows who is shown
+   under it. */
+#bench-view{display:flex;flex-wrap:wrap;gap:6px;margin:-6px 0 12px}
+#bench-view .bchip{font-size:.86em;padding:3px 9px}
 .bchip{padding:5px 11px;border:1px solid var(--line);border-radius:8px;background:transparent;
   color:var(--text-2);font-size:12px;cursor:pointer;font-family:inherit}
 .bchip:hover{color:var(--text)}

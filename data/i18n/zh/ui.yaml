@@ -1250,6 +1250,10 @@ ui:
   # "+150% Critical Chance" reads the same on a riven as on Point Strike.
   "Rivens": 裂罅
   "Riven": 裂罅
+  "All builds": "全部配装"
+  "No riven": "不带裂罅"
+  "Riven only": "仅裂罅"
+  "board": "榜单"
   "riven": 裂罅
   "rifle": 步枪
   "pistol": 手枪

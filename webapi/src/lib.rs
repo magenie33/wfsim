@@ -1798,6 +1798,31 @@ pub fn meta_json() -> Value {
 /// already knows how to check itself — eight mods, every seat filled — it still
 /// checks, because a reason on screen beats a round trip; this is the backstop
 /// for the rest, including every rule added after this comment.
+/// THE RIVEN SHAPE a board payload carries — two flat fields, the way the
+/// endpoint stores them.
+///
+/// The ROLLS are deliberately not on the wire: a row states a SHAPE and the
+/// scorer finds that shape's own best corner for the ruler's fight
+/// (`rivens_data::perfect`). Sending a roll would be sending something nobody
+/// ranks, and would invite the question of why the board's number is not the
+/// one on the submitter's card.
+pub(crate) fn riven_shape_from(v: &Value) -> Option<wfsim_engine::rivens_data::RivenShape> {
+    let bonuses: Vec<String> = v
+        .get("riven_pos")
+        .and_then(Value::as_array)
+        .map(|a| a.iter().filter_map(Value::as_str).map(String::from).collect())
+        .unwrap_or_default();
+    if bonuses.is_empty() {
+        return None;
+    }
+    let mut bonuses = bonuses;
+    bonuses.sort();
+    Some(wfsim_engine::rivens_data::RivenShape {
+        bonuses,
+        malus: Some(get_str(v, "riven_neg", "").to_string()).filter(|x| !x.is_empty()),
+    })
+}
+
 pub fn board_check_json(v: &Value) -> Value {
     let bench = get_str(v, "benchmark", "");
     let weapon = get_str(v, "weapon", "");
@@ -1808,13 +1833,14 @@ pub fn board_check_json(v: &Value) -> Value {
             .unwrap_or_default()
     };
     let valence = get_str(v, "valence", "");
-    match wfsim_engine::builds::validate_for_board(
+    match wfsim_engine::builds::validate_for_board_with(
         bench,
         weapon,
         &list("mods"),
         &list("evolutions"),
         &list("arcanes"),
         valence,
+        riven_shape_from(v).as_ref(),
     ) {
         // A REFUSAL IS A RESULT, not a transport error: `ok` says the question
         // was answered, `accepted` says what the answer was.

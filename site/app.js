@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "d15d4e8d+ · 2026-08-22 13:14Z";
+const BUILD_ID = "bebcaee8+ · 2026-08-22 16:04Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -1790,12 +1790,61 @@ const modeLabel = (w, id) => {
 /// and a weapon with a row for one mode and none for the other is the sharpest
 /// version of it, because the missing one is a question somebody can answer
 /// this afternoon.
+/// WHICH BUILDS THE BOARD IS SHOWING — `all`, `plain` or `riven`.
+///
+/// The RANKING is one list: a riven build does not always beat a plain one, so
+/// ranking them apart would publish a comparison the fight does not make
+/// (owner, 2026-08-22). What this decides is which subset each weapon's SHOWN
+/// row is drawn from — and the reason it exists is `plain`: under `all`, a
+/// weapon whose riven build wins hides its plain build entirely, and those are
+/// the builds most readers can actually make.
+let benchRivenView = "all";
+const BENCH_VIEWS = [
+  ["all", "All builds"],
+  ["plain", "No riven"],
+  ["riven", "Riven only"],
+];
+const rowHasRiven = (r) => !!(r && r.riven);
+
+/// A BOARD ROW'S RIVEN, AS A LOCAL ITEM — the name it takes on the reader's
+/// machine, DERIVED from the shape so opening the same row twice reuses the
+/// one riven instead of stacking copies.
+///
+/// A row cannot name somebody's riven: the item is on one machine and what the
+/// board holds is a SHAPE. So the reader's copy is named after the shape, which
+/// is also the only honest name for it — it is not anyone's roll, it is what
+/// that shape is worth at its ceiling.
+const boardRivenName = (rv) =>
+  `${tr("board")} · ${(rv.bonuses || []).join(" / ")}${rv.malus ? ` − ${rv.malus}` : ""}`;
+
+/// The definitions `builtinBuilds` met, by the mod id it put in the slot.
+///
+/// A REGISTRY RATHER THAN A WRITE, so listing the board's builds stays pure:
+/// a reader who never opens a riven row never gets one in their riven list.
+/// `restoreState` is where it lands, because that is the moment the build is
+/// actually being taken (owner, 2026-08-22: "copying one also generates a copy
+/// of the riven locally").
+const boardRivenDefs = {};
+/// One board riven as a riven PRESET's state — the editor's own shape.
+const boardRivenState = (rv) => ({
+  bonuses: (rv.bonuses || []).map((id, i) => ({ id, roll: (rv.rolls || [])[i] ?? 1 })),
+  malus: rv.malus
+    ? { id: rv.malus, roll: (rv.rolls || [])[(rv.bonuses || []).length] ?? 1 }
+    : null,
+  rank: 8,
+  polarity: "madurai",
+});
+const inBenchView = (r) =>
+  benchRivenView === "all"
+  || (benchRivenView === "riven") === rowHasRiven(r);
+
 const benchEntries = (id) => {
   const out = [];
   for (const w of META.weapons || []) {
     for (const m of w.modes || ["base"]) {
       const rows = (BOARD[w.id] || [])
-        .filter((r) => r.benchmark === id && (r.mode || "base") === m);
+        .filter((r) => r.benchmark === id && (r.mode || "base") === m)
+        .filter(inBenchView);
       out.push({ w, mode: m,
         row: rows.length ? rows.reduce((a, r) => (r.score > a.score ? r : a), rows[0]) : null });
     }
@@ -1821,6 +1870,17 @@ function renderBenchBoard() {
     });
   }
   if (!cur) { box.innerHTML = ""; return; }
+  // …AND WHICH BUILDS. A separate row of chips from the ruler's, because they
+  // are separate questions: the ruler is the FIGHT, this is which entrants are
+  // being listed. Drawn on every ruler, since every ruler takes both kinds.
+  const view = $("bench-view");
+  if (view) {
+    view.innerHTML = BENCH_VIEWS.map(([v, label]) => `<button type="button" class="bchip${
+      benchRivenView === v ? " sel" : ""}" data-bview="${v}">${escHtml(tr(label))}</button>`).join("");
+    view.querySelectorAll("[data-bview]").forEach((el) => {
+      el.onclick = () => { benchRivenView = el.dataset.bview; renderBenchBoard(); };
+    });
+  }
   // THE RULES, under the ruler that makes them. Collapsed by default: a reader
   // who wants the ranking should not have to scroll a standard to reach it, and
   // one who doubts a row should not have to leave the page to check the terms.
@@ -6251,6 +6311,31 @@ function snapshotState() {
   });
 }
 
+/// Create any BOARD riven this state wears that the reader does not have yet.
+///
+/// Returns nothing and writes at most once: the riven's name is derived from
+/// its shape, so a row taken twice reuses the first copy rather than stacking
+/// `… 2`, `… 3` behind it — which is the whole difference between this and the
+/// share link's import, where two links legitimately carry two different
+/// people's rivens that happen to share a name.
+function materialiseBoardRivens(st) {
+  const want = (st.slots || [])
+    .map((s) => s && s.mod)
+    .filter((id) => isRivenId(id) && boardRivenDefs[id]);
+  if (!want.length) return;
+  const ps = loadPresetList(RIVENS);
+  let added = 0;
+  for (const id of want) {
+    const name = id.slice(RIVEN_PREFIX.length);
+    if (ps.some((p) => p.name === name)) continue;
+    ps.push({ name, savedAt: Date.now(), state: boardRivenState(boardRivenDefs[id]) });
+    added++;
+  }
+  if (!added) return;
+  storePresetList(RIVENS, ps);
+  refreshRivenNames();
+}
+
 // Apply a saved state. `weapon` is the weapon it belongs to — pass it and the
 // payload's own `st.weapon` is IGNORED.
 //
@@ -6274,6 +6359,14 @@ function restoreState(st, weapon) {
     history.replaceState(null, "", weaponModPath(w));
   }
   applyWeapon(w, null); // resets pool/innate/visibility
+  // A BOARD ROW'S RIVEN IS CREATED HERE, and only here — the moment a build
+  // that wears one is actually taken. Without it the loop below would drop the
+  // slot as "an id gone from the pool" and hand back a seven-mod build that
+  // scores nothing like the row it came from.
+  //
+  // IDEMPOTENT: the name is derived from the shape, so taking the same row
+  // twice finds the riven it made the first time.
+  materialiseBoardRivens(st);
   (st.slots || []).forEach((s, i) => {
     if (i >= slots.length) return;
     slots[i].mod = s.mod && modById(s.mod) ? s.mod : null; // drop ids gone from the pool
@@ -7101,6 +7194,12 @@ const builtinBuilds = () => {
     .sort((a, b) =>
       order(a.benchmark) - order(b.benchmark)
       || modeOrder(a.mode) - modeOrder(b.mode)
+      // …AND RIVEN ROWS AFTER PLAIN ONES, contiguous, for the reason modes are:
+      // the picker draws a group header only where the group CHANGES, and a
+      // rank only means something within one group. The board's floor already
+      // treats the two as separate fields; a `#1` that could mean either would
+      // be the only number on this page that does not say what it is best of.
+      || (rowHasRiven(a) ? 1 : 0) - (rowHasRiven(b) ? 1 : 0)
       // Best first inside a mode. board.json already arrives this way; stating
       // it here is what makes `#1` the leader rather than a bet on the scorer's
       // write order.
@@ -7109,19 +7208,25 @@ const builtinBuilds = () => {
   const rank = {};
   return rows.map((row) => {
     const mode = row.mode || "base";
-    const key = `${row.benchmark}#${mode}`;
+    const rv = rowHasRiven(row);
+    const key = `${row.benchmark}#${mode}#${rv ? "r" : "p"}`;
     rank[key] = (rank[key] || 0) + 1;
     const n = rank[key];
     const bench = (META.benchmarks || []).find((b) => b.id === row.benchmark);
+    // WHAT THIS ROW IS BEST OF, said in its own name. A board that holds both
+    // kinds has two leaders per weapon and mode, and "#1" alone would be the
+    // one number here that does not say what it ranks among.
+    const kind = rv ? tr("riven") : "";
+    const label = [many ? modeLabel(w, mode) : "", kind].filter(Boolean).join(" · ");
     return {
-      name: many ? `#${n} · ${modeLabel(w, mode)}` : `#${n}`,
+      name: label ? `#${n} · ${label}` : `#${n}`,
       // The two halves of that name, for a picker that puts the MODE in a
       // group header and leaves the row to say the rank.
       rank: n,
-      subgroup: many ? modeLabel(w, mode) : "",
-      // Unique per ruler AND mode: the id is what the active pointer stores,
-      // and two rulers' first rows are two different builds.
-      builtin: `${row.benchmark}#${mode}#${n}`,
+      subgroup: label,
+      // Unique per ruler, mode AND kind: the id is what the active pointer
+      // stores, and a plain #1 and a riven #1 are two different builds.
+      builtin: `${row.benchmark}#${mode}#${rv ? "r" : "p"}#${n}`,
       benchmark: row.benchmark,
       mode,
       board: row,
@@ -7134,9 +7239,18 @@ const builtinBuilds = () => {
       savedAt: 0,
       state: buildState(w.id, {
         mode,
-        slots: Array.from({ length: 9 }, (_, k) => ({
-          mod: (row.mods || [])[k] || null, pol: null, rank: null,
-        })),
+        // THE RIVEN'S SLOT IS TRANSLATED BACK. A record carries the bare
+        // `riven` at the riven's own position — position is the build — and on
+        // this side a mod id has to name an ITEM. The definition is registered
+        // rather than written: `restoreState` creates it if and when this build
+        // is actually taken.
+        slots: Array.from({ length: 9 }, (_, k) => {
+          const id = (row.mods || [])[k] || null;
+          if (id !== BOARD_RIVEN_SLOT || !row.riven) return { mod: id, pol: null, rank: null };
+          const local = RIVEN_PREFIX + boardRivenName(row.riven);
+          boardRivenDefs[local] = row.riven;
+          return { mod: local, pol: null, rank: null };
+        }),
         evoSel: (row.evolutions || []).reduce((m, id, k) => ({ ...m, [k + 1]: id }), {}),
         arcane: (row.arcanes || []).length ? row.arcanes : ["none"],
         arcaneRank: [null],
@@ -11641,6 +11755,33 @@ const setBoardConsent = (v) => {
 };
 
 /// The submission itself: the BUILD, and nothing else about you.
+/// The mod id a RIVEN takes in a board record — the bare word, because the
+/// endpoint's ids are `[a-z0-9_]` and a riven's local name is one player's
+/// label for their own item.
+const BOARD_RIVEN_SLOT = "riven";
+
+/// THE EQUIPPED RIVEN AS A SHAPE, for a board record: `{riven_pos, riven_neg}`,
+/// or `{}` when the build wears none.
+///
+/// Two flat fields rather than an object, because that is the worker's shape —
+/// it validates `id` and `ids` and has no game data to check anything richer
+/// against. Spellings are per-protocol and always have been; what is shared is
+/// the AXIS, which both fields name.
+function boardRivenShape() {
+  const slot = mainSlots().find((s) => isRivenId(s.mod));
+  if (!slot) return { riven_pos: [], riven_neg: "" };
+  const st = (loadPresetList(RIVENS).find(
+    (p) => RIVEN_PREFIX + p.name === slot.mod) || {}).state || {};
+  const ids = (xs) => (xs || []).map((x) => x && x.id).filter(Boolean);
+  return {
+    // SORTED, because a riven's stats do not combine with each other — two
+    // players listing them in different orders described one riven and must
+    // produce one row.
+    riven_pos: ids(st.bonuses || st.positives).sort(),
+    riven_neg: ((st.malus || st.curse) || {}).id || "",
+  };
+}
+
 function boardPayload() {
   const bench = (scenarioNamed(activeScenario) || {}).builtin;
   if (!bench) return null;
@@ -11673,7 +11814,25 @@ function boardPayload() {
     // Torid that is 12,424 DPS against 46,583 (measured 2026-08-04). The
     // scorer canonicalises with the pool in front of it, which is the only
     // place that can tell an elemental mod from any other.
-    mods: mainSlots().filter((s) => s.mod).map((s) => s.mod),
+    // THE RIVEN RIDES AT ITS OWN POSITION, under the bare id `riven`. Position
+    // is the build: an elemental riven pairs with the build's other elementals
+    // and where it sits decides what it pairs WITH, which is the same reason
+    // the list is sent AS PLACED rather than sorted. The endpoint's ids are
+    // `[a-z0-9_]`, so the riven's local name cannot travel — and it should not:
+    // a name is what one player called their item.
+    mods: mainSlots()
+      .filter((s) => s.mod)
+      .map((s) => (isRivenId(s.mod) ? BOARD_RIVEN_SLOT : s.mod)),
+    // …AND WHAT THAT SLOT HOLDS, as a SHAPE. Which stats, and which is the
+    // malus — never the rolls: the board scores a shape at its own ceiling, the
+    // same way it scores every row at full Forma and every valence at the
+    // roll's maximum. What one copy landed on is luck.
+    //
+    // STATED EVEN WHEN EMPTY, like `valence` beside it: a payload that names
+    // every axis is one a reader can check against the worker's table, and the
+    // endpoint drops an empty one rather than storing it.
+    riven_pos: boardRivenShape().riven_pos,
+    riven_neg: boardRivenShape().riven_neg,
     evolutions: Object.values(evoSel).filter(Boolean),
     arcanes: arcanes.slice(),
     // THE PROGENITOR ELEMENT, for an adversary weapon. The ELEMENT only: the

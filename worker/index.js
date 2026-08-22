@@ -111,6 +111,18 @@ export const AXES = [
   // not here: it is the weapon, and `weapon` already carries it.
   { key: "grip", kind: "id", axis: "assembly" },
   { key: "loader", kind: "id", axis: "assembly" },
+  // A RIVEN, AS A SHAPE — which stats it rolled and which is the malus. The
+  // ROLLS are not here and never will be: a row states a shape and the scorer
+  // finds that shape's own best corner for the ruler's fight, the same way
+  // every row is scored at full Forma and at the valence roll's ceiling. Two
+  // players who rolled the same stats submitted the same build.
+  //
+  // A SET, because a riven's stats do not combine with each other — two people
+  // listing them in different orders described one riven. WHERE it sits is in
+  // `mods`, which carries the bare `riven` at its own position: an elemental
+  // riven pairs with the build's other elementals, so position is the build.
+  { key: "riven_pos", kind: "ids", max: 3, set: true, axis: "rivens" },
+  { key: "riven_neg", kind: "id", axis: "rivens" },
 ];
 
 const bad = (msg, status = 400) =>
@@ -130,7 +142,8 @@ const identity = (b) =>
   AXES.map((a) => {
     const v = b[a.key];
     if (a.kind === "id") return v || "";
-    return (a.set ? [...v].sort() : v).join(",");
+    const list = v || [];
+    return (a.set ? [...list].sort() : list).join(",");
   }).join("|");
 
 async function submit(request, env) {
@@ -163,11 +176,18 @@ async function submit(request, env) {
       // weapon's record has no `valence` key, exactly as before this table.
       if (s) rec[a.key] = s;
     } else {
-      if (!Array.isArray(v) || v.length > a.max) return bad(`bad ${a.key}`);
-      if (!v.every((s) => typeof s === "string" && ID.test(s))) return bad(`bad ${a.key}`);
+      // AN EMPTY LIST IS AN ABSENT AXIS, the same rule an `id` axis has three
+      // lines up. A build with no riven sends `riven_pos: []` — the page states
+      // every axis rather than omitting the ones it has nothing for — and a
+      // record should no more carry an empty riven than it carries an empty
+      // valence. `undefined` means the same thing, so a caller written before
+      // an axis existed is not a rejection.
+      const list = v === undefined ? [] : v;
+      if (!Array.isArray(list) || list.length > a.max) return bad(`bad ${a.key}`);
+      if (!list.every((s) => typeof s === "string" && ID.test(s))) return bad(`bad ${a.key}`);
       // As submitted, never sorted here: sorting would store a build the
       // player never made. The KEY sorts the axes that are sets.
-      rec[a.key] = v;
+      if (list.length) rec[a.key] = list;
     }
   }
   await env.SUBMISSIONS.put(identity(rec), JSON.stringify(rec), {

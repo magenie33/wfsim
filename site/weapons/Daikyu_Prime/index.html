@@ -231,6 +231,12 @@
     <h1 class="home-h" data-i18n>Benchmark</h1>
     <p class="bench-sub" data-i18n>One ruler, every weapon. A score is a build measured by this engine under the benchmark's own pinned terms — nobody submits a number. An empty row is a weapon nobody has measured yet.</p>
     <div id="bench-picker"></div>
+    <!-- WHICH BUILDS ARE LISTED, not which fight. Its own row of chips because
+         it is its own question: the ruler above picks the FIGHT, this picks
+         which entrants the ranking draws each weapon's row from. Under "All
+         builds" a weapon whose riven build wins hides its plain one, and those
+         are the builds most readers can actually make. -->
+    <div id="bench-view"></div>
     <div id="bench-rules"></div>
     <!-- THE RULER'S OWN FIGHT, as the picture the simulator draws. Read-only:
          a benchmark pins its positions, and the scene refuses the gesture
@@ -750,7 +756,7 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (owner, 2026-08-18, after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">d15d4e8d+ · 2026-08-22 13:14Z</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">bebcaee8+ · 2026-08-22 16:04Z</span>
     </div>
   </footer>
 
