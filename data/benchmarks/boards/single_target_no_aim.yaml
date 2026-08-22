@@ -557,6 +557,11 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, hammer_shot, magnetic_capacity, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_merciless]
+  - weapon: trumna_prime
+    mode: base
+    score: 0.61671032412622
+    mods: [heavy_caliber, primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, hellfire, thermite_rounds]
+    arcanes: [primary_crux]
   - weapon: vectis_prime
     mode: base
     score: 1.696582842816628
