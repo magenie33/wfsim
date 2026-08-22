@@ -199,11 +199,47 @@ pub struct ValidBuild {
 /// (owner, 2026-08-04) — a rule chosen so the representative is stable and
 /// readable, not because the engine cares.
 pub fn canonical_mods(weapon: &str, mods: &[String]) -> Vec<String> {
+    canonical_mods_with(weapon, mods, None)
+}
+
+/// THE SLOT A RIVEN OCCUPIES in a public record's mod list.
+///
+/// A board row cannot name somebody's riven — the item is on one machine — so
+/// it carries the literal id and the SHAPE separately. The id is in `mods` at
+/// the riven's own position because position is the build: an elemental riven
+/// pairs with the build's other elementals, and where it sits decides what it
+/// pairs WITH.
+pub const RIVEN_SLOT: &str = "riven";
+
+/// [`canonical_mods`], for a build carrying a riven of known SHAPE.
+///
+/// A riven is an ATOM: it may bring TWO elements, and they enter the pool
+/// adjacent and in its own stat order, which no permutation of the build can
+/// separate. That is the one assumption the rule below was built on — one mod,
+/// one element — and it is why the layout step has a second path.
+pub fn canonical_mods_with(
+    weapon: &str,
+    mods: &[String],
+    riven: Option<&crate::rivens_data::RivenShape>,
+) -> Vec<String> {
     let pool = crate::mods_data::pool_for_weapon(weapon);
     let def = |id: &String| pool.iter().find(|m| m.id == id.as_str());
-    let (mut plain, elemental): (Vec<&String>, Vec<&String>) = mods
-        .iter()
-        .partition(|id| def(id).is_none_or(|m| m.primary_element().is_none()));
+    // WHAT EACH MOD PUTS INTO THE ELEMENT POOL, in order. One entry for an
+    // ordinary elemental mod, none for a plain one, and up to TWO for a riven.
+    let riven_elements: Vec<crate::damage::DamageType> = match riven {
+        Some(r) => crate::rivens_data::class_for_weapon(weapon)
+            .map(|c| r.elements(c))
+            .unwrap_or_default(),
+        None => Vec::new(),
+    };
+    let elements_of = |id: &String| -> Vec<crate::damage::DamageType> {
+        if id == RIVEN_SLOT {
+            return riven_elements.clone();
+        }
+        def(id).and_then(|m| m.primary_element()).into_iter().collect()
+    };
+    let (mut plain, elemental): (Vec<&String>, Vec<&String>) =
+        mods.iter().partition(|id| elements_of(id).is_empty());
     // Biggest drain first, then DE's own English name — stable and readable.
     let rank = |a: &&String, b: &&String| {
         let (da, db) = (def(a).map_or(0, |m| m.base_drain), def(b).map_or(0, |m| m.base_drain));
@@ -226,14 +262,19 @@ pub fn canonical_mods(weapon: &str, mods: &[String]) -> Vec<String> {
     //
     // So: pool first, decide the canonical ELEMENT order, then lay the mods
     // out to match it.
-    let element_of = |x: &&String| def(x).and_then(|m| m.primary_element());
+    let element_of = |x: &&String| elements_of(x).first().copied();
     // Distinct elements in first-appearance order — exactly what `push` builds.
-    let mut seq: Vec<crate::damage::DamageType> = Vec::new();
-    for e in elemental.iter().filter_map(element_of) {
-        if !seq.contains(&e) {
-            seq.push(e);
+    // A riven contributes its own in one go, which is what makes it an atom.
+    let seq_of = |order: &[&String]| {
+        let mut seq: Vec<crate::damage::DamageType> = Vec::new();
+        for e in order.iter().flat_map(|x| elements_of(x)) {
+            if !seq.contains(&e) {
+                seq.push(e);
+            }
         }
-    }
+        seq
+    };
+    let mut seq = seq_of(&elemental);
     // Two freedoms, both provably free, and one hard constraint.
     //
     // FREE: the order inside a pair (`combined_of` is symmetric and pools both
@@ -261,24 +302,124 @@ pub fn canonical_mods(weapon: &str, mods: &[String]) -> Vec<String> {
         )
     });
     let canonical_elements: Vec<crate::damage::DamageType> =
-        pairs.into_iter().flatten().chain(tail).collect();
-    // Lay the mods out in that element order, same-element mods together (they
-    // pool anyway, so their order among themselves changes nothing) and ranked
-    // by the usual rule so the representative is stable.
-    let elemental: Vec<&String> = canonical_elements
-        .iter()
-        .flat_map(|&want| {
-            let mut group: Vec<&String> = elemental
-                .iter()
-                .copied()
-                .filter(|m| element_of(m) == Some(want))
-                .collect();
-            group.sort_by(rank);
-            group
-        })
-        .collect();
+        pairs.clone().into_iter().flatten().chain(tail.clone()).collect();
+
+    // AN ATOM CANNOT BE LAID OUT ELEMENT BY ELEMENT. A riven bringing Heat AND
+    // Cold occupies two consecutive places in the pool, in its own order, and
+    // the sort above is free to put those two elements apart or the other way
+    // round — an arrangement no mod order can produce.
+    //
+    // So when one is present the representative is SEARCHED instead of built:
+    // every ordering of the elemental mods, keeping the ones whose pooled
+    // sequence makes the SAME pairing, and the smallest of those by the usual
+    // rank. The submitted order is always one of them, so the search cannot
+    // come back empty — and the invariant it matches on is the same
+    // `(pairs, tail)` the direct construction uses, so both paths agree about
+    // what "the same build" means.
+    //
+    // The fast path is kept rather than folded into the search because it is
+    // the one every existing row was keyed under, and a representative that
+    // moved would re-key the whole board for no reason.
+    let elemental: Vec<&String> = if elemental.iter().all(|m| elements_of(m).len() <= 1) {
+        // Lay the mods out in that element order, same-element mods together
+        // (they pool anyway, so their order among themselves changes nothing)
+        // and ranked by the usual rule so the representative is stable.
+        canonical_elements
+            .iter()
+            .flat_map(|&want| {
+                let mut group: Vec<&String> = elemental
+                    .iter()
+                    .copied()
+                    .filter(|m| element_of(m) == Some(want))
+                    .collect();
+                group.sort_by(rank);
+                group
+            })
+            .collect()
+    } else {
+        let want = (pairs, tail);
+        let mut best: Option<Vec<&String>> = None;
+        for cand in orderings(&elemental) {
+            if pairing_of(&seq_of(&cand)) != want {
+                continue;
+            }
+            let better = match &best {
+                None => true,
+                Some(b) => cand
+                    .iter()
+                    .zip(b.iter())
+                    .find_map(|(x, y)| match rank(x, y) {
+                        std::cmp::Ordering::Equal => None,
+                        o => Some(o),
+                    })
+                    .is_some_and(std::cmp::Ordering::is_lt),
+            };
+            if better {
+                best = Some(cand);
+            }
+        }
+        best.unwrap_or(elemental)
+    };
     plain.into_iter().chain(elemental).cloned().collect()
 }
+
+/// THE PAIRING A POOLED ELEMENT SEQUENCE MAKES — which elements share a pair,
+/// and which one trails.
+///
+/// Everything about position that the FIGHT can see, and nothing it cannot: the
+/// order inside a pair is free (`combined_of` is symmetric) and so is the order
+/// of the pairs among themselves (`combine` adds each secondary into a vector),
+/// so both are normalised away here.
+fn pairing_of(
+    seq: &[crate::damage::DamageType],
+) -> (Vec<[crate::damage::DamageType; 2]>, Vec<crate::damage::DamageType>) {
+    let mut seq = seq.to_vec();
+    let odd = seq.len() % 2;
+    let tail = seq.split_off(seq.len() - odd);
+    let mut pairs: Vec<[crate::damage::DamageType; 2]> =
+        seq.chunks(2).map(|c| [c[0], c[1]]).collect();
+    for p in &mut pairs {
+        p.sort_by_key(|&t| crate::elements::wiki_order(t));
+    }
+    pairs.sort_by_key(|p| {
+        crate::elements::wiki_order(
+            crate::elements::combined_of(p[0], p[1]).expect("pooled elements are distinct"),
+        )
+    });
+    (pairs, tail)
+}
+
+/// Every ordering of `xs`. Only ever called on the ELEMENTAL mods of one build,
+/// which a benchmark caps at eight — 40,320 orderings of a six-entry sequence,
+/// with no simulation behind any of them.
+fn orderings<'a>(xs: &[&'a String]) -> Vec<Vec<&'a String>> {
+    if xs.len() > MAX_ELEMENTAL_PERMUTED {
+        return vec![xs.to_vec()];
+    }
+    let mut out = Vec::new();
+    let mut acc = Vec::new();
+    let mut rest = xs.to_vec();
+    fn go<'a>(rest: &mut Vec<&'a String>, acc: &mut Vec<&'a String>, out: &mut Vec<Vec<&'a String>>) {
+        if rest.is_empty() {
+            out.push(acc.clone());
+            return;
+        }
+        for i in 0..rest.len() {
+            let x = rest.remove(i);
+            acc.push(x);
+            go(rest, acc, out);
+            acc.pop();
+            rest.insert(i, x);
+        }
+    }
+    go(&mut rest, &mut acc, &mut out);
+    out
+}
+
+/// The guard on [`orderings`]. A benchmark build has eight main slots, so this
+/// cannot be reached today; it is here so that a longer build can never turn
+/// canonicalisation into a hang.
+const MAX_ELEMENTAL_PERMUTED: usize = 8;
 
 /// One way a build's elements can PAIR, and what it makes.
 ///
@@ -864,6 +1005,157 @@ mod riven_perfection_tests {
 
 #[cfg(test)]
 mod tests {
+
+    /// A TWO-ELEMENT RIVEN IS AN ATOM, and canonicalisation still has to mean
+    /// EXACTLY "the same fight".
+    ///
+    /// This is the property, not the arrangement: two mod orders share a
+    /// representative if and only if they resolve to the same damage vector.
+    /// Asserted by RESOLVING every ordering, because a rule written over
+    /// positions is the thing being tested and cannot also be the judge.
+    ///
+    /// The fixture is chosen so the answer is not one class: a riven bringing
+    /// Cold+Heat, a Toxin mod and an Electricity mod make three genuinely
+    /// different fights depending on where the atom sits —
+    /// Blast+Corrosive, Viral+Radiation, or Magnetic+Gas — and the atom can
+    /// never be split, so a representative that separated its two elements
+    /// would be an order no build can produce.
+    #[test]
+    fn a_two_element_riven_is_an_atom_and_one_form_still_means_one_fight() {
+        use crate::mods::Polarity;
+        use crate::rivens_data::{RivenShape, RivenSpec, RolledStat};
+
+        let shape = RivenShape {
+            // SORTED, so the atom's own element order is `cold` then `heat` —
+            // fixed by the shape and unreachable by any permutation.
+            bonuses: vec!["cold".into(), "heat".into(), "multishot".into()],
+            malus: None,
+        };
+        assert_eq!(shape.elements("rifle").len(), 2, "the fixture needs a two-element riven");
+
+        let spec = RivenSpec {
+            class: "rifle".into(),
+            bonuses: shape
+                .bonuses
+                .iter()
+                .map(|id| RolledStat { id: id.clone(), roll: 1.0 })
+                .collect(),
+            malus: None,
+            rank: 8,
+            polarity: Polarity::Madurai,
+        };
+        let riven_def = spec.to_mod_def(RIVEN_SLOT, 1.0);
+
+        // The three elemental carriers, plus a plain mod so the plain/elemental
+        // split is exercised too.
+        let ids: Vec<String> = [RIVEN_SLOT, "infected_clip", "stormbringer", "serration"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+
+        // What a given order actually RESOLVES to — the judge.
+        let resolved = |order: &[String]| {
+            let pool = crate::mods_data::pool_for_weapon("torid");
+            let mods: Vec<&crate::loadout::ModDef> = order
+                .iter()
+                .map(|id| {
+                    if id == RIVEN_SLOT {
+                        &riven_def
+                    } else {
+                        pool.iter().find(|m| m.id == *id).expect("mod in pool")
+                    }
+                })
+                .collect();
+            let base = crate::loadout::WeaponBase::from_data("torid", true, &[]);
+            let panel = crate::loadout::resolve_for(
+                &base, &mods, crate::loadout::StackPolicy::Emergent,
+                crate::tenno_data::default_tenno());
+            format!("{:?}", panel.damage)
+        };
+
+        // Every ordering of the four, grouped by canonical form and by fight.
+        let mut by_form: std::collections::BTreeMap<String, std::collections::BTreeSet<String>> =
+            Default::default();
+        let mut by_fight: std::collections::BTreeMap<String, std::collections::BTreeSet<String>> =
+            Default::default();
+        let refs: Vec<&String> = ids.iter().collect();
+        for order in orderings(&refs) {
+            let order: Vec<String> = order.into_iter().cloned().collect();
+            let form = canonical_mods_with("torid", &order, Some(&shape)).join(",");
+            let fight = resolved(&order);
+            by_form.entry(form.clone()).or_default().insert(fight.clone());
+            by_fight.entry(fight).or_default().insert(form);
+        }
+
+        // THE FIXTURE IS WORTH RUNNING: more than one fight is reachable.
+        assert!(by_fight.len() >= 3, "{} distinct fights — fixture too weak", by_fight.len());
+
+        // THE REPRESENTATIVE IS A MEMBER OF ITS OWN CLASS. Everything else here
+        // is about telling builds APART; this is the one that says the build
+        // kept is the build submitted. A representative that resolves to
+        // something else scores a fight nobody entered — which is the 12,424
+        // against 46,583 this whole function exists to prevent, arrived at from
+        // the other direction.
+        for order in orderings(&refs) {
+            let order: Vec<String> = order.into_iter().cloned().collect();
+            let form = canonical_mods_with("torid", &order, Some(&shape));
+            assert_eq!(
+                resolved(&form),
+                resolved(&order),
+                "the representative of {order:?} is {form:?}, which is a different fight"
+            );
+        }
+
+        // SOUND: one representative never covers two fights. This is the half
+        // that matters — a collision here files two builds under one row and
+        // the second one submitted is the one that disappears.
+        for (form, fights) in &by_form {
+            assert_eq!(fights.len(), 1, "`{form}` covers {} different fights", fights.len());
+        }
+        // COMPLETE: one fight never gets two representatives, which would put
+        // the same build on the board twice.
+        for (fight, forms) in &by_fight {
+            assert_eq!(
+                forms.len(), 1,
+                "one fight has {} representatives: {forms:?} ({fight})", forms.len()
+            );
+        }
+
+        // AND THE ATOM IS NEVER SPLIT: in every representative the riven sits
+        // in one place, and the mods around it are an order that exists.
+        for form in by_form.keys() {
+            assert_eq!(
+                form.split(',').filter(|x| *x == RIVEN_SLOT).count(),
+                1,
+                "`{form}` does not carry the riven exactly once"
+            );
+        }
+    }
+
+    /// …AND A RIVEN WITH NO ELEMENT IS A PLAIN MOD, so it must not disturb the
+    /// pairing of the build it sits in. The negative control: without it, the
+    /// test above would pass just as well on a rule that treated every riven as
+    /// elemental.
+    #[test]
+    fn a_riven_with_no_element_does_not_pair() {
+        use crate::rivens_data::RivenShape;
+        let plain = RivenShape {
+            bonuses: vec!["damage".into(), "multishot".into()],
+            malus: Some("recoil".into()),
+        };
+        assert!(plain.elements("rifle").is_empty());
+        let with: Vec<String> = [RIVEN_SLOT, "infected_clip", "stormbringer"]
+            .iter().map(|s| s.to_string()).collect();
+        let without: Vec<String> =
+            ["infected_clip", "stormbringer"].iter().map(|s| s.to_string()).collect();
+        let a = canonical_mods_with("torid", &with, Some(&plain));
+        let b = canonical_mods_with("torid", &without, None);
+        assert_eq!(
+            a.iter().filter(|x| *x != RIVEN_SLOT).cloned().collect::<Vec<_>>(),
+            b,
+            "a riven with no element changed how the build's elements paired"
+        );
+    }
     use super::*;
 
     /// The capacity a benchmark build is judged against, for THIS weapon —

@@ -918,6 +918,22 @@ fn effect_of(def: &RivenStat, v: f64) -> Option<ModEffect> {
     })
 }
 
+/// WHICH RIVEN POOL THIS WEAPON ROLLS FROM — the NARROWEST of its mod pools
+/// that has riven stats at all.
+///
+/// The rule lived in `webapi` and had one caller; a second one (canonicalising
+/// a board row's elements) is what moved it here. It is the engine's answer for
+/// the reason every other equip rule is: two copies of it would be two answers,
+/// and this one decides whether a riven's Heat pairs with the build's Cold.
+pub fn class_for_weapon(weapon: &str) -> Option<&'static str> {
+    crate::weapons_data::spec(weapon)?
+        .mod_pools
+        .iter()
+        .rev()
+        .find(|c| !pool(c).is_empty())
+        .map(|c| &*Box::leak(c.clone().into_boxed_str()))
+}
+
 /// A RIVEN AS A PUBLIC RECORD STATES IT: which stats it carries, and which one
 /// is the malus. The ROLLS are deliberately absent.
 ///
