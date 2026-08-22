@@ -157,10 +157,10 @@ entries:
     valence: impact
   - weapon: kuva_ogris
     mode: base
-    score: 5.486322380443075
-    mods: [heavy_caliber, primed_firestorm, serration, vile_acceleration, magnetic_capacity, high_voltage, malignant_force, thermite_rounds]
+    score: 14.591299598190131
+    mods: [heavy_caliber, primed_firestorm, serration, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
     arcanes: [primary_compression]
-    valence: electricity
+    valence: magnetic
   - weapon: kuva_tonkor
     mode: base
     score: 9.904717034846849
@@ -365,6 +365,12 @@ entries:
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
+  - weapon: tenet_envoy
+    mode: base
+    score: 11.237013483421755
+    mods: [galvanized_chamber, primed_firestorm, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    arcanes: [primary_compression]
+    valence: electricity
   - weapon: torid
     mode: cycle
     score: 85.68079862637441
