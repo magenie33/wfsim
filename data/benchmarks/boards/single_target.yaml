@@ -1664,6 +1664,11 @@ entries:
     score: 8.502859082402198
     mods: [primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
     arcanes: [primary_deadhead]
+  - weapon: hikou_prime
+    mode: base
+    score: 11.6249434766719
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_fortifier]
   - weapon: karak_wraith
     mode: base
     score: 6.0840652547395315
@@ -3173,6 +3178,11 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [soma_prime_evo1_incarnon_form, soma_prime_fortress_salvo, soma_prime_rapid_reinforcement, soma_prime_zeroed_in]
     arcanes: [primary_deadhead]
+  - weapon: spira_prime
+    mode: base
+    score: 4.580937177201737
+    mods: [pistol_acuity, hornet_strike, primed_target_cracker, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_deadhead]
   - weapon: sporothrix
     mode: base
     score: 20.9314722847186
@@ -3645,6 +3655,11 @@ entries:
     score: 1.110194958795281
     mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_deadhead]
+  - weapon: trumna_prime
+    mode: base
+    score: 14.36466199147229
+    mods: [primary_acuity, galvanized_aptitude, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     arcanes: [primary_deadhead]
   - weapon: trumna_prime
     mode: base
