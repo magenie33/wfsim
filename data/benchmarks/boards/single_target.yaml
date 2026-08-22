@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 558d89202bf1e44a0ebf2185a4bbe5f77e6eec97
+engine: 8e78a3354b5e103021ac34950bce51ab0570246e
 entries:
   - weapon: akarius_prime
     mode: base
@@ -3094,7 +3094,7 @@ entries:
     arcanes: [secondary_shiver]
   - weapon: soma_prime
     mode: cycle
-    score: 21.270555880758916
+    score: 21.272129763013503
     mods: [primary_acuity, galvanized_aptitude, vile_acceleration, vital_sense, hata_satya, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [soma_prime_evo1_incarnon_form, soma_prime_fortress_salvo, soma_prime_rapid_reinforcement, soma_prime_fatal_affliction]
     arcanes: [primary_deadhead]
