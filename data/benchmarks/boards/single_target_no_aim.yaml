@@ -26,6 +26,12 @@ entries:
     score: 4.655215820519738
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_deadly_efficiency, marked_target, magnetized_cycle, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_fortifier]
+  - weapon: atomos
+    mode: base
+    score: 0.03380919417094067
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, pistol_elementalist, primed_convulsion, primed_heated_charge, frostbite, pistol_pestilence]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_resonant_restore, atomos_survivors_edge]
+    arcanes: [cascadia_flare]
   - weapon: boar_prime
     mode: base
     score: 1.6042717294573257
