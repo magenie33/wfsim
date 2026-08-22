@@ -296,6 +296,45 @@ mod tests {
             "effect_phrases entries must be [regex, replacement(, flags)]");
     }
 
+    /// A UI STRING IS NEVER EMPTY, in any locale.
+    ///
+    /// `ui:` is hand-written prose, so an entry with no value is a key nobody
+    /// translated — the page silently falls back to English and nothing says
+    /// so. `names.yaml` is deliberately exempt: an empty NAME there means "DE's
+    /// own string could not be reached", which is the documented way to say it
+    /// (AGENTS: leave it empty and say so).
+    ///
+    /// Written for a real failure and it is a structural one (2026-08-20 ->
+    /// 2026-08-22). A bulk-intake generator re-sorted `data/i18n/zh/ui.yaml`
+    /// LINE-WISE, which splits every two-line entry — the key stays where it
+    /// sorts and its indented value line sorts away as if it were a record of
+    /// its own. Twenty-nine translations were left empty, and the thirty-one
+    /// orphaned value lines landed under whichever key sorted before them,
+    /// where YAML folds an indented plain scalar into the value above it: the
+    /// share panel's second button came out 1,746 characters long, carrying the
+    /// whole support page and a dozen weapons' unmodelled notes into a tooltip.
+    ///
+    /// EMPTY IS THE COMPLETE TELL. However the orphan lands, the key it left
+    /// behind has nothing — so this catches the sort at its source without
+    /// needing a length threshold, which would be a number somebody picked.
+    #[test]
+    fn no_ui_string_is_empty() {
+        for (code, spec) in locales() {
+            let blank: Vec<&str> = spec
+                .ui
+                .iter()
+                .filter(|(_, v)| v.trim().is_empty())
+                .map(|(k, _)| k.as_str())
+                .collect();
+            assert!(
+                blank.is_empty(),
+                "{code}: {} ui strings have no translation and fall back to English silently: {:?}",
+                blank.len(),
+                &blank[..blank.len().min(8)]
+            );
+        }
+    }
+
     /// Overlay keys must reference REAL ids — a translator's typo fails the
     /// build instead of silently showing English forever.
     #[test]
