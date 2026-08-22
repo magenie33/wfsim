@@ -51,7 +51,6 @@ effects:
 
 unmodeled:
   - "the HOMING PROJECTILES are not fired. On a headshot kill this releases 1-4 bolts of their own damage — half Slash, half Puncture, with a forced Impact proc and double the benefit of crit mods — and none of it is counted here, so a headshot build with this arcane is understated by everything the bolts would have done. The formula is transcribed in this file; what is missing is the machinery for a second attack part whose trigger is a KILL"
-  - "extra-hit abilities are DETRIMENTAL to it in game — a kill by Xata's Whisper or Cyte-09's Resupply does not trigger the arcane, and the buffs do not apply to the bolts — which is an interaction this sim could not have either way while the bolts are unmodelled"
 
 source:
   url: https://wiki.warframe.com/w/Pax_Seeker

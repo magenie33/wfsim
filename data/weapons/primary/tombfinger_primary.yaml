@@ -87,7 +87,6 @@ attack:
 
 unmodeled:
   - "the QUICK SHOT is not a form here. Tapping the trigger fires a smaller explosion (1.7 m, 30-108 Radiation by grip, falloff to 75%) and the page says 'the only change to the projectile is damage distribution' — the total is the same and the split moves — but neither the module nor the page publishes that split, so a quick-shot entry would have to invent one. The explosion's numbers are already transcribed in data/kitguns/chambers/tombfinger_primary.yaml and one in-game reading of the projectile is all that is missing"
-  - "the weapon FIRES ITSELF the instant the charge completes, 'which can lead to premature firing'. This arena releases every charge on purpose, so nothing is lost to a shot that went off early"
   - reason: projectile_must_be_led
   - reason: self_stagger
 

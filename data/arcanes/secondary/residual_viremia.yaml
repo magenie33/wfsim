@@ -2,7 +2,7 @@ id: residual_viremia
 name: Residual Viremia
 rarity: rare
 max_rank: 3
-description: "On Kill: 20%% chance to create a pool of toxic blood, dealing 40 Toxin Damage."
+description: "On Kill: 20% chance to create a pool of toxic blood, dealing 40 Toxin Damage."
 
 equip_traits: [modular]
 # BOTH SEATS. A Kitgun is ONE weapon with a roster entry in each slot, so a
@@ -13,11 +13,11 @@ seats: [primary, secondary]
 
 effects:
   # A GROUND FIELD, and the one family here that is not a weapon stat at all: on
-  # a kill, with a 20%% chance, it leaves something on the floor that deals its
+  # a kill, with a 20% chance, it leaves something on the floor that deals its
   # OWN damage for a while to whatever comes near. Every number is transcribed
   # below; what is missing is the machinery.
   #
-  # THE NUMBERS. 20%% chance at every rank, 40 Toxin, 10 m range,
+  # THE NUMBERS. 20% chance at every rank, 40 Toxin, 10 m range,
   # 9 m buff radius, and a DURATION that is the only thing rank buys:
   # 3 / 6 / 9 / 12 seconds. The damage does not scale with the build — it is the
   # field's, not the weapon's — so its share of a fight falls as the build gets
@@ -38,9 +38,7 @@ effects:
     rankMax: 12
 
 unmodeled:
-  - "the FIELD is not placed. On a kill this has a 20%% chance to leave something on the ground for 3-12 seconds dealing 40 Toxin damage to enemies within 10 m, and none of it is counted — so against a crowd, where kills are frequent and bodies stand close, this arcane is worth more than the zero shown here. Its damage is flat and does not scale with the build, so what it is worth falls as the build gets stronger"
-  - "only TWO fields may be live at once, and the cap is shared between the primary and secondary Kitgun a player is carrying — a limit that spans two equipped weapons, where this arena fires one"
-  - "the Theorem arcanes a Warframe wears turn standing in one of these fields into a buff, which is the reason most players equip a Residual at all. That is the Warframe layer and this sim has no frame standing anywhere"
+  - "the FIELD is not placed. On a kill this has a 20% chance to leave something on the ground for 3-12 seconds dealing 40 Toxin damage to enemies within 10 m, and none of it is counted — so against a crowd, where kills are frequent and bodies stand close, this arcane is worth more than the zero shown here. Its damage is flat and does not scale with the build, so what it is worth falls as the build gets stronger"
 
 source:
   url: https://wiki.warframe.com/w/Residual_Viremia

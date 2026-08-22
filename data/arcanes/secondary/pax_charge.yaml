@@ -35,10 +35,8 @@ effects:
     rankMax: 0.50
 
 unmodeled:
-  - "MOST OF WHAT THIS ARCANE IS FOR does not exist in this arena. In game its value is never needing ammo pickups again; here ammo is free and a magazine is the only thing that runs out, so what is left is the difference between a reload and a recharge — on a Tombfinger, 2.10 s against 1.40 s of delay plus 0.58 s of refill, which is a wash. Measured at +0.9% on the secondary and under a tenth of a per cent on the primary, and that is the honest answer rather than a broken one"
   - "a LIVE reload buff shortens the REFILL here and does not in game. The delay and the refill are one number in this sim's reload, and the arcane's own static bonus is compensated for exactly — so a build with reload MODS is right — but a buff that arrives mid-fight (Conjunction Voltage's stacks, Merciless) also speeds up the rounds-per-second part, which 'is **not** affected by mods or abilities'. Worth at most the refill itself, which is 0.6 s of a 2.0 s empty cycle on a Tombfinger"
   - "it PREVENTS reload-triggered mods and arcanes from paying — 'such as Pressurized Magazine or Arcane Awakening' — because there is no reload to trigger them. This sim applies no such lock, so a build pairing one with Pax Charge is overstated by whatever that mod is worth"
-  - "you cannot MANUALLY reload under Pax Charge, which in game costs you the trick of topping up early; this arena never reloads early anyway"
 
 source:
   url: https://wiki.warframe.com/w/Pax_Charge
