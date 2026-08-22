@@ -2578,8 +2578,24 @@ pub fn spec_assembled<'a>(
     s: &'a WeaponSpec,
     a: Option<&crate::kitguns_data::Assembly>,
 ) -> Option<std::borrow::Cow<'a, WeaponSpec>> {
-    let (Some(chamber_id), Some(a)) = (s.kitgun.as_deref(), a) else {
+    let Some(chamber_id) = s.kitgun.as_deref() else {
         return Some(std::borrow::Cow::Borrowed(s));
+    };
+    // A MODULAR WEAPON IS NEVER FIRED AS ITS PREVIEW. The `base` row is the
+    // module's no-grip preview and is a stat line no player can reproduce, so
+    // a caller that names no assembly gets the DEFAULT one rather than that —
+    // which means no path anywhere can produce a preview-based panel by
+    // forgetting to pass parts. Six call sites in `webapi` build a base for a
+    // request and every one of them would otherwise have had to remember;
+    // a shared helper is not enough when the DECISION around it is the thing
+    // that goes missing (AGENTS.md, `parse_fight`).
+    let owned;
+    let a = match a {
+        Some(a) => a,
+        None => {
+            owned = crate::kitguns_data::default_assembly(chamber_id)?;
+            &owned
+        }
     };
     let built = crate::kitguns_data::assemble(a)?;
     // THE ASSEMBLY MUST BE THIS ENTRY'S. The grip picks the slot and the slot
@@ -6758,7 +6774,29 @@ mod modular_tests {
     #[test]
     fn an_assembly_composes_all_the_way_into_a_panel() {
         use crate::kitguns_data::Assembly;
-        let preview = crate::loadout::WeaponBase::from_data("tombfinger_secondary", false, &[]);
+        // NAMING NO ASSEMBLY IS THE DEFAULT ONE, never the chamber's preview —
+        // so no path can produce a preview-based panel by forgetting to pass
+        // parts. Asserted against the default composed by hand, because the
+        // whole point is that the two agree without the caller knowing.
+        let unnamed = crate::loadout::WeaponBase::from_data("tombfinger_secondary", false, &[]);
+        let dflt = crate::kitguns_data::default_assembly("tombfinger_secondary").unwrap();
+        assert_eq!(dflt.grip, "ulnaris", "the grip nearest the `base` preview");
+        assert_eq!(dflt.loader, "bellows", "the first loader that changes nothing");
+        let named = crate::loadout::WeaponBase::from_data_assembled(
+            "tombfinger_secondary",
+            false,
+            &[],
+            Some(&dflt),
+        );
+        assert_eq!(unnamed.base_vector, named.base_vector);
+        assert_eq!(unnamed.base_fire_rate, named.base_fire_rate);
+        assert_eq!(unnamed.magazine_size, named.magazine_size);
+        // …and it is NOT the preview: the module's no-grip row totals 84 and
+        // Ulnaris totals 100.01. The panel's own vector is the DIRECT hit, so
+        // the shot is that plus the explosion — which is the carve holding.
+        let whole = unnamed.base_vector.total()
+            + unnamed.radial.as_ref().map_or(0.0, |r| r.base_vector.total());
+        assert!((whole - 100.01).abs() < 1e-6, "{whole}");
         let haymaker = Assembly {
             chamber: "tombfinger".into(),
             grip: "haymaker".into(),
@@ -6793,7 +6831,7 @@ mod modular_tests {
         // number: the grip's fire rate, the loader's magazine class and reload,
         // and crit and status as the loader's additive deltas on the chamber.
         assert!((built.base_fire_rate - 2.17).abs() < 1e-9, "{}", built.base_fire_rate);
-        assert_ne!(built.base_fire_rate, preview.base_fire_rate);
+        assert_ne!(built.base_fire_rate, unnamed.base_fire_rate);
         // Thunderdrum is -4% crit chance, -0.1 crit damage, +7% status, the
         // `highest` magazine class (29 rounds on this chamber) and a 2.1 s
         // reload. TWO OF THE THREE DELTAS ARE NEGATIVE, which is the whole

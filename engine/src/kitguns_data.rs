@@ -364,6 +364,50 @@ pub struct AssembledBlast {
     pub direct: BTreeMap<String, f64>,
 }
 
+/// THE ASSEMBLY A REQUEST THAT NAMES NONE GETS.
+///
+/// A modular weapon with no assembly is a weapon NOBODY HAS: the chamber's own
+/// `base` row is a preview a part picker shows, and simulating it would report
+/// a stat line no player can reproduce. That is `valence_element_of`'s rule in
+/// another family — a request naming no progenitor element gets the weapon's
+/// first one rather than a fight against a weapon that does not exist.
+///
+/// IT IS DERIVED, NOT DECLARED, so a chamber transcribed tomorrow has one for
+/// free and nobody has to have a taste about it:
+///
+/// - the GRIP whose damage total is nearest the chamber's own `base` preview,
+///   since that row is what DE publishes as the chamber's representative;
+/// - the LOADER that changes nothing — all three deltas at zero, so the default
+///   states the chamber and not somebody's build. SIX loaders qualify and they
+///   differ in magazine and reload, which is a trade with no neutral point, so
+///   the tie is broken by id: arbitrary, but stated and the same everywhere.
+///
+/// `None` for a chamber record with no grips in its slot, which cannot happen
+/// while the parts files load and is not worth a panic if it ever does.
+pub fn default_assembly(chamber_record_id: &str) -> Option<Assembly> {
+    let c = chambers().iter().find(|c| c.id == chamber_record_id)?;
+    let total = |v: &BTreeMap<String, f64>| v.values().sum::<f64>();
+    let preview = c.damage.get("base").map(total).unwrap_or(0.0);
+    let grip = grips()
+        .iter()
+        .filter(|g| g.slot == c.slot)
+        .filter_map(|g| c.damage.get(&g.id).map(|d| (g, (total(d) - preview).abs())))
+        // NEAREST, and the id breaks a tie so the answer is the same on every
+        // machine — a default that moved with a map's iteration order would be
+        // a different weapon depending on who asked.
+        .min_by(|a, b| a.1.total_cmp(&b.1).then_with(|| a.0.id.cmp(&b.0.id)))?
+        .0;
+    let neutral = loaders()
+        .iter()
+        .filter(|l| l.crit_chance == 0.0 && l.crit_multiplier == 0.0 && l.status_chance == 0.0)
+        .min_by(|a, b| a.id.cmp(&b.id))?;
+    Some(Assembly {
+        chamber: c.chamber.clone(),
+        grip: grip.id.clone(),
+        loader: neutral.id.clone(),
+    })
+}
+
 /// THE COMPOSITION RULE, and the whole of it.
 ///
 /// `None` when a part is missing or names nothing — a Kitgun that is not
@@ -684,6 +728,33 @@ mod tests {
         assert_eq!(imp.direct["impact"], 32.0);
         assert_eq!(imp.direct["puncture"], 25.0);
         assert_eq!(b.blast_radius_mods, vec!["fulmination".to_string()]);
+    }
+
+    /// EVERY CHAMBER HAS A DEFAULT, it composes, and it is the one the rule
+    /// says — asserted as the PROPERTY rather than against two named parts, so
+    /// a chamber added tomorrow is covered by nobody.
+    #[test]
+    fn every_chamber_has_a_default_assembly_and_it_is_the_neutral_one() {
+        for c in chambers() {
+            let a = default_assembly(&c.id).unwrap_or_else(|| panic!("{}: no default", c.id));
+            let built = assemble(&a).unwrap_or_else(|| panic!("{}: {a:?} does not compose", c.id));
+            assert_eq!(built.chamber_record_id, c.id, "{}: default is another record", c.id);
+            // THE LOADER CHANGES NOTHING: the composed crit and status are the
+            // chamber's own, which is what makes the default a statement about
+            // the chamber rather than about somebody's build.
+            assert_eq!(built.crit_chance, c.crit_chance, "{}", c.id);
+            assert_eq!(built.crit_multiplier, c.crit_multiplier, "{}", c.id);
+            assert_eq!(built.status_chance, c.status_chance, "{}", c.id);
+            // THE GRIP IS THE NEAREST TO THE PREVIEW: no other grip in this
+            // slot is closer to the `base` row's total.
+            let total = |v: &std::collections::BTreeMap<String, f64>| v.values().sum::<f64>();
+            let preview = total(&c.damage["base"]);
+            let chosen = (total(&built.damage) - preview).abs();
+            for g in grips().iter().filter(|g| g.slot == c.slot) {
+                let d = (total(&c.damage[&g.id]) - preview).abs();
+                assert!(d >= chosen - 1e-9, "{}: {} is nearer than {}", c.id, g.id, a.grip);
+            }
+        }
     }
 
 }

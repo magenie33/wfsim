@@ -538,13 +538,72 @@ fn mod_not_here(id: &str, weapon: &WeaponInfo, evos: &[&str]) -> String {
 /// not a second weapon (user, 2026-08-01). Absent or unknown leaves the
 /// weapon on its own column, which is the one its fields state.
 fn base_for(v: &Value, id: &str, evos: &[&str]) -> WeaponBase {
-    let mut b = WeaponBase::from_data(id, true, evos);
+    let asm = assembly_of(v, id);
+    let mut b = WeaponBase::from_data_assembled(id, true, evos, asm.as_ref());
     let dep = get_str(v, "deployment", "");
     if !dep.is_empty() {
         wfsim_engine::weapons_data::apply_deployment(&mut b, id, dep);
     }
     apply_valence_from(v, id, &mut b);
     b
+}
+
+/// THE ASSEMBLY a request asked for, for a MODULAR weapon.
+///
+/// `None` for everything that is not one, so an ordinary weapon cannot be
+/// handed parts by a request — the same shape `apply_valence_from` has, and for
+/// the same reason.
+///
+/// A REQUEST THAT NAMES NO ASSEMBLY GETS THE DEFAULT, never the chamber's
+/// preview: the preview is the module's no-grip row and is a stat line no
+/// player can reproduce, so simulating it would answer a question about a
+/// weapon nobody has. `valence_element_of` decided the same thing for the same
+/// reason. It also REPAIRS a part this entry cannot take — a grip from the
+/// other slot, a loader that no longer exists — which would otherwise compose
+/// to nothing and panic the panel, and which is reached from a stale share link
+/// rather than from an omission.
+pub(crate) fn assembly_of(v: &Value, id: &str) -> Option<wfsim_engine::kitguns_data::Assembly> {
+    let spec = wfsim_engine::weapons_data::spec(id)?;
+    let record = spec.kitgun.as_deref()?;
+    let fallback = wfsim_engine::kitguns_data::default_assembly(record);
+    let Some(a) = v.get("assembly") else { return fallback };
+    let mut asked = wfsim_engine::kitguns_data::Assembly {
+        // THE CHAMBER IS THE WEAPON'S, never the request's. A request that could
+        // name one would be naming a different weapon than the id it sent.
+        chamber: fallback.as_ref().map(|f| f.chamber.clone()).unwrap_or_default(),
+        grip: get_str(a, "grip", "").to_string(),
+        loader: get_str(a, "loader", "").to_string(),
+    };
+    // PART BY PART, not all or nothing: a stale link naming a grip from the
+    // other slot must not also throw away a loader it named correctly. That is
+    // `valence_element_of`'s rule — it repairs the ELEMENT and leaves the bonus
+    // alone — and the difference is visible, since a discarded loader moves the
+    // magazine, the reload and all three of crit, crit damage and status.
+    let f = fallback?;
+    if !wfsim_engine::kitguns_data::grips()
+        .iter()
+        .any(|g| g.id == asked.grip && Some(g.slot.as_str()) == kitgun_slot(spec))
+    {
+        asked.grip = f.grip.clone();
+    }
+    if !wfsim_engine::kitguns_data::loaders().iter().any(|l| l.id == asked.loader) {
+        asked.loader = f.loader.clone();
+    }
+    // …and if the pair still does not compose, the whole default, because a
+    // panel is about to be derived from it and there is nothing else to give.
+    match wfsim_engine::weapons_data::spec_assembled(spec, Some(&asked)) {
+        Some(_) => Some(asked),
+        None => Some(f),
+    }
+}
+
+/// Which slot a modular entry's grips must belong to.
+fn kitgun_slot(spec: &wfsim_engine::weapons_data::WeaponSpec) -> Option<&str> {
+    let record = spec.kitgun.as_deref()?;
+    wfsim_engine::kitguns_data::chambers()
+        .iter()
+        .find(|c| c.id == record)
+        .map(|c| c.slot.as_str())
 }
 
 /// THE VALENCE BONUS a request asked for, applied to a base.
@@ -793,6 +852,55 @@ pub fn i18n_json() -> Value {
 
 // ---- /api/meta ---------------------------------------------------------
 
+/// The PARTS a modular weapon can be assembled from, for `/api/meta`.
+///
+/// `Value::Null` for every weapon that is not one.
+fn assembly_meta(id: &str) -> Value {
+    use wfsim_engine::kitguns_data as kg;
+    let Some(record) = wfsim_engine::weapons_data::spec(id).and_then(|s| s.kitgun.as_deref())
+    else {
+        return Value::Null;
+    };
+    let Some(c) = kg::chambers().iter().find(|c| c.id == record) else {
+        return Value::Null;
+    };
+    json!({
+        // The CHAMBER is the weapon and is not a choice here — it is named so
+        // the page can say which one this is without knowing the id scheme.
+        "chamber": c.chamber,
+        "chamber_name": c.name,
+        // ONLY THE GRIPS THAT FIT THIS SLOT. The other five compose into the
+        // sibling entry and into nothing here.
+        "grips": kg::grips()
+            .iter()
+            .filter(|g| g.slot == c.slot)
+            .map(|g| json!({ "id": g.id, "name": g.name, "recoil": g.recoil }))
+            .collect::<Vec<_>>(),
+        "loaders": kg::loaders()
+            .iter()
+            .map(|l| json!({
+                "id": l.id,
+                "name": l.name,
+                "crit_chance": l.crit_chance,
+                "crit_multiplier": l.crit_multiplier,
+                "status_chance": l.status_chance,
+                "magazine": l.magazine,
+                "reload_seconds": l.reload_seconds,
+                // WHAT THIS LOADER'S SIZE CLASS IS WORTH ON THIS CHAMBER. The
+                // class is DE's own key and prices differently per chamber, so
+                // a page showing `highest` would be showing a word instead of
+                // a number.
+                "rounds": c.magazine.get(&l.magazine).copied().unwrap_or(0.0),
+            }))
+            .collect::<Vec<_>>(),
+        "default": kg::default_assembly(record).map(|a| json!({
+            "grip": a.grip,
+            "loader": a.loader,
+        })),
+    })
+}
+
+
 /// A coarse category for grouping mods in the picker UI.
 fn mod_category(m: &ModDef) -> &'static str {
     let has = |f: fn(&ModEffect) -> bool| m.effects.iter().any(f);
@@ -1030,6 +1138,19 @@ pub fn meta_json() -> Value {
                 // above). The engine answers "what does picking this cost you",
                 // and the picker just subtracts.
                 "evo_forbids": evo_forbids(w),
+                // A MODULAR WEAPON'S PARTS, and only for one. Absent everywhere
+                // else, which is what the page tests to decide whether this
+                // weapon needs assembling at all.
+                //
+                // THE ENGINE ANSWERS WHICH PARTS FIT, for `evo_forbids`' own
+                // reason: a grip decides the SLOT, so only half the grips in the
+                // game belong on this entry, and a page that re-derived that
+                // would go stale the first time a chamber arrives that is
+                // primary-only. The DEFAULT rides along because the server uses
+                // it for a request that names none — a page that guessed a
+                // different one would show a build that is not the one being
+                // simulated.
+                "assembly": assembly_meta(&w.id),
                 // WHICH AURAS PAY THIS WEAPON — the CONSEQUENCE, computed by
                 // the engine, for the same reason `evo_forbids` is: the amp
                 // family does not share one gate (Rifle Amp is a MOD POOL and

@@ -137,6 +137,11 @@ pub const BUILD_AXES: &[BuildAxis] = &[
     // choice, so it is not part of what a row states.
     BuildAxis { id: "arcane_ranks", request_field: "arcane_rank", on_board: false },
     BuildAxis { id: "mode", request_field: "mode", on_board: true },
+    // A MODULAR WEAPON'S PARTS. On the board because the assembly IS the stat
+    // line — two assemblies of one chamber are two different weapons in every
+    // number a row states — which is the same reason `mode` is there and the
+    // opposite of `arcane_ranks`, where a ruler fixes the answer for everyone.
+    BuildAxis { id: "assembly", request_field: "assembly", on_board: true },
     // The ELEMENT only on the board, for the same reason: the roll is scored at
     // its ceiling, which every player can Valence-fuse to.
     BuildAxis { id: "valence", request_field: "valence_element", on_board: true },
