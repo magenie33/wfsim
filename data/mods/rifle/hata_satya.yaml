@@ -48,8 +48,17 @@ effects:
   #
   # WHAT TAKES IT: "Resets upon reloading or holstering", plus "Swapping to
   # Incarnon Form counts as reloading the Soma Prime and will therefore end the
-  # bonus" — so the transform is a second event and not a special case of the
-  # first. Holstering is a weapon swap this arena never does; "Bonus ends as
+  # bonus".
+  #
+  # …AND SO DOES COMING BACK OUT (owner measured 2026-08-22). The wiki names
+  # only the way in, and reading it literally left the revert counting as
+  # neither a reload nor a transform — so a pile at its ceiling rode it into the
+  # base form and spent a whole magazine there at +500%. The engine keys the
+  # clear on the MAGAZINE REFILL now, which is the rule it already held about
+  # the cycle from the other side: swapping either way fully reloads the base
+  # form's magazine, so the buff is spent by whatever refills it.
+  #
+  # Holstering is a weapon swap this arena never does; "Bonus ends as
   # soon as the reload animation begins" is a distinction with no consequence
   # here, since nothing fires during a reload. 33.5 then made the transformed
   # form BUILD the pile: "Soma Prime's Incarnon Form fire now triggers the

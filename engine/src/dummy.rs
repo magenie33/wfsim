@@ -8097,6 +8097,8 @@ pub fn run_once_traced(
             }
         };
     }
+    // How many times the magazine has been full again — see the macro below.
+    let mut mag_refills = 0u32;
     // THE MAGAZINE IS FULL AGAIN — a reload that COMPLETED, or either Incarnon
     // transform completing, since swapping either way fully reloads the base
     // form's magazine (wiki).
@@ -8116,6 +8118,11 @@ pub fn run_once_traced(
         (also_a_reload: $reload:expr) => {
             rs_armed = false;
             rounds_this_mag = 0;
+            // HOW MANY TIMES THE MAGAZINE HAS BEEN FULL AGAIN. Counted here
+            // rather than derived from `r.reloads` and `r.transforms`, because
+            // those two miss the fourth site: the Incarnon EXIT refills the
+            // base magazine and increments neither.
+            mag_refills += 1;
             if !opening_closed {
                 opening_closed = true;
                 r.first_magazine_damage = r.effective_damage;
@@ -8412,12 +8419,10 @@ pub fn run_once_traced(
     // accumulation, not just the firing.
     let mut syndicate_ready_at = 0.0f64;
     let mut tendril_reload_mark = 0u32;
-    // HATA-SATYA: the pellet count and the magazine events at the last clear,
-    // plus the card's opening pile. Three marks rather than one because the
-    // stacks are counted off a HIT counter and cleared by two different events.
+    // HATA-SATYA: the pellet count at the last clear, plus the card's opening
+    // pile. TWO marks — the hits, and the REFILL COUNTER that ends them.
     let mut cc_hit_mark = 0u32;
-    let mut cc_hit_reload_mark = 0u32;
-    let mut cc_hit_transform_mark = 0u32;
+    let mut cc_hit_refill_mark = 0u32;
     let mut cc_hit_seed = params
         .crit_chance_per_hit
         .map_or(0, |c| params.crit_chance_per_hit_initial_stacks.min(c.max_stacks()));
@@ -8674,18 +8679,27 @@ pub fn run_once_traced(
         // Read at the START of the shot, so the hit that earns a stack does not
         // carry it. That is the rule every other trigger in this loop follows.
         if params.crit_chance_per_hit.is_some() {
-            // WHAT TAKES THE PILE: "Resets upon reloading or holstering", and
+            // WHAT TAKES THE PILE: "Resets upon reloading or holstering", plus
             // "Swapping to Incarnon Form counts as reloading the Soma Prime and
-            // will therefore end the bonus" — so the transform is the second
-            // event, not a special case of the first. Holstering is a weapon
-            // swap, which this arena never does.
+            // will therefore end the bonus". Holstering is a weapon swap, which
+            // this arena never does.
+            //
+            // KEYED ON THE REFILL, NOT ON THE RELOAD COUNTER (owner measured
+            // 2026-08-22: coming OUT of the Incarnon form clears it too). The
+            // wiki names only the way in, and reading its two events literally
+            // left the way out counting as neither a reload nor a transform —
+            // so a pile at its ceiling rode the revert into the base form and
+            // spent a whole magazine there at +500% that the game would have
+            // taken away. This is the engine's own rule about the cycle, which
+            // was already written one screen down: swapping EITHER WAY fully
+            // reloads the base form's magazine, so the buff is spent by
+            // whatever refills it. One mark instead of two, and the event that
+            // was missing is the one it now cannot miss — every refill in this
+            // loop goes through `magazine_refilled!`.
             //
             // The seed dies with the earned stacks: it is the same buff.
-            let cleared = r.reloads != cc_hit_reload_mark
-                || r.transforms != cc_hit_transform_mark;
-            if cleared && !params.crit_chance_per_hit_held {
-                cc_hit_reload_mark = r.reloads;
-                cc_hit_transform_mark = r.transforms;
+            if mag_refills != cc_hit_refill_mark && !params.crit_chance_per_hit_held {
+                cc_hit_refill_mark = mag_refills;
                 cc_hit_mark = r.pellets;
                 cc_hit_seed = 0;
             }
@@ -18526,6 +18540,100 @@ mod tests {
         assert!(
             shallow < deep / 2.0,
             "a reload must clear the pile: deep magazine {deep}, one-round {shallow}"
+        );
+    }
+
+    /// …AND BOTH HALVES OF THE CYCLE TAKE IT, including the way OUT.
+    ///
+    /// The wiki names one direction — "Swapping to Incarnon Form counts as
+    /// reloading the Soma Prime and will therefore end the bonus" — and the
+    /// revert is MEASURED (owner, 2026-08-22) rather than inferred from it: it
+    /// clears the pile too. Which is what the engine's own rule about the cycle
+    /// already said from the other side, since swapping either way refills the
+    /// base magazine.
+    ///
+    /// It is the sharp case for this mod, because the pile is at its ceiling
+    /// exactly when the Incarnon ammo runs out: without this the base form
+    /// opens on +500% and keeps it for a whole magazine.
+    ///
+    /// THE PILE IS READ IN THE BASE FORM ALONE, which is what makes the count
+    /// mean anything: the mod is the WEAPON's, so both forms build it and both
+    /// forms spend it, and a total over the whole run cannot tell a pile that
+    /// survived the revert from one that was rebuilt after it. The Incarnon
+    /// panel carries no crit chance for the pile to multiply, so every crit
+    /// here was landed after the revert.
+    #[test]
+    fn leaving_the_incarnon_form_clears_hata_satyas_pile() {
+        let head = vec![BodyPart {
+            name: "head".into(),
+            aim_weight: 1.0,
+            multiplier: 1.0,
+            is_head: true,
+            crit_bonus: false,
+        }];
+        let base_form = DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 50.0),
+            base_crit_chance: 0.0,
+            unmodded_crit_chance: 1.0, // the base a relative bonus multiplies
+            crit_multiplier: 2.0,
+            arcane: ArcaneFx::none(),
+            magazine_size: 200.0,
+            fire_rate: 10.0,
+            body_parts: head.clone(),
+            ..no_status()
+        };
+        // 2% a hit, so 40 Incarnon rounds are worth +80% carried over and the
+        // twenty shots after the revert are worth +38% rebuilt from zero —
+        // two numbers no run can confuse.
+        let build = |held: bool| DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 50.0),
+            base_crit_chance: 0.0,
+            unmodded_crit_chance: 0.0, // …and NONE in the Incarnon form
+            crit_multiplier: 2.0,
+            crit_chance_per_hit: Some(crate::loadout::CritPerHit {
+                per_stack: 0.02,
+                max_bonus: 5.0,
+            }),
+            crit_chance_per_hit_held: held,
+            arcane: ArcaneFx::none(),
+            magazine_size: 40.0,
+            ammo_efficiency_applies: false,
+            infinite_reserve: true,
+            fire_rate: 10.0,
+            duration_seconds: 6.5,
+            body_parts: head.clone(),
+            target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
+            cycle: Some(IncarnonCycle {
+                starts_primed: true,        // open IN the form…
+                base_form: Box::new(base_form.clone()),
+                charge_on: crate::loadout::ChargeOn::WeakpointHits,
+                charges_to_fill: 1_000_000, // …and never earn it back
+                transmute_out_seconds: 0.5,
+                transmute_seconds: 1.0,
+                reload_bucket: 0.0,
+            }),
+            ..no_status()
+        };
+        let cleared = run_once(&build(false), &mut Rng::new(11));
+        assert_eq!(cleared.transforms, 0, "this fixture opens primed and never transforms back in");
+        let after = cleared.pellets - 40;
+        assert!(after >= 15, "the base form has to fire after the revert: {after} shots");
+
+        // THE NEGATIVE CONTROL, and it is the card's own setting: "no timeout"
+        // means no event takes the pile, so the same fixture must carry it
+        // through the revert and crit nearly every shot. Without this the
+        // assertion above passes just as well on a build that lost the pile
+        // for some other reason — or never had one.
+        let held = run_once(&build(true), &mut Rng::new(11));
+        assert!(
+            held.crits >= after - 1,
+            "held: the pile must survive the revert at its 80% and crit through, got {} of {after}",
+            held.crits
+        );
+        assert!(
+            cleared.crits * 3 < held.crits,
+            "the revert must clear the pile: {} crits over {after} base-form shots against {} held",
+            cleared.crits, held.crits
         );
     }
 
