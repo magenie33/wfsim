@@ -127,6 +127,12 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: atomos
     mode: base
+    score: 6.467948754389211
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge, scorch]
+    evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_resonant_restore, atomos_survivors_edge]
+    arcanes: [cascadia_flare]
+  - weapon: atomos
+    mode: base
     score: 5.925488967375548
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, primed_heated_charge, scorch]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_resonant_restore, atomos_survivors_edge]
