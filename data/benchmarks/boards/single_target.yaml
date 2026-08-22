@@ -587,6 +587,12 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, semi_pistol_cannonade, frostbite, primed_convulsion, primed_heated_charge]
     evolutions: [bronco_evo1_incarnon_form, bronco_speeding_bullet, bronco_extended_volley, bronco_commodores_fortune]
     arcanes: [secondary_enervate]
+  - weapon: bronco_prime
+    mode: cycle
+    score: 17.837217146539196
+    mods: [pistol_acuity, primed_target_cracker, galvanized_shot, pistol_elementalist, semi_pistol_cannonade, dizzying_rounds, magnetic_might, primed_heated_charge]
+    evolutions: [bronco_prime_evo1_incarnon_form, bronco_prime_speeding_bullet, bronco_prime_extended_volley, bronco_prime_rain_of_lead]
+    arcanes: [secondary_deadhead]
   - weapon: burston
     mode: cycle
     score: 46.04461662297974
