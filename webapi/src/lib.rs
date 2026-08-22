@@ -225,7 +225,17 @@ fn weapons() -> &'static [WeaponInfo] {
                         .filter_map(|f| wfsim_engine::weapons_data::spec(f.weapon_id))
                         .flat_map(|x| x.unmodeled.iter().cloned())
                         .collect(),
-                    subtype: title_case(&s.class),
+                    // WHAT KIND OF WEAPON IT IS, for the picker's filter and
+                    // the home card's tag. Normally the CLASS — a Rifle, a
+                    // Pistol — and for a MODULAR weapon the fact that it is
+                    // one: a Tombfinger is a `rifle` in the primary slot and a
+                    // `pistol` in the secondary, and neither of those is the
+                    // answer a reader looking for a Kitgun is after.
+                    subtype: if s.kitgun.is_some() {
+                        "Kitgun".to_string()
+                    } else {
+                        title_case(&s.class)
+                    },
                     sentinel,
                     forms,
                     has_cycle: wfsim_engine::weapons_data::has_gauge_switched_form(&s.id),

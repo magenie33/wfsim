@@ -1230,7 +1230,10 @@ function initWeaponSearch() {
     });
   const renderList = () => {
     const q = input.value.trim().toLowerCase();
-    const list = (META.weapons || [])
+    // ONE ROW PER MODULAR WEAPON, for the reason the home grid shows one card:
+    // two entries with one name, one picture and one destination is a list that
+    // looks like it has a bug in it.
+    const list = oneCardPerChamber(META.weapons || [])
       .filter((w) => flt === "all" || (w.subtype || w.mod_class) === flt)
       .filter((w) => searchHit(w, q))
       .sort((a, b) => (srt === "za" ? -1 : 1) * a.name.localeCompare(b.name));
@@ -1693,16 +1696,41 @@ const weaponModPath = (id) => weaponPath(id) + (modSuffix() ? "/" + modSuffix() 
 // Equipment slots, in the order the arsenal shows them. "sentinel" is a real
 // slot, not a kind of primary: a sentinel weapon rides the companion and draws
 // from the rifle mod pool without ever occupying a weapon slot.
-const SLOT_ORDER = ["primary", "secondary", "melee", "sentinel", "archgun"];
+const SLOT_ORDER = ["primary", "secondary", "kitgun", "melee", "sentinel", "archgun"];
 const SLOT_LABEL = { primary: "Primary", secondary: "Secondary", melee: "Melee",
-  sentinel: "Sentinel Weapons", archgun: "Arch-Guns", other: "Other" };
+  kitgun: "Kitguns", sentinel: "Sentinel Weapons", archgun: "Arch-Guns", other: "Other" };
+
+/// WHICH GROUP A WEAPON IS LISTED UNDER — its slot, except that a MODULAR
+/// weapon gets its own.
+///
+/// A Kitgun is one weapon with a roster entry per slot, so listing it by slot
+/// puts the same name and the same picture in two groups, both linking to the
+/// same page. Its own group says what it actually is, and says it once.
+const weaponCategory = (w) => (w.assembly ? "kitgun" : (w.slot || ""));
+
+/// ONE CARD PER MODULAR WEAPON. The chamber IS the weapon — one mastery track,
+/// one riven, one wiki page — so its two slot entries are one entry here, and
+/// which one the card opens is settled on the page by the Slot control.
+const oneCardPerChamber = (ws) => {
+  const seen = new Set();
+  return ws.filter((w) => {
+    const key = w.assembly ? w.assembly.chamber : w.id;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
 
 function renderHome() {
   const grid = $("weapon-grid");
   if (!grid) return;
   const card = (w) => {
     const tags = [
-      `<span class="tag">${w.subtype || w.mod_class}</span>`,
+      // TRANSLATED, like the group heading above it. `tr` falls through to the
+      // English for a subtype no overlay names, so this costs nothing on the
+      // ones nobody has translated and stops the Kitgun card reading half in
+      // one language.
+      `<span class="tag">${escHtml(tr(w.subtype || w.mod_class))}</span>`,
       w.uses_evo2 ? `<span class="tag">Incarnon</span>` : "",
       w.sentinel ? `<span class="tag">Sentinel</span>` : "",
     ].join("");
@@ -1714,11 +1742,11 @@ function renderHome() {
       </div>
     </a>`;
   };
-  const all = META.weapons || [];
+  const all = oneCardPerChamber(META.weapons || []);
   const groups = SLOT_ORDER
-    .map((s) => [s, all.filter((w) => (w.slot || "") === s)])
+    .map((s) => [s, all.filter((w) => weaponCategory(w) === s)])
     .filter(([, ws]) => ws.length);
-  const rest = all.filter((w) => !SLOT_ORDER.includes(w.slot || ""));
+  const rest = all.filter((w) => !SLOT_ORDER.includes(weaponCategory(w)));
   if (rest.length) groups.push(["other", rest]);
   grid.innerHTML = groups.map(([slot, ws]) => `
     <section class="wgroup">
