@@ -745,6 +745,123 @@ pub fn identity(b: &ValidBuild) -> String {
     )
 }
 
+/// THE CARD'S SIGN IS NOT THE BUILD'S DIRECTION — the case the whole design
+/// rests on, measured through the simulator rather than argued.
+///
+/// Three weapons pay *"50% chance to deal +2000% damage on non-critical hits"*
+/// in their Incarnon form (Felarx, Laetum, Phenmor). On those, critical chance
+/// is a LIABILITY — a Laetum Incarnon crit is worth x2.2 where a non-crit is
+/// worth `0.5 x 21 + 0.5 x 1 = 11` — so a riven whose MALUS is critical chance
+/// wants that malus as DEEP as it goes, and the same shape on an ordinary
+/// weapon wants it as shallow as it goes.
+///
+/// `perfect` is handed the fight and asked; it is never told which way is up.
+///
+/// A MALUS'S ROLL SCALES ITS MAGNITUDE, NOT ITS VALUE, and that caught the
+/// first version of this test: `ROLL_MAX` on a malus is the DEEPEST one, so
+/// "the top of the band" and "the better stat" are opposites there. The band
+/// ends are named by their roll below for exactly that reason — `deep` and
+/// `shallow` are a reading of the number and belong in prose, not in a
+/// variable somebody has to get right twice.
+#[cfg(test)]
+mod riven_perfection_tests {
+    use crate::rivens_data::{perfect, RivenShape, RivenSpec, ROLL_MAX, ROLL_MIN};
+
+    /// THE WHOLE LADDER, because Devouring Attrition is TIER 5 and a tier is
+    /// only open when the ones below it are filled — a set with a gap is
+    /// trimmed to its longest legal prefix, so naming tier 1 and tier 5 alone
+    /// applies neither.
+    const ATTRITION: &[&str] = &[
+        "laetum_evo1_incarnon_form",
+        "laetum_rapid_wrath",
+        "laetum_awakened_readiness",
+        "laetum_incarnon_efficiency",
+        "laetum_devouring_attrition",
+    ];
+
+    /// A riven whose MALUS is critical chance, and nothing else that could
+    /// confuse the reading.
+    fn negative_crit() -> RivenShape {
+        RivenShape {
+            bonuses: vec!["damage".into(), "multishot".into()],
+            malus: Some("critical_chance".into()),
+        }
+    }
+
+    /// That shape with every bonus at its ceiling and the malus at `malus_roll`.
+    fn at(shape: &RivenShape, malus_roll: f64) -> RivenSpec {
+        let mut sp = perfect(shape, "pistol", |_| 0.0);
+        for b in sp.bonuses.iter_mut() {
+            b.roll = ROLL_MAX;
+        }
+        if let Some(m) = sp.malus.as_mut() {
+            m.roll = malus_roll;
+        }
+        sp
+    }
+
+    fn fight(weapon: &str, evos: &[&str], spec: &RivenSpec) -> f64 {
+        let disposition =
+            crate::weapons_data::spec(weapon).and_then(|s| s.disposition).unwrap_or(1.0);
+        let riven = spec.to_mod_def(
+            Box::leak(format!("riven:{weapon}").into_boxed_str()), disposition);
+        let base = crate::loadout::WeaponBase::from_data(weapon, true, evos);
+        let tenno = crate::tenno_data::default_tenno();
+        let panel = crate::loadout::resolve_for(
+            &base, &[&riven], crate::loadout::StackPolicy::Emergent, tenno);
+        let arena = crate::arena::Arena::training(12.0);
+        let dp = crate::dummy::DummyParams::from_panel(
+            &panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+        crate::dummy::monte_carlo(&dp, 120, 7).mean_damage
+    }
+
+    #[test]
+    fn a_negative_crit_riven_goes_the_other_way_on_a_devouring_attrition_weapon() {
+        let shape = negative_crit();
+
+        // THE LAETUM, Incarnon, with Devouring Attrition taken: the DEEPEST
+        // crit malus pays MOST, because every crit is a roll that did not pay
+        // 21x.
+        let deep = fight("laetum_incarnon", ATTRITION, &at(&shape, ROLL_MAX));
+        let shallow = fight("laetum_incarnon", ATTRITION, &at(&shape, ROLL_MIN));
+        assert!(
+            deep > shallow,
+            "Devouring Attrition: the deepest crit malus should pay MOST ({deep} vs {shallow})"
+        );
+
+        // …AND AN ORDINARY WEAPON GOES THE OTHER WAY, which is what makes the
+        // first half evidence rather than a coincidence: same shape, same stat,
+        // same sign on the card, opposite end of the band.
+        let deep_p = fight("laetum", &[], &at(&shape, ROLL_MAX));
+        let shallow_p = fight("laetum", &[], &at(&shape, ROLL_MIN));
+        assert!(
+            shallow_p > deep_p,
+            "without Devouring Attrition the crit malus should be SHALLOW \
+             ({shallow_p} vs {deep_p})"
+        );
+
+        // AND `perfect` FINDS BOTH WITHOUT BEING TOLD — handed the fight and
+        // nothing else. No per-stat table, no sign convention.
+        let with = perfect(&shape, "pistol", |sp| fight("laetum_incarnon", ATTRITION, sp));
+        assert_eq!(
+            with.malus.as_ref().unwrap().roll,
+            ROLL_MAX,
+            "on Devouring Attrition the malus belongs at its deepest"
+        );
+        let without = perfect(&shape, "pistol", |sp| fight("laetum", &[], sp));
+        assert_eq!(
+            without.malus.as_ref().unwrap().roll,
+            ROLL_MIN,
+            "without it, at its shallowest"
+        );
+        // Both agree about the BONUSES, which is the uninteresting half and the
+        // one a per-stat table would have got right.
+        assert!(with.bonuses.iter().all(|b| b.roll == ROLL_MAX));
+        assert!(without.bonuses.iter().all(|b| b.roll == ROLL_MAX));
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;

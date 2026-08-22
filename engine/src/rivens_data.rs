@@ -918,8 +918,230 @@ fn effect_of(def: &RivenStat, v: f64) -> Option<ModEffect> {
     })
 }
 
+/// A RIVEN AS A PUBLIC RECORD STATES IT: which stats it carries, and which one
+/// is the malus. The ROLLS are deliberately absent.
+///
+/// A riven is an item that exists on one machine, which is why no board row
+/// could ever hold one — and this is the shape that CAN be held, because it is
+/// a statement anybody can act on: roll this weapon for these stats. What a
+/// particular copy landed on is luck, and the board has never ranked luck. It
+/// scores every row at full Forma, every mod at max rank and every valence at
+/// the roll's ceiling for the same reason (owner, 2026-08-22).
+///
+/// So a shape is scored at ITS OWN ceiling, and [`perfect`] is what finds it.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct RivenShape {
+    /// Bonus stat ids, SORTED — a riven's stats do not combine with each other,
+    /// so two players listing them in different orders described one riven and
+    /// must produce one row. (Mod ORDER is the opposite and stays as placed:
+    /// elements pair in the order the mods sit in, which is why `canonical_mods`
+    /// exists at all.)
+    pub bonuses: Vec<String>,
+    /// The malus, when the riven has one. A riven without one rolls smaller
+    /// bonuses, so "no malus" is a different shape rather than a better one.
+    pub malus: Option<String>,
+}
+
+impl RivenShape {
+    /// The shape of a rolled riven — what survives when the luck is removed.
+    pub fn of(spec: &RivenSpec) -> Self {
+        let mut bonuses: Vec<String> = spec.bonuses.iter().map(|b| b.id.clone()).collect();
+        bonuses.sort();
+        Self { bonuses, malus: spec.malus.as_ref().map(|m| m.id.clone()) }
+    }
+
+    /// This shape as a rolled riven, every stat at `roll`.
+    fn at(&self, class: &str, rolls: &[f64]) -> RivenSpec {
+        RivenSpec {
+            class: class.to_string(),
+            bonuses: self
+                .bonuses
+                .iter()
+                .zip(rolls)
+                .map(|(id, &roll)| RolledStat { id: id.clone(), roll })
+                .collect(),
+            malus: self
+                .malus
+                .as_ref()
+                .map(|id| RolledStat { id: id.clone(), roll: rolls[self.bonuses.len()] }),
+            // AT THE CEILING, like every other investment the board scores. A
+            // rank is levelled and a polarity is Forma'd, so neither is part of
+            // what a row states.
+            rank: MAX_RANK,
+            polarity: Polarity::Madurai,
+        }
+    }
+
+    /// How many stats have a roll to choose — bonuses plus the malus.
+    pub fn stat_count(&self) -> usize {
+        self.bonuses.len() + usize::from(self.malus.is_some())
+    }
+
+    /// THE ELEMENTS THIS SHAPE CARRIES, in the order its stats are listed.
+    ///
+    /// A riven with an elemental stat PAIRS with the build's other elementals,
+    /// so where it sits among the mods changes the combined element and
+    /// therefore the fight — the same fact that makes `builds::canonical_mods`
+    /// keep mod order at all (owner, 2026-08-22). A shape that carries none is
+    /// position-independent like any other plain mod.
+    ///
+    /// A MALUS IS NEVER ONE. The five bonus-only stats aside, a negative
+    /// elemental roll still adds that element to the pool — but no riven can
+    /// take an elemental stat as its malus, which `stat_pool` already encodes
+    /// (`malus: false` on those entries) and `RivenSpec::illegal` enforces.
+    pub fn elements(&self, class: &str) -> Vec<crate::damage::DamageType> {
+        let p = pool(class);
+        self.bonuses
+            .iter()
+            .filter_map(|id| p.iter().find(|x| &x.id == id))
+            .filter(|d| d.kind == "elemental_damage_bonus")
+            .filter_map(|d| d.arg.as_deref().map(crate::weapons_data::damage_type))
+            .collect()
+    }
+}
+
+/// THE BEST ROLL THIS SHAPE CAN HAVE, for a caller who can score one.
+///
+/// Every stat goes to one END of the 0.9-1.1 band, and which end is decided by
+/// the SCORE rather than by the card's sign. That distinction is the whole of
+/// this function: DE's `+` and `-` describe the STAT, not the build. A riven
+/// whose malus is critical chance is a BONUS on the three weapons whose
+/// Incarnon form pays "+2000% damage on non-critical hits" — Felarx, Laetum
+/// and Phenmor — and on those same weapons a `+` critical chance riven is
+/// worst at the BOTTOM of its positive band. A per-stat table could not state
+/// either case; asking the fight states both, and states the next one for free.
+///
+/// `score` is called at most `2^n` times, n <= 4, so at most sixteen. The
+/// corners are searched exhaustively rather than by climbing: sixteen is
+/// cheap, and a climb would have to assume monotonicity, which is exactly the
+/// assumption this function exists to avoid making.
+///
+/// Ties keep the FIRST corner, which is every stat at `ROLL_MIN` — so a stat
+/// the fight cannot read at all (a magazine stat on a build that never
+/// reloads) comes back at the bottom of its band rather than at an arbitrary
+/// end, and two runs of this cannot disagree.
+pub fn perfect(shape: &RivenShape, class: &str, mut score: impl FnMut(&RivenSpec) -> f64) -> RivenSpec {
+    let n = shape.stat_count();
+    let mut best: Option<(f64, RivenSpec)> = None;
+    for corner in 0..(1u32 << n) {
+        let rolls: Vec<f64> = (0..n)
+            .map(|i| if corner >> i & 1 == 1 { ROLL_MAX } else { ROLL_MIN })
+            .collect();
+        let spec = shape.at(class, &rolls);
+        let s = score(&spec);
+        if best.as_ref().is_none_or(|(b, _)| s > *b) {
+            best = Some((s, spec));
+        }
+    }
+    best.map(|(_, spec)| spec).unwrap_or_else(|| shape.at(class, &[]))
+}
+
 #[cfg(test)]
 mod tests {
+
+/// PERFECTION IS A SEARCH OVER CORNERS, and these pin the machinery before any
+/// weapon is involved: the count, the ends, and the tie rule.
+#[test]
+fn perfect_searches_every_corner_and_takes_the_end_the_score_likes() {
+    let shape = RivenShape {
+        bonuses: vec!["critical_damage".into(), "multishot".into(), "damage".into()],
+        malus: Some("critical_chance".into()),
+    };
+    assert_eq!(shape.stat_count(), 4);
+
+    // A SCORE THAT WANTS EVERY BONUS HIGH AND THE MALUS LOW — the ordinary
+    // reading, and the one a per-stat table would have hard-coded.
+    let mut seen = 0;
+    let want_high = perfect(&shape, "rifle", |r| {
+        seen += 1;
+        r.bonuses.iter().map(|b| b.roll).sum::<f64>() - r.malus.as_ref().map_or(0.0, |m| m.roll)
+    });
+    assert_eq!(seen, 16, "four stats is sixteen corners");
+    assert!(want_high.bonuses.iter().all(|b| b.roll == ROLL_MAX));
+    assert_eq!(want_high.malus.as_ref().unwrap().roll, ROLL_MIN);
+
+    // …AND ONE THAT WANTS THE OPPOSITE OF ALL FOUR. Nothing about the stats
+    // changed — only the fight — and every end flips, which is the property
+    // that makes a per-stat rule impossible.
+    let want_low = perfect(&shape, "rifle", |r| {
+        -(r.bonuses.iter().map(|b| b.roll).sum::<f64>())
+            + r.malus.as_ref().map_or(0.0, |m| m.roll)
+    });
+    assert!(want_low.bonuses.iter().all(|b| b.roll == ROLL_MIN));
+    assert_eq!(want_low.malus.as_ref().unwrap().roll, ROLL_MAX);
+
+    // A STAT THE FIGHT CANNOT READ comes back at the BOTTOM, not at an
+    // arbitrary end: the first corner wins a tie, and two runs agree.
+    let flat = perfect(&shape, "rifle", |_| 1.0);
+    assert!(flat.bonuses.iter().all(|b| b.roll == ROLL_MIN));
+    assert_eq!(flat.malus.as_ref().unwrap().roll, ROLL_MIN);
+
+    // AND IT IS SCORED AT THE CEILING OF ITS INVESTMENT, like every board row.
+    assert_eq!(want_high.rank, MAX_RANK);
+}
+
+/// A SHAPE IS THE LUCK REMOVED, and two rolls of one shape are one shape.
+#[test]
+fn a_shape_is_what_survives_when_the_roll_is_taken_away() {
+    let mk = |a: f64, b: f64| RivenSpec {
+        class: "rifle".into(),
+        bonuses: vec![
+            RolledStat { id: "multishot".into(), roll: a },
+            RolledStat { id: "damage".into(), roll: b },
+        ],
+        malus: Some(RolledStat { id: "recoil".into(), roll: a }),
+        rank: 8,
+        polarity: Polarity::Madurai,
+    };
+    assert_eq!(RivenShape::of(&mk(0.91, 1.07)), RivenShape::of(&mk(1.10, 0.90)));
+    // SORTED, because a riven's stats do not combine with each other — two
+    // players listing them in different orders described one riven.
+    let shape = RivenShape::of(&mk(1.0, 1.0));
+    assert_eq!(shape.bonuses, vec!["damage".to_string(), "multishot".to_string()]);
+}
+
+/// AN ELEMENTAL RIVEN PAIRS WITH THE BUILD, so the shape has to be able to say
+/// which elements it brings — where it sits among the mods then changes the
+/// combined element and therefore the fight.
+#[test]
+fn a_shape_names_the_elements_it_brings() {
+    let none = RivenShape { bonuses: vec!["multishot".into(), "damage".into()], malus: None };
+    assert!(none.elements("rifle").is_empty());
+
+    let heat = RivenShape {
+        bonuses: vec!["heat".into(), "multishot".into()],
+        malus: Some("recoil".into()),
+    };
+    assert_eq!(heat.elements("rifle"), vec![crate::damage::DamageType::Heat]);
+
+    // TWO OF THEM IS LEGAL and the pair is what a board row has to keep apart
+    // from one: a riven bringing Heat AND Toxin pools two entries into the
+    // element sequence, not one.
+    let two = RivenShape {
+        bonuses: vec!["cold".into(), "heat".into(), "multishot".into()],
+        malus: None,
+    };
+    assert_eq!(two.elements("rifle").len(), 2);
+
+    // A PHYSICAL stat is not an element and never pairs.
+    let phys = RivenShape { bonuses: vec!["slash".into(), "damage".into()], malus: None };
+    assert!(phys.elements("rifle").is_empty());
+}
+
+/// NO RIVEN TAKES AN ELEMENT AS ITS MALUS, which is what lets `elements()` read
+/// the bonuses alone. Asserted against the pool rather than assumed, so a data
+/// change that made one malus-legal fails here instead of silently dropping an
+/// element out of the pairing.
+#[test]
+fn an_element_is_never_a_malus() {
+    for class in crate::mods_data::classes() {
+        for st in pool(class) {
+            if st.kind == "elemental_damage_bonus" {
+                assert!(!st.malus, "{class}/{}: an element may be a malus", st.id);
+            }
+        }
+    }
+}
     use super::*;
 
     fn spec(ids: &[&str], malus: Option<&str>, rank: u32) -> RivenSpec {
