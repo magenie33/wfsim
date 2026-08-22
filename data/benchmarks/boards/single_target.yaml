@@ -1728,6 +1728,12 @@ entries:
     valence: magnetic
   - weapon: kuva_grattler
     mode: base
+    score: 12.634816231744557
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_grattler
+    mode: base
     score: 9.933319342422111
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, critical_focus, hollowed_bullets, parallax_scope, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
