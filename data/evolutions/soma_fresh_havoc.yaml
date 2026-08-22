@@ -40,6 +40,15 @@ effects:
       base_damage: 6.0
     max_stacks: 2
     trigger: reload_from_empty
+    # ONE OF THE THREE BUFFS THE CARD OPENS FULL (owner, 2026-08-22). It is a
+    # DECISION rather than a reading of the card: this one is trivially kept up
+    # in play, so a fight that opens without it is the less realistic of the
+    # two. The card's own "lasts permanently throughout the mission" agrees, but
+    # it is not the criterion — a permanent buff that takes a hundred kills to
+    # fill would not be on the list. See docs/BUFFS.md for the whole list and
+    # what it costs; the trigger and the clear are unchanged, and a reader who
+    # disagrees sets the stepper in their own scenario.
+    card_opens_full: true
 
 source:
   url: https://wiki.warframe.com/w/Soma_Incarnon_Genesis

@@ -432,6 +432,29 @@ Worth knowing because it changes what the numbers MEAN: a zero here is "under
 this play pattern", and on this perk a player who reloads deliberately is buying
 something real.
 
+### The RELOAD'S TAIL — OPEN, and it wants a MEASUREMENT (every weapon)
+
+A reload does not finish when its animation does. The magazine is actually full
+at somewhere around **80–90% of the way through**, and what is left is a
+recovery the player sits through (owner, 2026-08-22). This engine models the
+reload as one block of dead time with the magazine arriving at the END.
+
+**Nothing computed today is wrong because of it.** The total is the same number
+either way — the published reload time — so the shot cadence, the downtime and
+every throughput figure are unaffected, which is why this is written down rather
+than fixed.
+
+What it WOULD move is when a reload-complete buff's window opens: earlier by the
+length of the tail, on every perk that fires on `ReloadComplete` or
+`ReloadFromEmpty`. On a buff with a clock that is a few tenths of a second of
+uptime per reload; on a buff without one it is nothing at all.
+
+The missing thing is a number, and it is per weapon: the real split between the
+two halves. Until somebody measures it, a made-up 85% would be a precision
+nobody checked — which is worse than the honest block this has now, because it
+would read as measured. Recorded here so the question survives (see also
+docs/MEASUREMENTS.md when it is answered).
+
 ### The 99-stack Mounting Momentum edge
 
 Reaching the cap needs a magazine that never empties, which is a firing pattern

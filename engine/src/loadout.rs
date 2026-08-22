@@ -1901,6 +1901,30 @@ pub struct StackingBuff {
     /// way to the 99-stack cap is to keep topping up a magazine that never
     /// empties.
     pub cleared_by: ClearedBy,
+    /// THE CARD OPENS AT ITS CAP — a DECISION, not a derivation.
+    ///
+    /// Every buff in this app opens EARNED at zero, because the modelled fight
+    /// is one you have been in a while but have not been in contact for the
+    /// last few seconds (docs/BUFFS.md). A short, CLOSED list is exempted
+    /// because keeping it up is not something a player has to think about, so
+    /// a fight that opens without it is the less realistic of the two — the
+    /// owner's own allowance, granted per buff and named in BUFFS.md
+    /// (2026-08-22).
+    ///
+    /// IT IS A JUDGEMENT ABOUT PLAYING, NOT A CLAIM OFF THE CARD, and the two
+    /// diverge: a card can say "lasts the mission" for a pile that takes a
+    /// hundred kills to fill, which is exactly what should NOT open full. So
+    /// the wiki cannot decide this and nothing here derives it — the shape it
+    /// would derive from (`duration: NO_TIMEOUT` with `cleared_by: Nothing`)
+    /// is the DEFAULT for a buff that states neither, and twenty of them carry
+    /// it.
+    ///
+    /// ONLY THE OPENING MOVES. The trigger still fires, the clear still clears
+    /// and the decay still decays, so a buff on this list that DOES get taken
+    /// away in a fight is taken away in the sim. And it is a default rather
+    /// than a rule: the card's stack stepper sets any count you like, so a
+    /// reader who disagrees says so in their own scenario.
+    pub card_opens_full: bool,
 }
 
 /// See [`StackingBuff::cleared_by`]. A buff with a duration needs none of

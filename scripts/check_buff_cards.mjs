@@ -183,8 +183,28 @@ const r = await evaluate(`(async () => {
     stat: e.querySelector('.rp-stat').textContent.split(/\\s+/).join(' ').trim(),
     now: e.querySelector('.rp-now').textContent.trim(),
   }));
+  // A CARD THAT OPENS FULL, and the one claim that earns it. Fresh Havoc's own
+  // text says a mission never takes the buff, so it is not one a player keeps
+  // up — it is one they walk in carrying, and a card at 0/2 models somebody who
+  // just spawned. Every other buff on the same weapon still opens earned.
+  history.pushState({},'','/weapons/Soma_Prime'); route(); await sleep(3000);
+  slots.forEach(s => { s.mod = null; s.rank = null; });
+  slots[0] = { mod:'galvanized_chamber', pol:slots[0].pol, rank:null };
+  // The whole ladder, because a tier only unlocks under the ones below it.
+  evoSel = {1:'soma_prime_evo1_incarnon_form',2:'soma_prime_fortress_salvo',
+            3:'soma_prime_rapid_reinforcement',4:'soma_prime_fresh_havoc'};
+  markPresetDirty(); renderMods(); renderEvo(); refreshPanel(); await sleep(3000);
+  document.querySelectorAll('.tab').forEach(x=>{ if(/Sim|模拟/i.test(x.textContent)) x.click(); });
+  await sleep(1500);
+  const havoc = [...document.querySelectorAll('#sim-buffs .buff-card')].map(e=>({
+    id: e.querySelector('input[data-f="stacks"]').dataset.b,
+    name: e.querySelector('.bn').textContent.trim(),
+    stacks: e.querySelector('input[data-f="stacks"]').value,
+    cap: e.querySelector('.bmax').textContent.trim(),
+    locked: e.querySelector('input[data-f="locked"]') ? e.querySelector('input[data-f="locked"]').disabled : null,
+  }));
   return { cards, rows, atZero, un, tend, tendRows, lang: LANG,
-           combo, hipCombo, comboRows, dpsCold, dpsHeld, hsCard, hsRows };
+           combo, hipCombo, comboRows, dpsCold, dpsHeld, hsCard, hsRows, havoc };
 })()`);
 
 console.log("lang:", r.lang);
@@ -271,5 +291,25 @@ check("...while the card that seeds it counts HITS, to the 417th",
 // every row as a percentage would pass everything above and fail here.
 check("...and an ordinary buff beside it still reads a count",
   (r.hsRows || []).some((x) => /^\d+\/\d+$/.test(x.now)), JSON.stringify(r.hsRows));
+
+// A BUFF THE MISSION NEVER TAKES OPENS FULL (owner, 2026-08-22) — and it is a
+// claim off DE's card, not a shape: twenty evolution buffs reach the engine with
+// no clock and nothing that clears them, and only Fresh Havoc says so.
+console.log("fresh havoc:", JSON.stringify(r.havoc));
+const fh = (r.havoc || []).find((c) => c.id === "on_empty_reload_damage");
+check("Fresh Havoc's card opens at its cap, because a mission never takes it",
+  fh && fh.stacks === "2" && /2/.test(fh.cap), JSON.stringify(fh));
+// …AND IT IS STILL EARNABLE, which is what tells it from Fevered Frenzy: that
+// one has no trigger the sim can fire, so its lock is greyed out. This one is
+// earned by an empty reload the fight performs several times over — set it to
+// zero and the run builds it back.
+check("...and it is still a buff the fight can earn, so the lock stays live",
+  fh && fh.locked === false, JSON.stringify(fh));
+// THE NEGATIVE CONTROL, on the same weapon in the same run: a card that says
+// nothing about lasting still opens earned at zero. Without it this passes just
+// as well on a page that went back to opening everything full.
+const gal = (r.havoc || []).find((c) => c.id === "on_kill_multishot");
+check("...while an ordinary earned buff beside it still opens at zero",
+  gal && gal.stacks === "0", JSON.stringify(r.havoc));
 
 await app.finish("the buff cards read right in Chinese");

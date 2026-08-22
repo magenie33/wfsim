@@ -453,10 +453,49 @@ on-kill stacks never accumulate, and seeding them full handed the build a buff
 it can never earn and then held it there for five minutes. Zero-start is not a
 more pessimistic guess in that case; it is the correct one.
 
-Which buffs stay full, in the whole data set: **Fevered Frenzy** (`on_ability_cast`,
-20 stacks, no duration, not consumed). That is the list. Everything else — every Galvanized
+Which buffs open full, in the whole data set — **three, and the list is closed**
+(owner, 2026-08-22):
+
+| buff | where | why it is on the list |
+|---|---|---|
+| **Fevered Frenzy** | Dual Toxocyst | no trigger the sim can fire, so the count is a static choice and full is the only honest opening |
+| **Reified Bane** | both Boars, the three Latos | on reload from empty, nothing takes it |
+| **Fresh Havoc** | both Somas | on reload from empty, nothing takes it |
+
+THREE BUFFS, EIGHT ROWS. The unit the allowance is granted in is the PERK, not
+the weapon: Reified Bane is one buff with a different number on each of its five
+weapons, so a sixth weapon inheriting it needs no new decision.
+`only_the_three_named_buffs_open_full` reads the whole roster back and refuses a
+fourth — written that way round because a test naming the three and checking
+they open full would pass on a build that opened thirty.
+
+Everything else — every Galvanized
 mod, every on-kill/on-status arcane, Argon Scope, Sharpened Bullets, and the
 Dual Toxocyst's own **Frenzy** passive — has a 3–30 s timer and is earned.
+
+Reified Bane and Fresh Havoc are the second kind of full, and they are a
+**decision** where Fevered Frenzy's is a fact. Fevered Frenzy has no trigger the sim can fire, so its count
+is a static choice and there is nothing else it could open on. Fresh Havoc is
+earned by an empty reload the fight performs several times over — the sim can
+build it perfectly well. It opens full because keeping it up is not something a
+player has to think about, so a fight that opens without it is the less
+realistic of the two (owner, 2026-08-22).
+
+**A CLOSED LIST, and the owner's own allowance.** `card_opens_full:` on the
+buff. It is a judgement about how the game is actually played, not a claim off
+the card, and the two diverge: a card can say "lasts permanently throughout the
+mission" for a pile that takes a hundred kills to fill, and that one should NOT
+open full. So nothing derives this — not from the wiki text and not from the
+shape, which would be the trap the paragraph below names from the other side:
+**twenty** stacking buffs in `data/evolutions/` reach the engine with no clock
+and nothing that clears them, because that is the DEFAULT for a card stating
+neither.
+
+Only the OPENING moves. The trigger still fires, the clear still clears, the
+decay still decays — a buff on this list that a fight does take away is taken
+away in the sim. And it is a DEFAULT, not a rule: the stack stepper on the card
+takes any count, so a reader who disagrees with the allowance says so in their
+own scenario, and the official benchmarks simply inherit it.
 
 Two things carry no duration but are NOT permanent, and must never be treated
 as such by inferring the rule from `duration == 0`: **Secondary Enervate** (a

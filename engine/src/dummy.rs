@@ -14292,6 +14292,7 @@ mod tests {
             stacks_per_trigger: 1,
             per_shell: false,
             cleared_by: crate::loadout::ClearedBy::MagazineRefilled,
+            card_opens_full: false,
         };
         // 21 rounds = seven whole bursts; the cap is five, so a magazine that
         // long reaches it and sits there. The reload is long enough that the
@@ -14380,6 +14381,25 @@ mod tests {
             "a flat +6 is {want} of an unmodded {} base, got {}",
             soma_base.base_vector.total(), sb[0].per_stack);
 
+        // …AND THE CARD OPENS FULL. One of the short, closed list the owner
+        // exempts from the earned-at-zero rule because keeping it up is not
+        // something a player has to think about (2026-08-22) — a DECISION,
+        // named per buff in docs/BUFFS.md, and not something the card text or
+        // the buff's shape could decide.
+        assert!(sb[0].card_opens_full, "the allowance is granted and the data has to carry it");
+
+        // NOTHING ELSE IS ON THE LIST BY RESEMBLANCE. Twenty buffs reach the
+        // same arm with no clock and nothing that clears them — the default for
+        // a card that states neither — so this asserts the difference between
+        // being named and merely sharing the shape. Reaver's Rapture is one of
+        // the eighteen.
+        let quiet = buffs("burston", "burston_reavers_rapture");
+        assert!(!quiet.is_empty(), "the fixture has to carry a buff");
+        assert!(
+            quiet.iter().all(|b| !b.card_opens_full),
+            "a buff nobody put on the list must not open full: {quiet:?}"
+        );
+
         // ---- the Zylok: a BASE crit-damage add, and the mods multiply it ----
         let zb = buffs("zylok", "zylok_maulers_magazine");
         let z = zb.iter().find(|b| b.grant == crate::loadout::BuffGrant::BaseCritDamage)
@@ -14398,6 +14418,57 @@ mod tests {
         let cd_mod = modded.crit_damage / base.base_crit_damage;
         assert!((zm.per_stack - cd_mod).abs() < 1e-6,
             "+1x BASE through a x{cd_mod} crit-damage bucket is worth that much: {}", zm.per_stack);
+
+        // ---- …AND THE INCARNON FORM RUNNING DRY PAYS NOTHING ----
+        //
+        // The trigger is a reload from EMPTY, and an Incarnon form does not
+        // reload: it fires a CHARGE pool, so emptying it is not a magazine
+        // event and cannot earn a stack (owner, 2026-08-22). What CAN pay is
+        // the transform IN, and only from empty — "Switching to Incarnon Form
+        // from empty will also trigger the buff" — which is a different moment
+        // with a different question about the base magazine.
+        //
+        // A run that opens primed and never earns the form back therefore pays
+        // exactly once for its whole Incarnon magazine: at the exit, nothing,
+        // and afterwards only what the BASE form's own empty reloads earn.
+        {
+            let base_form = DummyParams {
+                fire_rate: 10.0,
+                magazine_size: 1_000.0, // deep enough never to reload
+                reload_seconds: 0.5,
+                ..no_status()
+            };
+            let p = DummyParams {
+                fire_rate: 10.0,
+                magazine_size: 20.0, // the CHARGE pool, spent and not reloaded
+                ammo_efficiency_applies: false,
+                infinite_reserve: true,
+                stacking_buffs: vec![crate::loadout::StackingBuff {
+                    id: "on_empty_reload_damage", ..sb[0]
+                }],
+                duration_seconds: 8.0,
+                cycle: Some(IncarnonCycle {
+                    starts_primed: true,
+                    base_form: Box::new(base_form),
+                    charge_on: crate::loadout::ChargeOn::WeakpointHits,
+                    charges_to_fill: 1_000_000,
+                    transmute_out_seconds: 0.5,
+                    transmute_seconds: 1.0,
+                    reload_bucket: 0.0,
+                }),
+                ..no_status()
+            };
+            let trace = replay(&p, Rng::new(7).state(), 600);
+            let i = trace.buffs.iter().position(|x| x.id == "on_empty_reload_damage")
+                .expect("on the roster");
+            let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
+            let r = run_once(&p, &mut Rng::new(7));
+            assert_eq!(r.reloads, 0, "neither form reloads in this fixture");
+            assert!(
+                series.iter().all(|&v| v == 0),
+                "an Incarnon form spends CHARGES, not a magazine — running it dry                  must earn nothing: {series:?}"
+            );
+        }
 
         // ---- it climbs to its cap over reloads, and NOTHING takes it back ----
         let p = DummyParams {
@@ -14473,6 +14544,7 @@ mod tests {
             stacks_per_trigger: 1,
             per_shell: false,
             cleared_by: crate::loadout::ClearedBy::Nothing,
+            card_opens_full: false,
         };
         let base_form = DummyParams {
             damage: DamageVector::new().with(DamageType::Impact, 50.0),
@@ -14692,6 +14764,7 @@ mod tests {
             stacks_per_trigger: 1,
             per_shell: false,
             cleared_by: crate::loadout::ClearedBy::Nothing,
+            card_opens_full: false,
         };
         // A target that dies to every shot and comes straight back, so kills
         // are frequent and nothing else in the fixture is doing anything.
@@ -14894,6 +14967,7 @@ mod tests {
             stacks_per_trigger: 1,
             per_shell: false,
             cleared_by: crate::loadout::ClearedBy::Nothing,
+            card_opens_full: false,
         };
         // Every shot on the head: the streak is never broken, so it climbs and
         // sits at the cap.
@@ -19209,6 +19283,7 @@ mod tests {
                     stacks_per_trigger: 1,
                     per_shell: false,
                     cleared_by: crate::loadout::ClearedBy::Nothing,
+                    card_opens_full: false,
                 }],
                 // Never crits, never procs: every instance is "plain", so
                 // the only variable is HOW MANY instances a shot produces.
@@ -19286,6 +19361,7 @@ mod tests {
                 stacks_per_trigger: 1,
                 per_shell: false,
                 cleared_by: crate::loadout::ClearedBy::Nothing,
+                card_opens_full: false,
             }, crate::loadout::StackingBuff {
                 id: "on_headshot_reload_speed",
                 trigger: crate::loadout::BuffTrigger::Headshot,
@@ -19299,6 +19375,7 @@ mod tests {
                 stacks_per_trigger: 1,
                 per_shell: false,
                 cleared_by: crate::loadout::ClearedBy::Nothing,
+                card_opens_full: false,
             }],
             crit_chance_on_headshot: Some(timed(0.5)),
             crit_damage_on_kill: Some(timed(0.6)),
@@ -19358,6 +19435,7 @@ mod tests {
                     stacks_per_trigger: 1,
                     per_shell: false,
                     cleared_by: crate::loadout::ClearedBy::Nothing,
+                    card_opens_full: false,
                 }],
                 fire_rate,
                 duration_seconds: secs,
@@ -22738,6 +22816,7 @@ mod replay_reads_every_buff_tests {
             stacks_per_trigger: 1,
             per_shell: false,
             cleared_by: crate::loadout::ClearedBy::Nothing,
+            card_opens_full: false,
         };
         let mut params = DummyParams {
             co_stack: Some(stack(0.2)),
@@ -23640,6 +23719,7 @@ mod incarnon_reload_route_tests {
                 stacks_per_trigger: base_mag as u32,
                 per_shell: true,
                 cleared_by: crate::loadout::ClearedBy::EmptyMagazine,
+                card_opens_full: false,
             }];
         }
         p

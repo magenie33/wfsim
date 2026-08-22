@@ -294,6 +294,12 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
             stacks_per_trigger: 1,
             per_shell: false,
             cleared_by: crate::loadout::ClearedBy::Nothing,
+            // Read here as well, so a MOD that states it needs no second edit
+            // — no mod does today; the two that claim it are evolutions.
+            card_opens_full: v
+                .get("card_opens_full")
+                .and_then(Value::as_bool)
+                .unwrap_or(false),
         }),
         // DEGREES, not an accuracy fraction — see `ModEffect::AddedSpread`.
         // `max_stacks` multiplies it, the same assumed-max reading a `kind:

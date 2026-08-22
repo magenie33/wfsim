@@ -450,6 +450,9 @@ enum EvoEffect {
         chance: f64,
         decay: crate::loadout::BuffDecay,
         cleared_by: crate::loadout::ClearedBy,
+        /// The card's own claim that a mission never takes it — see
+        /// [`crate::loadout::StackingBuff::card_opens_full`].
+        card_opens_full: bool,
     },
     StackingMultishotOnFiring {
         per_stack: f64,
@@ -601,6 +604,54 @@ pub struct EvolutionDef {
     /// which is the whole difference from `live_bug` in the same position.
     misprints: Vec<String>,
     effects: Vec<EvoEffect>,
+}
+
+#[cfg(test)]
+mod opens_full_tests {
+    use super::*;
+
+    /// EXACTLY THREE BUFFS OPEN FULL, and the list is closed (owner,
+    /// 2026-08-22).
+    ///
+    /// Every buff in this app opens EARNED at zero (docs/BUFFS.md). Three are
+    /// exempt because keeping them up is not something a player has to think
+    /// about, which makes a fight that opens without them the less realistic of
+    /// the two — Fevered Frenzy, Reified Bane and Fresh Havoc. That is an
+    /// allowance the owner grants per buff, so the only thing that can hold it
+    /// is a test that reads the WHOLE roster back and refuses a fourth.
+    ///
+    /// It is written this way round on purpose. A test naming the three and
+    /// checking they open full would pass just as well on a build that opened
+    /// thirty of them — and the shape these three share (no clock, nothing
+    /// clears them) is the DEFAULT for a card that states neither, carried by
+    /// twenty evolutions, so a rule derived from it would sweep in eighteen on
+    /// evidence nobody wrote down.
+    #[test]
+    fn only_the_three_named_buffs_open_full() {
+        let mut rows: Vec<String> = Vec::new();
+        let mut perks: Vec<&str> = Vec::new();
+        for def in pool() {
+            for card in def.buff_cards() {
+                if card.opens_at == CardOpens::Full {
+                    rows.push(format!("{} ({})", def.id, card.id));
+                    perks.push(def.name.as_str());
+                }
+            }
+        }
+        perks.sort_unstable();
+        perks.dedup();
+        rows.sort();
+        // THREE PERKS, however many weapons carry them — which is the unit the
+        // allowance was granted in. Reified Bane is one buff on five weapons
+        // (both Boars and the three Latos) with a different number on each, and
+        // Fresh Havoc is one on both Somas; a sixth weapon inheriting one of
+        // them is the same buff and needs no decision.
+        assert_eq!(
+            perks,
+            ["Fevered Frenzy", "Fresh Havoc", "Reified Bane"],
+            "the list of buffs that open full is CLOSED — adding one is a              decision about how the game is played, not a property of the              data. Rows: {rows:?}"
+        );
+    }
 }
 
 impl EvolutionDef {
@@ -769,11 +820,20 @@ impl EvolutionDef {
                     permanent: false,
                     opens_at: CardOpens::Zero,
                 }),
-                EvoEffect::StackingGrant { trigger, grant, max_stacks, .. } => Some(EvoBuffCard {
+                // OPENS FULL WHERE THE CARD SAYS A MISSION NEVER TAKES IT
+                // (owner, 2026-08-22) — a buff you are already carrying rather
+                // than one you keep up. NOT `permanent`, which means something
+                // narrower here: no trigger the sim can fire, so the count is a
+                // static choice. This one is earned by an event the fight
+                // performs several times over, so its lock stays live and a
+                // card set to zero builds back.
+                EvoEffect::StackingGrant {
+                    trigger, grant, max_stacks, card_opens_full, ..
+                } => Some(EvoBuffCard {
                     id: stacking_card_id(*trigger, *grant),
                     max_stacks: *max_stacks,
                     permanent: false,
-                    opens_at: CardOpens::Zero,
+                    opens_at: if *card_opens_full { CardOpens::Full } else { CardOpens::Zero },
                 }),
                 EvoEffect::StackingMultishotOnFiring { max_stacks, .. } => Some(EvoBuffCard {
                     id: "on_firing_multishot",
@@ -1518,6 +1578,14 @@ fn effect(v: &Value) -> Option<EvoEffect> {
                     Some("empty_magazine") => crate::loadout::ClearedBy::EmptyMagazine,
                     _ => crate::loadout::ClearedBy::Nothing,
                 },
+                // TRANSCRIBED FROM THE CARD, and false is not "it decays" — it
+                // is "the card does not say". Two of the twenty buffs that
+                // reach this arm with no clock and no clear actually state it,
+                // and the other eighteen simply never filled the key in.
+                card_opens_full: v
+                    .get("card_opens_full")
+                    .and_then(Value::as_bool)
+                    .unwrap_or(false),
             }
         }
         "stacking_buff" => {
@@ -1910,6 +1978,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         stacks_per_trigger: 0,
                         per_shell: true,
                         cleared_by: crate::loadout::ClearedBy::EmptyMagazine,
+                        card_opens_full: false,
                     });
                 }
                 EvoEffect::FlatBaseStatusChance(v) => {
@@ -1992,6 +2061,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         stacks_per_trigger: 1,
                         per_shell: false,
                         cleared_by: crate::loadout::ClearedBy::MagazineRefilled,
+                        card_opens_full: false,
                     });
                 }
                 EvoEffect::MultishotOnLastRound { value, base: is_base } => {
@@ -2103,6 +2173,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 }
                 EvoEffect::StackingGrant {
                     trigger, grant, per_stack, max_stacks, duration, chance, decay, cleared_by,
+                    card_opens_full,
                 } => {
                     base.stacking_buffs.push(crate::loadout::StackingBuff {
                         id: stacking_card_id(*trigger, *grant),
@@ -2117,6 +2188,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         stacks_per_trigger: 1,
                         per_shell: false,
                         cleared_by: *cleared_by,
+                        card_opens_full: *card_opens_full,
                     });
                 }
                 EvoEffect::StackingMultishotOnFiring { per_stack, max_stacks, base: is_base } => {
@@ -2141,6 +2213,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         stacks_per_trigger: 1,
                         per_shell: false,
                         cleared_by: crate::loadout::ClearedBy::Reload,
+                        card_opens_full: false,
                     });
                 }
                 EvoEffect::StackingMultishotOnStatus { status, per_stack, max_stacks, duration } => {
@@ -2161,6 +2234,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         stacks_per_trigger: 1,
                         per_shell: false,
                         cleared_by: crate::loadout::ClearedBy::Nothing,
+                        card_opens_full: false,
                     });
                 }
                 EvoEffect::StackingFireRateOnHeadshot { per_stack, max_stacks, duration, chance, decay } => {
@@ -2180,6 +2254,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         stacks_per_trigger: 1,
                         per_shell: false,
                         cleared_by: crate::loadout::ClearedBy::Nothing,
+                        card_opens_full: false,
                     });
                 }
                 EvoEffect::PostModCritChance(v) => base.post_mod_crit_chance += v,
@@ -2215,6 +2290,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         stacks_per_trigger: 1,
                         per_shell: false,
                         cleared_by: crate::loadout::ClearedBy::Nothing,
+                        card_opens_full: false,
                     });
                 }
                 EvoEffect::StackingReloadSpeedOnHeadshot {
@@ -2237,6 +2313,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         stacks_per_trigger: 1,
                         per_shell: false,
                         cleared_by: crate::loadout::ClearedBy::Nothing,
+                        card_opens_full: false,
                     });
                 }
                 EvoEffect::Inert(_) | EvoEffect::Qualifier(_) => {}

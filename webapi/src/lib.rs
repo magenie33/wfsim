@@ -2187,7 +2187,14 @@ fn enumerate_buffs(
                     kind: "stacking",
                     // EARNED, so it opens at zero: nothing in hand when the
                     // fight starts, like every other triggered buff here.
-                    default_stacks: 0,
+                    //
+                    // …UNLESS THE CARD SAYS A MISSION NEVER TAKES IT, which is
+                    // a different thing from a buff that merely happens to have
+                    // no clock (owner, 2026-08-22): one you are already
+                    // carrying when the fight starts and do not have to keep
+                    // up. It still HAS a trigger, so it is not `permanent` —
+                    // set the card to zero and the run earns it back.
+                    default_stacks: if b.card_opens_full { b.max_stacks } else { 0 },
                     default_locked: false,
                     permanent: false,
                     uncapped: false,
