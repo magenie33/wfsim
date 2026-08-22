@@ -171,6 +171,18 @@ pub struct ValidBuild {
     /// weaker one. The PERCENTAGE is not here — the board scores every
     /// row at the roll's maximum, which every player can reach.
     pub valence: String,
+    /// THE RIVEN THIS BUILD CARRIES, as a SHAPE — which stats, and which is the
+    /// malus. `None` on a build with no riven, which is almost all of them.
+    ///
+    /// The ROLLS are not here on purpose: a board row states a shape and the
+    /// shape is scored at its own ceiling (`rivens_data::perfect`), for the same
+    /// reason every row is scored at full Forma. What a particular copy landed
+    /// on is luck, and luck is not a build.
+    ///
+    /// WHERE IT SITS IS IN `mods`, as [`RIVEN_SLOT`], because position is part
+    /// of the build: an elemental riven pairs with the build's other elementals
+    /// and where it sits decides what it pairs with.
+    pub riven: Option<crate::rivens_data::RivenShape>,
     /// Forma the cheapest legal polarity layout needs. Not a legality term —
     /// two builds that are the same FIGHT can cost different amounts to reach,
     /// and the board should show the cheaper one.
@@ -557,8 +569,20 @@ fn permutations(
 /// Never fails: unknown or foreign ids are DROPPED rather than rejected, since
 /// an id we do not know is one this weapon cannot have either way. What is left
 /// is what [`validate`] then judges.
-fn normalize(weapon: &str, mods: &[String], evolutions: &[String]) -> (Vec<String>, Vec<String>) {
-    let pool = crate::mods_data::pool_for_weapon(weapon);
+fn normalize_with(
+    weapon: &str,
+    mods: &[String],
+    evolutions: &[String],
+    riven: Option<&crate::rivens_data::RivenShape>,
+) -> (Vec<String>, Vec<String>) {
+    let mut pool = crate::mods_data::pool_for_weapon(weapon);
+    // A RIVEN IS IN THE POOL FOR THIS WEAPON BY DEFINITION — it is rolled for
+    // it — so the "drop anything foreign" filter below must not throw the slot
+    // away. Its legality is a question about the SHAPE and is asked in
+    // `check_riven_shape`, where the answer can say why.
+    if riven.is_some() {
+        pool.push(crate::loadout::ModDef { id: RIVEN_SLOT, ..pool[0].clone() });
+    }
     // CANONICALISED, not sorted and not left raw — see `canonical_mods`. A
     // plain sort scored a pairing nobody submitted; raw order made two spellings
     // of one fight into two rows.
@@ -567,7 +591,7 @@ fn normalize(weapon: &str, mods: &[String], evolutions: &[String]) -> (Vec<Strin
         .filter(|id| pool.iter().any(|m| m.id == id.as_str()))
         .cloned()
         .collect();
-    let multishot = canonical_mods(weapon, &kept);
+    let multishot = canonical_mods_with(weapon, &kept, riven);
 
     // The ladder: tier N is only open when the tiers below it are filled, so a
     // set is trimmed to its longest legal prefix. One option per tier.
@@ -625,7 +649,25 @@ pub fn validate_for_board(
     arcanes: &[String],
     valence: &str,
 ) -> Result<ValidBuild, String> {
-    let b = validate(weapon, mods, evolutions, arcanes, valence)?;
+    validate_for_board_with(benchmark, weapon, mods, evolutions, arcanes, valence, None)
+}
+
+/// [`validate_for_board`], for a build carrying a riven of known SHAPE.
+///
+/// A riven OCCUPIES A MAIN SLOT like any other mod, so a benchmark that wants
+/// all eight still wants all eight — seven cards and the riven. Nothing about
+/// admission changes; what changes is that one of the eight is priced from a
+/// shape rather than from the pool.
+pub fn validate_for_board_with(
+    benchmark: &str,
+    weapon: &str,
+    mods: &[String],
+    evolutions: &[String],
+    arcanes: &[String],
+    valence: &str,
+    riven: Option<&crate::rivens_data::RivenShape>,
+) -> Result<ValidBuild, String> {
+    let b = validate_with(weapon, mods, evolutions, arcanes, valence, riven)?;
     let req = match crate::benchmarks_data::get(benchmark) {
         Some(bm) => bm.build.clone(),
         // An unknown benchmark admits nothing: scoring a build against a ruler
@@ -697,8 +739,36 @@ pub fn validate(
     arcanes: &[String],
     valence: &str,
 ) -> Result<ValidBuild, String> {
+    validate_with(weapon, mods, evolutions, arcanes, valence, None)
+}
+
+/// [`validate`], for a build carrying a riven of known SHAPE.
+///
+/// The riven rides in `mods` as [`RIVEN_SLOT`] so its POSITION is kept, and the
+/// shape says what that slot actually holds — which pool it must be rollable
+/// from, what it drains, and which elements it brings to the pairing.
+pub fn validate_with(
+    weapon: &str,
+    mods: &[String],
+    evolutions: &[String],
+    arcanes: &[String],
+    valence: &str,
+    riven: Option<&crate::rivens_data::RivenShape>,
+) -> Result<ValidBuild, String> {
     let spec = crate::weapons_data::spec(weapon)
         .ok_or_else(|| format!("unknown weapon: {weapon}"))?;
+    // THE SHAPE AND THE SLOT MUST AGREE, both ways. A shape with no slot is a
+    // riven nobody is wearing; a slot with no shape is a mod nothing can price.
+    // Either one silently scores a different build from the one submitted.
+    let wears = mods.iter().any(|m| m == RIVEN_SLOT);
+    match (riven, wears) {
+        (Some(_), false) => return Err("a riven was named and no slot holds it".into()),
+        (None, true) => return Err("a riven slot with no riven in it".into()),
+        _ => {}
+    }
+    if let Some(shape) = riven {
+        check_riven_shape(weapon, shape)?;
+    }
     // DUPLICATES first, and separately: `normalize` collapses them, so a build
     // listing one mod nine times would otherwise be reported as "eight mods are
     // not in the pool" — a true count attached to the wrong reason, which is
@@ -709,7 +779,15 @@ pub fn validate(
     if uniq.len() != mods.len() {
         return Err(format!("{} of {} mods are listed twice", mods.len() - uniq.len(), mods.len()));
     }
-    let (multishot, evos) = normalize(weapon, mods, evolutions);
+    // THE RIVEN JOINS THE POOL for the rest of this function, because every
+    // question below is asked THROUGH the pool — is it in it, what family is it,
+    // what does it drain. A riven has no family and drains 18 at max rank, and
+    // both of those are the mod's own answer rather than a special case here.
+    let riven_def = riven.map(|shape| {
+        crate::rivens_data::perfect(shape, riven_class(weapon), |_| 0.0)
+            .to_mod_def(RIVEN_SLOT, spec.disposition.unwrap_or(1.0))
+    });
+    let (multishot, evos) = normalize_with(weapon, mods, evolutions, riven);
     if multishot.len() != mods.len() {
         // Loud, because a silently dropped mod is a build the submitter did not
         // send being scored under their name.
@@ -720,7 +798,8 @@ pub fn validate(
             spec.name
         ));
     }
-    let pool = crate::mods_data::pool_for_weapon(weapon);
+    let mut pool = crate::mods_data::pool_for_weapon(weapon);
+    pool.extend(riven_def.clone());
     let def = |id: &str| pool.iter().find(|m| m.id == id).expect("normalised into the pool");
 
     // FAMILIES. Two mods of one family cannot be equipped together.
@@ -860,7 +939,54 @@ pub fn validate(
         forma: plan.cost.total(),
         drain: plan.drain,
         valence: val,
+        riven: riven.cloned(),
     })
+}
+
+/// The riven pool this weapon rolls from — empty when it rolls from none, which
+/// no roster weapon does today and a companion weapon might.
+fn riven_class(weapon: &str) -> &'static str {
+    crate::rivens_data::class_for_weapon(weapon).unwrap_or("")
+}
+
+/// IS THIS SHAPE A RIVEN THIS WEAPON CAN ACTUALLY ROLL?
+///
+/// The board may not rank an item the game cannot produce, and this is the one
+/// place that decides it. `rivens_data`'s own rules answer it — the derived
+/// pool for the weapon's riven FAMILY, plus the per-family exceptions — so a
+/// stat that stops being rollable in a hotfix stops being rankable in the same
+/// data change, with no list here to remember.
+fn check_riven_shape(
+    weapon: &str,
+    shape: &crate::rivens_data::RivenShape,
+) -> Result<(), String> {
+    let class = riven_class(weapon);
+    if class.is_empty() {
+        return Err(format!("{weapon} takes no riven"));
+    }
+    // SHAPE FIRST: two or three bonuses, at most one malus. Asked through
+    // `RivenSpec::illegal` so there is one answer to "could this exist", and
+    // this function only has to carry the part that is about the WEAPON.
+    let spec = crate::rivens_data::perfect(shape, class, |_| 0.0);
+    let bad = spec.illegal();
+    if !bad.is_empty() {
+        return Err(bad.join("; "));
+    }
+    let rollable = crate::rivens_data::derived_for(weapon);
+    for id in shape.bonuses.iter().chain(shape.malus.iter()) {
+        if !rollable.iter().any(|x| x == id) {
+            return Err(format!("a {} riven does not roll {id}", crate::weapons_data::spec(weapon)
+                .map_or(weapon, |w| w.name.as_str())));
+        }
+    }
+    // A MALUS IS NOT ANY STAT. Five are bonus-only, and the pool says which.
+    if let Some(m) = &shape.malus {
+        let ok = crate::rivens_data::pool(class).iter().any(|x| &x.id == m && x.malus);
+        if !ok {
+            return Err(format!("{m} cannot be a riven's negative"));
+        }
+    }
+    Ok(())
 }
 
 /// The FIGHT this build is, as one stable string.
@@ -876,14 +1002,30 @@ pub fn identity(b: &ValidBuild) -> String {
     // the first's number. Appended rather than inserted, so every identity
     // already computed for an ordinary weapon is unchanged — it ends in `|`
     // and nothing else moved.
-    format!(
+    let key = format!(
         "{}|{}|{}|{}|{}",
         b.weapon,
         b.mods.join(","),
         set(&b.evolutions),
         b.arcanes.join(","),
         b.valence
-    )
+    );
+    // THE RIVEN'S SHAPE, appended — so every identity already computed for a
+    // build without one is unchanged, byte for byte, and the board is not
+    // re-keyed by a feature it does not use. Same reason the valence went on
+    // the end rather than into the middle.
+    //
+    // The SHAPE and not the rolls: two players who rolled the same stats
+    // submitted the same build, and the board scores it at the ceiling either
+    // way. WHERE it sits is already in `mods`, which carries `riven` in place.
+    match &b.riven {
+        None => key,
+        Some(r) => format!(
+            "{key}|{}{}",
+            r.bonuses.join("+"),
+            r.malus.as_ref().map_or(String::new(), |m| format!("-{m}"))
+        ),
+    }
 }
 
 /// THE CARD'S SIGN IS NOT THE BUILD'S DIRECTION — the case the whole design

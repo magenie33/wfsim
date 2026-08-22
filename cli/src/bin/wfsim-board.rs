@@ -57,6 +57,31 @@ struct Row {
     /// The BONUS is not a row field: the ruler scores every row at the roll's
     /// maximum, which is investment rather than a choice.
     valence: String,
+    /// THE RIVEN THIS BUILD CARRIES, as a SHAPE — which stats and which is the
+    /// malus, never a roll. A row states a shape and the shape is scored at its
+    /// own ceiling (`rivens_data::perfect`), for the reason every row is scored
+    /// at full Forma: what one copy landed on is luck, and the board does not
+    /// rank luck.
+    ///
+    /// WHERE it sits is in `mods`, which carries `riven` at its own position —
+    /// an elemental riven pairs with the build's other elementals, so position
+    /// is part of the build.
+    ///
+    /// The ROLLS the scorer settled on go in `riven_rolls`, because opening
+    /// this row has to be able to build that riven on the reader's machine.
+    riven: Option<RowRiven>,
+}
+
+/// A row's riven: the SHAPE it states, and the ROLLS this engine found best for
+/// it. The shape is what a player acts on; the rolls are what the number rests
+/// on and what a reader needs to reproduce it.
+#[derive(Debug, Clone, PartialEq)]
+struct RowRiven {
+    bonuses: Vec<String>,
+    malus: Option<String>,
+    /// One roll per stat, bonuses first then the malus — the corner
+    /// `rivens_data::perfect` picked for THIS fight. Not part of the identity.
+    rolls: Vec<f64>,
 }
 
 /// THE FLOOR: a row must score at least half its group's leader to be listed
@@ -112,11 +137,23 @@ const FLOOR: f64 = 0.5;
 /// descending and global.
 fn keep_above_floor(mut rows: Vec<Row>) -> (Vec<Row>, usize) {
     rows.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
-    let mut leader: std::collections::BTreeMap<(String, String), f64> = Default::default();
+    let mut leader: std::collections::BTreeMap<(String, String, bool), f64> = Default::default();
     let mut kept = Vec::new();
     let mut below = 0usize;
     for r in rows {
-        let top = *leader.entry((r.weapon.clone(), r.mode.clone())).or_insert(r.score);
+        // …AND PER RIVEN-NESS, for the reason it is per mode: a riven build and
+        // a plain one compete with each other for nothing, and a shared
+        // reference would let whichever is stronger on this weapon decide what
+        // the other may show. On most weapons that is the riven build, and the
+        // plain ones — the builds most players can actually make — would be the
+        // ones to disappear.
+        //
+        // THE RANKING IS STILL ONE LIST. Only the floor partitions: a riven
+        // build does not always beat a plain one, so ranking them apart would
+        // publish a comparison the fight does not make (owner, 2026-08-22).
+        let top = *leader
+            .entry((r.weapon.clone(), r.mode.clone(), r.riven.is_some()))
+            .or_insert(r.score);
         if r.score >= FLOOR * top {
             kept.push(r);
         } else {
@@ -269,6 +306,17 @@ fn main() {
     }
     let emit_to = flag("--emit-scores");
     let mut computed: std::collections::HashMap<String, f64> = Default::default();
+    // THE ROLLS TRAVEL BESIDE THE SCORE, keyed the same way and reused on the
+    // same terms.
+    //
+    // They have to travel at all because a score is not enough to publish a
+    // riven row: the reader has to be able to BUILD that riven, and the corner
+    // this engine chose is not something a page can re-derive without paying
+    // for the search again. And they reuse on the same terms as the score
+    // because they were found by the same fingerprint — anything that could
+    // move the rolls moves the score, since the rolls ARE the argmax of it.
+    let mut rolls: std::collections::HashMap<String, Vec<f64>> =
+        load_rolls(flag("--scores"), &bench_id);
     let bench = wfsim_engine::benchmarks_data::get(&bench_id).unwrap_or_else(|| {
         eprintln!("unknown benchmark: {bench_id}");
         std::process::exit(2);
@@ -349,8 +397,24 @@ fn main() {
         // a ruler's, since a build without an element is not a build a ruler
         // declines, it is not a build.
         let valence = s.get("valence").and_then(Value::as_str).unwrap_or("");
-        let v = match wfsim_engine::builds::validate_for_board(
-            &bench_id, &weapon, &mods, &evos, &arcs, valence,
+        // A RIVEN'S SHAPE, when the submission carries one. Two flat lists, the
+        // way the endpoint stores them: the ROLLS are never submitted because
+        // they are never ranked — `rivens_data::perfect` finds this shape's own
+        // best corner for this fight, below.
+        let shape = {
+            let bonuses = get("riven_pos");
+            let malus = s.get("riven_neg").and_then(Value::as_str).filter(|x| !x.is_empty());
+            (!bonuses.is_empty()).then(|| wfsim_engine::rivens_data::RivenShape {
+                bonuses: {
+                    let mut b = bonuses;
+                    b.sort();
+                    b
+                },
+                malus: malus.map(String::from),
+            })
+        };
+        let v = match wfsim_engine::builds::validate_for_board_with(
+            &bench_id, &weapon, &mods, &evos, &arcs, valence, shape.as_ref(),
         ) {
             Ok(v) => v,
             Err(e) => {
@@ -411,10 +475,26 @@ fn main() {
             continue;
         }
 
+        // THE RIVEN'S SLOT IS SPELLED DIFFERENTLY ON THE WIRE. A record carries
+        // the bare `riven` because the endpoint's ids are `[a-z0-9_]`; a
+        // simulate request names the riven ITEM, which is `riven:<name>`. The
+        // translation is one line and lives here so neither protocol has to
+        // bend for the other.
         let mut req = scenario.clone();
         if let Some(o) = req.as_object_mut() {
             o.insert("weapon".into(), json!(v.weapon));
-            o.insert("mods".into(), json!(v.mods));
+            o.insert(
+                "mods".into(),
+                json!(v
+                    .mods
+                    .iter()
+                    .map(|m| if m == wfsim_engine::builds::RIVEN_SLOT {
+                        RIVEN_ITEM.to_string()
+                    } else {
+                        m.clone()
+                    })
+                    .collect::<Vec<_>>()),
+            );
             o.insert("evolutions".into(), json!(v.evolutions));
             o.insert("arcane".into(), json!(v.arcanes));
             // THE VALENCE, at the ruler's own terms: the element the entrant
@@ -445,6 +525,17 @@ fn main() {
         if !seen_ids.insert(key.clone()) {
             continue;
         }
+        // THE ROLLS THIS ENGINE SETTLED ON, filled in by the search below. A row
+        // that was REUSED keeps whatever the last run found, which is correct:
+        // reuse only happens when the fingerprint says nothing that could move
+        // the answer has changed.
+        let mut row_riven: Option<RowRiven> = v.riven.as_ref().and_then(|shape| {
+            rolls.get(&key).map(|r| RowRiven {
+                bonuses: shape.bonuses.clone(),
+                malus: shape.malus.clone(),
+                rolls: r.clone(),
+            })
+        });
         let score = match known.get(&key) {
             // A SIBLING SHARD OF THIS RUN ALREADY PAID FOR IT. Not a cache: the
             // map only ever travels between processes built from one commit.
@@ -455,6 +546,48 @@ fn main() {
                 // twice and ranking it once.
                 if shards > 1 && idx % shards != shard {
                     continue;
+                }
+                // A RIVEN ROW IS SCORED AT ITS SHAPE'S CEILING, and finding
+                // that ceiling is a search: every corner of the roll band, at a
+                // CHEAP run count, then the winner measured properly at the
+                // ruler's own. Sixteen probes and one real measurement rather
+                // than sixteen real ones — the same "search cheaply, then
+                // measure the winner" the optimizer's `finalists x final_runs`
+                // is built on, and here it takes the cost of a riven row from
+                // 16x a plain one to about 2.6x.
+                //
+                // The corners are far apart, so picking between them does not
+                // need the precision the published number does.
+                if let Some(shape) = &v.riven {
+                    let cls = wfsim_engine::rivens_data::class_for_weapon(&v.weapon)
+                        .unwrap_or("");
+                    let best = wfsim_engine::rivens_data::perfect(shape, cls, |sp| {
+                        let mut probe = req.clone();
+                        if let Some(o) = probe.as_object_mut() {
+                            o.insert("rivens".into(), riven_request(sp));
+                            o.insert("runs".into(), json!(PROBE_RUNS));
+                        }
+                        wfsim_engine_webapi_simulate(&probe)
+                            .get("score")
+                            .and_then(Value::as_f64)
+                            .unwrap_or(0.0)
+                    });
+                    row_riven = Some(RowRiven {
+                        bonuses: shape.bonuses.clone(),
+                        malus: shape.malus.clone(),
+                        rolls: best
+                            .bonuses
+                            .iter()
+                            .map(|b| b.roll)
+                            .chain(best.malus.iter().map(|m| m.roll))
+                            .collect(),
+                    });
+                    if let Some(o) = req.as_object_mut() {
+                        o.insert("rivens".into(), riven_request(&best));
+                    }
+                    if let Some(rv) = &row_riven {
+                        rolls.insert(key.clone(), rv.rolls.clone());
+                    }
                 }
                 let out = wfsim_engine_webapi_simulate(&req);
                 let ok = out.get("ok").and_then(Value::as_bool).unwrap_or(false);
@@ -492,6 +625,7 @@ fn main() {
             evolutions: v.evolutions,
             arcanes: v.arcanes,
             valence: v.valence,
+            riven: row_riven,
         });
     }
 
@@ -548,6 +682,12 @@ fn main() {
         let text = serde_json::to_string(&serde_json::json!({
             "benchmark": bench_id,
             "scores": computed,
+            // Only the rows this shard actually searched; a plain build has no
+            // entry, so an ordinary board's shard file is what it always was.
+            "rolls": computed
+                .keys()
+                .filter_map(|k| rolls.get(k).map(|r| (k.clone(), r.clone())))
+                .collect::<std::collections::HashMap<_, _>>(),
         }))
         .expect("scores");
         std::fs::write(path, text).unwrap_or_else(|e| panic!("write {path}: {e}"));
@@ -636,7 +776,73 @@ fn main() {
         if !r.valence.is_empty() {
             println!("    valence: {}", r.valence);
         }
+        // THE RIVEN, where there is one — and both halves of it. The SHAPE is
+        // what a player acts on ("roll this weapon for these stats"); the ROLLS
+        // are what the number rests on, and what lets opening this row build
+        // the riven on the reader's own machine.
+        if let Some(rv) = &r.riven {
+            println!("    riven:");
+            println!("      bonuses: [{}]", rv.bonuses.join(", "));
+            if let Some(m) = &rv.malus {
+                println!("      malus: {m}");
+            }
+            println!(
+                "      rolls: [{}]",
+                rv.rolls.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(", ")
+            );
+        }
     }
+}
+
+/// The ROLLS a previous pass settled on, from the same shard files
+/// [`load_scores`] reads. Same key, same benchmark guard, same merge rule.
+fn load_rolls(
+    spec: Option<String>,
+    bench_id: &str,
+) -> std::collections::HashMap<String, Vec<f64>> {
+    let mut out: std::collections::HashMap<String, Vec<f64>> = Default::default();
+    let Some(dir) = spec else { return out };
+    let Ok(entries) = std::fs::read_dir(&dir) else { return out };
+    for e in entries.flatten() {
+        let Ok(text) = std::fs::read_to_string(e.path()) else { continue };
+        let Ok(file) = serde_json::from_str::<Value>(&text) else { continue };
+        if file.get("benchmark").and_then(Value::as_str) != Some(bench_id) {
+            continue;
+        }
+        let Some(rolls) = file.get("rolls").and_then(Value::as_object) else { continue };
+        for (k, v) in rolls {
+            let Some(a) = v.as_array() else { continue };
+            out.insert(k.clone(), a.iter().filter_map(Value::as_f64).collect());
+        }
+    }
+    out
+}
+
+/// HOW MANY RUNS A CORNER PROBE GETS. Only ever used to pick BETWEEN corners,
+/// never to publish: the winner is then measured at the ruler's own count.
+///
+/// The corners of a roll band are far apart — a stat at 0.9 against the same
+/// stat at 1.1 — so choosing between them does not need the precision the
+/// published number does, and paying for it sixteen times would make a riven
+/// row cost sixteen plain ones on a board that already takes an hour.
+const PROBE_RUNS: u32 = 60;
+
+/// The mod id a RIVEN takes in a simulate request. A record spells it `riven`
+/// (the endpoint's ids are `[a-z0-9_]`); the request names an ITEM.
+const RIVEN_ITEM: &str = "riven:board";
+
+/// One riven, as the `rivens` array of a simulate request.
+fn riven_request(spec: &wfsim_engine::rivens_data::RivenSpec) -> Value {
+    let stat = |s: &wfsim_engine::rivens_data::RolledStat| json!({ "id": s.id, "roll": s.roll });
+    json!([{
+        "name": RIVEN_ITEM.trim_start_matches("riven:"),
+        "spec": {
+            "bonuses": spec.bonuses.iter().map(stat).collect::<Vec<_>>(),
+            "malus": spec.malus.as_ref().map(stat),
+            "rank": spec.rank,
+            "polarity": "madurai",
+        }
+    }])
 }
 
 /// `webapi::simulate_json` under a name that says the crate boundary is
@@ -659,6 +865,19 @@ mod tests {
             evolutions: vec![],
             arcanes: vec![],
             valence: String::new(),
+            riven: None,
+        }
+    }
+
+    /// The same row, carrying a riven — so the floor's groups can be told apart.
+    fn riven_row(weapon: &str, mode: &str, score: f64) -> Row {
+        Row {
+            riven: Some(RowRiven {
+                bonuses: vec!["damage".into(), "multishot".into()],
+                malus: None,
+                rolls: vec![1.1, 1.1],
+            }),
+            ..row(weapon, mode, score)
         }
     }
 
@@ -798,4 +1017,45 @@ mod tests {
         assert_eq!(got.get("b#base").copied(), Some(2.0));
         let _ = std::fs::remove_dir_all(&d);
     }
+    /// THE FLOOR PARTITIONS BY RIVEN, and the ranking does not.
+    ///
+    /// A riven build and a plain one compete with each other for nothing, so a
+    /// shared reference would let whichever is stronger on this weapon decide
+    /// what the other may show — and on most weapons that is the riven build,
+    /// which would take the plain ones with it. Those are the builds most
+    /// players can actually make.
+    #[test]
+    fn the_floor_is_drawn_per_riven_ness_and_the_list_is_still_one() {
+        // A strong riven leader and a plain group far below it. Every plain row
+        // survives on its OWN leader; under one shared reference all three
+        // would be gone.
+        let (kept, below) = keep_above_floor(vec![
+            riven_row("torid", "cycle", 100.0),
+            riven_row("torid", "cycle", 60.0),
+            riven_row("torid", "cycle", 40.0), // 40% of the riven leader
+            row("torid", "cycle", 20.0),
+            row("torid", "cycle", 12.0),
+            row("torid", "cycle", 11.0), // 55% of the PLAIN leader, and 11% of the riven one
+        ]);
+        assert_eq!(below, 1, "only the riven row under half its own leader");
+        assert_eq!(kept.len(), 5);
+        assert_eq!(kept.iter().filter(|r| r.riven.is_some()).count(), 2);
+        assert_eq!(kept.iter().filter(|r| r.riven.is_none()).count(), 3);
+
+        // ONE LIST, still sorted by score across both kinds — a riven build
+        // does not always beat a plain one, so ranking them apart would publish
+        // a comparison the fight does not make.
+        let scores: Vec<f64> = kept.iter().map(|r| r.score).collect();
+        assert!(scores.windows(2).all(|w| w[0] >= w[1]), "{scores:?}");
+
+        // AND THE PARTITION IS NOT PER WEAPON ONLY: another weapon's riven
+        // leader must not set this one's floor either.
+        let (kept, _) = keep_above_floor(vec![
+            riven_row("laetum", "base", 1000.0),
+            riven_row("torid", "cycle", 10.0),
+            riven_row("torid", "cycle", 6.0),
+        ]);
+        assert_eq!(kept.len(), 3);
+    }
+
 }
