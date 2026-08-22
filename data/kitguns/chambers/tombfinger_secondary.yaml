@@ -122,6 +122,20 @@ blast:
     splash_share_of: radiation
     splash_share: 0.805
 
+# ================= PAX CHARGE =================
+#
+# The Kitgun arcane that replaces the magazine with a rechargeable battery. The
+# RATE is per chamber and per slot, and it is stated on Pax Charge's own page
+# rather than on this one — a table of six chambers by two slots, verbatim for
+# this row. It is "**not** affected by mods or abilities", which is why it is a
+# constant here and not a bucket.
+#
+# The DELAY is not here, because it is not the chamber's: "base recharge delay
+# is equal to the reload time displayed on the weapon", which is the LOADER's,
+# and it is then shortened by reload speed like any other reload. So the whole
+# mechanic is this one number plus machinery the engine already has.
+recharge_per_second: 50
+
 source:
   url: https://wiki.warframe.com/w/Tombfinger
   module: https://wiki.warframe.com/w/Module:Modular/data

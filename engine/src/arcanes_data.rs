@@ -34,6 +34,10 @@ struct ArcaneFile {
     requires: Option<String>,
     #[serde(default)]
     equip_classes: Vec<String>,
+    #[serde(default)]
+    equip_traits: Vec<String>,
+    #[serde(default)]
+    seats: Vec<String>,
     /// Custom perk implementation id (Secondary Enervate's ramp/reset lives
     /// in `engine::perks`, not in the declarative effect vocabulary).
     #[serde(default)]
@@ -207,6 +211,13 @@ pub struct ArcaneFx {
     pub headshot_multiplier_bonus: f64,
     /// Static reload-speed bucket addition (Merciless rank 5).
     pub reload_bonus: f64,
+    /// PAX CHARGE: does the magazine RECHARGE instead of reloading?
+    ///
+    /// A flag rather than a rate, because the rate is the WEAPON's and the
+    /// arcane does not know it — so an arcane that grants this on a weapon with
+    /// no rate grants nothing, which is the honest answer for a chamber whose
+    /// row nobody has transcribed.
+    pub rechargeable_magazine: bool,
     /// Σ RELATIVE crit-chance bonuses from assumed-max conditionals
     /// (Overcharge, Outburst) — they join the crit-chance BUCKET, so each
     /// attack part multiplies its OWN unmodded base by this. Kept relative all
@@ -267,6 +278,7 @@ impl Default for ArcaneFx {
             echo_needs_radiation_stacks: 0,
             headshot_multiplier_bonus: 0.0,
             reload_bonus: 0.0,
+            rechargeable_magazine: false,
             crit_chance_relative: 0.0,
             crit_damage_relative: 0.0,
             weakpoint_crit_chance_relative: 0.0,
@@ -399,6 +411,29 @@ pub struct ArcaneDef {
     /// them at all. A picker that offers what the arsenal refuses is a worse
     /// way to say the same thing.
     pub equip_classes: Vec<&'static str>,
+    /// …AND THE WEAPON TRAITS, for a family that is not a class.
+    ///
+    /// A CLASS could not say "Kitgun": a primary Tombfinger is a `rifle` and a
+    /// secondary one a `pistol`, exactly like a Braton and a Lex, and the eight
+    /// Pax and Residual arcanes go on neither. What separates them is that the
+    /// weapon is MODULAR, which is a `traits:` entry on the roster and the same
+    /// thing `incarnon` already is.
+    ///
+    /// An EQUIP rule like `equip_classes` beside it, and for its reason: the
+    /// arsenal does not offer these on anything else, so a picker that did
+    /// would be a worse way of saying the same thing. Both are ANDed — an
+    /// arcane may narrow by either, or by both.
+    pub equip_traits: Vec<&'static str>,
+    /// WHICH ARCANE SEATS this arcane fits — `primary`, `secondary`, `melee`.
+    ///
+    /// Almost always the one directory it is filed under, which is the default
+    /// and needs no yaml. The KITGUN family is why it can be a list: a Kitgun is
+    /// one weapon with an entry in both slots, so a primary Tombfinger has a
+    /// PRIMARY arcane seat and a secondary one a SECONDARY seat, and Pax Charge
+    /// goes in either. Ids are globally unique across slots — a test asserts it,
+    /// and `secondary(id)` is safe because of it — so filing the same arcane in
+    /// two directories was never an option.
+    pub seats: Vec<&'static str>,
     /// Verbatim in-game text with rank-varying numbers as `X`.
     pub description: String,
     /// WHAT THIS ARCANE DOES IN THE LIVE GAME THAT DE DID NOT MEAN IT TO.
@@ -527,6 +562,13 @@ enum ArcEffect {
     /// it leaves carries the faction bonus a third time; see
     /// `dummy::faction_at`).
     Debilitate(Scale),
+    /// PAX CHARGE: the magazine becomes a rechargeable BATTERY.
+    ///
+    /// The whole mechanic is a reload-speed bonus plus a rate the WEAPON states,
+    /// so this effect carries only the first — "recharge rate is **not**
+    /// affected by mods or abilities. Recharge rate depends on the chamber
+    /// part". A weapon with no rate of its own gets nothing.
+    RechargeableMagazine { scale: Scale },
     Unmodeled { scale: Scale },
     OutOfScope { scale: Scale },
     /// No single-target sim payload and NO description number of its own
@@ -597,7 +639,14 @@ pub fn arc_condition(v: &Value) -> Option<ArcCondition> {
         // has to be added here, which is the whole mechanism.
         "while_sliding_or_aim_gliding"
         | "while_overshields_active"
-        | "while_buffing_ally_warframes" => ArcCondition::AssumedTennoState,
+        | "while_buffing_ally_warframes"
+        // AIRBORNE, which is the same family: a state of the TENNO that this
+        // arena does not model, so the house reading treats it as satisfied. It
+        // costs nothing to be optimistic here because Pax Soar's three grants —
+        // accuracy, recoil and aim glide — all pay zero either way; the gate is
+        // recorded so that the day one of them can be paid, the condition is
+        // already the right kind.
+        | "while_airborne" => ArcCondition::AssumedTennoState,
         other => ArcCondition::Unknown(other.to_string()),
     })
 }
@@ -684,6 +733,7 @@ fn effect(v: &Value) -> Option<ArcEffect> {
             value: f(v, "rankMax").unwrap_or(0.0),
             unlocks_at: u(v, "unlocks_at_rank"),
         },
+        "rechargeable_magazine" => ArcEffect::RechargeableMagazine { scale: scale(v) },
         "reload_speed_bonus" => ArcEffect::ReloadSpeed {
             value: f(v, "rankMax").unwrap_or(0.0),
             unlocks_at: u(v, "unlocks_at_rank"),
@@ -917,6 +967,15 @@ impl ArcaneDef {
                         fx.headshot_multiplier_bonus += value;
                     }
                 }
+                ArcEffect::RechargeableMagazine { scale } => {
+                    // THE DELAY IS THE RELOAD, shortened by reload speed like
+                    // any other: "recharge delay is further reduced (stacking
+                    // additively) by reload speed mods". So the bonus joins the
+                    // bucket the mods already feed, and the panel's own
+                    // `reload_seconds` IS the delay with nothing to recompute.
+                    fx.reload_bonus += scale.at(rank, self.max_rank);
+                    fx.rechargeable_magazine = true;
+                }
                 ArcEffect::ReloadSpeed { value, unlocks_at } => {
                     if rank >= *unlocks_at {
                         fx.reload_bonus += value;
@@ -1004,6 +1063,7 @@ impl ArcaneDef {
                 | ArcEffect::CondCritDamageStacked { scale, .. }
                 | ArcEffect::WeakpointCritChance(scale)
                 | ArcEffect::PerColdDamage { scale, .. }
+                | ArcEffect::RechargeableMagazine { scale }
                 | ArcEffect::FlatDamageOnStatus(scale)
                 | ArcEffect::EncumberChance(scale)
                 | ArcEffect::AmmoEfficiency(scale)
@@ -1153,6 +1213,10 @@ impl ArcaneDef {
                         out.push(format!("{} to Headshot Multiplier", pct(*value)));
                     }
                 }
+                ArcEffect::RechargeableMagazine { scale } => out.push(format!(
+                    "the magazine RECHARGES instead of reloading, {} Recharge Delay",
+                    pct(at(scale))
+                )),
                 ArcEffect::ReloadSpeed { value, unlocks_at } => {
                     if rank >= *unlocks_at {
                         out.push(format!("{} Reload Speed", pct(*value)));
@@ -1247,6 +1311,13 @@ fn rarity(name: &str) -> Rarity {
 pub fn load_pool(prefix: &str) -> Vec<ArcaneDef> {
     let mut out = Vec::new();
     for (path, text) in crate::data::files_under(prefix) {
+        // THE DIRECTORY IS THE DEFAULT SEAT, taken from the path rather than
+        // from the caller's prefix so a pool loaded any other way still gets it.
+        let dir: &'static str = path
+            .strip_prefix("arcanes/")
+            .and_then(|p| p.split('/').next())
+            .map(|d| &*Box::leak(d.to_string().into_boxed_str()))
+            .unwrap_or("secondary");
         let af: ArcaneFile =
             serde_norway::from_str(text).unwrap_or_else(|e| panic!("parse {path}: {e}"));
         let effects = af
@@ -1260,6 +1331,19 @@ pub fn load_pool(prefix: &str) -> Vec<ArcaneDef> {
             rarity: rarity(&af.rarity),
             max_rank: af.max_rank,
             requires: af.requires,
+            seats: if af.seats.is_empty() {
+                vec![dir]
+            } else {
+                af.seats
+                    .iter()
+                    .map(|s| &*Box::leak(s.clone().into_boxed_str()))
+                    .collect()
+            },
+            equip_traits: af
+                .equip_traits
+                .iter()
+                .map(|s| &*Box::leak(s.clone().into_boxed_str()))
+                .collect(),
             equip_classes: af
                 .equip_classes
                 .into_iter()
@@ -1309,11 +1393,26 @@ pub fn slot_pool(slot: &str) -> &'static [ArcaneDef] {
 /// The engine decides, once, for the page and the sim alike — the same rule
 /// `mods_data::pool_for_weapon` follows.
 pub fn pool_for_weapon(weapon: &str, slot: &str) -> Vec<&'static ArcaneDef> {
-    let class = crate::weapons_data::spec(weapon).map(|s| s.class.as_str());
-    slot_pool(slot)
-        .iter()
+    let spec = crate::weapons_data::spec(weapon);
+    let class = spec.map(|s| s.class.as_str());
+    // The DERIVED traits — trigger, class and `modular` — which is the same
+    // list a mod's `requires:` is gated on.
+    let traits = spec.map(crate::weapons_data::traits_of).unwrap_or(&[]);
+    // EVERY POOL, not this slot's, because an arcane may declare SEATS beyond
+    // the directory it is filed under — the Kitgun family fits both. The filter
+    // below is what puts it back: an arcane that declares nothing gets its own
+    // directory as its only seat, so this is the same list it always was for
+    // every other arcane in the game.
+    slots()
+        .into_iter()
+        .flat_map(slot_pool)
+        .filter(|a| a.seats.contains(&slot))
         .filter(|a| {
-            a.equip_classes.is_empty() || class.is_some_and(|c| a.equip_classes.contains(&c))
+            (a.equip_classes.is_empty() || class.is_some_and(|c| a.equip_classes.contains(&c)))
+                // AND, not OR: an arcane may narrow by class, by trait, or by
+                // both, and each list it states has to be satisfied.
+                && (a.equip_traits.is_empty()
+                    || a.equip_traits.iter().all(|t| traits.iter().any(|w| w == t)))
         })
         .collect()
 }
@@ -1349,7 +1448,16 @@ pub fn secondary(id: &str) -> Option<&'static ArcaneDef> {
 /// lives here rather than in each caller's own filtering (a SECONDARY arcane
 /// was silently applying to the first primary weapon — user, 2026-07-30).
 pub fn for_slot(slot: &str, id: &str) -> Option<&'static ArcaneDef> {
-    slot_pool(slot).iter().find(|a| a.id == id)
+    // EVERY POOL, filtered by the SEATS the arcane declares — the same rule
+    // `pool_for_weapon` follows, and it has to be the same rule or an arcane
+    // the picker offers is one the equip path then refuses. A Kitgun arcane is
+    // filed under one directory and fits both seats; everything else declares
+    // nothing and gets its own directory as its only seat, which is the list
+    // this function always returned.
+    slots()
+        .into_iter()
+        .flat_map(slot_pool)
+        .find(|a| a.id == id && a.seats.contains(&slot))
 }
 
 #[cfg(test)]
@@ -1418,9 +1526,18 @@ mod tests {
     const NO_TRAITS: &[&str] = &[];
 
     #[test]
-    fn loads_all_18_secondary_arcanes() {
+    fn loads_all_26_secondary_arcanes() {
         let pool = secondary_pool();
-        assert_eq!(pool.len(), 18, "expected the full 18-arcane pool");
+        // 18 ordinary secondaries plus the EIGHT Kitgun arcanes — four Pax and
+        // four Residual — which are filed here and declare `seats: [primary,
+        // secondary]`, because arcane ids are globally unique across slots and
+        // one weapon has an entry in each.
+        assert_eq!(pool.len(), 26, "expected the full 26-arcane pool");
+        assert_eq!(
+            pool.iter().filter(|a| a.seats.len() > 1).count(),
+            8,
+            "the eight Kitgun arcanes are the only ones in two seats"
+        );
     }
 
     /// SIXTEEN, and the last two are the reason this count is worth asserting.

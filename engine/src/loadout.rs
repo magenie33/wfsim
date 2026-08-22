@@ -1312,6 +1312,11 @@ pub struct WeaponBase {
     /// way to top it up.
     pub no_resupply: bool,
     pub base_reload: f64,
+    /// ROUNDS A SECOND under Pax Charge — a MODULAR weapon's chamber states it,
+    /// and it is `None` everywhere else. The arcane is what turns the magazine
+    /// into a battery; this is the only part of the mechanic the weapon owns,
+    /// because the DELAY is the reload and the reload is the loader's.
+    pub recharge_per_second: Option<f64>,
     /// A BY-ROUND reload, as `(start, per shell, end)` seconds. `None` = the
     /// ordinary one-block reload. See `WeaponSpec::reload_style`: the whole
     /// point is that the magazine size is IN the reload time, so a magazine
@@ -2544,6 +2549,11 @@ pub struct ResolvedPanel {
     /// the regen rate is the weapon's and a magazine mod changes only how many
     /// rounds it has to refill.
     pub battery: Option<crate::weapons_data::Battery>,
+    /// ROUNDS A SECOND under Pax Charge — carried from the weapon so
+    /// `DummyParams::from_panel` can build the battery, which is where the
+    /// ARCANE is finally in hand. The rate is the only part of that mechanic
+    /// the weapon owns.
+    pub recharge_per_second: Option<f64>,
     /// Ammo per shot — a WEAPON constant, so no mod bucket touches it.
     pub ammo_cost: f64,
     /// See `weapons_data::WeaponSpec::headshot_bonus_multiplicative`.
@@ -3935,6 +3945,7 @@ pub fn resolve_for(
         charge_ammo_per_second: base.charge_ammo_per_second,
         sustained_fire_rate: base.sustained_fire_rate,
         battery: base.battery,
+        recharge_per_second: base.recharge_per_second,
         // A MAGAZINE-EATING CHARGE STATES ITS OWN TIME. `magazine / rate`
         // seconds, because that is how long the magazine takes to be spent —
         // so a magazine mod lengthens the charge as well as paying for the

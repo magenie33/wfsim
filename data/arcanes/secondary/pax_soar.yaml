@@ -1,0 +1,39 @@
+id: pax_soar
+name: Pax Soar
+rarity: rare
+max_rank: 3
+description: "While Airborne: X% Accuracy and Recoil, and increased Aim Glide / Wall Latch duration."
+
+equip_traits: [modular]
+# BOTH SEATS. A Kitgun is ONE weapon with a roster entry in each slot, so a
+# primary Tombfinger has a PRIMARY arcane seat and a secondary one a SECONDARY
+# seat, and this goes in either. Filed under one directory because arcane ids
+# are globally unique across slots.
+seats: [primary, secondary]
+
+effects:
+  # THREE GRANTS AND THIS ARENA CAN PAY NONE OF THEM, for three different
+  # reasons, which is why the line below says so rather than quietly applying a
+  # third of it:
+  #
+  #   * ACCURACY. The weapon-level `accuracy` field is DERIVED and fuzzy — the
+  #     wiki defines it as 100/(average spread) and prints it as a CATEGORY —
+  #     and this engine does not read it at all; the aim model reads
+  #     `AttackSpec::spread`, which is a cone in degrees from a different table
+  #     (see `WeaponSpec::accuracy`). There is no published conversion from an
+  #     accuracy percentage to a cone, so applying this would be inventing one.
+  #   * RECOIL. Nobody aims in this arena. Recoil is recorded per grip and paid
+  #     by nothing — docs/UNMODELLED.md §"no movement, nobody shoots back".
+  #   * AIM GLIDE and WALL LATCH are movement, and there is none.
+  #
+  # AND THE WHOLE THING IS GATED ON BEING AIRBORNE, which is a Tenno state this
+  # sim does not model — the same family as Akimbo Slip Shot's sliding gate.
+  # Under the house assumed-max reading the gate would be treated as satisfied;
+  # it makes no difference here, because the grants pay nothing either way.
+  - kind: unmodeled
+    condition: while_airborne
+    rank0: 0.125
+    rankMax: 0.50
+
+source:
+  url: https://wiki.warframe.com/w/Pax_Soar

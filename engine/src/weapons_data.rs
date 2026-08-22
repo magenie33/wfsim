@@ -1172,6 +1172,11 @@ pub struct WeaponSpec {
     /// what a Kitgun is.
     #[serde(default)]
     pub kitgun: Option<String>,
+    /// ROUNDS A SECOND under Pax Charge, filled in by [`spec_assembled`] from
+    /// the chamber. Not written in any weapon yaml: it is the chamber's, and a
+    /// roster entry that restated it would be the same number written twice.
+    #[serde(skip)]
+    pub recharge_per_second: Option<f64>,
     /// Riven disposition — the multiplier every riven stat on this weapon is
     /// scaled by. It belongs to the WEAPON, not to the riven, which is why
     /// one riven reads differently on two guns.
@@ -2502,6 +2507,11 @@ fn independent_procs_for(s: &WeaponSpec) -> &'static [&'static str] {
     leaked
 }
 
+/// The traits a weapon has, for an EQUIP rule — [`traits_for`], public.
+pub fn traits_of(s: &WeaponSpec) -> &'static [&'static str] {
+    traits_for(s)
+}
+
 fn traits_for(s: &WeaponSpec) -> &'static [&'static str] {
     static CACHE: OnceLock<Mutex<BTreeMap<String, &'static [&'static str]>>> = OnceLock::new();
     let cache = CACHE.get_or_init(|| Mutex::new(BTreeMap::new()));
@@ -2548,6 +2558,14 @@ fn traits_for(s: &WeaponSpec) -> &'static [&'static str] {
     // Leaked because the class is data-driven and the caller wants a 'static
     // slice; the set is one entry per weapon and never grows at runtime.
     out.push(Box::leak(s.class.clone().into_boxed_str()));
+    // MODULAR, which no class can say. A primary Tombfinger is a `rifle` and a
+    // secondary one a `pistol` — the same two classes as a Braton and a Lex —
+    // and the eight Pax and Residual arcanes go on neither. DERIVED from the
+    // one field that makes the weapon modular rather than written on the entry
+    // beside it, so a chamber transcribed tomorrow cannot arrive without it.
+    if s.kitgun.is_some() {
+        out.push("modular");
+    }
     let leaked: &'static [&'static str] = Box::leak(out.into_boxed_slice());
     g.insert(s.id.clone(), leaked);
     leaked
@@ -2649,6 +2667,7 @@ pub fn spec_assembled<'a>(
         min_deg: built.spread.min_deg,
         max_deg: built.spread.max_deg,
     });
+    out.recharge_per_second = built.recharge_per_second;
     out.magazine = Some(built.magazine);
     out.reload_seconds = Some(built.reload_seconds);
     out.ammo_max = Some(built.ammo_max);
@@ -2824,6 +2843,7 @@ pub fn base_panel_assembled(
         // draw" without a lookup — the two questions the Amp auras ask.
         class: Box::leak(s.class.clone().into_boxed_str()),
         slot: Box::leak(s.slot.clone().into_boxed_str()),
+        recharge_per_second: s.recharge_per_second,
         mod_pools: Box::leak(
             s.mod_pools
                 .iter()
@@ -6894,4 +6914,61 @@ mod modular_tests {
             }
         }
     }
+    /// PAX CHARGE REMOVES THE RELOAD, and this is that end to end: the arcane
+    /// grants nothing but a reload-speed bonus and a flag, the CHAMBER states
+    /// the rate, and the sim's own battery — written for the Shedu — does the
+    /// rest. Asserted on the fight rather than on the panel, because a flag
+    /// that reaches a card and not the loop is exactly what this is for.
+    #[test]
+    fn pax_charge_turns_the_magazine_into_a_battery() {
+        use crate::loadout::StackPolicy;
+        let base = crate::loadout::WeaponBase::from_data("tombfinger_secondary", false, &[]);
+        assert_eq!(base.recharge_per_second, Some(50.0), "the chamber states its rate");
+
+        let arc = crate::arcanes_data::for_slot("secondary", "pax_charge")
+            .expect("pax charge is offered in the secondary seat");
+        // …AND IN THE PRIMARY ONE. One arcane, two seats, because a Kitgun is
+        // one weapon with an entry in each slot.
+        assert!(crate::arcanes_data::for_slot("primary", "pax_charge").is_some());
+        // …AND ON NOTHING ELSE: the equip rule is a TRAIT, since no class can
+        // say "Kitgun" — a secondary Tombfinger is a `pistol` exactly like a Lex.
+        let on_lex = crate::arcanes_data::pool_for_weapon("lex", "secondary");
+        assert!(
+            !on_lex.iter().any(|a| a.id == "pax_charge"),
+            "pax charge is offered on an ordinary pistol"
+        );
+        let on_kit = crate::arcanes_data::pool_for_weapon("tombfinger_secondary", "secondary");
+        assert!(on_kit.iter().any(|a| a.id == "pax_charge"));
+        // All eight, in both seats.
+        for seat in ["primary", "secondary"] {
+            let w = if seat == "primary" { "tombfinger_primary" } else { "tombfinger_secondary" };
+            let n = crate::arcanes_data::pool_for_weapon(w, seat)
+                .iter()
+                .filter(|a| a.id.starts_with("pax_") || a.id.starts_with("residual_"))
+                .count();
+            assert_eq!(n, 8, "{seat}: the four Pax and four Residual arcanes");
+        }
+
+        let tenno = crate::tenno_data::default_tenno();
+        let fx = arc.fx(arc.max_rank, StackPolicy::Emergent, &["modular"], tenno);
+        // MAX RANK IS +50% RECHARGE DELAY REDUCTION, joining the reload bucket.
+        assert!((fx.reload_bonus - 0.50).abs() < 1e-9, "{}", fx.reload_bonus);
+        assert!(fx.rechargeable_magazine);
+
+        // THE FIGHT. Same weapon, same everything, with and without the arcane.
+        let arena = crate::arena::Arena::training(12.0);
+        let panel = crate::loadout::resolve_for(&base, &[], StackPolicy::Emergent, tenno);
+        let plain = crate::dummy::DummyParams::from_panel(
+            &panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+        let charged = crate::dummy::DummyParams::from_panel(&panel, &arena, &fx);
+        assert!(plain.battery.is_none(), "an ordinary Kitgun has no battery");
+        let b = charged.battery.expect("pax charge installs one");
+        assert_eq!(b.regen_per_second, 50.0);
+        // THE DELAY IS THE RELOAD, shortened by the arcane's own bonus: the
+        // default assembly's Bellows loader reloads in 2.1 s, and 2.1 / 1.5 is
+        // 1.4 s — which is the worked example on the arcane's own page.
+        assert!((b.delay_empty_seconds - 1.4).abs() < 1e-6, "{}", b.delay_empty_seconds);
+        assert_eq!(b.delay_partial_seconds, b.delay_empty_seconds);
+    }
+
 }

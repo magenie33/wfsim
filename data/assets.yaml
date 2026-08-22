@@ -909,6 +909,21 @@ mods:
 
 arcanes:
 
+  # THE EIGHT KITGUN ARCANES. WFCD's export carries no `imageName` for any of
+  # them — `gen_assets.py` reports "NO imageName" on all eight and writes
+  # nothing — and its CDN answers 404 for six of the file names besides. The
+  # wiki hosts every one, so all eight take the `wiki:` prefix rather than two
+  # of them being on the CDN and six not: one rule for one family reads better
+  # than a split nobody can predict from the outside.
+  pax_bolt: wiki:PaxBolt.png
+  pax_charge: wiki:PaxCharge.png
+  pax_seeker: wiki:PaxSeeker.png
+  pax_soar: wiki:PaxSoar.png
+  residual_boils: wiki:ResidualBoils.png
+  residual_malodor: wiki:ResidualMalodor.png
+  residual_shock: wiki:ResidualShock.png
+  residual_viremia: wiki:ResidualViremia.png
+
   akimbo_slip_shot: ArcaneProjectionCT.png
   cascadia_accuracy: ArcaneProjectionBU.png
   cascadia_empowered: ArcaneProjectionBT.png

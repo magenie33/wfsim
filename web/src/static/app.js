@@ -9812,19 +9812,44 @@ const arcanePools = (weaponId) =>
 // The arcanes SLOT i may hold — pool i's, and only pool i's. A picker that
 // offers the whole set and then refuses the pick is a worse way to say the
 // same thing.
+/// WHICH SEATS an arcane fits, by id. Almost always the one directory it is
+/// filed under; a KITGUN arcane fits both, because a Kitgun is one weapon with
+/// a roster entry per slot. `slot` is the fallback for a meta served before
+/// seats existed, so a page loaded against an older build still sees what it
+/// always saw.
+const arcaneSeats = (a) => (a && (a.seats || (a.slot ? [a.slot] : []))) || [];
+/// Do two arcanes compete for the same seat? The optimizer groups its marks by
+/// this, because a pin in the Primary seat must not clear a Secondary mark.
+const sameArcaneSeat = (a, b) =>
+  arcaneSeats(a).some((s) => arcaneSeats(b).includes(s));
+
 const arcanePool = (i = 0) => {
   const pool = arcanePools()[i];
-  // ...and the weapon's CLASS, for the two arcanes typed by class rather than
-  // by slot (Shotgun Vendetta, Longbow Sharpshot). An EQUIP rule: the arsenal
-  // does not offer them elsewhere, so neither does the picker (owner,
-  // 2026-08-05). `equip_classes` is the engine's answer, not a rule restated
-  // here — empty means any weapon the slot seats.
-  const cls = (weaponInfo($("weapon").value) || {}).class;
+  // WHICH ARCANES THIS WEAPON MAY SEAT is the ENGINE's answer, per weapon —
+  // the CONSEQUENCE, not a rule restated here, which is `evo_forbids`' and
+  // `auras`' own pattern. It was `equip_classes` until 2026-08-22, and that was
+  // enough while every narrowing arcane named a CLASS (Shotgun Vendetta,
+  // Longbow Sharpshot). The eight Kitgun arcanes narrow by a TRAIT instead,
+  // because no class can say "Kitgun" — a secondary Tombfinger is a `pistol`
+  // exactly like a Lex — so the picker offered all eight on a Lex, and a third
+  // kind of gate would have gone stale the same way.
+  //
+  // `equip_classes` stays as the fallback for a meta served before this field
+  // existed, so a page loaded against an older build still narrows the two it
+  // could always narrow.
+  const w = weaponInfo($("weapon").value) || {};
+  const allowed = w.arcanes;
   return (META.arcanes || []).filter(
     (a) =>
       a.id !== "none" &&
-      a.slot === pool &&
-      (!(a.equip_classes || []).length || a.equip_classes.includes(cls)),
+      // THE SEATS IT FITS, not the directory it is filed under. A Kitgun
+      // arcane fits both, because a Kitgun is one weapon with a roster entry
+      // per slot; `slot` is the fallback for a meta served before seats
+      // existed.
+      arcaneSeats(a).includes(pool) &&
+      (allowed
+        ? allowed.includes(a.id)
+        : !(a.equip_classes || []).length || a.equip_classes.includes(w.class)),
   );
 };
 // An arcane belongs to ONE slot, so another slot's arcane is not a
@@ -9848,7 +9873,7 @@ function arcaneFor(weaponId, id, i = 0) {
   if (!id || id === "none") return "none";
   const canon = ARCANE_RENAMED[id] || id;
   const a = arcaneById(canon);
-  return a && a.slot === arcanePools(weaponId)[i] ? canon : "none";
+  return a && arcaneSeats(a).includes(arcanePools(weaponId)[i]) ? canon : "none";
 }
 /// Can this weapon seat this arcane in ANY of its slots?
 ///
@@ -13521,7 +13546,7 @@ const exilusPinned = () => Object.keys(opt.exilus).find((id) => opt.exilus[id] =
 // means something with a pool attached.
 const arcanePinnedIn = (pool) =>
   Object.keys(opt.arcanes).find(
-    (id) => opt.arcanes[id] === "fixed" && (arcaneById(id) || {}).slot === pool,
+    (id) => opt.arcanes[id] === "fixed" && arcaneSeats(arcaneById(id)).includes(pool),
   ) || null;
 /// Options this pool contributes to the search: a pin is one, otherwise the
 /// marked ones PLUS the empty choice — "no arcane in this slot" is always
@@ -13529,7 +13554,7 @@ const arcanePinnedIn = (pool) =>
 const arcaneOptionsIn = (pool) => {
   if (arcanePinnedIn(pool)) return 1;
   const marked = Object.keys(opt.arcanes).filter(
-    (id) => opt.arcanes[id] === "search" && (arcaneById(id) || {}).slot === pool,
+    (id) => opt.arcanes[id] === "search" && arcaneSeats(arcaneById(id)).includes(pool),
   ).length;
   return marked + 1;
 };
@@ -13869,11 +13894,11 @@ function renderOptArcanes() {
       const own = arcaneById(el.dataset.a);
       const group = {};
       Object.keys(opt.arcanes).forEach((id) => {
-        if ((arcaneById(id) || {}).slot === (own || {}).slot) group[id] = opt.arcanes[id];
+        if (sameArcaneSeat(arcaneById(id), own)) group[id] = opt.arcanes[id];
       });
       setSingleSlotMark(group, el.dataset.a, el.dataset.s);
       Object.keys(opt.arcanes).forEach((id) => {
-        if ((arcaneById(id) || {}).slot === (own || {}).slot) delete opt.arcanes[id];
+        if (sameArcaneSeat(arcaneById(id), own)) delete opt.arcanes[id];
       });
       Object.assign(opt.arcanes, group);
       renderOptArcanes(); updateOptEstimate();

@@ -83,6 +83,12 @@ pub struct Chamber {
     pub fire_rate: BTreeMap<String, f64>,
     #[serde(default)]
     pub charge_seconds: BTreeMap<String, f64>,
+    /// ROUNDS A SECOND under Pax Charge, which turns the magazine into a
+    /// rechargeable battery. Per chamber AND per slot, off that arcane's own
+    /// page, and "**not** affected by mods or abilities" — so it is a constant
+    /// rather than a bucket. `None` on a chamber whose row has not been read.
+    #[serde(default)]
+    pub recharge_per_second: Option<f64>,
     /// Size class -> rounds. The loader names the class.
     pub magazine: BTreeMap<String, f64>,
     /// AN AOE CHAMBER'S EXPLOSION, and the one part of a Kitgun the module does
@@ -355,6 +361,8 @@ pub struct Assembled {
     pub spread: Spread,
     pub forced_procs: Vec<String>,
     pub falloff: Option<Falloff>,
+    /// See [`Chamber::recharge_per_second`].
+    pub recharge_per_second: Option<f64>,
     /// THE EXPLOSION, resolved for this grip: form id -> what it deals and how
     /// far. Empty when the chamber does not explode.
     pub blasts: BTreeMap<String, AssembledBlast>,
@@ -467,6 +475,7 @@ pub fn assemble(a: &Assembly) -> Option<Assembled> {
         spread: c.spread,
         forced_procs: c.forced_procs.clone(),
         falloff: c.falloff,
+        recharge_per_second: c.recharge_per_second,
         blasts: match &c.blast {
             None => BTreeMap::new(),
             Some(b) => {

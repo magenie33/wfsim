@@ -1166,6 +1166,19 @@ pub fn meta_json() -> Value {
                 // different one would show a build that is not the one being
                 // simulated.
                 "assembly": assembly_meta(&w.id),
+                // WHICH ARCANES THIS WEAPON MAY SEAT — the CONSEQUENCE, computed
+                // by the engine, for `evo_forbids`' and `auras`' reason. The
+                // page used to re-derive it from `equip_classes`, which was
+                // enough while every narrowing arcane named a class; the eight
+                // Kitgun ones narrow by a TRAIT instead, because no class can
+                // say "Kitgun" — a secondary Tombfinger is a `pistol` exactly
+                // like a Lex, so the page offered all eight on a Lex. A second
+                // rule added tomorrow would go stale the same way.
+                "arcanes": w.arcane_pools
+                    .iter()
+                    .flat_map(|p| wfsim_engine::arcanes_data::pool_for_weapon(&w.id, p))
+                    .map(|a| a.id.clone())
+                    .collect::<Vec<_>>(),
                 // WHICH AURAS PAY THIS WEAPON — the CONSEQUENCE, computed by
                 // the engine, for the same reason `evo_forbids` is: the amp
                 // family does not share one gate (Rifle Amp is a MOD POOL and
@@ -1448,6 +1461,18 @@ pub fn meta_json() -> Value {
             // player is reading a number a hotfix can take away, and only the
             // card can tell them which kind of number it is.
             "live_bugs": a.live_bugs,
+            // WHICH SEATS IT FITS. Almost always the one directory it is filed
+            // under, and a LIST because a Kitgun arcane fits both: a Kitgun is
+            // one weapon with a roster entry per slot, so a primary Tombfinger
+            // has a PRIMARY arcane seat and a secondary one a SECONDARY seat,
+            // and Pax Charge goes in either. Arcane ids are globally unique
+            // across slots, so filing the same one in two directories was never
+            // an option — the engine answers with `seats` and the page tests
+            // membership.
+            "seats": a.seats,
+            // The DIRECTORY, kept for a page that has not been rebuilt: it was
+            // this field alone until seats existed, and a stale `site/app.js`
+            // reading it still gets every arcane it used to.
             "slot": slot,
         }));
     }

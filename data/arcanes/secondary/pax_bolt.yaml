@@ -1,0 +1,33 @@
+id: pax_bolt
+name: Pax Bolt
+rarity: rare
+max_rank: 3
+description: "On Headshot Kill: X% Increased Ability Strength and Efficiency on next ability."
+
+equip_traits: [modular]
+# BOTH SEATS. A Kitgun is ONE weapon with a roster entry in each slot, so a
+# primary Tombfinger has a PRIMARY arcane seat and a secondary one a SECONDARY
+# seat, and this goes in either. Filed under one directory because arcane ids
+# are globally unique across slots.
+seats: [primary, secondary]
+
+effects:
+  # THE WARFRAME LAYER, whole. Ability Strength and Ability Efficiency are the
+  # frame's and this arena has no abilities to cast — see docs/UNMODELLED.md
+  # §"the Warframe layer". `out_of_scope` rather than `unmodeled`: the two are
+  # different promises (memory: todo vs edge). Nothing here is waiting to be
+  # built — a fight with one weapon and one target has nowhere to put an
+  # ability-strength bonus, and it would still have nowhere if every other gap
+  # in this file were closed.
+  #
+  # It is NOT worth nothing to a player, and that is the point of saying so:
+  # a Kitgun carrying Pax Bolt is buffing a Roar or an Eclipse, and this app
+  # models those as the FIGHT's (data/abilities/) with the strength typed in.
+  # So the honest reading is that the strength box is where this arcane's value
+  # already lives.
+  - kind: out_of_scope
+    rank0: 0.075
+    rankMax: 0.30
+
+source:
+  url: https://wiki.warframe.com/w/Pax_Bolt

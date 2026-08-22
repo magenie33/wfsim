@@ -137,6 +137,40 @@ const plain = await evaluate(`(async () => {
 check("a weapon with no parts draws no parts block", plain.hidden, JSON.stringify(plain));
 check("...and the engine says it has none", !plain.spec, JSON.stringify(plain));
 
+// ---- the KITGUN ARCANES, and who may seat them -----------------------------
+
+// Eight arcanes go on a modular weapon and nothing else. No CLASS can say so —
+// a secondary Tombfinger is a `pistol` exactly like the Lex above — so the gate
+// is a weapon TRAIT, and the ENGINE answers it per weapon (`/api/meta.arcanes`)
+// rather than the page re-deriving a rule. It offered all eight on a Lex until
+// that landed.
+//
+// They also fit BOTH SEATS, which no other arcane does: a Kitgun is one weapon
+// with a roster entry per slot, so a primary Tombfinger has a PRIMARY seat and
+// a secondary one a SECONDARY seat, and the same arcane goes in either. Ids are
+// globally unique across slots, so it is one record declaring two seats.
+const arcanes = await evaluate(`(async () => {
+  const seen = {};
+  for (const w of ['${PLAIN}', '${KIT}']) {
+    history.pushState({}, '', '/weapons/' + w); route();
+    await new Promise(r => setTimeout(r, 4000));
+    const id = $('weapon').value;
+    const pool = arcanePool(0);
+    seen[w] = { id, seat: (weaponInfo(id).arcane_pools || [])[0], total: pool.length,
+                kit: pool.filter(a => /^(pax_|residual_)/.test(a.id)).map(a => a.id) };
+  }
+  return seen;
+})()`);
+check("the eight Kitgun arcanes are offered on a Kitgun",
+  arcanes[KIT].kit.length === 8, JSON.stringify(arcanes[KIT]));
+// THE NEGATIVE CONTROL, and the bug this was written for: a page filtering on
+// class alone offers every one of them on an ordinary pistol.
+check("...and on nothing else",
+  arcanes[PLAIN].kit.length === 0, JSON.stringify(arcanes[PLAIN]));
+check("...in whichever seat the weapon has",
+  arcanes[KIT].seat === "primary" || arcanes[KIT].seat === "secondary",
+  JSON.stringify(arcanes[KIT]));
+
 // ---- the assembly reaches the wire, and moves the answer --------------------
 
 // TWO GRIPS ARE TWO WEAPONS. The lightest and the heaviest differ three to five

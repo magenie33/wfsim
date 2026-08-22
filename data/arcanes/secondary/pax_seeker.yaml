@@ -1,0 +1,57 @@
+id: pax_seeker
+name: Pax Seeker
+rarity: rare
+max_rank: 3
+description: "On Headshot Kill: Releases X Homing projectiles."
+
+equip_traits: [modular]
+# BOTH SEATS. A Kitgun is ONE weapon with a roster entry in each slot, so a
+# primary Tombfinger has a PRIMARY arcane seat and a secondary one a SECONDARY
+# seat, and this goes in either. Filed under one directory because arcane ids
+# are globally unique across slots.
+seats: [primary, secondary]
+
+effects:
+  # A SECOND DAMAGE INSTANCE, and NOT a member of docs/EXTRA_HIT.md: an Extra
+  # Hit is a percentage of the hit that spawned it, and this is its own damage
+  # with its own formula, its own element split and its own crit stats. Filed as
+  # unmodelled rather than approximated, with the whole formula transcribed
+  # below so that implementing it is transcription and not research.
+  #
+  # THE TRIGGER is a HEADSHOT KILL by the weapon: "the enemy must be headshot
+  # killed by the Kitgun, and not any damage-over-time status effect such as
+  # Slash" — with the exception that an Electricity or Gas proc CAN trigger it,
+  # since those "can target specific body parts", and only if the killing proc
+  # was itself inflicted by a headshot.
+  #
+  # THE DAMAGE, per the weapon's own page, for the four chambers it names. The
+  # Tombfinger's case:
+  #
+  #   2 x [ (Barrel Base Damage) x (1 + Base Damage Buffs)
+  #                              x (1 + Multishot Buffs) ] + Grip Damage Bonus
+  #
+  # where "Barrel Base Damage" is the chamber's `base` row — the module's no-grip
+  # preview, which is what that row is FOR — and "Grip Damage Bonus" is the
+  # chosen grip's total minus it. Gaze and Rattleguts put the grip bonus inside
+  # the bracket as well; Catchmoon drops the leading x2.
+  #
+  #   * multishot counts in INTEGER multiples (a +150% bonus is x2, with a 50%
+  #     chance of x3);
+  #   * elemental bonuses apply after everything else;
+  #   * Galvanized Aptitude / Galvanized Shot are MULTIPLICATIVE on the total;
+  #   * the projectiles carry the kitgun's crit stats and take DOUBLE the bonus
+  #     from crit chance and crit damage mods;
+  #   * 50% Slash / 50% Puncture plus any modded elements, one forced Impact
+  #     proc each, and they aim for the head — except on a Catchmoon, which
+  #     cannot headshot with them;
+  #   * unaffected by punch through.
+  - kind: unmodeled
+    rank0: 1
+    rankMax: 4
+
+unmodeled:
+  - "the HOMING PROJECTILES are not fired. On a headshot kill this releases 1-4 bolts of their own damage — half Slash, half Puncture, with a forced Impact proc and double the benefit of crit mods — and none of it is counted here, so a headshot build with this arcane is understated by everything the bolts would have done. The formula is transcribed in this file; what is missing is the machinery for a second attack part whose trigger is a KILL"
+  - "extra-hit abilities are DETRIMENTAL to it in game — a kill by Xata's Whisper or Cyte-09's Resupply does not trigger the arcane, and the buffs do not apply to the bolts — which is an interaction this sim could not have either way while the bolts are unmodelled"
+
+source:
+  url: https://wiki.warframe.com/w/Pax_Seeker
