@@ -24,10 +24,20 @@
 //!
 //! The GRIP decides primary or secondary. The CHAMBER decides the pool within
 //! the primary slot — Catchmoon *"Uses Shotgun mods"*, Gaze *"Uses Rifle
-//! mods"*. The LOADER decides nothing about it. So [`Assembly::pool_key`] is a
-//! function of the pair, and it is what the builder's mod lock and its per-pool
-//! build cache are both keyed on: keying on "which part moved" would have to
-//! enumerate two different ways of crossing the same line.
+//! mods"*. The LOADER decides nothing about it.
+//!
+//! …WHICH IS WHY THE SLOT IS PART OF THE WEAPON AND NOT PART OF THE ASSEMBLY.
+//! The roster holds one entry per (chamber, slot) and each states its own
+//! `mod_pools`, so the pool is settled before a single part is chosen — there is
+//! no build to invalidate when a grip changes, and no mod lock to wait behind.
+//! Switching slots is switching WEAPONS, which already means a build of its own
+//! ("nothing crosses between weapons"). [`Assembly::pool_key`] is what that rule
+//! looked like while the slot lived in the assembly; it is kept because it is
+//! the statement of the rule and a chamber whose two slots share a pool still
+//! reads the same, and it is no longer what any build is keyed on.
+//!
+//! It is a function of the pair, because keying on "which part moved" would have
+//! to enumerate two different ways of crossing the same line.
 
 use serde::Deserialize;
 use std::collections::BTreeMap;

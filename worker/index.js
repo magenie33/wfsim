@@ -102,6 +102,15 @@ export const AXES = [
   { key: "mods", kind: "ids", max: MAX_MODS, axis: "mods" },
   { key: "evolutions", kind: "ids", max: 8, set: true, axis: "evolutions" },
   { key: "arcanes", kind: "ids", max: 4, axis: "arcanes" },
+  // A MODULAR WEAPON'S PARTS, as TWO FLAT IDS rather than as the object the
+  // simulate request carries. Spellings are per-protocol and always have been
+  // (`arcane` on a request, `arcanes` here); what is shared is the axis, which
+  // both rows name. Flat because this worker's identity key is a join of
+  // strings and its validation is `id`/`ids` — an object would need a third
+  // kind, in the one file with no game data to check it against. The CHAMBER is
+  // not here: it is the weapon, and `weapon` already carries it.
+  { key: "grip", kind: "id", axis: "assembly" },
+  { key: "loader", kind: "id", axis: "assembly" },
 ];
 
 const bad = (msg, status = 400) =>

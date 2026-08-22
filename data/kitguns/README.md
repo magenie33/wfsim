@@ -40,9 +40,17 @@ chamber is stored per slot here rather than once with a flag.
 - The **LOADER** never decides anything about the pool.
 
 So the pool is a function of (chamber, grip), and a build survives a part change
-exactly when that pair's answer does not move. That is the rule the builder's
-mod lock and its per-pool build cache are both keyed on — not on "which part
-moved", which would have to enumerate two different ways of crossing the line.
+exactly when that pair's answer does not move — not "which part moved", which
+would have to enumerate two different ways of crossing the same line.
+
+**AND THAT IS WHY THE SLOT IS PART OF THE WEAPON, NOT PART OF THE ASSEMBLY.**
+The roster holds one entry per (chamber, slot) — `tombfinger_primary` and
+`tombfinger_secondary` — and each states its own `mod_pools`, so the pool is
+settled before a single part is chosen. A grip cannot move it, which means there
+is no build to invalidate when one changes and nothing for a mod lock to wait
+behind; and switching slots is switching WEAPONS, which already means a build of
+its own under "nothing crosses between weapons". The two hard parts of shipping
+a modular weapon fall out of where the slot lives rather than being built.
 
 ## THE COMPOSITION RULE
 

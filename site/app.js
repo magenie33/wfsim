@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "9feb2a3a+ · 2026-08-22 07:11Z";
+const BUILD_ID = "d763a146+ · 2026-08-22 08:16Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -974,6 +974,24 @@ let evoSel = { 1: null, 2: null, 3: null, 4: null };
 // switching mid-engagement for free. What it is part of is the SUBJECT of a
 // measurement, which is what a build is (owner, 2026-08-07).
 let mode = "base";
+
+/// A MODULAR WEAPON'S PARTS — the Grip and the Loader it was built with.
+///
+/// Part of the BUILD for the same reason a valence is: a Kitgun has no
+/// published stat line, so the parts ARE its numbers, and two assemblies of one
+/// chamber are two different weapons in every figure a card shows.
+///
+/// `null` means "this weapon has none", which is every weapon but a Kitgun. The
+/// SERVER falls back to a derived default for a request that names no assembly,
+/// so this can never hand parts to something that does not take them — and
+/// `defaultAssembly` seeds it from `/api/meta` rather than guessing, because a
+/// page that picked a different default would draw a build that is not the one
+/// being simulated.
+///
+/// THE CHAMBER IS NOT IN HERE. It is the WEAPON — one mastery track, one riven,
+/// one wiki page — and the slot is the weapon too, since it decides the mod
+/// pool. So what is left to choose is exactly these two.
+let assembly = null;
 
 /// AN ADVERSARY WEAPON'S VALENCE BONUS — the element it came out of a Lich with
 /// and how big the roll was. Part of the BUILD, because it is a property of the
@@ -4699,7 +4717,7 @@ const evoPrefix = () => {
 /// on the default progenitor element — a link claiming a number for a build it
 /// did not carry (2026-08-15).
 const SHARE_AXES = ["mods", "evolutions", "arcanes", "arcane_ranks", "mode",
-                    "valence", "rivens"];
+                    "valence", "rivens", "assembly"];
 
 function sharePayload(withFight = true) {
   const st = snapshotState();
@@ -4807,8 +4825,16 @@ function sharePayload(withFight = true) {
   // defaults", and a recipient must be able to tell those apart or every build
   // link silently plants a scenario preset nobody asked for. Every link posted
   // before today sends an object there, so they land exactly as they did.
+  // THE PARTS, on the same terms: omitted when the recipient derives the same
+  // answer, since `defaultAssembly` is what both ends ask. Two ids, in the
+  // order the control draws them.
+  const da = defaultAssembly(st.weapon, null);
+  const asm = st.assembly && da
+      && (st.assembly.grip !== da.grip || st.assembly.loader !== da.loader)
+    ? [st.assembly.grip, st.assembly.loader] : 0;
+
   const out = [2, st.weapon, activePreset, slots9, arcs, evos, rivens,
-               withFight ? sc : 0, withFight ? m : 0, md, val];
+               withFight ? sc : 0, withFight ? m : 0, md, val, asm];
   while (out.length > 9 && !out[out.length - 1]) out.pop();
   return out;
 }
@@ -4832,7 +4858,7 @@ async function decodeShare(code) {
   const json = code[0] === SHARE_V_DEFLATE ? await inflate(bytes) : bytes;
   const data = JSON.parse(new TextDecoder().decode(json));
   if (!Array.isArray(data)) return v1Share(data);      // links posted before v2
-  const [, weapon, name, slots9, arcs, evos, rivens, sc, m, md, val] = data;
+  const [, weapon, name, slots9, arcs, evos, rivens, sc, m, md, val, asm] = data;
   return {
     w: weapon,
     n: name,
@@ -4841,6 +4867,10 @@ async function decodeShare(code) {
     // posted before these two travelled still lands where it always did.
     mode: md || undefined,
     valence: val ? { element: val[0], bonus: val[1] } : undefined,
+    // Absent means this weapon's default, the same as the two above — so a link
+    // posted before parts travelled still lands where it always did, and an
+    // ordinary weapon (which has none) is unaffected either way.
+    assembly: asm ? { grip: asm[0], loader: asm[1] } : undefined,
     slots: (slots9 || []).map((s) => {
       if (!s) return { mod: null, pol: null, rank: null };
       const [id, pol, rank] = typeof s === "string" ? [s] : s;
@@ -4971,6 +5001,9 @@ async function importShare(code) {
     // mode it cannot be played in falls back to the arsenal's.
     mode: data.mode,
     valence: data.valence,
+    // Same terms: `restoreState` repairs a part this weapon cannot take, and
+    // `undefined` on a link posted before parts travelled means its default.
+    assembly: data.assembly,
   });
   const builds = loadPresetList(BUILDS);
   // Named for where it came from. Without it a link lands as "build 1 2",
@@ -6171,6 +6204,7 @@ const BUILD_STATE_KEYS = [
   { axis: "arcane_ranks", keys: ["arcaneRank"] },
   { axis: "mode", keys: ["mode"] },
   { axis: "valence", keys: ["valence"] },
+  { axis: "assembly", keys: ["assembly"] },
   // A RIVEN IS A MOD: its id sits in a slot like any other, and the item
   // itself lives in its own collection rather than inside a build. So the axis
   // is covered, by `slots`, and saying so is the point — an axis with no entry
@@ -6203,6 +6237,9 @@ function snapshotState() {
     // The VALENCE, for the same reason `mode` is here: it is part of what this
     // build IS, and two builds of one weapon may differ only in it.
     valence: { ...valence },
+    // THE PARTS, for the same reason: on a Kitgun they are the stat line, and
+    // `null` on everything else, which is what "this weapon has none" means.
+    assembly: assembly ? { ...assembly } : null,
     // NO `sim` FIELD. A build used to carry a snapshot of the fight, which
     // `restoreState` then applied — so picking a build silently rewrote the
     // scenario you were working in. The scenario is INDEPENDENT (user,
@@ -6255,6 +6292,11 @@ function restoreState(st, weapon) {
   // drops an element this weapon's spec does not offer, which is what a preset
   // copied across weapons carries.
   valence = defaultValence(w, st.valence);
+  // ONTO THIS WEAPON'S DEFAULT, never onto the last build's parts — a grip
+  // belongs to one slot and a preset copied across weapons carries the other
+  // one's. `defaultAssembly` also drops a part this entry cannot take, which is
+  // the same repair the server does on the wire.
+  assembly = defaultAssembly(w, st.assembly);
   arcanes = arcanesFor(w, st.arcane);
   arcaneRanks = asArcaneList(st.arcaneRank, arcanes.length).map((x) => x ?? null);
   // The scenario is NOT restored: it belongs to `simulator-scenarios` and a
@@ -6275,6 +6317,7 @@ function restoreState(st, weapon) {
   // Nothing of yours is at risk: a benchmark build is read-only and has no
   // hand-set polarity to overwrite.
   if (officialBuildActive()) autoForma();
+  renderAssembly();
   renderMods(); renderArcanes(); renderEvo(); renderMode(); renderValence(); renderSim(); refreshPanel();
   renderStoredSimResult(); // the simulator shows THIS preset's last test
 }
@@ -6979,6 +7022,10 @@ function blankBuildState() {
     // an axis also looks like (`BUILD_AXES`).
     mode: undefined,
     valence: undefined,
+    // …and a modular weapon comes assembled — the derived default, which is
+    // also what the server uses for a request that names none, so a brand new
+    // build and a blank request describe the same weapon.
+    assembly: undefined,
   });
 }
 
@@ -7101,6 +7148,12 @@ const builtinBuilds = () => {
         valence: row.valence
           ? { element: row.valence, bonus: (valenceSpec(w.id) || {}).max || 0 }
           : undefined,
+        // THE PARTS the row was scored with, from the row's own two flat
+        // fields. A modular weapon's assembly IS its stat line, so a row that
+        // opened on the default parts would be a build that scores nothing
+        // like the number beside it — which is exactly what a missing `mode`
+        // did to every Incarnon row, and `valence` to seven Kuva Nukors.
+        assembly: row.grip ? { grip: row.grip, loader: row.loader } : undefined,
       }),
     };
   });
@@ -7461,6 +7514,10 @@ function applyWeaponInner(id, presetMods) {
   // NOTHING CROSSES BETWEEN WEAPONS: a valence is a statement about one of
   // them, so opening another starts with none.
   valence = defaultValence(id, null);
+  // …AND SO ARE ITS PARTS. A grip belongs to one slot, so the sibling entry's
+  // five are not even legal here; `defaultAssembly` returns null on a weapon
+  // that takes none, which is what clears them on the way to an ordinary gun.
+  assembly = defaultAssembly(id, null);
   // THE FIGHT DOES NOT MOVE. A scenario is shared across the roster now
   // (`SHARED_DOMAINS`), so switching weapons keeps the fight you are measuring
   // under — which is the entire point of being able to compare two guns.
@@ -7575,6 +7632,7 @@ function applyWeaponInner(id, presetMods) {
   (presetMods || []).filter((m) => modById(m)).slice(0, 8).forEach((m, i) => { slots[i].mod = m; slots[i].rank = modById(m).max_rank; });
   autoForma(); // sensible default: minimum-Forma polarities for the preset
 
+  renderAssembly();
   renderMods(); renderArcanes(); renderEvo(); renderMode(); renderValence(); renderSim(); renderOpt();
 }
 
@@ -7707,6 +7765,7 @@ function renderMods() {
   // ...and so does the mode control: equipping a Cannonade is what takes the
   // cycle away, so the reason it is greyed changes with the slots.
   if (typeof renderMode === "function") renderMode();
+  if (typeof renderAssembly === "function") renderAssembly();
   const used = capacityUsed();
   const cap = capOf($("weapon").value);
   const capEl = $("capacity");
@@ -7816,6 +7875,10 @@ function buildPayload() {
     // path that builds a weapon for a request goes through it.
     valence_element: valence.element,
     valence_bonus: valence.bonus,
+    // THE PARTS, as an object, because they are one fact: `assembly_of` reads
+    // the pair and repairs it part by part. Omitted entirely on a weapon that
+    // has none, so the wire says nothing rather than saying `null`.
+    ...(assembly ? { assembly: { ...assembly } } : {}),
     // A `riven:` id means nothing without the riven itself — it is the
     // visitor's item, not a pool entry, so it rides along with the request.
     rivens: rivenPayload(),
@@ -7873,6 +7936,10 @@ function stateFromBuild(p, weapon, exilusId) {
     valence: p.valence_element
       ? { element: p.valence_element, bonus: p.valence_bonus }
       : undefined,
+    // `undefined` rather than `null` when the request carries none, so
+    // `restoreState` reads it as "the weapon's own default" — which is what a
+    // request that omitted it meant and what the server itself used.
+    assembly: p.assembly || undefined,
   });
 }
 
@@ -7884,7 +7951,8 @@ let panelKey = null;
 /// The build, as a value. Same idea as `simKey`: a key DERIVED from the state,
 /// never a hand-listed set of things that ought to trigger a refresh.
 const buildKey = () =>
-  JSON.stringify([$("weapon").value, slots, arcanes, arcaneRanks, evoSel, rivenPayload()]);
+  JSON.stringify([$("weapon").value, slots, arcanes, arcaneRanks, evoSel, rivenPayload(),
+                  assembly]);
 
 /// THE PANEL REFRESHES BECAUSE THE BUILD CHANGED, not because a control
 /// remembered to say so.
@@ -10081,6 +10149,155 @@ function defaultValence(id, st) {
   return { element: el, bonus: Math.min(Math.max(b, s.min), s.max) };
 }
 
+/// The parts `/api/meta` publishes for a weapon, or `null` if it takes none.
+const assemblySpec = (id) => (weaponInfo(id) || {}).assembly || null;
+
+/// THE OTHER SLOT OF THE SAME CHAMBER, or `null`.
+///
+/// A Kitgun is ONE weapon — one mastery track, one riven, one wiki page, and
+/// therefore ONE URL — and it is TWO roster entries, because the slot decides
+/// which mods it may hold and that is a question with a static answer. Those
+/// two facts meet here: `/weapons/Tombfinger` resolves to one entry and the
+/// Slot control moves to the other WITHOUT changing the address, which is what
+/// makes the two a page rather than two pages that happen to share a name.
+///
+/// Switching is switching WEAPONS in every other sense — its own build, its own
+/// riven slots, its own board rows — which is exactly what "nothing crosses
+/// between weapons" already guarantees, so nothing extra is needed for it.
+const slotSibling = (id) => {
+  const s = assemblySpec(id);
+  if (!s) return null;
+  const w = (META.weapons || []).find(
+    (x) => x.id !== id && x.assembly && x.assembly.chamber === s.chamber);
+  return w ? w.id : null;
+};
+
+/// THIS WEAPON'S PARTS, repaired against what it can actually take.
+///
+/// A build with no assembly, or one carrying a part from the sibling slot,
+/// lands on the server's own default rather than on nothing — the same repair
+/// `assembly_of` does on the wire, and it has to agree with it: a page showing
+/// one assembly while the server simulates another is the exact shape of bug
+/// that had a player measuring 26 KPM on a ranking and 15 in the simulator.
+/// That is why the default comes from `/api/meta` and is not computed here.
+function defaultAssembly(id, st) {
+  const s = assemblySpec(id);
+  if (!s) return null;
+  const d = s.default || {};
+  const has = (list, v) => list.some((x) => x.id === v);
+  return {
+    grip: st && has(s.grips, st.grip) ? st.grip : d.grip,
+    loader: st && has(s.loaders, st.loader) ? st.loader : d.loader,
+  };
+}
+
+/// THE PARTS BLOCK — two dropdowns, and what each part is worth beside it.
+///
+/// The block is HIDDEN on everything that is not modular, where Mode is always
+/// drawn: every weapon is fired in some mode, and only a Kitgun has parts.
+///
+/// EACH OPTION CARRIES ITS OWN NUMBERS, because that is the whole decision. A
+/// grip is damage, fire rate and (on a charge chamber) charge time; a loader is
+/// three additive deltas that may be NEGATIVE, plus a magazine and a reload.
+/// A list of twenty names would say none of it, which is the Mode control's own
+/// lesson (owner, 2026-08-15).
+function renderAssembly() {
+  const block = $("assembly-block");
+  const box = $("assembly-row");
+  if (!block || !box || !META) return;
+  const w = $("weapon").value;
+  const s = assemblySpec(w);
+  block.hidden = !s;
+  if (!s) return;
+  if (!assembly) assembly = defaultAssembly(w, null);
+  const sub = $("assembly-sub");
+  if (sub) sub.textContent = tr("what this weapon is built from");
+
+  // A ROUND COUNT AND A RELOAD ARE NOT THE SAME KIND OF NUMBER, so the block
+  // trims its own rather than borrowing the results panel's two-significant
+  // figures: "23 rounds" and "1.70 s" is what a card would say.
+  const n = (v) => String(Math.round(Number(v) * 100) / 100);
+  const sign = (v, unit) => (v > 0 ? "+" : "") + n(v) + (unit || "");
+  const pc = (v) => Math.round(Number(v) * 1000) / 10;
+  const gripItem = (g) => {
+    const d = s.grip_stats && s.grip_stats[g.id];
+    const bits = d
+      ? [`${n(d.damage)} ${tr("damage")}`, `${n(d.fire_rate)}/s`,
+         d.charge_seconds != null ? `${n(d.charge_seconds)} s ${tr("charge")}` : ""]
+        .filter(Boolean)
+      : [];
+    return { value: g.id, label: g.name, hint: bits.join(" · ") };
+  };
+  const loaderItem = (l) => {
+    // ONLY WHAT IT MOVES. Two of the three deltas are zero on most loaders and
+    // six are zero on all three, so printing every one would bury the ones that
+    // decide the pick.
+    const bits = [
+      `${n(l.rounds)} ${tr("rounds")}`,
+      `${n(l.reload_seconds)} s`,
+      l.crit_chance ? `${sign(pc(l.crit_chance), "%")} ${tr("crit")}` : "",
+      l.crit_multiplier ? `${sign(l.crit_multiplier)}x` : "",
+      l.status_chance ? `${sign(pc(l.status_chance), "%")} ${tr("status")}` : "",
+    ].filter(Boolean);
+    return { value: l.id, label: l.name, hint: bits.join(" · ") };
+  };
+
+  const pick = (part, label, items, hint) =>
+    `<label title="${escHtml(hint)}">${escHtml(label)} ${ddButton("dd-" + part, {
+      value: assembly[part],
+      items,
+      onPick: (v) => {
+        assembly = { ...assembly, [part]: v };
+        markPresetDirty();
+        renderAssembly();
+        refreshPanel();
+      },
+    })}</label>`;
+
+  // THE SLOT. In game the GRIP decides it; here it is picked first, because it
+  // decides the mod pool and therefore which build you are even editing. So the
+  // two are one control read in the other direction: choose the slot, then a
+  // grip from that slot's five.
+  const sibling = slotSibling(w);
+  const wSlot = (weaponInfo(w) || {}).slot;
+  const slotPick = sibling
+    ? `<label title="${escHtml(tr("the grip decides this in game; here it comes first, because it decides which mods the weapon can hold — and switching is switching weapons, so each slot keeps its own build"))}">${
+        escHtml(tr("Slot"))} ${ddButton("dd-kitslot", {
+        value: wSlot,
+        items: [w, sibling].map((id) => ({
+          value: (weaponInfo(id) || {}).slot,
+          label: tr(cap1((weaponInfo(id) || {}).slot)),
+        })).sort((a, b) => a.value.localeCompare(b.value)),
+        onPick: (v) => {
+          if (v === wSlot) return;
+          switchWeapon(sibling);
+        },
+      })}</label>`
+    : "";
+
+  // WHAT THE CURRENT PARTS ARE WORTH, on the line under the controls. The
+  // dropdown carries a hint per option, which is what the picking is done from;
+  // this is what the picked pair says once the list is shut.
+  const cur = {
+    grip: s.grips.find((g) => g.id === assembly.grip),
+    loader: s.loaders.find((l) => l.id === assembly.loader),
+  };
+  const summary = [cur.grip && gripItem(cur.grip).hint, cur.loader && loaderItem(cur.loader).hint]
+    .filter(Boolean).join(" · ");
+
+  box.innerHTML =
+    // THE CHAMBER IS STATED, NOT OFFERED: it is the weapon. Said out loud so a
+    // reader can see that what is missing here is missing on purpose.
+    `<label>${escHtml(tr("Chamber"))} <span class="fixed-val">${
+      escHtml(s.chamber_name)}</span></label>` +
+    slotPick +
+    pick("grip", tr("Grip"), s.grips.map(gripItem),
+         tr("the grip sets damage, fire rate and the charge — only this slot's five are offered, because a grip is what decides the slot")) +
+    pick("loader", tr("Loader"), s.loaders.map(loaderItem),
+         tr("the loader sets the magazine and the reload, and adds three deltas that can be negative")) +
+    (summary ? `<span class="sim-hint">${escHtml(summary)}</span>` : "");
+}
+
 /// THE VALENCE BLOCK. Two controls, because a Lich hands you two facts: which
 /// element, and how big the roll was.
 ///
@@ -11440,6 +11657,13 @@ function boardPayload() {
     // investment rather than a choice (the same rule that scores every row at
     // full Forma).
     valence: valence.element,
+    // THE PARTS of a modular weapon, flat, because that is the worker's shape.
+    // Empty strings on everything else — the field is always sent so a record
+    // written today and one written by a Kitgun submitter have the same keys,
+    // and the scorer's own fallback never has to guess which kind it is looking
+    // at.
+    grip: (assembly && assembly.grip) || "",
+    loader: (assembly && assembly.loader) || "",
   };
 }
 
@@ -14251,6 +14475,12 @@ async function runOptimize() {
       valence: opt.valence,
       valence_element: valence.element,
       valence_bonus: valence.bonus,
+      // THE PARTS, pinned to the builder's. Not a search axis yet: every
+      // candidate is assembled the same way, which is the weapon the replay
+      // will fire. The day it becomes one it joins `modes` above — 100 grip and
+      // loader pairs per chamber is a real scope and a real cost, and it is the
+      // owner's call whether a search should spend it.
+      ...(assembly ? { assembly: { ...assembly } } : {}),
       exilus: opt.exilus,
       // THE FIGHT, WHOLE AND DERIVED — never a hand-written list of its
       // fields. This was twelve of them copied out one by one, under a comment

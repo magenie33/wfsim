@@ -200,6 +200,12 @@ const TRAVELS_AS = {
   evoSel: "evolutions",
   arcane: "arcanes",
   valence: "valence",
+  // ONE STATE KEY, TWO PAYLOAD FIELDS. A modular weapon's parts are one fact on
+  // the page and two flat ids in a board record — the worker validates `id` and
+  // `ids` and has no game data to check an object against — so the mapping is a
+  // LIST here. Spellings are per-protocol and always have been; what is shared
+  // is the axis, which both fields name.
+  assembly: ["grip", "loader"],
 };
 // …and what a board row deliberately is NOT. Short, and stating it is the
 // point: a row carries the build, never the layout you reached it through.
@@ -214,8 +220,9 @@ const AXES = await app.evaluate(`(async () => {
   pickPreset(scenarioBarCfg(), presetId(sc)); await s(900);
   return { build: Object.keys(snapshotState()), payload: Object.keys(boardPayload() || {}) };
 })()`);
+const asList = (v) => (Array.isArray(v) ? v : [v]);
 const missing = AXES.build.filter((k) =>
-  !NOT_A_ROW.includes(k) && !AXES.payload.includes(TRAVELS_AS[k]));
+  !NOT_A_ROW.includes(k) && !asList(TRAVELS_AS[k]).every((f) => AXES.payload.includes(f)));
 app.check("every axis a build has reaches the board's submission",
   missing.length === 0,
   missing.length ? `dropped on the way out: ${missing.join(", ")}`

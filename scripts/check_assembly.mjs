@@ -1,0 +1,280 @@
+// A MODULAR WEAPON IS ASSEMBLED, AND THE ASSEMBLY IS THE NUMBER.
+//
+// A Kitgun has no published stat line: it has a Chamber, a Grip and a Loader,
+// and every figure on the panel is composed from the three. So the failure this
+// check exists for is a page that draws a perfectly good parts picker and
+// simulates something else — the most convincing wrong thing this app could
+// show, because there is no printed stat line anywhere to contradict it.
+//
+// Every assertion below is therefore either ON THE WIRE or on a real
+// `/api/simulate` in the shipping wasm build. That is `check_squad`'s rule and
+// `check_opt_modes`' lesson: the Phantasma's charged mode was OFFERED on the
+// optimizer tab and never sent, so the page presented a choice it did not make.
+//
+// The sharp cases:
+//
+//   * two grips are two weapons, in the ANSWER and not only on the card;
+//   * a build REMEMBERS its parts, through a preset and through a share link —
+//     parts that reset to the default turn a saved build into a different
+//     weapon with the same name, which is what a missing axis did four times;
+//   * the block is HIDDEN on the other 134 weapons, which is the negative
+//     control: a check that only asserts presence passes just as well on a page
+//     showing a parts picker for a Braton.
+//
+// It also pins the two structural decisions, because both are invisible from
+// outside and both would read as bugs if they regressed: the CHAMBER is stated
+// rather than offered (it is the weapon), and only THIS slot's five grips are
+// offered rather than all ten.
+//
+//   node scripts/check_assembly.mjs
+//
+// Exits non-zero on the first failure.
+import { openApp } from "./cdp.mjs";
+
+const app = await openApp({ boot: 12000 });
+const { evaluate, check, finish } = app;
+
+const KIT = "Tombfinger";
+// The negative control. An ordinary secondary: same page, same controls, no
+// parts — so every "is drawn" assertion below has something to fail against.
+const PLAIN = "Lex";
+
+const open = (weapon) => `
+  history.pushState({}, '', '/weapons/${weapon}'); route();
+  await new Promise(r => setTimeout(r, 4000));`;
+
+// ---- the block draws, and only where it should ------------------------------
+
+const drawn = await evaluate(`(async () => {
+  ${open(KIT)}
+  const block = document.getElementById('assembly-block');
+  const row = document.getElementById('assembly-row');
+  const id = $('weapon').value;
+  return {
+    shown: !!block && !block.hidden,
+    id,
+    slot: weaponInfo(id).slot,
+    sibling: slotSibling(id),
+    controls: [...row.querySelectorAll('[id^="dd-"]')].map(d => d.id),
+    fixed: [...row.querySelectorAll('.fixed-val')].map(e => e.textContent.trim()),
+    // The grips on offer, as the engine states them for THIS entry...
+    grips: (assemblySpec(id).grips || []).map(g => g.id),
+    // ...and every grip the game has, so "only this slot's" is a real claim.
+    allGrips: [...new Set(META.weapons.filter(w => w.assembly)
+      .flatMap(w => w.assembly.grips.map(g => g.id)))].sort(),
+    text: row.textContent,
+  };
+})()`);
+
+check("a modular weapon draws a parts block", drawn.shown, JSON.stringify(drawn));
+check("...with a control for the grip and one for the loader",
+  drawn.controls.includes("dd-grip") && drawn.controls.includes("dd-loader"),
+  JSON.stringify(drawn.controls));
+// THE CHAMBER IS THE WEAPON, and so is the slot. Stated out loud so a reader
+// can see that what is missing from this control is missing on purpose.
+check("...and the chamber is STATED, not offered",
+  drawn.fixed.includes("Tombfinger") && !drawn.controls.includes("dd-chamber"),
+  JSON.stringify(drawn.fixed));
+// ONLY THIS SLOT'S GRIPS. A grip decides primary or secondary, so the other
+// five compose into the sibling entry and into nothing here — and the ENGINE
+// says which, because a page that re-derived the rule would go stale the first
+// time a chamber arrives that exists in one slot only.
+check("...and only this slot's grips are offered",
+  drawn.grips.length === 5 && drawn.allGrips.length === 10
+    && drawn.grips.every((g) => drawn.allGrips.includes(g)),
+  `${drawn.grips.length} of ${drawn.allGrips.length}: ${drawn.grips}`);
+// EACH OPTION CARRIES ITS OWN NUMBERS. Twenty names say nothing about the
+// decision, which is the Mode control's own lesson (owner, 2026-08-15).
+check("...and each part says what it is worth",
+  /\d/.test(drawn.text), drawn.text.slice(0, 120));
+
+// ---- ONE PAGE, TWO SLOTS ----------------------------------------------------
+
+// A Kitgun is ONE weapon and TWO roster entries, so `/weapons/Tombfinger`
+// resolves to one of them and the Slot control has to reach the other WITHOUT
+// changing the address — otherwise the two are two pages that happen to share a
+// name, and the second is unreachable. Switching is switching WEAPONS in every
+// other sense, which is what keeps each slot's build its own.
+check("...and it offers the other slot", !!drawn.sibling, JSON.stringify(drawn));
+
+const switched = await evaluate(`(async () => {
+  ${open(KIT)}
+  const before = { id: $('weapon').value, slot: weaponInfo($('weapon').value).slot,
+                   grips: assemblySpec($('weapon').value).grips.map(g => g.id) };
+  const path = location.pathname;
+  switchWeapon(slotSibling(before.id));
+  renderAssembly();
+  await new Promise(r => setTimeout(r, 600));
+  const id = $('weapon').value;
+  return {
+    before, after: { id, slot: weaponInfo(id).slot,
+                     grips: assemblySpec(id).grips.map(g => g.id) },
+    path, pathAfter: location.pathname,
+    // The parts reset to the new entry's own default: the sibling's five grips
+    // are not legal here, so carrying one over would be a weapon nobody has.
+    assembly: { ...assembly },
+    sent: buildPayload().weapon,
+  };
+})()`);
+check("picking the other slot moves to the other entry",
+  switched.after.id !== switched.before.id
+    && switched.after.slot !== switched.before.slot
+    && switched.sent === switched.after.id,
+  JSON.stringify(switched));
+check("...without changing the address, because it is one weapon",
+  switched.pathAfter === switched.path,
+  `${switched.path} -> ${switched.pathAfter}`);
+check("...and the grips on offer are the new slot's",
+  switched.after.grips.every((g) => !switched.before.grips.includes(g))
+    && switched.after.grips.includes(switched.assembly.grip),
+  JSON.stringify(switched));
+
+const plain = await evaluate(`(async () => {
+  ${open(PLAIN)}
+  const block = document.getElementById('assembly-block');
+  return { hidden: !block || block.hidden, spec: !!(weaponInfo('lex').assembly) };
+})()`);
+check("a weapon with no parts draws no parts block", plain.hidden, JSON.stringify(plain));
+check("...and the engine says it has none", !plain.spec, JSON.stringify(plain));
+
+// ---- the assembly reaches the wire, and moves the answer --------------------
+
+// TWO GRIPS ARE TWO WEAPONS. The lightest and the heaviest differ three to five
+// times in base damage on every chamber, so a picker that is wired at all
+// cannot answer the same twice. It runs a REAL simulate rather than reading the
+// card, because a card is drawn from the state the picker just wrote and would
+// agree with itself either way.
+//
+// NO DIRECTION IS ASSERTED, and that is not caution — it is the mechanic. On a
+// CHARGE chamber the grip sets the charge time as well as the damage, and the
+// two pull opposite ways: a primary Tombfinger on Brash is 38 damage every
+// 0.5 s and on Tremor 116 every 1.4 s, so the LIGHTEST grip wins on DPS by a
+// third. The wiki says as much ("grips with higher damage output will increase
+// the charge time"), and a check demanding "heavier is better" would have been
+// asserting the opposite of the weapon.
+const fired = await evaluate(`(async () => {
+  ${open(KIT)}
+  const id = $('weapon').value;
+  const spec = assemblySpec(id);
+  // The LIGHTEST and the HEAVIEST grip this entry takes, DERIVED rather than
+  // named — so the assertion holds whichever slot the route landed on and
+  // whichever chamber is being tested.
+  const by = [...spec.grips].sort(
+    (a, b) => spec.grip_stats[a.id].damage - spec.grip_stats[b.id].damage);
+  const light = by[0].id, heavy = by[by.length - 1].id;
+  const out = {};
+  for (const grip of [light, heavy]) {
+    assembly = { ...assembly, grip };
+    const p = buildPayload();
+    out[grip] = {
+      // Read DEFENSIVELY: a payload that stopped carrying the axis at all is
+      // the failure this is looking for, and it should be reported by name
+      // rather than crash the check on a property read of undefined.
+      sent: (p.assembly || {}).grip || null,
+      dps: (await api('/api/simulate', { ...p, ...theFight(), runs: 40, seed: 11 })).dps,
+    };
+  }
+  return { light, heavy, sent: [out[light].sent, out[heavy].sent],
+           dps: [out[light].dps, out[heavy].dps],
+           damage: [spec.grip_stats[light].damage, spec.grip_stats[heavy].damage] };
+})()`);
+
+check("the grip the page shows is the grip it sends",
+  fired.sent[0] === fired.light && fired.sent[1] === fired.heavy,
+  JSON.stringify(fired));
+const spread = Math.max(...fired.dps) / Math.min(...fired.dps);
+check("...and two grips are two different weapons in the answer",
+  spread > 1.2,
+  `${fired.light} ${fired.damage[0]} dmg -> ${fired.dps[0]} dps; ` +
+  `${fired.heavy} ${fired.damage[1]} -> ${fired.dps[1]} (x${spread.toFixed(2)})`);
+
+// A LOADER IS NOT COSMETIC EITHER: it sets the magazine and the reload and adds
+// three deltas that may be negative. Killstream is +14% crit chance on a `low`
+// magazine, Flutterfire -8% and +14% status on the same class. Asserted on the
+// answer, so a loader that reaches the card and not the fight fails here.
+const loaders = await evaluate(`(async () => {
+  ${open(KIT)}
+  const out = {};
+  for (const loader of ['killstream', 'flutterfire']) {
+    assembly = { ...assembly, loader };
+    const p = buildPayload();
+    out[loader] = { sent: (p.assembly || {}).loader || null,
+      dps: (await api('/api/simulate', { ...p, ...theFight(), runs: 40, seed: 11 })).dps };
+  }
+  return out;
+})()`);
+check("the loader is sent too",
+  loaders.killstream.sent === "killstream" && loaders.flutterfire.sent === "flutterfire",
+  JSON.stringify(loaders));
+check("...and it moves the answer",
+  Math.abs(loaders.killstream.dps - loaders.flutterfire.dps) > 1e-6,
+  JSON.stringify(loaders));
+
+// ---- a build REMEMBERS its parts --------------------------------------------
+
+const remembered = await evaluate(`(async () => {
+  ${open(KIT)}
+  assembly = { grip: 'haymaker', loader: 'killstream' };
+  markPresetDirty();
+  await new Promise(r => setTimeout(r, 1200));   // the auto-save debounce
+  const saved = snapshotState().assembly;
+  // Move away and back, the way switching presets does.
+  assembly = { grip: 'gibber', loader: 'zip' };
+  const st = loadPresetList(BUILDS).find(x => x.name === activePreset).state;
+  restoreState(st, 'tombfinger_secondary');
+  return { saved, after: { ...assembly }, sent: buildPayload().assembly || null };
+})()`);
+check("a build remembers the parts it was built with",
+  remembered.saved && remembered.saved.grip === "haymaker"
+    && remembered.saved.loader === "killstream",
+  JSON.stringify(remembered));
+check("...and restoring it puts them back",
+  remembered.after.grip === "haymaker" && remembered.after.loader === "killstream"
+    && remembered.sent && remembered.sent.grip === "haymaker",
+  JSON.stringify(remembered));
+
+// A SHARE LINK CARRIES THEM. The tuple omits what the recipient would derive
+// anyway, so this uses a NON-default pair: a link that dropped them would land
+// on the default and claim a number for a build it does not carry, which is
+// exactly what happened to `mode` and `valence` (2026-08-15).
+const shared = await evaluate(`(async () => {
+  ${open(KIT)}
+  assembly = { grip: 'haymaker', loader: 'killstream' };
+  const url = await shareUrl(false);
+  const back = await decodeShare(new URL(url).searchParams.get('b'));
+  return { assembly: back.assembly, dflt: defaultAssembly($('weapon').value, null) };
+})()`);
+check("a share link carries a build's parts",
+  shared.assembly && shared.assembly.grip === "haymaker"
+    && shared.assembly.loader === "killstream",
+  JSON.stringify(shared));
+check("...and they are not merely the default coming back",
+  shared.dflt.grip !== "haymaker" || shared.dflt.loader !== "killstream",
+  JSON.stringify(shared.dflt));
+
+// ---- a part this weapon cannot take is REPAIRED, not obeyed -----------------
+
+// A stale link naming a grip from the sibling slot must land on a real weapon.
+// Repaired PART BY PART, so a correctly named loader survives — and the
+// difference is visible, since a discarded loader moves the magazine, the
+// reload and all three of crit, crit damage and status.
+const repaired = await evaluate(`(async () => {
+  ${open(KIT)}
+  const id = $('weapon').value;
+  const mine = assemblySpec(id).default.grip;
+  // A grip from the SIBLING slot: a real grip, on the wrong entry.
+  const theirs = assemblySpec(slotSibling(id)).grips[0].id;
+  const fight = { weapon: id, mods: [], runs: 40, seed: 11, ...theFight() };
+  const good  = await api('/api/simulate', { ...fight, assembly: { grip: mine,   loader: 'killstream' } });
+  const stale = await api('/api/simulate', { ...fight, assembly: { grip: theirs, loader: 'killstream' } });
+  const none  = await api('/api/simulate', { ...fight, assembly: { grip: mine,   loader: 'nope' } });
+  return { mine, theirs, good: good.dps, stale: stale.dps, none: none.dps };
+})()`);
+check("a grip from the other slot is repaired and the loader kept",
+  Math.abs(repaired.stale - repaired.good) < 1e-6,
+  JSON.stringify(repaired));
+check("...and a loader that does not exist falls back without erroring",
+  repaired.none > 0 && Math.abs(repaired.none - repaired.good) > 1e-6,
+  JSON.stringify(repaired));
+
+await finish("a modular weapon is assembled, and the assembly is the number");

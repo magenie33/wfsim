@@ -399,6 +399,21 @@
          in it, and the panel should say so rather than stay silent — the same
          rule the Form control carried before this replaced it (user,
          2026-07-31, restated 2026-08-07). One mode is stated, not offered. -->
+    <!-- THE PARTS, and only for a weapon that has any. A Kitgun has no
+         published stat line — it has a Chamber, a Grip and a Loader, and every
+         number on the panel below is composed from the three — so this block
+         comes BEFORE the mode, which is the first thing true about an ordinary
+         build. It is hidden outright on the rest of the roster: a control that
+         is always drawn and disabled 134 times out of 136 is noise, where Mode
+         is always drawn because every weapon is fired in one.
+         NO MOD LOCK BEHIND IT. The pool is the WEAPON's — the slot lives in the
+         roster entry, not in the assembly — so no part can move it and there is
+         nothing to wait for. See data/kitguns/README.md. -->
+    <section class="block" id="assembly-block" hidden>
+      <div class="bh"><span class="n">0</span><h2 data-i18n>Parts</h2><span class="sub" id="assembly-sub"></span></div>
+      <div class="bb"><div id="assembly-row" class="field-grid"></div></div>
+    </section>
+
     <section class="block" id="mode-block">
       <div class="bh"><span class="n">1</span><h2 data-i18n>Mode</h2><span class="sub" id="mode-sub"></span></div>
       <div class="bb"><div id="mode-row" class="field-grid"></div></div>
@@ -735,7 +750,7 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (owner, 2026-08-18, after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">9feb2a3a+ · 2026-08-22 07:11Z</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">d763a146+ · 2026-08-22 08:16Z</span>
     </div>
   </footer>
 

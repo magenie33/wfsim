@@ -876,6 +876,21 @@ fn assembly_meta(id: &str) -> Value {
             .filter(|g| g.slot == c.slot)
             .map(|g| json!({ "id": g.id, "name": g.name, "recoil": g.recoil }))
             .collect::<Vec<_>>(),
+        // WHAT EACH GRIP IS WORTH ON THIS CHAMBER. The grip's only stat of its
+        // own is recoil; what it actually decides — damage, fire rate and the
+        // charge — is published per grip in the CHAMBER's tables, so a page
+        // showing five names and a recoil figure would be hiding the whole
+        // decision.
+        "grip_stats": kg::grips()
+            .iter()
+            .filter(|g| g.slot == c.slot)
+            .filter_map(|g| c.damage.get(&g.id).map(|d| (g, d)))
+            .map(|(g, d)| (g.id.clone(), json!({
+                "damage": d.values().sum::<f64>(),
+                "fire_rate": c.fire_rate.get(&g.id).copied().unwrap_or(0.0),
+                "charge_seconds": c.charge_seconds.get(&g.id),
+            })))
+            .collect::<serde_json::Map<String, Value>>(),
         "loaders": kg::loaders()
             .iter()
             .map(|l| json!({
