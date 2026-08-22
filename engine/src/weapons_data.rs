@@ -1160,6 +1160,18 @@ pub struct WeaponSpec {
     /// or bow mods, which is why those are pools of their own.
     #[serde(default)]
     pub mod_pools: Vec<String>,
+    /// THE CHAMBER RECORD this entry is assembled from — `tombfinger_secondary`
+    /// in `data/kitguns/chambers/`. Its presence is what makes the weapon
+    /// MODULAR, and it is the whole of that difference.
+    ///
+    /// A Kitgun has no published stat line: every number on this entry is the
+    /// chamber's own `base` PREVIEW, which is the module's no-grip row and is
+    /// not any grip's answer. [`spec_assembled`] composes the real ones over
+    /// the top the moment a build names an assembly, exactly as an evolution
+    /// overrides a panel — so nothing downstream of `base_panel` has to learn
+    /// what a Kitgun is.
+    #[serde(default)]
+    pub kitgun: Option<String>,
     /// Riven disposition — the multiplier every riven stat on this weapon is
     /// scaled by. It belongs to the WEAPON, not to the riven, which is why
     /// one riven reads differently on two guns.
@@ -2544,8 +2556,111 @@ fn traits_for(s: &WeaponSpec) -> &'static [&'static str] {
 /// Build the RAW (no evolutions, no mods) [`WeaponBase`] panel for a weapon
 /// entry. `frenzy_active` folds passive-granted element injections in
 /// (resolved from the transform group's base entry, where passives live).
+/// THE SPEC A BUILD ACTUALLY FIRES, with a KITGUN's assembly composed into it.
+///
+/// Everything that is not modular comes back untouched, and so does a modular
+/// weapon with no assembly named — whose numbers are the chamber's `base`
+/// PREVIEW, which its own entry says out loud.
+///
+/// WHY IT REWRITES THE SPEC RATHER THAN THE PANEL. `base_panel` derives a great
+/// deal from `s.attack` on the way past — the cone, the falloff, the CO class,
+/// the punch-through budget, the radial's own crit and status defaults — so a
+/// panel patched afterwards would have to re-derive every one of them, and the
+/// ones nobody remembered would silently keep the preview's answer. Composing
+/// one layer earlier means NOTHING downstream of this function has to learn
+/// what a Kitgun is; it is the same reason an evolution overrides a panel
+/// rather than the sim.
+///
+/// `None` when the assembly names parts that do not compose — a grip from the
+/// other slot, a loader that does not exist. A Kitgun that is not assembled has
+/// no numbers, and inventing some would be worse than saying so.
+pub fn spec_assembled<'a>(
+    s: &'a WeaponSpec,
+    a: Option<&crate::kitguns_data::Assembly>,
+) -> Option<std::borrow::Cow<'a, WeaponSpec>> {
+    let (Some(chamber_id), Some(a)) = (s.kitgun.as_deref(), a) else {
+        return Some(std::borrow::Cow::Borrowed(s));
+    };
+    let built = crate::kitguns_data::assemble(a)?;
+    // THE ASSEMBLY MUST BE THIS ENTRY'S. The grip picks the slot and the slot
+    // picks the chamber record, so a secondary grip on the primary entry
+    // composes a real weapon that is the WRONG one — which is exactly the kind
+    // of mismatch that reads as a working build.
+    if built.chamber_record_id != chamber_id {
+        return None;
+    }
+
+    let mut out = s.clone();
+    // THE FORM DECIDES WHICH EXPLOSION. A Tombfinger primary explodes
+    // differently on a quick shot and on a full charge, and this entry is one
+    // of the two; the chamber keys its blasts by the same form ids.
+    let blast = built.blasts.get(&s.form);
+    if built.blasts.is_empty() != out.attack.radial.is_none() {
+        // A chamber that explodes on an entry with no `radial:` (or the other
+        // way round) is a roster entry and a parts file that disagree about
+        // what the weapon IS, and neither one can be the answer.
+        return None;
+    }
+
+    // THE DIRECT HIT IS WHAT THE EXPLOSION LEAVES — the whole shot where the
+    // explosion is ADDED beside it, and short of it by the carve where it is
+    // taken out of it. One field either way, so the two shapes need no branch.
+    out.attack.damage = match blast {
+        Some(b) => b.direct.clone(),
+        None => built.damage.clone(),
+    };
+    if let (Some(r), Some(b)) = (out.attack.radial.as_mut(), blast) {
+        r.damage = b.damage.clone();
+        r.radius_m = b.radius_m;
+        r.falloff_start_m = Some(0.0);
+        r.falloff_reduction = Some(1.0 - b.falloff_to);
+    }
+
+    out.attack.fire_rate = built.fire_rate;
+    // A CHARGE ONLY WHERE THE CHAMBER HAS ONE, and it is the GRIP's — the one
+    // trigger in the roster whose charge belongs to a part rather than to the
+    // weapon.
+    if built.charge_seconds.is_some() {
+        out.attack.charge_seconds = built.charge_seconds;
+    }
+    out.attack.crit_chance = built.crit_chance;
+    out.attack.crit_multiplier = built.crit_multiplier;
+    out.attack.status_chance = built.status_chance;
+    out.attack.multishot = built.multishot;
+    out.attack.ammo_cost = built.ammo_cost;
+    out.attack.punch_through_m = built.punch_through_m.unwrap_or(0.0);
+    out.attack.spread = Some(SpreadSpec {
+        min_deg: built.spread.min_deg,
+        max_deg: built.spread.max_deg,
+    });
+    out.magazine = Some(built.magazine);
+    out.reload_seconds = Some(built.reload_seconds);
+    out.ammo_max = Some(built.ammo_max);
+    // THE DISPOSITION IS THE ENTRY'S, not the assembly's: it is per chamber AND
+    // per slot, and this entry already is one chamber in one slot. Restating it
+    // from the parts would be the same number written twice.
+    Some(std::borrow::Cow::Owned(out))
+}
+
 pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
-    let s = spec(id).unwrap_or_else(|| panic!("unknown weapon id: {id}"));
+    base_panel_assembled(id, frenzy_active, None)
+}
+
+/// [`base_panel`], for a MODULAR weapon whose numbers are its assembly's.
+///
+/// Panics on an assembly that does not compose, the way this function already
+/// panics on an unknown weapon id: both are a caller handing over a weapon that
+/// does not exist, and a panel invented for one is a build nobody can reproduce.
+pub fn base_panel_assembled(
+    id: &str,
+    frenzy_active: bool,
+    assembly: Option<&crate::kitguns_data::Assembly>,
+) -> WeaponBase {
+    let raw = spec(id).unwrap_or_else(|| panic!("unknown weapon id: {id}"));
+    let composed = spec_assembled(raw, assembly).unwrap_or_else(|| {
+        panic!("weapon {id}: the assembly {assembly:?} does not compose into it")
+    });
+    let s = &*composed;
 
     let mut vector = DamageVector::new();
     for (name, amount) in &s.attack.damage {
@@ -6625,3 +6740,120 @@ mod condition_overload_catalog_tests {
 
 }
 
+/// MODULAR WEAPONS — a Kitgun's parts reaching the panel a fight reads.
+///
+/// Its own module rather than a corner of the CO catalog's: what it is about is
+/// [`spec_assembled`], and a test's home is part of what it says.
+#[cfg(test)]
+mod modular_tests {
+    use super::{spec, spec_assembled};
+
+    /// A KITGUN'S ASSEMBLY REACHES THE PANEL — the whole point of
+    /// `spec_assembled`, asserted on the numbers a fight actually reads rather
+    /// than on the spec it was composed from.
+    ///
+    /// The roster entry carries the chamber's `base` PREVIEW, so the test is
+    /// that naming an assembly MOVES every number it should and moves them to
+    /// the parts' own values.
+    #[test]
+    fn an_assembly_composes_all_the_way_into_a_panel() {
+        use crate::kitguns_data::Assembly;
+        let preview = crate::loadout::WeaponBase::from_data("tombfinger_secondary", false, &[]);
+        let haymaker = Assembly {
+            chamber: "tombfinger".into(),
+            grip: "haymaker".into(),
+            loader: "thunderdrum".into(),
+        };
+        let built = crate::loadout::WeaponBase::from_data_assembled(
+            "tombfinger_secondary",
+            false,
+            &[],
+            Some(&haymaker),
+        );
+
+        // THE DIRECT HIT IS WHAT THE EXPLOSION LEAVES. Haymaker is 32 Impact +
+        // 25 Puncture + 123 Radiation, and 19.5% of the Radiation stays here.
+        let d = &built.base_vector;
+        assert!((d.get(crate::damage::DamageType::Impact) - 32.0).abs() < 1e-9, "{d:?}");
+        assert!((d.get(crate::damage::DamageType::Puncture) - 25.0).abs() < 1e-9, "{d:?}");
+        assert!(
+            (d.get(crate::damage::DamageType::Radiation) - 123.0 * 0.195).abs() < 1e-9,
+            "{d:?}"
+        );
+        // …AND THE OTHER 80.5% IS THE EXPLOSION.
+        let r = built.radial.as_ref().expect("the secondary explodes");
+        assert!(
+            (r.base_vector.get(crate::damage::DamageType::Radiation) - 123.0 * 0.805).abs() < 1e-9,
+            "{:?}",
+            r.base_vector
+        );
+        assert!((r.radius_m - 1.9).abs() < 1e-9);
+
+        // EVERY OTHER AXIS THE ASSEMBLY OWNS MOVED, and moved to the part's own
+        // number: the grip's fire rate, the loader's magazine class and reload,
+        // and crit and status as the loader's additive deltas on the chamber.
+        assert!((built.base_fire_rate - 2.17).abs() < 1e-9, "{}", built.base_fire_rate);
+        assert_ne!(built.base_fire_rate, preview.base_fire_rate);
+        // Thunderdrum is -4% crit chance, -0.1 crit damage, +7% status, the
+        // `highest` magazine class (29 rounds on this chamber) and a 2.1 s
+        // reload. TWO OF THE THREE DELTAS ARE NEGATIVE, which is the whole
+        // reason they are additive and not a multiplier.
+        assert!((built.base_crit_chance - 0.20).abs() < 1e-9, "{}", built.base_crit_chance);
+        assert!((built.base_crit_damage - 1.9).abs() < 1e-9, "{}", built.base_crit_damage);
+        assert!((built.base_status_chance - 0.31).abs() < 1e-9, "{}", built.base_status_chance);
+        assert_eq!(built.magazine_size, 29.0);
+        assert!((built.base_reload - 2.1).abs() < 1e-9, "{}", built.base_reload);
+
+        // AND A GRIP FROM THE OTHER SLOT DOES NOT COMPOSE. It is a real weapon
+        // and it is the wrong one, which is the mismatch that reads as working.
+        let tremor = Assembly {
+            chamber: "tombfinger".into(),
+            grip: "tremor".into(),
+            loader: "thunderdrum".into(),
+        };
+        assert!(
+            spec_assembled(spec("tombfinger_secondary").unwrap(), Some(&tremor)).is_none(),
+            "a primary grip composed into the secondary entry"
+        );
+        // …and the same grip on the PRIMARY entry does.
+        assert!(
+            spec_assembled(spec("tombfinger_primary").unwrap(), Some(&tremor)).is_some()
+        );
+    }
+
+    /// A KITGUN'S ROSTER ENTRY AND ITS PARTS FILE MUST AGREE ABOUT WHAT THE
+    /// WEAPON IS, and every entry that names a chamber must name one that
+    /// exists. Both are the kind of mismatch that composes into a plausible
+    /// weapon rather than into an error.
+    #[test]
+    fn every_modular_entry_matches_its_chamber() {
+        for s in super::all() {
+            let Some(k) = s.kitgun.as_deref() else { continue };
+            let c = crate::kitguns_data::chambers()
+                .iter()
+                .find(|c| c.id == k)
+                .unwrap_or_else(|| panic!("{}: no chamber record {k}", s.id));
+            assert_eq!(c.slot, s.slot, "{}: slot", s.id);
+            assert_eq!(
+                c.blast.is_some(),
+                s.attack.radial.is_some(),
+                "{}: the chamber explodes {} and the entry {}",
+                s.id,
+                c.blast.is_some(),
+                s.attack.radial.is_some()
+            );
+            // THE ENTRY'S FORM MUST BE ONE THE CHAMBER PUBLISHES AN EXPLOSION
+            // FOR. A form the parts file has never heard of composes to nothing
+            // at all, and the panel that would have said so panics.
+            if let Some(b) = &c.blast {
+                assert!(
+                    b.forms.contains_key(&s.form),
+                    "{}: form `{}` has no explosion; the chamber states {:?}",
+                    s.id,
+                    s.form,
+                    b.forms.keys().collect::<Vec<_>>()
+                );
+            }
+        }
+    }
+}

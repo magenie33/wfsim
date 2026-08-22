@@ -1,0 +1,118 @@
+# Tombfinger, as a SECONDARY — the roster's first KITGUN.
+#
+# A KITGUN HAS NO PUBLISHED STAT LINE, and that is the whole difference between
+# this entry and every other one in `data/weapons/`. It has a Chamber, a Grip
+# and a Loader; `data/kitguns/` is the parts and `engine::kitguns_data` is the
+# composition rule. What is written below is the chamber's `base` PREVIEW — the
+# module's own no-grip row, which is what a part picker shows before a grip is
+# chosen and is NOT any grip's answer. The moment a build names an assembly,
+# `weapons_data::spec_assembled` composes the real numbers over the top of it,
+# exactly as an evolution overrides a panel.
+#
+# So this file is a SHAPE plus a preview: which mods it takes, which riven, what
+# it does that no assembly changes. Nothing here is a claim about a Tombfinger
+# anybody actually built.
+#
+# WHY THE TWO SLOTS ARE TWO ENTRIES AND NOT TWO MODES. The chamber is the
+# WEAPON — one mastery track, one riven, one wiki page, and both entries point
+# at `Tombfinger` — but a mode is HOW A WEAPON IS PLAYED and the slot is not
+# that (owner, 2026-08-18). The slot decides which mods it may hold, which
+# aura pays it, which archon shard names it and which board column it lands in,
+# and every one of those is a question with a static answer that `mode` would
+# have made dynamic for the whole roster. DE's own module agrees: `KitgunPrimary`
+# and `KitgunSecondary` are two stat blocks and the difference reaches the
+# damage TYPE. See data/kitguns/README.md.
+id: tombfinger_secondary
+name: Tombfinger
+wiki_name: Tombfinger
+slot: secondary
+class: pistol
+form: base
+default_form: true
+mod_pools: [pistol]
+mastery_rank: 0
+max_rank: 30
+
+# THE CHAMBER RECORD this entry is assembled from. Its presence is what makes
+# the weapon modular at all: `spec_assembled` reads it, and a build with no
+# assembly named gets the preview below unchanged.
+kitgun: tombfinger_secondary
+
+transform_group: tombfinger_secondary
+
+# ONE RIVEN FITS BOTH SLOTS — DE's weekly trade dump lists `Tombfinger` with no
+# slot suffix — but the DISPOSITION does not: the module gives this slot 0.7
+# where the primary gets 1.0, so the same riven reads differently depending on
+# which grip is on it.
+disposition: 0.7
+riven_family: Tombfinger
+
+polarities: []
+introduced: "24.2"
+noise: alarming
+ammo_type: secondary
+ammo_max: 210
+ammo_pickup: 20
+
+# THE PREVIEW's magazine and reload. A loader replaces BOTH — it names a size
+# class the chamber prices, and carries its own reload — so these are the
+# module's `base`/`Zip` shape and not a number anybody plays with.
+magazine: 19
+reload_seconds: 1.4
+
+# No CO catalog row for this attack — absence in that catalog means ORDINARY
+# rather than unknown, since it lists only the anomalies (docs/CATALOGS.md).
+co_behavior: additive_with_base_damage
+
+attack:
+  # Cone half-angle from the reticle, degrees — the chamber's own MinSpread /
+  # MaxSpread. A grip changes recoil and never this.
+  spread:
+    min_deg: 1
+    max_deg: 3
+  trigger: semi_auto
+  shot_type: projectile
+  fire_rate: 2.83
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.24
+  crit_multiplier: 2
+  status_chance: 0.24
+  punch_through_m: 0.0
+  # A GUARANTEED IMPACT PROC on the direct hit — "dealing Impact, Puncture and
+  # Radiation damage with a guaranteed Impact proc" (wiki Tombfinger, verbatim).
+  # The MODULE does not carry it: `ForcedProcs` is absent from this chamber's
+  # block, and the wiki wins.
+  forced_procs: [impact]
+  # THE DIRECT HIT IS WHAT THE EXPLOSION LEAVES. "The Impact, Puncture and
+  # ~19.5% of the Radiation damage make up the direct hit, the remaining ~80.5%
+  # of Radiation damage is assigned to the explosion" — so 19.5% of the
+  # preview's 59 Radiation stays here and the rest is below. It is CARVED, not
+  # added: the two halves add back to the chamber's own 84.
+  damage: { impact: 16, puncture: 9, radiation: 11.505 }
+
+  # …AND THE OTHER 80.5%.
+  radial:
+    damage: { radiation: 47.495 }
+    radius_m: 1.9
+    # A CONTACT blast: it goes off on the first thing it touches, which is what
+    # "detonates upon the first enemy or surface hit" says, and therefore takes
+    # no punch-through mods.
+    blast_kind: contact
+    # "Can benefit from Fulmination (Primed)" — the SECONDARY radius bucket.
+    takes_blast_radius_mods: true
+    # "Linear damage falloff from 100% to 70% from central impact": full damage
+    # at the centre, 30% removed at the rim.
+    falloff_start_m: 0.0
+    falloff_reduction: 0.30
+    # "The status chance remains the same for both the direct hit and the
+    # explosion" — so it inherits, and is deliberately not restated.
+
+unmodeled:
+  - "the explosion is a REVERSE CONE — 'dealing damage to enemies in front of the original target' — and this arena gives a splash no facing, so it is modelled as a full 1.9 m sphere. That is the generous reading: against a crowd it reaches bodies the game would leave behind the target"
+  - reason: projectile_must_be_led
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Tombfinger
+  module: https://wiki.warframe.com/w/Module:Modular/data

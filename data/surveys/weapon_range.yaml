@@ -448,3 +448,9 @@ checked:
   tysis:                       { range: null, type: read, note: 'no Range row; Projectile at 75 m/s' }
 
   zymos:                       { range: null, type: projectile, note: 'this form’s own attack block states no Range; its 3.3 m is the explosion RADIUS, not a reach; Projectile at 79 m/s' }
+  # KITGUNS. `Module:Modular/data` states no Range on either Tombfinger block —
+  # the field is simply absent from the chamber, the way it is on a Tetra — and
+  # the weapon's page confirms it from the other side twice, once per slot:
+  # "an accurate and powerful semi-auto chamber, with no damage falloff".
+  tombfinger_secondary:        { range: null, type: read, note: 'no Range row in the modular module; Projectile with travel time, and the page states no falloff' }
+  tombfinger_primary:          { range: null, type: read, note: 'no Range row in the modular module; Projectile with travel time, and the page states no falloff' }

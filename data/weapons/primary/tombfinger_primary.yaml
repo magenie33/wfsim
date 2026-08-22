@@ -1,0 +1,96 @@
+# Tombfinger, as a PRIMARY — the other half of one weapon.
+#
+# See data/weapons/secondary/tombfinger_secondary.yaml for why the two slots are
+# two ENTRIES and not two modes, and data/kitguns/README.md for the composition
+# rule. Every number below is the chamber's `base` PREVIEW; a build that names
+# an assembly gets the real ones from `weapons_data::spec_assembled`.
+#
+# THIS ENTRY IS THE CHARGED SHOT, which is how the weapon fires: "the weapon
+# fires as soon as it has reached a full charge". The GRIP sets that charge
+# (0.5 s on Brash to 1.4 s on Tremor), which is a thing no other trigger in the
+# roster does — elsewhere a charge belongs to the weapon.
+#
+# AND THE MODULE'S DAMAGE TABLE IS THIS SHOT'S. The page says "fully charged
+# projectiles having a significantly large explosion but without any Puncture
+# damage", and the table carries Impact and Radiation and no Puncture — which
+# is the module confirming which of the two shots it published. The QUICK shot
+# is admitted below rather than invented.
+id: tombfinger_primary
+name: Tombfinger
+wiki_name: Tombfinger
+slot: primary
+class: rifle
+form: charged
+default_form: true
+# "Uses Rifle mods" (wiki Tombfinger §Primary, verbatim) — so the primary-wide
+# pool and the rifle class pool, and no narrower one.
+mod_pools: [primary, rifle]
+mastery_rank: 0
+max_rank: 30
+
+kitgun: tombfinger_primary
+
+transform_group: tombfinger_primary
+
+# THE SAME RIVEN, A DIFFERENT DISPOSITION: 1.0 here against the secondary's 0.7.
+disposition: 1.0
+riven_family: Tombfinger
+
+polarities: []
+introduced: "24.2"
+noise: alarming
+ammo_type: primary
+ammo_max: 120
+ammo_pickup: 20
+
+magazine: 19
+reload_seconds: 1.4
+
+co_behavior: additive_with_base_damage
+
+attack:
+  spread:
+    min_deg: 1
+    max_deg: 3
+  trigger: charge
+  shot_type: projectile
+  fire_rate: 2.83
+  # THE GRIP SETS THE CHARGE. This is the preview's; an assembly replaces it.
+  charge_seconds: 0.8
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.24
+  crit_multiplier: 2
+  status_chance: 0.24
+  punch_through_m: 0.0
+  # THE PROJECTILE IS THE MODULE'S TABLE, whole — this explosion is ADDED
+  # beside it rather than carved out of it, which is the one structural way
+  # the two slots differ.
+  damage: { impact: 40, radiation: 18 }
+
+  radial:
+    # The `base` preview has no explosion of its own — the page states the AoE
+    # damage per GRIP and nothing for the no-grip row — so this is the SHREWD
+    # grip's 422, the middle of the five, standing in until an assembly
+    # replaces it. Written down because a zero here would read as "no
+    # explosion", which is the one thing this weapon certainly has.
+    damage: { radiation: 422 }
+    radius_m: 6.2
+    blast_kind: contact
+    # "All explosions can benefit from Firestorm (Primed)".
+    takes_blast_radius_mods: true
+    # "100% to 30% from central impact on fully charged shots."
+    falloff_start_m: 0.0
+    falloff_reduction: 0.70
+    # "Initial hit and explosion apply status separately" — two rolls, and the
+    # chance is the direct part's, so it is deliberately not restated.
+
+unmodeled:
+  - "the QUICK SHOT is not a form here. Tapping the trigger fires a smaller explosion (1.7 m, 30-108 Radiation by grip, falloff to 75%) and the page says 'the only change to the projectile is damage distribution' — the total is the same and the split moves — but neither the module nor the page publishes that split, so a quick-shot entry would have to invent one. The explosion's numbers are already transcribed in data/kitguns/chambers/tombfinger_primary.yaml and one in-game reading of the projectile is all that is missing"
+  - "the weapon FIRES ITSELF the instant the charge completes, 'which can lead to premature firing'. This arena releases every charge on purpose, so nothing is lost to a shot that went off early"
+  - reason: projectile_must_be_led
+  - reason: self_stagger
+
+source:
+  url: https://wiki.warframe.com/w/Tombfinger
+  module: https://wiki.warframe.com/w/Module:Modular/data

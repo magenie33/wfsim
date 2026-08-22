@@ -8511,8 +8511,21 @@ mod one_picture_one_weapon {
 
     /// The weapon an id draws its art from — its transform group, so every
     /// form of one weapon is one subject.
+    ///
+    /// …AND A MODULAR WEAPON IS ITS CHAMBER. A Kitgun's two slots are two
+    /// roster entries with two transform groups, because a slot is not a form —
+    /// it decides which mods the weapon may hold, which is a question with a
+    /// static answer. They are still ONE weapon by every measure DE has: one
+    /// mastery track, one riven, one wiki page and therefore one picture. See
+    /// data/kitguns/README.md.
     fn subject(id: &str) -> &str {
-        wfsim_engine::weapons_data::spec(id).map_or(id, |s| s.group())
+        let Some(s) = wfsim_engine::weapons_data::spec(id) else { return id };
+        match s.kitgun.as_deref().and_then(|k| {
+            wfsim_engine::kitguns_data::chambers().iter().find(|c| c.id == k)
+        }) {
+            Some(c) => c.chamber.as_str(),
+            None => s.group(),
+        }
     }
 
     #[test]

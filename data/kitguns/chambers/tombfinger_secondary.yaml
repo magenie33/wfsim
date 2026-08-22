@@ -95,9 +95,10 @@ blast:
   # A SECONDARY's radius mod is Fulmination, not Firestorm. The page names it.
   radius_mods: [fulmination]
   self_stagger: true
-  # ONE ENTRY PER FIRING FORM. This slot has exactly one.
+  # ONE ENTRY PER FIRING FORM, keyed by that form's own id in
+  # `weapons_data::FormKind`. This slot has exactly one.
   forms:
-   impact:
+   base:
     radius_m: 1.9
     falloff_to: 0.70
     # THE SPLIT IS A SHARE OF THE CHAMBER'S OWN DAMAGE, not a separate table —

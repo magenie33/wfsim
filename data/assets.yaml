@@ -353,6 +353,11 @@ weapons:
   tiberon_prime_semi: TiberonPrime.png
   tigris: Tigris.png
   tigris_prime: TigrisPrime.png
+  # A KITGUN CHAMBER, and the CDN has no file for one — its export knows the
+  # assembled weapon and not the part. The wiki hosts the chamber's own image,
+  # which is what both slots show because the chamber IS the weapon.
+  tombfinger_primary: wiki:Tombfinger.png
+  tombfinger_secondary: wiki:Tombfinger.png
   tonkor: Tonkor.png
   trumna: ThanotechRifle.png
   trumna_grenade: ThanotechRifle.png

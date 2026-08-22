@@ -110,10 +110,14 @@ blast:
   radius_mods: [firestorm]
   # It staggers the WIELDER, which this arena gives no body to stagger.
   self_stagger: true
-  # ONE ENTRY PER FIRING FORM, keyed by the form it belongs to.
+  # ONE ENTRY PER FIRING FORM, keyed by that form's own id in
+  # `weapons_data::FormKind` — `base` is what the page calls the QUICK SHOT.
+  # An exact join rather than a table of synonyms: a form whose explosion is
+  # missing composes to nothing at all instead of to a weapon that does not
+  # explode.
   forms:
   # THE QUICK SHOT: fired before the charge completes.
-    quick:
+    base:
       radius_m: 1.7
       # 100% at the centre to 75% at the rim — a shallow falloff, because the
       # radius is small.

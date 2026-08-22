@@ -317,6 +317,11 @@ impl Assembly {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Assembled {
     pub name: String,
+    /// WHICH CHAMBER RECORD composed this — `tombfinger_secondary`. The grip
+    /// picks the slot and the slot picks the record, so a caller that has one
+    /// slot's roster entry in hand can only tell a mismatched grip from a
+    /// matched one by reading this back.
+    pub chamber_record_id: String,
     pub slot: &'static str,
     pub damage: BTreeMap<String, f64>,
     pub fire_rate: f64,
@@ -379,6 +384,7 @@ pub fn assemble(a: &Assembly) -> Option<Assembled> {
     let shot = c.damage.get(&g.id)?;
     Some(Assembled {
         name: c.name.clone(),
+        chamber_record_id: c.id.clone(),
         slot: if c.slot == "secondary" { "secondary" } else { "primary" },
         // PER GRIP, published. `base` is the picker's preview and is not a
         // grip's answer, so it is never reachable here: the key is the grip's id.
@@ -644,7 +650,7 @@ mod tests {
             loader: "thunderdrum".into(),
         })
         .expect("tremor tombfinger");
-        let quick = &a.blasts["quick"];
+        let quick = &a.blasts["base"];
         let charged = &a.blasts["charged"];
         assert_eq!(quick.radius_m, 1.7);
         assert_eq!(charged.radius_m, 6.2);
@@ -663,7 +669,7 @@ mod tests {
         })
         .expect("haymaker tombfinger");
         assert_eq!(b.slot, "secondary");
-        let imp = &b.blasts["impact"];
+        let imp = &b.blasts["base"];
         assert_eq!(imp.radius_m, 1.9);
         // 80.5% of 123 to the explosion, 19.5% left on the direct hit.
         assert!((imp.damage["radiation"] - 99.015).abs() < 1e-9, "{:?}", imp.damage);

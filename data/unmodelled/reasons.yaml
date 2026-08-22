@@ -61,6 +61,13 @@ reasons:
     text: "this mode is entered by AIMING rather than by a trigger, and the simulator treats the mode and the fight's Aiming state as two separate settings — so a run with this mode and Aiming off is a combination the game cannot produce, and every while-aiming bonus should be read as active whenever this mode is"
   # SELF-STAGGER, which every modern AoE weapon carries and none of them can
   # suffer here — the wielder is not a body in this arena.
+  # A PROJECTILE THAT HAS TO BE LED. Every shot in this arena connects the
+  # instant it is fired, so a slow round costs nothing here and costs a real
+  # player hit rate. Four earlier entries wrote this out in prose of their own
+  # (Kuva Ogris, Tenet Ferrox, the Dual Toxocyst's Incarnon) and are worth
+  # folding in here next time one of them is touched.
+  projectile_must_be_led:
+    text: "the projectile has TRAVEL TIME and has to be led — 'hitting a target at range requires leading the target before firing'. Every shot here connects the instant it is fired, so this weapon's real hit rate against anything that moves is worse than the numbers below"
   self_stagger:
     text: "the blast staggers the WIELDER in game — this arena gives the player no body, so a build that would be unplayable in a corridor costs nothing here"
   # A SECOND EXPLOSION FROM ONE SHOT. An attack carries ONE `radial:`, and the

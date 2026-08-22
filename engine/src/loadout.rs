@@ -2398,7 +2398,23 @@ impl WeaponBase {
     }
 
     pub fn from_data(id: &str, frenzy_active: bool, evo_ids: &[&str]) -> Self {
-        crate::weapons_data::base_panel(id, frenzy_active).apply_evolution_ids(evo_ids)
+        Self::from_data_assembled(id, frenzy_active, evo_ids, None)
+    }
+
+    /// [`WeaponBase::from_data`], for a MODULAR weapon.
+    ///
+    /// The assembly is composed into the SPEC before the panel is derived from
+    /// it, so an evolution applied afterwards sees the assembled weapon and not
+    /// the chamber's preview — which is the order the two mechanics have to be
+    /// in, since an evolution states a DELTA against whatever it is fired on.
+    pub fn from_data_assembled(
+        id: &str,
+        frenzy_active: bool,
+        evo_ids: &[&str],
+        assembly: Option<&crate::kitguns_data::Assembly>,
+    ) -> Self {
+        crate::weapons_data::base_panel_assembled(id, frenzy_active, assembly)
+            .apply_evolution_ids(evo_ids)
     }
 
 }
