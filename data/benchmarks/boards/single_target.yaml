@@ -1674,34 +1674,34 @@ entries:
     arcanes: [primary_crux]
   - weapon: kunai
     mode: cycle
+    score: 29.558163072480543
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    evolutions: [kunai_evo1_incarnon_form, kunai_swift_conclusion, kunai_rapid_reinforcement, kunai_survivors_edge]
+    arcanes: [secondary_deadhead]
+  - weapon: kunai
+    mode: cycle
+    score: 27.944746069080985
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [kunai_evo1_incarnon_form, kunai_swift_conclusion, kunai_rapid_reinforcement, kunai_survivors_edge]
+    arcanes: [secondary_deadhead]
+  - weapon: kunai
+    mode: cycle
+    score: 19.66155334666237
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, pathogen_rounds]
+    evolutions: [kunai_evo1_incarnon_form, kunai_swift_conclusion, kunai_rapid_reinforcement, kunai_survivors_edge]
+    arcanes: [secondary_deadhead]
+  - weapon: kunai
+    mode: cycle
+    score: 18.72975614969786
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, pistol_pestilence]
+    evolutions: [kunai_evo1_incarnon_form, kunai_swift_conclusion, kunai_rapid_reinforcement, kunai_survivors_edge]
+    arcanes: [secondary_deadhead]
+  - weapon: kunai
+    mode: cycle
     score: 15.10646899013323
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [kunai_evo1_incarnon_form, kunai_swift_conclusion, kunai_extended_volley, kunai_survivors_edge]
     arcanes: [cascadia_flare]
-  - weapon: kunai
-    mode: cycle
-    score: 11.008265933926006
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds]
-    evolutions: [kunai_evo1_incarnon_form, kunai_swift_conclusion, kunai_rapid_reinforcement, kunai_survivors_edge]
-    arcanes: [secondary_deadhead]
-  - weapon: kunai
-    mode: cycle
-    score: 9.491026896249997
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
-    evolutions: [kunai_evo1_incarnon_form, kunai_swift_conclusion, kunai_rapid_reinforcement, kunai_survivors_edge]
-    arcanes: [secondary_deadhead]
-  - weapon: kunai
-    mode: cycle
-    score: 8.445183725356621
-    mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, magnetic_might, primed_convulsion, pathogen_rounds]
-    evolutions: [kunai_evo1_incarnon_form, kunai_swift_conclusion, kunai_extended_volley, kunai_survivors_edge]
-    arcanes: [cascadia_accuracy]
-  - weapon: kunai
-    mode: cycle
-    score: 8
-    mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, primed_convulsion, pathogen_rounds, primed_heated_charge]
-    evolutions: [kunai_evo1_incarnon_form, kunai_swift_conclusion, kunai_extended_volley, kunai_survivors_edge]
-    arcanes: [cascadia_accuracy]
   - weapon: kuva_ayanga
     mode: base
     score: 3.2054067788118044
