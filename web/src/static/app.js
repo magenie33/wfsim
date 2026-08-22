@@ -12168,7 +12168,41 @@ const REPLAY_SPEEDS = [1, 2, 5, 20];
 // scaled its chart to 1 — an uncapped row drawn as though it were full from
 // the first stack (2026-08-21).
 const rpUncapped = (b) => !!b.uncapped || Number(b.max) === 0;
-const rpCap = (b) => (rpUncapped(b) ? "∞" : b.max);
+// A ROW IS A COUNT OR IT IS A NUMBER, and the roster says which (owner,
+// 2026-08-22). Almost every buff is capped by a stack count and DE publishes
+// that count, so `3/4` is the honest reading. A few publish the NUMBER the pile
+// stops at and let the counter run — Hata-Satya's "capped at 500% at all mod
+// ranks" — and for those a stack count is a chart of the wrong quantity: it
+// climbs past a ceiling nobody printed. Such a row carries `value` from the
+// engine ({per, max, unit}) and everything below reads the VALUE: the curve,
+// the average, the live readout and the ramp.
+//
+// `unit: "%"` means the engine's numbers are fractions and the reader
+// multiplies by 100 — the same convention `loadout::pct` uses on the Rust side.
+// The engine states the quantity; this states the presentation.
+const rpValueOf = (b, stacks) => {
+  const v = b && b.value;
+  if (!v) return Number(stacks);
+  return Math.min(Number(stacks) * v.per, v.max);
+};
+// A point on the row, already in the row's own quantity.
+const rpFmtVal = (b, n) => {
+  const v = b && b.value;
+  if (!v) return String(n);
+  return v.unit === "%" ? `${(n * 100).toFixed(1)}%` : `${n.toFixed(2)}${v.unit}`;
+};
+// …and the same from a raw stack count, which is what the frames carry.
+const rpFmt = (b, stacks) => (b && b.value ? rpFmtVal(b, rpValueOf(b, stacks)) : String(stacks));
+// The number the row stops at: the published one where there is one, the stack
+// ceiling otherwise, and NaN-free where there is neither.
+const rpCeil = (b) => (b && b.value ? b.value.max : Number(b.max));
+// The ceiling as the row draws it: a stack count, a published number, or ∞.
+const rpCap = (b) => {
+  if (b && b.value) return b.value.unit === "%"
+    ? `${(b.value.max * 100).toFixed(0)}%`
+    : `${b.value.max}${b.value.unit}`;
+  return rpUncapped(b) ? "∞" : b.max;
+};
 let replayState = null; // { data, i, playing, speed, raf }
 
 // ---- EVERY BLOCK FOLDS -------------------------------------------------
@@ -12394,8 +12428,15 @@ function replayMarkup(r) {
   const dSeries = (rp.dstacks || [])[dBody] || [];
   const W = 600, H = 28;
   const curveRows = (roster, series, name, kind) => roster.map((b, i) => {
-    const s = series[i] || [];
-    const max = Math.max(1, rpUncapped(b) ? Math.max(...s) : b.max);
+    // WHAT IS DRAWN, which is the stack count on an ordinary row and the number
+    // the stacks are worth on a value-capped one. Everything below — the area,
+    // the average, the dead bands, the ramp — is computed on this, so a clamped
+    // pile draws the flat plateau it actually is instead of a line climbing
+    // past its own ceiling.
+    const raw = series[i] || [];
+    const s = b && b.value ? raw.map((n) => rpValueOf(b, n)) : raw;
+    const max = b && b.value ? b.value.max
+      : Math.max(1, rpUncapped(b) ? Math.max(...s) : b.max);
     const px = (j) => (j / (s.length - 1)) * W;
     const py = (v) => H - 1 - (v / max) * (H - 2);
     const pts = s.map((v, j) => `${px(j).toFixed(1)},${py(v).toFixed(1)}`).join(" ");
@@ -12410,7 +12451,7 @@ function replayMarkup(r) {
     const offPct = (100 - up * 100).toFixed(2);
     // ...and the thing the 100% was hiding: how long the ramp took. This is
     // the answer to "初始肯定要花时间" as a number rather than a rounding.
-    const iFull = rpUncapped(b) ? -1 : s.findIndex((v) => v >= b.max);
+    const iFull = rpUncapped(b) && !(b && b.value) ? -1 : s.findIndex((v) => v >= rpCeil(b));
     const ramp = iFull < 0
       ? tr("never full")
       : `${tr("full at")} ${(iFull * rp.frame_seconds).toFixed(2)}s`;
@@ -12429,8 +12470,8 @@ function replayMarkup(r) {
       <div class="rp-head">
         <span class="rp-caret">▾</span>
         <span class="rp-name">${escHtml(name(b.id))}</span>
-        <span class="rp-stat">${escHtml(tr("avg"))} ${mean.toFixed(2)}/${rpCap(b)} · ${escHtml(tr("uptime"))} ${upPct}%${up < 1 ? ` · <span class="rp-off">${escHtml(tr("inactive"))} ${offPct}%</span>` : ""} · ${escHtml(ramp)}</span>
-        <span class="rp-now" data-now="${i}" data-series="${kind}">${s[s.length - 1]}/${rpCap(b)}</span>
+        <span class="rp-stat">${escHtml(tr("avg"))} ${b && b.value ? rpFmtVal(b, mean) : mean.toFixed(2)}/${rpCap(b)} · ${escHtml(tr("uptime"))} ${upPct}%${up < 1 ? ` · <span class="rp-off">${escHtml(tr("inactive"))} ${offPct}%</span>` : ""} · ${escHtml(ramp)}</span>
+        <span class="rp-now" data-now="${i}" data-series="${kind}">${b && b.value ? rpFmtVal(b, s[s.length - 1]) : s[s.length - 1]}/${rpCap(b)}</span>
       </div>
       <div class="rp-chart">
         <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
@@ -12688,10 +12729,12 @@ function replayApply(rp, i) {
     const j = Number(el.dataset.now);
     if (el.dataset.series === "debuff") {
       const [b, s] = dLive[j] || [];
-      if (b) el.textContent = `${s[i]}/${rpCap(b)}`;
+      if (b) el.textContent = `${rpFmt(b, s[i])}/${rpCap(b)}`;
       return;
     }
-    el.textContent = `${rp.stacks[j][i]}/${rpCap(rp.buffs[j])}`;
+    // THE SAME QUANTITY THE ROW WAS DRAWN IN — a header that scrubs from a
+    // percentage to a stack count would be two charts wearing one label.
+    el.textContent = `${rpFmt(rp.buffs[j], rp.stacks[j][i])}/${rpCap(rp.buffs[j])}`;
   });
 }
 

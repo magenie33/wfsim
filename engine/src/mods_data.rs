@@ -254,10 +254,15 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         // the cap is what the rate is worth, not a separate fact. Here the
         // cap is the one thing rank does NOT move — "capped at 500% at all mod
         // ranks" — so the yaml states it and the rate ladders under it.
-        "crit_chance_per_hit" => ModEffect::CritChancePerHit {
+        //
+        // `max_bonus` AND NOT `max_stacks`, which is the difference between a
+        // ceiling DE published and one we computed from it: a stack count would
+        // have to be re-derived at every rank, and at rank 0 it is 2,500 rather
+        // than the 417 the card's own rate suggests.
+        "crit_chance_per_hit" => ModEffect::CritChancePerHit(crate::loadout::CritPerHit {
             per_stack: max("rankMax"),
-            max_stacks: v.get("max_stacks").and_then(|x| x.as_u64()).unwrap_or(0) as u32,
-        },
+            max_bonus: f(v, "max_bonus").unwrap_or(0.0),
+        }),
         // EXIMUS ADVANTAGE. The duration is fixed at every rank, so it is a
         // plain number beside the ladder.
         "eximus_weakpoint_damage" => ModEffect::OnEximusWeakpointDamage {

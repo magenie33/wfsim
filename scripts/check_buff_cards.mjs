@@ -157,8 +157,34 @@ const r = await evaluate(`(async () => {
   sim.aiming = false; markScenarioDirty(); refreshPanel(); await sleep(2000);
   const hipCombo = card();
   sim.aiming = true; markScenarioDirty(); await sleep(300);
+  // A ROW DRAWN AS A NUMBER. Hata-Satya is the one buff whose ceiling DE
+  // publishes as a VALUE (500%) instead of as a stack count, so its curve is a
+  // curve of per cent — and the stepper beside it is still in HITS, because a
+  // hit is what a player would count. Galvanized Chamber rides along as the
+  // negative control: an ordinary stack-capped buff in the same run must still
+  // read a count out of a count.
+  history.pushState({},'','/weapons/Soma_Prime'); route(); await sleep(3000);
+  slots.forEach(s => { s.mod = null; s.rank = null; });
+  slots[0] = { mod:'hata_satya', pol:slots[0].pol, rank:null };
+  slots[1] = { mod:'galvanized_chamber', pol:slots[1].pol, rank:null };
+  markPresetDirty(); renderMods(); refreshPanel(); await sleep(2500);
+  document.querySelectorAll('.tab').forEach(x=>{ if(/Sim|模拟/i.test(x.textContent)) x.click(); });
+  await sleep(1500);
+  const hsCard = [...document.querySelectorAll('#sim-buffs .buff-card')].map(e=>({
+    id: e.querySelector('input[data-f="stacks"]').dataset.b,
+    cap: e.querySelector('.bmax').textContent.trim(),
+  })).find(c => c.id === 'crit_per_hit');
+  sim.level = 300; sim.steel_path = true; sim.duration = 30; sim.runs = 4;
+  markScenarioDirty(); await sleep(600);
+  document.getElementById('run-sim').click();
+  for (let k=0;k<60 && !document.querySelector('.rp-row'); k++) await sleep(1000);
+  const hsRows = [...document.querySelectorAll('.rp-row[data-buff]')].map(e=>({
+    name: e.querySelector('.rp-name').textContent.trim(),
+    stat: e.querySelector('.rp-stat').textContent.split(/\\s+/).join(' ').trim(),
+    now: e.querySelector('.rp-now').textContent.trim(),
+  }));
   return { cards, rows, atZero, un, tend, tendRows, lang: LANG,
-           combo, hipCombo, comboRows, dpsCold, dpsHeld };
+           combo, hipCombo, comboRows, dpsCold, dpsHeld, hsCard, hsRows };
 })()`);
 
 console.log("lang:", r.lang);
@@ -173,8 +199,12 @@ check("the coverage rows are Chinese too", r.rows.every(x => /[\u4e00-\u9fff]/.t
 // reached its cap says so in words, and demanding a time off it was demanding
 // the row lie. The Ocucor's tendrils against a target that dies slowly is
 // exactly that row, which is the case the card was added for.
+// …AGAINST A CEILING THAT MAY BE AN INFINITY. An uncapped row prints "0.20/∞"
+// and this demanded a digit after the slash, so it had been red since the
+// debuff table started drawing the uncapped DoT families (2026-08-19) — the
+// two-decimal property it exists for was holding the whole time.
 check("every figure carries two decimals",
-  r.rows.every(x => /[\d]+\.\d\d\/\d/.test(x.stat) && /\d+\.\d\d%/.test(x.stat)
+  r.rows.every(x => /[\d]+\.\d\d\/(\d|∞)/.test(x.stat) && /\d+\.\d\d%/.test(x.stat)
     && (/\d+\.\d\ds/.test(x.stat) || /never|未满层/.test(x.stat))),
   r.rows.map(x=>x.stat).join(" | "));
 check("uptime is never a flat 100%", r.rows.every(x => !/(^|[^.\d])100%/.test(x.stat)), r.rows.map(x=>x.stat).join(" | "));
@@ -219,4 +249,27 @@ check("...holding it at 405 multiplies the fight",
 // scoped in" — a hip-fired fight has no counter, so it must offer no card.
 check("a sniper fired from the HIP is offered no counter at all",
   !r.hipCombo, JSON.stringify(r.hipCombo));
+
+// A CEILING THAT IS A NUMBER IS DRAWN AS A NUMBER (owner, 2026-08-22).
+// Hata-Satya publishes "capped at 500% at all mod ranks" and lets the counter
+// run, so a stack count charted against 417 would be a chart of a quantity DE
+// never printed — the row draws the per cent instead, and the ceiling it is
+// drawn against is the card's own.
+console.log("hata-satya:", JSON.stringify(r.hsCard), JSON.stringify(r.hsRows));
+const hs = (r.hsRows || []).find((x) => /%\/500%$/.test(x.now));
+check("the crit-per-hit row is drawn as a PER CENT against the published cap",
+  !!hs, JSON.stringify(r.hsRows));
+check("...and its average is the same quantity, not a stack count",
+  hs && /\d+\.\d%\/500%/.test(hs.stat), hs && hs.stat);
+// THE STEPPER IS STILL IN HITS, and its maximum is the first hit that reaches
+// the ceiling — 417 at max rank, which is the wiki's own column and one more
+// than the "last stack that fits under 500%" this used to compute.
+check("...while the card that seeds it counts HITS, to the 417th",
+  r.hsCard && r.hsCard.cap === "/ 417", JSON.stringify(r.hsCard));
+// THE NEGATIVE CONTROL, in the same run: an ordinary stack-capped buff is
+// still a count out of a count. A page that had simply started formatting
+// every row as a percentage would pass everything above and fail here.
+check("...and an ordinary buff beside it still reads a count",
+  (r.hsRows || []).some((x) => /^\d+\/\d+$/.test(x.now)), JSON.stringify(r.hsRows));
+
 await app.finish("the buff cards read right in Chinese");

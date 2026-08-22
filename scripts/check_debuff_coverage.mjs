@@ -69,12 +69,15 @@ const r = await evaluate(`(async () => {
   const ds = rp ? (rp.dstacks || [])[0] || [] : [];
   out.seriesLen = ds.length;
   out.sameFrames = rp ? ds.every((s) => s.length === rp.t.length) : false;
-  // The SHAPE is the buff table's: (id, max) pairs indexed by the series.
+  // The SHAPE is the buff table's: (id, max, value) per entry, indexed by the
+  // series. The value field is null on all but the rows whose ceiling is a
+  // NUMBER rather than a stack count (2026-08-22) — it is a key on BOTH
+  // rosters precisely so this assertion keeps holding.
   out.rosterShape = rp && rp.debuffs[0] ? Object.keys(rp.debuffs[0]).sort().join(",") : "";
   // The buff roster of an unmodded build is EMPTY, so the shape is compared
   // against the literal the two share rather than against a row that may not
   // exist.
-  out.buffShape = rp && rp.buffs[0] ? Object.keys(rp.buffs[0]).sort().join(",") : "id,max";
+  out.buffShape = rp && rp.buffs[0] ? Object.keys(rp.buffs[0]).sort().join(",") : "id,max,value";
 
   // POISON is the one this weapon guarantees, and it must actually move.
   const iPoison = rp ? rp.debuffs.findIndex((d) => d.id === 'poison') : -1;

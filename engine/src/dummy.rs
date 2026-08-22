@@ -1997,11 +1997,12 @@ pub struct DummyParams {
     /// because the panel has no target to ask — see
     /// [`crate::loadout::ModEffect::OnEximusWeakpointDamage`].
     pub base_damage_on_eximus_weakpoint: Option<crate::loadout::TimedBuff>,
-    /// HATA-SATYA: relative crit chance per HIT, and how many stacks fit. The
-    /// pile has no clock — a RELOAD is what takes it — so it is a rate and a
-    /// cap here rather than a `TimedBuff`, the same shape `crit_chance_per_tendril`
-    /// carries one field down.
-    pub crit_chance_per_hit: Option<(f64, u32)>,
+    /// HATA-SATYA: relative crit chance per HIT, and the CEILING ON WHAT THE
+    /// PILE IS WORTH rather than on how deep it gets — see
+    /// [`crate::loadout::CritPerHit`]. The pile has no clock — a RELOAD is what
+    /// takes it — so it is a rate and a cap here rather than a `TimedBuff`, the
+    /// same shape `crit_chance_per_tendril` carries one field down.
+    pub crit_chance_per_hit: Option<crate::loadout::CritPerHit>,
     /// The stacks Hata-Satya's card OPENS with, and whether an event may take
     /// them — the same two knobs the tendrils carry, and for the same reason:
     /// a pile that costs hits is unmeasurable against a target that dies before
@@ -2227,6 +2228,49 @@ pub struct Frame {
     pub debuffs: Vec<Vec<u16>>,
 }
 
+/// HOW A STACK COUNT READS AS THE NUMBER IT BUYS.
+///
+/// Almost every buff in the app is capped by a STACK COUNT, and the count is
+/// what DE publishes for it — "Stacks up to 4x" — so the honest chart is a
+/// chart of stacks. A few are the other way round: the card publishes the
+/// NUMBER the pile stops at and lets the counter run (Hata-Satya's 500%), and
+/// for those a stack count is a chart of the wrong quantity — it climbs past
+/// the ceiling it is drawn against, and the ceiling it is drawn against is one
+/// nobody printed (owner, 2026-08-22).
+///
+/// Declared where the ceiling is a value; absent everywhere else, which is what
+/// keeps the four-stack buffs reading `3/4` exactly as they always have.
+///
+/// The numbers are the ENGINE's (0.012, 5.0) and `unit` is how they are read:
+/// "%" means the reader multiplies by 100, the same convention `pct()` uses one
+/// module over. The engine states the quantity; the page states the
+/// presentation.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct StackValue {
+    pub per_stack: f64,
+    /// Where it stops climbing — the published ceiling, not `per_stack ×
+    /// max_stacks`, which is a hair above it by construction.
+    pub max: f64,
+    pub unit: &'static str,
+}
+
+/// One rostered buff: the id every surface joins on, the stack ceiling (0 =
+/// uncapped), and — where the ceiling is a number rather than a count — how to
+/// read the stacks as that number.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BuffSeries {
+    pub id: String,
+    pub max_stacks: u32,
+    pub value: Option<StackValue>,
+}
+
+impl BuffSeries {
+    /// The ordinary one: a count out of a count.
+    fn stacked(id: String, max_stacks: u32) -> Self {
+        Self { id, max_stacks, value: None }
+    }
+}
+
 /// A replay of one engagement: the buff roster it was fought with, and a frame
 /// every `frame_seconds` seconds.
 ///
@@ -2252,10 +2296,10 @@ pub struct Replay {
     pub(crate) follow: Vec<usize>,
     /// Seconds between frames.
     pub frame_seconds: f64,
-    /// (buff id, max stacks) — ids are the SAME vocabulary as [`BuffConfig`]
-    /// and the web's buff cards, because they come from one place:
-    /// [`DummyParams::buff_roster`].
-    pub buffs: Vec<(String, u32)>,
+    /// The rostered buffs, in the order [`Frame::stacks`] holds them — ids are
+    /// the SAME vocabulary as [`BuffConfig`] and the web's buff cards, because
+    /// they come from one place: [`DummyParams::buff_roster`].
+    pub buffs: Vec<BuffSeries>,
     pub frames: Vec<Frame>,
     /// One worked example per attack part — see [`HitAccount`]. First come,
     /// first recorded: the first direct hit of the engagement and the first
@@ -2459,34 +2503,43 @@ impl DummyParams {
         self.locked_stats.contains(&stat)
     }
 
-    /// EVERY configurable buff this build carries, as `(id, max_stacks)`.
+    /// EVERY configurable buff this build carries, as a [`BuffSeries`].
     ///
     /// Deliberately adjacent to [`Self::apply_buff_config`] and written in the
     /// same order off the same fields: the ids are one vocabulary shared by
     /// the config, the web's cards and the replay, and the way to keep three
     /// readers in step is to give them one writer. A buff that gains a config
     /// knob and not a roster entry would be configurable and invisible.
-    pub fn buff_roster(&self) -> Vec<(String, u32)> {
-        let mut out: Vec<(String, u32)> = Vec::new();
+    pub fn buff_roster(&self) -> Vec<BuffSeries> {
+        let mut out: Vec<BuffSeries> = Vec::new();
+        // Every entry but one is a count out of a count; the exception says so
+        // where it is pushed, beside the field it reads. A macro rather than a
+        // closure so the one arm that pushes a whole `BuffSeries` can still
+        // reach `out`.
+        macro_rules! push {
+            ($id:expr, $max:expr) => {
+                out.push(BuffSeries::stacked($id.into(), $max))
+            };
+        }
         if self.frenzy {
-            out.push(("frenzy".into(), 1));
+            push!("frenzy", 1);
         }
         if let Some(multishot) = self.evo_multishot {
-            out.push(("evo_multishot".into(), multishot.max_stacks));
+            push!("evo_multishot", multishot.max_stacks);
         }
         // UNCAPPED — 0 means "no ceiling", which the api and the UI both read
         // as such rather than as a maximum of zero.
         if self.arcane.enervate_rank.is_some() {
-            out.push(("arcane:secondary_enervate".into(), 0));
+            push!("arcane:secondary_enervate", 0);
         }
         if let Some(s) = &self.co_stack {
-            out.push(("condition_overload".into(), s.max_stacks));
+            push!("condition_overload", s.max_stacks);
         }
         if let Some(s) = &self.multishot_stack {
-            out.push(("on_kill_multishot".into(), s.max_stacks));
+            push!("on_kill_multishot", s.max_stacks);
         }
         if self.evo_base_damage.is_some() {
-            out.push(("evo_reload_damage".into(), 1));
+            push!("evo_reload_damage", 1);
         }
         // READY RETALIATION HAS NO CARD any more. It was one while it was a
         // 6 s window that could be up or down; now it lasts exactly as long as
@@ -2495,10 +2548,10 @@ impl DummyParams {
         // reading 0/1 for a perk that works every time would be a lie.
         // LINGERING JUDGEMENT, the same shape: a window that is open or not.
         if self.headshot_streak.is_some() {
-            out.push(("evo_headshot_streak".into(), 1));
+            push!("evo_headshot_streak", 1);
         }
         if let Some(s) = &self.crit_chance_stack {
-            out.push(("on_headshot_kill_cc".into(), s.max_stacks));
+            push!("on_headshot_kill_cc", s.max_stacks);
         }
         // THE SHOT COMBO COUNTER — a buff by the same three tests: it is
         // gained on a trigger (a landing hit), it is lost on one (two seconds
@@ -2518,7 +2571,7 @@ impl DummyParams {
         if self.sniper_combo.is_some()
             || self.cycle.as_ref().is_some_and(|c| c.base_form.sniper_combo.is_some())
         {
-            out.push(("sniper_combo".into(), 0));
+            push!("sniper_combo", 0);
         }
         // TENDRILS — the Ocucor's passive, and a buff by every test that
         // matters: it is gained on a trigger (a kill), it is lost on one (a
@@ -2527,34 +2580,43 @@ impl DummyParams {
         // own damage is cosmetic on the beam's target) — a card for it with
         // no Sentient Surge equipped would move no number.
         if self.tendril_max > 0 && (self.crit_chance_per_tendril > 0.0 || self.sc_per_tendril > 0.0) {
-            out.push(("tendrils".into(), self.tendril_max));
+            push!("tendrils", self.tendril_max);
         }
         // EVERY stacking buff, by construction. A new one appears on the
         // replay the moment the data declares it — there is no arm to add.
         for b in &self.stacking_buffs {
-            out.push((b.id.into(), b.max_stacks));
+            push!(b.id, b.max_stacks);
         }
         if self.crit_chance_on_headshot.is_some() {
-            out.push(("on_headshot_cc".into(), 1));
+            push!("on_headshot_cc", 1);
         }
         if self.crit_damage_on_kill.is_some() {
-            out.push(("on_kill_cd".into(), 1));
+            push!("on_kill_cd", 1);
         }
         if self.base_damage_on_reload.is_some() {
-            out.push(("on_reload_bd".into(), 1));
+            push!("on_reload_bd", 1);
         }
         if self.base_damage_on_eximus_weakpoint.is_some() {
-            out.push(("on_eximus_weakpoint_bd".into(), 1));
+            push!("on_eximus_weakpoint_bd", 1);
         }
         // HATA-SATYA's pile — a buff by the same three tests the tendrils pass
         // (gained on a trigger, lost on one, capped), with the trigger being a
         // hit rather than a kill. Its cap is the MOD's, not the weapon's, which
         // is why it rides the rate rather than being looked up.
-        if let Some((_, cap)) = self.crit_chance_per_hit {
-            out.push(("crit_per_hit".into(), cap));
+        // …AND THE ONE ROW THAT IS DRAWN AS A NUMBER. Its ceiling is a value
+        // DE published (500%) rather than a stack count, so the chart is of the
+        // value — see [`StackValue`]. The scale is read off the same field the
+        // ceiling came from, which is what stops the two from describing
+        // different mods.
+        if let Some(c) = self.crit_chance_per_hit {
+            out.push(BuffSeries {
+                id: "crit_per_hit".into(),
+                max_stacks: c.max_stacks(),
+                value: Some(StackValue { per_stack: c.per_stack, max: c.max_bonus, unit: "%" }),
+            });
         }
         if self.fire_rate_on_reload.is_some() {
-            out.push(("on_reload_fr".into(), 1));
+            push!("on_reload_fr", 1);
         }
         // One entry per ARCANE, not per grant — the same rule the cards
         // follow, and for the same reason: Frostbite's crit damage and
@@ -2563,8 +2625,8 @@ impl DummyParams {
         for spec in self.arcane.buffs.iter() {
             let owner = if spec.owner.is_empty() { &arcane_id } else { &spec.owner };
             let id = format!("arcane:{owner}");
-            if !out.iter().any(|(x, _)| *x == id) {
-                out.push((id, spec.max_stacks));
+            if !out.iter().any(|x| x.id == id) {
+                push!(id, spec.max_stacks);
             }
         }
         out
@@ -2700,9 +2762,9 @@ impl DummyParams {
         // The pile's opening count, seeded like the tendrils' — `locked` cannot
         // be a duration here either, because this buff has no clock: what ends
         // it is the reload.
-        if let Some((_, cap)) = self.crit_chance_per_hit {
+        if let Some(c) = self.crit_chance_per_hit {
             if let Some(&(stacks, locked)) = cfg.get("crit_per_hit") {
-                self.crit_chance_per_hit_initial_stacks = stacks.min(cap);
+                self.crit_chance_per_hit_initial_stacks = stacks.min(c.max_stacks());
                 self.crit_chance_per_hit_held = locked;
             }
         }
@@ -7011,7 +7073,7 @@ fn sample_stacks(
     let live = |on: bool| u16::from(on);
     rep.buffs
         .iter()
-        .map(|(id, _max)| match id.as_str() {
+        .map(|b| match b.id.as_str() {
             // A weapon passive, not a stack: it is up or it is not.
             "frenzy" => live(bar.get(crate::perks::frenzy::BUFF_ID).is_some()),
             // PERMANENT (no trigger, no decay): whatever it was configured to,
@@ -7635,7 +7697,7 @@ mod sniper_combo_fight {
         // The card exists on a cycle at all — this is the assertion that was
         // false, and `replay.buffs` came back empty because of it.
         assert!(
-            cycle(0, false).buff_roster().iter().any(|(id, _)| id == "sniper_combo"),
+            cycle(0, false).buff_roster().iter().any(|b| b.id == "sniper_combo"),
             "the cycle offers the counter its base form has"
         );
         let cold = monte_carlo(&cycle(0, false), 40, 3);
@@ -7675,9 +7737,9 @@ mod sniper_combo_fight {
         let roster = p.buff_roster();
         let at = roster
             .iter()
-            .position(|(id, _)| id == "sniper_combo")
+            .position(|x| x.id == "sniper_combo")
             .expect("the combo is a rostered buff");
-        assert_eq!(roster[at].1, 0, "uncapped: the tiers do not stop");
+        assert_eq!(roster[at].max_stacks, 0, "uncapped: the tiers do not stop");
 
         let rep = replay(&p, 12345, 60);
         let peak = rep.frames.iter().map(|f| f.stacks[at]).max().unwrap_or(0);
@@ -8302,7 +8364,9 @@ pub fn run_once_traced(
     let mut cc_hit_mark = 0u32;
     let mut cc_hit_reload_mark = 0u32;
     let mut cc_hit_transform_mark = 0u32;
-    let mut cc_hit_seed = params.crit_chance_per_hit.map_or(0, |(_, cap)| params.crit_chance_per_hit_initial_stacks.min(cap));
+    let mut cc_hit_seed = params
+        .crit_chance_per_hit
+        .map_or(0, |c| params.crit_chance_per_hit_initial_stacks.min(c.max_stacks()));
     let mut crit_chance_hit_stacks = cc_hit_seed;
     // THE SHOT COMBO COUNTER: the count as of the last landing hit, and when
     // that was. `combo_at` turns the pair into the count at any later moment.
@@ -8555,7 +8619,7 @@ pub fn run_once_traced(
         //
         // Read at the START of the shot, so the hit that earns a stack does not
         // carry it. That is the rule every other trigger in this loop follows.
-        if let Some((_, cap)) = params.crit_chance_per_hit {
+        if params.crit_chance_per_hit.is_some() {
             // WHAT TAKES THE PILE: "Resets upon reloading or holstering", and
             // "Swapping to Incarnon Form counts as reloading the Soma Prime and
             // will therefore end the bonus" — so the transform is the second
@@ -8571,7 +8635,14 @@ pub fn run_once_traced(
                 cc_hit_mark = r.pellets;
                 cc_hit_seed = 0;
             }
-            crit_chance_hit_stacks = (cc_hit_seed + (r.pellets - cc_hit_mark)).min(cap);
+            // THE COUNTER IS NOT CAPPED — the BONUS is (owner, 2026-08-22).
+            // The pile takes every hit that lands, and 500% is what it is worth
+            // once it passes the ceiling: a card of this class publishes a
+            // NUMBER and lets the count run, so 417 stacks and 4,000 stacks are
+            // both ordinary states of the same fight. Clamping the count would
+            // be modelling a mechanic DE did not write, and the row is drawn as
+            // the value anyway, so its ceiling is never on screen.
+            crit_chance_hit_stacks = cc_hit_seed + (r.pellets - cc_hit_mark);
         }
 
         // THE SYNDICATE GAUGE. Affinity the WEAPON earned, which is half of
@@ -8927,7 +8998,9 @@ pub fn run_once_traced(
             // max bonus Hata-Satya and Point Strike will have a 30% × (1 + 500%
             // + 150%) critical chance" — the wiki does the bracket for us, and
             // it is the same one Point Strike is in.
-            + params.crit_chance_per_hit.map_or(0.0, |(per, _)| per * f64::from(crit_chance_hit_stacks));
+            + params
+                .crit_chance_per_hit
+                .map_or(0.0, |c| c.bonus(crit_chance_hit_stacks));
         // VICIOUS PROMISE, both halves of it. VERBATIM (wiki, Paris Incarnon
         // Genesis): "Enemies are undamaged as long as their health and shield
         // have not been damaged. Damaging Overguard is not taken into account."
@@ -13587,7 +13660,7 @@ mod tests {
         // It is ANNOUNCED, or no card is drawn for it.
         let params = DummyParams::from_panel(&panel, &crate::arena::Arena::training(10.0), &ArcaneFx::none());
         assert!(
-            params.buff_roster().iter().any(|(id, max)| id == "evo_reload_damage" && *max == 1),
+            params.buff_roster().iter().any(|b| b.id == "evo_reload_damage" && b.max_stacks == 1),
             "the buff bar never hears about it: {:?}",
             params.buff_roster()
         );
@@ -14175,7 +14248,7 @@ mod tests {
         let i = trace
             .buffs
             .iter()
-            .position(|(id, _)| id == "full_burst_damage")
+            .position(|x| x.id == "full_burst_damage")
             .expect("the buff is on the roster");
         let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
         assert!(series.contains(&5), "it reaches the cap: {series:?}");
@@ -14270,7 +14343,7 @@ mod tests {
             ..no_status()
         };
         let trace = replay(&p, Rng::new(7).state(), 600);
-        let i = trace.buffs.iter().position(|(id, _)| id == "on_empty_reload_damage")
+        let i = trace.buffs.iter().position(|x| x.id == "on_empty_reload_damage")
             .expect("on the roster");
         let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
         assert_eq!(series[0], 0, "it opens empty — the fight earns it");
@@ -14363,7 +14436,7 @@ mod tests {
         };
         let trace = replay(&p, Rng::new(9).state(), 900);
         let peak = |id: &str| {
-            let i = trace.buffs.iter().position(|(b, _)| b == id).expect(id);
+            let i = trace.buffs.iter().position(|x| x.id == id).expect(id);
             trace.frames.iter().map(|f| f.stacks[i]).max().unwrap_or(0)
         };
         let (from_empty, on_reload) = (peak("on_empty_reload_damage"), peak("on_reload_damage"));
@@ -14564,7 +14637,7 @@ mod tests {
             ..flat_base()
         };
         let trace = replay(&p, Rng::new(4).state(), 600);
-        let i = trace.buffs.iter().position(|(id, _)| id == "on_kill_damage")
+        let i = trace.buffs.iter().position(|x| x.id == "on_kill_damage")
             .expect("on the roster");
         let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
         assert_eq!(series[0], 0, "it opens empty — the fight earns it");
@@ -14596,7 +14669,7 @@ mod tests {
         let s = monte_carlo(&dot, 4, 11);
         assert!(s.mean_kills > 0.0, "the fixture has to kill something: {}", s.mean_kills);
         let trace = replay(&dot, Rng::new(11).state(), 1200);
-        let i = trace.buffs.iter().position(|(id, _)| id == "on_kill_damage").expect("roster");
+        let i = trace.buffs.iter().position(|x| x.id == "on_kill_damage").expect("roster");
         let peak = trace.frames.iter().map(|f| f.stacks[i]).max().unwrap_or(0);
         assert!(peak > 0,
             "a kill counts wherever it came from — {} kills and the pile never moved",
@@ -14769,7 +14842,7 @@ mod tests {
         };
         let trace = replay(&all_head, Rng::new(5).state(), 300);
         let i = trace.buffs.iter()
-            .position(|(id, _)| id == "on_weakpoint_streak_headshot_damage")
+            .position(|x| x.id == "on_weakpoint_streak_headshot_damage")
             .expect("on the roster");
         let series: Vec<u16> = trace.frames.iter().map(|f| f.stacks[i]).collect();
         assert_eq!(series[0], 0, "it opens empty");
@@ -14790,7 +14863,7 @@ mod tests {
         };
         let mtrace = replay(&mixed, Rng::new(5).state(), 300);
         let j = mtrace.buffs.iter()
-            .position(|(id, _)| id == "on_weakpoint_streak_headshot_damage").expect("roster");
+            .position(|x| x.id == "on_weakpoint_streak_headshot_damage").expect("roster");
         let mseries: Vec<u16> = mtrace.frames.iter().map(|f| f.stacks[j]).collect();
         assert!(mseries.iter().any(|&v| v > 0), "it still climbs sometimes: {mseries:?}");
         assert!(mseries.windows(2).any(|w| w[0] > 1 && w[1] == 0),
@@ -16972,7 +17045,7 @@ mod tests {
             // 20 frames over 10 s, so the LAST frame sits at t = 9.5 — after
             // the t = 9 pull rather than on top of it.
             let rep = replay(&params, s.median_run.rng_state, 20);
-            let i = rep.buffs.iter().position(|(id, _)| id == "arcane:test").expect("buff in roster");
+            let i = rep.buffs.iter().position(|x| x.id == "arcane:test").expect("buff in roster");
             *rep.frames.last().expect("frames").stacks.get(i).expect("stack series")
         };
         // 10 pulls, 5 pellets each. Capped: one a pull -> 10. Uncapped: one a
@@ -18367,7 +18440,10 @@ mod tests {
             base_crit_chance: 0.0,
             unmodded_crit_chance: 1.0, // the base a relative bonus multiplies
             crit_multiplier: 2.0,
-            crit_chance_per_hit: Some((per_hit, 416)),
+            crit_chance_per_hit: Some(crate::loadout::CritPerHit {
+                per_stack: per_hit,
+                max_bonus: 5.0,
+            }),
             magazine_size: mag,
             reload_seconds: 0.5,
             fire_rate: 10.0,
@@ -18399,21 +18475,40 @@ mod tests {
         );
     }
 
-    /// …AND THE CAP IS THE CARD'S, not the fight's.
+    /// …AND THE CAP IS ON THE BONUS, not on the stack count.
     ///
-    /// 500% is published flat at every rank, so a pile deep enough to reach it
-    /// stops there — which is the difference between this and an uncapped
-    /// counter, and the reason the yaml carries 416 rather than a rate alone.
+    /// 500% is published flat at every rank, and DE does not stop counting hits
+    /// to protect it: the pile keeps taking hits and what it is WORTH stops at
+    /// the ceiling (owner, 2026-08-22). The two readings are told apart by the
+    /// LAST STACK — 416 x 1.2% is 499.2%, and the 417th hit is the one that
+    /// makes it 500% rather than the one that overshoots and is refused.
     #[test]
     fn hata_satyas_pile_stops_at_its_published_ceiling() {
-        let build = |cap: u32| DummyParams {
+        // THE CARD'S OWN NUMBERS, because this is arithmetic about them: 1.2%
+        // a hit under a 500% ceiling.
+        let card = crate::loadout::CritPerHit { per_stack: 0.012, max_bonus: 5.0 };
+        assert_eq!(card.max_stacks(), 417, "the ceiling is reached, not fitted under");
+        assert!((card.bonus(416) - 4.992).abs() < 1e-12, "the 416th is still under it");
+        assert!((card.bonus(417) - 5.0).abs() < 1e-12, "and the 417th reads the ceiling");
+        // Nothing past it moves a number, which is why the counter may stop.
+        assert!((card.bonus(10_000) - 5.0).abs() < 1e-12);
+        // AT RANK 0 THE SAME CEILING IS 2,500 HITS AWAY, which is the half a
+        // stack count written into the yaml could never have expressed.
+        let rank0 = crate::loadout::CritPerHit { per_stack: 0.002, max_bonus: 5.0 };
+        assert_eq!(rank0.max_stacks(), 2_500);
+
+        // …and it BINDS in a fight. Same fixture, two ceilings.
+        let build = |max_bonus: f64| DummyParams {
             base_crit_chance: 0.0,
             unmodded_crit_chance: 1.0,
             crit_multiplier: 2.0,
-            // 1% a stack, so `cap` stacks is exactly `cap`% — and a crit rate
-            // is clamped at 1.0, so the cap has to bite BELOW that to be
-            // visible at all.
-            crit_chance_per_hit: Some((0.01, cap)),
+            // 1% a hit, so the ceiling is reached in `max_bonus x 100` hits —
+            // and a crit rate is clamped at 1.0, so a ceiling has to bite BELOW
+            // that to be visible at all.
+            crit_chance_per_hit: Some(crate::loadout::CritPerHit {
+                per_stack: 0.01,
+                max_bonus,
+            }),
             magazine_size: 100_000.0,
             fire_rate: 10.0,
             duration_seconds: 60.0,
@@ -18421,17 +18516,17 @@ mod tests {
             target: frail_target(TargetMode::InstantRespawn, 0.0, 0.0),
             ..flat_base()
         };
-        let rate = |cap: u32| {
-            let r = run_once(&build(cap), &mut Rng::new(9));
+        let rate = |max_bonus: f64| {
+            let r = run_once(&build(max_bonus), &mut Rng::new(9));
             r.crits as f64 / r.pellets.max(1) as f64
         };
         // 600 shots at 10/s over 60 s, so both piles fill; only the ceiling
         // separates them.
-        let low = rate(20);
-        let high = rate(80);
+        let low = rate(0.20);
+        let high = rate(0.80);
         assert!(
             low < 0.35 && high > 0.6,
-            "the cap must bind: 20 stacks gave {low}, 80 gave {high}"
+            "the ceiling must bind: +20% gave {low}, +80% gave {high}"
         );
     }
 
@@ -19060,7 +19155,8 @@ mod tests {
         // being read.
         const ELSEWHERE: [&str; 1] = ["frenzy"];
 
-        for (id, _max) in params.buff_roster() {
+        for b in params.buff_roster() {
+            let id = b.id;
             if ELSEWHERE.contains(&id.as_str()) {
                 continue;
             }
@@ -21647,8 +21743,8 @@ mod tests {
         }
         // Merciless was seeded full, so its series starts at its cap rather
         // than at the zero an unknown id would produce.
-        let at = roster.iter().position(|(id, _)| id.starts_with("arcane:")).expect("an arcane");
-        assert_eq!(u32::from(rep.frames[0].stacks[at]), roster[at].1);
+        let at = roster.iter().position(|b| b.id.starts_with("arcane:")).expect("an arcane");
+        assert_eq!(u32::from(rep.frames[0].stacks[at]), roster[at].max_stacks);
     }
 
     /// THE FACTION LADDER, which is the whole reason Primary Debilitate is
@@ -22152,7 +22248,7 @@ mod headshot_buff_wiring_tests {
         );
         let p = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
         let params = DummyParams::from_panel(&p, &crate::arena::Arena::training(30.0), &ArcaneFx::none());
-        params.buff_roster().into_iter().map(|(id, _)| id).collect()
+        params.buff_roster().into_iter().map(|b| b.id).collect()
     }
 
     #[test]
@@ -22187,7 +22283,7 @@ mod headshot_buff_wiring_tests {
                 );
                 let p = crate::loadout::resolve(&base, &[], crate::loadout::StackPolicy::Emergent);
                 let params = DummyParams::from_panel(&p, &crate::arena::Arena::training(30.0), &ArcaneFx::none());
-                let listed = params.buff_roster().into_iter().any(|(id, _)| id == card.id);
+                let listed = params.buff_roster().into_iter().any(|b| b.id == card.id);
                 assert!(
                     listed,
                     "{} offers a buff card `{}` the sim never rosters — the panel would \
@@ -22507,8 +22603,8 @@ mod replay_reads_every_buff_tests {
         let roster = params.buff_roster();
         assert!(roster.len() >= 9, "the fixture stopped covering the roster: {roster:?}");
         let mut cfg = BuffConfig::new();
-        for (id, max) in &roster {
-            cfg.insert(id.clone(), (if *max == 0 { 1 } else { *max }, true));
+        for b in &roster {
+            cfg.insert(b.id.clone(), (if b.max_stacks == 0 { 1 } else { b.max_stacks }, true));
         }
         params.apply_buff_config(&cfg);
 
@@ -22516,7 +22612,8 @@ mod replay_reads_every_buff_tests {
         let first = &rep.frames[0];
         // The weapon passive is applied by the api, not by these params — the
         // same exemption `every_buff_the_roster_offers_is_actually_read` makes.
-        for (i, (id, _)) in rep.buffs.iter().enumerate() {
+        for (i, b) in rep.buffs.iter().enumerate() {
+            let id = &b.id;
             if id == "frenzy" {
                 continue;
             }

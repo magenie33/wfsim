@@ -426,6 +426,17 @@ fn r3(v: f64) -> f64 {
     (v * 1000.0).round() / 1000.0
 }
 
+/// A rostered buff whose ceiling is a NUMBER, as the chart reads it: what one
+/// stack is worth, where it stops, and the unit both are in. `null` for the
+/// ordinary kind, where the stack count is the published fact and the chart is
+/// a chart of stacks — see [`wfsim_engine::dummy::StackValue`].
+fn value_json(v: Option<wfsim_engine::dummy::StackValue>) -> Value {
+    match v {
+        Some(v) => json!({ "per": v.per_stack, "max": v.max, "unit": v.unit }),
+        None => Value::Null,
+    }
+}
+
 fn default_headshot_pct(info: &WeaponInfo) -> f64 {
     if info.sentinel {
         0.0
@@ -2096,11 +2107,15 @@ fn enumerate_buffs(
                 // and the card is the whole measurement for the same reason the
                 // tendril card is: a stack costs a hit, so how deep the pile
                 // was when the fight started is a thing only the player knows.
-                CritChancePerHit { max_stacks, .. } if !locked("crit_chance") => push(BuffMeta {
+                CritChancePerHit(c) if !locked("crit_chance") => push(BuffMeta {
                     id: "crit_per_hit".into(),
                     name: nm.clone(),
                     grants: "Critical Chance".into(),
-                    max_stacks,
+                    // THE STEPPER IS IN HITS and the ceiling is in per cent, so
+                    // the maximum it offers is the first hit that reaches the
+                    // ceiling — 417 at max rank. Nothing above it moves a
+                    // number, and the replay draws the per cent.
+                    max_stacks: c.max_stacks(),
                     kind: "stacking",
                     default_stacks: 0,
                     default_locked: false,
@@ -2796,14 +2811,17 @@ pub fn panel_json(v: &Value) -> Value {
                 // tendrils, whose cap comes from the weapon. What the panel
                 // cannot say is how long it takes to get there: 416 hits at max
                 // rank, and a reload puts it back to zero.
-                CritChancePerHit { per_stack, max_stacks } => match policy {
+                CritChancePerHit(c) => match policy {
                     StackPolicy::BaseOnly => conditionals.push(json!({
                         "mod": name, "desc": e.describe(), "active": false,
                         "why": "the pile is built by this weapon's own hits and cleared by its reload, and a companion weapon's hits are not the Tenno's"})),
+                    // THE CEILING ITSELF, not a stack count times a rate: what
+                    // DE publishes is the number, and the hit count under it is
+                    // ours to derive.
                     _ => push(
                         "crit_chance",
-                        per_stack * f64::from(max_stacks),
-                        Some(format!("{max_stacks} hits assumed (the 500% cap)")),
+                        c.max_bonus,
+                        Some(format!("{} hits assumed (the {} cap)", c.max_stacks(), wfsim_engine::loadout::pct(c.max_bonus))),
                     ),
                 },
                 OnReloadFireRate { bonus, .. } => match policy {
@@ -5082,7 +5100,14 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         json!({
             "frame_seconds": rep.frame_seconds,
             // Ids are the buff cards' own — the client joins on them for names.
-            "buffs": rep.buffs.iter().map(|(id, max)| json!({ "id": id, "max": max }))
+            // (id, stack ceiling, how the stacks read as a NUMBER where the
+            // ceiling is one). `value` is null on every ordinary buff, which is
+            // most of them — see `dummy::StackValue`. It is a key on BOTH
+            // rosters rather than on this one, because the debuff table is
+            // drawn by the same component and `check_debuff_coverage` asserts
+            // the two shapes match.
+            "buffs": rep.buffs.iter()
+                .map(|b| json!({ "id": b.id, "max": b.max_stacks, "value": value_json(b.value) }))
                 .collect::<Vec<_>>(),
             "t": rep.frames.iter().map(|f| (f.t * 100.0).round() / 100.0).collect::<Vec<_>>(),
             "og": series(|f| f.overguard),
@@ -5141,7 +5166,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
                 // asserts and the whole reason one component draws both.
                 // Adding an `uncapped` field here instead broke that symmetry
                 // on the first run (2026-08-21).
-                .map(|(id, cap)| json!({ "id": id, "max": cap.unwrap_or(0) }))
+                .map(|(id, cap)| json!({ "id": id, "max": cap.unwrap_or(0), "value": Value::Null }))
                 .collect::<Vec<_>>(),
             // ONE TABLE PER BODY THE REPLAY FOLLOWED, and the first is the
             // aimed one. `dstacks` was a single body's until 2026-08-17, which
@@ -8344,7 +8369,7 @@ mod card_and_sim_agree {
             &wfsim_engine::arena::Arena::training(30.0),
             &wfsim_engine::arcanes_data::ArcaneFx::none(),
         );
-        params.buff_roster().into_iter().map(|(i, _)| i).collect()
+        params.buff_roster().into_iter().map(|b| b.id).collect()
     }
 
     #[test]
@@ -8439,7 +8464,7 @@ mod card_and_sim_agree {
                 let roster: Vec<String> = params
                     .buff_roster()
                     .into_iter()
-                    .map(|(i, _)| i)
+                    .map(|b| b.id)
                     .filter(|id| id.starts_with("arcane:"))
                     .filter(|id| !passive.contains(id))
                     .collect();

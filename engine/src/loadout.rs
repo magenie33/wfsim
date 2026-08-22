@@ -369,11 +369,12 @@ pub enum ModEffect {
     /// cleared by a magazine event, capped) with the event swapped: a hit
     /// instead of a kill.
     ///
-    /// `max_stacks` is the CEILING divided by the per-stack value, floored:
-    /// the wiki caps the bonus at "500% at all mod ranks" and ranks only the
-    /// rate, so at max rank 1.2% a stack the last stack that fits is the 416th
-    /// (499.2%) and a 417th would overshoot the published ceiling.
-    CritChancePerHit { per_stack: f64, max_stacks: u32 },
+    /// THE CAP IS ON THE BONUS, NOT ON THE STACK COUNT (owner, 2026-08-22).
+    /// "The critical chance bonus is capped at 500% at all mod ranks" is a
+    /// ceiling on a NUMBER, so the 417th hit at max rank happens like any
+    /// other and the bonus it would carry to 500.4% simply reads 500% —
+    /// see [`CritPerHit`].
+    CritChancePerHit(CritPerHit),
     /// ...and that refill: a fraction of the magazine back on every kill,
     /// drawn from the reserve ("This mod does not generate ammo").
     MagazineRefillOnKill(f64),
@@ -715,10 +716,14 @@ impl ModEffect {
             PerTendril { crit_chance, .. } => {
                 format!("{} Crit Chance and Status Chance per active tendril", pct(crit_chance))
             }
-            CritChancePerHit { per_stack, max_stacks } => format!(
-                "On Hit: {} Crit Chance per stack ×{max_stacks} ({}), cleared by a reload",
-                pct(per_stack),
-                pct(per_stack * f64::from(max_stacks))
+            // THE CEILING IS THE CARD'S OWN NUMBER, and the hit count under it
+            // is the thing the card never states — so both are said, in that
+            // order.
+            CritChancePerHit(c) => format!(
+                "On Hit: {} Crit Chance per stack, capped at {} ({} hits), cleared by a reload",
+                pct(c.per_stack),
+                pct(c.max_bonus),
+                c.max_stacks()
             ),
             MagazineRefillOnKill(v) => format!("on kill, {} of the magazine back", pct(v)),
             SyndicateRadial { syndicate, amount } => {
@@ -938,6 +943,62 @@ pub struct StackSpec {
     /// Stacks at t = 0 (user setting: full by default, 0 for a cold
     /// start; afterwards mechanics rule either way).
     pub initial_stacks: u32,
+}
+
+/// HATA-SATYA's pile: a rate per hit and the CEILING ON WHAT IT IS WORTH.
+///
+/// The distinction is the whole of this type. Every other stacking buff in the
+/// app is capped by a STACK COUNT, which is what DE publishes for it; this card
+/// publishes a number instead — "The critical chance bonus is capped at 500% at
+/// all mod ranks" — and ranks only the rate under it. So the pile is not 416
+/// stacks of 1.2%: it is however many hits have landed, worth 500% once they
+/// pass the ceiling (owner, 2026-08-22). The two readings differ by 0.8
+/// percentage points at max rank and by a factor of six at rank 0, where 500%
+/// is 2,500 hits away rather than 417.
+///
+/// It is also why the replay draws this row as a VALUE rather than as a count:
+/// the number that stops climbing is the one DE published, and a stack count
+/// beside a ceiling it can never state is a chart about the wrong quantity.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CritPerHit {
+    /// Relative crit chance per landed hit — the same bucket Point Strike is
+    /// in, so it multiplies the UNMODDED base.
+    pub per_stack: f64,
+    /// The published ceiling on the bonus (5.0 = 500%), at the rank this build
+    /// equips — which is max rank, the only one the sim runs.
+    ///
+    /// FLAT ACROSS RANKS ON THIS CARD, and that is a fact about the card rather
+    /// than about the class: the same shape exists ranked the other way round,
+    /// where the rate is fixed and the CEILING is what a rank buys (Primary
+    /// Bulwark's +250% -> +500%, Primary Overcharge, Secondary Surge). Those
+    /// three ladder it through the arcane loader's own `rank0`/`rankMax`, so
+    /// nothing here has to; a MOD that ladders it would state the second
+    /// endpoint the way `duration_rank0` does.
+    pub max_bonus: f64,
+}
+
+impl CritPerHit {
+    /// What `stacks` hits are worth, which is the rate until the ceiling and
+    /// the ceiling afterwards.
+    pub fn bonus(&self, stacks: u32) -> f64 {
+        (self.per_stack * f64::from(stacks)).min(self.max_bonus)
+    }
+
+    /// The first stack that reaches the ceiling — 417 at max rank, where the
+    /// 416th is worth 499.2% and the 417th is worth 500%.
+    ///
+    /// It is NOT where the fight's counter stops: the pile takes every hit and
+    /// the CEILING is what clamps (owner, 2026-08-22). This is a UI number —
+    /// the maximum the card's "stacks the run starts with" stepper offers,
+    /// since a higher one buys nothing — and the answer to "how long is the
+    /// ramp", which is the fact the card never states and the one that moves
+    /// with rank: 417 hits at max rank, 2,500 at rank 0.
+    pub fn max_stacks(&self) -> u32 {
+        if self.per_stack <= 0.0 {
+            return 0;
+        }
+        (self.max_bonus / self.per_stack).ceil() as u32
+    }
 }
 
 /// A non-stacking timed buff (a single refreshable window) handed to the sim:
@@ -2533,11 +2594,11 @@ pub struct ResolvedPanel {
     pub crit_chance_per_tendril: f64,
     /// Its status half, same bucket rule.
     pub sc_per_tendril: f64,
-    /// HATA-SATYA under Emergent: relative crit chance per hit and the cap,
-    /// spent in the sim because the pile's size is a fact about the fight.
-    /// `None` under the other policies — AssumedMax has already folded it into
-    /// `crit_chance`, and BaseOnly refuses conditionals.
-    pub crit_chance_per_hit: Option<(f64, u32)>,
+    /// HATA-SATYA under Emergent: the rate per hit and the ceiling on what it
+    /// is worth, spent in the sim because the pile's size is a fact about the
+    /// fight. `None` under the other policies — AssumedMax has already folded
+    /// it into `crit_chance`, and BaseOnly refuses conditionals.
+    pub crit_chance_per_hit: Option<CritPerHit>,
     /// Fraction of the magazine returned on each kill, from the reserve.
     pub magazine_refill_on_kill: f64,
     /// The syndicate radial this build's augment grants, if any.
@@ -3022,7 +3083,7 @@ pub fn resolve_for(
     let mut fire_rate_on_reload: Option<TimedBuff> = None;
     let mut base_damage_on_reload: Option<TimedBuff> = None;
     let mut base_damage_on_eximus_weakpoint: Option<TimedBuff> = None;
-    let mut crit_chance_per_hit: Option<(f64, u32)> = None;
+    let mut crit_chance_per_hit: Option<CritPerHit> = None;
     // READY RETALIATION arrives on the BASE (an evolution wrote it there),
     // unlike the two above which arrive from mods — so the policy split is
     // here rather than in the mod loop.
@@ -3130,10 +3191,13 @@ pub fn resolve_for(
                 // HATA-SATYA. Same split as the tendrils above and for the
                 // same reason — how many hits are in the pile is a fact about
                 // the fight — except that the panel HAS an honest maximum to
-                // show, because the card publishes one (500%).
-                ModEffect::CritChancePerHit { per_stack, max_stacks } => match policy {
-                    StackPolicy::AssumedMax => cc += per_stack * f64::from(max_stacks),
-                    StackPolicy::Emergent => crit_chance_per_hit = Some((per_stack, max_stacks)),
+                // show, because the card publishes one (500%). Assumed-max is
+                // that number itself rather than a stack count times a rate:
+                // the ceiling is what DE published and the arithmetic under it
+                // is ours.
+                ModEffect::CritChancePerHit(c) => match policy {
+                    StackPolicy::AssumedMax => cc += c.max_bonus,
+                    StackPolicy::Emergent => crit_chance_per_hit = Some(c),
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
                 },
                 ModEffect::MagazineRefillOnKill(v) => mag_refill += v,

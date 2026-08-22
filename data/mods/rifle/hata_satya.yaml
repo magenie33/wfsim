@@ -22,6 +22,10 @@ exclusive_to: [soma_prime]
 #     3  |      0.8%       |         625        |  5
 #     4  |      1%         |         500        |  6
 #     5  |      1.2%       |         417        |  7
+#
+# The wiki's own third column is that ceiling divided by the rate and ROUNDED
+# UP — 417 at max rank, not 416 — which is the same reading the engine takes:
+# the 417th hit lands like any other and what it is worth is 500%.
 family: hata_satya
 
 effects:
@@ -51,15 +55,23 @@ effects:
   # form BUILD the pile: "Soma Prime's Incarnon Form fire now triggers the
   # 'Hata-Satya' Augment Mod's Critical Chance buff."
   #
-  # 416 STACKS, NOT 417. The card publishes a ceiling (500%) rather than a stack
-  # count, and 416 × 1.2% = 499.2% is the last stack that fits under it — a 417th
-  # would read 500.4% and overshoot a number DE states flatly. The wiki's own
-  # "hits required to reach 500%" column rounds the other way, which is the same
-  # arithmetic asked as a question rather than as a limit.
+  # THE CEILING IS ON THE BONUS, NOT ON THE STACK COUNT (owner, 2026-08-22),
+  # and this card is the first member of a CLASS: one where DE publishes a
+  # NUMBER the effect stops at and lets the rank move what a stack is worth. The
+  # pile keeps taking hits — 417 stacks and 4,000 stacks are both ordinary — and
+  # 500% is what it is worth from the 417th on. So `max_bonus` is the field, the
+  # stack count is DERIVED from it per rank (417 at max, 2,500 at rank 0), and
+  # the replay draws this row as a PER CENT rather than as a count, because a
+  # count here has no ceiling to be drawn against.
+  #
+  # It was `max_stacks: 416` until then, on the reasoning that the last stack
+  # which FITS under the ceiling is the 416th. That is the arithmetic of a
+  # different mechanic — a cap that stops the counter — and it is worth 0.8
+  # percentage points at max rank and a factor of six at rank 0.
   - kind: crit_chance_per_hit
     rank0: 0.002
     rankMax: 0.012
-    max_stacks: 416
+    max_bonus: 5.0            # 500%, at every rank
 
 source:
   url: https://wiki.warframe.com/w/Hata-Satya
