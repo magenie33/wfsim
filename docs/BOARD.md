@@ -296,11 +296,56 @@ The bill still reports what is SPENT, not what earned room: a build with fewer
 mods than mastery has polarizations buys all five, and the last land on empty
 slots.
 
+## Rivens: a SHAPE, not an item (owner, 2026-08-22)
+
+A riven was off the board until now, and the reason still holds: *"they are
+personal random items, so a board that counted them would rank luck"* (user,
+2026-08-04). What is on the board is not the item.
+
+**A ROW HOLDS A SHAPE** — which stats it rolled, and which one is the malus.
+Nothing else. It is a statement anybody can act on ("roll this weapon for these
+stats"), where a roll is one person's luck, and it carries no free-text field a
+player authors.
+
+**AND THE SHAPE IS SCORED AT ITS OWN CEILING.** `rivens_data::perfect` searches
+every corner of the roll band and keeps the best — which is the same rule that
+scores every row at full Forma, every mod at max rank and every valence at the
+roll's maximum: anything a player can eventually reach is not part of what a
+row states. Two players who rolled the same stats submitted the same build.
+
+**WHICH END IS "BEST" IS ASKED OF THE FIGHT, NEVER OF THE CARD.** DE's `+` and
+`-` describe the STAT, not the build. A riven whose malus is critical chance is
+a *bonus* on the three weapons whose Incarnon form pays "+2000% damage on
+non-critical hits" — a Laetum Incarnon crit is worth ×2.2 where a non-crit is
+worth `0.5×21 + 0.5×1 = 11` — and on an ordinary weapon the same malus wants to
+be as shallow as it goes. A per-stat table could state neither case.
+
+**WHERE IT SITS IS PART OF THE BUILD.** An elemental riven pairs with the
+build's other elementals, so the record carries the bare `riven` at the riven's
+own position in `mods`. A riven may bring TWO elements, which makes it an ATOM
+in the pairing — adjacent, in its own order, unsplittable — and
+`builds::canonical_mods_with` searches for a representative rather than
+constructing one when an atom is present.
+
+**THE RANKING IS ONE LIST; THE FLOOR IS NOT.** A riven build does not always
+beat a plain one, so ranking them apart would publish a comparison the fight
+does not make. But the floor's group gains riven-ness beside weapon and mode,
+for the reason it has mode: a shared reference would let whichever is stronger
+on this weapon decide what the other may show, and the rows that would vanish
+are the plain ones — the builds most readers can actually make. The board page
+carries three views for the same reason: **all builds / no riven / riven only**,
+deciding which subset each weapon's shown row is drawn from.
+
+**TAKING A RIVEN ROW GIVES YOU THE RIVEN.** The record names no item, so the
+page creates one, named after the shape so taking the same row twice reuses it.
+
+**WHAT IT COSTS.** Sixteen corners per riven row, probed at 60 runs to choose
+and then measured once at the ruler's own count — about 2.6× a plain row rather
+than 16×. The chosen rolls travel beside the score and reuse on the same
+fingerprint, because they *are* its argmax.
+
 ## What is not on the board
 
-- **Rivens** (user, 2026-08-04). They are personal random items, so a board
-  that counted them would rank luck. It also removes the only free-text field a
-  player authors from anything uploaded.
 - **The exilus slot** (user, 2026-08-04). Exilus mods are handling and
   mobility with no single-target damage model — the optimizer already excludes
   them — and the slot costs a separate adapter, so counting it would price a
