@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "764e4ea7+ · 2026-08-21 17:45Z";
+const BUILD_ID = "e732ac98+ · 2026-08-22 00:58Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -9048,6 +9048,37 @@ const gainTied = (g) => {
   return near(best, g);
 };
 
+// PROGRESS BELONGS WHERE THE WORK IS BEING READ, not only where it was started.
+//
+// The quick calc counted itself in one place — the panel at the top of the page
+// — and the LIST it was ranking said nothing. A pool of 90 mods at 200 runs is
+// tens of seconds of a list that does not move, and a list that does not move is
+// read as broken (owner, 2026-08-22). The per-row "…" chip was already there and
+// was not enough: it says THIS row has no answer yet, and says nothing about
+// whether anything is still happening.
+//
+// So the strip goes at the top of every list a scan ranks — the mod picker, the
+// arcane picker, the evolution tiers, the valence row, and the optimizer's own
+// list — and it is the SAME component fed from whichever scan state that list
+// reads, because "how far along is it" is one question with one answer.
+//
+// It draws NOTHING when nothing is running, so a finished list is a finished
+// list: a bar sitting at 100% would be one more thing to read and dismiss.
+function scanStrip(st, axis) {
+  if (!st || !st.running) return "";
+  // AN AXIS ONLY SHOWS ITS OWN. Two lists can be open at once (a picker over
+  // the evolution rows), and the scan belongs to exactly one of them — showing
+  // it on both would say the other one is being measured when it is waiting.
+  if (axis && JSON.stringify(st.axis) !== JSON.stringify(axis)) return "";
+  const total = Math.max(1, st.total || 1);
+  const done = Math.min(st.done || 0, total);
+  const pct = Math.round((done / total) * 100);
+  return `<div class="scan-strip" role="status" aria-live="polite" title="${escHtml(
+    tr("the ranking is still being measured — the order moves until it finishes"))}">` +
+    `<span class="scan-bar"><i style="width:${pct}%"></i></span>` +
+    `<span class="scan-txt">⚡ ${escHtml(tr("ranking"))} ${done}/${total}</span></div>`;
+}
+
 const gainChipFor = (id, where) => {
   const g = gainOf(id);
   // A HALF-FILLED RANKING HAS TO LOOK LIKE ONE.
@@ -9650,9 +9681,10 @@ function renderMenu(slotIdx, query) {
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
       <div class="info"><div class="mn">${m.riven ? escHtml(m.name) : wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}${gainChip}</div><div class="me">${cardLines(m, m.max_rank).map((x) => `<div>${x}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
   };
-  menu.innerHTML = hits.length
-    ? sectionedRows(hits, (m) => (m.riven ? "Riven" : "Mods"), row)
-    : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`;
+  menu.innerHTML = scanStrip(gainScan, { kind: "mods", idx: slotIdx })
+    + (hits.length
+      ? sectionedRows(hits, (m) => (m.riven ? "Riven" : "Mods"), row)
+      : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`);
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => {
     const id = o.dataset.id;
     if (slots[slotIdx].mod === id) { closePopovers(); return; } // already here
@@ -9881,12 +9913,13 @@ function renderArcaneMenu(query) {
     .filter((a) => !q || searchBlob(a).includes(q))
     .sort((a, b) => (a.id === arcanes[arcaneSlotIdx] ? -1 : b.id === arcanes[arcaneSlotIdx] ? 1 : 0)
       || gainSort(a, b, ["gain", "name"]));
-  menu.innerHTML = hits.length ? hits.map((a) => {
+  menu.innerHTML = scanStrip(gainScan, { kind: "arcane", idx: arcaneSlotIdx })
+    + (hits.length ? hits.map((a) => {
     const isCur = a.id === arcanes[arcaneSlotIdx];
     return `<div class="opt ${isCur ? "cur" : ""} ${a.rarity ? "rar-" + a.rarity : ""}" data-id="${a.id}">
       ${imgTag(IMG(a.image), "mod")}
       <div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}${isCur ? ' <span class="slotchip cur">equipped</span>' : ""}${gainChipFor(a.id, tr("Arcane"))}</div>${effLines(cardLines(a, a.max_rank, effectsAt(a, a.max_rank)))}</div></div>`;
-  }).join("") : `<div class="opt dis">no matches</div>`;
+  }).join("") : `<div class="opt dis">no matches</div>`);
   menu.querySelectorAll(".opt:not(.dis)").forEach((o) => o.addEventListener("click", () => { setArcane(o.dataset.id); closePopovers(); renderArcanes(); }));
 }
 
@@ -10093,6 +10126,7 @@ function renderValence() {
   // which is the wiki infobox's figure and not a build.
   const picks = s.elements.map((e) => pick(e, DT(e))).join("");
   box.innerHTML =
+    scanStrip(gainScan, { kind: "valence", idx: 0 }) +
     `<div class="evo"><span class="rank">${escHtml(tr("Element"))}</span><div class="picks">${picks}</div></div>` +
     `<div class="runs-row"><label title="${escHtml(tr("how big the roll was, as a share of base damage — a Lich rolls it randomly and Valence Fusion raises it, capping at the number on the right"))}">${escHtml(tr("Valence bonus"))} <span class="unit">%</span> <input type="number" id="valence-bonus" min="${pct(s.min)}" max="${pct(s.max)}" step="0.5" value="${pct(valence.bonus)}"></label>` +
     `<span class="sim-hint">${escHtml(tr("rolls") + ` ${pct(s.min)}–${pct(s.max)}%`)}</span></div>`;
@@ -10252,7 +10286,7 @@ function renderEvo() {
       ? `title="${escHtml(tr("install the previous tier first"))}"` : ""
     }><span class="rank">EVO ${ROMAN(t.tier)}</span><div class="picks">${empty}${t.options.map(card).join("")}</div></div>`);
   }
-  $("evo-rows").innerHTML = rows.join("");
+  $("evo-rows").innerHTML = scanStrip(gainScan, { kind: "evo", idx: 0 }) + rows.join("");
   // Evolutions are all on screen at once, so they are scanned ACROSS EVERY
   // TIER in one pass — a dozen candidates, not seventy, which is why they can
   // afford to answer without being opened (user, 2026-08-01: arcanes and
@@ -13987,9 +14021,12 @@ function renderOptModList() {
       </div>
     </div>`;
   };
-  $("opt-mods").innerHTML = hits.length
+  // THE OPTIMIZER'S OWN SCAN, same component and a different state. It has no
+  // slots and therefore no axis — there is one list and one question — so the
+  // strip is asked without one.
+  $("opt-mods").innerHTML = scanStrip(optGain) + (hits.length
     ? sectionedRows(hits, (m) => (m.riven ? "Riven" : "Mods"), row)
-    : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`;
+    : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`);
   $("opt-mods").querySelectorAll(".seg:not(.dis)").forEach((el) =>
     el.addEventListener("click", (e) => {
       e.stopPropagation();

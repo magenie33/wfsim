@@ -1114,6 +1114,32 @@ around (decision 2026-07-31).
   floating plausible numbers would look exactly right and mean nothing. Every
   drawn number must be one the replay's own `pops` carries. Verified to bite —
   nudging the text by 1% reddens it.
+- **PROGRESS BELONGS WHERE THE WORK IS BEING READ** (owner, 2026-08-22). The
+  quick calc counted itself in exactly one place — the panel at the top of the
+  page — and the LIST it was ranking said nothing. A pool of ninety mods at a
+  real run count is tens of seconds of a list that does not move, and a list
+  that does not move is read as broken rather than as busy.
+  THE PER-ROW "…" CHIP WAS ALREADY THERE AND IS A DIFFERENT CLAIM: it says THIS
+  row has no answer yet and says nothing about whether anything is still
+  happening. `scanStrip` is the strip — a bar, a count, sticky at the top of the
+  list — and it is ONE component fed from whichever scan state that list reads,
+  because "how far along is it" is one question. It is mounted in all five
+  places a scan ranks something: the mod picker, the arcane picker, the
+  evolution tiers, the valence row, and the optimizer's own list.
+  AN AXIS ONLY SHOWS ITS OWN. Two lists can be open at once — a picker over the
+  evolution rows — and the scan belongs to exactly one of them; drawing it on
+  both would tell the reader the other one is being measured when it is queued.
+  IT DRAWS NOTHING WHEN NOTHING RUNS, and the check asserts the ABSENCE as well
+  as the presence: a bar that is always there is furniture, one that appears
+  with the work and leaves with it is information, and only the second half
+  catches a strip that never goes away.
+  `node scripts/check_scan_progress.mjs` is the THIRTY-SEVENTH check. Its
+  evolution half had to be given a CROWD to be worth anything: a one-body Torid
+  ranks its dozen evolutions in ~360 ms, faster than the 250 ms repaint
+  throttle, so nothing is ever drawn and the assertion passed on a page that
+  never drew the strip at all. The expensive fight is also the one the report
+  was about — a cheap scan never needed a bar. Verified to bite: stubbing
+  `scanStrip` to return nothing reddens seven of its ten.
 - **Golden values only change with an in-game measurement** justifying
   it. New mechanics need golden tests; a faithful-looking implementation
   without a measurement is not correct.

@@ -1685,3 +1685,26 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .rp-pop.p-more{font-size:11px; font-weight:600; color:var(--dim); opacity:.85}
 /* THE SCENE HAS TO BE A POSITIONING CONTEXT for any of the above to land. */
 #rp-scene{position:relative}
+
+/* PROGRESS WHERE THE WORK IS BEING READ. The quick calc counted itself at the
+   top of the page and the LIST it was ranking said nothing — and a list that
+   does not move for thirty seconds is read as broken, not as busy (owner,
+   2026-08-22). Same strip in every list a scan ranks. */
+.scan-strip{
+  position:sticky; top:0; z-index:3;
+  display:flex; align-items:center; gap:8px;
+  padding:5px 10px; background:var(--bg2, var(--bg));
+  border-bottom:1px solid var(--line);
+  font-size:11px; color:var(--dim); white-space:nowrap;
+}
+.scan-bar{
+  flex:1 1 auto; min-width:40px; height:4px; border-radius:2px;
+  background:var(--line); overflow:hidden;
+}
+.scan-bar>i{
+  display:block; height:100%; background:var(--gold, #e8c46a);
+  /* The width is set per repaint (every 250 ms while scanning), so the
+     transition is what makes it read as movement rather than as a jump. */
+  transition:width .25s linear;
+}
+.scan-txt{font-variant-numeric:tabular-nums; flex:0 0 auto}
