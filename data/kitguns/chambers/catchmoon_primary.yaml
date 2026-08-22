@@ -1,0 +1,81 @@
+# Catchmoon, as a PRIMARY — one of the two forms of ONE weapon.
+#
+# A Kitgun has no published stat line: it has a Chamber, a Grip and a Loader,
+# and `engine::kitguns_data` composes them. This file is the CHAMBER's half —
+# everything a grip and a loader do not touch, plus the two tables that are
+# published PER GRIP because DE publishes them that way rather than as a
+# formula.
+#
+# WHY THIS IS A SEPARATE FILE FROM THE OTHER SLOT. The chamber is the WEAPON
+# (mastery, riven family and the wiki page are all per chamber), but the two
+# slots are two stat blocks in DE's own module and the difference reaches the
+# damage TYPE. A flag could not carry that; two files can. See README.md.
+#
+# THE POOL: Catchmoon's own page says "Uses Shotgun mods" of its PRIMARY
+# form. That is the chamber deciding the pool, not the grip — the grip only
+# decides which SLOT — and it is why a build cannot survive Catchmoon ->
+# Gaze even with the grip untouched.
+id: catchmoon_primary
+name: Catchmoon
+chamber: catchmoon
+slot: primary
+
+# THE STATS THAT ARE THE CHAMBER'S OWN — everything a grip and a loader
+# do not touch.
+crit_chance: 0.21
+crit_multiplier: 2
+status_chance: 0.21
+multishot: 1
+accuracy: 22.2
+ammo_cost: 1
+ammo_max: 70
+ammo_pickup: 15
+trigger: "Auto"
+shot_type: "Projectile"
+riven_disposition: 1.05
+silent: false
+range_m: 42
+spread:
+  min_deg: 3
+  max_deg: 6
+forced_procs: [impact]
+falloff:
+  start_m: 20
+  end_m: 40
+  reduction: 0.9416
+# DE's own compatibility tags, transcribed. They are what a mod pool and
+# an equip rule are decided from elsewhere in this repo.
+tags: ["MODULAR_GUN", "SEMI_AUTO"]
+
+# DAMAGE IS PER GRIP, published per grip. There is no formula behind these
+# — the module states one vector per grip and this is that table.
+damage:
+  base: { heat: 167, impact: 89 }
+  brash: { heat: 73, impact: 37 }
+  palmaris: { heat: 76, impact: 40 }
+  shrewd: { heat: 79, impact: 43 }
+  steadyslam: { heat: 105.5, impact: 69.5 }
+  tremor: { heat: 126, impact: 90 }
+
+# …AND SO IS FIRE RATE.
+fire_rate:
+  brash: 5.67
+  palmaris: 5.17
+  shrewd: 4.67
+  steadyslam: 3.33
+  tremor: 3
+
+# THE MAGAZINE IS A SIZE CLASS, and the loader names which one.
+magazine:
+  gigahighest: 39
+  high: 11
+  highest: 13
+  low: 7
+  lowest: 5
+  med: 9
+  megahighest: 23
+  superhighest: 17
+
+source:
+  url: https://wiki.warframe.com/w/Catchmoon
+  module: https://wiki.warframe.com/w/Module:Modular/data

@@ -1,0 +1,20 @@
+grips:
+  - id: gibber
+    name: Gibber
+    recoil: -0.5
+  - id: haymaker
+    name: Haymaker
+    recoil: 1
+  - id: lovetap
+    name: Lovetap
+    recoil: 0.5
+  - id: ramble
+    name: Ramble
+    recoil: 0
+  - id: ulnaris
+    name: Ulnaris
+    recoil: 0
+
+source:
+  url: https://wiki.warframe.com/w/Kitgun
+  module: https://wiki.warframe.com/w/Module:Modular/data

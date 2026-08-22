@@ -1,0 +1,80 @@
+# Tombfinger, as a SECONDARY — one of the two forms of ONE weapon.
+#
+# A Kitgun has no published stat line: it has a Chamber, a Grip and a Loader,
+# and `engine::kitguns_data` composes them. This file is the CHAMBER's half —
+# everything a grip and a loader do not touch, plus the two tables that are
+# published PER GRIP because DE publishes them that way rather than as a
+# formula.
+#
+# WHY THIS IS A SEPARATE FILE FROM THE OTHER SLOT. The chamber is the WEAPON
+# (mastery, riven family and the wiki page are all per chamber), but the two
+# slots are two stat blocks in DE's own module and the difference reaches the
+# damage TYPE. A flag could not carry that; two files can. See README.md.
+#
+# A CHARGED TRIGGER, and the GRIP sets the charge time (0.5 s on Brash to
+# 1.4 s on Tremor). So a Tombfinger row on the board carries a SLOT and a
+# MODE and they are different facts: 'Tombfinger, primary, charged' is one
+# entry and 'Tombfinger, secondary, charged' is another.
+#
+# ITS `AOE` TAG HAS NO NUMBERS HERE. The module marks it AOE and publishes
+# no radius and no radial damage, so the blast is NOT modelled from this
+# file — it has to be read off the weapon's own page before this chamber is
+# worth simulating. Said here rather than discovered later.
+id: tombfinger_secondary
+name: Tombfinger
+chamber: tombfinger
+slot: secondary
+
+# THE STATS THAT ARE THE CHAMBER'S OWN — everything a grip and a loader
+# do not touch.
+crit_chance: 0.24
+crit_multiplier: 2
+status_chance: 0.24
+multishot: 1
+accuracy: 50
+ammo_cost: 1
+ammo_max: 210
+ammo_pickup: 20
+trigger: "Semi-Auto"
+shot_type: "Projectile"
+riven_disposition: 0.7
+silent: false
+spread:
+  min_deg: 1
+  max_deg: 3
+# DE's own compatibility tags, transcribed. They are what a mod pool and
+# an equip rule are decided from elsewhere in this repo.
+tags: ["PROJECTILE", "AOE", "MODULAR_GUN", "SEMI_AUTO"]
+
+# DAMAGE IS PER GRIP, published per grip. There is no formula behind these
+# — the module states one vector per grip and this is that table.
+damage:
+  base: { impact: 16, puncture: 9, radiation: 59 }
+  gibber: { impact: 8, puncture: 1, radiation: 27 }
+  haymaker: { impact: 32, puncture: 25, radiation: 123 }
+  lovetap: { impact: 24, puncture: 17, radiation: 91 }
+  ramble: { impact: 12, puncture: 5, radiation: 43 }
+  ulnaris: { impact: 18.67, puncture: 11.67, radiation: 69.67 }
+
+# …AND SO IS FIRE RATE.
+fire_rate:
+  gibber: 4.5
+  haymaker: 2.17
+  lovetap: 2.5
+  ramble: 3.67
+  ulnaris: 2.83
+
+# THE MAGAZINE IS A SIZE CLASS, and the loader names which one.
+magazine:
+  gigahighest: 49
+  high: 23
+  highest: 29
+  low: 15
+  lowest: 9
+  med: 19
+  megahighest: 35
+  superhighest: 31
+
+source:
+  url: https://wiki.warframe.com/w/Tombfinger
+  module: https://wiki.warframe.com/w/Module:Modular/data

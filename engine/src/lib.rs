@@ -38,6 +38,7 @@ pub mod enemy_data;
 pub mod evolutions_data;
 pub mod factions_data;
 pub mod i18n_data;
+pub mod kitguns_data;
 pub mod loadout;
 pub mod mercy;
 pub mod mod_sets_data;

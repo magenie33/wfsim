@@ -1,0 +1,81 @@
+# Catchmoon, as a SECONDARY — one of the two forms of ONE weapon.
+#
+# A Kitgun has no published stat line: it has a Chamber, a Grip and a Loader,
+# and `engine::kitguns_data` composes them. This file is the CHAMBER's half —
+# everything a grip and a loader do not touch, plus the two tables that are
+# published PER GRIP because DE publishes them that way rather than as a
+# formula.
+#
+# WHY THIS IS A SEPARATE FILE FROM THE OTHER SLOT. The chamber is the WEAPON
+# (mastery, riven family and the wiki page are all per chamber), but the two
+# slots are two stat blocks in DE's own module and the difference reaches the
+# damage TYPE. A flag could not carry that; two files can. See README.md.
+#
+# THE POOL: Catchmoon's own page says "Uses Shotgun mods" of its PRIMARY
+# form. That is the chamber deciding the pool, not the grip — the grip only
+# decides which SLOT — and it is why a build cannot survive Catchmoon ->
+# Gaze even with the grip untouched.
+id: catchmoon_secondary
+name: Catchmoon
+chamber: catchmoon
+slot: secondary
+
+# THE STATS THAT ARE THE CHAMBER'S OWN — everything a grip and a loader
+# do not touch.
+crit_chance: 0.21
+crit_multiplier: 2
+status_chance: 0.21
+multishot: 1
+accuracy: 5.9
+ammo_cost: 1
+ammo_max: 70
+ammo_pickup: 20
+trigger: "Semi-Auto"
+shot_type: "Projectile"
+riven_disposition: 0.5
+silent: false
+range_m: 20
+spread:
+  min_deg: 12
+  max_deg: 22
+forced_procs: [impact]
+falloff:
+  start_m: 8
+  end_m: 16
+  reduction: 0.9375
+# DE's own compatibility tags, transcribed. They are what a mod pool and
+# an equip rule are decided from elsewhere in this repo.
+tags: ["MODULAR_GUN", "SEMI_AUTO"]
+
+# DAMAGE IS PER GRIP, published per grip. There is no formula behind these
+# — the module states one vector per grip and this is that table.
+damage:
+  base: { heat: 167, impact: 89 }
+  gibber: { heat: 119, impact: 41 }
+  haymaker: { heat: 269, impact: 191 }
+  lovetap: { heat: 218, impact: 140 }
+  ramble: { heat: 143, impact: 65 }
+  ulnaris: { heat: 184, impact: 106 }
+
+# …AND SO IS FIRE RATE.
+fire_rate:
+  gibber: 3.17
+  haymaker: 1.17
+  lovetap: 1.5
+  ramble: 2.5
+  ulnaris: 1.83
+
+# THE MAGAZINE IS A SIZE CLASS, and the loader names which one.
+magazine:
+  gigahighest: 39
+  high: 11
+  highest: 13
+  low: 7
+  lowest: 5
+  med: 9
+  megahighest: 23
+  superhighest: 17
+
+source:
+  url: https://wiki.warframe.com/w/Catchmoon
+  module: https://wiki.warframe.com/w/Module:Modular/data
