@@ -3240,6 +3240,12 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     arcanes: [primary_deadhead]
     valence: magnetic
+  - weapon: tenet_glaxion
+    mode: base
+    score: 7.922706734845352
+    mods: [primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, stormbringer, infected_clip]
+    arcanes: [primary_deadhead]
+    valence: electricity
   - weapon: torid
     mode: cycle
     score: 29.054480073668856
