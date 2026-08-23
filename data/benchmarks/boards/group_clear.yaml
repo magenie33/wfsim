@@ -152,6 +152,12 @@ entries:
     mods: [seeker, galvanized_diffusion, hornet_strike, lethal_torrent, magnetic_might, deep_freeze, pathogen_rounds, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: impact
+  - weapon: kuva_nukor
+    mode: base
+    score: 33.79167292809576
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
   - weapon: kuva_ogris
     mode: base
     score: 58.647111578239695
@@ -265,6 +271,12 @@ entries:
     score: 233.26379949439453
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_flensing_spikes]
+    arcanes: [primary_deadhead]
+  - weapon: latron_prime
+    mode: base
+    score: 11.203547907124031
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, vigilante_armaments, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
     arcanes: [primary_deadhead]
   - weapon: latron_wraith
     mode: cycle
