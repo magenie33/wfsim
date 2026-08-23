@@ -3069,7 +3069,7 @@ impl DummyParams {
         for (ty, fraction) in added {
             out.add(ty, stage_mb * fraction);
         }
-        out.quantized()
+        out.quantized_against(stage_mb)
     }
 
     /// Build engagement params from a resolved mod loadout (pipeline
@@ -3553,7 +3553,7 @@ impl DummyParams {
         if mb <= 0.0 {
             return 1.0;
         }
-        self.with_ability_elements(self.damage.quantized(), mb, t).total() / mb
+        self.with_ability_elements(self.damage.quantized_against(mb), mb, t).total() / mb
     }
 
     /// The (1 + element bonuses) bracket for an elemental DoT's ticks.
@@ -6699,7 +6699,7 @@ fn field_tick(
     let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
     // The field is its own attack part, so the ability elements are sized off
     // ITS ModifiedBase — same rule as the explosion's.
-    let qvec = params.with_ability_elements(f.damage.quantized(), f.modified_base, at);
+    let qvec = params.with_ability_elements(f.damage.quantized_against(f.modified_base), f.modified_base, at);
     let qtotal = qvec.total();
     let shares = TypeShares::of(&qvec);
 
@@ -8477,9 +8477,11 @@ pub fn run_once_traced(
     // (no dynamic mods); ModdedBase for proc payload formulas stays
     // pre-quantization and EXCLUDES elemental portions (base × (1 + dmg)).
     let precompute = |p: &DummyParams| {
-        let qvec = p.damage.quantized();
-        let qtotal = qvec.total();
+        // `mb` is read FIRST because it is also the quantization denominator —
+        // it was computed one line below the `quantized()` that needed it.
         let mb = p.dot_modified_base.unwrap_or_else(|| p.damage.total());
+        let qvec = p.damage.quantized_against(mb);
+        let qtotal = qvec.total();
         (qvec, qtotal, mb)
     };
     // ...and one per PROJECTILE, for a weapon whose missiles differ. Built
@@ -8490,14 +8492,21 @@ pub fn run_once_traced(
         p.pellet_damage
             .iter()
             .map(|(d, _)| {
-                let q = d.quantized();
-                let tot = q.total();
-                (q, tot, p.dot_modified_base.unwrap_or_else(|| d.total()))
+                let mb = p.dot_modified_base.unwrap_or_else(|| d.total());
+                let q = d.quantized_against(mb);
+                (q, q.total(), mb)
             })
             .collect()
     };
     let variant_rad = |p: &DummyParams| -> Vec<crate::damage::DamageVector> {
-        p.pellet_damage.iter().map(|(_, r)| r.quantized()).collect()
+        // An explosion is its OWN attack part, so its denominator is the
+        // radial's ModifiedBase and not the direct hit's (MECHANICS §7).
+        p.pellet_damage
+            .iter()
+            .map(|(_, r)| {
+                r.quantized_against(p.radial.as_ref().map_or_else(|| r.total(), |x| x.modified_base))
+            })
+            .collect()
     };
     let main_variants = variant_pre(params);
     let main_variant_rad = variant_rad(params);
@@ -10239,7 +10248,13 @@ pub fn run_once_traced(
                             ap.crit_tier_upgrade_chance,
                             &mut d.spine,
                         );
-                        (own.map_or_else(|| r.damage.quantized(), |i| variant_rad[i]), t2)
+                        (
+                            own.map_or_else(
+                                || r.damage.quantized_against(r.modified_base),
+                                |i| variant_rad[i],
+                            ),
+                            t2,
+                        )
                     }
                 };
                 // WARFRAME ABILITY ELEMENTS, added to the FINISHED vector.
@@ -23864,7 +23879,7 @@ mod warframe_ability_tests {
         // formula has no reason to carry. So the example's 310 is 300.3125 here
         // and every absolute figure below moves with it — the four RELATIONS,
         // which are what the example is demonstrating, are exact.
-        let q = wiki_example().damage.quantized().total();
+        let q = wiki_example().damage.quantized_against(100.0).total();
         assert!(q < 310.0 && q > 295.0, "quantised vector {q}");
         let f = 1.55;
         let mb = 100.0;
@@ -23996,6 +24011,16 @@ mod warframe_ability_tests {
     /// The last row is the one worth having a test for: the faction bonus lands
     /// a THIRD time, and the elemental bracket lands on a payload that is
     /// explicitly denied elemental bonuses.
+    ///
+    /// THE `2.2` IN THAT TABLE IS THE ILLUSTRATION'S, NOT THE GAME'S. The Blast
+    /// half is `98 x 1.2 = 117.6`, which is 38.4 steps of the `98/32`
+    /// quantization scale and snaps to 38 — so the vector a hit actually deals
+    /// is `214.375` and the bracket a status burns off is `2.1875`. A capture
+    /// read off a target through mitigation cannot resolve 0.6%, and the
+    /// example is written to show a formula. The four RELATIONS are what it
+    /// demonstrates and they are exact; the absolute figures carry the
+    /// quantization, which is the same split this test's sibling above already
+    /// notes.
     #[test]
     fn an_extra_hit_fires_off_a_blast_detonation_at_the_third_faction_layer() {
         let mut p = measured();
@@ -24006,7 +24031,12 @@ mod warframe_ability_tests {
         p.forced_procs = vec![DamageType::Blast];
         let r = run_once(&p, &mut crate::rng::Rng::new(3));
 
-        let hit = 98.0 * 2.2 * 1.55;
+        // 117.6 Blast is 38.4 steps of 98/32 and snaps to 38.
+        let qtotal = 98.0 + 38.0 * (98.0 / crate::damage::QUANTIZATION_DENOMINATOR);
+        let bracket = qtotal / 98.0;
+        let hit = qtotal * 1.55;
+        // The detonation reads ModifiedBase — 98 — which quantization never
+        // touches, so this half is unmoved.
         let deto = BLAST_COEFFICIENT * 98.0 * 1.55 * 1.55;
         assert!((r.sources.direct - hit).abs() < 1e-6, "hit {:.3}", r.sources.direct);
         assert!(
@@ -24016,7 +24046,7 @@ mod warframe_ability_tests {
         );
         // The hit's own extra hit, plus the detonation's.
         let from_hit = hit * 0.26 * 1.55;
-        let from_deto = deto * 0.26 * 1.55 * 2.2;
+        let from_deto = deto * 0.26 * 1.55 * bracket;
         assert!(
             (r.sources.extra_hit - (from_hit + from_deto)).abs() < 1e-6,
             "extra {:.3} vs {:.3} + {:.3}",
@@ -24024,9 +24054,16 @@ mod warframe_ability_tests {
             from_hit,
             from_deto
         );
-        // 62.6 on a 70.6 detonation: the extra hit off a Blast proc is worth
-        // 89% of the proc, which is only possible with both of the layers above.
-        assert!((from_deto / deto - 0.887).abs() < 0.002, "{:.4}", from_deto / deto);
+        // The extra hit off a Blast proc is worth about 89% of the proc, which
+        // is only possible with both of the layers above.
+        //
+        // THE BAND IS THE CAPTURE'S OWN. It read 63 and 71, each a whole number
+        // popped in game, so the ratio it pins is `[62.5/71.5, 63.5/70.5]` —
+        // 0.874 to 0.901, and nothing tighter is in the video. The 0.002 that
+        // used to be here claimed a precision two integers cannot carry, and it
+        // is what turned a 0.57% quantization correction into a red test.
+        let ratio = from_deto / deto;
+        assert!((0.874..=0.901).contains(&ratio), "{ratio:.4} outside the capture's 63/71");
     }
 
     /// NO OTHER STATUS PAYLOAD TRIGGERS ONE — the negative control, and the

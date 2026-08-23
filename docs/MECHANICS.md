@@ -475,13 +475,34 @@ numbers.
 > (b) the U40 change (1/16 → 1/32) is a *refinement* of the mechanism,
 > not a removal; (c) the effect is material (the 30/30/40 example deals
 > 103.125 off a 100 panel — +3.1%, far beyond our matching tolerance).
-> Implemented: `DamageVector::quantized()` (per-hit vector, BEFORE
-> crits/type-modifiers/faction multipliers — those multiply quantized
-> values) and `damage::quantize_base_crit_damage` (wired into the CD
-> bucket when mod resolution lands). The page's flagged "conflicting
-> info" is a mathematical pseudo-conflict: for pure multipliers,
-> `Round(v/s)·s·k ≡ Round(kv/ks)·ks` — the two descriptions differ only
-> when elemental mods change the vector's composition.
+> Implemented: `DamageVector::quantized_against(modded_base)` (per-hit
+> vector, BEFORE crits/type-modifiers/faction multipliers — those
+> multiply quantized values) and `damage::quantize_base_crit_damage`
+> (wired into the CD bucket when mod resolution lands). The page's
+> flagged "conflicting info" is a mathematical pseudo-conflict: for pure
+> multipliers, `Round(v/s)·s·k ≡ Round(kv/ks)·ks` — the two descriptions
+> differ only when elemental mods change the vector's composition.
+
+**THE SCALE'S DENOMINATOR IS `ModdedBase`, NOT THE VECTOR'S TOTAL** (measured,
+2026-08-23, M57). The page states it twice as formulas — `Scale = ModdedBase/32`
+and `x = TypeValue/ModdedBase` — where ModdedBase is `base × (1 + damage mods)`
+with elemental portions EXCLUDED. Elements are in the NUMERATOR only, which is
+what makes the note above true: a non-elemental bonus scales numerator and
+denominator alike and cancels, an elemental one does not.
+
+It was the vector's own total here for months, and the paragraph above is the
+one that should have caught it — *"the two descriptions differ only when
+elemental mods change the vector's composition"* names the exact case, and the
+only test on the function is the 30/30/40 example, which carries no mods at all
+and therefore has `ModdedBase == total`. A Braton Prime with Infected Clip and
+Hellfire tells them apart: base 35, Gas 63, and the wrong denominator snaps four
+components to 33 units instead of 32 — **101.06 against a measured 98**. Four
+builds were measured and the right denominator reproduces all four to the digit.
+
+One visible consequence: a MONO-TYPE vector is no longer automatically lossless.
+It used to be exactly 32 units of itself; it is now however many units of
+ModdedBase it happens to be, so a pure 63 Gas on a base of 35 is 57.6 units and
+snaps to 58.
 
 Related: per-shot **damage** quantization also exists and was changed from
 1/16 to 1/32 steps in Update 40 (undocumented, per the wiki `Damage` patch
