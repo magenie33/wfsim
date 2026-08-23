@@ -2504,13 +2504,32 @@ pub fn arcane_pools(weapon: &str) -> Vec<&'static str> {
     if s.class.contains("sentinel") {
         return Vec::new();
     }
-    match s.slot.as_str() {
+    let own = match s.slot.as_str() {
+        // "Archguns possess two Arcane Enhancement slots to equip one Primary
+        // Arcane and one Secondary Arcane" (wiki, Arch-Gun).
         "archgun" => vec!["primary", "secondary"],
         "primary" => vec!["primary"],
         "secondary" => vec!["secondary"],
         "melee" => vec!["melee"],
-        _ => Vec::new(),
+        _ => return Vec::new(),
+    };
+    // A KITGUN SEATS ONE OF ITS OWN AS WELL, and the wiki states it as an
+    // "as well" rather than an "instead": *"These can be installed
+    // simultaneously with Secondary/Primary arcanes"* (`Kitgun` §Kitgun
+    // Arcanes). Filing Pax and Residual under the weapon's own slot made the
+    // two compete for one seat, so the page asked the reader to choose between
+    // a Pax Charge and a Primary Merciless — a choice the game never puts to
+    // them (owner, 2026-08-23).
+    //
+    // FIRST, because it is the seat this weapon has that no other weapon does:
+    // the ordinary one is the same seat every gun in the roster carries, and
+    // putting the distinctive one after it reads as an afterthought.
+    if s.kitgun.is_some() {
+        let mut out = vec!["kitgun"];
+        out.extend(own);
+        return out;
     }
+    own
 }
 
 /// Innate MAIN-slot polarities as an 8-slot layout (exilus excluded — the
@@ -7001,29 +7020,42 @@ mod modular_tests {
         let base = crate::loadout::WeaponBase::from_data("tombfinger_secondary", false, &[]);
         assert_eq!(base.recharge_per_second, Some(50.0), "the chamber states its rate");
 
-        let arc = crate::arcanes_data::for_slot("secondary", "pax_charge")
-            .expect("pax charge is offered in the secondary seat");
-        // …AND IN THE PRIMARY ONE. One arcane, two seats, because a Kitgun is
-        // one weapon with an entry in each slot.
-        assert!(crate::arcanes_data::for_slot("primary", "pax_charge").is_some());
+        // ITS OWN SEAT, and NOT the weapon's. *"These can be installed
+        // simultaneously with Secondary/Primary arcanes"* (wiki, `Kitgun`), so
+        // a Kitgun holds one of each and the two never compete.
+        let arc = crate::arcanes_data::for_slot("kitgun", "pax_charge")
+            .expect("pax charge is offered in the Kitgun seat");
+        for seat in ["primary", "secondary"] {
+            assert!(
+                crate::arcanes_data::for_slot(seat, "pax_charge").is_none(),
+                "{seat}: a Kitgun arcane is competing with the ordinary pool"
+            );
+        }
         // …AND ON NOTHING ELSE: the equip rule is a TRAIT, since no class can
         // say "Kitgun" — a secondary Tombfinger is a `pistol` exactly like a Lex.
-        let on_lex = crate::arcanes_data::pool_for_weapon("lex", "secondary");
-        assert!(
-            !on_lex.iter().any(|a| a.id == "pax_charge"),
-            "pax charge is offered on an ordinary pistol"
-        );
-        let on_kit = crate::arcanes_data::pool_for_weapon("tombfinger_secondary", "secondary");
-        assert!(on_kit.iter().any(|a| a.id == "pax_charge"));
-        // All eight, in both seats.
-        for seat in ["primary", "secondary"] {
-            let w = if seat == "primary" { "tombfinger_primary" } else { "tombfinger_secondary" };
-            let n = crate::arcanes_data::pool_for_weapon(w, seat)
-                .iter()
-                .filter(|a| a.id.starts_with("pax_") || a.id.starts_with("residual_"))
-                .count();
-            assert_eq!(n, 8, "{seat}: the four Pax and four Residual arcanes");
+        for w in ["lex", "braton_prime"] {
+            assert!(
+                crate::arcanes_data::pool_for_weapon(w, "kitgun").is_empty(),
+                "{w} is offered a Kitgun arcane"
+            );
         }
+        // All eight, on both entries, in the Kitgun seat and nowhere else.
+        for w in ["tombfinger_primary", "tombfinger_secondary"] {
+            let kit = crate::arcanes_data::pool_for_weapon(w, "kitgun");
+            assert_eq!(kit.len(), 8, "{w}: the four Pax and four Residual arcanes");
+            let own = crate::weapons_data::arcane_pools(w);
+            assert_eq!(own[0], "kitgun", "{w}: the distinctive seat comes first");
+            assert_eq!(own.len(), 2, "{w}: a Kitgun holds one of each");
+            assert!(
+                !crate::arcanes_data::pool_for_weapon(w, own[1])
+                    .iter()
+                    .any(|a| a.id.starts_with("pax_") || a.id.starts_with("residual_")),
+                "{w}: a Kitgun arcane leaked into the ordinary seat"
+            );
+        }
+        // A NON-MODULAR WEAPON IS UNCHANGED — one seat, its own slot's.
+        assert_eq!(crate::weapons_data::arcane_pools("lex"), vec!["secondary"]);
+        assert_eq!(crate::weapons_data::arcane_pools("braton_prime"), vec!["primary"]);
 
         let tenno = crate::tenno_data::default_tenno();
         let fx = arc.fx(arc.max_rank, StackPolicy::Emergent, &["modular"], tenno);

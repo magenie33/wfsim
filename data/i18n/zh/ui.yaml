@@ -1254,8 +1254,25 @@ ui:
   "No riven": "不带裂罅"
   "Riven only": "仅裂罅"
   "board": "榜单"
-  "Kitguns": "组装枪"
-  "Kitgun": "组装枪"
+  # THE KITGUN FAMILY, off the CN wiki's own page (`组合枪`, reached through its
+  # MediaWiki API — DATA_SOURCES §"The CN wiki is reachable through its API").
+  # WFCD carries the PART names in Chinese (Haymaker is 重拳) and none of the
+  # category words, so this is the same path the evolution strings came down.
+  #
+  # It was 组装枪 for a day, with no source behind it — the CN wiki's article
+  # says 组合枪 in its title and in every sentence of its body, and a name that
+  # can be read is never derived (2026-08-23).
+  "Kitguns": "组合枪"
+  "Kitgun": "组合枪"
+  # The three components, from the same article's own headings: 组合枪由三种不同的
+  # 组件构成，分别为'''枪膛'''、'''握把'''和'''填弹器'''.
+  "Chamber": 枪膛
+  "Grip": 握把
+  "Loader": 填弹器
+  # OURS, not DE's: the parts block asks which SEAT of the two this Kitgun is
+  # being built for, and no in-game screen puts that question because in game
+  # the grip answers it.
+  "Slot": 槽位
   "riven": 裂罅
   "rifle": 步枪
   "pistol": 手枪

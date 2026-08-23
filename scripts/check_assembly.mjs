@@ -56,6 +56,21 @@ const drawn = await evaluate(`(async () => {
     slot: weaponInfo(id).slot,
     sibling: slotSibling(id),
     controls: [...row.querySelectorAll('[id^="dd-"]')].map(d => d.id),
+    // THE PARTS ARE PICK ROWS, one chip per option, keyed by the part they
+    // belong to — the same UI every other ranked axis on this page uses.
+    parts: [...new Set([...row.querySelectorAll('.evopick[data-part]')].map(e => e.dataset.part))],
+    picks: [...row.querySelectorAll('.evopick[data-part]')].map(e => e.dataset.part + ':' + e.dataset.id),
+    selected: [...row.querySelectorAll('.evopick[data-part].sel')].map(e => e.dataset.part + ':' + e.dataset.id),
+    // A gain chip, or the "…" that says one is still being measured. Either is
+    // proof the row is on a scanned axis; neither would appear on a dropdown.
+    //
+    // THE INSTALLED PART IS THE BASELINE and carries none, which is not a gap:
+    // there is no gain in swapping a part for itself. So the claim is about the
+    // options that are CANDIDATES, and a check counting every chip would fail
+    // on a working page by exactly the number of parts.
+    unranked: [...row.querySelectorAll('.evopick[data-part]')]
+      .filter(e => !e.classList.contains('sel') && !e.querySelector('.gainchip'))
+      .map(e => e.dataset.part + ':' + e.dataset.id),
     fixed: [...row.querySelectorAll('.fixed-val')].map(e => e.textContent.trim()),
     // The grips on offer, as the engine states them for THIS entry...
     grips: (assemblySpec(id).grips || []).map(g => g.id),
@@ -67,14 +82,29 @@ const drawn = await evaluate(`(async () => {
 })()`);
 
 check("a modular weapon draws a parts block", drawn.shown, JSON.stringify(drawn));
-check("...with a control for the grip and one for the loader",
-  drawn.controls.includes("dd-grip") && drawn.controls.includes("dd-loader"),
-  JSON.stringify(drawn.controls));
-// THE CHAMBER IS THE WEAPON, and so is the slot. Stated out loud so a reader
-// can see that what is missing from this control is missing on purpose.
-check("...and the chamber is STATED, not offered",
-  drawn.fixed.includes("Tombfinger") && !drawn.controls.includes("dd-chamber"),
-  JSON.stringify(drawn.fixed));
+check("...with a row for the grip and one for the loader",
+  drawn.parts.includes("grip") && drawn.parts.includes("loader"),
+  JSON.stringify(drawn.parts));
+// ONE SELECTED PER PART, because a pick row that highlights nothing (or two
+// things) is a control that cannot say what the weapon currently is.
+check("...each showing exactly which part is installed",
+  drawn.selected.length === 2
+    && drawn.selected.some(x => x.startsWith("grip:"))
+    && drawn.selected.some(x => x.startsWith("loader:")),
+  JSON.stringify(drawn.selected));
+// A PART IS RANKED LIKE EVERY OTHER AXIS (owner, 2026-08-23). A grip is worth
+// a different amount on every build and no card states it, which is the same
+// argument the valence row and the evolution tiers are built on — so the parts
+// carry quick-calc chips rather than a dropdown that shuts over its own hints.
+check("...and every option that is a candidate is ranked, not just described",
+  drawn.unranked.length === 0,
+  `${drawn.unranked.length} of ${drawn.picks.length} unranked: ${drawn.unranked}`);
+// THE CHAMBER IS NOT DRAWN AT ALL. It used to be stated as a read-only value;
+// the chamber IS the weapon, whose name is already at the top of the page, so
+// the row said the same word twice (owner, 2026-08-23).
+check("...and the chamber is not drawn at all",
+  !drawn.fixed.includes("Tombfinger") && !drawn.controls.includes("dd-chamber"),
+  JSON.stringify({ fixed: drawn.fixed, controls: drawn.controls }));
 // ONLY THIS SLOT'S GRIPS. A grip decides primary or secondary, so the other
 // five compose into the sibling entry and into nothing here — and the ENGINE
 // says which, because a page that re-derived the rule would go stale the first
@@ -83,6 +113,12 @@ check("...and only this slot's grips are offered",
   drawn.grips.length === 5 && drawn.allGrips.length === 10
     && drawn.grips.every((g) => drawn.allGrips.includes(g)),
   `${drawn.grips.length} of ${drawn.allGrips.length}: ${drawn.grips}`);
+// …AND THE ROW OFFERS EXACTLY THOSE, so the scan and the picker cannot rank
+// different sets.
+check("...and the row offers exactly those five",
+  drawn.grips.every((g) => drawn.picks.includes("grip:" + g))
+    && drawn.picks.filter(x => x.startsWith("grip:")).length === drawn.grips.length,
+  JSON.stringify(drawn.picks));
 // EACH OPTION CARRIES ITS OWN NUMBERS. Twenty names say nothing about the
 // decision, which is the Mode control's own lesson (owner, 2026-08-15).
 check("...and each part says what it is worth",
@@ -155,9 +191,17 @@ const arcanes = await evaluate(`(async () => {
     history.pushState({}, '', '/weapons/' + w); route();
     await new Promise(r => setTimeout(r, 4000));
     const id = $('weapon').value;
-    const pool = arcanePool(0);
-    seen[w] = { id, seat: (weaponInfo(id).arcane_pools || [])[0], total: pool.length,
-                kit: pool.filter(a => /^(pax_|residual_)/.test(a.id)).map(a => a.id) };
+    const seats = weaponInfo(id).arcane_pools || [];
+    const isKit = (a) => /^(pax_|residual_)/.test(a.id);
+    seen[w] = {
+      id,
+      seats,
+      total: arcanePool(0).length,
+      kit: arcanePool(0).filter(isKit).map(a => a.id),
+      // The OTHER seat, where a Kitgun arcane must not appear at all.
+      ordinary: seats.length > 1 ? arcanePool(1).filter(isKit).map(a => a.id) : [],
+      ordinaryTotal: seats.length > 1 ? arcanePool(1).length : 0,
+    };
   }
   return seen;
 })()`);
@@ -167,9 +211,28 @@ check("the eight Kitgun arcanes are offered on a Kitgun",
 // class alone offers every one of them on an ordinary pistol.
 check("...and on nothing else",
   arcanes[PLAIN].kit.length === 0, JSON.stringify(arcanes[PLAIN]));
-check("...in whichever seat the weapon has",
-  arcanes[KIT].seat === "primary" || arcanes[KIT].seat === "secondary",
-  JSON.stringify(arcanes[KIT]));
+// A SEAT OF THEIR OWN, AND IT IS NOT THE WEAPON'S (owner, 2026-08-23). The
+// wiki puts it as an "as well" rather than an "instead" — "These can be
+// installed simultaneously with Secondary/Primary arcanes" (`Kitgun` §Kitgun
+// Arcanes) — so filing them under the weapon's slot made the page ask the
+// reader to choose between a Pax Charge and a Primary Merciless, which the
+// game never does.
+check("...in a seat of their own, which comes first",
+  arcanes[KIT].seats.length === 2 && arcanes[KIT].seats[0] === "kitgun",
+  JSON.stringify(arcanes[KIT].seats));
+check("...and nothing else is in it",
+  arcanes[KIT].total === 8 && arcanes[KIT].kit.length === 8,
+  JSON.stringify({ total: arcanes[KIT].total, kit: arcanes[KIT].kit.length }));
+// BOTH DIRECTIONS. A check asserting only that the Kitgun seat holds them
+// passes just as well on a page that ALSO leaves them in the ordinary one,
+// which is the state this replaced.
+check("...and the ordinary seat is still the ordinary seat",
+  arcanes[KIT].ordinary.length === 0 && arcanes[KIT].ordinaryTotal > 8,
+  JSON.stringify({ leaked: arcanes[KIT].ordinary, total: arcanes[KIT].ordinaryTotal }));
+// THE NEGATIVE CONTROL on the seat itself: an ordinary pistol gains no seat.
+check("...and an ordinary weapon has one seat, not two",
+  arcanes[PLAIN].seats.length === 1 && arcanes[PLAIN].seats[0] !== "kitgun",
+  JSON.stringify(arcanes[PLAIN].seats));
 
 // ---- the assembly reaches the wire, and moves the answer --------------------
 

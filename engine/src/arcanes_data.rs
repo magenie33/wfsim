@@ -1529,14 +1529,18 @@ mod tests {
     fn loads_all_26_secondary_arcanes() {
         let pool = secondary_pool();
         // 18 ordinary secondaries plus the EIGHT Kitgun arcanes — four Pax and
-        // four Residual — which are filed here and declare `seats: [primary,
-        // secondary]`, because arcane ids are globally unique across slots and
-        // one weapon has an entry in each.
+        // four Residual — which are FILED here and SEATED elsewhere. Ids are
+        // globally unique across slots, so a directory is a filing decision;
+        // `seats` is the equip rule, and theirs is a seat of their own.
         assert_eq!(pool.len(), 26, "expected the full 26-arcane pool");
-        assert_eq!(
-            pool.iter().filter(|a| a.seats.len() > 1).count(),
-            8,
-            "the eight Kitgun arcanes are the only ones in two seats"
+        let kit = pool.iter().filter(|a| a.seats == ["kitgun"]).count();
+        assert_eq!(kit, 8, "the four Pax and four Residual arcanes");
+        // …AND EVERY OTHER ARCANE IS SEATED WHERE IT IS FILED. Asserted over
+        // the whole pool rather than by naming the eight, so an arcane added
+        // tomorrow with a stray `seats:` is caught by nobody.
+        assert!(
+            pool.iter().all(|a| a.seats == ["kitgun"] || a.seats == ["secondary"]),
+            "a secondary arcane is seated somewhere it is not filed"
         );
     }
 

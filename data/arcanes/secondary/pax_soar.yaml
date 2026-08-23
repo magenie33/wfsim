@@ -5,11 +5,17 @@ max_rank: 3
 description: "While Airborne: X% Accuracy and Recoil, and increased Aim Glide / Wall Latch duration."
 
 equip_traits: [modular]
-# BOTH SEATS. A Kitgun is ONE weapon with a roster entry in each slot, so a
-# primary Tombfinger has a PRIMARY arcane seat and a secondary one a SECONDARY
-# seat, and this goes in either. Filed under one directory because arcane ids
-# are globally unique across slots.
-seats: [primary, secondary]
+# ITS OWN SEAT, and that is the whole point: a Kitgun holds one of these AND an
+# ordinary Primary/Secondary arcane at the same time. The wiki says so in as
+# many words — "These can be installed simultaneously with Secondary/Primary
+# arcanes" (`Kitgun` §Kitgun Arcanes) — so filing this family under the weapon's
+# own slot made the two compete for one seat and the reader pick between a Pax
+# and a Merciless, which the game never asks.
+#
+# `kitgun` rather than `modular`: a Zaw's Exodia and an Amp's Virtuos are the
+# same shape and are NOT these, so the seat is named for the family that fits
+# it. Filed under one directory because arcane ids are globally unique.
+seats: [kitgun]
 
 effects:
   # THREE GRANTS AND THIS ARENA CAN PAY NONE OF THEM, for three different

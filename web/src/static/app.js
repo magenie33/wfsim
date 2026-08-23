@@ -1700,6 +1700,12 @@ const SLOT_ORDER = ["primary", "secondary", "kitgun", "melee", "sentinel", "arch
 const SLOT_LABEL = { primary: "Primary", secondary: "Secondary", melee: "Melee",
   kitgun: "Kitguns", sentinel: "Sentinel Weapons", archgun: "Arch-Guns", other: "Other" };
 
+// WHAT AN ARCANE SEAT IS CALLED, which is the weapon-group label everywhere but
+// one: the group heading is the plural "Kitguns" because it heads a list of
+// them, and "add Kitguns arcane" is not a sentence. One override rather than a
+// second full table, so a seat added later still reads.
+const ARC_POOL_LABEL = { ...SLOT_LABEL, kitgun: "Kitgun" };
+
 /// WHICH GROUP A WEAPON IS LISTED UNDER — its slot, except that a MODULAR
 /// weapon gets its own.
 ///
@@ -1711,14 +1717,22 @@ const weaponCategory = (w) => (w.assembly ? "kitgun" : (w.slot || ""));
 /// ONE CARD PER MODULAR WEAPON. The chamber IS the weapon — one mastery track,
 /// one riven, one wiki page — so its two slot entries are one entry here, and
 /// which one the card opens is settled on the page by the Slot control.
+///
+/// IT OPENS THE PRIMARY (owner, 2026-08-23). Which of the two a card lands on
+/// is a real choice, and it used to be made by roster ORDER — which happens to
+/// be alphabetical and happens to put `_primary` before `_secondary`. That is
+/// the right answer arrived at by accident, and an accident stops being right
+/// the day a chamber is named so that it is not.
 const oneCardPerChamber = (ws) => {
-  const seen = new Set();
-  return ws.filter((w) => {
+  const best = new Map();
+  ws.forEach((w) => {
     const key = w.assembly ? w.assembly.chamber : w.id;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
+    const cur = best.get(key);
+    if (!cur || (w.slot === "primary" && cur.slot !== "primary")) best.set(key, w);
   });
+  // A Map keeps insertion order, so this is the roster's order with the
+  // duplicates removed — the same list every caller sorted before.
+  return [...best.values()];
 };
 
 function renderHome() {
@@ -6418,8 +6432,14 @@ function restoreState(st, weapon) {
   // one's. `defaultAssembly` also drops a part this entry cannot take, which is
   // the same repair the server does on the wire.
   assembly = defaultAssembly(w, st.assembly);
-  arcanes = arcanesFor(w, st.arcane);
-  arcaneRanks = asArcaneList(st.arcaneRank, arcanes.length).map((x) => x ?? null);
+  // THE RANKS FOLLOW THE ARCANE, not the index — see `seatArcanes`. Reading
+  // them positionally would put a Kitgun arcane's rank on the ordinary seat
+  // the moment one of them moved.
+  const seat = seatArcanes(w, st.arcane);
+  arcanes = seat.ids;
+  const rawRanks = Array.isArray(st.arcaneRank) ? st.arcaneRank
+    : st.arcaneRank == null ? [] : [st.arcaneRank];
+  arcaneRanks = seat.from.map((src) => (src < 0 ? null : rawRanks[src] ?? null));
   // The scenario is NOT restored: it belongs to `simulator-scenarios` and a
   // build has no opinion about it. An old preset may still carry `st.sim`;
   // it is ignored rather than migrated, because reading it back is the exact
@@ -8977,6 +8997,29 @@ function gainCandidates(axis) {
     });
     return out;
   }
+  if (axis.kind === "assembly") {
+    // BOTH PARTS AT ONCE, the way a tier of evolutions is scanned: they are on
+    // screen together, so measuring one and leaving the other blank would be a
+    // ranking that only half exists. One axis also keeps them from cancelling
+    // each other in `ensureGains`, which gives way per axis.
+    //
+    // A grip and a loader can share a name, so the candidate id carries the
+    // part — it is the key the chip is looked up by.
+    const w = $("weapon").value;
+    const spec = assemblySpec(w);
+    if (!spec || !assembly) return [];
+    const out = [];
+    [["grip", spec.grips], ["loader", spec.loaders]].forEach(([part, items]) => {
+      (items || []).forEach((it) => {
+        if (assembly[part] === it.id) return;
+        out.push({
+          id: part + ":" + it.id,
+          payload: { assembly: { ...assembly, [part]: it.id } },
+        });
+      });
+    });
+    return out;
+  }
   if (axis.kind === "valence") {
     // THE SEVEN PROGENITOR ELEMENTS, scanned the way a tier of evolutions is —
     // all on screen at once, one swap each, everything else left alone (owner,
@@ -10027,11 +10070,52 @@ function arcaneFor(weaponId, id, i = 0) {
 /// the search then had nothing to put in the second slot (user, 2026-08-01).
 const arcaneFitsWeapon = (weaponId, id) => {
   const a = arcaneById(ARCANE_RENAMED[id] || id);
-  return !!a && arcanePools(weaponId).includes(a.slot);
+  // BY SEAT, NOT BY DIRECTORY. `a.slot` is where the file LIVES, which was the
+  // same answer as where it fits for every arcane in the game until the eight
+  // Kitgun ones — they are filed under `secondary/` because ids are globally
+  // unique, and they seat in `kitgun`. Reading `slot` here dropped every
+  // Kitgun mark an optimizer scope carried (2026-08-23), the same shape as the
+  // secondary-mark bug this function's own comment is about.
+  return !!a && arcanePools(weaponId).some((p) => arcaneSeats(a).includes(p));
 };
+/// SEAT AN ARCANE LIST ON A WEAPON — by POSITION first, then by POOL.
+///
+/// Position is the wire format and stays it: a build's arcane list is one id
+/// per seat in the weapon's own seat order, and a list written under today's
+/// seats is left exactly where it is.
+///
+/// WHAT A SAVED BUILD CANNOT KNOW IS THAT THE ORDER MOVED UNDER IT. A Kitgun
+/// gained a seat of its own IN FRONT of its ordinary one (owner, 2026-08-23),
+/// so every Tombfinger build written before that has its Primary arcane
+/// sitting in the Kitgun seat — where it fits nothing, and where the old
+/// index-only rule dropped it without a word. An id that no longer fits where
+/// it sits is offered the seats that are still empty; one that fits nowhere is
+/// still dropped, because there is nowhere for it to go.
+///
+/// Returns the mapping as well, so a positional array BESIDE the ids — the
+/// ranks — can follow the move instead of staying behind on an index that now
+/// means something else.
+function seatArcanes(weaponId, list) {
+  const pools = arcanePools(weaponId);
+  const raw = Array.isArray(list) ? list.slice() : list == null ? [] : [list];
+  const ids = pools.map(() => "none");
+  const from = pools.map(() => -1);
+  const spare = [];
+  raw.forEach((id, i) => {
+    const fit = i < pools.length ? arcaneFor(weaponId, id, i) : "none";
+    if (fit !== "none") { ids[i] = fit; from[i] = i; return; }
+    if (id && id !== "none") spare.push({ id, i });
+  });
+  spare.forEach(({ id, i }) => {
+    const j = pools.findIndex((_, k) => ids[k] === "none" && arcaneFor(weaponId, id, k) !== "none");
+    if (j < 0) return;
+    ids[j] = arcaneFor(weaponId, id, j);
+    from[j] = i;
+  });
+  return { ids, from };
+}
 /// Every slot's id, validated against the pool that slot draws from.
-const arcanesFor = (weaponId, list) =>
-  arcanePools(weaponId).map((_, i) => arcaneFor(weaponId, asArcaneList(list, i + 1)[i], i));
+const arcanesFor = (weaponId, list) => seatArcanes(weaponId, list).ids;
 /// The builder picker's list. Same set — kept as its own name because the
 /// picker is where a reader looks for it.
 const arcanePickPool = arcanePool;
@@ -10091,7 +10175,7 @@ function arcaneSlotEl(pool, i) {
   if (none) {
     el.className = "slot empty arc";
     el.innerHTML = `<span class="plus">+ ${escHtml(
-      many ? tr("add {pool} arcane").replace("{pool}", tr(SLOT_LABEL[pool] || pool)) : tr("add arcane"),
+      many ? tr("add {pool} arcane").replace("{pool}", tr(ARC_POOL_LABEL[pool] || pool)) : tr("add arcane"),
     )}</span>`;
   } else {
     const maxr = a.max_rank || 0;
@@ -10393,7 +10477,7 @@ function renderAssembly() {
          d.charge_seconds != null ? `${n(d.charge_seconds)} s ${tr("charge")}` : ""]
         .filter(Boolean)
       : [];
-    return { value: g.id, label: g.name, hint: bits.join(" · ") };
+    return { id: g.id, label: g.name, hint: bits.join(" · ") };
   };
   const loaderItem = (l) => {
     // ONLY WHAT IT MOVES. Two of the three deltas are zero on most loaders and
@@ -10406,20 +10490,27 @@ function renderAssembly() {
       l.crit_multiplier ? `${sign(l.crit_multiplier)}x` : "",
       l.status_chance ? `${sign(pc(l.status_chance), "%")} ${tr("status")}` : "",
     ].filter(Boolean);
-    return { value: l.id, label: l.name, hint: bits.join(" · ") };
+    return { id: l.id, label: l.name, hint: bits.join(" · ") };
   };
 
-  const pick = (part, label, items, hint) =>
-    `<label title="${escHtml(hint)}">${escHtml(label)} ${ddButton("dd-" + part, {
-      value: assembly[part],
-      items,
-      onPick: (v) => {
-        assembly = { ...assembly, [part]: v };
-        markPresetDirty();
-        renderAssembly();
-        refreshPanel();
-      },
-    })}</label>`;
+  // A PICK ROW, not a dropdown, and for the reason every other axis on this
+  // page is one (owner, 2026-08-23): a part is a factor that moves the headline
+  // number, so it is ranked, and a chip is the one place a reader can compare
+  // five of them at a glance. A dropdown can carry a hint per option — it
+  // already did — but it cannot show five gains side by side, and it shuts
+  // before you have read the second one.
+  const partRow = (part, label, items, hint) => {
+    const cur = assembly[part];
+    const opts = items.map((it) => {
+      const on = cur === it.id;
+      return `<span class="evopick${on ? " sel" : ""}" data-part="${escHtml(part)}" data-id="${escHtml(it.id)}">
+        <span class="einfo"><b class="en">${escHtml(it.label)}${
+          gainChipFor(part + ":" + it.id, tr(label))}</b>${
+          it.hint ? `<span class="ed"><div>${escHtml(it.hint)}</div></span>` : ""}</span></span>`;
+    }).join("");
+    return `<div class="evo" title="${escHtml(hint)}"><span class="rank">${
+      escHtml(tr(label))}</span><div class="picks">${opts}</div></div>`;
+  };
 
   // THE SLOT. In game the GRIP decides it; here it is picked first, because it
   // decides the mod pool and therefore which build you are even editing. So the
@@ -10442,27 +10533,36 @@ function renderAssembly() {
       })}</label>`
     : "";
 
-  // WHAT THE CURRENT PARTS ARE WORTH, on the line under the controls. The
-  // dropdown carries a hint per option, which is what the picking is done from;
-  // this is what the picked pair says once the list is shut.
-  const cur = {
-    grip: s.grips.find((g) => g.id === assembly.grip),
-    loader: s.loaders.find((l) => l.id === assembly.loader),
-  };
-  const summary = [cur.grip && gripItem(cur.grip).hint, cur.loader && loaderItem(cur.loader).hint]
-    .filter(Boolean).join(" · ");
-
+  // THE CHAMBER IS NOT HERE AT ALL (owner, 2026-08-23). It was stated as a
+  // read-only value on the reasoning that a reader should see what is missing
+  // on purpose — but the chamber IS the weapon, whose name is already at the
+  // top of the page, so the row said the same word twice and took the first
+  // line of the block to do it. What belongs in that line is the one thing
+  // about this weapon that IS a choice and is not offered anywhere else: the
+  // SLOT.
+  //
+  // No summary line either: it existed because the dropdowns shut over their
+  // own hints, and the rows below keep every option's on screen.
+  const axis = { kind: "assembly", idx: 0 };
   box.innerHTML =
-    // THE CHAMBER IS STATED, NOT OFFERED: it is the weapon. Said out loud so a
-    // reader can see that what is missing here is missing on purpose.
-    `<label>${escHtml(tr("Chamber"))} <span class="fixed-val">${
-      escHtml(s.chamber_name)}</span></label>` +
-    slotPick +
-    pick("grip", tr("Grip"), s.grips.map(gripItem),
-         tr("the grip sets damage, fire rate and the charge — only this slot's five are offered, because a grip is what decides the slot")) +
-    pick("loader", tr("Loader"), s.loaders.map(loaderItem),
-         tr("the loader sets the magazine and the reload, and adds three deltas that can be negative")) +
-    (summary ? `<span class="sim-hint">${escHtml(summary)}</span>` : "");
+    (slotPick ? `<div class="runs-row">${slotPick}</div>` : "") +
+    scanStrip(gainScan, axis) +
+    partRow("grip", "Grip", s.grips.map(gripItem),
+      tr("the grip sets damage, fire rate and the charge — only this slot's five are offered, because a grip is what decides the slot")) +
+    partRow("loader", "Loader", s.loaders.map(loaderItem),
+      tr("the loader sets the magazine and the reload, and adds three deltas that can be negative"));
+  // The scan that fills the chips, keyed like every other axis so it runs once
+  // per (build, fight) and repaints when it lands.
+  ensureGains(axis, () => renderAssembly());
+  box.querySelectorAll(".evopick").forEach((c) =>
+    c.addEventListener("click", () => {
+      const { part, id } = c.dataset;
+      if (!part || assembly[part] === id) return;
+      assembly = { ...assembly, [part]: id };
+      markPresetDirty();
+      renderAssembly();
+      refreshPanel();
+    }));
 }
 
 /// THE VALENCE BLOCK. Two controls, because a Lich hands you two facts: which
@@ -14066,7 +14166,7 @@ function renderOptArcanes() {
       const pinned = marks.find((id) => opt.arcanes[id] === "fixed") || null;
       const hasPool = marks.some((id) => opt.arcanes[id] === "search");
       const head = axes.length > 1
-        ? `<div class="menu-head">${escHtml(tr(SLOT_LABEL[pool] || pool))}</div>`
+        ? `<div class="menu-head">${escHtml(tr(ARC_POOL_LABEL[pool] || pool))}</div>`
         : "";
       const rows = inPool.map((a) => row(a, pinned, hasPool)).join("")
         || `<div class="opt dis">${escHtml(tr("no matches"))}</div>`;
