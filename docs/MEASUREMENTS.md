@@ -3977,16 +3977,31 @@ own tolerances, and the wiki's DoT examples are all on a seed of 40 where the
 absolute figures are printed and the ratio is not. It took a small gun and nine
 readings across three brackets.
 
-### The harness could not have caught it
+### The harness could not have caught it — and now can
 
 `one_fight`, the cost-and-answer baseline, reported all three shapes **unmoved
-to fifteen digits** — including with the accumulator scaled by a thousand. Its
-default build is Hellfire + Cryo Rounds and Infected Clip + Stormbringer, which
-is BLAST and CORROSIVE: a detonation and an armour strip, and not one of the
-five damaging burns. So it ticks no status DoT at all, and its own comment
-claimed it exercised them. The comment is corrected; the mod list is not,
-because every saved baseline was measured under it. A DoT change is graded by
-`cargo test`, and an unmoved answer column there is not evidence.
+to fifteen digits** — including with the accumulator scaled by a thousand,
+which is what turned "too small to see" into "never executed". Its default
+build is Hellfire + Cryo Rounds and Infected Clip + Stormbringer, which is
+BLAST and CORROSIVE: a detonation and an armour strip, and not one of the five
+damaging burns. So it ticked no status DoT at all, while its own comment
+claimed it exercised them.
+
+The trap underneath is that `dot_damage` is **not** a proxy for "a burn
+ticked": that bucket also holds Blast detonations and area hits, so the Torid
+reported 29,001 of it with not one burn in the fight. `RunResult::dot_ticks`
+already counted the right thing and was never reported anywhere;
+`Summary::mean_dot_ticks` is that counter, surfaced.
+
+Fixed twice over. A **fourth shape** — the Braton Prime, 60% Slash, and a
+physical type is the one thing an elemental mod cannot combine away — burns
+under the unchanged default build, 507.6 ticks a run against zero for the other
+three. And the tool now **fails when the whole suite ticks nothing**, so the
+next edit to the mod list or the weapon list cannot silently undo it. The mod
+list itself is untouched: it is what every saved baseline was measured under.
+Both halves verified to bite, and so is the fleet merge carrying the new
+counter — a shard that dropped it would report zero burns for a fight full of
+them, which is the guard firing on a working engine.
 
 Also noted on the same page and NOT implemented: *"intermediate DoT operations
 use binary32 arithmetic"*. Its effect is below the resolution of anything

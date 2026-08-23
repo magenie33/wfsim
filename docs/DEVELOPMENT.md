@@ -136,6 +136,25 @@ answer moved**. A moved answer exits non-zero: an optimisation that changes a
 number is not an optimisation, it is a bug, and that is the one thing this must
 never let you scroll past. It catches a change of one part in 10¹².
 
+**IT ALSO GRADES ITS OWN COVERAGE**, and it has to, because the answer column
+can only catch a change in something the suite actually does. For as long as
+this tool existed its default build combined every element away — Hellfire +
+Cryo Rounds is Blast, Infected Clip + Stormbringer is Corrosive — so the suite
+ticked **no status DoT at all**, and nothing said so: a change to DoT tick
+damage left all three shapes unmoved to fifteen digits, and so did the same
+change scaled by a thousand (2026-08-23). A broken burn would have been
+reported as "3 of 3 answers unchanged, 40% faster: ship it", which is the exact
+failure this tool exists to catch arriving through the one door it was not
+watching.
+
+Two things fixed it, and only the second one is permanent. A fourth shape —
+the **Braton Prime**, 60% of whose base is Slash, and a PHYSICAL type is the
+one thing an elemental mod cannot combine away — burns under the unchanged
+default build. And the tool now FAILS when the whole suite ticks nothing, so
+the next person to edit the mod list or the weapon list cannot silently undo
+it. `-v` prints the burn-tick count per shape. The mod list itself is
+deliberately untouched: it is what every saved baseline was measured under.
+
 Every knob is a `key=value` argument — `weapon=`, `mods=`, `runs=`,
 `duration=`, `enemy=`, `level=`, `steel_path=`, `seed=`, `repeats=`, and `-v`.
 `--help` lists them.

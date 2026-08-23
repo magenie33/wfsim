@@ -185,9 +185,16 @@ around (decision 2026-07-31).
   without both "it feels faster" and "it got dumber" are the same sentence. It
   diffs a saved baseline and says whether the ANSWER moved — a moved answer is a
   non-zero exit, because an optimisation that changes a number is a bug. Read
-  its table ACROSS: the default is three shapes, and a change to the inner loop
+  its table ACROSS: the default is four shapes, and a change to the inner loop
   rarely moves them together (`target-cpu=native` is −23% / −36% / **+31%**
-  across them). docs/DEVELOPMENT.md §5 lists what has already been tried and
+  across the first three). IT GRADES ITS OWN COVERAGE, because an answer column
+  can only catch a change in something the suite actually does: for as long as
+  the tool existed the default build combined every element into Blast or
+  Corrosive, so the suite ticked NO status DoT and a DoT change came back
+  "3 of 3 unchanged" — even scaled by a thousand (2026-08-23). The fourth shape
+  is a Braton Prime, whose 60% SLASH is the one thing an elemental mod cannot
+  combine away, and the tool now FAILS when the whole suite burns nothing so
+  the next edit cannot silently undo it. docs/DEVELOPMENT.md §5 lists what has already been tried and
   what it was worth, so nobody spends a day on it twice.
 - **Optimizer verification: `cargo run --release --bin wfsim-truth -- pool=<ids>
   …`**. A search cannot vouch for itself, so it is GRADED: the tool exhausts the

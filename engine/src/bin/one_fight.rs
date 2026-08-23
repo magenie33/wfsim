@@ -68,18 +68,19 @@ use wfsim_engine::loadout::{resolve, StackPolicy, WeaponBase};
 /// exercises the elemental hierarchy, crit and status rather than a bare
 /// weapon's arithmetic.
 ///
-/// **IT TICKS NO STATUS DoT AT ALL**, and the reason is in the list below
-/// rather than in the weapons: Hellfire + Cryo Rounds is BLAST and Infected
-/// Clip + Stormbringer is CORROSIVE, so the two things this build can proc are
-/// a detonation and an armour strip. Neither is one of the five damaging
-/// burns. It was found by a change to DoT tick damage that all three shapes
-/// reported as unmoved to fifteen digits (2026-08-23).
+/// **IT COMBINES AWAY ALL FOUR OF ITS ELEMENTS**: Hellfire + Cryo Rounds is
+/// BLAST and Infected Clip + Stormbringer is CORROSIVE, so the two things this
+/// build can proc are a detonation and an armour strip — neither of them one
+/// of the five damaging burns. For as long as this tool existed the suite
+/// therefore ticked NO status DoT at all, and nothing said so: a change to DoT
+/// tick damage left all three shapes unmoved to fifteen digits, and so did the
+/// same change scaled by a thousand (2026-08-23).
 ///
-/// Not changed here, because the mod list is what every saved baseline was
-/// measured under and moving it makes this tool's whole history
-/// incomparable. What it means is that a DoT change is graded by
-/// `cargo test`, and this tool has nothing to say about it — which is worth
-/// knowing before reading an unmoved answer column as reassurance.
+/// The mod list is NOT the fix and is deliberately unchanged — it is what every
+/// saved baseline was measured under, and moving it makes this tool's whole
+/// history incomparable. The fix is a fourth weapon that carries innate SLASH,
+/// because a PHYSICAL type is the one thing an elemental mod cannot combine
+/// away, plus a coverage guard that fails when the suite burns nothing.
 const DEFAULT_MODS: &str = "serration,split_chamber,point_strike,vital_sense,\
                             hellfire,cryo_rounds,infected_clip,stormbringer";
 
@@ -87,14 +88,23 @@ const DEFAULT_MODS: &str = "serration,split_chamber,point_strike,vital_sense,\
 /// do not. A change that helps one and hurts another is the normal case, not
 /// the exception, so the default measurement has to be able to say so.
 const SUITE: &[(&str, &str)] = &[
-    // A launcher with a LINGERING FIELD: few shots, ~900 procs, and the DoT
-    // bookkeeping dominates.
-    ("torid", "the field/DoT shape — 180 shots, ~900 procs"),
+    // A launcher with a LINGERING FIELD: few shots, ~900 procs, and the field
+    // bookkeeping dominates. Its damage is pure Toxin, which the default
+    // build's Stormbringer combines into Corrosive — so it burns nothing.
+    ("torid", "the field shape — 180 shots, ~900 procs"),
     // A high fire-rate rifle: ~1800 shots, and the per-shot path dominates.
+    // Pure Puncture.
     ("gotva_prime", "the per-shot shape — ~1800 shots"),
     // A projectile with a RADIAL on every shot: two damage instances a trigger
-    // pull, each with its own crit and status roll.
+    // pull, each with its own crit and status roll. Innate Corrosive.
     ("scourge", "the radial shape — an explosion on every shot"),
+    ("braton_prime", "the bleed shape — the only one that ticks a status DoT"),
+    // THE ONLY SHAPE THAT BURNS, and it is here because the other three do not
+    // — see `DEFAULT_MODS`. 60% of its base is SLASH, and a physical type
+    // survives any elemental mod, so its bleeds tick under the unchanged
+    // default build and the DoT path is finally on the table. It is also the
+    // gun the accumulator was measured on (M58), which is not a coincidence:
+    // the shape that would have caught the gap is the one that found it.
 ];
 
 /// Where a baseline lives: under `target/`, which is machine-local and already
@@ -111,6 +121,10 @@ struct Shape {
     spread: f64,
     shots: f64,
     procs: f64,
+    /// STATUS DoT ticks this shape paid. Not an answer and not a cost — it is
+    /// COVERAGE, and it is here because its being zero is invisible in every
+    /// other column. See the guard at the end of `main`.
+    dot_ticks: f64,
     /// The ANSWER. Two means over every run, so they are stable to many digits
     /// and a real change is unmissable.
     kill_progress: f64,
@@ -220,6 +234,7 @@ fn measure(weapon: &str, c: &Cfg) -> Shape {
         spread: if best > 0.0 { (worst - best) / best } else { 0.0 },
         shots: s.mean_shots,
         procs: s.mean_procs,
+        dot_ticks: s.mean_dot_ticks,
         kill_progress: s.mean_kill_progress,
         damage: s.mean_effective_damage,
     }
@@ -536,13 +551,33 @@ fn main() -> std::process::ExitCode {
         println!();
         for s in &measured {
             println!(
-                "  {:<14} shots {:>7.1}  procs {:>7.1}  kill progress {:.9}",
-                s.weapon, s.shots, s.procs, s.kill_progress
+                "  {:<14} shots {:>7.1}  procs {:>7.1}  burn ticks {:>7.1}  kill progress {:.9}",
+                s.weapon, s.shots, s.procs, s.dot_ticks, s.kill_progress
             );
         }
     }
 
     println!();
+    // COVERAGE, AND IT IS DERIVED RATHER THAN REMEMBERED (2026-08-23).
+    //
+    // The answer column can only catch a change in something the suite
+    // actually does. For as long as this tool existed the suite burned
+    // NOTHING — every element in `DEFAULT_MODS` combines into Blast or
+    // Corrosive — so a broken DoT tick would have been reported as "3 of 3
+    // answers unchanged, 40% faster: ship it". That is the exact failure this
+    // tool is for, arriving through the one door it was not watching.
+    //
+    // Adding a burning shape fixes it once; this fixes it for good, because
+    // the next person to edit the mod list or the weapon list cannot silently
+    // undo it. It runs on the SUITE only — asking one weapon named on the
+    // command line to burn would be a false alarm, since plenty do not.
+    if arg(&args, "weapon").is_none() && measured.iter().all(|s| s.dot_ticks == 0.0) {
+        println!("  ! the suite ticked NO status DoT — the answer column is blind to every burn.");
+        println!("    Every element in this build combines into Blast or Corrosive, so nothing");
+        println!("    burns. Restore a shape with innate Slash, or a mono-element build.
+");
+        return std::process::ExitCode::FAILURE;
+    }
     if moved > 0 {
         // NON-ZERO EXIT, so a script cannot ignore it and a person cannot
         // scroll past it. A faster engine that computes something else is the

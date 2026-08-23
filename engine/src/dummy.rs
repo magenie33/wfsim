@@ -4014,7 +4014,17 @@ pub struct RunResult {
     pub crit_tier_sum: u32,
     pub headshots: u32,  // hits on an `is_head` part
     pub procs: u32,      // status procs applied (all types)
-    pub dot_ticks: u32,  // bleed ticks that landed
+    /// STATUS DoT TICKS THAT PAID — a Heat/Electricity/Toxin/Gas/Slash burn,
+    /// counted per tick GROUP (see [`Dot::accumulator_unit`]). A Blast
+    /// detonation is not one and does not count.
+    ///
+    /// NOT derivable from `dot_damage`, which is the trap: that bucket also
+    /// holds Blast detonations and area hits, so a fight with tens of
+    /// thousands of "DoT damage" and not one burn in it looks identical to a
+    /// fight full of burns. `one_fight`'s default build was exactly that
+    /// fight for as long as the tool existed (2026-08-23), which is why this
+    /// counter is now REPORTED rather than only recorded.
+    pub dot_ticks: u32,
     /// Lingering-FIELD ticks that landed (Torid's cloud) — its own counter
     /// because a field tick is weapon damage, not a status DoT tick.
     pub field_ticks: u32,
@@ -11775,6 +11785,10 @@ pub struct Summary {
     pub mean_procs: f64,
     /// Mean lingering-FIELD ticks that landed (Torid's cloud).
     pub mean_field_ticks: f64,
+    /// Mean STATUS DoT ticks that paid — see [`RunResult::dot_ticks`]. Reported
+    /// because `mean_dot_damage` is not a proxy for it: a fight can carry a
+    /// large one and no burn at all.
+    pub mean_dot_ticks: f64,
     pub mean_reloads: f64,
     pub mean_transforms: f64,
     pub mean_kills: f64,
@@ -11961,6 +11975,7 @@ pub struct Shard {
     dot: f64,
     procs: u64,
     field_ticks: u64,
+    dot_ticks: u64,
     reloads: u64,
     transforms: u64,
     kills: u64,
@@ -12009,6 +12024,7 @@ impl Default for Shard {
             dot: 0.0,
             procs: 0,
             field_ticks: 0,
+            dot_ticks: 0,
             reloads: 0,
             transforms: 0,
             kills: 0,
@@ -12053,6 +12069,7 @@ impl Shard {
         self.dot += o.dot;
         self.procs += o.procs;
         self.field_ticks += o.field_ticks;
+        self.dot_ticks += o.dot_ticks;
         self.reloads += o.reloads;
         self.transforms += o.transforms;
         self.kills += o.kills;
@@ -12184,6 +12201,7 @@ pub fn shard(
         a.dot += r.dot_damage;
         a.procs += u64::from(r.procs);
         a.field_ticks += u64::from(r.field_ticks);
+        a.dot_ticks += u64::from(r.dot_ticks);
         a.reloads += u64::from(r.reloads);
         a.transforms += u64::from(r.transforms);
         a.kills += u64::from(r.kills);
@@ -12229,6 +12247,7 @@ impl Shard {
         let (effective, effective_sq, dot) = (self.effective, self.effective_sq, self.dot);
         let (procs, field_ticks, reloads, transforms) =
             (self.procs, self.field_ticks, self.reloads, self.transforms);
+        let dot_ticks = self.dot_ticks;
         let (kills, kills_sq) = (self.kills, self.kills_sq);
         let (kill_progress, kill_progress_sq) = (self.kill_progress, self.kill_progress_sq);
         let (min_kills, max_kills) = (self.min_kills, self.max_kills);
@@ -12282,6 +12301,7 @@ impl Shard {
         mean_dot_damage: dot / n,
         mean_procs: procs as f64 / n,
         mean_field_ticks: field_ticks as f64 / n,
+        mean_dot_ticks: dot_ticks as f64 / n,
         mean_reloads: reloads as f64 / n,
         mean_transforms: transforms as f64 / n,
         mean_kills: kills as f64 / n,
@@ -13354,6 +13374,11 @@ mod tests {
             ("mean_kills", part.mean_kills, whole.mean_kills),
             ("std_kills", part.std_kills, whole.std_kills),
             ("mean_procs", part.mean_procs, whole.mean_procs),
+            // COVERAGE TRAVELS TOO. `one_fight` fails when the suite burns
+            // nothing, and a fleet that lost this field would report zero
+            // burns for a fight full of them — the guard turning on a working
+            // engine, which is worse than no guard.
+            ("mean_dot_ticks", part.mean_dot_ticks, whole.mean_dot_ticks),
             ("mean_crit_rate", part.mean_crit_rate, whole.mean_crit_rate),
             ("mean_headshot_rate", part.mean_headshot_rate, whole.mean_headshot_rate),
             ("burst_dps", part.burst_dps, whole.burst_dps),
