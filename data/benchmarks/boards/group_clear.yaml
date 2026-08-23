@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-engine: 99463cb61b1cacf8906c9ab944fc75587dc225be
+engine: 4be4b00b69ba3014e341f15d13102953e6221459
 entries:
   - weapon: afentis_prime
     mode: base
@@ -148,10 +148,22 @@ entries:
     valence: impact
   - weapon: kuva_ogris
     mode: base
-    score: 14.591299598190131
-    mods: [heavy_caliber, primed_firestorm, serration, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
+    score: 32.33342955697661
+    mods: [galvanized_chamber, primed_firestorm, serration, nightwatch_napalm, semi_rifle_cannonade, rime_rounds, malignant_force, hellfire]
+    arcanes: [primary_crux]
+    valence: magnetic
+  - weapon: kuva_ogris
+    mode: base
+    score: 29.299077337026464
+    mods: [galvanized_chamber, primed_firestorm, serration, nightwatch_napalm, semi_rifle_cannonade, rime_rounds, malignant_force, hellfire]
     arcanes: [primary_compression]
     valence: magnetic
+  - weapon: kuva_ogris
+    mode: base
+    score: 27.05383902757782
+    mods: [galvanized_chamber, primed_firestorm, serration, nightwatch_napalm, semi_rifle_cannonade, magnetic_capacity, primed_cryo_rounds, malignant_force]
+    arcanes: [primary_crux]
+    valence: heat
   - weapon: kuva_tonkor
     mode: base
     score: 9.904717034846849
