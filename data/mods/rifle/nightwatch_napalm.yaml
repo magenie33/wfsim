@@ -57,6 +57,13 @@ effects:
   # agree by construction rather than by a second rule. A Kuva Ogris rolled on
   # anything but Heat is the reading that would tell them apart.
   #
+  # ECLIPSE REACHES IT, and that is not a hole in the closed list above —
+  # measured (owner, 2026-08-23). The wiki's sentence is about MODS ("can only
+  # be increased by base damage mods and faction mods"), and an ability's FINAL
+  # multiplier is a different bracket that no mod lives in. It already worked:
+  # `field_tick` multiplies by `ability_final_at`, so the fire triples under
+  # Eclipse exactly as the rocket does.
+  #
   # IT TAKES NO GUN CONDITION OVERLOAD — "it is area damage, modelled the
   # ordinary way" (owner, 2026-08-23), which is where it parts company with the
   # Torid's cloud. That is already the default for an AoE part here

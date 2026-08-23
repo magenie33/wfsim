@@ -817,10 +817,16 @@ impl Dot {
     /// the body part belong to a hit that is over, and no later buff can change
     /// where a bullet landed.
     ///
-    /// The three factors below are re-read because all three were already
-    /// TIME-INDEXED — `ability_element_at`, `faction_at_time`,
-    /// `ability_final_at` — and the only thing wrong was the moment they were
-    /// asked about. Asking at `now` instead of at `at` is the whole change.
+    /// WHICH FACTORS, AND WHY NOT ALL OF THEM. The element bracket and the
+    /// faction bracket are re-read; the FINAL multiplier is not, and Eclipse is
+    /// the measurement that draws that line (owner, 2026-08-23). Both are
+    /// abilities with a duration, so the line is about the BRACKET rather than
+    /// about where the buff came from — which is the same split the wiki states
+    /// for a different reason: *"Unlike faction damage, which double dips for
+    /// status effects, the one from Eclipse is applied once."*
+    ///
+    /// Eclipse therefore lives in `frozen`, applied once, at the moment the
+    /// proc landed.
     fn live(&self, params: &DummyParams, now: f64) -> f64 {
         if !self.source_scaled {
             return self.frozen;
@@ -828,7 +834,6 @@ impl Dot {
         self.frozen
             * (self.bracket + params.ability_element_at(self.dtype, now))
             * faction_at(params.faction_at_time(now), self.depth)
-            * params.ability_final_at(now)
     }
 }
 
@@ -4914,13 +4919,16 @@ fn settle_procs(
     // snapshot of its instance, which is why `crit_multiplier` is snapshotted here
     // too.
     let fm2 = faction_at(params.faction_at_time(at), depth);
-    // ECLIPSE AND FACTION ARE NO LONGER READ HERE FOR A BURN — both are the
-    // SOURCE's and are re-read when the tick is paid (`Dot::live`).
+    // ECLIPSE IS SNAPSHOTTED AND FACTION IS NOT, and that is a fact about the
+    // BRACKET rather than about where the buff came from — both are abilities
+    // with a duration (owner, measured both, 2026-08-23).
     //
-    // `fm2` above stays, because a BLAST stack is not a burn: it is a delayed
-    // INSTANCE that detonates once, and what it is worth is settled by the hit
-    // that stacked it. Nobody has measured that one either way, so it keeps the
-    // answer it had.
+    // The wiki draws the same line for a different reason and in so many words:
+    // *"Unlike faction damage, which double dips for status effects, the one
+    // from Eclipse is applied once."* The FINAL multiplier is not part of what
+    // a status inherits; the faction bracket is, twice over. So it is read HERE,
+    // at `at`, and lives in the tick's frozen half.
+    let ecl = params.ability_final_at(at);
     // RETURNS THE DOT IT PUSHED, so an AREA proc can post a copy to
     // `DebuffState::area_out` for everybody standing near this body.
     let push_dot = |debuffs: &mut DebuffState,
@@ -4950,11 +4958,10 @@ fn settle_procs(
                 // so its share belongs in the same sum, which is what makes
                 // Fireball Frenzy "contribute to DoT" rather than only to the
                 // hit.
-                // THE INSTANCE'S HALF ONLY. The element bracket, the faction
-                // bonus and Eclipse are the SOURCE's and are re-read at every
-                // tick — see `Dot::live`. `fm2` and `ecl` are computed above
-                // and now go unused on this path, which is what the change IS.
-                frozen: coeff * mb_live * sdm * crit_multiplier * part * attrition,
+                // THE INSTANCE'S HALF, and ECLIPSE IS IN IT. The element
+                // bracket and the faction bonus are re-read at every tick
+                // (`Dot::live`); the final multiplier is not, measured.
+                frozen: coeff * mb_live * sdm * crit_multiplier * part * attrition * ecl,
                 bracket,
                 depth,
                 source_scaled: true,
@@ -5094,7 +5101,9 @@ fn settle_procs(
                     * mb_live
                     * sdm
                     * crit_multiplier
-                    * part_factor;
+                    * part_factor
+                    // …and Eclipse, applied ONCE at the proc. See `Dot::live`.
+                    * ecl;
                 let expiry = at + STATUS_DURATION * status_damage;
                 debuffs.apply_heat(
                     at, contrib, expiry, heat_cap,
@@ -7076,8 +7085,7 @@ fn process_ticks(
                 // whose stacks all share a clock.
                 let paid = h.value
                     * (h.bracket + params.ability_element_at(DamageType::Heat, now))
-                    * faction_at(params.faction_at_time(now), h.depth)
-                    * params.ability_final_at(now);
+                    * faction_at(params.faction_at_time(now), h.depth);
                 (paid, false, true, DamageType::Heat, DamageType::Heat, None)
             }
             Ev::Blast(i) => {
@@ -23632,6 +23640,31 @@ mod warframe_ability_tests {
         assert!(
             brief > none * 1.001,
             "the ticks under Roar were not paid either: {brief} against {none}"
+        );
+
+        // ECLIPSE GOES THE OTHER WAY, and it is the control that makes the
+        // reading above mean something. Both are abilities with a duration, so
+        // if the split were "abilities are live" they would behave alike — they
+        // do not, because the split is about the BRACKET: the faction bonus is
+        // part of what a status inherits and the FINAL multiplier is applied
+        // once, at the proc (owner measured both, 2026-08-23; the wiki draws
+        // the same line for its own reason).
+        let ebleed = |seconds: Option<f64>| {
+            let mut p = params(&[("eclipse", seconds)], 1.0);
+            p.damage = DamageVector::new().with(DamageType::Slash, 100.0);
+            p.status_chance = 1.0;
+            p.base_status_chance = 1.0;
+            p.target.base_health = 1e15;
+            p.fire_rate = 0.02;
+            p.duration_seconds = 30.0;
+            run_once(&p, &mut crate::rng::Rng::new(3)).dot_damage
+        };
+        let e_whole = ebleed(None);
+        let e_brief = ebleed(Some(2.0));
+        assert!(e_whole > none, "eclipse must pay something: {none} -> {e_whole}");
+        assert!(
+            (e_brief - e_whole).abs() < e_whole * 1e-9,
+            "an Eclipse that ended mid-burn changed the burn: {e_brief} against              {e_whole} — the final multiplier is being re-read and should be frozen"
         );
     }
 
