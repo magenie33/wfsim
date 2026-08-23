@@ -508,6 +508,35 @@ Related: per-shot **damage** quantization also exists and was changed from
 1/16 to 1/32 steps in Update 40 (undocumented, per the wiki `Damage` patch
 history). Exact mechanics not yet transcribed — same recorded-only status.
 
+**A STATUS TICK'S ACCUMULATOR STARTS AT 1** (wiki `Damage/Calculation` §Damage
+Over Time; measured, 2026-08-23, M58).
+
+```
+Unrounded Tick Damage = (Σ Sᵢ + 1) × C × M
+```
+
+`Sᵢ` is each stored damage seed (ModifiedBase with the applying hit's crit, body
+part and faction in it), `C` is 0.5 for Heat / Electricity / Toxin / Gas and
+0.35 for Slash, and `M` is the elemental, faction and status-damage bonuses.
+`Dot::accumulator_unit` is the `1`.
+
+- **Once per TICK GROUP.** Heat, Electricity and Gas consolidate, so one `1`
+  however many stacks fold in; Slash and Toxin tick independently and each
+  carries its own. The page says so outright and says why: it is "neither a
+  final flat +1 damage bonus nor a bonus applied once per status stack".
+- **Five statuses only.** Blast is not among them, and the capture confirms it
+  independently — a detonation reads exactly `0.3 × base` at every tier.
+- **One faction layer, not two.** The page's Toxin example is
+  `(40 × 1.55 + 1) × 0.5 × 3.25 × 1.55`, with the `1` added between the seed's
+  layer and `M`'s. So a Roar'd bleed is `f²` only in the limit where the seed
+  dwarfs the 1. A FINAL multiplier (Eclipse) scales both and stays exact.
+- **DoT ticks take no 1/32 quantization**, stated in the same section: "A proc
+  is calculated from the attack's modded base damage rather than from the sum
+  of its quantized damage-type values."
+
+It is worth 0.5 damage before multipliers — 2.9% of a tick on a base-35 rifle
+and 0.25% on a base of 400, which is why it took a small gun to see.
+
 **Critical headshots** (wiki `Critical_Hit` §Critical Headshots). A critical hit
 on a head/weak-point location gets an **additional 2.0x** bonus on top of the
 location multiplier and the crit damage multiplier, folded into the tier

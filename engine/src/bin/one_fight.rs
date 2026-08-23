@@ -65,8 +65,21 @@ use wfsim_engine::dummy::{monte_carlo, DummyParams, TargetMode};
 use wfsim_engine::loadout::{resolve, StackPolicy, WeaponBase};
 
 /// The default build: eight mods a real rifle build carries, so the fight
-/// exercises the elemental hierarchy, crit, status and DoTs rather than a bare
+/// exercises the elemental hierarchy, crit and status rather than a bare
 /// weapon's arithmetic.
+///
+/// **IT TICKS NO STATUS DoT AT ALL**, and the reason is in the list below
+/// rather than in the weapons: Hellfire + Cryo Rounds is BLAST and Infected
+/// Clip + Stormbringer is CORROSIVE, so the two things this build can proc are
+/// a detonation and an armour strip. Neither is one of the five damaging
+/// burns. It was found by a change to DoT tick damage that all three shapes
+/// reported as unmoved to fifteen digits (2026-08-23).
+///
+/// Not changed here, because the mod list is what every saved baseline was
+/// measured under and moving it makes this tool's whole history
+/// incomparable. What it means is that a DoT change is graded by
+/// `cargo test`, and this tool has nothing to say about it — which is worth
+/// knowing before reading an unmoved answer column as reassurance.
 const DEFAULT_MODS: &str = "serration,split_chamber,point_strike,vital_sense,\
                             hellfire,cryo_rounds,infected_clip,stormbringer";
 

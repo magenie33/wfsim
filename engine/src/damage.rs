@@ -436,6 +436,54 @@ mod tests {
         assert_eq!(popped(split), 137.0, "+200% Gas + 90% Toxin: {}", split.total());
     }
 
+    /// **THE PAGE'S OWN END-TO-END EXAMPLE, WITH ELEMENTS**, which is the one
+    /// the 30/30/40 illustration is not: a Nagantaka Prime (base 173, 1/9/90)
+    /// with Cryo Rounds, Malignant Force, Hellfire, Piercing Caliber and a Gas
+    /// Valence Formation.
+    ///
+    /// It states the scale as `173 / 32 = 5.40625` — the weapon's BASE, against
+    /// a modded total of 951.5 — and then walks all six components. Under the
+    /// denominator this engine used until 2026-08-23 the scale would have been
+    /// `951.5/32 = 29.7` and not one line of it would reproduce.
+    ///
+    /// Three separate rules fall out of the same six lines, and each is a thing
+    /// the engine has to get right:
+    ///
+    /// - a component too small for one step **rounds to zero** — the page says
+    ///   so outright, "the Impact value of Nagantaka Prime is so low that it
+    ///   will not register during attacks";
+    /// - a COMBINED element quantizes its SUM as one component (Cold 90% +
+    ///   Toxin 60% is one 150% Viral, not two);
+    /// - a PARALLEL imbue is its own component beside it, which is what makes
+    ///   Valence Formation visible here at all.
+    #[test]
+    fn the_pages_nagantaka_prime_example_reproduces_line_by_line() {
+        let base = 173.0;
+        let v = DamageVector::new()
+            .with(DamageType::Impact, 1.73)
+            // Piercing Caliber is +120% Puncture, and a physical mod scales the
+            // weapon's own share of that type.
+            .with(DamageType::Puncture, 15.57 * 2.2)
+            .with(DamageType::Slash, 155.7)
+            // Cryo Rounds 90% + Malignant Force 60%, summed into one Viral.
+            .with(DamageType::Viral, 1.5 * base)
+            .with(DamageType::Heat, 0.9 * base)
+            // Valence Formation, parallel and therefore its own type.
+            .with(DamageType::Gas, 2.0 * base)
+            .quantized_against(base);
+        for (t, want) in [
+            (DamageType::Impact, 0.0),
+            (DamageType::Puncture, 32.4375),
+            (DamageType::Slash, 156.78125),
+            (DamageType::Viral, 259.5),
+            (DamageType::Heat, 156.78125),
+            (DamageType::Gas, 346.0),
+        ] {
+            assert_eq!(v.get(t), want, "{t:?}");
+        }
+        assert_eq!(v.total(), 951.5);
+    }
+
     #[test]
     fn base_crit_damage_quantization() {
         // Even a clean 2.0x sits off-grid: 2.0 * 4095/32 = 255.9375 -> 256

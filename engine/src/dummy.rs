@@ -798,6 +798,10 @@ struct Dot {
     /// up Lavos and Eclipse through `live`, which is a bonus on a number that
     /// was never the weapon's.
     source_scaled: bool,
+    /// WHAT THE ACCUMULATOR'S INITIAL `1` IS WORTH here — `C x` the multipliers
+    /// that are NOT re-read live, and 0.0 for a tick the rule does not cover.
+    /// See [`Dot::accumulator_unit`].
+    unit: f64,
     dtype: DamageType,
     ignores_armor: bool,
 }
@@ -835,11 +839,76 @@ impl Dot {
             * (self.bracket + params.ability_element_at(self.dtype, now))
             * faction_at(params.faction_at_time(now), self.depth)
     }
+
+    /// **THE ACCUMULATOR STARTS AT 1, NOT AT 0** (wiki `Damage/Calculation`
+    /// §Damage Over Time, verbatim): *"the temporary damage accumulator for
+    /// each tick group starts at 1 rather than 0"*, giving
+    ///
+    /// ```text
+    /// Unrounded Tick Damage = (Σ Sᵢ + 1) × C × M
+    /// ```
+    ///
+    /// where `Sᵢ` is each stored damage seed, `C` is 0.5 (Heat, Electricity,
+    /// Toxin, Gas) or 0.35 (Slash), and `M` is the elemental, faction and
+    /// status-damage bonuses. So the `1` is worth `C × M` — this method — and
+    /// it is neither a flat +1 of damage nor anything the seed carries.
+    ///
+    /// IT IS PER TICK GROUP, ONCE. The page says so and says why it matters:
+    /// *"If several seeds are consolidated into a single tick, they are added
+    /// to the same accumulator, so its initial value of 1 is included only
+    /// once. It is therefore neither a final flat +1 damage bonus nor a bonus
+    /// applied once per status stack."* Heat, Electricity and Gas consolidate;
+    /// Slash and Toxin tick independently and each carries its own.
+    ///
+    /// WHAT IT WAS WORTH, and how it was found. Nine DoT readings on a Braton
+    /// Prime came back a flat 36/35 above what this engine computed, across
+    /// three independent element brackets, while every direct hit on the same
+    /// builds landed on the digit (M56). `(35 + 1) × 0.5 = 18` reproduces all
+    /// nine; `35 × 0.5 = 17.5` reproduces none. It is 2.9% on a base of 35 and
+    /// 0.25% on a base of 400 — a small weapon's problem, and invisible on a
+    /// big one, which is why measuring it took a base-35 rifle.
+    ///
+    /// AND THE SAME SESSION BOUNDS IT FROM THE OTHER SIDE. Blast is NOT in the
+    /// page's list of five, and the capture proves it: a detonation read 11 /
+    /// 21 / 63 across body, crit and critical headshot, which is `0.3 × 35`
+    /// times 1 / 2 / 6 exactly. With an accumulator the crit line would be
+    /// `0.3 × 36 × 2 = 21.6`, displayed 22.
+    ///
+    /// ONLY ONE FACTION LAYER. The seed already carries the hit's own — the
+    /// page's Toxin example is `(40 × 1.55 + 1) × 0.5 × 3.25 × 1.55`, with the
+    /// bonus inside the seed AND in `M`, and the `1` added between them. So a
+    /// payload at `depth` puts `depth − 1` layers in the seed and exactly one
+    /// here.
+    fn accumulator_unit(&self, params: &DummyParams, now: f64) -> f64 {
+        if !self.source_scaled || self.unit == 0.0 {
+            return 0.0;
+        }
+        self.unit
+            * (self.bracket + params.ability_element_at(self.dtype, now))
+            * params.faction_at_time(now)
+    }
 }
 
 /// The Heat singleton accumulator (data/debuffs/ignite.yaml): ONE entity
 /// per target; each proc adds its contribution to the tick value and
 /// refreshes the shared expiry; ticks stay anchored to the FIRST proc.
+/// THE SOURCE-SIDE FACTS A HEAT ENTITY IS BORN WITH, taken from its first proc.
+///
+/// One type because they are set together, read together and never
+/// individually: Heat is one entity per target with one clock, so the first
+/// proc decides all three and every later contribution on this target is the
+/// same weapon in the same fight.
+#[derive(Clone, Copy)]
+struct HeatOrigin {
+    /// The mod-side element bracket, as [`Dot::bracket`].
+    bracket: f64,
+    /// The faction derivation step, as [`Dot::depth`].
+    depth: u32,
+    /// What the accumulator's initial `1` is worth, as
+    /// [`Dot::accumulator_unit`].
+    unit: f64,
+}
+
 struct HeatEntity {
     born: f64,
     expiry: f64,
@@ -853,6 +922,11 @@ struct HeatEntity {
     bracket: f64,
     /// The faction derivation step, as [`Dot::depth`].
     depth: u32,
+    /// What the accumulator's initial `1` is worth for this entity, set by the
+    /// FIRST proc for the same reason `bracket` is. Heat is the archetype of a
+    /// consolidated tick group, so it is counted ONCE however many stacks fold
+    /// into `value` — see [`Dot::accumulator_unit`].
+    unit: f64,
     /// Individual contributions, oldest first — only tracked when a per-unit
     /// stack cap applies, so a capped Heat can drop its OLDEST contribution
     /// (FIFO) when a new proc lands, exactly like every other capped status.
@@ -1450,9 +1524,9 @@ impl DebuffState {
         contrib: f64,
         expiry: f64,
         cap: Option<usize>,
-        bracket: f64,
-        depth: u32,
+        origin: HeatOrigin,
     ) {
+        let HeatOrigin { bracket, depth, unit } = origin;
         match &mut self.heat {
             Some(h) => {
                 match cap {
@@ -1484,6 +1558,7 @@ impl DebuffState {
                     // the same weapon in the same fight.
                     bracket,
                     depth,
+                    unit,
                     born: t,
                     expiry,
                     next_tick: t + 1.0,
@@ -4288,10 +4363,12 @@ fn push_break_proc(debuffs: &mut DebuffState, params: &DummyParams, now: f64, po
         ticks_left: 6,
         frozen: total / 6.0,
         // A SHARE OF THE TARGET'S OWN POOL, so nothing the shooter carries
-        // scales it — not the element bracket, not faction, not Eclipse.
+        // scales it — not the element bracket, not faction, not Eclipse, and
+        // not the accumulator, whose rule names "weapon-generated" statuses.
         bracket: 1.0,
         depth: 0,
         source_scaled: false,
+        unit: 0.0,
         dtype: DamageType::Electricity,
         ignores_armor: false,
     });
@@ -4962,6 +5039,10 @@ fn settle_procs(
                 // bracket and the faction bonus are re-read at every tick
                 // (`Dot::live`); the final multiplier is not, measured.
                 frozen: coeff * mb_live * sdm * crit_multiplier * part * attrition * ecl,
+                // …and what the accumulator's initial 1 is worth: the same
+                // chain with the SEED taken out of it. See
+                // `Dot::accumulator_unit`.
+                unit: coeff * sdm * ecl,
                 bracket,
                 depth,
                 source_scaled: true,
@@ -5106,8 +5187,17 @@ fn settle_procs(
                     * ecl;
                 let expiry = at + STATUS_DURATION * status_damage;
                 debuffs.apply_heat(
-                    at, contrib, expiry, heat_cap,
-                    ap.elem_bracket(DamageType::Heat), depth);
+                    at,
+                    contrib,
+                    expiry,
+                    heat_cap,
+                    HeatOrigin {
+                        bracket: ap.elem_bracket(DamageType::Heat),
+                        depth,
+                        // The seed taken out of `contrib`, exactly as a Dot's.
+                        unit: DOT_COEFFICIENT * sdm * ecl,
+                    },
+                );
             }
             DamageType::Cold => {
                 // Primary Frostbite: each Cold status THIS WEAPON APPLIES
@@ -7051,6 +7141,12 @@ fn process_ticks(
                 // their respective damage separately ... but once per second".
                 let value = if matches!(dtype, DamageType::Electricity | DamageType::Gas) {
                     let mut sum = 0.0;
+                    // ONE ACCUMULATOR FOR THE WHOLE GROUP, taken from whichever
+                    // seed joined it first — "they are added to the same
+                    // accumulator, so its initial value of 1 is included only
+                    // once" (`Dot::accumulator_unit`). Adding it per stack is
+                    // the exact mistake the page calls out.
+                    let mut unit = 0.0;
                     for d in debuffs.dots.iter_mut() {
                         if d.dtype == dtype
                             && d.ticks_left > 0
@@ -7062,14 +7158,19 @@ fn process_ticks(
                             // `Dot::live`. A buff the shooter gained while this
                             // was burning is already in it.
                             sum += d.live(params, now);
+                            if unit == 0.0 {
+                                unit = d.accumulator_unit(params, now);
+                            }
                         }
                     }
-                    sum
+                    sum + unit
                 } else {
                     let d = &mut debuffs.dots[*i];
                     d.next_tick += 1.0;
                     d.ticks_left -= 1;
-                    d.live(params, now)
+                    // Slash and Toxin tick independently, so each stack is its
+                    // own tick group and carries its own accumulator.
+                    d.live(params, now) + d.accumulator_unit(params, now)
                 };
                 let hit_type = if ignores_armor {
                     DamageType::Cinematic
@@ -7083,9 +7184,12 @@ fn process_ticks(
                 h.next_tick += 1.0;
                 // AT `now`. See `Dot::live` — the same rule, on the one status
                 // whose stacks all share a clock.
-                let paid = h.value
-                    * (h.bracket + params.ability_element_at(DamageType::Heat, now))
-                    * faction_at(params.faction_at_time(now), h.depth);
+                let bracket = h.bracket + params.ability_element_at(DamageType::Heat, now);
+                let f = params.faction_at_time(now);
+                // ONE ACCUMULATOR for the whole consolidated tick, whatever
+                // `stacks` says — `Dot::accumulator_unit`, and Heat is the case
+                // the page spells out.
+                let paid = h.value * bracket * faction_at(f, h.depth) + h.unit * bracket * f;
                 (paid, false, true, DamageType::Heat, DamageType::Heat, None)
             }
             Ev::Blast(i) => {
@@ -13384,7 +13488,7 @@ mod tests {
     fn a_gas_cloud_survives_the_death_and_nothing_else_does() {
         let dot = |dtype| Dot {
             next_tick: 5.0, ticks_left: 4, frozen: 100.0, bracket: 1.0, depth: 0,
-            source_scaled: false, dtype, ignores_armor: false,
+            source_scaled: false, unit: 0.0, dtype, ignores_armor: false,
         };
         let mut d = DebuffState::default();
         d.dots.push(dot(DamageType::Gas));
@@ -18131,9 +18235,11 @@ mod tests {
     fn forced_bleed_dot_is_exactly_deterministic() {
         // Forced Slash on every shot, SC 0, mono body 1x, crit_multiplier 1
         // (tier changes nothing): every shot procs one bleed with tick value
-        // 0.35 × 75 = 26.25, ticking at +1..+6 s. Ticks beyond the 10 s
-        // engagement are lost: shots at 0..9 yield 6,6,6,6,5,4,3,2,1,0 ticks
-        // = 39 ticks → dot = 39 × 26.25 = 1023.75; direct = 10 × 75 = 750.
+        // `(75 + 1) × 0.35 = 26.6`, ticking at +1..+6 s. A Slash stack is its
+        // own tick group, so each carries its own accumulator
+        // (`Dot::accumulator_unit`). Ticks beyond the 10 s engagement are lost:
+        // shots at 0..9 yield 6,6,6,6,5,4,3,2,1,0 ticks = 39 ticks →
+        // dot = 39 × 26.6 = 1037.4; direct = 10 × 75 = 750.
         let p = DummyParams {
             crit_multiplier: 1.0,
             forced_procs: vec![DamageType::Slash],
@@ -18142,12 +18248,12 @@ mod tests {
         };
         let s = monte_carlo(&p, 50, 5);
         assert!(
-            (s.mean_dot_damage - 1023.75).abs() < 1e-9,
+            (s.mean_dot_damage - 1037.4).abs() < 1e-6,
             "dot {}",
             s.mean_dot_damage
         );
         assert!(
-            (s.mean_damage - 1773.75).abs() < 1e-9,
+            (s.mean_damage - 1787.4).abs() < 1e-6,
             "total {}",
             s.mean_damage
         );
@@ -18171,8 +18277,8 @@ mod tests {
             ..no_status()
         };
         let s = monte_carlo(&p, 50, 11);
-        // Same schedule as the forced-Slash test: 39 ticks x 0.35 x 75.
-        assert!((s.mean_dot_damage - 1023.75).abs() < 1e-9, "dot {}", s.mean_dot_damage);
+        // Same schedule as the forced-Slash test: 39 ticks x 0.35 x (75 + 1).
+        assert!((s.mean_dot_damage - 1037.4).abs() < 1e-6, "dot {}", s.mean_dot_damage);
         assert!((s.mean_procs - 10.0).abs() < 1e-9, "one proc per shot");
 
         // Without the mod the same build bleeds not at all.
@@ -18471,7 +18577,9 @@ mod tests {
 
     #[test]
     fn bleed_snapshots_the_proccing_hits_multipliers() {
-        // 3x part, forced Slash, crit disabled: tick = 0.35 × 75 × 3 = 78.75.
+        // 3x part, forced Slash, crit disabled. The SEED is 75 × 3 = 225 — the
+        // body part is a fact about the hit and rides inside it — and the tick
+        // is `(225 + 1) × 0.35 = 79.1`. See `Dot::accumulator_unit`.
         let p = DummyParams {
             crit_multiplier: 1.0,
             forced_procs: vec![DamageType::Slash],
@@ -18483,7 +18591,7 @@ mod tests {
         // Shot at t=0 procs a bleed ticking at t=1 (once before 2 s).
         let s = monte_carlo(&p, 10, 6);
         assert!(
-            (s.mean_dot_damage - 78.75).abs() < 1e-9,
+            (s.mean_dot_damage - 79.1).abs() < 1e-9,
             "dot {}",
             s.mean_dot_damage
         );
@@ -19872,7 +19980,7 @@ mod tests {
     fn bleed_ticks_ignore_armor_entirely() {
         // Forced Slash, capped armor (90% DR): direct hits take 0.1x but
         // ticks land at full value. crit off, mono 1x, 10 s:
-        // direct effective = 750 × 0.1 = 75; dot effective = 1023.75 (full).
+        // direct effective = 750 × 0.1 = 75; dot effective = 1037.4 (full).
         let p = DummyParams {
             crit_multiplier: 1.0,
             forced_procs: vec![DamageType::Slash],
@@ -19882,12 +19990,12 @@ mod tests {
         };
         let s = monte_carlo(&p, 50, 5);
         assert!(
-            (s.mean_dot_damage - 1023.75).abs() < 1e-9,
+            (s.mean_dot_damage - 1037.4).abs() < 1e-6,
             "dot {}",
             s.mean_dot_damage
         );
         assert!(
-            (s.mean_effective_damage - (75.0 + 1023.75)).abs() < 1e-9,
+            (s.mean_effective_damage - (75.0 + 1037.4)).abs() < 1e-6,
             "effective {}",
             s.mean_effective_damage
         );
@@ -20193,13 +20301,58 @@ mod tests {
         assert_eq!(kills("narmer"), 1.0, "Toxin x1.5 past the shield kills it");
     }
 
+    /// **THE BRATON PRIME CAPTURE, ALL NINE TICKS** (owner, 2026-08-23, M56).
+    ///
+    /// A base-35 rifle, three element brackets, and every reading came back a
+    /// flat 36/35 above what this engine computed — while every DIRECT hit on
+    /// the same builds landed on the digit. The accumulator is the whole of the
+    /// difference (`Dot::accumulator_unit`):
+    ///
+    /// | bracket | `35 × 0.5 × b` | `(35 + 1) × 0.5 × b` | measured |
+    /// | --- | --- | --- | --- |
+    /// | 1.0 | 17.5 | **18** | 18 |
+    /// | 1.9 | 33.25 | **34.2** | 34 |
+    /// | 3.0 | 52.5 | **54** | 54 |
+    ///
+    /// A BASE-35 RIFLE IS WHY IT WAS FINDABLE. The `1` is worth 0.5 damage
+    /// before multipliers, so it is 2.9% here and 0.25% on a base of 400 —
+    /// under the noise of every fixture this engine had.
+    ///
+    /// The measured column is the game's pop-up, `floor(x + 0.5)`, which is why
+    /// 34.2 reads as 34; the assertion is on the unrounded tick.
+    #[test]
+    fn a_base_35_rifles_toxin_ticks_reproduce_the_capture() {
+        let tick = |bracket: f64| {
+            let p = DummyParams {
+                damage: DamageVector::new().with(DamageType::Toxin, 35.0),
+                dot_modified_base: Some(35.0),
+                elem_dot_bonus: vec![(DamageType::Toxin, bracket)],
+                crit_multiplier: 1.0,
+                forced_procs: vec![DamageType::Toxin],
+                body_parts: mono_body(1.0),
+                // ONE shot, and long enough for all six of its ticks — 0.2
+                // would put a second shot at t=5 and a seventh tick at t=6.
+                fire_rate: 0.1,
+                duration_seconds: 6.5,
+                ..no_status()
+            };
+            monte_carlo(&p, 20, 5).mean_dot_damage / 6.0
+        };
+        for (bracket, want) in [(1.0, 18.0), (1.9, 34.2), (3.0, 54.0)] {
+            let got = tick(bracket);
+            assert!((got - want).abs() < 1e-6, "bracket {bracket}: {got} vs {want}");
+        }
+    }
+
     #[test]
     fn toxin_dot_matches_the_bleed_shape_at_half_base() {
-        // Toxin mirrors the forced-bleed test at coefficient 0.5 vs 0.35:
-        // 39 ticks × 37.5 = 1462.5 (no armor: full value).
+        // Toxin mirrors the forced-bleed test at coefficient 0.5 vs 0.35, and
+        // like Slash it ticks INDEPENDENTLY, so each stack is its own tick
+        // group: 39 ticks × (75 + 1) × 0.5 = 39 × 38 = 1482 (no armor: full
+        // value).
         let s = monte_carlo(&bare(DamageType::Toxin), 20, 5);
         assert!(
-            (s.mean_dot_damage - 1462.5).abs() < 1e-9,
+            (s.mean_dot_damage - 1482.0).abs() < 1e-6,
             "dot {}",
             s.mean_dot_damage
         );
@@ -20364,7 +20517,8 @@ mod tests {
         };
         let s = monte_carlo(&dense, 20, 5);
         assert!(
-            (s.mean_dot_damage - 48_000.0).abs() < 1e-9,
+            // …plus one accumulator per tick group, sixteen of them.
+            (s.mean_dot_damage - (48_000.0 + 16.0 * 0.5)).abs() < 1e-6,
             "dot {} — 47,400 is the answer with the stale-key guard removed",
             s.mean_dot_damage
         );
@@ -20393,9 +20547,14 @@ mod tests {
         // are past the ten-second window this fixture counts in — every
         // instance still pays its full six. What a real engagement loses is the
         // tail of the last few procs, which is the same tail every DoT has.
+        //
+        // THE ACCUMULATOR IS PER TICK GROUP, and Electricity is the family that
+        // has groups: the 39 seed-ticks land on TEN distinct tick times (0, and
+        // 1..9), so the `1` is counted ten times and not thirty-nine
+        // (`Dot::accumulator_unit`).
         let s = monte_carlo(&bare(DamageType::Electricity), 20, 5);
         assert!(
-            (s.mean_dot_damage - 39.0 * 37.5).abs() < 1e-9,
+            (s.mean_dot_damage - (39.0 * 37.5 + 10.0 * 0.5)).abs() < 1e-6,
             "dot {}",
             s.mean_dot_damage
         );
@@ -20411,12 +20570,12 @@ mod tests {
         // Ten forced Heat procs, one per second: ONE entity born at t=0,
         // each proc adds 37.5 to the tick and refreshes the expiry, ticks
         // anchored at 1,2,...,9 (< 10 s): tick k has k contributions ->
-        // Σ k=1..9 of 37.5k = 37.5 × 45 = 1687.5. Same total as the
-        // independent-stack Electricity case ONLY by coincidence of this
-        // cadence — the entity count differs (1 vs 10).
+        // Σ k=1..9 of 37.5k = 37.5 × 45 = 1687.5, plus ONE accumulator per
+        // tick — nine of them, not forty-five, because Heat is the archetype
+        // of a consolidated tick group (`Dot::accumulator_unit`): + 9 × 0.5.
         let s = monte_carlo(&bare(DamageType::Heat), 20, 5);
         assert!(
-            (s.mean_dot_damage - 1687.5).abs() < 1e-9,
+            (s.mean_dot_damage - (1687.5 + 9.0 * 0.5)).abs() < 1e-6,
             "dot {}",
             s.mean_dot_damage
         );
@@ -20944,19 +21103,21 @@ mod tests {
         // boosted = 13 × 435 = 5655. The Heat singleton itself also
         // benefits (mb_live): each proc adds 0.5 × 435 = 217.5 to the
         // tick; ticks at 1..14 carry Σ min(k,12) = 102 contributions →
-        // DoT = 22,185; total 27,840.
+        // 22,185 — plus ONE accumulator per tick, fourteen of them and not a
+        // hundred and two, because Heat consolidates
+        // (`Dot::accumulator_unit`): + 14 × 0.5. DoT = 22,192; total 27,847.
         let sustained = DummyParams {
             forced_procs: vec![DamageType::Heat],
             ..starved
         };
         let s2 = monte_carlo(&sustained, 20, 5);
         assert!(
-            (s2.mean_dot_damage - 22_185.0).abs() < 1e-9,
+            (s2.mean_dot_damage - (22_185.0 + 14.0 * 0.5)).abs() < 1e-6,
             "dot {}",
             s2.mean_dot_damage
         );
         assert!(
-            (s2.mean_damage - 27_840.0).abs() < 1e-9,
+            (s2.mean_damage - (27_840.0 + 14.0 * 0.5)).abs() < 1e-6,
             "dmg {}",
             s2.mean_damage
         );
@@ -21772,6 +21933,7 @@ mod tests {
             heat: Some(HeatEntity {
                 bracket: 1.0,
                 depth: 0,
+                unit: 0.0,
                 born: 0.0,
                 expiry: 6.0,
                 next_tick: 1.0,
@@ -21805,6 +21967,7 @@ mod tests {
             heat: Some(HeatEntity {
                 bracket: 1.0,
                 depth: 0,
+                unit: 0.0,
                 born: 0.0,
                 expiry: 12.0,
                 next_tick: 1.0,
@@ -21828,7 +21991,7 @@ mod tests {
         // Uncapped: every contribution folds into the consolidated tick.
         let mut d = DebuffState::default();
         for c in [1.0, 2.0, 3.0, 4.0, 5.0] {
-            d.apply_heat(0.0, c, 6.0, None, 1.0, 0);
+            d.apply_heat(0.0, c, 6.0, None, HeatOrigin { bracket: 1.0, depth: 0, unit: 0.0 });
         }
         assert_eq!(d.heat.as_ref().unwrap().value, 15.0);
 
@@ -21837,7 +22000,7 @@ mod tests {
         // ignore-new model would have frozen it at 1+2+3=6).
         let mut d = DebuffState::default();
         for c in [1.0, 2.0, 3.0, 4.0, 5.0] {
-            d.apply_heat(0.0, c, 6.0, Some(3), 1.0, 0);
+            d.apply_heat(0.0, c, 6.0, Some(3), HeatOrigin { bracket: 1.0, depth: 0, unit: 0.0 });
         }
         let h = d.heat.as_ref().unwrap();
         assert_eq!(h.recent, vec![3.0, 4.0, 5.0]);
@@ -21878,7 +22041,7 @@ mod tests {
         let ignite = DEBUFF_ROSTER.iter().position(|(k, _)| *k == "ignite").expect("ignite");
         let mut d = DebuffState::default();
         for _ in 0..7 {
-            d.apply_heat(0.0, 3.0, 6.0, None, 1.0, 0);
+            d.apply_heat(0.0, 3.0, 6.0, None, HeatOrigin { bracket: 1.0, depth: 0, unit: 0.0 });
         }
         assert_eq!(d.sample(1.0)[ignite], 7, "seven procs, seven stacks");
         // The DAMAGE was always right — this is the number that was thrown away.
@@ -21887,7 +22050,7 @@ mod tests {
         // dropped as the new one lands.
         let mut c = DebuffState::default();
         for _ in 0..7 {
-            c.apply_heat(0.0, 3.0, 6.0, Some(3), 1.0, 0);
+            c.apply_heat(0.0, 3.0, 6.0, Some(3), HeatOrigin { bracket: 1.0, depth: 0, unit: 0.0 });
         }
         assert_eq!(c.sample(1.0)[ignite], 3);
         // …and an expired burn is no stacks at all rather than a stale count.
@@ -21904,6 +22067,7 @@ mod tests {
             bracket: 1.0,
             depth: 0,
             source_scaled: false,
+            unit: 0.0,
             dtype: ty,
             ignores_armor: false,
         };
@@ -23741,25 +23905,52 @@ mod warframe_ability_tests {
     /// AND IT DOUBLE-DIPS ON STATUS, which is the difference from Eclipse.
     /// A Slash DoT applied under +50% Roar ticks for 1.5^2 = 2.25x — the wiki's
     /// "the bonus is used twice in the calculation of status damage".
+    ///
+    /// **THE DOUBLE DIP IS ON THE SEED, AND THE ACCUMULATOR'S `1` IS NOT PART
+    /// OF IT.** The page's own Toxin example is
+    /// `(40 × 1.55 + 1) × 0.5 × 3.25 × 1.55` — the faction bonus inside the
+    /// seed AND in `M`, with the `1` added between them, so it takes exactly
+    /// one of the two layers (`Dot::accumulator_unit`). The ratio is therefore
+    /// `f²` only in the limit where the seed dwarfs the 1: at a base of 100 it
+    /// reads 2.2446, and the test asserts the LIMIT so that what is being
+    /// pinned stays the mechanic rather than one fixture's base damage.
+    ///
+    /// Eclipse is unaffected either way, and that is not a coincidence: it is a
+    /// FINAL multiplier, so it multiplies the accumulator and the seed alike
+    /// and stays exactly x3 at any base.
     #[test]
     fn roar_is_used_twice_on_a_status_tick_and_eclipse_once() {
-        let bleed = |abilities: &[(&'static str, Option<f64>)]| {
+        let bleed = |abilities: &[(&'static str, Option<f64>)], base: f64| {
             let mut p = params(abilities, 1.0);
-            p.damage = DamageVector::new().with(DamageType::Slash, 100.0);
+            p.damage = DamageVector::new().with(DamageType::Slash, base);
+            p.dot_modified_base = Some(base);
             p.status_chance = 1.0;
             p.base_status_chance = 1.0;
             p.target.base_health = 1e15;
             run_once(&p, &mut crate::rng::Rng::new(3)).dot_damage
         };
-        let plain = bleed(&[]);
+        // A base large enough that the accumulator is below the tolerance.
+        let big = 1e9;
+        let plain = bleed(&[], big);
         assert!(plain > 0.0);
-        let roar = bleed(&[("roar", None)]) / plain;
+        let roar = bleed(&[("roar", None)], big) / plain;
         assert!((roar - 2.25).abs() < 1e-6, "roar on a DoT: x{roar:.4}");
+        // …and at an ordinary base it is strictly BETWEEN one layer and two,
+        // which is the accumulator's signature and the only shape that can be.
+        let small = bleed(&[], 100.0);
+        let roar_small = bleed(&[("roar", None)], 100.0) / small;
+        assert!(
+            (1.5..2.25).contains(&roar_small),
+            "the accumulator takes one faction layer, not two or none: x{roar_small:.4}"
+        );
         // Eclipse (+200%) is x3 on the hit and x3 on the tick — "Unlike faction
         // damage, which double dips for status effects, the one from Eclipse is
-        // applied once". Nine would be the wrong answer.
-        let ecl = bleed(&[("eclipse", None)]) / plain;
-        assert!((ecl - 3.0).abs() < 1e-6, "eclipse on a DoT: x{ecl:.4}");
+        // applied once". Nine would be the wrong answer. Exact at BOTH bases,
+        // because a final multiplier scales the accumulator too.
+        for base in [big, 100.0] {
+            let ecl = bleed(&[("eclipse", None)], base) / bleed(&[], base);
+            assert!((ecl - 3.0).abs() < 1e-6, "eclipse on a DoT at {base}: x{ecl:.4}");
+        }
     }
 
     /// THE ADDED ELEMENT DOES NOT COMBINE (owner, 2026-08-08). A weapon whose
