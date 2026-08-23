@@ -99,11 +99,17 @@ effects:
     tick_rate: 1.0
     duration_rank0: 1.0
     duration_seconds: 6.0
-    # IT CANNOT CRIT "VIA ANY MEANS", which is a stronger claim than a zero and
-    # needs to be: a zero alone does not survive a build that is trying. Vital
-    # Sense took the crit DAMAGE from 1.0 to 2.2 and a post-mod flat crit-chance
-    # source would then have had something to spend it on (owner asked,
-    # 2026-08-23 — the question found this).
+    # IT CANNOT CRIT "VIA ANY MEANS" — MEASURED (owner, 2026-08-23), and
+    # measured on the path that matters: no crit appeared even with a source
+    # that adds critical chance DIRECTLY, which is the one way a zero could have
+    # been lifted. So the chance is not merely zero, it is unreachable, and the
+    # MULTIPLIER is locked with it.
+    #
+    # Both halves needed saying, because a zero alone does not survive a build
+    # that is trying: Vital Sense took this field's crit DAMAGE from 1.0 to 2.2,
+    # and a flat crit-chance source would then have had something to spend it
+    # on. The question that found it was about how to BUILD the weapon, which is
+    # the only reason anyone would have looked.
     can_crit: false
     crit_chance: 0.0
     status_chance: 0.68
