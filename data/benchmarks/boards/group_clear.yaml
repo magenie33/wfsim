@@ -442,6 +442,11 @@ entries:
     mods: [galvanized_chamber, primed_firestorm, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     arcanes: [primary_compression]
     valence: electricity
+  - weapon: tombfinger_secondary
+    mode: base
+    score: 1.2108904763839106
+    mods: [pistol_acuity, primed_target_cracker, galvanized_shot, anemic_agility, creeping_bullseye, jolt, pistol_pestilence, primed_heated_charge]
+    arcanes: [pax_charge, secondary_fortifier]
   - weapon: torid
     mode: cycle
     score: 85.69880788478987
