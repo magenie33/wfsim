@@ -786,10 +786,30 @@ pub struct RadialSpec {
     pub takes_condition_overload: bool,
     /// Does the explosion fire once PER PELLET, or once per trigger pull?
     ///
-    /// Default YES (per pellet) — a radial rides its projectile, so a weapon
-    /// that throws two projectiles detonates twice. The Burston's Incarnon is
-    /// the exception the wiki states outright: "The Radial Attack does not
-    /// benefit from Multishot bonuses". Declared per entry, never inferred.
+    /// **MOST AoE TAKES MULTISHOT** (owner, 2026-08-23), and the reason is the
+    /// mechanism rather than a table: a pellet lands and detonates, so several
+    /// pellets are several detonations. Default YES.
+    ///
+    /// THE EXCEPTION IS A WEAPON WHOSE BLAST IS TIED TO THE SHOT rather than to
+    /// the projectile. The Burston Incarnon is the one the roster has and the
+    /// wiki states it outright — "The Radial Attack does not benefit from
+    /// Multishot bonuses" — and what makes it exceptional is that its explosion
+    /// counts PULLS: extra pellets ride along and add nothing to it.
+    ///
+    /// HOW IT WAS FOUND: both Ogrises read `false` with no source behind it,
+    /// which cost a Split Chamber 43% of what it is worth on that weapon — the
+    /// second rocket arrived, left its napalm fire, and did no blast damage at
+    /// all. "Two warheads is two fields" was the reading that settled it: a
+    /// field is left by a rocket that LANDED, so two fields is two arrivals, and
+    /// an arrival detonates.
+    ///
+    /// **73 ENTRIES STILL DECLARE `false` AND ONLY TWO HAVE A SOURCE** — the two
+    /// Burstons. The rest carry the shape of a bulk intake that applied it as a
+    /// rule, which is the one thing the line below forbids. Nobody has surveyed
+    /// them against the wiki yet; until somebody does, a `false` on any entry
+    /// other than a Burston should be read as unverified rather than as stated.
+    ///
+    /// Declared per entry, never inferred.
     #[serde(default = "yes")]
     pub takes_multishot: bool,
 }
