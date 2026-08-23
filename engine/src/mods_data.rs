@@ -499,6 +499,8 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
                     .get("takes_condition_overload")
                     .and_then(Value::as_bool)
                     .unwrap_or(false),
+                // A MOD-GRANTED field says so the same way a weapon's does.
+                can_crit: v.get("can_crit").and_then(Value::as_bool).unwrap_or(true),
                 elemental_mods_apply: v
                     .get("elemental_mods_apply")
                     .and_then(Value::as_bool)

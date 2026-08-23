@@ -99,6 +99,12 @@ effects:
     tick_rate: 1.0
     duration_rank0: 1.0
     duration_seconds: 6.0
+    # IT CANNOT CRIT "VIA ANY MEANS", which is a stronger claim than a zero and
+    # needs to be: a zero alone does not survive a build that is trying. Vital
+    # Sense took the crit DAMAGE from 1.0 to 2.2 and a post-mod flat crit-chance
+    # source would then have had something to spend it on (owner asked,
+    # 2026-08-23 — the question found this).
+    can_crit: false
     crit_chance: 0.0
     status_chance: 0.68
     elemental_mods_apply: false

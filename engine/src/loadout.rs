@@ -2102,6 +2102,8 @@ pub struct LingeringBase {
     pub takes_condition_overload: bool,
     /// See [`crate::weapons_data::LingeringSpec::elemental_mods_apply`].
     pub elemental_mods_apply: bool,
+    /// See [`crate::weapons_data::LingeringSpec::can_crit`].
+    pub can_crit: bool,
     /// See [`crate::weapons_data::LingeringSpec::status_mods_apply`].
     pub status_mods_apply: bool,
 }
@@ -3958,8 +3960,17 @@ pub fn resolve_for(
         ResolvedLingering {
             damage: fd,
             modified_base: fmb,
-            crit_chance: (f.base_crit_chance * (1.0 + cc) + (base.post_mod_crit_chance + scope_post_cc)).max(0.0),
-            crit_damage: f.base_crit_damage * (1.0 + cd),
+            // A FIELD THAT CANNOT CRIT TAKES NEITHER BUCKET AND NO FLAT ADD.
+            // Leaving the chance at zero is not enough on its own: the crit
+            // DAMAGE bucket still multiplied a 1.0 up to 2.2, and a post-mod
+            // additive chance would then have something to spend it on.
+            crit_chance: if f.can_crit {
+                (f.base_crit_chance * (1.0 + cc) + (base.post_mod_crit_chance + scope_post_cc))
+                    .max(0.0)
+            } else {
+                0.0
+            },
+            crit_damage: if f.can_crit { f.base_crit_damage * (1.0 + cd) } else { 1.0 },
             status_chance: if f.status_mods_apply {
                 (f.base_status_chance * (1.0 + sc) + base.post_mod_status_chance).max(0.0)
             } else {
@@ -4530,6 +4541,30 @@ mod tests {
         let rifle_aptitude = by("rifle_aptitude");
         assert!((field(&[napalm, rifle_aptitude]).status_chance - 0.68).abs() < 1e-9,
             "68% is pinned");
+
+        // …AND NEITHER DOES A CRIT MOD, in either half. "It cannot crit via any
+        // means", so the zero above has to survive a build that is TRYING to
+        // make it crit — a zero asserted only on a bare weapon says nothing
+        // about the mod that would move it (owner asked, 2026-08-23: this
+        // decides how the weapon is built).
+        //
+        // BOTH HALVES, because they are two buckets and a field could leak
+        // either: Point Strike multiplies the base crit CHANCE, which is zero
+        // and stays zero, while Vital Sense multiplies the crit DAMAGE, which
+        // is 1.0 and would quietly become 3.4 — invisible until something
+        // rolled a crit that cannot happen.
+        let point_strike = by("point_strike");
+        let vital_sense = by("vital_sense");
+        let critted = field(&[napalm, point_strike, vital_sense]);
+        assert_eq!(critted.crit_chance, 0.0, "a crit-chance mod moved a field that cannot crit");
+        assert!((critted.crit_damage - 1.0).abs() < 1e-9,
+            "a crit-damage mod reached it: x{}", critted.crit_damage);
+        // …while the ROCKET takes both, which is what makes the two rows
+        // different and the assertion worth making.
+        let rocket = super::resolve(&base, &[napalm, point_strike, vital_sense],
+                                    super::StackPolicy::Emergent);
+        assert!(rocket.crit_chance > 0.05, "the rocket still crits: {}", rocket.crit_chance);
+        assert!(rocket.crit_damage > 2.0, "…and still crits harder: {}", rocket.crit_damage);
     }
 
     /// …AND THE FIRE IS A SHARE OF THE BLAST, so Firestorm grows it.

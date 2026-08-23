@@ -623,6 +623,22 @@ pub struct LingeringSpec {
     /// it.
     #[serde(default = "lingering_default_true")]
     pub elemental_mods_apply: bool,
+    /// CAN THIS FIELD CRIT AT ALL?
+    ///
+    /// Not the same question as "what is its crit chance". Nightwatch Napalm's
+    /// fire states a zero, and the wiki states the REASON in stronger words:
+    /// it cannot crit *"via any means"*. A zero alone does not survive a build
+    /// that is trying — Vital Sense multiplies the crit DAMAGE bucket, taking a
+    /// field's 1.0 to 2.2, and a post-mod ADDITIVE crit-chance source (Arcane
+    /// Avenger) lifts the chance off zero. Together those make a fire that
+    /// cannot crit crit for 2.2x (owner asked, 2026-08-23; found by the test
+    /// the question prompted).
+    ///
+    /// So this is declared rather than inferred from a zero: a field with 0%
+    /// base crit and no such sentence on its page SHOULD take a flat crit-chance
+    /// source, exactly as a 0% weapon does.
+    #[serde(default = "lingering_default_true")]
+    pub can_crit: bool,
     /// DO STATUS-CHANCE MODS REACH IT? Default YES, same reasoning.
     ///
     /// Nightwatch Napalm's is pinned: *"Napalm has 68% chance to proc Heat …
@@ -2865,6 +2881,7 @@ pub fn base_panel_assembled(
             falloff_reduction: f.falloff_reduction.unwrap_or(0.0),
             takes_condition_overload: f.takes_condition_overload,
             elemental_mods_apply: f.elemental_mods_apply,
+            can_crit: f.can_crit,
             status_mods_apply: f.status_mods_apply,
             stacking: match f.stacking.as_str() {
                 "stack" => FieldStacking::Stack,

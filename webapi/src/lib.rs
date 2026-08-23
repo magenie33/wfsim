@@ -3512,6 +3512,42 @@ pub fn panel_json(v: &Value) -> Value {
                 format!("{}s", num(panel.reload_seconds)),
             );
         }
+        // THE CONE, and what an accuracy mod does to it.
+        //
+        // It was on no card at all, which made Heavy Caliber's downside
+        // invisible on every weapon in the roster: a reader saw `+165% base
+        // damage` and nothing about the cost. The cost is real on a Braton and
+        // exactly ZERO on a launcher, and the difference decides whether that
+        // mod belongs in the build — so a panel that shows neither is hiding
+        // the more interesting half (owner, 2026-08-23).
+        //
+        // ACCURACY IS NOT THE STAT. The weapon-level `accuracy` field is
+        // derived and fuzzy — the wiki prints it as a CATEGORY — and this
+        // engine does not read it; the aim model reads the CONE in degrees. An
+        // accuracy mod DIVIDES that cone, which is why a weapon whose cone is
+        // already zero pays nothing: `0 / 1.55` is still 0.
+        if let (Some(sb), Some(sr)) = (base.spread, panel.spread) {
+            let deg = |x: f64| format!("{}°", display_number(x));
+            let pinpoint = sr.min_deg <= 0.0 && sr.max_deg <= 0.0;
+            let cone = |a: f64, b: f64| {
+                if (a - b).abs() < 1e-9 { deg(a) } else { format!("{}–{}", deg(a), deg(b)) }
+            };
+            stats.push(json!({
+                "key": "spread",
+                "label": "Cone",
+                "base": cone(sb.min_deg, sb.max_deg),
+                "final": cone(sr.min_deg, sr.max_deg),
+                // THE NOTE IS THE POINT on a pinpoint weapon: it says the
+                // accuracy penalty in the build above cost nothing, which is
+                // not something a `0° -> 0°` row says by itself.
+                "note": if pinpoint {
+                    "this weapon fires exactly where the reticle is, so an accuracy                      penalty has no cone to widen and costs nothing here"
+                } else {
+                    "the first shot's cone and where sustained fire takes it — an                      accuracy mod divides both"
+                }.to_string(),
+                "sources": sources("accuracy", None),
+            }));
+        }
         // BOWS state their cadence, because the Fire Rate row above is NOT it:
         // wiki Fire Rate gives bows a formula of their own — "Effective Fire
         // Rate = 1 / (Modded Charge Time + Modded Reload Time)" — which has no
