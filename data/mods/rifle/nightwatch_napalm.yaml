@@ -43,6 +43,27 @@ effects:
   # reaches it: a Cryo Rounds on the same build moves the rocket and not the
   # fire. `elemental_mods_apply: false` is that sentence.
   #
+  # THE KUVA BONUS RAISES ITS BASE, and the ORDER is what was measured: 150 a
+  # tick becomes 240 on a 60% roll, and 612 with +155% base damage (owner,
+  # 2026-08-23). That is `240 x 2.55` — the valence lands on the BASE and the
+  # bucket multiplies it afterwards — and not `150 x 3.15`, which is what the
+  # valence joining the base-damage bucket would have given. Two orders, 30%
+  # apart, told apart by one reading.
+  #
+  # WHICH ELEMENT THE 90 ARRIVES AS IS NOT SETTLED by that measurement and
+  # cannot be: the field is pure Heat, so `150 Heat + 90 Cold` and `240 Heat`
+  # both total 240 and both give 612. The engine adds the progenitor ELEMENT,
+  # which is what `apply_valence` does to every other attack part, so the two
+  # agree by construction rather than by a second rule. A Kuva Ogris rolled on
+  # anything but Heat is the reading that would tell them apart.
+  #
+  # IT TAKES NO GUN CONDITION OVERLOAD — "it is area damage, modelled the
+  # ordinary way" (owner, 2026-08-23), which is where it parts company with the
+  # Torid's cloud. That is already the default for an AoE part here
+  # (`takes_condition_overload` is NO unless the CO catalog lists a row), so
+  # nothing is set below; this line is the measurement saying the default is
+  # right rather than merely unchallenged.
+  #
   # IT CANNOT CRIT, "via any means", so the field states a zero of its own
   # rather than inheriting the rocket's 5%.
   #
@@ -63,6 +84,18 @@ effects:
     rank0: 0.05
     rankMax: 0.30
     damage: { heat: 150.0 }
+    # ONE TICK A SECOND, MEASURED (owner, 2026-08-23) — and it is FIXED: "the
+    # interval is always 1 s, and fire-rate mods do not affect it". It was an
+    # assumption here for a day, on the two things the page states (the card
+    # pays "over 6s" and the next sentence measures the Heat proc "per second"),
+    # and it is the whole DPS of the field, so it mattered that somebody counted.
+    #
+    # SIX TICKS, AND THE FIRST IS ON CONTACT. The field pays as it lands and
+    # again at +1 s through +5 s, then lives out its sixth second and expires
+    # WITHOUT a seventh — "it lasts 1 s more after the last tick, and there is no
+    # final tick". `next_tick: t` and `duration x tick_rate` already produce
+    # exactly that; the measurement is what makes it a fact rather than a
+    # coincidence.
     tick_rate: 1.0
     duration_rank0: 1.0
     duration_seconds: 6.0
@@ -70,22 +103,16 @@ effects:
     status_chance: 0.68
     elemental_mods_apply: false
     status_mods_apply: false
+    # MULTISHOT MULTIPLIES THE NUMBER OF FIELDS, not the damage of one: "however
+    # much multishot, that many napalms" (owner, 2026-08-23). `stack` is that —
+    # the sim spawns one field per grenade that lands, which is what it already
+    # does for the Torid's clouds and needed no rule of its own.
     stacking: stack
 
   # …AND THE AREA, which is its own column on the card and so its own effect.
   - kind: lingering_area_fraction
     rank0: 0.15
     rankMax: 0.90
-
-  # THE TICK RATE IS THE ONE NUMBER NOBODY PUBLISHED. The page gives the damage
-  # per TICK and the duration in seconds and never joins them; the Ogris's own
-  # page, Napalm Grenades and the export's card text are all silent too. One
-  # tick a second is the reading taken here, on the two things that are stated:
-  # the card pays out "over 6s", and the same page's next sentence measures this
-  # mod's own Heat proc "per second". It is an ASSUMPTION and it is the whole
-  # DPS of the field, so it says so on the card and an in-game measurement
-  # settles it — count the fire's damage numbers over one rocket.
-  - kind: an_unmeasured_tick_rate_of_one_per_second
 
   # …AND THE HEAT PROC IT LEAVES BURNS ON THIS ENGINE'S OWN CLOCK. "Napalm has
   # 68% chance to proc Heat, ticking for 50% of napalm's damage per second for

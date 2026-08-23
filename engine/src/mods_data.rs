@@ -2025,7 +2025,6 @@ mod card_values_tests {
                 // runs the standard time and this weapon is overstated by the
                 // difference.
                 "nightwatch_napalm :: a heat proc that should burn for three seconds and burns for the standard time",
-                "nightwatch_napalm :: an unmeasured tick rate of one per second",
                 // A PER-WEAPON CATALOG ROW, of the kind docs/CATALOGS.md is
                 // about: the wiki tabulates an ADDITIONAL spread penalty for
                 // the Cernos Prime (and, commented out, four crossbows this

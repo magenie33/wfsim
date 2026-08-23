@@ -1500,6 +1500,18 @@ pub struct WeaponBase {
     pub crit_chance_on_undamaged: f64,
     /// The other half of the same card. See above.
     pub crit_damage_on_undamaged: f64,
+    /// THE VALENCE FRACTION THIS COPY CAME OUT OF ITS LICH WITH, once applied.
+    ///
+    /// `apply_valence` spends it on the base vector and the radial and then it
+    /// is gone — which is fine while everything it can reach is on the weapon,
+    /// and is not once a MOD grants an attack part. Nightwatch Napalm's fire is
+    /// the first: it arrives during `resolve_for`, long after the valence was
+    /// applied, and its base is "increased by Kuva weapon's bonus damage stat"
+    /// (wiki) — measured at 150 to 240 on a 60% roll (owner, 2026-08-23).
+    ///
+    /// Zero on every weapon that is not an adversary weapon, and on one whose
+    /// element was never named.
+    pub valence_bonus: f64,
     /// This weapon's Condition Overload behavior class.
     pub co_behavior: CoBehavior,
     /// CO base effectiveness = `original_base / evolved_base`, i.e. how much of
@@ -3905,7 +3917,22 @@ pub fn resolve_for(
     // taking the modded radial here would grow it twice.
     let granted = granted_lingering.filter(|_| base.lingering.is_none()).map(|f| {
         let blast = base.radial.as_ref().map_or(0.0, |r| r.radius_m);
-        LingeringBase { radius_m: blast * granted_area_fraction.max(0.0).sqrt(), ..f.clone() }
+        // THE VALENCE REACHES IT, and it reaches the BASE rather than the
+        // base-damage bucket. Nightwatch Napalm on a Kuva Ogris: 150 a tick
+        // becomes 240 on a 60% roll, and 612 with +155% base damage — which is
+        // `240 x 2.55` and not `150 x 3.15`, so the two orders are told apart
+        // by the measurement rather than assumed (owner, 2026-08-23).
+        //
+        // A GRANTED part cannot be reached by `apply_valence`: the mod is
+        // resolved here, long after the weapon's own vectors were scaled. This
+        // is that gap closed, and `base.lingering` — a weapon's OWN field — is
+        // scaled over there beside the radial, for the day an adversary weapon
+        // carries one.
+        LingeringBase {
+            radius_m: blast * granted_area_fraction.max(0.0).sqrt(),
+            base_vector: f.base_vector.scale(1.0 + base.valence_bonus),
+            ..f.clone()
+        }
     });
     let lingering = base.lingering.as_ref().or(granted.as_ref()).map(|f| {
         // …AND A FIELD MAY BE OUTSIDE THOSE BUCKETS, which is a fact about the
@@ -6126,6 +6153,77 @@ mod tests {
         // it is also the proof the stacks are not being seeded.
         assert!(d30 < d300 * 0.95, "the opening magazine is unbuffed: {d30:.0} vs {d300:.0}");
     }
+
+/// NIGHTWATCH NAPALM'S FIELD, and the two things a measurement settled about it
+/// (owner, 2026-08-23).
+#[cfg(test)]
+mod napalm_tests {
+    /// The resolved field on a Kuva Ogris wearing the augment.
+    fn field(valence: f64, mods: &[&str]) -> super::ResolvedLingering {
+        let mut base = super::WeaponBase::from_data("kuva_ogris", true, &[]);
+        if valence > 0.0 {
+            crate::weapons_data::apply_valence(&mut base, "kuva_ogris", "heat", valence);
+        }
+        let pool = crate::mods_data::pool_for_weapon("kuva_ogris");
+        let picked: Vec<&super::ModDef> = std::iter::once("nightwatch_napalm")
+            .chain(mods.iter().copied())
+            .map(|id| pool.iter().find(|m| m.id == id).expect("in the pool"))
+            .collect();
+        super::resolve_for(
+            &base, &picked, super::StackPolicy::Emergent, crate::tenno_data::default_tenno())
+            .lingering
+            .expect("the augment grants a field")
+    }
+
+    /// THE KUVA BONUS REACHES IT, and reaches the BASE.
+    ///
+    /// It did not before: `apply_valence` spends the roll on the weapon's own
+    /// vectors and a MOD-granted part arrives later, so the fire stayed at 150
+    /// however the Lich had rolled. Measured on an impact-valence Kuva Ogris,
+    /// which is the clean probe — the element itself does nothing to a Heat
+    /// field, so anything that moves is the base moving: 21,217 DPS to 21,447
+    /// before, against 26,279 to 33,578 after.
+    #[test]
+    fn the_kuva_bonus_raises_the_fields_base_and_the_bucket_multiplies_it() {
+        // 150 a tick, stated on the card and on the wiki's own correction of it.
+        assert!((field(0.0, &[]).damage.total() - 150.0).abs() < 1e-6);
+        // …and 240 on a 60% roll.
+        assert!((field(0.6, &[]).damage.total() - 240.0).abs() < 1e-6, "{}",
+                field(0.6, &[]).damage.total());
+
+        // THE ORDER IS WHAT WAS MEASURED. Serration is +165%, so the base-damage
+        // bucket multiplies the ALREADY-RAISED 240: `240 x 2.65 = 636`. Had the
+        // valence joined that bucket instead it would be `150 x (1 + 0.6 +
+        // 1.65) = 487.5` — two answers 30% apart, and one reading tells them
+        // apart.
+        let with = field(0.6, &["serration"]).damage.total();
+        assert!((with - 636.0).abs() < 1e-6, "{with}");
+        assert!((with - 487.5).abs() > 1.0, "the valence fell into the base-damage bucket");
+    }
+
+    /// IT TAKES NO GUN CONDITION OVERLOAD — "area damage, modelled the ordinary
+    /// way", which is where it parts company with the Torid's cloud. Already the
+    /// default for an AoE part; asserted so the default cannot drift under it.
+    #[test]
+    fn the_field_takes_no_condition_overload() {
+        assert!(!field(0.0, &[]).takes_condition_overload);
+    }
+
+    /// SIX TICKS, THE FIRST ON CONTACT, AND NO SEVENTH. One a second, fixed —
+    /// fire-rate mods do not move it, which is why `tick_rate` is a constant on
+    /// the field rather than anything read off the weapon.
+    #[test]
+    fn six_ticks_a_second_apart() {
+        let f = field(0.0, &[]);
+        assert_eq!(f.tick_rate, 1.0);
+        assert_eq!(f.duration_seconds, 6.0);
+        assert_eq!((f.duration_seconds * f.tick_rate).round() as u32, 6);
+        // …and a fire-rate mod leaves both alone.
+        let fast = field(0.0, &["vile_acceleration"]);
+        assert_eq!(fast.tick_rate, f.tick_rate);
+        assert_eq!(fast.duration_seconds, f.duration_seconds);
+    }
+}
 
 }
     /// A CHARGE THAT EATS THE MAGAZINE MAKES MAGAZINE CAPACITY A DAMAGE STAT —

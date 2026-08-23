@@ -146,6 +146,19 @@ pub fn apply_valence(base: &mut WeaponBase, id: &str, element: &str, bonus: f64)
             r.base_vector = r.base_vector.with(ty, r.base_vector.get(ty) + radd);
         }
     }
+    // …AND A LINGERING FIELD, on the same argument and still on no weapon in
+    // this roster. A field a MOD grants is the case that is real today, and it
+    // cannot be reached from here — see `WeaponBase::valence_bonus`, which
+    // `resolve_for` spends when it builds one.
+    if let Some(l) = base.lingering.as_mut() {
+        let lt = l.base_vector.total();
+        if lt > 0.0 {
+            let ladd = lt * fraction;
+            l.base_vector = l.base_vector.with(ty, l.base_vector.get(ty) + ladd);
+        }
+    }
+    // WHAT IS LEFT FOR A PART THAT DOES NOT EXIST YET.
+    base.valence_bonus = fraction;
 }
 
 /// The valence spec of a weapon, if it is an adversary weapon at all.
@@ -2866,6 +2879,9 @@ pub fn base_panel_assembled(
         // draw" without a lookup — the two questions the Amp auras ask.
         class: Box::leak(s.class.clone().into_boxed_str()),
         slot: Box::leak(s.slot.clone().into_boxed_str()),
+        // Filled in by `apply_valence`; zero until then, and zero forever on a
+        // weapon that never came out of a Lich.
+        valence_bonus: 0.0,
         recharge_per_second: s.recharge_per_second,
         mod_pools: Box::leak(
             s.mod_pools
