@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: d40bef8c11aecebc74a73036a689dcf00162e378
+engine: 2162cf971e3ddc704ac1dfa4f207954228db59e4
 entries:
   - weapon: afentis_prime
     mode: base
@@ -64,7 +64,7 @@ entries:
     arcanes: [primary_crux, secondary_fortifier]
   - weapon: artax
     mode: base
-    score: 0.19669739095344096
+    score: 0.19669739095343827
     mods: [heavy_caliber, serration, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, wildfire, thermite_rounds]
   - weapon: astilla_prime
     mode: base
@@ -133,7 +133,7 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: atomos
     mode: base
-    score: 5.925488967375548
+    score: 5.925488967375549
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, primed_heated_charge, scorch]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_resonant_restore, atomos_survivors_edge]
     arcanes: [secondary_encumber]
@@ -235,7 +235,7 @@ entries:
     arcanes: [primary_merciless]
   - weapon: boar
     mode: cycle
-    score: 3.950655772166975
+    score: 3.950655772166976
     mods: [primed_point_blank, primed_ravage, critical_deceleration, hells_chamber, shotgun_elementalist, magnetic_strafe, blaze, scattering_inferno]
     evolutions: [boar_evo1_incarnon_form, boar_reified_bane, boar_ready_retaliation, boar_critical_parallel]
     arcanes: [shotgun_vendetta]
@@ -269,6 +269,12 @@ entries:
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
     arcanes: [primary_frostbite]
+  - weapon: boar_prime
+    mode: base
+    score: 24.60556431538697
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, repeater_clip, magnetic_strafe, primed_chilling_grasp, contagious_spread]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
   - weapon: boar_prime
     mode: base
     score: 23.48144683064891
@@ -487,7 +493,7 @@ entries:
     arcanes: [shotgun_vendetta]
   - weapon: boar_prime
     mode: cycle
-    score: 6.916884638144129
+    score: 6.91688463814413
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, scattering_inferno]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_debilitate]
@@ -2534,7 +2540,7 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
-    score: 11.998704002636266
+    score: 11.99870400263627
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, marked_target, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
@@ -2884,7 +2890,7 @@ entries:
     arcanes: [primary_crux]
   - weapon: phantasma_prime
     mode: alternate
-    score: 0.1824424671036101
+    score: 0.18244246710360995
     mods: [magnetic_welt, primed_point_blank, hunter_track, shotgun_elementalist, shotgun_savvy, incendiary_coat, blaze, scattering_inferno]
     arcanes: [primary_merciless]
   - weapon: phenmor
@@ -3822,7 +3828,7 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: verglas
     mode: base
-    score: 0.3289122938297663
+    score: 0.32891229382976717
     mods: [heavy_caliber, split_chamber, serration, hammer_shot, primed_cryo_rounds, stormbringer, hellfire, thermite_rounds]
   - weapon: verglas_prime
     mode: base
@@ -3838,11 +3844,11 @@ entries:
     mods: [galvanized_chamber, serration, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire, thermite_rounds]
   - weapon: verglas_prime
     mode: base
-    score: 0.9919676875027124
+    score: 0.991967687502712
     mods: [split_chamber, serration, rifle_elementalist, magnetic_capacity, rime_rounds, malignant_force, hellfire, thermite_rounds]
   - weapon: verglas_prime
     mode: base
-    score: 0.984859740742031
+    score: 0.9848597407420308
     mods: [heavy_caliber, split_chamber, serration, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire]
   - weapon: verglas_prime
     mode: base
@@ -3858,11 +3864,11 @@ entries:
     mods: [galvanized_chamber, serration, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire, thermite_rounds]
   - weapon: verglas_prime
     mode: base
-    score: 0.7984947273826167
+    score: 0.7984947273826165
     mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire]
   - weapon: verglas_prime
     mode: base
-    score: 0.7477007529856743
+    score: 0.7477007529856744
     mods: [split_chamber, serration, rifle_elementalist, speed_trigger, magnetic_capacity, rime_rounds, malignant_force, hellfire]
   - weapon: verglas_prime
     mode: base
@@ -3886,7 +3892,7 @@ entries:
     mods: [heavy_caliber, split_chamber, serration, vile_acceleration, rime_rounds, malignant_force, hellfire, thermite_rounds]
   - weapon: verglas_prime
     mode: base
-    score: 0.6509274917829435
+    score: 0.6509274917829434
     mods: [heavy_caliber, split_chamber, rifle_elementalist, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
   - weapon: verglas_prime
     mode: base
