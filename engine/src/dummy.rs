@@ -776,9 +776,60 @@ impl TargetState {
 struct Dot {
     next_tick: f64,
     ticks_left: u32,
-    value: f64,
+    /// THE INSTANCE'S OWN HALF of the tick — coefficient, ModifiedBase, status
+    /// damage, and the crit and body part of the hit that applied it. Frozen,
+    /// because those are facts about a hit that has already happened.
+    ///
+    /// The SOURCE's half is not here: see [`Dot::live`].
+    frozen: f64,
+    /// The MOD-side element bracket, `1 + Σ this element's bonuses` — frozen
+    /// because mods do not change mid-fight, and carried rather than re-read
+    /// because a transform weapon's ACTIVE form is not always the form that
+    /// applied the status.
+    bracket: f64,
+    /// Which DERIVATION STEP the faction bonus is re-applied at for this tick
+    /// (2 for a status a hit applied). See `faction_at`.
+    depth: u32,
+    /// Does the SOURCE scale this at all?
+    ///
+    /// False for the one DoT that is a share of the TARGET's own pool — a
+    /// shield-break Electricity tick is `3% x stacks` of what was broken, and
+    /// no bonus the shooter carries touches it. Without this flag it would pick
+    /// up Lavos and Eclipse through `live`, which is a bonus on a number that
+    /// was never the weapon's.
+    source_scaled: bool,
     dtype: DamageType,
     ignores_armor: bool,
+}
+
+impl Dot {
+    /// WHAT THIS TICK IS WORTH RIGHT NOW.
+    ///
+    /// A DoT TRACKS ITS SOURCE (owner, 2026-08-23, measured in game): a buff
+    /// the shooter gains while it is burning strengthens it immediately —
+    /// measured on an elemental bonus (Lavos) and on a faction bonus, and the
+    /// burn already running got stronger the instant the buff landed.
+    ///
+    /// This engine snapshotted all of it, and said so in a comment: *"a status
+    /// takes the faction bonus that was running when it was APPLIED"*. That was
+    /// a decision, not an oversight, and the measurement overturns it — for the
+    /// SOURCE's buffs. It leaves the INSTANCE's own facts alone: the crit and
+    /// the body part belong to a hit that is over, and no later buff can change
+    /// where a bullet landed.
+    ///
+    /// The three factors below are re-read because all three were already
+    /// TIME-INDEXED — `ability_element_at`, `faction_at_time`,
+    /// `ability_final_at` — and the only thing wrong was the moment they were
+    /// asked about. Asking at `now` instead of at `at` is the whole change.
+    fn live(&self, params: &DummyParams, now: f64) -> f64 {
+        if !self.source_scaled {
+            return self.frozen;
+        }
+        self.frozen
+            * (self.bracket + params.ability_element_at(self.dtype, now))
+            * faction_at(params.faction_at_time(now), self.depth)
+            * params.ability_final_at(now)
+    }
 }
 
 /// The Heat singleton accumulator (data/debuffs/ignite.yaml): ONE entity
@@ -790,6 +841,13 @@ struct HeatEntity {
     next_tick: f64,
     /// Current consolidated tick value (sum of the live contributions).
     value: f64,
+    /// THE MOD-SIDE ELEMENT BRACKET these contributions were frozen WITHOUT.
+    /// Heat is one entity per target with one clock, so it carries one — taken
+    /// from the first proc, which on every build in this roster is the only
+    /// answer there is (one form, one set of mods).
+    bracket: f64,
+    /// The faction derivation step, as [`Dot::depth`].
+    depth: u32,
     /// Individual contributions, oldest first — only tracked when a per-unit
     /// stack cap applies, so a capped Heat can drop its OLDEST contribution
     /// (FIFO) when a new proc lands, exactly like every other capped status.
@@ -1254,7 +1312,7 @@ impl DebuffState {
             if *r == radius_m
                 && d.dtype == dot.dtype
                 && d.ticks_left == dot.ticks_left
-                && (d.value - dot.value).abs() < 1e-9
+                && (d.frozen - dot.frozen).abs() < 1e-9
                 && (d.next_tick - dot.next_tick).abs() < 1e-9
             {
                 *n = (*n + 1).min(lim);
@@ -1381,7 +1439,15 @@ impl DebuffState {
     /// anchored to the first proc). Under a per-unit cap, hold at most `cap`
     /// contributions FIFO — a new proc drops the OLDEST contribution instead
     /// of being ignored (the universal replace-oldest rule; user 2026-07-25).
-    fn apply_heat(&mut self, t: f64, contrib: f64, expiry: f64, cap: Option<usize>) {
+    fn apply_heat(
+        &mut self,
+        t: f64,
+        contrib: f64,
+        expiry: f64,
+        cap: Option<usize>,
+        bracket: f64,
+        depth: u32,
+    ) {
         match &mut self.heat {
             Some(h) => {
                 match cap {
@@ -1408,6 +1474,11 @@ impl DebuffState {
                     recent.push(contrib);
                 }
                 self.heat = Some(HeatEntity {
+                    // THE FIRST PROC SETS THE LINK. One entity, one clock, one
+                    // bracket — and every later contribution on this target is
+                    // the same weapon in the same fight.
+                    bracket,
+                    depth,
                     born: t,
                     expiry,
                     next_tick: t + 1.0,
@@ -4210,7 +4281,12 @@ fn push_break_proc(debuffs: &mut DebuffState, params: &DummyParams, now: f64, po
     debuffs.dots.push(Dot {
         next_tick: now,
         ticks_left: 6,
-        value: total / 6.0,
+        frozen: total / 6.0,
+        // A SHARE OF THE TARGET'S OWN POOL, so nothing the shooter carries
+        // scales it — not the element bracket, not faction, not Eclipse.
+        bracket: 1.0,
+        depth: 0,
+        source_scaled: false,
         dtype: DamageType::Electricity,
         ignores_armor: false,
     });
@@ -4838,9 +4914,13 @@ fn settle_procs(
     // snapshot of its instance, which is why `crit_multiplier` is snapshotted here
     // too.
     let fm2 = faction_at(params.faction_at_time(at), depth);
-    // ECLIPSE, ONCE. Not `faction_at`-style repetition: the wiki draws the
-    // contrast in so many words.
-    let ecl = params.ability_final_at(at);
+    // ECLIPSE AND FACTION ARE NO LONGER READ HERE FOR A BURN — both are the
+    // SOURCE's and are re-read when the tick is paid (`Dot::live`).
+    //
+    // `fm2` above stays, because a BLAST stack is not a burn: it is a delayed
+    // INSTANCE that detonates once, and what it is worth is settled by the hit
+    // that stacked it. Nobody has measured that one either way, so it keeps the
+    // answer it had.
     // RETURNS THE DOT IT PUSHED, so an AREA proc can post a copy to
     // `DebuffState::area_out` for everybody standing near this body.
     let push_dot = |debuffs: &mut DebuffState,
@@ -4870,9 +4950,14 @@ fn settle_procs(
                 // so its share belongs in the same sum, which is what makes
                 // Fireball Frenzy "contribute to DoT" rather than only to the
                 // hit.
-                value: coeff * mb_live
-                    * (bracket + params.ability_element_at(dtype, at))
-                    * sdm * crit_multiplier * part * fm2 * attrition * ecl,
+                // THE INSTANCE'S HALF ONLY. The element bracket, the faction
+                // bonus and Eclipse are the SOURCE's and are re-read at every
+                // tick — see `Dot::live`. `fm2` and `ecl` are computed above
+                // and now go unused on this path, which is what the change IS.
+                frozen: coeff * mb_live * sdm * crit_multiplier * part * attrition,
+                bracket,
+                depth,
+                source_scaled: true,
                 dtype,
                 ignores_armor,
         };
@@ -4964,7 +5049,7 @@ fn settle_procs(
                 // neighbour: `part_factor` is the aimed pellet's headshot and
                 // an arc is not aimed at anything.
                 debuffs.post_area(
-                    Dot { value: dot.value / part_factor.max(1e-9), ..dot },
+                    Dot { frozen: dot.frozen / part_factor.max(1e-9), ..dot },
                     TESLA_RADIUS_M,
                     dot_cap_of(DamageType::Electricity),
                 );
@@ -4986,7 +5071,7 @@ fn settle_procs(
                 let radius_m = (GAS_RADIUS_M + GAS_RADIUS_STEP_M * stacks_before as f64)
                     .min(GAS_RADIUS_MAX_M);
                 debuffs.post_area(
-                    Dot { value: dot.value / part_factor.max(1e-9), ..dot },
+                    Dot { frozen: dot.frozen / part_factor.max(1e-9), ..dot },
                     radius_m,
                     dot_cap_of(DamageType::Gas),
                 );
@@ -5000,15 +5085,20 @@ fn settle_procs(
                 // procs only — the "any source" clause waits on a
                 // multi-actor world).
                 arc.bump_trigger(&params.arcane.buffs, ArcTrigger::HeatStatus, at);
+                // THE INSTANCE'S HALF ONLY, like a `Dot`'s `frozen`: the
+                // element bracket, the faction bonus and Eclipse are the
+                // SOURCE's and are re-read when the entity pays. A Heat burn is
+                // the commonest DoT in the game and the one a Lavos or a Bane
+                // arriving mid-fight is most often meant to strengthen.
                 let contrib = DOT_COEFFICIENT
                     * mb_live
-                    * ap.elem_bracket(DamageType::Heat)
                     * sdm
                     * crit_multiplier
-                    * part_factor
-                    * fm2; // faction double-dip
+                    * part_factor;
                 let expiry = at + STATUS_DURATION * status_damage;
-                debuffs.apply_heat(at, contrib, expiry, heat_cap);
+                debuffs.apply_heat(
+                    at, contrib, expiry, heat_cap,
+                    ap.elem_bracket(DamageType::Heat), depth);
             }
             DamageType::Cold => {
                 // Primary Frostbite: each Cold status THIS WEAPON APPLIES
@@ -6959,7 +7049,10 @@ fn process_ticks(
                         {
                             d.next_tick += 1.0;
                             d.ticks_left -= 1;
-                            sum += d.value;
+                            // AT `now`, NOT AT THE MOMENT IT WAS APPLIED — see
+                            // `Dot::live`. A buff the shooter gained while this
+                            // was burning is already in it.
+                            sum += d.live(params, now);
                         }
                     }
                     sum
@@ -6967,7 +7060,7 @@ fn process_ticks(
                     let d = &mut debuffs.dots[*i];
                     d.next_tick += 1.0;
                     d.ticks_left -= 1;
-                    d.value
+                    d.live(params, now)
                 };
                 let hit_type = if ignores_armor {
                     DamageType::Cinematic
@@ -6979,7 +7072,13 @@ fn process_ticks(
             Ev::Heat => {
                 let h = debuffs.heat.as_mut().expect("heat event needs entity");
                 h.next_tick += 1.0;
-                (h.value, false, true, DamageType::Heat, DamageType::Heat, None)
+                // AT `now`. See `Dot::live` — the same rule, on the one status
+                // whose stacks all share a clock.
+                let paid = h.value
+                    * (h.bracket + params.ability_element_at(DamageType::Heat, now))
+                    * faction_at(params.faction_at_time(now), h.depth)
+                    * params.ability_final_at(now);
+                (paid, false, true, DamageType::Heat, DamageType::Heat, None)
             }
             Ev::Blast(i) => {
                 let b = debuffs.blast.remove(*i);
@@ -13261,7 +13360,8 @@ mod tests {
     #[test]
     fn a_gas_cloud_survives_the_death_and_nothing_else_does() {
         let dot = |dtype| Dot {
-            next_tick: 5.0, ticks_left: 4, value: 100.0, dtype, ignores_armor: false,
+            next_tick: 5.0, ticks_left: 4, frozen: 100.0, bracket: 1.0, depth: 0,
+            source_scaled: false, dtype, ignores_armor: false,
         };
         let mut d = DebuffState::default();
         d.dots.push(dot(DamageType::Gas));
@@ -21592,6 +21692,8 @@ mod tests {
     fn heat_strip_ramps_up_and_decays_after_the_entity_dies() {
         let mut d = DebuffState {
             heat: Some(HeatEntity {
+                bracket: 1.0,
+                depth: 0,
                 born: 0.0,
                 expiry: 6.0,
                 next_tick: 1.0,
@@ -21623,6 +21725,8 @@ mod tests {
         // (counter-intuitive: longer duration = SLOWER strip).
         let d = DebuffState {
             heat: Some(HeatEntity {
+                bracket: 1.0,
+                depth: 0,
                 born: 0.0,
                 expiry: 12.0,
                 next_tick: 1.0,
@@ -21646,7 +21750,7 @@ mod tests {
         // Uncapped: every contribution folds into the consolidated tick.
         let mut d = DebuffState::default();
         for c in [1.0, 2.0, 3.0, 4.0, 5.0] {
-            d.apply_heat(0.0, c, 6.0, None);
+            d.apply_heat(0.0, c, 6.0, None, 1.0, 0);
         }
         assert_eq!(d.heat.as_ref().unwrap().value, 15.0);
 
@@ -21655,7 +21759,7 @@ mod tests {
         // ignore-new model would have frozen it at 1+2+3=6).
         let mut d = DebuffState::default();
         for c in [1.0, 2.0, 3.0, 4.0, 5.0] {
-            d.apply_heat(0.0, c, 6.0, Some(3));
+            d.apply_heat(0.0, c, 6.0, Some(3), 1.0, 0);
         }
         let h = d.heat.as_ref().unwrap();
         assert_eq!(h.recent, vec![3.0, 4.0, 5.0]);
@@ -21696,7 +21800,7 @@ mod tests {
         let ignite = DEBUFF_ROSTER.iter().position(|(k, _)| *k == "ignite").expect("ignite");
         let mut d = DebuffState::default();
         for _ in 0..7 {
-            d.apply_heat(0.0, 3.0, 6.0, None);
+            d.apply_heat(0.0, 3.0, 6.0, None, 1.0, 0);
         }
         assert_eq!(d.sample(1.0)[ignite], 7, "seven procs, seven stacks");
         // The DAMAGE was always right — this is the number that was thrown away.
@@ -21705,7 +21809,7 @@ mod tests {
         // dropped as the new one lands.
         let mut c = DebuffState::default();
         for _ in 0..7 {
-            c.apply_heat(0.0, 3.0, 6.0, Some(3));
+            c.apply_heat(0.0, 3.0, 6.0, Some(3), 1.0, 0);
         }
         assert_eq!(c.sample(1.0)[ignite], 3);
         // …and an expired burn is no stacks at all rather than a stale count.
@@ -21718,7 +21822,10 @@ mod tests {
         let dot = |v: f64, ty| Dot {
             next_tick: 0.0,
             ticks_left: 6,
-            value: v,
+            frozen: v,
+            bracket: 1.0,
+            depth: 0,
+            source_scaled: false,
             dtype: ty,
             ignores_armor: false,
         };
@@ -21733,13 +21840,13 @@ mod tests {
             .dots
             .iter()
             .filter(|x| x.dtype == DamageType::Toxin)
-            .map(|x| x.value)
+            .map(|x| x.frozen)
             .collect();
         let sla: Vec<f64> = d
             .dots
             .iter()
             .filter(|x| x.dtype == DamageType::Slash)
-            .map(|x| x.value)
+            .map(|x| x.frozen)
             .collect();
         assert_eq!(tox, vec![3.0, 4.0]);
         assert_eq!(sla, vec![9.0]);
@@ -23477,6 +23584,55 @@ mod warframe_ability_tests {
         // …and STRENGTH is linear, so 200% strength is +100%.
         let strong = direct(&params(&[("roar", None)], 2.0));
         assert!((strong / none - 2.0).abs() < 1e-9, "x{:.4}", strong / none);
+    }
+
+    /// A DoT TRACKS ITS SOURCE, so a buff that ENDS mid-burn stops paying for
+    /// the rest of it — and one that is up for the whole burn pays throughout.
+    ///
+    /// Measured in game (owner, 2026-08-23): a buff the shooter gains while a
+    /// DoT is burning strengthens the burn IMMEDIATELY, on an elemental bonus
+    /// (Lavos) and on a faction bonus. This engine snapshotted every factor at
+    /// the moment the proc landed and said so in a comment — *"a status takes
+    /// the faction bonus that was running when it was APPLIED"* — which was a
+    /// decision, and the measurement overturns it.
+    ///
+    /// THE TEST GOES THE OTHER WAY ROUND because it is the same claim and it is
+    /// the one this harness can stage: abilities here start at zero, so a SHORT
+    /// Roar is a source buff that disappears under a burn already running. If
+    /// the tick were still a snapshot, every tick would carry Roar and the two
+    /// numbers below would be equal.
+    #[test]
+    fn a_dot_follows_its_source_and_a_buff_that_ends_stops_paying() {
+        let bleed = |seconds: Option<f64>| {
+            let mut p = params(&[("roar", seconds)], 1.0);
+            p.damage = DamageVector::new().with(DamageType::Slash, 100.0);
+            p.status_chance = 1.0;
+            p.base_status_chance = 1.0;
+            p.target.base_health = 1e15;
+            // ONE SHOT, so every tick after it belongs to one burn and there is
+            // no second proc landing under a different buff state to confuse
+            // the reading.
+            p.fire_rate = 0.02;
+            p.duration_seconds = 30.0;
+            run_once(&p, &mut crate::rng::Rng::new(3)).dot_damage
+        };
+        let none = bleed(Some(0.0));
+        let whole = bleed(None);
+        let brief = bleed(Some(2.0));
+
+        assert!(none > 0.0 && whole > none, "roar must pay: {none} -> {whole}");
+        // A ROAR THAT ENDS PAYS LESS THAN ONE THAT DOES NOT, which is the
+        // whole claim — and it cannot be true of a snapshot.
+        assert!(
+            brief < whole * 0.999,
+            "a Roar that ended mid-burn still paid for the whole burn:              {brief} against {whole} — the tick is still a snapshot"
+        );
+        // …AND MORE THAN NO ROAR AT ALL, or the early ticks were lost too and
+        // the reading says nothing about WHEN it stopped.
+        assert!(
+            brief > none * 1.001,
+            "the ticks under Roar were not paid either: {brief} against {none}"
+        );
     }
 
     /// AND IT DOUBLE-DIPS ON STATUS, which is the difference from Eclipse.
