@@ -2656,6 +2656,35 @@ fn frenzy_lock_mode(cfg: Option<&(u32, bool)>) -> LockMode {
 // the model explains itself. Static view: max-rank mods; conditionals at max
 // stacks (AssumedMax), except sentinels where conditionals never fire.
 
+/// A NUMBER AS A PANEL SHOWS IT — trimmed, not rounded to a fixed width.
+///
+/// `format!("{x}")` on an f64 gives the shortest string that reads back as the
+/// same number, which is exactly right for a RECORD and exactly wrong for a
+/// card: `1.0 - 0.7` is `0.30000000000000004`, and the falloff row printed
+/// **"30.000000000000004% at 6.2 m"** on 27 of the roster's 141 falloff
+/// entries — every weapon whose reduction is 0.7, 0.8 or 0.9 (owner,
+/// 2026-08-23).
+///
+/// Three decimals is past anything this data carries — the finest real figure
+/// on these rows is a tenth of a metre — so the trim can never eat a digit
+/// somebody wrote down. Trailing zeros and a trailing point go, so `6.2` stays
+/// `6.2` and `30.0` reads `30`.
+fn display_number(x: f64) -> String {
+    let s = format!("{x:.3}");
+    // ONLY WHERE THERE IS A POINT TO TRIM BACK TO. `{:.3}` always writes one,
+    // so the guard is dead today — and it is here because the trim is
+    // otherwise safe by an invariant of the line above it: on a string with no
+    // decimal point, `trim_end_matches('0')` turns 30 into 3. Sabotaging the
+    // format specifier to prove this function's own test bites printed exactly
+    // that (2026-08-23).
+    let s = match s.split_once('.') {
+        Some(_) => s.trim_end_matches('0').trim_end_matches('.'),
+        None => s.as_str(),
+    };
+    // `-0` is a real f64 and never a thing a reader wants to see.
+    if s == "-0" { "0".into() } else { s.to_string() }
+}
+
 pub fn panel_json(v: &Value) -> Value {
     let info = weapon(get_str(v, "weapon", default_weapon_id()));
     let policy = if info.sentinel {
@@ -3801,7 +3830,7 @@ pub fn panel_json(v: &Value) -> Value {
         if let (Some(rb), Some(rr)) = (base.radial.as_ref(), panel.radial.as_ref()) {
             let rsrc = |key: &'static str| sources(key, None);
             // Geometry reads as a distance, not a stat: 2 m, not 2.0.
-            let dist = |x: f64| format!("{x}");
+            let dist = display_number;
             let mut rows = vec![
                 json!({ "key": "base_damage", "label": "Base Damage",
                     "base": num(rb.base_vector.total()), "final": num(rr.modified_base),
@@ -3901,7 +3930,7 @@ pub fn panel_json(v: &Value) -> Value {
         // because "40 damage" means nothing here without "×10 ticks".
         if let (Some(fb), Some(fr)) = (base.lingering.as_ref(), panel.lingering.as_ref()) {
             let fsrc = |key: &'static str| sources(key, None);
-            let dist = |x: f64| format!("{x}");
+            let dist = display_number;
             // ✅ measured (MEASUREMENTS M13): the first tick lands WITH the
             // impact, so the count is the plain product — ten for a 10 s cloud.
             let ticks = (fr.duration_seconds * fr.tick_rate).round();
@@ -8760,6 +8789,65 @@ mod card_and_sim_agree {
 /// and an uncharged bow is the same bow. That is what a TRANSFORM GROUP already
 /// means, so the exemption is read off the weapon data rather than written as a
 /// list of pairs or guessed from the id's suffix.
+/// WHAT A PANEL PRINTS IS NOT WHAT A RECORD STORES.
+#[cfg(test)]
+mod display_number_tests {
+    use super::display_number;
+
+    /// THE ONE THAT SHIPPED. `1.0 - 0.7` is not 0.3 in binary, so the falloff
+    /// row read "30.000000000000004% at 6.2 m" — on 27 of the roster's 141
+    /// falloff entries, which is every weapon whose reduction is .7, .8 or .9.
+    #[test]
+    fn a_subtraction_that_does_not_land_on_a_round_number_still_prints_one() {
+        for (reduction, want) in [(0.7, "30"), (0.8, "20"), (0.9, "10"), (0.25, "75")] {
+            assert_eq!(display_number((1.0 - reduction) * 100.0), want);
+        }
+    }
+
+    /// …AND A REAL DIGIT SURVIVES. The trim is the whole risk here: a formatter
+    /// that tidied 30.000000000000004 by rounding to whole numbers would also
+    /// turn a 6.2 m radius into 6.
+    #[test]
+    fn a_digit_somebody_wrote_down_is_kept() {
+        assert_eq!(display_number(6.2), "6.2");
+        assert_eq!(display_number(1.7), "1.7");
+        assert_eq!(display_number(0.5), "0.5");
+        assert_eq!(display_number(18.67), "18.67");
+        assert_eq!(display_number(0.125), "0.125");
+    }
+
+    /// Trailing zeros and a signed zero are noise on a card.
+    #[test]
+    fn a_whole_number_reads_whole_and_zero_has_no_sign() {
+        assert_eq!(display_number(30.0), "30");
+        assert_eq!(display_number(0.0), "0");
+        assert_eq!(display_number(-0.0), "0");
+    }
+
+    /// EVERY FALLOFF ROW IN THE ROSTER, walked — so a weapon transcribed
+    /// tomorrow with a reduction nobody thought of cannot bring the artefact
+    /// back. A percentage a reader sees may not carry more than one decimal:
+    /// nothing in this data does, and a longer one is the bug.
+    #[test]
+    fn no_weapon_prints_a_float_artefact_in_its_falloff() {
+        let mut checked = 0;
+        for w in wfsim_engine::weapons_data::all() {
+            for r in w.attack.radial.iter() {
+                let Some(red) = r.falloff_reduction else { continue };
+                checked += 1;
+                let shown = display_number((1.0 - red) * 100.0);
+                let decimals = shown.split_once('.').map_or(0, |(_, d)| d.len());
+                assert!(
+                    decimals <= 1,
+                    "{}: falloff reduction {red} prints {shown}%",
+                    w.id
+                );
+            }
+        }
+        assert!(checked > 100, "only {checked} falloff rows — the walk found nothing");
+    }
+}
+
 #[cfg(test)]
 mod one_picture_one_weapon {
     use super::*;
