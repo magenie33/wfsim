@@ -1,0 +1,52 @@
+# A WARFRAME ABILITY BUFF — the fight's PLAYER, not the build. See
+# data/abilities/fireball_frenzy.yaml for what that means and why the board
+# carries none of these.
+#
+# THE ONE THAT CAN IMBUE A **COMBINED** ELEMENT, and that is the whole reason it
+# is worth having. The other four in this family (the Chroma set, Venom Dose,
+# Shock Trooper…) each add ONE primary, so "the element's own bracket" and "the
+# element a mod could carry" were never distinguishable. Lavos infuses two
+# abilities and casts the mix, so this one can add GAS — literally, as its own
+# element — which nothing in a mod list can do.
+#
+# WHY THAT MATTERS, measured (owner, 2026-08-23). A DoT tick reads `1 + Σ THAT
+# ELEMENT's own bonuses`, and only literal same-element sources count. So on a
+# Braton Prime:
+#
+#   90% Toxin + 90% Heat  -> the HIT is Gas at +180%, and the Gas DoT reads 1.0
+#   Valence Formation Gas -> the Gas DoT reads 3.0
+#
+# The two mods that CREATE the Gas contribute nothing to the Gas burn; this
+# augment contributes all of it. The wiki states the mechanism from the other
+# side, in its own words: *"Bonus Elemental Damage will be added PARALLEL to the
+# weapon's Elemental Damage, meaning it will NOT combine with elements on the
+# weapon."* Parallel is exactly what `add_element` already means here.
+
+id: valence_formation
+name: Valence Formation
+frame: Lavos
+# Only one elemental bonus can be active at a time: *"Casting another ability
+# with a mixed element will replace it and refresh the duration."* One family,
+# so the page offers one.
+family: valence_formation
+helminth: false
+
+# +200% at max rank, from the mod's own rank table (50/100/150/200%). The Notes
+# repeat it as the flat figure: *"grants a 200% Elemental Damage buff of the
+# imbued element to all of Lavos's weapons"*.
+value: 2.0
+# 20 s at 100% Ability Duration, stated on the same table and in the Notes.
+duration_seconds: 20
+
+effect:
+  kind: add_element
+  # THE PICK IS THE POINT. Lavos imbues per ability and casts the mix, so any of
+  # the four primaries or any of the six combined ones can be the buff — which
+  # is why the list is all ten rather than the four a single-element augment
+  # would carry. No buff at all when the ability cast has no element infused,
+  # which is the state of not picking one here.
+  element: selectable
+  elements: [heat, cold, electricity, toxin, blast, radiation, gas, magnetic, viral, corrosive]
+
+source:
+  url: https://wiki.warframe.com/w/Valence_Formation

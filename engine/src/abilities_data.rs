@@ -258,11 +258,30 @@ pub fn all() -> &'static [AbilityDef] {
                     // same way, so it is parsed once — a second copy of these
                     // four lines is how one of them ends up accepting a typo
                     // the other rejects.
+                    //
+                    // A SELECTABLE ELEMENT IS PART OF THAT, and used not to be:
+                    // it was handled in the `extra_hit` arm alone, so
+                    // `add_element` rejected `selectable` outright — which is
+                    // exactly the divergence the paragraph above forbids, one
+                    // arm short of the rule. It cost the ONE ability that adds a
+                    // COMBINED element: Lavos casts whichever mix he infused, so
+                    // Valence Formation needs a picker without being an extra
+                    // hit, and could not be stated at all (2026-08-23).
+                    //
+                    // The choice DEFAULTS to the first entry and is replaced by
+                    // the pick at resolve; a fixed element is itself.
                     let element = |kind: &str| {
                         let e = ef
                             .element
                             .as_deref()
                             .unwrap_or_else(|| panic!("{path}: {kind} needs an element"));
+                        let e = if e == "selectable" {
+                            ef.elements.first().map(String::as_str).unwrap_or_else(|| {
+                                panic!("{path}: `element: selectable` needs `elements:`")
+                            })
+                        } else {
+                            e
+                        };
                         DamageType::from_name(e)
                             .unwrap_or_else(|| panic!("{path}: unknown element {e}"))
                     };
@@ -277,18 +296,7 @@ pub fn all() -> &'static [AbilityDef] {
                         "add_element" => AbilityEffect::AddElement(element("add_element"), v),
                         "ammo_efficiency" => AbilityEffect::AmmoEfficiency(v),
                         "extra_hit" => AbilityEffect::ExtraHit {
-                            // A SELECTABLE element defaults to the first choice
-                            // and is replaced by the pick; a fixed one is
-                            // itself.
-                            element: if ef.element.as_deref() == Some("selectable") {
-                                let first = ef.elements.first().unwrap_or_else(|| {
-                                    panic!("{path}: `element: selectable` needs `elements:`")
-                                });
-                                DamageType::from_name(first)
-                                    .unwrap_or_else(|| panic!("{path}: unknown element {first}"))
-                            } else {
-                                element("extra_hit")
-                            },
+                            element: element("extra_hit"),
                             fraction: v,
                             forced_status: ef.forced_status,
                         },
@@ -383,23 +391,29 @@ pub fn resolve(
             }
         };
         let value = scale(def.value);
+        // THE PICK'S element wins wherever the ability offers a choice, and
+        // "wherever" is the whole point: this was written into the `extra_hit`
+        // arm alone, so an `add_element` with a gear wheel would have drawn the
+        // picker, taken the pick, and paid the FIRST entry whatever was chosen
+        // (2026-08-23). An ability offers at most one choice, so one reading of
+        // it serves every effect it has.
+        let picked = |stated: DamageType| {
+            p.element
+                .and_then(DamageType::from_name)
+                .filter(|_| !def.elements.is_empty())
+                .unwrap_or(stated)
+        };
         let effects: Vec<AbilityEffect> = def
             .effects
             .iter()
             .map(|e| match *e {
                 AbilityEffect::FactionDamage(v) => AbilityEffect::FactionDamage(scale(v)),
                 AbilityEffect::FinalDamage(v) => AbilityEffect::FinalDamage(scale(v)),
-                AbilityEffect::AddElement(t, v) => AbilityEffect::AddElement(t, scale(v)),
+                AbilityEffect::AddElement(t, v) => AbilityEffect::AddElement(picked(t), scale(v)),
                 AbilityEffect::AmmoEfficiency(v) => AbilityEffect::AmmoEfficiency(scale(v)),
                 AbilityEffect::ExtraHit { element, fraction, forced_status } => {
                     AbilityEffect::ExtraHit {
-                        // THE PICK'S element wins where the ability offers a
-                        // choice.
-                        element: p
-                            .element
-                            .and_then(DamageType::from_name)
-                            .filter(|_| !def.elements.is_empty())
-                            .unwrap_or(element),
+                        element: picked(element),
                         fraction: scale(fraction)
                             * def
                                 .class_bonus
@@ -697,6 +711,40 @@ mod tests {
                 d.effects
             );
         }
+    }
+
+    /// THE ONE THAT ADDS A **COMBINED** ELEMENT, which is what makes it worth
+    /// having and what made it impossible to state.
+    ///
+    /// Every other member of this family pays one fixed primary, so a picker
+    /// and an `add_element` had never met: `selectable` was implemented on the
+    /// `extra_hit` arm alone, in both the parser and the resolver. Two failures
+    /// in a row, the second silent — the file would have loaded, the page would
+    /// have drawn the wheel, and every pick would have paid Heat.
+    ///
+    /// WHY A COMBINED ELEMENT IS THE POINT: a DoT tick reads `1 + Σ THAT
+    /// ELEMENT's own bonuses` and only literal same-element sources count, so
+    /// 90% Toxin + 90% Heat makes the HIT Gas and contributes nothing to the
+    /// Gas burn. Nothing in a mod list can add Gas literally; this can — the
+    /// wiki's own sentence being *"added parallel to the weapon's Elemental
+    /// Damage, meaning it will NOT combine with elements on the weapon"*
+    /// (measured by the owner on a Braton Prime, 2026-08-23).
+    #[test]
+    fn valence_formation_imbues_the_combined_element_it_was_given() {
+        let def = get("valence_formation").expect("valence_formation");
+        assert_eq!(def.elements.len(), 10, "four primaries and six combinations");
+        let pick = |e: Option<&'static str>| {
+            let live =
+                resolve(&[AbilityPick { id: "valence_formation", duration_seconds: None, element: e }], 1.0, "rifle");
+            added_elements_at(&live, 0.0)
+        };
+        // A COMBINATION SURVIVES THE PICK. Gas is the measured case and is not
+        // reachable any other way.
+        assert_eq!(pick(Some("gas")), vec![(DamageType::Gas, 2.0)]);
+        // …and so does a primary, which the family's other four also do.
+        assert_eq!(pick(Some("cold")), vec![(DamageType::Cold, 2.0)]);
+        // No pick is the first choice, the same stand-in the gear wheel uses.
+        assert_eq!(pick(None), vec![(DamageType::Heat, 2.0)]);
     }
 }
     /// A FAMILY WITH TWO IDENTICAL MEMBERS IS ONE BUFF LISTED TWICE.

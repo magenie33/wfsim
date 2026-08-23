@@ -711,6 +711,7 @@ mods:
   motus_setup: 跃动 设局
   nano_applicator: 纳米涂覆
   narrow_barrel: 狭窄枪膛
+  nightwatch_napalm: 夜巡燃烧弹
   parallax_scope: 视差瞄具
   pathogen_rounds: 病原弹头
   perpetual_agony: 永恒苦痛
@@ -945,6 +946,12 @@ abilities:
   freeze_force: 寒冰之力
   venom_dose: 猛毒附加
   toxic_lash: 剧毒鞭笞
+  # A DIFFERENT PATH FROM THE SEVEN ABOVE: this one is an AUGMENT MOD, so DE's
+  # own string is in WFCD's export like any other mod card, joined on
+  # `/Lotus/Powersuits/Alchemist/AlchemistPassiveAugmentCard`. Its card says the
+  # mechanic in DE's words too — 「为武器附加 200% 该元素伤害」, 附加 rather than
+  # 合成, which is the wiki's "parallel … will NOT combine" from the other side.
+  valence_formation: 效价炼成
   resupply: 补给
   # HELMINTH'S OWN, off `/Lotus/Powersuits/PowersuitAbilities/Helminth`'s ability
   # list in WFCD's i18n.json — DE's Chinese client, not a translation of ours.
