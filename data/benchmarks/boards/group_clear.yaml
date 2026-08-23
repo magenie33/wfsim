@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-engine: 4be4b00b69ba3014e341f15d13102953e6221459
+engine: d200ab5ae01d073a3aeda4eb5e72ff4e31fbd01a
 entries:
   - weapon: afentis_prime
     mode: base
@@ -148,19 +148,19 @@ entries:
     valence: impact
   - weapon: kuva_ogris
     mode: base
-    score: 32.33342955697661
-    mods: [galvanized_chamber, primed_firestorm, serration, nightwatch_napalm, semi_rifle_cannonade, rime_rounds, malignant_force, hellfire]
-    arcanes: [primary_crux]
-    valence: magnetic
-  - weapon: kuva_ogris
-    mode: base
-    score: 29.299077337026464
+    score: 58.647111578239695
     mods: [galvanized_chamber, primed_firestorm, serration, nightwatch_napalm, semi_rifle_cannonade, rime_rounds, malignant_force, hellfire]
     arcanes: [primary_compression]
     valence: magnetic
   - weapon: kuva_ogris
     mode: base
-    score: 27.05383902757782
+    score: 45.74068115071902
+    mods: [galvanized_chamber, primed_firestorm, serration, nightwatch_napalm, semi_rifle_cannonade, rime_rounds, malignant_force, hellfire]
+    arcanes: [primary_crux]
+    valence: magnetic
+  - weapon: kuva_ogris
+    mode: base
+    score: 38.72223120342806
     mods: [galvanized_chamber, primed_firestorm, serration, nightwatch_napalm, semi_rifle_cannonade, magnetic_capacity, primed_cryo_rounds, malignant_force]
     arcanes: [primary_crux]
     valence: heat
@@ -212,6 +212,16 @@ entries:
     score: 126.031382166871
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: larkspur_prime
+    mode: base
+    score: 121.55450199775215
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: base
+    score: 119.66666666666669
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, sabot_rounds, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
   - weapon: larkspur_prime
     mode: base
     score: 118.22688798863922
