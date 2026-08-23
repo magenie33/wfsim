@@ -56,21 +56,32 @@ const drawn = await evaluate(`(async () => {
     slot: weaponInfo(id).slot,
     sibling: slotSibling(id),
     controls: [...row.querySelectorAll('[id^="dd-"]')].map(d => d.id),
-    // THE PARTS ARE PICK ROWS, one chip per option, keyed by the part they
-    // belong to — the same UI every other ranked axis on this page uses.
-    parts: [...new Set([...row.querySelectorAll('.evopick[data-part]')].map(e => e.dataset.part))],
-    picks: [...row.querySelectorAll('.evopick[data-part]')].map(e => e.dataset.part + ':' + e.dataset.id),
-    selected: [...row.querySelectorAll('.evopick[data-part].sel')].map(e => e.dataset.part + ':' + e.dataset.id),
-    // A gain chip, or the "…" that says one is still being measured. Either is
-    // proof the row is on a scanned axis; neither would appear on a dropdown.
+    // THE PARTS ARE DROPDOWNS THAT CARRY THEIR GAINS — the mod picker's shape,
+    // which is what a Kitgun's twenty loaders need and what four evolution
+    // chips did not. ddReg is the component own registry, so this reads what
+    // the list WILL draw rather than re-deriving it.
+    parts: ['grip', 'loader'].filter(p => ddReg.has('dd-' + p)),
+    picks: ['grip', 'loader'].flatMap(p =>
+      (ddReg.get('dd-' + p) || { items: [] }).items.map(i => p + ':' + i.value)),
+    selected: ['grip', 'loader']
+      .filter(p => ddReg.has('dd-' + p))
+      .map(p => p + ':' + ddReg.get('dd-' + p).value),
+    // A gain chip, or the "…" that says one is still being measured, on every
+    // row of the list.
     //
     // THE INSTALLED PART IS THE BASELINE and carries none, which is not a gap:
     // there is no gain in swapping a part for itself. So the claim is about the
     // options that are CANDIDATES, and a check counting every chip would fail
     // on a working page by exactly the number of parts.
-    unranked: [...row.querySelectorAll('.evopick[data-part]')]
-      .filter(e => !e.classList.contains('sel') && !e.querySelector('.gainchip'))
-      .map(e => e.dataset.part + ':' + e.dataset.id),
+    unranked: ['grip', 'loader'].flatMap(p => {
+      const cfg = ddReg.get('dd-' + p) || { items: [], value: null };
+      return cfg.items
+        .filter(i => String(i.value) !== String(cfg.value) && !/gainchip/.test(i.badge || ''))
+        .map(i => p + ':' + i.value);
+    }),
+    // …AND THE ORDER IS THE RANKING. Best first, by the picker's own rule.
+    order: ['grip', 'loader'].flatMap(p =>
+      (ddReg.get('dd-' + p) || { items: [] }).items.map(i => p + ':' + i.value)),
     fixed: [...row.querySelectorAll('.fixed-val')].map(e => e.textContent.trim()),
     // The grips on offer, as the engine states them for THIS entry...
     grips: (assemblySpec(id).grips || []).map(g => g.id),
@@ -82,7 +93,7 @@ const drawn = await evaluate(`(async () => {
 })()`);
 
 check("a modular weapon draws a parts block", drawn.shown, JSON.stringify(drawn));
-check("...with a row for the grip and one for the loader",
+check("...with a list for the grip and one for the loader",
   drawn.parts.includes("grip") && drawn.parts.includes("loader"),
   JSON.stringify(drawn.parts));
 // ONE SELECTED PER PART, because a pick row that highlights nothing (or two
@@ -99,6 +110,12 @@ check("...each showing exactly which part is installed",
 check("...and every option that is a candidate is ranked, not just described",
   drawn.unranked.length === 0,
   `${drawn.unranked.length} of ${drawn.picks.length} unranked: ${drawn.unranked}`);
+// TWENTY LOADERS IS WHY THIS IS A LIST AND NOT A ROW OF CHIPS (owner,
+// 2026-08-24). Asserted so the shape cannot quietly go back to one that only
+// works for an axis with four options.
+check("...and the loader list is the long one, so it is searchable",
+  drawn.picks.filter(x => x.startsWith("loader:")).length >= 20,
+  JSON.stringify(drawn.picks.filter(x => x.startsWith("loader:")).length));
 // THE CHAMBER IS NOT DRAWN AT ALL. It used to be stated as a read-only value;
 // the chamber IS the weapon, whose name is already at the top of the page, so
 // the row said the same word twice (owner, 2026-08-23).

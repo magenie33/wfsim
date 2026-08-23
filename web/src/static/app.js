@@ -8562,7 +8562,16 @@ function closePopovers(keep) {
 // the rest — while silent here costs a shipped feature nobody can see missing.
 const DD_CFG_KEYS = ["value", "items", "dataK", "title", "placeholder", "onPick", "search",
   "data", "disabled"];
-const DD_ITEM_KEYS = ["value", "label", "hint", "disabled", "group"];
+// `badge` IS THE ONE RAW-HTML FIELD, and it exists because escaped text cannot
+// carry a quick-calc gain (2026-08-24). A gain is MARKUP — a class that colours
+// it, a title that explains the band it was measured to, and a "…" while it is
+// still being measured — so flattening it into `hint` would print "≈+3.1% ±7.2%"
+// as words and lose the three shapes that make a chip readable at a glance.
+//
+// Raw means the CALLER escapes. The only producer is `gainChipFor`, which
+// builds its own markup and escapes its own inputs; anything else passed here
+// is an injection the component cannot see.
+const DD_ITEM_KEYS = ["value", "label", "hint", "disabled", "group", "badge"];
 
 function ddCheck(id, cfg) {
   const stray = (obj, known) => Object.keys(obj).filter((k) => !known.includes(k));
@@ -8640,7 +8649,7 @@ function ddRender(id, query) {
       group = i.group || group;
       return head + `<div class="opt${String(i.value) === String(cfg.value) ? " cur" : ""}${
         i.disabled ? " dis" : ""}" data-v="${escHtml(String(i.value))}">
-        <div class="info"><div class="mn">${escHtml(i.label)}</div>${
+        <div class="info"><div class="mn">${escHtml(i.label)}${i.badge || ""}</div>${
           i.hint ? `<div class="me"><div>${escHtml(i.hint)}</div></div>` : ""}</div>
       </div>`;
     }).join("")
@@ -10493,24 +10502,51 @@ function renderAssembly() {
     return { id: l.id, label: l.name, hint: bits.join(" · ") };
   };
 
-  // A PICK ROW, not a dropdown, and for the reason every other axis on this
-  // page is one (owner, 2026-08-23): a part is a factor that moves the headline
-  // number, so it is ranked, and a chip is the one place a reader can compare
-  // five of them at a glance. A dropdown can carry a hint per option — it
-  // already did — but it cannot show five gains side by side, and it shuts
-  // before you have read the second one.
-  const partRow = (part, label, items, hint) => {
-    const cur = assembly[part];
-    const opts = items.map((it) => {
-      const on = cur === it.id;
-      return `<span class="evopick${on ? " sel" : ""}" data-part="${escHtml(part)}" data-id="${escHtml(it.id)}">
-        <span class="einfo"><b class="en">${escHtml(it.label)}${
-          gainChipFor(part + ":" + it.id, tr(label))}</b>${
-          it.hint ? `<span class="ed"><div>${escHtml(it.hint)}</div></span>` : ""}</span></span>`;
-    }).join("");
-    return `<div class="evo" title="${escHtml(hint)}"><span class="rank">${
-      escHtml(tr(label))}</span><div class="picks">${opts}</div></div>`;
-  };
+  // A DROPDOWN THAT CARRIES ITS GAINS (owner, 2026-08-24).
+  //
+  // This was a row of chips for a day, on the reasoning that every ranked axis
+  // on this page is one. The reasoning was right about the RANKING and wrong
+  // about the shape: a tier of evolutions is four options and a valence is
+  // seven, while the parts are five grips and TWENTY loaders — and twenty-five
+  // chips in a row is a wall the reader has to get past to reach anything else
+  // on the page.
+  //
+  // The MOD and ARCANE pickers are the precedent that actually applies, and
+  // they are what "like an arcane" meant: a list you OPEN, with a gain on every
+  // row. So the control shuts to one line and the ranking lives inside it.
+  const partItems = (part, label, items) => items
+    // `id` is the SCAN's key, which carries the part because a grip and a
+    // loader may share a name; `name` is what `gainSort` orders by when two
+    // options are not separated.
+    .map((it) => ({ ...it, id: part + ":" + it.id, partId: it.id, name: it.label }))
+    // BEST FIRST, by the picker's own rule rather than a second copy of it —
+    // an unranked option sorts last either way, because an absent answer is
+    // not a small one. Twenty loaders is well past the point where a reader
+    // can scan a list, which is the same threshold `ddRender`'s grouping
+    // comment names.
+    .sort((a, b) => gainSort(a, b, ["gain", "name"]))
+    .map((it) => ({
+      value: it.partId,
+      label: it.label,
+      hint: it.hint,
+      badge: gainChipFor(it.id, tr(label)),
+    }));
+
+  const pick = (part, label, items, hint) =>
+    `<label title="${escHtml(hint)}">${escHtml(tr(label))} ${ddButton("dd-" + part, {
+      value: assembly[part],
+      // A LIST YOU CAN TYPE INTO once it is longer than a glance. Five grips is
+      // not; twenty loaders is.
+      search: items.length > 8,
+      items: partItems(part, label, items),
+      onPick: (v) => {
+        if (assembly[part] === v) return;
+        assembly = { ...assembly, [part]: v };
+        markPresetDirty();
+        renderAssembly();
+        refreshPanel();
+      },
+    })}</label>`;
 
   // THE SLOT. In game the GRIP decides it; here it is picked first, because it
   // decides the mod pool and therefore which build you are even editing. So the
@@ -10541,28 +10577,30 @@ function renderAssembly() {
   // about this weapon that IS a choice and is not offered anywhere else: the
   // SLOT.
   //
-  // No summary line either: it existed because the dropdowns shut over their
-  // own hints, and the rows below keep every option's on screen.
+  // WHAT THE PICKED PAIR IS WORTH, under the controls. Each list carries a hint
+  // per option, which is what the picking is done from; this is what the pair
+  // says once the lists are shut, and it is the reason they CAN shut.
+  const cur = {
+    grip: s.grips.find((g) => g.id === assembly.grip),
+    loader: s.loaders.find((l) => l.id === assembly.loader),
+  };
+  const summary = [cur.grip && gripItem(cur.grip).hint, cur.loader && loaderItem(cur.loader).hint]
+    .filter(Boolean).join(" · ");
   const axis = { kind: "assembly", idx: 0 };
   box.innerHTML =
-    (slotPick ? `<div class="runs-row">${slotPick}</div>` : "") +
-    scanStrip(gainScan, axis) +
-    partRow("grip", "Grip", s.grips.map(gripItem),
+    slotPick +
+    pick("grip", "Grip", s.grips.map(gripItem),
       tr("the grip sets damage, fire rate and the charge — only this slot's five are offered, because a grip is what decides the slot")) +
-    partRow("loader", "Loader", s.loaders.map(loaderItem),
-      tr("the loader sets the magazine and the reload, and adds three deltas that can be negative"));
+    pick("loader", "Loader", s.loaders.map(loaderItem),
+      tr("the loader sets the magazine and the reload, and adds three deltas that can be negative")) +
+    (summary ? `<span class="sim-hint">${escHtml(summary)}</span>` : "") +
+    // THE STRIP GOES OUTSIDE THE LISTS, because the lists are shut. A reader
+    // who has not opened one still has to be able to see that the ranking
+    // inside it is not finished (the strip draws nothing when nothing runs).
+    scanStrip(gainScan, axis);
   // The scan that fills the chips, keyed like every other axis so it runs once
   // per (build, fight) and repaints when it lands.
   ensureGains(axis, () => renderAssembly());
-  box.querySelectorAll(".evopick").forEach((c) =>
-    c.addEventListener("click", () => {
-      const { part, id } = c.dataset;
-      if (!part || assembly[part] === id) return;
-      assembly = { ...assembly, [part]: id };
-      markPresetDirty();
-      renderAssembly();
-      refreshPanel();
-    }));
 }
 
 /// THE VALENCE BLOCK. Two controls, because a Lich hands you two facts: which
@@ -11783,19 +11821,36 @@ function renderWfBuffs(host, readonly) {
 /// are then 1..n in document order. Only badges that are already a NUMBER are
 /// touched: `Σ`, `≡` and `▶` mark panels that are not steps in the build and
 /// say so by not being counted.
-/// The BUILDER's blocks, in document order. Named rather than selected by
-/// class, because `.config-page` also holds the Sim, Rivens, Enemies and
-/// Optimizer pages — they are TABS with their own numbering, and a sweep over
-/// the class renumbered the Rivens editor as step 5 of building a gun.
-const BUILDER_BLOCKS = [
-  "mode-block", "mod-block", "arcane-block", "evo-block", "element-block",
-];
+/// The BUILDER's blocks, in document order — DERIVED, never listed.
+///
+/// It was a list of ids, because `.config-page` also holds the Sim, Rivens,
+/// Enemies and Optimizer pages: they are TABS with their own numbering, and a
+/// sweep over `.block` renumbered the Rivens editor as step 5 of building a
+/// gun. The list was the right answer to the wrong question — the thing that
+/// needed saying is which MODULE a block belongs to, and once every block says
+/// it (`data-module` in the HTML) this and the CSS and the official-build lock
+/// are all one query (owner, 2026-08-24).
+///
+/// Four such lists existed and the Parts block was added to none of them, so a
+/// Kitgun's parts drew on the Simulator and Optimizer tabs and were numbered
+/// nowhere. Same shape as the Mode block's bug (check_opt_modes, 2026-08-11).
+const builderBlocks = () => [...document.querySelectorAll('[data-module="builder"]')];
+
+/// …and of those, the ones that are a STEP rather than a read-out.
+///
+/// The badge already says which, and `renumberBlocks` already reads it: a step
+/// carries a NUMBER, while `Σ`, `≡` and `▶` mark panels that only report. So
+/// the lock derives from the same fact the numbering does, instead of naming
+/// four blocks and going stale on the fifth.
+const builderSteps = () => builderBlocks().filter((b) => {
+  const n = b.querySelector(".bh .n");
+  return !!n && /^\d+$/.test(n.textContent.trim());
+});
 
 function renumberBlocks() {
   let n = 0;
-  BUILDER_BLOCKS.forEach((id) => {
-    const b = $(id);
-    if (!b || b.hidden) return;
+  builderBlocks().forEach((b) => {
+    if (b.hidden) return;
     const badge = b.querySelector(".bh .n");
     if (!badge) return;
     badge.textContent = String(++n);
@@ -12224,9 +12279,10 @@ function lockOfficialBuild() {
   // sent nothing (`offerBoardSubmit` refuses one too) — so a player testing the
   // base form several times saw no row appear and nothing on screen said why
   // (owner, 2026-08-09).
-  ["mod-block", "arcane-block", "evo-block", "mode-block"].forEach((id) => {
-    const b = $(id);
-    if (!b) return;
+  // EVERY BUILDER STEP, derived — see `builderSteps`. It was four ids, which
+  // is why the Parts block stayed live on a read-only board row. The Stats
+  // panel is deliberately not among them: there is nothing in it to click.
+  builderSteps().forEach((b) => {
     b.classList.toggle("locked-hard", on);
     // …AND IT SAYS WHY, on the block a player is trying to click. A slot that
     // simply does not react teaches nothing; this names the reason and the way

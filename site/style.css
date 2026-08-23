@@ -73,15 +73,33 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .mtab{display:inline-flex;align-items:center;line-height:1;padding:9px 16px;font-size:13.5px;color:var(--muted);text-decoration:none;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0}
 .mtab:hover{color:var(--text)}
 .mtab.sel{color:var(--text);font-weight:600;border-color:var(--line);background:var(--panel2);position:relative;top:1px}
-body:not(.on-optimizer) #opt-block{display:none}
-body:not(.on-rivens) #riven-block{display:none}
-body:not(.on-enemies) #enemy-block{display:none}
+/* EVERY BLOCK DECLARES WHOSE IT IS, and the rules below are DERIVED from that
+   declaration rather than from a list of ids (owner, 2026-08-24).
+
+   A block belongs to exactly one module (`data-module` in the HTML), and a
+   module's blocks show only on that module's tab. That is one rule per module
+   instead of one selector per block — which is what this was, and the Parts
+   block was in none of the lists: it drew on the Simulator and the Optimizer
+   tabs, a builder control on two pages that do not own a build. The same shape
+   as the Mode block's own bug (check_opt_modes, 2026-08-11), which is why a
+   list is the wrong mechanism.
+
+   The BUILDER is the default tab, so its blocks show whenever no other
+   module's tab is on. */
+body:not(.on-optimizer) [data-module="optimizer"],
+body:not(.on-rivens) [data-module="rivens"],
+body:not(.on-enemies) [data-module="enemies"],
+body:not(.on-simulator) [data-module="simulator"]{display:none}
+body.on-optimizer [data-module="builder"],
+body.on-simulator [data-module="builder"],
+body.on-rivens [data-module="builder"],
+body.on-enemies [data-module="builder"]{display:none}
 /* THE SIMULATOR'S BLOCKS, and `#wfbuff-block` is one of them: a Warframe buff
    is not part of the weapon (owner, 2026-08-09). It is something done TO this
    weapon for a while, which is the fight's business — the builder answers
    "what is this gun", and a Roar belongs to no gun. The optimizer shows its
    own read-only copy inside `#opt-block`, so it needs no entry here. */
-body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body:not(.on-simulator) #sim-results-block{display:none}
+/* (the simulator's own rule is in the derived block above) */
 /* A SECTION OF THE FIGHT THAT STILL READS AS ITS OWN THING (owner,
    2026-08-09). Wrapped rather than merely headed: it saves with the scenario,
    travels with it across weapons and is what the optimizer reads off the
@@ -130,7 +148,10 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
    that hides the build bar hides them too — listing only the bar put a
    read-only build chip and its note at the top of the optimizer, which owns no
    build (owner, 2026-08-04). */
-.on-optimizer #bench-bar-builder-builds,.on-optimizer #build-official,.on-optimizer #preset-bar-builder-builds,.on-optimizer #quick-calc,.on-optimizer #mode-block,.on-optimizer #mod-block,.on-optimizer #arcane-block,.on-optimizer #evo-block,.on-optimizer #element-block,.on-optimizer #stats-block{display:none}
+/* …and the builder's furniture that is not a `.block`: its preset bars and the
+   quick calc. Named here because they carry no block of their own; the BLOCKS
+   are covered by the derived rule above. */
+.on-optimizer #bench-bar-builder-builds,.on-optimizer #build-official,.on-optimizer #preset-bar-builder-builds,.on-optimizer #quick-calc{display:none}
 /* The RIVENS tab is its own bench: the builder's blocks step aside, the same
    way they do for the other two modules. */
 .on-rivens #bench-bar-builder-builds,.on-rivens #build-official,.on-rivens #preset-bar-builder-builds,.on-rivens #quick-calc,.on-rivens #mode-block,.on-rivens #mod-block,.on-rivens #arcane-block,.on-rivens #evo-block,.on-rivens #element-block,.on-rivens #stats-block{display:none}
@@ -217,7 +238,7 @@ body:not(.on-simulator) #sim-block,body:not(.on-simulator) #sim-build-block,body
    is not the builder.
    NOT hidden on the optimizer, which still reads `mode` off this control and
    has no scope axis of its own for it yet. */
-.on-simulator #quick-calc,.on-simulator #mode-block,.on-simulator #mod-block,.on-simulator #arcane-block,.on-simulator #evo-block,.on-simulator #element-block,.on-simulator #stats-block{display:none}
+.on-simulator #quick-calc{display:none}
 
 /* Preset bar above the Mods block: chips CRUD in place. */
 .preset-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 12px;padding:8px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}

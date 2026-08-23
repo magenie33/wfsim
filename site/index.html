@@ -397,6 +397,16 @@
          in it, and the panel should say so rather than stay silent — the same
          rule the Form control carried before this replaced it (user,
          2026-07-31, restated 2026-08-07). One mode is stated, not offered. -->
+    <!-- EVERY BLOCK DECLARES WHOSE IT IS (owner, 2026-08-24).
+         `data-module` is the ONE statement of which of the three modules (or
+         which editor) a block belongs to, and everything that used to name
+         them by id now derives from it: the CSS that hides the other modules'
+         blocks on a tab, the builder's step numbering, and the official-build
+         lock. There were FOUR such lists and the Parts block was added to none
+         of them, so it drew on the Simulator and the Optimizer tabs — a
+         builder control on two pages that do not own a build. Same shape as
+         the Mode block's own bug (check_opt_modes, 2026-08-11), and the reason
+         a list was the wrong mechanism both times. -->
     <!-- THE PARTS, and only for a weapon that has any. A Kitgun has no
          published stat line — it has a Chamber, a Grip and a Loader, and every
          number on the panel below is composed from the three — so this block
@@ -407,17 +417,17 @@
          NO MOD LOCK BEHIND IT. The pool is the WEAPON's — the slot lives in the
          roster entry, not in the assembly — so no part can move it and there is
          nothing to wait for. See data/kitguns/README.md. -->
-    <section class="block" id="assembly-block" hidden>
+    <section class="block" data-module="builder" id="assembly-block" hidden>
       <div class="bh"><span class="n">0</span><h2 data-i18n>Parts</h2><span class="sub" id="assembly-sub"></span></div>
       <div class="bb"><div id="assembly-row" class="field-grid"></div></div>
     </section>
 
-    <section class="block" id="mode-block">
+    <section class="block" data-module="builder" id="mode-block">
       <div class="bh"><span class="n">1</span><h2 data-i18n>Mode</h2><span class="sub" id="mode-sub"></span></div>
       <div class="bb"><div id="mode-row" class="field-grid"></div></div>
     </section>
 
-    <section class="block" id="mod-block">
+    <section class="block" data-module="builder" id="mod-block">
       <div class="bh"><span class="n">2</span><h2 id="mod-block-h" data-i18n>Mods</h2>
         <span class="sub">
           <span class="cap" id="capacity">0 / 0</span>
@@ -443,13 +453,13 @@
     </section>
 
     <!-- Block: Arcane -->
-    <section class="block" id="arcane-block">
+    <section class="block" data-module="builder" id="arcane-block">
       <div class="bh"><span class="n">3</span><h2 data-i18n>Arcane</h2><span class="sub" id="arcane-sub"></span></div>
       <div class="bb"><div id="arcane-slots" class="slots one"></div></div>
     </section>
 
     <!-- Block: Evolution (Incarnon weapons) -->
-    <section class="block" id="evo-block">
+    <section class="block" data-module="builder" id="evo-block">
       <div class="bh"><span class="n">4</span><h2 data-i18n>Evolution</h2><span class="sub" data-i18n>Incarnon Genesis</span></div>
       <div class="bb"><div id="evo-rows"></div></div>
     </section>
@@ -460,13 +470,13 @@
          axis beside the evolutions and not a weapon field (owner,
          2026-08-13). Hidden on every weapon that is not one — the same "no
          choice, no control" rule every axis here follows. -->
-    <section class="block" id="element-block" hidden>
+    <section class="block" data-module="builder" id="element-block" hidden>
       <div class="bh"><span class="n">5</span><h2 data-i18n>Valence</h2><span class="sub" id="valence-sub"></span></div>
       <div class="bb"><div id="element-cfg" class="field-grid"></div></div>
     </section>
 
     <!-- Block: Stats — the FINAL panel: merged buckets, explained by source -->
-    <section class="block" id="stats-block">
+    <section class="block" data-module="builder" id="stats-block">
       <div class="bh"><span class="n">Σ</span><h2 data-i18n>Stats</h2><span class="sub" id="stats-sub"></span></div>
       <div class="bb">
         <!-- Shown only for a weapon whose PASSIVE the sim does not model: the
@@ -482,7 +492,7 @@
     <!-- Block: Build (SIMULATOR tab) — a read-only summary of what is
          under test: the ACTIVE preset's mods / arcane / evolutions, with
          a jump to the Builder to change it. -->
-    <section class="block" id="sim-build-block">
+    <section class="block" data-module="simulator" id="sim-build-block">
       <div class="bh"><span class="n">≡</span><h2 data-i18n>Build</h2><span class="sub" id="sim-build-sub"></span></div>
       <div class="bb"><div id="sim-build-info"></div></div>
     </section>
@@ -490,7 +500,7 @@
     <!-- Block: Sim — the SIMULATOR tab's view (2D arena + scenario/buff
          settings); Run simulates the current build against the enemy and
          shows a summary + scene replay. -->
-    <section class="block" id="sim-block">
+    <section class="block" data-module="simulator" id="sim-block">
       <div class="bh"><span class="n">▶</span><h2 data-i18n>Sim</h2><span class="sub" id="sim-sub"></span></div>
       <div class="bb">
         <!-- The SCENARIO as a saved thing: enemy, technique and measurement
@@ -570,7 +580,7 @@
 
     <!-- Block: Result (SIMULATOR tab) — its own container, separate from
          the settings above; hidden until the active preset has a result. -->
-    <section class="block" id="sim-results-block" hidden>
+    <section class="block" data-module="simulator" id="sim-results-block" hidden>
       <div class="bh"><span class="n">Σ</span><h2 data-i18n>Result</h2><span class="sub" id="sim-results-sub"></span></div>
       <div class="bb"><div id="sim-results"></div></div>
     </section>
@@ -578,7 +588,7 @@
     <!-- Block: Rivens (RIVENS tab) — a CONSTRUCTOR, not a roller. Every
          control is bounded by the formula, so the only rivens it can express
          are legal ones, including the corner where every roll is maximal. -->
-    <section class="block" id="riven-block">
+    <section class="block" data-module="rivens" id="riven-block">
       <div class="bh"><span class="n">4</span><h2 data-i18n>Rivens</h2><span class="sub" id="riven-sub"></span></div>
       <div class="bb">
         <!-- A CUSTOM, not a preset: a riven is a thing you made, which the
@@ -599,7 +609,7 @@
          target you made is a CUSTOM: it is not weapon-scoped (a fight is not a
          statement about a weapon), so this collection is shared across the
          roster like the scenarios themselves. -->
-    <section class="block" id="enemy-block">
+    <section class="block" data-module="enemies" id="enemy-block">
       <div class="bh"><span class="n">5</span><h2 data-i18n>Enemies</h2><span class="sub" id="enemy-sub"></span></div>
       <div class="bb">
         <div class="cu-tools" id="enemy-tools"></div>
@@ -611,7 +621,7 @@
 
     <!-- Block: Optimizer — scope (mods/arcanes/evolutions) + the Sim panel's
          enemy & buff settings → top-10 ranked builds, each loadable. -->
-    <section class="block" id="opt-block">
+    <section class="block" data-module="optimizer" id="opt-block">
       <div class="bh"><span class="n">⚙</span><h2 data-i18n>Optimize</h2><span class="sub" id="opt-sub">what to search, and how hard — the fight is the simulator's</span></div>
       <div class="bb">
         <!-- ONE preset per weapon: the whole search (scope + final round).
@@ -748,7 +758,7 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (owner, 2026-08-18, after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">0b4869fc+ · 2026-08-23 14:35Z</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">7201c226+ · 2026-08-23 16:24Z</span>
     </div>
   </footer>
 
