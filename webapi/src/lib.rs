@@ -3940,7 +3940,13 @@ pub fn panel_json(v: &Value) -> Value {
         // not land once, it ticks. So it states its own clock — rate, lifetime
         // and the resulting total — on top of the same per-instance stats,
         // because "40 damage" means nothing here without "×10 ticks".
-        if let (Some(fb), Some(fr)) = (base.lingering.as_ref(), panel.lingering.as_ref()) {
+        // FROM THE PANEL, not from the weapon. A field a MOD granted — Nightwatch
+        // Napalm's fire — has no `base.lingering` at all, so reading the weapon
+        // here drew nothing: the part was resolved, simulated, and appeared on
+        // no card, which on an Ogris is most of the build's damage (owner,
+        // 2026-08-23). `ResolvedPanel::lingering_base` is whichever one the
+        // field actually resolved from.
+        if let (Some(fb), Some(fr)) = (panel.lingering_base.as_ref(), panel.lingering.as_ref()) {
             let fsrc = |key: &'static str| sources(key, None);
             let dist = display_number;
             // ✅ measured (MEASUREMENTS M13): the first tick lands WITH the

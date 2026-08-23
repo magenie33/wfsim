@@ -75,7 +75,7 @@ attack:
 
 unmodeled:
   - "'Enemies can destroy the rockets with gunfire or area of effect explosions' (wiki) — nothing shoots back in this arena, so every rocket reaches what it was aimed at"
-  - "Nightwatch Napalm and the launcher-exclusive Adhesive Blast are outside the pools this roster loads"
+  - "the launcher-exclusive Adhesive Blast is outside the pools this roster loads — it sticks the rocket to what it hits, which changes where the explosion goes off and is a placement this arena has no room to be wrong about"
   - reason: explosion_ignores_cover
   - reason: self_stagger
 

@@ -439,7 +439,7 @@ ui:
   "Name": 名称
   "Necrophagic Vigor, the Hema family's exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Necrophagic Vigor」，Hema 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Necrophagic Vigor, the Synapse family's exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Necrophagic Vigor」，Synapse 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
-  "Nightwatch Napalm and the launcher-exclusive Adhesive Blast are outside the pools this roster loads": "「Nightwatch Napalm」以及榴弹发射器专属的「Adhesive Blast」都不在本武器库载入的卡池里"
+  "the launcher-exclusive Adhesive Blast is outside the pools this roster loads — it sticks the rocket to what it hits, which changes where the explosion goes off and is a placement this arena has no room to be wrong about": "发射器专属的**粘附爆破**不在本 roster 加载的 mod 池里 — 它把火箭黏在命中物上，这会改变爆炸发生的**位置**，而位置是本战场输不起的一个变量"
   "No matches": 无匹配
   "No tiers, no perks, no supporter badge. A donation is a thank-you, not a purchase.":
     没有档位，没有特权，没有赞助者标识。捐助是一句谢谢，不是一次购买。

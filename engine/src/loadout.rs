@@ -2674,6 +2674,14 @@ pub struct ResolvedPanel {
     /// See [`crate::weapons_data::Battery`]. Untouched by the mod layer too:
     /// the regen rate is the weapon's and a magazine mod changes only how many
     /// rounds it has to refill.
+    /// THE FIELD'S OWN BASE, whether it came from the WEAPON or from a MOD.
+    ///
+    /// The panel prints a `base -> final` pair for every part, and for the field
+    /// it read `WeaponBase::lingering` — which is `None` when a mod granted the
+    /// field, so Nightwatch Napalm's fire was resolved, simulated, and drawn
+    /// nowhere at all. A part that pays most of a build's damage and appears on
+    /// no card is the worst kind of invisible (owner, 2026-08-23).
+    pub lingering_base: Option<LingeringBase>,
     pub battery: Option<crate::weapons_data::Battery>,
     /// ROUNDS A SECOND under Pax Charge — carried from the weapon so
     /// `DummyParams::from_panel` can build the battery, which is where the
@@ -4169,6 +4177,9 @@ pub fn resolve_for(
         // ones count only where the weapon lets them (an Arch-Gun does not).
         charge_ammo_per_second: base.charge_ammo_per_second,
         sustained_fire_rate: base.sustained_fire_rate,
+        // Whichever one the field above resolved from — the weapon's if it has
+        // one, otherwise the mod's.
+        lingering_base: base.lingering.clone().or(granted),
         battery: base.battery,
         recharge_per_second: base.recharge_per_second,
         // A MAGAZINE-EATING CHARGE STATES ITS OWN TIME. `magazine / rate`
