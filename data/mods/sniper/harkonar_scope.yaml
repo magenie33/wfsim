@@ -1,0 +1,52 @@
+id: harkonar_scope
+name: Harkonar Scope
+rarity: uncommon
+polarity: naramon
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Rifle/Event/ProjectNightwatch/VulkarNightwatchMod
+description: "+Xs Combo Duration"
+
+effects:
+  # THE SNIPER COMBO'S CLOCK, and nothing else. The counter drops by one after
+  # `seconds` without a landing hit (`weapons_data::SniperCombo::seconds`), and
+  # this mod adds to that window: "+12s Combo Duration" at max rank.
+  #
+  # IT IS A PER-WEAPON NUMBER IT ADDS TO, which the card cannot say and the
+  # wiki does: "All sniper rifles have a 2 second combo duration, with the
+  # exception of the Lanka, which has a 6 second combo duration. Harkonar Scope
+  # at max rank extends this to 14 seconds, and to 18 seconds for Lanka." Both
+  # halves fall out of adding to the weapon's own field rather than setting a
+  # constant — the Lanka already states its 6.
+  #
+  # NOT "WHEN AIMING" ANY MORE, and the card was changed to say so: "Updated
+  # Harkonar Scope's Mod description to read '+Xs Combo Duration' (removed the
+  # 'when Aiming' bit) as the Mod extends Combo Duration outside of aiming"
+  # (Update 38). The COUNTER is still the aimed fight's — `resolve` drops the
+  # whole spec from the hip, which is the mechanic's own gate and not this
+  # mod's — so a hip-fired build is offered this card and it moves nothing,
+  # exactly as the weapon's own combo does.
+  # SECONDS, so it is written as a duration and not as a rank ladder: the
+  # card's placeholder is "+Xs", which the fill answers from `duration_seconds`
+  # (and `duration_rank0` for the other end of the ladder) exactly as Argon
+  # Scope's does.
+  - kind: combo_duration_bonus
+    duration_rank0: 2.0
+    duration_seconds: 12.0
+
+  # THE SCOPED-EXPIRY SUBTLETY IS NOT MODELLED, and it is a play pattern rather
+  # than a number: "The extended combo duration only applies to a stack if the
+  # player is already scoped when the previous stack expires. As such, the most
+  # efficient combo conservation can either be achieved by always being scoped
+  # in, or only every 14 (18) seconds, when the counter decrements." This arena
+  # holds ONE aim state for the whole fight (`tenno.state.aiming`), so a run
+  # that is scoped is scoped at every expiry and a run that is not has no
+  # counter at all. Both ends of the sentence are already the answer here;
+  # what is missing is the play in between, which is the same ruling every
+  # timing pattern in docs/UNMODELLED.md gets.
+
+source:
+  url: https://wiki.warframe.com/w/Harkonar_Scope
+  # Rank table (+2s..+12s, cost 4-9), Notes and Patch History, read 2026-08-23.
+  # WFCD cross-check on `uniqueName`: naramon, Uncommon, baseDrain 4,
+  # fusionLimit 5, compatName Sniper — agrees on every field.

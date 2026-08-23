@@ -599,6 +599,27 @@ pub struct LingeringSpec {
     /// the branch is per weapon, and a future one may refresh.
     #[serde(default = "stack")]
     pub stacking: String,
+    /// DO ELEMENTAL MODS REACH THIS FIELD? Default YES, which is the Torid's
+    /// cloud and what "through the SAME mod buckets" has always meant here.
+    ///
+    /// Nightwatch Napalm is the exception and the wiki states it as a closed
+    /// list: *"Damage output can only be increased by base damage mods (e.g.
+    /// Serration, Heavy Caliber, Semi-Rifle Cannonade), and faction mods"* — so
+    /// its 150 Heat is multiplied by the base-damage bucket and by the faction
+    /// bonus at fire time, and a Cryo Rounds on the same build does nothing to
+    /// it.
+    #[serde(default = "lingering_default_true")]
+    pub elemental_mods_apply: bool,
+    /// DO STATUS-CHANCE MODS REACH IT? Default YES, same reasoning.
+    ///
+    /// Nightwatch Napalm's is pinned: *"Napalm has 68% chance to proc Heat …
+    /// Status chance is not affected by mods."*
+    #[serde(default = "lingering_default_true")]
+    pub status_mods_apply: bool,
+}
+
+fn lingering_default_true() -> bool {
+    true
 }
 
 fn stack() -> String {
@@ -2830,6 +2851,8 @@ pub fn base_panel_assembled(
             falloff_start_m: f.falloff_start_m.unwrap_or(0.0),
             falloff_reduction: f.falloff_reduction.unwrap_or(0.0),
             takes_condition_overload: f.takes_condition_overload,
+            elemental_mods_apply: f.elemental_mods_apply,
+            status_mods_apply: f.status_mods_apply,
             stacking: match f.stacking.as_str() {
                 "stack" => FieldStacking::Stack,
                 "refresh" => FieldStacking::Refresh,

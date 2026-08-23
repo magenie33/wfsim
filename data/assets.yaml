@@ -590,6 +590,14 @@ mods:
   # statement about where the file lives.
   # Assault-rifle-only pool (2026-08-05). Rifle Ammo Mutation and its Primed
   # version share one card art, which is DE's own doing.
+  # HAND-WRITTEN, and `wiki:` because the CDN has nothing: the mod was released
+  # 2026-08-21 and WFCD's export has no entry for it yet, so gen_assets.py
+  # cannot see it. The name is the module's own `Image` field. Once the export
+  # catches up the generator will produce this line by itself.
+  # WFCD gives Primed Chamber the SAME `imageName` as Charged Chamber
+  # (RifleChargedChamberMod.jpg), which is the export being wrong about a card
+  # that has looked different since 2013 — so the fetcher takes this one from
+  # the wiki, where the mod's own page links it.
   accelerated_blast: ShotgunAcceleratedBlast.jpg
   accelerated_isotope: RadiationFireratePistolMod.jpg
   aerial_ace: JumpRefreshOnKillRifleMod.jpg
@@ -696,6 +704,7 @@ mods:
   gun_glide: LessRecoilMoreAccuracyRifleMod.jpg
   gunslinger: PistolFireRateMod.jpg
   hammer_shot: RifleHammerSHotMod.jpg
+  harkonar_scope: VulkarNightwatchMod.jpg
   hata_satya: SomaPrimeCritChanceMod.jpg
   hawk_eye: PistolZoomMod.jpg
   heated_charge: PistolFireDamageMod.jpg
@@ -744,6 +753,7 @@ mods:
   nano_applicator: StatusChanceWhileAiming.jpg
   narrow_barrel: AccuracyWhileAiming.jpg
   neutralizing_justice: Miter.jpg
+  nightwatch_napalm: OgrisNightwatchMod.jpg
   overview: HigherAirAimFoVRifleMod.jpg
   parallax_scope: ArchwingRifleCritChanceMod.jpg
   pathogen_rounds: PoisonDamagePistolMod.jpg
@@ -758,11 +768,6 @@ mods:
   point_blank: ShotgunDamageAmountMod.jpg
   point_strike: RifleCritChanceMod.jpg
   polar_magazine: ArchwingWeaponFreezeDamageModRifle.jpg
-  # HAND-WRITTEN, and `wiki:` because the CDN has nothing: the mod was released
-  # 2026-08-21 and WFCD's export has no entry for it yet, so gen_assets.py
-  # cannot see it. The name is the module's own `Image` field. Once the export
-  # catches up the generator will produce this line by itself.
-  primed_polar_magazine: wiki:PrimedPolarMagazineMod.png
   pressurized_magazine: FireRateWhileAimingMods.jpg
   primary_acuity: WeaponWeakpointCriticalChanceMod.jpg
   primed_ammo_chain: ArchwingRifleAmmoMaxMod.jpg
@@ -772,10 +777,6 @@ mods:
   primed_bane_of_infested: RifleDamageInfested.jpg
   primed_bane_of_orokin: RifleDamageCorrupted.jpg
   primed_bane_of_the_murmur: WeaponFactionDamageMurmurs.jpg
-  # WFCD gives Primed Chamber the SAME `imageName` as Charged Chamber
-  # (RifleChargedChamberMod.jpg), which is the export being wrong about a card
-  # that has looked different since 2013 — so the fetcher takes this one from
-  # the wiki, where the mod's own page links it.
   primed_chamber: wiki:PrimedChamberMod.png
   primed_charged_shell: ShotgunElectricityDamageMod.jpg
   primed_chilling_grasp: ShotgunFreezeDamageMod.jpg
@@ -804,6 +805,7 @@ mods:
   primed_pistol_ammo_mutation: PistolAmmoMutatorMod.jpg
   primed_pistol_gambit: PistolCritChanceMod.jpg
   primed_point_blank: ShotgunDamageAmountMod.jpg
+  primed_polar_magazine: wiki:PrimedPolarMagazineMod.png
   primed_quickdraw: PistolReloadSpeedMod.jpg
   primed_ravage: ShotgunCritDamageMod.jpg
   primed_rifle_ammo_mutation: RifleAmmoMutatorMod.jpg

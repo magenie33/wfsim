@@ -472,6 +472,49 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         // mod equipped and the number was thrown away. They carry no
         // SINGLE-TARGET damage, which is what `Indirect` is for.
         "range_bonus" => ModEffect::Indirect(IndirectStat::Range, max("rankMax")),
+        // NIGHTWATCH NAPALM: the mod LEAVES A FIELD. Every number the field
+        // needs is stated here rather than borrowed from the weapon, because
+        // this fire is not the rocket's — see `ModEffect::GrantsLingering`.
+        "grants_lingering" => {
+            let mut vector = crate::damage::DamageVector::new();
+            for (k, val) in v.get("damage")?.as_mapping()? {
+                vector.add(crate::weapons_data::damage_type(k.as_str()?), val.as_f64()?);
+            }
+            let field = Box::leak(Box::new(crate::loadout::LingeringBase {
+                base_vector: vector,
+                base_crit_chance: n(v, "crit_chance").unwrap_or(0.0),
+                base_crit_damage: n(v, "crit_multiplier").unwrap_or(1.0),
+                base_status_chance: n(v, "status_chance").unwrap_or(0.0),
+                tick_rate: n(v, "tick_rate")?,
+                duration_seconds: n(v, "duration_seconds")?,
+                // Overwritten at resolve time from the weapon's own blast.
+                radius_m: 0.0,
+                falloff_start_m: n(v, "falloff_start_m").unwrap_or(0.0),
+                falloff_reduction: n(v, "falloff_reduction").unwrap_or(0.0),
+                stacking: match v.get("stacking").and_then(Value::as_str) {
+                    Some("refresh") => crate::loadout::FieldStacking::Refresh,
+                    _ => crate::loadout::FieldStacking::Stack,
+                },
+                takes_condition_overload: v
+                    .get("takes_condition_overload")
+                    .and_then(Value::as_bool)
+                    .unwrap_or(false),
+                elemental_mods_apply: v
+                    .get("elemental_mods_apply")
+                    .and_then(Value::as_bool)
+                    .unwrap_or(true),
+                status_mods_apply: v
+                    .get("status_mods_apply")
+                    .and_then(Value::as_bool)
+                    .unwrap_or(true),
+            }));
+            ModEffect::GrantsLingering(field)
+        }
+        // …and the share of the blast AREA it covers, its own column on the
+        // card and therefore its own effect.
+        "lingering_area_fraction" => ModEffect::LingeringAreaFraction(max("rankMax")),
+        // HARKONAR SCOPE: seconds onto the sniper combo's decay window.
+        "combo_duration_bonus" => ModEffect::ComboDuration(n(v, "duration_seconds")?),
         "beam_range_bonus" => ModEffect::Indirect(IndirectStat::BeamRange, max("rankMax")),
         // …and the PERCENTAGE half, which is a different bucket because it
         // lands in a different place — see `range_m` in `loadout::resolve`.
@@ -1939,6 +1982,23 @@ mod card_values_tests {
                 // Warframe".
                 "neutralizing_justice :: destroys a nullifier shield generator no such \
                  enemy in this roster",
+                // THE TWO HALVES OF THE NAPALM NOBODY PUBLISHED, and they are
+                // different kinds of gap. The tick rate is the whole DPS of the
+                // field and NOTHING states it — the page gives damage per tick
+                // and a duration in seconds and never joins them, and the
+                // Ogris's page, Napalm Grenades and DE's own card text are all
+                // silent — so one a second is an assumption a measurement
+                // settles rather than something the engine can derive.
+                //
+                // The Heat proc is the opposite: it is STATED and this engine
+                // cannot express it. "ticking for 50% of napalm's damage per
+                // second for 3 seconds" — the rate is what every Heat proc here
+                // already does; the LENGTH is this mod's own and a per-proc
+                // duration is not something a field can carry yet, so the burn
+                // runs the standard time and this weapon is overstated by the
+                // difference.
+                "nightwatch_napalm :: a heat proc that should burn for three seconds and burns for the standard time",
+                "nightwatch_napalm :: an unmeasured tick rate of one per second",
                 // A PER-WEAPON CATALOG ROW, of the kind docs/CATALOGS.md is
                 // about: the wiki tabulates an ADDITIONAL spread penalty for
                 // the Cernos Prime (and, commented out, four crossbows this

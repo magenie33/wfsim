@@ -409,6 +409,31 @@ pub enum ModEffect {
     /// (wiki) — the same reading [`BuffTrigger::Headshot`] already carries. It
     /// REFRESHES rather than stacking, so one window with its clock restarted.
     OnEximusWeakpointDamage { bonus: f64, duration: f64 },
+    /// NIGHTWATCH NAPALM: a LINGERING FIELD the weapon does not have, granted
+    /// by a mod.
+    ///
+    /// The first of its kind — every other field in the app is a property of an
+    /// attack (the Torid's cloud), and this one is bolted onto a rocket that
+    /// leaves none. Everything downstream of `ResolvedPanel` is unchanged: the
+    /// sim spawns, ticks and expires it exactly as it does a weapon's own,
+    /// which is why the mod grants a `LingeringBase` rather than a mechanic.
+    ///
+    /// THE RADIUS IS A FRACTION OF THE BLAST, not a number of its own — DE's
+    /// card says "across 90% of the explosion area" — so it is resolved against
+    /// the weapon's radial AFTER blast-radius mods, and Firestorm growing the
+    /// fire falls out rather than being arranged.
+    GrantsLingering(&'static LingeringBase),
+    /// …and the SHARE OF THE BLAST AREA that field covers, which is its own
+    /// effect because it is its own column on the card: "across X% of the
+    /// explosion area", 15% at rank 0 and 90% at rank 5.
+    LingeringAreaFraction(f64),
+    /// HARKONAR SCOPE: seconds added to the SNIPER COMBO's decay window.
+    ///
+    /// It adds to a number the WEAPON states rather than setting one, which is
+    /// what makes the wiki's two answers one rule: "+12s" reaches 14 seconds on
+    /// every sniper and 18 on the Lanka, whose 6 is its own
+    /// ([`crate::weapons_data::SniperCombo::seconds`]).
+    ComboDuration(f64),
     /// Hemorrhage: each `from` status APPLIED rolls `chance` to also apply
     /// one `to` status (at most one roll per damage instance, and never
     /// alongside another `to` proc in the same instance). The chance is
@@ -778,6 +803,14 @@ impl ModEffect {
                 format!("On Equip: {} Recoil, {} Accuracy, {duration}s", pct(recoil), pct(accuracy))
             }
             FactionDamage(fac, v) => format!("{} Damage to {fac:?}", pct(v)),
+            GrantsLingering(field) => format!(
+                "leaves a field: {} per tick for {}s",
+                field.base_vector.total(),
+                field.duration_seconds
+            ),
+            LingeringAreaFraction(v) => format!("over {} of the explosion area", pct(v)),
+            // Seconds, not a percentage — the card's own unit.
+            ComboDuration(v) => format!("+{v}s Combo Duration"),
             MagazineCapacity(v) => format!("{} Magazine Capacity", pct(v)),
             BlastRadius(v) => format!("{} Blast Range (radius)", pct(v)),
             StatusDuration(v) => format!("{} Status Duration", pct(v)),
@@ -1988,7 +2021,7 @@ pub enum FieldStacking {
 
 /// A weapon's LINGERING FIELD attack part — an area that persists and TICKS
 /// rather than landing once (Torid's Toxin cloud), unmodded. MECHANICS §7.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct LingeringBase {
     pub base_vector: DamageVector,
     pub base_crit_chance: f64,
@@ -2011,6 +2044,10 @@ pub struct LingeringBase {
     /// would not get it, but the programmer let it"), so the weapon declares it
     /// rather than the engine assuming every field behaves that way.
     pub takes_condition_overload: bool,
+    /// See [`crate::weapons_data::LingeringSpec::elemental_mods_apply`].
+    pub elemental_mods_apply: bool,
+    /// See [`crate::weapons_data::LingeringSpec::status_mods_apply`].
+    pub status_mods_apply: bool,
 }
 
 /// The lingering field after mod resolution.
@@ -3143,6 +3180,12 @@ pub fn resolve_for(
     let mut base_damage_on_reload: Option<TimedBuff> = None;
     let mut base_damage_on_eximus_weakpoint: Option<TimedBuff> = None;
     let mut crit_chance_per_hit: Option<CritPerHit> = None;
+    // Seconds a mod adds to the sniper combo's decay window (Harkonar Scope).
+    let mut combo_seconds_bonus = 0.0f64;
+    // A field a MOD leaves on a weapon that has none (Nightwatch Napalm), with
+    // the share of the blast AREA it covers.
+    let mut granted_lingering: Option<&'static LingeringBase> = None;
+    let mut granted_area_fraction = 1.0f64;
     // READY RETALIATION arrives on the BASE (an evolution wrote it there),
     // unlike the two above which arrive from mods — so the policy split is
     // here rather than in the mod loop.
@@ -3379,6 +3422,9 @@ pub fn resolve_for(
                         faction_bonus.push((fac, v));
                     }
                 }
+                ModEffect::ComboDuration(v) => combo_seconds_bonus += v,
+                ModEffect::GrantsLingering(field) => granted_lingering = Some(field),
+                ModEffect::LingeringAreaFraction(v) => granted_area_fraction = v,
                 ModEffect::MagazineCapacity(v) => mag += v,
                 ModEffect::BlastRadius(v) => br += v,
                 ModEffect::StatusDuration(v) => sdur += v,
@@ -3787,15 +3833,45 @@ pub fn resolve_for(
     // duration are NOT mod-scaled: fire-rate mods change shots per second, not
     // the cloud's own clock, and the cloud is not a status effect so status
     // duration does not reach it either.
-    let lingering = base.lingering.as_ref().map(|f| {
-        let (fd, fmb) = build(&f.base_vector, None);
+    // A MOD MAY LEAVE A FIELD ON A WEAPON THAT HAS NONE (Nightwatch Napalm),
+    // and its radius is a share of the BLAST rather than a number of its own —
+    // DE's card: "across 90% of the explosion area". Area, not radius, so the
+    // radius is `sqrt(fraction)` of the blast's, read AFTER blast-radius mods
+    // so that "Firestorm increases the effective area" needs no arm of its own.
+    //
+    // The weapon's own field wins if it has one: nothing in the roster is in
+    // that position, and a mod silently replacing an attack part would be the
+    // worse answer if one ever is.
+    // Read off the weapon's OWN blast, not the resolved one: the field's radius
+    // goes through `* (1 + br)` a few lines down like every other field, so
+    // taking the modded radial here would grow it twice.
+    let granted = granted_lingering.filter(|_| base.lingering.is_none()).map(|f| {
+        let blast = base.radial.as_ref().map_or(0.0, |r| r.radius_m);
+        LingeringBase { radius_m: blast * granted_area_fraction.max(0.0).sqrt(), ..f.clone() }
+    });
+    let lingering = base.lingering.as_ref().or(granted.as_ref()).map(|f| {
+        // …AND A FIELD MAY BE OUTSIDE THOSE BUCKETS, which is a fact about the
+        // field rather than about fields. Nightwatch Napalm's fire takes the
+        // base-damage bucket and nothing else — no element goes near it, and no
+        // status mod moves its 68% — so both flags exist and both default to
+        // the Torid's YES.
+        let (fd, fmb) = if f.elemental_mods_apply {
+            build(&f.base_vector, None)
+        } else {
+            let scaled = f.base_vector.scale(1.0 + base_damage);
+            let total = scaled.total();
+            (scaled, total)
+        };
         ResolvedLingering {
             damage: fd,
             modified_base: fmb,
             crit_chance: (f.base_crit_chance * (1.0 + cc) + (base.post_mod_crit_chance + scope_post_cc)).max(0.0),
             crit_damage: f.base_crit_damage * (1.0 + cd),
-            status_chance: (f.base_status_chance * (1.0 + sc) + base.post_mod_status_chance)
-                .max(0.0),
+            status_chance: if f.status_mods_apply {
+                (f.base_status_chance * (1.0 + sc) + base.post_mod_status_chance).max(0.0)
+            } else {
+                f.base_status_chance
+            },
             base_crit_chance: f.base_crit_chance,
             base_crit_damage: f.base_crit_damage,
             base_status_chance: f.base_status_chance,
@@ -4181,7 +4257,19 @@ pub fn resolve_for(
         tendril_max: base.tendril_max,
         tendril_range_m: base.tendril_range_m,
         tendril_acquire_deg: base.tendril_acquire_deg,
-        sniper_combo: if tenno.state.aiming { base.sniper_combo } else { None },
+        // THE COUNTER IS THE AIMED FIGHT'S, and the mod's seconds ride the
+        // weapon's own window — see `ModEffect::ComboDuration`. A hip-fired
+        // build has no counter at all, so a Harkonar Scope on one adds seconds
+        // to nothing, which is what the mechanic's own gate says and not this
+        // mod's doing.
+        sniper_combo: if tenno.state.aiming {
+            base.sniper_combo.map(|c| crate::weapons_data::SniperCombo {
+                seconds: c.seconds + combo_seconds_bonus,
+                ..c
+            })
+        } else {
+            None
+        },
         crit_chance_per_tendril: per_tendril_cc,
         crit_chance_per_hit,
         sc_per_tendril: per_tendril_sc,
@@ -4289,6 +4377,153 @@ pub fn resolve_for(
 
 #[cfg(test)]
 mod tests {
+
+    /// NIGHTWATCH NAPALM leaves a field on a weapon that has none, and the
+    /// field obeys THREE rules the rest of the app does not.
+    ///
+    /// Its damage is a flat 150 Heat that only the base-damage bucket and the
+    /// faction bonus may touch — *"Damage output can only be increased by base
+    /// damage mods … and faction mods"* — it cannot crit *"via any means"*, and
+    /// its 68% Heat chance is *"not affected by mods"*. Each is asserted
+    /// against a build carrying the mod that would move it if the rule were
+    /// missing, which is the only way to tell a rule from a coincidence.
+    #[test]
+    fn nightwatch_napalm_leaves_a_field_outside_every_bucket_but_base_damage() {
+        let pool = crate::mods_data::pool_for_build("ogris", &[]);
+        let by = |id: &str| pool.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("{id}"));
+        let napalm = by("nightwatch_napalm");
+        let base = super::WeaponBase::from_data("ogris", false, &[]);
+        assert!(base.lingering.is_none(), "the Ogris leaves no fire of its own");
+
+        let field = |mods: &[&_]| {
+            super::resolve(&base, mods, super::StackPolicy::Emergent)
+                .lingering
+                .expect("the mod leaves one")
+        };
+        let plain = field(&[napalm]);
+        assert!((plain.damage.total() - 150.0).abs() < 1e-9,
+            "a flat 150 unmodded, not a share of the rocket: {}", plain.damage.total());
+        assert_eq!(plain.crit_chance, 0.0, "it cannot crit via any means");
+        assert!((plain.status_chance - 0.68).abs() < 1e-9);
+        assert!((plain.duration_seconds - 6.0).abs() < 1e-9);
+
+        // BASE DAMAGE REACHES IT…
+        let serration = by("serration");
+        let bd = field(&[napalm, serration]);
+        let want = 150.0 * (1.0 + serration_bonus(serration));
+        assert!((bd.damage.total() - want).abs() < 1e-6,
+            "the base-damage bucket is the one that reaches it: {} vs {want}", bd.damage.total());
+
+        // …AND AN ELEMENT DOES NOT, which is the sentence's other half. The
+        // same mod moves the ROCKET, so a build cannot be told the two apart
+        // by looking at the weapon.
+        let cryo = by("cryo_rounds");
+        let el = field(&[napalm, cryo]);
+        assert!((el.damage.total() - 150.0).abs() < 1e-9,
+            "no element goes near the fire: {}", el.damage.total());
+        assert!(
+            super::resolve(&base, &[napalm, cryo], super::StackPolicy::Emergent)
+                .damage
+                .get(crate::damage::DamageType::Cold)
+                > 0.0,
+            "…while the rocket itself takes it"
+        );
+
+        // …AND NEITHER DOES A STATUS MOD.
+        let rifle_aptitude = by("rifle_aptitude");
+        assert!((field(&[napalm, rifle_aptitude]).status_chance - 0.68).abs() < 1e-9,
+            "68% is pinned");
+    }
+
+    /// …AND THE FIRE IS A SHARE OF THE BLAST, so Firestorm grows it.
+    ///
+    /// DE's card says "across 90% of the explosion area", which is an AREA and
+    /// a FRACTION — not the rank table's "+90%" — so the radius is sqrt(0.9) of
+    /// the rocket's, and a blast-radius mod moves both without this having an
+    /// arm for it.
+    #[test]
+    fn the_napalm_covers_a_share_of_the_rockets_own_blast() {
+        let pool = crate::mods_data::pool_for_build("ogris", &[]);
+        let napalm = pool.iter().find(|m| m.id == "nightwatch_napalm").expect("the augment");
+        let firestorm = pool.iter().find(|m| m.id == "primed_firestorm").expect("primed_firestorm");
+        let base = super::WeaponBase::from_data("ogris", false, &[]);
+        let of = |mods: &[&_]| {
+            let p = super::resolve(&base, mods, super::StackPolicy::Emergent);
+            (p.radial.expect("a rocket explodes").radius_m, p.lingering.expect("fire").radius_m)
+        };
+        let (blast, fire) = of(&[napalm]);
+        assert!((fire - blast * 0.9f64.sqrt()).abs() < 1e-9, "{fire} is sqrt(0.9) of {blast}");
+        let (big_blast, big_fire) = of(&[napalm, firestorm]);
+        assert!(big_blast > blast, "Firestorm grows the rocket's own blast");
+        assert!(
+            (big_fire - big_blast * 0.9f64.sqrt()).abs() < 1e-6 && big_fire > fire,
+            "…and the fire grows with it: fire {big_fire} against a blast of {big_blast}              (want {}), was {fire}",
+            big_blast * 0.9f64.sqrt()
+        );
+    }
+
+    /// The base-damage share a mod contributes, read off its own effect rather
+    /// than typed in — a rank table nobody re-checks is how a test starts
+    /// asserting last year's numbers.
+    fn serration_bonus(m: &super::ModDef) -> f64 {
+        m.effects
+            .iter()
+            .find_map(|e| match e {
+                super::ModEffect::BaseDamage(v) => Some(*v),
+                _ => None,
+            })
+            .expect("Serration is a base-damage mod")
+    }
+
+    /// HARKONAR SCOPE adds seconds to a window the WEAPON owns, which is what
+    /// makes the wiki's two answers one rule.
+    ///
+    /// VERBATIM: *"All sniper rifles have a 2 second combo duration, with the
+    /// exception of the Lanka, which has a 6 second combo duration. Harkonar
+    /// Scope at max rank extends this to 14 seconds, and to 18 seconds for
+    /// Lanka."* Both numbers fall out of adding +12 to the weapon's own field;
+    /// a mod that SET the window would have to name the Lanka.
+    #[test]
+    fn harkonar_scope_extends_each_snipers_own_combo_window() {
+        let scope = crate::mods_data::pool_for_build("vectis_prime", &[])
+            .into_iter()
+            .find(|m| m.id == "harkonar_scope")
+            .expect("a sniper is offered it");
+        let window = |weapon: &str, mods: &[&_]| {
+            let base = super::WeaponBase::from_data(weapon, false, &[]);
+            super::resolve(&base, mods, super::StackPolicy::Emergent)
+                .sniper_combo
+                .map(|c| c.seconds)
+        };
+        assert_eq!(window("vectis_prime", &[]), Some(2.0), "the ordinary sniper's own");
+        assert_eq!(window("lanka", &[]), Some(6.0), "and the Lanka's own");
+        assert_eq!(window("vectis_prime", &[&scope]), Some(14.0));
+        assert_eq!(window("lanka", &[&scope]), Some(18.0));
+        // …and the MINIMUM combo is untouched: this mod buys time, not hits.
+        let base = super::WeaponBase::from_data("vectis_prime", false, &[]);
+        let with = super::resolve(&base, &[&scope], super::StackPolicy::Emergent);
+        assert_eq!(with.sniper_combo.map(|c| c.min), base.sniper_combo.map(|c| c.min));
+    }
+
+    /// …AND FROM THE HIP IT ADDS SECONDS TO NOTHING.
+    ///
+    /// The counter is the AIMED fight's — "building combo and benefiting from
+    /// its multiplier requires being scoped in" — so `resolve` drops the whole
+    /// spec, and a card that extended a window that does not exist would be the
+    /// plainest kind of lie a panel can tell. The mod is still OFFERED, which
+    /// is right: the weapon can hold it and the fight is what decides.
+    #[test]
+    fn a_hip_fired_sniper_has_no_window_for_the_scope_to_extend() {
+        let scope = crate::mods_data::pool_for_build("vectis_prime", &[])
+            .into_iter()
+            .find(|m| m.id == "harkonar_scope")
+            .expect("still in the pool");
+        let base = super::WeaponBase::from_data("vectis_prime", false, &[]);
+        let mut tenno = crate::tenno_data::default_tenno().clone();
+        tenno.state.aiming = false;
+        let hip = super::resolve_for(&base, &[&scope], super::StackPolicy::Emergent, &tenno);
+        assert!(hip.sniper_combo.is_none(), "no counter from the hip, and none to extend");
+    }
 
     /// BEAM LENGTH: a flat mod adds AFTER a percentage, and the wiki says so
     /// exactly once — on the other mod's page.

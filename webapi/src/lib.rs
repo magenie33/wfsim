@@ -2742,6 +2742,57 @@ pub fn panel_json(v: &Value) -> Value {
             };
             match *e {
                 WhileTenno(..) => unreachable!("unwrapped above"),
+                // NIGHTWATCH NAPALM. A whole attack PART rather than a bucket
+                // line — it leaves a field the weapon does not have — so it
+                // states what the fire is and where it lands rather than
+                // pretending to be a term in someone's damage sum.
+                GrantsLingering(field) => {
+                    conditionals.push(json!({
+                        "mod": name,
+                        "desc": e.describe(),
+                        "active": true,
+                        "why": format!(
+                            "a fire that ticks {} Heat for {}s — it cannot crit, its {}% status is not moved by mods, and only base-damage and faction mods scale it",
+                            field.base_vector.total(),
+                            field.duration_seconds,
+                            (field.base_status_chance * 100.0).round()),
+                    }));
+                }
+                // …and the share of the blast it covers, stated beside it.
+                LingeringAreaFraction(v) => {
+                    conditionals.push(json!({
+                        "mod": name,
+                        "desc": e.describe(),
+                        "active": true,
+                        "why": format!(
+                            "the fire covers {}% of this rocket's explosion AREA, so a blast-radius mod grows it too",
+                            (v * 100.0).round()),
+                    }));
+                }
+                // HARKONAR SCOPE. A CONDITIONAL and not a stat row: the seconds
+                // it adds are worth nothing unless the fight has a combo
+                // counter at all, which is a question about the WEAPON (a
+                // sniper) and about the fight (scoped in). The panel states
+                // both rather than printing "+12s" beside a weapon that has no
+                // window — see `loadout::ModEffect::ComboDuration`.
+                ComboDuration(v) => {
+                    // The WEAPON's own window, read the same way the buff
+                    // card's roster reads it one screen up.
+                    let window = wfsim_engine::weapons_data::spec(&info.id)
+                        .and_then(|w| w.sniper_combo)
+                        .map(|c| c.seconds);
+                    conditionals.push(json!({
+                        "mod": name,
+                        "desc": e.describe(),
+                        "active": window.is_some(),
+                        "why": match window {
+                            Some(w) => format!(
+                                "this weapon's combo drops one stack after {w}s without a landing hit, and this makes it {}s — worth nothing from the hip, where there is no counter",
+                                w + v),
+                            None => "only a SNIPER carries a combo counter, and this weapon has none for the seconds to extend".to_string(),
+                        },
+                    }));
+                }
                 // DOUBLE TAP is a CONDITIONAL, not a bucket line: it is worth
                 // nothing until the hits are consecutive and it stands on its
                 // own multiplier, so folding it into base damage would both

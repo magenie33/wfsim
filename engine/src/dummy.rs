@@ -18568,6 +18568,43 @@ mod tests {
         );
     }
 
+    /// …AND THE FIRE BURNS IN A REAL FIGHT, which is the assertion the other
+    /// two cannot make: a field that resolves correctly and never spawns would
+    /// pass both of them.
+    #[test]
+    fn the_napalm_burns_and_only_the_base_damage_bucket_feeds_it() {
+        let pool = crate::mods_data::pool_for_build("ogris", &[]);
+        let by = |id: &str| pool.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("{id}"));
+        let base = crate::loadout::WeaponBase::from_data("ogris", false, &[]);
+        // The FIELD's own share of the run, off `RunResult::sources` — a total
+        // would answer with the rocket's damage and hide the fire inside it.
+        let field_damage = |mods: &[&_]| {
+            let panel = crate::loadout::resolve(&base, mods, crate::loadout::StackPolicy::Emergent);
+            let arena = crate::arena::Arena::training(10.0);
+            let p = DummyParams::from_panel(
+                &panel, &arena, &crate::arcanes_data::ArcaneFx::none(),
+            );
+            let mut total = 0.0;
+            for seed in 0..5u64 {
+                total += run_once(&p, &mut Rng::new(7 + seed)).sources.field;
+            }
+            total / 5.0
+        };
+        let none = field_damage(&[]);
+        assert_eq!(none, 0.0, "the Ogris leaves no fire without the augment");
+        let with = field_damage(&[by("nightwatch_napalm")]);
+        assert!(with > 0.0, "and burns with it: {with}");
+        // BASE DAMAGE FEEDS THE FIRE…
+        let bd = field_damage(&[by("nightwatch_napalm"), by("serration")]);
+        assert!(bd > with * 1.5, "Serration reaches it: {bd} against {with}");
+        // …AND AN ELEMENT DOES NOT, in the fight and not just on the panel.
+        let el = field_damage(&[by("nightwatch_napalm"), by("cryo_rounds")]);
+        assert!(
+            (el - with).abs() < with * 1e-6,
+            "a Cold mod moves the rocket and not the fire: {el} against {with}"
+        );
+    }
+
     /// HATA-SATYA: the pile is built by HITS and a RELOAD takes it back.
     ///
     /// The same two-magazine measurement the tendrils get one test up, with the

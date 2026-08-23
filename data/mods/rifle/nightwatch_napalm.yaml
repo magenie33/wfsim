@@ -1,0 +1,104 @@
+id: nightwatch_napalm
+name: Nightwatch Napalm
+rarity: uncommon
+polarity: madurai
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Rifle/Event/ProjectNightwatch/OgrisNightwatchMod
+# DE's own card, verbatim from the export's `levelStats` at rank 5.
+description: "Rockets disperse napalm, inflicting X% damage over Xs across X% of the explosion area."
+
+# A WEAPON AUGMENT for the OGRIS and the KUVA OGRIS — "a mod for the Ogris and
+# Kuva Ogris", and WFCD's compatName says `Ogris`, which is the same statement
+# from the other side.
+exclusive_to: [ogris, kuva_ogris]
+
+# THE RANK TABLE, and the first column is the one the Notes overturn:
+#
+#   Rank | Damage | Duration | Explosion Area | Cost
+#     0  |   +5%  |    1s    |      +15%      |  4
+#     1  |  +10%  |    2s    |      +30%      |  5
+#     2  |  +15%  |    3s    |      +45%      |  6
+#     3  |  +20%  |    4s    |      +60%      |  7
+#     4  |  +25%  |    5s    |      +75%      |  8
+#     5  |  +30%  |    6s    |      +90%      |  9
+family: nightwatch_napalm
+
+effects:
+  # THE FIRST MOD-GRANTED FIELD. Every other lingering field in the app belongs
+  # to an ATTACK (the Torid's cloud); this one is bolted onto a rocket that
+  # leaves none, which is the whole of what `grants_lingering` adds — the sim
+  # spawns, ticks and expires it exactly as it does a weapon's own.
+  #
+  # THE CARD SAYS A PERCENTAGE AND THE PAGE SAYS A NUMBER, and the number wins:
+  # "Rather than doing 30% of damage, it creates an AoE dealing 150 Heat damage
+  # per tick." A note that opens "rather than" is a measurement correcting the
+  # card, which is the same shape the Burston Prime's CO fraction had.
+  #
+  # WHAT SCALES IT is stated as a closed list and it is a SHORT one: "Damage
+  # output can only be increased by base damage mods (e.g. Serration, Heavy
+  # Caliber, Semi-Rifle Cannonade), and faction mods (e.g. Bane of Grineer,
+  # Bane of Corpus)", plus "Damage is increased by Kuva weapon's bonus damage
+  # stat" — which is the base-damage bucket by another name. So no element
+  # reaches it: a Cryo Rounds on the same build moves the rocket and not the
+  # fire. `elemental_mods_apply: false` is that sentence.
+  #
+  # IT CANNOT CRIT, "via any means", so the field states a zero of its own
+  # rather than inheriting the rocket's 5%.
+  #
+  # 68% HEAT, PINNED: "Napalm has 68% chance to proc Heat … Status chance is
+  # not affected by mods." `status_mods_apply: false`.
+  #
+  # THE AREA IS A SHARE OF THE BLAST rather than a radius of its own — DE's card
+  # says "across 90% of the explosion area", and the wiki agrees from the other
+  # side: "Firestorm (Primed Firestorm) increases the effective area". So it is
+  # resolved against the weapon's radial AFTER blast-radius mods, and it is an
+  # AREA: the radius is sqrt(0.9) of the blast's. The rank table's "+90%" column
+  # header reads it as a bonus; DE's own words are a fraction, and the card is
+  # the closer source for what the card means.
+  - kind: grants_lingering
+    # THE CARD'S OWN DAMAGE COLUMN, carried so its "X%" fills per rank — the
+    # SIM reads `damage:` below, because the page's own note overturns this
+    # column ("rather than doing 30% of damage… 150 Heat per tick").
+    rank0: 0.05
+    rankMax: 0.30
+    damage: { heat: 150.0 }
+    tick_rate: 1.0
+    duration_rank0: 1.0
+    duration_seconds: 6.0
+    crit_chance: 0.0
+    status_chance: 0.68
+    elemental_mods_apply: false
+    status_mods_apply: false
+    stacking: stack
+
+  # …AND THE AREA, which is its own column on the card and so its own effect.
+  - kind: lingering_area_fraction
+    rank0: 0.15
+    rankMax: 0.90
+
+  # THE TICK RATE IS THE ONE NUMBER NOBODY PUBLISHED. The page gives the damage
+  # per TICK and the duration in seconds and never joins them; the Ogris's own
+  # page, Napalm Grenades and the export's card text are all silent too. One
+  # tick a second is the reading taken here, on the two things that are stated:
+  # the card pays out "over 6s", and the same page's next sentence measures this
+  # mod's own Heat proc "per second". It is an ASSUMPTION and it is the whole
+  # DPS of the field, so it says so on the card and an in-game measurement
+  # settles it — count the fire's damage numbers over one rocket.
+  - kind: an_unmeasured_tick_rate_of_one_per_second
+
+  # …AND THE HEAT PROC IT LEAVES BURNS ON THIS ENGINE'S OWN CLOCK. "Napalm has
+  # 68% chance to proc Heat, ticking for 50% of napalm's damage per second for
+  # 3 seconds": the RATE is what every Heat proc here already does
+  # (data/debuffs/ignite.yaml: `0.5 x ModdedBaseDamage x (1 + Heat mods)`, and
+  # "Heat proc damage is affected by Heat mods" agrees), but the LENGTH is this
+  # mod's own and shorter than the standard burn. A per-proc duration is not
+  # something a field can state yet, so the burn runs long here and this weapon
+  # is overstated by the difference.
+  - kind: a_heat_proc_that_should_burn_for_three_seconds_and_burns_for_the_standard_time
+
+source:
+  url: https://wiki.warframe.com/w/Nightwatch_Napalm
+  # Rank table, Notes and the export's `levelStats` card text, read 2026-08-23.
+  # WFCD cross-check on `uniqueName`: madurai, Uncommon, baseDrain 4,
+  # fusionLimit 5, compatName Ogris — agrees on every field.
