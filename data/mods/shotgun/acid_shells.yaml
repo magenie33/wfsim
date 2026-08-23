@@ -1,0 +1,91 @@
+id: acid_shells
+name: Acid Shells
+rarity: uncommon
+polarity: madurai
+base_drain: 4                 # max drain 9 at rank 5
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Shotgun/Event/ProjectNightwatch/SobekNightwatchMod
+# DE's own card, from the export's `levelStats` at rank 5.
+description: "Enemies explode on death, dealing X Corrosive Damage (+X% Enemy Max Health) in a Xm radius."
+
+# A WEAPON AUGMENT for the SOBEK and the KUVA SOBEK — "exclusive to the Sobek
+# and Kuva Sobek", and WFCD's compatName says `Sobek` from the other side.
+exclusive_to: [sobek, kuva_sobek]
+
+# THE RANK TABLE:
+#
+#   Rank | Flat | % of Max Health | Radius | Cost
+#     0  |  75  |      7.5%       |  2.5m  |  4
+#     1  | 150  |       15%       |    5m  |  5
+#     2  | 225  |      22.5%      |  7.5m  |  6
+#     3  | 300  |       30%       |   10m  |  7
+#     4  | 375  |      37.5%      | 12.5m  |  8
+#     5  | 450  |       45%       |   15m  |  9
+family: acid_shells
+
+effects:
+  # A CORPSE IS AN EPICENTRE. "causes enemies killed by the Sobek to explode,
+  # dealing a flat amount of Corrosive damage, plus a percentage of the enemy's
+  # maximum Health as Blast damage, to all enemies within 15m of the target."
+  #
+  # IT CHAINS BY CONSTRUCTION rather than by arrangement — "If the explosion
+  # caused by Acid Shells kills a nearby enemy, that enemy will also explode,
+  # creating a chain reaction that can lead to very large areas being cleared
+  # from a single shot." The explosion is queued on the body that DIED and every
+  # death in this engine goes through one funnel, so a body the blast kills
+  # queues its own on the way out. Nothing enumerates the chain.
+  #
+  # THE HEALTH IT READS IS THE BASE ONE: "The Blast damage bonus does not
+  # account for the bonus Health given to enemies in The Steel Path, Archon
+  # Hunt, Deep Archimedea, and similar modes." On the official rulers — Steel
+  # Path, level 9999 — that is a factor of 2.5 between the two readings, so it
+  # is not a detail.
+  #
+  # LINEAR TO NOTHING AT THE RIM: "The explosion has linear damage falloff from
+  # 100% to 0% from the central enemy", which is its own shape — a Blast
+  # detonation reaches everyone inside its sphere for the same number.
+  #
+  # NO STATUS AND NO CRIT: "The explosion cannot apply a Corrosive or Blast
+  # status effect, and it cannot crit, even with Universal Weapon Bonuses that
+  # apply flat bonus crit chance." Neither is expressible as a number here —
+  # the area path applies damage and rolls nothing — so both hold by
+  # construction rather than by a flag.
+  # THREE COLUMNS, THREE EFFECTS, one mechanic — DE's card names all three
+  # numbers in one sentence and each has its own ladder, so each fills its own
+  # X. `resolve` puts them back together.
+  #
+  # DE'S CARD ROUNDS THE FIRST STEP and the wiki's table does not: the card
+  # reads "+8% Enemy Max Health" at rank 0 against the table's 7.5%, which is
+  # the linear ladder 7.5 -> 45 in six steps. The ladder is the number.
+  - kind: acid_shells_flat_damage
+    rank0: 75.0
+    rankMax: 450.0
+  - kind: acid_shells_health_fraction
+    rank0: 0.075
+    rankMax: 0.45
+  - kind: acid_shells_radius_m
+    rank0: 2.5
+    rankMax: 15.0
+
+  # LINE OF SIGHT IS NOT MODELLED, and it cannot be: "The explosion only hits
+  # enemies within Line of Sight of the central enemy" — this arena has no
+  # geometry at all (docs/UNMODELLED.md §"no walls"), so every body in the
+  # radius is in sight of every other. On the group ruler's open grid that is
+  # the game's own answer too; in a corridor it is not, and this weapon is
+  # overstated there.
+  - kind: a_line_of_sight_rule_this_arena_has_no_walls_to_enforce
+
+  # …AND THE EXTRA HIT IT SHOULD TRIGGER. "Acid Shells' explosion will trigger
+  # the Extra Hit from Cyte-09's Resupply, Garuda's Seeking Talons, Oraxia's
+  # Silken Stride, Saryn's Toxic Lash, Uriel's Vythelas, and Xaku's Xata's
+  # Whisper" — and "because these effects are considered Sobek's damage, they
+  # too can trigger Acid Shells", so the chain feeds itself. `fire_extra_hits`
+  # is not wired into the area path, so a build running one of those abilities
+  # is understated here. See docs/EXTRA_HIT.md.
+  - kind: an_extra_hit_the_corpse_explosion_should_also_trigger
+
+source:
+  url: https://wiki.warframe.com/w/Acid_Shells
+  # Rank table, Notes and Tips, read 2026-08-23. WFCD cross-check on
+  # `uniqueName`: madurai, Uncommon, baseDrain 4, fusionLimit 5, compatName
+  # Sobek — agrees on every field.

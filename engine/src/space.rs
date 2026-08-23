@@ -497,6 +497,14 @@ impl Neighbours {
     /// The list is nearest-first, so this stops at the first body out of range
     /// rather than walking the formation.
     pub fn within(&self, from: usize, radius_m: f64) -> impl Iterator<Item = usize> + '_ {
+        self.within_at(from, radius_m).map(|(j, _)| j)
+    }
+
+    /// …AND HOW FAR EACH ONE IS, for the mechanics whose share falls off with
+    /// distance (Acid Shells' corpse explosion is "linear damage falloff from
+    /// 100% to 0% from the central enemy"). Centre to centre — [`blast_reach`]
+    /// is what turns it into the reach a sphere is measured by.
+    pub fn within_at(&self, from: usize, radius_m: f64) -> impl Iterator<Item = (usize, f64)> + '_ {
         let reach = radius_m + BODY_RADIUS_M + 1e-9;
         self.near
             .get(from)
@@ -504,7 +512,7 @@ impl Neighbours {
             .unwrap_or(&[])
             .iter()
             .take_while(move |(d, _)| *d <= reach)
-            .map(|(_, j)| *j as usize)
+            .map(|(d, j)| (*j as usize, *d))
     }
 }
 

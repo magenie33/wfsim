@@ -394,7 +394,7 @@ pub struct TargetParams {
 /// vulnerability column is per component. Both used to be answered by passing
 /// a bare `toxin_frac` down; a second per-type question makes that a growing
 /// list of scalars, so the shape travels as one value instead.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct TypeShares([f64; DamageType::ALL.len()]);
 
 impl TypeShares {
@@ -519,6 +519,20 @@ impl TargetParams {
         } else {
             self.base_health
         }
+    }
+
+    /// …AND THE SAME NUMBER WITHOUT THE MODE'S GIFT, which one mechanic reads
+    /// and nothing else does.
+    ///
+    /// VERBATIM (Acid Shells): *"The Blast damage bonus does not account for
+    /// the bonus Health given to enemies in The Steel Path, Archon Hunt, Deep
+    /// Archimedea, and similar modes."* So a percentage of "maximum Health"
+    /// there means the unit's own scaled maximum before the multiplier the
+    /// MODE applies — which is this, and it is `max_health()` on any fight that
+    /// is not one of those modes.
+    pub fn max_health_before_steel_path(&self) -> f64 {
+        let delta = self.level.saturating_sub(self.base_level) as f64;
+        self.effective_base_health() * self.health_curve.multiplier(delta)
     }
 
     /// Scaled max health at `level` (Steel Path ×2.5 applied).
@@ -811,6 +825,26 @@ struct BlastStack {
     xh_bracket: f64,
 }
 
+/// AN INSTANT AREA HIT queued on one body and paid out to its neighbours.
+///
+/// Two mechanisms produce these and they are not the same shape, which is why
+/// this is a struct and not the `(damage, radius)` pair it was: a Blast
+/// detonation reaches everyone inside its sphere for the same number, while
+/// Acid Shells' corpse explosion has "linear damage falloff from 100% to 0%
+/// from the central enemy" and carries two damage types at once.
+#[derive(Debug, Clone, Copy)]
+struct AreaHit {
+    damage: f64,
+    radius_m: f64,
+    /// What it is made of — Blast for a detonation, and Acid Shells' own
+    /// Corrosive/Blast split for the augment.
+    shares: TypeShares,
+    /// Does the share fall off with distance? A Blast detonation does not; the
+    /// corpse explosion falls linearly to nothing at the rim.
+    linear_falloff: bool,
+}
+
+
 /// Target-side debuff state — the payloads of all proc types a combined
 /// vector can produce (data/debuffs/*.yaml; simplifications noted inline).
 #[derive(Default)]
@@ -878,7 +912,7 @@ struct DebuffState {
     /// lands once, and it carries no `dtype` for the neighbour to count as a
     /// status ("inherits no additional status effects"). A one-tick DoT would
     /// have been both of those things wrongly.
-    area_hit: Vec<(f64, f64)>,
+    area_hit: Vec<AreaHit>,
     /// MICROWAVE — the Nukor family's own status effect, and the only one in
     /// this file that carries no payload at all.
     ///
@@ -1235,9 +1269,40 @@ impl DebuffState {
         self.area_out.push((dot, radius_m, 1));
     }
 
-    fn on_death(&mut self) {
+    /// THE ONE PLACE A BODY DIES, and everything a death sets off is set off
+    /// here — the DoT clouds it leaves, the Blast stacks it was carrying, and
+    /// now the corpse explosion an augment turns it into.
+    ///
+    /// The victim is handed IN rather than remembered: this state resets itself
+    /// to default on the next line, so anything the build knows would have to
+    /// be restored afterwards, and a field that must be restored is a field
+    /// somebody eventually forgets. It also forces a new death site to say
+    /// whose death it is, which is the only reason this stays a funnel.
+    fn on_death(&mut self, acid: Option<crate::loadout::AcidShells>, victim: &TargetParams) {
         let out = std::mem::take(&mut self.area_out);
         let mut hits = std::mem::take(&mut self.area_hit);
+        // ACID SHELLS: "enemies killed by the Sobek explode, dealing a flat
+        // amount of Corrosive damage, plus a percentage of the enemy's maximum
+        // Health as Blast damage, to all enemies within 15m".
+        //
+        // THE HEALTH IT READS IS THE BASE ONE. "The Blast damage bonus does not
+        // account for the bonus Health given to enemies in The Steel Path,
+        // Archon Hunt, Deep Archimedea, and similar modes" — so it is the
+        // unit's own maximum before the mode's multiplier, which is exactly
+        // what `TargetParams::base_max_health` holds.
+        if let Some(a) = acid {
+            let mut v = DamageVector::new();
+            v.add(DamageType::Corrosive, a.flat_damage);
+            v.add(DamageType::Blast, a.health_fraction * victim.max_health_before_steel_path());
+            if v.total() > 0.0 {
+                hits.push(AreaHit {
+                    damage: v.total(),
+                    radius_m: a.radius_m,
+                    shares: TypeShares::of(&v),
+                    linear_falloff: true,
+                });
+            }
+        }
         let clouds: Vec<Dot> = self
             .dots
             .iter()
@@ -1246,10 +1311,12 @@ impl DebuffState {
             .collect();
         if !self.blast.is_empty() {
             let single: f64 = self.blast.iter().map(|b| b.value).sum();
-            hits.push((
-                single / BLAST_COEFFICIENT * BLAST_AOE_COEFFICIENT,
-                BLAST_AOE_RADIUS_M,
-            ));
+            hits.push(AreaHit {
+                damage: single / BLAST_COEFFICIENT * BLAST_AOE_COEFFICIENT,
+                radius_m: BLAST_AOE_RADIUS_M,
+                shares: TypeShares::single(DamageType::Blast),
+                linear_falloff: false,
+            });
         }
         *self = DebuffState::default();
         self.area_out = out;
@@ -1997,6 +2064,10 @@ pub struct DummyParams {
     /// because the panel has no target to ask — see
     /// [`crate::loadout::ModEffect::OnEximusWeakpointDamage`].
     pub base_damage_on_eximus_weakpoint: Option<crate::loadout::TimedBuff>,
+    /// ACID SHELLS: the corpse explosion every kill by this weapon sets off —
+    /// see [`crate::loadout::AcidShells`]. It rides on the params rather than
+    /// on the target, because it is a fact about the BUILD that a death reads.
+    pub acid_shells: Option<crate::loadout::AcidShells>,
     /// HATA-SATYA: relative crit chance per HIT, and the CEILING ON WHAT THE
     /// PILE IS WORTH rather than on how deep it gets — see
     /// [`crate::loadout::CritPerHit`]. The pile has no clock — a RELOAD is what
@@ -3254,6 +3325,7 @@ impl DummyParams {
             fire_rate_on_reload: panel.fire_rate_on_reload,
             base_damage_on_reload: panel.base_damage_on_reload,
             base_damage_on_eximus_weakpoint: panel.base_damage_on_eximus_weakpoint,
+            acid_shells: panel.acid_shells,
             crit_chance_per_hit: panel.crit_chance_per_hit,
             // A fight in contact has not built a pile; the card moves it.
             crit_chance_per_hit_initial_stacks: 0,
@@ -3586,6 +3658,7 @@ impl Default for DummyParams {
             fire_rate_on_reload: None,
             base_damage_on_reload: None,
             base_damage_on_eximus_weakpoint: None,
+            acid_shells: None,
             crit_chance_per_hit: None,
             crit_chance_per_hit_initial_stacks: 0,
             crit_chance_per_hit_held: false,
@@ -4417,7 +4490,7 @@ fn fire_extra_hits(
         if killed {
             gal.bump_on_kill(params, at);
             arc.on_kill(params, at);
-            debuffs.on_death();
+            debuffs.on_death(params.acid_shells, &params.target);
             // A fresh individual, so the remaining extra hits of this trigger
             // are gone with the one that earned them — the same rule the wiki
             // states for the trigger itself ("If a hit that would trigger an
@@ -4594,14 +4667,25 @@ fn drain_area_procs(
             pending.push((i + 1, dot, r, n));
         }
     }
-    // …AND THE INSTANT ONES, which today is a simultaneous Blast detonation.
-    let mut blows: Vec<(usize, f64, f64)> = Vec::new();
-    for (dmg, rad) in debuffs.area_hit.drain(..) {
-        blows.push((0, dmg, rad));
+    // ONE BODY, ONE CORPSE, ONE EXPLOSION PER INSTANT. A cascade terminates in
+    // game because the dead stay dead; this arena respawns a training dummy the
+    // moment it dies, so without a bound one explosion killing seven bodies
+    // produces seven explosions, then forty-nine, then three hundred and
+    // forty-three — measured as a 10 GB allocation on an eight-body line.
+    //
+    // The bound is the game's own sentence rather than a cap somebody picked: a
+    // body can only die once at one instant, so it can only explode once. Later
+    // instants are later deaths and chain normally.
+    let mut exploded = vec![false; others.len() + 1];
+    // …AND THE INSTANT ONES: a simultaneous Blast detonation, and the corpse
+    // explosion Acid Shells turns a kill into.
+    let mut blows: Vec<(usize, AreaHit)> = Vec::new();
+    for h in debuffs.area_hit.drain(..) {
+        blows.push((0, h));
     }
     for (i, f) in others.iter_mut().enumerate() {
-        for (dmg, rad) in f.debuffs.area_hit.drain(..) {
-            blows.push((i + 1, dmg, rad));
+        for h in f.debuffs.area_hit.drain(..) {
+            blows.push((i + 1, h));
         }
     }
     for (from, dot, radius_m, count) in pending {
@@ -4628,8 +4712,8 @@ fn drain_area_procs(
         }
     }
     let status_damage = params.status_duration_multiplier;
-    for (from, dmg, radius_m) in blows {
-        for j in near.within(from, radius_m) {
+    for (from, hit) in blows {
+        for (j, centre_gap) in near.within_at(from, hit.radius_m) {
             // THE HOST IS NEVER ONE OF THEM: it took the single-target half and
             // the page excludes it from this one.
             if j == from {
@@ -4643,10 +4727,23 @@ fn drain_area_procs(
                     None => continue,
                 }
             };
+            // LINEAR TO NOTHING AT THE RIM where the mechanic says so, and
+            // flat where it does not — a Blast detonation reaches everyone
+            // inside its sphere for the same number.
+            let share = if hit.linear_falloff {
+                let reach = crate::space::blast_reach(centre_gap);
+                (1.0 - reach / hit.radius_m).clamp(0.0, 1.0)
+            } else {
+                1.0
+            };
+            if share <= 0.0 {
+                continue;
+            }
+            let dmg = hit.damage * share;
             let mit = dbf.mitigation(at_now, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
             let (eff, killed, _broke) = state.apply(
                 dmg,
-                TypeShares::single(DamageType::Blast),
+                hit.shares,
                 false,
                 at_now,
                 fp,
@@ -4657,12 +4754,18 @@ fn drain_area_procs(
             r.effective_damage += eff;
             r.dot_damage += eff;
             r.note_body_damage(j, eff);
-            r.sources.add_status(DamageType::Blast, eff);
+            r.sources.add_status(hit.shares.dominant(), eff);
             r.timeline.add(at_now, eff);
-            r.pop(at_now, j, eff, DamageType::Blast, PopKind::BlastArea);
+            r.pop(at_now, j, eff, hit.shares.dominant(), PopKind::BlastArea);
             r.note_kills(u32::from(killed), at_now);
             if killed {
-                dbf.on_death();
+                // A CHAIN, and it needs no arranging: this body's own corpse
+                // explosion is queued here and drained on the next pass, which
+                // is the wiki's "chain reaction that can lead to very large
+                // areas being cleared from a single shot".
+                let acid = params.acid_shells.filter(|_| !exploded[j]);
+                exploded[j] = true;
+                dbf.on_death(acid, fp);
             }
         }
     }
@@ -4993,10 +5096,12 @@ fn settle_procs(
                     // the page's own words — "the initial target of the blast
                     // procs is not dealt this AoE damage" — and by the drain,
                     // which never hands a body its own.
-                    debuffs.area_hit.push((
-                        total / BLAST_COEFFICIENT * BLAST_AOE_COEFFICIENT,
-                        BLAST_AOE_RADIUS_M,
-                    ));
+                    debuffs.area_hit.push(AreaHit {
+                        damage: total / BLAST_COEFFICIENT * BLAST_AOE_COEFFICIENT,
+                        radius_m: BLAST_AOE_RADIUS_M,
+                        shares: TypeShares::single(DamageType::Blast),
+                        linear_falloff: false,
+                    });
                     // …and each stack's OWN extra-hit contribution, pre-scaled
                     // by the bracket the gun that applied it had. Ten stacks
                     // land as one number here, but they are ten detonations and
@@ -5027,7 +5132,7 @@ fn settle_procs(
                     if killed {
                         gal.bump_on_kill(params, at);
                         arc.on_kill(params, at);
-                        debuffs.on_death();
+                        debuffs.on_death(params.acid_shells, &params.target);
                     } else {
                         // THE ONE STATUS PAYLOAD THAT TRIGGERS AN EXTRA HIT.
                         // The bracket is already folded into `xh_total`, and no
@@ -5235,7 +5340,7 @@ fn settle_procs(
             if killed {
                 gal.bump_on_kill(params, at);
                 arc.on_kill(params, at);
-                debuffs.on_death();
+                debuffs.on_death(params.acid_shells, &params.target);
             }
         }
     }
@@ -6454,7 +6559,7 @@ fn process_field_ticks(
             // every respawn, which on a fight with instant respawns is most of
             // its uptime. `one_fight`'s three shapes do not see it because
             // their Thrax never dies.
-            debuffs.on_death();
+            debuffs.on_death(params.acid_shells, &params.target);
             return;
         }
     }
@@ -6947,7 +7052,7 @@ fn process_ticks(
             gal.bump_on_kill(params, now);
             arc.on_kill(params, now);
             // Fresh individual: clean DebuffBar (decision 2026-07-24).
-            debuffs.on_death();
+            debuffs.on_death(params.acid_shells, &params.target);
             break;
         }
         // …and the detonation's EXTRA HIT, off the value that actually landed —
@@ -10683,7 +10788,7 @@ pub fn run_once_traced(
                     // individual; the CLOUDS do not — see the note in
                     // `field_tick`. What follows hits the fresh spawn, standing
                     // in whatever is still burning where it spawned.
-                    debuffs.on_death();
+                    debuffs.on_death(params.acid_shells, &params.target);
                     continue;
                 }
                 // THE EXTRA HIT, off a WEAPON damage instance — the direct
@@ -13165,7 +13270,7 @@ mod tests {
         d.blast.push(BlastStack { fuse: 9.0, value: 30.0, xh_bracket: 1.0 });
         d.microwave = true;
 
-        d.on_death();
+        d.on_death(None, &frail_target(TargetMode::InstantRespawn, 0.0, 0.0));
 
         assert_eq!(d.dots.len(), 1, "only the cloud stays: {:?}", d.dots);
         assert_eq!(d.dots[0].dtype, DamageType::Gas);
@@ -13175,8 +13280,8 @@ mod tests {
         // …AND THE DETONATION IS OWED TO THE NEIGHBOURS: 300% a stack against
         // the 30% the host carried, so ten times what it held.
         assert_eq!(d.area_hit.len(), 1);
-        assert!((d.area_hit[0].0 - 300.0).abs() < 1e-9, "{:?}", d.area_hit);
-        assert!((d.area_hit[0].1 - BLAST_AOE_RADIUS_M).abs() < 1e-9);
+        assert!((d.area_hit[0].damage - 300.0).abs() < 1e-9, "{:?}", d.area_hit);
+        assert!((d.area_hit[0].radius_m - BLAST_AOE_RADIUS_M).abs() < 1e-9);
     }
 
     /// GAS AND ELECTRICITY REACH PAST THE BODY THEY LANDED ON.
@@ -18605,6 +18710,49 @@ mod tests {
         );
     }
 
+    /// ACID SHELLS: a corpse is an epicentre, and the blast CHAINS.
+    ///
+    /// Three claims, and the third is the one that cannot be arranged: the
+    /// explosion is queued on the body that DIED, so a body it kills queues its
+    /// own on the way out — "a chain reaction that can lead to very large areas
+    /// being cleared from a single shot". Nothing enumerates the chain.
+    #[test]
+    fn acid_shells_explodes_a_corpse_and_the_blast_chains() {
+        let pool = crate::mods_data::pool_for_build("sobek", &[]);
+        let acid = pool.iter().find(|m| m.id == "acid_shells").expect("the augment");
+        let base = crate::loadout::WeaponBase::from_data("sobek", false, &[]);
+        // A LINE OF FRAIL BODIES two metres apart, well inside the 15 m reach:
+        // one killed by the gun, the rest reachable only by the chain.
+        let fight = |mods: &[&_]| {
+            let panel = crate::loadout::resolve(&base, mods, crate::loadout::StackPolicy::Emergent);
+            let mut arena = crate::arena::Arena::training(6.0);
+            // FRAIL, and deliberately: 50 health is under a single Corrosive
+            // 450, so what the chain does is visible as KILLS rather than as a
+            // damage total that a bigger direct hit could also explain.
+            arena.target = frail_target(TargetMode::InstantRespawn, 0.0, 0.0);
+            arena.others = (1..8)
+                .map(|i| crate::formation::FoeSpec {
+                    id: format!("e{}", i + 1),
+                    params: arena.target.clone(),
+                    body_parts: arena.body_parts.clone(),
+                    at: crate::space::Vec2::new(
+                        0.0,
+                        crate::space::CONTACT_RANGE_M + f64::from(i) * 2.0,
+                    ),
+                })
+                .collect();
+            let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+            monte_carlo(&p, 3, 5)
+        };
+        let without = fight(&[]);
+        let with = fight(&[acid]);
+        assert!(
+            with.mean_kills > without.mean_kills,
+            "the corpses have to kill: {} against {}",
+            with.mean_kills, without.mean_kills
+        );
+    }
+
     /// HATA-SATYA: the pile is built by HITS and a RELOAD takes it back.
     ///
     /// The same two-magazine measurement the tendrils get one test up, with the
@@ -19966,8 +20114,8 @@ mod tests {
             // `on_death` is the OTHER trigger the wiki names -- "10 stacks OR
             // the target dying" -- and it posts the same radial the tenth stack
             // would, which is the cheap way to read it here.
-            d.on_death();
-            d.area_hit.first().map(|(v, _)| *v).unwrap_or(0.0)
+            d.on_death(None, &frail_target(TargetMode::InstantRespawn, 0.0, 0.0));
+            d.area_hit.first().map(|h| h.damage).unwrap_or(0.0)
         };
         let body = aoe(1.0);
         let head = aoe(3.0);

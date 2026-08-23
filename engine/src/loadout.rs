@@ -427,6 +427,16 @@ pub enum ModEffect {
     /// effect because it is its own column on the card: "across X% of the
     /// explosion area", 15% at rank 0 and 90% at rank 5.
     LingeringAreaFraction(f64),
+    /// ACID SHELLS: the corpse of anything this weapon kills explodes.
+    ///
+    /// "causes enemies killed by the Sobek to explode, dealing a flat amount of
+    /// Corrosive damage, plus a percentage of the enemy's maximum Health as
+    /// Blast damage, to all enemies within 15m of the target", with "linear
+    /// damage falloff from 100% to 0% from the central enemy".
+    ///
+    /// It CHAINS by construction rather than by arrangement: the explosion is
+    /// queued on the body that died, and a body it kills queues its own.
+    AcidShells(AcidShellsPart),
     /// HARKONAR SCOPE: seconds added to the SNIPER COMBO's decay window.
     ///
     /// It adds to a number the WEAPON states rather than setting one, which is
@@ -446,6 +456,31 @@ pub enum ModEffect {
         low_rate_threshold: f64,
         low_rate_multiplier: f64,
     },
+}
+
+/// ACID SHELLS' corpse explosion — see [`ModEffect::AcidShells`].
+///
+/// Three numbers off one rank ladder, kept together because none of them means
+/// anything alone: 450 Corrosive, 45% of the victim's maximum health as Blast,
+/// and a 15 m reach, all at max rank.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct AcidShells {
+    pub flat_damage: f64,
+    pub health_fraction: f64,
+    pub radius_m: f64,
+}
+
+/// ONE COLUMN OF THE CARD. DE's card names three numbers in one sentence —
+/// "dealing 450 Corrosive Damage (+45% Enemy Max Health) in a 15m radius" — and
+/// each is its own rank ladder, so each is its own effect and `resolve`
+/// assembles them. Splitting a mechanic across three lines is the price of a
+/// card whose every number fills per rank; the alternative is a sentence with
+/// two X's nothing can answer.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum AcidShellsPart {
+    FlatDamage(f64),
+    HealthFraction(f64),
+    RadiusM(f64),
 }
 
 /// Indirect stat targets (each its own additive bucket) — outside the
@@ -809,6 +844,15 @@ impl ModEffect {
                 field.duration_seconds
             ),
             LingeringAreaFraction(v) => format!("over {} of the explosion area", pct(v)),
+            AcidShells(part) => match part {
+                AcidShellsPart::FlatDamage(v) => {
+                    format!("on kill, the corpse explodes for {v} Corrosive")
+                }
+                AcidShellsPart::HealthFraction(v) => {
+                    format!("…plus {} of its max health as Blast", pct(v))
+                }
+                AcidShellsPart::RadiusM(v) => format!("…within {v} m, falling to nothing at the rim"),
+            },
             // Seconds, not a percentage — the card's own unit.
             ComboDuration(v) => format!("+{v}s Combo Duration"),
             MagazineCapacity(v) => format!("{} Magazine Capacity", pct(v)),
@@ -2695,6 +2739,8 @@ pub struct ResolvedPanel {
     /// fight. `None` under the other policies — AssumedMax has already folded
     /// it into `crit_chance`, and BaseOnly refuses conditionals.
     pub crit_chance_per_hit: Option<CritPerHit>,
+    /// ACID SHELLS' corpse explosion, when the build carries the augment.
+    pub acid_shells: Option<AcidShells>,
     /// Fraction of the magazine returned on each kill, from the reserve.
     pub magazine_refill_on_kill: f64,
     /// The syndicate radial this build's augment grants, if any.
@@ -3182,6 +3228,10 @@ pub fn resolve_for(
     let mut crit_chance_per_hit: Option<CritPerHit> = None;
     // Seconds a mod adds to the sniper combo's decay window (Harkonar Scope).
     let mut combo_seconds_bonus = 0.0f64;
+    // Assembled from the card's three columns; `seen` is what tells "no augment"
+    // from "an augment whose radius happens to be zero".
+    let mut acid = AcidShells::default();
+    let mut acid_seen = false;
     // A field a MOD leaves on a weapon that has none (Nightwatch Napalm), with
     // the share of the blast AREA it covers.
     let mut granted_lingering: Option<&'static LingeringBase> = None;
@@ -3423,6 +3473,14 @@ pub fn resolve_for(
                     }
                 }
                 ModEffect::ComboDuration(v) => combo_seconds_bonus += v,
+                ModEffect::AcidShells(part) => {
+                    acid_seen = true;
+                    match part {
+                        AcidShellsPart::FlatDamage(v) => acid.flat_damage += v,
+                        AcidShellsPart::HealthFraction(v) => acid.health_fraction += v,
+                        AcidShellsPart::RadiusM(v) => acid.radius_m += v,
+                    }
+                }
                 ModEffect::GrantsLingering(field) => granted_lingering = Some(field),
                 ModEffect::LingeringAreaFraction(v) => granted_area_fraction = v,
                 ModEffect::MagazineCapacity(v) => mag += v,
@@ -4272,6 +4330,7 @@ pub fn resolve_for(
         },
         crit_chance_per_tendril: per_tendril_cc,
         crit_chance_per_hit,
+        acid_shells: acid_seen.then_some(acid),
         sc_per_tendril: per_tendril_sc,
         magazine_refill_on_kill: mag_refill,
         syndicate_radial,

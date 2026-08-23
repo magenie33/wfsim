@@ -20,6 +20,7 @@ use wfsim_engine::scaling;
 
 fn dual_toxocyst_baseline() -> DummyParams {
     DummyParams {
+        acid_shells: None,
         // NO WARFRAME behind this fixture: no auras, no shards.
         squad: wfsim_engine::tenno_data::SquadEffects::default(),
         abilities: Vec::new(),

@@ -2771,6 +2771,18 @@ pub fn panel_json(v: &Value) -> Value {
             };
             match *e {
                 WhileTenno(..) => unreachable!("unwrapped above"),
+                // ACID SHELLS. Three columns of one card, each its own effect,
+                // and none of them a term in anybody's damage sum — what it
+                // produces is an explosion at a CORPSE, so the panel says what
+                // that explosion is and leaves the buckets alone.
+                AcidShells(_) => {
+                    conditionals.push(json!({
+                        "mod": name,
+                        "desc": e.describe(),
+                        "active": true,
+                        "why": "on every kill, the corpse explodes and can kill again — the chain is what this mod is for, and it needs a crowd to be worth anything",
+                    }));
+                }
                 // NIGHTWATCH NAPALM. A whole attack PART rather than a bucket
                 // line — it leaves a field the weapon does not have — so it
                 // states what the fire is and where it lands rather than

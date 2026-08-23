@@ -513,6 +513,17 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         // …and the share of the blast AREA it covers, its own column on the
         // card and therefore its own effect.
         "lingering_area_fraction" => ModEffect::LingeringAreaFraction(max("rankMax")),
+        // ACID SHELLS: the corpse explosion. Three numbers off one ladder,
+        // read together because none of them means anything alone.
+        "acid_shells_flat_damage" => {
+            ModEffect::AcidShells(crate::loadout::AcidShellsPart::FlatDamage(max("rankMax")))
+        }
+        "acid_shells_health_fraction" => {
+            ModEffect::AcidShells(crate::loadout::AcidShellsPart::HealthFraction(max("rankMax")))
+        }
+        "acid_shells_radius_m" => {
+            ModEffect::AcidShells(crate::loadout::AcidShellsPart::RadiusM(max("rankMax")))
+        }
         // HARKONAR SCOPE: seconds onto the sniper combo's decay window.
         "combo_duration_bonus" => ModEffect::ComboDuration(n(v, "duration_seconds")?),
         "beam_range_bonus" => ModEffect::Indirect(IndirectStat::BeamRange, max("rankMax")),
@@ -1959,6 +1970,22 @@ mod card_values_tests {
         assert_eq!(
             found,
             [
+                // TWO THINGS ACID SHELLS' EXPLOSION DOES THAT THIS ARENA
+                // CANNOT. Line of sight is not a simplification here, it is a
+                // missing dimension: there are no walls at all, so every body
+                // in the radius is in sight of every other. On the group
+                // ruler's open grid that is the game's own answer too; in a
+                // corridor it is not.
+                //
+                // The Extra Hit is the other, and it compounds: the explosion
+                // triggers Toxic Lash and Xata's Whisper, and "because these
+                // effects are considered Sobek's damage, they too can trigger
+                // Acid Shells". `fire_extra_hits` is not wired into the area
+                // path, so a build running one of those abilities is
+                // understated by the extra instances AND by the chain they
+                // would start.
+                "acid_shells :: a line of sight rule this arena has no walls to enforce",
+                "acid_shells :: an extra hit the corpse explosion should also trigger",
                 // A HEAL, and nothing damages the Tenno here — the same edge
                 // Winds of Purity's life steal sits on.
                 "bhisaj_bal :: health restore nothing damages the tenno here",
