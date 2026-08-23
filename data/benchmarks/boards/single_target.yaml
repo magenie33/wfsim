@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-engine: 876e8ef3ff152f41b3d9244595432b7d1e6ff0e5
+engine: cec6eeaaf5a64a13c5f70a3c73b3961eef2bb7f8
 entries:
   - weapon: afentis_prime
     mode: base
