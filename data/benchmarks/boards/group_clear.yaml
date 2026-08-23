@@ -521,3 +521,7 @@ entries:
     mode: base
     score: 1.1232390647595432
     mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire]
+  - weapon: verglas_prime
+    mode: base
+    score: 0.9212224081742788
+    mods: [heavy_caliber, split_chamber, rifle_elementalist, vile_acceleration, rime_rounds, malignant_force, hellfire, thermite_rounds]

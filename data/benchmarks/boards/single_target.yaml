@@ -3972,6 +3972,10 @@ entries:
     mode: base
     score: 0.5788045389542485
     mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, rime_rounds, malignant_force, hellfire, thermite_rounds]
+  - weapon: verglas_prime
+    mode: base
+    score: 0.5788045389542485
+    mods: [heavy_caliber, split_chamber, rifle_elementalist, vile_acceleration, rime_rounds, malignant_force, hellfire, thermite_rounds]
   - weapon: zylok
     mode: cycle
     score: 8.756160913994986
