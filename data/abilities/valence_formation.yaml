@@ -35,6 +35,25 @@ helminth: false
 # repeat it as the flat figure: *"grants a 200% Elemental Damage buff of the
 # imbued element to all of Lavos's weapons"*.
 value: 2.0
+
+# ABILITY STRENGTH DOES NOT MOVE IT; ABILITY DURATION DOES (owner, 2026-08-23).
+#
+# The mod's own stats table says both, in the wiki's own notation, and the two
+# columns are marked DIFFERENTLY — which is the whole tell:
+#
+#   ! <u>Elemental Damage</u>                      <- underlined, no icon
+#   ! {{Stat|Ability Duration|icon=only}}Duration   <- the Duration stat icon
+#
+# A column carrying a stat icon scales with that stat; the underlined one
+# carries none. The Notes repeat it the same way — *"grants a <u>200%</u>
+# Elemental Damage buff … for 20 seconds"*, with the Duration icon on the 20 and
+# nothing on the 200.
+#
+# So the page's Strength knob leaves this buff alone, and its card says so
+# rather than silently pocketing a multiplier it never gets in game. The
+# DURATION stays a number the reader sets, which is where Ability Duration
+# already lives for every buff in this directory.
+scales_with: none
 # 20 s at 100% Ability Duration, stated on the same table and in the Notes.
 duration_seconds: 20
 

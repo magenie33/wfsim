@@ -208,6 +208,28 @@ struct AbilityFile {
     /// stat this page has. The knob still moves the abilities it governs, and a
     /// buff that ignores it says so on its own card rather than silently
     /// pocketing a multiplier it never gets in game.
+    ///
+    /// **READ THE ICON, NEVER THE FAMILY** (owner, 2026-08-23). The answer is
+    /// in the mod's own stats table, per COLUMN: a heading carrying
+    /// `{{Stat|<X>|icon=only}}` scales with X, and one that is merely
+    /// underlined scales with nothing. The five element-adding augments are the
+    /// case that proves guessing does not work, because four of them are
+    /// identical and the fifth is not:
+    ///
+    /// ```text
+    /// Shock Trooper      ! {{Stat|Ability Strength|icon=only}}Electricity Damage
+    /// Fireball Frenzy    ! {{Stat|Ability Strength|icon=only}}Heat Damage
+    /// Freeze Force       ! {{Stat|Ability Strength|icon=only}}Cold Damage
+    /// Venom Dose         ! {{Stat|Ability Strength|icon=only}}Corrosive Damage
+    /// Valence Formation  ! <u>Elemental Damage</u>
+    /// ```
+    ///
+    /// Valence Formation was filed as strength-scaling on exactly that
+    /// reasoning — it does what the other four do, so it must scale the way
+    /// they do — and it does not. Its Duration column carries the Duration
+    /// icon, so the row is not unmarked; it is marked to say Duration and NOT
+    /// Strength. Same lesson `docs/CATALOGS.md` keeps teaching in another
+    /// domain: mechanics that sound like one family do not share a rule.
     #[serde(default)]
     scales_with: Option<String>,
     #[serde(default)]
@@ -745,6 +767,26 @@ mod tests {
         assert_eq!(pick(Some("cold")), vec![(DamageType::Cold, 2.0)]);
         // No pick is the first choice, the same stand-in the gear wheel uses.
         assert_eq!(pick(None), vec![(DamageType::Heat, 2.0)]);
+
+        // ABILITY STRENGTH DOES NOT MOVE IT (owner, 2026-08-23), and the mod's
+        // own stats table marks its two columns differently to say so: the
+        // Duration column carries the Ability Duration stat icon and the
+        // Elemental Damage column is underlined with no icon at all. A column
+        // with a stat icon scales with that stat; this one has none.
+        //
+        // Asserted at a strength the knob would obviously move — 2.5x is +150%,
+        // which would read as +500% elemental damage on a card and in the sim.
+        let strong = resolve(
+            &[AbilityPick { id: "valence_formation", duration_seconds: None, element: Some("gas") }],
+            2.5,
+            "rifle",
+        );
+        assert_eq!(added_elements_at(&strong, 0.0), vec![(DamageType::Gas, 2.0)]);
+        // …AND THE CONTROL, because an assertion that a number did not move
+        // passes just as well on a build where the knob is wired to nothing:
+        // Roar's row DOES carry the Strength icon, and 50% x 2.5 is 125%.
+        let roar = resolve(&[AbilityPick { id: "roar", duration_seconds: None, element: None }], 2.5, "rifle");
+        assert!((faction_bonus_at(&roar, 0.0) - 1.25).abs() < 1e-9, "{}", faction_bonus_at(&roar, 0.0));
     }
 }
     /// A FAMILY WITH TWO IDENTICAL MEMBERS IS ONE BUFF LISTED TWICE.
