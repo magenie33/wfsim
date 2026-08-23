@@ -20493,6 +20493,61 @@ mod tests {
         );
     }
 
+    /// **ELEMENTAL DAMAGE DOES NOT REACH A BLAST DETONATION**, which is the one
+    /// rule that makes Blast unlike every other damaging status: *"Unlike other
+    /// damaging statuses, adding more elemental damage (Heat and Cold) will not
+    /// increase the Blast proc damage"* (wiki, `Damage/Blast_Damage`).
+    ///
+    /// MEASURED AS A CONTROLLED PAIR on a Braton Prime, base 35 (owner,
+    /// 2026-08-23). 90% Cold + 90% Heat hits for 98 = 35 x 2.8 and detonates
+    /// for 11; adding a further +200% Blast takes the HIT to 168 = 35 x 4.8 and
+    /// leaves the detonation at 11 — `0.3 x 35 = 10.5` both times, the element
+    /// bracket nowhere in it.
+    ///
+    /// The engine is right BY CONSTRUCTION — a stack reads `modified_base`,
+    /// which is the Serration bucket alone, while elements are a bracket
+    /// applied at the hit — and by-construction is exactly what a later change
+    /// breaks silently, since every other status would WANT the bracket there.
+    ///
+    /// BOTH HALVES ARE ASSERTED. A test that only checked "unchanged" would
+    /// pass just as well on a build where the ability did nothing at all, so
+    /// the direct damage has to move in the same run that the detonation does
+    /// not.
+    #[test]
+    fn elemental_damage_moves_the_hit_and_never_the_blast_detonation() {
+        let plain = bare(DamageType::Blast);
+        let imbued = DummyParams {
+            // Valence Formation is the only source that can add Blast as its
+            // own element rather than by combining two — see
+            // `data/abilities/valence_formation.yaml`.
+            abilities: crate::abilities_data::resolve(
+                &[crate::abilities_data::AbilityPick {
+                    id: "valence_formation",
+                    duration_seconds: None,
+                    element: Some("blast"),
+                }],
+                1.0,
+                "",
+            ),
+            ..bare(DamageType::Blast)
+        };
+        let (a, b) = (monte_carlo(&plain, 20, 5), monte_carlo(&imbued, 20, 5));
+        // The hit moves — +200% of modified base on a weapon that had 100% of
+        // it, so x3. Taken as `damage - dot` because `mean_damage` is the
+        // WHOLE run and the detonations are in it; leaving them in dilutes the
+        // very ratio this half exists to prove (x2.5748 with them).
+        let direct = |s: &Summary| s.mean_damage - s.mean_dot_damage;
+        let ratio = direct(&b) / direct(&a);
+        assert!((ratio - 3.0).abs() < 1e-6, "the imbue has to land: x{ratio:.4}");
+        // …and the detonation does not, to the last bit.
+        assert!(
+            (b.mean_dot_damage - a.mean_dot_damage).abs() < 1e-9,
+            "blast took an element bracket: {} vs {}",
+            b.mean_dot_damage,
+            a.mean_dot_damage
+        );
+    }
+
     #[test]
     fn overguard_break_with_disrupt_fires_the_tesla_payload() {
         // 100 overguard, forced Magnetic (InstantRespawn so pools deplete;
