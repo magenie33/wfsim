@@ -94,6 +94,12 @@ entries:
     mods: [primary_acuity, serration, galvanized_aptitude, hammer_shot, vile_acceleration, vital_sense, primed_cryo_rounds, thermite_rounds]
     evolutions: [braton_prime_evo1_incarnon_form, braton_prime_munitions_grit, braton_prime_mercenary_chamber, braton_prime_prelude_of_might]
     arcanes: [primary_deadhead]
+  - weapon: braton_vandal
+    mode: cycle
+    score: 4.996319954687941
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [braton_vandal_evo1_incarnon_form, braton_vandal_munitions_grit, braton_vandal_voids_guidance, braton_vandal_survivors_edge]
+    arcanes: [primary_merciless]
   - weapon: burston_prime
     mode: cycle
     score: 19.01041384911357
