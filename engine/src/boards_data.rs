@@ -62,6 +62,16 @@ pub struct BoardEntry {
     /// full Forma). Empty on every weapon that has no valence.
     #[serde(default)]
     pub valence: String,
+    /// THE RIVEN THIS ROW WEARS, as a SHAPE. Absent on a row without one.
+    ///
+    /// It went the way `mode` did, one comment up: the file has carried it
+    /// since a riven build could reach the board and this struct did not, so
+    /// serde dropped it — and `every_published_row_is_a_legal_build` then
+    /// validated a build with a `riven` in its mods and no riven to put there,
+    /// which passed for as long as the board held none and failed the hour the
+    /// first one landed (2026-08-24).
+    #[serde(default)]
+    pub riven: Option<crate::rivens_data::RivenShape>,
 }
 
 /// One benchmark's board.
@@ -162,8 +172,9 @@ mod tests {
                 b.benchmark
             );
             for e in &b.entries {
-                let v = crate::builds::validate_for_board(
+                let v = crate::builds::validate_for_board_with(
                     &b.benchmark, &e.weapon, &e.mods, &e.evolutions, &e.arcanes, &e.valence,
+                    e.riven.as_ref(),
                 )
                     .unwrap_or_else(|err| panic!("{} row on {}: {err}", e.weapon, b.benchmark));
                 // `validate` already refused anything over capacity, and the

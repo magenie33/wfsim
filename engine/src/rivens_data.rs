@@ -945,7 +945,11 @@ pub fn class_for_weapon(weapon: &str) -> Option<&'static str> {
 /// the roll's ceiling for the same reason (owner, 2026-08-22).
 ///
 /// So a shape is scored at ITS OWN ceiling, and [`perfect`] is what finds it.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+/// `Deserialize` so a BOARD row can carry one: `boards_data::BoardEntry` reads
+/// the same block the scorer writes. `rolls` sits beside it in the file and is
+/// not part of the shape — serde ignores it, which is right: a shape is scored
+/// at its own ceiling and the rolls are what THIS engine found there.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, serde::Deserialize)]
 pub struct RivenShape {
     /// Bonus stat ids, SORTED — a riven's stats do not combine with each other,
     /// so two players listing them in different orders described one riven and
