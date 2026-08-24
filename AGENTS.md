@@ -1476,11 +1476,29 @@ around (decision 2026-07-31).
   variant's card with nothing on screen saying so. `mergeRivenFamilyLists`
   renames the collision and rewrites that weapon's builds in the same pass, and
   it runs after `META` rather than beside the other migrations because a family
-  is something only the roster knows. `scripts/check_riven_family.mjs` is the
+  is something only the roster knows.
+  A RENAME AND A DELETE REACH EVERY BUILD THAT NAMES THE CARD, which the scope
+  change made worse rather than introduced. A riven's id IS its name, so both
+  are the same operation seen from a build — and both touched the LIVE build
+  only, leaving a weapon's OTHER saved builds holding an id nothing resolves.
+  Filing by family widened that across weapons: rename a card on the Burston
+  and the Burston Prime's saved builds lose it silently. `repointRivenInBuilds`
+  is the one place, and its SCOPE IS PASSED IN because the callers mean
+  different things by it and both are right — rename and delete pass the
+  family's members, the migration passes the ONE weapon whose list it is
+  moving, since before it a riven was per weapon and the other variant's builds
+  point at their own card of the same name. It was found by asking why the
+  collision was not simply a name-uniqueness rule: it already IS one
+  (`freeName` at every creation path, and rename refuses a duplicate), which is
+  exactly why the answer had to be elsewhere — the hard part is never DETECTING
+  a collision, it is that a build already points at the surviving name, which a
+  rule about names cannot see.
+  `scripts/check_riven_family.mjs` is the
   THIRTY-EIGHTH check and holds all of it — the shared list, the disposition
-  RATIO (2.243 -> 2.088 = 1.35/1.45), three negative controls and the
-  migration. Verified to bite: scoping by weapon again reddens three, one
-  reading `[] vs made ["riven 1"]`.
+  RATIO (2.243 -> 2.088 = 1.35/1.45), three negative controls, the migration,
+  and the rename/delete sweep with a same-named card in another family as its
+  control. Verified to bite: scoping by weapon again reddens three, one reading
+  `[] vs made ["riven 1"]`; dropping the two sweep calls reddens two more.
   A SCENARIO is not a statement about a weapon, so it is SHARED across the
   roster — one list, key `wfsim-presets-simulator-scenarios` with no weapon in
   it (`SHARED_DOMAINS`), and switching weapons keeps the fight you are measuring
