@@ -138,6 +138,24 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, parallax_scope, primed_electrified_barrel, contamination_casing, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
     valence: impact
+  - weapon: kuva_grattler
+    mode: base
+    score: 3.009944004321439
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: magnetic
+    riven:
+      bonuses: [critical_damage, fire_rate, reload_speed]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: kuva_grattler
+    mode: base
+    score: 2.500689988871565
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: heat
+    riven:
+      bonuses: [critical_damage, fire_rate, reload_speed]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     score: 5.804194018301634

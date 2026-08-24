@@ -1847,10 +1847,37 @@ entries:
     valence: magnetic
   - weapon: kuva_grattler
     mode: base
+    score: 13.341738825378917
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: magnetic
+    riven:
+      bonuses: [critical_damage, fire_rate, reload_speed]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: kuva_grattler
+    mode: base
     score: 13.027464733799048
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     valence: magnetic
+  - weapon: kuva_grattler
+    mode: base
+    score: 12.932736031821246
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: magnetic
+    riven:
+      bonuses: [critical_damage, fire_rate, reload_speed]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: kuva_grattler
+    mode: base
+    score: 12.912390283171636
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: heat
+    riven:
+      bonuses: [critical_damage, fire_rate, reload_speed]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: kuva_grattler
     mode: base
     score: 12.85427923002458
