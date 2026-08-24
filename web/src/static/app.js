@@ -9664,6 +9664,48 @@ const optPairingNoteFor = (id) => {
   return `<div class="pairnote">${g.drops ? "⇠" : "⇢"} ${pairingLabel(g.combined, g.leftover)}</div>`;
 };
 
+/// **A RANKED DROPDOWN — the one shape every quantifiable build axis wears.**
+///
+/// The parts, the valence element and the evolution tiers are the same
+/// question in three costumes: pick one of N, where each N is worth a
+/// measurable amount on THIS build and against THIS target, and no card
+/// anywhere states it. So they get ONE control rather than three (owner,
+/// 2026-08-24) — a list you open, every row carrying its quick-calc gain, best
+/// first.
+///
+/// THE CONSISTENCY IS THE POINT AND NOT A TIDINESS ARGUMENT. A reader who meets
+/// the same control on every axis learns that every axis is a NUMBER, which is
+/// the thing this app has that a wiki table does not; three different shapes
+/// teach that only one of them is measurable. It also aligns the moments a scan
+/// fires, because the axes now ask the same way.
+///
+/// `items` carry `key` — what the SCAN calls the candidate, which is not always
+/// the value (a grip and a loader may share a name, so the part is in the key)
+/// — plus an optional `extra` of raw markup that rides beside the gain chip.
+function rankedPick(id, cfg) {
+  const items = cfg.items
+    // `gainSort` is the picker's own rule, read over `id`; an unranked option
+    // sorts last either way, because an absent answer is not a small one.
+    .map((it) => ({ ...it, id: it.key, name: it.label }))
+    .sort((a, b) => gainSort(a, b, ["gain", "name"]))
+    .map((it) => ({
+      value: it.value,
+      label: it.label,
+      hint: it.hint,
+      disabled: it.disabled,
+      badge: gainChipFor(it.key, cfg.label) + (it.extra || ""),
+    }));
+  return `<label${cfg.title ? ` title="${escHtml(cfg.title)}"` : ""}>${
+    escHtml(cfg.label)} ${ddButton(id, {
+    value: cfg.value,
+    // A LIST YOU CAN TYPE INTO once it is longer than a glance.
+    search: items.length > 8,
+    disabled: cfg.disabled,
+    items,
+    onPick: cfg.onPick,
+  })}</label>`;
+}
+
 /// The picker's ONE ordering rule, over whatever keys an axis has.
 /// Descending on every key, the chosen one first, the rest in a fixed order —
 /// and an unscanned option sorts last whichever way the arrow points, because
@@ -10502,43 +10544,19 @@ function renderAssembly() {
     return { id: l.id, label: l.name, hint: bits.join(" · ") };
   };
 
-  // A DROPDOWN THAT CARRIES ITS GAINS (owner, 2026-08-24).
-  //
-  // This was a row of chips for a day, on the reasoning that every ranked axis
-  // on this page is one. The reasoning was right about the RANKING and wrong
-  // about the shape: a tier of evolutions is four options and a valence is
-  // seven, while the parts are five grips and TWENTY loaders — and twenty-five
-  // chips in a row is a wall the reader has to get past to reach anything else
-  // on the page.
-  //
-  // The MOD and ARCANE pickers are the precedent that actually applies, and
-  // they are what "like an arcane" meant: a list you OPEN, with a gain on every
-  // row. So the control shuts to one line and the ranking lives inside it.
-  const partItems = (part, label, items) => items
-    // `id` is the SCAN's key, which carries the part because a grip and a
-    // loader may share a name; `name` is what `gainSort` orders by when two
-    // options are not separated.
-    .map((it) => ({ ...it, id: part + ":" + it.id, partId: it.id, name: it.label }))
-    // BEST FIRST, by the picker's own rule rather than a second copy of it —
-    // an unranked option sorts last either way, because an absent answer is
-    // not a small one. Twenty loaders is well past the point where a reader
-    // can scan a list, which is the same threshold `ddRender`'s grouping
-    // comment names.
-    .sort((a, b) => gainSort(a, b, ["gain", "name"]))
-    .map((it) => ({
-      value: it.partId,
-      label: it.label,
-      hint: it.hint,
-      badge: gainChipFor(it.id, tr(label)),
-    }));
-
+  // THE PARTS, on the page's one ranked control — see `rankedPick`. They were
+  // a row of chips for a day, on the reasoning that every ranked axis is one:
+  // right about the RANKING, wrong about the shape. A tier of evolutions is
+  // four options and a valence is seven; the parts are five grips and TWENTY
+  // loaders, and twenty-five chips in a row is a wall.
   const pick = (part, label, items, hint) =>
-    `<label title="${escHtml(hint)}">${escHtml(tr(label))} ${ddButton("dd-" + part, {
+    rankedPick("dd-" + part, {
+      label: tr(label),
+      title: hint,
       value: assembly[part],
-      // A LIST YOU CAN TYPE INTO once it is longer than a glance. Five grips is
-      // not; twenty loaders is.
-      search: items.length > 8,
-      items: partItems(part, label, items),
+      // A grip and a loader may share a name, so the SCAN's key carries the
+      // part it belongs to.
+      items: items.map((it) => ({ key: part + ":" + it.id, value: it.id, label: it.label, hint: it.hint })),
       onPick: (v) => {
         if (assembly[part] === v) return;
         assembly = { ...assembly, [part]: v };
@@ -10546,7 +10564,7 @@ function renderAssembly() {
         renderAssembly();
         refreshPanel();
       },
-    })}</label>`;
+    });
 
   // THE SLOT. In game the GRIP decides it; here it is picked first, because it
   // decides the mod pool and therefore which build you are even editing. So the
@@ -10621,47 +10639,41 @@ function renderValence() {
   if (!s) { box.innerHTML = ""; if (sub) sub.textContent = ""; return; }
   if (sub) sub.textContent = tr("the bonus this copy came out of its Lich with — added as the weapon's own BASE damage, so elemental mods and status scale with it");
   const pct = (x) => Math.round(x * 1000) / 10;
-  // A PICK ROW, not a dropdown — the same shape an evolution tier has, and for
-  // the same reason: every option carries its own quick-calc gain, and a chip
-  // is the one place a reader can compare seven of them at a glance. Any factor
-  // that moves the headline number is ranked with this same UI.
+  // ON THE PAGE'S ONE RANKED CONTROL — see `rankedPick`. Which element wins is
+  // the question a scan is worth the most on: a progenitor element is a whole
+  // element entering the hierarchy, so the answer depends on the mods around it
+  // and on the target, and no card states it.
   //
-  // Which element wins is the question a scan is worth the most on here: a
-  // progenitor element is a whole element entering the hierarchy, so the answer
-  // depends on the mods around it and on the target, and no card states it.
   // THE NAME AND THE NUMBER, and nothing else (owner, 2026-08-14). An
-  // evolution's description line earns its space because the perks differ from
-  // each other; seven elements do not — every one of them says the same
-  // sentence, so seven copies of it is a wall of text between the reader and
-  // the seven numbers that are the actual answer. What the bonus DOES is said
-  // once, by the block's own subtitle.
-  const pick = (id, label) => {
-    const on = valence.element === id;
-    return `<span class="evopick${on ? " sel" : ""}" data-vel="${escHtml(id)}">
-      <span class="einfo"><b class="en">${escHtml(label)}${
-        gainChipFor(id, tr("Valence"))}</b></span></span>`;
-  };
-  // NO "NONE" OPTION (owner, 2026-08-14). Every copy of an adversary weapon
-  // comes out of a Lich carrying an element, so an empty valence is not a
-  // weaker build of this weapon — it is a weapon nobody has, and a number
-  // nobody can reproduce. It was offered here as "the weapon's printed panel",
-  // which is the wiki infobox's figure and not a build.
-  const picks = s.elements.map((e) => pick(e, DT(e))).join("");
+  // evolution's description earns its space because the perks differ from each
+  // other; seven elements do not — every one says the same sentence, so seven
+  // copies of it is a wall of text between the reader and the seven numbers
+  // that are the actual answer. What the bonus DOES is said once, by the
+  // block's own subtitle.
+  //
+  // NO "NONE" OPTION. Every copy of an adversary weapon comes out of a Lich
+  // carrying an element, so an empty valence is not a weaker build of this
+  // weapon — it is a weapon nobody has, and a number nobody can reproduce.
+  const axis = { kind: "valence", idx: 0 };
   box.innerHTML =
-    scanStrip(gainScan, { kind: "valence", idx: 0 }) +
-    `<div class="evo"><span class="rank">${escHtml(tr("Element"))}</span><div class="picks">${picks}</div></div>` +
+    rankedPick("dd-valence", {
+      label: tr("Element"),
+      value: valence.element,
+      items: s.elements.map((e) => ({ key: e, value: e, label: DT(e) })),
+      onPick: (v) => {
+        if (valence.element === v) return;
+        valence.element = v;
+        markPresetDirty();
+        renderValence();
+        refreshPanel();
+      },
+    }) +
+    scanStrip(gainScan, axis) +
     `<div class="runs-row"><label title="${escHtml(tr("how big the roll was, as a share of base damage — a Lich rolls it randomly and Valence Fusion raises it, capping at the number on the right"))}">${escHtml(tr("Valence bonus"))} <span class="unit">%</span> <input type="number" id="valence-bonus" min="${pct(s.min)}" max="${pct(s.max)}" step="0.5" value="${pct(valence.bonus)}"></label>` +
     `<span class="sim-hint">${escHtml(tr("rolls") + ` ${pct(s.min)}–${pct(s.max)}%`)}</span></div>`;
   // The scan that fills the chips. Keyed like every other axis, so it runs once
   // per (build, fight) and repaints when it lands.
-  ensureGains({ kind: "valence", idx: 0 }, () => renderValence());
-  box.querySelectorAll(".evopick").forEach((c) =>
-    c.addEventListener("click", () => {
-      valence.element = c.dataset.vel;
-      markPresetDirty();
-      renderValence();
-      refreshPanel();
-    }));
+  ensureGains(axis, () => renderValence());
   const inp = $("valence-bonus");
   if (inp) {
     inp.addEventListener("change", () => {
