@@ -255,9 +255,22 @@ def write_board() -> None:
     # hundred engagements are summed, and summation order decides the last bit.
     # Which is exactly why an identity key is the right one — the build is what
     # a row IS, and the score is a measurement of it.
-    def _ident(benchmark, mode, mods, evos, arcs, valence):
-        return (benchmark or "", mode or "",
-                tuple(mods or []), tuple(evos or []), tuple(arcs or []), valence or "")
+    def _ident(r):
+        """A row's identity, DERIVED from the row rather than from a list.
+
+        It was six named arguments, and the caller had to remember to pass
+        every axis. `riven` was never added, so two builds differing only in
+        their riven shared an identity and a carried score.
+
+        Everything but `score`, `shown` and `source` is identity: a row is a
+        BUILD, and every field the scorer writes about the build is part of
+        which build it is. That is the same rule `builds::BUILD_AXES` states in
+        the engine, and deriving it here is what stops this list going stale
+        the next time an axis is added.
+        """
+        skip = {"score", "shown", "source"}
+        return json.dumps({k: v for k, v in r.items() if k not in skip},
+                          sort_keys=True, separators=(",", ":"))
 
     # ...and then the score decides only whether the CARRIED figures still
     # describe this row. Equal to a part in 1e-12 is the same measurement (a
@@ -277,9 +290,7 @@ def write_board() -> None:
         try:
             for weapon, rows in json.loads(board_path.read_text(encoding="utf-8")).items():
                 for r in rows:
-                    prior[(weapon, _ident(r.get("benchmark"), r.get("mode"), r.get("mods"),
-                                          r.get("evolutions"), r.get("arcanes"),
-                                          r.get("valence")))] = r
+                    prior[(weapon, _ident(r))] = r
         except (ValueError, AttributeError):
             pass  # unreadable or an older shape: fall through and omit `shown`
 
@@ -287,30 +298,37 @@ def write_board() -> None:
     for f in sorted((ROOT / "data" / "benchmarks" / "boards").glob("*.yaml")):
         b = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
         for e in b.get("entries") or []:
-            row = {
-                "benchmark": b.get("benchmark"),
-                # HOW the weapon was played. Part of the entrant's identity, so
-                # a row that loses it is filed under the wrong one — dropping it
-                # here put every Torid row under `base` and left the cycle it
-                # was actually measured in showing as unmeasured.
-                "mode": e.get("mode"),
-                "source": b.get("source", ""),
-                # FLOAT, always: the yaml writes a whole score as `10` and the
-                # scorer emits `10.0` from an f64. Two spellings of one number
-                # is a diff on every build.
-                "score": float(e["score"]) if e.get("score") is not None else None,
-                "mods": e.get("mods", []),
-                "evolutions": e.get("evolutions", []),
-                "arcanes": e.get("arcanes", []),
-                # THE ELEMENT AN ADVERSARY WEAPON WAS SCORED ON, and part of
-                # the row's identity for the same reason `mode` is: two Kuva
-                # Nukors on different valences are two entrants. The scorer
-                # writes it on every row (`""` when the weapon has none), so
-                # omitting it here made a local build strip it from all 118 —
-                # this function's whole job is to be a no-op against the
-                # scorer's own output.
-                "valence": e.get("valence", ""),
-            }
+            # **EVERY FIELD THE SCORER WROTE, not a list of the ones somebody
+            # remembered.** This function's whole job is to be a NO-OP against
+            # the scorer's own output, and it was a hand list of seven keys —
+            # so a field the scorer added was silently dropped on the way to
+            # the page, for as long as nobody looked.
+            #
+            # IT HAS NOW HAPPENED TWICE. `valence` went first, and a local site
+            # build stripped it from all 118 rows; the comment written then said
+            # what this function is for and left the list in place. `riven` went
+            # second (owner, 2026-08-24) and cost three symptoms at once — the
+            # benchmark's "riven only" view showed nothing, the builder could
+            # not group riven rows, and TAKING one left an empty slot, because
+            # `row.riven` never reached the page so the bare `riven` id resolved
+            # to no mod.
+            row = dict(e)
+            row["benchmark"] = b.get("benchmark")
+            row["source"] = b.get("source", "")
+            # FLOAT, always: the yaml writes a whole score as `10` and the
+            # scorer emits `10.0` from an f64. Two spellings of one number is a
+            # diff on every build.
+            row["score"] = float(e["score"]) if e.get("score") is not None else None
+            # …and the three the page reads by name are guaranteed present,
+            # because an entry may legitimately omit an empty one and the page
+            # would rather have `[]` than `undefined`.
+            for k in ("mods", "evolutions", "arcanes"):
+                row.setdefault(k, [])
+            # THE ELEMENT AN ADVERSARY WEAPON WAS SCORED ON, and part of the
+            # row's identity for the same reason `mode` is: two Kuva Nukors on
+            # different valences are two entrants.
+            row.setdefault("valence", "")
+            row.setdefault("mode", None)
             # THE PRIOR ROW WINS ON BOTH FIGURES OR ON NEITHER. Carrying the
             # string while re-deriving the number from the yaml would leave the
             # file dirty after every build for the ULP alone — and the two
@@ -318,14 +336,22 @@ def write_board() -> None:
             # prefer between them. A score that actually MOVED takes the
             # yaml's number and drops the string, which is what sends the page
             # to its own rounding.
-            keep = prior.get((e["weapon"], _ident(row["benchmark"], row["mode"], row["mods"],
-                                                  row["evolutions"], row["arcanes"],
-                                                  row["valence"])))
+            keep = prior.get((e["weapon"], _ident(row)))
             if keep is not None and _same_measurement(keep.get("score"), row["score"]):
                 if keep.get("score") is not None:
                     row["score"] = float(keep["score"])
                 if keep.get("shown") is not None:
                     row["shown"] = keep["shown"]
+            # NOTHING THE SCORER WROTE MAY BE DROPPED, asserted rather than
+            # trusted. `row = dict(e)` makes it true by construction today; this
+            # is what keeps it true, because the two times it broke the code
+            # LOOKED right and the field was simply not in the list. A build
+            # that would ship a lesser board fails instead.
+            missing = [k for k in e if k not in row and k != "weapon"]
+            if missing:
+                raise SystemExit(
+                    f"board.json would drop {missing} from {e['weapon']} — "
+                    "every field the scorer writes belongs on the page")
             out.setdefault(e["weapon"], []).append(row)
     # BYTE-FOR-BYTE with the scorer's own writer: `serde_json::to_string` over a
     # BTreeMap is compact and key-sorted. Matching it is what makes this

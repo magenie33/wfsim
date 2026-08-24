@@ -7269,7 +7269,13 @@ const builtinBuilds = () => {
     // kinds has two leaders per weapon and mode, and "#1" alone would be the
     // one number here that does not say what it ranks among.
     const kind = rv ? tr("riven") : "";
-    const label = [many ? modeLabel(w, mode) : "", kind].filter(Boolean).join(" · ");
+    // A QUALIFIER IN BRACKETS, not another dot-separated part (owner,
+    // 2026-08-24). "Incarnon cycle · riven" reads as two facts of equal weight
+    // and the group above it is already dot-separated; "Incarnon cycle (riven)"
+    // reads as the same mode, narrowed — which is what it is, and what makes
+    // the plain group next to it obviously the rest.
+    const m = many ? modeLabel(w, mode) : "";
+    const label = m && kind ? `${m}（${kind}）` : (m || kind);
     return {
       name: label ? `#${n} · ${label}` : `#${n}`,
       // The two halves of that name, for a picker that puts the MODE in a
