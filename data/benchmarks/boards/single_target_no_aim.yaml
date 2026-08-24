@@ -156,6 +156,16 @@ entries:
     riven:
       bonuses: [critical_damage, fire_rate, reload_speed]
       rolls: [1.1, 1.1, 0.9]
+  - weapon: kuva_kohm
+    mode: base
+    score: 1.305117395775275
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, shotgun_barrage, shotgun_elementalist, primed_charged_shell, riven]
+    arcanes: [primary_deadhead]
+    valence: magnetic
+    riven:
+      bonuses: [critical_chance, damage, toxin]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
     score: 5.804194018301634
