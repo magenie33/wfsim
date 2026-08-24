@@ -1596,6 +1596,12 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
+    score: 37.39284225842707
+    mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_crosshairs, anemic_agility, deep_freeze, pathogen_rounds, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_deadhead]
+  - weapon: furis
+    mode: cycle
     score: 36
     mods: [pistol_acuity, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence]
     evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_extended_volley, furis_prelude_of_might]
