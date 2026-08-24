@@ -535,6 +535,12 @@ entries:
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
+    score: 2.658440342611444
+    mods: [galvanized_chamber, serration, galvanized_aptitude, vital_sense, magnetic_capacity, cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
     score: 2.652423891731122
     mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]

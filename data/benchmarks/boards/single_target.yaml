@@ -3419,6 +3419,12 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: tenet_arca_plasmor
     mode: base
+    score: 1.3182330719970343
+    mods: [galvanized_hell, magnetic_welt, semi_shotgun_cannonade, primed_charged_shell, contagious_spread, incendiary_coat, blaze, scattering_inferno]
+    arcanes: [primary_crux]
+    valence: heat
+  - weapon: tenet_arca_plasmor
+    mode: base
     score: 1.2666367002224066
     mods: [galvanized_hell, magnetic_welt, semi_shotgun_cannonade, primed_charged_shell, contagious_spread, incendiary_coat, blaze, scattering_inferno]
     arcanes: [primary_crux]
