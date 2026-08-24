@@ -1441,12 +1441,46 @@ around (decision 2026-07-31).
   builder → simulator → optimizer, each reading upstream and writing nothing. Its three old collections
   (`optimizer-mods` / `-arcanes` / `-evolutions`) merged into one: they were
   split for cross-weapon reuse, which is the import's job.
-  **NOTHING CROSSES BETWEEN WEAPONS — EXCEPT THE FIGHT** (user, 2026-08-02;
-  amended 2026-08-09). A BUILD, a SEARCH and a RIVEN are statements about ONE
-  weapon and are never born from each other: a weapon opened for the first time
-  gets a blank build, the search's `finalists`/`threads` reset, and the
-  previous weapon's optimizer RANKING is cleared rather than left on screen
-  under the new weapon's name.
+  **NOTHING CROSSES BETWEEN WEAPONS — EXCEPT THE FIGHT, AND A RIVEN WITHIN ITS
+  FAMILY** (user, 2026-08-02; amended 2026-08-09 and 2026-08-25). A BUILD and a
+  SEARCH are statements about ONE weapon and are never born from each other: a
+  weapon opened for the first time gets a blank build, the search's
+  `finalists`/`threads` reset, and the previous weapon's optimizer RANKING is
+  cleared rather than left on screen under the new weapon's name.
+  A RIVEN LEFT THAT LIST ON 2026-08-25, and it left it the way the scenario did
+  — because the claim it was making stopped being true, not because the rule
+  weakened. A riven is not a statement about an ENTRY; it is a card for a
+  weapon FAMILY: *"Riven mods can be used on variants of a particular weapon,
+  including MK1, Prime, Vandal, Wraith, Dex, Prisma, Mara, and Syndicate
+  variants"* (wiki `Riven Mods`). Filing it per weapon made a player build the
+  same card twice and gave them two cards free to drift apart.
+  THE NUMBERS FOLLOW BY THEMSELVES, which is why this is a STORAGE SCOPE and
+  not a conversion: a saved riven holds ROLLS — where each stat landed inside
+  its own range — and the shown value is that roll against THIS weapon's
+  disposition, recomputed by `/api/riven` on every render. So one card reads
+  1.45's worth on a Burston and 1.35's on its Prime with nothing converted,
+  which is the game's own behaviour: *"the cycling screen allows players to
+  view the Riven stats on every owned variant of said weapon"*.
+  THE SCOPE IS (FAMILY, RIVEN CLASS) RATHER THAN THE FAMILY, and a KITGUN is
+  why. `tombfinger_primary` and `tombfinger_secondary` are one family and two
+  cards — built as a primary the chamber takes a RIFLE riven, as a secondary a
+  PISTOL one — so a family-only key would put a rifle riven in a pistol's list,
+  offered by the editor and refused by the board. It was not reasoned out: the
+  engine test written for this (`every_member_of_a_riven_family_rolls_the_same
+  _pool`, derived from the roster) failed on exactly that pair and on nothing
+  else.
+  THE MIGRATION IS THE PART THAT CAN LOSE WORK. A riven is identified by its
+  NAME and a build references it as `riven:<name>`, so two variants each
+  carrying a "riven 1" cannot simply be merged: the surviving name is the one a
+  build still points at, and that build would come back equipping the OTHER
+  variant's card with nothing on screen saying so. `mergeRivenFamilyLists`
+  renames the collision and rewrites that weapon's builds in the same pass, and
+  it runs after `META` rather than beside the other migrations because a family
+  is something only the roster knows. `scripts/check_riven_family.mjs` is the
+  THIRTY-EIGHTH check and holds all of it — the shared list, the disposition
+  RATIO (2.243 -> 2.088 = 1.35/1.45), three negative controls and the
+  migration. Verified to bite: scoping by weapon again reddens three, one
+  reading `[] vs made ["riven 1"]`.
   A SCENARIO is not a statement about a weapon, so it is SHARED across the
   roster — one list, key `wfsim-presets-simulator-scenarios` with no weapon in
   it (`SHARED_DOMAINS`), and switching weapons keeps the fight you are measuring

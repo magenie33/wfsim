@@ -1488,6 +1488,10 @@ async function init() {
     optRun.threads = Math.max(0, Math.min(128, Number($("opt-threads").value) || 0));
     updateOptEstimate(); // the scope's auto-save; threads lands in the preset
   });
+  // BEFORE ANY LIST IS READ: a riven is the FAMILY's as of 2026-08-25, and the
+  // lists already on this machine are filed per weapon. It needs `META`, which
+  // is why it is called here rather than beside the migrations it belongs with.
+  mergeRivenFamilyLists();
   initPresets();
   reattachOptimize(); // resume progress display if a server-side job survives a reload
   $("auto-forma").addEventListener("click", () => { autoForma(); renderMods(); });
@@ -2521,8 +2525,36 @@ function renderRivens() {
   // The weapon and its disposition, and nothing else: that the values below
   // are scaled by it is what a disposition IS, so saying it was noise (user,
   // 2026-08-02).
+  //
+  // …AND WHOSE RIVEN IT IS, once a family has more than one member on the
+  // roster (owner, 2026-08-25). A card is the FAMILY's, so a riven the player
+  // built on the Burston is in the Burston Prime's list — and silent sharing
+  // reads as a bug the first time a riven you never made here turns up. It
+  // names the other variants rather than counting them, because "also fits 1
+  // other" is the one thing a reader cannot act on, and it states the
+  // disposition rule, since that is why the same card shows two sets of
+  // numbers.
+  const kin = (META.weapons || []).filter((x) =>
+    x.riven_family && x.riven_family === w.riven_family && x.id !== w.id
+    // …AND THE SAME CARD. A Kitgun's two builds share a family and take two
+    // different rivens, so the primary must not claim its own card also fits
+    // the secondary.
+    && (x.riven_class || x.mod_class) === (w.riven_class || w.mod_class));
+  // THE FAMILY IS NAMED IN THE READER'S LANGUAGE, by borrowing the localized
+  // name of its BASE member rather than printing the family string. That
+  // string is DE's module `Family` field and is always English, so a Chinese
+  // page said "一张 Burston 紫卡" beside 伯斯顿 Prime — and inventing a
+  // Chinese name for it would be a TRANSLATION of an id. The base member's
+  // name is DE's own transcription and already in `names.yaml`.
+  const base = [w, ...kin].find((x) => x.id === (w.riven_family || "").toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_"));
   $("riven-sub").textContent =
-    `${w.name} · ${tr("disposition")} ${(w.disposition || 1).toFixed(2)}`;
+    `${w.name} · ${tr("disposition")} ${(w.disposition || 1).toFixed(2)}`
+    + (kin.length
+      ? ` · ${tr("a {family} riven — it fits {others} too, each at its own disposition")
+          .replace("{family}", (base && base.name) || w.riven_family)
+          .replace("{others}", kin.map((x) => x.name).join(", "))}`
+      : "");
   renderRivenTools();
   if (!open) {
     // LIST MODE — nothing is being edited, so nothing pretends to be. The
@@ -5775,7 +5807,48 @@ const isCustomDomain = (d) => CUSTOM_DOMAINS.has(d);
 // there is no other weapon to import from.
 const SHARED_DOMAINS = new Set(["simulator-scenarios", "enemies"]);
 const isSharedDomain = (d) => SHARED_DOMAINS.has(d);
-const domainScope = (d, w) => (isSharedDomain(d) ? "" : (w ?? presetWeapon()) + "-");
+
+/// WHOSE RIVEN THIS IS — the weapon FAMILY, never the entry (owner,
+/// 2026-08-25). A riven made on the Burston is a *Burston Riven Mod* and the
+/// game puts it on the Burston Prime too: *"Riven mods can be used on variants
+/// of a particular weapon, including MK1, Prime, Vandal, Wraith, Dex, Prisma,
+/// Mara, and Syndicate variants"* (wiki `Riven Mods`). Filing it under the
+/// weapon meant a player had to build the same card twice and got two cards
+/// that could drift apart.
+///
+/// THE NUMBERS FOLLOW BY THEMSELVES, and that is why this is a storage change
+/// rather than a feature. A saved riven holds ROLLS — where each stat landed
+/// inside its own range, on 0..1 — and the shown value is `roll` against THIS
+/// weapon's disposition, computed by `/api/riven` on every render. So the same
+/// card reads 1.45's worth on a Burston and 1.35's on its Prime with nothing
+/// converted, which is what the game does: *"the cycling screen allows players
+/// to view the Riven stats on every owned variant of said weapon"*.
+///
+/// A weapon that declares no family is its own, which is what an entry with no
+/// variants means — and it keeps the key it already had.
+///
+/// THE RIVEN CLASS IS PART OF THE SCOPE, and a KITGUN is why. A Tombfinger
+/// built as a primary takes a RIFLE riven and the same chamber built as a
+/// secondary takes a PISTOL one — one family, two cards, two pools. Filing
+/// both under `tombfinger` would put a rifle riven in a pistol's list, where
+/// the editor offers it and the board refuses it. An engine test holds the
+/// other half: every weapon sharing a (family, class) rolls the same pool.
+const rivenScope = (id) => {
+  // NOT `weaponInfo`: that falls back to the FIRST weapon in the roster for an
+  // id it does not know, which would file a riven under a stranger's family.
+  const w = ((META && META.weapons) || []).find((x) => x.id === id);
+  const slug = (x) => String(x || "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  const fam = slug((w && w.riven_family) || id);
+  const cls = slug(w && (w.riven_class || w.mod_class));
+  return cls ? `${fam}-${cls}` : fam;
+};
+
+const domainScope = (d, w) => {
+  if (isSharedDomain(d)) return "";
+  const weapon = w ?? presetWeapon();
+  return (d === RIVENS ? rivenScope(weapon) : weapon) + "-";
+};
 const presetListKey = (d, w) =>
   (isCustomDomain(d) ? "wfsim-customs-" : "wfsim-presets-") + domainScope(d, w) + d;
 const presetActiveKey = (d, w) =>
@@ -5835,6 +5908,94 @@ const presetActiveKey = (d, w) =>
     localStorage.removeItem(from);
   });
 })();
+/// ONE-TIME MOVE of every per-weapon riven list into its FAMILY's — the storage
+/// half of "a riven is the family's" (see `rivenScope`). A player who
+/// built a Burston riven before this must not have to build it again, and the
+/// Prime's copy of the same card must not vanish either, so the lists are
+/// ADDITIVE: nothing is dropped and nothing is overwritten.
+///
+/// IT RUNS AFTER `META`, unlike the other migrations beside it. A family is
+/// something only the roster knows, and asking before the fetch would file
+/// every riven under its own weapon id and then report the job done — the
+/// worst outcome available, because a one-time migration only gets one go.
+///
+/// A RIVEN IS IDENTIFIED BY ITS NAME and a build references it as
+/// `riven:<name>`, so a collision inside one family — two variants each
+/// carrying a "riven 1" — cannot just be renamed on the way in: the surviving
+/// name is the one a build is still pointing at, and that build would silently
+/// equip the OTHER variant's card. Every rename therefore rewrites that
+/// weapon's own builds in the same pass.
+function mergeRivenFamilyLists() {
+  const per = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const m = /^wfsim-customs-(.+)-rivens$/.exec(localStorage.key(i) || "");
+    if (m) per.push(m[1]);
+  }
+  for (const weapon of per) {
+    const fam = rivenScope(weapon);
+    if (!fam || fam === weapon) continue;          // already filed under it
+    const from = `wfsim-customs-${weapon}-rivens`;
+    const to = `wfsim-customs-${fam}-rivens`;
+    const read = (k) => {
+      try { return JSON.parse(localStorage.getItem(k) || "[]") || []; } catch (_) { return []; }
+    };
+    const mine = read(from), theirs = read(to);
+    const renames = [];
+    for (const p of mine) {
+      // THE SAME CARD MADE TWICE COLLAPSES, exactly as the scenario merge does:
+      // a player who built one riven per variant built ONE riven, and carrying
+      // both across turns a migration into a mess they have to clean up.
+      const sig = JSON.stringify(p.state);
+      const twin = theirs.find((q) => JSON.stringify(q.state) === sig);
+      if (twin) {
+        if (twin.name !== p.name) renames.push([p.name, twin.name]);
+        continue;
+      }
+      let name = p.name;
+      if (theirs.some((q) => q.name === name)) {
+        name = `${name} (${weapon})`;
+        renames.push([p.name, name]);
+      }
+      theirs.push({ ...p, name });
+    }
+    if (theirs.length) localStorage.setItem(to, JSON.stringify(theirs));
+    localStorage.removeItem(from);
+    // WHICH ONE IS OPEN is the weapon's own state and does not merge: the
+    // family key keeps whatever it already had, and a weapon arriving with an
+    // open card only fills a blank.
+    const openKey = `wfsim-custom-open-${weapon}-rivens`;
+    const open = localStorage.getItem(openKey);
+    const famOpen = `wfsim-custom-open-${fam}-rivens`;
+    if (open !== null && localStorage.getItem(famOpen) === null) {
+      const hit = renames.find(([a]) => a === open);
+      localStorage.setItem(famOpen, hit ? hit[1] : open);
+    }
+    localStorage.removeItem(openKey);
+    renames.forEach(([a, b]) => renameRivenInBuilds(weapon, a, b));
+  }
+}
+
+/// Point one weapon's saved builds at a riven that has just been renamed.
+///
+/// A DEEP WALK over the stored JSON rather than a list of the fields a build
+/// keeps a mod id in. There are three today (a slot, the exilus slot, and the
+/// share tuple's copy) and a hand list is how the fourth one gets missed — the
+/// lesson `BUILD_AXES` is already built on. The value is an exact string, so a
+/// walk cannot hit anything else by accident.
+function renameRivenInBuilds(weapon, from, to) {
+  const key = `wfsim-presets-${weapon}-builder-builds`;
+  const raw = localStorage.getItem(key);
+  if (!raw) return;
+  const before = RIVEN_PREFIX + from, after = RIVEN_PREFIX + to;
+  let list;
+  try { list = JSON.parse(raw); } catch (_) { return; }
+  const walk = (v) => Array.isArray(v) ? v.map(walk)
+    : (v && typeof v === "object")
+      ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)]))
+      : (v === before ? after : v);
+  localStorage.setItem(key, JSON.stringify(walk(list)));
+}
+
 // Parsed lists, memoised on the RAW STRING. The stored text IS the
 // invalidation — nothing to keep in sync, and a stale read is impossible.
 // Worth having because `gainKey()` resolves a whole scenario and is called

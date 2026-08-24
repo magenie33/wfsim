@@ -1291,6 +1291,9 @@ ui:
   "Polarity": 极性
   "capacity": 容量
   "disposition": 倾向
+  # A riven belongs to a weapon FAMILY, so the same card is in every variant's
+  # list and reads that variant's own disposition.
+  "a {family} riven — it fits {others} too, each at its own disposition": "{family}紫卡 —— 同样可以装在{others}上，各按各自的倾向计算"
   "choose a stat": 选择词条
   "no matching stat": 没有匹配的词条
   "Search a riven stat…": 搜索裂罅词条…

@@ -98,6 +98,10 @@ struct WeaponInfo {
     /// Riven disposition. 1.0 when the data does not say, so a weapon with no
     /// disposition yet reads as neutral rather than as zero.
     disposition: f64,
+    /// WHOSE RIVEN THIS IS — the weapon FAMILY, never the entry. A weapon that
+    /// declares none is its own family. See the meta field for the wiki's own
+    /// sentence.
+    riven_family: String,
     /// WHAT THIS WEAPON'S ENTRY DOES NOT MODEL, one sentence per gap, straight
     /// from the weapon file. Shown to the reader — a number that omits
     /// something owes them the sentence, not just the omission.
@@ -217,6 +221,7 @@ fn weapons() -> &'static [WeaponInfo] {
                     },
                     continuous: s.attack.trigger == "held",
                     disposition: s.disposition.unwrap_or(1.0),
+                    riven_family: s.riven_family.clone().unwrap_or_else(|| s.id.to_string()),
                     // The BASE entry's gaps and its Incarnon form's, together:
                     // a reader is looking at one weapon and both halves are
                     // theirs to know about.
@@ -1029,6 +1034,15 @@ pub fn meta_json() -> Value {
                 // for modding purposes.
                 "continuous": w.continuous,
                 "disposition": w.disposition,
+                // WHOSE RIVEN THIS IS. A riven belongs to a weapon FAMILY, not
+                // to one entry in it: *"Riven mods can be used on variants of a
+                // particular weapon, including MK1, Prime, Vandal, Wraith, Dex,
+                // Prisma, Mara, and Syndicate variants"* — and each variant
+                // carries its OWN disposition, so the same card reads different
+                // numbers on each (wiki `Riven Mods`). A weapon that declares
+                // none is its own family, which is what an entry with no
+                // variants means.
+                "riven_family": w.riven_family,
                 // The riven stat pool this weapon draws from — not always its
                 // mod class (a bow's mods are `bow`, its rivens are `rifle`).
                 "riven_class": riven_class(w),
