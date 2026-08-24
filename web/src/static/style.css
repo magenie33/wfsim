@@ -463,8 +463,6 @@ body.on-enemies [data-module="builder"]{display:none}
 .combo-menu .opt.cur:hover{background:color-mix(in srgb,var(--accent) 24%,transparent)}
 .combo-menu .opt .dr{color:var(--muted);font-size:12px}
 
-/* evolution */
-.evo{display:flex;align-items:flex-start;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line)}
 /* WHAT BECAME OF THIS RUN, under the headline. The states are not the same
    news: `sent` is a fact, `refused` and `failed` are things to act on, `short`
    is a build that is not finished, and `none`/`pending` are neither good nor
@@ -474,11 +472,6 @@ body.on-enemies [data-module="builder"]{display:none}
 .board-outcome.sent{color:var(--gold)}
 .board-outcome.refused,.board-outcome.failed{color:#e0a052}
 .board-outcome .board-state{color:var(--muted)}
-.evo .rank{padding-top:8px}
-.evo:last-child{border:0}
-.evo .rank{width:74px;color:var(--gold);font-weight:700;font-size:12px;flex:none}
-.evo .locked{color:var(--text-2);font-size:13px}
-.evo .picks{display:flex;gap:7px;flex-wrap:wrap}
 /* ONE CONTROL FOR EVERY QUANTIFIABLE AXIS (owner, 2026-08-24): a CARD saying
    what is installed, with a ⋯ that opens the ranked list. It borrows `.slot`
    wholesale — the arcane slot has been this shape all along and is the model —
@@ -502,25 +495,6 @@ body.on-enemies [data-module="builder"]{display:none}
 /* A DROPDOWN ROW CARRIES CHIPS TOO — the gain, and whatever the perk admits.
    Same component as the mod list's, so it needs no size of its own. */
 #dd-menu .opt .exchip,#dd-menu .opt .bx{margin-left:5px}
-/* Evolution option CARDS: icon + name + verbatim effect text (like the
-   mod/arcane cards); top-aligned like every other card. */
-.evopick{border:1px solid var(--line);border-radius:9px;padding:7px 10px;cursor:pointer;background:var(--panel2);display:inline-flex;align-items:flex-start;gap:8px;max-width:250px}
-.evopick:hover{border-color:var(--accent)}
-.evopick.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
-.evopick .eicon{width:26px;height:26px;object-fit:contain;flex:none;margin-top:1px;filter:invert(0.55)}
-.evopick.sel .eicon{filter:invert(0.35) sepia(1) saturate(3) hue-rotate(160deg)}
-.evopick .einfo{min-width:0}
-.evopick .en{font-size:12.5px;font-weight:600;display:block}
-.evopick .ed{font-size:11px;color:var(--text-2);display:block}
-.evopick .ed div{line-height:1.35}
-.evopick.empty{border-style:dashed}
-.evopick.empty .en{color:var(--muted)}
-/* Wiki-flagged broken evolutions: the engine computes ZERO for them. The
-   warning renders INSIDE the selected card (never across the row divider). */
-.evopick.broken{border-color:#8b3a3a}
-.evopick .bx{color:#e05252;font-size:10px;font-weight:800;font-style:normal}
-.evopick .ed.warn{color:#e05252;margin-top:3px}
-.evo .picks{align-items:stretch}
 
 /* stats panel — merged buckets explained by source */
 .srow{padding:7px 0;border-bottom:1px dashed var(--line)}
@@ -915,8 +889,6 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 @media(max-width:520px){.runs-row{flex-wrap:wrap;gap:6px}}
 
 /* A tier that cannot be chosen yet: the one before it is not installed. */
-.evo.locked .rank{opacity:.45}
-.evopick.tlocked{opacity:.4;cursor:not-allowed;pointer-events:none}
 .opt-tier-block.locked .opt-tier-h{opacity:.45}
 .opt-tier-block.locked .opt{opacity:.45}
 .seg.tlocked{cursor:not-allowed;pointer-events:none}
@@ -1215,7 +1187,6 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .caveat.unmod{color:var(--gold)}
 /* The builder's evolution tiles use <i> for their marks (`.bx` BROKEN does),
    so the unmodelled chip has to lose the italic it would otherwise inherit. */
-.evopick .exchip{font-style:normal}
 /* The weapon's own "what this does not model" banner: a heading and one line
    per gap, so several gaps read as a list rather than as one long sentence. */
 .unmod-h{font-weight:600}

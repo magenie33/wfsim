@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "7ac4eb83+ · 2026-08-24 15:52Z";
+const BUILD_ID = "11a35540+ · 2026-08-24 17:09Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -8705,7 +8705,8 @@ function ddRender(id, query) {
   // ranked axis is this list — the same place the mod and arcane pickers put
   // theirs. `scanStrip` draws nothing unless this axis is the one running, and
   // a dropdown that ranks nothing declares no `axis` and gets none.
-  const strip = cfg.axis ? scanStrip(gainScan, cfg.axis) : "";
+  const strip = cfg.axis
+    ? scanStrip(gainScan, cfg.axis, hits.map((i) => i.key)) : "";
   $("dd-menu").innerHTML = strip + (hits.length
     ? hits.map((i) => {
       const head = (i.group && i.group !== group)
@@ -8969,7 +8970,8 @@ let gainPrefs = { on: true, runs: GAIN_RUNS_MIN };
 try { const s = JSON.parse(localStorage.getItem("wfsim-gain")); if (s) gainPrefs = { ...gainPrefs, ...s }; } catch (_) {}
 const saveGainPrefs = () => localStorage.setItem("wfsim-gain", JSON.stringify(gainPrefs));
 
-let gainScan = { key: null, running: false, base: 0, floor: 0, by: {}, done: 0, total: 0, note: "", metric: "" };
+let gainScan = { key: null, running: false, base: 0, floor: 0, by: {}, done: 0, total: 0,
+  ids: new Set(), note: "", metric: "" };
 
 /// THE FIGHT A SCAN RUNS UNDER, and there is only one: THE ONE YOU ARE IN.
 ///
@@ -9208,8 +9210,21 @@ async function scanGains(axis, onTick) {
   // The note is WHICH FIGHT this was measured in. The run counts used to ride
   // along here too and were dropped: each chip's tooltip states its own count,
   // which is the only place the number changes how a reading should be taken.
-  gainScan = { key: gainKey(), axis, running: true, base: 0, floor: 0, by: {}, done: 0, total: 0,
-    note: name, metric: "" };
+  // THE CANDIDATES ARE ENUMERATED BEFORE THE FIRST RUN, so a list drawn while
+  // the base fight is still going already knows how many of ITS OWN rows are
+  // coming. `gainCandidates` is a pure enumeration and awaits nothing, so this
+  // costs the move and no time.
+  const cands = gainCandidates(axis);
+  gainScan = { key: gainKey(), axis, running: true, base: 0, floor: 0, by: {}, done: 0,
+    total: cands.length + (refine ? Math.min(GAIN_REFINE_TOP, cands.length) + 1 : 0),
+    ids: new Set(cands.map((c) => c.id)), note: name, metric: "" };
+  // THE BAR APPEARS WHEN THE WORK STARTS, not when the first candidate lands.
+  // The BASE fight runs before any candidate does, and on a crowd at a real run
+  // count that is tens of seconds — throughout which `running` is already true
+  // and nothing had repainted the list. So the list a reader had just opened
+  // sat silent through exactly the wait the strip exists to explain, and the
+  // bar turned up only once there was already an answer to show.
+  if (onTick) onTick(gainScan);
   // Kill progress is the optimizer's metric and the one a player is actually
   // buying; DPS is the fallback for a target this build cannot kill at all,
   // where the ratio has no denominator. The SCENARIO decides which.
@@ -9229,8 +9244,6 @@ async function scanGains(axis, onTick) {
   // server measured across the runs it was already paid for, not a second run
   // at another seed. See `readGain`.
   gainScan.floor = base.se / base.v;
-  const cands = gainCandidates(axis);
-  gainScan.total = cands.length + (refine ? Math.min(GAIN_REFINE_TOP, cands.length) + 1 : 0);
   // One shared cursor, every lane pulling the next candidate as it frees up —
   // so a slow candidate delays itself and nothing else. `live()` is checked
   // after each await, which is what bounds an interrupted scan to one
@@ -9391,14 +9404,31 @@ const gainTied = (g) => {
 //
 // It draws NOTHING when nothing is running, so a finished list is a finished
 // list: a bar sitting at 100% would be one more thing to read and dismiss.
-function scanStrip(st, axis) {
+function scanStrip(st, axis, rows) {
   if (!st || !st.running) return "";
   // AN AXIS ONLY SHOWS ITS OWN. Two lists can be open at once (a picker over
   // the evolution rows), and the scan belongs to exactly one of them — showing
   // it on both would say the other one is being measured when it is waiting.
   if (axis && JSON.stringify(st.axis) !== JSON.stringify(axis)) return "";
-  const total = Math.max(1, st.total || 1);
-  const done = Math.min(st.done || 0, total);
+  // THE COUNT IS THE LIST'S OWN, and it is DERIVED FROM THE ROWS ON SCREEN
+  // (owner, 2026-08-25). `st.total` is how many SIMULATIONS this scan will run,
+  // which is a different number from how many options the reader is looking at
+  // — it carries the refine pass, and on an axis whose candidates are split
+  // across several lists it carries the other lists too. Both cases read as a
+  // denominator that does not match what is in front of you: a Kitgun's grip
+  // list is five rows and said `12/23`, because one scan covers the grip and
+  // the loader and only one of the two is ever open.
+  //
+  // So a caller that has rows hands them over and the strip counts those: how
+  // many of THESE options have an answer, over how many are coming. It is
+  // derived from the list rather than from the axis, so a list added tomorrow
+  // — or one an axis splits into three — is right without being taught.
+  const mine = rows && st.ids
+    ? rows.filter((k) => k && st.ids.has(k)) : null;
+  const total = mine ? Math.max(1, mine.length)
+    : Math.max(1, st.total || 1);
+  const done = mine ? mine.filter((k) => gainOf(k)).length
+    : Math.min(st.done || 0, total);
   const pct = Math.round((done / total) * 100);
   return `<div class="scan-strip" role="status" aria-live="polite" title="${escHtml(
     tr("the ranking is still being measured — the order moves until it finishes"))}">` +
@@ -10157,7 +10187,7 @@ function renderMenu(slotIdx, query) {
       ${imgTag(POL(m.polarity), "pol")}${imgTag(IMG(m.image), "mod")}
       <div class="info"><div class="mn">${m.riven ? escHtml(m.name) : wl(m.name, wikiUrl(m.name_en || m.name))}${m.exilus ? ' <span class="exchip">EXILUS</span>' : ""} ${badge}${gainChip}</div><div class="me">${cardLines(m, m.max_rank).map((x) => `<div>${x}</div>`).join("")}</div></div><span class="dr">${m.drain}</span></div>`;
   };
-  menu.innerHTML = scanStrip(gainScan, { kind: "mods", idx: slotIdx })
+  menu.innerHTML = scanStrip(gainScan, { kind: "mods", idx: slotIdx }, hits.map((m) => m.id))
     + (hits.length
       ? sectionedRows(hits, (m) => (m.riven ? "Riven" : "Mods"), row)
       : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`);
@@ -10463,7 +10493,7 @@ function renderArcaneMenu(query) {
     .filter((a) => !q || searchBlob(a).includes(q))
     .sort((a, b) => (a.id === arcanes[arcaneSlotIdx] ? -1 : b.id === arcanes[arcaneSlotIdx] ? 1 : 0)
       || gainSort(a, b, ["gain", "name"]));
-  menu.innerHTML = scanStrip(gainScan, { kind: "arcane", idx: arcaneSlotIdx })
+  menu.innerHTML = scanStrip(gainScan, { kind: "arcane", idx: arcaneSlotIdx }, hits.map((a) => a.id))
     + (hits.length ? hits.map((a) => {
     const isCur = a.id === arcanes[arcaneSlotIdx];
     return `<div class="opt ${isCur ? "cur" : ""} ${a.rarity ? "rar-" + a.rarity : ""}" data-id="${a.id}">
