@@ -976,9 +976,28 @@ fn check_riven_shape(
     if !bad.is_empty() {
         return Err(bad.join("; "));
     }
-    let rollable = crate::rivens_data::derived_for(weapon);
+    // **WHAT THE EDITOR OFFERS IS WHAT THE BOARD MUST ACCEPT**, and the two
+    // disagreed completely (owner, 2026-08-24): the class pool MINUS what this
+    // weapon cannot roll, which is exactly `rivenPool()` on the page —
+    // `rivenPoolAll()` filtered by the `riven_excludes` this same engine
+    // serves.
+    //
+    // IT WAS `derived_for` READ AS A WHITELIST, which is its exact inverse.
+    // That function's name and its doc both read as "the stats this weapon
+    // rolls" and its OUTPUT is the EXCLUSIONS — a Braton Prime answers
+    // `["projectile_speed"]`, being hit-scan, and a Torid answers the three
+    // physical types, being pure Toxin. So this loop refused every legal stat
+    // and could only have accepted illegal ones: EVERY riven build submitted to
+    // the board was rejected with "a X riven does not roll Y", which is why the
+    // board has never carried one. `excluded_for` is the same list with the
+    // family's exceptions applied and is what the page is served, so reading it
+    // here is what makes the two surfaces one answer.
+    let excluded = crate::rivens_data::excluded_for(weapon);
+    let class_pool = crate::rivens_data::pool(class);
     for id in shape.bonuses.iter().chain(shape.malus.iter()) {
-        if !rollable.iter().any(|x| x == id) {
+        let offered = class_pool.iter().any(|x| &x.id == id)
+            && !excluded.iter().any(|x| x == id);
+        if !offered {
             return Err(format!("a {} riven does not roll {id}", crate::weapons_data::spec(weapon)
                 .map_or(weapon, |w| w.name.as_str())));
         }
@@ -1151,6 +1170,55 @@ mod riven_perfection_tests {
 
 #[cfg(test)]
 mod tests {
+
+    /// **WHAT THE EDITOR OFFERS, THE BOARD ACCEPTS** — over every weapon that
+    /// takes a riven, not over a named one.
+    ///
+    /// The page's picker is `rivenPoolAll()` minus the `riven_excludes` this
+    /// engine serves; `check_riven_shape` decides what a board row may carry.
+    /// Nothing joined the two, and they were EXACT INVERSES: the check read
+    /// `derived_for` as a whitelist when it is the exclusion list, so every
+    /// legal riven was refused with "a X riven does not roll Y" and only
+    /// illegal ones could have passed. The board has never carried a riven
+    /// build, and this is why (owner, 2026-08-24).
+    ///
+    /// It is asserted as the PROPERTY over the whole roster, because a test
+    /// naming one weapon and one stat is the same shape as the bug: a hand
+    /// list cannot report what is not on it.
+    #[test]
+    fn the_board_accepts_every_stat_the_riven_editor_offers() {
+        let mut checked = 0usize;
+        for w in crate::weapons_data::all() {
+            let class = super::riven_class(&w.id);
+            if class.is_empty() {
+                continue;
+            }
+            let excluded = crate::rivens_data::excluded_for(&w.id);
+            let offered: Vec<String> = crate::rivens_data::pool(class)
+                .iter()
+                .filter(|x| !excluded.iter().any(|e| *e == x.id))
+                .map(|x| x.id.clone())
+                .collect();
+            assert!(!offered.is_empty(), "{}: the editor offers nothing at all", w.id);
+            for id in &offered {
+                // THE SMALLEST LEGAL SHAPE that carries the stat — a riven has
+                // two or three bonuses, so the partner is another OFFERED one
+                // and a refusal can still only be about the stat under test.
+                let partner = offered.iter().find(|x| *x != id).expect("a second stat");
+                let shape = crate::rivens_data::RivenShape {
+                    bonuses: vec![id.clone(), partner.clone()],
+                    malus: None,
+                };
+                let r = super::check_riven_shape(&w.id, &shape);
+                assert!(r.is_ok(), "{} / {id}: offered by the picker, refused by the board — {}",
+                    w.id, r.unwrap_err());
+                checked += 1;
+            }
+        }
+        // …AND IT ACTUALLY WALKED SOMETHING. A loop that `continue`s past every
+        // weapon passes silently.
+        assert!(checked > 500, "only {checked} (weapon, stat) pairs were checked");
+    }
 
     /// A TWO-ELEMENT RIVEN IS AN ATOM, and canonicalisation still has to mean
     /// EXACTLY "the same fight".
