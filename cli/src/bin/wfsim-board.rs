@@ -84,6 +84,47 @@ struct RowRiven {
     rolls: Vec<f64>,
 }
 
+/// ONE ROW AS THE PAGE RECEIVES IT — `site/board.json`'s shape, in one place.
+///
+/// Extracted so it can be TESTED, because the one thing that went wrong with it
+/// is invisible from the outside: it was a hand-written list of nine keys and
+/// `riven` was never one of them, so a riven row reached the yaml and never
+/// reached the page. Three separate reports came out of that single missing key
+/// — the board's "riven only" view listed nothing, the builder could not group
+/// riven builds apart, and TAKING one left an empty mod slot (owner,
+/// 2026-08-24).
+///
+/// BYTE FOR BYTE WITH `build_site_app.py`, which is what makes a local site
+/// build a no-op against the scorer's own output. That is why the riven key is
+/// OMITTED rather than written as `null` on a plain row: the Python side copies
+/// the yaml entry, and a plain entry simply has no `riven` key.
+fn page_row(bench_id: &str, r: &Row) -> Value {
+    let mut row = json!({
+        "benchmark": bench_id,
+        "mode": r.mode,
+        "source": "submissions",
+        "score": r.score,
+        // The number stays EXACT and the string beside it is what the page
+        // prints. Formatting lives in `boards_data::format_score`, so "four
+        // significant figures, four decimals" is one rule in one language
+        // rather than a Rust copy and a JS copy that drift.
+        "shown": wfsim_engine::boards_data::format_score(r.score),
+        "mods": r.mods,
+        "evolutions": r.evolutions,
+        "arcanes": r.arcanes,
+        "valence": r.valence,
+    });
+    if let Some(rv) = &r.riven {
+        if let Some(o) = row.as_object_mut() {
+            o.insert(
+                "riven".into(),
+                json!({ "bonuses": rv.bonuses, "malus": rv.malus, "rolls": rv.rolls }),
+            );
+        }
+    }
+    row
+}
+
 /// THE FLOOR: a row must score at least half its group's leader to be listed
 /// (owner, 2026-08-20). It replaces a COUNT — the top hundred per ruler and
 /// mode, itself raised from ten on 2026-08-08.
@@ -718,21 +759,7 @@ fn main() {
             }
         }
         for r in &kept {
-            by_weapon.entry(r.weapon.clone()).or_default().push(json!({
-                "benchmark": bench_id,
-                "mode": r.mode,
-                "source": "submissions",
-                "score": r.score,
-                // The number stays EXACT and the string beside it is what the
-                // page prints. Formatting lives in `boards_data::format_score`,
-                // so "four significant figures, four decimals" is one rule in
-                // one language rather than a Rust copy and a JS copy that drift.
-                "shown": wfsim_engine::boards_data::format_score(r.score),
-                "mods": r.mods,
-                "evolutions": r.evolutions,
-                "arcanes": r.arcanes,
-                "valence": r.valence,
-            }));
+            by_weapon.entry(r.weapon.clone()).or_default().push(page_row(&bench_id, r));
         }
         std::fs::write(&path, serde_json::to_string(&by_weapon).expect("json"))
             .unwrap_or_else(|e| panic!("{path}: {e}"));
@@ -1070,4 +1097,62 @@ mod tests {
         assert_eq!(kept.len(), 3);
     }
 
+}
+
+#[cfg(test)]
+mod page_row_tests {
+    use super::*;
+
+    fn row(riven: Option<RowRiven>) -> Row {
+        Row {
+            weapon: "dual_toxocyst".into(),
+            mode: "cycle".into(),
+            score: 139.28,
+            mods: vec!["galvanized_diffusion".into()],
+            evolutions: vec!["dual_toxocyst_evo1_incarnon_form".into()],
+            arcanes: vec!["secondary_deadhead".into()],
+            valence: String::new(),
+            riven,
+        }
+    }
+
+    /// **THE RIVEN REACHES THE PAGE**, which is the whole of what went wrong.
+    ///
+    /// A row wearing one was written to `site/board.json` without it for as
+    /// long as the writer existed, and the board simply held none until
+    /// 2026-08-24 — so nothing was ever visibly broken until the hour the first
+    /// riven build landed, and then three unrelated-looking things were.
+    #[test]
+    fn a_riven_row_carries_its_riven_to_the_page() {
+        let v = page_row("single_target", &row(Some(RowRiven {
+            bonuses: vec!["critical_chance".into(), "multishot".into()],
+            malus: Some("zoom".into()),
+            rolls: vec![1.1, 1.1, 0.9],
+        })));
+        let rv = v.get("riven").expect("the riven reaches the page");
+        assert_eq!(rv["bonuses"], json!(["critical_chance", "multishot"]));
+        assert_eq!(rv["malus"], json!("zoom"));
+        // THE ROLLS TOO: taking a board row has to give the reader that riven,
+        // and a shape without its corner is a card they cannot build.
+        assert_eq!(rv["rolls"], json!([1.1, 1.1, 0.9]));
+    }
+
+    /// …AND A PLAIN ROW OMITS THE KEY RATHER THAN WRITING `null`.
+    ///
+    /// Not a style choice: this file is compared BYTE FOR BYTE against
+    /// `build_site_app.py`'s output, which is what makes a local site build a
+    /// no-op against the scorer. The Python side copies the yaml entry and a
+    /// plain entry has no `riven` key at all, so a `null` here would leave
+    /// every local build dirty.
+    #[test]
+    fn a_plain_row_omits_the_key_entirely() {
+        let v = page_row("single_target", &row(None));
+        assert!(v.get("riven").is_none(), "{v}");
+        // …and the fields a page reads by name are all still there, so the
+        // extraction did not quietly drop one of the other nine.
+        for k in ["benchmark", "mode", "source", "score", "shown", "mods",
+                  "evolutions", "arcanes", "valence"] {
+            assert!(v.get(k).is_some(), "{k} is missing");
+        }
+    }
 }
