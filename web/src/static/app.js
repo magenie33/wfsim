@@ -8994,11 +8994,39 @@ document.addEventListener("click", (e) => {
   }
   ddOpen(t.id, t);
 }, true);
+/// PUT A POPOVER UNDER ITS ANCHOR — AND INSIDE THE SCREEN (owner, 2026-08-25).
+///
+/// It used to be the anchor's left edge and nothing else, which is right on a
+/// desktop and is HORIZONTAL OVERFLOW on a phone. A mod slot's ⋯ sits at x=295
+/// of a 360px screen, so its 200px menu ran to 495 and the DOCUMENT became 495
+/// wide; the browser then fits 495 into 360, the whole page shrinks, and the
+/// Swap/Remove the reader was reaching for is off the right edge. It was
+/// reported as two bugs — "the card is too long to reach its top right" and
+/// "the menu makes the page smaller" — and it is one, which is why the fix is
+/// here rather than in either surface.
+///
+/// THE WIDTH IS CAPPED BEFORE THE CLAMP, because a popover wider than the
+/// screen cannot be clamped into it: the mod picker is 331px and a 360px phone
+/// has 348 to give. Both are measured after `hidden` is cleared, since a hidden
+/// element has no size — and from a known left, because the popover is still
+/// sitting wherever it was last opened and a width read against the right edge
+/// comes back squeezed.
+///
+/// EVERY popover goes through this, so the mod picker, the arcane picker, the
+/// ranked dropdown, the riven pickers and the slot menu are all covered by the
+/// one change. `check_mobile` asserts it with each of them OPEN — its blind
+/// spot until now was that it only ever measured a page at rest.
 function place(pop, anchor) {
   const r = anchor.getBoundingClientRect();
   pop.hidden = false;
+  const margin = 6;
+  const view_width = document.documentElement.clientWidth;
+  pop.style.maxWidth = (view_width - 2 * margin) + "px";
+  pop.style.left = margin + "px";
+  const width = pop.offsetWidth;
+  const left = Math.max(margin, Math.min(r.left, view_width - margin - width));
   pop.style.top = (window.scrollY + r.bottom + 4) + "px";
-  pop.style.left = (window.scrollX + r.left) + "px";
+  pop.style.left = (window.scrollX + left) + "px";
 }
 
 function openPicker(slotIdx, anchor) {

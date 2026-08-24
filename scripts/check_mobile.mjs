@@ -115,8 +115,59 @@ for (const [label, w, h, mobile] of SCREENS) {
     }
   }
 
+  // ---- AND WITH A POPOVER OPEN ------------------------------------------
+  //
+  // THIS CHECK'S OWN BLIND SPOT UNTIL 2026-08-25: everything above measures a
+  // page AT REST, and the overflow the owner hit came from a thing that is not
+  // on the page until it is opened. place put a popover's left edge at its
+  // anchor's and stopped, which is right on a desktop — so a mod slot's ⋯ at
+  // x=295 of a 360px screen opened a 200px menu that ran to 495: the DOCUMENT
+  // went 495 wide, the browser fit that into 360, the whole page shrank, and
+  // the Swap/Remove being reached for sat off the right edge. It was reported
+  // as two bugs ("the card is too long to reach its top right" and "the menu
+  // makes the page smaller") and it was one.
+  //
+  // The openings are the ones a builder page actually has, driven through the
+  // app's own entry points. Each is measured on its own, because a popover
+  // that overflows only tells on the screen where its anchor is far right.
+  //
+  // IT PUTS ITSELF BACK ON THE BUILDER FIRST. The touch branch above navigates
+  // to another weapon's SIMULATOR and stays there, so this ran against an
+  // empty mod grid and every opening threw on a null - which reads exactly
+  // like the bug it is here to catch. A block that depends on where the last
+  // one left the page is a block that reports the wrong thing.
+  history.pushState({}, '', '/weapons/Ocucor'); route(); await sleep(2600);
+  const pool2 = (META.weapons.find(x => x.id === 'ocucor') || {}).mods || [];
+  for (let i = 0; i < 8 && i < pool2.length; i++) slots[i] = { mod: pool2[i], pol: null, rank: null };
+  renderMods(); await sleep(1400);
+
+  const popovers = [];
+  for (const [name, open] of [
+    ['slot menu', () => document.querySelector('#mod-slots .slot .dots').click()],
+    ['mod picker', () => openPicker(7, slotEl(7))],
+    ['arcane picker', () => openArcanePicker(document.querySelector('#arcane-slots .slot'), 0)],
+  ]) {
+    closePopovers(); await sleep(300);
+    let threw = null;
+    try { open(); } catch (e) { threw = String(e); }
+    await sleep(800);
+    const shown = ['#slot-menu', '#mod-popover', '#arcane-popover', '#dd-popover']
+      .map(sel => document.querySelector(sel))
+      .filter(el => el && !el.hidden && el.getBoundingClientRect().width > 0);
+    const rects = shown.map(el => el.getBoundingClientRect());
+    popovers.push({
+      name, threw,
+      opened: rects.length > 0,
+      left: rects.length ? Math.round(Math.min(...rects.map(b => b.left))) : null,
+      right: rects.length ? Math.round(Math.max(...rects.map(b => b.right))) : null,
+      scrollW: document.documentElement.scrollWidth,
+    });
+  }
+  closePopovers(); await sleep(250);
+
   return {
       ...out,
+      popovers,
       vw,
       // The page's own sideways scroll — the symptom a reader actually feels.
       scrollW: document.documentElement.scrollWidth,
@@ -198,6 +249,20 @@ for (const [label, w, h, mobile] of SCREENS) {
     `rightmost bar edge ${r.barsRight} vs viewport ${r.vw}`);
   check(`${tag} the page does not scroll sideways`, r.scrollW <= r.vw + 0.5,
     `scrollWidth ${r.scrollW} vs clientWidth ${r.vw}`);
+
+  // …AND IT STILL DOES NOT ONCE SOMETHING IS OPEN. A popover is placed rather
+  // than laid out, so it is the one thing on the page that can leave the
+  // viewport without any container noticing.
+  for (const p of r.popovers || []) {
+    check(`${tag} the ${p.name} opens`, p.opened === true,
+      p.threw ? `threw ${p.threw}` : JSON.stringify(p));
+    if (!p.opened) continue;
+    check(`${tag} ...inside the screen, so its buttons can be tapped`,
+      p.right <= r.vw + 0.5 && p.left >= -0.5,
+      `${p.left}..${p.right} vs viewport ${r.vw}`);
+    check(`${tag} ...without widening the page under it`,
+      p.scrollW <= r.vw + 0.5, `scrollWidth ${p.scrollW} vs ${r.vw}`);
+  }
   // NOTHING IS LOST AT ANY WIDTH — the two destinations and the six controls
   // are all on screen and inside it, once the menu is open.
   check(`${tag} every topbar destination and control is reachable`,
