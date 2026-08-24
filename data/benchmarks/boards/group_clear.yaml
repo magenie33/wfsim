@@ -146,6 +146,11 @@ entries:
     score: 3.603474865445216
     mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
+  - weapon: hystrix_prime
+    mode: base
+    score: 5.519831070938963
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, jolt, pistol_pestilence]
+    arcanes: [secondary_enervate]
   - weapon: ignis_wraith
     mode: base
     score: 11.969444016093515
