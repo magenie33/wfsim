@@ -1493,6 +1493,15 @@ around (decision 2026-07-31).
   exactly why the answer had to be elsewhere — the hard part is never DETECTING
   a collision, it is that a build already points at the surviving name, which a
   rule about names cannot see.
+  AN EDIT IS NOT A DELETE, and that is the whole point of a riven being a
+  REFERENCE. Editing one is the game's own reroll — the same card, new numbers,
+  everywhere it is equipped — so a build KEEPS it and picks the values up:
+  dropping the rank from 8 to 0 on the Burston takes the Burston Prime's build
+  from 18 drain / +208.8% to 2 / +23.2%, slot intact. Asked for as "deleted or
+  CHANGED should remove it from the build" (owner, 2026-08-25) and answered
+  with only the first half, because removal on an edit would take a slot off
+  the build every time somebody moved the rank slider. The measurement is an
+  assertion, so the behaviour cannot be "fixed" later by mistake.
   `scripts/check_riven_family.mjs` is the
   THIRTY-EIGHTH check and holds all of it — the shared list, the disposition
   RATIO (2.243 -> 2.088 = 1.35/1.45), three negative controls, the migration,

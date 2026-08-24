@@ -163,6 +163,34 @@ const r = await evaluate(`(async () => {
   const del = document.querySelector('.cu-del');
   if (del) { del.click(); await sleep(1000); }
   out.primeAfterDelete = localStorage.getItem('wfsim-presets-burston_prime-builder-builds');
+
+  // ---- 7. AN EDIT CHANGES THE CARD; IT DOES NOT DROP IT ----------------
+  // The opposite of a delete, and the distinction is the whole point of a
+  // riven being a REFERENCE. Editing one is the game's own reroll: the same
+  // card, new numbers, everywhere it is equipped. Asked for as "deleted OR
+  // CHANGED should remove it from the build" (owner, 2026-08-25) and declined
+  // with this measurement, because removal here would drop a slot every time
+  // somebody nudged the rank slider. Pinned so nobody 'fixes' it later.
+  localStorage.clear();
+  await go('/weapons/Burston/rivens');
+  await mk();
+  await pick('0', 'damage');
+  const nm = activeRivenName();
+  await go('/weapons/Burston_Prime');
+  slots[0].mod = 'riven:' + nm;
+  renderMods(); refreshPanel(); markPresetDirty(); await sleep(1400);
+  const was = modById('riven:' + nm);
+  out.editBefore = { drain: was && was.drain, eff: ((was || {}).effects || []).join(' ') };
+  await go('/weapons/Burston/rivens');
+  const openEl = document.querySelector('#riven-all [data-open="' + nm + '"]');
+  if (openEl) { openEl.click(); await sleep(1600); }
+  const rk = document.getElementById('rv-rank');
+  out.rankFound = !!rk;
+  if (rk) { rk.value = '0'; rk.dispatchEvent(new Event('input', { bubbles: true })); await sleep(1800); }
+  await go('/weapons/Burston_Prime');
+  const now = modById('riven:' + nm);
+  out.editAfter = { drain: now && now.drain, eff: ((now || {}).effects || []).join(' ') };
+  out.stillEquipped = ((slots[0] || {}).mod === 'riven:' + nm);
   return out;
 })()`);
 
@@ -257,5 +285,23 @@ check("deleting it clears that saved build's slot rather than orphaning it",
   !/riven:/.test(r.primeAfterDelete || "")
     && /"mod":null/.test(r.primeAfterDelete || ""),
   r.primeAfterDelete);
+
+// ---- …but an EDIT is not a delete -------------------------------------------
+
+check("the rank control was found, so an edit really happened",
+  r.rankFound === true);
+check(`editing the card on one variant changes it in the other's build `
+  + `(${r.editBefore && r.editBefore.drain} -> ${r.editAfter && r.editAfter.drain} drain)`,
+  !!r.editBefore && !!r.editAfter
+    && r.editBefore.drain !== r.editAfter.drain
+    && r.editBefore.eff !== r.editAfter.eff,
+  JSON.stringify({ before: r.editBefore, after: r.editAfter }));
+// AND IT IS STILL THERE. Editing a riven is the game's own reroll — the same
+// card with new numbers — so a build keeps it. Dropping it on every edit would
+// take a slot off the build each time somebody moved the rank slider, which is
+// why "deleted or changed should remove it" was answered with only the first
+// half (owner, 2026-08-25).
+check("...and the build still has it, because an edit is not a delete",
+  r.stillEquipped === true);
 
 await finish("a riven is the weapon family's");
