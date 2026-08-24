@@ -44,6 +44,37 @@ for (const lang of ["en", "zh"]) {
 
   const r = await evaluate(`(async () => {
     const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    // WHERE AN EVOLUTION'S ADMISSIONS LIVE, now that a tier is a dropdown
+    // (2026-08-24). Two places, and both are the promise:
+    //
+    //   * the ROWS you choose from, because that is where the choosing
+    //     happens — rendered with ddRender, which is the same function the
+    //     popover calls, so this is real markup and not the registry;
+    //   * the INSTALLED perk's own card under the control, which is what
+    //     keeps a gap ON THE PAGE without anybody opening anything.
+    //
+    // A locked tier still LISTS its perks, so this reads every tier rather
+    // than only the reachable ones — what is being asserted is the chip, and
+    // the ladder is check_gain_axes' subject.
+    const evoRows = (sel) => {
+      const out = [];
+      for (const b of document.querySelectorAll('[id^="dd-evo-"]')) {
+        ddRender(b.id);
+        out.push(...document.querySelectorAll('#dd-menu .opt ' + sel));
+      }
+      out.push(...document.querySelectorAll('.evosel ' + sel));
+      return out;
+    };
+    const evoOpt = (id) => {
+      for (const b of document.querySelectorAll('[id^="dd-evo-"]')) {
+        ddRender(b.id);
+        const el = document.querySelector('#dd-menu .opt[data-v="' + id + '"]');
+        if (el) return el;
+      }
+      return null;
+    };
+
     history.pushState({}, '', '/weapons/Stug'); route(); await sleep(3800);
     const out = { lang: ${JSON.stringify(lang)} };
 
@@ -54,13 +85,12 @@ for (const lang of ["en", "zh"]) {
     out.weaponGaps = (weaponInfo($('weapon').value).unmodeled || []).length;
 
     // 2. EVOLUTION TILES.
-    out.evoChips = [...document.querySelectorAll('.evopick .exchip.unmod')]
-        .map(e => e.textContent.trim());
+    out.evoChips = evoRows('.exchip.unmod').map(e => e.textContent.trim());
     // …AND THE OTHER ADMISSION. An evolution has two: a clause nobody has
     // modelled YET, and a clause that cannot pay out in a one-target fight at
     // all. They were one chip until 2026-08-12, which said "not modelled yet"
     // over perks nobody is working on and nobody should.
-    out.evoScope = [...document.querySelectorAll('.evopick .exchip.scope')]
+    out.evoScope = evoRows('.exchip.scope')
         .map(e => ({ text: e.textContent.trim(), why: e.getAttribute('title') || '' }));
     // …AND THE THIRD, which is not a shortfall of ours at all: a clause the
     // GAME does not pay out. The mod and arcane cards have carried live bugs
@@ -167,10 +197,8 @@ for (const lang of ["en", "zh"]) {
     // The day nothing in the roster is inert, this stops finding a weapon and
     // says so, which is the right way to learn that the ratchet reached zero.
     history.pushState({}, '', '/weapons/Felarx'); route(); await sleep(3200);
-    out.todoChips = [...document.querySelectorAll('.evopick .exchip.unmod')]
-        .map(e => e.textContent.trim());
-    out.todoScope = [...document.querySelectorAll('.evopick .exchip.scope')]
-        .map(e => e.textContent.trim());
+    out.todoChips = evoRows('.exchip.unmod').map(e => e.textContent.trim());
+    out.todoScope = evoRows('.exchip.scope').map(e => e.textContent.trim());
 
     // 7b-2. THE FIFTH KIND OF ADMISSION: THE CARD ITSELF IS WRONG.
     //
@@ -188,7 +216,7 @@ for (const lang of ["en", "zh"]) {
     // carry no chip. A check that only asserts presence passes just as well on
     // a page that stamps "card is wrong" on everything.
     history.pushState({}, '', '/weapons/Latron_Prime'); route(); await sleep(3800);
-    const pick = (id) => document.querySelector('.evopick[data-id="' + id + '"]');
+    const pick = evoOpt;
     out.misprintDeclared = ((META.weapons || [])
       .find((w) => w.id === 'latron_prime') || {}).evolutions || [];
     out.misprintChips = pick('latron_prime_swift_punishment')
@@ -246,7 +274,7 @@ for (const lang of ["en", "zh"]) {
     //    (No backticks in here: this block lives inside a template literal.)
     history.pushState({}, '', '/weapons/Torid'); route(); await sleep(3200);
     out.cleanBanner = document.querySelector('.unmod-h') ? 'shown' : 'absent';
-    out.cleanEvoChips = document.querySelectorAll('.evopick .exchip.unmod').length;
+    out.cleanEvoChips = evoRows('.exchip.unmod').length;
     return out;
   })()`);
 

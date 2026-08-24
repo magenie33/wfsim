@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "b185b886+ · 2026-08-24 02:55Z";
+const BUILD_ID = "b3e32327+ · 2026-08-24 03:20Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -10756,69 +10756,39 @@ function renderEvo() {
   // TIERS UNLOCK IN ORDER, as they do in game: tier N is reachable only once
   // tier N-1 is installed (user, 2026-08-01). Without it the whole branch is
   // void — a tier-2 perk with no tier 1 is not a weaker build, it is not a
-  // build — so the later rows are shown DISABLED rather than silently
-  // contributing to a number nobody could reach.
+  // build — so the later rows are DISABLED rather than silently contributing
+  // to a number nobody could reach.
   const openTo = evoOpenTo();
+  const genesis = () => wikiUrl(wikiWeaponName(weaponInfo($("weapon").value)));
   for (const t of tiers) {
     const sel = evoSel[t.tier] || null;
     const locked = t.tier > openTo;
-    const card = (o) => {
-      const icon = o.icon ? `<img class="eicon" src="${IMG(o.icon)}" alt="">` : "";
-      const cls = ["evopick", o.id === sel ? "sel" : "", o.broken ? "broken" : "",
-        locked ? "tlocked" : ""].join(" ");
-      const lines = evoLines(o).map((x) => `<div>${escHtml(x)}</div>`).join("");
-      const title = (o.effects || []).join("\n"); // model statement as tooltip
-      // The broken warning lives INSIDE the selected card, so it never
-      // straddles the row divider into the next tier.
-      const warn = o.broken && o.id === sel
-        ? `<span class="ed warn">⚠ does not work in-game (wiki) — the simulation computes it as NO EFFECT</span>`
-        : "";
-      // THE CONDITION OVERLOAD CAVEAT, on the tile you choose from.
-      //
-      // A perk flagged here raises base damage WITHOUT feeding the CO term, so
-      // the card reads strictly better than the tier's other option and is not
-      // — every status is worth less, and past a couple of statuses the other
-      // one overtakes it. That was reported as a bug (2026-08-05) precisely
-      // because the only place saying so was the CO row in the stats panel,
-      // which is not where the comparison happens.
-      //
-      // Shown on EVERY option, not just the selected one: the whole point is to
-      // be readable while deciding.
-      const coNote = o.co_excluded
-        ? `<span class="ed caveat" title="${escHtml(
-            tr("Condition Overload computes on this weapon's ORIGINAL base damage — this perk's added base is excluded, so every status type is worth less than the card implies"),
-          )}">◈ ${escHtml(tr("its added base does not feed Condition Overload"))}</span>`
-        : "";
-      // Evolutions have no standalone wiki pages, so they link to the
-      // WEAPON's — which carries the same evolution tables and is where you
-      // wanted to end up anyway (user, 2026-08-01). It used to point at the
-      // "<Weapon> Incarnon Genesis" page: correct, and one hop further from
-      // everything else you would look up while reading the card.
-      const genesis = wikiUrl(wikiWeaponName(weaponInfo($("weapon").value)));
-      // WHAT THE SIM DOES NOT MODEL, on the tile you choose from — the same
-      // chip the optimizer's list has carried all along.
-      //
-      // It was missing here, and the asymmetry only became expensive when the
-      // roster grew: eleven Incarnon weapons landed on 2026-08-08 carrying 31
-      // perks with an unmodelled effect, and in the BUILDER every one of them
-      // read exactly like its working tier-mates. The data knew
-      // (`fully_unmodeled`), the optimizer said so, and the surface where the
-      // choice is actually made did not (owner, 2026-08-08).
-      //
-      // TWO STATES, because they are different facts: a perk whose EVERY effect
-      // is inert is not a weaker choice, it is not a choice; one with a live
-      // half is a real pick that is being under-counted.
-      const unmod = evoGapChips(o, "i");
-      return `<span class="${cls}" data-tier="${t.tier}" data-id="${o.id}" title="${title}">
-        ${icon}<span class="einfo"><b class="en">${wl(o.name, genesis)}${o.broken ? ' <i class="bx">BROKEN</i>' : ""}${unmod}${
-          gainChipFor(o.id, `EVO ${ROMAN(t.tier)}`)}</b><span class="ed">${lines}</span>${coNote}${warn}</span></span>`;
-    };
-    const empty = `<span class="evopick empty ${sel === null ? "sel" : ""} ${locked ? "tlocked" : ""}" data-tier="${t.tier}" data-id="">
-      <span class="einfo"><b class="en">None</b><span class="ed"><div>nothing installed at this tier</div></span></span></span>`;
-    // None comes FIRST (the default state is a bare weapon).
-    rows.push(`<div class="evo${locked ? " locked" : ""}" ${locked
-      ? `title="${escHtml(tr("install the previous tier first"))}"` : ""
-    }><span class="rank">EVO ${ROMAN(t.tier)}</span><div class="picks">${empty}${t.options.map(card).join("")}</div></div>`);
+    const label = `EVO ${ROMAN(t.tier)}`;
+    // NONE COMES FIRST as an OPTION, not as a separate control: the default
+    // state of a weapon is a bare one, and "take this tier back out" is the
+    // same question as "which perk", so it is the same list.
+    const items = [{ key: "", value: "", label: tr("None"),
+                     hint: tr("nothing installed at this tier") }]
+      .concat(t.options.map((o) => ({
+        key: o.id,
+        value: o.id,
+        label: o.name,
+        // The perk's own lines, flattened: a list row is one line, and the
+        // full text stays under the control on whichever perk is installed.
+        hint: evoLines(o).join(" · "),
+        // WHAT THE SIM DOES NOT MODEL, ON THE ROW YOU CHOOSE FROM — the whole
+        // point of these chips is to be readable while deciding, which is
+        // exactly when the list is open.
+        extra: (o.broken ? ' <i class="bx">BROKEN</i>' : "") + evoGapChips(o, "i"),
+      })));
+    rows.push(rankedPick("dd-evo-" + t.tier, {
+      label,
+      value: sel || "",
+      items,
+      disabled: locked,
+      title: locked ? tr("install the previous tier first") : (t.unlock || ""),
+      onPick: (v) => pickEvolution(t.tier, v || null),
+    }) + evoDetail(t, sel, genesis()));
   }
   $("evo-rows").innerHTML = scanStrip(gainScan, { kind: "evo", idx: 0 }) + rows.join("");
   // Evolutions are all on screen at once, so they are scanned ACROSS EVERY
@@ -10826,31 +10796,72 @@ function renderEvo() {
   // afford to answer without being opened (user, 2026-08-01: arcanes and
   // evolutions use this too). The key guards the repeat.
   if (tiers.length) ensureGains({ kind: "evo", idx: 0 }, () => renderEvo());
-  $("evo-rows").querySelectorAll(".evopick:not(.tlocked)").forEach((c) => c.addEventListener("click", () => {
-    const tier = Number(c.dataset.tier);
-    evoSel[tier] = c.dataset.id || null;
-    // Removing a tier removes everything that stood on it. Leaving them
-    // selected-but-void would show a build the game cannot make, and the
-    // engine would price perks the weapon never reached.
-    if (!evoSel[tier]) tiers.forEach((x) => { if (x.tier > tier) evoSel[x.tier] = null; });
-    // ...and an installed form takes with it every mod that needed the weapon
-    // not to have it (a Cannonade under the Incarnon form). Said out loud, never
-    // silently: the slot emptying under you is exactly the kind of change a
-    // build must not make without telling you (user, 2026-08-04).
-    const no = forbiddenByEvos();
-    const evicted = slots
-      .filter((s) => s.mod && no.has(s.mod))
-      .map((s) => (modById(s.mod) || {}).name || s.mod);
-    if (evicted.length) {
-      slots = slots.map((s) => (s.mod && no.has(s.mod) ? { ...s, mod: null, rank: null } : s));
-      presetToast(`${tr("unequipped")}: ${evicted.join(", ")} — ${
-        tr("it needs the same trigger on every firing mode")}`);
-      renderMods();
-    }
-    // Redraw the whole ladder, not just this row: a pick opens (or a removal
-    // shuts) every tier below it.
-    renderEvo(); renderMode(); refreshPanel();
-  }));
+}
+
+/// THE INSTALLED PERK, under its own control.
+///
+/// A gap this app admits has to be ON THE PAGE, and a chip that appears only
+/// inside an open list is a weaker promise than that (owner's rule, and
+/// `check_disclosure`'s subject). The list carries every option's chips because
+/// that is where the choosing happens; this carries the chosen one's, plus the
+/// text and the wiki link a row cannot hold, and it is there without anybody
+/// opening anything.
+function evoDetail(t, sel, genesis) {
+  const o = (t.options || []).find((x) => x.id === sel);
+  if (!o) return "";
+  const lines = evoLines(o).map((x) => `<div>${escHtml(x)}</div>`).join("");
+  // The broken warning lives INSIDE the card, so it never straddles the
+  // divider into the next tier.
+  const warn = o.broken
+    ? `<span class="ed warn">⚠ ${escHtml(tr("does not work in-game (wiki) — the simulation computes it as NO EFFECT"))}</span>`
+    : "";
+  // THE CONDITION OVERLOAD CAVEAT. A perk flagged here raises base damage
+  // WITHOUT feeding the CO term, so it reads strictly better than the tier's
+  // other option and is not — every status is worth less, and past a couple of
+  // statuses the other one overtakes it. Reported as a bug (2026-08-05)
+  // precisely because the only place saying so was the CO row in the stats
+  // panel, which is not where the comparison happens.
+  const coNote = o.co_excluded
+    ? `<span class="ed caveat" title="${escHtml(
+        tr("Condition Overload computes on this weapon's ORIGINAL base damage — this perk's added base is excluded, so every status type is worth less than the card implies"),
+      )}">◈ ${escHtml(tr("its added base does not feed Condition Overload"))}</span>`
+    : "";
+  const icon = o.icon ? `<img class="eicon" src="${IMG(o.icon)}" alt="">` : "";
+  // Evolutions have no standalone wiki pages, so they link to the WEAPON's —
+  // which carries the same evolution tables and is where you wanted to end up
+  // anyway (user, 2026-08-01).
+  return `<div class="evosel${o.broken ? " broken" : ""}" data-tier="${t.tier}" data-id="${
+    escHtml(o.id)}" title="${escHtml((o.effects || []).join(String.fromCharCode(10)))}">
+    ${icon}<span class="einfo"><b class="en">${wl(o.name, genesis)}${
+      o.broken ? ' <i class="bx">BROKEN</i>' : ""}${evoGapChips(o, "i")}</b><span class="ed">${
+      lines}</span>${coNote}${warn}</span></div>`;
+}
+
+/// INSTALLING OR REMOVING ONE TIER, and everything that follows from it.
+function pickEvolution(tier, id) {
+  const tiers = weaponEvos();
+  evoSel[tier] = id;
+  // Removing a tier removes everything that stood on it. Leaving them
+  // selected-but-void would show a build the game cannot make, and the engine
+  // would price perks the weapon never reached.
+  if (!id) tiers.forEach((x) => { if (x.tier > tier) evoSel[x.tier] = null; });
+  // ...and an installed form takes with it every mod that needed the weapon
+  // not to have it (a Cannonade under the Incarnon form). Said out loud, never
+  // silently: the slot emptying under you is exactly the kind of change a
+  // build must not make without telling you (user, 2026-08-04).
+  const no = forbiddenByEvos();
+  const evicted = slots
+    .filter((s) => s.mod && no.has(s.mod))
+    .map((s) => (modById(s.mod) || {}).name || s.mod);
+  if (evicted.length) {
+    slots = slots.map((s) => (s.mod && no.has(s.mod) ? { ...s, mod: null, rank: null } : s));
+    presetToast(`${tr("unequipped")}: ${evicted.join(", ")} — ${
+      tr("it needs the same trigger on every firing mode")}`);
+    renderMods();
+  }
+  // Redraw the whole ladder, not just this row: a pick opens (or a removal
+  // shuts) every tier below it.
+  renderEvo(); renderMode(); refreshPanel();
 }
 
 // ---- Sim: scenario/buff settings + run against an enemy -----------------

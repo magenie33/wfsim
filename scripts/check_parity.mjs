@@ -161,7 +161,15 @@ const VIS = await app.evaluate(`(async () => {
     if (!flagged.length) continue;
     history.pushState({}, '', weaponPath(w.id)); route(); await s(900);
     for (const id of flagged) {
-      const card = document.querySelector('#evo-rows .evopick[data-id="' + id + '"]');
+      // THE ROW YOU CHOOSE FROM. A tier is a dropdown now, so the tile this
+      // used to read is a list row — rendered with ddRender, the same function
+      // the popover calls, so this is real markup rather than the registry.
+      let card = null;
+      for (const b of document.querySelectorAll('[id^="dd-evo-"]')) {
+        ddRender(b.id);
+        card = document.querySelector('#dd-menu .opt[data-v="' + id + '"]');
+        if (card) break;
+      }
       out.checked++;
       if (!card || !card.querySelector('.exchip.unmod')) out.missing.push(w.id + ' / ' + id);
     }

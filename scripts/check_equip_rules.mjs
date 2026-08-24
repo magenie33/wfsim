@@ -53,7 +53,10 @@ const r = await evaluate(`(async () => {
     closePopovers();
     return ids;
   };
-  const evoCard = (id) => document.querySelector(\`.evopick[data-id="\${id}"]\`);
+  // A TIER IS A DROPDOWN (2026-08-24), so installing and removing a perk is
+  // the control own path rather than a click on a tile, and pickEvolution is
+  // that path — the one the onPick handler calls.
+  const evoTierOf = (id) => (weaponEvos().find(t => (t.options || []).some(o => o.id === id)) || {}).tier;
 
   out.bare = (await offered()).includes('${MOD}');
 
@@ -141,13 +144,13 @@ const r = await evaluate(`(async () => {
 
   // Installing the form takes the mod off, out loud.
   await go('/weapons/Dual_Toxocyst');
-  evoCard('${EVO1}').click(); await sleep(900);
+  pickEvolution(evoTierOf('${EVO1}'), '${EVO1}'); await sleep(900);
   out.evicted = !slots.some(s => s.mod === '${MOD}');
   out.said = (document.getElementById('toast') || {}).textContent || '';
   out.installedOffered = (await offered()).includes('${MOD}');
 
   // Taking the form back off gives it back — this excludes, it does not delete.
-  evoCard('${EVO1}').parentElement.querySelector('.evopick.empty').click(); await sleep(900);
+  pickEvolution(evoTierOf('${EVO1}'), null); await sleep(900);
   out.backOffered = (await offered()).includes('${MOD}');
 
   // ---- THE LOCK. Re-equip it and read the panel: Fire Rate must sit at the
