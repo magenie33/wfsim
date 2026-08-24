@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "4959c1b7+ · 2026-08-24 17:32Z";
+const BUILD_ID = "b3d8dc1f+ · 2026-08-24 22:51Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -2853,6 +2853,66 @@ let rivenSaveTimer = null;
 // one has a consequence no preset delete has: a slot can be left pointing at
 // an id that no longer exists. Nothing downstream would say so — the slot
 // renders blank and the panel quietly prices a build with a hole in it.
+/// EVERY BUILD THAT NAMES THIS RIVEN, MOVED — or cleared when it is gone.
+///
+/// A riven's id IS its name (`riven:<name>`), so renaming one and deleting one
+/// are the same operation seen from a build: the thing a slot points at has
+/// moved or stopped existing. Both used to touch the LIVE build only, which was
+/// already narrow — a weapon's OTHER saved builds kept an id nothing resolves —
+/// and filing rivens by FAMILY widened it across weapons (owner asked the
+/// question that found it, 2026-08-25): rename a card on the Burston and the
+/// Burston Prime's saved builds lose it with nothing on screen saying so.
+///
+/// THE SCOPE IS PASSED IN rather than derived here, because the two callers
+/// mean different things by it and both are right. Rename and delete pass the
+/// FAMILY's members, since that is exactly who can be pointing at this name
+/// today. `mergeRivenFamilyLists` passes the ONE weapon whose list it is
+/// moving, because before that migration a riven was per weapon and nobody
+/// else could ever have referenced it — a family-wide sweep there would rewrite
+/// the OTHER variant's builds, which point at their own card of the same name.
+///
+/// A SLOT IS RECOGNISED BY ITS `mod`, and everything else by the exact string.
+/// Clearing has to drop the RANK with it, which a blind string walk cannot do;
+/// anything that stores the id some other way — a share tuple's copy — still
+/// gets swapped, so this needs no list of the fields a build keeps an id in.
+function repointRivenInBuilds(weapons, from, to) {
+  const before = RIVEN_PREFIX + from;
+  const after = to ? RIVEN_PREFIX + to : null;
+  let moved = 0;
+  const walk = (v) => {
+    if (Array.isArray(v)) return v.map(walk);
+    if (v && typeof v === "object") {
+      if (v.mod === before) {
+        moved++;
+        return after ? { ...v, mod: after } : { ...v, mod: null, rank: null };
+      }
+      return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)]));
+    }
+    return v === before ? (moved++, after) : v;
+  };
+  for (const id of weapons) {
+    const key = `wfsim-presets-${id}-builder-builds`;
+    const raw = localStorage.getItem(key);
+    // The cheap gate: most weapons have never heard of this name, and parsing
+    // every build list on every rename would be the expensive way to find out.
+    if (!raw || raw.indexOf(before) < 0) continue;
+    let list;
+    try { list = JSON.parse(raw); } catch (_) { continue; }
+    localStorage.setItem(key, JSON.stringify(walk(list)));
+  }
+  return moved;
+}
+
+/// The weapons that could be pointing at one of THIS weapon's rivens — every
+/// entry filed under the same riven scope, which is what makes the card theirs
+/// too. Derived from `rivenScope`, so a family that gains a variant tomorrow is
+/// covered by nobody.
+const rivenKinWeapons = () => {
+  const scope = rivenScope($("weapon").value);
+  return ((META && META.weapons) || [])
+    .filter((w) => rivenScope(w.id) === scope).map((w) => w.id);
+};
+
 function pruneDanglingRivens() {
   let hit = false;
   slots.forEach((s) => {
@@ -4669,6 +4729,10 @@ function renderRivenTools() {
   });
   click(".cu-del", () => {
     storePresetList(RIVENS, loadPresetList(RIVENS).filter((x) => x.name !== open));
+    // …AND EVERY SAVED BUILD IN THE FAMILY LETS IT GO. `pruneDanglingRivens`
+    // below clears the LIVE build; these are the ones nobody has open, which
+    // would otherwise come back holding an id nothing resolves.
+    repointRivenInBuilds(rivenKinWeapons(), open, null);
     // Back to the LIST, not to another riven: deleting the thing you had open
     // is not a request to open a different one.
     openIt("");
@@ -4694,8 +4758,12 @@ function renderRivenTools() {
       ps2[at] = { ...ps2[at], name: want };
       storePresetList(RIVENS, ps2);
       // The id a slot holds is `riven:<name>`, so a rename moves the item the
-      // builder is pointing at — follow it rather than orphan the slot.
+      // builder is pointing at — follow it rather than orphan the slot. The
+      // LIVE build first, since it is in memory and not in storage…
       slots.forEach((s) => { if (s.mod === RIVEN_PREFIX + open) s.mod = RIVEN_PREFIX + want; });
+      // …and then every SAVED build that can name this card, which is every
+      // one in the family now that a riven is the family's.
+      repointRivenInBuilds(rivenKinWeapons(), open, want);
       openIt(want);
       renderMods(); refreshPanel();
     };
@@ -5971,29 +6039,11 @@ function mergeRivenFamilyLists() {
       localStorage.setItem(famOpen, hit ? hit[1] : open);
     }
     localStorage.removeItem(openKey);
-    renames.forEach(([a, b]) => renameRivenInBuilds(weapon, a, b));
+    // ONE WEAPON, not the family: before this migration a riven was per weapon,
+    // so nobody else can have referenced it — and the other variant's builds
+    // point at their OWN card of the same name.
+    renames.forEach(([a, b]) => repointRivenInBuilds([weapon], a, b));
   }
-}
-
-/// Point one weapon's saved builds at a riven that has just been renamed.
-///
-/// A DEEP WALK over the stored JSON rather than a list of the fields a build
-/// keeps a mod id in. There are three today (a slot, the exilus slot, and the
-/// share tuple's copy) and a hand list is how the fourth one gets missed — the
-/// lesson `BUILD_AXES` is already built on. The value is an exact string, so a
-/// walk cannot hit anything else by accident.
-function renameRivenInBuilds(weapon, from, to) {
-  const key = `wfsim-presets-${weapon}-builder-builds`;
-  const raw = localStorage.getItem(key);
-  if (!raw) return;
-  const before = RIVEN_PREFIX + from, after = RIVEN_PREFIX + to;
-  let list;
-  try { list = JSON.parse(raw); } catch (_) { return; }
-  const walk = (v) => Array.isArray(v) ? v.map(walk)
-    : (v && typeof v === "object")
-      ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)]))
-      : (v === before ? after : v);
-  localStorage.setItem(key, JSON.stringify(walk(list)));
 }
 
 // Parsed lists, memoised on the RAW STRING. The stored text IS the

@@ -126,6 +126,43 @@ const r = await evaluate(`(async () => {
   out.oldKeysGone = ['wfsim-customs-burston-rivens', 'wfsim-customs-burston_prime-rivens']
     .filter((k) => localStorage.getItem(k) !== null);
   out.buildPoints = JSON.stringify(read('wfsim-presets-burston_prime-builder-builds'));
+
+  // ---- 6. RENAME AND DELETE REACH EVERY BUILD IN THE FAMILY -------------
+  // A riven's id IS its name, so both are the same operation seen from a build.
+  // They used to touch the LIVE build only, which filing by family widened
+  // across weapons: rename a card on the Burston and the Burston Prime's saved
+  // builds lose it silently. Driven through the page's own buttons, so the
+  // wiring is under test and not just the helper.
+  localStorage.clear();
+  await go('/weapons/Burston/rivens');
+  await mk();
+  out.rn = activeRivenName();
+  const equipped = () => JSON.stringify([{ name: 'b1', state: { slots: [
+    { mod: 'riven:' + out.rn, rank: 3, pol: null }] } }]);
+  localStorage.setItem('wfsim-presets-burston_prime-builder-builds', equipped());
+  // THE NEGATIVE CONTROL: another FAMILY whose own card happens to carry the
+  // same name. A sweep over every weapon would rewrite this one too.
+  localStorage.setItem('wfsim-presets-braton-builder-builds', equipped());
+
+  const renameTo = async (want) => {
+    const b = document.querySelector('.cu-ren');
+    if (!b) return false;
+    b.click(); await sleep(350);
+    const inp = document.querySelector('.cu-name');
+    if (!inp) return false;
+    inp.value = want;
+    inp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await sleep(1000);
+    return true;
+  };
+  out.renamed = await renameTo(out.rn + ' x');
+  out.nameAfter = activeRivenName();
+  out.primeAfterRename = localStorage.getItem('wfsim-presets-burston_prime-builder-builds');
+  out.bratonAfterRename = localStorage.getItem('wfsim-presets-braton-builder-builds');
+
+  const del = document.querySelector('.cu-del');
+  if (del) { del.click(); await sleep(1000); }
+  out.primeAfterDelete = localStorage.getItem('wfsim-presets-burston_prime-builder-builds');
   return out;
 })()`);
 
@@ -201,5 +238,24 @@ check("...the old per-weapon keys are gone", (r.oldKeysGone || []).length === 0,
 check("...and the build that equipped the renamed card follows it",
   /riven:riven 1 \(burston_prime\)/.test(r.buildPoints || ""),
   r.buildPoints);
+
+// ---- a rename and a delete reach every build that names the card -----------
+
+check("the riven was renamed through the page's own control",
+  r.renamed === true && r.nameAfter === r.rn + " x",
+  `${r.rn} -> ${r.nameAfter}`);
+// THE ONE THE OWNER'S QUESTION FOUND. Both operations touched the LIVE build
+// only — already narrow for a weapon's other saved builds, and filing by family
+// widened it across weapons.
+check("...and a SAVED build on the other variant followed it",
+  new RegExp("riven:" + r.rn + " x").test(r.primeAfterRename || ""),
+  r.primeAfterRename);
+check("...while another family's build with the same name did NOT move",
+  new RegExp("riven:" + r.rn + "\"").test(r.bratonAfterRename || ""),
+  r.bratonAfterRename);
+check("deleting it clears that saved build's slot rather than orphaning it",
+  !/riven:/.test(r.primeAfterDelete || "")
+    && /"mod":null/.test(r.primeAfterDelete || ""),
+  r.primeAfterDelete);
 
 await finish("a riven is the weapon family's");
