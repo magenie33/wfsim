@@ -4706,6 +4706,24 @@ fn fire_extra_hits(
                 // what the trigger's own procs took once.
                 crit_multiplier: 1.0,
                 part_factor: 1.0,
+                // **AND DEVOURING ATTRITION IS NOT ROLLED AGAIN** — measured
+                // (owner, 2026-08-24). An extra hit is a percentage of a hit
+                // that has ALREADY taken its x21, so it inherits that and
+                // stops there: Xata's Whisper cannot re-trigger the roll and
+                // reach x441.
+                //
+                // It was a reasonable place to be wrong. The perk's own rule is
+                // "per damage instance that did not crit" and an extra hit IS a
+                // second instance, so a second roll was the reading a careful
+                // person would have argued for; this line carried the other one
+                // on the strength of the sentence above it, which is about crit
+                // and the body part. It is now the measured answer rather than
+                // an inherited assumption.
+                //
+                // THE ONE THING THAT DOES REACH x441 is Primary Debilitate's
+                // DoT, and for a different reason entirely: its zero-damage
+                // instance leaks its multipliers into the burn it leaves, which
+                // is a LIVE BUG in the game and is declared as one (M37).
                 attrition: 1.0,
                 xh_bracket: bracket,
             },

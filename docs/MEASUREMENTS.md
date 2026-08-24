@@ -4091,3 +4091,23 @@ which is a lead rather than a finding.
 to: it asserts the roster holds exactly one, so the day a second weapon is
 measured the test fails, names both, and forces the decision to be made on
 purpose instead of by a default.
+
+### …and an EXTRA HIT does not roll the ×21 again
+
+Same session, and it closes a question this file had left open. Xata's Whisper
+fires a second damage instance worth a percentage of the hit that triggered it.
+Devouring Attrition's own rule is "per damage instance that did not crit", and
+an extra hit IS a second instance — so a second roll was the reading a careful
+person would have argued for, and it would reach **×441**.
+
+It does not. **"真理密语不能再继续触发那个 x21，从而达成 x441。只能简单的 x21，
+就是原本的实现"** (owner, 2026-08-24). The extra hit inherits the ×21 the
+trigger already took, through the `raw` it is a percentage of, and stops there
+— which is what this engine already did, on the strength of a comment about
+crit and the body part rather than about this perk. Now measured rather than
+inherited.
+
+**The one thing that DOES reach ×441 is Primary Debilitate's DoT**, and for an
+unrelated reason: its zero-damage instance leaks its multipliers into the burn
+it leaves. That is a LIVE BUG in the game, declared as one on the card, and
+recorded in M37.

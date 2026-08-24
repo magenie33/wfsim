@@ -105,6 +105,37 @@ const VISIBLE_OPT = `(() => {
 // `node scripts/check_parity.mjs http://host:port` points it at a running
 // server instead of the built `site/`.
 const app = await openApp({ base: process.argv[2] });
+
+// ---- AN AXIS DESCRIBES THE WEAPON IT WAS ASKED ABOUT ----------------------
+//
+// `weaponAxes(id)` derives every axis from the `id` it is handed — except that
+// `evolutions` used to read the live `#weapon` select instead, so it could
+// return one weapon's mods and another's evolution tiers. The caller cannot
+// see it: `show("evo-block", AX.evolutions.length > 0)` then draws the block
+// for a weapon with none.
+//
+// THAT IS THIS CHECK'S OWN INTERMITTENT FAILURE, demonstrated rather than
+// guessed at: "the builder shows an evolution block for a weapon with none",
+// four times over eight runs, never the same weapon twice, always a weapon
+// with NO evolutions (2026-08-24). Reproducing it by re-running the 219-weapon
+// sweep is a coin flip that costs seven minutes; this states the PROPERTY, so
+// it is deterministic and costs nothing.
+const CROSSED = `(() => {
+  const withEvo = META.weapons.find((w) => (w.evolutions || []).length);
+  const none = META.weapons.find((w) => !(w.evolutions || []).length);
+  const was = $("weapon").value;
+  $("weapon").value = withEvo.id;                 // the select says one weapon…
+  const asked = weaponAxes(none.id).evolutions.length;   // …ask about another
+  $("weapon").value = was;
+  return { a: withEvo.id, b: none.id, asked };
+})()`;
+{
+  const x = await app.evaluate(CROSSED);
+  app.check("an axis describes the weapon it was ASKED about, not the one on screen",
+    x.asked === 0,
+    `#weapon said ${x.a} and weaponAxes(${x.b}) answered with ${x.asked} evolution tiers`);
+}
+
 const { send, evaluate, sleep } = app;
 const url = app.BASE;
 let bad = 0;

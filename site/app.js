@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "104fa0ca+ · 2026-08-24 09:45Z";
+const BUILD_ID = "b8b4229d+ · 2026-08-24 10:27Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -2295,8 +2295,10 @@ function weaponAxes(weaponId) {
     hasExilus: exilus.length > 0,
     // One entry per arcane pool, in the weapon's own pool order.
     arcanes: (w.arcane_pools || []).map((pool, i) => ({ pool, options: arcanePool(i) })),
-    // One entry per evolution tier.
-    evolutions: weaponEvos(),
+    // One entry per evolution tier — OF THE WEAPON THIS OBJECT IS ABOUT. It
+    // read the live `#weapon` until 2026-08-24, which let this one axis
+    // describe a different weapon from the other four.
+    evolutions: weaponEvos(w.id),
     // HOW THE WEAPON IS PLAYED — an axis like the rest, because it is one: the
     // builder picks a value and the optimizer searches the set, and the board
     // ranks weapon x mode. Only the modes a fight can HOLD are offered; the
@@ -7605,7 +7607,26 @@ let currentPool = [];
 const weaponInfo = (id) => META.weapons.find((w) => w.id === id) || META.weapons[0];
 // Evolutions moved into each weapon's meta entry (they are per transform
 // group); this reads the CURRENT weapon's tiers.
-const weaponEvos = () => weaponInfo($("weapon").value).evolutions || [];
+/// THE TIERS OF A WEAPON — **the one it is ASKED about**, and only the LIVE one
+/// when nobody says (owner, 2026-08-24).
+///
+/// It took no argument at all and read `#weapon` every time, which made
+/// `weaponAxes(id)` able to disagree with itself: every other axis in that
+/// object is derived from the `id` it was handed, and `evolutions` was derived
+/// from whatever the select happened to say. So `weaponAxes(A)` could return
+/// A's mods, A's arcanes and B's evolution tiers, and the caller has no way to
+/// see it — `show("evo-block", AX.evolutions.length > 0)` would then draw the
+/// block for a weapon with none.
+///
+/// That is precisely the shape of `check_parity`'s intermittent "the builder
+/// shows an evolution block for a weapon with none" — four times over eight
+/// runs, never the same weapon twice, always a weapon with NO evolutions. It
+/// is not proven to be the cause and the diagnostic that would prove it is in
+/// place; what IS certain is that this could produce it, and that a function
+/// reading global state instead of what it was asked about is wrong whether or
+/// not it is the bug of the day.
+const weaponEvos = (weaponId) =>
+  (weaponInfo(weaponId || $("weapon").value) || {}).evolutions || [];
 // THE TIER LADDER, in one place. Tier N is choosable only once N-1 is filled:
 // a tier-2 perk with no tier 1 is not a weaker build, it is not a build. The
 // builder greys the later rows out; the gain scan has to obey the same rule or
