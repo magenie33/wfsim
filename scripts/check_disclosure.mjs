@@ -51,24 +51,24 @@ for (const lang of ["en", "zh"]) {
     //   * the ROWS you choose from, because that is where the choosing
     //     happens — rendered with ddRender, which is the same function the
     //     popover calls, so this is real markup and not the registry;
-    //   * the INSTALLED perk's own card under the control, which is what
-    //     keeps a gap ON THE PAGE without anybody opening anything.
+    //   * the INSTALLED perk's own card — the control IS the card now, so its
+    //     chips are on the page without anybody opening anything.
     //
     // A locked tier still LISTS its perks, so this reads every tier rather
     // than only the reachable ones — what is being asserted is the chip, and
     // the ladder is check_gain_axes' subject.
     const evoRows = (sel) => {
       const out = [];
-      for (const b of document.querySelectorAll('[id^="dd-evo-"]')) {
-        ddRender(b.id);
+      for (const b of document.querySelectorAll('[data-slot^="dd-evo-"]')) {
+        ddRender(b.dataset.slot);
         out.push(...document.querySelectorAll('#dd-menu .opt ' + sel));
       }
-      out.push(...document.querySelectorAll('.evosel ' + sel));
+      out.push(...document.querySelectorAll('.slot.axis.filled ' + sel));
       return out;
     };
     const evoOpt = (id) => {
-      for (const b of document.querySelectorAll('[id^="dd-evo-"]')) {
-        ddRender(b.id);
+      for (const b of document.querySelectorAll('[data-slot^="dd-evo-"]')) {
+        ddRender(b.dataset.slot);
         const el = document.querySelector('#dd-menu .opt[data-v="' + id + '"]');
         if (el) return el;
       }

@@ -470,23 +470,26 @@ body.on-enemies [data-module="builder"]{display:none}
 .evo .rank{width:74px;color:var(--gold);font-weight:700;font-size:12px;flex:none}
 .evo .locked{color:var(--text-2);font-size:13px}
 .evo .picks{display:flex;gap:7px;flex-wrap:wrap}
-/* THE INSTALLED PERK, under its own control (owner, 2026-08-24). The tiers
-   are dropdowns now — the one ranked control every quantifiable axis wears —
-   and this is the card that keeps the chosen perk's text, its wiki link and
-   its disclosure chips ON THE PAGE rather than only inside an open list. It
-   borrows the option card's styling because it IS one, minus the picking. */
-.evosel{border:1px solid var(--line);border-left:2px solid var(--accent);border-radius:9px;
-  padding:7px 10px;margin:4px 0 10px 78px;background:var(--panel2);
-  display:flex;align-items:flex-start;gap:8px;max-width:520px}
-.evosel.broken{border-color:#8b3a3a}
-.evosel .eicon{width:26px;height:26px;object-fit:contain;flex:none;margin-top:1px;
+/* ONE CONTROL FOR EVERY QUANTIFIABLE AXIS (owner, 2026-08-24): a CARD saying
+   what is installed, with a ⋯ that opens the ranked list. It borrows `.slot`
+   wholesale — the arcane slot has been this shape all along and is the model —
+   and adds only the AXIS LABEL down its left edge, because these cards sit in
+   a column of different questions where an arcane's sit in a row of the same
+   one. */
+.slot.axis{align-items:flex-start;margin-bottom:8px}
+.slot.axis .axl{flex:none;width:74px;color:var(--gold);font-weight:700;font-size:12px;
+  padding-top:3px;letter-spacing:.02em}
+.slot.axis .eicon{width:26px;height:26px;object-fit:contain;flex:none;margin-top:1px;
   filter:invert(0.35) sepia(1) saturate(3) hue-rotate(160deg)}
-.evosel .einfo{min-width:0}
-.evosel .en{font-size:12.5px;font-weight:600;display:block}
-.evosel .ed{font-size:11px;color:var(--text-2);display:block}
-.evosel .ed div{line-height:1.35}
-.evosel .bx{color:#e05252;font-size:10px;font-weight:800;font-style:normal}
-.evosel .ed.warn{color:#e05252;margin-top:3px}
+.slot.axis .mn{white-space:normal}
+.slot.axis .ed{font-size:11px;color:var(--text-2);display:block}
+.slot.axis .ed div{line-height:1.35}
+.slot.axis .bx{color:#e05252;font-size:10px;font-weight:800;font-style:normal}
+.slot.axis .ed.warn{color:#e05252;margin-top:3px}
+.slot.axis.broken{border-left-color:#8b3a3a}
+/* A LOCKED TIER SAYS WHY instead of inviting a click it would refuse. */
+.slot.axis.axlocked{cursor:default;color:var(--text-2);opacity:.7}
+.slot.axis.axlocked:hover{border-color:var(--line)}
 /* A DROPDOWN ROW CARRIES CHIPS TOO — the gain, and whatever the perk admits.
    Same component as the mod list's, so it needs no size of its own. */
 #dd-menu .opt .exchip,#dd-menu .opt .bx{margin-left:5px}

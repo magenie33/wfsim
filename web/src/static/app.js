@@ -7161,12 +7161,14 @@ function blankBuildState() {
     // what `defaultMode`/`defaultValence` answer when handed nothing. Named
     // rather than omitted, because an omission is what a producer that forgot
     // an axis also looks like (`BUILD_AXES`).
-    mode: undefined,
-    valence: undefined,
+    // `null`, not `undefined` — see `stateFromBuild`: the two mean the same
+    // thing to `restoreState` and only one of them survives being saved.
+    mode: null,
+    valence: null,
     // …and a modular weapon comes assembled — the derived default, which is
     // also what the server uses for a request that names none, so a brand new
     // build and a blank request describe the same weapon.
-    assembly: undefined,
+    assembly: null,
   });
 }
 
@@ -7309,13 +7311,13 @@ const builtinBuilds = () => {
         // re-running it matches no line on the board.
         valence: row.valence
           ? { element: row.valence, bonus: (valenceSpec(w.id) || {}).max || 0 }
-          : undefined,
+          : null,
         // THE PARTS the row was scored with, from the row's own two flat
         // fields. A modular weapon's assembly IS its stat line, so a row that
         // opened on the default parts would be a build that scores nothing
         // like the number beside it — which is exactly what a missing `mode`
         // did to every Incarnon row, and `valence` to seven Kuva Nukors.
-        assembly: row.grip ? { grip: row.grip, loader: row.loader } : undefined,
+        assembly: row.grip ? { grip: row.grip, loader: row.loader } : null,
       }),
     };
   });
@@ -8094,14 +8096,20 @@ function stateFromBuild(p, weapon, exilusId) {
     // BOTH HALVES OR NEITHER. `restoreState` cleans them against the weapon
     // being opened, so a payload naming an element this spec does not offer
     // lands on the default rather than on a weapon nobody has.
-    mode: p.mode || undefined,
+    // `null` WHEN THE REQUEST CARRIES NONE, meaning "the weapon's own default"
+    // — which is what an omitting request meant and what the server itself
+    // used. It was `undefined`, on the same reasoning and one step short of it:
+    // `defaultMode`/`defaultValence`/`defaultAssembly` all read `null` as that
+    // instruction, and `undefined` is DELETED BY `JSON.stringify` on the way
+    // into a preset. So a producer that carefully NAMED the axis handed over an
+    // object that had lost it, which is precisely what `BUILD_AXES` exists to
+    // catch — and did (check_valence, 2026-08-24, on an optimizer winner's
+    // saved build).
+    mode: p.mode || null,
     valence: p.valence_element
       ? { element: p.valence_element, bonus: p.valence_bonus }
-      : undefined,
-    // `undefined` rather than `null` when the request carries none, so
-    // `restoreState` reads it as "the weapon's own default" — which is what a
-    // request that omitted it meant and what the server itself used.
-    assembly: p.assembly || undefined,
+      : null,
+    assembly: p.assembly || null,
   });
 }
 
@@ -8484,7 +8492,7 @@ function buildSlot(i) {
     el.innerHTML = polBtn(s.pol, i) + imgTag(IMG(m.image), "mod") +
       `<div class="info"><div class="mn">${wl(m.name, wikiUrl(m.name_en || m.name))}</div>${desc ? `<div class="me">${desc.map((x) => `<div>${x}</div>`).join("")}</div>` : ""}<div class="dr">${eff} drain${eff !== base ? ` (base ${base})` : ""}</div>${rank}</div>` +
       `<button class="dots" title="options">⋯</button>`;
-    el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openSlotMenu(i, e.currentTarget); });
+    el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openModSlotMenu(i, e.currentTarget); });
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
       e.stopPropagation();
       const nr = Math.max(0, Math.min(m.max_rank, r + Number(b.dataset.d)));
@@ -9664,26 +9672,58 @@ const optPairingNoteFor = (id) => {
   return `<div class="pairnote">${g.drops ? "⇠" : "⇢"} ${pairingLabel(g.combined, g.leftover)}</div>`;
 };
 
-/// **A RANKED DROPDOWN — the one shape every quantifiable build axis wears.**
+/// **ONE CONTROL FOR EVERY QUANTIFIABLE AXIS** — a CARD saying what is
+/// installed, with a ⋯ in its corner that opens the RANKED list (owner,
+/// 2026-08-24).
 ///
-/// The parts, the valence element and the evolution tiers are the same
-/// question in three costumes: pick one of N, where each N is worth a
-/// measurable amount on THIS build and against THIS target, and no card
-/// anywhere states it. So they get ONE control rather than three (owner,
-/// 2026-08-24) — a list you open, every row carrying its quick-calc gain, best
-/// first.
+/// The arcane slot has been this shape all along and is the model: a card while
+/// something is in it, a `+ add` plate while nothing is, and a menu offering
+/// Swap and Remove. The parts, the valence element and the evolution tiers are
+/// the same question — pick one of N, each worth a measurable amount on THIS
+/// build — so they are the same control.
 ///
-/// THE CONSISTENCY IS THE POINT AND NOT A TIDINESS ARGUMENT. A reader who meets
-/// the same control on every axis learns that every axis is a NUMBER, which is
-/// the thing this app has that a wiki table does not; three different shapes
-/// teach that only one of them is measurable. It also aligns the moments a scan
-/// fires, because the axes now ask the same way.
+/// **WHETHER THE AXIS CAN BE EMPTY IS ONE MENU ITEM, NOT A SECOND SHAPE.**
+/// `Remove` appears where nothing-installed is a real state (an arcane, an
+/// evolution tier) and does not where it is not: a Kitgun has a grip, and every
+/// copy of a Lich weapon carries an element. Offering it there would be a verb
+/// that can never be used, which is the "always drawn and disabled" noise this
+/// page already refuses — and hiding it costs no consistency, because the
+/// consistency a reader actually reads is the CARD and the ranked list behind
+/// it, not the length of a menu they have to open to see.
 ///
-/// `items` carry `key` — what the SCAN calls the candidate, which is not always
-/// the value (a grip and a loader may share a name, so the part is in the key)
-/// — plus an optional `extra` of raw markup that rides beside the gain chip.
-function rankedPick(id, cfg) {
-  const items = cfg.items
+/// It registers with `ddReg` and opens through `ddOpen`, so the list, its
+/// search and its ordering are the dropdown's own — only the TRIGGER differs.
+function rankedSlot(id, cfg) {
+  ddReg.set(id, {
+    value: cfg.value,
+    items: rankedItems(cfg),
+    search: cfg.items.length > 8,
+    onPick: cfg.onPick,
+  });
+  const card = cfg.card;
+  if (!card) {
+    // NOTHING INSTALLED. A locked tier says why instead of inviting a click it
+    // would refuse.
+    return `<div class="slot empty axis${cfg.locked ? " axlocked" : ""}" data-slot="${id}"${
+      cfg.lockedWhy ? ` title="${escHtml(cfg.lockedWhy)}"` : ""}>
+      <span class="axl">${escHtml(cfg.label)}</span>
+      <span class="plus">${cfg.locked ? escHtml(cfg.lockedWhy || "") : "+ " + escHtml(cfg.addLabel || cfg.label)}</span>
+    </div>`;
+  }
+  const icon = card.icon ? `<img class="eicon" src="${IMG(card.icon)}" alt="">` : "";
+  const lines = (card.lines || []).map((x) => `<div>${escHtml(x)}</div>`).join("");
+  return `<div class="slot filled axis${card.broken ? " broken" : ""}" data-slot="${id}" data-id="${
+    escHtml(String(cfg.value))}"${card.title ? ` title="${escHtml(card.title)}"` : ""}>
+    <span class="axl">${escHtml(cfg.label)}</span>
+    ${icon}<div class="info"><div class="mn">${card.href ? wl(card.name, card.href) : escHtml(card.name)}${
+      card.chips || ""}</div><div class="ed">${lines}</div>${card.notes || ""}</div>
+    <button class="dots" title="${escHtml(tr("options"))}">⋯</button>
+  </div>`;
+}
+
+/// The rows a `rankedSlot` offers, ordered by gain.
+function rankedItems(cfg) {
+  return cfg.items
     // `gainSort` is the picker's own rule, read over `id`; an unranked option
     // sorts last either way, because an absent answer is not a small one.
     .map((it) => ({ ...it, id: it.key, name: it.label }))
@@ -9695,15 +9735,42 @@ function rankedPick(id, cfg) {
       disabled: it.disabled,
       badge: gainChipFor(it.key, cfg.label) + (it.extra || ""),
     }));
-  return `<label${cfg.title ? ` title="${escHtml(cfg.title)}"` : ""}>${
-    escHtml(cfg.label)} ${ddButton(id, {
-    value: cfg.value,
-    // A LIST YOU CAN TYPE INTO once it is longer than a glance.
-    search: items.length > 8,
-    disabled: cfg.disabled,
-    items,
-    onPick: cfg.onPick,
-  })}</label>`;
+}
+
+/// The ⋯ menu a `rankedSlot` opens — Swap, and Remove where the axis has one.
+function openSlotMenu(anchor, id, cfg) {
+  closePopovers();
+  const menu = $("slot-menu");
+  const swap = `<div class="mi" data-a="swap">${escHtml(tr("Swap") + " " + cfg.label)}</div>`;
+  const rm = cfg.removable
+    ? `<div class="mi danger" data-a="remove">${escHtml(tr("Remove") + " " + cfg.label)}</div>` : "";
+  menu.innerHTML = swap + rm;
+  place(menu, anchor);
+  menu.querySelector('[data-a="swap"]')
+    .addEventListener("click", () => (cfg.onSwap ? cfg.onSwap() : ddOpen(id, anchor)));
+  const r = menu.querySelector('[data-a="remove"]');
+  if (r) r.addEventListener("click", () => { closePopovers(); cfg.onPick(""); });
+}
+
+/// WIRE A BLOCK'S SLOTS, once its markup is in the DOM. One call per block
+/// rather than per slot: the cards are re-rendered wholesale on every change,
+/// so a listener bound to a card dies with the card that carried it — the
+/// arena's own lesson (2026-08-15).
+function bindRankedSlots(box, cfgs) {
+  box.querySelectorAll(".slot.axis").forEach((el) => {
+    const id = el.dataset.slot;
+    const cfg = cfgs[id];
+    if (!cfg || cfg.locked) return;
+    const dots = el.querySelector(".dots");
+    if (dots) {
+      dots.addEventListener("click", (e) => { e.stopPropagation(); openSlotMenu(el, id, cfg); });
+    } else {
+      // An EMPTY slot opens the list on a click anywhere, which is the mod and
+      // arcane slots' own rule: there is nothing in it to select, so the whole
+      // plate is the button.
+      el.addEventListener("click", () => ddOpen(id, el));
+    }
+  });
 }
 
 /// The picker's ONE ordering rule, over whatever keys an axis has.
@@ -10006,16 +10073,24 @@ function renderMenu(slotIdx, query) {
   }));
 }
 
-function openSlotMenu(slotIdx, anchor) {
-  closePopovers();
-  // MOD ops only (polarity lives on the left icon — no duplication).
-  const menu = $("slot-menu");
-  menu.innerHTML = `
-    <div class="mi" data-a="swap">Swap mod</div>
-    <div class="mi danger" data-a="remove">Remove mod</div>`;
-  place(menu, anchor);
-  menu.querySelector('[data-a="swap"]').addEventListener("click", () => { openPicker(slotIdx, slotEl(slotIdx)); });
-  menu.querySelector('[data-a="remove"]').addEventListener("click", () => { slots[slotIdx].mod = null; closePopovers(); renderMods(); }); // in-place; keep polarity
+// THE MOD SLOT'S MENU, on the shared one (2026-08-24). It was a THIRD copy of
+// the same two items — and the collision that found it is worth recording: this
+// function was called `openSlotMenu` too, and being declared later in the file
+// it silently SHADOWED the shared one, so an evolution card's ⋯ opened "Swap
+// mod". Its items were hardcoded English as well, which is the same gap the
+// arcane menu carried.
+//
+// MOD ops only: polarity lives on the left icon, and duplicating it here is
+// what this menu has always refused.
+function openModSlotMenu(slotIdx, anchor) {
+  openSlotMenu(anchor, null, {
+    label: tr("Mod"),
+    removable: true,
+    onSwap: () => openPicker(slotIdx, slotEl(slotIdx)),
+    // In place: the slot keeps its polarity, which is a property of the SLOT
+    // and not of what was in it.
+    onPick: () => { slots[slotIdx].mod = null; renderMods(); },
+  });
 }
 
 function openPolMenu(slotIdx) {
@@ -10294,14 +10369,20 @@ function renderArcaneMenu(query) {
 }
 
 // ⋯ on a filled arcane slot: mirror the mod slot menu (remove).
+// THE ARCANE'S OWN MENU, on the shared one (2026-08-24). It was the model for
+// `rankedSlot` and had drifted from it in two ways worth ending: its two items
+// were HARDCODED ENGLISH — no `tr()` at all, so a Chinese page said "Swap
+// arcane" — and a second copy of this markup is how the two would keep
+// drifting. The picker stays its own, because an arcane's list carries images
+// and a rank that the ranked list does not.
 function openArcaneMenu(anchor, i = 0) {
   arcaneSlotIdx = i;
-  closePopovers();
-  const menu = $("slot-menu");
-  menu.innerHTML = `<div class="mi" data-a="swap">Swap arcane</div><div class="mi danger" data-a="remove">Remove arcane</div>`;
-  place(menu, anchor);
-  menu.querySelector('[data-a="swap"]').addEventListener("click", () => openArcanePicker(anchor, i));
-  menu.querySelector('[data-a="remove"]').addEventListener("click", () => { setArcane("none", i); closePopovers(); renderArcanes(); });
+  openSlotMenu(anchor, null, {
+    label: tr("Arcane"),
+    removable: true,
+    onSwap: () => openArcanePicker(anchor, i),
+    onPick: () => { setArcane("none", i); renderArcanes(); },
+  });
 }
 
 // ---- Evolution ----
@@ -10544,27 +10625,32 @@ function renderAssembly() {
     return { id: l.id, label: l.name, hint: bits.join(" · ") };
   };
 
-  // THE PARTS, on the page's one ranked control — see `rankedPick`. They were
-  // a row of chips for a day, on the reasoning that every ranked axis is one:
-  // right about the RANKING, wrong about the shape. A tier of evolutions is
-  // four options and a valence is seven; the parts are five grips and TWENTY
-  // loaders, and twenty-five chips in a row is a wall.
-  const pick = (part, label, items, hint) =>
-    rankedPick("dd-" + part, {
+  // THE PARTS, on the page's one ranked control — see `rankedSlot`. A part can
+  // never be absent (a Kitgun without a grip is not a Kitgun), so the card has
+  // no Remove.
+  const partCfgs = {};
+  const pick = (part, label, items, hint) => {
+    const id = "dd-" + part;
+    const cur = items.find((it) => it.id === assembly[part]);
+    partCfgs[id] = {
       label: tr(label),
       title: hint,
       value: assembly[part],
+      removable: false,
       // A grip and a loader may share a name, so the SCAN's key carries the
       // part it belongs to.
       items: items.map((it) => ({ key: part + ":" + it.id, value: it.id, label: it.label, hint: it.hint })),
+      card: cur ? { name: cur.label, lines: cur.hint ? [cur.hint] : [], title: hint } : null,
       onPick: (v) => {
-        if (assembly[part] === v) return;
+        if (!v || assembly[part] === v) return;
         assembly = { ...assembly, [part]: v };
         markPresetDirty();
         renderAssembly();
         refreshPanel();
       },
-    });
+    };
+    return rankedSlot(id, partCfgs[id]);
+  };
 
   // THE SLOT. In game the GRIP decides it; here it is picked first, because it
   // decides the mod pool and therefore which build you are even editing. So the
@@ -10595,15 +10681,8 @@ function renderAssembly() {
   // about this weapon that IS a choice and is not offered anywhere else: the
   // SLOT.
   //
-  // WHAT THE PICKED PAIR IS WORTH, under the controls. Each list carries a hint
-  // per option, which is what the picking is done from; this is what the pair
-  // says once the lists are shut, and it is the reason they CAN shut.
-  const cur = {
-    grip: s.grips.find((g) => g.id === assembly.grip),
-    loader: s.loaders.find((l) => l.id === assembly.loader),
-  };
-  const summary = [cur.grip && gripItem(cur.grip).hint, cur.loader && loaderItem(cur.loader).hint]
-    .filter(Boolean).join(" · ");
+  // NO SUMMARY LINE ANY MORE: the card each part draws carries its own stats,
+  // which is what the line under the shut dropdowns used to be for.
   const axis = { kind: "assembly", idx: 0 };
   box.innerHTML =
     slotPick +
@@ -10611,11 +10690,11 @@ function renderAssembly() {
       tr("the grip sets damage, fire rate and the charge — only this slot's five are offered, because a grip is what decides the slot")) +
     pick("loader", "Loader", s.loaders.map(loaderItem),
       tr("the loader sets the magazine and the reload, and adds three deltas that can be negative")) +
-    (summary ? `<span class="sim-hint">${escHtml(summary)}</span>` : "") +
     // THE STRIP GOES OUTSIDE THE LISTS, because the lists are shut. A reader
     // who has not opened one still has to be able to see that the ranking
     // inside it is not finished (the strip draws nothing when nothing runs).
     scanStrip(gainScan, axis);
+  bindRankedSlots(box, partCfgs);
   // The scan that fills the chips, keyed like every other axis so it runs once
   // per (build, fight) and repaints when it lands.
   ensureGains(axis, () => renderAssembly());
@@ -10639,7 +10718,7 @@ function renderValence() {
   if (!s) { box.innerHTML = ""; if (sub) sub.textContent = ""; return; }
   if (sub) sub.textContent = tr("the bonus this copy came out of its Lich with — added as the weapon's own BASE damage, so elemental mods and status scale with it");
   const pct = (x) => Math.round(x * 1000) / 10;
-  // ON THE PAGE'S ONE RANKED CONTROL — see `rankedPick`. Which element wins is
+  // ON THE PAGE'S ONE RANKED CONTROL — see `rankedSlot`. Which element wins is
   // the question a scan is worth the most on: a progenitor element is a whole
   // element entering the hierarchy, so the answer depends on the mods around it
   // and on the target, and no card states it.
@@ -10655,22 +10734,30 @@ function renderValence() {
   // carrying an element, so an empty valence is not a weaker build of this
   // weapon — it is a weapon nobody has, and a number nobody can reproduce.
   const axis = { kind: "valence", idx: 0 };
-  box.innerHTML =
-    rankedPick("dd-valence", {
+  const cfgs = {
+    "dd-valence": {
       label: tr("Element"),
       value: valence.element,
+      // NO REMOVE. Every copy of an adversary weapon comes out of a Lich
+      // carrying an element, so there is no empty state to offer.
+      removable: false,
       items: s.elements.map((e) => ({ key: e, value: e, label: DT(e) })),
+      card: { name: DT(valence.element) },
       onPick: (v) => {
-        if (valence.element === v) return;
+        if (!v || valence.element === v) return;
         valence.element = v;
         markPresetDirty();
         renderValence();
         refreshPanel();
       },
-    }) +
+    },
+  };
+  box.innerHTML =
+    rankedSlot("dd-valence", cfgs["dd-valence"]) +
     scanStrip(gainScan, axis) +
     `<div class="runs-row"><label title="${escHtml(tr("how big the roll was, as a share of base damage — a Lich rolls it randomly and Valence Fusion raises it, capping at the number on the right"))}">${escHtml(tr("Valence bonus"))} <span class="unit">%</span> <input type="number" id="valence-bonus" min="${pct(s.min)}" max="${pct(s.max)}" step="0.5" value="${pct(valence.bonus)}"></label>` +
     `<span class="sim-hint">${escHtml(tr("rolls") + ` ${pct(s.min)}–${pct(s.max)}%`)}</span></div>`;
+  bindRankedSlots(box, cfgs);
   // The scan that fills the chips. Keyed like every other axis, so it runs once
   // per (build, fight) and repaints when it lands.
   ensureGains(axis, () => renderValence());
@@ -10759,38 +10846,42 @@ function renderEvo() {
   // build — so the later rows are DISABLED rather than silently contributing
   // to a number nobody could reach.
   const openTo = evoOpenTo();
-  const genesis = () => wikiUrl(wikiWeaponName(weaponInfo($("weapon").value)));
+  const genesis = wikiUrl(wikiWeaponName(weaponInfo($("weapon").value)));
+  const cfgs = {};
   for (const t of tiers) {
     const sel = evoSel[t.tier] || null;
     const locked = t.tier > openTo;
-    const label = `EVO ${ROMAN(t.tier)}`;
-    // NONE COMES FIRST as an OPTION, not as a separate control: the default
-    // state of a weapon is a bare one, and "take this tier back out" is the
-    // same question as "which perk", so it is the same list.
-    const items = [{ key: "", value: "", label: tr("None"),
-                     hint: tr("nothing installed at this tier") }]
-      .concat(t.options.map((o) => ({
-        key: o.id,
-        value: o.id,
-        label: o.name,
-        // The perk's own lines, flattened: a list row is one line, and the
-        // full text stays under the control on whichever perk is installed.
-        hint: evoLines(o).join(" · "),
+    const id = "dd-evo-" + t.tier;
+    const o = (t.options || []).find((x) => x.id === sel);
+    cfgs[id] = {
+      label: `EVO ${ROMAN(t.tier)}`,
+      addLabel: tr("add evolution"),
+      value: sel || "",
+      // A TIER CAN BE EMPTY — a bare weapon is every tier empty — so this one
+      // HAS a Remove. That is the whole of the difference from a part or an
+      // element, and it is one menu item rather than a second shape.
+      removable: !!sel,
+      locked,
+      lockedWhy: locked ? tr("install the previous tier first") : "",
+      items: t.options.map((x) => ({
+        key: x.id,
+        value: x.id,
+        label: x.name,
+        // The perk's own lines, flattened: a list row is one line, and the full
+        // text is on the card of whichever perk is installed.
+        hint: evoLines(x).join(" · "),
         // WHAT THE SIM DOES NOT MODEL, ON THE ROW YOU CHOOSE FROM — the whole
         // point of these chips is to be readable while deciding, which is
         // exactly when the list is open.
-        extra: (o.broken ? ' <i class="bx">BROKEN</i>' : "") + evoGapChips(o, "i"),
-      })));
-    rows.push(rankedPick("dd-evo-" + t.tier, {
-      label,
-      value: sel || "",
-      items,
-      disabled: locked,
-      title: locked ? tr("install the previous tier first") : (t.unlock || ""),
+        extra: (x.broken ? ' <i class="bx">BROKEN</i>' : "") + evoGapChips(x, "i"),
+      })),
+      card: o ? evoCardOf(o, genesis) : null,
       onPick: (v) => pickEvolution(t.tier, v || null),
-    }) + evoDetail(t, sel, genesis()));
+    };
+    rows.push(rankedSlot(id, cfgs[id]));
   }
   $("evo-rows").innerHTML = scanStrip(gainScan, { kind: "evo", idx: 0 }) + rows.join("");
+  bindRankedSlots($("evo-rows"), cfgs);
   // Evolutions are all on screen at once, so they are scanned ACROSS EVERY
   // TIER in one pass — a dozen candidates, not seventy, which is why they can
   // afford to answer without being opened (user, 2026-08-01: arcanes and
@@ -10798,18 +10889,15 @@ function renderEvo() {
   if (tiers.length) ensureGains({ kind: "evo", idx: 0 }, () => renderEvo());
 }
 
-/// THE INSTALLED PERK, under its own control.
+/// THE INSTALLED PERK, as its own card — the pieces `rankedSlot` draws.
 ///
 /// A gap this app admits has to be ON THE PAGE, and a chip that appears only
-/// inside an open list is a weaker promise than that (owner's rule, and
-/// `check_disclosure`'s subject). The list carries every option's chips because
-/// that is where the choosing happens; this carries the chosen one's, plus the
-/// text and the wiki link a row cannot hold, and it is there without anybody
-/// opening anything.
-function evoDetail(t, sel, genesis) {
-  const o = (t.options || []).find((x) => x.id === sel);
-  if (!o) return "";
-  const lines = evoLines(o).map((x) => `<div>${escHtml(x)}</div>`).join("");
+/// inside an open list is a weaker promise than that (`check_disclosure`'s
+/// subject). The list carries every option's chips because that is where the
+/// choosing happens; this carries the chosen one's, plus the text and the wiki
+/// link a list row cannot hold, and it is there without anybody opening
+/// anything.
+function evoCardOf(o, genesis) {
   // The broken warning lives INSIDE the card, so it never straddles the
   // divider into the next tier.
   const warn = o.broken
@@ -10826,15 +10914,19 @@ function evoDetail(t, sel, genesis) {
         tr("Condition Overload computes on this weapon's ORIGINAL base damage — this perk's added base is excluded, so every status type is worth less than the card implies"),
       )}">◈ ${escHtml(tr("its added base does not feed Condition Overload"))}</span>`
     : "";
-  const icon = o.icon ? `<img class="eicon" src="${IMG(o.icon)}" alt="">` : "";
-  // Evolutions have no standalone wiki pages, so they link to the WEAPON's —
-  // which carries the same evolution tables and is where you wanted to end up
-  // anyway (user, 2026-08-01).
-  return `<div class="evosel${o.broken ? " broken" : ""}" data-tier="${t.tier}" data-id="${
-    escHtml(o.id)}" title="${escHtml((o.effects || []).join(String.fromCharCode(10)))}">
-    ${icon}<span class="einfo"><b class="en">${wl(o.name, genesis)}${
-      o.broken ? ' <i class="bx">BROKEN</i>' : ""}${evoGapChips(o, "i")}</b><span class="ed">${
-      lines}</span>${coNote}${warn}</span></div>`;
+  return {
+    name: o.name,
+    // Evolutions have no standalone wiki pages, so they link to the WEAPON's —
+    // which carries the same evolution tables and is where you wanted to end up
+    // anyway (user, 2026-08-01).
+    href: genesis,
+    icon: o.icon,
+    broken: o.broken,
+    lines: evoLines(o),
+    title: (o.effects || []).join(String.fromCharCode(10)),
+    chips: (o.broken ? ' <i class="bx">BROKEN</i>' : "") + evoGapChips(o, "i"),
+    notes: coNote + warn,
+  };
 }
 
 /// INSTALLING OR REMOVING ONE TIER, and everything that follows from it.

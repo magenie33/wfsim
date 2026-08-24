@@ -165,8 +165,8 @@ const VIS = await app.evaluate(`(async () => {
       // used to read is a list row — rendered with ddRender, the same function
       // the popover calls, so this is real markup rather than the registry.
       let card = null;
-      for (const b of document.querySelectorAll('[id^="dd-evo-"]')) {
-        ddRender(b.id);
+      for (const b of document.querySelectorAll('[data-slot^="dd-evo-"]')) {
+        ddRender(b.dataset.slot);
         card = document.querySelector('#dd-menu .opt[data-v="' + id + '"]');
         if (card) break;
       }

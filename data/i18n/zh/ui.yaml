@@ -429,6 +429,7 @@ ui:
   "Mod presets": MOD 预设
   "Mode": 模式
   "Mods": MOD
+  "Mod": MOD
   "More": 更多
   "Movement Speed (aiming)": 移动速度（瞄准时）
   "Multishot": 多重射击
@@ -641,6 +642,13 @@ ui:
   "abilities cast on this weapon — set your Ability Strength and the values follow": 施加在这把武器上的战甲技能——填入技能强度，下面的数值随之变化
   "about {s}s left": 还剩约 {s} 秒
   "add arcane": 添加赋能
+  # THE SHARED SLOT MENU's two verbs. They were hardcoded English inside
+  # `openArcaneMenu` — not even wrapped in tr() — so the arcane card's menu was
+  # the one control on a Chinese page that never spoke Chinese (2026-08-24).
+  "Swap": 更换
+  "Remove": 移除
+  "options": 选项
+  "add evolution": 添加进化
   "add {pool} arcane": 添加{pool}赋能
   "added on top and NOT combined with the weapon's own elements": 直接加在最终属性之上，不与武器自身的元素合成
   "aim": "瞄准"

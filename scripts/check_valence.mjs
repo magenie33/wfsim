@@ -137,18 +137,24 @@ const gain = await evaluate(`(async () => {
   // …and the chips REACH THE SCREEN, in the same component every other ranked
   // axis uses. A scan whose answers never reach a pick is a scan nobody reads.
   //
-  // OPENED FOR REAL, not read off the registry: the registry says what the list
-  // would draw, and the claim here is that a reader can see it. The popover
-  // renders on click, so this is the one place the rendered rows exist.
-  document.getElementById('dd-valence').click();
+  // OPENED FOR REAL, and BY THE PATH A READER TAKES: the axis is a card with a
+  // ⋯ that offers Swap, so this clicks both rather than calling ddOpen. The
+  // registry says what the list would draw; the claim here is that somebody can
+  // get to it.
+  document.querySelector('#element-cfg .slot.axis .dots').click();
+  await sleep(300);
+  document.querySelector('#slot-menu [data-a="swap"]').click();
   await sleep(400);
   const chips = document.querySelectorAll('#dd-menu .opt .gainchip').length;
   const picks = document.querySelectorAll('#dd-menu .opt').length;
-  document.getElementById('dd-popover').hidden = true;
+  // …AND THE AXIS HAS NO REMOVE, because it can never be empty — one menu item
+  // is the whole of the difference from an evolution tier (owner, 2026-08-24).
+  const removable = !!document.querySelector('#slot-menu [data-a="remove"]');
+  closePopovers();
   return { kind: gainScan.axis && gainScan.axis.kind,
            ranked: Object.keys(gainScan.by || {}).sort(),
            cur: valence.element,
-           chips, picks,
+           chips, picks, removable,
            steps };
 })()`);
 
@@ -162,6 +168,11 @@ check("the quick calc ranks the valence axis",
 check("...with the gain on the pick, not in a tooltip",
   gain.picks === 7 && gain.chips === 6,
   `${gain.picks} picks, ${gain.chips} chips`);
+// AND NO WAY TO EMPTY IT, said by the menu rather than by a missing option:
+// every quantifiable axis wears the same card, and whether it can be empty is
+// one menu item — an evolution tier has Remove and this does not.
+check("...and the card offers no Remove, because there is no empty state",
+  gain.removable === false, String(gain.removable));
 // THE STEP NUMBERS ARE DERIVED, not written into the markup (owner). This
 // weapon has no evolutions, so its Valence block is step 4 — there is no 5
 // with nothing at 4.
