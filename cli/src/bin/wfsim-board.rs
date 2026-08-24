@@ -825,7 +825,19 @@ fn load_rolls(
 /// stat at 1.1 — so choosing between them does not need the precision the
 /// published number does, and paying for it sixteen times would make a riven
 /// row cost sixteen plain ones on a board that already takes an hour.
-const PROBE_RUNS: u32 = 60;
+///
+/// A HUNDRED, not sixty (owner, 2026-08-24): the board is the reference and a
+/// corner search that decides which card to tell people to go and get should
+/// read like one. It is still a fraction of the ruler's own 1000, and the
+/// sixteen probes are what the two-decision structure buys — the CHOICE is made
+/// here and the published NUMBER is measured afterwards at full precision.
+///
+/// A CORNER THAT THE FIGHT CANNOT SEPARATE COSTS NOTHING EXTRA, because every
+/// probe runs under the ruler's own pinned seed: two corners differing only in
+/// something this arena ignores return the same f64 bit for bit, and
+/// `rivens_data::perfect` then breaks the tie toward the PLAYER rather than
+/// toward whichever end noise happened to favour.
+const PROBE_RUNS: u32 = 100;
 
 /// The mod id a RIVEN takes in a simulate request. A record spells it `riven`
 /// (the endpoint's ids are `[a-z0-9_]`); the request names an ITEM.

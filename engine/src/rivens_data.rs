@@ -1038,18 +1038,43 @@ impl RivenShape {
 /// end, and two runs of this cannot disagree.
 pub fn perfect(shape: &RivenShape, class: &str, mut score: impl FnMut(&RivenSpec) -> f64) -> RivenSpec {
     let n = shape.stat_count();
-    let mut best: Option<(f64, RivenSpec)> = None;
+    let n_bonus = shape.bonuses.len();
+    // HOW GOOD THIS CORNER IS FOR THE PLAYER, all else equal: every bonus at its
+    // ceiling and the malus at its floor. Bits 0..n_bonus are the bonuses and
+    // the last one is the malus, which is the order `RivenShape::at` reads.
+    let preference = |corner: u32| -> u32 {
+        (0..n)
+            .filter(|i| {
+                let high = corner >> i & 1 == 1;
+                if *i < n_bonus { high } else { !high }
+            })
+            .count() as u32
+    };
+    let mut best: Option<(f64, u32, RivenSpec)> = None;
     for corner in 0..(1u32 << n) {
         let rolls: Vec<f64> = (0..n)
             .map(|i| if corner >> i & 1 == 1 { ROLL_MAX } else { ROLL_MIN })
             .collect();
         let spec = shape.at(class, &rolls);
         let s = score(&spec);
-        if best.as_ref().is_none_or(|(b, _)| s > *b) {
-            best = Some((s, spec));
+        let p = preference(corner);
+        // **A TIE GOES TO THE PLAYER** (owner, 2026-08-24). A stat this fight
+        // cannot read — Zoom, Recoil, Ammo Maximum against one standing target
+        // — scores the same at both ends, and the board is publishing a riven
+        // somebody will go and try to obtain. It used to keep the FIRST corner,
+        // which is every bit clear: every bonus at its MINIMUM. So a shape with
+        // one dead stat was published asking for a worse card than it needs.
+        //
+        // THE TIE IS EXACT, not "within noise", and that is what makes this
+        // deterministic rather than a tolerance somebody picked: every corner is
+        // probed under the ruler's own PINNED SEED, so two corners that differ
+        // only in something the fight ignores return the same f64 bit for bit.
+        // The same pairing the quick calc's gain band rests on.
+        if best.as_ref().is_none_or(|(b, bp, _)| s > *b || (s == *b && p > *bp)) {
+            best = Some((s, p, spec));
         }
     }
-    best.map(|(_, spec)| spec).unwrap_or_else(|| shape.at(class, &[]))
+    best.map(|(_, _, spec)| spec).unwrap_or_else(|| shape.at(class, &[]))
 }
 
 #[cfg(test)]
@@ -1086,11 +1111,25 @@ fn perfect_searches_every_corner_and_takes_the_end_the_score_likes() {
     assert!(want_low.bonuses.iter().all(|b| b.roll == ROLL_MIN));
     assert_eq!(want_low.malus.as_ref().unwrap().roll, ROLL_MAX);
 
-    // A STAT THE FIGHT CANNOT READ comes back at the BOTTOM, not at an
-    // arbitrary end: the first corner wins a tie, and two runs agree.
+    // A STAT THE FIGHT CANNOT READ COMES BACK AT THE END THAT IS BETTER FOR THE
+    // PLAYER — every bonus at its ceiling, the malus at its floor.
+    //
+    // It used to come back at the BOTTOM, and this test asserted that: the
+    // first corner won a tie and the first corner is every bit clear, so every
+    // BONUS landed at its minimum. Determinism was the right thing to want and
+    // the wrong end to take it at — a board row is a riven somebody will go and
+    // try to obtain, so a shape with one dead stat was published asking for a
+    // worse card than it needs (owner, 2026-08-24).
     let flat = perfect(&shape, "rifle", |_| 1.0);
-    assert!(flat.bonuses.iter().all(|b| b.roll == ROLL_MIN));
+    assert!(flat.bonuses.iter().all(|b| b.roll == ROLL_MAX));
     assert_eq!(flat.malus.as_ref().unwrap().roll, ROLL_MIN);
+    // …AND IT IS STILL DETERMINISTIC, which is the half worth keeping.
+    let again = perfect(&shape, "rifle", |_| 1.0);
+    assert_eq!(again.bonuses.iter().map(|b| b.roll).collect::<Vec<_>>(),
+               flat.bonuses.iter().map(|b| b.roll).collect::<Vec<_>>());
+    // …AND A REAL SCORE STILL WINS OVER THE PREFERENCE: the tie-break only
+    // speaks when the fight has nothing to say, which `want_low` above proves
+    // from the other side — every end flipped because the score asked for it.
 
     // AND IT IS SCORED AT THE CEILING OF ITS INVESTMENT, like every board row.
     assert_eq!(want_high.rank, MAX_RANK);
