@@ -275,6 +275,16 @@ entries:
     arcanes: [primary_frostbite]
   - weapon: boar_prime
     mode: base
+    score: 26.255211055399247
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, shotgun_barrage, magnetic_strafe, riven, primed_charged_shell, contagious_spread]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [shotgun_vendetta]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: base
     score: 25.648156847485776
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
@@ -299,10 +309,30 @@ entries:
     arcanes: [shotgun_vendetta]
   - weapon: boar_prime
     mode: base
+    score: 21.61868677031599
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_barrage, riven, primed_charged_shell, contagious_spread]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [shotgun_vendetta]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: base
     score: 20.586463130635018
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
     arcanes: [shotgun_vendetta]
+  - weapon: boar_prime
+    mode: base
+    score: 19.935389690915343
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_barrage, riven, primed_charged_shell, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [shotgun_vendetta]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: base
     score: 19.564600223901664
@@ -1217,6 +1247,15 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: dual_toxocyst
     mode: cycle
+    score: 54.14449627552618
+    mods: [pistol_acuity, primed_target_cracker, galvanized_shot, anemic_agility, gunslinger, magnetic_might, riven, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, puncture]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: dual_toxocyst
+    mode: cycle
     score: 48.07822599460719
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -1257,6 +1296,15 @@ entries:
     mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_ready_retaliation, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_deadhead]
+  - weapon: dual_toxocyst
+    mode: cycle
+    score: 44.27164479246132
+    mods: [pistol_acuity, primed_target_cracker, galvanized_shot, anemic_agility, gunslinger, magnetic_might, riven, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_encumber]
+    riven:
+      bonuses: [critical_chance, damage, puncture]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: dual_toxocyst
     mode: cycle
     score: 43.80611286632924
@@ -2877,6 +2925,15 @@ entries:
     mods: [amalgam_serration, primary_acuity, galvanized_aptitude, point_strike, vital_sense, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [paris_prime_evo1_incarnon_form, paris_prime_deadly_pace, paris_prime_swift_deliverance, paris_prime_elemental_balance]
     arcanes: [primary_deadhead]
+  - weapon: phaedra
+    mode: base
+    score: 24.55084172672648
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, riven]
+    arcanes: [primary_crux, secondary_enervate]
+    riven:
+      bonuses: [critical_damage, heat]
+      malus: magazine_capacity
+      rolls: [1.1, 1.1, 0.9]
   - weapon: phaedra
     mode: base
     score: 16.460397885887517
