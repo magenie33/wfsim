@@ -36,10 +36,10 @@ const r = await evaluate(`(async () => {
   sim.level = 40; sim.steel_path = false; sim.duration = 20; sim.runs = 8;
   sim.formation = [[1.6, 0.4], [-1.6, 0.4], [0, 2.0]].map((at) => ({ at }));
   // COLD + HEAT, so the build makes BLAST — and a blast detonation is what
-  // reaches the neighbours. Without something that spreads, only the aimed body
-  // takes damage, the result draws no scene at all (the roll call needs two
-  // bodies to be worth a picture), and there is nowhere for a number to land.
-  // Status mods too, so the fight produces more than one KIND of number.
+  // reaches the neighbours. Without something that spreads only the aimed body
+  // takes damage, and the assertions below about numbers landing on more than
+  // one body would have nothing to be about. Status mods too, so the fight
+  // produces more than one KIND of number.
   ['serration', 'split_chamber', 'point_strike', 'vital_sense',
    'primed_cryo_rounds', 'thermite_rounds', 'rifle_aptitude', 'malignant_force']
     .forEach((m, i) => {
@@ -152,5 +152,58 @@ check("a frame that dropped numbers SAYS so",
   !r.hasCappedFrame || r.saysMore === true,
   r.hasCappedFrame ? `dropped ${r.dropped}` : "no frame hit the cap in this fight");
 check("scrubbing REPLACES rather than piling up", r.scrubReplaces === true);
+
+// ---- AND A SINGLE-TARGET FIGHT IS THE SAME PANEL ---------------------------
+//
+// It was not. The whole block — scene, roll call, and the layer the numbers
+// float in — was gated on there being more than one body, on the reasoning
+// that a one-row roll call is not worth a picture. So the one output that is a
+// discrete thing that happened at a place at a time was invisible in the
+// COMMONEST fight this app runs, and nothing said why (owner, 2026-08-24).
+//
+// The special case was the mistake rather than the missing feature: a fight is
+// a scene with N bodies and N=1 is just N=1 — it has a shooter, a target, a
+// distance and an aim point, which is exactly what the scenario's own canvas
+// draws for it. This asserts the panel does not change shape with the body
+// count, which is the property, not the pops.
+const one = await evaluate(`(async () => {
+  history.pushState({}, '', '/weapons/Braton_Prime/simulator'); route();
+  await new Promise(r => setTimeout(r, 6000));
+  sim.formation = [];
+  sim.runs = 20;
+  document.getElementById('run-sim').click();
+  for (let i = 0; i < 90 && !document.getElementById('rp-scene'); i++) {
+    await new Promise(r => setTimeout(r, 700));
+  }
+  const sc = document.getElementById('rp-scene');
+  const rp = (shownResult && shownResult.r && shownResult.r.replay) || {};
+  const out = {
+    bodies: ((shownResult && shownResult.r && shownResult.r.bodies) || []).length,
+    scene: !!sc,
+    svg: !!(sc && sc.querySelector('.ar-svg')),
+    roll: document.querySelectorAll('.rp-roll tr').length,
+  };
+  // A FRAME THAT ACTUALLY POPPED, found rather than guessed: most frames of a
+  // 20 s fight are between shots.
+  const idx = (rp.pops || []).findIndex((f) => f && (f.v || []).length);
+  out.hasPops = idx >= 0;
+  if (sc && idx >= 0) {
+    const scrub = document.getElementById('rp-scrub');
+    scrub.value = String(idx);
+    scrub.dispatchEvent(new Event('input'));
+    await new Promise(r => setTimeout(r, 600));
+    out.drawn = sc.querySelectorAll('.rp-pop').length;
+    out.engineCount = (rp.pops[idx].v || []).length;
+  }
+  return out;
+})()`);
+
+check("a single-target fight is one body", one.bodies === 1, String(one.bodies));
+check("...and it draws the same scene", one.scene === true && one.svg === true,
+  JSON.stringify({ scene: one.scene, svg: one.svg }));
+check("...and the same roll call, one row long", one.roll === 1, String(one.roll));
+check("...and it pops numbers like any other fight",
+  one.hasPops === true && one.drawn > 0,
+  `${one.drawn} drawn of ${one.engineCount} the engine popped`);
 
 await finish("the numbers a fight pops");

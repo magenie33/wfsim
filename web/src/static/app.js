@@ -13268,7 +13268,19 @@ function replayMarkup(r) {
   // rather than a sort in place: `r.bodies` is the stored result and a render
   // does not get to reorder it.
   const bodyRows = [...(r.bodies || [])].sort((a, b) => (b.damage || 0) - (a.damage || 0));
-  const crowd = bodyRows.length > 1
+  // ONE TEMPLATE, WHATEVER THE FIGHT IS (owner, 2026-08-24). This block was
+  // gated on `bodyRows.length > 1` and called `crowd`, so a single-target
+  // simulation drew no scene, no roll call — and no DAMAGE POPS, since the
+  // layer they float in is appended to the scene. The one output that is a
+  // discrete thing that happened at a place at a time was invisible in the
+  // commonest fight this app runs.
+  //
+  // THE SPECIAL CASE WAS THE MISTAKE, not the missing feature. A fight is a
+  // scene with N bodies and N=1 is just N=1: it has a shooter, a target, a
+  // distance and an aim point, which is exactly what the SCENARIO's own canvas
+  // draws for it. A result that changes shape with the body count is a second
+  // template nobody asked for, and the reader has to learn both.
+  const crowd = bodyRows.length
     ? `<div class="rp-scene" id="rp-scene"></div>`
       + `<table class="rp-roll"><tbody>${bodyRows.map((b) => {
           const top = Math.max(...bodyRows.map((x) => x.damage)) || 1;
@@ -13509,8 +13521,8 @@ function wireReplay(r) {
   // THE MAP, mounted last because it measures the box it was given. It is the
   // RESULT's copy of the scene: read-only, shaded by what each body took, and
   // it picks rather than drags (`mountArena`'s analysis mount).
-  const scene = $("rp-scene");
-  if (scene && (r.bodies || []).length > 1) {
+  const sceneEl = $("rp-scene");
+  if (sceneEl && (r.bodies || []).length) {
     // BY ARENA INDEX, which is what the scene draws: 0 is the aimed body and
     // `i + 1` is `formation[i]`. The result names bodies by ID, so the two are
     // joined on the name the page itself gave them.
@@ -13523,7 +13535,7 @@ function wireReplay(r) {
     const heat = Array.from({ length: n }, (_, i) => byId[idAt(i)] || 0);
     const selIdx = Array.from({ length: n }, (_, i) => i)
       .find((i) => idAt(i) === (rp.tracked || [])[replayFoeIdx(rp)]);
-    mountArena(scene, sim, (allEnemies().find((e) => e.id === sim.enemy) || allEnemies()[0]), {
+    mountArena(sceneEl, sim, (allEnemies().find((e) => e.id === sim.enemy) || allEnemies()[0]), {
       readonly: true,
       heat,
       selected: selIdx,
@@ -13540,7 +13552,7 @@ function wireReplay(r) {
     // the arena's own repaints because those redraw the CANVAS, not the host.
     const layer = document.createElement("div");
     layer.className = "rp-pops";
-    scene.appendChild(layer);
+    sceneEl.appendChild(layer);
   }
   $("rp-play").onclick = () => {
     if (st.playing) { stop(); return; }
