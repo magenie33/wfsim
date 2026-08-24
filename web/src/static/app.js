@@ -11861,11 +11861,15 @@ const builderSteps = () => builderBlocks().filter((b) => {
 
 function renumberBlocks() {
   let n = 0;
-  builderBlocks().forEach((b) => {
+  // THE STEPS, not every builder block — see `builderSteps`. The doc above has
+  // always said "only badges that are already a NUMBER are touched", and the
+  // code never did: it was true because the LIST left the read-outs out. Derive
+  // the list and the claim has to be implemented, which is how the Stats
+  // panel's `Σ` came back as "5" the first time this was a query
+  // (caught by check_valence, 2026-08-24).
+  builderSteps().forEach((b) => {
     if (b.hidden) return;
-    const badge = b.querySelector(".bh .n");
-    if (!badge) return;
-    badge.textContent = String(++n);
+    b.querySelector(".bh .n").textContent = String(++n);
   });
 }
 

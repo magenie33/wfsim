@@ -39,10 +39,12 @@ const r = await evaluate(`(async () => {
   const openedBase = (await panel()).base;
 
   // NO WAY TO EMPTY IT. Every copy comes out of a Lich with an element, so
-  // the pick row offers no "none" — the weapon's printed panel is the wiki
+  // the list offers no "none" — the weapon's printed panel is the wiki
   // infobox's figure and not a build anyone can play.
-  const offered = [...document.querySelectorAll('#element-cfg .evopick')]
-    .map(c => c.dataset.vel);
+  //
+  // Read off the dropdown's own registry, which is what the list WILL draw.
+  // The DOM half is asserted further down, by opening it.
+  const offered = (ddReg.get('dd-valence') || { items: [] }).items.map(i => i.value);
   // …and the roll is always live, since there is always an element under it.
   const rollDisabled = !!(document.getElementById('valence-bonus') || {}).disabled;
 
@@ -129,14 +131,20 @@ const gain = await evaluate(`(async () => {
   // Enemies and Optimizer tabs, which have their own numbering — a sweep over
   // the shared class is exactly the bug this renumbering had on its first pass
   // (it made the Rivens editor step 5 of building a gun).
-  const steps = BUILDER_BLOCKS
-    .map(id => document.getElementById(id))
-    .filter(b => b && !b.hidden)
+  const steps = builderBlocks()
+    .filter(b => !b.hidden)
     .map(b => b.id + ':' + ((b.querySelector('.bh .n') || {}).textContent || ''));
-  // …and the chips are ON SCREEN, in the same component every other ranked
+  // …and the chips REACH THE SCREEN, in the same component every other ranked
   // axis uses. A scan whose answers never reach a pick is a scan nobody reads.
-  const chips = [...document.querySelectorAll('#element-cfg .evopick .gainchip')].length;
-  const picks = [...document.querySelectorAll('#element-cfg .evopick')].length;
+  //
+  // OPENED FOR REAL, not read off the registry: the registry says what the list
+  // would draw, and the claim here is that a reader can see it. The popover
+  // renders on click, so this is the one place the rendered rows exist.
+  document.getElementById('dd-valence').click();
+  await sleep(400);
+  const chips = document.querySelectorAll('#dd-menu .opt .gainchip').length;
+  const picks = document.querySelectorAll('#dd-menu .opt').length;
+  document.getElementById('dd-popover').hidden = true;
   return { kind: gainScan.axis && gainScan.axis.kind,
            ranked: Object.keys(gainScan.by || {}).sort(),
            cur: valence.element,
@@ -157,8 +165,14 @@ check("...with the gain on the pick, not in a tooltip",
 // THE STEP NUMBERS ARE DERIVED, not written into the markup (owner). This
 // weapon has no evolutions, so its Valence block is step 4 — there is no 5
 // with nothing at 4.
+//
+// …AND A READ-OUT IS NOT A STEP. The Stats panel is a builder block and keeps
+// its `Σ`: the numbering walks `builderSteps()`, whose rule is that a step's
+// badge is a NUMBER. That rule was in the doc from the start and lived in a
+// hand LIST that simply left the read-outs out, so the first version of the
+// derived query renumbered `Σ` to "5" — caught here (2026-08-24).
 check("...and the builder numbers its steps from the blocks it actually has",
-  gain.steps.join(" ") === "mode-block:1 mod-block:2 arcane-block:3 element-block:4",
+  gain.steps.join(" ") === "mode-block:1 mod-block:2 arcane-block:3 element-block:4 stats-block:Σ",
   gain.steps.join(" "));
 
 // …AND THE RANKING DOES NOT FLIP WHEN YOU MOVE.
