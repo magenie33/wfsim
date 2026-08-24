@@ -3029,6 +3029,12 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: phenmor
     mode: cycle
+    score: 20.037981980802904
+    mods: [galvanized_chamber, serration, galvanized_aptitude, vile_acceleration, magnetic_capacity, stormbringer, malignant_force, hellfire]
+    evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_executioners_fortune, phenmor_elemental_excess, phenmor_devouring_attrition]
+    arcanes: [primary_debilitate]
+  - weapon: phenmor
+    mode: cycle
     score: 19.777610183791666
     mods: [primary_acuity, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, rime_rounds, malignant_force, hellfire]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_ready_retaliation, phenmor_elemental_excess, phenmor_devouring_attrition]

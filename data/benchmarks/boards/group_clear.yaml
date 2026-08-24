@@ -402,8 +402,20 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: soma_prime
     mode: cycle
+    score: 121.29076732783491
+    mods: [amalgam_serration, primary_acuity, primed_shred, metal_auger, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [soma_prime_evo1_incarnon_form, soma_prime_fortress_salvo, soma_prime_rapid_reinforcement, soma_prime_zeroed_in]
+    arcanes: [primary_deadhead]
+  - weapon: soma_prime
+    mode: cycle
     score: 117.30930369229516
     mods: [amalgam_serration, galvanized_chamber, primed_shred, hata_satya, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [soma_prime_evo1_incarnon_form, soma_prime_fortress_salvo, soma_prime_rapid_reinforcement, soma_prime_fatal_affliction]
+    arcanes: [primary_deadhead]
+  - weapon: soma_prime
+    mode: cycle
+    score: 107.41939903482358
+    mods: [amalgam_serration, galvanized_chamber, primed_shred, vital_sense, hata_satya, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [soma_prime_evo1_incarnon_form, soma_prime_fortress_salvo, soma_prime_rapid_reinforcement, soma_prime_fatal_affliction]
     arcanes: [primary_deadhead]
   - weapon: strun_prime
