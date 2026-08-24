@@ -79,13 +79,27 @@ const applied = (id) => `(() => {
     : null;
 })()`;
 
+// …AND WHO THE PAGE THINKS IT IS DRAWING. Carried in the reading rather than
+// only in the wait, because this check has a rare mismatch — a builder showing
+// an evolution block for a weapon with none, four times over eight runs, never
+// the same weapon twice and always one with NO evolutions — that the wait was
+// tightened for and did not stop. A failure that names `for` and `sel` says in
+// one line whether the page was mid-switch or genuinely wrong, which is the
+// difference between a flake and a bug and is not otherwise recoverable from
+// the output.
 const VISIBLE = `(() => {
   const v = (id) => { const e = document.getElementById(id); return !!e && !e.hidden; };
-  return { exilus: v("exilus-block"), arcanes: v("arcane-block"), evolutions: v("evo-block") };
+  return { exilus: v("exilus-block"), arcanes: v("arcane-block"), evolutions: v("evo-block"),
+           for: document.body.dataset.panelFor || null,
+           sel: (document.getElementById("weapon") || {}).value || null,
+           axes: (weaponAxes($("weapon").value).evolutions || []).length };
 })()`;
 const VISIBLE_OPT = `(() => {
   const v = (id) => { const e = document.getElementById(id); return !!e && !e.hidden; };
-  return { exilus: v("opt-exilus-sect"), arcanes: v("opt-arcanes-sect"), evolutions: v("opt-evos-sect") };
+  return { exilus: v("opt-exilus-sect"), arcanes: v("opt-arcanes-sect"), evolutions: v("opt-evos-sect"),
+           for: document.body.dataset.panelFor || null,
+           sel: (document.getElementById("weapon") || {}).value || null,
+           axes: (weaponAxes($("weapon").value).evolutions || []).length };
 })()`;
 
 // `node scripts/check_parity.mjs http://host:port` points it at a running
@@ -125,9 +139,13 @@ const settled = async (id) => {
     await send("Page.navigate", { url: `${url}/weapons/${r.weapon}/optimizer` });
     await settled(r.weapon);
     const shownOpt = await evaluate(VISIBLE_OPT);
-    const diffs = Object.keys(shownBuilder)
+    // The three AXES only: `for`/`sel`/`axes` are diagnostics carried in the
+    // same object, and the two pages legitimately differ on none of them.
+    const diffs = ["exilus", "arcanes", "evolutions"]
       .filter((k) => shownBuilder[k] !== shownOpt[k])
-      .map((k) => `${k}: builder ${shownBuilder[k]} vs optimizer ${shownOpt[k]}`);
+      .map((k) => `${k}: builder ${shownBuilder[k]} vs optimizer ${shownOpt[k]}`
+        + ` [builder saw ${shownBuilder.for}/${shownBuilder.sel}/${shownBuilder.axes},`
+        + ` optimizer ${shownOpt.for}/${shownOpt.sel}/${shownOpt.axes}]`);
     // An axis that is SHOWN must have options, and one with options must show.
     for (const k of ["exilus", "arcanes", "evolutions"]) {
       const has = k === "exilus" ? r.axes.exilus.length > 0 : r.axes[k].length > 0;
