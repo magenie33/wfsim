@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-engine: 9fbfb540f6c6b424ecf9d700f542a36fb363b635
+engine: eecc7e27ec4120e64d598d3fd27fab6327583f1f
 entries:
   - weapon: afentis_prime
     mode: base
@@ -427,8 +427,8 @@ entries:
     arcanes: [primary_crux]
   - weapon: stug
     mode: cycle
-    score: 2.243064353974186
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, lethal_torrent, anemic_agility, riven, pathogen_rounds]
+    score: 5.930432070458673
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, anemic_agility, creeping_bullseye, riven, pathogen_rounds]
     evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
     arcanes: [secondary_deadhead]
     riven:
