@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-engine: 10d43a58a9ee704e6d8a563c871f12d0d5bb79c7
+engine: 03aed0a82cd7aada146a88336a9be0326c7e1674
 entries:
   - weapon: afentis_prime
     mode: base
@@ -84,6 +84,21 @@ entries:
     mode: base
     score: 306.65224637736225
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: cortege
+    mode: base
+    score: 291.7038009515651
+    mods: [primed_dual_rounds, critical_focus, hollowed_bullets, magnetized_cycle, parallax_scope, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+  - weapon: cortege
+    mode: base
+    score: 290.5529532913897
+    mods: [primed_dual_rounds, critical_focus, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+  - weapon: cortege
+    mode: base
+    score: 284.3333333333333
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: cortege
     mode: base
