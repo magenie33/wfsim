@@ -465,6 +465,15 @@ body.on-enemies [data-module="builder"]{display:none}
 
 /* evolution */
 .evo{display:flex;align-items:flex-start;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line)}
+/* WHAT BECAME OF THIS RUN, under the headline. The states are not the same
+   news: `sent` is a fact, `refused` and `failed` are things to act on, `short`
+   is a build that is not finished, and `none`/`pending` are neither good nor
+   bad. Muted by default, so a run nobody is submitting does not shout. */
+.board-outcome{font-size:11.5px;color:var(--text-2);line-height:1.5;margin:2px 0 10px}
+.board-outcome:empty{display:none}
+.board-outcome.sent{color:var(--gold)}
+.board-outcome.refused,.board-outcome.failed{color:#e0a052}
+.board-outcome .board-state{color:var(--muted)}
 .evo .rank{padding-top:8px}
 .evo:last-child{border:0}
 .evo .rank{width:74px;color:var(--gold);font-weight:700;font-size:12px;flex:none}

@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "2e6dcf19+ · 2026-08-24 11:01Z";
+const BUILD_ID = "2c8dd713+ · 2026-08-24 13:54Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -12342,12 +12342,12 @@ const hasExilusMod = () => slots.length > boardBuildMods() && !!slots[boardBuild
 async function offerBoardSubmit() {
   if (!officialScenarioActive()) return;      // only the official ruler feeds the board
   if (officialBuildActive()) return;          // a board row does not resubmit itself
-  if (boardConsent() !== "yes") { renderBoardConsent(); return; }
+  if (boardConsent() !== "yes") { renderBoardConsent(); renderBoardOutcome(); return; }
   // INCOMPLETE BUILDS ARE NOT SENT, and the panel says so rather than letting
   // the server refuse in silence. Without this the default-on setting would
   // fire a request on every first visit — the default build is empty — and the
   // player would never learn why nothing appeared on the board.
-  if (!buildIsComplete()) { renderBoardConsent(); return; }
+  if (!buildIsComplete()) { renderBoardConsent(); renderBoardOutcome(); return; }
   const body = boardPayload();
   if (!body) return;
   // THE BOARD'S OWN DOOR, ASKED BEFORE KNOCKING. The store accepts anything;
@@ -12364,6 +12364,7 @@ async function offerBoardSubmit() {
     boardState = "refused";
     boardRefusal = verdict.reason || "";
     renderBoardConsent();
+    renderBoardOutcome();
     return;
   }
   boardRefusal = "";
@@ -12389,6 +12390,7 @@ async function offerBoardSubmit() {
     boardState = "failed";
   }
   renderBoardConsent();
+  renderBoardOutcome();
 }
 
 /// THE LINE THE BOARD DRAWS, said to the person it applies to. A submission
@@ -12400,6 +12402,61 @@ async function offerBoardSubmit() {
 /// absence readable, and it is checkable against the board on screen.
 const boardCutNote = () =>
   tr("Only builds scoring at least half their weapon's leading row are listed — the board holds the answers, not every attempt.");
+
+/// **WHAT HAPPENED TO THIS RUN**, in one sentence — the ONE statement of it.
+///
+/// It is written once and read twice: by the consent box at the top of the Sim
+/// panel, where the standing policy lives, and by the RESULT, where the reader
+/// actually is when they want to know (owner, 2026-08-24). A run that was sent
+/// and a run that was never going to be sent looked identical from the result,
+/// which is the same silence the consent box itself was written to end — a
+/// player who built their own scenario, ran it, and watched the board.
+///
+/// A second copy of these branches would be a second answer to "was it sent",
+/// which is what `/api/board/check` exists not to have.
+function boardRunOutcome() {
+  if (officialBuildActive()) {
+    return { kind: "none", text: tr("this build is already a row on the board — running it sends nothing") };
+  }
+  if (!officialScenarioActive()) {
+    return { kind: "none",
+      text: tr("the board only measures its own fight — runs under a scenario of your own are yours alone, and nothing is sent") };
+  }
+  if (boardConsent() !== "yes") return { kind: "none", text: tr("nothing is sent from here") };
+  const short = buildShortfalls();
+  if (short.length) {
+    return { kind: "short",
+      text: tr("{what} — the board takes a weapon built as far as it goes, so this one is not sent")
+        .replace("{what}", short.join(tr(", "))) };
+  }
+  if (boardState === "refused") {
+    return { kind: "refused",
+      text: `${tr("the board would not take this build, so nothing was sent")}: ${boardRefusal}` };
+  }
+  if (boardState === "failed") {
+    return { kind: "failed", text: tr("could not reach the board — nothing was sent") };
+  }
+  if (boardState === "sent") {
+    return { kind: "sent",
+      text: tr("sent — the board re-scores every 20 minutes, so it appears there within about 20, at most 40") };
+  }
+  // NOT YET ANSWERED. `offerBoardSubmit` runs after the result is drawn, so
+  // this is the state the first paint is in and it has to say so rather than
+  // claiming either outcome.
+  return { kind: "pending", text: tr("submitting to the board…") };
+}
+
+/// The result's own copy of that sentence. Re-rendered when the verdict lands.
+function renderBoardOutcome() {
+  const box = $("sim-board-outcome");
+  if (!box) return;
+  const o = boardRunOutcome();
+  box.className = `board-outcome ${o.kind}`;
+  box.innerHTML = escHtml(o.text)
+    // THE CUT LINE FOLLOWS A SENT RUN, because that is the reader who is about
+    // to go and look for a row that may never appear.
+    + (o.kind === "sent" ? ` <span class="board-state">${escHtml(boardCutNote())}</span>` : "");
+}
 
 function renderBoardConsent() {
   const box = $("board-consent");
@@ -12458,15 +12515,14 @@ function renderBoardConsent() {
   // number is the workflow's own: three runs an hour, and GitHub's scheduler
   // slips about fifteen minutes whatever minute is named, so the honest bound
   // is "usually 20, sometimes 40".
-  const state = c === "yes"
-    ? (boardState === "refused"
-        ? `${tr("the board would not take this build, so nothing was sent")}: ${boardRefusal}`
-        : boardState === "failed"
-        ? tr("could not reach the board — nothing was sent")
-        : boardState === "sent"
-          ? tr("sent — the board re-scores every 20 minutes, so it appears there within about 20, at most 40")
-          : tr("builds you run here are submitted — the board re-scores every 20 minutes, so a run appears there within about 20, at most 40"))
-    : tr("nothing is sent from here");
+  // THE SAME SENTENCE THE RESULT SHOWS — see `boardRunOutcome`. Before any run
+  // this box states the standing POLICY instead, which is what a reader at the
+  // top of an unrun panel needs; the result says what happened to a run.
+  const state = c !== "yes"
+    ? tr("nothing is sent from here")
+    : boardState === ""
+      ? tr("builds you run here are submitted — the board re-scores every 20 minutes, so a run appears there within about 20, at most 40")
+      : boardRunOutcome().text;
   box.innerHTML =
     `<span class="board-state">${escHtml(state)}</span>` +
     // THE RULE FOLLOWS THE STATE, and only where it can bite: a reader who
@@ -14008,6 +14064,10 @@ function renderResults(r, testedAt) {
     <div class="results">
       <div class="hero"><div><div class="hero-num" data-hero="${byDps ? "dps" : "kpm"}">${heroNum}<span class="hero-unit">${heroUnit}</span></div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
       ${replayBar}
+      <!-- WHAT BECAME OF THIS RUN, filled by renderBoardOutcome — right after
+           the headline, because "did this reach the board" is a question about
+           the number directly above it. -->
+      <div id="sim-board-outcome" class="board-outcome"></div>
       <div class="kpi-row">${kpis}</div>
       ${foldBlock("meter", tr("Damage by source"), "",
         `<div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${composition}`)}
@@ -14015,6 +14075,12 @@ function renderResults(r, testedAt) {
       ${foldBlock("detail", tr("Detail"), "", `<div class="stat-table">${detail}</div>`)}
       ${ask}
     </div>`;
+  // WHAT BECAME OF THIS RUN, drawn on EVERY result — a stored one re-rendered
+  // after a reload, a pick in the roll call, and the fresh run that
+  // `offerBoardSubmit` is about to repaint when its verdict lands. Filling it
+  // only from there would leave "submitting…" standing for ever on the two
+  // paths that submit nothing: a scenario of your own, and a board row.
+  renderBoardOutcome();
   // Meter rows that carry a per-type split toggle theirs. The choice is kept
   // across runs — a player who opened Direct hits wants it open on the next
   // simulate, not to reopen it every time.
