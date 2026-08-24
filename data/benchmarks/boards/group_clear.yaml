@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-engine: 6e9b234c695c1c05ca48923eef8fcc56c829ddbf
+engine: 10d43a58a9ee704e6d8a563c871f12d0d5bb79c7
 entries:
   - weapon: afentis_prime
     mode: base
@@ -190,7 +190,7 @@ entries:
     valence: toxin
   - weapon: laetum
     mode: cycle
-    score: 209.3210660655752
+    score: 378.28726622645087
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [secondary_irradiate]
