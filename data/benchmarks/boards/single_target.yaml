@@ -4296,6 +4296,14 @@ entries:
     mods: [heavy_caliber, split_chamber, serration, hammer_shot, primed_cryo_rounds, stormbringer, hellfire, thermite_rounds]
   - weapon: verglas_prime
     mode: base
+    score: 2.0126311527598446
+    mods: [split_chamber, serration, vile_acceleration, magnetic_capacity, riven, rime_rounds, malignant_force, hellfire]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
     score: 1.8928329443963103
     mods: [galvanized_chamber, serration, rifle_elementalist, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, riven]
     riven:
