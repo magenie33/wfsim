@@ -230,6 +230,20 @@ around (decision 2026-07-31).
   right-hand slots hung 55px off-screen with their ⋯ button unreachable (owner,
   2026-08-05). It also asserts a mod NAME keeps room to be one, because the
   cheapest way to stop an overflow is to squeeze a column to nothing.
+  AND IT MEASURES THE PAGE WITH A POPOVER OPEN, which was its own blind spot
+  until 2026-08-25: everything else it looks at is a page AT REST, and a
+  popover is PLACED rather than laid out — the one thing that can leave the
+  viewport with no container noticing. `place` put a popover's left edge at its
+  anchor's and stopped, which is right on a desktop and is overflow on a phone:
+  a mod slot's ⋯ sits at x=295 of a 360px screen, so its 200px menu ran to 495,
+  the DOCUMENT became 495 wide, the browser fit that into 360, the whole page
+  shrank, and the Swap/Remove the reader was reaching for sat off the right
+  edge. Reported as two bugs — "the card is too long to reach its top right"
+  and "the menu makes the page smaller" — and it was ONE, so the fix is in
+  `place` and all six popovers inherit it. The width is capped BEFORE the
+  clamp, because a popover wider than the screen cannot be clamped into it.
+  Verified to bite: the old two-line version reddens ten, naming
+  `295..495 vs viewport 360`.
   `node scripts/check_equip_rules.mjs` is the TWELFTH — what a
   mod's CARD says the weapon may do, in both directions. An
   equip rule is asked of EVERY firing mode, and installing a form ADDS one — so
