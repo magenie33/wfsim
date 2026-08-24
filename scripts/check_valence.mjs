@@ -123,7 +123,17 @@ const gain = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
   history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(3500);
-  for (let i = 0; i < 60 && !(gainScan.axis && gainScan.axis.kind === 'valence' && !gainScan.running); i++) {
+  // OPENING THE LIST IS WHAT STARTS THE SCAN (openRanked, 2026-08-24) — the
+  // same moment the mod and arcane pickers have always used. It used to run
+  // from the block's render, which is why this simply waited.
+  document.querySelector('#element-cfg .slot.axis .dots').click();
+  await sleep(300);
+  document.querySelector('#slot-menu [data-a="swap"]').click();
+  // …AND THE KEY, not just the axis: a scan from an earlier block can still be
+  // sitting there, finished and stale, which satisfies 'valence and not
+  // running' on the first iteration and reads zero chips.
+  for (let i = 0; i < 60 && !(gainScan.axis && gainScan.axis.kind === 'valence'
+        && !gainScan.running && gainScan.key === gainKey()); i++) {
     await sleep(500);
   }
   // …and the BUILDER's step numbers follow the blocks this weapon actually has.
@@ -137,14 +147,10 @@ const gain = await evaluate(`(async () => {
   // …and the chips REACH THE SCREEN, in the same component every other ranked
   // axis uses. A scan whose answers never reach a pick is a scan nobody reads.
   //
-  // OPENED FOR REAL, and BY THE PATH A READER TAKES: the axis is a card with a
-  // ⋯ that offers Swap, so this clicks both rather than calling ddOpen. The
-  // registry says what the list would draw; the claim here is that somebody can
-  // get to it.
-  document.querySelector('#element-cfg .slot.axis .dots').click();
-  await sleep(300);
-  document.querySelector('#slot-menu [data-a="swap"]').click();
-  await sleep(400);
+  // OPENED FOR REAL, and BY THE PATH A READER TAKES — done above, since it is
+  // also what starts the measurement. The registry says what the list would
+  // draw; the claim here is that somebody can get to it and read the numbers.
+  ddRender('dd-valence', '');
   const chips = document.querySelectorAll('#dd-menu .opt .gainchip').length;
   const picks = document.querySelectorAll('#dd-menu .opt').length;
   // …AND THE AXIS HAS NO REMOVE, because it can never be empty — one menu item
@@ -202,6 +208,9 @@ const flip = await evaluate(`(async () => {
   history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(3500);
   const scan = async (el) => {
     valence.element = el; renderValence(); refreshPanel(); await sleep(1000);
+    // OPEN THE LIST, which is what asks for the measurement.
+    const card = document.querySelector('#element-cfg .slot.axis');
+    if (card) openRanked('dd-valence', card);
     for (let i = 0; i < 90; i++) {
       await sleep(400);
       if (gainScan.axis && gainScan.axis.kind === 'valence'

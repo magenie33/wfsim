@@ -50,6 +50,19 @@ const drawn = await evaluate(`(async () => {
   const block = document.getElementById('assembly-block');
   const row = document.getElementById('assembly-row');
   const id = $('weapon').value;
+  // OPENING A LIST IS WHAT STARTS THE MEASUREMENT (openRanked, 2026-08-24) —
+  // the same moment the mod and arcane pickers have always used. The parts are
+  // ONE axis, so opening either list measures both. It used to run from the
+  // block's render, which is why this simply read the rows.
+  row.querySelector('.slot.axis .dots').click();
+  await new Promise(r => setTimeout(r, 300));
+  document.querySelector('#slot-menu [data-a="swap"]').click();
+  for (let i = 0; i < 60; i++) {
+    await new Promise(r => setTimeout(r, 500));
+    if (gainScan.axis && gainScan.axis.kind === 'assembly'
+        && !gainScan.running && gainScan.key === gainKey()) break;
+  }
+  closePopovers();
   return {
     shown: !!block && !block.hidden,
     id,
@@ -73,11 +86,18 @@ const drawn = await evaluate(`(async () => {
     // there is no gain in swapping a part for itself. So the claim is about the
     // options that are CANDIDATES, and a check counting every chip would fail
     // on a working page by exactly the number of parts.
+    //
+    // READ OFF THE RENDERED LIST, not the registry: a gain chip is computed
+    // when the list DRAWS (2026-08-24), because the scan that fills it starts
+    // when the list is OPENED — baking it in at registration is what kept a
+    // freshly opened list showing none at all. ddRender is the function the
+    // popover itself calls.
     unranked: ['grip', 'loader'].flatMap(p => {
       const cfg = ddReg.get('dd-' + p) || { items: [], value: null };
-      return cfg.items
-        .filter(i => String(i.value) !== String(cfg.value) && !/gainchip/.test(i.badge || ''))
-        .map(i => p + ':' + i.value);
+      ddRender('dd-' + p);
+      return [...document.querySelectorAll('#dd-menu .opt')]
+        .filter(el => el.dataset.v !== String(cfg.value) && !el.querySelector('.gainchip'))
+        .map(el => p + ':' + el.dataset.v);
     }),
     // …AND THE ORDER IS THE RANKING. Best first, by the picker's own rule.
     order: ['grip', 'loader'].flatMap(p =>

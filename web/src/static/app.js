@@ -8569,7 +8569,7 @@ function closePopovers(keep) {
 // loads every weapon on every tab in both languages, and the check scripts do
 // the rest — while silent here costs a shipped feature nobody can see missing.
 const DD_CFG_KEYS = ["value", "items", "dataK", "title", "placeholder", "onPick", "search",
-  "data", "disabled"];
+  "data", "disabled", "axis", "axisLabel"];
 // `badge` IS THE ONE RAW-HTML FIELD, and it exists because escaped text cannot
 // carry a quick-calc gain (2026-08-24). A gain is MARKUP — a class that colours
 // it, a title that explains the band it was measured to, and a "…" while it is
@@ -8579,7 +8579,13 @@ const DD_CFG_KEYS = ["value", "items", "dataK", "title", "placeholder", "onPick"
 // Raw means the CALLER escapes. The only producer is `gainChipFor`, which
 // builds its own markup and escapes its own inputs; anything else passed here
 // is an injection the component cannot see.
-const DD_ITEM_KEYS = ["value", "label", "hint", "disabled", "group", "badge"];
+// `key` IS THE SCAN'S NAME FOR THIS ROW, and it is what makes the gain chip
+// LIVE. The chip used to be baked into `badge` when the list was registered —
+// which is before the scan that fills it has started, so the rows kept their
+// first answer for ever and a freshly opened list showed none at all
+// (2026-08-24). It is computed at RENDER now, like the mod picker's, and the
+// order with it.
+const DD_ITEM_KEYS = ["value", "label", "hint", "disabled", "group", "badge", "key"];
 
 function ddCheck(id, cfg) {
   const stray = (obj, known) => Object.keys(obj).filter((k) => !known.includes(k));
@@ -8625,7 +8631,15 @@ function ddRender(id, query) {
   // carries the enemy, the level and the metric, so "no aim", "thrax" and
   // "cycle" all have to find rows or the search only works for people who
   // already know where things are.
-  const hits = cfg.items.filter((i) => {
+  // RANKED AT RENDER, so a scan that lands while the list is open re-orders it
+  // — the mod picker's own behaviour, and the reason a half-filled ranking
+  // marks itself with "…" rather than pretending to be final.
+  const items = cfg.axis
+    ? [...cfg.items]
+        .map((i) => ({ ...i, id: i.key, name: i.label }))
+        .sort((a, b) => gainSort(a, b, ["gain", "name"]))
+    : cfg.items;
+  const hits = items.filter((i) => {
     if (!q) return true;
     const blob = [i.label, i.hint, i.group].filter(Boolean).join(" ").toLowerCase();
     // …and space-insensitively, for the same reason the mod list is: a
@@ -8650,18 +8664,24 @@ function ddRender(id, query) {
   // nothing when no item carries one, and it survives filtering — a search that
   // leaves two rulers standing still says which is which.
   let group = null;
-  $("dd-menu").innerHTML = hits.length
+  // THE SCAN'S PROGRESS BELONGS WHERE THE WORK IS BEING READ, which for a
+  // ranked axis is this list — the same place the mod and arcane pickers put
+  // theirs. `scanStrip` draws nothing unless this axis is the one running, and
+  // a dropdown that ranks nothing declares no `axis` and gets none.
+  const strip = cfg.axis ? scanStrip(gainScan, cfg.axis) : "";
+  $("dd-menu").innerHTML = strip + (hits.length
     ? hits.map((i) => {
       const head = (i.group && i.group !== group)
         ? `<div class="ddgroup">${escHtml(i.group)}</div>` : "";
       group = i.group || group;
+      const chip = cfg.axis && i.key ? gainChipFor(i.key, cfg.axisLabel || "") : "";
       return head + `<div class="opt${String(i.value) === String(cfg.value) ? " cur" : ""}${
         i.disabled ? " dis" : ""}" data-v="${escHtml(String(i.value))}">
-        <div class="info"><div class="mn">${escHtml(i.label)}${i.badge || ""}</div>${
+        <div class="info"><div class="mn">${escHtml(i.label)}${chip}${i.badge || ""}</div>${
           i.hint ? `<div class="me"><div>${escHtml(i.hint)}</div></div>` : ""}</div>
       </div>`;
     }).join("")
-    : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`;
+    : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`);
   $("dd-menu").querySelectorAll(".opt[data-v]:not(.dis)").forEach((el) => {
     el.onclick = (e) => {
       e.stopPropagation();
@@ -9698,6 +9718,10 @@ function rankedSlot(id, cfg) {
     value: cfg.value,
     items: rankedItems(cfg),
     search: cfg.items.length > 8,
+    // WHICH AXIS THIS LIST RANKS — what `openRanked` measures, what the strip
+    // inside the list reports on, and what tells `ddRender` to rank its rows.
+    axis: cfg.axis,
+    axisLabel: cfg.label,
     onPick: cfg.onPick,
   });
   const card = cfg.card;
@@ -9723,18 +9747,41 @@ function rankedSlot(id, cfg) {
 
 /// The rows a `rankedSlot` offers, ordered by gain.
 function rankedItems(cfg) {
-  return cfg.items
-    // `gainSort` is the picker's own rule, read over `id`; an unranked option
-    // sorts last either way, because an absent answer is not a small one.
-    .map((it) => ({ ...it, id: it.key, name: it.label }))
-    .sort((a, b) => gainSort(a, b, ["gain", "name"]))
-    .map((it) => ({
-      value: it.value,
-      label: it.label,
-      hint: it.hint,
-      disabled: it.disabled,
-      badge: gainChipFor(it.key, cfg.label) + (it.extra || ""),
-    }));
+  // NEITHER RANKED NOR CHIPPED HERE. Both are read from the SCAN, which has
+  // not started when a list is registered — `ddRender` does them, every time
+  // it draws.
+  return cfg.items.map((it) => ({
+    value: it.value,
+    label: it.label,
+    hint: it.hint,
+    disabled: it.disabled,
+    key: it.key,
+    badge: it.extra || "",
+  }));
+}
+
+/// OPEN A RANKED LIST, and start measuring it.
+///
+/// **THE SCAN FIRES ON OPEN, like the mod and arcane pickers** (owner,
+/// 2026-08-24). The parts, the valence and the evolution tiers used to scan
+/// from their RENDER, and the reason was written down: they were rows of chips,
+/// "all on screen at once … which is why they can afford to answer without
+/// being opened". That stopped being true the day they became cards — the
+/// options live inside a closed list now, so an eager scan spends a fight per
+/// candidate on numbers nobody can see, and does it again on every repaint.
+///
+/// The list opens FIRST and the scan starts after, so the rows are there
+/// immediately carrying their "…" chips rather than after a measurement.
+function openRanked(id, anchor) {
+  const cfg = ddReg.get(id);
+  if (!cfg) return;
+  ddOpen(id, anchor);
+  if (!cfg.axis) return;
+  ensureGains(cfg.axis, () => {
+    // REPAINT THE OPEN LIST, and only while it is open — the mod picker's own
+    // rule. A closed list has nobody reading it, and its next open re-renders.
+    if (!$("dd-popover").hidden) ddRender(id, $("dd-search").value);
+  });
 }
 
 /// The ⋯ menu a `rankedSlot` opens — Swap, and Remove where the axis has one.
@@ -9747,7 +9794,7 @@ function openSlotMenu(anchor, id, cfg) {
   menu.innerHTML = swap + rm;
   place(menu, anchor);
   menu.querySelector('[data-a="swap"]')
-    .addEventListener("click", () => (cfg.onSwap ? cfg.onSwap() : ddOpen(id, anchor)));
+    .addEventListener("click", () => (cfg.onSwap ? cfg.onSwap() : openRanked(id, anchor)));
   const r = menu.querySelector('[data-a="remove"]');
   if (r) r.addEventListener("click", () => { closePopovers(); cfg.onPick(""); });
 }
@@ -9768,7 +9815,7 @@ function bindRankedSlots(box, cfgs) {
       // An EMPTY slot opens the list on a click anywhere, which is the mod and
       // arcane slots' own rule: there is nothing in it to select, so the whole
       // plate is the button.
-      el.addEventListener("click", () => ddOpen(id, el));
+      el.addEventListener("click", () => openRanked(id, el));
     }
   });
 }
@@ -9895,12 +9942,33 @@ function refreshGains() {
   // it has to follow a switch even when the scan itself is off.
   renderQuickCalc();
   if (gainPrefs.on === false) return;
+  // **AN OPEN PICKER RE-ASKS; A SHUT ONE HAS NOTHING TO RE-ASK** (owner,
+  // 2026-08-24). Every ranked axis now measures when its list is OPENED, so an
+  // open list is the only place an answer exists that a fight change can make
+  // stale — and all three kinds of list are treated the same way here, which
+  // is the point.
+  //
+  // IT WAS A REPAINT FOR TWO OF THEM. The mod and arcane pickers were
+  // re-rendered without being re-measured, and the freshness check passed
+  // anyway because this function ended in `renderEvo()` — which asked for an
+  // EVOLUTION scan, which made `gainScan.key` catch up with the fight while the
+  // open mod picker's own chips still answered the old one. A check passing for
+  // the wrong reason is what hid it.
   if ($("mod-popover") && !$("mod-popover").hidden) {
     renderTools();
-    renderMenu(pickerSlot, $("mod-search").value);
+    ensureGains({ kind: "mods", idx: pickerSlot },
+      () => { if (!$("mod-popover").hidden) renderMenu(pickerSlot, $("mod-search").value); });
   }
-  if ($("arcane-popover") && !$("arcane-popover").hidden) renderArcaneMenu($("arcane-search").value);
-  renderEvo(); renderMode();
+  if ($("arcane-popover") && !$("arcane-popover").hidden) {
+    ensureGains({ kind: "arcane", idx: arcaneSlotIdx },
+      () => { if (!$("arcane-popover").hidden) renderArcaneMenu($("arcane-search").value); });
+  }
+  const dd = $("dd-popover");
+  if (dd && !dd.hidden && dd._anchor) {
+    const id = dd._anchor.dataset.slot || dd._anchor.dataset.dd;
+    if (id && (ddReg.get(id) || {}).axis) openRanked(id, dd._anchor);
+  }
+  renderMode();
 }
 
 /// Compute this axis position's ranking, unless it is already on screen.
@@ -10633,6 +10701,7 @@ function renderAssembly() {
     const id = "dd-" + part;
     const cur = items.find((it) => it.id === assembly[part]);
     partCfgs[id] = {
+      axis,
       label: tr(label),
       title: hint,
       value: assembly[part],
@@ -10689,15 +10758,10 @@ function renderAssembly() {
     pick("grip", "Grip", s.grips.map(gripItem),
       tr("the grip sets damage, fire rate and the charge — only this slot's five are offered, because a grip is what decides the slot")) +
     pick("loader", "Loader", s.loaders.map(loaderItem),
-      tr("the loader sets the magazine and the reload, and adds three deltas that can be negative")) +
-    // THE STRIP GOES OUTSIDE THE LISTS, because the lists are shut. A reader
-    // who has not opened one still has to be able to see that the ranking
-    // inside it is not finished (the strip draws nothing when nothing runs).
-    scanStrip(gainScan, axis);
+      tr("the loader sets the magazine and the reload, and adds three deltas that can be negative"));
+  // THE SCAN FIRES WHEN A LIST IS OPENED — see `openRanked`. The strip that
+  // reports it lives inside that list, where the ranking is being read.
   bindRankedSlots(box, partCfgs);
-  // The scan that fills the chips, keyed like every other axis so it runs once
-  // per (build, fight) and repaints when it lands.
-  ensureGains(axis, () => renderAssembly());
 }
 
 /// THE VALENCE BLOCK. Two controls, because a Lich hands you two facts: which
@@ -10736,6 +10800,7 @@ function renderValence() {
   const axis = { kind: "valence", idx: 0 };
   const cfgs = {
     "dd-valence": {
+      axis,
       label: tr("Element"),
       value: valence.element,
       // NO REMOVE. Every copy of an adversary weapon comes out of a Lich
@@ -10754,13 +10819,9 @@ function renderValence() {
   };
   box.innerHTML =
     rankedSlot("dd-valence", cfgs["dd-valence"]) +
-    scanStrip(gainScan, axis) +
     `<div class="runs-row"><label title="${escHtml(tr("how big the roll was, as a share of base damage — a Lich rolls it randomly and Valence Fusion raises it, capping at the number on the right"))}">${escHtml(tr("Valence bonus"))} <span class="unit">%</span> <input type="number" id="valence-bonus" min="${pct(s.min)}" max="${pct(s.max)}" step="0.5" value="${pct(valence.bonus)}"></label>` +
     `<span class="sim-hint">${escHtml(tr("rolls") + ` ${pct(s.min)}–${pct(s.max)}%`)}</span></div>`;
   bindRankedSlots(box, cfgs);
-  // The scan that fills the chips. Keyed like every other axis, so it runs once
-  // per (build, fight) and repaints when it lands.
-  ensureGains(axis, () => renderValence());
   const inp = $("valence-bonus");
   if (inp) {
     inp.addEventListener("change", () => {
@@ -10854,6 +10915,7 @@ function renderEvo() {
     const id = "dd-evo-" + t.tier;
     const o = (t.options || []).find((x) => x.id === sel);
     cfgs[id] = {
+      axis: { kind: "evo", idx: 0 },
       label: `EVO ${ROMAN(t.tier)}`,
       addLabel: tr("add evolution"),
       value: sel || "",
@@ -10880,13 +10942,14 @@ function renderEvo() {
     };
     rows.push(rankedSlot(id, cfgs[id]));
   }
-  $("evo-rows").innerHTML = scanStrip(gainScan, { kind: "evo", idx: 0 }) + rows.join("");
+  $("evo-rows").innerHTML = rows.join("");
+  // ONE AXIS FOR EVERY TIER, still: they are scanned in a single pass — a dozen
+  // candidates, not seventy — so opening any tier's list measures them all and
+  // the next tier's opens already answered. What changed is WHEN. The pass used
+  // to run from this render, on the reasoning that the options were all on
+  // screen at once; they are inside a closed list now, so it runs on open
+  // (`openRanked`).
   bindRankedSlots($("evo-rows"), cfgs);
-  // Evolutions are all on screen at once, so they are scanned ACROSS EVERY
-  // TIER in one pass — a dozen candidates, not seventy, which is why they can
-  // afford to answer without being opened (user, 2026-08-01: arcanes and
-  // evolutions use this too). The key guards the repeat.
-  if (tiers.length) ensureGains({ kind: "evo", idx: 0 }, () => renderEvo());
 }
 
 /// THE INSTALLED PERK, as its own card — the pieces `rankedSlot` draws.

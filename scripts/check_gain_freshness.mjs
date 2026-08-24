@@ -137,11 +137,10 @@ const r = await evaluate(`(async () => {
     out.overrun = gainScan.done > gainScan.total;
     out.finishedClean = gainScan.done === gainScan.total;
 
-    // NO PING-PONG. refreshGains ends in renderEvo, so the evolution axis asks
-    // for a scan on EVERY repaint while the picker's own scan is still running.
-    // If the newest request always won, the two would cancel each other forever
-    // and neither would ever finish. Only a stale fight supersedes; a different
-    // axis waits its turn.
+    // NO PING-PONG. Two axes can ask at once — a mod picker open over a ranked
+    // list, or a refresh reaching both — and if the newest request always won
+    // they would cancel each other forever and neither would ever finish. Only
+    // a stale FIGHT supersedes; a different axis waits its turn.
     const p3 = scanGains({ kind: 'mods', idx: 0 }, () => {});
     for (let i = 0; i < 400 && !(gainScan.running && gainScan.done > 0); i++) await sleep(25);
     const heldAxis = JSON.stringify(gainScan.axis);
@@ -166,9 +165,12 @@ const r = await evaluate(`(async () => {
   // re-run. The box was redrawn under the new fight's name while every chip
   // beside it still answered the old fight's question (owner, 2026-08-17).
   //
-  // On the EVOLUTION axis, which is the one that ranks without a picker being
-  // open — so this asserts the re-ask itself rather than a repaint that
-  // happened to reopen something.
+  // ON THE EVOLUTION AXIS, THROUGH AN OPEN LIST. It used to rank without
+  // anything being open, which is what made it the axis to test this on; since
+  // 2026-08-24 every ranked axis scans on OPEN (openRanked), so an open list
+  // is the only thing a fight change can make stale — and it is exactly the
+  // path refreshGains takes. Driving it by opening the tier the way a reader
+  // does is therefore the same assertion on the surface that now carries it.
   {
     const settleScan = async () => {
       for (let i = 0; i < 120; i++) {
@@ -184,7 +186,9 @@ const r = await evaluate(`(async () => {
       .filter((c) => !c.classList.contains('add') && !c.classList.contains('imp'));
     copyActiveScenario(); await sleep(1500);
     sim.level = 950; markScenarioDirty(); await sleep(900);
-    renderEvo(); await sleep(300);
+    // OPEN A TIER'S LIST, which is what starts a scan now.
+    const evoBtn = () => document.querySelector('[data-slot="dd-evo-1"]');
+    openRanked('dd-evo-1', evoBtn()); await sleep(300);
     out.switchScanned = await settleScan();
     const beforeKey = gainScan.key;
     // THE SCAN'S OWN BASELINE, which is this build measured under this fight
@@ -217,6 +221,11 @@ for (const k of ["buffs", "metric", "level", "dur", "future"]) {
 }
 check("a scan ran at all", r.scanned === true);
 check("its key matched the fight it measured", r.freshBefore === true);
+// WITHOUT REOPENING ANYTHING — the picker is still the one opened above, and
+// the edit alone has to make it re-ask. It was a REPAINT for the mod picker
+// until 2026-08-24 and this assertion passed anyway, because refreshGains
+// ended in renderEvo() and the EVOLUTION scan made the key catch up while the
+// open mod picker still showed the old fight answers.
 check("editing the fight re-runs it without reopening anything", r.freshAgain === true);
 check("and what is on screen was measured under the NEW fight", r.rescanned === true);
 check(`the scan runs over ${r.laneCount} lanes, not one`, r.laneCount > 1, String(r.laneCount));
