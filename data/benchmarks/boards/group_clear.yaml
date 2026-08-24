@@ -88,6 +88,12 @@ entries:
       bonuses: [critical_chance, critical_damage]
       malus: impact
       rolls: [1.1, 1.1, 0.9]
+  - weapon: boltor_prime
+    mode: cycle
+    score: 6.881407656898692
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [boltor_prime_evo1_incarnon_form, boltor_prime_hunters_mantra, boltor_prime_rapid_reinforcement, boltor_prime_survivors_edge]
+    arcanes: [primary_merciless]
   - weapon: braton_prime
     mode: cycle
     score: 15.20753061216977
@@ -510,6 +516,12 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
     arcanes: [secondary_deadhead]
+  - weapon: telos_boltor
+    mode: cycle
+    score: 12.355638156252516
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [telos_boltor_evo1_incarnon_form, telos_boltor_hunters_mantra, telos_boltor_rapid_reinforcement, telos_boltor_elemental_balance]
+    arcanes: [primary_merciless]
   - weapon: tenet_cycron
     mode: base
     score: 27.376337391273065

@@ -50,6 +50,12 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, critical_delay, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [boltor_prime_evo1_incarnon_form, boltor_prime_hunters_mantra, boltor_prime_rapid_reinforcement, boltor_prime_survivors_edge]
     arcanes: [primary_debilitate]
+  - weapon: boltor_prime
+    mode: cycle
+    score: 0.3611396390081517
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [boltor_prime_evo1_incarnon_form, boltor_prime_hunters_mantra, boltor_prime_rapid_reinforcement, boltor_prime_survivors_edge]
+    arcanes: [primary_merciless]
   - weapon: burston_prime
     mode: cycle
     score: 1.930073022672166
@@ -451,6 +457,12 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, lethal_torrent, anemic_agility, primed_convulsion, pathogen_rounds]
     evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
     arcanes: [secondary_deadhead]
+  - weapon: telos_boltor
+    mode: cycle
+    score: 0.3382471253675331
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [telos_boltor_evo1_incarnon_form, telos_boltor_hunters_mantra, telos_boltor_rapid_reinforcement, telos_boltor_elemental_balance]
+    arcanes: [primary_merciless]
   - weapon: tenet_glaxion
     mode: base
     score: 1.9100051772191424

@@ -3423,12 +3423,6 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [rakta_ballistica_evo1_incarnon_form, rakta_ballistica_headcracker, rakta_ballistica_rapid_reinforcement, rakta_ballistica_critical_parallel]
     arcanes: [cascadia_flare]
-  - weapon: rakta_ballistica
-    mode: cycle
-    score: 16.910817593087398
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
-    evolutions: [rakta_ballistica_evo1_incarnon_form, rakta_ballistica_headcracker, rakta_ballistica_rapid_reinforcement, rakta_ballistica_critical_parallel]
-    arcanes: [secondary_deadhead]
   - weapon: rubico_prime
     mode: base
     score: 19.59650654124375
@@ -3730,6 +3724,12 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_pistol_gambit, lethal_torrent, pistol_elementalist, deep_freeze, pistol_pestilence, primed_heated_charge]
     evolutions: [synoid_gammacor_evo1_incarnon_form, synoid_gammacor_sages_resolve, synoid_gammacor_extended_volley, synoid_gammacor_critical_parallel]
     arcanes: [cascadia_flare]
+  - weapon: telos_boltor
+    mode: cycle
+    score: 5.872132328117172
+    mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [telos_boltor_evo1_incarnon_form, telos_boltor_hunters_mantra, telos_boltor_rapid_reinforcement, telos_boltor_elemental_balance]
+    arcanes: [primary_merciless]
   - weapon: tenet_arca_plasmor
     mode: base
     score: 1.3182330719970343
