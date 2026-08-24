@@ -4,6 +4,30 @@ slot: secondary
 class: pistol
 form: incarnon
 
+# **SECONDARY IRRADIATE'S ECHO IS DOUBLE HERE**, measured (owner, 2026-08-24,
+# M59). The arcane deals `1.8 x the hit` at max rank and that is exactly what a
+# pure single-target weapon deals — the owner measured several. This form deals
+# 3.6x, and the BASE Laetum deals the ordinary 1.8x, which is why the field is
+# on this entry and not on the weapon:
+#
+#   base form      1536 direct  ->  2764.8 echo  = 1.80x
+#   Incarnon form   320 direct  ->  1152   echo  = 3.60x
+#                   960 direct  ->  3456   echo  = 3.60x
+#
+# THE OWNER'S READING, and it is a hypothesis rather than a rule: the game sees
+# TWO damage components on this attack — a direct hit and a radial — so it
+# computes an echo for each, 1.8 + 1.8, while only the DIRECT one actually
+# fires. That matches the other half of the same session's measurement: an AoE
+# hit never triggers this echo at all, which this engine already had right
+# (`spread_from_echo` is called from the direct path alone).
+#
+# SO THE NUMBER IS "ONE PER DAMAGE COMPONENT", not a magic 2 — and it stays a
+# per-ENTRY figure until a second weapon is measured. Every direct+radial
+# weapon in the roster is a candidate for the same doubling and none of them
+# has been read; generalising a single measurement to a class is exactly what
+# `docs/CATALOGS.md` forbids, and this comment is the note to come back to.
+echo_multiplier: 2.0
+
 # TWO WEAPONS MODEL: second entry of the transform group — see
 # data/weapons/secondary/laetum.yaml for the base form and the decision.
 transform_group: laetum

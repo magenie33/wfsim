@@ -1403,6 +1403,10 @@ pub struct WeaponBase {
     /// into a battery; this is the only part of the mechanic the weapon owns,
     /// because the DELAY is the reload and the reload is the loader's.
     pub recharge_per_second: Option<f64>,
+    /// See `weapons_data::WeaponSpec::echo_multiplier` — a MEASURED,
+    /// unexplained coefficient on Secondary Irradiate's echo, 1.0 everywhere
+    /// but the Laetum's Incarnon form.
+    pub echo_multiplier: f64,
     /// A BY-ROUND reload, as `(start, per shell, end)` seconds. `None` = the
     /// ordinary one-block reload. See `WeaponSpec::reload_style`: the whole
     /// point is that the magazine size is IN the reload time, so a magazine
@@ -2690,6 +2694,9 @@ pub struct ResolvedPanel {
     /// ARCANE is finally in hand. The rate is the only part of that mechanic
     /// the weapon owns.
     pub recharge_per_second: Option<f64>,
+    /// Carried from the weapon so the fight can read it — see
+    /// `weapons_data::WeaponSpec::echo_multiplier`.
+    pub echo_multiplier: f64,
     /// Ammo per shot — a WEAPON constant, so no mod bucket touches it.
     pub ammo_cost: f64,
     /// See `weapons_data::WeaponSpec::headshot_bonus_multiplicative`.
@@ -4193,6 +4200,7 @@ pub fn resolve_for(
         lingering_base: base.lingering.clone().or(granted),
         battery: base.battery,
         recharge_per_second: base.recharge_per_second,
+        echo_multiplier: base.echo_multiplier,
         // A MAGAZINE-EATING CHARGE STATES ITS OWN TIME. `magazine / rate`
         // seconds, because that is how long the magazine takes to be spent —
         // so a magazine mod lengthens the charge as well as paying for the

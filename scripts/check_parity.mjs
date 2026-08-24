@@ -63,9 +63,17 @@ const applied = (id) => `(() => {
   const el = document.getElementById("weapon");
   const v = (x) => { const e = document.getElementById(x); return !!e && !e.hidden; };
   // THE VALUE AND WHAT IS ON SCREEN. The value alone is not enough: it is set
-  // synchronously and the blocks below are drawn once /api/panel answers, so a
-  // weapon that follows one WITH evolutions reads the previous page's block.
+  // synchronously and the blocks below are drawn later, so a weapon that
+  // follows one WITH evolutions reads the previous page's block.
+  //
+  // …AND WAITING FOR QUIESCENCE WAS NOT ENOUGH EITHER. Two identical reads
+  // 250 ms apart can both land inside that window, which is where this check's
+  // "the builder shows an evolution block for a weapon with none" flake came
+  // from — three times over six runs, never the same weapon twice. panelFor
+  // is stamped where the blocks are DECIDED, so it is the same fact rather
+  // than a longer guess.
   return !!el && el.value === ${JSON.stringify(id)}
+    && document.body.dataset.panelFor === ${JSON.stringify(id)}
     ? [v("exilus-block"), v("arcane-block"), v("evo-block"),
        v("opt-exilus-sect"), v("opt-arcanes-sect"), v("opt-evos-sect")].join(",")
     : null;

@@ -7770,6 +7770,16 @@ function applyWeaponInner(id, presetMods) {
   const AX = weaponAxes(w.id);
   show("arcane-block", AX.arcanes.length > 0);
   show("evo-block", AX.evolutions.length > 0);
+  // WHICH WEAPON THE BLOCKS ON SCREEN ARE FOR, stamped where the blocks are
+  // decided. `#weapon`'s value is set SYNCHRONOUSLY by the switch while these
+  // are drawn after it, so there is a window in which the page names one
+  // weapon and shows another's axes — and a reader of the DOM has no way to
+  // tell. It is one line and it makes that window observable: `check_parity`
+  // waits on it rather than on the value plus a guess, which is where its
+  // "builder shows an evolution block for a weapon with none" flake came from
+  // (three times over six runs, always a weapon following one WITH evolutions
+  // — 2026-08-24).
+  document.body.dataset.panelFor = w.id;
   // THE VALENCE AXIS exists only where the weapon has one — an adversary
   // weapon. Same "no choice, no control" rule every other axis follows.
   show("element-block", !!valenceSpec(w.id));

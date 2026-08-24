@@ -1249,6 +1249,37 @@ pub struct WeaponSpec {
     pub recharge_per_second: Option<f64>,
     /// Riven disposition — the multiplier every riven stat on this weapon is
     /// scaled by. It belongs to the WEAPON, not to the riven, which is why
+    /// **AN UNEXPLAINED, MEASURED COEFFICIENT ON SECONDARY IRRADIATE'S ECHO.**
+    ///
+    /// The arcane's echo is `1.8 × the hit` at max rank, and on a pure
+    /// single-target weapon that is exactly what it deals — the owner measured
+    /// several. On the LAETUM'S INCARNON FORM it deals **3.6×**, twice as much,
+    /// and nobody knows why (owner, 2026-08-24, M59):
+    ///
+    /// ```text
+    /// base form      1536 direct  ->  2764.8 echo   = 1.80x   (ordinary)
+    /// Incarnon form   320 direct  ->  1152   echo   = 3.60x
+    ///                 960 direct  ->  3456   echo   = 3.60x
+    /// ```
+    ///
+    /// IT IS NOT THE AoE TRIGGERING IT A SECOND TIME. The same session
+    /// established that only a DIRECT hit ever triggers this echo and the
+    /// radial never does — which this engine already had right, since
+    /// `spread_from_echo` is called from the direct path alone. So the
+    /// explanation is not two triggers, and we do not have another.
+    ///
+    /// WHAT IS SUSPECTED AND NOT ESTABLISHED: the two forms differ in that the
+    /// Incarnon one carries a radial, and the owner reports "other weapons with
+    /// an AoE seem to have a bit of this problem". That is a lead, not a rule —
+    /// so this is a per-ENTRY number rather than a rule about AoE weapons, and
+    /// it stays that way until somebody measures a second one. The same
+    /// discipline `docs/CATALOGS.md` states for Condition Overload: transcribe
+    /// the row for the entry it names, never generalise it to a class.
+    ///
+    /// NOT INHERITED (it is absent from `INHERITED`), because the base Laetum
+    /// measures 1.8 and only its Incarnon form does not.
+    #[serde(default = "one")]
+    pub echo_multiplier: f64,
     /// one riven reads differently on two guns.
     #[serde(default)]
     pub disposition: Option<f64>,
@@ -2939,6 +2970,7 @@ pub fn base_panel_assembled(
         // weapon that never came out of a Lich.
         valence_bonus: 0.0,
         recharge_per_second: s.recharge_per_second,
+        echo_multiplier: s.echo_multiplier,
         mod_pools: Box::leak(
             s.mod_pools
                 .iter()
@@ -6875,6 +6907,49 @@ mod condition_overload_catalog_tests {
 ///
 /// Its own module rather than a corner of the CO catalog's: what it is about is
 /// [`spec_assembled`], and a test's home is part of what it says.
+#[cfg(test)]
+mod echo_tests {
+    /// **THE LAETUM'S INCARNON FORM DOUBLES SECONDARY IRRADIATE'S ECHO**, and
+    /// its base form does not (owner, 2026-08-24, M59). 1.8x on a pure
+    /// single-target weapon, 3.6x here.
+    ///
+    /// The pair is the whole point: a test asserting only that the Incarnon
+    /// form is 2.0 passes just as well on a build that applied it to the entire
+    /// weapon, which the base form's own measurement contradicts.
+    #[test]
+    fn the_laetums_incarnon_form_doubles_the_echo_and_its_base_form_does_not() {
+        let m = |id: &str| super::spec(id).unwrap_or_else(|| panic!("{id}")).echo_multiplier;
+        assert_eq!(m("laetum_incarnon"), 2.0);
+        assert_eq!(m("laetum"), 1.0, "the base form measures the ordinary 1.8x");
+        // …AND IT REACHES THE FIGHT. A number in a yaml that no panel carries
+        // is a number nothing computes.
+        let base = crate::loadout::WeaponBase::from_data("laetum_incarnon", false, &[]);
+        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        assert_eq!(panel.echo_multiplier, 2.0);
+    }
+
+    /// **IT IS THE ONLY ONE, AND THAT IS ASSERTED RATHER THAN ASSUMED.** The
+    /// owner's reading is that the game counts the attack's damage components —
+    /// a direct hit and a radial give 1.8 + 1.8 — which would make every
+    /// direct+radial weapon in the roster a candidate. NONE of the others has
+    /// been measured, so none of them carries the field, and generalising one
+    /// measurement to a class is what `docs/CATALOGS.md` forbids.
+    ///
+    /// This test is the note to come back to: the day somebody measures a
+    /// second weapon it fails, names both, and forces the decision to be made
+    /// on purpose rather than by a default.
+    #[test]
+    fn only_the_measured_entry_carries_an_echo_coefficient() {
+        let odd: Vec<&str> = super::all()
+            .iter()
+            .filter(|s| (s.echo_multiplier - 1.0).abs() > 1e-9)
+            .map(|s| s.id.as_str())
+            .collect();
+        assert_eq!(odd, ["laetum_incarnon"], "an unmeasured entry gained a coefficient");
+    }
+}
+
 #[cfg(test)]
 mod modular_tests {
     use super::{spec, spec_assembled};

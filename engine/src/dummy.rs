@@ -1988,6 +1988,10 @@ pub struct DummyParams {
     /// this adds is the BETWEEN-SHOTS one, which is where the mechanic stops
     /// being a differently-spelled reload.
     pub battery: Option<crate::weapons_data::Battery>,
+    /// SECONDARY IRRADIATE'S ECHO, TIMES THIS — a MEASURED coefficient with no
+    /// explanation behind it. 1.0 for every entry in the roster but one; see
+    /// [`crate::weapons_data::WeaponSpec::echo_multiplier`].
+    pub echo_multiplier: f64,
     /// A BURST trigger's modded shape — see [`crate::weapons_data::BurstSpec`].
     pub burst: Option<crate::weapons_data::BurstSpec>,
     /// Whether the weapon's Frenzy passive is equipped (Dual Toxocyst base
@@ -3392,6 +3396,7 @@ impl DummyParams {
             // taking its own battery away: a chamber whose Pax Charge row
             // nobody has read gets the ordinary reload, which is honest, where
             // a zero rate would be a weapon that never reloads at all.
+            echo_multiplier: panel.echo_multiplier,
             battery: match (panel.battery, recharging, panel.recharge_per_second) {
                 (_, true, Some(rate)) if rate > 0.0 => {
                     let delay =
@@ -3708,6 +3713,8 @@ impl Default for DummyParams {
     /// the engine.
     fn default() -> Self {
         Self {
+            // Ordinary: only one measured entry differs (see the field).
+            echo_multiplier: 1.0,
             // A FIXTURE BRINGS NO WARFRAME: no auras, no shards.
             squad: crate::tenno_data::SquadEffects::default(),
             enervate_stacks: 0,
@@ -6158,7 +6165,11 @@ fn spread_from_echo(
     d: &mut crate::rng::Draws,
     t: f64,
 ) {
-    let share = params.arcane.echo_share;
+    // THE ARCANE'S SHARE, TIMES THE WEAPON'S OWN COEFFICIENT — see
+    // `weapons_data::WeaponSpec::echo_multiplier`. It is 1.0 for every entry in
+    // the roster but the Laetum's Incarnon form, where the echo was MEASURED at
+    // 3.6x a 1.8x arcane and nobody knows why (owner, 2026-08-24, M59).
+    let share = params.arcane.echo_share * params.echo_multiplier;
     let radius = params.arcane.echo_radius_m;
     if share <= 0.0 || radius <= 0.0 {
         return;
@@ -19065,7 +19076,9 @@ mod tests {
     /// revert is MEASURED (owner, 2026-08-22) rather than inferred from it: it
     /// clears the pile too. Which is what the engine's own rule about the cycle
     /// already said from the other side, since swapping either way refills the
-    /// base magazine.
+    /// base magazine — and what the weapon's GENESIS page says in as many
+    /// words, "Switching to and from Incarnon Form resets Hata-Satya's bonus"
+    /// (found 2026-08-24, two days after the measurement).
     ///
     /// It is the sharp case for this mod, because the pile is at its ceiling
     /// exactly when the Incarnon ammo runs out: without this the base form

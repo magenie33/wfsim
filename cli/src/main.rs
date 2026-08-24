@@ -21,6 +21,8 @@ use wfsim_engine::scaling;
 fn dual_toxocyst_baseline() -> DummyParams {
     DummyParams {
         acid_shells: None,
+        // Ordinary — only the Laetum's Incarnon form differs, and this is not it.
+        echo_multiplier: 1.0,
         // NO WARFRAME behind this fixture: no auras, no shards.
         squad: wfsim_engine::tenno_data::SquadEffects::default(),
         abilities: Vec::new(),

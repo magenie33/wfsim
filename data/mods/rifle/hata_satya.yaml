@@ -50,13 +50,22 @@ effects:
   # Incarnon Form counts as reloading the Soma Prime and will therefore end the
   # bonus".
   #
-  # …AND SO DOES COMING BACK OUT (owner measured 2026-08-22). The wiki names
-  # only the way in, and reading it literally left the revert counting as
-  # neither a reload nor a transform — so a pile at its ceiling rode it into the
-  # base form and spent a whole magazine there at +500%. The engine keys the
-  # clear on the MAGAZINE REFILL now, which is the rule it already held about
-  # the cycle from the other side: swapping either way fully reloads the base
-  # form's magazine, so the buff is spent by whatever refills it.
+  # …AND SO DOES COMING BACK OUT (owner measured 2026-08-22), which the engine
+  # keys on the MAGAZINE REFILL — the rule it already held about the cycle from
+  # the other side: swapping either way fully reloads the base form's magazine,
+  # so the buff is spent by whatever refills it. Before that, reading THIS page
+  # literally left the revert counting as neither a reload nor a transform, and
+  # a pile at its ceiling rode it into the base form and spent a whole magazine
+  # there at +500%.
+  #
+  # AND IT WAS PUBLISHED ALL ALONG, on the weapon's Genesis page rather than on
+  # this one (found 2026-08-24): "Switching to and from Incarnon Form resets
+  # Hata-Satya's bonus" (Soma Incarnon Genesis, the Incarnon Form evolution's
+  # own notes, which also state "Incarnon Form can trigger Hata-Satya"). So the
+  # measurement confirmed a sentence rather than filling a silence — the same
+  # lesson the beam-range bracket taught two days earlier, where the rule was on
+  # the OTHER mod's page. When a card seems to leave a case open, read the pages
+  # that mention it, not just its own.
   #
   # Holstering is a weapon swap this arena never does; "Bonus ends as
   # soon as the reload animation begins" is a distinction with no consequence
