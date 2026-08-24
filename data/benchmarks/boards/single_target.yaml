@@ -1801,6 +1801,36 @@ entries:
     valence: magnetic
   - weapon: kuva_grattler
     mode: base
+    score: 12.85427923002458
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: heat
+  - weapon: kuva_grattler
+    mode: base
+    score: 12.08160165281416
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: heat
+  - weapon: kuva_grattler
+    mode: base
+    score: 12
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: heat
+  - weapon: kuva_grattler
+    mode: base
+    score: 12
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, hollowed_bullets, magnetized_cycle, primed_polar_magazine, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: heat
+  - weapon: kuva_grattler
+    mode: base
+    score: 11
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, containment_breach, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: heat
+  - weapon: kuva_grattler
+    mode: base
     score: 9.909956457405714
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, critical_focus, hollowed_bullets, parallax_scope, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
