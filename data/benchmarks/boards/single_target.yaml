@@ -1946,10 +1946,26 @@ entries:
     valence: magnetic
   - weapon: kuva_nukor
     mode: base
+    score: 18.93955772345429
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, pistol_elementalist, sure_shot, riven, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+    riven:
+      bonuses: [cold, multishot]
+      malus: ammo_maximum
+      rolls: [0.9, 1.1, 0.9]
+  - weapon: kuva_nukor
+    mode: base
     score: 18.03521941260796
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: heat
+  - weapon: kuva_nukor
+    mode: base
+    score: 17.60541436503697
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, pistol_elementalist, sure_shot, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
   - weapon: kuva_nukor
     mode: base
     score: 17.603699708885898
@@ -1960,6 +1976,12 @@ entries:
     mode: base
     score: 16.68218218654743
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge, scorch]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    score: 11.488813966705049
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, pistol_elementalist, sure_shot, primed_convulsion, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
   - weapon: kuva_nukor
