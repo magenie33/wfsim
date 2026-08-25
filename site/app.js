@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "61514a40+ · 2026-08-25 00:43Z";
+const BUILD_ID = "76f39096+ · 2026-08-25 02:10Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -1646,10 +1646,14 @@ function route() {
     // cannot reproduce, and arriving with neither gave you the FIRST ruler's
     // leader whichever board you clicked (owner, 2026-08-08).
     const wantBench = new URLSearchParams(location.search).get("bench");
+    // WHICH OF THE TWO LEADERS — see the link builder. Null when the link
+    // predates the parameter, which means "whichever row leads".
+    const rivenParam = new URLSearchParams(location.search).get("riven");
+    const wantRiven = rivenParam === null ? null : rivenParam === "1";
     if ($("weapon").value !== w.id) {
       switchWeapon(w.id);
     }
-    if (wantBench) applyBenchLink(w, wantBench, wantMode);
+    if (wantBench) applyBenchLink(w, wantBench, wantMode, wantRiven);
     if (wantMode && (w.modes || []).includes(wantMode)) {
       if (wantMode !== mode) {
         mode = wantMode;
@@ -1664,6 +1668,7 @@ function route() {
       if (new URLSearchParams(location.search).get("mode") !== wantMode) {
         const q = new URLSearchParams();
         if (wantBench) q.set("bench", wantBench);
+        if (rivenParam !== null) q.set("riven", rivenParam);
         q.set("mode", wantMode);
         history.replaceState(null, "", `${location.pathname}?${q}`);
       }
@@ -1984,8 +1989,21 @@ function renderBenchBoard() {
         // It selects the FIGHT as well as the build. A board row is a build AND
         // the ruler it was measured under, so arriving with only the build is
         // arriving with a number you cannot reproduce.
+        // …AND WHICH OF THE TWO LEADERS. The board holds a riven row and a
+        // plain one per weapon and mode, both called "#1", and the ruler and
+        // the mode tell them apart no better than they told the two rulers
+        // apart in 2026-08-08. Clicking the leader of the "riven only" view
+        // opened the PLAIN leader — a different build, with a riven slot the
+        // landing page then had nothing to put in (owner reported the empty
+        // slot, 2026-08-24; this is where it came from).
+        //
+        // STATED EITHER WAY (`riven=1` / `riven=0`) rather than only when
+        // there is one, so an ABSENT parameter keeps meaning what it always
+        // meant: a link written before this existed, which lands on whichever
+        // row leads.
         `?bench=${encodeURIComponent(cur.id)}${
-          (w.modes || []).length > 1 ? `&mode=${encodeURIComponent(mode)}` : ""}`}">
+          (w.modes || []).length > 1 ? `&mode=${encodeURIComponent(mode)}` : ""
+        }${row ? `&riven=${rowHasRiven(row) ? 1 : 0}` : ""}`}">
         <span class="brank">${row ? `#${i + 1}` : "—"}</span>
         ${imgTag(IMG(w.image), "bimg")}
         <span class="bname">${escHtml(w.name)}${
@@ -7496,6 +7514,9 @@ const builtinBuilds = () => {
       // Unique per ruler, mode AND kind: the id is what the active pointer
       // stores, and a plain #1 and a riven #1 are two different builds.
       builtin: `${row.benchmark}#${mode}#${rv ? "r" : "p"}#${n}`,
+      // STATED, not parsed back out of the id above. The id is a durable key
+      // and reading a fact out of one is how a rename becomes a wrong answer.
+      riven: rv,
       benchmark: row.benchmark,
       mode,
       board: row,
@@ -7553,11 +7574,22 @@ const builtinBuilds = () => {
 /// Silent where it cannot help: a link naming a ruler this build of the site
 /// has never heard of, or a weapon with no row under it, leaves the page as it
 /// found it rather than clearing what is on screen.
-function applyBenchLink(w, benchId, wantMode) {
+function applyBenchLink(w, benchId, wantMode, wantRiven) {
   const sc = builtinScenarios().find((s) => s.builtin === benchId);
   if (sc) pickPreset(scenarioBarCfg(), presetId(sc));
-  const rows = builtinBuilds().filter((p) => p.benchmark === benchId);
+  let rows = builtinBuilds().filter((p) => p.benchmark === benchId);
   if (!rows.length) return;
+  // WHICH OF THE TWO LEADERS, narrowed FIRST because it is the coarser split:
+  // a weapon's riven rows and its plain ones are two rankings, and taking the
+  // mode's leader out of the union hands back whichever of the two happens to
+  // score higher. Skipped when the link predates the parameter, and skipped
+  // when it would leave nothing — a board that holds only plain rows still has
+  // to answer a `riven=1` link with the row it does have rather than with
+  // silence.
+  if (wantRiven !== null && wantRiven !== undefined) {
+    const narrowed = rows.filter((p) => !!p.riven === wantRiven);
+    if (narrowed.length) rows = narrowed;
+  }
   // The mode the link asked for, else however this weapon is played — the
   // board's own row order inside a ruler is best-first, so `find` is the
   // leader either way.

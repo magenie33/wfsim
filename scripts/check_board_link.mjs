@@ -54,16 +54,33 @@ const r = await evaluate(`(async () => {
       const b = buildNamed(activePreset) || {};
       rec.buildRuler = b.benchmark;
       rec.buildMode = b.mode;
-      rec.mods = slots.filter(x => x.mod).map(x => x.mod);
+      // A RIVEN ROW LANDS WITH A RIVEN MADE FOR IT, so the slot holds
+      // riven:<the card's name> where the board row states the bare riven.
+      // Normalised rather than compared raw: the name is generated and
+      // localized ("榜单 · critical_chance / …"), so a raw comparison would be
+      // asserting the label rather than the build.
+      rec.mods = slots.filter(x => x.mod)
+        .map(x => (String(x.mod).startsWith('riven') ? 'riven' : x.mod));
       rec.arcanes = arcanes.filter(a => a && a !== 'none');
       rec.mode = mode;
       // BY MODE, not "the first row for this weapon". A weapon can hold a
       // row per mode, so taking [0] compared the row you clicked against
       // whichever one happened to be stored first.
       const hrefMode = (rec.href.match(/mode=([^&]+)/) || [])[1] || 'base';
+      // …AND WHICH OF THE TWO LEADERS. A board holds a riven row and a plain
+      // one per weapon and mode, both called #1, and until 2026-08-25 the link
+      // carried no way to tell them apart — so clicking the riven view's
+      // leader opened the plain one. Taking the highest score of the union
+      // here would compare the row that WAS opened against the row that should
+      // have been, and call the link correct whichever it opened.
+      const hrefRiven = (rec.href.match(/riven=([01])/) || [])[1];
       const want = (BOARD[rec.weapon] || [])
-        .filter(x => x.benchmark === id && (x.mode || 'base') === hrefMode)
+        .filter(x => x.benchmark === id && (x.mode || 'base') === hrefMode
+          && (hrefRiven === undefined || (!!x.riven) === (hrefRiven === '1')))
         .sort((a, b) => b.score - a.score);
+      rec.hrefRiven = hrefRiven;
+      rec.wantRiven = !!(want[0] || {}).riven;
+      rec.openedRiven = slots.some(x => String(x.mod || '').startsWith('riven'));
       rec.wantMods = (want[0] || {}).mods || null;
       rec.wantArcanes = (want[0] || {}).arcanes || null;
       rec.wantMode = (want[0] || {}).mode || null;
@@ -189,6 +206,14 @@ for (const e of r.each.filter((x) => x.href)) {
   // cycle and one that never transmutes are two lines on the same board.
   check(`${tag} ...played the way the row was`, e.mode === (e.wantMode || "base"),
     `${e.mode} vs ${e.wantMode}`);
+  // AND CARRYING A RIVEN IF THE ROW DID. The build that lands has to be the one
+  // the link named on BOTH halves of a weapon's board — the empty riven slot
+  // the owner reported (2026-08-24) was this: a riven row's link opened the
+  // plain leader, so the slot the row needed had nothing in it.
+  check(`${tag} ...and the link says which of the two leaders it is`,
+    e.hrefRiven === '0' || e.hrefRiven === '1', String(e.hrefRiven));
+  check(`${tag} ...opening a build with a riven exactly when the row has one`,
+    e.openedRiven === e.wantRiven, `opened ${e.openedRiven}, row ${e.wantRiven}`);
 }
 
 // ---- and the same weapon in TWO modes ----------------------------------
@@ -255,7 +280,11 @@ const pick = await evaluate(`(async () => {
     const prev = {};
     let last = null, ok = true, why = '';
     for (const p of ps) {
-      const k = p.benchmark + '#' + p.mode;
+      // THE GROUP IS THREE THINGS, not two. Riven rows became their own block
+      // on 2026-08-24 — a rank only means something inside one — and a key that
+      // stopped at the mode reported the two rankings interleaved, which is
+      // exactly what a reader would see if the page had not grouped them.
+      const k = p.benchmark + '#' + p.mode + '#' + (p.riven ? 'r' : 'p');
       if (k !== last) { blocks.push(k); last = k; }
       // WHAT A RANK MEANS: #1 is that mode's leader. Counting positions would
       // be vacuous — builtinBuilds numbers the rows as it walks them, so a

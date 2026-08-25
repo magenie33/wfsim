@@ -33,6 +33,15 @@ jobs:
         with:
           # >= 22 for the global WebSocket the CDP client uses.
           node-version: "22"
+      # EVERY CHECK SCRIPT PARSES, before any of them is run. A stray backtick
+      # in a comment closes the template literal a browser check hands the page,
+      # and it has done so seven times — each one costing a full browser run to
+      # find, because the parser reports it as a SyntaxError inside
+      # `node:internal` naming the line the literal starts on. Milliseconds, no
+      # browser, so it goes first: a check that cannot parse cannot fail
+      # honestly either.
+      - name: Every check script parses
+        run: node scripts/check_page_bodies.mjs
       - name: Builder / optimizer parity
         # `CI` is set by Actions; the script reads it to drop Chrome's sandbox,
         # which a runner has no user namespace for.
