@@ -1555,8 +1555,33 @@ const weaponPath = (id) => {
   return "/weapons/" + (w ? wikiSlug(w) : id);
 };
 function nav(path) {
-  if (location.pathname !== path) history.pushState(null, "", path);
+  const moved = location.pathname !== path;
+  if (moved) history.pushState(null, "", path);
   route();
+  // A NEW PAGE STARTS AT THE TOP.
+  //
+  // `pushState` does not touch the scroll position, so a click from halfway
+  // down the home grid landed on a weapon page ALREADY scrolled to wherever the
+  // grid had been — somewhere in the middle of a panel nobody chose. Every
+  // in-app link had it, because every one of them comes through here (owner,
+  // 2026-08-25).
+  //
+  // ONLY ON A FORWARD MOVE, and only when the path actually changed. `route()`
+  // is called on its own for a re-render — a language switch, a share import,
+  // every check in `scripts/` — and jumping those to the top would throw away a
+  // position the reader never left. BACK and FORWARD go through `popstate`,
+  // which calls `route()` directly and never reaches this line, so the
+  // browser's own restored position stands: that is why
+  // `history.scrollRestoration` is left alone rather than turned off.
+  //
+  // AFTER the `pushState`, never before. The entry being LEFT records its
+  // scroll at the moment the new one is pushed, so scrolling first would file
+  // "top of page" against the page the reader is about to come back to.
+  //
+  // `instant`, not the default `auto`: `auto` defers to CSS, and a smooth
+  // scroll from the bottom of a 500-weapon grid is an animation nobody asked
+  // for on top of a navigation.
+  if (moved) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
 }
 function route() {
   // A SHARED LINK is answered before anything else on the page is drawn for

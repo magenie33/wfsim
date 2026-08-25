@@ -351,4 +351,50 @@ check(`[${pick.drawn}] ...drawing each mode's header exactly once`,
     && pick.headers.length === new Set(pick.headers).size,
   JSON.stringify(pick.headers));
 
+// ---- and the page you land on starts at the top ----------------------------
+//
+// THE SAME GESTURE'S OTHER HALF. Everything above asks WHERE a click on a row
+// takes you; this asks what you see when you get there. `pushState` does not
+// touch the scroll position, so a click from halfway down a 500-row board
+// landed on a weapon page already scrolled into the middle of a panel nobody
+// chose — every in-app link had it (owner, 2026-08-25).
+//
+// A REAL CLICK, not `pushState`: the fix lives in `nav()`, which is what a link
+// click goes through and what the rest of this file deliberately bypasses.
+{
+  const sc = await evaluate(`(async () => {
+    const s = (ms) => new Promise(r => setTimeout(r, ms));
+    const out = {};
+    history.pushState({}, '', '/benchmark'); route(); await s(3000);
+    window.scrollTo(0, document.documentElement.scrollHeight); await s(400);
+    out.before = Math.round(window.scrollY);
+    const a = document.querySelector('.bench-rows .brow');
+    out.href = a ? a.getAttribute('href') : null;
+    if (a) { a.click(); await s(2600); }
+    out.after = Math.round(window.scrollY);
+    out.path = location.pathname;
+    // BACK KEEPS ITS PLACE. popstate never reaches nav(), so the browser's own
+    // restoration stands - which is why history.scrollRestoration is left alone
+    // rather than turned off.
+    history.back(); await s(2200);
+    out.backPath = location.pathname;
+    out.backScroll = Math.round(window.scrollY);
+    // ...and a RE-RENDER is not a navigation. route() is called on its own for
+    // a language switch, a share import and every check in this directory.
+    window.scrollTo(0, 400); await s(300);
+    route(); await s(900);
+    out.afterRoute = Math.round(window.scrollY);
+    return out;
+  })()`);
+  check("the board was scrolled before the click", sc.before > 200, String(sc.before));
+  check("...and the weapon page it opens starts at the top",
+    sc.after === 0 && String(sc.path || "").indexOf("/weapons/") === 0,
+    `${sc.after} on ${sc.path}`);
+  check("...while BACK returns to where the reader was",
+    sc.backPath === "/benchmark" && Math.abs(sc.backScroll - sc.before) < 40,
+    `${sc.backScroll} vs ${sc.before} on ${sc.backPath}`);
+  check("...and a re-render is not a navigation", sc.afterRoute === 400,
+    String(sc.afterRoute));
+}
+
 await app.finish("a board row opens the build it is about, under the ruler it is on");
