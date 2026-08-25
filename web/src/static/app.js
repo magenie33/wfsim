@@ -4932,6 +4932,164 @@ const SHARE_PARAM = "b";
 const SHARE_ENABLED = true;
 const SHARE_V_DEFLATE = "1";
 const SHARE_V_PLAIN = "0";
+/// **v3: THE IDS TRAVEL AS INDICES, AND THE PAYLOAD IS PLAIN TEXT** (owner
+/// asked for a shorter link, 2026-08-25).
+///
+/// A link used to spell its ids out and then deflate them, which is why a build
+/// cost ~280 characters: the payload is mostly identifiers, and deflate cannot
+/// know the ones the payload does NOT contain. The same Laetum is 76 characters
+/// as indices — and at that length deflate makes it BIGGER (its own header
+/// outweighs what it finds), so v3 goes into the URL as it is.
+///
+/// EVERY SEPARATOR IS URL-SAFE, which is what lets the text travel raw: `~`,
+/// `-`, `.` and `_` are unreserved in RFC 3986 and `:`, `;`, `,` and `!` are
+/// sub-delims a query accepts without escaping. Anything that is not — a riven
+/// somebody named in Chinese — falls back to the deflate+base64 path, which is
+/// still there and still reads every link ever posted.
+const SHARE_V_TEXT = "3";
+/// The frozen order both ends index into, from `/api/meta`'s `si` per entity.
+/// Built once, from what is already travelling — the manifest itself never
+/// crosses the wire.
+let shareIx = null;
+function shareIndex() {
+  if (shareIx) return shareIx;
+  const to = new Map();
+  const from = new Map();
+  const take = (x) => {
+    if (!x || x.si == null) return;
+    to.set(x.id, x.si);
+    from.set(x.si, x.id);
+  };
+  (META.weapons || []).forEach((w) => {
+    take(w);
+    (w.evolutions || []).forEach((t) => (t.options || []).forEach(take));
+  });
+  // MODS ARRIVE BY POOL, not as one list — `mod_pools` is a map of pool name to
+  // its mods, and a mod in two pools is the same object twice, which `take`
+  // absorbs.
+  Object.values(META.mod_pools || {}).forEach((list) => (list || []).forEach(take));
+  (META.arcanes || []).forEach(take);
+  Object.values(META.riven_stats || {}).forEach((list) => (list || []).forEach(take));
+  shareIx = { to, from };
+  return shareIx;
+}
+/// An id as a number, or `!<id>` for one the manifest has never been told
+/// about — a mod added since the last `gen_share_order.py`. A link that carries
+/// one is longer and still correct, which is the only direction this may fail.
+const siOf = (id) => {
+  const n = shareIndex().to.get(id);
+  return n == null ? "!" + id : String(n);
+};
+const siBack = (tok) => {
+  if (tok === "" || tok == null) return "";
+  if (tok[0] === "!") return tok.slice(1);
+  const id = shareIndex().from.get(Number(tok));
+  return id == null ? "" : id;
+};
+/// The characters v3 may travel raw in. Everything the format itself uses, plus
+/// what an id or a rank can contain.
+const SHARE_TEXT_OK = /^[A-Za-z0-9~.:;,!_-]*$/;
+
+/// A weapon's evolution id prefix, WITHOUT reading the page — `evoPrefix` asks
+/// the DOM and the decoder runs before the weapon has been switched.
+const evoPrefixFor = (weaponId) => {
+  const w = (META.weapons || []).find((x) => x.id === weaponId);
+  const any = ((w && w.evolutions) || [])[0];
+  const first = ((any || {}).options || [])[0];
+  return first && first.id.startsWith(weaponId + "_") ? weaponId + "_" : "";
+};
+
+/// The v2 array as v3 text. One place, and its inverse is directly below it —
+/// the pair round-trips, which is what `check_share` asserts over every axis.
+function packV3(a) {
+  const [, weapon, name, slots9, arcs, evos, rivens, sc, m, md, val, asm] = a;
+  if (sc || m) return null;                 // a CLAIM keeps the JSON path
+  const pre = evoPrefixFor(weapon);
+  const slot = (s) => {
+    if (!s) return "";
+    const [id, pol, rank] = typeof s === "string" ? [s] : s;
+    // A RIVEN SLOT names the riven by its place in field 5, as v2 does with
+    // "~0" — `r0` here, because `~` is the field separator.
+    const head = String(id)[0] === "~" ? "r" + String(id).slice(1) : siOf(id);
+    if (rank != null) return `${head}:${pol || ""}:${rank}`;
+    return pol ? `${head}:${pol}` : head;
+  };
+  const riven = (r) => {
+    const [rn, shape, rank, pol, bonuses, malus] = r;
+    const stats = (bonuses || []).map(([id, roll]) => `${siOf(id)}:${roll}`).join(",");
+    const mal = malus ? `${siOf(malus[0])}:${malus[1]}` : "";
+    // A NAME THE SHAPE ALREADY IMPLIES DOES NOT TRAVEL — the same rule every
+    // other field here follows. A board riven's local name is
+    // `boardRivenName(shape)` and nothing else, so sending it is pure length —
+    // and it is the one string in this payload that is NOT url-safe (it is
+    // localized: "榜单 · critical_chance / …"), which would have sent every
+    // board-riven link back to base64 for a name the reader can compute.
+    //
+    // AND THE READER NAMES IT IN THEIR OWN LANGUAGE, which is better than
+    // carrying the sharer's.
+    const derived = boardRivenName({
+      bonuses: (bonuses || []).map(([id]) => id),
+      malus: malus ? malus[0] : null,
+    });
+    return [rn === derived ? "" : rn, shape, rank, pol, stats, mal].join(";");
+  };
+  const out = [
+    siOf(weapon),
+    name || "",
+    (slots9 || []).map(slot).join("."),
+    (arcs || []).map((x) => (Array.isArray(x) ? `${siOf(x[0])}:${x[1]}` : siOf(x))).join("."),
+    (evos || []).map((e) => (e ? siOf(pre + e) : "")).join("."),
+    (rivens || []).map(riven).join("!"),
+    md || "",
+    val ? `${val[0]}:${val[1]}` : "",
+    asm ? `${siOf(asm[0])}:${siOf(asm[1])}` : "",
+  ];
+  while (out.length > 3 && out[out.length - 1] === "") out.pop();
+  const text = out.join("~");
+  return SHARE_TEXT_OK.test(text) ? text : null;
+}
+
+/// v3 text back into the v2 array, so everything downstream is unchanged.
+function unpackV3(text) {
+  const f = String(text).split("~");
+  const weapon = siBack(f[0]);
+  if (!weapon) return null;
+  const pre = evoPrefixFor(weapon);
+  const list = (i, sep) => (f[i] ? String(f[i]).split(sep || ".") : []);
+  const slots9 = list(2).map((t) => {
+    if (!t) return 0;
+    const [head, pol, rank] = t.split(":");
+    const id = head[0] === "r" ? "~" + head.slice(1) : siBack(head);
+    if (!id) return 0;
+    if (rank != null && rank !== "") return [id, pol || "", Number(rank)];
+    return pol ? [id, pol] : id;
+  });
+  const arcs = list(3).map((t) => {
+    const [i, rank] = t.split(":");
+    return rank == null ? siBack(i) : [siBack(i), Number(rank)];
+  });
+  const evos = list(4).map((t) => {
+    const id = siBack(t);
+    return id && pre && id.startsWith(pre) ? id.slice(pre.length) : id;
+  });
+  const rivens = list(5, "!").filter(Boolean).map((r) => {
+    const [rn, shape, rank, pol, stats, mal] = r.split(";");
+    const pair = (t) => { const [i, roll] = t.split(":"); return [siBack(i), Number(roll)]; };
+    const bonuses = stats ? stats.split(",").map(pair) : [];
+    const malus = mal ? pair(mal) : 0;
+    // AN EMPTY NAME MEANS "the one the shape implies" — see `packV3`.
+    const name = rn || boardRivenName({
+      bonuses: bonuses.map(([id]) => id),
+      malus: malus ? malus[0] : null,
+    });
+    return [name, shape, Number(rank), pol, bonuses, malus];
+  });
+  const val = f[7] ? f[7].split(":") : null;
+  const asm = f[8] ? f[8].split(":") : null;
+  return [2, weapon, f[1] || 0, slots9, arcs, evos, rivens, 0, 0,
+    f[6] || 0, val ? [val[0], Number(val[1])] : 0,
+    asm ? [siBack(asm[0]), siBack(asm[1])] : 0];
+}
 
 const b64urlEnc = (u8) => {
   let s = "";
@@ -5141,20 +5299,39 @@ const r3 = (x) => Math.round((Number(x) || 0) * 1000) / 1000;
 const cap1 = (s) => String(s || "").replace(/^./, (c) => c.toUpperCase());
 
 async function shareUrl(withFight = true) {
-  const json = new TextEncoder().encode(JSON.stringify(sharePayload(withFight)));
+  const payload = sharePayload(withFight);
+  // THE SHORTEST OF THREE, chosen by measuring rather than by rule. v3 wins on
+  // every ordinary build — the ids become numbers and the text goes in raw —
+  // and loses on a payload it cannot express (a CLAIM, or a riven named in a
+  // script the URL would have to escape), where the two older forms are still
+  // there and still read every link ever posted.
+  const text = packV3(payload);
+  const json = new TextEncoder().encode(JSON.stringify(payload));
   const z = await deflate(json);
-  const code = z && z.length < json.length
+  const zipped = z && z.length < json.length
     ? SHARE_V_DEFLATE + b64urlEnc(z)
     : SHARE_V_PLAIN + b64urlEnc(json);
+  const code = text != null && SHARE_V_TEXT.length + text.length < zipped.length
+    ? SHARE_V_TEXT + text
+    : zipped;
   const w = weaponInfo($("weapon").value);
   return `${location.origin}${weaponPath(w.id)}?${SHARE_PARAM}=${code}`;
 }
 
 async function decodeShare(code) {
   if (!code) return null;
-  const bytes = b64urlDec(code.slice(1));
-  const json = code[0] === SHARE_V_DEFLATE ? await inflate(bytes) : bytes;
-  const data = JSON.parse(new TextDecoder().decode(json));
+  // v3 IS TEXT, so it never goes near base64 or inflate. Dispatched on the
+  // version character the code has always carried, which is why adding a third
+  // form costs the older two nothing.
+  let data;
+  if (code[0] === SHARE_V_TEXT) {
+    data = unpackV3(code.slice(1));
+    if (!data) return null;
+  } else {
+    const bytes = b64urlDec(code.slice(1));
+    const json = code[0] === SHARE_V_DEFLATE ? await inflate(bytes) : bytes;
+    data = JSON.parse(new TextDecoder().decode(json));
+  }
   if (!Array.isArray(data)) return v1Share(data);      // links posted before v2
   const [, weapon, name, slots9, arcs, evos, rivens, sc, m, md, val, asm] = data;
   return {

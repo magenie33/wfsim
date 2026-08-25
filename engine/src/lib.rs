@@ -29,6 +29,7 @@ pub mod formation;
 pub mod damage;
 pub mod data;
 pub mod data_fingerprint;
+pub mod share_order;
 pub mod arena;
 pub mod benchmarks_data;
 pub mod boards_data;

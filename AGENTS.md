@@ -1627,9 +1627,32 @@ around (decision 2026-07-31).
   drawn at a FIXED 8 device pixels per module — measured, not chosen: at 4 the
   card only scans at full size, at 6 it survives a 0.66x shrink, at 8 it still
   reads at 1080px wide after JPEG 60, which is what a chat app hands back.
-  The code's size is therefore an input to the layout, not an output of it. IDs travel as their own stable slugs, never as indices into a
-  table: a table would have to stay append-only forever or silently reinterpret
-  every link already posted. It rides the QUERY, not the fragment — a fragment
+  The code's size is therefore an input to the layout, not an output of it. IDs USED TO TRAVEL AS THEIR OWN STABLE SLUGS, on the reasoning that
+  "a table would have to stay append-only forever or silently reinterpret every
+  link already posted". **THAT PRICE IS NOW PAID** (owner asked for a shorter
+  link, 2026-08-25): a v3 link names an id by its place in
+  `data/share_order.yaml`, which is APPEND-ONLY and held there by a ratchet —
+  `engine::share_order` recomputes the generator's digest over the whole list
+  and fails on anything that is not an append, so a reorder is a red test rather
+  than a link that quietly opens somebody else's build. The rule NAMED the cost
+  before it was paid, and the cost turned out to be one generator, one file and
+  one test.
+  IT IS WORTH 3.4x. The same Laetum is 279 characters as slugs and 79 as
+  indices; a board build carrying a riven, 383 and 117. Nothing else changed:
+  the v2 array is still the one internal representation, so `importShare` and
+  every consumer below it are untouched — only the framing is new, and v1 and
+  v2 links still open.
+  AND v3 IS PLAIN TEXT IN THE URL. At 79 characters deflate makes the payload
+  BIGGER (its own header outweighs what it finds), so the text goes in raw; the
+  separators are RFC 3986 unreserved characters and sub-delims a query accepts
+  unescaped. A payload it cannot express — a CLAIM, or a name in a script the
+  URL would escape — falls back to the deflate+base64 form, which is why the
+  encoder measures all three and takes the shortest rather than following a
+  rule.
+  A NAME THE SHAPE IMPLIES DOES NOT TRAVEL: a board riven's local name is
+  `boardRivenName(shape)` and nothing else, and it is the one string in the
+  payload that is NOT url-safe (it is localized). Deriving it on arrival is
+  shorter AND names it in the reader's own language. It rides the QUERY, not the fragment — a fragment
   never reaches a crawler and these links are meant to be posted. The card
   (`drawShareCard`, a canvas PNG to paste into chat) always carries the
   wordmark and the site's host.

@@ -981,6 +981,13 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
         .map(|m| {
             let mut j = json!({
                 "id": m.id,
+                // WHERE THIS SITS IN THE FROZEN SHARE ORDER, so a share
+                // link can name it with a number instead of spelling it
+                // out — see `engine::share_order`. Absent for an id the
+                // manifest has not been told about yet, which a link
+                // falls back to spelling.
+                "si": wfsim_engine::share_order::index_of(m.id),
+
                 // DE's own name, straight from the yaml. This used to be
                 // `prettify(m.id)` — a title-cased id, which is not the same
                 // string: "Semi-Shotgun Cannonade" came back without its
@@ -1039,6 +1046,12 @@ pub fn meta_json() -> Value {
             );
             json!({
                 "id": w.id,
+                // WHERE THIS SITS IN THE FROZEN SHARE ORDER, so a share
+                // link can name it with a number instead of spelling it
+                // out — see `engine::share_order`. Absent for an id the
+                // manifest has not been told about yet, which a link
+                // falls back to spelling.
+                "si": wfsim_engine::share_order::index_of(&w.id),
                 "name": w.name,
                 // The pools to union, in order. `mod_class` stays as the
                 // NARROWEST one, which is what labels and filters read.
@@ -1324,6 +1337,8 @@ pub fn meta_json() -> Value {
                             .iter()
                             .map(|e| json!({
                                 "id": e.id,
+                                // See the `si` on a mod above.
+                                "si": wfsim_engine::share_order::index_of(&e.id),
                                 "name": e.name,
                                 "icon": e.icon,
                                 "broken": e.currently_broken,
@@ -1477,6 +1492,8 @@ pub fn meta_json() -> Value {
         let desc_ranks: Vec<String> = (0..=a.max_rank).map(|r| a.desc_at(r)).collect();
         arcanes_json.push(json!({
             "id": a.id,
+            // See the `si` on a mod above.
+            "si": wfsim_engine::share_order::index_of(&a.id),
             "name": a.name,
             "image": assets().arcanes.get(&a.id),
             "ranks": ranks,
@@ -1651,7 +1668,11 @@ pub fn meta_json() -> Value {
                         json!(p
                             .iter()
                             .map(|s| json!({
-                                "id": s.id, "text": s.text, "base": s.base,
+                                "id": s.id,
+                                // See the `si` on a mod: a riven's SHAPE names
+                                // its stats and a share link carries the shape.
+                                "si": wfsim_engine::share_order::index_of(&s.id),
+                                "text": s.text, "base": s.base,
                                 "prefix": s.prefix, "suffix": s.suffix,
                                 "malus": s.malus, "modeled": s.kind != "unmodeled",
                             }))

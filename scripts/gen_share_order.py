@@ -1,0 +1,152 @@
+#!/usr/bin/env python3
+"""THE SHARE MANIFEST — a frozen, APPEND-ONLY order for every id a share link
+can name.
+
+A share link used to spell its ids out (`galvanized_diffusion`), which is why a
+build cost ~280 characters even after deflate: the payload is mostly identifiers
+and deflate cannot know the ones the payload does NOT contain. Sending an INDEX
+instead takes the same build to ~76 (owner asked for a shorter link,
+2026-08-25).
+
+**THE PRICE IS THIS FILE, and the repo's own rule named it before it was paid**:
+
+    IDs travel as their own stable slugs, never as indices into a table: a table
+    would have to stay append-only forever or silently reinterpret every link
+    already posted.  (AGENTS.md)
+
+So the table stays append-only forever, and that is not a promise — it is a
+ratchet. `engine::share_order`'s test recomputes the digest of every entry that
+was already frozen and fails on a reorder or a deletion; this script only ever
+APPENDS, so the ordinary way of working cannot break it.
+
+    python scripts/gen_share_order.py          # append what is new, re-freeze
+    python scripts/gen_share_order.py --check  # report, write nothing
+
+A DIGEST OVER THE FROZEN PREFIX, not over the whole file: appending is free and
+must stay free (weapons arrive every week), while touching anything already in
+the list has to be a deliberate act that fails a test until somebody re-freezes
+it on purpose.
+"""
+import hashlib
+import io
+import os
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.path.join(ROOT, "data", "share_order.yaml")
+
+# THE FAMILIES A SHARE NAMES. Anything a build can carry and a link must spell:
+# the weapon, its mods, its arcanes, its evolutions, and the stats a riven rolls.
+# A family added here is a new set of ids appended at the END, which is exactly
+# what append-only means.
+FAMILIES = ["weapons", "mods", "arcanes", "evolutions"]
+
+# THE RIVEN STATS, which live differently: `data/rivens/<class>.yaml` is a POOL
+# with one `- id:` per stat rather than one file per stat, so the sweep above
+# would find nothing in it. A riven shape names its stats and a share link
+# carries the shape, so they have to be frozen like everything else.
+RIVEN_POOLS = ["pistol", "rifle", "shotgun", "archgun"]
+
+
+def ids_under(rel):
+    """Every top-level `id:` under `data/<rel>`, sorted — the order a FIRST
+    generation freezes. After that the order is whatever the file already says
+    and this only supplies the set."""
+    out = []
+    base = os.path.join(ROOT, "data", rel)
+    for dirpath, _, names in os.walk(base):
+        for n in sorted(names):
+            if not n.endswith(".yaml"):
+                continue
+            with io.open(os.path.join(dirpath, n), encoding="utf-8") as f:
+                for line in f:
+                    if line.startswith("id:"):
+                        out.append(line[3:].split("#")[0].strip())
+                        break
+    return sorted(set(out))
+
+
+def read_existing():
+    """The frozen list as it stands, in order. Parsed by hand rather than with
+    a yaml library: this file is one key and a list of bare slugs, and the
+    parser has to agree with the Rust one byte for byte."""
+    if not os.path.exists(OUT):
+        return []
+    order = []
+    with io.open(OUT, encoding="utf-8") as f:
+        for line in f:
+            s = line.strip()
+            if s.startswith("- "):
+                order.append(s[2:].strip())
+    return order
+
+
+def digest(order):
+    """FNV-1a over the joined list, hex. Written out rather than borrowed so the
+    Rust side computes the identical number from the identical bytes."""
+    h = 0xCBF29CE484222325
+    for b in ",".join(order).encode("utf-8"):
+        h ^= b
+        h = (h * 0x100000001B3) & 0xFFFFFFFFFFFFFFFF
+    return f"{h:016x}"
+
+
+def main():
+    check = "--check" in sys.argv
+    have = read_existing()
+    seen = set(have)
+    fresh = []
+
+    def take(i):
+        if i not in seen:
+            seen.add(i)
+            fresh.append(i)
+
+    for fam in FAMILIES:
+        for i in ids_under(fam):
+            take(i)
+    for cls in RIVEN_POOLS:
+        path = os.path.join(ROOT, "data", "rivens", cls + ".yaml")
+        if not os.path.exists(path):
+            continue
+        with io.open(path, encoding="utf-8") as f:
+            for line in f:
+                t = line.strip()
+                if t.startswith("- id:"):
+                    take(t[5:].split("#")[0].strip())
+    order = have + fresh
+
+    # A DUPLICATE WOULD MAKE TWO BUILDS ONE. Checked here as well as in the
+    # ratchet, because this is where one could be introduced.
+    assert len(set(order)) == len(order), "duplicate id in the share manifest"
+
+    if check:
+        print(f"{len(have)} frozen, {len(fresh)} new")
+        for i in fresh[:20]:
+            print(f"  + {i}")
+        if len(fresh) > 20:
+            print(f"  … and {len(fresh) - 20} more")
+        sys.exit(1 if fresh else 0)
+
+    body = [
+        "# THE SHARE MANIFEST — generated by scripts/gen_share_order.py.",
+        "#",
+        "# APPEND-ONLY, FOREVER. A share link names a mod by its INDEX in this",
+        "# list, so reordering or removing a line silently reinterprets every link",
+        "# already posted. `engine::share_order` recomputes `digest` over the whole",
+        "# list and fails on any change that is not an append.",
+        "#",
+        "# Never edit by hand: run the generator, which only ever appends.",
+        "#",
+        f"digest: {digest(order)}",
+        f"count: {len(order)}",
+        "ids:",
+    ]
+    body += [f"  - {i}" for i in order]
+    with io.open(OUT, "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(body) + "\n")
+    print(f"{OUT}: {len(order)} ids ({len(fresh)} appended)")
+
+
+if __name__ == "__main__":
+    main()

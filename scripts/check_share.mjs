@@ -201,4 +201,65 @@ check("...no scenario was planted in their list", bo.scenarios.length === mine.s
 check("...and they are still on their own", bo.active === mine.active,
   `${mine.active} -> ${bo.active}`);
 
+// ---- v3: THE IDS TRAVEL AS INDICES, AND NOTHING ELSE CHANGES ---------------
+//
+// A link used to spell its ids out and deflate them; v3 sends each one's place
+// in a frozen manifest and puts the text in the URL raw (owner asked for a
+// shorter link, 2026-08-25). That is a renumbering of every id in the payload,
+// laid on top of a format that has ALREADY silently dropped an axis once
+// (2026-08-15: `mode` and `valence` were in the state and not in the tuple, so
+// a shared Kuva Nukor reopened on the default element).
+//
+// SO THE ASSERTION IS AN ANSWER, not a field list: the same build encoded BOTH
+// ways must decode to the same object. It cannot go stale — an axis added
+// tomorrow is covered by nobody, because neither side of the comparison knows
+// what an axis is.
+{
+  const r3 = await evaluate(`(async () => {
+    const s = (ms) => new Promise(r => setTimeout(r, ms));
+    localStorage.clear();
+    history.pushState({}, '', '/weapons/Dual_Toxocyst?bench=single_target&mode=cycle&riven=1');
+    route(); await s(4000);
+    const out = {};
+    out.build = activePreset;
+    out.hasRiven = slots.some(x => String(x.mod || '').startsWith('riven'));
+    const payload = sharePayload(false);
+    const text = packV3(payload);
+    out.packed = text !== null;
+    if (!out.packed) return out;
+    // BOTH CODES, from ONE payload - so the comparison is about the framing and
+    // not about two different builds.
+    const json = new TextEncoder().encode(JSON.stringify(payload));
+    const z = await deflate(json);
+    const oldCode = (z && z.length < json.length ? '1' + b64urlEnc(z) : '0' + b64urlEnc(json));
+    const newCode = '3' + text;
+    out.oldLen = oldCode.length;
+    out.newLen = newCode.length;
+    const a = await decodeShare(oldCode);
+    const b = await decodeShare(newCode);
+    out.same = JSON.stringify(a) === JSON.stringify(b);
+    out.a = JSON.stringify(a).slice(0, 260);
+    out.b = JSON.stringify(b).slice(0, 260);
+    // ...AND IT SURVIVES A REAL URL UNCHANGED. The whole point of the text form
+    // is that it needs no base64, so what is asserted is the round trip through
+    // the thing that actually carries it — not 'encodeURIComponent', which
+    // escapes ':' ';' and ',' although a QUERY accepts all three (they are
+    // sub-delims in RFC 3986). Testing against the wrong function would have
+    // sent every link back through base64 for nothing.
+    const u = new URL('https://wfsim.app/weapons/X');
+    u.searchParams.set('b', newCode);
+    out.raw = new URL(u.href).searchParams.get('b') === newCode;
+    out.href = u.href.slice(0, 90);
+    return out;
+  })()`);
+  check("the v3 case runs on a build with a riven, which is the hard one",
+    r3.hasRiven === true, `${r3.build}, riven ${r3.hasRiven}`);
+  check("...and v3 can express it", r3.packed === true);
+  check("...decoding both codes gives the SAME build",
+    r3.same === true, `old ${r3.a}    new ${r3.b}`);
+  check(`...and the new code is shorter (${r3.oldLen} -> ${r3.newLen})`,
+    r3.newLen < r3.oldLen, `${r3.oldLen} -> ${r3.newLen}`);
+  check("...and survives a real URL unchanged", r3.raw === true, r3.href);
+}
+
 await app.finish("a shared link lands whole, on screen, first time");
