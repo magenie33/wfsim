@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 2383
+submissions: 2406
 engine: 51824f59ee8cfd30ce89a5c77b15bcaab93e989b
 entries:
   - weapon: afentis_prime
@@ -791,6 +791,17 @@ entries:
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, toxic_barrage]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_mercenary_chamber, boar_prime_critical_parallel]
     arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: cycle
+    score: 12.697230039115414
+    fp: 5b6472b2dc9f24a3
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, primed_charged_shell, contagious_spread]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage]
+      malus: impact
+      rolls: [1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: cycle
     score: 12.564360442436213
@@ -3667,6 +3678,13 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: laetum
     mode: cycle
+    score: 47.95895106756102
+    fp: 2d7b829a5d52f531
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+  - weapon: laetum
+    mode: cycle
     score: 47.613146166246445
     fp: 13c704d82b38ee7e
     mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -6131,6 +6149,50 @@ entries:
     mods: [primary_acuity, serration, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, stormbringer, infected_clip]
     arcanes: [primary_deadhead]
     valence: electricity
+  - weapon: tenet_plinx
+    mode: base
+    score: 0.9389785336203562
+    fp: 9964016e63bcc606
+    mods: [hornet_strike, magnum_force, primed_target_cracker, primed_pistol_gambit, barrel_diffusion, riven, primed_convulsion, primed_heated_charge]
+    arcanes: [secondary_fortifier]
+    valence: cold
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: tenet_plinx
+    mode: base
+    score: 0.9121991987457406
+    fp: a3da0725fb4cdb74
+    mods: [hornet_strike, primed_target_cracker, primed_pistol_gambit, barrel_diffusion, lethal_torrent, magnetic_might, riven, primed_convulsion]
+    arcanes: [secondary_fortifier]
+    valence: cold
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: tenet_plinx
+    mode: base
+    score: 0.8866926851142461
+    fp: 49e3d08a624b5be0
+    mods: [hornet_strike, magnum_force, primed_target_cracker, primed_pistol_gambit, barrel_diffusion, magnetic_might, riven, primed_convulsion]
+    arcanes: [secondary_fortifier]
+    valence: cold
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: tenet_plinx
+    mode: base
+    score: 0.8827888920719613
+    fp: ee96b6f909b8280d
+    mods: [hornet_strike, primed_target_cracker, primed_pistol_gambit, barrel_diffusion, magnetic_might, riven, primed_convulsion, primed_heated_charge]
+    arcanes: [secondary_fortifier]
+    valence: cold
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
   - weapon: tombfinger_secondary
     mode: base
     score: 1.2108904763839106

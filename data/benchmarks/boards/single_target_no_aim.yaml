@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 2383
+submissions: 2406
 engine: 51824f59ee8cfd30ce89a5c77b15bcaab93e989b
 entries:
   - weapon: afentis_prime
@@ -581,6 +581,17 @@ entries:
     score: 1.644165886372455
     fp: 832419a5059e8821
     mods: [galvanized_hell, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, riven, primed_charged_shell, contagious_spread]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage]
+      malus: impact
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: cycle
+    score: 1.6126973863902587
+    fp: 3b4fa3000309effe
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, primed_charged_shell, contagious_spread]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
     arcanes: [primary_deadhead]
     riven:
@@ -2182,15 +2193,15 @@ entries:
   - weapon: larkspur_prime
     mode: base
     score: 4.913549132617774
-    fp: 9b7d1ebdf573e1a0
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
-    arcanes: [primary_crux, cascadia_flare]
-  - weapon: larkspur_prime
-    mode: base
-    score: 4.913549132617774
     fp: f9fb02c2dc43aadf
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_deadhead, cascadia_flare]
+  - weapon: larkspur_prime
+    mode: base
+    score: 4.913549132617774
+    fp: 9b7d1ebdf573e1a0
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
   - weapon: larkspur_prime
     mode: base
     score: 4.779072903653303
@@ -3512,6 +3523,50 @@ entries:
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     arcanes: [primary_deadhead]
     valence: magnetic
+  - weapon: tenet_plinx
+    mode: base
+    score: 0.2567398895670777
+    fp: 8296801bd8d6e32d
+    mods: [hornet_strike, magnum_force, primed_target_cracker, primed_pistol_gambit, barrel_diffusion, riven, primed_convulsion, primed_heated_charge]
+    arcanes: [secondary_fortifier]
+    valence: cold
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: tenet_plinx
+    mode: base
+    score: 0.2540294913914674
+    fp: 88f2766b1c8cd01d
+    mods: [hornet_strike, primed_target_cracker, primed_pistol_gambit, barrel_diffusion, lethal_torrent, magnetic_might, riven, primed_convulsion]
+    arcanes: [secondary_fortifier]
+    valence: cold
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: tenet_plinx
+    mode: base
+    score: 0.24978414038071908
+    fp: 2fa9ffef1effba34
+    mods: [hornet_strike, primed_target_cracker, primed_pistol_gambit, barrel_diffusion, magnetic_might, riven, primed_convulsion, primed_heated_charge]
+    arcanes: [secondary_fortifier]
+    valence: cold
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: tenet_plinx
+    mode: base
+    score: 0.24966515939046097
+    fp: 4a43d3ff7953efed
+    mods: [hornet_strike, magnum_force, primed_target_cracker, primed_pistol_gambit, barrel_diffusion, magnetic_might, riven, primed_convulsion]
+    arcanes: [secondary_fortifier]
+    valence: cold
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
   - weapon: tombfinger_secondary
     mode: base
     score: 0.2663155452068602
@@ -3555,6 +3610,13 @@ entries:
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
+    score: 4.623372357136033
+    fp: d04b2efb896258d3
+    mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, high_voltage, thermite_rounds, rime_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
     score: 4.5917153458650315
     fp: cb439fad7c0ee0fe
     mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
@@ -3580,6 +3642,13 @@ entries:
     fp: bb546851e0758ab0
     mods: [galvanized_chamber, serration, critical_delay, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
+    score: 4.338460181565262
+    fp: 5199b911361fc808
+    mods: [galvanized_chamber, serration, critical_delay, vital_sense, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
     mode: cycle
