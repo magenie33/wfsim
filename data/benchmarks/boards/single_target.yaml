@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 2406
+submissions: 2411
 engine: 51824f59ee8cfd30ce89a5c77b15bcaab93e989b
 entries:
   - weapon: afentis_prime
@@ -6151,6 +6151,28 @@ entries:
     valence: electricity
   - weapon: tenet_plinx
     mode: base
+    score: 0.9649230126082624
+    fp: aed3701eb69f88dc
+    mods: [hornet_strike, primed_target_cracker, primed_pistol_gambit, barrel_diffusion, semi_pistol_cannonade, magnetic_might, riven, primed_heated_charge]
+    arcanes: [secondary_fortifier]
+    valence: cold
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: tenet_plinx
+    mode: base
+    score: 0.949804796725193
+    fp: 3d273aee027d84e6
+    mods: [hornet_strike, primed_target_cracker, primed_pistol_gambit, barrel_diffusion, lethal_torrent, riven, primed_convulsion, primed_heated_charge]
+    arcanes: [secondary_fortifier]
+    valence: cold
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: tenet_plinx
+    mode: base
     score: 0.9389785336203562
     fp: 9964016e63bcc606
     mods: [hornet_strike, magnum_force, primed_target_cracker, primed_pistol_gambit, barrel_diffusion, riven, primed_convulsion, primed_heated_charge]
@@ -6165,6 +6187,17 @@ entries:
     score: 0.9121991987457406
     fp: a3da0725fb4cdb74
     mods: [hornet_strike, primed_target_cracker, primed_pistol_gambit, barrel_diffusion, lethal_torrent, magnetic_might, riven, primed_convulsion]
+    arcanes: [secondary_fortifier]
+    valence: cold
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: tenet_plinx
+    mode: base
+    score: 0.8890543003186722
+    fp: 09a0b7b4e1f7b89f
+    mods: [hornet_strike, magnum_force, primed_target_cracker, primed_pistol_gambit, barrel_diffusion, magnetic_might, riven, primed_heated_charge]
     arcanes: [secondary_fortifier]
     valence: cold
     riven:

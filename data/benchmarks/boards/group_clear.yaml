@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 2406
+submissions: 2411
 engine: 51824f59ee8cfd30ce89a5c77b15bcaab93e989b
 entries:
   - weapon: afentis_prime
@@ -4033,42 +4033,9 @@ entries:
     valence: electricity
   - weapon: tenet_plinx
     mode: base
-    score: 0.9389785336203562
-    fp: 38cd45f333469584
-    mods: [hornet_strike, magnum_force, primed_target_cracker, primed_pistol_gambit, barrel_diffusion, riven, primed_convulsion, primed_heated_charge]
-    arcanes: [secondary_fortifier]
-    valence: cold
-    riven:
-      bonuses: [critical_damage, multishot]
-      malus: damage_to_infested
-      rolls: [1.1, 1.1, 0.9]
-  - weapon: tenet_plinx
-    mode: base
-    score: 0.9121991987457406
-    fp: 135aeedbd45d0b5e
-    mods: [hornet_strike, primed_target_cracker, primed_pistol_gambit, barrel_diffusion, lethal_torrent, magnetic_might, riven, primed_convulsion]
-    arcanes: [secondary_fortifier]
-    valence: cold
-    riven:
-      bonuses: [critical_damage, multishot]
-      malus: damage_to_infested
-      rolls: [1.1, 1.1, 0.9]
-  - weapon: tenet_plinx
-    mode: base
-    score: 0.8866926851142461
-    fp: 516f64fa172b8aea
-    mods: [hornet_strike, magnum_force, primed_target_cracker, primed_pistol_gambit, barrel_diffusion, magnetic_might, riven, primed_convulsion]
-    arcanes: [secondary_fortifier]
-    valence: cold
-    riven:
-      bonuses: [critical_damage, multishot]
-      malus: damage_to_infested
-      rolls: [1.1, 1.1, 0.9]
-  - weapon: tenet_plinx
-    mode: base
-    score: 0.8827888920719613
-    fp: 0a682d6bac2f1a67
-    mods: [hornet_strike, primed_target_cracker, primed_pistol_gambit, barrel_diffusion, magnetic_might, riven, primed_convulsion, primed_heated_charge]
+    score: 2.9642434193726364
+    fp: 6c7c35889186f7ca
+    mods: [hornet_strike, primed_target_cracker, primed_pistol_gambit, barrel_diffusion, semi_pistol_cannonade, magnetic_might, riven, primed_heated_charge]
     arcanes: [secondary_fortifier]
     valence: cold
     riven:
