@@ -54,6 +54,11 @@ POOL_TAG = {
     ('Secondary Mod', 'Pistol'): 'pistol',
     ('Secondary Mod', 'Pistol (No Aoe)'): 'pistol',
     ('Arch-Gun Mod', 'Archgun'): 'archgun',
+    # A TOME'S OWN EIGHT, which sit BESIDE `pistol` rather than replacing it:
+    # *"Tomes can equip Pistol Mods but also have access to unique Tome Mods"*
+    # (wiki `Tome`). The export files them as a Secondary Mod, which is why the
+    # Grimoire carries both tags (2026-08-25).
+    ('Secondary Mod', 'Tome'): 'tome',
 }
 
 # WHAT THE EXPORT HOLDS THAT NO PLAYER CAN EQUIP HERE, by RULE rather than by

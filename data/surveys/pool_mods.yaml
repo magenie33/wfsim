@@ -12,7 +12,7 @@
 # app refuses by RULE (flawed variants, riven placeholders, Conclave-only),
 # and the rule rides beside it.
 #
-# 287 of 461 carried, 145 excluded by rule, 29 still to transcribe.
+# 296 of 469 carried, 145 excluded by rule, 28 still to transcribe.
 #
 # Per pool (carried / in export, gap):
 #   archgun         37 /  37, gap 0
@@ -22,7 +22,8 @@
 #   primary         10 /  10, gap 0
 #   rifle           72 / 119, gap 7
 #   shotgun         76 / 118, gap 1
-#   sniper           2 /  14, gap 9
+#   sniper           3 /  14, gap 8
+#   tome             8 /   8, gap 0
 mods:
   - name: Ammo Chain
     pool: archgun
@@ -1979,7 +1980,7 @@ mods:
   - name: Harkonar Scope
     pool: sniper
     internal_name: /Lotus/Upgrades/Mods/Rifle/Event/ProjectNightwatch/VulkarNightwatchMod
-    carried: ~
+    carried: data/mods/sniper/harkonar_scope.yaml
   - name: Lie In Wait
     pool: sniper
     internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/HigherAimedDamageMoreRecoilSniperMod
@@ -2013,3 +2014,35 @@ mods:
     pool: sniper
     internal_name: /Lotus/Upgrades/Mods/Rifle/SniperHeadshotMultiplierMod
     carried: ~
+  - name: Fass Canticle
+    pool: tome
+    internal_name: /Lotus/Upgrades/Grimoire/FassAuraMod
+    carried: data/mods/tome/fass_canticle.yaml
+  - name: Jahu Canticle
+    pool: tome
+    internal_name: /Lotus/Upgrades/Grimoire/JahuAuraMod
+    carried: data/mods/tome/jahu_canticle.yaml
+  - name: Khra Canticle
+    pool: tome
+    internal_name: /Lotus/Upgrades/Grimoire/KhraAuraMod
+    carried: data/mods/tome/khra_canticle.yaml
+  - name: Lohk Canticle
+    pool: tome
+    internal_name: /Lotus/Upgrades/Grimoire/LohkAuraMod
+    carried: data/mods/tome/lohk_canticle.yaml
+  - name: Netra Invocation
+    pool: tome
+    internal_name: /Lotus/Upgrades/Grimoire/NetraStrikeMod
+    carried: data/mods/tome/netra_invocation.yaml
+  - name: Ris Invocation
+    pool: tome
+    internal_name: /Lotus/Upgrades/Grimoire/RisStrikeMod
+    carried: data/mods/tome/ris_invocation.yaml
+  - name: Vome Invocation
+    pool: tome
+    internal_name: /Lotus/Upgrades/Grimoire/VomeStrikeMod
+    carried: data/mods/tome/vome_invocation.yaml
+  - name: Xata Invocation
+    pool: tome
+    internal_name: /Lotus/Upgrades/Grimoire/XataStrikeMod
+    carried: data/mods/tome/xata_invocation.yaml

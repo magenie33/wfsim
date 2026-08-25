@@ -2315,13 +2315,16 @@ mod pool_survey {
     /// the moment somebody writes the tag down rather than months later.
     ///
     /// The ceiling is a RATCHET and starts where the pools stood the day the
-    /// survey was written. It is not zero and is not meant to be yet — the 29
+    /// survey was written. It is not zero and is not meant to be yet — the 28
     /// are a work list, not a defect: three Thunderbolt entries, the ammo
     /// mutations, Target Acquired, Depleted Reload, Primed Blunderbuss, and a
     /// handful of one-offs.
+    ///
+    /// 29 -> 28 on 2026-08-25, when the TOME pool arrived complete (8 of 8,
+    /// gap 0) — which is what lowering this line is for.
     #[test]
     fn the_pool_mods_we_still_owe_only_goes_down() {
-        const OWED: usize = 29;
+        const OWED: usize = 28;
         let text = crate::data::file("surveys/pool_mods.yaml")
             .expect("data/surveys/pool_mods.yaml — run scripts/survey_pool_mods.py");
         let mut total = 0usize;
