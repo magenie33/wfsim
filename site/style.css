@@ -250,6 +250,10 @@ body.on-enemies [data-module="builder"]{display:none}
 /* Sized to its content, not to the bar: it sits beside a label and a copy
    button, and a full-width control there would read as the bar itself. */
 .bench-bar .dd{height:26px;min-width:150px;max-width:min(360px,60vw)}
+/* A RANK WITH NOTHING TO PICK. The number is information even when it is
+   the only one, so it keeps a chip's shape without a chip's affordance. */
+.bench-bar .prank{font-size:12px;color:var(--text-2);border:1px solid var(--line);
+  border-radius:7px;padding:4px 9px;background:var(--plane)}
 /* TWO CONTROLS, TWO SIZES. The first holds a ruler's whole sentence; the
    second holds "#7". Giving them the same 150px floor made a rank read as a
    control with something missing from it. */
@@ -467,10 +471,21 @@ body.on-enemies [data-module="builder"]{display:none}
    news: `sent` is a fact, `refused` and `failed` are things to act on, `short`
    is a build that is not finished, and `none`/`pending` are neither good nor
    bad. Muted by default, so a run nobody is submitting does not shout. */
-.board-outcome{font-size:11.5px;color:var(--text-2);line-height:1.5;margin:2px 0 10px}
+/* ITS OWN BLOCK, ABOVE THE RESULT AND OUTSIDE IT (owner, 2026-08-25). It used
+   to sit under the headline inside `.results`, where it read as a footnote to
+   the damage number — and it is not about the damage, it is about the RUN. */
+.board-outcome{font-size:12px;color:var(--text-2);line-height:1.55;
+  margin:0 0 12px;padding:9px 12px;border:1px solid var(--line);
+  border-left:3px solid var(--line);border-radius:9px;background:var(--panel2)}
+.board-outcome .bo-h{color:var(--text)}
 .board-outcome:empty{display:none}
-.board-outcome.sent{color:var(--gold)}
-.board-outcome.refused,.board-outcome.failed{color:#e0a052}
+.board-outcome.sent{border-left-color:var(--gold)}
+.board-outcome.sent .bo-h{color:var(--gold)}
+/* THE RULE THAT DECIDES WHETHER IT WILL BE LISTED, under what happened to the
+   run rather than trailing off the end of it: two facts, two lines. */
+.board-outcome .board-state{margin-top:5px;display:block}
+.board-outcome.refused,.board-outcome.failed{border-left-color:#e0a052}
+.board-outcome.refused .bo-h,.board-outcome.failed .bo-h{color:#e0a052}
 .board-outcome .board-state{color:var(--muted)}
 /* ONE CONTROL FOR EVERY QUANTIFIABLE AXIS (owner, 2026-08-24): a CARD saying
    what is installed, with a ⋯ that opens the ranked list. It borrows `.slot`

@@ -7181,7 +7181,27 @@ function renderBenchmarkBarIn(bar, cfg) {
   }
   const curRuler = sel ? ruler(sel) : rulers[0].id;
   const inRuler = ps.filter((p) => ruler(p) === curRuler);
-  const grouped = inRuler.some((p) => p.subgroup);
+  // THEN WHETHER IT CARRIES A RIVEN, and only then the rank (owner,
+  // 2026-08-25: "榜单 - 裂罅/无裂罅 - 序号，序号应该保持纯粹性").
+  //
+  // A weapon's board holds TWO RANKINGS under one ruler — the builds with a
+  // riven and the builds without — and "#1" means something different in each.
+  // Both were in one list, told apart only by a suffix on the group header, so
+  // the CHIP on the bar read "#1" whichever of the two leaders it was on and
+  // the list ran two rankings past each other.
+  //
+  // A THIRD PICK RATHER THAN A LONGER LABEL, which is what this bar already
+  // does with the ruler: each list stays the size of ONE question, and the
+  // number at the end goes back to being a number.
+  const kindOf = (p) => (p.riven ? "riven" : "plain");
+  const curKind = sel ? kindOf(sel) : kindOf(inRuler[0]);
+  // IN THE ORDER THE ROWS COME IN — plain before riven, which is the order
+  // `builtinBuilds` sorts them into and the order the board page lists its
+  // views in. Derived, so a weapon with only one kind offers no choice.
+  const kinds = [];
+  for (const p of inRuler) if (!kinds.includes(kindOf(p))) kinds.push(kindOf(p));
+  const inKind = inRuler.filter((p) => kindOf(p) === curKind);
+  const grouped = inKind.some((p) => p.modeGroup);
   bar.innerHTML =
     `<span class="plabel bench" title="${escHtml(cfg.benchHint || "")}">${escHtml(cfg.benchLabel)} <b>${ps.length}</b></span>` +
     // THE RULER. Searched, because this list is the one designed to reach a
@@ -7198,23 +7218,54 @@ function renderBenchmarkBarIn(bar, cfg) {
         if (first) pickPreset(cfg, presetId(first));
       },
     }) +
-    (inRuler.length > 1
+    // WHICH OF THE TWO RANKINGS. Absent where the weapon has only one kind on
+    // this ruler, which is most of them — a control with one item is not a
+    // control, and this bar has said so since it was split in two.
+    (kinds.length > 1
+      ? ddButton(`dd-bench-kind-${cfg.domain}`, {
+        value: curKind,
+        title: cfg.rowHintTitle || "",
+        items: kinds.map((k) => ({
+          value: k,
+          label: tr(k === "riven" ? "Riven only" : "No riven"),
+        })),
+        // Picking a kind lands on ITS leader, the same way picking a ruler
+        // lands on the ruler's.
+        onPick: (v) => {
+          const first = inRuler.find((p) => kindOf(p) === v);
+          if (first) pickPreset(cfg, presetId(first));
+        },
+      })
+      : "") +
+    (inKind.length > 1
       ? ddButton(`dd-bench-row-${cfg.domain}`, {
-        value: presetId(sel || inRuler[0]),
+        value: presetId(sel || inKind[0]),
         search: true,
         title: cfg.rowHintTitle || "",
         // GROUPED BY MODE inside the ruler where the weapon has more than one:
         // a hundred rows split into "base" and "cycle" is two readable lists,
         // and a rank only means something within one way of playing.
-        items: inRuler.map((p) => ({
+        items: inKind.map((p) => ({
           value: presetId(p),
-          label: grouped && p.rank != null ? `#${p.rank}` : p.name,
+          // A PURE NUMBER. Which ruler and which of the two rankings are both
+          // answered by the controls to its left, so the rank is a rank again.
+          label: p.rank != null ? `#${p.rank}` : p.name,
           hint: p.rowHint || p.hint || (cfg.roTitle ? cfg.roTitle(p) : ""),
-          group: p.subgroup || "",
+          // GROUPED BY MODE, where the weapon has more than one: a rank only
+          // means something within one way of playing.
+          group: (grouped ? p.modeGroup : "") || "",
         })),
         onPick: (v) => pickPreset(cfg, v),
       })
-      : "") +
+      // ONE ROW STILL SHOWS ITS NUMBER (owner, 2026-08-25). The control was
+      // omitted here because "a control with one item is not a control", which
+      // is true and was the wrong conclusion: the NUMBER is information even
+      // when there is nothing to pick — "#1" says this is the leader, and a
+      // reader who sees no rank cannot tell whether they are looking at the
+      // best build on the board or the only one anybody sent. So the control
+      // goes and the label stays, as a static chip.
+      : `<span class="prank" title="${escHtml(cfg.rowHintTitle || "")}">${
+          escHtml(inKind[0].rank != null ? `#${inKind[0].rank}` : presetLabel(inKind[0]))}</span>`) +
     (sel
       ? `<button class="pop dup" title="${escHtml(
           tr("copy it into a {thing} of your own — the official one cannot be edited")
@@ -7551,6 +7602,12 @@ const builtinBuilds = () => {
     const label = m && kind ? `${m}（${kind}）` : (m || kind);
     return {
       name: label ? `#${n} · ${label}` : `#${n}`,
+      // THE MODE ALONE, for a list that groups by it — the riven is marked on
+      // the ROW instead (owner, 2026-08-25). Putting both in the group header
+      // made the header the only place the fact lived, so the CHIP on the bar
+      // read "#1" whether or not that leader carried a riven, and the reader
+      // had no way to tell which of the two they were looking at.
+      modeGroup: m,
       // The two halves of that name, for a picker that puts the MODE in a
       // group header and leaves the row to say the rank.
       rank: n,
@@ -12883,10 +12940,14 @@ function renderBoardOutcome() {
   if (!box) return;
   const o = boardRunOutcome();
   box.className = `board-outcome ${o.kind}`;
-  box.innerHTML = escHtml(o.text)
+  box.innerHTML = `<div class="bo-h">${escHtml(o.text)}</div>`
     // THE CUT LINE FOLLOWS A SENT RUN, because that is the reader who is about
-    // to go and look for a row that may never appear.
-    + (o.kind === "sent" ? ` <span class="board-state">${escHtml(boardCutNote())}</span>` : "");
+    // to go and look for a row that may never appear — and it is its OWN line.
+    // Trailing it onto the sentence above made one run-on paragraph out of two
+    // separate facts: what happened to this run, and the rule that decides
+    // whether it will be listed.
+    + (o.kind === "sent"
+      ? `<div class="board-state">${escHtml(boardCutNote())}</div>` : "");
 }
 
 function renderBoardConsent() {
@@ -14482,13 +14543,15 @@ function renderResults(r, testedAt) {
     escHtml(tr("Builder, simulator and optimizer stay free for everyone."))} <a href="/support">${
     escHtml(tr("Chip in ↗"))}</a></p>`;
   $("sim-results").innerHTML = `
+    <!-- WHAT BECAME OF THIS RUN, above the result and OUTSIDE it (owner,
+         2026-08-25). It sat inside the result, under the headline, and read as
+         a footnote to the number — which it is not: it is about the RUN, not
+         about the damage, and it carries the one sentence a submitter has to
+         act on. Its own block, above the thing it is not part of. -->
+    <div id="sim-board-outcome" class="board-outcome"></div>
     <div class="results">
       <div class="hero"><div><div class="hero-num" data-hero="${byDps ? "dps" : "kpm"}">${heroNum}<span class="hero-unit">${heroUnit}</span></div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
       ${replayBar}
-      <!-- WHAT BECAME OF THIS RUN, filled by renderBoardOutcome — right after
-           the headline, because "did this reach the board" is a question about
-           the number directly above it. -->
-      <div id="sim-board-outcome" class="board-outcome"></div>
       <div class="kpi-row">${kpis}</div>
       ${foldBlock("meter", tr("Damage by source"), "",
         `<div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${composition}`)}
