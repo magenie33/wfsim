@@ -6,8 +6,19 @@ One sentence carries the whole design — **a submission is a BUILD and never a
 number**. Everything else follows from it:
 
 - a forged score is impossible, because no score is ever accepted;
-- an engine or benchmark change RE-SCORES every stored build instead of
-  invalidating it, and nobody is asked to resubmit;
+- a change RE-SCORES stored builds instead of invalidating them, and nobody is
+  ever asked to resubmit — a CODE change rescores everything, and a DATA change
+  rescores only the rows that READ the file that moved (2026-08-25). Adding a
+  weapon costs 0 of 885 rows; correcting one mod costs the rows carrying it.
+  See `engine::data_fingerprint`;
+- **THE STORE IS A LIBRARY OF BUILDS AND EVERY RULER CROSSES THE WHOLE OF IT**
+  (2026-08-25). A submission carries no score, so the ruler it happened to be
+  measured under was never a property of the record — it was a gate, and the
+  gate was expensive: of 914 distinct builds players had sent, only 46 had ever
+  been scored on more than one board. ANY fight can upload now, and a new ruler
+  is scored from the library the day it lands rather than waiting for anyone to
+  resubmit. Measured on the first run after it landed: group_clear went from 106
+  published rows to 551, single_target_no_aim from 113 to 498;
 - every row is reproducible by anyone with the repo, since the score was
   computed by the engine that ships to their browser under the benchmark's own
   pinned seed. Measured 2026-08-04: wasm and native agree to the last digit
@@ -69,9 +80,24 @@ state anyway.
 | trigger | scope | cost |
 | --- | --- | --- |
 | `:00`, `:20`, `:40` | score what is new | seconds; no commit when nothing changed |
-| a push touching `engine/`, `webapi/`, `data/` or the scorer | **everything** | ~9 min, eight ways at once |
-| a change to a benchmark's terms | everything, under the new ruler | the builds carry over; only the numbers change |
-| Actions → board → Run workflow, **full = true** | everything, whatever the fingerprint says | the same ~9 min |
+| a push touching `engine/`, `webapi/` or the scorer | **everything** — the CODE fingerprint moved | ~2h20m measured 2026-08-25, 32 ways at once |
+| a push touching `data/` | only the rows that READ the file that moved | a new weapon costs **0 of 885 rows**; one mod costs the rows carrying it |
+| a change to a benchmark's terms | everything on THAT ruler | the builds carry over; only the numbers change |
+| Actions → board → Run workflow, **full = true** | everything, whatever the fingerprint says | the same ~2h20m |
+
+**THE FULL RESCORE GOT MUCH BIGGER WHEN THE LIBRARY LANDED, and that is the
+price of it**: 2,223 builds crossed with three rulers rather than 967 rows each
+scored once. Measured on the two runs that completed on 2026-08-25: 137 and 138
+minutes. The per-row fingerprint above is what keeps that off the ordinary day —
+a data change costs the rows that read it and nothing else — but a CODE change
+still pays in full.
+
+**A DAY OF CODE PUSHES IS A DAY WITH NO BOARD.** The workflow keeps one pending
+run and cancels the rest, so a rescore that takes 2h20m is cancelled by any push
+inside that window: on 2026-08-25, 18 of 20 runs were cancelled and two
+completed. That is the concurrency rule working as designed and it is worth
+knowing before wondering why the board has not moved. If a rescore matters more
+than the next push, stop pushing for two hours or run it by hand from Actions.
 
 **The clock is a best effort, not a promise.** GitHub delays scheduled runs
 under load and says so, and this repo's own history is the evidence: while the

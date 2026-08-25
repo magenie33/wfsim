@@ -120,10 +120,26 @@ if (axesBlock) {
   // `valence` were lost. `check_board_submit` proves the derivation end to end
   // against a KV stub; this asserts the shape it depends on has not been
   // unpicked into hand-written lists again.
-  const derived = (/for \(const a of AXES\)/.test(workerJs))
-    && (/AXES\.map\(\(a\) =>/.test(workerJs));
+  // ASSERTED AS A PROPERTY, NOT AS A SPELLING. This used to require the literal
+  // `AXES.map((a) =>`, and the day `benchmark` became provenance rather than
+  // identity — `AXES.filter((a) => a.identity !== false).map(…)` — the check
+  // went red on code that was still entirely derived (2026-08-25). A check that
+  // fails on a refactor it should not care about is a check people learn to
+  // edit rather than to read.
+  //
+  // What actually matters is two things: the record loop walks `AXES`, and the
+  // identity key is built FROM `AXES` rather than from a list of names typed
+  // out again. The second half is what was lost twice.
+  const idAt = workerJs.indexOf("const identity =");
+  const idBody = idAt < 0 ? "" : workerJs.slice(idAt, workerJs.indexOf("async function", idAt));
+  const loops = /for \(const a of AXES\)/.test(workerJs);
+  const fromAxes = /AXES/.test(idBody);
+  const noList = !/["'](benchmark|weapon|mods|evolutions|arcanes)["']\s*,/.test(idBody);
   check("...and the stored record and identity key are still derived from it",
-    derived, "the worker has grown a second, hand-written list");
+    loops && fromAxes && noList,
+    idAt < 0
+      ? "no `identity` in worker/index.js"
+      : `record loop ${loops}, identity reads AXES ${fromAxes}, no name list ${noList}`);
 }
 
 // ---- 4. THE ONE THAT CANNOT GO STALE, NAMED ----------------------------
