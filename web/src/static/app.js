@@ -5124,7 +5124,14 @@ function sharePayload(withFight = true) {
       && (st.assembly.grip !== da.grip || st.assembly.loader !== da.loader)
     ? [st.assembly.grip, st.assembly.loader] : 0;
 
-  const out = [2, st.weapon, activePreset, slots9, arcs, evos, rivens,
+  // A NAME THE SHARER CHOSE TRAVELS; A MACHINE-GENERATED ONE DOES NOT (owner
+  // asked for a shorter link, 2026-08-25). A board build's preset id is
+  // `single_target#cycle#p#1` — 25 characters that mean nothing to the person
+  // opening the link, and the importer already falls back to "build (shared)"
+  // when the field is absent. A name somebody typed is theirs and still goes.
+  const nm = officialBuildActive() ? 0 : activePreset;
+
+  const out = [2, st.weapon, nm, slots9, arcs, evos, rivens,
                withFight ? sc : 0, withFight ? m : 0, md, val, asm];
   while (out.length > 9 && !out[out.length - 1]) out.pop();
   return out;

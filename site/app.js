@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "a462fb65+ · 2026-08-25 08:20Z";
+const BUILD_ID = "17ac1a72+ · 2026-08-25 11:02Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -5124,7 +5124,14 @@ function sharePayload(withFight = true) {
       && (st.assembly.grip !== da.grip || st.assembly.loader !== da.loader)
     ? [st.assembly.grip, st.assembly.loader] : 0;
 
-  const out = [2, st.weapon, activePreset, slots9, arcs, evos, rivens,
+  // A NAME THE SHARER CHOSE TRAVELS; A MACHINE-GENERATED ONE DOES NOT (owner
+  // asked for a shorter link, 2026-08-25). A board build's preset id is
+  // `single_target#cycle#p#1` — 25 characters that mean nothing to the person
+  // opening the link, and the importer already falls back to "build (shared)"
+  // when the field is absent. A name somebody typed is theirs and still goes.
+  const nm = officialBuildActive() ? 0 : activePreset;
+
+  const out = [2, st.weapon, nm, slots9, arcs, evos, rivens,
                withFight ? sc : 0, withFight ? m : 0, md, val, asm];
   while (out.length > 9 && !out[out.length - 1]) out.pop();
   return out;
