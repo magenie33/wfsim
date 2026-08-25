@@ -59,6 +59,17 @@ duration_seconds: 20
 
 effect:
   kind: add_element
+  # …AND ITS STATUS IS GUARANTEED, which is the half of the card that decides
+  # what this augment can be played WITH: *"applies that Element as a 200% bonus
+  # to your weapons with guaranteed Status for 20s"* (wiki).
+  #
+  # It was missed when this file was written, and a player found it from the
+  # other side (owner, 2026-08-25): the Laetum's Overwhelming Attrition asks for
+  # a hit that "is neither Critical nor applies a Status Effect", and a hit that
+  # always procs can never be one — so the two cannot be run together and the
+  # augment silently wins. The engine had the Attrition condition right and had
+  # no way to know a status was being forced.
+  forced_status: true
   # THE PICK IS THE POINT. Lavos imbues per ability and casts the mix, so any of
   # the four primaries or any of the six combined ones can be the buff — which
   # is why the list is all ten rather than the four a single-element augment

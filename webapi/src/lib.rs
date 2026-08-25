@@ -1586,7 +1586,7 @@ pub fn meta_json() -> Value {
                 let (kind, v, element) = match *e {
                     AE::FactionDamage(v) => ("faction_damage", v, None),
                     AE::FinalDamage(v) => ("final_damage", v, None),
-                    AE::AddElement(t, v) => ("add_element", v, Some(t.name())),
+                    AE::AddElement(t, v, _) => ("add_element", v, Some(t.name())),
                     AE::AmmoEfficiency(v) => ("ammo_efficiency", v, None),
                     AE::ExtraHit { element, fraction, .. } => ("extra_hit", fraction, Some(element.name())),
                 };
@@ -8995,5 +8995,87 @@ mod one_picture_one_weapon {
                 w.id
             );
         }
+    }
+}
+
+/// **A GUARANTEED STATUS IS WHAT OVERWHELMING ATTRITION ASKS NOT TO HAPPEN.**
+///
+/// Valence Formation imbues an element *"with guaranteed Status for 20s"* (wiki
+/// `Valence_Formation`); the Laetum's Overwhelming Attrition pays *"On Hit that
+/// is neither Critical nor applies a Status Effect"*. A hit that always procs
+/// can never be such a hit, so the two cannot be played together and the
+/// augment silently wins — reported from the game (owner, 2026-08-25).
+///
+/// The engine had the Attrition condition right (`tier == 0 && procs.is_empty()`)
+/// and no way to know a status was being forced: this file's `add_element` read
+/// the element and the size and dropped the third clause of the card.
+///
+/// ASSERTED AS AN ANSWER, not as a flag. What is checked is that the perk is
+/// worth NOTHING with the augment up — and, as the control that makes that
+/// meaningful, that it is worth a great deal without it. A test that only
+/// asserted the first would pass on an engine that had lost the perk entirely.
+#[cfg(test)]
+mod valence_formation_blocks_attrition {
+    use serde_json::json;
+
+    fn dps(evolutions: &[&str], augment: bool) -> f64 {
+        let req = json!({
+            "weapon": "laetum",
+            "mode": "base",
+            "mods": [],
+            "evolutions": evolutions,
+            "arcane": ["none"],
+            // NO HEADSHOTS: this is about the status half of the condition, and
+            // a crit or a head would be a second reason for the perk not to arm.
+            "headshot_pct": 0,
+            "abilities": if augment {
+                json!([{ "id": "valence_formation", "element": "heat" }])
+            } else {
+                json!([])
+            },
+            "ability_strength": 1.0,
+            "runs": 120,
+            "seed": 3,
+        });
+        let out = super::simulate_json(&req);
+        assert!(out.get("ok").and_then(serde_json::Value::as_bool).unwrap_or(false),
+            "simulate refused: {out}");
+        out.get("dps").and_then(serde_json::Value::as_f64).expect("dps")
+    }
+
+    /// The ladder up to tier 5 — a tier-5 perk with no tier 4 is dropped by the
+    /// evolution ladder and would make both arms of this test read "no effect".
+    const LADDER: [&str; 4] = [
+        "laetum_evo1_incarnon_form",
+        "laetum_marksmans_hand",
+        "laetum_feather_of_justice",
+        "laetum_caput_mortuum",
+    ];
+
+    fn with_perk() -> Vec<&'static str> {
+        let mut v = LADDER.to_vec();
+        v.push("laetum_overwhelming_attrition");
+        v
+    }
+
+    #[test]
+    fn the_perk_is_worth_a_lot_without_the_augment() {
+        let plain = dps(&LADDER, false);
+        let perked = dps(&with_perk(), false);
+        assert!(perked > plain * 5.0,
+            "Overwhelming Attrition should dominate a bare Laetum: {plain} -> {perked}");
+    }
+
+    #[test]
+    fn and_worth_exactly_nothing_with_it() {
+        let plain = dps(&LADDER, true);
+        let perked = dps(&with_perk(), true);
+        // EXACTLY nothing, not approximately: the buff never arms, so the two
+        // runs are the same fight with the same dice.
+        assert_eq!(
+            plain, perked,
+            "a guaranteed status leaves no plain hit for Overwhelming Attrition to \
+             arm on, so the perk must change nothing at all"
+        );
     }
 }

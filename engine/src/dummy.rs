@@ -10504,15 +10504,46 @@ pub fn run_once_traced(
                 // said of one and not the other on the same weapon (the Scourge
                 // pair says it of the spear explosion; the Astilla says it of
                 // the direct hit and not of its radial).
-                const NO_FORCED: &[DamageType] = &[];
+                // …PLUS WHAT A WARFRAME ABILITY FORCES. Valence Formation imbues
+                // its element *"with guaranteed Status"* (wiki), so that element
+                // procs on every hit whatever the weapon's status chance.
+                //
+                // IT RIDES THE SAME LIST as a weapon's own "guaranteed Impact
+                // proc", which is what keeps the rest of the status path — the
+                // immunity renormalisation, the DoT bookkeeping — from having to
+                // know an ability is involved. It is also what makes the
+                // interaction the owner reported fall out rather than be
+                // arranged: Overwhelming Attrition asks for a hit that "is
+                // neither Critical nor applies a Status Effect", and a hit that
+                // always procs can never be one (2026-08-25).
+                let ability_forced =
+                    crate::abilities_data::forced_status_elements_at(&params.abilities, t);
+                // ONE SLOT PER DAMAGE TYPE IS ENOUGH: both sources are sets of
+                // types and the merge below refuses a duplicate, so the union
+                // can never be longer than the type list itself.
                 let mut forced_buf = [DamageType::Impact; DamageType::ALL.len()];
-                let forced: &[DamageType] = match (&rad, direct) {
-                    (None, true) => &ap.forced_procs,
-                    (Some(r), _) => {
-                        let n = r.forced_procs.fill(&mut forced_buf);
-                        &forced_buf[..n]
+                let forced: &[DamageType] = {
+                    let mut n = match (&rad, direct) {
+                        (None, true) => {
+                            for (i, ty) in ap.forced_procs.iter().enumerate() {
+                                forced_buf[i] = *ty;
+                            }
+                            ap.forced_procs.len()
+                        }
+                        (Some(r), _) => r.forced_procs.fill(&mut forced_buf),
+                        _ => 0,
+                    };
+                    for ty in &ability_forced {
+                        // A weapon that already forces this element does not
+                        // force it twice: `procs_for_hit` copies the list
+                        // through, and a duplicate would be a second proc the
+                        // game does not apply.
+                        if !forced_buf[..n].contains(ty) && n < forced_buf.len() {
+                            forced_buf[n] = *ty;
+                            n += 1;
+                        }
                     }
-                    _ => NO_FORCED,
+                    &forced_buf[..n]
                 };
 
                 // Devouring Attrition: an INDEPENDENT multiplier rolled per

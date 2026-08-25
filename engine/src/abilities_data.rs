@@ -57,7 +57,17 @@ pub enum AbilityEffect {
     /// `+x of ModifiedBase` as this element, NOT entering the elemental
     /// hierarchy. Additive with elemental mods in SIZE, separate from them in
     /// PLACEMENT.
-    AddElement(DamageType, f64),
+    /// The element, its size, and whether its STATUS is guaranteed.
+    ///
+    /// The third field is Valence Formation's and nothing else's so far:
+    /// *"applies that Element as a 200% bonus to your weapons WITH GUARANTEED
+    /// STATUS for 20s"* (wiki `Valence_Formation`). It is not decoration — a
+    /// hit that always procs can never be a hit that procs nothing, which is
+    /// exactly the condition Overwhelming Attrition asks about ("On Hit that is
+    /// neither Critical nor applies a Status Effect"). Reported from the game:
+    /// the two cannot be used together and the augment silently wins (owner,
+    /// 2026-08-25).
+    AddElement(DamageType, f64, bool),
     /// An EXTRA HIT: a whole second damage instance, entirely of this element,
     /// worth this fraction of the instance that triggered it. Not a multiplier
     /// on anything — `dummy::fire_extra_hits`, MECHANICS §7 §"Extra Hit", and
@@ -315,7 +325,8 @@ pub fn all() -> &'static [AbilityDef] {
                     match ef.kind.as_str() {
                         "faction_damage" => AbilityEffect::FactionDamage(v),
                         "final_damage" => AbilityEffect::FinalDamage(v),
-                        "add_element" => AbilityEffect::AddElement(element("add_element"), v),
+                        "add_element" => AbilityEffect::AddElement(
+                            element("add_element"), v, ef.forced_status),
                         "ammo_efficiency" => AbilityEffect::AmmoEfficiency(v),
                         "extra_hit" => AbilityEffect::ExtraHit {
                             element: element("extra_hit"),
@@ -431,7 +442,9 @@ pub fn resolve(
             .map(|e| match *e {
                 AbilityEffect::FactionDamage(v) => AbilityEffect::FactionDamage(scale(v)),
                 AbilityEffect::FinalDamage(v) => AbilityEffect::FinalDamage(scale(v)),
-                AbilityEffect::AddElement(t, v) => AbilityEffect::AddElement(picked(t), scale(v)),
+                AbilityEffect::AddElement(t, v, f) => {
+                    AbilityEffect::AddElement(picked(t), scale(v), f)
+                }
                 AbilityEffect::AmmoEfficiency(v) => AbilityEffect::AmmoEfficiency(scale(v)),
                 AbilityEffect::ExtraHit { element, fraction, forced_status } => {
                     AbilityEffect::ExtraHit {
@@ -493,7 +506,7 @@ pub fn added_elements_at(list: &[ActiveAbility], t: f64) -> Vec<(DamageType, f64
     let mut out: Vec<(DamageType, f64)> = Vec::new();
     for a in list.iter().filter(|a| a.live_at(t)) {
         for e in &a.effects {
-            if let AbilityEffect::AddElement(ty, v) = *e {
+            if let AbilityEffect::AddElement(ty, v, _) = *e {
                 match out.iter_mut().find(|(t2, _)| *t2 == ty) {
                     Some(slot) => slot.1 += v,
                     None => out.push((ty, v)),
@@ -507,6 +520,30 @@ pub fn added_elements_at(list: &[ActiveAbility], t: f64) -> Vec<(DamageType, f64
 /// The EXTRA HITS running at `t`, as (element, fraction of the triggering
 /// instance).
 ///
+/// THE ELEMENTS WHOSE STATUS IS GUARANTEED, at time `t`.
+///
+/// Valence Formation imbues an element *"with guaranteed Status"* (wiki), so
+/// every hit while it is up applies that element's proc whatever the weapon's
+/// status chance. It rides the same `forced` list a weapon's own "guaranteed
+/// Impact proc" rides, which is what makes the rest of the status path — the
+/// immunity renormalisation, the DoT bookkeeping — need to know nothing about
+/// it.
+///
+/// A SET, not a sum: two abilities forcing the same element force it once.
+pub fn forced_status_elements_at(list: &[ActiveAbility], t: f64) -> Vec<DamageType> {
+    let mut out: Vec<DamageType> = Vec::new();
+    for a in list.iter().filter(|a| a.live_at(t)) {
+        for e in &a.effects {
+            if let AbilityEffect::AddElement(ty, _, true) = *e {
+                if !out.contains(&ty) {
+                    out.push(ty);
+                }
+            }
+        }
+    }
+    out
+}
+
 /// A LIST, and they do not merge the way [`added_elements_at`] merges two
 /// grants of one element: each source is its own second damage instance with
 /// its own status roll, so Toxic Lash and Xata's Whisper on one weapon are two
@@ -728,7 +765,7 @@ mod tests {
         ] {
             let d = get(id).unwrap_or_else(|| panic!("{id} missing"));
             assert!(
-                d.effects.iter().any(|e| matches!(*e, AbilityEffect::AddElement(t, _) if t == want)),
+                d.effects.iter().any(|e| matches!(*e, AbilityEffect::AddElement(t, _, _) if t == want)),
                 "{id}: {:?}",
                 d.effects
             );
