@@ -6970,6 +6970,88 @@ mod echo_tests {
 }
 
 #[cfg(test)]
+mod url_tests {
+    /// **A WEAPON HAS A URL OF ITS OWN.** `/weapons/<Wiki_Name>` is built from
+    /// the English display name with a parenthesised qualifier stripped — the
+    /// qualifier is OURS rather than the page's ("Larkspur Prime (Atmosphere)"
+    /// is one wiki page with two stat columns and we ship the ground one), so
+    /// it never reaches a URL. `build_site_app.py::wiki_name` and `wikiSlug`
+    /// in app.js do exactly this, and the site PRERENDERS one directory per
+    /// roster weapon from it.
+    ///
+    /// TWO ENTRIES ON ONE SLUG IS SILENT DATA LOSS, in both directions: the
+    /// route resolves to whichever the lookup finds first, so the other weapon
+    /// is unreachable by link, by bare URL and by crawler — and the prerendered
+    /// `site/weapons/<Wiki_Name>/index.html` of one simply overwrites the
+    /// other's, with its title, description, canonical and OG card.
+    ///
+    /// It was found by `check_pages`, which reports it as three `WRONG WEAPON`
+    /// lines after fifty-five minutes of browser sweep (2026-08-25). This says
+    /// the same thing in a millisecond, which is what makes it a check somebody
+    /// runs.
+    ///
+    /// TOMBFINGER IS THE FIRST OF A KIND, not a one-off: a kitgun chamber is
+    /// TWO roster entries because the SLOT is the weapon (it decides the mod
+    /// pool), and the wiki gives a chamber ONE page. Catchmoon's chamber data
+    /// is already here, so the next dual-slot kitgun to reach the roster
+    /// collides the same way.
+    ///
+    /// SO IT IS A RATCHET RATHER THAN A FLAT ASSERTION. The fix is a URL
+    /// DECISION — which entry keeps the bare name and how the other is spelled
+    /// — and it changes what an already posted link means, which is the
+    /// owner's call and not something a test may guess at. What a test CAN do
+    /// is stop the next one arriving in silence, so the known collision is
+    /// written down and everything else fails.
+    ///
+    /// `KNOWN_URL_CLASHES` MAY ONLY SHRINK, the same way `naming::FROZEN` may
+    /// — an entry removed is a bug fixed, an entry added is the bug spreading,
+    /// so growing it needs the same deliberate act as re-freezing a manifest.
+    /// The non-breaking shape of the fix, for whoever takes it: today the bare
+    /// slug already resolves to ONE of the two, so giving a qualifier to the
+    /// OTHER one leaves every link already posted meaning exactly what it
+    /// meant, and makes the unreachable entry reachable.
+    const KNOWN_URL_CLASHES: &[&str] = &[
+        // The kitgun chamber built into both Gunsmith slots. One wiki page,
+        // two roster entries, and `/weapons/Tombfinger` can only be one.
+        "/weapons/Tombfinger <- tombfinger_primary, tombfinger_secondary",
+    ];
+
+    #[test]
+    fn no_two_weapons_want_the_same_url() {
+        use std::collections::BTreeMap;
+        let mut by_slug: BTreeMap<String, Vec<&str>> = BTreeMap::new();
+        for w in super::roster() {
+            let slug = w.name.split(" (").next().unwrap_or(&w.name).replace(' ', "_");
+            by_slug.entry(slug).or_default().push(&w.id);
+        }
+        let clashes: Vec<String> = by_slug
+            .iter()
+            .filter(|(_, ids)| ids.len() > 1)
+            .map(|(slug, ids)| format!("/weapons/{slug} <- {}", ids.join(", ")))
+            .collect();
+        let fresh: Vec<&String> =
+            clashes.iter().filter(|c| !KNOWN_URL_CLASHES.contains(&c.as_str())).collect();
+        assert!(
+            fresh.is_empty(),
+            "two roster entries want one URL, so one of them is unreachable \
+             and its prerendered page is overwritten:\n{}",
+            fresh.iter().map(|c| c.as_str()).collect::<Vec<_>>().join("\n")
+        );
+        // AND THE LIST MAY ONLY SHRINK. A fixed collision left written down
+        // here would silently re-admit the next one that spells itself the
+        // same way, which is the exact failure this exists to end.
+        let stale: Vec<&&str> =
+            KNOWN_URL_CLASHES.iter().filter(|k| !clashes.iter().any(|c| c == *k)).collect();
+        assert!(
+            stale.is_empty(),
+            "these URL collisions are FIXED — delete them from \
+             KNOWN_URL_CLASHES:\n{}",
+            stale.iter().map(|s| **s).collect::<Vec<_>>().join("\n")
+        );
+    }
+}
+
+#[cfg(test)]
 mod modular_tests {
     use super::{spec, spec_assembled};
 

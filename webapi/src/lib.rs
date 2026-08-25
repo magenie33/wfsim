@@ -5657,6 +5657,19 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         "crit_tier": m.crit_tier_sum as f64 / pel,
         "headshot_rate": m.headshots as f64 / pel,
         "procs": m.procs,
+        // …AND THE SAME COUNTS OVER EVERY RUN. `procs`/`pellets` above are the
+        // MEDIAN ENGAGEMENT — one fight, so a proc count out of it is a sample
+        // of size `pellets` however many runs were paid for, and raising the run
+        // count adds not one trial to it. That is the trap `score_mean` was
+        // added for (2026-08-12) in the other direction: a caller measuring a
+        // RATE needs the pooled counts, not one run's.
+        //
+        // `check_custom_enemies` is the caller, and it asserts the wiki's rule
+        // that a damage x0 column leaves the proc DRAW alone. At 45 pellets the
+        // binomial sd is 3.3 procs against a tolerance of 3.6, so that assertion
+        // could not have measured anything; over 1000 runs it is 45,000 trials.
+        "procs_mean": s.mean_procs,
+        "pellets_mean": s.mean_pellets,
         // THE SPEEDRUN SET. `dps` is the whole engagement; `burst_dps` is the
         // same damage over the time the weapon was actually firing, which is
         // what a room-clear is paced by. TTK carries its spread because a mean

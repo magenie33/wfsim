@@ -13434,6 +13434,12 @@ mod tests {
             ("mean_kills", part.mean_kills, whole.mean_kills),
             ("std_kills", part.std_kills, whole.std_kills),
             ("mean_procs", part.mean_procs, whole.mean_procs),
+            // …AND WHAT IT IS DIVIDED BY. `procs_mean`/`pellets_mean` reach a
+            // caller as a RATE (`check_custom_enemies` asks whether a damage x0
+            // column moves the proc draw), and the page runs every simulation on
+            // a worker fleet — so a denominator lost in the merge would move
+            // that rate with the numerator intact and nothing else disagreeing.
+            ("mean_pellets", part.mean_pellets, whole.mean_pellets),
             // COVERAGE TRAVELS TOO. `one_fight` fails when the suite burns
             // nothing, and a fleet that lost this field would report zero
             // burns for a fight full of them — the guard turning on a working

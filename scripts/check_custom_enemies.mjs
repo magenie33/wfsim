@@ -123,11 +123,27 @@ const r = await evaluate(`(async () => {
     // PER PELLET, not per engagement: a target that takes no damage never
     // dies, so the raw counts are two different fights. The RATE is the thing
     // the wiki is talking about.
-    return res ? (res.procs || 0) / Math.max(1, res.pellets || 0) : 0;
+    //
+    // AND POOLED OVER EVERY RUN, which is the whole sample this assertion has.
+    // It read procs/pellets until 2026-08-25, and those are the MEDIAN
+    // ENGAGEMENT — 45 pellets, however many runs were paid for. So the
+    // measurement's sample size was fixed at 45 and raising the run count added
+    // nothing to it: deterministic, never converging, and about two sigma wide
+    // against a tolerance of 15%, which is how it sat red on a correct engine.
+    // procs_mean and pellets_mean are the counts over all N.
+    // THE SAMPLE COMES BACK WITH THE RATE. A tolerance says nothing without
+    // the n behind it — that is the whole fault being repaired here — so the
+    // assertion below states the sample it actually got rather than trusting
+    // that the fight was measured hard enough.
+    if (!res) return { rate: 0, n: 0 };
+    const pel = res.pellets_mean || 0;
+    return { rate: (res.procs_mean || 0) / Math.max(1e-9, pel), n: pel * (res.runs || 1) };
   };
-  out.plainProcs = await procsWhen((s) => { s.damage_modifiers = null; s.status_immunities = []; });
-  out.noDamageProcs = await procsWhen((s) => { s.damage_modifiers = { toxin: 0 }; s.status_immunities = []; });
-  out.immuneProcs = await procsWhen((s) => { s.damage_modifiers = null; s.status_immunities = ['toxin']; });
+  const plain = await procsWhen((s) => { s.damage_modifiers = null; s.status_immunities = []; });
+  const zeroed = await procsWhen((s) => { s.damage_modifiers = { toxin: 0 }; s.status_immunities = []; });
+  const immune = await procsWhen((s) => { s.damage_modifiers = null; s.status_immunities = ['toxin']; });
+  out.plainProcs = plain.rate; out.noDamageProcs = zeroed.rate; out.immuneProcs = immune.rate;
+  out.procSample = Math.min(plain.n, zeroed.n);
 
   // ---- and DELETING one does not leave the fight pointing at nothing -----
   await go('/enemies');
@@ -164,33 +180,35 @@ check("...and the same target at x1 takes damage", r.normal > 0, String(r.normal
 // The two mechanics, told apart by measurement rather than by reading the
 // card back.
 check("procs happen at all", r.plainProcs > 0, String(r.plainProcs));
-// KNOWN RED as of 2026-08-25, and left red on purpose — see below before
-// touching either side of it.
+// THE SAMPLE IS THE WHOLE RUN SET, and for a day it was not. This assertion
+// went red at 0.533/pellet -> 0.689 and stayed red identically on every re-run,
+// which reads as a systematic effect and was not one: procs and pellets in the
+// response are the MEDIAN ENGAGEMENT's counts, so the sample was 45 pellets no
+// matter how many runs the fight was paid for. At a rate near 0.6 the binomial
+// sd over 45 trials is 3.3 procs and 15% of 24 is 3.6 — a two-sigma draw fails
+// this by construction, and no run count could ever have fixed it, because
+// raising it picks a different median run rather than adding a trial. It is
+// SELECTION-BIASED on top of that: the median run is chosen by damage and more
+// procs means more damage, so it climbs with the run count (measured on the
+// Torid: 0.5556 at 1 run, 0.6444 at 200, 0.7778 at 1000, while the pooled rate
+// held at 0.6244).
 //
-// Measured, deterministic, three runs identical: 24 procs / 45 pellets plain
-// against 31 / 45 with the column zeroed, which is +29% against a 15%
-// tolerance. The pellet counts are EQUAL, so what moved is the proc count.
+// It is procs_mean over pellets_mean now — 45,000 trials at the default 1000
+// runs — and the answer is EXACT: 0.6244 both ways, 0.000% apart, because the
+// damage column is not read by the proc draw at all and the two fights roll the
+// same dice. So the tolerance is 3% rather than 15%: loose enough that a
+// legitimate feedback path from damage into the fight would not redden it,
+// tight enough to catch a PARTIAL conflation, where the old one could only ever
+// have caught a total one.
 //
-// TWO READINGS AND THIS FILE CANNOT TELL THEM APART:
-//   * FORTY-FIVE PELLETS IS NOT A SAMPLE. At a status chance near 0.6 the
-//     binomial sd over 45 trials is about 3.3 procs, and 15% of 24 is 3.6 —
-//     so a two-sigma draw fails this assertion by construction. Raising the
-//     count to 400 runs gives 0.7111 against 0.6000, which is -15.6%: the
-//     difference CHANGED SIGN, which is what noise does and a systematic
-//     effect does not.
-//   * …but -15.6% at that sample is still large, so a systematic component
-//     cannot be ruled out from here either.
-//
-// The rule it is asserting is the wiki's own (`Status_Effect` §Status Immunity
-// Interactions) and the engine has an engine-level test for the
-// renormalisation half. What is unresolved is whether THIS measurement is too
-// weak to make the claim, or whether the claim is being broken — and that is a
-// question about the damage core, so it is recorded rather than answered by
-// widening the tolerance, which would make the check agree with whatever it
-// found.
+// AND THE SAMPLE IS ASSERTED BESIDE IT, because a tolerance without an n is the
+// fault this repaired. A fight measured at a handful of runs would pass this
+// vacuously and look exactly like one measured properly.
 check("a damage x0 does NOT change the proc RATE",
-  Math.abs(r.noDamageProcs - r.plainProcs) / r.plainProcs < 0.15,
-  `${r.plainProcs.toFixed(3)}/pellet -> ${r.noDamageProcs.toFixed(3)}`);
+  Math.abs(r.noDamageProcs - r.plainProcs) / r.plainProcs < 0.03,
+  `${r.plainProcs.toFixed(4)}/pellet -> ${r.noDamageProcs.toFixed(4)}`);
+check("...measured over a sample that can carry the claim",
+  r.procSample >= 5000, `${Math.round(r.procSample)} pellets`);
 check("...a STATUS immunity does", r.immuneProcs === 0, String(r.immuneProcs));
 
 check("deleting it repoints the fight at a real target",
