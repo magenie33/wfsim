@@ -1291,6 +1291,8 @@ ui:
   "Rank": 等级
   "Polarity": 极性
   "capacity": 容量
+  # The board is a static file; this is how far behind it is.
+  "· {n} more submitted since this board was scored — the next run is within 20 minutes": · 这块榜评分之后又有 {n} 套配装提交进来，下一次评分在 20 分钟内
   "disposition": 倾向
   # A riven belongs to a weapon FAMILY, so the same card is in every variant's
   # list and reads that variant's own disposition.

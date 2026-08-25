@@ -855,6 +855,12 @@ fn main() {
     println!("# migrating anything, because the builds are still builds.");
     println!("benchmark: {bench_id}");
     println!("source: submissions");
+    // HOW MANY BUILDS THIS RUN READ, so the page can say whether the board on
+    // screen is current: the library reports its own size at
+    // `/api/board/pending`, and the difference is what has arrived since. The
+    // board is a static file and always will be — this is the one fact the file
+    // cannot carry about itself.
+    println!("submissions: {seen}");
     // THE FINGERPRINT THIS BOARD WAS SCORED UNDER, so the next run can tell
     // whether these numbers are still its own answer. Absent = "scored by an
     // engine that did not record one", which reads as a full rescore.

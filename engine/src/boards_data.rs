@@ -144,6 +144,11 @@ pub struct Board {
     /// "rescore everything".
     #[serde(default)]
     pub engine: String,
+    /// HOW MANY BUILDS THE RUN THAT WROTE THIS BOARD READ. The library reports
+    /// its own size at `/api/board/pending`; the difference is what has arrived
+    /// since, which is the one thing a static file cannot say about itself.
+    #[serde(default)]
+    pub submissions: usize,
     #[serde(default)]
     pub entries: Vec<BoardEntry>,
 }
@@ -188,6 +193,11 @@ pub fn all() -> &'static [Board] {
             })
             .collect()
     })
+}
+
+/// One benchmark's board, by id.
+pub fn of(benchmark: &str) -> Option<&'static Board> {
+    all().iter().find(|b| b.benchmark == benchmark)
 }
 
 /// This weapon's rows on this benchmark's board, best first.

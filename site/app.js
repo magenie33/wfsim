@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "593aa48e+ · 2026-08-25 02:36Z";
+const BUILD_ID = "8fd054bf+ · 2026-08-25 02:46Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -1903,6 +1903,49 @@ const benchEntries = (id) => {
   return out;
 };
 
+/// HOW MANY BUILDS ARE IN THE LIBRARY, asked once per page and cached.
+///
+/// The board is a STATIC FILE committed to the repo and served from the CDN,
+/// which is what makes it fast and free — and what makes it only as fresh as
+/// the last scoring run. Moving it behind a service to make it live would trade
+/// the fast, unblockable path for a slow one; instead the file stays, and this
+/// asks the library the one fact the file cannot carry about itself.
+///
+/// A COUNT is all that comes back. It is enough for the sentence it is in and
+/// it is the most the store can honestly say: nothing about a submitter is kept
+/// there, so nothing about one can be reported here.
+let benchPending = null;
+function benchPendingAsk() {
+  if (benchPending !== null) return;
+  benchPending = "asking";
+  fetch("/api/board/pending")
+    .then((r) => (r.ok ? r.json() : null))
+    .then((j) => {
+      benchPending = j && j.ok ? j : "failed";
+      // Only a repaint, and only if the reader is still on the board — the
+      // number is a footnote and never worth stealing a render for.
+      if ($("bench-board")) renderBenchBoard();
+    })
+    .catch(() => { benchPending = "failed"; });
+}
+
+/// The footnote itself. Silent unless the library is genuinely AHEAD of the
+/// board: "0 waiting" is furniture, and a board that IS current should simply
+/// look current.
+function benchPendingNote(cur) {
+  benchPendingAsk();
+  if (!benchPending || typeof benchPending !== "object") return "";
+  const scored = (cur && cur.submissions) || 0;
+  const waiting = benchPending.count - scored;
+  // AND NEVER A NEGATIVE ONE. A ruler that has just been added has scored
+  // nothing, and a store that has expired records can sit below what the last
+  // run read; both are real and neither is "builds are waiting".
+  if (!(waiting > 0) || !scored) return "";
+  return ` <span class="bench-pending">${escHtml(
+    tr("· {n} more submitted since this board was scored — the next run is within 20 minutes")
+      .replace("{n}", waiting))}</span>`;
+}
+
 function renderBenchBoard() {
   const box = $("bench-board");
   if (!box || !META) return;
@@ -1976,7 +2019,8 @@ function renderBenchBoard() {
   box.innerHTML = `
     <div class="bench-meta">${escHtml(
       tr("{n} of {t} entries measured · ranked by {m}")
-        .replace("{n}", measured).replace("{t}", rows.length).replace("{m}", metric))}</div>
+        .replace("{n}", measured).replace("{t}", rows.length).replace("{m}", metric))}${
+      benchPendingNote(cur)}</div>
     <div class="bench-rows">${rows.map(({ w, mode, row }, i) => `
       <a class="brow${row ? "" : " none"}" href="/weapons/${wikiSlug(w)}${
         // WHICH RULER YOU CAME FROM, not just how the weapon is played. Without

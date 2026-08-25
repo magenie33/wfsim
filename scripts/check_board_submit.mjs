@@ -35,7 +35,13 @@ const check = (what, ok, detail = "") => {
 // `put`, so this is the whole binding it needs.
 const store = () => {
   const rows = new Map();
-  return { rows, put: async (k, v) => { rows.set(k, JSON.parse(v)); } };
+  return {
+    rows,
+    put: async (k, v) => { rows.set(k, JSON.parse(v)); },
+    // KV LISTS IN PAGES and the endpoint pages through them; the stub answers
+    // in one page, which is the shape a store this size really has.
+    list: async () => ({ keys: [...rows.keys()].map((name) => ({ name })), list_complete: true }),
+  };
 };
 
 const post = async (body, kv) =>
@@ -232,6 +238,35 @@ console.log("the board's submission endpoint\n");
   await post({ ...nameless, weapon: "braton_prime" }, kv2);
   check("...and two different builds are still two records",
     kv2.rows.size === 2, `${kv2.rows.size} records`);
+}
+
+// ---- and the library can say how big it is -----------------------------------
+//
+// THE BOARD IS A STATIC FILE and always will be — committed to the repo, served
+// from the CDN, unblockable and free. What it cannot carry is how far behind it
+// is, so the page asks the library for the one number that says: how many
+// builds it holds. A COUNT and nothing else, which is also the most the store
+// can honestly report, since it keeps nothing about a submitter to report.
+{
+  const kv = store();
+  await post(PAYLOAD, kv);
+  await post({ ...PAYLOAD, weapon: "braton_prime" }, kv);
+  const res = await worker.fetch(
+    new Request("https://wfsim.app/api/board/pending"),
+    { SUBMISSIONS: kv, ASSETS: { fetch: async () => new Response("site") } },
+  );
+  const body = res.ok ? await res.json() : null;
+  check("the library reports its own size", !!body && body.ok === true && body.count === 2,
+    JSON.stringify(body));
+  check("...and reports nothing else about it",
+    !!body && Object.keys(body).sort().join(",") === "capped,count,ok",
+    JSON.stringify(body && Object.keys(body)));
+  const post_ = await worker.fetch(
+    new Request("https://wfsim.app/api/board/pending", { method: "POST" }),
+    { SUBMISSIONS: kv, ASSETS: { fetch: async () => new Response("site") } },
+  );
+  check("...and it is a READ, so a POST is refused", post_.status === 405,
+    String(post_.status));
 }
 
 console.log(

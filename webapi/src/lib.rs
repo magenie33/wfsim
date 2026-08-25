@@ -1690,6 +1690,11 @@ pub fn meta_json() -> Value {
         "benchmarks": wfsim_engine::benchmarks_data::all().iter().map(|b| json!({
             "primary": b.primary, "id": b.id,
             "name": b.name,
+            // HOW MANY BUILDS THE RUN THAT WROTE THIS BOARD READ. Paired with
+            // the library's own size (`/api/board/pending`), it is what lets a
+            // STATIC board say how far behind it is — see `boards_data::Board`.
+            "submissions": wfsim_engine::boards_data::of(&b.id)
+                .map(|x| x.submissions).unwrap_or(0),
             // The standard AT LENGTH — the name is the same thing in one line.
             // A reader deciding whether a ranking answers their question needs
             // the terms, and a term that only exists in a yaml comment is one

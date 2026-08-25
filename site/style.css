@@ -496,6 +496,11 @@ body.on-enemies [data-module="builder"]{display:none}
    Same component as the mod list's, so it needs no size of its own. */
 #dd-menu .opt .exchip,#dd-menu .opt .bx{margin-left:5px}
 
+/* HOW FAR BEHIND THE STATIC BOARD IS — a footnote, never a headline: the board
+   is current almost all the time and a line that shouted would be wrong almost
+   all the time. */
+.bench-pending{color:var(--gold)}
+
 /* stats panel — merged buckets explained by source */
 .srow{padding:7px 0;border-bottom:1px dashed var(--line)}
 .srow:last-child{border-bottom:0}

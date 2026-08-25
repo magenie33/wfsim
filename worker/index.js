@@ -223,9 +223,53 @@ async function submit(request, env) {
   });
 }
 
+/// HOW MANY BUILDS THE LIBRARY HOLDS — the one number that says whether the
+/// board on screen is current (owner asked for a live board, 2026-08-25).
+///
+/// THE BOARD IS A STATIC FILE, committed to the repo and served from the CDN,
+/// which is what makes it fast and free — and what makes it only as fresh as
+/// the last scoring run. Rather than moving the board behind a service to make
+/// it live, the page keeps reading the file and asks THIS for the one fact the
+/// file cannot carry: how many builds have arrived since. The strip it draws is
+/// "N builds submitted since this board was scored", which answers both "did
+/// mine arrive" and "is this list current" without pretending to rank anything.
+///
+/// A COUNT, and nothing else. No build, no weapon, no day — the store already
+/// holds nothing about the submitter and this endpoint hands back less than the
+/// store holds, not more.
+///
+/// KV LISTS IN PAGES, at most 1000 keys each, and the loop is bounded: at the
+/// library's present size (about a thousand) this is one call, and at twenty
+/// thousand it stops counting and says so rather than walking KV on every board
+/// view. A capped count still answers the question the strip asks.
+async function pending(env) {
+  if (!env.SUBMISSIONS) return bad("submission storage is not configured", 503);
+  let count = 0;
+  let cursor;
+  let capped = true;
+  for (let page = 0; page < 20; page++) {
+    const r = await env.SUBMISSIONS.list({ limit: 1000, cursor });
+    count += (r.keys || []).length;
+    if (r.list_complete) { capped = false; break; }
+    cursor = r.cursor;
+  }
+  return new Response(JSON.stringify({ ok: true, count, capped }), {
+    headers: {
+      "content-type": "application/json",
+      // A MINUTE. The board itself moves every twenty, so a count that is up to
+      // a minute old is exact enough for the sentence it is in — and it keeps a
+      // busy board page from listing KV once per reader.
+      "cache-control": "public, max-age=60",
+    },
+  });
+}
+
 export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
+    if (path === "/api/board/pending") {
+      return request.method === "GET" ? pending(env) : bad("GET only", 405);
+    }
     if (path === "/api/board/submit") {
       // A GET here is somebody looking for the board itself, which is a STATIC
       // FILE committed to the repo (`data/benchmarks/boards/`) and served from
