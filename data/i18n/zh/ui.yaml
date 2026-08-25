@@ -1293,6 +1293,10 @@ ui:
   "capacity": 容量
   # The board is a static file; this is how far behind it is.
   "· {n} more submitted since this board was scored — the next run is within 20 minutes": · 这块榜评分之后又有 {n} 套配装提交进来，下一次评分在 20 分钟内
+  # A live bug: the number IS right and nobody can explain it - the opposite
+  # of the "not modelled" banner above it.
+  "measured on this weapon and unexplained — the engine reproduces what the game does, and a hotfix could change it": 在这把武器上实测到、但无人能解释——引擎忠实还原游戏的行为，而一次热修可能会改掉它
+  "Secondary Irradiate's echo is measured at 3.6x the hit on this form, not the 1.8x its card states and every pure single-target weapon delivers. The engine reproduces the measurement; nobody has explained it, and a hotfix could change it.": 在这个形态上，次要辐照的回响实测为命中伤害的 3.6 倍，而不是它卡面写的、也是所有纯单体武器实际给出的 1.8 倍。引擎还原的是实测结果；没有人解释过它，一次热修可能会改掉它。
   "disposition": 倾向
   # A riven belongs to a weapon FAMILY, so the same card is in every variant's
   # list and reads that variant's own disposition.

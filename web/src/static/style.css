@@ -501,6 +501,11 @@ body.on-enemies [data-module="builder"]{display:none}
    all the time. */
 .bench-pending{color:var(--gold)}
 
+/* A LIVE BUG IS NOT A SHORTFALL, so it does not wear the shortfall's colour:
+   the number is right and the reason is unknown, which is a different thing to
+   tell a reader than "this is a floor". */
+.livebug-banner .unmod-h{color:var(--gold)}
+
 /* stats panel — merged buckets explained by source */
 .srow{padding:7px 0;border-bottom:1px dashed var(--line)}
 .srow:last-child{border-bottom:0}

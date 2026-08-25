@@ -106,6 +106,11 @@ struct WeaponInfo {
     /// from the weapon file. Shown to the reader — a number that omits
     /// something owes them the sentence, not just the omission.
     unmodeled: Vec<String>,
+    /// WHAT THIS ENTRY DOES THAT NOBODY CAN EXPLAIN and the engine reproduces
+    /// anyway. The OPPOSITE of `unmodeled` beside it: that says the number is a
+    /// floor, this says the number is right and the reason is unknown — see
+    /// `weapons_data::WeaponSpec::live_bugs`.
+    live_bugs: Vec<String>,
     // Precise weapon type within that group (Dual Toxocyst = Dual Pistols).
     subtype: String,
     sentinel: bool,
@@ -225,6 +230,15 @@ fn weapons() -> &'static [WeaponInfo] {
                     // The BASE entry's gaps and its Incarnon form's, together:
                     // a reader is looking at one weapon and both halves are
                     // theirs to know about.
+                    // THE FORMS' TOO, on the same terms as `unmodeled` below: a
+                    // reader is looking at one weapon and both halves are
+                    // theirs to know about — and the Laetum's doubling is on
+                    // the INCARNON entry, which is not the one the page names.
+                    live_bugs: wfsim_engine::weapons_data::forms_of(&s.id)
+                        .iter()
+                        .filter_map(|f| wfsim_engine::weapons_data::spec(f.weapon_id))
+                        .flat_map(|x| x.live_bugs.iter().cloned())
+                        .collect(),
                     unmodeled: wfsim_engine::weapons_data::forms_of(&s.id)
                         .iter()
                         .filter_map(|f| wfsim_engine::weapons_data::spec(f.weapon_id))
@@ -1135,6 +1149,7 @@ pub fn meta_json() -> Value {
                 // way the enemy files already do. A reader is owed the gap in
                 // words, not only the number that omits it.
                 "unmodeled": w.unmodeled.clone(),
+                "live_bugs": w.live_bugs.clone(),
                 // THE SAME ADMISSIONS, STRUCTURED. `unmodeled` above is the
                 // finished English and stays for everything that just prints
                 // it; this carries the reason's TEMPLATE and its parameters, so

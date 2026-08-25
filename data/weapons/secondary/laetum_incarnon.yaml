@@ -28,6 +28,15 @@ form: incarnon
 # `docs/CATALOGS.md` forbids, and this comment is the note to come back to.
 echo_multiplier: 2.0
 
+# …AND THE READER IS TOLD, because the arcane's own card beside it prints DE's
+# 180% and this entry pays 360%. A number that departs from the card it sits
+# next to and says so nowhere is the shape of a bug report, and it was one
+# (owner asked where the doubling was shown, 2026-08-25). Not an `unmodeled:`
+# line: that banner says the number below is a FLOOR, and this says the number
+# is RIGHT and the reason is unknown.
+live_bugs:
+  - "Secondary Irradiate's echo is measured at 3.6x the hit on this form, not the 1.8x its card states and every pure single-target weapon delivers. The engine reproduces the measurement; nobody has explained it, and a hotfix could change it."
+
 # TWO WEAPONS MODEL: second entry of the transform group — see
 # data/weapons/secondary/laetum.yaml for the base form and the decision.
 transform_group: laetum

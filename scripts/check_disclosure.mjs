@@ -83,6 +83,28 @@ for (const lang of ["en", "zh"]) {
     out.banner = (document.querySelector('.unmod-h') || {}).textContent || '';
     out.bannerLines = [...document.querySelectorAll('.unmod-l')].map(e => e.textContent.trim());
     out.weaponGaps = (weaponInfo($('weapon').value).unmodeled || []).length;
+    // …AND THE STUG HAS NO LIVE BUG, which is the negative control for the
+    // block below: a banner that appeared on every weapon would tell nobody
+    // anything.
+    out.stugLiveBug = !document.getElementById('stats-livebug').hidden;
+
+    // 1b. A LIVE BUG, WHICH IS THE OPPOSITE ADMISSION. The banner above says the
+    //     number below is a FLOOR; this says the number is RIGHT, was measured,
+    //     and nobody can explain it — so a hotfix could take it away. Filing one
+    //     as the other would give a reader the opposite advice.
+    //
+    //     The Laetum is the case it exists for: its Incarnon form pays Secondary
+    //     Irradiate's echo at 3.6x the hit while the arcane's own card, on the
+    //     same screen, prints DE's 180%. The engine carried that as
+    //     echo_multiplier and said so nowhere a reader could see, which is how
+    //     it was reported (owner, 2026-08-25).
+    history.pushState({}, '', '/weapons/Laetum'); route(); await sleep(3200);
+    const lb = document.getElementById('stats-livebug');
+    out.bugShown = lb && !lb.hidden;
+    out.bugHead = lb ? (lb.querySelector('.unmod-h') || {}).textContent || '' : '';
+    out.bugLines = lb ? [...lb.querySelectorAll('.unmod-l')].map(e => e.textContent.trim()) : [];
+    out.bugData = (weaponInfo('laetum').live_bugs || []).length;
+    history.pushState({}, '', '/weapons/Stug'); route(); await sleep(3200);
 
     // 2. EVOLUTION TILES.
     out.evoChips = evoRows('.exchip.unmod').map(e => e.textContent.trim());
@@ -287,6 +309,27 @@ for (const lang of ["en", "zh"]) {
   check(`[${lang}] and the lines are in the display language`,
     r.bannerLines.every((l) => cjk.test(l) === (lang === "zh")),
     JSON.stringify(r.bannerLines[0] || "").slice(0, 90));
+  // A LIVE BUG IS ON THE PAGE, and it is not the "not modelled" banner.
+  check(`[${lang}] a weapon that does something unexplained says so`,
+    r.bugShown === true && r.bugLines.length === r.bugData && r.bugData >= 1,
+    `${r.bugLines.length} lines, ${r.bugData} in the data`);
+  check(`[${lang}] ...naming the number, so it can be argued with`,
+    /3\.6/.test(r.bugLines.join(" ")), JSON.stringify(r.bugLines).slice(0, 140));
+  // THE OPPOSITE ADVICE, said differently. "Not modelled" means the number is a
+  // floor; this means the number is right and may be taken away by a hotfix. A
+  // reader who cannot tell them apart has been told the wrong thing.
+  check(`[${lang}] ...in its own words, not the shortfall banner's`,
+    r.bugHead.length > 10 && r.bugHead !== r.banner,
+    JSON.stringify([r.bugHead, r.banner]).slice(0, 160));
+  check(`[${lang}] ...in the display language`,
+    cjk.test(r.bugHead) === (lang === "zh") && cjk.test(r.bugLines.join("")) === (lang === "zh"),
+    JSON.stringify(r.bugHead).slice(0, 90));
+  // THE NEGATIVE CONTROL, and not a formality: the Stug is the roster's
+  // most-disclaimed weapon and has no live bug, so a block that drew on
+  // everything would fail here rather than reading as thorough.
+  check(`[${lang}] ...and the most-disclaimed weapon on the roster has none`,
+    r.stugLiveBug === false, String(r.stugLiveBug));
+
   // ONE OF EACH IS THE CLAIM NOW, not three of one. The Stug's inert clauses
   // have been going down all night — the count was a proxy for "the chip is
   // drawn", and the pair below says that better: a todo AND an edge, both on

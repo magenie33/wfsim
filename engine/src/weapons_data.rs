@@ -1152,6 +1152,25 @@ pub struct WeaponSpec {
     /// carries, for the same reason: it is shown to a reader verbatim.
     #[serde(default)]
     pub unmodeled: Vec<String>,
+    /// WHAT THIS ENTRY DOES THAT NOBODY CAN EXPLAIN, and the engine reproduces
+    /// anyway — the weapon's half of the `live_bugs:` an arcane, an ability and
+    /// an enemy already carry.
+    ///
+    /// IT IS NOT AN `unmodeled:` LINE and must not be filed as one: that banner
+    /// says "the number below is a FLOOR", and this says the opposite — the
+    /// number is right, it was measured, and the reason is unknown. A player
+    /// building around it is owed both facts.
+    ///
+    /// The case it was added for is the Laetum's Incarnon form, whose Secondary
+    /// Irradiate echo measures 3.6x the hit where the arcane's own card says
+    /// 1.8x and every pure single-target weapon delivers 1.8x (MEASUREMENTS
+    /// M59). The engine carries it as `echo_multiplier` and said so nowhere a
+    /// reader could see, while the arcane card beside it printed 180%
+    /// (owner asked where it was shown, 2026-08-25).
+    ///
+    /// Prose, for the same reason `unmodeled:` is: it is shown verbatim.
+    #[serde(default)]
+    pub live_bugs: Vec<String>,
     /// DE's ACCURACY stat, as the Arsenal prints it. REFERENCE ONLY — the
     /// model reads [`AttackSpec::spread`], which is the primary value.
     ///

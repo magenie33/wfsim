@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "8fd054bf+ · 2026-08-25 02:46Z";
+const BUILD_ID = "4591b80f+ · 2026-08-25 04:07Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -8538,6 +8538,26 @@ function renderPanel(r) {
         // the template once instead of once per set of numbers.
         + gaps.map((g) => `<div class="unmod-l">${escHtml(trGap(g))}</div>`).join("")
       : "";
+    // …AND THE OPPOSITE ADMISSION, in its own block. A LIVE BUG says the number
+    // IS right — measured, reproduced — and that nobody can explain it, so a
+    // hotfix could take it away. Filing it under "not modelled" would tell the
+    // reader the number is a floor, which is the one thing it is not.
+    //
+    // The case it exists for: the Laetum's Incarnon form pays Secondary
+    // Irradiate's echo at 3.6x the hit while the arcane's own card, on the same
+    // screen, prints DE's 180%. A number that departs from the card beside it
+    // and says so nowhere reads as a bug, and it was reported as one (owner,
+    // 2026-08-25). VERBATIM, not through `trGap`: these are OUR sentences and
+    // they translate, but they carry no template holes.
+    const bugs = (wInfo.live_bugs || []).slice();
+    if ($("stats-livebug")) {
+      $("stats-livebug").hidden = !bugs.length;
+      $("stats-livebug").innerHTML = bugs.length
+        ? `<div class="unmod-h">⚠ ${escHtml(
+            tr("measured on this weapon and unexplained — the engine reproduces what the game does, and a hotfix could change it"))}</div>`
+          + bugs.map((b) => `<div class="unmod-l">${escHtml(tr(b))}</div>`).join("")
+        : "";
+    }
   }
   // A source the row's LOCK is ignoring still lists, struck through and said
   // out loud: "Fire Rate cannot be modified" means this mod's bonus is not in
