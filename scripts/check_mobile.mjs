@@ -308,4 +308,101 @@ for (const [label, w, h, mobile] of SCREENS) {
     r.slotNos === "1,2,3,4,5,6,7,8", r.slotNos);
 }
 
-await app.finish("the page fits every screen it was measured on");
+// ---- AND IT FITS IN EVERY LANGUAGE ------------------------------------
+//
+// THE PASS ABOVE HAS ONLY EVER MEASURED ONE. It never set a display language,
+// so it took the browser's — `navigator.language` is `zh-CN` on the machine
+// this is written on — and Chinese labels are the SHORT ones. The module tab
+// strip is five flex children with no wrap: 342px in Chinese and **474px in
+// English** at a 360px screen, so the DOCUMENT was 474 wide, the browser
+// fitted that into 360, every page shrank to 76% and the right quarter went
+// off the edge. That is where a mod card keeps its ⋯, which is why it was
+// reported as "the mod area is too big" — the exilus slot sitting beside it
+// looked fine only because its right-hand side is empty (owner, 2026-08-26).
+//
+// So the one check that is about phones was structurally blind to the whole
+// English UI, while `check_disclosure`, `check_enemies` and `check_mode_def`
+// have all run both languages for exactly this reason. A width is a TEXT
+// measurement; a check that fixes the language is measuring one translation.
+//
+// It is the PHONE widths only and the overflow facts only: the touch, menu and
+// numbering assertions above do not depend on how long a word is, and doubling
+// a 130-second check to cover them again would buy nothing.
+//
+// IT NAMES THE OFFENDER. "the document is 474 wide" is a symptom that took a
+// sweep to trace; the deepest element that crosses the edge is the answer, and
+// printing it is what turns the next failure into a one-line diagnosis.
+for (const lang of ["en", "zh"]) {
+  await app.setLang(lang, 13000);
+  for (const w of [360, 390, 430]) {
+    await send("Emulation.setDeviceMetricsOverride",
+      { width: w, height: 800, deviceScaleFactor: 2, mobile: true });
+    await send("Page.navigate", { url: BASE + "/weapons/Ocucor" });
+    await sleep(9000);
+    const g = await evaluate(`(async () => {
+      const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+      // A FULL build again: an empty slot is narrow and proves nothing.
+      const pool = (META.weapons.find((x) => x.id === 'ocucor') || {}).mods || [];
+      for (let i = 0; i < 8 && i < pool.length; i++) slots[i] = { mod: pool[i], pol: null, rank: null };
+      renderMods(); await sleep(1200);
+      const vw = document.documentElement.clientWidth;
+      // THE DEEPEST offenders only — an ancestor is wide because a child is,
+      // so listing both says the same thing twice and neither of them is it.
+      const over = [];
+      document.querySelectorAll('body *').forEach((el) => {
+        const b = el.getBoundingClientRect();
+        if (b.right <= vw + 0.5 || (b.width === 0 && b.height === 0)) return;
+        if ([...el.children].some((c) => c.getBoundingClientRect().right > vw + 0.5)) return;
+        over.push(el.tagName.toLowerCase() + '.' + String(el.className || '').split(' ')[0]
+          + ' ->' + Math.round(b.right) + ' "' + (el.textContent || '').trim().slice(0, 16) + '"');
+      });
+      return { vw, scrollW: document.documentElement.scrollWidth,
+               over: [...new Set(over)].slice(0, 4) };
+    })()`);
+    const tag = `[${lang} ${w}px]`;
+    check(`${tag} nothing crosses the right edge`, g.over.length === 0,
+      g.over.join(" | "));
+    check(`${tag} ...so the page does not scroll sideways`,
+      g.scrollW <= g.vw + 0.5, `scrollWidth ${g.scrollW} vs ${g.vw}`);
+    // …AND A LONG MOD NAME DOES NOT WIDEN THE CARD. `.mn` is `nowrap` with an
+    // ellipsis, which LOOKS like it cannot push — and `overflow:hidden` does
+    // not zero a block's min-content contribution, so the untruncated name was
+    // the card's minimum width all along: measured on a real card, 198px
+    // normally and 528px with a long name in it. A `1fr` track floors at
+    // min-content, so the grid was as wide as its longest name wanted and the
+    // card ran off a 360px screen (owner, 2026-08-26).
+    //
+    // The name is INJECTED rather than hunted for in the roster: what breaks it
+    // is a length, the roster's longest name today is not the longest one
+    // tomorrow, and a check that depends on which mods happen to exist is a
+    // check that goes quiet when the data moves.
+    //
+    // ONLY THE EIGHT MAIN SLOTS COULD SHOW IT, which is why it was reported as
+    // "the arcanes and the evolutions are fine and so is the exilus": the
+    // exilus grid is the same class with ONE usually-empty card, so its
+    // min-content is a stub and its track never reaches the floor.
+    const long = await evaluate(`(async () => {
+      const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+      const g = document.getElementById('mod-slots');
+      g.querySelectorAll('.slot .mn').forEach((el) => {
+        el.textContent = '超长名称测试'.repeat(6) + ' a very long mod name indeed';
+      });
+      await sleep(300);
+      const vw = document.documentElement.clientWidth;
+      const over = [];
+      document.querySelectorAll('#mod-slots, #mod-slots *').forEach((el) => {
+        const b = el.getBoundingClientRect();
+        if (b.right > vw + 0.5) over.push(String(el.className || el.id).split(' ')[0]
+          + ' ->' + Math.round(b.right));
+      });
+      return { vw, scrollW: document.documentElement.scrollWidth,
+               card: Math.round(g.querySelector('.slot').getBoundingClientRect().width),
+               over: [...new Set(over)].slice(0, 3) };
+    })()`);
+    check(`${tag} a long mod name does not push the card off screen`,
+      long.over.length === 0 && long.scrollW <= long.vw + 0.5,
+      `card ${long.card} in ${long.vw}: ${long.over.join(" | ") || "scrollWidth " + long.scrollW}`);
+  }
+}
+
+await app.finish("the page fits every screen it was measured on, in both languages");

@@ -69,10 +69,28 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
    NOT a tab — it sits at the bottom of the builder as the build's test
    bench. body.on-simulator / body.on-optimizer swap which module's
    sections show (Builder | Simulator | Optimizer). */
-.module-tabs{display:flex;gap:4px;margin:16px 0 14px;border-bottom:1px solid var(--line)}
+/* FIVE TABS, AND THEY MAY NOT PUSH THE DOCUMENT. `display:flex` with no wrap
+   let them overflow in normal flow, so the DOCUMENT grew to their width and
+   the browser fitted that into the screen: at 360px the English strip measured
+   474px, every page shrank to 76%, and the right quarter — which is where a
+   mod card keeps its ⋯ — went off the edge. It reads as "the mod area is too
+   big", because the mod cards are the widest thing being cut; the exilus slot
+   looks fine beside them only because its right-hand side is empty (owner,
+   2026-08-26).
+   ONLY ENGLISH SHOWED IT. The Chinese labels are short enough to fit at every
+   phone width, which is why eight weapons swept clean in zh and every one of
+   them overflowed in en. `wrap` is the GUARANTEE — a sixth tab, a longer
+   translation or a narrower phone costs a second row rather than the page —
+   and the tighter padding below is what usually keeps it to one. */
+.module-tabs{display:flex;flex-wrap:wrap;gap:4px;margin:16px 0 14px;border-bottom:1px solid var(--line)}
 .mtab{display:inline-flex;align-items:center;line-height:1;padding:9px 16px;font-size:13.5px;color:var(--muted);text-decoration:none;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0}
 .mtab:hover{color:var(--text)}
 .mtab.sel{color:var(--text);font-weight:600;border-color:var(--line);background:var(--panel2);position:relative;top:1px}
+/* Measured at 360px: 16px of side padding puts the five English labels at
+   474px, 9px puts them at 366 — one row on all but the narrowest phone, and
+   `wrap` above catches the rest. */
+@media(max-width:520px){.mtab{padding:8px 9px;font-size:12.5px}.module-tabs{gap:2px}}
+
 /* EVERY BLOCK DECLARES WHOSE IT IS, and the rules below are DERIVED from that
    declaration rather than from a list of ids (owner, 2026-08-24).
 
@@ -349,15 +367,30 @@ body.on-enemies [data-module="builder"]{display:none}
    ⋯ button (owner, 2026-08-05). `minmax(0,1fr)` lets the track shrink below
    its content and the ellipsis do its job. */
 .slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.slots.one{grid-template-columns:1fr}
+.slots.one{grid-template-columns:minmax(0,1fr)}
 /* ...and on a PHONE, one column. The line above stops the overflow but not
    much else: two columns inside 326px leaves each card 159px, of which the
    mod NAME gets 31px — about three characters before the ellipsis, which is
    not a name. One column gives the card the full 326px and the name 198px,
    and costs only vertical scrolling, which is the one thing a phone is good
    at. Measured, not guessed; see scripts/check_mobile.mjs. */
-@media(max-width:520px){.slots{grid-template-columns:1fr}}
-.slot{position:relative;display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px 8px;min-height:48px}
+/* …AND THE PHONE RULE TAKES `minmax(0,…)` TOO. It was a bare `1fr`, which
+   re-buried the exact mine the paragraph above was written about: `1fr` floors
+   its track at MIN-CONTENT, so ONE column is only as narrow as the widest card
+   is willing to be. Two columns had been fixed and one column had not, which
+   is why the report was "only the main 8 mods run off the screen — the arcanes
+   and the evolutions are fine, and so is the exilus" (owner, 2026-08-26): the
+   exilus grid is the SAME class with ONE usually-empty card in it, so its
+   min-content is a stub and its track never hits the floor. Eight filled cards
+   is the only place on the page where that floor can bind. */
+@media(max-width:520px){.slots{grid-template-columns:minmax(0,1fr)}}
+/* A GRID ITEM'S AUTOMATIC MINIMUM IS ITS MIN-CONTENT, so a track that CAN
+   shrink is only half of it — the card itself has to be willing to. `min-width:0`
+   is the same line `.slot .info` already carries one level down, and
+   `overflow:hidden` is the backstop: whatever a card comes to hold, it is
+   clipped at the card's own edge rather than painted past it. Between the
+   three, a mod card cannot leave the screen no matter what is in it. */
+.slot{position:relative;display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:6px 8px;min-height:48px;min-width:0;overflow:hidden}
 /* The slot's own number, matching the picker's "slot N" chip. Absolutely
    placed so it costs the row NO width — the grid is two tracks wide on a
    phone and the mod NAME is what has to keep the room (check_mobile). */
@@ -379,6 +412,16 @@ body.on-enemies [data-module="builder"]{display:none}
 .slot .info{min-width:0;flex:1}
 .slot .mn{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .slot .dr{font-size:11px;color:var(--muted)}
+/* THE DRAIN AND THE RANK ARE ONE LINE. They were two — a block `.dr` above an
+   inline-flex `.rank` — which is a whole row per card for two short facts, and
+   a card is eight rows deep on a phone before the eighth one is reached: the
+   grid measured 763-956px, nearly two screens of nothing but slots (owner,
+   2026-08-26). Side by side costs one line each and reads better everywhere,
+   so it is not a phone-only rule. It WRAPS, because a lowered rank draws a
+   filled pill and a long drain string ("15 drain (base 7)") can want the
+   width. */
+.slot .drow{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;margin-top:2px}
+.slot .drow .rank{margin-top:0}
 .slot .dots{flex:none;background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px;border-radius:5px}
 .slot .dots:hover{color:var(--text);background:var(--plane)}
 .slot.empty{justify-content:flex-start;border-style:dashed;color:var(--muted);cursor:pointer;gap:8px}
@@ -452,7 +495,11 @@ body.on-enemies [data-module="builder"]{display:none}
 .combo-menu .opt .me div{line-height:1.35}
 /* Configured slot cards show the current-rank description in the same
    small-text style as the picker cards. */
-.slot .me{font-size:11px;color:var(--text-2)}
+/* A card's text WRAPS RATHER THAN PUSHES. A mod name is nowrap + ellipsis, but
+   a description line is prose and one long unbreakable token in it — a
+   translation without spaces, an id, a number with a unit — would otherwise set
+   the card's min-content all by itself. */
+.slot .me{font-size:11px;color:var(--text-2);overflow-wrap:anywhere}
 .slot .me div{line-height:1.35}
 /* Item names (mods / arcanes / evolutions) link to their wiki page. */
 .wl{color:inherit;text-decoration:none}
