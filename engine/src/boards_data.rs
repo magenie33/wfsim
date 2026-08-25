@@ -71,7 +71,46 @@ pub struct BoardEntry {
     /// which passed for as long as the board held none and failed the hour the
     /// first one landed (2026-08-24).
     #[serde(default)]
-    pub riven: Option<crate::rivens_data::RivenShape>,
+    pub riven: Option<BoardRiven>,
+    /// WHAT THIS ROW'S SCORE DEPENDS ON, as one hash — the ruler, the weapon
+    /// and every form it fires, each mod, each arcane, each evolution, and
+    /// everything no entity owns (`data_fingerprint`). The next run recomputes
+    /// it and reuses the score only if it matches, so a mod correction rescores
+    /// the rows carrying that mod and leaves the rest alone.
+    ///
+    /// Empty = written before per-row fingerprints existed, which reads as
+    /// "rescore it", the same way an absent board fingerprint does.
+    #[serde(default)]
+    pub fp: String,
+}
+
+/// A published row's riven: the SHAPE, plus the ROLLS this engine settled on.
+///
+/// Not `rivens_data::RivenShape` directly, because the rolls have to survive a
+/// parse. They travel because a score is not enough to publish a riven row —
+/// the reader has to be able to BUILD that riven, and the corner the scorer
+/// chose took a sixteen-way search to find. Before this they were written and
+/// never read back, which nothing noticed because the board's coarse
+/// fingerprint made almost every run a full rescore; the moment reuse became
+/// the common case a reused riven row would have lost its rolls, and with them
+/// its whole riven block (2026-08-25).
+#[derive(Debug, Clone, Deserialize, PartialEq, Default)]
+pub struct BoardRiven {
+    pub bonuses: Vec<String>,
+    #[serde(default)]
+    pub malus: Option<String>,
+    #[serde(default)]
+    pub rolls: Vec<f64>,
+}
+
+impl BoardRiven {
+    /// The shape alone — what validation and scoring ask for.
+    pub fn shape(&self) -> crate::rivens_data::RivenShape {
+        crate::rivens_data::RivenShape {
+            bonuses: self.bonuses.clone(),
+            malus: self.malus.clone(),
+        }
+    }
 }
 
 /// One benchmark's board.
@@ -92,9 +131,12 @@ pub struct Board {
     ///
     /// It is what lets the next run tell reuse from staleness EXACTLY. A score
     /// is a pure function of (build, the ruler's terms, this code and this
-    /// data), so an unchanged fingerprint means the stored number is not merely
-    /// probably still right — it is the number this run would compute. Empty =
-    /// scored before this was recorded, which reads as "rescore everything".
+    /// The ENGINE CODE this board was scored by (`engine`, `webapi`, `cli`).
+    /// The DATA half is per row — see `BoardEntry::fp` — because a data change
+    /// moves the rows that read the file that changed and no others, while a
+    /// change in `damage.rs` can move any row and no dependency set can say
+    /// otherwise. Empty = scored before this was recorded, which reads as
+    /// "rescore everything".
     #[serde(default)]
     pub engine: String,
     #[serde(default)]
@@ -174,7 +216,7 @@ mod tests {
             for e in &b.entries {
                 let v = crate::builds::validate_for_board_with(
                     &b.benchmark, &e.weapon, &e.mods, &e.evolutions, &e.arcanes, &e.valence,
-                    e.riven.as_ref(),
+                    e.riven.as_ref().map(BoardRiven::shape).as_ref(),
                 )
                     .unwrap_or_else(|err| panic!("{} row on {}: {err}", e.weapon, b.benchmark));
                 // `validate` already refused anything over capacity, and the

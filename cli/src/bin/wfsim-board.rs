@@ -57,6 +57,10 @@ struct Row {
     /// The BONUS is not a row field: the ruler scores every row at the roll's
     /// maximum, which is investment rather than a choice.
     valence: String,
+    /// WHAT THIS ROW'S SCORE DEPENDS ON, as one hash — see
+    /// `engine::data_fingerprint`. Written into the board so the NEXT run can
+    /// ask, per row, whether anything it reads has moved.
+    fp: String,
     /// THE RIVEN THIS BUILD CARRIES, as a SHAPE — which stats and which is the
     /// malus, never a roll. A row states a shape and the shape is scored at its
     /// own ceiling (`rivens_data::perfect`), for the reason every row is scored
@@ -266,34 +270,63 @@ fn load_scores(spec: Option<String>, bench_id: &str) -> std::collections::HashMa
 /// canonical build, so it has to be recomputed from the row rather than stored
 /// beside it. That also means a row this engine would now REFUSE simply fails
 /// to produce a key and is rescored (and then refused) rather than carried.
-fn reuse_prior(
-    path: &str,
-    engine_fp: &str,
-    bench_id: &str,
-) -> Result<std::collections::HashMap<String, f64>, String> {
-    if engine_fp.is_empty() {
+/// What a prior board still answers for.
+#[derive(Default)]
+struct Prior {
+    scores: std::collections::HashMap<String, f64>,
+    /// THE ROLLS TRAVEL WITH THE SCORE. They were written and never read back,
+    /// which nothing noticed while the fingerprint was coarse enough to make
+    /// almost every run a full rescore. The moment reuse became the common
+    /// case, a reused riven row would have come back with no rolls — and a
+    /// riven row with no rolls loses its whole riven block (2026-08-25).
+    rolls: std::collections::HashMap<String, Vec<f64>>,
+    /// Rows whose OWN data moved. Printed rather than counted silently: it is
+    /// the number that says how much a change actually cost.
+    stale: usize,
+}
+
+fn reuse_prior(path: &str, code_fp: &str, bench_id: &str) -> Result<Prior, String> {
+    if code_fp.is_empty() {
         return Err("no engine fingerprint given".into());
     }
     let text = std::fs::read_to_string(path).map_err(|e| format!("{path}: {e}"))?;
     let prior = wfsim_engine::boards_data::parse(&text).map_err(|e| format!("{path}: {e}"))?;
-    if prior.engine != engine_fp {
+    if prior.engine != code_fp {
         return Err(format!(
-            "engine moved ({} -> {engine_fp})",
+            "engine code moved ({} -> {code_fp})",
             if prior.engine.is_empty() { "unrecorded" } else { &prior.engine }
         ));
     }
     if family(&prior.benchmark) != family(bench_id) {
         return Err(format!("{path} is {}'s board", prior.benchmark));
     }
-    let mut out = std::collections::HashMap::new();
+    let mut out = Prior::default();
     for e in &prior.entries {
-        let Ok(v) = wfsim_engine::builds::validate_for_board(
+        let Ok(v) = wfsim_engine::builds::validate_for_board_with(
             bench_id, &e.weapon, &e.mods, &e.evolutions, &e.arcanes, &e.valence,
+            e.riven.as_ref().map(wfsim_engine::boards_data::BoardRiven::shape).as_ref(),
         ) else {
             continue;
         };
+        // THE ROW'S OWN DATA, recomputed from the row rather than trusted — the
+        // same reason its identity is recomputed one line down. A row written
+        // before per-row fingerprints existed carries an empty one and is
+        // rescored, which is the safe direction and the only one available.
+        let want = wfsim_engine::data_fingerprint::row_fingerprint(
+            bench_id, &v.weapon, &v.mods, &v.arcanes, &v.evolutions,
+        );
+        if e.fp != want {
+            out.stale += 1;
+            continue;
+        }
         let mode = if e.mode.is_empty() { "base" } else { e.mode.as_str() };
-        out.insert(format!("{}#{}", wfsim_engine::builds::identity(&v), mode), e.score);
+        let key = format!("{}#{}", wfsim_engine::builds::identity(&v), mode);
+        if let Some(rv) = &e.riven {
+            if !rv.rolls.is_empty() {
+                out.rolls.insert(key.clone(), rv.rolls.clone());
+            }
+        }
+        out.scores.insert(key, e.score);
     }
     Ok(out)
 }
@@ -330,15 +363,25 @@ fn main() {
     // A COOLDOWN WOULD BE THE WRONG AXIS (owner asked about one, 2026-08-11).
     // Time is not an input: an untouched score is valid forever, and a score
     // whose engine moved is wrong immediately, not in an hour.
+    // WHAT `--engine` IS NOW: the CODE, and only the code (`engine`, `webapi`,
+    // `cli`). It used to hash `data/` in as well, which made adding a weapon —
+    // a file no existing row reads — invalidate all 967 stored scores and buy a
+    // full rescore: about an hour of wall clock and thirty of CPU to reproduce
+    // numbers that could not have moved (owner, 2026-08-25). The data half is
+    // now asked PER ROW, from the files that row actually reads.
     let engine_fp = flag("--engine").unwrap_or_default();
     let mut known = load_scores(flag("--scores"), &bench_id);
     let mut reused = 0usize;
+    let mut stale = 0usize;
+    let mut prior_rolls: std::collections::HashMap<String, Vec<f64>> = Default::default();
     if let Some(path) = flag("--reuse") {
         match reuse_prior(&path, &engine_fp, &bench_id) {
-            Ok(map) => {
-                reused = map.len();
+            Ok(p) => {
+                reused = p.scores.len();
+                stale = p.stale;
+                prior_rolls = p.rolls;
                 // The shards' own scores win: they were computed by THIS run.
-                for (k, v) in map {
+                for (k, v) in p.scores {
                     known.entry(k).or_insert(v);
                 }
             }
@@ -358,6 +401,11 @@ fn main() {
     // move the rolls moves the score, since the rolls ARE the argmax of it.
     let mut rolls: std::collections::HashMap<String, Vec<f64>> =
         load_rolls(flag("--scores"), &bench_id);
+    // …and the ones a prior board already found, on the same terms as its
+    // scores. This run's shards win: they were computed by this engine.
+    for (k, v) in prior_rolls {
+        rolls.entry(k).or_insert(v);
+    }
     let bench = wfsim_engine::benchmarks_data::get(&bench_id).unwrap_or_else(|| {
         eprintln!("unknown benchmark: {bench_id}");
         std::process::exit(2);
@@ -658,6 +706,12 @@ fn main() {
                 s
             }
         };
+        // WHAT THIS ROW READS, hashed from the CANONICAL build rather than from
+        // the submission — the same object `identity` is taken from, so the
+        // next run recomputes the identical hash off its own stored row.
+        let fp = wfsim_engine::data_fingerprint::row_fingerprint(
+            &bench_id, &v.weapon, &v.mods, &v.arcanes, &v.evolutions,
+        );
         rows.push(Row {
             weapon: v.weapon,
             mode: played.id.to_string(),
@@ -667,6 +721,7 @@ fn main() {
             arcanes: v.arcanes,
             valence: v.valence,
             riven: row_riven,
+            fp,
         });
     }
 
@@ -687,7 +742,7 @@ fn main() {
     // for twice. This log is the maintainer's half of saying so; the panel
     // that states the rule to the player is the other.
     eprintln!(
-        "{seen} submissions, {refused} refused, {} rows ({reused} reused, {} scored here, {below} below the floor){}",
+        "{seen} submissions, {refused} refused, {} rows ({reused} reused, {stale} rescored for a data change, {} scored here, {below} below the floor){}",
         kept.len(),
         computed.len(),
         // ONLY WHEN THERE ARE ANY. A board whose every row carries its
@@ -791,6 +846,12 @@ fn main() {
         // rather than a rounding of it — the published figure is rounded at the
         // point it is SHOWN, and two rows that tie on screen still rank.
         println!("    score: {}", r.score);
+        // WHAT THIS SCORE DEPENDS ON. The next run recomputes it from the row
+        // and reuses the number only if it matches, which is what makes a mod
+        // correction cost the rows carrying that mod instead of the board.
+        if !r.fp.is_empty() {
+            println!("    fp: {}", r.fp);
+        }
         println!("    mods: [{}]", r.mods.join(", "));
         if !r.evolutions.is_empty() {
             println!("    evolutions: [{}]", r.evolutions.join(", "));
@@ -905,6 +966,7 @@ mod tests {
             arcanes: vec![],
             valence: String::new(),
             riven: None,
+            fp: String::new(),
         }
     }
 
@@ -1113,6 +1175,7 @@ mod page_row_tests {
             arcanes: vec!["secondary_deadhead".into()],
             valence: String::new(),
             riven,
+            fp: "0123456789abcdef".into(),
         }
     }
 

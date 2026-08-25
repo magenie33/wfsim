@@ -8,7 +8,9 @@
 #
 # Two triggers, two scopes:
 #   schedule  — score what is new. quiet hours produce no commit at all.
-#   push      — engine or data changed, so every stored build is re-scored.
+#   push      - engine or data changed. A CODE change re-scores every stored
+#               build; a DATA change re-scores only the rows that read the
+#               file that moved, which is most pushes and nearly free.
 #
 # The second is not an optimisation of the first, it is the correctness rule:
 # a board whose rows were measured by different engine versions is not a board.
@@ -123,8 +125,15 @@ jobs:
         id: fp
         run: |
           set -euo pipefail
-          fp=$(git ls-files -s -- engine webapi cli data ':!data/benchmarks/boards' \
-               | git hash-object --stdin)
+          # THE CODE, AND ONLY THE CODE. `data/` used to be hashed in here, so
+          # adding a weapon (a file no existing row reads) invalidated every
+          # stored score and bought a full rescore: about an hour of wall clock
+          # and thirty of CPU to reproduce numbers that could not have moved.
+          # The data half is asked PER ROW now, inside the scorer, from the
+          # files that row actually reads (`engine::data_fingerprint`), so a
+          # mod correction costs the rows carrying that mod and nothing else
+          # (owner, 2026-08-25).
+          fp=$(git ls-files -s -- engine webapi cli | git hash-object --stdin)
           echo "engine=$fp" >> "$GITHUB_OUTPUT"
           echo "engine fingerprint: $fp"
 
