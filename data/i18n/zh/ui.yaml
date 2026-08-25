@@ -615,7 +615,7 @@ ui:
   "Weapons": 武器
   "What a donation never buys": 捐助永远买不到什么
   "What each mode is": 每种输出方式分别是什么
-  "What is sent is the BUILD: the weapon and its mods, evolutions and arcanes. Not the fight you ran it under — the board scores every build under its OWN rulers, so any scenario can contribute. And nothing about you: no account, no identifier, no address, no time finer than the day, and no score. The board takes a weapon built as far as it goes: every main slot filled, exilus not counted.": 发送的是这套配装：武器及其 mod、进化、赋能。不包含你跑它的那场仗——榜单会用它自己的标尺去跑每一套配装，所以任何场景都可以做贡献。也不包含关于你的任何东西：没有账号、没有标识符、没有地址、没有精确到天以下的时间，也没有分数。榜单收的是这把武器的最努力配置：8 个主槽位全部装满，exilus 不计。
+  "What is sent is the BUILD: the weapon and its mods, evolutions and arcanes. Not the fight you ran it under — the board scores every build under its OWN rulers, so any scenario can contribute. And nothing about you: no account, no identifier, no address, no time finer than the day, and no score. The board takes a weapon built as far as it goes: every main slot filled, and the exilus slot counted if you use one.": 发送的是这套配装：武器及其 mod、进化、赋能。不包含你跑它的那场仗——榜单会用它自己的标尺去跑每一套配装，所以任何场景都可以做贡献。也不包含关于你的任何东西：没有账号、没有标识符、没有地址、没有精确到天以下的时间，也没有分数。榜单收的是这把武器的最努力配置：8 个主槽位全部装满，用了 exilus 的话也一并计入。
   "What this benchmark measures": 这个基准到底在量什么
   "What would be sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself).": 会发送的内容：武器，以及它的 MOD、进化和赋能。仅此而已 —— 没有账号，没有任何标识，没有你起的任何名字，也不含分数（榜单自己测量配装）。
   "Where it goes": 钱花在哪
@@ -1227,7 +1227,6 @@ ui:
   "your Warframe's MAX energy — Primary Overcharge turns 35% of it into multishot. 0 = no frame": 你战甲的能量上限 —— 主要过载把其中 35% 转成多重射击。填 0 表示没有战甲
   "your Warframe's armor, buffs included — Primary Bulwark pays +1% damage per point past 1,000. 0 = no frame": 你战甲的护甲值，含增益 —— 主要壁垒每超出 1,000 点给 +1% 伤害。填 0 表示没有战甲
   "your Warframe's sprint speed — several Incarnon perks pay only at 1.2 or higher, and the slowest frame is 0.9": 你的战甲冲刺速度 —— 有几个灵化天赋要求 1.2 或更高才生效,而最慢的战甲是 0.9
-  "your exilus mod is not part of a benchmark build — it is left out of what is sent, so the board's number will differ from this one": 你的 exilus mod 不属于基准配装 —— 它不会被提交，所以榜单上的数字会和这里不同
   "yours, not the fight's — the boards score at 1,000": 这是你的设置，不属于这场战斗——榜单按 1,000 次跑分
   "{form} ({how})": "{form}（{how}）"
   "{form} ({secs}s charge)": "{form}（蓄力 {secs} 秒）"

@@ -175,6 +175,14 @@ pub struct ValidBuild {
     /// weaker one. The PERCENTAGE is not here — the board scores every
     /// row at the roll's maximum, which every player can reach.
     pub valence: String,
+    /// THE EXILUS MOD, if the build wears one. `None` on almost every build.
+    ///
+    /// ITS OWN FIELD RATHER THAN A NINTH ENTRY IN `mods`, because nothing
+    /// downstream could tell which entry it was: an exilus-eligible mod is
+    /// legal in a MAIN slot too, so the list alone cannot say whether one was
+    /// spent on it. Only the slot it came out of knows, and this is where that
+    /// fact is kept (owner, 2026-08-25).
+    pub exilus: Option<String>,
     /// THE RIVEN THIS BUILD CARRIES, as a SHAPE — which stats, and which is the
     /// malus. `None` on a build with no riven, which is almost all of them.
     ///
@@ -653,7 +661,7 @@ pub fn validate_for_board(
     arcanes: &[String],
     valence: &str,
 ) -> Result<ValidBuild, String> {
-    validate_for_board_with(benchmark, weapon, mods, evolutions, arcanes, valence, None)
+    validate_for_board_with(benchmark, weapon, mods, evolutions, arcanes, valence, None, None)
 }
 
 /// [`validate_for_board`], for a build carrying a riven of known SHAPE.
@@ -662,6 +670,12 @@ pub fn validate_for_board(
 /// all eight still wants all eight — seven cards and the riven. Nothing about
 /// admission changes; what changes is that one of the eight is priced from a
 /// shape rather than from the pool.
+// EIGHT ARGUMENTS, AND EACH IS A DISTINCT BUILD AXIS. Bundling them into a
+// struct would satisfy the lint and hide the thing that matters here: every
+// caller has to name every axis, which is the property `builds::BUILD_AXES`
+// states and the one that has been broken four times by a producer that simply
+// did not mention one.
+#[allow(clippy::too_many_arguments)]
 pub fn validate_for_board_with(
     benchmark: &str,
     weapon: &str,
@@ -670,8 +684,9 @@ pub fn validate_for_board_with(
     arcanes: &[String],
     valence: &str,
     riven: Option<&crate::rivens_data::RivenShape>,
+    exilus: Option<&str>,
 ) -> Result<ValidBuild, String> {
-    let b = validate_with(weapon, mods, evolutions, arcanes, valence, riven)?;
+    let b = validate_with(weapon, mods, evolutions, arcanes, valence, riven, exilus)?;
     let req = match crate::benchmarks_data::get(benchmark) {
         Some(bm) => bm.build.clone(),
         // An unknown benchmark admits nothing: scoring a build against a ruler
@@ -689,6 +704,21 @@ pub fn validate_for_board_with(
             "{} mods, and this benchmark wants all {MAIN_SLOTS} main slots",
             b.mods.len()
         ));
+    }
+
+    // THE EXILUS SLOT, which is OPTIONAL rather than excluded as of 2026-08-25.
+    //
+    // OPTIONAL AND NOT `full`, deliberately. Requiring one would force a choice
+    // that is worth nothing on most weapons — and the board would then rank
+    // whichever exilus mod the dice favoured, which is the thing the quick
+    // calc's `tied` marking exists to admit rather than to publish. Leaving it
+    // out is a real build a player can have; so is filling it. Both are rows,
+    // and the floor decides which is worth listing.
+    //
+    // A RULER MAY STILL EXCLUDE IT and the rule is the ruler's, not this
+    // function's — the same way `mods`/`evolutions`/`arcanes` admission is.
+    if b.exilus.is_some() && !R::allows_exilus(&req.exilus) {
+        return Err("this benchmark does not count the exilus slot".to_string());
     }
 
     // EVOLUTIONS. The same argument, and stronger: an Incarnon weapon with no
@@ -743,7 +773,7 @@ pub fn validate(
     arcanes: &[String],
     valence: &str,
 ) -> Result<ValidBuild, String> {
-    validate_with(weapon, mods, evolutions, arcanes, valence, None)
+    validate_with(weapon, mods, evolutions, arcanes, valence, None, None)
 }
 
 /// [`validate`], for a build carrying a riven of known SHAPE.
@@ -758,6 +788,10 @@ pub fn validate_with(
     arcanes: &[String],
     valence: &str,
     riven: Option<&crate::rivens_data::RivenShape>,
+    // The EXILUS slot's mod, when the build wears one. Its own argument for the
+    // reason `ValidBuild::exilus` is its own field: nothing downstream could
+    // tell a ninth entry in `mods` from a main-slot one.
+    exilus: Option<&str>,
 ) -> Result<ValidBuild, String> {
     let spec = crate::weapons_data::spec(weapon)
         .ok_or_else(|| format!("unknown weapon: {weapon}"))?;
@@ -806,8 +840,41 @@ pub fn validate_with(
     pool.extend(riven_def.clone());
     let def = |id: &str| pool.iter().find(|m| m.id == id).expect("normalised into the pool");
 
-    // FAMILIES. Two mods of one family cannot be equipped together.
+    // THE EXILUS MOD, resolved against this weapon's own pool.
+    //
+    // IT IS A REAL BUILD AXIS, and it was excluded from the board because
+    // "exilus mods are handling and mobility, with no single-target damage
+    // model". That was true of most of them and is not true of the pool: BEAM
+    // RANGE is exilus (`sinister_reach`, `ruinous_extension`,
+    // `galvanized_acceleration`), and beam range decides how many bodies a beam
+    // reaches — which on a 19x19 group ruler is most of the damage. Excluding
+    // the slot put those mods out of reach of every board row (owner,
+    // 2026-08-25).
+    //
+    // THE SLOT ONLY TAKES AN EXILUS MOD, which is the one rule the game
+    // enforces here that a main slot does not.
+    let exilus_id = match exilus.filter(|x| !x.is_empty()) {
+        None => None,
+        Some(id) => {
+            let Some(m) = crate::mods_data::pool_for_weapon(weapon).iter()
+                .find(|m| m.id == id).cloned() else {
+                return Err(format!("{id} is not a mod this weapon can hold"));
+            };
+            if !m.exilus {
+                return Err(format!("{id} is not an exilus mod, so the exilus slot cannot take it"));
+            }
+            Some(m)
+        }
+    };
+
+    // FAMILIES. Two mods of one family cannot be equipped together — and the
+    // exilus slot is not a way around that, so it joins the same list.
     let mut fams: Vec<&str> = multishot.iter().filter_map(|id| def(id).family).collect();
+    if let Some(m) = &exilus_id {
+        if let Some(f) = m.family {
+            fams.push(f);
+        }
+    }
     fams.sort_unstable();
     for w in fams.windows(2) {
         if w[0] == w[1] {
@@ -856,13 +923,20 @@ pub fn validate_with(
     let mut innate: Vec<Option<crate::mods::Polarity>> =
         crate::weapons_data::innate_slots(weapon).to_vec();
     innate.push(crate::weapons_data::exilus_polarity(weapon));
-    let planned: Vec<PlannedMod> = multishot
+    let mut planned: Vec<PlannedMod> = multishot
         .iter()
         .map(|id| {
             let m = def(id);
             PlannedMod { base_drain: m.base_drain, polarity: m.polarity }
         })
         .collect();
+    // …AND THE EXILUS MOD IS PRICED WITH THEM. Its slot's polarity was already
+    // in `innate` above, for the reason written there: a polarity belongs to
+    // the weapon, not to the slot it sits on. What is new is that there can now
+    // be a NINTH mod to spend it on.
+    if let Some(m) = &exilus_id {
+        planned.push(PlannedMod { base_drain: m.base_drain, polarity: m.polarity });
+    }
     let plan = crate::mods::fit(spec.max_rank, &innate, &planned, BENCHMARK_INVESTMENT)
         .map_err(|e| format!("does not fit this weapon's capacity even with Forma: {e}"))?;
 
@@ -937,6 +1011,7 @@ pub fn validate_with(
 
     Ok(ValidBuild {
         weapon: weapon.to_string(),
+        exilus: exilus_id.map(|m| m.id.to_string()),
         mods: multishot,
         evolutions: evos,
         arcanes: arcs,
@@ -1041,13 +1116,28 @@ pub fn identity(b: &ValidBuild) -> String {
     // The SHAPE and not the rolls: two players who rolled the same stats
     // submitted the same build, and the board scores it at the ceiling either
     // way. WHERE it sits is already in `mods`, which carries `riven` in place.
-    match &b.riven {
+    let key = match &b.riven {
         None => key,
         Some(r) => format!(
             "{key}|{}{}",
             r.bonuses.join("+"),
             r.malus.as_ref().map_or(String::new(), |m| format!("-{m}"))
         ),
+    };
+    // THE EXILUS SLOT'S MOD, appended for the same reason the valence and the
+    // riven shape were: every identity already computed for a build without one
+    // is unchanged byte for byte, so the board is not re-keyed by a feature most
+    // of it does not use.
+    //
+    // IT IS PART OF THE BUILD. The slot was excluded from the board until
+    // 2026-08-25, so an identity that ignored it was right and stopped being:
+    // the first submission carrying one collapsed into the same row as the
+    // build without it and the score that survived was whichever arrived first.
+    // Caught by scoring two Atomos builds differing only in `ruinous_extension`
+    // and getting one row.
+    match &b.exilus {
+        None => key,
+        Some(x) => format!("{key}|x:{x}"),
     }
 }
 

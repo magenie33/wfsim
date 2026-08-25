@@ -346,11 +346,36 @@ fingerprint, because they *are* its argmax.
 
 ## What is not on the board
 
-- **The exilus slot** (user, 2026-08-04). Exilus mods are handling and
-  mobility with no single-target damage model — the optimizer already excludes
-  them — and the slot costs a separate adapter, so counting it would price a
-  build against a resource the ranking cannot value. A benchmark build is 8
-  slots.
+*(The exilus slot used to be here. It is on the board as of 2026-08-25 — see
+below.)*
+
+## The exilus slot is OPTIONAL (owner, 2026-08-25)
+
+A row MAY wear an exilus mod, and a row without one is not a lesser build. Both
+sit on the same board and the better number wins.
+
+It was EXCLUDED from 2026-08-04, on the reasoning that "exilus mods are handling
+and mobility with no single-target damage model". That is true of most of the
+pool and false of the part that decides a fight: `vile_precision` is **−36% fire
+rate**, which takes an Ignis Wraith from **11.9694 to 9.3737** on the group
+ruler — a real 22% that the board could not see. Beam range is exilus too
+(`sinister_reach`, `ruinous_extension`, `galvanized_acceleration`) and IS
+modelled, though measurement found it does not bind on the current rulers: the
+same Ignis scores 11.9694 with and without Sinister Reach. That is a finding
+rather than a reason to keep the slot out — it is now something the board can
+answer instead of something the rules assumed.
+
+**Not `full`.** Requiring an exilus would force a choice worth nothing on most
+weapons and publish whichever mod the dice favoured, which is what the quick
+calc's `tied` marking exists to admit rather than to rank.
+
+**It travels in a field of its own** (`exilus`), never as a ninth entry in
+`mods`. An exilus-eligible mod is legal in a MAIN slot too, so a flat list
+cannot say which one came out of the exilus slot — only the page has the slots.
+For the same reason it is its own field in `ValidBuild`, in the worker's `AXES`,
+in the board row, and in `builds::identity`: the last of those was found by
+scoring two Atomos builds differing only in `ruinous_extension` and getting ONE
+row back.
 
 ## How deep a board goes — the floor (owner, 2026-08-20)
 

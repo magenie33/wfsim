@@ -12557,6 +12557,20 @@ function boardPayload() {
     // investment rather than a choice (the same rule that scores every row at
     // full Forma).
     valence: valence.element,
+    // THE EXILUS SLOT'S MOD, as its own field — optional on every ruler as of
+    // 2026-08-25, where it used to be dropped here and never counted.
+    //
+    // IT HAS TO BE ITS OWN FIELD, which is the same reason it was dropped
+    // rather than appended before: the payload's `mods` is a flat list with no
+    // slot positions, and an exilus-eligible mod is legal in a MAIN slot, so
+    // nothing downstream could tell which entry came out of the exilus slot.
+    // Only the page knows, because only the page has the slots.
+    //
+    // WHY IT IS COUNTED NOW: "exilus mods are handling and mobility, with no
+    // single-target damage model" was true of most of the pool and false of the
+    // part that decides a group fight — BEAM RANGE is exilus, and beam range is
+    // how many bodies a beam reaches.
+    exilus: (slots[boardBuildMods()] || {}).mod || undefined,
     // THE PARTS of a modular weapon, flat, because that is the worker's shape.
     // Empty strings on everything else — the field is always sent so a record
     // written today and one written by a Kitgun submitter have the same keys,
@@ -12655,9 +12669,6 @@ function buildShortfalls() {
 /// filled is irrelevant — a build with one is not more complete, and a build
 /// without one is not less.
 const buildIsComplete = () => buildShortfalls().length === 0;
-/// ...and is there an exilus mod that will be left behind? Worth saying, since
-/// the number the board reports will not be the number on screen.
-const hasExilusMod = () => slots.length > boardBuildMods() && !!slots[boardBuildMods()].mod;
 
 /// WHICH RULERS WOULD TAKE THIS BUILD, asked of the board's own door.
 ///
@@ -12836,18 +12847,14 @@ function renderBoardConsent() {
         escHtml(tr("{what} — the board takes a weapon built as far as it goes, so this one is not sent")
           .replace("{what}", short.join(tr(", ")))) +
         `</span>`
-      : c === "yes" && hasExilusMod()
-        ? ` <span class="board-state">` +
-          escHtml(tr("your exilus mod is not part of a benchmark build — it is left out of what is sent, so the board's number will differ from this one")) +
-          `</span>`
-        : "";
+      : "";
   if (!boardConsentChosen()) {
     // THE DEFAULT, STATED. Not a question — the answer is already yes — so it
     // reads as what will happen and what it contains, with the way out next to
     // it. Asking would be dishonest when the default has already decided.
     box.innerHTML =
       `<b>${escHtml(tr("Builds you run here are added to the official board."))}</b> ` +
-      escHtml(tr("What is sent is the BUILD: the weapon and its mods, evolutions and arcanes. Not the fight you ran it under — the board scores every build under its OWN rulers, so any scenario can contribute. And nothing about you: no account, no identifier, no address, no time finer than the day, and no score. The board takes a weapon built as far as it goes: every main slot filled, exilus not counted.")) +
+      escHtml(tr("What is sent is the BUILD: the weapon and its mods, evolutions and arcanes. Not the fight you ran it under — the board scores every build under its OWN rulers, so any scenario can contribute. And nothing about you: no account, no identifier, no address, no time finer than the day, and no score. The board takes a weapon built as far as it goes: every main slot filled, and the exilus slot counted if you use one.")) +
       // WHEN, on the FIRST visit too — this is the branch a new player reads,
       // and it is the one that was silent about the twenty minutes. Saying it
       // only after the consent had been chosen told the fact to everyone except

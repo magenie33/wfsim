@@ -161,6 +161,10 @@ pub fn row_fingerprint(
     mods: &[String],
     arcanes: &[String],
     evolutions: &[String],
+    // THE EXILUS SLOT'S MOD, which is a mod like any other to this hash — and
+    // folded in SEPARATELY from `mods` because it is a separate axis: the same
+    // card in the exilus slot and in a main slot are two builds.
+    exilus: Option<&str>,
 ) -> String {
     let mut h = fold(FNV_OFFSET, b"wfsim-row-fp-1");
     h ^= global();
@@ -183,6 +187,12 @@ pub fn row_fingerprint(
             h = fold_entity(h, family, id);
         }
     }
+    // THE EXILUS SLOT'S MOD, marked so it cannot hash the same as the same card
+    // sitting in a main slot.
+    if let Some(id) = exilus.filter(|x| !x.is_empty()) {
+        h = fold_entity(h, "mods", id);
+        h = fold(h, b"#exilus");
+    }
     format!("{h:016x}")
 }
 
@@ -192,7 +202,7 @@ mod tests {
 
     fn fp(weapon: &str, mods: &[&str]) -> String {
         let m: Vec<String> = mods.iter().map(|x| x.to_string()).collect();
-        row_fingerprint("single_target", weapon, &m, &[], &[])
+        row_fingerprint("single_target", weapon, &m, &[], &[], None)
     }
 
     #[test]
@@ -212,8 +222,8 @@ mod tests {
     fn a_ruler_is_part_of_it() {
         let m = vec!["serration".to_string()];
         assert_ne!(
-            row_fingerprint("single_target", "braton_prime", &m, &[], &[]),
-            row_fingerprint("group_clear", "braton_prime", &m, &[], &[])
+            row_fingerprint("single_target", "braton_prime", &m, &[], &[], None),
+            row_fingerprint("group_clear", "braton_prime", &m, &[], &[], None)
         );
     }
 
@@ -223,7 +233,7 @@ mod tests {
     #[test]
     fn a_row_ignores_every_file_it_does_not_read() {
         let m = vec!["serration".to_string()];
-        let mine = row_fingerprint("single_target", "braton_prime", &m, &[], &[]);
+        let mine = row_fingerprint("single_target", "braton_prime", &m, &[], &[], None);
         // Recomputing after touching NOTHING is trivially equal; what is asserted
         // here is the shape that makes the optimisation real — the fingerprint is
         // built from a NAMED set of files, and the roster has hundreds this row
@@ -232,7 +242,7 @@ mod tests {
             + crate::weapons_data::forms_of("braton_prime").len() + 1 /* mod */;
         let all = crate::data::files_under("").count();
         assert!(all > named * 20, "{all} files, {named} named — the index is not narrowing anything");
-        assert_eq!(mine, row_fingerprint("single_target", "braton_prime", &m, &[], &[]));
+        assert_eq!(mine, row_fingerprint("single_target", "braton_prime", &m, &[], &[], None));
     }
 
     /// The exclusion list is the only hand list here, so it is asserted to be

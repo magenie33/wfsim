@@ -312,7 +312,13 @@ def write_board() -> None:
             # not group riven rows, and TAKING one left an empty slot, because
             # `row.riven` never reached the page so the bare `riven` id resolved
             # to no mod.
-            row = dict(e)
+            # …MINUS `fp`, which is the SCORER'S REUSE KEY and not a fact about
+            # the build: it says which data files this row's score depends on so
+            # the next run can skip re-scoring it (`engine::data_fingerprint`).
+            # The Rust writer of this same file does not emit it, and the two
+            # have to agree byte for byte or every local build leaves board.json
+            # dirty.
+            row = {k: v for k, v in e.items() if k != "fp"}
             row["benchmark"] = b.get("benchmark")
             row["source"] = b.get("source", "")
             # FLOAT, always: the yaml writes a whole score as `10` and the
@@ -347,7 +353,7 @@ def write_board() -> None:
             # is what keeps it true, because the two times it broke the code
             # LOOKED right and the field was simply not in the list. A build
             # that would ship a lesser board fails instead.
-            missing = [k for k in e if k not in row and k != "weapon"]
+            missing = [k for k in e if k not in row and k not in ("weapon", "fp")]
             if missing:
                 raise SystemExit(
                     f"board.json would drop {missing} from {e['weapon']} — "

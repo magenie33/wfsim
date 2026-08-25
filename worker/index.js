@@ -121,6 +121,12 @@ export const AXES = [
   // strings and its validation is `id`/`ids` — an object would need a third
   // kind, in the one file with no game data to check it against. The CHAMBER is
   // not here: it is the weapon, and `weapon` already carries it.
+  // THE EXILUS SLOT'S MOD, its own key rather than a ninth entry in `mods`:
+  // an exilus-eligible mod is legal in a MAIN slot too, so a flat list cannot
+  // say which one came out of the exilus slot, and only the page knows. It
+  // joined on 2026-08-25, when the rulers stopped excluding the slot — beam
+  // range is exilus, and beam range is how many bodies a beam reaches.
+  { key: "exilus", kind: "id", axis: "mods" },
   { key: "grip", kind: "id", axis: "assembly" },
   { key: "loader", kind: "id", axis: "assembly" },
   // A RIVEN, AS A SHAPE — which stats it rolled and which is the malus. The

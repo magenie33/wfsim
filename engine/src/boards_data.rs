@@ -70,6 +70,11 @@ pub struct BoardEntry {
     /// validated a build with a `riven` in its mods and no riven to put there,
     /// which passed for as long as the board held none and failed the hour the
     /// first one landed (2026-08-24).
+    /// THE EXILUS SLOT'S MOD, when the row wears one. Its own field for the
+    /// reason `builds::ValidBuild::exilus` is: an exilus-eligible mod is legal
+    /// in a MAIN slot, so `mods` alone cannot say which entry came out of it.
+    #[serde(default)]
+    pub exilus: String,
     #[serde(default)]
     pub riven: Option<BoardRiven>,
     /// WHAT THIS ROW'S SCORE DEPENDS ON, as one hash — the ruler, the weapon
@@ -217,6 +222,7 @@ mod tests {
                 let v = crate::builds::validate_for_board_with(
                     &b.benchmark, &e.weapon, &e.mods, &e.evolutions, &e.arcanes, &e.valence,
                     e.riven.as_ref().map(BoardRiven::shape).as_ref(),
+                    Some(e.exilus.as_str()).filter(|x| !x.is_empty()),
                 )
                     .unwrap_or_else(|err| panic!("{} row on {}: {err}", e.weapon, b.benchmark));
                 // `validate` already refused anything over capacity, and the

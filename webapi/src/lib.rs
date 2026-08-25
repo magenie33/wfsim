@@ -1865,6 +1865,11 @@ pub fn board_check_json(v: &Value) -> Value {
         &list("arcanes"),
         valence,
         riven_shape_from(v).as_ref(),
+        // THE EXILUS SLOT'S MOD, empty on almost every submission. It is its own
+        // field on the wire for the reason it is its own field in `ValidBuild`:
+        // an exilus-eligible mod is legal in a MAIN slot, so a flat list cannot
+        // say which entry came out of the exilus slot.
+        Some(get_str(v, "exilus", "")).filter(|x| !x.is_empty()),
     ) {
         // A REFUSAL IS A RESULT, not a transport error: `ok` says the question
         // was answered, `accepted` says what the answer was.

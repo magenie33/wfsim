@@ -65,9 +65,19 @@ pub struct BuildRequirement {
     /// `full` = every arcane seat THIS weapon has, which for a sentinel is none.
     #[serde(default)]
     pub arcanes: Option<String>,
-    /// `excluded` is the only value that means anything today: the exilus slot
-    /// is not counted and never travels. Recorded so the file states it rather
-    /// than leaving it to be inferred from silence.
+    /// `optional` = a row MAY wear an exilus mod and a row without one is not a
+    /// lesser build; `excluded` (and silence) = the slot is not counted and
+    /// never travels.
+    ///
+    /// It was `excluded` everywhere until 2026-08-25, on the reasoning that
+    /// exilus mods are handling and mobility with no damage model. That is true
+    /// of most of the pool and false of the part that matters: BEAM RANGE is
+    /// exilus, and beam range decides how many bodies a beam reaches — on a
+    /// 19x19 group ruler, most of the damage. The rule stays per RULER because
+    /// admission always has been.
+    ///
+    /// NOT `full`. Requiring one would force a choice worth nothing on most
+    /// weapons and publish whichever mod the dice favoured.
     #[serde(default)]
     pub exilus: Option<String>,
     /// `full` = an ADVERSARY weapon must name its Valence element, and the
@@ -88,6 +98,16 @@ impl BuildRequirement {
     /// Does this axis demand a full house?
     pub fn requires_full(v: &Option<String>) -> bool {
         v.as_deref() == Some("full")
+    }
+
+    /// May a row wear an exilus mod?
+    ///
+    /// `optional` yes, `excluded` no — and SILENCE is no, which is what every
+    /// ruler written before the slot was countable meant. The safe direction:
+    /// a ruler that has not been told about the slot refuses one rather than
+    /// silently scoring a build nobody could compare against its neighbours.
+    pub fn allows_exilus(v: &Option<String>) -> bool {
+        v.as_deref() == Some("optional")
     }
 }
 

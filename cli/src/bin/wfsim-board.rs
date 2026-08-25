@@ -57,6 +57,9 @@ struct Row {
     /// The BONUS is not a row field: the ruler scores every row at the roll's
     /// maximum, which is investment rather than a choice.
     valence: String,
+    /// THE EXILUS SLOT'S MOD, empty on almost every row. Optional as of
+    /// 2026-08-25 — see `benchmarks_data::BuildRequirement::allows_exilus`.
+    exilus: String,
     /// WHAT THIS ROW'S SCORE DEPENDS ON, as one hash — see
     /// `engine::data_fingerprint`. Written into the board so the NEXT run can
     /// ask, per row, whether anything it reads has moved.
@@ -124,6 +127,14 @@ fn page_row(bench_id: &str, r: &Row) -> Value {
                 "riven".into(),
                 json!({ "bonuses": rv.bonuses, "malus": rv.malus, "rolls": rv.rolls }),
             );
+        }
+    }
+    // THE EXILUS SLOT'S MOD, on the same terms as the riven above: OMITTED on a
+    // row that wears none rather than written as an empty string, because the
+    // Python side copies the yaml entry and a row without one simply has no key.
+    if !r.exilus.is_empty() {
+        if let Some(o) = row.as_object_mut() {
+            o.insert("exilus".into(), json!(r.exilus));
         }
     }
     row
@@ -305,6 +316,7 @@ fn reuse_prior(path: &str, code_fp: &str, bench_id: &str) -> Result<Prior, Strin
         let Ok(v) = wfsim_engine::builds::validate_for_board_with(
             bench_id, &e.weapon, &e.mods, &e.evolutions, &e.arcanes, &e.valence,
             e.riven.as_ref().map(wfsim_engine::boards_data::BoardRiven::shape).as_ref(),
+            Some(e.exilus.as_str()).filter(|x| !x.is_empty()),
         ) else {
             continue;
         };
@@ -313,7 +325,7 @@ fn reuse_prior(path: &str, code_fp: &str, bench_id: &str) -> Result<Prior, Strin
         // before per-row fingerprints existed carries an empty one and is
         // rescored, which is the safe direction and the only one available.
         let want = wfsim_engine::data_fingerprint::row_fingerprint(
-            bench_id, &v.weapon, &v.mods, &v.arcanes, &v.evolutions,
+            bench_id, &v.weapon, &v.mods, &v.arcanes, &v.evolutions, v.exilus.as_deref(),
         );
         if e.fp != want {
             out.stale += 1;
@@ -506,8 +518,13 @@ fn main() {
                 malus: malus.map(String::from),
             })
         };
+        // THE EXILUS SLOT'S MOD. Optional as of 2026-08-25 — see
+        // `benchmarks_data::BuildRequirement::allows_exilus` — and its own
+        // field on the wire because a flat `mods` list cannot say which entry
+        // came out of the exilus slot.
+        let exilus = s.get("exilus").and_then(Value::as_str).filter(|x| !x.is_empty());
         let v = match wfsim_engine::builds::validate_for_board_with(
-            &bench_id, &weapon, &mods, &evos, &arcs, valence, shape.as_ref(),
+            &bench_id, &weapon, &mods, &evos, &arcs, valence, shape.as_ref(), exilus,
         ) {
             Ok(v) => v,
             Err(e) => {
@@ -586,6 +603,7 @@ fn main() {
                     } else {
                         m.clone()
                     })
+                    .chain(v.exilus.iter().cloned())
                     .collect::<Vec<_>>()),
             );
             o.insert("evolutions".into(), json!(v.evolutions));
@@ -714,8 +732,9 @@ fn main() {
         // the submission — the same object `identity` is taken from, so the
         // next run recomputes the identical hash off its own stored row.
         let fp = wfsim_engine::data_fingerprint::row_fingerprint(
-            &bench_id, &v.weapon, &v.mods, &v.arcanes, &v.evolutions,
+            &bench_id, &v.weapon, &v.mods, &v.arcanes, &v.evolutions, v.exilus.as_deref(),
         );
+        let exilus_for_row = v.exilus.clone().unwrap_or_default();
         rows.push(Row {
             weapon: v.weapon,
             mode: played.id.to_string(),
@@ -724,6 +743,7 @@ fn main() {
             evolutions: v.evolutions,
             arcanes: v.arcanes,
             valence: v.valence,
+            exilus: exilus_for_row,
             riven: row_riven,
             fp,
         });
@@ -856,6 +876,9 @@ fn main() {
         if !r.fp.is_empty() {
             println!("    fp: {}", r.fp);
         }
+        if !r.exilus.is_empty() {
+            println!("    exilus: {}", r.exilus);
+        }
         println!("    mods: [{}]", r.mods.join(", "));
         if !r.evolutions.is_empty() {
             println!("    evolutions: [{}]", r.evolutions.join(", "));
@@ -969,6 +992,7 @@ mod tests {
             evolutions: vec![],
             arcanes: vec![],
             valence: String::new(),
+            exilus: String::new(),
             riven: None,
             fp: String::new(),
         }
@@ -1178,6 +1202,7 @@ mod page_row_tests {
             evolutions: vec!["dual_toxocyst_evo1_incarnon_form".into()],
             arcanes: vec!["secondary_deadhead".into()],
             valence: String::new(),
+            exilus: String::new(),
             riven,
             fp: "0123456789abcdef".into(),
         }

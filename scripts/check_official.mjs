@@ -344,8 +344,13 @@ const CONSENT_PROBE = `(async () => {
   out.shortfalls = buildShortfalls();
 
   // AN EXILUS MOD ON TOP. The build is complete at 8 main slots; filling the
-  // exilus slot must not make it "9 mods" and must not be sent — the most
-  // thoroughly built players were the ones this refused (2026-08-05).
+  // exilus slot must not make it "9 mods" — the most thoroughly built players
+  // were the ones that refused (2026-08-05) — and as of 2026-08-25 it TRAVELS,
+  // in a field of its own, because the rulers stopped excluding the slot.
+  //
+  // ITS OWN FIELD, not a ninth entry in mods: an exilus-eligible mod is legal
+  // in a MAIN slot too, so a flat list cannot say which one came out of the
+  // exilus slot, and only the page has the slots.
   const exi = pool.find((id) => modById(id) && modById(id).exilus && !slots.some((s) => s.mod === id));
   if (exi) { slots[8].mod = exi; slots[8].rank = modById(exi).max_rank; markPresetDirty(); renderMods(); await sleep(900); }
   out.exilusEquipped = !!exi && !!slots[8].mod;
@@ -357,6 +362,8 @@ const CONSENT_PROBE = `(async () => {
   const first = posts.length ? JSON.parse(posts[posts.length - 1].body || '{}') : null;
   out.sentModCount = first ? first.mods.length : null;
   out.sentHasExilus = first ? first.mods.includes(exi) : null;
+  // …AND THE FIELD THAT SHOULD CARRY IT INSTEAD.
+  out.sentExilus = first ? (first.exilus || null) : null;
 
   out.boxHtml = ($('board-consent').innerHTML || '').slice(0, 200);
   out.hasNo = !!$('board-no') || !!$('board-flip');
@@ -420,8 +427,9 @@ check("a COMPLETE build goes under the default", c.postsOnDefault === 1,
   `${c.modCountAfter}/${c.floor} mods, missing ${JSON.stringify(c.shortfalls)}, ${c.postsOnDefault} posts`);
 check("an EXILUS mod does not make it incomplete", c.exilusEquipped === true && c.stillComplete === true,
   `equipped ${c.exilusEquipped}, complete ${c.stillComplete}`);
-check("...and never travels", c.sentModCount === c.floor && c.sentHasExilus === false,
-  `sent ${c.sentModCount} mods, exilus among them: ${c.sentHasExilus}`);
+check("...and travels in a field of its own, leaving the mod list eight long",
+  c.sentModCount === c.floor && c.sentHasExilus === false && !!c.sentExilus,
+  `sent ${c.sentModCount} mods, exilus among them: ${c.sentHasExilus}, exilus field: ${c.sentExilus}`);
 check("nothing leaves after opting out", c.postsAfterNo === 0, String(c.postsAfterNo));
 check("...and the line says nothing is sent", /not|nothing|不会/.test(c.declinedText), JSON.stringify(c.declinedText));
 check("turning it back on is not itself a submission", c.postsOnFlip === 0, String(c.postsOnFlip));
@@ -447,7 +455,7 @@ check("...carrying the BUILD and no score",
   // literal because a browser check cannot read the worker, and it earns its
   // place by being the only one that watches the WIRE.
   JSON.stringify(c.sentKeys) === JSON.stringify(
-    ["arcanes","benchmark","evolutions","grip","loader","mode","mods",
+    ["arcanes","benchmark","evolutions","exilus","grip","loader","mode","mods",
      "riven_neg","riven_pos","valence","weapon"]) && c.sentHasScore === false,
   JSON.stringify(c.sentKeys));
 check("...against the official benchmark", c.sentBenchmark === "single_target", String(c.sentBenchmark));
