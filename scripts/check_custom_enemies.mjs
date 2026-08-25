@@ -164,6 +164,30 @@ check("...and the same target at x1 takes damage", r.normal > 0, String(r.normal
 // The two mechanics, told apart by measurement rather than by reading the
 // card back.
 check("procs happen at all", r.plainProcs > 0, String(r.plainProcs));
+// KNOWN RED as of 2026-08-25, and left red on purpose — see below before
+// touching either side of it.
+//
+// Measured, deterministic, three runs identical: 24 procs / 45 pellets plain
+// against 31 / 45 with the column zeroed, which is +29% against a 15%
+// tolerance. The pellet counts are EQUAL, so what moved is the proc count.
+//
+// TWO READINGS AND THIS FILE CANNOT TELL THEM APART:
+//   * FORTY-FIVE PELLETS IS NOT A SAMPLE. At a status chance near 0.6 the
+//     binomial sd over 45 trials is about 3.3 procs, and 15% of 24 is 3.6 —
+//     so a two-sigma draw fails this assertion by construction. Raising the
+//     count to 400 runs gives 0.7111 against 0.6000, which is -15.6%: the
+//     difference CHANGED SIGN, which is what noise does and a systematic
+//     effect does not.
+//   * …but -15.6% at that sample is still large, so a systematic component
+//     cannot be ruled out from here either.
+//
+// The rule it is asserting is the wiki's own (`Status_Effect` §Status Immunity
+// Interactions) and the engine has an engine-level test for the
+// renormalisation half. What is unresolved is whether THIS measurement is too
+// weak to make the claim, or whether the claim is being broken — and that is a
+// question about the damage core, so it is recorded rather than answered by
+// widening the tolerance, which would make the check agree with whatever it
+// found.
 check("a damage x0 does NOT change the proc RATE",
   Math.abs(r.noDamageProcs - r.plainProcs) / r.plainProcs < 0.15,
   `${r.plainProcs.toFixed(3)}/pellet -> ${r.noDamageProcs.toFixed(3)}`);
