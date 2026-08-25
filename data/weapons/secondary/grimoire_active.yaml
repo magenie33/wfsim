@@ -49,6 +49,16 @@ attack:
     damage: { electricity: 250 }   # total 250
 
 unmodeled:
+  # THE TWO THAT MAKE THESE NUMBERS A CEILING. The stats above are the wiki's
+  # to the last decimal, and the FIGHT they are fired in is not: this arena
+  # spends every second on the form you picked, and this form cannot be fired
+  # every second (2026-08-25).
+  - reason: tome_meter
+    rate: 1
+    seconds: 45
+  - reason: orb_shocks_over_time
+    radius: 6
+    fuse: 6
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
