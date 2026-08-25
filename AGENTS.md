@@ -170,6 +170,59 @@ around (decision 2026-07-31).
   bare name either way.
 - Deploy = push to `main`: Cloudflare picks up `site/` automatically
   (takes ~1–2 min). There is no deploy step in CI.
+- **THE STORE IS A LIBRARY OF BUILDS, AND EVERY RULER CROSSES THE WHOLE OF IT**
+  (owner, 2026-08-25). A submission has never carried a score — it carries a
+  BUILD, and the number is produced by the scorer under the ruler's own pinned
+  seed. So the ruler a build happened to be measured under was never a property
+  of the record; it was a GATE. Of 914 distinct builds players had sent, only 46
+  had ever been scored on more than one board: 95% of every contribution was
+  read once and held back from the two boards it could also have answered.
+  ANY FIGHT CAN UPLOAD, so the consent notice is ONE story everywhere and says
+  what actually leaves — the BUILD, not the fight you ran it under, and nothing
+  about you. That last part is a statement of an existing property rather than a
+  new promise: the worker stores no IP, no token, and no time finer than the day
+  (and a record already expired after a year before any of this). From a fight
+  of your own the page asks the door about EVERY ruler and reports "2 of 3
+  boards will take it"; it never predicts a SCORE, which is the scorer's.
+  A new ruler now costs no community effort — it is scored from the library the
+  day it lands.
+- **A RESCORE COSTS THE ROWS THAT READ WHAT CHANGED** (owner, 2026-08-25). The
+  trigger was one fingerprint over `engine` + `webapi` + `cli` + all of `data`,
+  so adding a WEAPON — a file no existing row reads — invalidated every stored
+  score and bought a full rescore. `engine::data_fingerprint` hashes what a row
+  actually reads (its ruler, its weapon and every form it fires, each mod,
+  arcane and evolution, plus everything no entity owns), the board stores it per
+  row, and `--engine` is now the CODE alone.
+  THIS STATES THE BOARD'S INVARIANT RATHER THAN WEAKENING IT: "different engine
+  versions" was a conservative proxy for "the number this engine would compute",
+  and a row that reads none of the changed files already stores that number.
+  Measured on 24 real rows: 26.0 s full, **0.075 s** when nothing changed
+  (byte-identical board), 2 of 24 rescored for a Heavy Caliber edit, **0 of 24**
+  for a whole new weapon. The one hand list (`AFFECTS_NO_NUMBER`) can only cost
+  TIME — anything unclassified falls into the global bucket every row carries.
+  Comments are free, since `build.rs` embeds each file with them stripped.
+- **THE EXILUS SLOT IS OPTIONAL** (owner, 2026-08-25). It was excluded on the
+  reasoning that exilus mods are handling and mobility with no damage model,
+  which is true of most of the pool and false of the part that decides a fight:
+  `vile_precision` is −36% fire rate and takes an Ignis Wraith from 11.9694 to
+  9.3737 on the group ruler. Beam range is exilus too and IS modelled, but
+  measurement found it does not bind on the current rulers — a FINDING, and now
+  one the board can answer instead of one the rules assumed. NOT `full`:
+  requiring one would publish whichever mod the dice favoured. IT TRAVELS IN A
+  FIELD OF ITS OWN everywhere (wire, worker `AXES`, board row, fingerprint,
+  `builds::identity`) because an exilus-eligible mod is legal in a MAIN slot, so
+  a flat `mods` list cannot say which entry came out of the exilus slot — only
+  the page has the slots. The `identity` half was found rather than reasoned:
+  two Atomos builds differing only in `ruinous_extension` came back as ONE row.
+- **THE BOARD STAYS A STATIC FILE, AND SAYS HOW FAR BEHIND IT IS** (owner asked
+  for a live board, 2026-08-25). Moving it behind a service would trade the
+  thing that makes it good — committed to the repo, served from the CDN, fast
+  and unblockable — for a slow path and a second thing that can fail. So the
+  file stays and `GET /api/board/pending` answers the one fact it cannot carry
+  about itself: how many builds the library holds. A COUNT and nothing else,
+  which is also the most a store that keeps nothing about submitters can report.
+  The scorer writes `submissions:` per board and the difference is a footnote —
+  SILENT when the board is current, which it is almost all the time.
 - **NEVER RESCORE THE BOARD LOCALLY.** `.github/workflows/board.yml` already
   rescores every stored row on any push touching `engine/`, `data/`, `webapi/`
   or the scorer — which is precisely every change that moves a score — and the
@@ -523,6 +576,7 @@ around (decision 2026-07-31).
   reach — a share link nobody has clicked, a board record nobody has submitted —
   and says in its own text that it is the weaker half. Verified to bite: a fake
   axis added in Rust reddens all three surfaces, each naming it.
+  `node scripts/check_page_bodies.mjs` is the THIRTY-NINTH and the cheapest: `node --check` over every script here, because a page-side body is a TEMPLATE LITERAL and an unescaped backtick in a COMMENT closes it — which has happened in seven checks, each costing a full browser run to find, since the parser reports it from inside `node:internal` naming the line the literal starts on. A scanner that hunted the backtick itself was written first and was wrong both ways: an escaped one in prose is legal, and the first unescaped one IS the terminator. The parser was always the authority; what was missing was running it unasked. Milliseconds, no browser, so it runs first in CI.
   `node scripts/check_riven_pool.mjs` is the SEVENTEENTH: the riven editor
   offers the stats that weapon's rivens actually roll, in BOTH slots. What a
   riven can roll is DE's per-weapon table, published nowhere, and the wiki's
