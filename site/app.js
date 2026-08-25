@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "52f8bb07+ · 2026-08-25 13:28Z";
+const BUILD_ID = "0d78f926+ · 2026-08-25 16:04Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can

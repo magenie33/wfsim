@@ -119,7 +119,14 @@ const r = await evaluate(`(async () => {
     ps[0].state.stats.health = 1e9;
     mut(ps[0].state);
     storePresetList('enemies', ps);
-    const res = await api('/api/simulate', { ...buildPayload(), ...theFight(), buffs: {} });
+    // THE RUN COUNT IS THIS CALLER'S, and it is the one axis a caller owns
+    // (AGENTS: the reader's precision, not an edit to the fight — so it lands
+    // LAST in the spread). The scenario the check happens to be on runs at 100,
+    // which is 4,500 pellets, and the assertion below wants 30,000: a check that
+    // inherits its precision from whatever fight was active is a check whose
+    // strength nobody chose.
+    const res = await api('/api/simulate',
+      { ...buildPayload(), ...theFight(), buffs: {}, runs: 1000 });
     // PER PELLET, not per engagement: a target that takes no damage never
     // dies, so the raw counts are two different fights. The RATE is the thing
     // the wiki is talking about.
@@ -207,8 +214,14 @@ check("procs happen at all", r.plainProcs > 0, String(r.plainProcs));
 check("a damage x0 does NOT change the proc RATE",
   Math.abs(r.noDamageProcs - r.plainProcs) / r.plainProcs < 0.03,
   `${r.plainProcs.toFixed(4)}/pellet -> ${r.noDamageProcs.toFixed(4)}`);
+// THE FLOOR IS DERIVED FROM THE CLAIM ABOVE, not picked. Two binomial rates at
+// p about 0.62 differ with sd sqrt(2p(1-p)/n)/p as a fraction of the rate; for
+// four sigma of that to sit inside the 3% tolerance takes about 35,000 trials,
+// and 1000 runs of this fight is 45,000. It is CONSERVATIVE besides, because the
+// two fights are paired on one seed rather than independent — which is why the
+// measured difference is 0.000% rather than merely small.
 check("...measured over a sample that can carry the claim",
-  r.procSample >= 5000, `${Math.round(r.procSample)} pellets`);
+  r.procSample >= 30000, `${Math.round(r.procSample)} pellets`);
 check("...a STATUS immunity does", r.immuneProcs === 0, String(r.immuneProcs));
 
 check("deleting it repoints the fight at a real target",

@@ -7006,10 +7006,13 @@ mod url_tests {
     /// `KNOWN_URL_CLASHES` MAY ONLY SHRINK, the same way `naming::FROZEN` may
     /// — an entry removed is a bug fixed, an entry added is the bug spreading,
     /// so growing it needs the same deliberate act as re-freezing a manifest.
-    /// The non-breaking shape of the fix, for whoever takes it: today the bare
-    /// slug already resolves to ONE of the two, so giving a qualifier to the
-    /// OTHER one leaves every link already posted meaning exactly what it
-    /// meant, and makes the unreachable entry reachable.
+    /// The non-breaking shape of the fix, for whoever takes it, and it is an
+    /// OBSERVATION rather than a preference: `check_pages` reports the loser by
+    /// name — six lines reading `tombfinger_secondary WRONG WEAPON
+    /// tombfinger_primary`, in both languages — so the bare slug already means
+    /// the PRIMARY. Giving the qualifier to the SECONDARY therefore leaves
+    /// every link already posted meaning exactly what it means today, and makes
+    /// the unreachable entry reachable.
     const KNOWN_URL_CLASHES: &[&str] = &[
         // The kitgun chamber built into both Gunsmith slots. One wiki page,
         // two roster entries, and `/weapons/Tombfinger` can only be one.
