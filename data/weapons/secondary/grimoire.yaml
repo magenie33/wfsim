@@ -8,7 +8,8 @@ class: pistol
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 transform_group: grimoire
-mod_pools: []   # CompatibilityTags PROJECTILE, THROWN
+mod_pools: [pistol, tome]   # wiki `Tome`: "Tomes can equip Pistol Mods but
+                            # also have access to unique Tome Mods"
 mastery_rank: 10
 max_rank: 30
 
@@ -77,7 +78,6 @@ attack:
     damage: { electricity: 50 }   # total 50
 
 unmodeled:
-  - "A TOME'S MOD POOL IS ITS OWN and this roster does not load it — `mod_pools: []` here means the builder offers NOTHING, which is honest rather than offering pistol cards a Tome cannot wear. The weapon's numbers are right and no build can be put on it yet"
   - reason: explosion_ignores_cover
   - reason: self_stagger
 

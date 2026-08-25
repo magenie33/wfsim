@@ -146,6 +146,14 @@ fn indirect_grant(grants: &str) -> Option<IndirectStat> {
         "beam_range_percent" => IndirectStat::BeamRangePercent,
         "movement_speed" => IndirectStat::MovementSpeed,
         "sprint_speed" => IndirectStat::SprintSpeed,
+        // TOME MODS — see the enum for why each is its own bucket.
+        "ability_strength" => IndirectStat::AbilityStrength,
+        "ability_duration" => IndirectStat::AbilityDuration,
+        "ability_efficiency" => IndirectStat::AbilityEfficiency,
+        "energy_regen" => IndirectStat::EnergyRegen,
+        "ally_buff" => IndirectStat::AllyBuff,
+        "strip_on_kill" => IndirectStat::StripOnKill,
+        "orb_drop" => IndirectStat::OrbDrop,
         _ => return None,
     })
 }
@@ -466,6 +474,22 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         "dodge_speed_bonus" => ModEffect::Indirect(IndirectStat::DodgeSpeed, max("rankMax")),
         "acrobatic_speed_bonus" => ModEffect::Indirect(IndirectStat::AcrobaticSpeed, max("rankMax")),
         "punch_through_bonus" => ModEffect::Indirect(IndirectStat::PunchThrough, max("rankMax")),
+        // TOME MODS. Each carries its real number into the panel and pays
+        // nothing, which is what `IndirectStat` is for — see the enum for why
+        // the three ability stats are three buckets and not one.
+        "ability_strength_bonus" => {
+            ModEffect::Indirect(IndirectStat::AbilityStrength, max("rankMax"))
+        }
+        "ability_duration_bonus" => {
+            ModEffect::Indirect(IndirectStat::AbilityDuration, max("rankMax"))
+        }
+        "ability_efficiency_bonus" => {
+            ModEffect::Indirect(IndirectStat::AbilityEfficiency, max("rankMax"))
+        }
+        "energy_regen_bonus" => ModEffect::Indirect(IndirectStat::EnergyRegen, max("rankMax")),
+        "ally_buff" => ModEffect::Indirect(IndirectStat::AllyBuff, max("rankMax")),
+        "strip_on_kill" => ModEffect::Indirect(IndirectStat::StripOnKill, max("rankMax")),
+        "orb_drop_chance" => ModEffect::Indirect(IndirectStat::OrbDrop, max("rankMax")),
         "zoom_bonus" => ModEffect::Indirect(IndirectStat::Zoom, max("rankMax")),
         "accuracy_bonus" => ModEffect::Indirect(IndirectStat::Accuracy, max("rankMax")),
         // 2D groundwork (2026-08-01): these were `kind: unmodeled`, i.e. the

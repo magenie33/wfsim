@@ -682,6 +682,7 @@ mods:
   expel_orokin: PistolDamageCorrupted.jpg
   expel_the_murmur: WeaponPistolFactionDamageMurmurs.jpg
   fanged_fusillade: EventSlashDamageRifleMod.jpg
+  fass_canticle: ImmortalRuneChaos.png
   fast_hands: RifleReloadSpeedMod.jpg
   fatal_acceleration: WeaponProjectileSpeedShotgunMod.jpg
   firestorm: FirestormMod.jpg
@@ -726,13 +727,16 @@ mods:
   incendiary_coat: ShotgunFireDamageMod.jpg
   infected_clip: PoisonDamageRifleMod.jpg
   internal_bleeding: WeaponBleedOnImpactProcRifleMod.jpg
+  jahu_canticle: ImmortalRuneForm.png
   jolt: ElectEventPistolMod.jpg
   jugulus_spines: BonebladeSpines.jpg
+  khra_canticle: ImmortalRuneTime.png
   laser_sight: CritChanceWhileAiming.jpg
   lethal_momentum: WeaponProjectileSpeedPistolMod.jpg
   lethal_torrent: Grinder.jpg
   lingering_torment: WeaponProcTimeShotgunMod.jpg
   lock_and_load: PassiveReloadShotgunMod.jpg
+  lohk_canticle: ImmortalRuneVoid.png
   lucky_shot: HigherVelocityLessAccurateRifleMod.jpg
   magazine_extension: ArchwingRifleClipMaxMod.jpg
   magazine_warp: RifleClipMaxMod.jpg
@@ -753,6 +757,7 @@ mods:
   motus_setup: RaptorsAmbush.jpg
   nano_applicator: StatusChanceWhileAiming.jpg
   narrow_barrel: AccuracyWhileAiming.jpg
+  netra_invocation: ImmortalRuneDecay.png
   neutralizing_justice: Miter.jpg
   nightwatch_napalm: OgrisNightwatchMod.jpg
   overview: HigherAirAimFoVRifleMod.jpg
@@ -835,6 +840,7 @@ mods:
   rifle_elementalist: RifleStatusDamageDuoMod.jpg
   rime_rounds: IceEventRifleMod.jpg
   ripper_rounds: DamageBiasPunctureRifleMod.jpg
+  ris_invocation: ImmortalRuneLight.png
   riven: OmegaMod.png
   rubedo_lined_barrel: ArchwingRifleDamageAmountMod.jpg
   ruinous_extension: WeaponBeamDistancePistolMod.jpg
@@ -906,8 +912,10 @@ mods:
   vile_acceleration: CorruptedFireRateDamageRifleMod.jpg
   vile_precision: CorruptedRecoilForFireRateMod.jpg
   vital_sense: RifleCritDamageMod.jpg
+  vome_invocation: ImmortalRuneOrder.png
   wildfire: RifleWildfireMod.jpg
   winds_of_purity: Furis.jpg
+  xata_invocation: ImmortalRuneTruth.png
   zodiac_shred: ArchwingDualStatSlashStatusRifleMod.jpg
 
 arcanes:

@@ -1,0 +1,35 @@
+# A TOME MOD. The Grimoire is a Tome, and *"Tomes can equip Pistol Mods but also
+# have access to unique Tome Mods that grant player buffs or enemy debuffs"*
+# (wiki `Tome`) — so this pool sits BESIDE `pistol` rather than replacing it.
+#
+# EVERY ONE OF THE EIGHT BUYS SOMETHING THIS ARENA DOES NOT HAVE, and each says
+# which rather than sharing one sentence: see the `unmodeled`/`out_of_scope`
+# line on each. That is the point of loading them at all — a card a player owns
+# and cannot find in the builder is indistinguishable from one the app got
+# wrong, and now the builder offers it and states what it is worth here.
+#
+# DRAIN AND MAX RANK COME FROM THE EXPORT, which is the ONE standing exception
+# to "the wiki wins" (AGENTS.md): the wiki is wrong about them for ~20 mods.
+# The RANK TABLE and the description are the wiki's own.
+
+id: khra_canticle
+name: Khra Canticle
+rarity: rare
+polarity: naramon
+base_drain: 4                # max drain 7 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Grimoire/KhraAuraMod
+description: "Enemies have a X% chance to drop a Universal Orb on death."
+effects:
+  # A DROP IS NOT A DAMAGE MODEL. What falls on the floor decides how long
+  # a mission lasts, which is the one thing an engagement of fixed length
+  # cannot measure. Nothing here picks anything up.
+  - kind: orb_drop_chance
+    rank0: 0.03
+    rankMax: 0.12
+  # …AND WHAT IT IS WORTH HERE, said on the card rather than left to be
+  # inferred from a number that never moves the answer.
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Tome_Mods

@@ -1,0 +1,40 @@
+# A TOME MOD. The Grimoire is a Tome, and *"Tomes can equip Pistol Mods but also
+# have access to unique Tome Mods that grant player buffs or enemy debuffs"*
+# (wiki `Tome`) — so this pool sits BESIDE `pistol` rather than replacing it.
+#
+# EVERY ONE OF THE EIGHT BUYS SOMETHING THIS ARENA DOES NOT HAVE, and each says
+# which rather than sharing one sentence: see the `unmodeled`/`out_of_scope`
+# line on each. That is the point of loading them at all — a card a player owns
+# and cannot find in the builder is indistinguishable from one the app got
+# wrong, and now the builder offers it and states what it is worth here.
+#
+# DRAIN AND MAX RANK COME FROM THE EXPORT, which is the ONE standing exception
+# to "the wiki wins" (AGENTS.md): the wiki is wrong about them for ~20 mods.
+# The RANK TABLE and the description are the wiki's own.
+
+id: jahu_canticle
+name: Jahu Canticle
+rarity: rare
+polarity: madurai
+base_drain: 4                # max drain 7 at rank 3
+max_rank: 3
+internal_name: /Lotus/Upgrades/Grimoire/JahuAuraMod
+description: "Killing enemies reduces the Armor and Shields of other enemies within Affinity Range by X%."
+effects:
+  # THE ONE THAT COULD PAY, and does not yet. Armour is the binding
+  # constraint on most of this board (check_squad had to build a fight
+  # where it binds before an aura could be measured at all), and a strip
+  # that reaches OTHER bodies on every kill is a real term in a group
+  # fight. What is missing is the trigger: `SpreadFoe` carries per-body
+  # debuffs, but nothing yet turns one body's DEATH into a debuff on its
+  # neighbours. Filed as a todo rather than an edge, because the arena
+  # HAS the crowd this needs (2026-08-25).
+  - kind: strip_on_kill
+    rank0: 0.02
+    rankMax: 0.05
+  # …AND WHAT IT IS WORTH HERE, said on the card rather than left to be
+  # inferred from a number that never moves the answer.
+  - kind: unmodeled
+
+source:
+  url: https://wiki.warframe.com/w/Tome_Mods

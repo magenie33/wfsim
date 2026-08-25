@@ -7893,12 +7893,15 @@ mod asset_tests {
         assert_eq!(
             unmoddable,
             [
-                // A TOME is its own weapon class in DE's data and its mods are
-                // their own pool, which this roster does not load. Offering the
-                // pistol cards a Tome cannot wear would be worse than offering
-                // none, so the entry says none and its card says why
-                // (2026-08-20).
-                "grimoire",
+                // THE GRIMOIRE LEFT THIS LIST ON 2026-08-25, and the reason it
+                // was on it was simply wrong: it read "a Tome's mods are their
+                // own pool" and concluded that offering pistol cards would be
+                // worse than offering none. The wiki says the opposite in one
+                // sentence — *"Tomes can equip Pistol Mods but also have access
+                // to unique Tome Mods"* (`Tome`) — so the weapon was
+                // unbuildable for five days over a pool it does take. It is
+                // `[pistol, tome]` now and `data/mods/tome/` holds the eight.
+                //
                 // The Deconstructor is a sentinel's GLAIVE — a melee weapon in
                 // a companion's hands — and this roster loads no melee pool.
                 "deconstructor",

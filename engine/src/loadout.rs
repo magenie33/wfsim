@@ -544,11 +544,55 @@ pub enum IndirectStat {
     /// `ModEffect::SyndicateRadial`, which names the syndicate; this bucket
     /// only exists so the card's number has somewhere to print.
     SyndicateRadial,
+
+    // ---- TOME MODS (2026-08-25) ----------------------------------------
+    // A Tome equips Pistol mods AND eight of its own (wiki `Tome`), and not one
+    // of the eight buys anything this arena has. They are here rather than
+    // absent because a card a player owns and cannot find in the builder is
+    // indistinguishable from one the app got wrong — the value survives into
+    // the panel and the card says what it is worth here.
+    //
+    // THE THREE ABILITY STATS ARE NOT ONE BUCKET. A Warframe ability rides this
+    // fight with a STRENGTH and a DURATION the reader types (data/abilities/),
+    // and Strength reaches the damage while Efficiency — which is energy spent
+    // — cannot, because there is no energy economy to spend it in. Collapsing
+    // them would hide that difference behind one label.
+    /// Ability Strength, as a fraction (Vome Invocation, per alt-fire hit).
+    /// Feeds a number that DOES reach the damage; what is missing is the loop
+    /// from the weapon back into it.
+    AbilityStrength,
+    /// Ability Duration, as a fraction (Ris Invocation). Same loop, same gap.
+    AbilityDuration,
+    /// Ability Efficiency, as a fraction (Netra Invocation) — energy SPENT,
+    /// which this sim never does.
+    AbilityEfficiency,
+    /// Energy regenerated per second (Xata Invocation). Needs the same economy.
+    EnergyRegen,
+    /// A buff granted to ALLIES, as a fraction (Lohk Canticle's fire rate, Fass
+    /// Canticle's shield recharge). One bucket for both because the reason they
+    /// pay nothing is the same and is not about the stat: this arena is one
+    /// Tenno, so there is nobody to grant it to.
+    AllyBuff,
+    /// Armour and shields stripped from OTHER enemies on a kill (Jahu
+    /// Canticle), as a fraction. Real in a crowd, and the arena has a crowd —
+    /// what is missing is a death that debuffs its neighbours.
+    StripOnKill,
+    /// Chance for a killed enemy to drop a Universal Orb (Khra Canticle). What
+    /// falls on the floor decides how long a MISSION lasts, which an engagement
+    /// of fixed length cannot measure.
+    OrbDrop,
 }
 
 impl IndirectStat {
     pub fn label(&self) -> &'static str {
         match self {
+            IndirectStat::AbilityStrength => "Ability Strength",
+            IndirectStat::AbilityDuration => "Ability Duration",
+            IndirectStat::AbilityEfficiency => "Ability Efficiency",
+            IndirectStat::EnergyRegen => "Energy Regen/s",
+            IndirectStat::AllyBuff => "Ally Buff",
+            IndirectStat::StripOnKill => "Armour/Shield Strip on Kill",
+            IndirectStat::OrbDrop => "Universal Orb Chance",
             IndirectStat::Recoil => "Recoil",
             IndirectStat::Noise => "Noise Reduction",
             IndirectStat::AmmoMax => "Ammo Reserve",

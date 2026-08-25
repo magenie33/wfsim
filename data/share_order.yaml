@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: 60c229edf98678bf
-count: 1565
+digest: 53a3e44e3b47bc47
+count: 1573
 ids:
   - acceltra
   - acceltra_prime
@@ -1575,3 +1575,11 @@ ids:
   - toxin
   - weapon_recoil
   - zoom
+  - fass_canticle
+  - jahu_canticle
+  - khra_canticle
+  - lohk_canticle
+  - netra_invocation
+  - ris_invocation
+  - vome_invocation
+  - xata_invocation
