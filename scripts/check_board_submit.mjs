@@ -198,12 +198,40 @@ console.log("the board's submission endpoint\n");
   check("...and reaches storage under its own name",
     rec && rec.benchmark === fresh.benchmark, JSON.stringify(rec && rec.benchmark));
 
-  // …AND IT IS ITS OWN ROW. Two rulers scoring one BUILD are two records, or
-  // the second silently overwrites the first's answer — the identity key has to
-  // carry the benchmark.
+  // …AND ONE BUILD IS ONE RECORD, whichever ruler it arrived from (owner,
+  // 2026-08-25). This assertion used to be its opposite — two rulers scoring one
+  // build were two records, because the identity key carried the benchmark — and
+  // it was right while a submission was bound to the fight it was measured
+  // under. It is not any more: the store is a LIBRARY OF BUILDS and every ruler
+  // crosses the whole of it, so the ruler is provenance (`identity: false`) and
+  // the same build arriving from two fights is the same build.
+  //
+  // LAST WRITE WINS, which is what "the same build always produces the same
+  // key" has always meant here — a resubmission overwrites the record rather
+  // than adding one. That is the right way round for the two fields that are
+  // not the build: `at` is the day, so a build somebody is still submitting
+  // stays current, and `benchmark` is only where the last submitter happened to
+  // be standing. Neither is ranked.
   await post(PAYLOAD, kv);
-  check("...beside the same build's row on another ruler, not on top of it",
-    kv.rows.size === 2, `${kv.rows.size} records`);
+  check("...and the same build from another ruler is the SAME record",
+    kv.rows.size === 1, `${kv.rows.size} records`);
+  const only = [...kv.rows.values()][0];
+  check("...still carrying a provenance, and the same build",
+    !!only && !!only.benchmark && only.weapon === PAYLOAD.weapon,
+    JSON.stringify(only && { benchmark: only.benchmark, weapon: only.weapon }));
+
+  // THE NEGATIVE CONTROL FOR THAT COLLAPSE: dropping the ruler must not make
+  // every build one record. A build with no ruler at all is legal now — that is
+  // what an upload from a scenario of the player's own is — and it is still a
+  // record of its own build.
+  const kv2 = store();
+  const nameless = { ...PAYLOAD };
+  delete nameless.benchmark;
+  const res2 = await post(nameless, kv2);
+  check("a build uploaded from no ruler at all is accepted", res2.ok, String(res2.status));
+  await post({ ...nameless, weapon: "braton_prime" }, kv2);
+  check("...and two different builds are still two records",
+    kv2.rows.size === 2, `${kv2.rows.size} records`);
 }
 
 console.log(

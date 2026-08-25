@@ -442,20 +442,24 @@ fn main() {
     let (mut seen, mut refused) = (0usize, 0usize);
     let mut seen_ids: std::collections::HashSet<String> = Default::default();
     for (idx, s) in subs.iter().enumerate() {
-        // MATCHED BY FAMILY, which today is a MIGRATION SHIM and nothing more.
-        // Benchmarks carry no version (owner, 2026-08-04) — but records already
-        // in the store were submitted against `single_target_v1`, and those are
-        // builds like any other. Stripping the suffix is what lets them keep
-        // competing under the id that replaced it, which is the same rule as
-        // everywhere else here: a changed standard RE-SCORES rather than asking
-        // anyone to resubmit: a row stays on the board and is overtaken by a
-        // better one rather than being retired by a rule change.
+        // EVERY SUBMISSION IS A CANDIDATE FOR EVERY RULER (owner, 2026-08-25).
         //
-        // A different ruler entirely — `group_clear` — is a different family and
-        // keeps its own board.
-        if family(s.get("benchmark").and_then(Value::as_str).unwrap_or("")) != family(&bench_id) {
-            continue;
-        }
+        // A submission has never carried a score — it carries a BUILD, and the
+        // number is produced here. So the ruler it happened to be measured
+        // under was never a property of the record; it was a gate, and the gate
+        // was expensive: of 914 distinct builds players have submitted, only 46
+        // had ever been scored on more than one board. Ninety-five per cent of
+        // everything anyone had contributed was being read once and then held
+        // back from the two boards it could also have answered.
+        //
+        // A build that is not admissible here is refused below like any other
+        // and its reason printed, which is what the ruler's own admission rule
+        // is for. Nothing filters by benchmark any more: THE STORE IS A LIBRARY
+        // OF BUILDS and each ruler crosses the whole of it.
+        //
+        // This is also what makes a NEW ruler cost no community effort: it is
+        // scored from the library the day it lands, rather than waiting for
+        // players to resubmit everything under it.
         seen += 1;
         let weapon = s.get("weapon").and_then(Value::as_str).unwrap_or("").to_string();
         let get = |k: &str| -> Vec<String> {

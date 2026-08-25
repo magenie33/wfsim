@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "9880d0f1+ · 2026-08-24 23:27Z";
+const BUILD_ID = "61514a40+ · 2026-08-25 00:43Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -12420,6 +12420,10 @@ const boardConsentChosen = () => {
 // `boardState` rather than inside it: the state is what happened, this is what
 // was said, and only one of the states has anything to say.
 let boardRefusal = "";
+/// HOW MANY BOARDS TOOK IT, out of how many were asked. Null until a run has
+/// asked — "sent" alone does not say whether it will be RANKED anywhere, which
+/// is the question a submitter actually has.
+let boardBoards = null;
 const setBoardConsent = (v) => {
   try { localStorage.setItem(BOARD_CONSENT, v); } catch (_) { /* private mode */ }
   renderBoardConsent();
@@ -12455,9 +12459,18 @@ function boardRivenShape() {
 
 function boardPayload() {
   const bench = (scenarioNamed(activeScenario) || {}).builtin;
-  if (!bench) return null;
   return {
-    benchmark: bench,
+    // WHERE THE SUBMITTER HAPPENED TO BE STANDING — provenance, not identity
+    // (owner, 2026-08-25). A submission has never carried a score, so the ruler
+    // was never a property of the record; the store is a LIBRARY OF BUILDS and
+    // every ruler crosses the whole of it. A build measured under a scenario of
+    // the player's own has no ruler to name and simply omits the field.
+    // `undefined`, not a conditional spread and not `null`: `JSON.stringify`
+    // drops an undefined key, which is exactly "omit it on the wire", while the
+    // key stays visible at this indentation to the cross-file check that reads
+    // this literal against the worker's own table (`check_board_submit`). A
+    // `null` would travel and the worker would refuse it as a non-string id.
+    benchmark: bench || undefined,
     weapon: $("weapon").value,
     // HOW IT IS PLAYED, and it has to travel or the dimension is fed by
     // nothing. The scorer's fallback for a mode-less submission is "the cycle
@@ -12614,8 +12627,37 @@ const buildIsComplete = () => buildShortfalls().length === 0;
 /// the number the board reports will not be the number on screen.
 const hasExilusMod = () => slots.length > boardBuildMods() && !!slots[boardBuildMods()].mod;
 
+/// WHICH RULERS WOULD TAKE THIS BUILD, asked of the board's own door.
+///
+/// `/api/board/check` is `validate_for_board` itself — the same call the scorer
+/// makes, not a copy of its rules, because a second implementation is a second
+/// answer and the player has to be given the board's.
+///
+/// FROM A RULER, it is asked about that one. FROM A FIGHT OF YOUR OWN there is
+/// no ruler to name, so it is asked about ALL of them: a build only has to
+/// qualify somewhere to be worth uploading, and "it qualifies for 2 of 3" is
+/// the one thing a reader can act on. The page is not predicting a SCORE here —
+/// that is the scorer's and always was — only whether the door opens at all.
+async function boardVerdict(body) {
+  const ids = body.benchmark ? [body.benchmark] : benchList().map((b) => b.id);
+  if (!ids.length) return { ok: true, accepted: true, boards: 0, of: 0 };
+  let accepted = 0;
+  let reason = "";
+  for (const id of ids) {
+    const v = await api("/api/board/check", { ...body, benchmark: id });
+    if (!v || !v.ok) return { ok: false };
+    if (v.accepted === false) reason = reason || v.reason || "";
+    else accepted += 1;
+  }
+  return { ok: true, accepted: accepted > 0, reason, boards: accepted, of: ids.length };
+}
+
 async function offerBoardSubmit() {
-  if (!officialScenarioActive()) return;      // only the official ruler feeds the board
+  // NO RULER GATE. Any fight can upload, because what is uploaded is the BUILD
+  // and the number is produced by the scorer under ITS fight (owner,
+  // 2026-08-25). Of 914 distinct builds players had submitted, only 46 had ever
+  // been scored on more than one board — the gate was holding 95% of everything
+  // anyone contributed back from the boards it could also have answered.
   if (officialBuildActive()) return;          // a board row does not resubmit itself
   if (boardConsent() !== "yes") { renderBoardConsent(); renderBoardOutcome(); return; }
   // INCOMPLETE BUILDS ARE NOT SENT, and the panel says so rather than letting
@@ -12634,7 +12676,8 @@ async function offerBoardSubmit() {
   // `/api/board/check` is `validate_for_board` itself, the same call the scorer
   // makes — not a copy of its rules, because a second implementation is a
   // second answer and the player has to be given the board's.
-  const verdict = await api("/api/board/check", body);
+  const verdict = await boardVerdict(body);
+  boardBoards = verdict && verdict.ok ? { n: verdict.boards, of: verdict.of } : null;
   if (verdict && verdict.ok && verdict.accepted === false) {
     boardState = "refused";
     boardRefusal = verdict.reason || "";
@@ -12693,10 +12736,7 @@ function boardRunOutcome() {
   if (officialBuildActive()) {
     return { kind: "none", text: tr("this build is already a row on the board — running it sends nothing") };
   }
-  if (!officialScenarioActive()) {
-    return { kind: "none",
-      text: tr("the board only measures its own fight — runs under a scenario of your own are yours alone, and nothing is sent") };
-  }
+
   if (boardConsent() !== "yes") return { kind: "none", text: tr("nothing is sent from here") };
   const short = buildShortfalls();
   if (short.length) {
@@ -12712,8 +12752,17 @@ function boardRunOutcome() {
     return { kind: "failed", text: tr("could not reach the board — nothing was sent") };
   }
   if (boardState === "sent") {
+    // WHICH BOARDS, when there is more than one to qualify for. "Sent" alone
+    // does not say whether it will be RANKED anywhere, which is the question a
+    // submitter actually has — and from a fight of your own it is the only
+    // thing the page can honestly answer, since the SCORE is the scorer's.
+    const b = boardBoards;
+    const where = b && b.of > 1
+      ? " " + tr("({n} of {of} boards will take it)")
+        .replace("{n}", b.n).replace("{of}", b.of)
+      : "";
     return { kind: "sent",
-      text: tr("sent — the board re-scores every 20 minutes, so it appears there within about 20, at most 40") };
+      text: tr("sent — the board re-scores every 20 minutes, so it appears there within about 20, at most 40") + where };
   }
   // NOT YET ANSWERED. `offerBoardSubmit` runs after the result is drawn, so
   // this is the state the first paint is in and it has to say so rather than
@@ -12742,12 +12791,6 @@ function renderBoardConsent() {
   // scenario, ran it, and watched the board never learn why nothing appeared
   // (player report via the owner, 2026-08-10).
   if (officialBuildActive()) { box.hidden = true; return; }
-  if (!officialScenarioActive()) {
-    box.hidden = false;
-    box.innerHTML = `<span class="board-state">${escHtml(
-      tr("the board only measures its own fight — runs under a scenario of your own are yours alone, and nothing is sent"))}</span>`;
-    return;
-  }
   box.hidden = false;
   const c = boardConsent();
   // THE FLOOR IS A SUFFIX, NOT A REPLACEMENT. While the build is half-built the
@@ -12771,8 +12814,8 @@ function renderBoardConsent() {
     // reads as what will happen and what it contains, with the way out next to
     // it. Asking would be dishonest when the default has already decided.
     box.innerHTML =
-      `<b>${escHtml(tr("Runs here are added to the official board."))}</b> ` +
-      escHtml(tr("What is sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself). The board takes a weapon built as far as it goes: every main slot filled, exilus not counted.")) +
+      `<b>${escHtml(tr("Builds you run here are added to the official board."))}</b> ` +
+      escHtml(tr("What is sent is the BUILD: the weapon and its mods, evolutions and arcanes. Not the fight you ran it under — the board scores every build under its OWN rulers, so any scenario can contribute. And nothing about you: no account, no identifier, no address, no time finer than the day, and no score. The board takes a weapon built as far as it goes: every main slot filled, exilus not counted.")) +
       // WHEN, on the FIRST visit too — this is the branch a new player reads,
       // and it is the one that was silent about the twenty minutes. Saying it
       // only after the consent had been chosen told the fact to everyone except

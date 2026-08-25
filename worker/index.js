@@ -82,9 +82,21 @@ const ID = /^[a-z0-9_]{1,64}$/;
 // claimed by a row here. A worker with no game data cannot look that up at
 // request time, so the check does it once, on the ground.
 export const AXES = [
-  // Not build axes: the RULER a row is on and the weapon it is for. Half of a
-  // record's identity, and neither is a choice inside a build.
-  { key: "benchmark", kind: "id", required: true },
+  // THE RULER IS NOT PART OF WHAT THIS IS (owner, 2026-08-25). A submission has
+  // never carried a score — it carries a BUILD, and the number is produced by
+  // the scorer. So the ruler a build happened to be measured under was never a
+  // property of the record; it was a GATE, and the gate was expensive: of 914
+  // distinct builds players had submitted, only 46 had ever been scored on more
+  // than one board.
+  //
+  // THE STORE IS A LIBRARY OF BUILDS and every ruler crosses the whole of it, so
+  // `benchmark` stays only as PROVENANCE — where the submitter happened to be —
+  // and is `identity: false`, which is what lets the same build arriving from
+  // two different fights be one record instead of two. It is optional because a
+  // build uploaded from a scenario of the player's own has no ruler to name.
+  { key: "benchmark", kind: "id", identity: false },
+  // Not a build axis either, but it IS the record's identity: a build is a
+  // statement about one weapon.
   { key: "weapon", kind: "id", required: true },
   // HOW IT WAS PLAYED — half the entrant's identity. Optional because records
   // written before the dimension existed are still in KV, and the scorer's
@@ -139,7 +151,11 @@ const bad = (msg, status = 400) =>
 /// see the note on `AXES`. Writes stay idempotent because the same build always
 /// produces the same key.
 const identity = (b) =>
-  AXES.map((a) => {
+  // `identity: false` marks an axis the record CARRIES and is not IDENTIFIED by
+  // — provenance rather than a choice inside the build. Read off the same table
+  // as everything else, so an axis cannot be identity-bearing here and absent
+  // from storage, which is how a build was lost twice.
+  AXES.filter((a) => a.identity !== false).map((a) => {
     const v = b[a.key];
     if (a.kind === "id") return v || "";
     const list = v || [];

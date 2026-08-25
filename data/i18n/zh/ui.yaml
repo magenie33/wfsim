@@ -499,7 +499,10 @@ ui:
   "Ruinous Extension's reach — the page states the beam is 'extendable to 36 meters', and beam-range mods are shown on the card without being applied until a measurement settles the flat-versus-percent bracket (docs/UNMODELLED.md)": "「毁灭延伸」带来的射程——页面写明这道光束「可延长至 36 米」。光束射程类 MOD 会显示在卡片上但不会被施加，直到有一次实测确定它是固定值还是百分比那一档为止（见 docs/UNMODELLED.md）"
   "Run Optimizer": 运行优化
   "Run Simulation": 运行模拟
-  "Runs here are added to the official board.": 在这里运行的配装会被加入官方榜单。
+  # How many of the rulers accepted the build, said only when there is more
+  # than one to qualify for.
+  "({n} of {of} boards will take it)": （{of} 块榜里有 {n} 块会收）
+  "Builds you run here are added to the official board.": 在这里跑过的配装会被加入官方榜单。
   "Runs": 次数
   "SEVEN OF THE EIGHT TARGETS. The mode locks \"up to 8 enemies within 60 meters on the reticle\" and fires a 2-round burst at each; this entry fires the burst ONE enemy receives, because the engine aims at a place and never picks targets. Against a lone enemy that is the whole attack and correct; in a crowd this weapon does up to eight times what is shown": "八个目标里的七个。该模式会锁定「准星上 60 米内最多 8 个敌人」，并对每个打出一轮 2 发连射；本条目打出的是「一个」敌人所承受的那一轮，因为引擎瞄准的是一个位置，从不挑选目标。对着孤立的一个敌人，这就是攻击的全部，且是正确的；在人群里，这把武器最多能做到屏幕上数字的八倍"
   "Scattered Justice, the Hek-exclusive mod (+200% multishot) — a weapon-exclusive card outside the pools this roster loads, and the single largest thing missing from this weapon's real numbers": "「Scattered Justice」，Hek 的专属 MOD（+200% 多重射击）——这是一张武器专属卡，不在本武器库载入的卡池里，也是这把武器真实数值里缺得最多的一项"
@@ -612,7 +615,7 @@ ui:
   "Weapons": 武器
   "What a donation never buys": 捐助永远买不到什么
   "What each mode is": 每种输出方式分别是什么
-  "What is sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself). The board takes a weapon built as far as it goes: every main slot filled, exilus not counted.": 发送的内容：武器及其 mod、进化、赋能。仅此而已——没有账号、没有标识符、没有你起的任何名字，也没有分数（榜单自己跑分）。榜单收的是这把武器的最努力配置：8 个主槽位全部装满，exilus 不计。
+  "What is sent is the BUILD: the weapon and its mods, evolutions and arcanes. Not the fight you ran it under — the board scores every build under its OWN rulers, so any scenario can contribute. And nothing about you: no account, no identifier, no address, no time finer than the day, and no score. The board takes a weapon built as far as it goes: every main slot filled, exilus not counted.": 发送的是这套配装：武器及其 mod、进化、赋能。不包含你跑它的那场仗——榜单会用它自己的标尺去跑每一套配装，所以任何场景都可以做贡献。也不包含关于你的任何东西：没有账号、没有标识符、没有地址、没有精确到天以下的时间，也没有分数。榜单收的是这把武器的最努力配置：8 个主槽位全部装满，exilus 不计。
   "What this benchmark measures": 这个基准到底在量什么
   "What would be sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself).": 会发送的内容：武器，以及它的 MOD、进化和赋能。仅此而已 —— 没有账号，没有任何标识，没有你起的任何名字，也不含分数（榜单自己测量配装）。
   "Where it goes": 钱花在哪
@@ -1016,7 +1019,6 @@ ui:
   "the beam's 29 m range and its pinpoint accuracy, which this arena has no distance to spend": 光束 29 米的射程和它的极高精度 —— 这个战场没有距离可以消耗它们
   "the blades RICOCHET off surfaces (wiki) and this arena has no walls to bounce off": "锯片会从表面上反弹（维基），而这个战场没有墙可以反弹"
   "the blob economy is not modelled — a shot EMBEDS and only explodes after a delay or at max stacks, and the sim fires the embed as an ordinary hit": 粘液机制尚未建模 —— 射出的粘液会先附着，延迟后或叠满层数才爆炸，而模拟把附着当成一次普通命中
-  "the board only measures its own fight — runs under a scenario of your own are yours alone, and nothing is sent": 榜单只测它自己那场仗——你用自己的场景跑出来的结果只属于你，不会上传
   "the board would not take this build, so nothing was sent": 榜单不会收这套配装，所以没有提交
   "the body the weapon was on": 武器瞄准的那一具
   "the bonus this copy came out of its Lich with — added as the weapon's own BASE damage, so elemental mods and status scale with it": 这把枪从它的 Lich 那里带出来的加成——作为武器自身的基础伤害加上去，所以元素 mod 和异常都会跟着放大

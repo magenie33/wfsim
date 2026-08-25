@@ -268,8 +268,21 @@ const CONSENT_PROBE = `(async () => {
   let posts = [];
   window.fetch = (u, o) => { if (String(u).includes('/api/board/')) posts.push({ u: String(u), body: o && o.body }); return real(u, o); };
 
-  // Under an ordinary scenario the question is not even asked.
+  // …AND IT IS ASKED UNDER AN ORDINARY SCENARIO TOO, as of 2026-08-25. It used
+  // to be silent there, because only the official ruler fed the board; the
+  // store is a LIBRARY OF BUILDS now and any fight can contribute, so the
+  // notice is the same one everywhere. That unification is the point: a reader
+  // should not have to work out which of two policies they are under.
+  //
+  // RENDERED FIRST, then read. The old assertion here was "the notice is
+  // absent", and it passed on a box nothing had drawn yet — the panel starts
+  // hidden in the markup, so reading it before a render asserts the initial
+  // state of the DOM rather than the policy. It would have passed under the old
+  // rule and under the new one alike, which is the definition of a vacuous
+  // assertion (found 2026-08-25).
+  renderBoardConsent();
   out.askedOffOfficial = !$('board-consent').hidden;
+  out.offOfficialText = ($('board-consent').textContent || '').trim().slice(0, 200);
 
   // Open the official scenario.
   const bar = $('bench-bar-simulator-scenarios');
@@ -381,7 +394,16 @@ const c = await evaluate(CONSENT_PROBE);
 console.log("");
 console.log("[consent]");
 if (!c.hasNo) console.log("      [diag] " + JSON.stringify({ chipSeen: c.chipSeen, asked: c.askedOnOfficial, html: c.boxHtml }));
-check("the notice is absent under an ordinary scenario", c.askedOffOfficial === false);
+// ONE STORY FOR EVERY FIGHT (owner, 2026-08-25). This assertion used to be its
+// opposite — the notice was absent under an ordinary scenario, because only the
+// official ruler fed the board. Any fight can contribute now, so the notice is
+// present everywhere and says the same thing: what leaves is the BUILD, and the
+// board scores it under its own rulers.
+check("the notice is up under an ordinary scenario too", c.askedOffOfficial === true,
+  JSON.stringify(c.offOfficialText));
+check("...and it is the SAME notice, not a second policy",
+  /added to the official board|加入官方榜单/.test(c.offOfficialText || ""),
+  JSON.stringify(c.offOfficialText));
 check("...and present under the official one", c.askedOnOfficial === true);
 check("it says what would be sent", c.saysWhatIsSent === true);
 // THE CONTRACT CHANGED (2026-08-05): submission is default-ON, so the property
@@ -416,7 +438,17 @@ check("...carrying the BUILD and no score",
   // progenitor element is part of the build, and seven submissions were
   // silently refused while it was carried by the page and dropped by the
   // worker (see check_board_submit).
-  JSON.stringify(c.sentKeys) === JSON.stringify(["arcanes","benchmark","evolutions","mode","mods","valence","weapon"]) && c.sentHasScore === false,
+  // IT HAD GONE STALE, and silently: `riven_pos`/`riven_neg` joined the payload
+  // when a riven could reach the board and `grip`/`loader` when a Kitgun could,
+  // and neither updated this literal — so the check had been red for days
+  // (found 2026-08-25). The CROSS-FILE version of this assertion, which cannot
+  // go stale, is `check_board_submit`'s first: the axes the page emits must be
+  // exactly the axes the worker's own table knows how to keep. This one stays a
+  // literal because a browser check cannot read the worker, and it earns its
+  // place by being the only one that watches the WIRE.
+  JSON.stringify(c.sentKeys) === JSON.stringify(
+    ["arcanes","benchmark","evolutions","grip","loader","mode","mods",
+     "riven_neg","riven_pos","valence","weapon"]) && c.sentHasScore === false,
   JSON.stringify(c.sentKeys));
 check("...against the official benchmark", c.sentBenchmark === "single_target", String(c.sentBenchmark));
 // ...and the mode is the one on screen, not a default the scorer guessed.
