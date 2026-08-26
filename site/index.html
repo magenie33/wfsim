@@ -587,6 +587,19 @@
              it is not in `lockOfficialScenario`'s list — the
              lock is for the fight's terms, and this is not one. -->
         <div id="sim-runs-block" class="runs-row"></div>
+        <!-- THE WHOLE FIGHT, INCLUDING THE PART THIS WEAPON HIDES (owner,
+             2026-08-27). The blocks above show what applies to the weapon in
+             front of you, which is the right default and leaves two things
+             invisible: a field this weapon FORCES (a sentinel's headshot rate
+             is 0 whatever the document says) and a field it merely does not
+             use, which is still part of the fight and still travels.
+             "The same fight across two weapons" was a claim nobody could
+             check; this is where it can be. Folded shut, because the ordinary
+             reader is not asked to care. -->
+        <details id="sim-whole-fight" class="whole-fight">
+          <summary data-i18n>The whole fight — every field, including the ones this weapon hides</summary>
+          <div id="sim-whole-fight-body"></div>
+        </details>
         <button id="run-sim" class="run-btn" data-i18n>Run Simulation</button>
       </div>
     </section>
@@ -771,7 +784,7 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (owner, 2026-08-18, after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">18662b89+ · 2026-08-26 20:43Z</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">e60c14ee+ · 2026-08-26 22:10Z</span>
     </div>
   </footer>
 

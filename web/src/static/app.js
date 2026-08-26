@@ -2333,27 +2333,35 @@ const eximusField = (en) => {
   return `<label class="check" title="${escHtml(tr("the elite variant: more health, and a pool of Overguard in front of it"))}"><input type="checkbox" data-k="eximus" ${eximusOn(en) ? "checked" : ""}> ${escHtml(tr("Eximus"))}</label>`;
 };
 
-// FORCED EITHER WAY, and for opposite reasons — so the control has THREE
-// states, not two (owner, 2026-08-04). It had one flag and read it as the
-// wrong one of the two facts, which ticked-and-disabled the box on every
-// weapon but the single Arch-Gun: the only weapon whose ammo you could adjust
-// was the one weapon the game gives no way to adjust.
-//
-//   no reserve at all (sentinel)      -> ticked, disabled: nothing to run out
-//   a reserve it cannot refill (AG)   -> UNticked, disabled: pickups it cannot get
-//   a reserve it can refill (the rest) -> yours, defaulting to on
-const ammoForcedOn = (w) => !w.has_reserve;
-const ammoForcedOff = (w) => !!w.no_resupply;
-const ammoForced = (w) => ammoForcedOn(w) || ammoForcedOff(w);
+/// WHAT THIS WEAPON FORCES THIS FIELD TO, AND WHY — or null when the choice is
+/// the reader's.
+///
+/// THE RULE IS THE ENGINE'S (owner, 2026-08-27). `engine::scenario::forced_for`
+/// decides and `/api/meta` states the consequence per weapon; this reads it.
+/// The three rules used to be re-derived here from weapon flags — two
+/// implementations of one rule, and a forced field looks identical whoever
+/// forced it, so they could drift without anything going red.
+///
+/// It still has THREE states and not two, which is what the flags could not say
+/// (owner, 2026-08-04): "there is nothing to run out of" and "there is, and you
+/// cannot refill it" force the SAME box to OPPOSITE values. Reading one as the
+/// other left the only adjustable weapon being the one weapon the game gives no
+/// way to adjust.
+const forcedAxis = (w, id) => {
+  const f = (w || {}).forced || {};
+  const hit = f[id];
+  return hit ? { value: hit[0], why: hit[1] } : null;
+};
 // A SENTINEL WEAPON IS ALWAYS AIMING (user, 2026-08-01) — it just never aims
 // at the HEAD, which is why its headshot default is 0 and every on-headshot
 // trigger stays dead anyway. Ticked and disabled, the same shape as infinite
 // ammo: the state is real, the control is honestly unavailable.
 const aimField = (w, state) => {
-  const forced = !!w.sentinel;
-  const on = forced || state.aiming;
+  const f = forcedAxis(w, "aiming");
+  const forced = !!f;
+  const on = forced ? !!f.value : state.aiming;
   const why = forced
-    ? tr("a sentinel weapon is always aiming — it just never aims at the head, so on-headshot effects never fire")
+    ? tr(f.why)
     : tr("mods that only work while aiming (Galvanized Crosshairs, Argon Scope, Sharpened Bullets…) grant nothing when this is off");
   return `<label class="check" title="${escHtml(why)}"><input type="checkbox" data-k="aiming"${on ? " checked" : ""}${forced ? " disabled" : ""}> ${escHtml(tr("Aiming"))}</label>`;
 };
@@ -2374,21 +2382,21 @@ const aimField = (w, state) => {
 /// and avoids. So the field shows 0 and disables itself while the underlying
 /// scenario keeps whatever the reader set for the rest of the roster.
 const headshotField = (w, state) => {
-  const forced = !!w.sentinel;
-  const val = forced ? 0 : state.headshot_pct;
+  const f = forcedAxis(w, "headshot_pct");
+  const forced = !!f;
+  const val = forced ? f.value : state.headshot_pct;
   const why = forced
-    ? tr("a sentinel weapon is fired by the companion and never aims at the head, so this is 0 whatever is typed — and every on-headshot effect stays dead")
+    ? tr(f.why)
     : tr("a per-PELLET aim weight on the body the shot STRUCK, not a whole-spread promise — the landing spot is rolled for each pellet, and nothing a blast or a chain reaches can be a headshot");
   return `<label title="${escHtml(why)}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${val}"${forced ? " disabled" : ""}></label>`;
 };
 const ammoField = (w, state) => {
-  const forced = ammoForced(w);
-  const on = ammoForcedOn(w) || (!ammoForcedOff(w) && state.infinite_ammo !== false);
-  const why = ammoForcedOn(w)
-    ? tr("this weapon has no ammo reserve to run out of")
-    : ammoForcedOff(w)
-      ? tr("this weapon cannot be resupplied — once its reserve is gone it is removed for five minutes, so the setting has nothing to stand in for")
-      : tr("on = ammo pickups keep the reserve topped up, which the sim has no entities for; off = it runs dry. The magazine and its reloads apply either way");
+  const f = forcedAxis(w, "infinite_ammo");
+  const forced = !!f;
+  const on = forced ? !!f.value : state.infinite_ammo !== false;
+  const why = forced
+    ? tr(f.why)
+    : tr("on = ammo pickups keep the reserve topped up, which the sim has no entities for; off = it runs dry. The magazine and its reloads apply either way");
   return `<label class="check" title="${escHtml(why)}"><input type="checkbox" data-k="infinite_ammo"${on ? " checked" : ""}${forced ? " disabled" : ""}> ${escHtml(tr("Infinite ammo"))}</label>`;
 };
 
@@ -11914,6 +11922,77 @@ const wfOverride = (key, label, floorKey, min, max, step, why) => {
 // ENGAGEMENT LENGTH sits with the enemy, not with the measurement: it is a
 // property of the fight, which is exactly why the optimizer needs it while
 // needing neither Runs (the funnel sets those round by round) nor Measure.
+/// **THE WHOLE FIGHT — every axis, including the ones this weapon hides.**
+///
+/// The blocks above show what APPLIES to the weapon in front of you, which is
+/// the right default and leaves two things invisible: a field this weapon
+/// FORCES, and a field it merely does not use. Both are still part of the fight
+/// and both still travel — the buff map's own rule (AGENTS.md), generalised.
+///
+/// SO IT IS A READING SURFACE FIRST. Every row says what the fight carries, and
+/// a forced one says what it will actually run as and WHY — which is the pair a
+/// reader could not see before: `sim.headshot_pct` can be 100 on a Verglas
+/// while the run is computed at 0.
+///
+/// EDITABLE WHERE A CONTROL CAN MEAN IT. A flag and a number are edited here;
+/// a formation, a buff map or an aura list is shown as what it holds and edited
+/// in its own panel, because two controls over one document is how one of them
+/// silently undoes the other (the arena's own rule, 2026-08-16).
+function renderWholeFight() {
+  const host = $("sim-whole-fight-body");
+  if (!host) return;
+  const axes = (META && META.scenario_axes) || [];
+  const w = weaponInfo($("weapon").value) || {};
+  const GROUPS = [["target", tr("The target")], ["engagement", tr("The engagement")],
+                  ["wielder", tr("The wielder")], ["squad", tr("What the Warframe brings")]];
+  const shown = (v) => {
+    if (v === undefined) return `<i class="wf-absent">${escHtml(tr("not set — the default"))}</i>`;
+    if (v === null) return "null";
+    if (typeof v === "object") {
+      const n = Array.isArray(v) ? v.length : Object.keys(v).length;
+      return `<i>${escHtml(n ? tr("{n} entries").replace("{n}", n) : tr("empty"))}</i>`;
+    }
+    return escHtml(String(v));
+  };
+  host.innerHTML = GROUPS.map(([g, label]) => {
+    const rows = axes.filter((a) => a.group === g).map((a) => {
+      const f = forcedAxis(w, a.id);
+      const live = sim[a.id];
+      // THE FORCED ROW SHOWS BOTH NUMBERS. What the document says and what the
+      // run will use are different facts, and the gap between them is the one
+      // thing this panel exists to make visible.
+      const val = f
+        ? `<b>${escHtml(String(f.value))}</b> <span class="wf-was">${
+            escHtml(tr("document says"))} ${shown(live)}</span>`
+        : shown(live);
+      const editable = !f && (a.kind.t === "flag" || a.kind.t === "number");
+      const ctl = editable
+        ? (a.kind.t === "flag"
+            ? `<input type="checkbox" data-k="${a.id}"${live ? " checked" : ""}>`
+            : `<input type="number" data-k="${a.id}" min="${a.kind.min}" max="${a.kind.max}" value="${
+                live === undefined || live === null ? "" : live}">`)
+        : "";
+      return `<div class="wf-row${f ? " forced" : ""}">`
+        + `<code>${escHtml(a.id)}</code>`
+        + `<span class="wf-val">${val}</span>`
+        + `<span class="wf-ctl">${ctl}</span>`
+        + (f ? `<span class="wf-why">${escHtml(tr(f.why))}</span>` : "")
+        + `</div>`;
+    }).join("");
+    return `<div class="wf-group"><div class="wf-g-h">${escHtml(label)}</div>${rows}</div>`;
+  }).join("");
+  // The same generic binding every other scenario field uses, so a change here
+  // is a change to the fight and nothing else has to know about this panel.
+  host.querySelectorAll("[data-k]").forEach((el) => {
+    el.addEventListener("change", () => {
+      const k = el.dataset.k;
+      sim[k] = el.type === "checkbox" ? el.checked : Number(el.value);
+      markScenarioDirty();
+      renderSim();
+    });
+  });
+}
+
 function renderScenarioFields(ids, opts = {}) {
   const w = weaponInfo($("weapon").value);
   const enemies = allEnemies();
@@ -12099,6 +12178,10 @@ function renderScenarioFields(ids, opts = {}) {
                   { value: "dps", label: tr("DPS"), hint: tr("damage per second") }],
         })}</label>`;
   }
+
+  // …AND THE WHOLE-FIGHT PANEL, drawn from the same state as the blocks
+  // above so the two can never disagree about what the fight holds.
+  renderWholeFight();
 
   const boxes = [ids.target, ids.technique, ids.limits, ids.extra, ids.run]
     .filter(Boolean)

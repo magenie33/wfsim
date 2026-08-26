@@ -1159,6 +1159,17 @@ pub fn meta_json() -> Value {
                     .is_some_and(|a| a > 0.0),
                 "no_resupply": wfsim_engine::weapons_data::spec(&w.id)
                     .is_some_and(|s| s.no_resupply),
+                // …AND THE CONSEQUENCE, so the page stops deriving it. The two
+                // flags above stay because the roster grid reads them, but a
+                // CONTROL now asks this: `{ "<axis>": [value, "why"] }` for
+                // every axis this weapon forces, absent when the choice is the
+                // reader's. `engine::scenario::forced_for` is the one rule, so
+                // the number that runs and the sentence on screen cannot
+                // describe different ones (owner, 2026-08-27).
+                "forced": wfsim_engine::scenario::SCENARIO_AXES.iter()
+                    .filter_map(|a| wfsim_engine::scenario::forced_for(a, &w.id)
+                        .map(|(v, why)| (a.id.to_string(), json!([v, why]))))
+                    .collect::<serde_json::Map<_, _>>(),
                 // A PASSIVE WE DO NOT MODEL, so the page can say the number is
                 // a floor rather than let it read as the weapon's real output.
                 // Empty today — Gotva Prime's was the only one and it is
@@ -1618,6 +1629,36 @@ pub fn meta_json() -> Value {
         // most of the roster and a SENTINEL holds the 21 companion weapons, and
         // their rosters have different lowest values — 450/130/80 against
         // 250/0/105 (owner, 2026-08-26). The page picks by the weapon.
+        // **WHAT A FIGHT CONSISTS OF**, and which of it this weapon takes away.
+        //
+        // `engine::scenario::SCENARIO_AXES` is the one declaration; this states
+        // its CONSEQUENCE per weapon, which is `evo_forbids`' and `auras:`' own
+        // pattern. The page used to re-derive the three forcing rules from
+        // weapon flags — two implementations of one rule, and a forced field
+        // looks identical whoever forced it, so they could drift in silence
+        // (owner, 2026-08-27).
+        //
+        // The FORCED map is per weapon and only carries what is actually
+        // forced: `{ "<weapon id>": { "<axis>": [value, "why"] } }`. Absent
+        // means the reader's, which is the ordinary case for almost every pair.
+        "scenario_axes": wfsim_engine::scenario::SCENARIO_AXES.iter().map(|a| {
+            json!({
+                "id": a.id,
+                "group": match a.group {
+                    wfsim_engine::scenario::Group::Target => "target",
+                    wfsim_engine::scenario::Group::Engagement => "engagement",
+                    wfsim_engine::scenario::Group::Wielder => "wielder",
+                    wfsim_engine::scenario::Group::Squad => "squad",
+                },
+                "kind": match a.kind {
+                    wfsim_engine::scenario::AxisKind::Flag => json!({ "t": "flag" }),
+                    wfsim_engine::scenario::AxisKind::Number { min, max } =>
+                        json!({ "t": "number", "min": min, "max": max }),
+                    wfsim_engine::scenario::AxisKind::Id => json!({ "t": "id" }),
+                    wfsim_engine::scenario::AxisKind::Structured => json!({ "t": "structured" }),
+                },
+            })
+        }).collect::<Vec<_>>(),
         "tenno_floor": floor_json(wfsim_engine::tenno_data::default_tenno()),
         "sentinel_floor": floor_json(wfsim_engine::tenno_data::sentinel_wielder()),
         "factions": factions,

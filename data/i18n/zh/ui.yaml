@@ -840,6 +840,15 @@ ui:
   "Max energy": 最大能量
   "Sprint": 冲刺
   "Wielder floor": 持械者保底
+  "The whole fight — every field, including the ones this weapon hides": 完整的一场仗 —— 全部字段，包括这把武器隐藏的那些
+  "The target": 目标
+  "The engagement": 交战
+  "The wielder": 持械者
+  "What the Warframe brings": 战甲带来的
+  "not set — the default": 未设置 —— 用默认
+  "document says": 文档里是
+  "empty": 空
+  "{n} entries": "{n} 项"
   "baseline — the floor every board is scored on": 基准战甲 —— 所有榜单都按它计算
   "none — the weapon on its own": 无——武器裸装
   "none — this target dispels them": 无 —— 这个目标会驱散它们

@@ -1870,3 +1870,25 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
   display:flex;flex-direction:column;gap:3px}
 .dl-row{display:flex;gap:8px;align-items:baseline}
 .dl-os{color:var(--text-2);min-width:62px}
+
+/* THE WHOLE FIGHT — a reading surface first, so it is dense and quiet. Folded
+   shut by default; the ordinary reader is not asked to care. */
+.whole-fight{grid-column:1/-1;margin-top:8px;border-top:1px solid var(--line);padding-top:6px}
+.whole-fight > summary{cursor:pointer;font-size:11.5px;color:var(--muted);list-style:none;padding:2px 0}
+.whole-fight > summary::-webkit-details-marker{display:none}
+.whole-fight > summary::before{content:"▸ ";color:var(--muted)}
+.whole-fight[open] > summary::before{content:"▾ "}
+.whole-fight > summary:hover{color:var(--text)}
+.wf-group{margin:6px 0 10px}
+.wf-g-h{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:3px}
+.wf-row{display:grid;grid-template-columns:minmax(0,11em) minmax(0,1fr) auto;gap:4px 10px;
+  align-items:center;font-size:11.5px;padding:2px 0;border-bottom:1px solid rgba(128,128,128,.12)}
+.wf-row code{color:var(--text-2);font-size:11px;overflow:hidden;text-overflow:ellipsis}
+.wf-val{font-variant-numeric:tabular-nums;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.wf-row.forced .wf-val b{color:var(--gold)}
+.wf-was{color:var(--muted);font-size:10.5px;margin-left:6px}
+/* The REASON spans the row: it is a sentence, and squeezing it into a column
+   would make the one thing a forced row exists to say the hardest to read. */
+.wf-why{grid-column:1/-1;font-size:10.5px;color:var(--muted);line-height:1.35;padding-bottom:2px}
+.wf-absent{color:var(--muted)}
+.wf-ctl input[type=number]{width:6.5em}
