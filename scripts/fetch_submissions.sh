@@ -73,11 +73,29 @@ build_library() {
   : > new.ndjson
   while read -r key; do
     [ -n "$key" ] || continue
-    # A value that does not arrive, or does not parse, is simply not added —
-    # the next run finds it missing and asks again.
-    if v=$(curl -sf -H "Authorization: Bearer ${CF_TOKEN:-x}" --get \
-             --data-urlencode "x=1" \
-             "$api/values/$(jq -rn --arg v "$key" '$v|@uri')"); then
+    # THREE TRIES, BACKING OFF. A cold fetch is ~2,474 requests against
+    # Cloudflare's 1200-per-five-minutes, so it runs at the rate limit by
+    # construction and an occasional 429 is expected rather than exceptional —
+    # measured on the first cold run under this script, 2,474 keys listed and
+    # 2,473 stored. One dropped record is invisible: the board simply never
+    # holds that build, and nothing anywhere says so.
+    #
+    # For the PIPELINE a miss is cheap (the next run finds it missing and asks
+    # again), but the BACKUP has no next run to lean on — the snapshot it writes
+    # is the copy. So the retry is here rather than there, where both get it.
+    v=""
+    for attempt in 1 2 3; do
+      if v=$(curl -sf -H "Authorization: Bearer ${CF_TOKEN:-x}" --get \
+               --data-urlencode "x=1" \
+               "$api/values/$(jq -rn --arg v "$key" '$v|@uri')"); then
+        break
+      fi
+      v=""
+      sleep "$attempt"
+    done
+    # Still nothing, or something that does not parse: not added. The next run
+    # finds it missing and asks again.
+    if [ -n "$v" ]; then
       printf '%s' "$v" | jq -c --arg k "$key" '{key: $k, val: .}' >> new.ndjson || true
     fi
   done < missing.txt
@@ -161,6 +179,43 @@ STUB
   build_library x > /dev/null
   [ "$(got)" = "a,b,c" ] && say ok "cold start fetches every key" \
     || say FAIL "cold start: $(got)"
+
+  # A KEY WHOSE REQUEST FAILS ONCE IS STILL FETCHED. A cold run sits at
+  # Cloudflare's rate limit by construction, so a 429 is expected rather than
+  # exceptional — and a dropped record is INVISIBLE: the board simply never
+  # holds that build and nothing says so. Measured on the first cold run under
+  # this script: 2,474 keys listed, 2,473 stored.
+  export FLAKY_COUNTER="$dir/work/flaky"; echo 0 > "$FLAKY_COUNTER"
+  cat > "$dir/bin/curl" <<'FLAKY'
+#!/usr/bin/env bash
+for a in "$@"; do
+  case "$a" in *"/values/"*)
+    n=$(cat "$FLAKY_COUNTER"); echo $((n + 1)) > "$FLAKY_COUNTER"
+    [ "$n" -lt 1 ] && exit 22
+    printf '{"weapon":"%s","at":"2026-01-01"}' "${a##*/values/}"; exit 0;;
+  esac
+done
+exit 1
+FLAKY
+  chmod +x "$dir/bin/curl"
+  rm -f library.json
+  printf 'x\ny\n' > keys.txt
+  build_library x > /dev/null
+  [ "$(got)" = "x,y" ] && say ok "a key whose first request fails is retried" \
+    || say FAIL "after a flaky fetch: $(got)"
+
+  # …and back to the reliable stub, for everything below.
+  cat > "$dir/bin/curl" <<'STUB2'
+#!/usr/bin/env bash
+for a in "$@"; do
+  case "$a" in *"/values/"*) printf '{"weapon":"%s","at":"2026-01-01"}' "${a##*/values/}"; exit 0;; esac
+done
+exit 1
+STUB2
+  chmod +x "$dir/bin/curl"
+  rm -f library.json
+  printf 'a\nb\nc\n' > keys.txt
+  build_library x > /dev/null
 
   # WARM: the same three plus one. Only the new one may be fetched, which is
   # the whole point — asserted on the REPORTED count, not inferred.

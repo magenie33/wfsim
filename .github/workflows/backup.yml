@@ -36,9 +36,21 @@ name: backup
 
 on:
   schedule:
-    # Once a day, well away from the board's :00/:20/:40 so the two are never
-    # reading KV at the same time.
-    - cron: "35 4 * * *"
+    # MIDNIGHT UTC, so a snapshot is one calendar day (owner, 2026-08-26). The
+    # records carry `at` as a DATE and nothing finer, so a run at the day
+    # boundary is the one time that makes "yesterday's library" an exact
+    # statement rather than an approximate one.
+    #
+    # It was 04:35 to keep clear of the board's :00/:20/:40, and that reasoning
+    # was weaker than it read: the board fires THREE TIMES AN HOUR and GitHub's
+    # scheduler slips ~15 minutes whatever minute you name (this repo's own
+    # history — the :17 runs landed at :33-:35), so no minute reliably avoids
+    # it. Timing was never the protection. What protects the snapshot is the
+    # tripwire in the commit step, which refuses to overwrite a good copy with
+    # a short one, and the retry in `fetch_submissions.sh`, which is there
+    # because a cold read runs AT Cloudflare's rate limit by construction and
+    # a dropped record is otherwise invisible.
+    - cron: "0 0 * * *"
   workflow_dispatch:
 
 concurrency:
