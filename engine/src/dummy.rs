@@ -11775,7 +11775,7 @@ pub fn run_once_traced(
     // a number is a golden-value change, not a rendering one. What the
     // reader most needs is on screen either way: the fight is 180 seconds
     // long and this build stopped contributing at 58.5.
-    // BISECT: disabled
+    sample_frames_up_to!(params.duration_seconds);
 
     // Partial credit: the fraction of the current individual's TOTAL bar
     // already depleted — overguard + shield + health (user 2026-07-25: the
@@ -22597,7 +22597,68 @@ mod tests {
     /// number reproduces it exactly. If that ever stops being true the replay
     /// silently starts showing a DIFFERENT engagement than the one whose
     /// number is on screen — which is worse than having no replay.
+    /// **THE REPLAY COVERS THE WHOLE FIGHT, EVEN AFTER THE AMMO RUNS OUT.**
+    ///
+    /// The firing loop `break`s the instant a finite reserve is dry, and for a
+    /// long time it took the sampler with it — so a 180-second engagement that
+    /// ran out at 58.5 was DRAWN as a 58.5-second one. Every rate the replay
+    /// derives divides by its own last frame, so the panel showed 378 KPM
+    /// beside its own "852.83 kill score in 180s", which is 284 (owner,
+    /// 2026-08-26).
+    ///
+    /// It was never only the divisor. The two `process_*` calls after the loop
+    /// settle the burning clouds and the remaining DoTs all the way to the end,
+    /// so damage and KILLS land after the last shot — and the final frame was
+    /// short of the summary's TOTALS as well as of its clock.
+    ///
+    /// Asserted on the two things a reader reads: the clock reaches the end,
+    /// and the last frame's totals are the run's own.
     #[test]
+    fn a_replay_runs_to_the_end_even_when_the_ammo_does_not() {
+        // A tiny reserve against a target that cannot be finished: the gun is
+        // dry long before the engagement is.
+        let p = DummyParams {
+            duration_seconds: 60.0,
+            infinite_reserve: false,
+            reserve_ammo: 20.0,
+            magazine_size: 10.0,
+            ..flat_base()
+        };
+        let s = monte_carlo(&p, 8, 7);
+        let rep = replay(&p, s.median_run.rng_state, 60);
+
+        // THE GUN REALLY DOES RUN DRY — without this the test passes on a
+        // fight that never had the problem, which is how a guard goes quiet.
+        assert!(
+            s.median_run.pellets as f64 <= 40.0,
+            "the fixture must run out of ammo, fired {} pellets",
+            s.median_run.pellets
+        );
+        assert_eq!(rep.frames.len(), 60, "every slot filled, to the end of the fight");
+        let last = rep.frames.last().unwrap();
+        assert!(
+            last.t >= p.duration_seconds - rep.frame_seconds - 1e-9,
+            "the replay stops at {} of a {} s fight",
+            last.t,
+            p.duration_seconds
+        );
+        // THE TOTALS ARE THE RUN'S. A rate read off the last frame has to agree
+        // with the summary beside it, which is the bug this exists for.
+        assert_eq!(last.kills, s.median_run.kills, "kills after the last shot are lost");
+        assert!(
+            (last.damage - s.median_run.effective_damage).abs() <= 1e-6,
+            "{} vs {}",
+            last.damage,
+            s.median_run.effective_damage
+        );
+        // …and the clock never goes backwards over the join.
+        for w in rep.frames.windows(2) {
+            assert!(w[1].t > w[0].t, "frames out of order at {}", w[0].t);
+        }
+    }
+
+    #[test]
+
     fn a_replay_reproduces_the_run_it_came_from() {
         let p = DummyParams {
             arcane: arc_stacked("secondary_merciless"),
