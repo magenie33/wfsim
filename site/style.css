@@ -1836,9 +1836,19 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    than filled: it is an offer, not the thing the page is for — someone who came
    to calculate should not have to step around it. `app.js` hides it inside the
    desktop app, where it would be an invitation to install what is running. */
-.hero-dl{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 26px}
+.hero-dl{margin:0 0 26px}
 .hero-dl[hidden]{display:none}
+.dl-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .dl-btn{border:1px solid var(--gold);color:var(--gold);border-radius:8px;
   padding:7px 16px;text-decoration:none;white-space:nowrap;font-weight:600}
 .dl-btn:hover{background:var(--gold);color:var(--surface)}
-.dl-why{color:var(--text-2);font-size:13px}
+/* The other sources for THIS machine, beside the button rather than under it:
+   they are the same download, not a different one. */
+.dl-alt{font-size:13px;color:var(--muted)}
+.dl-why{color:var(--text-2);font-size:13px;margin-top:6px}
+/* The platforms that are not this machine's. Small, and always visible — two
+   rows of text cost less than a control somebody has to discover. */
+.dl-more{margin-top:8px;font-size:12px;color:var(--muted);
+  display:flex;flex-direction:column;gap:3px}
+.dl-row{display:flex;gap:8px;align-items:baseline}
+.dl-os{color:var(--text-2);min-width:62px}

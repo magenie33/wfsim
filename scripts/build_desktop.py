@@ -83,13 +83,27 @@ def main() -> None:
     conf["version"] = version
     conf_path.write_text(json.dumps(conf, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
+    windows = os.name == "nt"
     try:
         print(f"\nbuilding WFSim {version}")
-        # Plain cargo. `tauri build` would bundle an installer we no longer
-        # ship, and its post-build patching step is what silently truncated
-        # this binary once already.
-        run(cargo(), "build", "--release", "--manifest-path",
-            str(DESKTOP / "Cargo.toml"), "--bin", "wfsim-desktop")
+        if windows:
+            # PLAIN CARGO ON WINDOWS. `tauri build` would produce an installer
+            # this project no longer ships, and its post-build patching step is
+            # what silently truncated this binary from 33.7 MB to 288 KB once
+            # already. What cargo writes is the artifact.
+            run(cargo(), "build", "--release", "--manifest-path",
+                str(DESKTOP / "Cargo.toml"), "--bin", "wfsim-desktop")
+        else:
+            # THE BUNDLER EARNS ITS KEEP ON LINUX, where a bare binary links
+            # against whatever WebKitGTK the distribution happens to ship and an
+            # AppImage carries its own. That is the difference between "download
+            # and run" and "download, then install the right webkit package" —
+            # and it gives the file a real extension, which a bare ELF has not.
+            #
+            # Neither Windows failure applies here: the crate has exactly one
+            # binary now (updatekit is an example), so there is nothing to pick
+            # wrongly, and the size check below still catches a truncation.
+            run(cargo(), "tauri", "build", "--bundles", "appimage", cwd=DESKTOP)
     finally:
         conf_path.write_text(original, encoding="utf-8")
 
@@ -102,16 +116,22 @@ def main() -> None:
     # stable name is worth more than being able to tell two downloads apart,
     # which the SHA-256 does anyway.
     #
-    # THE LINUX NAME CARRIES ITS PLATFORM because both land in one GitHub
-    # Release, where `WFSim` and `WFSim.exe` beside each other would be a
-    # guess. On Windows the extension already says it.
-    windows = os.name == "nt"
-    built = DESKTOP / "target" / "release" / ("wfsim-desktop.exe" if windows else "wfsim-desktop")
-    dest = DIST / ("WFSim.exe" if windows else "WFSim-linux")
+    # EACH PLATFORM'S OWN EXTENSION, and nothing else to tell them apart
+    # (owner, 2026-08-26): `.exe` and `.AppImage` both say what they are to the
+    # system and to the reader, where `WFSim-linux` was a label we invented.
+    if windows:
+        built = DESKTOP / "target" / "release" / "wfsim-desktop.exe"
+        dest = DIST / "WFSim.exe"
+    else:
+        found = sorted((DESKTOP / "target" / "release" / "bundle" / "appimage").glob("*.AppImage"))
+        if not found:
+            sys.exit("no AppImage was produced — look for the bundler's output above")
+        built = found[-1]
+        dest = DIST / "WFSim.AppImage"
     shutil.copy2(built, dest)
     if not windows:
-        # copy2 keeps the mode, but a file that arrives from a Release asset
-        # loses it — the notes say so, and this at least makes the local one run.
+        # An asset downloaded from a Release arrives without the execute bit;
+        # the release body says `chmod +x`, and this makes the local copy run.
         dest.chmod(0o755)
     body = dest.read_bytes()
     digest = hashlib.sha256(body).hexdigest()
@@ -122,8 +142,9 @@ def main() -> None:
     # so anything remotely small is that class of mistake.
     if len(body) < 20_000_000:
         sys.exit(
-            f"the executable is only {len(body) / 1e6:.1f} MB — the payload alone is 29 MB. "
-            "The app was almost certainly optimised out; check that lto is off."
+            f"the artifact is only {len(body) / 1e6:.1f} MB — the payload alone is 29 MB. "
+            "The app was almost certainly optimised out (check that lto is off) "
+            "or the bundler packaged the wrong thing."
         )
 
     # The source archive goes to the same place, because AGPL requires the

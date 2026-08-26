@@ -237,6 +237,7 @@ ui:
   "A body that dies respawns where it stood, so the arrangement is the same at the end as at the start and the score is a rate rather than a race to the last body.": 死掉的目标在原地重生，所以阵型从头到尾一样，分数是一个速率而不是清空最后一个的竞速。
   "A donation supports this site's running costs and nothing else — it is not a purchase, and nothing on this site is for sale.":
     捐助仅用于本站的运营成本，除此以外没有别的用途——它不是一次购买，本站也没有任何东西在出售。
+  "A desktop version is available for Windows and Linux.": "桌面版支持 Windows 和 Linux。"
   "A gauge bought with kills is worth what the fight lets you earn: against something that will not die, this mode is the base one.": 用击杀换来的充能条，值多少取决于这场战斗让你赚到多少 —— 面对一个打不死的目标，这个模式就等于基础模式。
   "A number. Nothing bought here moves a result by one decimal — an in-game measurement is the only thing that changes what the engine does.":
     一个数字。这里买到的东西不会让任何结果动一位小数——能改变引擎行为的只有游戏内实测，没有第二样。
@@ -334,7 +335,7 @@ ui:
   "Disarming Purity, the Panthera-exclusive augment — a weapon-exclusive card outside the pools this roster loads": "「Disarming Purity」，Panthera 的专属增强 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Dodge Speed": 闪避速度
   "Double Jumps": 二段跳
-  "Download for Windows": "下载 Windows 版"
+  "Download for {os}": "下载 {os} 版"
   "Drain": 消耗
   "Duration (s)": 时长（秒）
   "EACH PELLET ADDS 2 TO THE MELEE COMBO COUNT, capped at 28 a shot, and equipping it on Kullervo gives his melee +7 s of combo duration (wiki). This arena has no melee weapon for any of that to land on, so the weapon's published reason to exist pays nothing here": "每一颗弹丸给近战连击数 +2，单发上限 28；装备在 Kullervo 身上时他的近战还会 +7 秒连击持续时间（维基）。这个战场没有近战武器可以承接这一切，所以这把武器公开宣称的存在理由在这里一分不值"

@@ -16303,13 +16303,90 @@ const DESKTOP_POLL_MS = 700;
 /// enough to be invisible.
 const DESKTOP_CHECK_MS = 60 * 60 * 1000;
 
-function mountDesktopUpdater() {
-  // THE DOWNLOAD OFFER IS FOR THE WEB, and hiding it is the first thing to do
-  // here rather than the last: a link inviting the reader to install what they
-  // are already running reads as a page that does not know where it is.
-  const dl = document.getElementById("hero-dl");
-  if (dl && window.__WFSIM_DESKTOP__) dl.hidden = true;
+// ---------------------------------------------------------------------------
+// THE DESKTOP DOWNLOADS — a PLATFORM, and the SOURCES it can be had from.
+//
+// TWO LEVELS, NOT A LINK (owner, 2026-08-26). Which platform someone needs is
+// decided by their machine; which source is best is decided by where they are,
+// and neither answer is the other's. A single URL modelled neither, and the day
+// that stopped working was the day Linux was added and GitHub became a mirror —
+// the same day it was written.
+//
+// A SOURCE IS ORDERED, NOT RANKED BY US. The first one listed is what the
+// button offers, and for Windows that is the network drive, because the readers
+// this project is mostly for are the ones GitHub is slowest for. Everything
+// else is one click away rather than hidden: `latest/download/<file>` is a
+// permanent GitHub URL that always resolves to the newest release, so this
+// table does not go stale when a release is cut.
+const DOWNLOADS = [
+  {
+    os: "Windows",
+    // Anything that says Windows and is not a phone claiming to be one.
+    detect: (ua) => /Windows NT/i.test(ua),
+    file: "WFSim.exe",
+    sources: [
+      { name: "夸克网盘", url: "https://pan.quark.cn/s/dc8fe9046d6a", note: "China" },
+      { name: "GitHub", url: "https://github.com/magenie33/wfsim/releases/latest/download/WFSim.exe" },
+    ],
+  },
+  {
+    os: "Linux",
+    // Android reports Linux too, and a phone cannot use a desktop build.
+    detect: (ua) => /Linux/i.test(ua) && !/Android/i.test(ua),
+    file: "WFSim.AppImage",
+    sources: [
+      { name: "GitHub", url: "https://github.com/magenie33/wfsim/releases/latest/download/WFSim.AppImage" },
+    ],
+  },
+];
 
+/// Draws the offer, and says nothing it cannot back.
+///
+/// THREE ANSWERS, because there are three situations. A machine we build for
+/// gets its own button. A DESKTOP we do not build for (macOS) is told so
+/// plainly rather than shown a Windows button it cannot use — Warframe has no
+/// Mac client either, so this is rarely anyone. A PHONE is shown nothing at
+/// all: it is already running the thing a download would install, and an
+/// executable it cannot execute is noise.
+function renderDownloads() {
+  const host = document.getElementById("hero-dl");
+  if (!host) return;
+  const ua = navigator.userAgent || "";
+  if (/Android|iPhone|iPad|iPod/i.test(ua)) {
+    host.hidden = true;
+    return;
+  }
+  const mine = DOWNLOADS.find((d) => d.detect(ua));
+  const others = DOWNLOADS.filter((d) => d !== mine);
+
+  const srcLink = (s, cls) =>
+    `<a class="${cls}" href="${escHtml(s.url)}" target="_blank" rel="noopener">${escHtml(s.name)}</a>`;
+
+  let head;
+  if (mine) {
+    const [first, ...rest] = mine.sources;
+    head = `<a class="dl-btn" href="${escHtml(first.url)}" target="_blank" rel="noopener">`
+      + `${escHtml(tr("Download for {os}").replace("{os}", mine.os))}</a>`
+      + (rest.length ? `<span class="dl-alt">${rest.map((s) => srcLink(s, "wl")).join(" · ")}</span>` : "");
+  } else {
+    head = `<span class="dl-why">${escHtml(tr("A desktop version is available for Windows and Linux."))}</span>`;
+  }
+
+  // The platforms that are not this machine's, one line each. Not a menu to
+  // open: two rows of small text cost less than a control that has to be
+  // discovered, and somebody downloading for another machine is deliberate.
+  const rows = (mine ? others : DOWNLOADS)
+    .map((d) => `<div class="dl-row"><span class="dl-os">${escHtml(d.os)}</span>`
+      + d.sources.map((s) => srcLink(s, "wl")).join(" · ") + "</div>")
+    .join("");
+
+  host.innerHTML = `<div class="dl-head">${head}</div>`
+    + `<div class="dl-why">${escHtml(tr("The same calculator on your own machine — opens instantly, works offline, and updates itself."))}</div>`
+    + (rows ? `<div class="dl-more">${rows}</div>` : "");
+  host.hidden = false;
+}
+
+function mountDesktopUpdater() {
   if (!window.__WFSIM_DESKTOP__ || !window.__TAURI_INTERNALS__) return;
   const invoke = (cmd, args = {}) => window.__TAURI_INTERNALS__.invoke(cmd, args);
 
@@ -16420,7 +16497,13 @@ init()
     window.__wfsimReady = true;
     const b = document.getElementById("booting");
     if (b) b.remove();
-    try { mountDesktopUpdater(); } catch (_) { /* the app runs without it */ }
+    // THE DOWNLOAD OFFER IS FOR THE WEB. Inside the desktop app it would be an
+    // invitation to install what is already running, so that build draws
+    // nothing at all rather than drawing it and hiding it.
+    try {
+      if (window.__WFSIM_DESKTOP__) mountDesktopUpdater();
+      else renderDownloads();
+    } catch (_) { /* the app runs without either */ }
   })
   .catch((e) => {
     // …unless the reason already put its own, better sentence on the page.

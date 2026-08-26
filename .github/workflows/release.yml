@@ -43,7 +43,7 @@ jobs:
           - os: windows-latest
             artifact: WFSim.exe
           - os: ubuntu-latest
-            artifact: WFSim-linux
+            artifact: WFSim.AppImage
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -65,6 +65,12 @@ jobs:
         with:
           # The shell is its own workspace; the main one is not built here.
           workspaces: desktop
+
+      # The bundler, for the AppImage. Windows builds with plain cargo — see
+      # scripts/build_desktop.py for why the bundler is kept away from it.
+      - name: Tauri CLI
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo install tauri-cli --version "^2" --locked
 
       - uses: actions/setup-python@v5
         with:
@@ -91,7 +97,13 @@ jobs:
 
       - name: The shipped binary passes its own checks (Linux)
         if: matrix.os == 'ubuntu-latest'
-        run: xvfb-run --auto-servernum ./dist/WFSim-linux --selftest --reset
+        # APPIMAGE_EXTRACT_AND_RUN because a runner has no FUSE to mount one
+        # with; it unpacks to a temporary directory instead, which runs the same
+        # binary. xvfb because the app wants a display even though the checks
+        # report through its own protocol and nobody looks at the window.
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: xvfb-run --auto-servernum ./dist/WFSim.AppImage --selftest --reset
 
       - uses: actions/upload-artifact@v4
         with:
@@ -125,7 +137,7 @@ jobs:
         run: |
           cd artifacts
           WIN=$(sha256sum WFSim.exe | cut -d' ' -f1)
-          LIN=$(sha256sum WFSim-linux | cut -d' ' -f1)
+          LIN=$(sha256sum WFSim.AppImage | cut -d' ' -f1)
           TAG="$(date -u +%Y-%m-%d)-$(git -C .. rev-parse --short=7 HEAD)"
           {
             echo "tag=$TAG"
@@ -139,7 +151,7 @@ jobs:
           name: WFSim ${{ steps.notes.outputs.tag }}
           files: |
             artifacts/WFSim.exe
-            artifacts/WFSim-linux
+            artifacts/WFSim.AppImage
             artifacts/source.zip
           body: |
             **Download one file and run it.** No installer, no unpacking — the
@@ -150,19 +162,19 @@ jobs:
             | | |
             |---|---|
             | Windows | `WFSim.exe` — double-click |
-            | Linux | `WFSim-linux` — `chmod +x WFSim-linux && ./WFSim-linux` |
+            | Linux | `WFSim.AppImage` — `chmod +x` it, then double-click |
 
             Windows shows its blue "protected your PC" notice on first run:
             this build is not code-signed (a certificate costs more per year
             than a free tool justifies). Choose **More info → Run anyway**.
 
-            Linux needs WebKitGTK present — `libwebkit2gtk-4.1-0` on Debian and
-            Ubuntu, `webkit2gtk4.1` on Fedora, `webkit2gtk-4.1` on Arch. Most
-            desktops already have it.
+            The AppImage carries its own WebKitGTK, so no packages are needed.
+            A Release asset arrives without the execute bit — that is what the
+            `chmod +x` is for, not a quirk of this build.
 
             ```
-            WFSim.exe    ${{ steps.notes.outputs.win }}
-            WFSim-linux  ${{ steps.notes.outputs.lin }}
+            WFSim.exe       ${{ steps.notes.outputs.win }}
+            WFSim.AppImage  ${{ steps.notes.outputs.lin }}
             ```
 
             `source.zip` is the corresponding source AGPL-3.0 asks to be offered

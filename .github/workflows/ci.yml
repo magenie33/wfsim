@@ -46,6 +46,13 @@ jobs:
         # `CI` is set by Actions; the script reads it to drop Chrome's sandbox,
         # which a runner has no user namespace for.
         run: node scripts/check_parity.mjs
+      # THE DOWNLOAD OFFER, which has four answers and only one of them is
+      # visible on the machine it was written on. Three of its failure modes
+      # are silent and plausible — a Mac reader handed an .exe, a phone reader
+      # handed a 34 MB download, a Linux reader pointed at a network drive with
+      # no Linux build in it — and each looks like a working page.
+      - name: The download offer answers the machine asking
+        run: node scripts/check_downloads.mjs
       # THE SUBMISSION ENDPOINT, in the same job because it costs nothing: no
       # browser, no engine, no network — it imports `worker/index.js` and runs
       # it against a KV stub. It is here rather than on demand because the two
