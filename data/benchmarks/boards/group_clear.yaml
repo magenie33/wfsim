@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 2448
+submissions: 2473
 engine: 51824f59ee8cfd30ce89a5c77b15bcaab93e989b
 entries:
   - weapon: aeolak
@@ -519,13 +519,6 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
     arcanes: [secondary_deadhead]
-  - weapon: ballistica_prime
-    mode: cycle
-    score: 41.70349362191614
-    fp: 2443749894394396
-    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
-    evolutions: [ballistica_prime_evo1_incarnon_form, ballistica_prime_headcracker, ballistica_prime_rapid_reinforcement, ballistica_prime_elemental_balance]
-    arcanes: [cascadia_flare]
   - weapon: ballistica_prime
     mode: cycle
     score: 37.49244764388061
@@ -1688,11 +1681,60 @@ entries:
     arcanes: [primary_crux]
   - weapon: felarx
     mode: base
+    score: 1780.892965199435
+    fp: ac5400d9b82b0a34
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, atomic_fallout, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_crux]
+  - weapon: felarx
+    mode: base
+    score: 1544.5423560283273
+    fp: 5076bb858f6db0c8
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, atomic_fallout, magnetic_strafe, primed_chilling_grasp, contagious_spread, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_brutal_edge, felarx_devastating_attrition]
+    arcanes: [primary_crux]
+  - weapon: felarx
+    mode: base
+    score: 1511.114535580504
+    fp: 8933d53f1ebdf578
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_ammo_stock, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_crux]
+  - weapon: felarx
+    mode: base
+    score: 1509.3339499738331
+    fp: 33171ce1bf3bf602
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, atomic_fallout, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_brutal_edge, felarx_devastating_attrition]
+    arcanes: [primary_crux]
+  - weapon: felarx
+    mode: base
+    score: 1428.230151951724
+    fp: 1d9814001984c40a
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_crux]
+  - weapon: felarx
+    mode: base
+    score: 1383.9925113461472
+    fp: f753f89eaf5d8546
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, magnetic_strafe, primed_chilling_grasp, contagious_spread, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_brutal_edge, felarx_devastating_attrition]
+    arcanes: [primary_crux]
+  - weapon: felarx
+    mode: base
     score: 1345.6973789802478
     fp: 5ca2be64e2487f15
     mods: [galvanized_hell, galvanized_savvy, shotgun_barrage, shotgun_elementalist, magnetic_strafe, primed_chilling_grasp, toxic_barrage, scattering_inferno]
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_deadhead]
+  - weapon: felarx
+    mode: base
+    score: 1344.6690596914132
+    fp: 9761e1696463cee4
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_brutal_edge, felarx_devastating_attrition]
+    arcanes: [primary_crux]
   - weapon: felarx
     mode: base
     score: 1150.9894768682657
@@ -1711,6 +1753,17 @@ entries:
     score: 74.02508209103672
     fp: c598f5c909a1638b
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, pathogen_rounds, riven]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
+    score: 73.35658342567288
+    fp: 6cbe2f82a820557f
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, pistol_pestilence, riven]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
     arcanes: [secondary_enervate]
     riven:
