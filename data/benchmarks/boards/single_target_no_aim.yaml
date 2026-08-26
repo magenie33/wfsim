@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 2627
+submissions: 2633
 engine: e3a79ade47798f92db3dcdd1e47c0e39348fadc2
 entries:
   - weapon: aeolak
@@ -2105,6 +2105,14 @@ entries:
     mods: [primed_firestorm, serration, critical_delay, hammer_shot, semi_rifle_cannonade, vital_sense, radiated_reload, primed_cryo_rounds]
     arcanes: [primary_compression]
     valence: toxin
+  - weapon: kuva_tonkor
+    mode: base
+    score: 0.1272236442517536
+    fp: 2549826d7a48576a
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, primed_firestorm, primed_magazine_warp, primed_fast_hands, critical_delay, semi_rifle_cannonade, vital_sense, primed_cryo_rounds]
+    arcanes: [primary_merciless]
+    valence: toxin
   - weapon: kuva_zarr
     mode: base
     score: 0.062483458536967754
@@ -3433,6 +3441,16 @@ entries:
       rolls: [1.1, 1.1, 1.1]
   - weapon: sobek
     mode: base
+    score: 0.2906642352519623
+    fp: 4276d4ea952a3c24
+    exilus: vigilante_supplies
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, magnetic_strafe, riven, chilling_reload, toxic_barrage]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, multishot, weapon_recoil]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: sobek
+    mode: base
     score: 0.24587282833214755
     fp: 925081d9325ac698
     exilus: vigilante_supplies
@@ -4348,6 +4366,15 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, multishot]
       malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
+    score: 2.041485424109794
+    fp: 3a3bd8ee404d5ae4
+    mods: [heavy_caliber, split_chamber, rifle_elementalist, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds, riven]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: critical_chance
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: verglas_prime
     mode: base

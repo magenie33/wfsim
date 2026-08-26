@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 2627
+submissions: 2633
 engine: e3a79ade47798f92db3dcdd1e47c0e39348fadc2
 entries:
   - weapon: aeolak
@@ -4109,6 +4109,16 @@ entries:
     arcanes: [secondary_shiver]
   - weapon: sobek
     mode: base
+    score: 1.9193348156373584
+    fp: b0d6cf9b166432e5
+    exilus: vigilante_supplies
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, magnetic_strafe, riven, chilling_reload, toxic_barrage]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, multishot, weapon_recoil]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: sobek
+    mode: base
     score: 1.3216293923820706
     fp: 85e544f692a01fc2
     exilus: vigilante_supplies
@@ -4965,6 +4975,15 @@ entries:
     score: 0.3232977599925098
     fp: b7c6b9717e45eb97
     mods: [heavy_caliber, split_chamber, serration, hammer_shot, primed_cryo_rounds, stormbringer, hellfire, thermite_rounds]
+  - weapon: verglas_prime
+    mode: base
+    score: 3.0387393864308314
+    fp: 63a43c90e1020b8f
+    mods: [heavy_caliber, split_chamber, rifle_elementalist, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds, riven]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: verglas_prime
     mode: base
     score: 3.00849654597516

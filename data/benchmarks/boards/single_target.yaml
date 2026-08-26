@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 2627
+submissions: 2633
 engine: e3a79ade47798f92db3dcdd1e47c0e39348fadc2
 entries:
   - weapon: aeolak
@@ -3874,6 +3874,13 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
+    score: 59.02936512179042
+    fp: bfcbe65a37743c39
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, gunslinger, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+  - weapon: laetum
+    mode: cycle
     score: 58.69057672959506
     fp: 10e8e4aed6791d0d
     exilus: steady_hands
@@ -4227,6 +4234,14 @@ entries:
     mode: cycle
     score: 44.095151197891504
     fp: 5f16ad577168ac2d
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, primed_convulsion, pathogen_rounds, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
+    arcanes: [secondary_encumber]
+  - weapon: laetum
+    mode: cycle
+    score: 44.095151197891504
+    fp: 9f43bbb56b4f2185
+    exilus: primed_steady_hands
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
     arcanes: [secondary_encumber]
@@ -6381,6 +6396,16 @@ entries:
     arcanes: [secondary_shiver]
   - weapon: sobek
     mode: base
+    score: 1.9193348156373584
+    fp: fb031689e7207dcf
+    exilus: vigilante_supplies
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, magnetic_strafe, riven, chilling_reload, toxic_barrage]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, multishot, weapon_recoil]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: sobek
+    mode: base
     score: 1.3216293923820706
     fp: 5a186c8174422284
     exilus: vigilante_supplies
@@ -7757,6 +7782,15 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, multishot]
       malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
+    score: 2.041485424109794
+    fp: 8da65d15e3df6161
+    mods: [heavy_caliber, split_chamber, rifle_elementalist, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds, riven]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: critical_chance
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: verglas_prime
     mode: base
