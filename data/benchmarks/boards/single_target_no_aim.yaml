@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 2412
+submissions: 2428
 engine: 51824f59ee8cfd30ce89a5c77b15bcaab93e989b
 entries:
   - weapon: afentis_prime
@@ -1465,6 +1465,18 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: furis
     mode: cycle
+    score: 1.6798139526372655
+    fp: 1da36f4c0f37b0b5
+    exilus: lethal_momentum
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, pistol_elementalist, primed_heated_charge, riven]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [heat, multishot]
+      malus: puncture
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: furis
+    mode: cycle
     score: 1.4650195598399054
     fp: 609cc111ab6cad43
     exilus: lethal_momentum
@@ -1474,6 +1486,18 @@ entries:
     riven:
       bonuses: [critical_damage, damage, multishot]
       malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
+    score: 1.3505544165931962
+    fp: 1da36f4c0f37b0b5
+    exilus: lethal_momentum
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, primed_pistol_gambit, pistol_elementalist, riven, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_chance, multishot, status_chance]
+      malus: damage_to_infested
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: gammacor
     mode: base
@@ -2109,6 +2133,17 @@ entries:
     arcanes: [secondary_encumber]
   - weapon: laetum
     mode: cycle
+    score: 3.8052730375427113
+    fp: ded1a8ff7fca30de
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [damage, multishot, toxin]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: laetum
+    mode: cycle
     score: 3.707143630474898
     fp: fdcf5ce7992b5f70
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -2128,6 +2163,17 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [cascadia_flare]
+  - weapon: laetum
+    mode: cycle
+    score: 2.954449092115267
+    fp: ded1a8ff7fca30de
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [fire_rate, multishot, toxin]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 1.1]
   - weapon: laetum
     mode: cycle
     score: 2.647297407947579
