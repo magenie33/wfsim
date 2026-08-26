@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 2854
+submissions: 2866
 engine: 88d108af8d9cd4ef6b94e4847c99818aa6871a8d
 entries:
   - weapon: acceltra_prime
@@ -1417,6 +1417,13 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: base
+    score: 12.265319152460494
+    fp: b134d5b17d85c20c
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
     score: 10.611092508721612
     fp: 3fcbf587b1023f2d
     exilus: stabilizer
@@ -1887,6 +1894,17 @@ entries:
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_tactical_pump, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_crux]
+  - weapon: felarx
+    mode: base
+    score: 2032.9737463820557
+    fp: 88d09518339e2c71
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_tactical_pump, magnetic_strafe, riven, toxic_barrage, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [cold, multishot, status_chance]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 0.9, 1.1]
   - weapon: felarx
     mode: base
     score: 1780.892965199435
@@ -2610,6 +2628,13 @@ entries:
     fp: 185fab5623837c94
     mods: [galvanized_chamber, heavy_caliber, serration, hammer_shot, vile_acceleration, magnetic_capacity, hellfire, thermite_rounds]
     arcanes: [primary_deadhead]
+  - weapon: haalvu
+    mode: alternate
+    score: 1.2907104581637634
+    fp: 27340f2c988cdf65
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, critical_delay, hammer_shot, primed_cryo_rounds, malignant_force, hellfire, thermite_rounds]
+    arcanes: [primary_crux]
   - weapon: hikou_prime
     mode: base
     score: 12.196491937651103
@@ -3184,19 +3209,12 @@ entries:
     arcanes: [secondary_irradiate]
   - weapon: laetum
     mode: base
-    score: 4.76829786294743
-    fp: 4ec616c3829bed85
-    exilus: steady_hands
-    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, pistol_elementalist, jolt, pistol_pestilence, scorch]
-    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
-    arcanes: [cascadia_flare]
-  - weapon: laetum
-    mode: base
-    score: 4.76829786294743
-    fp: 50700075de2631a1
-    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, pistol_elementalist, jolt, pistol_pestilence, scorch]
-    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
-    arcanes: [cascadia_flare]
+    score: 15.538106249959707
+    fp: 06c0dd4d5c2d1d84
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, pistol_elementalist, magnetic_might, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
   - weapon: larkspur_prime
     mode: base
     score: 162.66666666666666
