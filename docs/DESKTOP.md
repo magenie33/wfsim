@@ -153,12 +153,19 @@ python scripts/release_desktop.py         # blobs + source.zip + signed manifest
 ~2.6 s when little changed. Only the shell needs the installer:
 
 ```
-python scripts/build_desktop.py           # dist/WFSim-<date>.exe + source.zip + notes
+python scripts/build_desktop.py           # dist/WFSim.exe + source.zip + notes
 ```
 
-No version number is ever chosen. Windows needs a version field for its own
-upgrade bookkeeping, so it comes from the build date; what identifies a build
-for a bug report is the **commit**, which the page footer already shows.
+No version number is ever chosen, and none appears in the filename. Windows
+needs a version field for its own upgrade bookkeeping, so it comes from the
+build date; what identifies a build for a bug report is the **commit**, which
+the page footer already shows.
+
+The installer is always . A network-drive share link is tied to the
+file, so renaming it invalidates every link already posted — and this is the one
+artifact that almost never needs replacing, since everything after it arrives
+through the update channel. The notes file carries the build date and SHA-256
+for anyone who wants to tell two downloads apart.
 
 ### The network drive
 

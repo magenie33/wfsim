@@ -63,7 +63,13 @@ def main() -> None:
     src = max(built, key=lambda p: p.stat().st_mtime)
 
     DIST.mkdir(exist_ok=True)
-    name = f"WFSim-{today:%Y%m%d}.exe"
+    # NO DATE, NO VERSION, IN THE FILENAME (owner, 2026-08-26). A network drive
+    # share link is tied to the file, so renaming the installer invalidates
+    # every link already posted — and the installer is the one thing here that
+    # almost never needs replacing, since everything after it arrives through
+    # the update channel. A stable name is worth more than being able to tell
+    # two downloads apart, which the notes file does anyway.
+    name = "WFSim.exe"
     dest = DIST / name
     shutil.copy2(src, dest)
 
