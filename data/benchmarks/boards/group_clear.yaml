@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 2866
+submissions: 2893
 engine: 88d108af8d9cd4ef6b94e4847c99818aa6871a8d
 entries:
   - weapon: acceltra_prime
@@ -1417,9 +1417,24 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: base
+    score: 12.293939771532296
+    fp: 92d704c4a820a82c
+    exilus: primed_stabilizer
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
     score: 12.265319152460494
     fp: b134d5b17d85c20c
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    score: 11.646830909828484
+    fp: fb964a51bac8c68e
+    mods: [primary_acuity, galvanized_scope, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
@@ -1447,6 +1462,13 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: base
+    score: 9.70825956188537
+    fp: a05a7e33bb3d866b
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, hammer_shot, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
     score: 8.796775635005483
     fp: 8cf74c2de7b11653
     exilus: stabilizer
@@ -1465,6 +1487,14 @@ entries:
     score: 8.445106903580118
     fp: a47b5d6868b09fb7
     mods: [primary_acuity, serration, galvanized_scope, critical_delay, vital_sense, gilded_truth, magnetic_capacity, thermite_rounds]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    score: 6.915268808992625
+    fp: 3925bbb25c38b71f
+    exilus: primed_stabilizer
+    mods: [primary_acuity, primed_bane_of_grineer, galvanized_aptitude, galvanized_scope, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
@@ -2624,17 +2654,11 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: haalvu
     mode: alternate
-    score: 1.3485697498714837
-    fp: 185fab5623837c94
-    mods: [galvanized_chamber, heavy_caliber, serration, hammer_shot, vile_acceleration, magnetic_capacity, hellfire, thermite_rounds]
-    arcanes: [primary_deadhead]
-  - weapon: haalvu
-    mode: alternate
-    score: 1.2907104581637634
-    fp: 27340f2c988cdf65
+    score: 5.594034541046832
+    fp: bfd6f40a27970a83
     exilus: vigilante_supplies
-    mods: [galvanized_chamber, serration, critical_delay, hammer_shot, primed_cryo_rounds, malignant_force, hellfire, thermite_rounds]
-    arcanes: [primary_crux]
+    mods: [galvanized_chamber, serration, shred, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
+    arcanes: [primary_deadhead]
   - weapon: hikou_prime
     mode: base
     score: 12.196491937651103
@@ -4868,6 +4892,13 @@ entries:
     arcanes: [primary_merciless]
   - weapon: torid
     mode: cycle
+    score: 63.12786835816176
+    fp: 80c95e64c6d0b289
+    mods: [galvanized_chamber, primed_firestorm, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
+    arcanes: [primary_merciless]
+  - weapon: torid
+    mode: cycle
     score: 63.056239391012866
     fp: ed4efc9ff722384e
     mods: [amalgam_serration, primary_acuity, primed_firestorm, vital_sense, magnetic_capacity, rime_rounds, malignant_force, hellfire]
@@ -4885,6 +4916,13 @@ entries:
     score: 59.44973496894011
     fp: 3093137bc6954b70
     exilus: terminal_velocity
+    mods: [galvanized_chamber, primed_firestorm, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
+    arcanes: [primary_merciless]
+  - weapon: torid
+    mode: cycle
+    score: 59.44973496894011
+    fp: bbd642c92bb86420
     mods: [galvanized_chamber, primed_firestorm, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
     arcanes: [primary_merciless]
@@ -5096,6 +5134,13 @@ entries:
       bonuses: [critical_chance, damage]
       malus: weapon_recoil
       rolls: [1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: base
+    score: 1.795986384841601
+    fp: 003692d42dbc07c0
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_merciless]
   - weapon: torid
     mode: base
     score: 1.404192019702844

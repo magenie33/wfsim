@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 2866
+submissions: 2893
 engine: 88d108af8d9cd4ef6b94e4847c99818aa6871a8d
 entries:
   - weapon: acceltra_prime
@@ -1786,6 +1786,13 @@ entries:
     score: 0.579832252234315
     fp: a3058b151abc2bd9
     mods: [galvanized_chamber, heavy_caliber, serration, hammer_shot, vile_acceleration, magnetic_capacity, hellfire, thermite_rounds]
+    arcanes: [primary_deadhead]
+  - weapon: haalvu
+    mode: alternate
+    score: 0.39688186735276526
+    fp: 382dd95e6a7c7040
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, shred, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
     arcanes: [primary_deadhead]
   - weapon: haalvu
     mode: alternate
@@ -4518,18 +4525,11 @@ entries:
       rolls: [1.1, 1.1, 0.9]
   - weapon: torid
     mode: base
-    score: 0.07401096179594036
-    fp: b156d5394d605ffa
-    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
+    score: 0.4246509113955887
+    fp: cf439dd1751eb0cf
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_deadhead]
-  - weapon: torid
-    mode: base
-    score: 0.07401096179594036
-    fp: f930fa6f38b8fdad
-    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_crux]
+    arcanes: [primary_merciless]
   - weapon: trumna_prime
     mode: base
     score: 0.8005167590976069
