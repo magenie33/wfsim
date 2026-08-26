@@ -84,7 +84,29 @@ env:
   # run has to finish inside twenty minutes or it starves itself, and four times
   # the fan-out puts the worst shard at ~14. The ceiling is GitHub's 256-job
   # matrix, so there is room to raise it again when the roster doubles again.
-  SHARDS: 32
+  #
+  # AND IT DID, THE SAME WAY, A THIRD TIME (2026-08-26). What doubled this time
+  # was not the roster but the STORE: the library model landed on 2026-08-25 and
+  # every ruler now crosses the whole of it, so the boards went from ~900 rows to
+  # 2,185 and the store to 2,447 builds. Measured on the last run that finished:
+  # `submissions` 9m, the 32 shards 9.3 / 21.8 / **52.9** minutes
+  # (min/median/max, 712 minutes of work), `publish` 1m — 63 minutes of wall
+  # against a twenty-minute schedule, so every queued run was cancelled by its
+  # successor and the board updated about once an hour. The owner noticed the
+  # same way as last time: a build submitted and not showing up.
+  #
+  # 128 is again sized against the interval: 712/128 is 5.6 minutes a shard, and
+  # the worst/mean ratio measured at 32 (2.4x) puts the worst at about 13. It is
+  # A BET TO BE MEASURED, not arithmetic — 32 jobs were observed starting within
+  # two seconds of each other, but nothing here has yet run 128, and if GitHub
+  # schedules them in waves the wall time will not fall as far as the division
+  # says. Read the next run's spread before raising it again.
+  #
+  # THE NEXT WALL IS NOT THIS NUMBER. `submissions` reads KV in ONE unsharded
+  # job and now costs 9 of the 20 available minutes, up from the 3m43s recorded
+  # above; no shard count touches it. When 128 stops being enough, that job is
+  # what has to change, not this line.
+  SHARDS: 128
 
 jobs:
   # ---- 1. what is there to score ----------------------------------------
