@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 2659
+submissions: 2671
 engine: 6cbc8e5f5f313e738971112932bbc961fbda2cf6
 entries:
   - weapon: aeolak
@@ -939,6 +939,17 @@ entries:
     fp: 83c8caf7a2ca0710
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, accelerated_blast, critical_deceleration, magnetic_strafe, incendiary_coat]
     arcanes: [primary_deadhead]
+  - weapon: cernos_prime
+    mode: base
+    score: 0.4163302819370725
+    fp: eb191b8d79ec69d0
+    exilus: terminal_velocity
+    mods: [galvanized_chamber, serration, hunter_munitions, point_strike, vital_sense, riven, primed_cryo_rounds, infected_clip]
+    arcanes: [longbow_sharpshot]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: magazine_capacity
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: cestra
     mode: cycle
     score: 0.467011202669313
@@ -2370,6 +2381,14 @@ entries:
       bonuses: [multishot, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: base
+    score: 1.0320701425370498
+    fp: 6836a6a22694e508
+    exilus: steady_hands
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, pistol_elementalist, jolt, pistol_pestilence, scorch]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
   - weapon: larkspur_prime
     mode: base
     score: 6.319955872450008
@@ -3312,6 +3331,13 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
     arcanes: [secondary_encumber]
+  - weapon: prisma_angstrum
+    mode: cycle
+    score: 4.958565370028997
+    fp: a17f661c7f98e9f9
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
+    arcanes: [cascadia_flare]
   - weapon: prisma_dual_decurions
     mode: base
     score: 2.676499035606708

@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 2659
+submissions: 2671
 engine: 6cbc8e5f5f313e738971112932bbc961fbda2cf6
 entries:
   - weapon: aeolak
@@ -1329,6 +1329,28 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
+    score: 55.63201581074088
+    fp: bb7750a4d4ae0d75
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, multishot, toxin]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 55.22446606549635
+    fp: c728b9c9e01219f9
+    mods: [primary_acuity, hammer_shot, point_strike, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_fortress_salvo, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, multishot, toxin]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: burston_prime
+    mode: cycle
     score: 52.38300820381114
     fp: 9dd843504825b907
     mods: [amalgam_serration, galvanized_chamber, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, riven]
@@ -1409,6 +1431,17 @@ entries:
     fp: 874fe38d87453bc7
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, incendiary_coat]
     arcanes: [primary_deadhead]
+  - weapon: cernos_prime
+    mode: base
+    score: 10.746424419588012
+    fp: df714de0d86eb9ab
+    exilus: terminal_velocity
+    mods: [galvanized_chamber, serration, hunter_munitions, point_strike, vital_sense, riven, primed_cryo_rounds, infected_clip]
+    arcanes: [longbow_sharpshot]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: magazine_capacity
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: cestra
     mode: cycle
     score: 22.253809376689414
@@ -3012,6 +3045,14 @@ entries:
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [secondary_irradiate]
+  - weapon: laetum
+    mode: base
+    score: 4.76829786294743
+    fp: 410aa25cfa18fced
+    exilus: steady_hands
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, pistol_elementalist, jolt, pistol_pestilence, scorch]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
   - weapon: larkspur_prime
     mode: base
     score: 162.66666666666666
@@ -3893,6 +3934,13 @@ entries:
       rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: prisma_angstrum
     mode: cycle
+    score: 39.289008590923224
+    fp: 98c011c815013ea4
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
+    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
+    arcanes: [cascadia_flare]
+  - weapon: prisma_angstrum
+    mode: cycle
     score: 36.08183507827096
     fp: 701d8c3902e1dace
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
@@ -3954,13 +4002,6 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence]
     evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_paladin_virtue, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
     arcanes: [secondary_encumber]
-  - weapon: prisma_angstrum
-    mode: cycle
-    score: 19.26458957466997
-    fp: 73811b83a0b374e3
-    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_heated_charge]
-    evolutions: [prisma_angstrum_evo1_incarnon_form, prisma_angstrum_haven_foray, prisma_angstrum_rapid_reinforcement, prisma_angstrum_critical_parallel]
-    arcanes: [secondary_deadhead]
   - weapon: prisma_dual_decurions
     mode: base
     score: 62.67687847759191
