@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "b69df795+ · 2026-08-26 09:27Z";
+const BUILD_ID = "07f91851+ · 2026-08-26 09:39Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -16304,6 +16304,12 @@ const DESKTOP_POLL_MS = 700;
 const DESKTOP_CHECK_MS = 60 * 60 * 1000;
 
 function mountDesktopUpdater() {
+  // THE DOWNLOAD OFFER IS FOR THE WEB, and hiding it is the first thing to do
+  // here rather than the last: a link inviting the reader to install what they
+  // are already running reads as a page that does not know where it is.
+  const dl = document.getElementById("hero-dl");
+  if (dl && window.__WFSIM_DESKTOP__) dl.hidden = true;
+
   if (!window.__WFSIM_DESKTOP__ || !window.__TAURI_INTERNALS__) return;
   const invoke = (cmd, args = {}) => window.__TAURI_INTERNALS__.invoke(cmd, args);
 

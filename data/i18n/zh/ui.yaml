@@ -334,6 +334,7 @@ ui:
   "Disarming Purity, the Panthera-exclusive augment — a weapon-exclusive card outside the pools this roster loads": "「Disarming Purity」，Panthera 的专属增强 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Dodge Speed": 闪避速度
   "Double Jumps": 二段跳
+  "Download for Windows": "下载 Windows 版"
   "Drain": 消耗
   "Duration (s)": 时长（秒）
   "EACH PELLET ADDS 2 TO THE MELEE COMBO COUNT, capped at 28 a shot, and equipping it on Kullervo gives his melee +7 s of combo duration (wiki). This arena has no melee weapon for any of that to land on, so the weapon's published reason to exist pays nothing here": "每一颗弹丸给近战连击数 +2，单发上限 28；装备在 Kullervo 身上时他的近战还会 +7 秒连击持续时间（维基）。这个战场没有近战武器可以承接这一切，所以这把武器公开宣称的存在理由在这里一分不值"
@@ -443,6 +444,7 @@ ui:
   "Necrophagic Vigor, the Hema family's exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Necrophagic Vigor」，Hema 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Necrophagic Vigor, the Synapse family's exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Necrophagic Vigor」，Synapse 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Restart now": "立即重启"
+  "The same calculator on your own machine — opens instantly, works offline, and updates itself.": "同一个计算器，跑在你自己的电脑上 —— 秒开、可离线、自动更新。"
   "Update": "更新"
   "Update failed": "更新失败"
   "Update ready — restart to finish": "更新已就绪，重启后生效"

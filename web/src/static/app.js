@@ -16304,6 +16304,12 @@ const DESKTOP_POLL_MS = 700;
 const DESKTOP_CHECK_MS = 60 * 60 * 1000;
 
 function mountDesktopUpdater() {
+  // THE DOWNLOAD OFFER IS FOR THE WEB, and hiding it is the first thing to do
+  // here rather than the last: a link inviting the reader to install what they
+  // are already running reads as a page that does not know where it is.
+  const dl = document.getElementById("hero-dl");
+  if (dl && window.__WFSIM_DESKTOP__) dl.hidden = true;
+
   if (!window.__WFSIM_DESKTOP__ || !window.__TAURI_INTERNALS__) return;
   const invoke = (cmd, args = {}) => window.__TAURI_INTERNALS__.invoke(cmd, args);
 

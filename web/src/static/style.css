@@ -1831,3 +1831,14 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    and "45%" is a number a reader can decide to wait for. */
 .dtup-bar{flex:1;min-width:80px;height:4px;border-radius:2px;background:var(--panel2);overflow:hidden}
 .dtup-bar i{display:block;height:100%;background:var(--gold);transition:width .2s}
+
+/* THE DESKTOP DOWNLOAD, on the home page under the hero. Gold-outlined rather
+   than filled: it is an offer, not the thing the page is for — someone who came
+   to calculate should not have to step around it. `app.js` hides it inside the
+   desktop app, where it would be an invitation to install what is running. */
+.hero-dl{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 26px}
+.hero-dl[hidden]{display:none}
+.dl-btn{border:1px solid var(--gold);color:var(--gold);border-radius:8px;
+  padding:7px 16px;text-decoration:none;white-space:nowrap;font-weight:600}
+.dl-btn:hover{background:var(--gold);color:var(--surface)}
+.dl-why{color:var(--text-2);font-size:13px}

@@ -254,6 +254,14 @@ const SELFTEST_PROBE: &str = r#"
         const v = await window.__TAURI_INTERNALS__.invoke('app_version');
         check('ipc + version', /^[0-9a-f]{6,}$/.test(v) || v === 'nogit', v);
       } catch (e) { check('ipc + version', false, 'invoke failed: ' + e.message); }
+      // THE HOME PAGE OFFERS A DOWNLOAD, and in here that is an invitation to
+      // install what is already running. The element still exists — the same
+      // index.html serves both — so the assertion is that it is HIDDEN, which
+      // is a thing only this build does.
+      try {
+        const dl = document.getElementById('hero-dl');
+        check('download offer hidden', !!dl && dl.hidden, dl ? 'hidden=' + dl.hidden : 'element missing');
+      } catch (e) { check('download offer hidden', false, e.message); }
       // THE BOARD IS A SERVICE, NOT A CALCULATION — the one thing the wasm
       // engine cannot answer. app.js fetches it same-origin on purpose, and in
       // here "same origin" is wfsim.localhost, so without a proxy the SPA

@@ -217,6 +217,18 @@
          old "The Simulacrum. / The Primed One." pair awkward to translate. -->
     <h1 class="hero-h" data-i18n-gold="Prime">The real Simulacrum Prime.</h1>
     <p class="hero-sub" data-i18n>WFSim is the ultimate Warframe calculator — builder, simulator, optimizer. True to in-game numbers, down to the last proc. Theorycrafting, solved.</p>
+    <!-- THE DESKTOP DOWNLOAD. Hidden inside the desktop app itself (app.js),
+         where a download link is an invitation to install what is already
+         running.
+
+         It says what the app is FOR rather than that it exists: the engine is
+         the same one this page runs, so the reasons to take it are the loading
+         (a 5.4 MB wasm module per compute lane, from a CDN that is slowest
+         exactly where the players are) and working with no network at all. -->
+    <p class="hero-dl" id="hero-dl">
+      <a class="dl-btn" href="https://pan.quark.cn/s/dc8fe9046d6a" target="_blank" rel="noopener" data-i18n>Download for Windows</a>
+      <span class="dl-why" data-i18n>The same calculator on your own machine — opens instantly, works offline, and updates itself.</span>
+    </p>
     <h2 class="home-h" data-i18n>Weapons</h2>
     <div id="weapon-grid"></div>
   </main>
@@ -770,7 +782,7 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (owner, 2026-08-18, after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">b69df795+ · 2026-08-26 09:27Z</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">07f91851+ · 2026-08-26 09:39Z</span>
     </div>
   </footer>
 
