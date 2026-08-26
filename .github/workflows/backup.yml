@@ -25,8 +25,15 @@
 #
 # THE BRANCH IS CHEAP BECAUSE THE FILE IS SORTED. One record per line, keys
 # sorted, object keys canonicalised — so a day's change is ~35 added lines and
-# git stores the delta. Measured: 692 KB for the first snapshot and ~10 KB a day
-# after it, against 247 MB if each day were kept whole.
+# git stores the delta. MEASURED ON THE FIRST REAL SNAPSHOT (2,502 records,
+# 1,598,310 bytes): 1.52 MB once and ~22 KB a night after it, against 570 MB a
+# year if each night were kept whole.
+#
+# The estimate this replaces said 692 KB and 10 KB, from a record shape sampled
+# out of a board row — a real record is 639 bytes against the 287 that guessed,
+# because a board row does not carry every axis. Left here as the correction
+# rather than silently: the arithmetic that justified committing a file nightly
+# is worth being right about.
 #
 # THE TOKEN HERE ONLY READS. Restoring needs a token with KV *Write*, which is
 # not a repo secret and is meant to be created for a restore and revoked after

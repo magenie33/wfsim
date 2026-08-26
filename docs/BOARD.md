@@ -801,9 +801,15 @@ costs about 7.5 minutes once a day.
 
 **THE BRANCH IS CHEAP BECAUSE THE FILE IS SORTED.** One record per line
 (`{"k": "<identity>", "v": {…}}`), keys sorted, object keys canonicalised — so a
-night's change is ~35 added lines and git stores the delta. Measured: 692 KB for
-the first snapshot and about 10 KB a night after it, against 247 MB a year if
-each night were kept whole.
+night's change is ~35 added lines and git stores the delta. Measured on the
+first real snapshot — 2,502 records, 1,598,310 bytes — **1.52 MB once and about
+22 KB a night after it**, against 570 MB a year if each night were kept whole.
+
+(The estimate that justified the design said 692 KB and 10 KB, from a record
+shape sampled out of a board row. A real record is 639 bytes against the 287
+that guessed, because a board row does not carry every axis. The conclusion
+survives the correction by a wide margin, which is the only reason it is a
+footnote rather than a redesign.)
 
 **THE SNAPSHOT CARRIES ITS KEYS**, which `submissions.json` does not — that file
 is the values, which is enough to score and not enough to restore. Recomputing
