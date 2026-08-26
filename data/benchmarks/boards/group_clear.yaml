@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 2633
-engine: e3a79ade47798f92db3dcdd1e47c0e39348fadc2
+submissions: 2652
+engine: 6cbc8e5f5f313e738971112932bbc961fbda2cf6
 entries:
   - weapon: aeolak
     mode: base
@@ -2625,6 +2625,13 @@ entries:
       rolls: [1.1, 1.1, 1.1]
   - weapon: kuva_grattler
     mode: base
+    score: 241.2943585245926
+    fp: 1a84fa7517081e49
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, hollowed_bullets, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_grattler
+    mode: base
     score: 237.66666666666663
     fp: 4d1918b2a060a4d5
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, hollowed_bullets, magnetized_cycle, primed_polar_magazine, contamination_casing, primed_combustion_rounds]
@@ -2659,6 +2666,13 @@ entries:
       rolls: [1.1, 1.1]
   - weapon: kuva_grattler
     mode: base
+    score: 228.01404625677748
+    fp: 903984c9a98198ff
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: heat
+  - weapon: kuva_grattler
+    mode: base
     score: 218
     fp: 1fea910623ebc56c
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
@@ -2666,11 +2680,44 @@ entries:
     valence: heat
   - weapon: kuva_grattler
     mode: base
+    score: 212.5192440302779
+    fp: 3f894b8f42ac3237
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    valence: magnetic
+    riven:
+      bonuses: [damage_to_grineer, magazine_capacity, reload_speed]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: kuva_grattler
+    mode: base
+    score: 208.36478216922035
+    fp: d1249b270328431c
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    valence: magnetic
+    riven:
+      bonuses: [damage_to_grineer, magazine_capacity, reload_speed]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: kuva_grattler
+    mode: base
     score: 203.3274634997075
     fp: 19d8cec2ac5d2596
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, primed_ammo_chain, hollowed_bullets, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_deadhead, secondary_enervate]
     valence: heat
+  - weapon: kuva_grattler
+    mode: base
+    score: 196.40956309417024
+    fp: 51b50439a87e1b97
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    valence: heat
+    riven:
+      bonuses: [damage_to_grineer, magazine_capacity, reload_speed]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: kuva_grattler
     mode: base
     score: 193
@@ -2685,6 +2732,17 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     valence: heat
+  - weapon: kuva_grattler
+    mode: base
+    score: 159.9037948518117
+    fp: 346b517add5d5176
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: magnetic
+    riven:
+      bonuses: [damage_to_grineer, magazine_capacity, reload_speed]
+      malus: damage_to_corpus
+      rolls: [1.1, 0.9, 1.1, 0.9]
   - weapon: kuva_grattler
     mode: base
     score: 154.24443026656232
@@ -4409,6 +4467,13 @@ entries:
     mods: [galvanized_chamber, primed_shred, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
     evolutions: [sybaris_prime_evo1_incarnon_form, sybaris_prime_well_rehearsed, sybaris_prime_marksmans_hand, sybaris_prime_survivors_edge]
     arcanes: [primary_deadhead]
+  - weapon: synoid_gammacor
+    mode: cycle
+    score: 8.92951213965582
+    fp: 34148283ab5f3f69
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, anemic_agility, pistol_elementalist, deep_freeze, pistol_pestilence, primed_heated_charge]
+    evolutions: [synoid_gammacor_evo1_incarnon_form, synoid_gammacor_sages_resolve, synoid_gammacor_extended_volley, synoid_gammacor_critical_parallel]
+    arcanes: [cascadia_flare]
   - weapon: synoid_gammacor
     mode: cycle
     score: 8.495860431836961

@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 2633
-engine: e3a79ade47798f92db3dcdd1e47c0e39348fadc2
+submissions: 2652
+engine: 6cbc8e5f5f313e738971112932bbc961fbda2cf6
 entries:
   - weapon: aeolak
     mode: base
@@ -1161,7 +1161,7 @@ entries:
   - weapon: dual_toxocyst
     mode: cycle
     score: 5.861923727733672
-    fp: 6238292bdf983cdd
+    fp: bb574612bf89146f
     exilus: primed_steady_hands
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -1173,7 +1173,7 @@ entries:
   - weapon: dual_toxocyst
     mode: cycle
     score: 3.0849369753671763
-    fp: 4096574aba27c342
+    fp: 34ae318299b1255e
     exilus: primed_steady_hands
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
@@ -1192,7 +1192,7 @@ entries:
   - weapon: dual_toxocyst
     mode: cycle
     score: 1.349837472037508
-    fp: 7ba2a53af5bac312
+    fp: 72a08bd94f786a42
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [cascadia_flare]
@@ -1206,14 +1206,14 @@ entries:
   - weapon: dual_toxocyst
     mode: cycle
     score: 1.2909073960719768
-    fp: 40a64f987d9ed083
+    fp: 3484a34f0d787bc9
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_enervate]
   - weapon: dual_toxocyst
     mode: cycle
     score: 1.2397561667179924
-    fp: c55edc0ac569a954
+    fp: 5e01f79f77a0ae80
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, pistol_elementalist, frostbite, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_encumber]
@@ -1760,6 +1760,17 @@ entries:
       rolls: [1.1, 0.9, 0.9]
   - weapon: kuva_grattler
     mode: base
+    score: 3.525675329416861
+    fp: f1a21955e03012bb
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    valence: magnetic
+    riven:
+      bonuses: [damage_to_grineer, magazine_capacity, reload_speed]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 0.9, 0.9]
+  - weapon: kuva_grattler
+    mode: base
     score: 3.3512503928308925
     fp: 679890a9bc8ffcbe
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
@@ -1788,6 +1799,24 @@ entries:
       rolls: [1.1, 1.1, 1.1]
   - weapon: kuva_grattler
     mode: base
+    score: 2.9646401831921847
+    fp: 679890a9bc8ffcbe
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: heat
+  - weapon: kuva_grattler
+    mode: base
+    score: 2.712386639106976
+    fp: 017cfff222f623de
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    valence: heat
+    riven:
+      bonuses: [damage_to_grineer, magazine_capacity, reload_speed]
+      malus: damage_to_corpus
+      rolls: [1.1, 0.9, 0.9, 0.9]
+  - weapon: kuva_grattler
+    mode: base
     score: 2.500689988871565
     fp: d70df499a69f3e6b
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
@@ -1806,6 +1835,24 @@ entries:
     riven:
       bonuses: [fire_rate, reload_speed]
       rolls: [1.1, 0.9]
+  - weapon: kuva_grattler
+    mode: base
+    score: 2.4773252234268637
+    fp: 1362f5529cdcf86a
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, hollowed_bullets, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_grattler
+    mode: base
+    score: 2.3333333333333335
+    fp: adda6fb3a9f48cd4
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    valence: magnetic
+    riven:
+      bonuses: [damage_to_grineer, magazine_capacity, reload_speed]
+      malus: damage_to_corpus
+      rolls: [1.1, 0.9, 0.9, 0.9]
   - weapon: kuva_grattler
     mode: base
     score: 2.2268280675809997
@@ -3718,6 +3765,13 @@ entries:
     score: 5.449530908239591
     fp: 46f2c94a640a7f5a
     mods: [galvanized_diffusion, hornet_strike, primed_pistol_gambit, lethal_torrent, pistol_elementalist, deep_freeze, pistol_pestilence, primed_heated_charge]
+    evolutions: [synoid_gammacor_evo1_incarnon_form, synoid_gammacor_sages_resolve, synoid_gammacor_extended_volley, synoid_gammacor_critical_parallel]
+    arcanes: [cascadia_flare]
+  - weapon: synoid_gammacor
+    mode: cycle
+    score: 5.4040728694953994
+    fp: a33a300e61d1dde4
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, anemic_agility, pistol_elementalist, deep_freeze, pistol_pestilence, primed_heated_charge]
     evolutions: [synoid_gammacor_evo1_incarnon_form, synoid_gammacor_sages_resolve, synoid_gammacor_extended_volley, synoid_gammacor_critical_parallel]
     arcanes: [cascadia_flare]
   - weapon: telos_boltor

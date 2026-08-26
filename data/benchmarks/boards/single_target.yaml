@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 2633
-engine: e3a79ade47798f92db3dcdd1e47c0e39348fadc2
+submissions: 2652
+engine: 6cbc8e5f5f313e738971112932bbc961fbda2cf6
 entries:
   - weapon: aeolak
     mode: base
@@ -2298,7 +2298,7 @@ entries:
   - weapon: dual_toxocyst
     mode: cycle
     score: 55.259827458997975
-    fp: 8e1425dad02d4685
+    fp: c5d26a99bc85d98f
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_encumber]
@@ -2312,7 +2312,7 @@ entries:
   - weapon: dual_toxocyst
     mode: cycle
     score: 48.07822599460719
-    fp: 9a2018c2bce50b81
+    fp: 859eb1ebc717870b
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_encumber]
@@ -2333,7 +2333,7 @@ entries:
   - weapon: dual_toxocyst
     mode: cycle
     score: 45.22552118336973
-    fp: 8a8e113ee8eb19e5
+    fp: 0c74501e2ce1ae6f
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, jolt]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_encumber]
@@ -2354,7 +2354,7 @@ entries:
   - weapon: dual_toxocyst
     mode: cycle
     score: 44.715295288835954
-    fp: 8908ad793069d72c
+    fp: 10c02440f89de7ee
     mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_ready_retaliation, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_deadhead]
@@ -3412,6 +3412,13 @@ entries:
       rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: kuva_grattler
     mode: base
+    score: 12.231526729380452
+    fp: 79cd2a3c9822f147
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, hollowed_bullets, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_grattler
+    mode: base
     score: 12.08160165281416
     fp: 3217fb6af1f1b82d
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
@@ -3433,6 +3440,13 @@ entries:
     valence: heat
   - weapon: kuva_grattler
     mode: base
+    score: 11.91753923812106
+    fp: 4d17163270ce0aed
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: heat
+  - weapon: kuva_grattler
+    mode: base
     score: 11.903826796793949
     fp: 84519a5cb9d11289
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
@@ -3441,6 +3455,28 @@ entries:
     riven:
       bonuses: [fire_rate, reload_speed]
       rolls: [1.1, 1.1]
+  - weapon: kuva_grattler
+    mode: base
+    score: 11.666666666666666
+    fp: b228ef79c646199e
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    valence: magnetic
+    riven:
+      bonuses: [damage_to_grineer, magazine_capacity, reload_speed]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 0.9, 0.9]
+  - weapon: kuva_grattler
+    mode: base
+    score: 11.114450657510634
+    fp: 55655e606ce1e7c5
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    valence: magnetic
+    riven:
+      bonuses: [damage_to_grineer, magazine_capacity, reload_speed]
+      malus: damage_to_corpus
+      rolls: [1.1, 0.9, 1.1, 0.9]
   - weapon: kuva_grattler
     mode: base
     score: 11
@@ -3457,6 +3493,17 @@ entries:
     valence: heat
   - weapon: kuva_grattler
     mode: base
+    score: 10.678163112333896
+    fp: 753372234d32c085
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    valence: heat
+    riven:
+      bonuses: [damage_to_grineer, magazine_capacity, reload_speed]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: kuva_grattler
+    mode: base
     score: 9.909956457405714
     fp: 6624e7ce46e34d92
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, critical_focus, hollowed_bullets, parallax_scope, primed_combustion_rounds, magma_chamber]
@@ -3464,11 +3511,33 @@ entries:
     valence: magnetic
   - weapon: kuva_grattler
     mode: base
+    score: 9.072321786795529
+    fp: a2b8faedbf35d6a4
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: magnetic
+    riven:
+      bonuses: [damage_to_grineer, magazine_capacity, reload_speed]
+      malus: damage_to_corpus
+      rolls: [1.1, 0.9, 0.9, 0.9]
+  - weapon: kuva_grattler
+    mode: base
     score: 9
     fp: c524d27794786c42
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, critical_focus, containment_breach, hollowed_bullets, parallax_scope, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     valence: magnetic
+  - weapon: kuva_grattler
+    mode: base
+    score: 6.739397117303671
+    fp: 55655e606ce1e7c5
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    valence: heat
+    riven:
+      bonuses: [damage_to_grineer, magazine_capacity, reload_speed]
+      malus: damage_to_corpus
+      rolls: [1.1, 0.9, 0.9, 0.9]
   - weapon: kuva_hek
     mode: base
     score: 8.223834655384788
@@ -4099,6 +4168,13 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
+    score: 49.4080514483487
+    fp: 14d8c536b774c0db
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, gunslinger, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+  - weapon: laetum
+    mode: cycle
     score: 49.329253171925224
     fp: 73d97ebb7073405a
     mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, accelerated_isotope, magnetic_might, primed_convulsion, pistol_pestilence, primed_heated_charge]
@@ -4233,15 +4309,15 @@ entries:
   - weapon: laetum
     mode: cycle
     score: 44.095151197891504
-    fp: 5f16ad577168ac2d
+    fp: 9f43bbb56b4f2185
+    exilus: primed_steady_hands
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
     arcanes: [secondary_encumber]
   - weapon: laetum
     mode: cycle
     score: 44.095151197891504
-    fp: 9f43bbb56b4f2185
-    exilus: primed_steady_hands
+    fp: 5f16ad577168ac2d
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
     arcanes: [secondary_encumber]
@@ -6759,6 +6835,13 @@ entries:
     mods: [galvanized_chamber, primed_shred, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
     evolutions: [sybaris_prime_evo1_incarnon_form, sybaris_prime_well_rehearsed, sybaris_prime_marksmans_hand, sybaris_prime_survivors_edge]
     arcanes: [primary_deadhead]
+  - weapon: synoid_gammacor
+    mode: cycle
+    score: 5.005517992043647
+    fp: f23fe61f4163d633
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, anemic_agility, pistol_elementalist, deep_freeze, pistol_pestilence, primed_heated_charge]
+    evolutions: [synoid_gammacor_evo1_incarnon_form, synoid_gammacor_sages_resolve, synoid_gammacor_extended_volley, synoid_gammacor_critical_parallel]
+    arcanes: [cascadia_flare]
   - weapon: synoid_gammacor
     mode: cycle
     score: 4.860710652659801
