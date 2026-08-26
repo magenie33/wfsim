@@ -28,9 +28,9 @@ rather than a speed:
 
 **It is not faster to compute with, and that is deliberate.** The engine could
 be called natively instead of through wasm, worth perhaps 20–50%, but then the
-shell would depend on `engine/` and every formula change would ship as an
-installer. This project releases too often for that trade: see "two layers"
-below.
+shell would depend on `engine/` and every formula change would mean
+re-downloading the whole 34 MB executable instead of swapping a file. This
+project releases too often for that trade: see "two layers" below.
 
 ## Shape
 
@@ -61,12 +61,20 @@ would happily serve its own cached copy of the old `app.js`.
 | | changes | how it ships | what the reader sees |
 |---|---|---|---|
 | **content** — `app.js`, `pkg/*.wasm`, `img/`, `board.json` | every push | files, swapped by two renames | a notice, then a restart |
-| **shell** — the `.exe` | rarely | NSIS installer | a download, once |
+| **shell** — the `.exe` | rarely | one file, downloaded once | a download |
 
-Everything that moves a number is content. So the path that runs weekly has no
-installer, no UAC prompt and no antivirus product watching a program rewrite
-itself, and the path that has all three runs almost never. **Keeping the shell
-thin is the update strategy**, not tidiness.
+Everything that moves a number is content. So the path that runs weekly is a
+directory swap, and the path that means downloading 34 MB again runs almost
+never. **Keeping the shell thin is the update strategy**, not tidiness.
+
+**There is no installer** (owner, 2026-08-26). The whole app is an
+`include_bytes!` inside the executable, so the file cargo produces is the
+product: double-click to run, delete to uninstall, no registry, no
+administrator prompt. An NSIS bundle was worth 9 MB of compression and a Start
+menu shortcut, and cost the **bundler** — the source of both of this project's
+"builds cleanly, ships the wrong thing" failures, below. Portability changes
+nothing about updates: the updater's target is `%LOCALAPPDATA%`, which has
+nothing to do with where the executable sits.
 
 The page-side updater lives in `app.js` (`mountDesktopUpdater`), not in the
 shell's injected script, for the same reason: an updater compiled into the shell
@@ -116,7 +124,7 @@ any of it does.
 ```
 cargo build --manifest-path desktop/Cargo.toml     # payload is rebuilt from site/
 desktop/target/debug/wfsim-desktop.exe             # run it
-desktop/target/debug/wfsim-desktop.exe --selftest  # 11 assertions, exits non-zero
+desktop/target/debug/wfsim-desktop.exe --selftest  # 12 assertions, exits non-zero
 desktop/target/debug/wfsim-desktop.exe --reset     # forget current/ and unpack again
 ```
 
@@ -132,7 +140,9 @@ rather than keeping a second copy.
 ### Checks
 
 - `--selftest` — wasm engine, page render, SPA fallback, storage, compute
-  lanes, external links (both directions), IPC, and the update channel.
+  lanes, external links (both directions), IPC, the AGPL source offer, and the
+  update channel. Run it on the RELEASE binary before shipping: that is the one
+  being downloaded, and it is built differently from the debug one.
 - `python scripts/check_desktop_update.py` — publishes a baseline, changes one
   file, publishes again, and drives a real client through seeing, fetching and
   applying it, then verifies the change by reading it out of `current/`. Ends
@@ -150,36 +160,43 @@ cargo build --manifest-path desktop/Cargo.toml
 python scripts/release_desktop.py         # blobs + source.zip + signed manifest
 ```
 
-~2.6 s when little changed. Only the shell needs the installer:
+~2.6 s when little changed. Only a change to the SHELL needs a new download:
 
 ```
 python scripts/build_desktop.py           # dist/WFSim.exe + source.zip + notes
 ```
 
-No version number is ever chosen, and none appears in the filename. Windows
-needs a version field for its own upgrade bookkeeping, so it comes from the
-build date; what identifies a build for a bug report is the **commit**, which
-the page footer already shows.
+~52 s, and it is plain `cargo build --release` — no bundler.
 
-The installer is always . A network-drive share link is tied to the
-file, so renaming it invalidates every link already posted — and this is the one
-artifact that almost never needs replacing, since everything after it arrives
-through the update channel. The notes file carries the build date and SHA-256
-for anyone who wants to tell two downloads apart.
+No version number is ever chosen, and none appears in the filename. Windows
+needs a version field for its own bookkeeping, so it comes from the build date;
+what identifies a build for a bug report is the **commit**, which the page
+footer already shows.
+
+**The download is always `WFSim.exe`, and the notes carry no date.** A share
+link is tied to the filename, so renaming invalidates every link already
+posted. And a date would say something untrue: a file stamped August, read in
+December, looks stale, when in fact any copy updates itself to current on its
+first run. The SHA-256 tells two builds apart, and does it precisely.
 
 ### The network drive
 
-`dist/` holds the installer, `source.zip` (AGPL requires the source to be
-offered wherever the binary is) and `安装说明.txt` with the SHA-256 and the
-SmartScreen instructions. Upload once. It is a **download link, not an update
-channel** — a network drive has no stable direct URL, and automated downloads
-would not count as real traffic anyway.
+`dist/` holds `WFSim.exe`, `source.zip` (AGPL requires the source to be offered
+wherever the binary is) and `使用说明.txt`, which says which of the two to
+download — **specifically that the source archive is not something a player
+needs** — plus the SHA-256 and what to do about SmartScreen.
+
+Upload once. It is a **download link, not an update channel** — a network drive
+has no stable direct URL, and automated downloads would not count as real
+traffic anyway.
 
 ## Three ways this builds cleanly and ships the wrong thing
 
 All three were found in one afternoon, all three produced a zero exit code, and
 none of them is visible in a log. They are why `build_desktop.py` refuses an
-installer under 20 MB and why `check_desktop_probes.mjs` exists.
+executable under 20 MB and why `check_desktop_probes.mjs` exists. Two of the
+three were the BUNDLER, which is no longer used — dropping the installer
+dropped them with it.
 
 **The bundler picks a binary, and picks the wrong one.** With two `[[bin]]`
 targets in the crate, Tauri bundled `updatekit` — the signing tool — renamed it
