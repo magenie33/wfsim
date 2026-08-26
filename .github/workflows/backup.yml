@@ -1,0 +1,157 @@
+# THE LIBRARY IS THE ONLY IRREPLACEABLE THING HERE, AND IT HAD ONE COPY.
+#
+# The boards are derived from it, the site is generated, the code is in git —
+# the library is what players sent, and until this workflow it lived in exactly
+# one Cloudflare KV namespace plus whatever `submissions` artifact had not
+# expired yet (owner, 2026-08-26).
+#
+# WHAT THIS IS NOT: it is not the tripwire. `guard_shrink` in
+# `scripts/fetch_submissions.sh` refuses to publish a board from a short list,
+# and that is the protection that works while nobody is watching — a backup
+# restores AFTER the damage. Both, because they fail differently: a tripwire
+# cannot help if Cloudflare loses the namespace, and a backup cannot help if
+# nobody notices for a month.
+#
+# IT FETCHES COLD, ON PURPOSE. The board pipeline caches the library between
+# runs; this restores no cache, so it reads every key straight out of KV. A
+# backup that shares its input with the thing it is backing up shares its
+# failure mode, and the whole point is to be the copy that survives a bug in
+# the other path. It costs ~7.5 minutes once a day.
+#
+# TWO LAYERS, because they expire differently:
+#
+#   the `library-backups` branch   forever, versioned by git, ~4 MB a year
+#   the artifact                   90 days, and restorable without a clone
+#
+# THE BRANCH IS CHEAP BECAUSE THE FILE IS SORTED. One record per line, keys
+# sorted, object keys canonicalised — so a day's change is ~35 added lines and
+# git stores the delta. Measured: 692 KB for the first snapshot and ~10 KB a day
+# after it, against 247 MB if each day were kept whole.
+#
+# THE TOKEN HERE ONLY READS. Restoring needs a token with KV *Write*, which is
+# not a repo secret and is meant to be created for a restore and revoked after
+# — see `scripts/restore_library.sh`, which is the other half of this and the
+# reason this is a backup rather than a hope.
+name: backup
+
+on:
+  schedule:
+    # Once a day, well away from the board's :00/:20/:40 so the two are never
+    # reading KV at the same time.
+    - cron: "35 4 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # NOT CONFIGURED IS NOT A FAILURE — the same rule the board job follows.
+      - name: is the board wired up?
+        id: wired
+        env:
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          if [ -n "$CF_ACCOUNT" ]; then echo "yes=true" >> "$GITHUB_OUTPUT";
+          else echo "yes=false" >> "$GITHUB_OUTPUT"; echo "::notice::board storage not configured — see docs/BOARD.md"; fi
+
+      # NO CACHE IS RESTORED, so `library.json` does not exist and the script
+      # takes its cold path: every key, straight from KV.
+      - name: read the whole library, cold
+        if: steps.wired.outputs.yes == 'true'
+        env:
+          CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_NAMESPACE: ${{ secrets.CF_SUBMISSIONS_NAMESPACE_ID }}
+          CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: bash scripts/fetch_submissions.sh
+
+      # THE SNAPSHOT CARRIES ITS KEYS. `submissions.json` is the values only —
+      # enough to score, not enough to restore, because a restore has to put
+      # each record back under the key it came from. Recomputing `identity()`
+      # in a restore script would be a second implementation of the one thing
+      # that must not drift, so the key travels in the file instead.
+      - name: the snapshot
+        if: steps.wired.outputs.yes == 'true'
+        id: snap
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          jq -Sc 'to_entries[] | {k: .key, v: .value}' library.json \
+            | LC_ALL=C sort > out/library.ndjson
+          n=$(wc -l < out/library.ndjson | tr -d ' ')
+          echo "count=$n" >> "$GITHUB_OUTPUT"
+          echo "snapshot: $n records, $(wc -c < out/library.ndjson | tr -d ' ') bytes"
+
+      - name: keep it where a restore can reach it without a clone
+        if: steps.wired.outputs.yes == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: library-${{ steps.snap.outputs.count }}
+          path: out/library.ndjson
+          retention-days: 90
+
+      # THE DURABLE HALF. An orphan branch, checked out into its own directory
+      # so nothing here can touch the working tree — a backup job that ran
+      # `rm -rf` in a checkout would be the funniest possible way to lose data.
+      - name: commit the snapshot
+        if: steps.wired.outputs.yes == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COUNT: ${{ steps.snap.outputs.count }}
+        run: |
+          set -euo pipefail
+          url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git clone --quiet --depth 1 --branch library-backups "$url" backup 2>/dev/null; then
+            prev=$(wc -l < backup/library.ndjson 2>/dev/null | tr -d ' ' || echo 0)
+          else
+            mkdir backup && (cd backup && git init --quiet -b library-backups)
+            prev=0
+          fi
+          prev=${prev:-0}
+
+          # THE SAME TRIPWIRE AS THE PIPELINE, for the same reason and against a
+          # different clock: a short read must not overwrite a good snapshot. A
+          # year of expiry can shrink the library slowly; ten percent between
+          # two nights is a bug, not attrition.
+          floor=$(( prev * 9 / 10 ))
+          if [ "$COUNT" -lt "$floor" ]; then
+            echo "::error::snapshot has $COUNT records against $prev yesterday — refusing to overwrite."
+            exit 1
+          fi
+
+          cp out/library.ndjson backup/library.ndjson
+          cd backup
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # WRITTEN LINE BY LINE, not with a heredoc: a heredoc body sits at
+          # column 0 and that ends the `run: |` block scalar it is inside, so
+          # the yaml stops parsing several lines later at whatever character
+          # happens to be first. It fails as a workflow-wide syntax error a long
+          # way from the cause.
+          {
+            echo "# The library, nightly"
+            echo
+            echo 'One record per line, sorted by key: {"k": "<identity>", "v": {<the record>}}'
+            echo
+            echo "Written by .github/workflows/backup.yml and read by"
+            echo "scripts/restore_library.sh, which puts it back. Nothing else should"
+            echo "depend on it: the live library is the Cloudflare KV namespace, and"
+            echo "the board is generated from that."
+            echo
+            echo "It is sorted so git stores a night as a delta rather than as a file."
+          } > README.md
+          git add library.ndjson README.md
+          if git diff --cached --quiet; then
+            echo "library unchanged since the last snapshot — nothing to commit"
+            exit 0
+          fi
+          git commit --quiet -m "library: $COUNT records $(date -u +'%Y-%m-%d')"
+          git push --quiet "$url" library-backups
+          echo "committed $COUNT records (was $prev)"

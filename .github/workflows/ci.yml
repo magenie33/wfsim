@@ -60,3 +60,8 @@ jobs:
       # and nothing anywhere saying so. Stub `curl`, no network, milliseconds.
       - name: The library is fetched once and then only added to
         run: bash scripts/fetch_submissions.sh --self-test
+      # …AND IT CAN BE PUT BACK. A backup nobody has restored is a hope: the
+      # restore runs once, under pressure, by someone who has just lost data,
+      # which is the worst moment to find a typo in it. Stub `curl`, no network.
+      - name: The library can be put back
+        run: bash scripts/restore_library.sh --self-test

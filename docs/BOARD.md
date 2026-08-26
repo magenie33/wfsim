@@ -781,6 +781,70 @@ seen** is accepted, reaches storage under its own name, and sits BESIDE the same
 build's row on another ruler rather than on top of it — the identity key carries
 the benchmark, so two rulers scoring one build are two records.
 
+## The library has a copy, and the copy has a restore (2026-08-26)
+
+Until this, the one irreplaceable thing here lived in exactly one Cloudflare KV
+namespace. The boards are derived from it, the site is generated, the code is in
+git — the library is what players sent, and there was no second copy of it.
+
+`.github/workflows/backup.yml` runs nightly and writes two:
+
+| where | for how long | reach it with |
+| --- | --- | --- |
+| the `library-backups` branch | for ever, versioned by git | `git clone --branch library-backups` |
+| a run artifact | 90 days | `gh run download --name library-<n>` |
+
+**IT FETCHES COLD.** The board pipeline caches the library between runs; the
+backup restores no cache and reads every key straight out of KV, because a copy
+that shares its input with the thing it is copying shares its failure mode. It
+costs about 7.5 minutes once a day.
+
+**THE BRANCH IS CHEAP BECAUSE THE FILE IS SORTED.** One record per line
+(`{"k": "<identity>", "v": {…}}`), keys sorted, object keys canonicalised — so a
+night's change is ~35 added lines and git stores the delta. Measured: 692 KB for
+the first snapshot and about 10 KB a night after it, against 247 MB a year if
+each night were kept whole.
+
+**THE SNAPSHOT CARRIES ITS KEYS**, which `submissions.json` does not — that file
+is the values, which is enough to score and not enough to restore. Recomputing
+`identity()` in a restore script would be a second implementation of the one
+thing that must not drift.
+
+### Putting it back
+
+`scripts/restore_library.sh` is the other half, and it is the reason this is a
+backup rather than a hope: **a backup nobody has restored is a hope**. It is DRY
+BY DEFAULT and `--self-test` runs the whole path against a stub, in CI, so the
+day it is needed is not the first day it has ever run.
+
+```sh
+scripts/restore_library.sh library.ndjson            # says what it WOULD write
+CF_ACCOUNT=… CF_NAMESPACE=… CF_TOKEN=<a WRITE token>   scripts/restore_library.sh library.ndjson --write
+```
+
+**THE TOKEN IS NOT THE REPO'S.** `CF_API_TOKEN` grants *KV: Read* and nothing
+else, which is why a compromised repo cannot touch the library. A restore needs
+*Write*, and the right way is to create that token, use it, and revoke it.
+
+**IT IS ADDITIVE, NEVER DESTRUCTIVE.** It writes the records in the file and
+touches nothing else, so restoring an old snapshot cannot delete newer
+submissions — which is the failure a restore is most likely to cause and the one
+nobody thinks about while restoring.
+
+**AND IT WRITES IN BULK**, which is the one place KV is generous: there is no
+bulk read (which is why a cold fetch costs 7.5 minutes) but there is a bulk
+write of up to 10,000 pairs, so 2,474 records go back in one call.
+
+### Three things fail differently, which is why there are three
+
+- `guard_shrink` (the **tripwire**) refuses to publish a board from a short
+  list. It is the only one that works while nobody is watching, and it cannot
+  help if Cloudflare loses the namespace.
+- The **backup** can, and cannot help if nobody notices for a month.
+- The **board yaml in git** is a partial copy that has always existed — every
+  PUBLISHED row carries its build, which is 2,185 of 2,474. What it misses is
+  the builds under the 50% floor.
+
 ## What it costs as it grows, and where it moves next (2026-08-26)
 
 The board is the thing nothing else in this space has, so the question is not
