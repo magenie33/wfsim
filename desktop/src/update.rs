@@ -157,6 +157,21 @@ fn sources(local: &Manifest) -> Vec<String> {
     }
 }
 
+/// Where to fetch the source archive for what this client is RUNNING.
+///
+/// AGPL asks for the source corresponding to the binary being conveyed, and
+/// this client conveys itself a new one every time it updates — so the answer
+/// moves with `current/`, and a link to "the latest source" would be the wrong
+/// tree for anyone who has not updated yet. `release_desktop.py` keeps every
+/// version's archive at `src/<version>/source.zip` for exactly this.
+pub fn source_url(local: &Manifest) -> String {
+    let base = sources(local)
+        .first()
+        .map(|b| b.trim_end_matches('/').to_string())
+        .unwrap_or_default();
+    format!("{base}/src/{}/source.zip", local.version)
+}
+
 /// Fetch and verify the remote manifest, from the first source that answers.
 fn remote_manifest(local: &Manifest) -> Result<Manifest, String> {
     let mut last = String::from("no sources configured");

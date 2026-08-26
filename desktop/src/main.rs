@@ -147,6 +147,14 @@ fn update_status() -> update::Status {
     update::status()
 }
 
+/// The source archive matching what this client is running — see
+/// `update::source_url`. AGPL asks for the source of the binary being conveyed,
+/// and this one conveys itself a new binary on every update.
+#[tauri::command]
+fn source_url(state: tauri::State<Arc<Layout>>) -> String {
+    update::source_url(&state.manifest())
+}
+
 /// Swap `next/` in. The PAGE reloads itself afterwards rather than the shell
 /// restarting: only the page knows whether the reader is halfway through
 /// something, and a reload is cheap where a restart is a window disappearing.
@@ -246,6 +254,18 @@ const SELFTEST_PROBE: &str = r#"
         const v = await window.__TAURI_INTERNALS__.invoke('app_version');
         check('ipc + version', /^[0-9a-f]{6,}$/.test(v) || v === 'nogit', v);
       } catch (e) { check('ipc + version', false, 'invoke failed: ' + e.message); }
+      // THE SOURCE OFFER IS A LICENCE OBLIGATION, so it is asserted rather than
+      // documented. It must name the version actually running — this client
+      // conveys itself a new binary on every update, and a link to "latest"
+      // would be the wrong tree for anyone who has not updated yet — and it has
+      // to be ON THE PAGE, because an archive nobody can reach is not offered.
+      try {
+        const su = await window.__TAURI_INTERNALS__.invoke('source_url');
+        const v = await window.__TAURI_INTERNALS__.invoke('app_version');
+        const anchor = [...document.querySelectorAll('a')].some((x) => x.href === su);
+        check('source offer', !!su && su.includes(v) && su.endsWith('source.zip') && anchor,
+              (anchor ? 'linked: ' : 'NOT ON THE PAGE: ') + su);
+      } catch (e) { check('source offer', false, e.message); }
       // THE UPDATE CHANNEL, END TO END: reach a source, verify the manifest's
       // signature against the key built into this binary, parse it, and compare
       // it with what is on disk. Any of those failing is the same symptom for a
@@ -545,7 +565,7 @@ TIMEOUT: the page never reported after {secs}s
         .manage(layout)
         .invoke_handler(tauri::generate_handler![
             mark_healthy, app_version, open_external,
-            update_check, update_download, update_status, update_apply
+            update_check, update_download, update_status, update_apply, source_url
         ])
         .register_uri_scheme_protocol("wfsim", move |_ctx, req| protocol::serve(&root, &req))
         .setup(move |app| {

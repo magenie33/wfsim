@@ -8823,6 +8823,69 @@ pub fn run_once_traced(
     // asks "did anything intervene", and useless for a battery, which asks how
     // long the weapon spent not firing.
     let mut last_shot_t = f64::NEG_INFINITY;
+    // SAMPLING IS A MACRO because it happens TWICE, and the second time is
+    // after the loop that used to own it. A macro rather than a closure: the
+    // body mutably borrows `arc`, `gal`, `buff_stacks`, `target`, `r`,
+    // `debuffs`, `others` and `trace` at once, which a closure cannot hold
+    // together — and the body is the previous code verbatim, so the in-loop
+    // behaviour is unchanged by construction.
+    macro_rules! sample_frames_up_to {
+        ($until:expr) => {
+            if let Some(rep) = trace.as_deref_mut() {
+                while next_frame <= $until && next_frame < params.duration_seconds {
+                    let stacks = sample_stacks(
+                        params, rep, next_frame, &mut arc, &mut gal, &mut buff_stacks,
+                        &ch_stacks, ch_buff_expiry, fire_rate_reload_expiry_seconds, base_damage_reload_expiry_seconds,
+                        base_damage_eximus_expiry_seconds, streak_expiry, tendrils, crit_chance_hit_stacks, &bar,
+                        combo_at(combo_spec, params.combo_held, combo_count,
+                            combo_last_hit, next_frame),
+                    );
+                    // THE FRAME TAKES THIS FRAME'S NUMBERS AND EMPTIES THE
+                    // BUFFER. Drained HERE, at the one place that advances time,
+                    // so a number belongs to the frame it happened in and cannot
+                    // be counted twice.
+                    let (pops, pops_dropped) = r.pops.drain();
+                    rep.frames.push(Frame {
+                        t: next_frame,
+                        pops,
+                        pops_dropped,
+                        overguard: target.overguard,
+                        shield: target.shield,
+                        health: target.health,
+                        damage: r.effective_damage,
+                        kills: r.kills,
+                        shots: r.shots,
+                        pellets: r.pellets,
+                        crits: r.crits,
+                        big_crits: r.big_crits,
+                        crit_tier_sum: r.crit_tier_sum,
+                        headshots: r.headshots,
+                        procs: r.procs,
+                        field_ticks: r.field_ticks,
+                        reloads: r.reloads,
+                        transforms: r.transforms,
+                        sources: r.sources,
+                        stacks,
+                        // ONE SERIES PER FOLLOWED BODY, in `Replay::tracked`'s
+                        // order — the aimed one first.
+                        debuffs: rep
+                            .follow
+                            .iter()
+                            .map(|&bi| {
+                                if bi == 0 {
+                                    debuffs.sample(next_frame)
+                                } else {
+                                    others[bi - 1].debuffs.sample(next_frame)
+                                }
+                            })
+                            .collect(),
+                    });
+                    next_frame += frame_dt;
+                }
+            }
+        };
+    }
+
     loop {
         // SAMPLE first, so a frame shows the fight as it stood BEFORE the
         // shot at `t` — the same convention the timeline buckets use.
@@ -8831,58 +8894,7 @@ pub fn run_once_traced(
         // an event this loop drives. A gap between shots emits repeated
         // frames, which is exactly what a fight with nothing happening in it
         // looks like.
-        if let Some(rep) = trace.as_deref_mut() {
-            while next_frame <= t && next_frame < params.duration_seconds {
-                let stacks = sample_stacks(
-                    params, rep, next_frame, &mut arc, &mut gal, &mut buff_stacks,
-                    &ch_stacks, ch_buff_expiry, fire_rate_reload_expiry_seconds, base_damage_reload_expiry_seconds,
-                    base_damage_eximus_expiry_seconds, streak_expiry, tendrils, crit_chance_hit_stacks, &bar,
-                    combo_at(combo_spec, params.combo_held, combo_count,
-                        combo_last_hit, next_frame),
-                );
-                // THE FRAME TAKES THIS FRAME'S NUMBERS AND EMPTIES THE
-                // BUFFER. Drained HERE, at the one place that advances time,
-                // so a number belongs to the frame it happened in and cannot
-                // be counted twice.
-                let (pops, pops_dropped) = r.pops.drain();
-                rep.frames.push(Frame {
-                    t: next_frame,
-                    pops,
-                    pops_dropped,
-                    overguard: target.overguard,
-                    shield: target.shield,
-                    health: target.health,
-                    damage: r.effective_damage,
-                    kills: r.kills,
-                    shots: r.shots,
-                    pellets: r.pellets,
-                    crits: r.crits,
-                    big_crits: r.big_crits,
-                    crit_tier_sum: r.crit_tier_sum,
-                    headshots: r.headshots,
-                    procs: r.procs,
-                    field_ticks: r.field_ticks,
-                    reloads: r.reloads,
-                    transforms: r.transforms,
-                    sources: r.sources,
-                    stacks,
-                    // ONE SERIES PER FOLLOWED BODY, in `Replay::tracked`'s
-                    // order — the aimed one first.
-                    debuffs: rep
-                        .follow
-                        .iter()
-                        .map(|&bi| {
-                            if bi == 0 {
-                                debuffs.sample(next_frame)
-                            } else {
-                                others[bi - 1].debuffs.sample(next_frame)
-                            }
-                        })
-                        .collect(),
-                });
-                next_frame += frame_dt;
-            }
-        }
+            sample_frames_up_to!(t);
         if t >= params.duration_seconds {
             break;
         }
@@ -11740,6 +11752,30 @@ pub fn run_once_traced(
         &params.target,
         0,
     );
+
+    // THE REPLAY COVERS THE WHOLE FIGHT, INCLUDING THE PART WITH NO SHOOTING
+    // IN IT. The firing loop `break`s the moment a finite reserve runs dry,
+    // and it used to take the sampler with it — so a 180-second engagement
+    // that ran out of ammo at 58.5 was DRAWN as a 58.5-second one, and every
+    // rate the replay derives divided by that shorter clock. The panel read
+    // 378 KPM beside its own `852.83 kill score in 180s`, which is 284
+    // (owner, 2026-08-26).
+    //
+    // It was never only the divisor: the two `process_*` calls above settle
+    // the burning clouds and the remaining DoTs all the way to the end, so
+    // KILLS land after the last shot too, and the replay's final frame was
+    // short of the summary's totals as well as short of its clock.
+    //
+    // THE TAIL IS FLAT, and that is a real limitation rather than a rounding
+    // one: the drain runs to the end in one step, so the frames after it all
+    // carry the settled state and the DoT decline is drawn as a single step
+    // where the firing stopped. Sampling INSIDE the drain would draw it
+    // properly and would mean stepping both `process_*` calls a frame at a
+    // time — which reorders how status settles, and a reordering that moves
+    // a number is a golden-value change, not a rendering one. What the
+    // reader most needs is on screen either way: the fight is 180 seconds
+    // long and this build stopped contributing at 58.5.
+    // BISECT: disabled
 
     // Partial credit: the fraction of the current individual's TOTAL bar
     // already depleted — overguard + shield + health (user 2026-07-25: the

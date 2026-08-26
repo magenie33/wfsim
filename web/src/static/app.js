@@ -16377,6 +16377,25 @@ function mountDesktopUpdater() {
     }
   });
 
+  // THE SOURCE LINK IS PART OF SHIPPING THIS AT ALL. AGPL asks for the source
+  // corresponding to the binary being conveyed, and this client conveys itself
+  // a new one on every update — so the link has to name the version in the
+  // footer beside it, not "the latest", which is the wrong tree for anyone who
+  // has not updated yet. The archive for every version is kept on the same
+  // bucket the update came from, so this is the same "same place" the licence
+  // means. It goes next to the build stamp because that is where a reader
+  // already looks to find out what they are running.
+  invoke("source_url").then((url) => {
+    const stamp = document.getElementById("build-stamp");
+    if (!stamp || !url) return;
+    const a = document.createElement("a");
+    a.href = url;
+    a.className = "wl";
+    a.textContent = tr("source");
+    a.title = "AGPL-3.0";
+    stamp.after(document.createTextNode(" · "), a);
+  }).catch(() => { /* an older shell without the command still runs */ });
+
   const look = async () => { try { await invoke("update_check"); poll(); } catch (_) { /* offline is normal */ } };
   // Not at boot: the first seconds belong to the page the reader opened.
   setTimeout(look, 8000);

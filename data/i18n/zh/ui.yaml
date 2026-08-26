@@ -447,6 +447,7 @@ ui:
   "Update failed": "更新失败"
   "Update ready — restart to finish": "更新已就绪，重启后生效"
   "Updating": "正在更新"
+  "source": "源码"
   "the launcher-exclusive Adhesive Blast is outside the pools this roster loads — it sticks the rocket to what it hits, which changes where the explosion goes off and is a placement this arena has no room to be wrong about": "发射器专属的**粘附爆破**不在本 roster 加载的 mod 池里 — 它把火箭黏在命中物上，这会改变爆炸发生的**位置**，而位置是本战场输不起的一个变量"
   "No matches": 无匹配
   "No tiers, no perks, no supporter badge. A donation is a thank-you, not a purchase.":
