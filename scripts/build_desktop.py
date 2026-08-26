@@ -34,6 +34,7 @@ that is by design: see desktop/src/update.rs.
 """
 import datetime
 import hashlib
+import os
 import json
 import pathlib
 import shutil
@@ -43,7 +44,22 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DESKTOP = ROOT / "desktop"
 DIST = ROOT / "dist"
-CARGO = pathlib.Path.home() / ".cargo" / "bin" / "cargo.exe"
+
+
+def cargo() -> str:
+    """`cargo` from PATH, falling back to the rustup default location.
+
+    On this machine cargo is installed but not on PATH; on a CI runner the
+    toolchain action puts it on PATH and nowhere predictable. Asking PATH first
+    covers both without either needing to know about the other.
+    """
+    found = shutil.which("cargo")
+    if found:
+        return found
+    local = pathlib.Path.home() / ".cargo" / "bin" / ("cargo.exe" if os.name == "nt" else "cargo")
+    if local.exists():
+        return str(local)
+    sys.exit("cargo not found on PATH or in ~/.cargo/bin")
 
 
 def run(*cmd: str, **kw) -> subprocess.CompletedProcess:
@@ -72,7 +88,7 @@ def main() -> None:
         # Plain cargo. `tauri build` would bundle an installer we no longer
         # ship, and its post-build patching step is what silently truncated
         # this binary once already.
-        run(str(CARGO), "build", "--release", "--manifest-path",
+        run(cargo(), "build", "--release", "--manifest-path",
             str(DESKTOP / "Cargo.toml"), "--bin", "wfsim-desktop")
     finally:
         conf_path.write_text(original, encoding="utf-8")

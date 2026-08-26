@@ -1,0 +1,97 @@
+# Publish the desktop client to a GitHub Release.
+#
+# WHY THIS EXISTS ALONGSIDE THE NETWORK DRIVE. The Quark link is the download
+# for the players this project is mostly for, and it is the right one for them:
+# fast, unblocked, and where they already are. This is the other three things a
+# network drive cannot do — reach people outside mainland China, keep a history
+# of what was released (a share link only ever holds "the latest", so there is
+# nothing to fall back to when a build turns out bad), and serve as a third
+# update source that does not route through China at all.
+#
+# MANUALLY TRIGGERED, AND THERE IS NO VERSION TO TYPE. The tag is the date plus
+# the commit, which is a fact rather than a decision — the same rule the footer
+# stamp and the notes file follow. Two releases on one day differ by their
+# commit, so the tag stays unique without anyone counting.
+#
+# IT DOES NOT REBUILD `site/`. That directory is committed — it is the artefact
+# Cloudflare deploys — so the client's payload comes straight out of the
+# checkout. A release is one `cargo build`, not the whole wasm pipeline.
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          # keep in sync with mise.toml and ci.yml
+          toolchain: "1.97.1"
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          # The shell is its own workspace; the main one is not built here.
+          workspaces: desktop
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build the client
+        shell: bash
+        run: python scripts/build_desktop.py
+
+      # THE BINARY CHECKS ITSELF BEFORE IT IS PUBLISHED. `build_desktop.py`
+      # already refuses anything under 20 MB — the shape of a build whose
+      # payload was optimised away — but that only rules out the emptiest
+      # failure. This runs the app: wasm engine, page render, storage, the
+      # board endpoints, the source offer. A release nobody ran is a release
+      # nobody has seen fail.
+      - name: The shipped binary passes its own checks
+        shell: bash
+        run: ./dist/WFSim.exe --selftest --reset
+
+      - name: Collect the release notes
+        id: notes
+        shell: bash
+        run: |
+          SHA=$(sha256sum dist/WFSim.exe | cut -d' ' -f1)
+          TAG="$(date -u +%Y-%m-%d)-$(git rev-parse --short=7 HEAD)"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Release $TAG, sha256 $SHA"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.notes.outputs.tag }}
+          name: WFSim ${{ steps.notes.outputs.tag }}
+          files: |
+            dist/WFSim.exe
+            dist/source.zip
+          body: |
+            **Download `WFSim.exe` and run it.** No installer, no unpacking —
+            the whole app is inside the executable. It updates itself after
+            that, so this download is a starting point rather than something to
+            come back for.
+
+            Windows will show its blue "protected your PC" notice on first run:
+            this build is not code-signed (a certificate costs more per year
+            than a free tool justifies). Choose **More info → Run anyway**.
+
+            ```
+            sha256  ${{ steps.notes.outputs.sha }}
+            ```
+
+            `source.zip` is the corresponding source AGPL-3.0 asks to be offered
+            alongside the binary. Nothing needs it to run the app.
+
+            Also on Quark (faster inside mainland China):
+            https://pan.quark.cn/s/dc8fe9046d6a
+            · Web version: https://wfsim.app
