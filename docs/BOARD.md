@@ -752,3 +752,100 @@ it passes the path straight to the binary, which treats an unreadable prior as
 seen** is accepted, reaches storage under its own name, and sits BESIDE the same
 build's row on another ruler rather than on top of it — the identity key carries
 the benchmark, so two rulers scoring one build are two records.
+
+## What it costs as it grows, and where it moves next (2026-08-26)
+
+The board is the thing nothing else in this space has, so the question is not
+whether it survives more users but what it costs per user and which of those
+costs are the wrong SHAPE. The rule the whole pipeline is measured against:
+
+> **Every step's cost should be proportional to what CHANGED, not to what
+> EXISTS.**
+
+Scoring has obeyed it since the per-row fingerprint (2026-08-25): a data change
+costs the rows that read the file that moved. Reading did not, and that is what
+made the board fall behind on 2026-08-26.
+
+### What was fixed, and what it was
+
+| | before | after |
+| --- | --- | --- |
+| read the library out of KV | **9 min**, every run, O(store) | seconds, O(new) — `scripts/fetch_submissions.sh` caches it between runs |
+| a scheduled run behind a full rescore | cancelled by its successor | its own concurrency group, keyed by trigger |
+| a truncated library | published a valid board with rows missing | refused — `guard_shrink`, floor at 90% of the last board's `submissions:` |
+| the only copy of the library | one KV namespace | that, plus 30 days of rolling `submissions` artifacts |
+
+KV has no bulk read and Cloudflare's API allows 1200 requests per five minutes —
+4 a second, which is what the old loop was already doing. So **fetching faster
+was never available; fetching fewer was.** The licence to cache a value is that
+the KEY DETERMINES IT: the key is `identity(rec)`, and the scorer reads nothing
+off a record that is not an identity axis (not `at`, not `benchmark`).
+
+### The next wall, named in advance
+
+1. **`submissions` is one unsharded job.** With the cache it is seconds on a
+   warm run — but a cold one (a lost cache, a new namespace) still pays the full
+   O(store) price, and that price grows with the library. It is bounded by the
+   API's 4/s, so at 20,000 builds a cold start is 80 minutes.
+2. **The board file holds every row.** 2,185 today across three rulers. It is
+   committed on every update, so the repo grows with the community, and `site/`
+   is regenerated and redeployed with it.
+3. **Full rescores are O(store) and unavoidable** — a code change really does
+   change every number. 128 shards buys a constant factor; the ceiling is
+   GitHub's 256-job matrix.
+
+### The order to move in, when each becomes the binding constraint
+
+Each step is independently useful and none of them requires the next.
+
+**A. Shard by COST, not by index.** *(cheap, do it first)* `idx % shards` assumes
+rows cost the same; measured at 32 shards they ranged 9.3 to 52.9 minutes — a
+5.7x spread, because a group-clear row reaches 361 bodies. Deal the rows out
+longest-first (LPT scheduling) and the worst shard falls to near the mean. Ten
+lines in the scorer, halves the full-rescore wall clock, costs nothing.
+
+**B. Persist the SCORES, not just the board.** *(the architectural one)* A score
+keyed by `(identity, ruler, data fingerprint)` is a fact that never expires. Put
+those in **Cloudflare D1** — SQLite, free tier 5 GB and 5 M row-reads a day,
+which is orders of magnitude more than this needs — and three things become
+true at once: a rescore is a background BACKFILL rather than a blocking rebuild,
+the board file becomes a cheap projection (read, sort, take the top N per weapon
+per mode per ruler — seconds), and a run that dies loses nothing it had already
+computed. This is the step that removes the whole class of problem, because
+after it no ordinary run is O(store) at all.
+
+**C. Publish a VIEW, not the library.** Once B is done the board file can hold
+the top N per (weapon, mode, ruler) instead of every row, and the deeper ranks
+the builder's picker shows can be fetched on demand. The file stays a static
+asset on the CDN — fast, free, and unblockable from where the players are, which
+is the property worth protecting above all the others.
+
+**D. Move the queue, keep the compute.** The compute is not the problem:
+**GitHub Actions is free and unmetered on a public repo**, which is a better
+deal than any paid runner, and the engine is a Rust binary that runs anywhere.
+What Actions is bad at is being a QUEUE — no backpressure, cancellation
+discards finished work, a 256-job ceiling, ~15 minutes of scheduler slip. So
+the move is a real queue in front of it (**Cloudflare Queues**, 1 M operations a
+month free, $0.40/M after) with Actions draining it, rather than replacing the
+runners.
+
+**E. A persistent scorer, only if D is not enough.** In rough order of cost:
+**Oracle Cloud Always Free** (4 ARM cores, 24 GB — genuinely free, genuinely
+enough), then a **€4/month Hetzner** box, then Fly.io. A long-lived process
+removes the per-run 30 s of checkout and cache restore that 128 shards pay 128
+times, and it can hold the library in memory instead of fetching it at all.
+Nothing above needs this; it is written down so the option is known rather than
+discovered under pressure.
+
+### What must not change
+
+- **The board stays a static file on the CDN.** It is committed to the repo and
+  served from the edge, which is what makes it fast and unblockable. Moving it
+  behind a service would trade the thing that makes it good for a slow path and
+  a second thing that can fail (owner, 2026-08-25).
+- **The store keeps nothing about submitters.** No IP, no token, no time finer
+  than the day. Any service this moves to inherits that, and a queue or a
+  database that would record more is the wrong service.
+- **The library is the only irreplaceable thing.** Boards are derived, the site
+  is generated, the code is in git. Anything that could truncate it needs a
+  tripwire before it needs a backup.

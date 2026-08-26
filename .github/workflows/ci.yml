@@ -54,3 +54,9 @@ jobs:
       # submitter is told "sent". See docs/BOARD.md.
       - name: The board's submission endpoint keeps the whole build
         run: node scripts/check_board_submit.mjs
+      # …AND THE OTHER END OF THE SAME PIPE: what reads those records back out
+      # of KV. It caches the library between runs, so its failure mode is a
+      # SHORT LIST — which publishes a perfectly valid board with rows missing
+      # and nothing anywhere saying so. Stub `curl`, no network, milliseconds.
+      - name: The library is fetched once and then only added to
+        run: bash scripts/fetch_submissions.sh --self-test

@@ -57,10 +57,22 @@ on:
         type: boolean
         default: false
 
-# One at a time. Two runs committing the same generated file is a conflict with
-# no meaning — the later run's numbers are simply the current ones.
+# ONE AT A TIME **PER TRIGGER**, which is two workloads and always was. A
+# scheduled run scores what is NEW — a handful of builds, reusing every stored
+# score — while a push that moves `engine/` makes every row stale and scores the
+# whole library. They differ by three orders of magnitude and they shared one
+# concurrency group, so the cheap one queued behind the expensive one and was
+# then thrown away: GitHub keeps a single PENDING run per group, so each
+# scheduled trigger cancelled the one before it and the board moved about once
+# an hour instead of three times (owner, 2026-08-26).
+#
+# Splitting the group is safe because `publish` was already written for it — it
+# takes whatever `main` is now, writes the generated files on top and retries
+# three times. Two runs landing a board is last-writer-wins BY DESIGN: there is
+# no sense in which two versions of a generated file both hold something worth
+# keeping, which is the same reasoning that made it refuse to rebase.
 concurrency:
-  group: board
+  group: board-${{ github.event_name }}
   cancel-in-progress: false
 
 env:
@@ -170,47 +182,59 @@ jobs:
           if [ -n "$CF_ACCOUNT" ]; then echo "yes=true" >> "$GITHUB_OUTPUT";
           else echo "yes=false" >> "$GITHUB_OUTPUT"; echo "::notice::board storage not configured — see docs/BOARD.md"; fi
 
-      # EVERY stored submission, every time. The endpoint keys by build identity
-      # so the list is already deduplicated — a hundred players who arrived at
-      # one build are one key.
+      # THE LIBRARY IS FETCHED ONCE AND THEN ONLY ADDED TO. `restore-keys` takes
+      # the newest cache whatever run wrote it, while the `key` carries this run
+      # id so every run SAVES one — which is what keeps the chain moving. A miss
+      # costs exactly what every run used to cost, so nothing depends on it.
+      - name: restore the library
+        if: steps.wired.outputs.yes == 'true'
+        uses: actions/cache@v4
+        with:
+          path: library.json
+          key: board-library-${{ github.run_id }}
+          restore-keys: board-library-
+
+      # WHAT THE LAST BOARD WAS BUILT FROM, as the floor this run may not fall
+      # under. The boards carry `submissions: N`; the largest is the best
+      # estimate of the library's real size, and 90% of it is the tripwire —
+      # see `guard_shrink` in the script for why a short list is the danger.
+      - name: what the last board was built from
+        if: steps.wired.outputs.yes == 'true'
+        id: floor
+        run: |
+          set -euo pipefail
+          n=$(grep -h '^submissions:' data/benchmarks/boards/*.yaml 2>/dev/null \
+                | awk '{print $2}' | sort -n | tail -1 || echo 0)
+          n=${n:-0}
+          echo "floor=$(( n * 9 / 10 ))" >> "$GITHUB_OUTPUT"
+          echo "last board was built from $n submissions"
+
+      # EVERY stored submission, every time — but FETCHED only once each. The
+      # logic is a FILE rather than a block of yaml so that the thing tested is
+      # the thing that runs: `scripts/fetch_submissions.sh --self-test` drives
+      # it against a stub `curl`, and CI runs that.
       - name: read submissions
         if: steps.wired.outputs.yes == 'true'
         env:
           CF_ACCOUNT: ${{ secrets.CF_ACCOUNT_ID }}
           CF_NAMESPACE: ${{ secrets.CF_SUBMISSIONS_NAMESPACE_ID }}
           CF_TOKEN: ${{ secrets.CF_API_TOKEN }}
-        run: |
-          set -euo pipefail
-          API="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/storage/kv/namespaces/$CF_NAMESPACE"
-          AUTH=(-H "Authorization: Bearer $CF_TOKEN")
-          : > keys.txt
-          cursor=""
-          while :; do
-            resp=$(curl -sf "${AUTH[@]}" "$API/keys?limit=1000${cursor:+&cursor=$cursor}")
-            echo "$resp" | jq -r '.result[].name' >> keys.txt
-            cursor=$(echo "$resp" | jq -r '.result_info.cursor // empty')
-            [ -n "$cursor" ] || break
-          done
-          echo "[]" > submissions.json
-          # Values one at a time: KV has no bulk read. A board this size makes
-          # that a few hundred requests, which is nothing next to the scoring.
-          jq -Rs 'split("\n") | map(select(length > 0))' keys.txt > keylist.json
-          jq -c '.[]' keylist.json | while read -r k; do
-            key=$(echo "$k" | jq -r .)
-            curl -sf "${AUTH[@]}" --get --data-urlencode "x=1" \
-              "$API/values/$(jq -rn --arg v "$key" '$v|@uri')" >> values.ndjson || true
-            echo >> values.ndjson
-          done
-          jq -s 'map(select(. != null))' values.ndjson > submissions.json || echo "[]" > submissions.json
-          echo "submissions: $(jq 'length' submissions.json)"
+          FLOOR: ${{ steps.floor.outputs.floor }}
+        run: bash scripts/fetch_submissions.sh
 
+      # THE LIST IS ALSO THE ONLY OFF-SITE COPY OF THE LIBRARY, which is the one
+      # irreplaceable thing in this pipeline — the boards are derived from it,
+      # the site is generated, the code is in git, and what players sent lives in
+      # exactly one KV namespace. Thirty days of rolling artifacts costs nothing
+      # and is the difference between "restore yesterday's" and "ask everyone to
+      # submit again" (owner, 2026-08-26).
       - name: keep the list for the scorers
         if: steps.wired.outputs.yes == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: submissions
           path: submissions.json
-          retention-days: 1
+          retention-days: 30
 
   # ---- 2. score, N ways at once -----------------------------------------
   #
