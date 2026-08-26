@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 2622
+submissions: 2625
 engine: e4c4d61bea3efcfd46fdf9a364d4914ca64f8e53
 entries:
   - weapon: aeolak
@@ -1904,6 +1904,17 @@ entries:
       bonuses: [multishot, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
+    score: 55.58796178361887
+    fp: 00c41dae1cdecd4c
+    mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, magnetic_might, riven, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
     score: 55.5589602232093
@@ -4096,6 +4107,16 @@ entries:
     mods: [pistol_acuity, primed_target_cracker, galvanized_shot, primed_pistol_gambit, magnetic_might, jolt, pistol_pestilence, primed_heated_charge]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_feigned_retreat, sicarus_prime_extended_volley, sicarus_prime_wisemans_regard]
     arcanes: [secondary_shiver]
+  - weapon: sobek
+    mode: base
+    score: 1.1439332675311995
+    fp: d427c0fc38dac0c6
+    exilus: counterbalance
+    mods: [galvanized_savvy, critical_deceleration, hells_chamber, shotgun_barrage, shotgun_elementalist, vigilante_armaments, riven, incendiary_coat]
+    arcanes: [primary_bulwark]
+    riven:
+      bonuses: [critical_damage, multishot, weapon_recoil]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: soma_prime
     mode: cycle
     score: 190.3277381366797

@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 2622
+submissions: 2625
 engine: e4c4d61bea3efcfd46fdf9a364d4914ca64f8e53
 entries:
   - weapon: aeolak
@@ -2646,6 +2646,17 @@ entries:
       rolls: [1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
+    score: 55.58796178361887
+    fp: 16cbf3b02810cb06
+    mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, magnetic_might, riven, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
     score: 55.5589602232093
     fp: e68383f77dc0459a
     exilus: lethal_momentum
@@ -3996,15 +4007,15 @@ entries:
   - weapon: laetum
     mode: cycle
     score: 53.30713105560481
-    fp: d2681e229e6da939
+    fp: 28b7ca6efc5020d1
+    exilus: primed_steady_hands
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
     score: 53.30713105560481
-    fp: 28b7ca6efc5020d1
-    exilus: primed_steady_hands
+    fp: d2681e229e6da939
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
@@ -6368,6 +6379,16 @@ entries:
     mods: [pistol_acuity, primed_target_cracker, galvanized_shot, primed_pistol_gambit, magnetic_might, jolt, pistol_pestilence, primed_heated_charge]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_feigned_retreat, sicarus_prime_extended_volley, sicarus_prime_wisemans_regard]
     arcanes: [secondary_shiver]
+  - weapon: sobek
+    mode: base
+    score: 1.1439332675311995
+    fp: c0f7507bf470c780
+    exilus: counterbalance
+    mods: [galvanized_savvy, critical_deceleration, hells_chamber, shotgun_barrage, shotgun_elementalist, vigilante_armaments, riven, incendiary_coat]
+    arcanes: [primary_bulwark]
+    riven:
+      bonuses: [critical_damage, multishot, weapon_recoil]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: soma_prime
     mode: cycle
     score: 23.017101744710015

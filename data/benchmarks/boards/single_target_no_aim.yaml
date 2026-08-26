@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 2622
+submissions: 2625
 engine: e4c4d61bea3efcfd46fdf9a364d4914ca64f8e53
 entries:
   - weapon: aeolak
@@ -3421,6 +3421,16 @@ entries:
     mods: [pistol_acuity, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, jolt, pistol_pestilence, primed_heated_charge]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_feigned_retreat, sicarus_prime_extended_volley, sicarus_prime_wisemans_regard]
     arcanes: [secondary_shiver]
+  - weapon: sobek
+    mode: base
+    score: 0.37861101723254736
+    fp: e26bf47d056fff77
+    exilus: counterbalance
+    mods: [galvanized_savvy, critical_deceleration, hells_chamber, shotgun_barrage, shotgun_elementalist, vigilante_armaments, riven, incendiary_coat]
+    arcanes: [primary_bulwark]
+    riven:
+      bonuses: [critical_damage, multishot, weapon_recoil]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: soma_prime
     mode: cycle
     score: 1.0694731140735436
