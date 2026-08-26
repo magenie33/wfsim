@@ -31,6 +31,32 @@ around (decision 2026-07-31).
 - `webapi/` — endpoint logic shared by `web/` (native) and `wasm/`.
 - `wasm/` + `site/` — the static deployment. `site/` is **generated** by
   `scripts/build_site_app.py` — never hand-edit it.
+- `desktop/` — WFSim as a WINDOWS APP, and an INDEPENDENT cargo workspace: it
+  depends on nothing in `engine/`, because every simulation already runs in the
+  wasm module the page carries. So the main CI never compiles Tauri, and the
+  shell has no reason to change when the engine does — which IS the update
+  strategy rather than a tidiness argument (owner asked for a self-updating
+  client for the Quark network drive, 2026-08-26). Two layers with very
+  different costs: CONTENT (`app.js`, `pkg/*.wasm`, `img/`, `board.json`)
+  changes every push and ships as FILES swapped by two renames — no installer,
+  no UAC, no antivirus watching a program rewrite itself; the SHELL changes
+  rarely and ships as an NSIS installer. Keeping the shell thin is what keeps
+  the weekly path quiet.
+  It exists because Cloudflare from mainland China is the least reliable thing
+  on the page, which is where the players are: MEASURED from Shanghai
+  2026-08-26, the 5.43 MB wasm module downloads at **2.11 MB/s** from wfsim.app
+  and **9.73 MB/s** from a Tencent COS bucket, and locally it is not a download
+  at all — **~200 ms** to instantiate, times however many compute lanes.
+  THE UPDATER LIVES IN `app.js`, not in the shell's injected script, and that is
+  the one placement decision the whole thing rests on: an updater compiled into
+  the shell cannot fix its own bugs, and every reader would be frozen on the
+  broken version with no way out but a manual download — the exact outcome the
+  client exists to avoid. `app.js` is the thing updates replace.
+  The channel is a SIGNED manifest over CONTENT-ADDRESSED blobs
+  (`blob/<sha256>`), so a release uploads only what is new and a client fetches
+  only what it lacks — measured at **0.8 KB, 1 of 764 files** for a one-file
+  release. `private/wfsim_update_key` is the one unrecoverable thing in this
+  project. See `docs/DESKTOP.md`.
 - `data/` — versioned game data. `data/README.md` explains the reference
   graph; `docs/DATA_SOURCES.md` the sourcing rules. **THE WIKI WINS. Use it
   wherever it can answer** (owner, 2026-08-14) — WFCD's export (`vendor/`) is

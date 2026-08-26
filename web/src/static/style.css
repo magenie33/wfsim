@@ -1809,3 +1809,25 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
   transition:width .25s linear;
 }
 .scan-txt{font-variant-numeric:tabular-nums; flex:0 0 auto}
+
+/* THE DESKTOP UPDATE NOTICE — drawn only by the desktop shell (`mountDesktopUpdater`).
+   Bottom-right rather than a full-width bar: an update is not urgent, and a
+   strip across the page reads like an error. It sits under `.page-note`
+   (z 9998) so a real message is never covered by a housekeeping one. */
+.dtup{position:fixed;right:16px;bottom:16px;z-index:70;display:flex;align-items:center;gap:10px;
+  padding:9px 10px 9px 13px;border-radius:10px;background:var(--surface);border:1px solid var(--line);
+  box-shadow:0 8px 28px rgba(0,0,0,.35);font-size:13px;color:var(--text);
+  max-width:min(440px,calc(100vw - 32px))}
+.dtup[hidden]{display:none}
+.dtup-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dtup-e{color:var(--critical);white-space:normal}
+.dtup-b{border:1px solid var(--gold);background:transparent;color:var(--gold);border-radius:7px;
+  padding:4px 11px;font:inherit;cursor:pointer;white-space:nowrap}
+.dtup-b:hover{background:var(--gold);color:var(--surface)}
+.dtup-x{border:0;background:transparent;color:var(--muted);font-size:17px;line-height:1;
+  padding:2px 4px;cursor:pointer}
+.dtup-x:hover{color:var(--text)}
+/* A LENGTH, not a spinner: a download of a known size can say how far it is,
+   and "45%" is a number a reader can decide to wait for. */
+.dtup-bar{flex:1;min-width:80px;height:4px;border-radius:2px;background:var(--panel2);overflow:hidden}
+.dtup-bar i{display:block;height:100%;background:var(--gold);transition:width .2s}

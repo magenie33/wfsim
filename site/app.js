@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "683babe0+ · 2026-08-26 00:37Z";
+const BUILD_ID = "0b2bc536+ · 2026-08-26 05:39Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -383,12 +383,25 @@ const COMPUTE_KEY = "wfsim-compute";
 /// HALF, by decision (owner, 2026-08-18). It is cooler than what this page did
 /// before on a phone and faster on a desktop with more than sixteen threads,
 /// which is the same change in both directions: the old default was a fixed
-/// eight whatever the machine was.
+/// eight whatever the machine was. It is a DEFAULT, not a limit — see the
+/// ceiling note below, of which there is now none.
 const COMPUTE_DEFAULT_PCT = 50;
-/// The ceiling, in lanes. Each one is a Web Worker holding its own instance of
-/// a ~6 MB wasm module, so the cost of the last few is memory rather than heat,
-/// and it is the same ceiling the optimizer's own `CPU threads` preset has.
-const COMPUTE_MAX_LANES = 16;
+/// THERE IS NO CEILING (owner, 2026-08-26). 100% means every logical processor
+/// the machine reports, on the desktop build and in a browser alike.
+///
+/// It used to stop at sixteen, on the reasoning that each lane is a Web Worker
+/// holding its own instance of the wasm module and the last few cost memory
+/// rather than heat. MEASURED, that instance is **48 MB** (0/1/4/8/16 lanes,
+/// linear to within 2%) — so a 28-core machine spends 1.3 GB to use all of
+/// itself, about 4% of what such a machine has. A cap was protecting nobody
+/// and taking 43% of the CPU away from precisely the readers who had the most
+/// of it, because core count and installed memory travel together: nobody
+/// builds 64 cores onto 8 GB.
+///
+/// The share stays the reader's the whole way, which is this control's own
+/// principle — "a share the reader can move, rather than a number this file
+/// works out for them" — and a ceiling was the one place that principle had an
+/// exception.
 
 /// WHAT THE MACHINE SAYS IT HAS, and how much that is worth believing.
 ///
@@ -427,21 +440,18 @@ let computePct = readComputePct();
 let pool = [];
 /// The lane count that share comes to on this machine — at least one, and never
 /// more than the ceiling.
-const poolSize = () =>
-  Math.max(1, Math.min(Math.round((detectedCores().n * computePct) / 100), COMPUTE_MAX_LANES));
+const poolSize = () => Math.max(1, Math.round((detectedCores().n * computePct) / 100));
 
 /// THE SHARES WORTH OFFERING — one per distinct lane count.
 ///
-/// Ten fixed steps read badly at both ends: on a 28-core machine everything
-/// from 60% up lands on the 16-lane ceiling and five rows say the same thing,
-/// and on a 4-core one two steps share a lane count. So the list is built from
+/// Ten fixed steps read badly at both ends: on a 4-core machine two steps share
+/// a lane count, and rows that buy the same thing say the same thing twice. So the list is built from
 /// what the shares actually BUY on this machine, keeping the cheapest share
 /// that reaches each count — which also makes the last row always mean "all of
 /// them", whatever the machine is.
 const computeSteps = () => {
   const { n: cores } = detectedCores();
-  const lanes = (pct) =>
-    Math.max(1, Math.min(Math.round((cores * pct) / 100), COMPUTE_MAX_LANES));
+  const lanes = (pct) => Math.max(1, Math.round((cores * pct) / 100));
   const out = [];
   const seen = new Set();
   for (let pct = 10; pct <= 100; pct += 10) {
@@ -749,11 +759,11 @@ function loadCheckpoint() {
 //
 // The count is the search preset's own `CPU threads` — the setting already
 // existed and meant this on the native server; it now means it here too.
-// Blank = every core but one, capped at 8: past that the strides get short,
-// the wasm instances get expensive (one 2.3 MB module each) and a phone
-// starts swapping.
+// A `CPU threads` preset is taken AS TYPED — no cap. It is the same decision
+// as the compute share above: the reader is told what a lane costs (48 MB) and
+// then trusted with the number, rather than having one picked for them.
 function woptWorkerCount() {
-  if (optRun.threads > 0) return Math.min(optRun.threads, 16);
+  if (optRun.threads > 0) return optRun.threads;
   // THE GLOBAL SETTING IS THE DEFAULT — see `poolSize`. A search owns its
   // workers for minutes, so it is the one thing on this page most able to cook
   // a phone, and the setting would be worth little if it were the one thing
@@ -16268,6 +16278,111 @@ function reclaimStoredReplays() {
 }
 try { reclaimStoredReplays(); } catch (_) { /* storage may be unavailable entirely */ }
 
+// ---------------------------------------------------------------------------
+// THE DESKTOP UPDATE NOTICE
+//
+// IT LIVES HERE AND NOT IN THE SHELL, and that one decision is the whole update
+// strategy. The shell is a binary a reader replaces by running an installer;
+// this file is a thing the updater itself replaces. So an updater compiled into
+// the shell cannot fix its own bugs — every reader would be frozen on the
+// broken version, and the only way out is asking them to download an installer
+// by hand, which is precisely what the desktop build exists to avoid. Putting
+// it in `app.js` means a mistake here is repairable the same quiet way as any
+// other: change a file, push, done.
+//
+// A NO-OP IN A BROWSER. `__WFSIM_DESKTOP__` is set by the shell and by nothing
+// else, so this costs the web build one comparison at boot.
+//
+// IT NEVER RESTARTS BY ITSELF. A download is silent and a restart is asked for,
+// because a page that reloads on its own throws away whatever the reader was
+// in the middle of — an hour-long search, a fight half set up — to deliver a
+// change they had not asked for yet.
+const DESKTOP_POLL_MS = 700;
+/// Hourly. The client is not a page a reader refreshes, so it has to look on
+/// its own; hourly is often enough that a fix lands the day it ships and rare
+/// enough to be invisible.
+const DESKTOP_CHECK_MS = 60 * 60 * 1000;
+
+function mountDesktopUpdater() {
+  if (!window.__WFSIM_DESKTOP__ || !window.__TAURI_INTERNALS__) return;
+  const invoke = (cmd, args = {}) => window.__TAURI_INTERNALS__.invoke(cmd, args);
+
+  const bar = document.createElement("div");
+  bar.className = "dtup";
+  bar.hidden = true;
+  document.body.appendChild(bar);
+
+  let dismissed = "";
+  const hide = () => { bar.hidden = true; };
+
+  const render = (s) => {
+    // A version the reader has already waved away stays away until the NEXT
+    // one — a notice that comes back every hour is a notice people learn to
+    // close without reading.
+    if (s.phase === "available" && dismissed === s.version) return hide();
+    const pct = s.bytes_total ? Math.round((s.bytes_done / s.bytes_total) * 100) : 0;
+    const mb = (n) => (n / 1048576).toFixed(1);
+    let html = "";
+    if (s.phase === "available") {
+      html = `<span class="dtup-t">${escHtml(tr("A new version is available"))} · ${mb(s.bytes_total)} MB</span>`
+        + `<button class="dtup-b" data-a="get">${escHtml(tr("Update"))}</button>`
+        + `<button class="dtup-x" data-a="no" title="${escHtml(tr("Later"))}">×</button>`;
+    } else if (s.phase === "downloading") {
+      html = `<span class="dtup-t">${escHtml(tr("Updating"))} ${pct}%</span>`
+        + `<span class="dtup-bar"><i style="width:${pct}%"></i></span>`;
+    } else if (s.phase === "ready") {
+      html = `<span class="dtup-t">${escHtml(tr("Update ready — restart to finish"))}</span>`
+        + `<button class="dtup-b" data-a="go">${escHtml(tr("Restart now"))}</button>`
+        + `<button class="dtup-x" data-a="no" title="${escHtml(tr("Later"))}">×</button>`;
+    } else if (s.phase === "failed") {
+      html = `<span class="dtup-t dtup-e">${escHtml(tr("Update failed"))}: ${escHtml(s.message || "")}</span>`
+        + `<button class="dtup-x" data-a="no">×</button>`;
+    } else {
+      return hide();
+    }
+    bar.innerHTML = html;
+    bar.hidden = false;
+  };
+
+  let polling = false;
+  const poll = async () => {
+    if (polling) return;
+    polling = true;
+    try {
+      const s = await invoke("update_status");
+      render(s);
+      if (s.phase === "checking" || s.phase === "downloading") setTimeout(() => { polling = false; poll(); }, DESKTOP_POLL_MS);
+      else polling = false;
+    } catch (_) { polling = false; }
+  };
+
+  bar.addEventListener("click", async (e) => {
+    const b = e.target.closest && e.target.closest("[data-a]");
+    if (!b) return;
+    const a = b.getAttribute("data-a");
+    if (a === "no") {
+      try { const s = await invoke("update_status"); dismissed = s.version; } catch (_) { /* hide anyway */ }
+      return hide();
+    }
+    if (a === "get") { await invoke("update_download"); return poll(); }
+    if (a === "go") {
+      try {
+        await invoke("update_apply");
+        // The swap is done; the page is now serving files from a directory
+        // that no longer matches what this document was loaded from.
+        location.reload();
+      } catch (err) {
+        render({ phase: "failed", message: String(err), version: "" });
+      }
+    }
+  });
+
+  const look = async () => { try { await invoke("update_check"); poll(); } catch (_) { /* offline is normal */ } };
+  // Not at boot: the first seconds belong to the page the reader opened.
+  setTimeout(look, 8000);
+  setInterval(look, DESKTOP_CHECK_MS);
+}
+
 // THE BOOT IS OVER, one way or the other, and the page must say which.
 //
 // This used to write a failure into `.config-page`, which is hidden on the home
@@ -16280,6 +16395,7 @@ init()
     window.__wfsimReady = true;
     const b = document.getElementById("booting");
     if (b) b.remove();
+    try { mountDesktopUpdater(); } catch (_) { /* the app runs without it */ }
   })
   .catch((e) => {
     // …unless the reason already put its own, better sentence on the page.

@@ -40,3 +40,12 @@ target-*/
 # one-shot data generators: they run once, and what they decided is in docs/
 .scan/
 .probe/
+
+# The desktop shell is its own cargo workspace, so the root `/target` rule does
+# not reach it.
+/desktop/target
+
+# Installers and the source archive that ships beside them. Built by
+# `scripts/build_desktop.py`, uploaded to the network drive, never committed —
+# a 30 MB binary per release is not what a git history is for.
+/dist

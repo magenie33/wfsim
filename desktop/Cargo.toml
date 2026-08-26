@@ -1,0 +1,68 @@
+# THE SHELL. It runs the app; it is not the app.
+#
+# An INDEPENDENT workspace on purpose (the empty `[workspace]` below). This
+# crate depends on NOTHING in the engine — every simulation runs in the wasm
+# module the page already carries, so the shell only ever serves files, swaps a
+# directory and checks a signature. Two things follow: the main workspace's CI
+# is not made to compile Tauri on every push, and the shell has no reason to
+# change when the engine does. That second one is the whole update strategy —
+# see docs/DESKTOP.md: content updates are a file swap, shell updates are an
+# installer, and the first kind must cover ~99% of releases.
+[workspace]
+
+[package]
+name = "wfsim-desktop"
+description = "wfsim as a desktop app: the shipping site/ served from a writable directory the updater swaps whole"
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.97"
+license = "AGPL-3.0-or-later"
+repository = "https://github.com/magenie33/wfsim"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+sha2 = "0.10"
+serde_json = "1"
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+# Blocking HTTP with rustls. The updater runs on its own thread and reports
+# progress through a polled status, so an async runtime would buy nothing.
+ureq = "2"
+# THE UPDATE CHANNEL'S ONLY DEFENCE. Files come from a public bucket over a
+# network this app exists because it is unreliable; a manifest nobody signed is
+# an invitation to serve a different one.
+ed25519-dalek = "2"
+getrandom = "0.2"
+# ShellExecuteW, for opening a wiki link in the reader's own browser.
+# `explorer.exe <url>` mostly works and is not what the platform documents;
+# this is the call every browser-opening library makes underneath.
+windows-sys = { version = "0.61", features = ["Win32_UI_Shell", "Win32_Foundation"] }
+
+[profile.release]
+# The shell ships as one file the reader downloads once; size is worth more
+# than the last few percent of speed in code that only copies bytes.
+opt-level = "s"
+# LTO IS OFF BECAUSE IT DELETES THE APP. The 29.2 MB payload is an
+# `include_bytes!` static, and with `lto = true` the linker drops it as
+# unreachable: MEASURED 2026-08-26, the same source builds to **268 KB** with
+# LTO and **33.7 MB** without it. Both link cleanly, both run, and the small one
+# is a shell with nothing to serve — it unpacks an empty app and shows a blank
+# window. Nothing in the build says so.
+#
+# It costs almost nothing to turn off: 87% of this binary is data, so LTO was
+# only ever working on the 4.5 MB of code, and NSIS compresses the result again
+# anyway. `scripts/build_desktop.py` refuses an installer under 20 MB, because
+# this failure produces a working installer for the wrong thing.
+lto = false
+codegen-units = 1
+# Off, and left off deliberately. The bundler EDITS this binary after cargo is
+# finished, patching a `__TAURI_BUNDLE_TYPE` marker into it, and a symbol it
+# cannot find is reported as a warning rather than an error. Stripping saves a
+# few hundred KB out of 33 MB — 87% of which is payload — and buys back the one
+# post-build step nobody watches. Not worth it.
+strip = false
+panic = "abort"
