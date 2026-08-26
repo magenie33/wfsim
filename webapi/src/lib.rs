@@ -439,6 +439,12 @@ fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
     {
         t = t.with_frame(f);
     }
+    // HEALTH JOINS ARMOR AND ENERGY (owner, 2026-08-26). It was the one base
+    // stat the roster carried and the wire could not set, which was invisible
+    // until a mod read it: the Basmu's Dreadful Killshot pays "+20% Damage and
+    // Status Chance for every 75 Warframe Health", so without this the mod has
+    // no way to be worth anything a player can steer.
+    t.health = get_f64(v, "wf_health", t.health).clamp(0.0, 100_000.0);
     t.armor = get_f64(v, "wf_armor", t.armor).clamp(0.0, 100_000.0);
     t.energy = get_f64(v, "wf_energy", t.energy).clamp(0.0, 100_000.0);
     t.sprint = get_f64(v, "wf_sprint", t.sprint).clamp(0.0, 10.0);
@@ -4276,6 +4282,22 @@ parts.push(json!({
         "policy": if info.sentinel { "base only (sentinel)" } else { "conditionals at max stacks" },
         "forms": forms,
         "conditionals": conditionals,
+        // WHO IS HOLDING THE GUN, as numbers rather than as an assumption
+        // (owner, 2026-08-26). Several perks and mods read the player and the
+        // panel showed none of it: "0 = no frame" is what the FIELDS say, and a
+        // reader had no way to see what the fight actually resolved to once a
+        // frame, an aura or an archon shard had moved it.
+        //
+        // Reported by the SERVER because it is the server that built it —
+        // `tenno_from` applies the frame, then the typed overrides, then what
+        // the squad brings, and a page re-deriving that would be a second
+        // implementation of the one thing every gated perk is asked about.
+        "tenno": {
+            "health": panel_tenno.health,
+            "armor": panel_tenno.armor,
+            "energy": panel_tenno.energy,
+            "sprint": panel_tenno.sprint,
+        },
         "buffs": buffs_json(&buffs),
     })
 }

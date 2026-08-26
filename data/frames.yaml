@@ -24,6 +24,18 @@
 # a frame's real health and be wrong by a hundred. They get sourced properly the
 # day something needs them.
 #
+# THAT DAY HAS COME FOR HEALTH (2026-08-26). The Basmu's Dreadful Killshot pays
+# "+20% Damage and Status Chance for every 75 Warframe Health, capped at 360%",
+# so health stopped being a number nothing reads. `wf_health` is typed on the
+# fight now and the panel states the resolved player — but PICKING A FRAME
+# still cannot fill it, and this file is why.
+#
+# What it costs to close: the rank-30 value per frame, from the wiki infobox,
+# because the export carries rank 0 and the bonus is per-frame (+100 on Ash,
+# +200 on Inaros Prime). Carrying the rank-0 number instead would be the exact
+# mistake the paragraph above refuses — it would read as the frame's health and
+# be a hundred to two hundred short, on a mod that pays per 75 of it.
+#
 # NOT MODDED, and it decides whether a gate is reachable at all. Vitality, Steel
 # Fiber, Primed Flow and the Umbral set are not here:
 #   - `armor > 450` — 9 frames reach it unmodded (Valkyr Prime tops out at 1000)

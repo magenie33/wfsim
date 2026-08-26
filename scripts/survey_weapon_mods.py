@@ -143,6 +143,19 @@ def main():
         '#',
         '# %d of %d carried, %d excluded on purpose, %d still to transcribe.'
         % (len(rows) - len(miss) - len(excl), len(rows), len(excl), len(miss)),
+        '#',
+        '# THE ROSTER THIS WAS JOINED AGAINST, because a survey nobody re-runs',
+        '# reports the question it was asked LAST time. This file sat at 20 rows',
+        '# and "0 still to transcribe" while the real answer grew to 197 and 103,',
+        '# and the ratchet reading it passed the whole way — a weapon added after',
+        '# the last run can only ever be absent from a generated file, which is',
+        '# the lesson docs/CATALOGS.md already records in another domain (2026-08-26).',
+        '#',
+        '# The test compares this to the live roster, so ADDING A WEAPON makes it',
+        '# stale and RED. Only this script can clear it, and only on a machine',
+        '# with `vendor/` — which is why the guard is a comparison here rather',
+        '# than a regeneration in CI, where the export does not exist.',
+        'roster: %d' % len(names),
         'mods:',
     ]
     for r in rows:

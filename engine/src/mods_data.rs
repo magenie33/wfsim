@@ -2108,15 +2108,40 @@ mod weapon_exclusive_survey {
     /// costs the same sentence as transcribing one and cannot be the quiet
     /// option.
     ///
-    /// IT IS AT ZERO (2026-08-13). The last two needed a trigger the engine did
-    /// not have — Eximus Advantage's weak-point hit on an EXIMUS, and
-    /// Hata-Satya's per-hit stack that the RELOAD clears — and neither could be
-    /// approximated: a `CondBuff` applies a buff at its assumed maximum, which
-    /// here is +600% base damage against any target and +500% critical chance
-    /// on the first shot of every run.
+    /// IT WAS AT ZERO FOR THIRTEEN DAYS AND THE ZERO WAS THE FILE'S, NOT THE
+    /// GAME'S (owner reported the Basmu's Dreadful Killshot missing, 2026-08-26).
+    ///
+    /// The survey is GENERATED, and nobody had regenerated it since the roster
+    /// was 20 rows wide. It has been answering "0 still to transcribe" about a
+    /// question whose real answer grew to 197 rows and 103 gaps — and this
+    /// ratchet reads the FILE, so it passed the whole way. `assert!(total >= 20)`
+    /// was the only thing looking at the size, and 20 was the number of rows the
+    /// day it was written.
+    ///
+    /// It is the lesson `docs/CATALOGS.md` records in another domain: asking a
+    /// generated file about something added after it was generated can only ever
+    /// answer no. So the survey now carries the ROSTER SIZE it was joined
+    /// against and this test compares it to the live roster — adding a weapon
+    /// makes the file stale and RED, which is the one state that cannot be
+    /// reached by forgetting.
+    ///
+    /// OF THE 103, forty-one are export rows whose mod NAME we already carry —
+    /// the sentinel copies of Split Chamber and friends, which need a
+    /// classification pass rather than a transcription — and sixty-two are real
+    /// gaps, one per weapon-exclusive mod nobody has written down. The ceiling
+    /// counts all of them, because the honest number is the one that includes
+    /// the work of deciding.
+    ///
+    /// The five that WERE genuinely closed by 2026-08-13 stay closed. The last
+    /// two of those needed a trigger the engine did not have — Eximus
+    /// Advantage's weak-point hit on an EXIMUS, and Hata-Satya's per-hit stack
+    /// that the RELOAD clears — and neither could be approximated: a `CondBuff`
+    /// applies a buff at its assumed maximum, which here is +600% base damage
+    /// against any target and +500% critical chance on the first shot of every
+    /// run.
     #[test]
     fn the_weapon_exclusive_mods_we_still_owe_only_goes_down() {
-        const OWED: usize = 0;
+        const OWED: usize = 103;
         let text = crate::data::file("surveys/weapon_exclusive_mods.yaml")
             .expect("data/surveys/weapon_exclusive_mods.yaml — run scripts/survey_weapon_mods.py");
         let mut total = 0usize;
@@ -2143,6 +2168,28 @@ mod weapon_exclusive_survey {
             }
         }
         assert!(total >= 20, "the survey looks empty: {total} rows");
+        // …AND IT IS THE CURRENT ROSTER'S ANSWER. A generated file cannot know
+        // about a weapon added after it was generated, so the file says which
+        // roster it was joined against and this compares it to the live one.
+        // Without it the ratchet above is a ratchet on a snapshot: it sat at
+        // zero for thirteen days while the real gap grew to 103.
+        let roster = text
+            .lines()
+            .find_map(|l| l.strip_prefix("roster:")?.trim().parse::<usize>().ok())
+            .expect("the survey records the roster it was joined against — re-run the script");
+        // DISTINCT NAMES, which is what the survey joins on: `basmu` and
+        // `basmu_beam` are two entries and one weapon to `compatName`, so
+        // counting entries would make the two numbers permanently unequal and
+        // the guard permanently red — which is the same as no guard.
+        let now = crate::weapons_data::all()
+            .iter()
+            .map(|w| w.name.as_str())
+            .collect::<std::collections::BTreeSet<_>>()
+            .len();
+        assert_eq!(
+            roster, now,
+            "the survey was joined against {roster} weapon files and there are {now} now —              re-run scripts/survey_weapon_mods.py"
+        );
         // EQUALITY, not a ceiling. The ratchet used to allow drifting below and
         // asked the ceiling to follow; at zero there is nowhere below to drift,
         // so the two directions collapse into one assertion — a mod appearing

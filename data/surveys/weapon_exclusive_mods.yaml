@@ -11,18 +11,251 @@
 # refuse on purpose, and the reason rides beside it. The export answers "does
 # a mod for this weapon exist", which is not "may a player equip it here".
 #
-# 13 of 20 carried, 7 excluded on purpose, 0 still to transcribe.
+# 87 of 197 carried, 7 excluded on purpose, 103 still to transcribe.
+#
+# THE ROSTER THIS WAS JOINED AGAINST, because a survey nobody re-runs
+# reports the question it was asked LAST time. This file sat at 20 rows
+# and "0 still to transcribe" while the real answer grew to 197 and 103,
+# and the ratchet reading it passed the whole way — a weapon added after
+# the last run can only ever be absent from a generated file, which is
+# the lesson docs/CATALOGS.md already records in another domain (2026-08-26).
+#
+# The test compares this to the live roster, so ADDING A WEAPON makes it
+# stale and RED. Only this script can clear it, and only on a machine
+# with `vendor/` — which is why the guard is a comparison here rather
+# than a regeneration in CI, where the export does not exist.
+roster: 452
 mods:
+  - name: Acid Shells
+    compat: Sobek
+    kind: Shotgun Mod
+    internal_name: /Lotus/Upgrades/Mods/Shotgun/Event/ProjectNightwatch/SobekNightwatchMod
+    carried: data/mods/shotgun/acid_shells.yaml
+  - name: Aerial Ace
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Arbitration/JumpRefreshOnKillRifleMod
+    carried: data/mods/rifle/aerial_ace.yaml
+  - name: Agile Aim
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/FasterMovementWhileAimingRifleMod
+    carried: data/mods/rifle/agile_aim.yaml
+  - name: Amalgam Argonak Metal Auger
+    compat: Argonak
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/DualSource/Rifle/ArgonakDaggerMod
+    carried: ~
+  - name: Amalgam Daikyu Target Acquired
+    compat: Daikyu
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/DualSource/Rifle/DaikyuKatanaMod
+    carried: ~
+  - name: Amalgam Javlok Magazine Warp
+    compat: Javlok
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/DualSource/Rifle/JavlokSwordShieldMod
+    carried: ~
+  - name: Amalgam Serration
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/DualSource/Rifle/SerratedRushMod
+    carried: data/mods/rifle/amalgam_serration.yaml
+  - name: Ambush Optics
+    compat: Rubico
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/RubicoLowZoom
+    carried: ~
+  - name: Ammo Drum
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponAmmoMaxModBeginner
+    carried: ~
+  - name: Ammo Drum
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponAmmoMaxModExpert
+    carried: ~
+  - name: Ammo Drum
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponAmmoMaxMod
+    carried: data/mods/rifle/ammo_drum.yaml
+  - name: Apex Predator
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/MarkTargetRifleMod
+    carried: ~
+  - name: Argon Scope
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/CritChanceWhileAimingRifleMod
+    carried: data/mods/rifle/argon_scope.yaml
+  - name: Bane Of Corpus
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponFactionDamageCorpusBeginner
+    carried: ~
+  - name: Bane Of Corpus
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponFactionDamageCorpusExpert
+    carried: ~
+  - name: Bane Of Corpus
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponFactionDamageCorpus
+    carried: data/mods/rifle/bane_of_corpus.yaml
+  - name: Bane Of Grineer
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponFactionDamageGrineerBeginner
+    carried: ~
+  - name: Bane Of Grineer
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponFactionDamageGrineerExpert
+    carried: ~
+  - name: Bane Of Grineer
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponFactionDamageGrineer
+    carried: data/mods/rifle/bane_of_grineer.yaml
+  - name: Bane Of Infested
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponFactionDamageInfestedBeginner
+    carried: ~
+  - name: Bane Of Infested
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponFactionDamageInfestedExpert
+    carried: ~
+  - name: Bane Of Infested
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponFactionDamageInfested
+    carried: data/mods/rifle/bane_of_infested.yaml
+  - name: Bane Of Orokin
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponFactionDamageCorrupted
+    carried: data/mods/rifle/bane_of_orokin.yaml
+  - name: Bane Of The Murmur
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponFactionDamageMurmurs
+    carried: data/mods/rifle/bane_of_the_murmur.yaml
   - name: Bhisaj-Bal
     compat: Paris Prime
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Rifle/Event/ParisHealOnStatusMod
     carried: data/mods/rifle/bhisaj_bal.yaml
+  - name: Biotic Rounds
+    compat: AX-52
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Nightwave/NightwaveTC2024AK47AugmentMod
+    carried: ~
+  - name: Bladed Rounds
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/CritDamageWhileAimingRifleMod
+    carried: data/mods/rifle/bladed_rounds.yaml
+  - name: Brain Storm
+    compat: Grakata
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/GrakataUnlimitedAmmo
+    carried: ~
+  - name: Bursting Mass
+    compat: Mutalist Quanta
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Arbitration/InfCrpShockSwarmRifleArbitrationMod
+    carried: ~
+  - name: Catalyzer Link
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/StatusProcWhileAimingRifleMod
+    carried: data/mods/rifle/catalyzer_link.yaml
+  - name: Cautious Shot
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponResistSelfDamageMod
+    carried: data/mods/rifle/cautious_shot.yaml
+  - name: Clip Delegation
+    compat: Sobek
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Nightwave/SobekNightwaveMod
+    carried: ~
+  - name: Combat Reload
+    compat: Tigris
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Nightwave/NightwaveTigrisAugmentMod
+    carried: ~
+  - name: Comet Rounds
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/DamageBiasImpactRifleMod
+    carried: ~
+  - name: Continuous Misery
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponProcTimeMod
+    carried: data/mods/rifle/continuous_misery.yaml
+  - name: Crash Course
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponEventRifleImpactDamageMod
+    carried: data/mods/rifle/crash_course.yaml
+  - name: Critical Delay
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/CorruptedCritRateFireRateRifle
+    carried: data/mods/rifle/critical_delay.yaml
+  - name: Critical Mutation
+    compat: Catabolyst
+    kind: Secondary Mod
+    internal_name: /Lotus/Upgrades/Mods/Pistol/Event/Nightwave/NightwaveCatabolystAugmentMod
+    carried: ~
+  - name: Critical Precision
+    compat: Tiberon
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Nightwave/NightwaveTiberonAugmentMod
+    carried: ~
+  - name: Cryo Rounds
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponFreezeDamageModBeginner
+    carried: ~
+  - name: Cryo Rounds
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponFreezeDamageMod
+    carried: data/mods/rifle/cryo_rounds.yaml
+  - name: Damzav-Vati
+    compat: Akbronco Prime
+    kind: Secondary Mod
+    internal_name: /Lotus/Upgrades/Mods/Pistol/Event/AkbroncoViralDamageMod
+    carried: ~
+  - name: Deadly Maneuvers
+    compat: Magnus
+    kind: Secondary Mod
+    internal_name: /Lotus/Upgrades/Mods/Nightwave/MagnusNightwaveMod
+    carried: ~
   - name: Deadly Sequence
     compat: Grinlok
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Syndicate/GrinlokMod
     carried: data/mods/rifle/deadly_sequence.yaml
+  - name: Directed Convergence
+    compat: Supra
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/SupraHigherAccuracyAiming
+    carried: ~
+  - name: Disarming Purity
+    compat: Panthera
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Syndicate/PantheraMod
+    carried: ~
   - name: Dizzying Rounds
     compat: Bronco
     kind: Secondary Mod
@@ -39,11 +272,111 @@ mods:
     internal_name: /Lotus/Upgrades/Mods/PvPMods/Pistol/DespairEnergyDrainAoE
     carried: excluded
     reason: "PvP: \"Draining Gloom is Conclave-exclusive Despair mod\"."
+  - name: Dreadful Killshot
+    compat: Basmu
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Nightwave/NightwaveBasmuAugmentMod
+    carried: ~
+  - name: Eagle Eye
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponZoomFovModExpert
+    carried: ~
+  - name: Eagle Eye
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Intermediate/WeaponZoomFovModIntermediate
+    carried: ~
+  - name: Eagle Eye
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponZoomFovMod
+    carried: data/mods/rifle/eagle_eye.yaml
+  - name: Efficient Beams
+    compat: Convectrix
+    kind: Shotgun Mod
+    internal_name: /Lotus/Upgrades/Mods/Shotgun/Event/Arbitration/CrpSplitLaserArbitrationMod
+    carried: ~
+  - name: Entropy Burst
+    compat: Supra
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Syndicate/SupraMod
+    carried: ~
+  - name: Entropy Spike
+    compat: Bolto
+    kind: Secondary Mod
+    internal_name: /Lotus/Upgrades/Mods/Syndicate/BoltoMod
+    carried: ~
+  - name: Eroding Blight
+    compat: Embolist
+    kind: Secondary Mod
+    internal_name: /Lotus/Upgrades/Mods/Syndicate/EmbolistMod
+    carried: ~
   - name: Eximus Advantage
     compat: Zylok
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Nightwave/NightwaveZylokAugmentMod
     carried: data/mods/pistol/eximus_advantage.yaml
+  - name: Exposing Harpoon
+    compat: Harpak
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Arbitration/GrnHarpoonGunArbitrationMod
+    carried: ~
+  - name: Fanged Fusillade
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponEventSlashDamageMod
+    carried: data/mods/rifle/fanged_fusillade.yaml
+  - name: Fast Hands
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponReloadSpeedModBeginner
+    carried: ~
+  - name: Fast Hands
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponReloadSpeedMod
+    carried: data/mods/rifle/fast_hands.yaml
+  - name: Final Tap
+    compat: Hind
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/HindDamageonFifthHit
+    carried: ~
+  - name: Firestorm
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponIncreaseRadialExplosionMod
+    carried: data/mods/rifle/firestorm.yaml
+  - name: Flux Overdrive
+    compat: Flux Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/CorpusArena/FluxRifleCorpusArenaMod
+    carried: ~
+  - name: Focused Acceleration
+    compat: Tetra
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/TetraFasterProjAiming
+    carried: ~
+  - name: Fomorian Accelerant
+    compat: Drakgoon
+    kind: Shotgun Mod
+    internal_name: /Lotus/Upgrades/Mods/Shotgun/Event/ProjectNightwatch/DrakgoonNightwatchMod
+    carried: ~
+  - name: Galvanized Aptitude
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponStatusChanceSPMod
+    carried: data/mods/rifle/galvanized_aptitude.yaml
+  - name: Galvanized Chamber
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponFireIterationsSPMod
+    carried: data/mods/rifle/galvanized_chamber.yaml
+  - name: Galvanized Scope
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/CritChanceWhileAimingRifleSPMod
+    carried: data/mods/rifle/galvanized_scope.yaml
   - name: Gilded Truth
     compat: Burston Prime
     kind: Primary Mod
@@ -61,62 +394,627 @@ mods:
     internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/MoreAccuracyOnHitGrinlokMod
     carried: excluded
     reason: "PvP: \"Grinloked is Conclave-exclusive Grinlok mod\"."
+  - name: Hammer Shot
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/HammerShotMod
+    carried: data/mods/rifle/hammer_shot.yaml
   - name: Hata-Satya
     compat: Soma Prime
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Rifle/Event/SomaCritChanceOnHitMod
     carried: data/mods/rifle/hata_satya.yaml
+  - name: Heavy Caliber
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/CorruptedDamageRecoilRifle
+    carried: data/mods/rifle/heavy_caliber.yaml
+  - name: Hellfire
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponFireDamageModBeginner
+    carried: ~
+  - name: Hellfire
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponFireDamageModExpert
+    carried: ~
+  - name: Hellfire
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponFireDamageMod
+    carried: data/mods/rifle/hellfire.yaml
+  - name: Higasa Serration
+    compat: Higasa
+    kind: Primary Mod
+    internal_name: /Lotus/Weapons/Tenno/LongGuns/Gunbrella/ShrineMaidenGunbrellaAugment
+    carried: ~
+  - name: High Voltage
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/ElectEventRifleMod
+    carried: data/mods/rifle/high_voltage.yaml
+  - name: Hush
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponNoiseReductionMod
+    carried: data/mods/rifle/hush.yaml
+  - name: Infected Clip
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponToxinDamageModBeginner
+    carried: ~
+  - name: Infected Clip
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponToxinDamageModExpert
+    carried: ~
+  - name: Infected Clip
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponToxinDamageMod
+    carried: data/mods/rifle/infected_clip.yaml
+  - name: Internal Bleeding
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponBleedOnImpactProcRifleMod
+    carried: data/mods/rifle/internal_bleeding.yaml
+  - name: Kinetic Ricochet
+    compat: Tetra
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/CorpusArena/TetraCorpusArenaMod
+    carried: ~
+  - name: Lasting Purity
+    compat: Vulkar
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Syndicate/VulkarMod
+    carried: ~
+  - name: Leaded Gas
+    compat: Vesper 77
+    kind: Secondary Mod
+    internal_name: /Lotus/Upgrades/Mods/Nightwave/NightwaveLasSilencedPistolAugmentMod
+    carried: ~
+  - name: Lucky Shot
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/HigherVelocityLessAccurateRifleMod
+    carried: ~
+  - name: Magazine Warp
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponClipMaxModBeginner
+    carried: ~
+  - name: Magazine Warp
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponClipMaxMod
+    carried: data/mods/rifle/magazine_warp.yaml
+  - name: Magnetic Capacity
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/MagneticClipRifleMod
+    carried: data/mods/rifle/magnetic_capacity.yaml
+  - name: Malignant Force
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/PoisonEventRifleMod
+    carried: data/mods/rifle/malignant_force.yaml
+  - name: Measured Burst
+    compat: Tiberon
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/TiberonLowRoFAiming
+    carried: ~
+  - name: Metal Auger
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponPunctureDepthModBeginner
+    carried: ~
+  - name: Metal Auger
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponPunctureDepthModExpert
+    carried: ~
+  - name: Metal Auger
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponPunctureDepthMod
+    carried: data/mods/rifle/metal_auger.yaml
   - name: Metamorphic Magazine
     compat: Gorgon
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Nightwave/NightwaveGorgonAugmentMod
     carried: data/mods/rifle/metamorphic_magazine.yaml
+  - name: Meticulous Aim
+    compat: Vulkar
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Arbitration/GrnSniperRifleArbitrationMod
+    carried: ~
+  - name: Napalm Grenades
+    compat: Penta
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/GrenadeLauncherProjectileMod
+    carried: ~
+  - name: Necrophagic Vigor
+    compat: Hema
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Nightwave/NightwaveHemaAugmentMod
+    carried: ~
   - name: Neutralizing Justice
     compat: Miter
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Syndicate/MiterMod
     carried: data/mods/rifle/neutralizing_justice.yaml
+  - name: Nightwatch Napalm
+    compat: Ogris
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/ProjectNightwatch/OgrisNightwatchMod
+    carried: data/mods/rifle/nightwatch_napalm.yaml
+  - name: Pain Points
+    compat: Athodai
+    kind: Secondary Mod
+    internal_name: /Lotus/Upgrades/Mods/Nightwave/NightwaveTnJetTurbinePistolAugmentMod
+    carried: ~
+  - name: Photon Overcharge
+    compat: Glaxion
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Nightwave/GlaxionNightwaveMod
+    carried: ~
+  - name: Piercing Caliber
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponEventPunctureDamageMod
+    carried: data/mods/rifle/piercing_caliber.yaml
+  - name: Piercing Hit
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponArmorPiercingDamageModBeginner
+    carried: ~
+  - name: Piercing Hit
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponArmorPiercingDamageModExpert
+    carried: ~
+  - name: Piercing Hit
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponArmorPiercingDamageMod
+    carried: data/mods/rifle/piercing_hit.yaml
+  - name: Point Strike
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponCritChanceModBeginner
+    carried: ~
+  - name: Point Strike
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponCritChanceModExpert
+    carried: ~
+  - name: Point Strike
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponCritChanceMod
+    carried: data/mods/rifle/point_strike.yaml
+  - name: Precision Munition
+    compat: Tonkor
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/TonkorAccuracySmallerMag
+    carried: ~
+  - name: Precision Strike
+    compat: Tonkor
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Arbitration/GrnGrenadeLauncherArbitrationMod
+    carried: ~
+  - name: Primary Acuity
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponWeakpointCriticalChanceMod
+    carried: data/mods/rifle/primary_acuity.yaml
+  - name: Primed Bane Of Corpus
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/PrimedWeaponFactionDamageCorpus
+    carried: data/mods/rifle/primed_bane_of_corpus.yaml
+  - name: Primed Bane Of Grineer
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/PrimedWeaponFactionDamageGrineer
+    carried: data/mods/rifle/primed_bane_of_grineer.yaml
+  - name: Primed Bane Of Infested
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/PrimedWeaponFactionDamageInfested
+    carried: data/mods/rifle/primed_bane_of_infested.yaml
+  - name: Primed Bane Of Orokin
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/PrimedWeaponFactionDamageCorrupted
+    carried: data/mods/rifle/primed_bane_of_orokin.yaml
+  - name: Primed Bane Of The Murmur
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/PrimedWeaponFactionDamageMurmurs
+    carried: data/mods/rifle/primed_bane_of_the_murmur.yaml
+  - name: Primed Cryo Rounds
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponFreezeDamageModExpert
+    carried: data/mods/rifle/primed_cryo_rounds.yaml
+  - name: Primed Fast Hands
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponReloadSpeedModExpert
+    carried: data/mods/rifle/primed_fast_hands.yaml
+  - name: Primed Firestorm
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponIncreaseRadialExplosionModExpert
+    carried: data/mods/rifle/primed_firestorm.yaml
+  - name: Primed Magazine Warp
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponClipMaxModExpert
+    carried: data/mods/rifle/primed_magazine_warp.yaml
+  - name: Primed Shred
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/PrimedShredMod
+    carried: data/mods/rifle/primed_shred.yaml
+  - name: Primed Stabilizer
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponRecoilReductionModExpert
+    carried: data/mods/rifle/primed_stabilizer.yaml
+  - name: Proton Jet
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Sets/Spider/SpiderModB
+    carried: data/mods/rifle/proton_jet.yaml
+  - name: Radiated Reload
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/RadiationReloadRifleMod
+    carried: data/mods/rifle/radiated_reload.yaml
+  - name: Range Advantage
+    compat: Akjagara
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Nightwave/NightwaveAkjagaraAugmentMod
+    carried: ~
+  - name: Rifle Aptitude
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponStatusChanceModBeginner
+    carried: ~
+  - name: Rifle Aptitude
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponStatusChanceModExpert
+    carried: ~
+  - name: Rifle Aptitude
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Intermediate/WeaponStatusChanceModIntermediate
+    carried: ~
+  - name: Rifle Aptitude
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponStunChanceMod
+    carried: data/mods/rifle/rifle_aptitude.yaml
+  - name: Rifle Elementalist
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/RifleStatusDamageDuoMod
+    carried: data/mods/rifle/rifle_elementalist.yaml
+  - name: Rime Rounds
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/IceEventRifleMod
+    carried: data/mods/rifle/rime_rounds.yaml
+  - name: Ripper Rounds
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/DamageBiasPunctureRifleMod
+    carried: ~
+  - name: Rupture
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponImpactDamageModBeginner
+    carried: ~
+  - name: Rupture
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponImpactDamageModExpert
+    carried: ~
+  - name: Rupture
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponImpactDamageMod
+    carried: data/mods/rifle/rupture.yaml
+  - name: Sawtooth Clip
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponSlashDamageModBeginner
+    carried: ~
+  - name: Sawtooth Clip
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponSlashDamageModExpert
+    carried: ~
+  - name: Sawtooth Clip
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponSlashDamageMod
+    carried: data/mods/rifle/sawtooth_clip.yaml
+  - name: Scattered Justice
+    compat: Hek
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Syndicate/HekMod
+    carried: ~
+  - name: Semi-Rifle Cannonade
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/RifleSemiAutoFantasyMod
+    carried: data/mods/rifle/semi_rifle_cannonade.yaml
+  - name: Sentient Barrage
+    compat: Battacor
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Nightwave/NightwaveBattacorAugmentMod
+    carried: ~
   - name: Sentient Surge
     compat: Ocucor
     kind: Secondary Mod
     internal_name: /Lotus/Upgrades/Mods/Pistol/Event/Nightwave/NightwaveOcucorAugmentMod
     carried: data/mods/pistol/sentient_surge.yaml
+  - name: Sequence Burn
+    compat: Spectra
+    kind: Secondary Mod
+    internal_name: /Lotus/Upgrades/Mods/Syndicate/SpectraMod
+    carried: ~
+  - name: Serrated Rounds
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/DamageBiasSlashRifleMod
+    carried: ~
+  - name: Serration
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponDamageAmountModBeginner
+    carried: ~
+  - name: Serration
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Intermediate/WeaponDamageAmountModIntermediate
+    carried: ~
+  - name: Serration
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponDamageAmountMod
+    carried: data/mods/rifle/serration.yaml
+  - name: Shattering Justice
+    compat: Sobek
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Syndicate/SobekMod
+    carried: ~
+  - name: Shrapnel Rounds
+    compat: Marelok
+    kind: Secondary Mod
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Pistol/MarelokMultishot
+    carried: ~
+  - name: Shred
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/ShredMod
+    carried: data/mods/rifle/shred.yaml
+  - name: Skull Shots
+    compat: Viper
+    kind: Secondary Mod
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Pistol/ViperUnlimitedAmmo
+    carried: ~
   - name: Soaring Truth
     compat: Ballistica
     kind: Secondary Mod
     internal_name: /Lotus/Upgrades/Mods/Syndicate/BallisticaMod
     carried: excluded
     reason: "unreleased: \"Soaring Truth\" has no wiki page, no row in Template:AugmentedMods (which lists every released augment), and is not among warframe.market's 3,837 tradeable items \u2014 while its three sibling syndicate augments are in all three. Checked 2026-08-13."
+  - name: Spectral Serration
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponDamageAmountInvisibleMod
+    carried: data/mods/rifle/spectral_serration.yaml
+  - name: Speed Trigger
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponFireRateModBeginner
+    carried: ~
+  - name: Speed Trigger
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponFireRateModExpert
+    carried: ~
+  - name: Speed Trigger
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponFireRateMod
+    carried: data/mods/rifle/speed_trigger.yaml
+  - name: Split Chamber
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponFireIterationsModBeginner
+    carried: ~
+  - name: Split Chamber
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponFireIterationsModExpert
+    carried: ~
+  - name: Split Chamber
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponFireIterationsMod
+    carried: data/mods/rifle/split_chamber.yaml
+  - name: Spontaneous Singularity
+    compat: Simulor
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Nightwave/NightwaveCephPrimaryAugmentMod
+    carried: ~
+  - name: Spring-Loaded Broadhead
+    compat: Daikyu
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/DaikyuMoreDamageOverDistanceMod
+    carried: ~
+  - name: Stabilizer
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Intermediate/WeaponRecoilReductionModIntermediate
+    carried: ~
+  - name: Stabilizer
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponRecoilReductionMod
+    carried: data/mods/rifle/stabilizer.yaml
+  - name: Static Alacrity
+    compat: Staticor
+    kind: Secondary Mod
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Pistol/StaticorFasterProjLessAoE
+    carried: ~
+  - name: Stinging Truth
+    compat: Viper
+    kind: Secondary Mod
+    internal_name: /Lotus/Upgrades/Mods/Syndicate/ViperMod
+    carried: ~
   - name: Stockpiled Blight
     compat: Kunai
     kind: Secondary Mod
     internal_name: /Lotus/Upgrades/Mods/Syndicate/KunaiMod
     carried: data/mods/pistol/stockpiled_blight.yaml
+  - name: Stormbringer
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponElectricityDamageModBeginner
+    carried: ~
+  - name: Stormbringer
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponElectricityDamageModExpert
+    carried: ~
+  - name: Stormbringer
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponElectricityDamageMod
+    carried: data/mods/rifle/stormbringer.yaml
   - name: Sudden Justice
     compat: Sybaris
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/SybarisIncreaseRoFonHit
     carried: excluded
     reason: "PvP: \"Sudden Justice is Conclave-exclusive Sybaris mod\"."
+  - name: Terminal Velocity
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponProjectileSpeedMod
+    carried: data/mods/rifle/terminal_velocity.yaml
+  - name: Tether Grenades
+    compat: Penta
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/CorpusArena/PentaCorpusArenaMod
+    carried: ~
+  - name: Thermagnetic Shells
+    compat: Detron
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/CorpusArena/SupraCorpusArenaMod
+    carried: ~
+  - name: Thermite Rounds
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/FireEventRifleMod
+    carried: data/mods/rifle/thermite_rounds.yaml
   - name: Thundermiter
     compat: Miter
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/ExplodingMiterBlades
     carried: excluded
     reason: "PvP: \"Thundermiter is Conclave-exclusive Miter mod\"."
+  - name: Toxic Sequence
+    compat: Acrid
+    kind: Secondary Mod
+    internal_name: /Lotus/Upgrades/Mods/Syndicate/AcridMod
+    carried: ~
   - name: Triple Tap
     compat: Burston
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/MoreDamageonMultiHitRifleMod
     carried: excluded
     reason: "PvP: \"Triple Tap is Conclave-exclusive Burston mod\"."
+  - name: Twitch
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/HolsterSpeedBonusMod
+    carried: data/mods/rifle/twitch.yaml
   - name: Unseen Dread
     compat: Dread
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Bows/Event/Nightwave/NightwaveStalkerBowAugmentMod
     carried: data/mods/rifle/unseen_dread.yaml
+  - name: Velox Conclusion
+    compat: Velox
+    kind: Secondary Mod
+    internal_name: /Lotus/Upgrades/Mods/Pistol/Event/Nightwave/NightwaveVeloxAugmentMod
+    carried: ~
+  - name: Vile Acceleration
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/CorruptedFireRateDamageRifle
+    carried: data/mods/rifle/vile_acceleration.yaml
+  - name: Vile Discharge
+    compat: Embolist
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Nightwave/NightwaveEmbolistAugmentMod
+    carried: ~
+  - name: Vile Precision
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/CorruptedRecoilFireRateRifle
+    carried: data/mods/rifle/vile_precision.yaml
+  - name: Vital Sense
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponCritDamageModBeginner
+    carried: ~
+  - name: Vital Sense
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponCritDamageModExpert
+    carried: ~
+  - name: Vital Sense
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponCritDamageMod
+    carried: data/mods/rifle/vital_sense.yaml
+  - name: Volatile Variant
+    compat: Sporothrix
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Nightwave/NightwaveSporothrixAugmentMod
+    carried: ~
+  - name: Voltage Sequence
+    compat: Lanka
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Syndicate/LankaMod
+    carried: ~
+  - name: Wild Frenzy
+    compat: Grakata
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Arbitration/GrnAssaultRifleArbitrationMod
+    carried: ~
+  - name: Wildfire
+    compat: Rifle
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/WildfireMod
+    carried: data/mods/rifle/wildfire.yaml
   - name: Winds Of Purity
     compat: Furis
     kind: Secondary Mod
     internal_name: /Lotus/Upgrades/Mods/Syndicate/FurisMod
     carried: data/mods/pistol/winds_of_purity.yaml
+  - name: Zazvat-Kar
+    compat: Akstiletto Prime
+    kind: Secondary Mod
+    internal_name: /Lotus/Upgrades/Mods/Pistol/Event/AkstilettoEfficiencyWhileAirborneMod
+    carried: ~

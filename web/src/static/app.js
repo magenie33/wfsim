@@ -1055,7 +1055,7 @@ function defaultScenario() {
     aim_at: d.aim_at ? [...d.aim_at] : null,
     invisible: !!d.invisible, airborne: !!d.airborne, overshields: !!d.overshields,
     channeling: !!d.channeling, solo_weapon: !!d.solo_weapon,
-    frame: d.frame || "", wf_armor: d.wf_armor || 0, wf_energy: d.wf_energy || 0,
+    frame: d.frame || "", wf_health: d.wf_health || 0, wf_armor: d.wf_armor || 0, wf_energy: d.wf_energy || 0,
     wf_sprint: d.wf_sprint || 0.9,
     infinite_ammo: d.infinite_ammo !== false, metric: d.metric || "kpm",
     // NO `form`: how the weapon is played belongs to the build.
@@ -1104,7 +1104,7 @@ let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: nul
   // which is the fight the board is scored under and what every clause about
   // the other slots has always been answered with.
   solo_weapon: false,
-  frame: "", wf_armor: 0, wf_energy: 0, wf_sprint: 0.9,
+  frame: "", wf_health: 0, wf_armor: 0, wf_energy: 0, wf_sprint: 0.9,
   // NO `form`, AND NO `mode`. How the weapon is played is part of the BUILD;
   // a fight that carried it could decide how the weapon was fired, which is
   // what let a ruler pin an Incarnon weapon at its cycle (owner, 2026-08-07):
@@ -8568,7 +8568,7 @@ function renderMods() {
 // sim never ran, and hid a contribution the sim was paying. One player, both
 // answers (user, 2026-08-02). The scenario fields that describe the
 // PLAYER rather than the fight.
-const TENNO_KEYS = ["aiming", "invisible", "airborne", "overshields", "channeling", "solo_weapon", "frame", "wf_armor", "wf_energy", "wf_sprint", "extra_stats", "auras", "shards"];
+const TENNO_KEYS = ["aiming", "invisible", "airborne", "overshields", "channeling", "solo_weapon", "frame", "wf_health", "wf_armor", "wf_energy", "wf_sprint", "extra_stats", "auras", "shards"];
 
 // THE FIGHT'S OWN STAT BONUSES: what this weapon is handed by something that is
 // not its build — a squad buff, a Warframe ability, an arcane on another weapon.
@@ -8917,10 +8917,30 @@ function renderPanel(r) {
   $("stats-rows").innerHTML = (r.forms || []).map(section).join("");
   $("stats-damage").innerHTML = "";
 
-  $("stats-conditionals").innerHTML = (r.conditionals && r.conditionals.length)
+  // WHO IS HOLDING THE GUN, stated before the clauses that read it (owner,
+  // 2026-08-26). Several perks and mods are answered by the PLAYER — a gate at
+  // 200 max energy, a bonus per 75 health, Primary Bulwark past 1,000 armor —
+  // and the panel listed those clauses while saying nothing about the numbers
+  // deciding them. The fields above read "0 = no frame", which is what they
+  // MEAN and not what the fight resolved to once a frame, an aura or an archon
+  // shard had moved them.
+  //
+  // The numbers are the SERVER's, from the same `tenno_from` every gate is
+  // asked against, so this cannot drift from what was actually simulated.
+  const wf = r.tenno;
+  $("stats-conditionals").innerHTML = (wf
+    ? `<div class="sdmg-title">${escHtml(tr("Who is holding it"))}</div>` +
+      // ITS OWN CLASS, not `.scond`: that class IS the list of conditional
+      // clauses, and `#stats-conditionals .scond` is how they are counted.
+      `<div class="swielder">` + [
+        [tr("Health"), wf.health], [tr("Armor"), wf.armor],
+        [tr("Max energy"), wf.energy], [tr("Sprint"), wf.sprint],
+      ].map(([l, v]) => `<span><b>${escHtml(l)}</b> ${sig2(v || 0)}</span>`).join("")
+      + `</div>`
+    : "") + ((r.conditionals && r.conditionals.length)
     ? `<div class="sdmg-title">Conditional / not merged</div>` +
       r.conditionals.map((c) => `<div class="scond ${c.active ? "" : "off"}"><b>${c.mod}</b>: ${c.desc} <span class="snote">${c.why}</span></div>`).join("")
-    : "";
+    : "");
   // The build's configurable buffs (weapon-scoped) drive the Sim section 2.
   buffList = r.buffs || [];
   renderSimBuffs();
@@ -11932,6 +11952,7 @@ function renderScenarioFields(ids, opts = {}) {
         items: [{ value: "", label: tr("none — no frame") }]
           .concat(frames().map((f) => ({ value: f.id, label: f.name }))),
       })}</label>
+      <label title="${escHtml(tr("your Warframe's HEALTH, buffs included — the Basmu's Dreadful Killshot pays +20% damage and status chance for every 75 of it. 0 = no frame"))}">${escHtml(tr("WF Health"))} <input type="number" data-k="wf_health" min="0" max="100000" step="1" value="${sim.wf_health || 0}"></label>
       <label title="${escHtml(tr("your Warframe's armor, buffs included — Primary Bulwark pays +1% damage per point past 1,000. 0 = no frame"))}">${escHtml(tr("WF Armor"))} <input type="number" data-k="wf_armor" min="0" max="100000" step="1" value="${sim.wf_armor || 0}"></label>
       <label title="${escHtml(tr("your Warframe's MAX energy — Primary Overcharge turns 35% of it into multishot. 0 = no frame"))}">${escHtml(tr("WF Energy"))} <input type="number" data-k="wf_energy" min="0" max="100000" step="1" value="${sim.wf_energy || 0}"></label>
       <label title="${escHtml(tr("your Warframe's sprint speed — several Incarnon perks pay only at 1.2 or higher, and the slowest frame is 0.9"))}">${escHtml(tr("WF Sprint"))} <input type="number" data-k="wf_sprint" min="0" max="3" step="0.05" value="${sim.wf_sprint ?? 0.9}"></label>`;
@@ -12014,6 +12035,7 @@ function renderScenarioFields(ids, opts = {}) {
         if (k === "frame") {
           const f = frameOf(sim.frame);
           if (f) {
+            sim.wf_health = f.health;
             sim.wf_armor = f.armor;
             sim.wf_energy = f.energy;
             sim.wf_sprint = f.sprint;
