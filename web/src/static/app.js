@@ -2333,7 +2333,7 @@ const eximusField = (en) => {
   return `<label class="check" title="${escHtml(tr("the elite variant: more health, and a pool of Overguard in front of it"))}"><input type="checkbox" data-k="eximus" ${eximusOn(en) ? "checked" : ""}> ${escHtml(tr("Eximus"))}</label>`;
 };
 
-/// WHAT THIS WEAPON FORCES THIS FIELD TO, AND WHY — or null when the choice is
+/// WHAT THIS WEAPON SETTLES THIS FIELD TO, AND WHY — or null when the choice is
 /// the reader's.
 ///
 /// THE RULE IS THE ENGINE'S (owner, 2026-08-27). `engine::scenario::forced_for`
@@ -2347,8 +2347,8 @@ const eximusField = (en) => {
 /// cannot refill it" force the SAME box to OPPOSITE values. Reading one as the
 /// other left the only adjustable weapon being the one weapon the game gives no
 /// way to adjust.
-const forcedAxis = (w, id) => {
-  const f = (w || {}).forced || {};
+const settledAxis = (w, id) => {
+  const f = (w || {}).settled || {};
   const hit = f[id];
   return hit ? { value: hit[0], why: hit[1] } : null;
 };
@@ -2357,7 +2357,7 @@ const forcedAxis = (w, id) => {
 // trigger stays dead anyway. Ticked and disabled, the same shape as infinite
 // ammo: the state is real, the control is honestly unavailable.
 const aimField = (w, state) => {
-  const f = forcedAxis(w, "aiming");
+  const f = settledAxis(w, "aiming");
   const forced = !!f;
   const on = forced ? !!f.value : state.aiming;
   const why = forced
@@ -2382,7 +2382,7 @@ const aimField = (w, state) => {
 /// and avoids. So the field shows 0 and disables itself while the underlying
 /// scenario keeps whatever the reader set for the rest of the roster.
 const headshotField = (w, state) => {
-  const f = forcedAxis(w, "headshot_pct");
+  const f = settledAxis(w, "headshot_pct");
   const forced = !!f;
   const val = forced ? f.value : state.headshot_pct;
   const why = forced
@@ -2391,7 +2391,7 @@ const headshotField = (w, state) => {
   return `<label title="${escHtml(why)}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${val}"${forced ? " disabled" : ""}></label>`;
 };
 const ammoField = (w, state) => {
-  const f = forcedAxis(w, "infinite_ammo");
+  const f = settledAxis(w, "infinite_ammo");
   const forced = !!f;
   const on = forced ? !!f.value : state.infinite_ammo !== false;
   const why = forced
@@ -11956,7 +11956,7 @@ function renderWholeFight() {
   };
   host.innerHTML = GROUPS.map(([g, label]) => {
     const rows = axes.filter((a) => a.group === g).map((a) => {
-      const f = forcedAxis(w, a.id);
+      const f = settledAxis(w, a.id);
       const live = sim[a.id];
       // THE FORCED ROW SHOWS BOTH NUMBERS. What the document says and what the
       // run will use are different facts, and the gap between them is the one

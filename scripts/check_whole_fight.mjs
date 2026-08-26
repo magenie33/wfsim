@@ -16,7 +16,7 @@
 // So "the same fight across two weapons" was a claim nobody could check. This
 // asserts that it can be.
 //
-// AND THAT THE RULE IS THE ENGINE'S. `engine::scenario::forced_for` decides and
+// AND THAT THE RULE IS THE ENGINE'S. `engine::scenario::settled_for` decides and
 // `/api/meta` states the consequence per weapon; the page reads it. The three
 // forcing rules used to be re-derived in `app.js` from weapon flags — two
 // implementations of one rule, drifting in silence, because a forced field
@@ -53,7 +53,7 @@ const read = async (weapon) => {
       // The ENGINE's answer for this weapon, straight off meta — so the
       // assertion below compares the screen to the served rule rather than to
       // a rule this check re-states.
-      served: ((META.weapons || []).find(x => x.id === document.getElementById('weapon').value) || {}).forced || {},
+      served: ((META.weapons || []).find(x => x.id === document.getElementById('weapon').value) || {}).settled || {},
     };
   })()`);
 };

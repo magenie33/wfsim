@@ -1166,9 +1166,24 @@ pub fn meta_json() -> Value {
                 // reader's. `engine::scenario::forced_for` is the one rule, so
                 // the number that runs and the sentence on screen cannot
                 // describe different ones (owner, 2026-08-27).
-                "forced": wfsim_engine::scenario::SCENARIO_AXES.iter()
-                    .filter_map(|a| wfsim_engine::scenario::forced_for(a, &w.id)
-                        .map(|(v, why)| (a.id.to_string(), json!([v, why]))))
+                // …AND THE CONSEQUENCE, so the page stops deriving it. A
+                // SETTLED axis is one the weapon decides rather than the reader
+                // — derived from the capabilities it lacks, never written down
+                // — as `{ "<axis>": [value, "why"] }`, absent when the choice
+                // is the reader's (owner, 2026-08-27).
+                //
+                // The VALUE keeps its json type: a flag arrives as a bool and a
+                // number as a number, so a control can be drawn from it without
+                // the page knowing which axis it is looking at.
+                "settled": wfsim_engine::scenario::SCENARIO_AXES.iter()
+                    .filter_map(|a| wfsim_engine::scenario::settled_for(a, &w.id)
+                        .map(|(v, why)| (a.id.to_string(), json!([
+                            match v {
+                                wfsim_engine::scenario::AxisValue::Flag(b) => json!(b),
+                                wfsim_engine::scenario::AxisValue::Number(n) => json!(n),
+                            },
+                            why,
+                        ]))))
                     .collect::<serde_json::Map<_, _>>(),
                 // A PASSIVE WE DO NOT MODEL, so the page can say the number is
                 // a floor rather than let it read as the weapon's real output.
@@ -1650,6 +1665,7 @@ pub fn meta_json() -> Value {
                     wfsim_engine::scenario::Group::Wielder => "wielder",
                     wfsim_engine::scenario::Group::Squad => "squad",
                 },
+                "requires": a.requires.iter().map(|r| format!("{:?}", r.cap)).collect::<Vec<_>>(),
                 "kind": match a.kind {
                     wfsim_engine::scenario::AxisKind::Flag => json!({ "t": "flag" }),
                     wfsim_engine::scenario::AxisKind::Number { min, max } =>
