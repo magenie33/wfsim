@@ -5,7 +5,7 @@
 //! a downloaded one, and roll back a version that will not start. Everything a
 //! reader sees is the same `site/` the browser gets, running the same wasm on
 //! the same CPU. See docs/DESKTOP.md.
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![cfg_attr(all(not(debug_assertions), windows), windows_subsystem = "windows")]
 
 mod layout;
 mod payload;
@@ -53,7 +53,7 @@ fn vet(url: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Open a URL with the shell's own handler — the reader's default browser.
+/// Open a URL with the platform's own handler — the reader's default browser.
 ///
 /// `ShellExecuteW` rather than spawning `explorer.exe`: the latter usually
 /// works, is not what the platform documents, and has a failure mode that is
@@ -61,6 +61,7 @@ fn vet(url: &str) -> Result<(), String> {
 /// did with the argument, so a link that opened nothing looks exactly like one
 /// that opened a browser. ShellExecuteW answers with the handler it started,
 /// and anything at or below 32 is an error code.
+#[cfg(windows)]
 fn shell_open(url: &str) -> Result<String, String> {
     use std::os::windows::ffi::OsStrExt;
     use windows_sys::Win32::UI::Shell::ShellExecuteW;
@@ -91,6 +92,22 @@ fn shell_open(url: &str) -> Result<String, String> {
     } else {
         Err(format!("the system refused to open {url} (ShellExecute returned {code})"))
     }
+}
+
+/// The same thing everywhere else: `xdg-open` on a desktop Linux, `open` on
+/// macOS. Both hand the URL to whatever the session has registered for http,
+/// and both report only whether the helper STARTED — the Windows arm can say
+/// more than that, and this one cannot, which is the platform's limit rather
+/// than a shortcut.
+#[cfg(not(windows))]
+fn shell_open(url: &str) -> Result<String, String> {
+    vet(url)?;
+    let helper = if cfg!(target_os = "macos") { "open" } else { "xdg-open" };
+    std::process::Command::new(helper)
+        .arg(url)
+        .spawn()
+        .map(|_| format!("opened {url}"))
+        .map_err(|e| format!("{helper} could not be started: {e}"))
 }
 
 /// Cleared only once the page has actually rendered — see `Layout::boot_begin`.
@@ -550,11 +567,9 @@ fn main() {
     // again, which is right (the updater owns that directory afterwards) and
     // means a rebuilt payload is invisible until the directory is cleared.
     if std::env::args().any(|a| a == "--reset") {
-        if let Ok(base) = std::env::var("LOCALAPPDATA") {
-            let dir = std::path::PathBuf::from(base).join("WFSim");
-            let _ = std::fs::remove_dir_all(&dir);
-            println!("reset: removed {}", dir.display());
-        }
+        let dir = layout::data_root();
+        let _ = std::fs::remove_dir_all(&dir);
+        println!("reset: removed {}", dir.display());
     }
     let layout = Arc::new(Layout::open().expect("could not prepare the app directory"));
     let rolled_back = layout.boot_begin();

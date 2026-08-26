@@ -38,12 +38,43 @@ pub struct Layout {
     root: PathBuf,
 }
 
+/// Where this app keeps the copy of the site it serves.
+///
+/// EACH PLATFORM'S OWN CONVENTION, rather than one path with the others bolted
+/// on. It is the directory a reader deletes to remove the app — the executable
+/// is the only other thing there is — so it has to be where they would look.
+///
+/// The name differs with the convention too: `WFSim` where directories are
+/// capitalised, `wfsim` where they are not.
+pub fn data_root() -> PathBuf {
+    #[cfg(windows)]
+    {
+        std::env::var("LOCALAPPDATA")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| std::env::temp_dir())
+            .join("WFSim")
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::env::var("HOME")
+            .map(|h| PathBuf::from(h).join("Library").join("Application Support"))
+            .unwrap_or_else(|_| std::env::temp_dir())
+            .join("WFSim")
+    }
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        // XDG: `$XDG_DATA_HOME`, or its documented default.
+        std::env::var("XDG_DATA_HOME")
+            .map(PathBuf::from)
+            .or_else(|_| std::env::var("HOME").map(|h| PathBuf::from(h).join(".local").join("share")))
+            .unwrap_or_else(|_| std::env::temp_dir())
+            .join("wfsim")
+    }
+}
+
 impl Layout {
     pub fn open() -> std::io::Result<Self> {
-        let base = std::env::var("LOCALAPPDATA")
-            .map(PathBuf::from)
-            .unwrap_or_else(|_| std::env::temp_dir());
-        let me = Self { root: base.join("WFSim") };
+        let me = Self { root: data_root() };
         std::fs::create_dir_all(&me.root)?;
 
         // A `next/` left behind is an update that died partway. It is never

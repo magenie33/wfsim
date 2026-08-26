@@ -101,8 +101,18 @@ def main() -> None:
     # replacing, since everything after it arrives through the update channel. A
     # stable name is worth more than being able to tell two downloads apart,
     # which the SHA-256 does anyway.
-    dest = DIST / "WFSim.exe"
-    shutil.copy2(DESKTOP / "target" / "release" / "wfsim-desktop.exe", dest)
+    #
+    # THE LINUX NAME CARRIES ITS PLATFORM because both land in one GitHub
+    # Release, where `WFSim` and `WFSim.exe` beside each other would be a
+    # guess. On Windows the extension already says it.
+    windows = os.name == "nt"
+    built = DESKTOP / "target" / "release" / ("wfsim-desktop.exe" if windows else "wfsim-desktop")
+    dest = DIST / ("WFSim.exe" if windows else "WFSim-linux")
+    shutil.copy2(built, dest)
+    if not windows:
+        # copy2 keeps the mode, but a file that arrives from a Release asset
+        # loses it — the notes say so, and this at least makes the local one run.
+        dest.chmod(0o755)
     body = dest.read_bytes()
     digest = hashlib.sha256(body).hexdigest()
 
@@ -131,6 +141,18 @@ def main() -> None:
     # THE WORDING IS THE OWNER'S (2026-08-26), edited by hand in `dist/` and
     # brought back here so the next build does not overwrite it. Only the
     # SHA-256 is generated — everything else is his text, kept verbatim.
+    # THE NOTES ARE FOR THE NETWORK DRIVE, which is a Windows audience: they
+    # explain SmartScreen and `certutil`, neither of which exists elsewhere. The
+    # Linux download goes out through a GitHub Release, where the release body
+    # is the place to say `chmod +x` — so this file is simply not written there
+    # rather than translated into something half-true.
+    if not windows:
+        print("\n" + "=" * 60)
+        print(f"app        {dest}  ({len(body) / 1e6:.1f} MB)")
+        print(f"sha256     {digest}")
+        print(f"source     {DIST / 'source.zip'}")
+        return
+
     notes = DIST / "使用说明.txt"
     notes.write_text(
         "WFSim: 终极 Warframe 计算器\n"

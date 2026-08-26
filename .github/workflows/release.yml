@@ -16,6 +16,14 @@
 # IT DOES NOT REBUILD `site/`. That directory is committed — it is the artefact
 # Cloudflare deploys — so the client's payload comes straight out of the
 # checkout. A release is one `cargo build`, not the whole wasm pipeline.
+#
+# LINUX IS HERE BECAUSE WARFRAME RUNS THERE. Digital Extremes ships no Linux
+# client ("There is no Mac or Linux support currently available"), but Proton
+# runs the game well and a Steam Deck is a Linux desktop — those players can
+# play and could not install the calculator. macOS is deliberately absent: with
+# no native client and no Proton equivalent, a Mac user cannot play Warframe at
+# all, and Gatekeeper plus $99/yr notarisation is a high price for an audience
+# that does not exist.
 name: Release
 
 on:
@@ -25,10 +33,28 @@ permissions:
   contents: write
 
 jobs:
-  windows:
-    runs-on: windows-latest
+  build:
+    strategy:
+      # Both platforms are built even if one fails, so a Linux problem does not
+      # hide whether Windows is fine.
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: WFSim.exe
+          - os: ubuntu-latest
+            artifact: WFSim-linux
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+
+      # Tauri on Linux is WebKitGTK rather than a system webview, so the
+      # development headers have to be present to build against.
+      - name: Linux webview dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - uses: dtolnay/rust-toolchain@master
         with:
@@ -54,39 +80,89 @@ jobs:
       # failure. This runs the app: wasm engine, page render, storage, the
       # board endpoints, the source offer. A release nobody ran is a release
       # nobody has seen fail.
-      - name: The shipped binary passes its own checks
+      #
+      # On Linux it needs a display, so it runs under a virtual one; there is
+      # no window to look at either way, the checks report through the app's
+      # own protocol.
+      - name: The shipped binary passes its own checks (Windows)
+        if: matrix.os == 'windows-latest'
         shell: bash
         run: ./dist/WFSim.exe --selftest --reset
 
+      - name: The shipped binary passes its own checks (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: xvfb-run --auto-servernum ./dist/WFSim-linux --selftest --reset
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}
+          if-no-files-found: error
+
+      # Only one of the two needs to carry these; Windows is the one whose
+      # notes file exists.
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'windows-latest'
+        with:
+          name: extras
+          path: |
+            dist/source.zip
+            dist/使用说明.txt
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
       - name: Collect the release notes
         id: notes
-        shell: bash
         run: |
-          SHA=$(sha256sum dist/WFSim.exe | cut -d' ' -f1)
-          TAG="$(date -u +%Y-%m-%d)-$(git rev-parse --short=7 HEAD)"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
-          echo "Release $TAG, sha256 $SHA"
+          cd artifacts
+          WIN=$(sha256sum WFSim.exe | cut -d' ' -f1)
+          LIN=$(sha256sum WFSim-linux | cut -d' ' -f1)
+          TAG="$(date -u +%Y-%m-%d)-$(git -C .. rev-parse --short=7 HEAD)"
+          {
+            echo "tag=$TAG"
+            echo "win=$WIN"
+            echo "lin=$LIN"
+          } >> "$GITHUB_OUTPUT"
 
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.notes.outputs.tag }}
           name: WFSim ${{ steps.notes.outputs.tag }}
           files: |
-            dist/WFSim.exe
-            dist/source.zip
+            artifacts/WFSim.exe
+            artifacts/WFSim-linux
+            artifacts/source.zip
           body: |
-            **Download `WFSim.exe` and run it.** No installer, no unpacking —
-            the whole app is inside the executable. It updates itself after
-            that, so this download is a starting point rather than something to
-            come back for.
+            **Download one file and run it.** No installer, no unpacking — the
+            whole app is inside the executable. It updates itself afterwards, so
+            this download is a starting point rather than something to come back
+            for.
 
-            Windows will show its blue "protected your PC" notice on first run:
+            | | |
+            |---|---|
+            | Windows | `WFSim.exe` — double-click |
+            | Linux | `WFSim-linux` — `chmod +x WFSim-linux && ./WFSim-linux` |
+
+            Windows shows its blue "protected your PC" notice on first run:
             this build is not code-signed (a certificate costs more per year
             than a free tool justifies). Choose **More info → Run anyway**.
 
+            Linux needs WebKitGTK present — `libwebkit2gtk-4.1-0` on Debian and
+            Ubuntu, `webkit2gtk4.1` on Fedora, `webkit2gtk-4.1` on Arch. Most
+            desktops already have it.
+
             ```
-            sha256  ${{ steps.notes.outputs.sha }}
+            WFSim.exe    ${{ steps.notes.outputs.win }}
+            WFSim-linux  ${{ steps.notes.outputs.lin }}
             ```
 
             `source.zip` is the corresponding source AGPL-3.0 asks to be offered

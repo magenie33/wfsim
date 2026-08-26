@@ -37,9 +37,11 @@ ureq = "2"
 # an invitation to serve a different one.
 ed25519-dalek = "2"
 getrandom = "0.2"
-# ShellExecuteW, for opening a wiki link in the reader's own browser.
-# `explorer.exe <url>` mostly works and is not what the platform documents;
-# this is the call every browser-opening library makes underneath.
+
+# ShellExecuteW, for opening a wiki link in the reader's own browser. Windows
+# only: every other platform hands the URL to xdg-open or open, which needs no
+# crate at all.
+[target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = ["Win32_UI_Shell", "Win32_Foundation"] }
 
 [profile.release]
