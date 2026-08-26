@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 2497
+submissions: 2521
 engine: e4c4d61bea3efcfd46fdf9a364d4914ca64f8e53
 entries:
   - weapon: aeolak
@@ -138,9 +138,31 @@ entries:
     arcanes: [primary_crux]
   - weapon: atomos
     mode: base
+    score: 17.495156628044683
+    fp: 1a4cb12aa9cc84e8
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, riven, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_resonant_restore, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [damage, multishot, toxin]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 0.9, 1.1]
+  - weapon: atomos
+    mode: base
     score: 13.458437600354602
     fp: ea9c4de92df1b997
     exilus: primed_pistol_ammo_mutation
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: atomos
+    mode: base
+    score: 13.458437600354602
+    fp: 360c8773c5db055e
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, riven, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
     arcanes: [secondary_enervate]
@@ -366,10 +388,18 @@ entries:
     arcanes: [secondary_encumber]
   - weapon: ax_52
     mode: base
-    score: 0.5854637401062202
-    fp: 17173328cb70cc73
-    mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, stormbringer, infected_clip, primed_cryo_rounds]
-    arcanes: [primary_deadhead]
+    score: 1.5811584615940897
+    fp: 96294d87003d7eae
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, high_voltage, hellfire]
+    arcanes: [primary_crux]
+  - weapon: ax_52
+    mode: base
+    score: 1.287536253285052
+    fp: 8e35a5503855adbe
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_aptitude, galvanized_scope, hunter_munitions, vile_acceleration, vital_sense, hellfire]
+    arcanes: [primary_crux]
   - weapon: ballistica
     mode: cycle
     score: 13.338243569977353
@@ -1935,6 +1965,12 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
   - weapon: cortege
     mode: base
+    score: 18.261399443668715
+    fp: 7e98f0ba473c8398
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+  - weapon: cortege
+    mode: base
     score: 17.666666666666668
     fp: 07c563830ecef4f8
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, marked_target, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
@@ -3073,6 +3109,12 @@ entries:
     fp: e1457036831c4676
     mods: [heavy_caliber, primary_acuity, serration, hammer_shot, vile_acceleration, vital_sense, hellfire, thermite_rounds]
     arcanes: [primary_crux]
+  - weapon: kompressa_prime
+    mode: base
+    score: 1.0291243870092437
+    fp: c944831c19b7a6c2
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, primed_convulsion, primed_heated_charge]
+    arcanes: [secondary_enervate]
   - weapon: kunai
     mode: cycle
     score: 48.6788031160701
@@ -5387,6 +5429,20 @@ entries:
     fp: f5d1066764e647e5
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, polar_magazine, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
+  - weapon: phage
+    mode: base
+    score: 4.7533646037080635
+    fp: 3efe9a5f9ba9dc7c
+    exilus: galvanized_acceleration
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, critical_deceleration, shotgun_barrage, shotgun_elementalist, shell_shock, scattering_inferno]
+    arcanes: [primary_debilitate]
+  - weapon: phage
+    mode: base
+    score: 4.35530824374777
+    fp: 5b51dc0f2d81b526
+    exilus: galvanized_acceleration
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_barrage, shotgun_elementalist, primed_charged_shell, toxic_barrage, scattering_inferno]
+    arcanes: [primary_debilitate]
   - weapon: phantasma
     mode: base
     score: 14.560424408141564
@@ -7392,6 +7448,33 @@ entries:
     score: 0.3232977599925098
     fp: b47588882224ddbd
     mods: [heavy_caliber, split_chamber, serration, hammer_shot, primed_cryo_rounds, stormbringer, hellfire, thermite_rounds]
+  - weapon: verglas_prime
+    mode: base
+    score: 2.356199523435937
+    fp: 06a31bf32f211381
+    mods: [heavy_caliber, split_chamber, magnetic_capacity, rime_rounds, malignant_force, hellfire, thermite_rounds, riven]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
+    score: 2.1849017565881423
+    fp: 06a31bf32f211381
+    mods: [heavy_caliber, split_chamber, magnetic_capacity, rime_rounds, malignant_force, hellfire, thermite_rounds, riven]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: status_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
+    score: 2.1624655952313296
+    fp: 06a31bf32f211381
+    mods: [heavy_caliber, split_chamber, magnetic_capacity, riven, rime_rounds, malignant_force, hellfire, thermite_rounds]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: verglas_prime
     mode: base
     score: 2.0126311527598446
