@@ -10478,7 +10478,13 @@ function bindRankedSlots(box, cfgs) {
     if (!cfg || cfg.locked) return;
     const dots = el.querySelector(".dots");
     if (dots) {
-      dots.addEventListener("click", (e) => { e.stopPropagation(); openSlotMenu(el, id, cfg); });
+      // THE MENU HANGS OFF THE ⋯, NOT OFF THE CARD. `place` puts a popover's
+      // top-left under its anchor's bottom-left, so anchoring to the whole card
+      // dropped the menu at the card's BOTTOM-LEFT while a mod slot's — the one
+      // that passes its own button — came out under the ⋯ at the top right.
+      // Same control, same gesture, two different places on the page
+      // (owner, 2026-08-26).
+      dots.addEventListener("click", (e) => { e.stopPropagation(); openSlotMenu(e.currentTarget, id, cfg); });
     } else {
       // An EMPTY slot opens the list on a click anywhere, which is the mod and
       // arcane slots' own rule: there is nothing in it to select, so the whole
@@ -11052,7 +11058,7 @@ function arcaneSlotEl(pool, i) {
     el.innerHTML = imgTag(IMG(a.image), "mod") +
       `<div class="info"><div class="mn">${wl(a.name, wikiUrl(a.name_en || a.name))}</div>${effLines(cardLines(a, r, effectsAt(a, r)))}${rank}</div>` +
       `<button class="dots" title="options">⋯</button>`;
-    el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openArcaneMenu(el, i); });
+    el.querySelector(".dots").addEventListener("click", (e) => { e.stopPropagation(); openArcaneMenu(e.currentTarget, i); });
     el.querySelectorAll(".rk").forEach((b) => b.addEventListener("click", (e) => {
       e.stopPropagation();
       setArcaneRank(i, Math.max(0, Math.min(maxr, r + Number(b.dataset.d))));

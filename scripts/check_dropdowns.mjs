@@ -140,4 +140,73 @@ check("a dropdown INSIDE the mod picker opens",
 check("...without closing the picker it belongs to",
   v.pickerStillOpen === true, `picker still open: ${v.pickerStillOpen}`);
 
+// ---- 5. AND THERE IS ONE SLOT MENU -------------------------------------
+//
+// The same claim one level down. Every axis that can hold something draws the
+// same card with the same ⋯ at its top right, and the ⋯ opens the same
+// Swap/Remove menu — so the menu has to arrive in the same place. It did not:
+// a MOD slot passed its own button as the anchor while the arcane, evolution,
+// kitgun-part and valence slots passed the whole CARD, and `place` puts a
+// popover under its anchor's bottom-LEFT. Same control, same gesture, and the
+// menu appeared under the ⋯ on one and at the card's BOTTOM-LEFT on the other
+// four (owner, 2026-08-26). Measured on an evolution row: the fix moves it
+// 152px right and 46px up.
+//
+// ASSERTED AS A RELATION, not as coordinates. Where the menu lands depends on
+// the width, the clamp and where the card sits, none of which this is about —
+// what has to hold is that it hangs off ITS OWN BUTTON, which is one number
+// (the gap under the button) and one that no layout change can drift.
+const MENUS = [
+  // Laetum carries three of the five: mods, arcanes and Incarnon evolutions.
+  ["Laetum", "mod-slots"], ["Laetum", "arcane-slots"], ["Laetum", "evo-rows"],
+  // …and the two that are a weapon KIND rather than a slot everyone has.
+  ["Tombfinger", "assembly-row"], ["Kuva_Nukor", "element-cfg"],
+];
+let lastWeapon = null;
+for (const [weapon, host] of MENUS) {
+  if (weapon !== lastWeapon) {
+    await send("Page.navigate", { url: BASE + "/weapons/" + weapon });
+    await sleep(11000);
+    lastWeapon = weapon;
+  }
+  const m = await evaluate(`(async () => {
+    const nap = (ms) => new Promise((r) => setTimeout(r, ms));
+    // FILL WHAT IS EMPTY, because an empty slot has no ⋯ at all — the whole
+    // plate opens the list — so this can only be asked of a filled one.
+    const pool = poolWithRivens().filter((x) => !x.exilus);
+    for (let i = 0; i < 8 && i < pool.length; i++) { slots[i].mod = pool[i].id; slots[i].rank = null; }
+    renderMods();
+    try { const ap = arcanePool(); if (ap && ap.length) { arcanes[0] = ap[0].id; renderArcanes(); } } catch (e) {}
+    try {
+      const wid = document.getElementById('weapon').value;
+      const tiers = ((META.weapons.find((x) => x.id === wid) || {}).evolutions) || [];
+      if (tiers.length && (tiers[0].options || []).length)
+        pickEvolution(tiers[0].tier, tiers[0].options[0].id);
+    } catch (e) {}
+    await nap(900);
+    const dots = document.querySelector('#' + ${JSON.stringify(host)} + ' .slot.filled .dots');
+    if (!dots) return { missing: true };
+    dots.click(); await nap(400);
+    const menu = [...document.querySelectorAll('.popover')].find((p) => !p.hidden);
+    if (!menu) return { noMenu: true };
+    const d = dots.getBoundingClientRect(), b = menu.getBoundingClientRect();
+    const card = dots.closest('.slot').getBoundingClientRect();
+    return { gapUnderButton: Math.round(b.top - d.bottom),
+             atCardBottom: Math.round(b.top - card.bottom),
+             leftOfButton: Math.round(b.left - d.left) };
+  })()`);
+  check(`the ${host} card's ⋯ opens its menu`, !m.missing && !m.noMenu,
+    JSON.stringify(m));
+  if (m.missing || m.noMenu) continue;
+  // The one number that is the claim: the menu sits just under the BUTTON.
+  check(`...directly under that button, like every other axis`,
+    m.gapUnderButton === 4, `${m.gapUnderButton}px under the ⋯`);
+  // And the negative control, which is what the four broken ones scored: a
+  // menu hung off the CARD lands under the card's bottom edge instead. Stated
+  // so a future `place` that happens to put both in the same spot cannot make
+  // the assertion above vacuous.
+  check(`...rather than at the card's bottom-left`, m.atCardBottom !== 4,
+    `${m.atCardBottom}px under the card, left offset ${m.leftOfButton}`);
+}
+
 await app.finish("every dropdown on the site is the same dropdown");
