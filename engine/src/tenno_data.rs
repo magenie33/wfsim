@@ -405,6 +405,25 @@ pub fn default_tenno() -> &'static Tenno {
     })
 }
 
+/// THE WIELDER OF A COMPANION WEAPON — a Sentinel, not a Warframe.
+///
+/// TWO ACTORS, ONE OF WHICH HOLDS THE GUN (owner, 2026-08-26). A robotic weapon
+/// is carried by a companion while the WARFRAME is still in the fight behind it,
+/// bringing the aura and the archon shards — so only the wielder's own STAT
+/// BLOCK comes from here and everything else stays the Warframe's. The auras a
+/// companion weapon can take are the proof that it does: `rifle_amp` reaches an
+/// Artax, and an aura is something a Warframe wears.
+///
+/// Same floor rule as [`default_tenno`], different roster: the lowest any
+/// released Sentinel has, stat by stat. See `data/tenno/sentinel.yaml`.
+pub fn sentinel_wielder() -> &'static Tenno {
+    static T: OnceLock<Tenno> = OnceLock::new();
+    T.get_or_init(|| {
+        let text = crate::data::file("tenno/sentinel.yaml").expect("embedded data/tenno/sentinel.yaml");
+        serde_norway::from_str(text).expect("parse data/tenno/sentinel.yaml")
+    })
+}
+
 /// ONE WARFRAME, as the three numbers a weapon perk can ask about.
 ///
 /// Health and shield are deliberately absent — see `data/frames.yaml`: the
@@ -507,6 +526,38 @@ mod tests {
     /// and its values are pinned, which is what `data/README.md` requires of a
     /// field with no runtime reader yet. If a future change starts feeding the
     /// Tenno into the sim, THIS test is what makes the placeholder values
+    /// **A COMPANION WEAPON IS HELD BY A SENTINEL**, and the two wielders have
+    /// different floors (owner, 2026-08-26).
+    ///
+    /// Read off the wiki's own infoboxes across all 17 Sentinels, which agree
+    /// with DE's export digit for digit — sentinel stats do not scale with rank,
+    /// so there is no "at Rank 30" figure to prefer.
+    ///
+    /// ASSERTED AGAINST THE WARFRAME FLOOR, not as literals alone: the point of
+    /// the entry is that the two DIFFER, and a test that only pinned five
+    /// numbers would pass just as well on a file that had been copied.
+    #[test]
+    fn a_companion_weapon_is_held_by_a_sentinel_and_it_is_a_different_floor() {
+        let s = sentinel_wielder();
+        let w = default_tenno();
+        assert_eq!(s.id, "sentinel");
+        assert_eq!(s.health, 450.0, "Wyrm Prime");
+        assert_eq!(s.shield, 130.0, "Shade");
+        assert_eq!(s.armor, 80.0, "Carrier and eleven others");
+        // The wiki's Sentinel infobox has no Energy row and no sprint row; the
+        // export lists `power` and the house rule is the wiki's.
+        assert_eq!(s.energy, 0.0);
+        assert_eq!(s.sprint, 0.0, "a sentinel flies — no legs, no sprint gate");
+        // THEY ARE NOT THE SAME WIELDER. A sentinel is tougher and less
+        // armoured, which is exactly why showing one for the other was wrong.
+        assert!(s.health > w.health && s.armor < w.armor,
+            "sentinel {}/{} vs warframe {}/{}", s.health, s.armor, w.health, w.armor);
+        // A SENTINEL IS ALWAYS AIMING, restated here because `webapi` forces it
+        // too and the two must not drift.
+        assert!(s.state.aiming);
+        assert!(!s.state.invisible && !s.state.airborne);
+    }
+
     /// impossible to ship by accident.
     #[test]
     fn the_default_tenno_is_the_floor_of_every_released_frame() {

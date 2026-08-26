@@ -140,6 +140,33 @@ check("...and they stay editable — no frame reaches the 700-energy gate",
 // armor" was true of the data and false of what the simulator ran. It could not
 // say the other thing either: four frames genuinely have no energy pool, so 0
 // is a real value and a control where 0 means "unset" cannot express it.
+// AND A COMPANION WEAPON SHOWS THE SENTINEL'S FLOOR, not a Warframe's (owner,
+// 2026-08-26). Two actors on the player's side: a Sentinel holds the 21
+// companion weapons while the WARFRAME stays in the fight behind it, bringing
+// the aura and the shards — so only the wielder's stat block swaps. Asserted on
+// the two rosters DIFFERING rather than on five literals, because a test that
+// pinned numbers alone would pass on a file that had been copied.
+{
+  await evaluate(`(() => { history.pushState({}, '', '/weapons/Artax'); route(); })()`);
+  await sleep(3000);
+  const sen = await evaluate(`(async () => {
+    await new Promise(r => setTimeout(r, 1500));
+    const l = document.querySelector('.wffloor');
+    return { line: l ? l.textContent : '', floor: tennoFloor() };
+  })()`);
+  check("a companion weapon states the SENTINEL's floor",
+    sen.floor && sen.floor.name === "Sentinel" && sen.floor.armor === 80,
+    JSON.stringify(sen.floor));
+  check("...which is a different wielder from the Warframe's",
+    sen.floor.health === 450 && sen.floor.health !== 250,
+    `health ${sen.floor && sen.floor.health}`);
+  // A SENTINEL FLIES, so the line does not offer it a sprint gate it can never
+  // open — and the heading says WHOSE floor it is, since the numbers alone
+  // cannot.
+  check("...and the line names the wielder rather than a generic one",
+    /Sentinel|哨兵/.test(sen.line), JSON.stringify(sen.line).slice(0, 120));
+}
+
 check("the wielder floor is stated before the boxes that override it",
   /105/.test(r.floorLine) && /0/.test(r.floorLine), JSON.stringify(r.floorLine).slice(0, 140));
 check("...and unticking drops the key, so the floor is what the fight uses",

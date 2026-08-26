@@ -1,0 +1,72 @@
+# THE WIELDER OF A COMPANION WEAPON — a Sentinel, not a Warframe.
+#
+# THERE ARE TWO ACTORS ON THE PLAYER'S SIDE and until now there was one entry
+# for both (owner, 2026-08-26). A robotic weapon is carried by a companion —
+# the wiki is explicit that MOAs "share Robotic weapons with Sentinels and equip
+# their weapons" — while the WARFRAME is still in the fight behind it, bringing
+# the aura and the archon shards. `data/tenno/default.yaml` was doing both jobs,
+# so opening an Artax showed a Warframe's health and armor as the stats of the
+# thing holding the gun.
+#
+# WHAT SWAPS AND WHAT DOES NOT. Only the wielder's own STAT BLOCK comes from
+# here: health, shield, armor, energy, sprint. Everything else on the fight's
+# player stays the Warframe's, because it still is — the auras a sentinel weapon
+# can take are proof (`rifle_amp` reaches an Artax; `emp_aura` and
+# `corrosive_projection` reach every one of the 21), and an aura is something a
+# WARFRAME wears.
+#
+# NOTHING READS THESE NUMBERS TODAY, and that is deliberate rather than an
+# oversight. Not one mod, evolution or arcane in any of the 21 companion pools
+# asks about the wielder's stats — measured, not assumed — so this entry moves
+# no damage figure. It exists for the same reason `default.yaml` did before its
+# first consumer: the next mechanic that reads a wielder configures one instead
+# of also having to invent one, and until then the panel stops telling a reader
+# that their Sentinel has a Warframe's armor.
+#
+# THE FLOOR RULE IS THE SAME ONE, applied to a different roster: each field is
+# the LOWEST any released Sentinel has, stat by stat, so a bonus this wielder
+# pays is one every Sentinel pays. Read off the wiki's own infoboxes across all
+# 17, which agree with DE's export digit for digit — sentinel stats do not
+# scale with rank, so there is no "at Rank 30" figure to prefer:
+#   health 450  Wyrm Prime
+#   shield 130  Shade
+#   armor   80  Carrier and eleven others
+id: sentinel
+name: Sentinel
+
+health: 450
+shield: 130
+overguard: 0
+armor: 80
+
+# ZERO, AND SAID RATHER THAN GUESSED. The wiki's Sentinel infobox has no Energy
+# row at all, while DE's export carries `power: 100`–`125`. The two disagree
+# about whether the field exists, nothing reads it, and the house rule is the
+# wiki's — so it is zero, and this comment is here so the next person knows the
+# export says otherwise rather than discovering it as a contradiction.
+energy: 0
+
+# A SENTINEL DOES NOT SPRINT — it flies, and its infobox has no sprint row. Zero
+# rather than a Warframe's 0.9, so a "With Sprint Speed 1.2 or Higher" perk is
+# unreachable here, which is the honest answer for a thing with no legs.
+sprint: 0
+
+# WHAT THE WIELDER IS DOING. A sentinel is always treated as aiming — that has
+# been true since before this file (`webapi`: `t.state.aiming = info.sentinel ||
+# …`) and is restated here so the two cannot drift.
+#
+# The rest is what `default.yaml` says and for the same reason: the neutral
+# wielder is doing none of it, so a mod gated on one contributes nothing and the
+# panel says so rather than folding a number in.
+state:
+  aiming: true
+  invisible: false
+  airborne: false
+  energy_pct: 1.0
+
+source:
+  # No wiki page defines "the default Sentinel" — like the Warframe floor, this
+  # is our own construction and no such companion exists. Every number in it is
+  # a real Sentinel's, and the comments above name which one each floor belongs
+  # to.
+  url: null

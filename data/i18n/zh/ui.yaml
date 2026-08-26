@@ -834,7 +834,13 @@ ui:
   "no": "否"
   "none selected": 未选择
   "none yet — a target you build here appears in every scenario's target list": 还没有 —— 在这里建的目标会出现在每个场景的目标列表里
-  "none — no frame": 无 —— 未选择战甲
+  "Warframe floor": 战甲保底
+  "Sentinel floor": 哨兵保底
+  "every board is scored on this": 所有榜单都按它计算
+  "Max energy": 最大能量
+  "Sprint": 冲刺
+  "Wielder floor": 持械者保底
+  "baseline — the floor every board is scored on": 基准战甲 —— 所有榜单都按它计算
   "none — the weapon on its own": 无——武器裸装
   "none — this target dispels them": 无 —— 这个目标会驱散它们
   "none": 无

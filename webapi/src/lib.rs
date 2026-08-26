@@ -357,7 +357,21 @@ fn form_unlock_evo(info: &WeaponInfo) -> Option<&'static str> {
 /// no on-headshot buff fires. So the state is on, the triggers stay dead, and
 /// the request cannot say otherwise.
 fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
-    let mut t = wfsim_engine::tenno_data::default_tenno().clone();
+    // WHOEVER IS HOLDING THIS GUN. A companion weapon is carried by a SENTINEL
+    // and the two rosters have different floors — 450/130/80 against a
+    // Warframe's 250/0/105 — so starting from the Warframe told a reader that
+    // their Artax had a Warframe's armor (owner, 2026-08-26).
+    //
+    // ONLY THE STAT BLOCK SWAPS. The Warframe is still in the fight behind the
+    // companion, bringing the aura and the archon shards, and the auras a
+    // companion weapon can take are the proof: `rifle_amp` reaches an Artax and
+    // an aura is something a Warframe wears. Everything below this line —
+    // state, overrides, squad — is read the same way for both.
+    let mut t = if info.sentinel {
+        wfsim_engine::tenno_data::sentinel_wielder().clone()
+    } else {
+        wfsim_engine::tenno_data::default_tenno().clone()
+    };
     t.state.aiming = info.sentinel || get_bool(v, "aiming", true);
     t.state.invisible = get_bool(v, "invisible", t.state.invisible);
     t.state.airborne = get_bool(v, "airborne", t.state.airborne);
@@ -1600,13 +1614,12 @@ pub fn meta_json() -> Value {
         // override has to be shown against the thing it overrides or the reader
         // cannot tell "0 because no frame" from "0 because that IS the floor".
         // Four frames really do have no energy pool.
-        "tenno_floor": {
-            "health": wfsim_engine::tenno_data::default_tenno().health,
-            "shield": wfsim_engine::tenno_data::default_tenno().shield,
-            "armor": wfsim_engine::tenno_data::default_tenno().armor,
-            "energy": wfsim_engine::tenno_data::default_tenno().energy,
-            "sprint": wfsim_engine::tenno_data::default_tenno().sprint,
-        },
+        // TWO FLOORS, because there are two kinds of wielder: a Warframe holds
+        // most of the roster and a SENTINEL holds the 21 companion weapons, and
+        // their rosters have different lowest values — 450/130/80 against
+        // 250/0/105 (owner, 2026-08-26). The page picks by the weapon.
+        "tenno_floor": floor_json(wfsim_engine::tenno_data::default_tenno()),
+        "sentinel_floor": floor_json(wfsim_engine::tenno_data::sentinel_wielder()),
         "factions": factions,
         // WARFRAME ABILITY BUFFS, the catalogue the scenario's own section
         // draws from (`data/abilities/`). `value` and `duration_seconds` are the
@@ -4346,6 +4359,14 @@ parts.push(json!({
             "sprint": panel_tenno.sprint,
         },
         "buffs": buffs_json(&buffs),
+    })
+}
+
+/// The five numbers a wielder floor is, for `/api/meta`.
+fn floor_json(t: &wfsim_engine::tenno_data::Tenno) -> Value {
+    json!({
+        "name": t.name, "health": t.health, "shield": t.shield,
+        "armor": t.armor, "energy": t.energy, "sprint": t.sprint,
     })
 }
 

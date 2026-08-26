@@ -265,21 +265,18 @@ scenario:
   # every row on this board was scored under; the Vasto's Lone Gun is the one
   # card that would notice.
   solo_weapon: false
-  # THE WIELDER IS THE FLOOR, named rather than zeroed (owner, 2026-08-26).
-  # These were `wf_armor: 0` / `wf_energy: 0`, which is not "no override" but an
-  # override that says nothing — and 0 armor is a Warframe that does not exist.
-  # `data/tenno/default.yaml` is the worst max-rank frame there is, stat by
-  # stat, so pinning THOSE numbers is what this block's own rule asks for and
-  # what makes the board's player the one every frame beats.
+  # THE WIELDER IS NOT NAMED HERE, and that is the exception this block states
+  # rather than hides (owner, 2026-08-27). Every other field is pinned so the
+  # board cannot move when a default moves — but the wielder's five numbers are
+  # pinned by a TEST now (`the_default_tenno_is_the_floor_of_every_released_frame`
+  # asserts all five, naming the frame each floor belongs to), so the drift this
+  # block guards against is already impossible.
   #
-  # IT MOVES NO SCORE, which is why it is a correction rather than a rescore:
-  # the only armor thresholds in the data are 450 (Fortress Salvo) and 1,000
-  # (Primary Bulwark), and 105 reaches neither. Energy was already 0 — four
-  # frames have no pool — and sprint was already the floor.
-  wf_health: 250
-  wf_armor: 105
-  wf_energy: 0
-  wf_sprint: 0.9
+  # What pinning them cost was the reader: the fight's Warframe fields are
+  # OVERRIDES with a tick, and a ruler that names its floor makes every tick
+  # arrive CHECKED — so a first-time visitor, who lands on a ruler, sees four
+  # boxes claiming to override something with the value it already had.
+  # Unticked is the honest default: nothing overridden, the floor in use.
   # CURRENT energy as a fraction of the pool above — and the pool is 0, so this
   # cannot move a number either way today. It is stated because the companion
   # ruler states it and states it DIFFERENTLY (`wf_energy_pct: 0`), which made a

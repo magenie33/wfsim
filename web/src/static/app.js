@@ -11831,7 +11831,15 @@ const defaultHeadshotPct = (w) => ((w || {}).sentinel ? 0 : META.defaults.headsh
 
 /// THE WIELDER'S FLOOR, from `/api/meta` — `data/tenno/default.yaml`, the worst
 /// max-rank frame that does not exist.
-const tennoFloor = () => (META.tenno_floor || { health: 0, shield: 0, armor: 0, energy: 0, sprint: 0.9 });
+/// WHOSE FLOOR THIS WEAPON'S FIGHT STARTS FROM — a Warframe's, or a SENTINEL's
+/// for the 21 companion weapons (owner, 2026-08-26). Two rosters, two lowest
+/// values: 450/130/80 against 250/0/105, so showing one for the other told a
+/// reader their Artax had a Warframe's armor.
+const tennoFloor = () => {
+  const w = (META.weapons || []).find((x) => x.id === ($("weapon") || {}).value);
+  const f = (w && w.sentinel ? META.sentinel_floor : META.tenno_floor);
+  return f || { name: "", health: 0, shield: 0, armor: 0, energy: 0, sprint: 0.9 };
+};
 
 /// ONE OVERRIDABLE WARFRAME STAT — a tick and a number (owner, 2026-08-26).
 ///
@@ -11863,13 +11871,18 @@ const tennoFloor = () => (META.tenno_floor || { health: 0, shield: 0, armor: 0, 
 /// means something: a bonus this player pays is a bonus EVERY frame pays.
 const wfFloorLine = () => {
   const f = tennoFloor();
-  const cell = (l, v) => `<span><b>${escHtml(l)}</b> ${sig2(v)}</span>`;
+  // WHOLE NUMBERS STAY WHOLE. Four of these five are integers and `sig2` wrote
+  // "250.00" for them, which reads as a measurement rather than as a stat.
+  const num = (v) => (Number.isInteger(v) ? String(v) : sig2(v));
+  const cell = (l, v) => `<span><b>${escHtml(l)}</b> ${num(v)}</span>`;
   return `<div class="wffloor" title="${escHtml(tr(
     "the fight's wielder before any override: each stat is the LOWEST any released Warframe has at rank 30, so a bonus it pays is one every frame pays. EVERY OFFICIAL BOARD IS SCORED ON THIS WIELDER — tick a box below to test a real frame instead"))}">`
-    + `<span class="wffloor-h">${escHtml(tr("Wielder floor · every board is scored on this"))}</span>`
+    + `<span class="wffloor-h">${escHtml(
+        (f.name === "Sentinel" ? tr("Sentinel floor") : tr("Warframe floor"))
+        + " · " + tr("every board is scored on this"))}</span>`
     + cell(tr("Health"), f.health) + cell(tr("Shield"), f.shield)
     + cell(tr("Armor"), f.armor) + cell(tr("Max energy"), f.energy)
-    + cell(tr("Sprint"), f.sprint)
+    + (f.name === "Sentinel" ? "" : cell(tr("Sprint"), f.sprint))
     + `</div>`;
 };
 
@@ -12024,7 +12037,13 @@ function renderScenarioFields(ids, opts = {}) {
         // dropdown that looks like the platform's rather than like the page's
         // is a control a reader has to learn twice (2026-08-18).
         search: true,
-        items: [{ value: "", label: tr("none — no frame") }]
+        // THE EMPTY OPTION IS NAMED, because it stopped meaning "nothing"
+        // (owner, 2026-08-26). It is the FLOOR — the worst max-rank frame there
+        // is, stat by stat — and every official board is scored on it, so
+        // calling it "no frame" described a state the fight has not had since
+        // the floor landed and hid the one wielder a reader most needs to know
+        // about.
+        items: [{ value: "", label: tr("baseline — the floor every board is scored on") }]
           .concat(frames().map((f) => ({ value: f.id, label: f.name }))),
       })}</label>
       ${wfFloorLine()}
@@ -12140,8 +12159,8 @@ function renderScenarioFields(ids, opts = {}) {
             sim.wf_energy = f.energy;
             sim.wf_sprint = f.sprint;
           } else {
-            // "none — no frame" clears the overrides rather than zeroing them:
-            // back to the floor, which is what no frame now means.
+            // The BASELINE option clears the overrides rather than zeroing
+            // them: back to the floor, which is what it names.
             delete sim.wf_health; delete sim.wf_armor;
             delete sim.wf_energy; delete sim.wf_sprint;
           }
