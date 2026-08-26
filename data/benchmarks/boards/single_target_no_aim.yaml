@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 2485
+submissions: 2494
 engine: 51824f59ee8cfd30ce89a5c77b15bcaab93e989b
 entries:
   - weapon: aeolak
@@ -1163,6 +1163,17 @@ entries:
     evolutions: [felarx_evo1_incarnon_form, felarx_kinetic_baffle, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_crux]
   - weapon: felarx
+    mode: cycle
+    score: 6.344280780061802
+    fp: 81db0c19f946f805
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, riven, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [multishot, toxin]
+      rolls: [1.1, 1.1]
+  - weapon: felarx
     mode: base
     score: 5.913029337374616
     fp: c7085f166c99e8b9
@@ -1179,15 +1190,15 @@ entries:
   - weapon: felarx
     mode: cycle
     score: 4.606032267704569
-    fp: 8099ce1bc3dfbb6e
-    exilus: primed_counterbalance
+    fp: adf52d6e33b81601
     mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_deadhead]
   - weapon: felarx
     mode: cycle
     score: 4.606032267704569
-    fp: adf52d6e33b81601
+    fp: 8099ce1bc3dfbb6e
+    exilus: primed_counterbalance
     mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_deadhead]
@@ -1727,37 +1738,15 @@ entries:
     valence: toxin
   - weapon: kuva_kohm
     mode: base
-    score: 1.305117395775275
-    fp: 9855c2e971904d7b
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, shotgun_barrage, shotgun_elementalist, primed_charged_shell, riven]
-    arcanes: [primary_deadhead]
-    valence: magnetic
+    score: 6.0437589177959445
+    fp: cf21c27c7e46d35c
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, primed_chilling_grasp, toxic_barrage]
+    arcanes: [primary_crux]
+    valence: heat
     riven:
-      bonuses: [critical_chance, damage, toxin]
+      bonuses: [damage, fire_rate]
       malus: damage_to_infested
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: kuva_kohm
-    mode: base
-    score: 1.2353273407791567
-    fp: 728257a7432a0f75
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, primed_charged_shell, riven]
-    arcanes: [primary_deadhead]
-    valence: magnetic
-    riven:
-      bonuses: [critical_chance, damage, toxin]
-      malus: damage_to_infested
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: kuva_kohm
-    mode: base
-    score: 0.91083332688815
-    fp: d072e164a69ebf82
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, riven]
-    arcanes: [primary_deadhead]
-    valence: magnetic
-    riven:
-      bonuses: [critical_chance, damage, toxin]
-      malus: damage_to_infested
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: kuva_kohm
     mode: base
     score: 0.7951840783824107
@@ -3889,6 +3878,39 @@ entries:
     mods: [galvanized_chamber, serration, hammer_shot, point_strike, vigilante_armaments, vile_acceleration, vital_sense, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: base
+    score: 1.5250736880860951
+    fp: ea97ea0d84a82401
+    mods: [galvanized_chamber, galvanized_aptitude, vile_acceleration, vital_sense, riven, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [critical_chance, damage]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: base
+    score: 1.232471851888544
+    fp: e575dead2c98d2a6
+    mods: [galvanized_chamber, galvanized_aptitude, vile_acceleration, vital_sense, riven, high_voltage, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [critical_chance, damage]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: base
+    score: 0.9069126990157408
+    fp: 602db0345387f061
+    mods: [galvanized_chamber, primed_firestorm, galvanized_aptitude, vital_sense, riven, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [critical_chance, damage]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
   - weapon: torid
     mode: base
     score: 0.07401096179594036
