@@ -265,7 +265,19 @@ scenario:
   # every row on this board was scored under; the Vasto's Lone Gun is the one
   # card that would notice.
   solo_weapon: false
-  wf_armor: 0
+  # THE WIELDER IS THE FLOOR, named rather than zeroed (owner, 2026-08-26).
+  # These were `wf_armor: 0` / `wf_energy: 0`, which is not "no override" but an
+  # override that says nothing — and 0 armor is a Warframe that does not exist.
+  # `data/tenno/default.yaml` is the worst max-rank frame there is, stat by
+  # stat, so pinning THOSE numbers is what this block's own rule asks for and
+  # what makes the board's player the one every frame beats.
+  #
+  # IT MOVES NO SCORE, which is why it is a correction rather than a rescore:
+  # the only armor thresholds in the data are 450 (Fortress Salvo) and 1,000
+  # (Primary Bulwark), and 105 reaches neither. Energy was already 0 — four
+  # frames have no pool — and sprint was already the floor.
+  wf_health: 250
+  wf_armor: 105
   wf_energy: 0
   wf_sprint: 0.9
   # CURRENT energy as a fraction of the pool above — and the pool is 0, so this

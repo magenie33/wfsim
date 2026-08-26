@@ -15,7 +15,21 @@
 #
 #   armor   +0     rank-invariant, so the export's number IS the maxed one
 #   sprint  +0     likewise
-#   energy  +50    the same on both frames checked, so it is applied below
+#   energy  +50    on both frames checked — and NOT on a frame with no pool
+#
+# THE +50 IS NOT UNIVERSAL, and generalising it from two samples wrote a number
+# into five entries that no frame has (owner pointed at the wiki's comparison
+# table, 2026-08-26). Hildryn, Hildryn Prime, Lavos, Lavos Prime and Helminth
+# have NO energy pool — their abilities are paid for out of shields or with
+# cooldowns — so 0 + 50 made up 50 for each of them. The wiki's own infobox is
+# unambiguous: "Energy 0 (0 at Rank 30)", and its data block carries
+# `"EnergyRank30": 0`.
+#
+# …WHICH ALSO MEANS THE DERIVATION WAS NEVER NECESSARY. That infobox states the
+# rank-30 value PER FRAME (`EnergyRank30`, `ShieldRank30`, and health as
+# "180 (280 at Rank 30)"), so the day this file is regenerated it should read
+# those rather than apply a rule — and the "health cannot be derived" paragraph
+# below stops being true at the same moment.
 #   health  +100 on Ash, +200 on Inaros Prime — per-frame, not derivable
 #   shield  +100 on Ash, +0 on Inaros Prime (which has none)
 #
@@ -247,17 +261,17 @@ frames:
   - id: helminth
     name: Helminth
     armor: 0
-    energy: 50
+    energy: 0
     sprint: 1.0
   - id: hildryn
     name: Hildryn
     armor: 315
-    energy: 50
+    energy: 0
     sprint: 1
   - id: hildryn_prime
     name: Hildryn Prime
     armor: 315
-    energy: 50
+    energy: 0
     sprint: 1.05
   - id: hydroid
     name: Hydroid
@@ -317,12 +331,12 @@ frames:
   - id: lavos
     name: Lavos
     armor: 575
-    energy: 50
+    energy: 0
     sprint: 1.15
   - id: lavos_prime
     name: Lavos Prime
     armor: 575
-    energy: 50
+    energy: 0
     sprint: 1.15
   - id: limbo
     name: Limbo

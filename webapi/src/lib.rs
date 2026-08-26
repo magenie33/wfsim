@@ -1588,6 +1588,25 @@ pub fn meta_json() -> Value {
                 "armor": f.armor, "energy": f.energy, "sprint": f.sprint,
             }))
             .collect::<Vec<_>>(),
+        // THE FLOOR THE FIGHT STARTS FROM — the neutral wielder, as five numbers.
+        //
+        // It is `data/tenno/default.yaml`: THE WORST MAX-RANK FRAME THAT DOES
+        // NOT EXIST, each stat the lowest any released Warframe has at rank 30.
+        // Static, so it rides on meta rather than costing a call — and it is
+        // served rather than repeated in the page because the page would then
+        // hold a second copy of a number the engine decides.
+        //
+        // WHAT IT IS FOR: the fight's Warframe fields are OVERRIDES, and an
+        // override has to be shown against the thing it overrides or the reader
+        // cannot tell "0 because no frame" from "0 because that IS the floor".
+        // Four frames really do have no energy pool.
+        "tenno_floor": {
+            "health": wfsim_engine::tenno_data::default_tenno().health,
+            "shield": wfsim_engine::tenno_data::default_tenno().shield,
+            "armor": wfsim_engine::tenno_data::default_tenno().armor,
+            "energy": wfsim_engine::tenno_data::default_tenno().energy,
+            "sprint": wfsim_engine::tenno_data::default_tenno().sprint,
+        },
         "factions": factions,
         // WARFRAME ABILITY BUFFS, the catalogue the scenario's own section
         // draws from (`data/abilities/`). `value` and `duration_seconds` are the
@@ -1810,8 +1829,16 @@ pub fn meta_json() -> Value {
             // handed by something that is not its build. Empty is a fight that
             // hands it nothing, which is every ruler and every stored scenario.
             "extra_stats": {},
-            "wf_armor": 0.0,
-            "wf_energy": 0.0,
+            // NO WARFRAME FIELDS AT ALL, which is what makes the floor reach a
+            // fight (owner, 2026-08-26). These were `0.0`, and 0 is an
+            // OVERRIDE — the page carried them into every request, so the
+            // neutral wielder in `data/tenno/default.yaml` was overwritten with
+            // zero before anything could read it. "The neutral Tenno has 105
+            // armor" was true of the data and false of what the simulator ran.
+            //
+            // An ABSENT key is the fallback: `tenno_from` reads
+            // `get_f64(v, "wf_armor", t.armor)`, which has always meant "the
+            // floor unless told otherwise" and never got the chance.
             // INFINITE AMMO by default — see `simulate_json` for why.
             "infinite_ammo": true,
             // Test precision (user, 2026-08-01), and the optimizer's last

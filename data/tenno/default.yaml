@@ -53,26 +53,41 @@ name: Tenno
 # answer rather than an admission. Give the fight a frame and the same gate
 # opens with no code change, which is the whole point of this file.
 #
-# THREE OF THE FIVE ARE CONFIRMED against the wiki's `Module:Warframes/data`
-# (123 released frames, reading `<stat>Rank30` where it exists and the listed
-# value where it does not):
-#   armor  105  Ash, Banshee, Gyre        — armor does not scale with rank
-#   shield  95  Grendel, Grendel Prime    — the module's own `ShieldRank30: 95`
-#   sprint 0.9  Atlas, Qorvex             — sprint does not scale with rank
-# The other two are the owner's figures, and the module cannot check them: it
-# stores a rank-30 value only where a frame BREAKS the standard gain, so reading
-# the listed number as a maximum understates every frame that follows it.
-#   health 250  Nokko                     — the module lists its base 150
-#   energy 150                            — the module's lowest base is 100
+# ALL FIVE ARE CONFIRMED NOW, and two of them MOVED (owner, 2026-08-26). Every
+# figure below is read off the wiki's own rendered infobox, which states the
+# rank-30 value beside the base one — "Health 150 (250 at Rank 30)" — so nothing
+# here is derived any more:
+#   health 250  Nokko      "Health 150 (250 at Rank 30)"
+#   shield   0  Inaros     "Shields 0 (0 at Rank 30)"        was 95
+#   armor  105  Ash        armor does not scale with rank
+#   energy   0  Hildryn    "Energy 0 (0 at Rank 30)"         was 150
+#   sprint 0.9  Atlas      sprint does not scale with rank
+#
+# THE TWO THAT WERE WRONG WERE WRONG THE SAME WAY: a ZERO was read as MISSING
+# DATA rather than as the value. Six frames have no shields at all (Inaros,
+# Inaros Prime, Nidus, Nidus Prime, Kullervo, Helminth) and four have no energy
+# pool (Hildryn, Hildryn Prime, Lavos, Lavos Prime — their abilities are paid
+# for out of shields or with cooldowns). Skipping them left Grendel's 95 and a
+# guessed 150 standing as the floors of stats whose real floor is nothing.
+#
+# IT MATTERS IN THE DIRECTION THAT COSTS A PLAYER. A floor that is too HIGH
+# makes the neutral Tenno pay a bonus some frames cannot — which is the one
+# thing this file exists to prevent, since the whole claim is "a gate that opens
+# here opens for everybody".
 health: 250
-shield: 95
+shield: 0
 overguard: 0
 armor: 105
 
 # MAX ability energy — the pool, not what is left in it (`state.energy_pct`
 # below is that). Primary Overcharge reads both: "While at or above 90% Energy:
 # gain 35% of Max Energy as Multishot".
-energy: 150
+#
+# ZERO, because four frames genuinely have no pool. So Primary Overcharge and
+# every other energy-reading clause pays NOTHING until a fight says which frame
+# is holding the gun — which is the honest floor rather than a shortfall, and
+# the fields in the Tenno block are where a reader says otherwise.
+energy: 0
 
 # Sprint multiplier (wiki `Module:Warframes/data` field `Sprint`; Loki Prime is
 # 1.25), and the first player stat a weapon perk reads: the Latron family's

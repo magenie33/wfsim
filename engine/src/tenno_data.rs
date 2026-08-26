@@ -515,10 +515,17 @@ mod tests {
         // THE LOWEST ANY RELEASED FRAME HAS AT RANK 30, stat by stat (owner,
         // 2026-08-20) — so this is not a frame, it is the floor of all of them,
         // and a gate that opens here opens for everybody.
-        assert_eq!(t.health, 250.0, "Nokko");
-        assert_eq!(t.shield, 95.0, "Grendel and Grendel Prime");
+        assert_eq!(t.health, 250.0, "Nokko — the wiki's \"150 (250 at Rank 30)\"");
+        // ZERO, AND ZERO IS A VALUE. Six frames have no shields and four have no
+        // energy pool, and the first pass at these floors read those zeros as
+        // MISSING DATA — leaving Grendel's 95 and a guessed 150 standing as the
+        // floors of stats whose real floor is nothing (owner, 2026-08-26). It
+        // errs in the direction that costs a player: a floor that is too high
+        // makes the neutral Tenno pay a bonus some frames cannot, which is the
+        // one thing this file exists to prevent.
+        assert_eq!(t.shield, 0.0, "Inaros, Nidus, Kullervo — \"Shields 0 (0 at Rank 30)\"");
         assert_eq!(t.armor, 105.0, "Ash, Banshee, Gyre");
-        assert_eq!(t.energy, 150.0);
+        assert_eq!(t.energy, 0.0, "Hildryn, Lavos — \"Energy 0 (0 at Rank 30)\"");
         assert_eq!(t.sprint, 0.9, "Atlas and Qorvex");
         // Overguard is the exception and stays zero: it is not a frame STAT,
         // it is something an ability grants, and the neutral Tenno casts none.
@@ -534,7 +541,10 @@ mod tests {
         assert!(!t.state.invisible);
         assert!(!t.state.airborne);
         assert_eq!(t.state.energy_pct, 1.0);
-        assert_eq!(t.energy_now(), 150.0, "a full pool, and the pool is the floor");
+        // A FULL POOL OF NOTHING IS STILL NOTHING. `energy_pct` is 1.0 and the
+        // pool is zero, so what is left in it is zero — the two fields say
+        // different things and this is where that shows.
+        assert_eq!(t.energy_now(), 0.0, "a full pool of nothing");
     }
 
     /// THE AMP FAMILY DOES NOT SHARE ONE GATE, and the four weapons below are

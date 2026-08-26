@@ -90,11 +90,17 @@ check("the share panel offers the BUILD first", sent.shownIsBuildOnly === true,
 check("...and it is a real build, not an empty one", sent.shownHasMods === true);
 check("a link is produced", !!sent.url, sent.url);
 check("the link is under 600 characters", sent.url.length < 600, `${sent.url.length} chars`);
-// A BUILD-only link drops fields 7 and 8 — the fight and the measurement — so
-// it is strictly shorter than the claim it came from. Length is a feature
-// here: these are posted into chat windows and printed into QR codes.
-check("a build-only link is shorter than the claim", sent.urlBuild.length < sent.url.length,
-  `build ${sent.urlBuild.length} vs claim ${sent.url.length} chars`);
+// **THERE IS NO CLAIM LINK ANY MORE** (owner, 2026-08-26). A share link is a
+// build and nothing else: fields 7 and 8 — the fight and the measurement — are
+// always 0, so the two paths through the panel produce the SAME url. This used
+// to assert that the build link was strictly shorter than the claim, which is
+// the assertion for a world with two link kinds in it.
+//
+// The measurement did not vanish: it travels as the CARD, a picture of a run
+// rather than something that lands in the reader's app. What vanished is a link
+// that plants a scenario preset in somebody else's page.
+check("both paths give the same build-only link", sent.urlBuild === sent.url,
+  `${sent.urlBuild.length} vs ${sent.url.length} chars`);
 // ---- the RECIPIENT: a real navigation, in a browser with nothing ---------
 await evaluate(`(() => { localStorage.clear(); location.href = ${JSON.stringify("__URL__").replace("__URL__", sent.url)}; })()`);
 await sleep(12000);
@@ -122,7 +128,12 @@ check("the query is stripped", got.search === "", got.search);
 check("the build is the shared one", /\(shared\)/.test(got.activeBuild || ""), got.activeBuild);
 check("the riven travelled", got.rivens.length === 1, JSON.stringify(got.rivens));
 check("the riven is equipped in its slot", /^riven:/.test(got.mods[6] || ""), got.mods[6]);
-check("the scenario travelled", got.scenarioLevel === 155 && got.headshot === 40,
+// AND THE SCENARIO DOES NOT TRAVEL, which is the inversion of what this line
+// used to assert. The sender was on level 155 at 40% headshots; the recipient
+// keeps whatever fight they were already in, and 155/40 arriving would mean a
+// link had moved it. That is the one thing a build link must never do.
+check("the scenario does NOT travel — the reader's own fight is untouched",
+  got.scenarioLevel !== 155 || got.headshot !== 40,
   `level=${got.scenarioLevel} headshot=${got.headshot}`);
 check("the panel reproduces the sender's exactly", got.panel === sent.panel,
   got.panel === sent.panel ? "" : `\n    sent: ${sent.panel.slice(0, 140)}\n    got : ${got.panel.slice(0, 140)}`);

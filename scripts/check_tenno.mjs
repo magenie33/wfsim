@@ -31,10 +31,40 @@ const r = await evaluate(`(async () => {
   const conds = () => [...document.querySelectorAll('#stats-conditionals .scond')]
     .map(e => e.textContent).join(' | ');
   const before = conds();
+  let out_floorArmorShown, out_noKeyBefore, out_numDisabled, out_afterTick;
 
-  const armor = box.querySelector('[data-k="wf_armor"]');
-  armor.value = '1500'; armor.dispatchEvent(new Event('change'));
-  await sleep(2500);
+  // AN OVERRIDE IS A TICK AND A NUMBER as of 2026-08-26, so the number box is
+  // disabled until the tick is on — and the tick is the thing that decides
+  // whether the key exists on the fight at all. Off, the fight sends nothing
+  // and the server falls back to the floor in data/tenno/default.yaml.
+  const ovBox = (k) => box.querySelector('input[type=checkbox][data-k="' + k + '"]');
+  const ovNum = (k) => box.querySelector('input[type=number][data-k="' + k + '"]');
+  const tick = async (k) => { ovBox(k).click(); await sleep(600); };
+  const typeIn = async (k, v) => {
+    const n = ovNum(k); n.value = String(v); n.dispatchEvent(new Event('change'));
+    await sleep(900);
+  };
+  // BOTH DIRECTIONS, from wherever this scenario happens to start. A ruler PINS
+  // every wielder field on purpose (its own rule: name every field, so the
+  // board cannot move when a default does), and a new scenario is made from the
+  // one you were on — so "the box starts unticked" is not a property of the
+  // page and asserting it would be asserting which scenario the check landed
+  // on.
+  //
+  // What IS the mechanism: unticking DELETES the key, and ticking seeds the
+  // floor. Those hold anywhere.
+  if (!ovBox('wf_armor').checked) await tick('wf_armor');
+  await tick('wf_armor');                       // …now definitely OFF
+  out_noKeyBefore = !('wf_armor' in sim);
+  out_numDisabled = ovNum('wf_armor').disabled === true;
+  out_floorArmorShown = Number(ovNum('wf_armor').value);
+
+  await tick('wf_armor');                       // …and back ON
+  // TICKING ALONE CHANGES NOTHING — it seeds the floor, so a reader sees what
+  // they are about to override before they override it.
+  out_afterTick = sim.wf_armor;
+  await typeIn('wf_armor', 1500);
+  await sleep(1600);
   const armorAfterTyping = sim.wf_armor;
   const after = conds();
 
@@ -59,19 +89,19 @@ const r = await evaluate(`(async () => {
   const picked = { armor: sim.wf_armor, energy: sim.wf_energy, sprint: sim.wf_sprint };
   // The numbers stay EDITABLE after a pick — the roster is unmodded, and one
   // gate no frame can open is only askable by typing.
-  const e2 = box.querySelector('[data-k="wf_energy"]');
-  e2.value = '900'; e2.dispatchEvent(new Event('change'));
-  await sleep(1200);
+  await tick('wf_energy');
+  await typeIn('wf_energy', 900);
   // …AND THE ARMOR AGAIN, ON PURPOSE. Picking the frame overwrote the 1500
   // typed above with Valkyr Prime's own 1000 — which is the control working —
   // so the number that must travel is one typed AFTER the pick. A frame's own
   // armor proves nothing about the payload: the recipient derives it from
   // the frame field either way (2026-08-20).
-  const a2 = box.querySelector('[data-k="wf_armor"]');
-  a2.value = '1500'; a2.dispatchEvent(new Event('change'));
-  await sleep(1200);
+  await typeIn('wf_armor', 1500);
 
   return { keys, editable, nFrames, picked, overridden: sim.wf_energy,
+           floorArmorShown: out_floorArmorShown, noKeyBefore: out_noKeyBefore,
+           numDisabled: out_numDisabled, afterTick: out_afterTick,
+           floorLine: (document.querySelector('.wffloor') || {}).textContent || '',
            // THE STATE, not a literal: this read simArmor: 1500 and the
            // assertion below compared 1500 to 1500, which is not a check.
            typedArmor: armorAfterTyping, simArmor: sim.wf_armor,
@@ -101,6 +131,26 @@ check("...and they stay editable — no frame reaches the 700-energy gate",
 // returned, so it compared 1500 to 1500 and could not fail; the assertion above
 // is what actually covers a frame pick overwriting it (owner rule: prove it
 // bites). 2026-08-20.
+// AN OVERRIDE IS A TICK AND A NUMBER (owner, 2026-08-26). Four assertions,
+// and the first two are the ones the design exists for.
+//
+// The field used to be a bare number whose tooltip said "0 = no frame", and the
+// page sent it on EVERY fight — so the floor in data/tenno/default.yaml was
+// overwritten with 0 before it could be read, and "the neutral Tenno has 105
+// armor" was true of the data and false of what the simulator ran. It could not
+// say the other thing either: four frames genuinely have no energy pool, so 0
+// is a real value and a control where 0 means "unset" cannot express it.
+check("the wielder floor is stated before the boxes that override it",
+  /105/.test(r.floorLine) && /0/.test(r.floorLine), JSON.stringify(r.floorLine).slice(0, 140));
+check("...and unticking drops the key, so the floor is what the fight uses",
+  r.noKeyBefore === true && r.numDisabled === true,
+  `key absent ${r.noKeyBefore}, number disabled ${r.numDisabled}`);
+check("...the box shows the floor it would replace",
+  r.floorArmorShown === 105, String(r.floorArmorShown));
+// TICKING ALONE CHANGES NOTHING, which is what makes the tick safe to click:
+// it seeds the floor, so the reader sees the number before they move it.
+check("...and ticking it seeds that same number rather than a zero",
+  r.afterTick === 105, String(r.afterTick));
 check("typing armor reaches the scenario state", r.typedArmor === 1500, String(r.typedArmor));
 check("no frame: Bulwark says nothing", !/Bulwark/i.test(r.before), r.before || "(no conditionals)");
 check("1,500 armor: the panel states Bulwark's +500%", /Bulwark/i.test(r.after) && /500/.test(r.after), r.after || "(no conditionals)");
@@ -327,16 +377,23 @@ check("...and clearing a box drops the key entirely",
   !("base_damage" in extra.cleared) && extra.cleared.multishot === 0.9,
   JSON.stringify(extra.cleared));
 
-// ...AND IT TRAVELS, when there is a way to send it. Sharing can be switched
-// off (SHARE_ENABLED) and is while its reliability is being investigated; the
-// claim is about the PAYLOAD, so it is asserted whenever a payload can be made
-// and returns of its own accord when the feature does.
+// ...AND IT DOES **NOT** TRAVEL IN A SHARE LINK (owner, 2026-08-26). The
+// wielder is part of the FIGHT, and a share link is a build and nothing else —
+// so a recipient keeps their own floor rather than inheriting the sender's
+// frame. This used to assert the opposite, which was right while a link could
+// carry a scenario and is the exact behaviour that was removed: a link must
+// never move somebody else's fight.
+//
+// Sharing can be switched off (SHARE_ENABLED); the claim is about the PAYLOAD,
+// so it is asserted whenever a payload can be made and returns of its own
+// accord when the feature does.
 const canShare = await evaluate("typeof SHARE_ENABLED === 'undefined' ? true : SHARE_ENABLED");
 if (canShare) {
   await evaluate(`(() => { localStorage.clear(); location.href = ${JSON.stringify(r.url)}; })()`);
   await sleep(12000);
   const got = await evaluate(`(async () => { await new Promise(r=>setTimeout(r,2500)); return { armor: sim.wf_armor }; })()`);
-  check("the Warframe travels in a share link", got.armor === 1500, String(got.armor));
+  check("the Warframe does NOT travel in a share link — the fight is the reader's",
+    got.armor !== 1500, String(got.armor));
 } else {
   console.log("  --  sharing is off; the share half of this check is waiting for it");
 }

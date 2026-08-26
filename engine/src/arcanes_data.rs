@@ -2043,10 +2043,24 @@ mod tests {
         // silent — and silent means NO buff, not a buff worth zero: a zero
         // stack would list in the picker and invite someone to turn it up.
         assert!(bulwark.fx(5, StackPolicy::Emergent, NO_TRAITS, neutral).buffs.is_empty());
-        // Overcharge reads the pool itself, so 150 energy at a full pool pays
-        // 0.35 x 150 / 100 = +52.5% multishot. It is the arcane doing its job on
-        // the weakest frame in the game, and it only applies when EQUIPPED.
-        assert!((multishot(neutral) - 0.525).abs() < 1e-9, "{}", multishot(neutral));
+        // Overcharge reads the POOL, and the floor of that pool is ZERO: four
+        // frames have no energy at all — Hildryn and Lavos pay for their
+        // abilities out of shields and with cooldowns — so "the weakest frame in
+        // the game" has none of it (owner, 2026-08-26). This used to assert
+        // +52.5% off a floor of 150, which was a floor no frame set: the first
+        // pass at these numbers read a zero as missing data rather than as the
+        // value.
+        //
+        // SILENT MEANS NO BUFF, not a buff worth zero — the same rule Bulwark
+        // follows one line above, and for the same reason: a zero stack would
+        // list in the picker and invite someone to turn it up.
+        assert!(
+            overcharge.fx(5, StackPolicy::Emergent, NO_TRAITS, neutral).buffs.is_empty(),
+            "no pool, no multishot"
+        );
+        // …and it pays the moment a fight says which frame is holding the gun.
+        assert!((multishot(&frame(0.0, 150.0, 1.0)) - 0.525).abs() < 1e-9,
+            "{}", multishot(&frame(0.0, 150.0, 1.0)));
 
         // Bulwark: +1% per point PAST 1,000 — so 1,000 armor still pays
         // nothing, 1,200 pays +200%, and the rank-5 cap of +500% is reached at

@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "a2a158b1+ · 2026-08-26 13:08Z";
+const BUILD_ID = "842fd51b+ · 2026-08-26 15:20Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -1055,8 +1055,13 @@ function defaultScenario() {
     aim_at: d.aim_at ? [...d.aim_at] : null,
     invisible: !!d.invisible, airborne: !!d.airborne, overshields: !!d.overshields,
     channeling: !!d.channeling, solo_weapon: !!d.solo_weapon,
-    frame: d.frame || "", wf_health: d.wf_health || 0, wf_armor: d.wf_armor || 0, wf_energy: d.wf_energy || 0,
-    wf_sprint: d.wf_sprint || 0.9,
+    frame: d.frame || "",
+    // ABSENT MEANS THE FLOOR. Only a key that is really there is an override,
+    // so these are copied only when the saved scenario had them.
+    ...(d.wf_health === undefined ? {} : { wf_health: d.wf_health }),
+    ...(d.wf_armor === undefined ? {} : { wf_armor: d.wf_armor }),
+    ...(d.wf_energy === undefined ? {} : { wf_energy: d.wf_energy }),
+    ...(d.wf_sprint === undefined ? {} : { wf_sprint: d.wf_sprint }),
     infinite_ammo: d.infinite_ammo !== false, metric: d.metric || "kpm",
     // NO `form`: how the weapon is played belongs to the build.
     duration: d.duration, buffs: {},
@@ -1104,7 +1109,7 @@ let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: nul
   // which is the fight the board is scored under and what every clause about
   // the other slots has always been answered with.
   solo_weapon: false,
-  frame: "", wf_health: 0, wf_armor: 0, wf_energy: 0, wf_sprint: 0.9,
+  frame: "",
   // NO `form`, AND NO `mode`. How the weapon is played is part of the BUILD;
   // a fight that carried it could decide how the weapon was fired, which is
   // what let a ruler pin an Incarnon weapon at its cycle (owner, 2026-08-07):
@@ -5178,7 +5183,7 @@ const evoPrefix = () => {
 const SHARE_AXES = ["mods", "evolutions", "arcanes", "arcane_ranks", "mode",
                     "valence", "rivens", "assembly"];
 
-function sharePayload(withFight = true) {
+function sharePayload() {
   const st = snapshotState();
   const p = loadPresetList(BUILDS).find((x) => x.name === activePreset);
   const pre = evoPrefix();
@@ -5277,13 +5282,23 @@ function sharePayload(withFight = true) {
   const val = (st.valence && st.valence.element !== dv.element) || (st.valence && st.valence.bonus !== dv.bonus)
     ? [st.valence.element, r3(st.valence.bonus)] : 0;
 
-  // A SHARE IS EITHER A BUILD OR A CLAIM (owner, 2026-08-19), and fields 7 and
-  // 8 are the difference. A BUILD-only link carries neither: `0` at field 7
-  // means NO FIGHT TRAVELLED, which is a different statement from `{}` — an
-  // empty object means "a fight travelled and it happens to equal the
-  // defaults", and a recipient must be able to tell those apart or every build
-  // link silently plants a scenario preset nobody asked for. Every link posted
-  // before today sends an object there, so they land exactly as they did.
+  // **A SHARE LINK IS A BUILD AND NOTHING ELSE** (owner, 2026-08-26). Fields 7
+  // and 8 — the fight and the measurement — are always `0` now, and `0` means
+  // NO FIGHT TRAVELLED, which is a different statement from `{}`: an empty
+  // object means "a fight travelled and it happens to equal the defaults". The
+  // importer has always told the two apart, so every link posted before today
+  // still lands exactly as it did; only new ones stop carrying a scenario.
+  //
+  // WHY IT NARROWED. A link that plants a scenario preset changes the fight the
+  // reader is working in, which is the one thing a build link has no business
+  // doing — and the measurement beside it is a claim ABOUT that scenario, so
+  // without the fight it means nothing anyway. The measured result still
+  // travels as the CARD, which is a picture of a run rather than something that
+  // lands in the reader's app.
+  //
+  // It also ends a size argument that should never have existed: the rulers pin
+  // every wielder field on purpose, so a ruler-derived link was carrying four
+  // Warframe numbers the recipient computes anyway.
   // THE PARTS, on the same terms: omitted when the recipient derives the same
   // answer, since `defaultAssembly` is what both ends ask. Two ids, in the
   // order the control draws them.
@@ -5299,8 +5314,7 @@ function sharePayload(withFight = true) {
   // when the field is absent. A name somebody typed is theirs and still goes.
   const nm = officialBuildActive() ? 0 : activePreset;
 
-  const out = [2, st.weapon, nm, slots9, arcs, evos, rivens,
-               withFight ? sc : 0, withFight ? m : 0, md, val, asm];
+  const out = [2, st.weapon, nm, slots9, arcs, evos, rivens, 0, 0, md, val, asm];
   while (out.length > 9 && !out[out.length - 1]) out.pop();
   return out;
 }
@@ -5308,8 +5322,8 @@ function sharePayload(withFight = true) {
 const r3 = (x) => Math.round((Number(x) || 0) * 1000) / 1000;
 const cap1 = (s) => String(s || "").replace(/^./, (c) => c.toUpperCase());
 
-async function shareUrl(withFight = true) {
-  const payload = sharePayload(withFight);
+async function shareUrl() {
+  const payload = sharePayload();
   // THE SHORTEST OF THREE, chosen by measuring rather than by rule. v3 wins on
   // every ordinary build — the ids become numbers and the text goes in raw —
   // and loses on a payload it cannot express (a CLAIM, or a riven named in a
@@ -5549,11 +5563,11 @@ async function openSharePanel(bar) {
   // is one click away and still costs a run, because a number nobody measured
   // is not a claim.
   panel.hidden = false;
-  const bUrl = await shareUrl(false);
+  const bUrl = await shareUrl();
   panel.innerHTML =
     `<div class="sh-row"><input class="sh-url" type="text" readonly value="${escHtml(bUrl)}">` +
     `<button class="cu-btn sh-copy">${escHtml(tr("copy link"))}</button></div>` +
-    `<div class="sh-note">${escHtml(tr("the build and its rivens — no fight and no measurement, so opening it leaves the reader's own scenario untouched"))}</div>` +
+    `<div class="sh-note">${escHtml(tr("the build and its rivens, and nothing else: no fight, no measurement, so opening it leaves the reader's own scenario untouched"))}</div>` +
     `<div class="sh-more"><button class="cu-btn sh-full">${
       escHtml(tr("…with the fight and the measurement →"))}</button></div>`;
   const bBox = panel.querySelector(".sh-url");
@@ -5562,26 +5576,30 @@ async function openSharePanel(bar) {
     try { await navigator.clipboard.writeText(bUrl); presetToast(tr("link copied")); }
     catch (_) { bBox.select(); presetToast(tr("press Ctrl+C to copy the selected link")); }
   };
-  panel.querySelector(".sh-full").onclick = () => openShareClaim(panel);
+  panel.querySelector(".sh-full").onclick = () => openShareClaim(panel, bUrl);
 }
 
-/// The CLAIM: the build, the fight it was measured in, the measurement, and the
-/// card that carries all three into a chat window. Split out of the panel above
-/// so it costs a simulation only when somebody asks for one.
-async function openShareClaim(panel) {
+/// THE CARD: a picture of this build's run, to paste into a chat window. Split
+/// out of the panel above so it costs a simulation only when somebody asks.
+///
+/// THE LINK IS THE SAME BUILD LINK (owner, 2026-08-26). It used to be a second,
+/// longer one carrying the fight and the measurement — a CLAIM — and that is
+/// gone: a link may plant a build and never a scenario. The measurement still
+/// travels, as the picture, which is a thing a reader looks at rather than
+/// something that lands in their app.
+async function openShareClaim(panel, url) {
   const more = panel.querySelector(".sh-more");
   if (!more) return;
   // Measure BEFORE building the link, so both the card and the payload carry
   // a number produced by exactly this build in exactly this fight.
   more.innerHTML = `<div class="sh-note">${escHtml(tr("simulating this build in the current scenario…"))}</div>`;
   await resultForShare();
-  const url = await shareUrl(true);
   more.innerHTML =
     `<div class="sh-row"><input class="sh-url" type="text" readonly value="${escHtml(url)}">` +
     `<button class="cu-btn sh-copy">${escHtml(tr("copy link"))}</button>` +
     `<button class="cu-btn sh-img">${escHtml(tr("copy image"))}</button>` +
     `<button class="cu-btn sh-dl">${escHtml(tr("download image"))}</button></div>` +
-    `<div class="sh-note">${escHtml(tr("the link carries the build, its rivens, the fight it was measured in and the measurement — opening it saves a new copy of each"))}</div>` +
+    `<div class="sh-note">${escHtml(tr("the CARD shows the measurement; the link beside it is the same build-only link — opening it never touches the reader's own scenario"))}</div>` +
     `<canvas class="sh-canvas" width="900" height="640"></canvas>`;
   const urlBox = more.querySelector(".sh-url");
   urlBox.onclick = () => urlBox.select();
@@ -11811,6 +11829,62 @@ function renderSimBuild() {
 // this only decides where the control opens.
 const defaultHeadshotPct = (w) => ((w || {}).sentinel ? 0 : META.defaults.headshot_pct);
 
+/// THE WIELDER'S FLOOR, from `/api/meta` — `data/tenno/default.yaml`, the worst
+/// max-rank frame that does not exist.
+const tennoFloor = () => (META.tenno_floor || { health: 0, shield: 0, armor: 0, energy: 0, sprint: 0.9 });
+
+/// ONE OVERRIDABLE WARFRAME STAT — a tick and a number (owner, 2026-08-26).
+///
+/// THE OLD FIELD COULD NOT SAY "LEAVE IT ALONE". It was a bare number whose
+/// tooltip read "0 = no frame", and the page sent it on every fight — so the
+/// floor in `data/tenno/default.yaml` was overwritten with 0 before it was ever
+/// read, and every "the neutral Tenno has 105 armor" statement was true of the
+/// data and false of what the simulator ran.
+///
+/// It could not say the other thing either: now that four frames genuinely have
+/// NO energy pool, 0 is a real value, and a control where 0 means "unset" has no
+/// way to express it.
+///
+/// So the tick IS the override. Unticked, the key is dropped from the fight
+/// entirely and the server falls back to the floor — `get_f64(v, "wf_armor",
+/// t.armor)` has always done that and nothing ever let it. Ticked, the number
+/// is sent, and it starts AT the floor so ticking alone changes nothing: the
+/// reader sees what they are overriding before they override it.
+/// WHAT THE FIGHT STARTS FROM, stated before the boxes that change it.
+///
+/// The four controls under this line are OVERRIDES, and an override shown alone
+/// cannot be read: a reader had no way to tell "0 because there is no frame"
+/// from "0 because that IS the floor" — and since 2026-08-26 the second is true
+/// of two of these stats, because four released frames have no energy pool and
+/// six have no shields.
+///
+/// IT NAMES WHAT IT IS. "The worst max-rank frame that does not exist" is the
+/// claim `data/tenno/default.yaml` makes, and it is the reason a number here
+/// means something: a bonus this player pays is a bonus EVERY frame pays.
+const wfFloorLine = () => {
+  const f = tennoFloor();
+  const cell = (l, v) => `<span><b>${escHtml(l)}</b> ${sig2(v)}</span>`;
+  return `<div class="wffloor" title="${escHtml(tr(
+    "the fight's wielder before any override: each stat is the LOWEST any released Warframe has at rank 30, so a bonus it pays is one every frame pays. EVERY OFFICIAL BOARD IS SCORED ON THIS WIELDER — tick a box below to test a real frame instead"))}">`
+    + `<span class="wffloor-h">${escHtml(tr("Wielder floor · every board is scored on this"))}</span>`
+    + cell(tr("Health"), f.health) + cell(tr("Shield"), f.shield)
+    + cell(tr("Armor"), f.armor) + cell(tr("Max energy"), f.energy)
+    + cell(tr("Sprint"), f.sprint)
+    + `</div>`;
+};
+
+const wfOverride = (key, label, floorKey, min, max, step, why) => {
+  const floor = tennoFloor()[floorKey];
+  const on = sim[key] !== undefined && sim[key] !== null;
+  const shown = on ? sim[key] : floor;
+  return `<label class="wfov ${on ? "" : "off"}" title="${escHtml(why)}">`
+    + `<input type="checkbox" data-k="${key}" data-wfov="${floorKey}"${on ? " checked" : ""}>`
+    + ` ${escHtml(label)} `
+    + `<input type="number" data-k="${key}" data-wfovnum="1" min="${min}" max="${max}" step="${step}"`
+    + ` value="${shown}"${on ? "" : " disabled"}>`
+    + `</label>`;
+};
+
 // The SCENARIO — enemy, technique, measurement — is the SIMULATOR's, and the
 // optimizer borrows it instead of keeping a lookalike of its own (user,
 // 2026-08-02). One state, one renderer: the search is then, by construction,
@@ -11932,6 +12006,7 @@ function renderScenarioFields(ids, opts = {}) {
   // lives in the builder — a fight that decided it could only ever measure
   // whichever way the ruler happened to pin, which is what kept "the Torid
   // that never transmutes" unaskable (owner, 2026-08-07).
+
   if (ids.technique) {
     $(ids.technique).innerHTML = `
       ${aimField(w, sim)}
@@ -11952,10 +12027,15 @@ function renderScenarioFields(ids, opts = {}) {
         items: [{ value: "", label: tr("none — no frame") }]
           .concat(frames().map((f) => ({ value: f.id, label: f.name }))),
       })}</label>
-      <label title="${escHtml(tr("your Warframe's HEALTH, buffs included — the Basmu's Dreadful Killshot pays +20% damage and status chance for every 75 of it. 0 = no frame"))}">${escHtml(tr("WF Health"))} <input type="number" data-k="wf_health" min="0" max="100000" step="1" value="${sim.wf_health || 0}"></label>
-      <label title="${escHtml(tr("your Warframe's armor, buffs included — Primary Bulwark pays +1% damage per point past 1,000. 0 = no frame"))}">${escHtml(tr("WF Armor"))} <input type="number" data-k="wf_armor" min="0" max="100000" step="1" value="${sim.wf_armor || 0}"></label>
-      <label title="${escHtml(tr("your Warframe's MAX energy — Primary Overcharge turns 35% of it into multishot. 0 = no frame"))}">${escHtml(tr("WF Energy"))} <input type="number" data-k="wf_energy" min="0" max="100000" step="1" value="${sim.wf_energy || 0}"></label>
-      <label title="${escHtml(tr("your Warframe's sprint speed — several Incarnon perks pay only at 1.2 or higher, and the slowest frame is 0.9"))}">${escHtml(tr("WF Sprint"))} <input type="number" data-k="wf_sprint" min="0" max="3" step="0.05" value="${sim.wf_sprint ?? 0.9}"></label>`;
+      ${wfFloorLine()}
+      ${wfOverride("wf_health", tr("Health"), "health", 1, 100000, 1,
+        tr("your Warframe's health, buffs included — the Basmu's Dreadful Killshot pays +20% damage and status chance for every 75 of it"))}
+      ${wfOverride("wf_armor", tr("Armor"), "armor", 0, 100000, 1,
+        tr("your Warframe's armor, buffs included — Primary Bulwark pays +1% damage per point past 1,000"))}
+      ${wfOverride("wf_energy", tr("Max energy"), "energy", 0, 100000, 1,
+        tr("your Warframe's MAX energy — Primary Overcharge turns 35% of it into multishot"))}
+      ${wfOverride("wf_sprint", tr("Sprint"), "sprint", 0, 3, 0.05,
+        tr("your Warframe's sprint speed — several Incarnon perks pay only at 1.2 or higher"))}`;
   }
 
   // ---- 2b. WHAT THE WARFRAME BRINGS ------------------------------------
@@ -12024,7 +12104,22 @@ function renderScenarioFields(ids, opts = {}) {
     box.querySelectorAll("[data-k]").forEach((el) => {
       el.addEventListener("change", () => {
         const k = el.dataset.k;
-        if (el.type === "checkbox") sim[k] = el.checked;
+        // A WARFRAME OVERRIDE IS TWO CONTROLS FOR ONE FACT, so it cannot use
+        // the generic binding: the tick and the number share a `data-k`, and
+        // reading `el.checked` into it would store `true` where a number goes.
+        //
+        // THE TICK DECIDES WHETHER THE KEY EXISTS AT ALL. Deleting it is the
+        // whole mechanism — an absent key is what makes the server fall back to
+        // the floor, and a `0` would be an override that happens to say zero.
+        if (el.dataset.wfov) {
+          if (el.checked) sim[k] = tennoFloor()[el.dataset.wfov];
+          else delete sim[k];
+          renderSim();
+          markScenarioDirty();
+          return;
+        }
+        if (el.dataset.wfovnum) { sim[k] = Number(el.value); }
+        else if (el.type === "checkbox") sim[k] = el.checked;
         else if (el.type === "number") sim[k] = Number(el.value);
         else sim[k] = el.value;
         // PICKING A FRAME FILLS ITS THREE NUMBERS. They stay editable after —
@@ -12035,10 +12130,20 @@ function renderScenarioFields(ids, opts = {}) {
         if (k === "frame") {
           const f = frameOf(sim.frame);
           if (f) {
-            sim.wf_health = f.health;
+            // PICKING A FRAME IS AN OVERRIDE, so it TICKS the boxes as well as
+            // filling them. Writing the numbers without the ticks would fill
+            // four fields the fight then ignores, which is the worst of both.
+            // (`health` is not in the frame roster yet — see data/frames.yaml —
+            // so it is left to the floor rather than set to `undefined`.)
+            if (f.health !== undefined) sim.wf_health = f.health;
             sim.wf_armor = f.armor;
             sim.wf_energy = f.energy;
             sim.wf_sprint = f.sprint;
+          } else {
+            // "none — no frame" clears the overrides rather than zeroing them:
+            // back to the floor, which is what no frame now means.
+            delete sim.wf_health; delete sim.wf_armor;
+            delete sim.wf_energy; delete sim.wf_sprint;
           }
         }
         // No `enemy` case here: the target is the picker's, not a field's, and

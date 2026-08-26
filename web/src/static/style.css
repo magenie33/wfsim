@@ -609,6 +609,19 @@ body.on-enemies [data-module="builder"]{display:none}
    panel of its own, and it has to survive a phone (check_mobile). */
 .swielder{font-size:12px;color:var(--text-2);padding:3px 0;display:flex;flex-wrap:wrap;gap:4px 16px;font-variant-numeric:tabular-nums}
 .swielder b{color:var(--muted);font-weight:600;margin-right:4px}
+/* THE WIELDER FLOOR, and the four overrides under it. The floor is context
+   rather than a control, so it reads quieter; an override that is OFF greys
+   its own number instead of hiding it, because the number is what the fight
+   is using. */
+.wffloor{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:2px 14px;align-items:baseline;
+  font-size:11.5px;color:var(--text-2);font-variant-numeric:tabular-nums;
+  padding:4px 0 2px;border-top:1px solid var(--line);margin-top:4px}
+.wffloor-h{color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-size:10px}
+.wffloor b{color:var(--muted);font-weight:600;margin-right:3px}
+.wfov{display:flex;align-items:center;gap:6px}
+.wfov.off{color:var(--muted)}
+.wfov.off input[type=number]{opacity:.55}
+.wfov input[type=number]{flex:1 1 0;min-width:0}
 .scond.off{opacity:.6}
 
 /* fields */
