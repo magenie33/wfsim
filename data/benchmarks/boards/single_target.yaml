@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 2831
+submissions: 2854
 engine: 88d108af8d9cd4ef6b94e4847c99818aa6871a8d
 entries:
   - weapon: acceltra_prime
@@ -2760,6 +2760,17 @@ entries:
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_deadhead]
   - weapon: felarx
+    mode: cycle
+    score: 36.30380233270551
+    fp: 11be57f088b787c0
+    mods: [primed_point_blank, galvanized_savvy, hells_chamber, magnetic_strafe, primed_charged_shell, riven, toxic_barrage, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_frictionless_flight, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [electricity, fire_rate, multishot]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: felarx
     mode: base
     score: 35.592544092085994
     fp: e67d5e490bbe7afe
@@ -2780,6 +2791,17 @@ entries:
     mods: [galvanized_hell, magnetic_welt, galvanized_savvy, primed_ammo_stock, shotgun_barrage, primed_charged_shell, toxic_barrage, scattering_inferno]
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_deadhead]
+  - weapon: felarx
+    mode: cycle
+    score: 34.91409818503951
+    fp: 11be57f088b787c0
+    mods: [primed_point_blank, galvanized_savvy, hells_chamber, magnetic_strafe, primed_charged_shell, riven, toxic_barrage, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_frictionless_flight, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [electricity, fire_rate, multishot]
+      malus: critical_damage
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: felarx
     mode: cycle
     score: 34.839441705181834
@@ -2808,6 +2830,20 @@ entries:
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_ammo_stock, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_crux]
+  - weapon: felarx
+    mode: cycle
+    score: 27.8791505833571
+    fp: 6b275aa408ed857d
+    mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, shotgun_elementalist, magnetic_strafe, incendiary_coat, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_frictionless_flight, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+  - weapon: felarx
+    mode: cycle
+    score: 27.65112291422828
+    fp: 79f3a6e2652acc8d
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_barrage, magnetic_strafe, chilling_reload, toxic_barrage, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_frictionless_flight, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_debilitate]
   - weapon: felarx
     mode: cycle
     score: 27.309009823275535
@@ -2839,6 +2875,17 @@ entries:
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, atomic_fallout, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_brutal_edge, felarx_devastating_attrition]
     arcanes: [primary_crux]
+  - weapon: felarx
+    mode: base
+    score: 25.10758009738785
+    fp: f950dc0d4beabe7e
+    mods: [galvanized_savvy, primed_tactical_pump, hells_chamber, magnetic_strafe, primed_charged_shell, riven, toxic_barrage, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_frictionless_flight, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [electricity, fire_rate, multishot]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 1.1]
   - weapon: felarx
     mode: base
     score: 25.02890810662412
@@ -4181,6 +4228,14 @@ entries:
     valence: magnetic
   - weapon: kuva_nukor
     mode: base
+    score: 14.394946278878844
+    fp: 2822d18c759dc210
+    exilus: primed_pistol_ammo_mutation
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, pistol_elementalist, target_cracker, frostbite, pistol_pestilence, scorch]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
     score: 13.30166933908368
     fp: 94ec944791cb53ed
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, primed_convulsion, pistol_pestilence, primed_heated_charge]
@@ -5182,6 +5237,13 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, pistol_elementalist, jolt, pistol_pestilence, scorch]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [cascadia_flare]
+  - weapon: laetum
+    mode: base
+    score: 4.76829786294743
+    fp: f7798d0e1acbbd7f
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, pistol_elementalist, jolt, pistol_pestilence, scorch]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
   - weapon: larkspur_prime
     mode: base
     score: 21.847408032128957
@@ -5849,15 +5911,15 @@ entries:
   - weapon: latron_prime
     mode: cycle
     score: 55.30756952434211
-    fp: 1523c4ce9ced5302
-    exilus: primed_stabilizer
+    fp: 3827f844aaccf16f
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
     arcanes: [primary_deadhead]
   - weapon: latron_prime
     mode: cycle
     score: 55.30756952434211
-    fp: 3827f844aaccf16f
+    fp: 1523c4ce9ced5302
+    exilus: primed_stabilizer
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
     arcanes: [primary_deadhead]
@@ -6546,6 +6608,13 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: phenmor
     mode: cycle
+    score: 37.37551669111781
+    fp: 50915f9dbe4ed951
+    mods: [galvanized_chamber, galvanized_aptitude, speed_trigger, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
+    arcanes: [primary_deadhead]
+  - weapon: phenmor
+    mode: cycle
     score: 37.2312601013477
     fp: 64d60695c843e70b
     mods: [galvanized_chamber, galvanized_aptitude, speed_trigger, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip, hellfire]
@@ -6641,6 +6710,13 @@ entries:
     fp: 330805208b9639f8
     mods: [galvanized_chamber, primed_shred, galvanized_aptitude, rifle_elementalist, vile_acceleration, magnetic_capacity, high_voltage, malignant_force]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_ready_retaliation, phenmor_elemental_excess, phenmor_devouring_attrition]
+    arcanes: [primary_debilitate]
+  - weapon: phenmor
+    mode: cycle
+    score: 18.88703645509451
+    fp: 45749df8edbd16ba
+    mods: [galvanized_chamber, galvanized_aptitude, rifle_elementalist, vigilante_armaments, vile_acceleration, magnetic_capacity, stormbringer, malignant_force]
+    evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_debilitate]
   - weapon: phenmor
     mode: cycle
@@ -6782,6 +6858,12 @@ entries:
       bonuses: [critical_chance, slash]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 0.9]
+  - weapon: proboscis_cernos
+    mode: base
+    score: 1.2700755440152434
+    fp: 7eeebb82262e4b59
+    mods: [amalgam_serration, heavy_caliber, primary_acuity, primed_shred, internal_bleeding, galvanized_aptitude, vital_sense, primed_cryo_rounds]
+    arcanes: [primary_compression]
   - weapon: pyrana_prime
     mode: base
     score: 4.910470247542833
@@ -8185,7 +8267,7 @@ entries:
     arcanes: [secondary_deadhead]
     riven:
       bonuses: [critical_chance, critical_damage, damage]
-      malus: zoom
+      malus: damage_to_infested
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: vasto_prime
     mode: cycle
@@ -8196,7 +8278,7 @@ entries:
     arcanes: [secondary_deadhead]
     riven:
       bonuses: [critical_chance, critical_damage, damage]
-      malus: damage_to_infested
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: vasto_prime
     mode: cycle

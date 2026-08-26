@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 2831
+submissions: 2854
 engine: 88d108af8d9cd4ef6b94e4847c99818aa6871a8d
 entries:
   - weapon: acceltra_prime
@@ -1924,6 +1924,17 @@ entries:
     arcanes: [primary_crux]
   - weapon: felarx
     mode: base
+    score: 1416.841853972176
+    fp: aaa4db3e8f87c5f8
+    mods: [galvanized_savvy, primed_tactical_pump, hells_chamber, magnetic_strafe, primed_charged_shell, riven, toxic_barrage, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_frictionless_flight, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [electricity, fire_rate, multishot]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: felarx
+    mode: base
     score: 1383.9925113461472
     fp: 8fbdea9225fd13ee
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, magnetic_strafe, primed_chilling_grasp, contagious_spread, blaze]
@@ -3179,6 +3190,13 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, pistol_elementalist, jolt, pistol_pestilence, scorch]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [cascadia_flare]
+  - weapon: laetum
+    mode: base
+    score: 4.76829786294743
+    fp: 50700075de2631a1
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, pistol_elementalist, jolt, pistol_pestilence, scorch]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
   - weapon: larkspur_prime
     mode: base
     score: 162.66666666666666
@@ -3465,15 +3483,15 @@ entries:
   - weapon: latron_prime
     mode: cycle
     score: 221.296454658473
-    fp: 64293488b44b6d68
-    exilus: primed_stabilizer
+    fp: 210eca6e156acd7d
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
     arcanes: [primary_deadhead]
   - weapon: latron_prime
     mode: cycle
     score: 221.296454658473
-    fp: 210eca6e156acd7d
+    fp: 64293488b44b6d68
+    exilus: primed_stabilizer
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
     arcanes: [primary_deadhead]
@@ -4074,6 +4092,13 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: phenmor
     mode: cycle
+    score: 480.0851585892124
+    fp: 2a701951e67f421f
+    mods: [galvanized_chamber, galvanized_aptitude, speed_trigger, vile_acceleration, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
+    arcanes: [primary_deadhead]
+  - weapon: phenmor
+    mode: cycle
     score: 461.0096054358737
     fp: 2522ebccd466b5e9
     mods: [galvanized_chamber, serration, galvanized_aptitude, vile_acceleration, magnetic_capacity, primed_cryo_rounds, infected_clip, thermite_rounds]
@@ -4233,6 +4258,12 @@ entries:
       bonuses: [critical_chance, slash]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 0.9]
+  - weapon: proboscis_cernos
+    mode: base
+    score: 1.249544293579567
+    fp: 3307097d2c42631b
+    mods: [amalgam_serration, heavy_caliber, primary_acuity, primed_shred, internal_bleeding, galvanized_aptitude, vital_sense, primed_cryo_rounds]
+    arcanes: [primary_compression]
   - weapon: pyrana_prime
     mode: base
     score: 4.910470247542833
@@ -5094,7 +5125,7 @@ entries:
     arcanes: [secondary_deadhead]
     riven:
       bonuses: [critical_chance, critical_damage, damage]
-      malus: zoom
+      malus: damage_to_infested
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: vasto_prime
     mode: cycle
@@ -5105,7 +5136,7 @@ entries:
     arcanes: [secondary_deadhead]
     riven:
       bonuses: [critical_chance, critical_damage, damage]
-      malus: damage_to_infested
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: vasto_prime
     mode: cycle
