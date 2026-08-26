@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 2699
+submissions: 2708
 engine: 84531210afc033edde2251fec145a37df2bf3a56
 entries:
   - weapon: acceltra_prime
@@ -1495,6 +1495,13 @@ entries:
       bonuses: [multishot, status_chance, toxin]
       malus: damage_to_grineer
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 51.108904812650195
+    fp: f362ac1d538a664c
+    mods: [primary_acuity, serration, galvanized_scope, vile_acceleration, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
     score: 50.558032511642985
@@ -3261,6 +3268,12 @@ entries:
     fp: 38bf4fce00e518cf
     mods: [primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
     arcanes: [primary_deadhead]
+  - weapon: haalvu
+    mode: alternate
+    score: 1.3485697498714837
+    fp: 892e76fe4971e85e
+    mods: [galvanized_chamber, heavy_caliber, serration, hammer_shot, vile_acceleration, magnetic_capacity, hellfire, thermite_rounds]
+    arcanes: [primary_deadhead]
   - weapon: hikou_prime
     mode: base
     score: 12.196491937651103
@@ -3612,6 +3625,13 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_deadly_efficiency, critical_focus, containment_breach, hollowed_bullets, parallax_scope, primed_combustion_rounds]
     arcanes: [primary_crux, cascadia_flare]
     valence: magnetic
+  - weapon: kuva_grattler
+    mode: base
+    score: 7.333333333333333
+    fp: 23a968a58b355ee9
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, parallax_scope, polar_magazine, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, cascadia_flare]
+    valence: cold
   - weapon: kuva_grattler
     mode: base
     score: 6.739397117303671

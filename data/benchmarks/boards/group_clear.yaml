@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 2699
+submissions: 2708
 engine: 84531210afc033edde2251fec145a37df2bf3a56
 entries:
   - weapon: acceltra_prime
@@ -2520,6 +2520,12 @@ entries:
     score: 18.05033037867569
     fp: ddd9fe5da07789f9
     mods: [primary_acuity, serration, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
+    arcanes: [primary_deadhead]
+  - weapon: haalvu
+    mode: alternate
+    score: 1.3485697498714837
+    fp: ff155018def4b43c
+    mods: [galvanized_chamber, heavy_caliber, serration, hammer_shot, vile_acceleration, magnetic_capacity, hellfire, thermite_rounds]
     arcanes: [primary_deadhead]
   - weapon: hikou_prime
     mode: base

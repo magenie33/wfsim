@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 2699
+submissions: 2708
 engine: 84531210afc033edde2251fec145a37df2bf3a56
 entries:
   - weapon: acceltra_prime
@@ -939,6 +939,13 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: base
+    score: 0.2823209314726346
+    fp: 96cab926ac0e0231
+    mods: [galvanized_chamber, serration, critical_delay, vigilante_armaments, vital_sense, gilded_truth, cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
     score: 0.2749994417782319
     fp: 7ab4787b9ef6bd36
     exilus: stabilizer
@@ -1663,6 +1670,12 @@ entries:
     score: 0.2769180330696089
     fp: 8c6d8b50591c4556
     mods: [galvanized_chamber, serration, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
+    arcanes: [primary_deadhead]
+  - weapon: haalvu
+    mode: alternate
+    score: 0.579832252234315
+    fp: 24c9768c3c0760dd
+    mods: [galvanized_chamber, heavy_caliber, serration, hammer_shot, vile_acceleration, magnetic_capacity, hellfire, thermite_rounds]
     arcanes: [primary_deadhead]
   - weapon: hikou_prime
     mode: base
@@ -3535,6 +3548,13 @@ entries:
       bonuses: [critical_chance, critical_damage, damage]
       malus: damage_to_infested
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: sicarus_prime
+    mode: cycle
+    score: 1.0587636481505358
+    fp: b909add49338fa2a
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, frostbite, pathogen_rounds, primed_heated_charge]
+    evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_feigned_retreat, sicarus_prime_rapid_reinforcement, sicarus_prime_commodores_fortune]
+    arcanes: [secondary_enervate]
   - weapon: sicarus_prime
     mode: base
     score: 0.5878068726329458
