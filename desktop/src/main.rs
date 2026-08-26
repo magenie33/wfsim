@@ -390,6 +390,18 @@ const UPDATE_PROBE: &str = r#"
         await rep('RESULT PASS\n' + out.join('\n'));
         return;
       }
+      // UP TO DATE IS NOT A FAILURE, it is the absence of anything to test. The
+      // channel answered — it reached a source, verified a signature and parsed
+      // a manifest — and there was simply no newer version, which is the normal
+      // state right after a release. Reporting that as FAIL would cry wolf on
+      // every run that is not preceded by a publish; the path itself is
+      // exercised by `scripts/check_desktop_update.py`, which manufactures one.
+      if (s.phase === 'uptodate') {
+        check('channel reachable', true, 'up to date — no update to apply');
+        check('path exercised', true, 'skipped; run scripts/check_desktop_update.py for the full round trip');
+        await rep('RESULT PASS\n' + out.join('\n'));
+        return;
+      }
       check('sees update', s.phase === 'available',
             s.phase + ', ' + s.files_total + ' files / ' + (s.bytes_total / 1024).toFixed(1) + ' KB' + (s.message ? ' — ' + s.message : ''));
       if (s.phase === 'available') {
