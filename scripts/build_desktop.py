@@ -96,7 +96,7 @@ def main() -> None:
     notes.write_text(
         "WFSim — Warframe 伤害计算器\n"
         "\n"
-        f"版本  {today:%Y-%m-%d}\n"
+        f"构建日期  {today:%Y-%m-%d}\n"
         f"SHA-256  {digest}\n"
         "\n"
         "安装\n"
