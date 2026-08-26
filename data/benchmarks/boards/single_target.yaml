@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 2799
+submissions: 2831
 engine: 88d108af8d9cd4ef6b94e4847c99818aa6871a8d
 entries:
   - weapon: acceltra_prime
@@ -2457,6 +2457,17 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: dual_toxocyst
     mode: cycle
+    score: 82.45773739131245
+    fp: 940cf2d973d7281a
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, creeping_bullseye, magnetic_might, riven]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [cold, multishot, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: dual_toxocyst
+    mode: cycle
     score: 80.0429329531616
     fp: d4662974aef4c83a
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, riven, primed_convulsion, pathogen_rounds]
@@ -2473,6 +2484,17 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_deadhead]
+  - weapon: dual_toxocyst
+    mode: cycle
+    score: 78.71270083710397
+    fp: a98ed114a30cc115
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, magnetic_might, riven, frostbite]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: dual_toxocyst
     mode: cycle
     score: 76.68646991807113
@@ -2764,6 +2786,13 @@ entries:
     fp: 87d069b41b59f824
     mods: [galvanized_hell, galvanized_savvy, shotgun_barrage, shotgun_elementalist, magnetic_strafe, primed_chilling_grasp, contagious_spread, primed_charged_shell]
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+  - weapon: felarx
+    mode: cycle
+    score: 30.276151177591004
+    fp: de6f4b7b78ba04e7
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, blaze, scattering_inferno]
+    evolutions: [felarx_evo1_incarnon_form, felarx_frictionless_flight, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_deadhead]
   - weapon: felarx
     mode: base
@@ -4219,6 +4248,17 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: laetum
     mode: cycle
+    score: 69.88265193007736
+    fp: 8172faab2370e87f
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, primed_convulsion, riven]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, multishot, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: cycle
     score: 63.31171216304874
     fp: 3537823263317188
     exilus: steady_hands
@@ -4343,6 +4383,13 @@ entries:
     score: 57.0583716080589
     fp: bf3b81d6a6468e6c
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, primed_convulsion, pathogen_rounds]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+  - weapon: laetum
+    mode: cycle
+    score: 56.95789927115026
+    fp: 20382bbe3341ea64
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, primed_convulsion, pistol_pestilence]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
   - weapon: laetum
@@ -5794,9 +5841,23 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: latron_prime
     mode: cycle
+    score: 55.96942674304704
+    fp: 44f774ea2051d41f
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: latron_prime
+    mode: cycle
     score: 55.30756952434211
     fp: 1523c4ce9ced5302
     exilus: primed_stabilizer
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: latron_prime
+    mode: cycle
+    score: 55.30756952434211
+    fp: 3827f844aaccf16f
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
     arcanes: [primary_deadhead]
@@ -5844,6 +5905,13 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: latron_prime
     mode: cycle
+    score: 39.08849867481662
+    fp: 06c8ecb34c7d7cc9
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_merciless]
+  - weapon: latron_prime
+    mode: cycle
     score: 34.79281861961506
     fp: f37f24c7fa36fa81
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
@@ -5856,6 +5924,13 @@ entries:
     mods: [galvanized_chamber, serration, double_tap, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_deadhead]
     arcanes: [primary_deadhead]
+  - weapon: latron_prime
+    mode: cycle
+    score: 30.79852139061963
+    fp: 6382df9f4da12fc8
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, point_strike, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_merciless]
   - weapon: latron_prime
     mode: base
     score: 19.917957668125737
@@ -7456,6 +7531,17 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
+    score: 29.751339440398997
+    fp: f35f6f7a6d8bce20
+    mods: [galvanized_chamber, critical_delay, hammer_shot, vile_acceleration, vital_sense, riven, infected_clip, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, electricity]
+      malus: magazine_capacity
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
     score: 29.51976860250505
     fp: 5fe30715c9154166
     mods: [galvanized_chamber, galvanized_scope, critical_delay, vital_sense, riven, primed_cryo_rounds, malignant_force, stormbringer]
@@ -8100,6 +8186,17 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, damage]
       malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: vasto_prime
+    mode: cycle
+    score: 128.23779941263075
+    fp: 5439de1f14b7164b
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, riven, primed_convulsion, pistol_pestilence]
+    evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_lone_gun, vasto_prime_extended_volley, vasto_prime_survivors_edge]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: damage_to_infested
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: vasto_prime
     mode: cycle

@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 2799
+submissions: 2831
 engine: 88d108af8d9cd4ef6b94e4847c99818aa6871a8d
 entries:
   - weapon: acceltra_prime
@@ -3450,6 +3450,13 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: latron_prime
     mode: cycle
+    score: 225.9368899703988
+    fp: 713d4f8eaed2ff5f
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_merciless]
+  - weapon: latron_prime
+    mode: cycle
     score: 223.64878302547663
     fp: 422861e444bf4d5f
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
@@ -3461,6 +3468,20 @@ entries:
     fp: 64293488b44b6d68
     exilus: primed_stabilizer
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: latron_prime
+    mode: cycle
+    score: 221.296454658473
+    fp: 210eca6e156acd7d
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+  - weapon: latron_prime
+    mode: cycle
+    score: 219.02320227246452
+    fp: 409443d256ea80dd
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
     arcanes: [primary_deadhead]
   - weapon: latron_prime
@@ -3484,6 +3505,20 @@ entries:
     mods: [galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
     arcanes: [primary_deadhead]
+  - weapon: latron_prime
+    mode: cycle
+    score: 146.349761794896
+    fp: 561b4f4343ef6cee
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, point_strike, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_merciless]
+  - weapon: latron_prime
+    mode: cycle
+    score: 127.53977490439254
+    fp: f9d65a2b1a79bed8
+    mods: [galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
+    arcanes: [primary_merciless]
   - weapon: latron_prime
     mode: base
     score: 19.917957668125737
@@ -5060,6 +5095,17 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, damage]
       malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: vasto_prime
+    mode: cycle
+    score: 128.23779941263075
+    fp: 4c02c68daa883e55
+    mods: [galvanized_diffusion, galvanized_shot, primed_pistol_gambit, lethal_torrent, magnetic_might, riven, primed_convulsion, pistol_pestilence]
+    evolutions: [vasto_prime_evo1_incarnon_form, vasto_prime_lone_gun, vasto_prime_extended_volley, vasto_prime_survivors_edge]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: damage_to_infested
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: vasto_prime
     mode: cycle
