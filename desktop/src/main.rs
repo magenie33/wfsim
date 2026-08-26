@@ -118,6 +118,7 @@ fn update_check(state: tauri::State<Arc<Layout>>) {
     if update_busy() {
         return;
     }
+    update::begin("checking");
     let layout = state.inner().clone();
     std::thread::spawn(move || {
         if let Err(e) = update::check(&layout.manifest()) {
@@ -131,6 +132,7 @@ fn update_download(state: tauri::State<Arc<Layout>>) {
     if update_busy() {
         return;
     }
+    update::begin("downloading");
     let layout = state.inner().clone();
     std::thread::spawn(move || {
         let local = layout.manifest();

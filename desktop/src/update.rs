@@ -85,6 +85,21 @@ fn set(s: Status) {
     }
 }
 
+/// Enter a phase synchronously, before the worker thread that will do the work.
+///
+/// THE COMMAND RETURNS BEFORE THE WORK STARTS, and the page polls. So if the
+/// status still reads `available` when `update_download` returns, the page sees
+/// nothing running, stops polling, and the download proceeds invisibly: the
+/// button appears to do nothing and the update turns up on some later launch.
+/// Setting the phase here closes that window — by the time the command returns,
+/// the status already says what is about to happen.
+pub fn begin(phase: &str) {
+    let mut s = status();
+    s.phase = phase.to_string();
+    s.message = String::new();
+    set(s);
+}
+
 pub fn note_failure(message: &str) {
     let mut s = status();
     s.phase = "failed".into();
