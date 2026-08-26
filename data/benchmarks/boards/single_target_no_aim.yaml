@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 2582
+submissions: 2600
 engine: e4c4d61bea3efcfd46fdf9a364d4914ca64f8e53
 entries:
   - weapon: aeolak
@@ -140,6 +140,17 @@ entries:
     score: 8.002291426978442
     fp: d4faf5d6303578eb
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, riven, primed_heated_charge]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_resonant_restore, atomos_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [damage, multishot, toxin]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 0.9, 0.9]
+  - weapon: atomos
+    mode: base
+    score: 6.4597547356268645
+    fp: 1e170b4f685c6e02
+    mods: [seeker, galvanized_diffusion, primed_target_cracker, pistol_elementalist, magnetic_might, frostbite, riven, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_resonant_restore, atomos_elemental_balance]
     arcanes: [secondary_enervate]
     riven:
@@ -1127,6 +1138,30 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: dual_toxocyst
     mode: cycle
+    score: 5.861923727733672
+    fp: 6238292bdf983cdd
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_chance, critical_damage]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: dual_toxocyst
+    mode: cycle
+    score: 3.0849369753671763
+    fp: 4096574aba27c342
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_damage, fire_rate, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: dual_toxocyst
+    mode: cycle
     score: 2.1875892342343133
     fp: d588b642b460caa8
     mods: [hornet_strike, barrel_diffusion, lethal_torrent, perpetual_agony, pistol_elementalist, magnetic_might, sure_shot, pistol_pestilence]
@@ -1160,16 +1195,12 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, pistol_elementalist, frostbite, primed_convulsion]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_carnage_reign, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [secondary_encumber]
-  - weapon: dual_toxocyst
-    mode: cycle
-    score: 0.8935881434059351
-    fp: 58d84bad1d0c8a41
-    mods: [merciless_gunfight, galvanized_diffusion, primed_target_cracker, lethal_torrent, riven, primed_convulsion, pathogen_rounds, primed_heated_charge]
-    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+  - weapon: epitaph_prime
+    mode: base
+    score: 0.04239953125510317
+    fp: 598f2575908c9992
+    mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, creeping_bullseye, primed_convulsion, pistol_pestilence]
     arcanes: [secondary_deadhead]
-    riven:
-      bonuses: [critical_chance, damage]
-      rolls: [1.1, 1.1]
   - weapon: felarx
     mode: base
     score: 9.663276076902482
@@ -3369,6 +3400,17 @@ entries:
     mods: [galvanized_chamber, primed_shred, vital_sense, hata_satya, magnetic_capacity, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [soma_prime_evo1_incarnon_form, soma_prime_fortress_salvo, soma_prime_rapid_reinforcement, soma_prime_fatal_affliction]
     arcanes: [primary_deadhead]
+  - weapon: soma_prime
+    mode: base
+    score: 0.6374497875885331
+    fp: a072eaf8bbfe3b67
+    mods: [galvanized_chamber, serration, vital_sense, hata_satya, riven, primed_cryo_rounds, infected_clip, wildfire]
+    evolutions: [soma_prime_evo1_incarnon_form, soma_prime_fortress_salvo, soma_prime_kinetic_battle, soma_prime_zeroed_in]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, fire_rate, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: soma_prime
     mode: cycle
     score: 0.574584664272566
