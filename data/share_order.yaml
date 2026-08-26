@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: 53a3e44e3b47bc47
-count: 1573
+digest: f8c72e213192939b
+count: 1574
 ids:
   - acceltra
   - acceltra_prime
@@ -1583,3 +1583,4 @@ ids:
   - ris_invocation
   - vome_invocation
   - xata_invocation
+  - dreadful_killshot

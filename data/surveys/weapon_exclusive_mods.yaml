@@ -11,7 +11,7 @@
 # refuse on purpose, and the reason rides beside it. The export answers "does
 # a mod for this weapon exist", which is not "may a player equip it here".
 #
-# 87 of 197 carried, 7 excluded on purpose, 103 still to transcribe.
+# 88 of 197 carried, 7 excluded on purpose, 102 still to transcribe.
 #
 # THE ROSTER THIS WAS JOINED AGAINST, because a survey nobody re-runs
 # reports the question it was asked LAST time. This file sat at 20 rows
@@ -276,7 +276,7 @@ mods:
     compat: Basmu
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Nightwave/NightwaveBasmuAugmentMod
-    carried: ~
+    carried: data/mods/rifle/dreadful_killshot.yaml
   - name: Eagle Eye
     compat: Rifle
     kind: Primary Mod

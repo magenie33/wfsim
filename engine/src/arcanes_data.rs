@@ -460,13 +460,30 @@ pub enum TennoStat {
     Armor,
     /// Primary Overcharge: "35% of Max Energy as Multishot".
     MaxEnergy,
+    /// Dreadful Killshot: "for every 75 Current Warframe Health".
+    ///
+    /// CURRENT health is what the card says and MAX health is what this reads,
+    /// which is the house rule for a Tenno state the arena does not simulate:
+    /// nothing in this fight damages the player, so the two are the same number
+    /// for the whole engagement unless somebody types otherwise.
+    Health,
 }
 
 impl TennoStat {
-    fn of(self, t: &crate::tenno_data::Tenno) -> f64 {
+    /// The stat's own name, for a card that has to say which one it reads.
+    pub fn name(self) -> &'static str {
+        match self {
+            TennoStat::Armor => "armor",
+            TennoStat::MaxEnergy => "max energy",
+            TennoStat::Health => "health",
+        }
+    }
+
+    pub fn of(self, t: &crate::tenno_data::Tenno) -> f64 {
         match self {
             TennoStat::Armor => t.armor,
             TennoStat::MaxEnergy => t.energy,
+            TennoStat::Health => t.health,
         }
     }
 }
@@ -1172,6 +1189,7 @@ impl ArcaneDef {
                     let of = match stat {
                         TennoStat::Armor => "Warframe Armor",
                         TennoStat::MaxEnergy => "Warframe Max Energy",
+                        TennoStat::Health => "Warframe Health",
                     };
                     let past = if *above > 0.0 { format!(" past {above}") } else { String::new() };
                     let gate = if *min_energy_pct > 0.0 {

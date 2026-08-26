@@ -1,0 +1,62 @@
+id: dreadful_killshot
+name: Dreadful Killshot
+rarity: rare
+polarity: madurai
+base_drain: 2                 # max drain 7 at rank 5 (wiki cost column: 2..7)
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Nightwave/NightwaveBasmuAugmentMod
+description: "Increased Damage and Status Chance by +20% for every 75 Warframe Health. Capped at 360%"
+exclusive_to: [basmu]
+family: dreadful_killshot
+
+# ONE PERCENTAGE, TWO BUCKETS, so it is TWO entries with identical parameters
+# rather than one granting a pair — the wiki settles that they are the same
+# number: *"Both the Damage and Status chance bonuses are additive."* Two
+# entries keep every grant a single bucket, which is what every other mod here
+# is.
+#
+# WHICH BUCKET THE DAMAGE HALF JOINS IS NOT A GUESS. The wiki's own note is
+# *"the equipped Warframe must have at least 675 current health for the damage
+# bonus to outdo Serration"*, and 675 / 75 x 20% = 180% against Serration's
+# 165%. That comparison is only meaningful inside Serration's bracket, so this
+# is `base_damage` and not a final multiplier.
+#
+# WHOLE STEPS ONLY: *"Buff is rounded down to the nearest multiple of 20%"*, so
+# 149 health is one step of 75 rather than 1.99. `TennoScaledTerm::value` floors
+# it, which is why `unit` is a field rather than the rate being pre-divided.
+#
+# THE CAP IS THE SAME AT EVERY RANK — 360% at rank 0 and at rank 5 — which is
+# what the wiki's "Minimum Max Health needed to reach cap" column measures: 2700
+# at rank 0 (10% a step) down to 1350 at rank 5 (20% a step). So `cap` does not
+# scale with rank while `rankMax` does.
+#
+# CURRENT HEALTH is what the card says and MAX health is what this reads. It is
+# the house rule for a Tenno state this arena does not simulate — nothing in
+# this fight damages the player, so the two are the same number for the whole
+# engagement unless somebody types otherwise. The wiki's own note that
+# *"Temporary buffs to health and damage to health can affect the current
+# bonuses"* is the part that is out of scope, and `wf_health` is where a reader
+# says what they are actually carrying.
+#
+# IT PAYS NOTHING WITH NO FRAME, which is the honest default rather than a gap:
+# the neutral Tenno has 250 health, so three steps and +60% at max rank. The
+# panel states that number now (`tenno` in the panel response), so a reader can
+# see why the mod is worth what it is worth.
+effects:
+  - kind: tenno_scaled
+    stat: health
+    unit: 75
+    grants: base_damage
+    cap: 3.60
+    rank0: 0.10
+    rankMax: 0.20
+  - kind: tenno_scaled
+    stat: health
+    unit: 75
+    grants: status_chance
+    cap: 3.60
+    rank0: 0.10
+    rankMax: 0.20
+
+source:
+  url: https://wiki.warframe.com/w/Dreadful_Killshot

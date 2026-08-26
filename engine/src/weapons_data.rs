@@ -3123,6 +3123,7 @@ pub fn base_panel_assembled(
         by_round_reload,
         innate_co_per_type: 0.0,
         gated: Vec::new(),
+        tenno_scaled: Vec::new(),
         cannot_zoom: s.cannot_zoom,
         consecutive_hit_damage: None,
         bodyshot_crit_chance_multiplier: 1.0,

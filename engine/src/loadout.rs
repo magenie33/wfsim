@@ -164,6 +164,41 @@ pub enum ModEffect {
     /// higher. The first two are resolved against the form; the third is an
     /// equip rule, because a magazine mod can neither buy it nor lose it.
     LastRoundDamage(f64),
+    /// **A BONUS COMPUTED FROM THE PLAYER**, per unit of one of their stats,
+    /// capped — the Basmu's Dreadful Killshot: *"increases Damage and Status
+    /// Chance for every 75 Current Warframe Health, up to 360% at all ranks"*.
+    ///
+    /// The arcane side has carried this shape since Primary Bulwark
+    /// (`ArcEffect::TennoScaled`); this is its MOD-side twin, and it is a
+    /// separate variant rather than a shared one because a mod's effects are
+    /// resolved in a different pass — `base.tenno_scaled` is read in
+    /// `resolve_for`, where the Tenno is known, exactly as `base.gated` is.
+    ///
+    /// ONE PERCENTAGE, TWO BUCKETS, so the card is TWO entries with identical
+    /// parameters rather than one entry granting a pair. The wiki settles that
+    /// they are the same number — *"Both the Damage and Status chance bonuses
+    /// are additive"* — and two entries keep every grant a single bucket, which
+    /// is what the rest of this enum is.
+    ///
+    /// WHICH BUCKET the damage half joins is not a guess: the wiki's own note
+    /// is *"the equipped Warframe must have at least 675 current health for the
+    /// damage bonus to outdo Serration"*, and 675/75 x 20% = 180% against
+    /// Serration's 165%. That comparison is only meaningful inside Serration's
+    /// bracket.
+    TennoScaled {
+        stat: crate::arcanes_data::TennoStat,
+        /// Only the part of the stat ABOVE this counts. Zero for a card that
+        /// counts from nothing, which is this one.
+        above: f64,
+        /// How much of the stat one step is worth — 75 health.
+        unit: f64,
+        /// What one whole step pays — 0.20 at max rank.
+        per_unit: f64,
+        /// The card's own ceiling on the whole bonus. 3.6 here, and the SAME at
+        /// every rank, which is why it does not scale with rank.
+        cap: f64,
+        grant: crate::arcanes_data::ArcGrant,
+    },
     /// THE CHAMBER FAMILY: *"+X% Damage on first shot in Magazine"* (Charged
     /// Chamber, Primed Chamber).
     ///
@@ -796,6 +831,15 @@ impl ModEffect {
         match *self {
             // The gate is stated as a suffix so the inner line reads normally.
             WhileTenno(c, ref inner) => format!("{} ({})", inner.describe(), c.label()),
+            TennoScaled { stat, above, unit, per_unit, cap, grant } => format!(
+                "{} {} per {:.0} of the Warframe's {}{} — capped at {}, and NOTHING with no                  frame, because the neutral player has none of it",
+                pct(per_unit),
+                grant.locked_stat(),
+                unit,
+                stat.name(),
+                if above > 0.0 { format!(" past {above:.0}") } else { String::new() },
+                pct(cap)
+            ),
             LastRoundDamage(v) => format!(
                 "{} damage on the magazine's LAST round — its own multiplier, not the                  base-damage bucket (nothing on a continuous weapon or an Incarnon form)",
                 pct(v)
@@ -1245,6 +1289,32 @@ pub enum TennoGate {
     SoloWeapon,
 }
 
+/// A BONUS THE PLAYER'S OWN STATS DECIDE, carried on the panel until a fight
+/// says who is holding the gun. `base.gated`'s scaled sibling: that one answers
+/// yes or no, this one answers HOW MUCH.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TennoScaledTerm {
+    pub stat: crate::arcanes_data::TennoStat,
+    pub above: f64,
+    pub unit: f64,
+    pub per_unit: f64,
+    pub cap: f64,
+    pub grant: crate::arcanes_data::ArcGrant,
+}
+
+impl TennoScaledTerm {
+    /// What this player is worth to it.
+    ///
+    /// WHOLE STEPS ONLY, which is the card's own arithmetic rather than a
+    /// convenience: *"Buff is rounded down to the nearest multiple of 20%"*
+    /// (wiki, Dreadful Killshot). 149 health is one step of 75, not 1.99.
+    pub fn value(&self, tenno: &crate::tenno_data::Tenno) -> f64 {
+        let have = (self.stat.of(tenno) - self.above).max(0.0);
+        let steps = (have / self.unit.max(1e-9)).floor();
+        (steps * self.per_unit).min(self.cap)
+    }
+}
+
 impl TennoGate {
     /// Does this player satisfy it?
     pub fn open(self, tenno: &crate::tenno_data::Tenno) -> bool {
@@ -1466,6 +1536,10 @@ pub struct WeaponBase {
     /// point is that the magazine size is IN the reload time, so a magazine
     /// mod on a Strun or a Felarx costs what the game charges for it.
     pub by_round_reload: Option<(f64, f64, f64)>,
+    /// Bonuses the PLAYER's stats decide, folded in `resolve_for` for the same
+    /// reason `gated` is: they are read off the raw weapon and the Tenno is not
+    /// there yet.
+    pub tenno_scaled: Vec<TennoScaledTerm>,
     /// Unconditional CO rate baked into the weapon config (Carnage
     /// Reign's +33% per status type) — additive with mod CO sources.
     pub innate_co_per_type: f64,
@@ -3315,6 +3389,9 @@ pub fn resolve_for(
     // from "an augment whose radius happens to be zero".
     let mut acid = AcidShells::default();
     let mut acid_seen = false;
+    // CARRIED, NOT SPENT — the mods that scale off the PLAYER. Folded in
+    // `resolve_for`, which has the Tenno, the same way `base.gated` is.
+    let mut tenno_scaled: Vec<TennoScaledTerm> = base.tenno_scaled.clone();
     // A field a MOD leaves on a weapon that has none (Nightwatch Napalm), with
     // the share of the blast AREA it covers.
     let mut granted_lingering: Option<&'static LingeringBase> = None;
@@ -3410,6 +3487,11 @@ pub fn resolve_for(
                 ModEffect::FirstRoundDamage(v) => first_round_damage += v,
                 ModEffect::ConsecutiveHitDamage { per_stack, max_stacks, duration } => {
                     consecutive_hit = Some((per_stack, max_stacks, duration));
+                }
+                // CARRIED, NOT SPENT — the player is not here. It is folded in
+                // `resolve_for`, which has the Tenno, exactly as `gated` is.
+                ModEffect::TennoScaled { stat, above, unit, per_unit, cap, grant } => {
+                    tenno_scaled.push(TennoScaledTerm { stat, above, unit, per_unit, cap, grant });
                 }
                 ModEffect::BaseDamage(v) => base_damage += v,
                 ModEffect::Multishot(v) => multishot += v,
@@ -3660,6 +3742,33 @@ pub fn resolve_for(
                     }
                 }
             }
+        }
+    }
+
+    // …AND THE BONUSES THE PLAYER DECIDES, folded once the whole build is in.
+    //
+    // AFTER the loop rather than inside it, because a term is a function of
+    // the Tenno and not of the mod that carried it: two cards reading the same
+    // stat pay their own steps and the sum joins the bucket once, which is what
+    // "Both the Damage and Status chance bonuses are additive" means on the
+    // Basmu's own card.
+    //
+    // THE NEUTRAL PLAYER PAYS FOR NONE OF IT. `TennoStat::of` reads the fight's
+    // Tenno, and a build that has not said which frame is holding the gun has
+    // 250 health and 105 armor — the honest default, and the same one every
+    // gated grant above already follows.
+    for t in &tenno_scaled {
+        let v = t.value(tenno);
+        match t.grant {
+            crate::arcanes_data::ArcGrant::BaseDamage => base_damage += v,
+            crate::arcanes_data::ArcGrant::StatusChance => sc += v,
+            crate::arcanes_data::ArcGrant::Multishot => multishot += v,
+            crate::arcanes_data::ArcGrant::CritDamage => cd += v,
+            // A grant no card has asked for yet. Loudly nothing rather than
+            // quietly the wrong bucket: `mods_data` refuses an unknown grant
+            // at load, so reaching here means one was added to that list and
+            // not to this one.
+            _ => {}
         }
     }
 

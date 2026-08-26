@@ -2753,6 +2753,11 @@ fn display_number(x: f64) -> String {
 
 pub fn panel_json(v: &Value) -> Value {
     let info = weapon(get_str(v, "weapon", default_weapon_id()));
+    // THE PLAYER, RESOLVED ONCE AND FIRST. It used to be built after the mod
+    // loop, and the loop now needs it — a mod that scales off the Tenno has to
+    // say what THIS one is worth to it. One call rather than two, because two
+    // `tenno_from` in one function is two answers that can differ.
+    let panel_tenno = tenno_from(v, info);
     let policy = if info.sentinel {
         StackPolicy::BaseOnly
     } else {
@@ -3200,6 +3205,22 @@ pub fn panel_json(v: &Value) -> Value {
                 ProcConversion { .. } => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": "rolled per damage instance in the sim"})),
+                // A BONUS THE PLAYER DECIDES. It IS in the panel's numbers —
+                // `resolve_for` folded it into the same buckets a plain mod
+                // writes — so this line exists to say WHERE it came from, and
+                // to state what the player is worth to it. Without it the panel
+                // would show a base-damage figure with no card explaining it.
+                TennoScaled { stat, above, unit, per_unit, cap, .. } => {
+                    let have = (stat.of(&panel_tenno) - above).max(0.0);
+                    let steps = (have / unit.max(1e-9)).floor();
+                    let paid = (steps * per_unit).min(cap);
+                    conditionals.push(json!({
+                        "mod": name, "desc": e.describe(), "active": paid > 0.0,
+                        "why": format!(
+                            "this Warframe has {:.0} {} — {:.0} whole steps of {:.0}, so it pays {:.0}%{}",
+                            stat.of(&panel_tenno), stat.name(), steps, unit, paid * 100.0,
+                            if paid >= cap { " (capped)" } else { "" })}));
+                }
             }
             // Tag whatever the arms just pushed, so the panel never shows a
             // contribution without the condition that earns it.
@@ -3250,7 +3271,6 @@ pub fn panel_json(v: &Value) -> Value {
     // THE FIGHT's PLAYER, hoisted: both the source list below and the resolved
     // panels at the end of this function ask it, and asking twice is how they
     // came to disagree.
-    let panel_tenno = tenno_from(v, info);
     let (mut evo_flat_bd, mut evo_flat_cc) = (0.0f64, 0.0f64);
     let (mut evo_flat_sc, mut evo_flat_mag) = (0.0f64, 0.0f64);
     if form_unlock_evo(info).is_some() {

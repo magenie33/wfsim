@@ -242,6 +242,44 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
     // resolves to); every other kind wraps here.
     let tenno_cond = if kind == "buff" { None } else { tenno_condition(cond) };
     let out = match kind {
+        // A BONUS THE PLAYER DECIDES — Dreadful Killshot, and the mod-side twin
+        // of the arcanes' `tenno_scaled`. The value is a step function of one of
+        // the Tenno's stats, so it cannot be a number here: it is carried to
+        // `resolve_for`, which has the player.
+        //
+        // AN UNKNOWN `stat:` OR `grants:` IS A REFUSAL, not a default. A card
+        // whose rule the engine cannot read must pay NOTHING and say so — the
+        // arcane loader's own rule, and the reason a data file cannot state a
+        // rule that quietly does not apply.
+        "tenno_scaled" => {
+            let stat = match v.get("stat").and_then(Value::as_str)? {
+                "armor" => crate::arcanes_data::TennoStat::Armor,
+                "max_energy" => crate::arcanes_data::TennoStat::MaxEnergy,
+                "health" => crate::arcanes_data::TennoStat::Health,
+                _ => return None,
+            };
+            let grant = match v.get("grants").and_then(Value::as_str)? {
+                "base_damage" => crate::arcanes_data::ArcGrant::BaseDamage,
+                "status_chance" => crate::arcanes_data::ArcGrant::StatusChance,
+                "multishot" => crate::arcanes_data::ArcGrant::Multishot,
+                "crit_damage" => crate::arcanes_data::ArcGrant::CritDamage,
+                _ => return None,
+            };
+            ModEffect::TennoScaled {
+                stat,
+                above: max("above"),
+                // A unit of ZERO would divide the player's stat by nothing and
+                // pay the cap to anybody, so it is required rather than
+                // defaulted.
+                unit: f(v, "unit").filter(|u| *u > 0.0)?,
+                per_unit: max("rankMax"),
+                // NO CAP IS A REAL STATE, and it is infinity rather than zero:
+                // zero would silently pay nothing, which is the failure this
+                // whole arm exists to avoid.
+                cap: f(v, "cap").unwrap_or(f64::INFINITY),
+                grant,
+            }
+        }
         "base_damage_bonus" => ModEffect::BaseDamage(max("rankMax")),
         "multishot_bonus" => ModEffect::Multishot(max("rankMax")),
         "crit_chance_bonus" => ModEffect::CritChance(max("rankMax")),
@@ -2138,10 +2176,78 @@ mod weapon_exclusive_survey {
     /// that the RELOAD clears — and neither could be approximated: a `CondBuff`
     /// applies a buff at its assumed maximum, which here is +600% base damage
     /// against any target and +500% critical chance on the first shot of every
+    /// **DREADFUL KILLSHOT PAYS IN WHOLE STEPS, AND STOPS AT THE CAP.**
+    ///
+    /// The Basmu's augment: *"increases Damage and Status Chance for every 75
+    /// Current Warframe Health, up to 360% at all ranks"*. It is the first mod
+    /// whose value is a function of the PLAYER, so the arithmetic is asserted
+    /// rather than trusted.
+    ///
+    /// THE WIKI'S OWN CROSS-CHECK IS THE SHARP ONE: *"the equipped Warframe
+    /// must have at least 675 current health for the damage bonus to outdo
+    /// Serration"*. 675 is nine whole steps at 20% = 180%, against Serration's
+    /// 165% — so asserting that number is asserting that the damage half lands
+    /// in SERRATION'S BRACKET and not in some final multiplier, which is the
+    /// one thing the card's own text cannot say directly.
+    #[test]
+    fn dreadful_killshot_pays_per_75_health_and_caps() {
+        // FROM THE BASMU'S OWN POOL, which is also the assertion that the mod
+        // is reachable: it is `exclusive_to: [basmu]`, so a transcription that
+        // never joins a pool would fail here rather than pass unnoticed.
+        let pool = crate::mods_data::pool_for_weapon("basmu");
+        let def = pool
+            .iter()
+            .find(|m| m.id == "dreadful_killshot")
+            .expect("the Basmu can equip its own augment");
+        let terms: Vec<crate::loadout::TennoScaledTerm> = def
+            .effects
+            .iter()
+            .filter_map(|e| match *e {
+                crate::loadout::ModEffect::TennoScaled { stat, above, unit, per_unit, cap, grant } => {
+                    Some(crate::loadout::TennoScaledTerm { stat, above, unit, per_unit, cap, grant })
+                }
+                _ => None,
+            })
+            .collect();
+        // TWO ENTRIES, ONE PERCENTAGE — "Both the Damage and Status chance
+        // bonuses are additive", so they are separate grants with identical
+        // parameters rather than one effect granting a pair.
+        assert_eq!(terms.len(), 2, "{:?}", def.effects);
+        assert!(terms.iter().any(|t| t.grant == crate::arcanes_data::ArcGrant::BaseDamage));
+        assert!(terms.iter().any(|t| t.grant == crate::arcanes_data::ArcGrant::StatusChance));
+
+        let at = |health: f64| {
+            let mut t = crate::tenno_data::default_tenno().clone();
+            t.health = health;
+            let v: Vec<f64> = terms.iter().map(|x| x.value(&t)).collect();
+            assert!((v[0] - v[1]).abs() < 1e-12, "the two halves must be one number: {v:?}");
+            v[0]
+        };
+        let near = |a: f64, b: f64| assert!((a - b).abs() < 1e-9, "{a} vs {b}");
+
+        // WHOLE STEPS ONLY — "rounded down to the nearest multiple of 20%".
+        near(at(74.0), 0.0);
+        near(at(75.0), 0.20);
+        // 149 is one step and not 1.99 of one, which is the whole reason `unit`
+        // is a field rather than the rate being pre-divided.
+        near(at(149.0), 0.20);
+        near(at(150.0), 0.40);
+        // THE NEUTRAL PLAYER, which is what a build pays before anyone says
+        // which frame is holding the gun: 250 health is three steps.
+        near(at(250.0), 0.60);
+        // THE WIKI'S OWN COMPARISON, and the assertion that pins the bucket.
+        near(at(675.0), 1.80);
+        // THE CAP, from the wiki's "minimum max health needed to reach cap"
+        // column: 1350 at rank 5. One step under it is not capped.
+        near(at(1275.0), 3.40);
+        near(at(1350.0), 3.60);
+        near(at(100_000.0), 3.60);
+    }
+
     /// run.
     #[test]
     fn the_weapon_exclusive_mods_we_still_owe_only_goes_down() {
-        const OWED: usize = 103;
+        const OWED: usize = 102;
         let text = crate::data::file("surveys/weapon_exclusive_mods.yaml")
             .expect("data/surveys/weapon_exclusive_mods.yaml — run scripts/survey_weapon_mods.py");
         let mut total = 0usize;
