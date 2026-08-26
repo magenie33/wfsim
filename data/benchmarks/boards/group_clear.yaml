@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 2625
-engine: e4c4d61bea3efcfd46fdf9a364d4914ca64f8e53
+submissions: 2627
+engine: e3a79ade47798f92db3dcdd1e47c0e39348fadc2
 entries:
   - weapon: aeolak
     mode: base
@@ -4107,6 +4107,26 @@ entries:
     mods: [pistol_acuity, primed_target_cracker, galvanized_shot, primed_pistol_gambit, magnetic_might, jolt, pistol_pestilence, primed_heated_charge]
     evolutions: [sicarus_prime_evo1_incarnon_form, sicarus_prime_feigned_retreat, sicarus_prime_extended_volley, sicarus_prime_wisemans_regard]
     arcanes: [secondary_shiver]
+  - weapon: sobek
+    mode: base
+    score: 1.3216293923820706
+    fp: 85e544f692a01fc2
+    exilus: vigilante_supplies
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, repeater_clip, magnetic_strafe, riven, chilling_reload, toxic_barrage]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, multishot, weapon_recoil]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: sobek
+    mode: base
+    score: 1.307534464740286
+    fp: 3e06ae5b9d48ad89
+    exilus: vigilante_supplies
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, riven, chilling_reload, toxic_barrage]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, multishot, weapon_recoil]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: sobek
     mode: base
     score: 1.1439332675311995

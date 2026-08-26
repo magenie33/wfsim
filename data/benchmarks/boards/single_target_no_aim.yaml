@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 2625
-engine: e4c4d61bea3efcfd46fdf9a364d4914ca64f8e53
+submissions: 2627
+engine: e3a79ade47798f92db3dcdd1e47c0e39348fadc2
 entries:
   - weapon: aeolak
     mode: base
@@ -3428,6 +3428,26 @@ entries:
     exilus: counterbalance
     mods: [galvanized_savvy, critical_deceleration, hells_chamber, shotgun_barrage, shotgun_elementalist, vigilante_armaments, riven, incendiary_coat]
     arcanes: [primary_bulwark]
+    riven:
+      bonuses: [critical_damage, multishot, weapon_recoil]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: sobek
+    mode: base
+    score: 0.24587282833214755
+    fp: 925081d9325ac698
+    exilus: vigilante_supplies
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, shotgun_barrage, magnetic_strafe, riven, chilling_reload, toxic_barrage]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, multishot, weapon_recoil]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: sobek
+    mode: base
+    score: 0.2330272154644689
+    fp: 7f733ce070c8997f
+    exilus: vigilante_supplies
+    mods: [galvanized_hell, galvanized_savvy, critical_deceleration, repeater_clip, magnetic_strafe, riven, chilling_reload, toxic_barrage]
+    arcanes: [primary_crux]
     riven:
       bonuses: [critical_damage, multishot, weapon_recoil]
       rolls: [1.1, 1.1, 1.1]
