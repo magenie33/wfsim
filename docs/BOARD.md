@@ -497,6 +497,34 @@ assets, and until the board there was no script at all. Two consequences:
    scored, not at the board. Every name in this pipeline says what it holds —
    the board is a file in the repo and nothing in Cloudflare is called after it.
 
+3. **The library database** — OPTIONAL, and everything above works without it.
+   It is the first step of moving the library out of KV, and it is written so
+   that it can land long before the database does: without the binding the
+   mirror in `worker/index.js` is a no-op, and `check_board_submit.mjs` asserts
+   that.
+
+   ```sh
+   npx wrangler d1 create wfsim-library
+   npx wrangler d1 execute wfsim-library --remote --file worker/schema.sql
+   ```
+
+   …then declare it beside the KV namespace, in the file for the same reason:
+
+   ```jsonc
+   "d1_databases": [
+     { "binding": "LIBRARY", "database_name": "wfsim-library",
+       "database_id": "<id from the create above>" }
+   ]
+   ```
+
+   KV STAYS THE AUTHORITY. The scorer and the pending count read KV and keep
+   reading it; this writes a second copy that nothing looks at yet, which is
+   what makes the step reversible — drop the binding and the system is exactly
+   what it was. What it buys immediately is that the library becomes something
+   you can ASK A QUESTION about (`wrangler d1 execute wfsim-library --remote
+   --command "SELECT weapon, count(*) FROM builds GROUP BY weapon ORDER BY 2
+   DESC LIMIT 20"`) and something you can DUMP, which KV is not.
+
 The token only ever READS. What the board says is computed in the repo from
 data in the repo; nothing secret decides a rank.
 
@@ -793,6 +821,109 @@ off a record that is not an identity axis (not `at`, not `benchmark`).
 3. **Full rescores are O(store) and unavoidable** — a code change really does
    change every number. 128 shards buys a constant factor; the ceiling is
    GitHub's 256-job matrix.
+
+### What this system actually is (owner asked for the principle, 2026-08-26)
+
+Strip the implementation and the board is **a materialised ranking over an
+expensive pure function on a growing input set**:
+
+```
+score = f(build, ruler, engine_version, data_version)
+```
+
+Four properties decide everything downstream:
+
+1. **`f` is deterministic** — the seed is pinned, so the same inputs give the
+   same number for ever.
+2. **`f` is expensive** — 5.8 seconds per `(build, ruler)` on average (712 CPU
+   minutes over 7,341 pairs, measured 2026-08-26).
+3. **The input set only grows**, apart from the one-year expiry.
+4. **The output is a projection** — top N per (weapon, mode, ruler).
+
+Anything with those four properties is a BUILD SYSTEM, and that is not an
+analogy: Bazel and Nix exist for exactly this shape — an expensive pure function
+over a versioned input set — so the answers can be taken from there rather than
+invented.
+
+#### A SCORE IS A FACT, NOT A STEP IN A PIPELINE
+
+This is the one idea the rest follows from. `(build, ruler, fingerprint) ->
+score` is true for ever once computed. It is a fact, not an intermediate result,
+and a fact should be written down THE MOMENT IT IS COMPUTED rather than when a
+batch finishes.
+
+The board is recomputed as a batch today, and every symptom traces back to that:
+
+| | batch (today) | facts |
+| --- | --- | --- |
+| a run is cancelled | everything it computed is lost | at most one score |
+| a code push | a 2h20m blocking full rescore | N facts are missing; they backfill |
+| a new submission | one cron period | seconds |
+| adding a ruler | rescore everything | the missing facts enqueue; nothing else moves |
+
+#### GENERATIONS — the least obvious part, and the most valuable
+
+There is a real invariant here that must not bend: *a board whose rows were
+measured by different engine versions is not a board.* It appears to conflict
+with backfilling, since a half-finished backfill is a mixture.
+
+It does not, and the resolution is one rule: **publish the newest COMPLETE
+generation.**
+
+```
+fingerprint A (old):  7341 / 7341 facts   <- publish this one
+fingerprint B (new):  3102 / 7341 facts   <- backfilling
+```
+
+When B completes it replaces A atomically. A reader never sees a mixed board,
+AND never sees the board stop moving: new submissions keep landing under A,
+because A is complete.
+
+That rule is what turns a rescore from an EVENT into background noise. Without
+it a six-hour backfill is a six-hour outage; with it, it is invisible. It
+matters more than any hardware choice.
+
+#### THREE TIERS, EACH WITH ITS OWN SCALING LAW
+
+They are one lockstep batch in Actions today, and that is the whole of the
+trouble.
+
+| tier | scales with | needs | the right thing |
+| --- | --- | --- | --- |
+| ingest | new submissions | cheap, always up | Worker + queue |
+| compute | missing facts | embarrassingly parallel, CPU-bound | wherever CPU is cheapest |
+| serve | readers | fast, unblockable | a static file on the CDN — already right |
+
+#### THE MOAT IS THE LIBRARY, SO IT IS A DATABASE AND NOT A CACHE
+
+What compounds is COVERAGE — builds times rulers — and that part is already
+architected correctly: the library model made a new ruler cost the community
+nothing, because it is scored from the library the day it lands.
+
+What follows is that KV is the wrong store for it. No queries, no transactions,
+no bulk read, and listing is the only index — so "which weapons are
+under-covered", "how much did the library grow this month", "which facts are
+stale" are questions that cannot be asked. Those are exactly the questions
+running a moat consists of. D1 is SQLite: it answers them, and it can be dumped
+whole, which is a hard requirement for the one asset that cannot be regenerated.
+
+#### WHERE THE COMPUTE GOES, AND A NUMBER WORTH KNOWING
+
+Steady state is about **35 new builds a day times 3 rulers = ~10 CPU minutes a
+day**. A €4 two-core box is 2,880 CPU minutes a day — **280x more than the
+steady state needs**. Cost is not a steady-state question at all; it is a BURST
+question, and the burst is a full rescore at 712 CPU minutes.
+
+The two kinds of compute are good at opposite things, so use both against one
+queue: GitHub Actions is free and unmetered on a public repo and absorbs bursts
+256 ways, while a small always-on box gives SECOND-level latency for a new
+submission — which is a product difference, not an ops one, for a tool whose
+board is the reason people come back.
+
+A box in Germany is the right place for scoring and the wrong place for anything
+a player waits on: the players are in China, and what makes wfsim.app fast and
+reachable there is that it is static and on Cloudflare. User-facing work stays at
+the edge; CPU-bound work goes on the box.
 
 ### The order to move in, when each becomes the binding constraint
 

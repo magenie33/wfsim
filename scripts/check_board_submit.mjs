@@ -44,14 +44,40 @@ const store = () => {
   };
 };
 
-const post = async (body, kv) =>
+// A D1 stub. `prepare(sql).bind(...).run()` is the whole surface the mirror
+// touches, and `fail` makes it throw — because the property that matters about
+// a mirror is what happens when it is broken.
+const database = (fail = false) => {
+  const rows = [];
+  return {
+    rows,
+    prepare: (sql) => ({
+      bind: (...args) => ({
+        run: async () => {
+          if (fail) throw new Error("D1 is down");
+          rows.push({ sql, args });
+          return { success: true };
+        },
+      }),
+    }),
+  };
+};
+
+const post = async (body, kv, db) =>
   worker.fetch(
     new Request("https://wfsim.app/api/board/submit", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
     }),
-    { SUBMISSIONS: kv, ASSETS: { fetch: async () => new Response("site") } },
+    {
+      SUBMISSIONS: kv,
+      ASSETS: { fetch: async () => new Response("site") },
+      // ABSENT BY DEFAULT, which is the state of every deploy until the
+      // database exists — so every assertion in this file also asserts that the
+      // mirror is a no-op without it.
+      ...(db ? { LIBRARY: db } : {}),
+    },
   );
 
 // THE PAYLOAD THE PAGE ACTUALLY SENDS, field for field — `boardPayload()` in
@@ -267,6 +293,58 @@ console.log("the board's submission endpoint\n");
   );
   check("...and it is a READ, so a POST is refused", post_.status === 405,
     String(post_.status));
+}
+
+// ---- THE LIBRARY MIRROR ---------------------------------------------------
+//
+// The first step of moving the library out of KV (docs/BOARD.md §What this
+// system actually is): the same record goes into D1 beside it, KV stays the
+// authority, and nothing reads the copy yet. What has to be true of a mirror is
+// not that it works — it is that it CANNOT HURT, so the interesting assertions
+// here are the two about it being absent and being broken.
+{
+  const kv = store();
+  const db = database();
+  const res = await post(PAYLOAD, kv, db);
+  check("a submission is mirrored into the library database",
+    res.ok && db.rows.length === 1, `${db.rows.length} row(s)`);
+  if (db.rows.length) {
+    const { sql, args } = db.rows[0];
+    // KEYED THE SAME WAY AS KV, which is what lets the two stores be compared
+    // row for row later without inventing a join key.
+    check("...under the same identity KV used",
+      args[0] === [...kv.rows.keys()][0], `${args[0]} vs ${[...kv.rows.keys()][0]}`);
+    // THE WHOLE RECORD travels as json rather than exploded into columns: the
+    // axes are declared once in `AXES`, and a schema spelling them out would be
+    // a fifth place to forget one — which is how `mode` and then `valence` were
+    // lost.
+    check("...carrying the whole record, not a subset",
+      JSON.stringify(JSON.parse(args[2])) === JSON.stringify([...kv.rows.values()][0]),
+      String(args[2]).slice(0, 120));
+    check("...as a write that a resubmission can repeat",
+      /INSERT OR REPLACE/i.test(sql), sql);
+  }
+}
+{
+  // ABSENT IS THE STATE OF EVERY DEPLOY UNTIL THE DATABASE EXISTS, so it has to
+  // be an ordinary state and not a 500.
+  const kv = store();
+  const res = await post(PAYLOAD, kv);
+  const body = await res.json();
+  check("with no library binding at all the submission still succeeds",
+    res.ok && body.ok === true && kv.rows.size === 1, JSON.stringify(body));
+}
+{
+  // AND A BROKEN MIRROR MAY NOT REACH THE SUBMITTER. The authoritative write
+  // already happened; telling a player "sent" and then failing on a copy they
+  // do not know exists is the worst of both.
+  const kv = store();
+  const res = await post(PAYLOAD, kv, database(true));
+  const body = await res.json();
+  check("a library that throws does not fail the submission",
+    res.ok && body.ok === true, `${res.status} ${JSON.stringify(body)}`);
+  check("...and the authoritative record is written anyway",
+    kv.rows.size === 1, String(kv.rows.size));
 }
 
 console.log(

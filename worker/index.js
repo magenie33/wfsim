@@ -212,15 +212,53 @@ async function submit(request, env) {
       if (list.length) rec[a.key] = list;
     }
   }
-  await env.SUBMISSIONS.put(identity(rec), JSON.stringify(rec), {
+  const key = identity(rec);
+  await env.SUBMISSIONS.put(key, JSON.stringify(rec), {
     // A build nobody has submitted in a year is not a live answer any more, and
     // the scoring job re-lists everything each run — so expiry is the only
     // cleanup needed.
     expirationTtl: 60 * 60 * 24 * 365,
   });
+  await mirror(env, key, rec);
   return new Response(JSON.stringify({ ok: true }), {
     headers: { "content-type": "application/json" },
   });
+}
+
+/// THE SAME RECORD, INTO D1 — the first step of moving the library out of KV,
+/// and deliberately the only step that can be taken without changing anything
+/// that reads it.
+///
+/// KV IS STILL THE AUTHORITY. Everything downstream — the scorer, the pending
+/// count — reads KV and keeps reading it; this writes a second copy and nothing
+/// looks at it yet. That is what makes the step reversible: delete the binding
+/// and the system is exactly what it was.
+///
+/// WHY D1 AT ALL. The library is the one irreplaceable thing here and KV cannot
+/// be asked a question about it: no queries, no transactions, no bulk read, and
+/// listing is the only index. "Which weapons are under-covered", "how much did
+/// the library grow this month", "which facts are stale" are the questions
+/// running a board consists of, and none of them can be put to a key-value
+/// store. D1 is SQLite — it answers them, and it dumps whole, which is a hard
+/// requirement for an asset with no other copy (docs/BOARD.md, 2026-08-26).
+///
+/// A FAILURE HERE MAY NOT REACH THE SUBMITTER. The submission already succeeded
+/// — the authoritative write is above — so a broken mirror must be invisible:
+/// telling a player "sent" and then failing on a copy they do not know exists is
+/// the worst of both. It is caught and dropped, and the next submission of the
+/// same build writes the row again (`INSERT OR REPLACE` on the identity).
+async function mirror(env, key, rec) {
+  if (!env.LIBRARY) return;
+  try {
+    await env.LIBRARY.prepare(
+      "INSERT OR REPLACE INTO builds (identity, at, record) VALUES (?, ?, ?)",
+    ).bind(key, rec.at, JSON.stringify(rec)).run();
+  } catch (e) {
+    // Nothing to tell the caller and nowhere useful to put it: the request is
+    // already answered. It shows up as a row that is in KV and not in D1, which
+    // is what the two-way count in the backup job is for.
+    console.log("library mirror failed:", (e && e.message) || String(e));
+  }
 }
 
 /// HOW MANY BUILDS THE LIBRARY HOLDS — the one number that says whether the
