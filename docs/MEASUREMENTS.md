@@ -3054,7 +3054,7 @@ and will FALL when the board rescores. That is the correction working: the
 weapon was ranked on damage the game does not deal, and the size of the drop is
 a function of how much CO the build was carrying.
 
-## M49 — the Dual Toxocyst computes CO on a flat 75, and Carnage Reign's +33% is dead ✅ (owner, 2026-08-16)
+## M49 — the Dual Toxocyst computes CO on a flat 75, and Carnage Reign's +33% is GATED, not dead ✅ (owner, 2026-08-16; resolved 2026-08-26)
 
 Two findings from one session on 毒囊双枪, and each overturns something this
 repo had written down. Galvanized Shot throughout (40% a stack per status type).
@@ -3151,11 +3151,53 @@ above 200, which is the one experiment that would tell the two apart — and it 
 cheap: same build, same target, a frame with ≥ 200 max energy, read the panel
 against a status-afflicted enemy with the GunCO mod off.
 
+### RESOLVED — it was the gate (owner, 2026-08-26)
+
+**The measurements above stand and the conclusion does not.** The unlisted
+requirement is real: the clause pays at **energy max ≥ 200**, and it is
+CONDITIONAL rather than broken.
+
+Nothing above needs re-reading, because the gate explains it exactly instead of
+contradicting it — the neutral Tenno this repo ships has **150** max energy, so
+every run that found nothing was made UNDER the threshold. The experiment this
+section asked for ("a frame with ≥ 200 max energy") is what the owner supplied.
+
+Modelled as `gated_by_tenno` with `condition: "energy_max >= 200"` and
+`grant: condition_overload`, which feeds the same CO term
+`innate_co_per_type` does — so the behaviour, the base exclusion and
+direct-damage-only all keep coming from where they already came from. Measured
+across the threshold on a Dual Toxocyst Incarnon with four status mods:
+
+| max energy | DPS |
+| --- | --- |
+| 150 (the neutral Tenno) | 33,384 |
+| 199 | 33,384 |
+| **200** | **53,383** |
+| 300 | 53,383 |
+
+The step is at 200 and not 201, which is why the engine gained an
+`EnergyMaxAtLeast` gate rather than reusing `EnergyMaxOver(199)`: a threshold
+written one off so the operator comes out right reads as a typo and is wrong the
+moment a frame lands between the two.
+
+**WHAT THE READER GETS BACK.** `live_bug` said *do not pick this perk for that
+half, and a hotfix will change it*; a gate says *it pays on the right frame*,
+which is a build decision rather than a warning. Saying the first when the second
+is true costs a player 60% of the weapon's damage.
+
+It was also the roster's ONLY evolution live bug, so `check_disclosure` lost its
+sample. The three assertions there now run against an INJECTED one, the way
+`check_board_link` injects a second mode — the claim is that the machinery can
+say it, and that claim should not depend on which perks happen to be broken this
+patch.
+
 ### What it moves
 
-Both findings push the Dual Toxocyst DOWN, and the board will rescore them. The
-weapon was being credited with a CO term on up to 125/135 of base where the game
-computes 75, plus a 33%-per-status source that does not exist.
+The first finding still pushes the Dual Toxocyst DOWN and the board rescores it:
+the weapon was being credited with a CO term on up to 125/135 of base where the
+game computes 75. The second no longer does — the 33%-per-status source exists,
+on a frame that can reach 200 energy, and the board's neutral player cannot, so
+board rows are unchanged by the correction.
 
 ## M50 — the Torid Incarnon's CO reads a flat 51, and the default flipped ✅ (owner, 2026-08-16)
 

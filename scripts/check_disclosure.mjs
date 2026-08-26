@@ -126,6 +126,34 @@ for (const lang of ["en", "zh"]) {
       .flatMap(t => (t.options || [])
         .filter(o => (o.live_bugs || []).length)
         .map(o => ({ id: o.id, bugs: o.live_bugs, effects: o.effects || [] }))));
+    // …AND THE ARM IS EXERCISED WHETHER OR NOT THE ROSTER HAS ONE TODAY.
+    //
+    // It had exactly one for ten days — Carnage Reign's "+33% per Status Type",
+    // read as a clause DE had broken — and on 2026-08-26 that turned out to be
+    // an unlisted ENERGY MAX gate rather than a bug, so the count went to zero.
+    // An "at least one" assertion over the roster would then have FAILED on
+    // correct data, and the two beside it would have passed VACUOUSLY over an
+    // empty list, which is the worse of the two outcomes.
+    //
+    // So the live bug is INJECTED, the way check_board_link injects a second
+    // mode: the claim is that the machinery can SAY it, and that claim does not
+    // depend on which perks happen to be broken this patch. It goes all the way
+    // to the DOM, which is more than reading META back could ever prove.
+    {
+      const w = (META.weapons || []).find(x => x.id === $('weapon').value);
+      const opt = ((w.evolutions || [])[0] || {}).options?.[0];
+      if (opt) {
+        opt.live_bugs = ['condition overload — an injected clause, to prove the chip draws'];
+        renderEvo();
+        await sleep(400);
+        out.evoBugInjected = evoRows('.livebug').map(e => e.textContent.trim());
+        out.evoBugTitle = (evoRows('.livebug')[0] || {}).title || '';
+        delete opt.live_bugs;
+        renderEvo();
+        await sleep(300);
+        out.evoBugGone = evoRows('.livebug').length;
+      }
+    }
     out.evoInert = ((META.weapons || []).find(w => w.id === $('weapon').value) || {}).id;
 
 
@@ -363,7 +391,16 @@ for (const lang of ["en", "zh"]) {
   // says do not pick the perk for that half — nobody is going to implement what
   // DE has not shipped (MEASUREMENTS M49).
   check(`[${lang}] an evolution whose clause the GAME does not honour says so`,
-    (r.evoBugs || []).length >= 1, `${(r.evoBugs || []).length} evolutions with a live bug`);
+    (r.evoBugInjected || []).length === 1,
+    `${(r.evoBugInjected || []).length} chips for one injected live bug`);
+  check(`[${lang}] ...and the chip says the number matches the live game`,
+    /unintended|bug|游戏|实际/i.test(r.evoBugTitle || '') || (r.evoBugTitle || '').length > 20,
+    JSON.stringify(r.evoBugTitle || '').slice(0, 160));
+  // THE NEGATIVE CONTROL, and the reason the injection is safe to trust: with
+  // the flag removed the chip goes. A page that drew it unconditionally would
+  // pass the assertion above and mean nothing.
+  check(`[${lang}] ...and it is gone when nothing is flagged`,
+    r.evoBugGone === 0, `${r.evoBugGone} chips left after the flag was removed`);
   check(`[${lang}] ...and it names the clause rather than condemning the whole perk`,
     (r.evoBugs || []).every((e) => e.bugs.every((b) => b.includes(" — "))
       && e.effects.some((x) => !/DOES NOT WORK/.test(x))),

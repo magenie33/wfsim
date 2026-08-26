@@ -2440,6 +2440,12 @@ fn tenno_condition(v: &Value) -> Option<crate::loadout::TennoGate> {
     if let Some(x) = c.strip_prefix("armor > ").and_then(num) {
         return Some(G::ArmorOver(x));
     }
+    // `>=` BEFORE `>`, and not because the parser would confuse them (the
+    // strict prefix carries a trailing space, so it cannot match `>=`) — because
+    // reading them in card order is how the next gate gets added correctly.
+    if let Some(x) = c.strip_prefix("energy_max >= ").and_then(num) {
+        return Some(G::EnergyMaxAtLeast(x));
+    }
     if let Some(x) = c.strip_prefix("energy_max > ").and_then(num) {
         return Some(G::EnergyMaxOver(x));
     }
@@ -2683,19 +2689,44 @@ mod tests {
             .contains(&EvoEffect::AssumedMaxMultishot { total: 1.0, max_stacks: 20 }));
         let ca = get("dual_toxocyst_carnage_reign").unwrap();
         assert!(ca.effects.contains(&EvoEffect::FlatBaseDamage(60.0)));
-        // …AND ITS SECOND CLAUSE IS DEAD. "+33% Direct Damage per Status Type"
-        // is on DE's own CO-source list and pays nothing in game, measured
-        // twice over (MEASUREMENTS M49) — so it loads as a LIVE BUG rather
-        // than as a CO source, which is what keeps the card able to SAY so
-        // while the number stays at zero.
+        // …AND ITS SECOND CLAUSE IS GATED, NOT DEAD. "+33% Direct Damage per
+        // Status Type" carries an UNLISTED "With Energy Max >= 200" (owner,
+        // 2026-08-26), which is what MEASUREMENTS M49 was actually measuring:
+        // both runs found it paying nothing, and both were made on the neutral
+        // Tenno this repo ships, whose max energy is 150. The gate explains
+        // those numbers rather than contradicting them.
+        //
+        // It was filed as a `live_bug` until then, which told a reader "do not
+        // pick this perk for that half" about a perk that pays on the right
+        // frame. That is the difference this assertion exists to hold.
         assert!(
-            !ca.effects
-                .iter()
-                .any(|e| matches!(e, EvoEffect::ConditionOverload { .. })),
-            "the +33% pays nothing in game and must not load as a CO source"
+            ca.live_bugs().is_empty(),
+            "the clause is conditional, not broken: {:?}",
+            ca.live_bugs()
         );
-        assert_eq!(ca.live_bugs().len(), 1, "{:?}", ca.live_bugs());
-        assert!(ca.live_bugs()[0].starts_with("condition overload — "), "{:?}", ca.live_bugs());
+        let gate = ca
+            .effects
+            .iter()
+            .find_map(|e| match e {
+                EvoEffect::GatedByTenno { gate, grant, value } => Some((*gate, *grant, *value)),
+                _ => None,
+            })
+            .expect("the +33% loads as a gated CO source");
+        assert_eq!(gate.1, crate::loadout::GatedGrant::ConditionOverload);
+        assert!((gate.2 - 0.33).abs() < 1e-9, "{:?}", gate.2);
+        // THE THRESHOLD IS >=, and asserted at the boundary rather than in the
+        // middle: 200 is the number the card names, so a frame AT 200 pays. A
+        // gate transcribed as `> 200` passes every test that only tries 150 and
+        // 300, and is wrong for exactly the frames a player would build for.
+        let at = |energy: f64| {
+            let mut t = crate::tenno_data::default_tenno().clone();
+            t.energy = energy;
+            gate.0.open(&t)
+        };
+        assert!(!at(150.0), "the neutral Tenno is under the gate — this is what M49 measured");
+        assert!(!at(199.0), "under the threshold");
+        assert!(at(200.0), "the card says 200 or higher, so 200 pays");
+        assert!(at(300.0), "over the threshold");
         // The perk is NOT fully unmodelled — its +60 works, and the tile must
         // not tell a player the whole option is dead.
         assert!(!ca.fully_unmodeled());

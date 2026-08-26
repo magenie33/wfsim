@@ -39,46 +39,47 @@ effects:
     # damage vector (75 -> 135 keeps the 10/80/10 split = vector x1.8),
     # BEFORE mods - and therefore inside ModdedBase (DoT ticks scale too).      # adds to BASE damage before mods (the
     value: 60                   # Incarnon "Increase Base Damage" layer)
-  - kind: condition_overload    # +33% DIRECT damage per status TYPE on the
-    value: 0.33                 # target (official CO-source list)
-    # IT PAYS NOTHING IN GAME — MEASURED (owner, 2026-08-16; MEASUREMENTS M49),
-    # and confirmed two independent ways. With Galvanized Shot equipped the 135
-    # panel reads 225 at one status type and 315 at two, which is
-    # `135 + 75 x 0.4 x stacks x types` with no room for a 33% term (it would
-    # add 25 and 50). And with the GunCO mod REMOVED entirely, a status-afflicted
-    # enemy takes exactly the panel — this clause is the only CO source left on
-    # the build and it adds nothing at all.
+  # +33% DIRECT damage per status TYPE on the target — and it is CONDITIONAL,
+  # not broken (owner, 2026-08-26).
+  #
+  # IT WAS FILED AS A LIVE BUG, on two measurements that both said it pays
+  # nothing (MEASUREMENTS M49): with Galvanized Shot equipped the 135 panel read
+  # 225 at one status type and 315 at two, which is `135 + 75 x 0.4 x stacks x
+  # types` with no room for a 33% term; and with the GunCO mod removed
+  # altogether a status-afflicted enemy took exactly the panel.
+  #
+  # THE MEASUREMENTS STAND AND THE CONCLUSION DOES NOT. The wiki records an
+  # unlisted requirement on this clause and only this clause — "With Energy Max
+  # >= 200" — which the file already carried as an unverified candidate cause,
+  # recorded rather than modelled because nothing had measured the same weapon
+  # on a frame above 200. It explains the measurements exactly instead of
+  # contradicting them: the neutral Tenno this repo ships has 150 max energy, so
+  # every run that found nothing was made UNDER the threshold.
+  #
+  # The difference to a reader is the whole point. `live_bug` says "do not pick
+  # this perk for that half, and a hotfix will change it"; a gate says "it pays
+  # on the right frame", which is a build decision rather than a warning. Saying
+  # the first when the second is true costs a player the perk.
+  #
+  # ONLY THIS CARD. The Lato family's Carnage Reign shares the NAME and is a
+  # different perk (+40% per status type, no base-damage clause, no gate), so
+  # nothing here generalises to it — the same per-entry rule the CO catalog is
+  # read under.
+  - kind: gated_by_tenno
+    condition: "energy_max >= 200"
+    grant: condition_overload
+    value: 0.33
+    # THE CO SEMANTICS ARE NOT ON THIS ENTRY and never were: the gate feeds the
+    # same `co` term `innate_co_per_type` does (`loadout.rs`), so `co_behavior`
+    # still comes from the WEAPON file and the base exclusion from
+    # `co_base_fraction`. Kept written down as the spec:
     #
-    # A LIVE BUG rather than a gap: DE's own CO-source list carries this perk,
-    # the card states the clause, and a hotfix restores it. The distinction
-    # matters to a reader — an `Inert` line says wait for us, this one says do
-    # not pick the perk for that half.
+    #   Adding: final = [135 x damage-bonus chain] + [75 x 0.33 x status_types]
     #
-    # A CANDIDATE CAUSE, unverified: the wiki notes an unlisted requirement of
-    # ENERGY MAX >= 200 on this clause. If that is real and the measuring frame
-    # was under it, the perk is conditional rather than broken and the engine
-    # should learn the gate instead. Recorded here rather than modelled because
-    # nothing has measured the same weapon on a frame above 200.
-    live_bug: >-
-      the +33% per Status Type pays nothing, measured with the GunCO mod both
-      equipped and removed; the wiki notes an unlisted energy-max >= 200
-      requirement that may be the cause and is unverified
-    applies_to: direct_damage_only   # ricochets included; AoE excluded
-    # Official CO catalog entry for DT Incarnon Mode: behavior "Adding" -
-    #   final = [135 x damage-bonus chain] + [75 x 0.33 x status_types]
-    # The CO term uses the UNBOOSTED base 75 (this perk's own +60 is
-    # excluded from its own CO chunk: "CO-bonus does not use base damage
-    # increase Evolution"), and ignores final multipliers (falloff etc.).
-    # Additive with all other CO sources (Galvanized Shot etc.).
-    # NOT LOADED, all four of the keys above and below: `evolutions_data` reads
-    # only `kind` and `value` from a `condition_overload` entry. `applies_to`,
-    # `condition`, `co_behavior` and `co_base_excludes_evolution_damage` are the
-    # written spec — the engine gets the same three facts from elsewhere and
-    # they are pinned there, not here: `co_behavior` from the WEAPON file
-    # (dual_toxocyst.yaml), and the base-exclusion from `co_base_fraction`,
-    # which `apply` computes as original/evolved total (data/README.md).
-    co_behavior: adding
-    co_base_excludes_evolution_damage: true
+    # The CO term uses the UNBOOSTED base 75 — this perk's own +60 is excluded
+    # from its own CO chunk ("CO-bonus does not use base damage increase
+    # Evolution") — ignores final multipliers, and is additive with every other
+    # CO source. Direct damage only: ricochets included, AoE excluded.
 
 source:
   url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis

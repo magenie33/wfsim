@@ -385,9 +385,27 @@ around (decision 2026-07-31).
   it leaves (MEASUREMENTS M37), so a player building around x441 is told what it
   rests on (owner, 2026-08-08). It reaches EVOLUTIONS as of 2026-08-16, where a
   live bug is declared beside the effect it kills rather than on the perk —
-  Carnage Reign's +60 base damage works and its "+33% per Status Type" pays
-  nothing (MEASUREMENTS M49), so a card that condemned the whole option would be
-  as wrong as one that stayed quiet. It carries a NEGATIVE CONTROL — a weapon with
+  Carnage Reign's +60 base damage works and its "+33% per Status Type" did not,
+  so a card that condemned the whole option would be as wrong as one that stayed
+  quiet.
+  THAT PERK IS ALSO WHERE A LIVE BUG TURNED OUT TO BE A GATE (owner, 2026-08-26).
+  The clause carries an UNLISTED "With Energy Max >= 200", and the two
+  measurements that filed it as broken were both made on the neutral Tenno, whose
+  max energy is 150 — so the gate explains them exactly rather than contradicting
+  them, and the yaml had recorded it as an unverified candidate cause all along
+  (MEASUREMENTS M49). It is `gated_by_tenno` now, and 150/199/200/300 max energy
+  measures 33,384/33,384/53,383/53,383 DPS: the step is AT 200, which is why the
+  engine gained `EnergyMaxAtLeast` rather than reusing `EnergyMaxOver(199)`.
+  The difference is the reader's: `live_bug` says do not pick this perk for that
+  half, a gate says it pays on the right frame — and saying the first when the
+  second is true costs a player 60% of the weapon.
+  IT WAS THE ROSTER'S ONLY EVOLUTION LIVE BUG, so removing it emptied the arm
+  `check_disclosure` was asserting over: one assertion would have failed on
+  correct data and the two beside it would have passed VACUOUSLY on an empty
+  list. The live bug is INJECTED there now, with the flag's removal as the
+  negative control — the claim is that the machinery can SAY it, which must not
+  depend on which perks happen to be broken this patch.
+  It carries a NEGATIVE CONTROL — a weapon with
   nothing to admit shows no banner — because a check that only asserts presence
   passes just as well on a page that shouts "not modelled" at everything, and
   it runs the whole pass in BOTH languages,

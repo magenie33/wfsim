@@ -1221,6 +1221,14 @@ pub enum TennoGate {
     ArmorOver(f64),
     /// `energy_max > x`
     EnergyMaxOver(f64),
+    /// `energy_max >= x` — the Dual Toxocyst's Carnage Reign, whose per-status
+    /// clause carries an UNLISTED "With Energy Max >= 200" (owner, 2026-08-26).
+    ///
+    /// A separate variant rather than `EnergyMaxOver(199)`: the card says >=,
+    /// and a threshold written one off so the operator comes out right is a
+    /// transcription that reads as a typo and is wrong the moment a frame lands
+    /// between the two. `SprintAtLeast` is the same distinction already made.
+    EnergyMaxAtLeast(f64),
     /// `overshields` — Haven Foray, Guardian's Might: "With Overshields".
     /// A yes/no rather than a threshold, which is what the card asks.
     HasOvershields,
@@ -1244,6 +1252,7 @@ impl TennoGate {
             TennoGate::SprintAtLeast(x) => tenno.sprint >= x,
             TennoGate::ArmorOver(x) => tenno.armor > x,
             TennoGate::EnergyMaxOver(x) => tenno.energy > x,
+            TennoGate::EnergyMaxAtLeast(x) => tenno.energy >= x,
             TennoGate::HasOvershields => tenno.state.overshields,
             TennoGate::ChannelingAbility => tenno.state.channeling,
             TennoGate::SoloWeapon => tenno.state.solo_weapon,
@@ -1256,6 +1265,7 @@ impl TennoGate {
             TennoGate::SprintAtLeast(x) => format!("at sprint speed {x} or higher"),
             TennoGate::ArmorOver(x) => format!("with armor over {x}"),
             TennoGate::EnergyMaxOver(x) => format!("with max energy over {x}"),
+            TennoGate::EnergyMaxAtLeast(x) => format!("with max energy of {x} or higher"),
             TennoGate::HasOvershields => "with overshields".to_string(),
             TennoGate::ChannelingAbility => "with a channeled ability active".to_string(),
             TennoGate::SoloWeapon => "with no other weapon equipped".to_string(),
