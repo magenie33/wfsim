@@ -9,9 +9,16 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 2428
+submissions: 2448
 engine: 51824f59ee8cfd30ce89a5c77b15bcaab93e989b
 entries:
+  - weapon: aeolak
+    mode: base
+    score: 12.017049643465652
+    fp: 56f5157642322318
+    exilus: vigilante_supplies
+    mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, hammer_shot, vital_sense, hellfire, thermite_rounds]
+    arcanes: [primary_crux]
   - weapon: afentis_prime
     mode: base
     score: 3.6308757154681865
@@ -1701,6 +1708,39 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: furis
     mode: cycle
+    score: 74.02508209103672
+    fp: c598f5c909a1638b
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, primed_convulsion, pathogen_rounds, riven]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
+    score: 71.33333333333333
+    fp: 2c6c50203f66d7a2
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds, riven]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
+    score: 63
+    fp: aa3ae1da5c30ec6b
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, anemic_agility, magnetic_might, frostbite, pistol_pestilence, riven]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
     score: 58.0140863845569
     fp: f769f7da9aadfe31
     exilus: lethal_momentum
@@ -1711,6 +1751,29 @@ entries:
       bonuses: [multishot, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
+    score: 55.5589602232093
+    fp: 68e6ad41ca339524
+    exilus: lethal_momentum
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [damage, multishot, status_chance]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
+    score: 53.727736539690014
+    fp: f11e258b371ff142
+    mods: [galvanized_diffusion, primed_target_cracker, anemic_agility, pistol_elementalist, stunning_speed, magnetic_might, primed_heated_charge, riven]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 0.9, 1.1, 0.9]
   - weapon: furis
     mode: cycle
     score: 51.67570954386076
@@ -2650,6 +2713,18 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: laetum
     mode: cycle
+    score: 63.31171216304874
+    fp: cd7a0c3246dfba32
+    exilus: steady_hands
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [multishot, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: cycle
     score: 62.2909576227291
     fp: 193f9f2b25df258f
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, riven, primed_heated_charge]
@@ -2670,6 +2745,18 @@ entries:
       bonuses: [damage, multishot, toxin]
       malus: critical_chance
       rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: laetum
+    mode: cycle
+    score: 58.69057672959506
+    fp: 281a088bbf3caecf
+    exilus: steady_hands
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [fire_rate, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
   - weapon: larkspur_prime
     mode: base
     score: 162.66666666666666
