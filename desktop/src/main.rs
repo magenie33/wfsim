@@ -254,6 +254,34 @@ const SELFTEST_PROBE: &str = r#"
         const v = await window.__TAURI_INTERNALS__.invoke('app_version');
         check('ipc + version', /^[0-9a-f]{6,}$/.test(v) || v === 'nogit', v);
       } catch (e) { check('ipc + version', false, 'invoke failed: ' + e.message); }
+      // THE BOARD IS A SERVICE, NOT A CALCULATION — the one thing the wasm
+      // engine cannot answer. app.js fetches it same-origin on purpose, and in
+      // here "same origin" is wfsim.localhost, so without a proxy the SPA
+      // fallback answers a submission with index.html and HTTP 200 — which
+      // `res.ok` reads as success. The page would say 已发送 having sent
+      // nothing. Asserting the CONTENT TYPE is the point: a status code cannot
+      // tell those apart.
+      try {
+        const r = await fetch('/api/board/pending');
+        const ct = r.headers.get('content-type') || '';
+        const body = await r.text();
+        check('board reaches out', r.ok && ct.includes('json') && !body.includes('<!doctype'),
+              'HTTP ' + r.status + ' ' + ct.split(';')[0] + ' — ' + body.slice(0, 40));
+      } catch (e) { check('board reaches out', false, e.message); }
+      // AND THE POST PATH, which is the one that matters: submitting is what a
+      // player does, and a GET working proves nothing about a request that
+      // carries a body. An empty payload is REFUSED by the worker, so this
+      // reaches the real endpoint without putting anything on the board — and a
+      // refusal is the proof, because the SPA fallback would answer 200/HTML.
+      try {
+        const r = await fetch('/api/board/submit', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+        });
+        const ct = r.headers.get('content-type') || '';
+        const body = await r.text();
+        check('board accepts POST', !r.ok && !body.includes('<!doctype'),
+              'HTTP ' + r.status + ' ' + ct.split(';')[0] + ' — ' + body.slice(0, 50));
+      } catch (e) { check('board accepts POST', false, e.message); }
       // THE SOURCE OFFER IS A LICENCE OBLIGATION, so it is asserted rather than
       // documented. It must name the version actually running — this client
       // conveys itself a new binary on every update, and a link to "latest"
@@ -567,7 +595,17 @@ TIMEOUT: the page never reported after {secs}s
             mark_healthy, app_version, open_external,
             update_check, update_download, update_status, update_apply, source_url
         ])
-        .register_uri_scheme_protocol("wfsim", move |_ctx, req| protocol::serve(&root, &req))
+        // ASYNCHRONOUS, because one of these paths goes to the network. A board
+        // submission is an HTTP round trip to wfsim.app, and answering it from
+        // the synchronous handler would block whatever thread Tauri calls it on
+        // for as long as that takes.
+        .register_asynchronous_uri_scheme_protocol("wfsim", move |_ctx, req, responder| {
+            if protocol::is_proxied(&req) {
+                std::thread::spawn(move || responder.respond(protocol::proxy(&req)));
+            } else {
+                responder.respond(protocol::serve(&root, &req));
+            }
+        })
         .setup(move |app| {
             let url = tauri::Url::parse("wfsim://localhost/").expect("app url");
             let mut win = tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::CustomProtocol(url))
