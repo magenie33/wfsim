@@ -658,6 +658,24 @@ fn main() {
                 if shards > 1 && idx % shards != shard {
                     continue;
                 }
+                // WHAT THIS ROW COST, when it cost enough to matter.
+                //
+                // The fan-out's efficiency is set by its SLOWEST shard, not by
+                // its total: measured on 2026-08-26 at 128 shards, 824
+                // shard-minutes of work finished in 35.5 because one shard took
+                // that alone — 6.4 minutes of mean work against a 35.5 minute
+                // makespan, **18% efficiency**. Raising the shard count barely
+                // touched it (32 -> 128 shards moved the worst shard only 52.9
+                // -> 35.5), which is the signature of a few very expensive ROWS
+                // rather than of a split that is too coarse.
+                //
+                // Balancing the deal needs to know what a row costs, and
+                // nothing here has ever measured that. This is the measurement,
+                // and it is a `eprintln` rather than a stored column on purpose:
+                // the question it answers — is the tail one row or twenty — is
+                // asked once, and a schema for it before that answer is known
+                // would be a guess wearing a table.
+                let began = std::time::Instant::now();
                 // A RIVEN ROW IS SCORED AT ITS SHAPE'S CEILING, and finding
                 // that ceiling is a search: every corner of the roll band, at a
                 // CHEAP run count, then the winner measured properly at the
@@ -725,6 +743,20 @@ fn main() {
                     _ => raw * 60.0 / duration,
                 };
                 computed.insert(key.clone(), s);
+                // THIRTY SECONDS is a row worth naming: the median row is under
+                // one, so this prints the tail and nothing else — a line per
+                // slow row rather than 2,474 lines nobody reads.
+                let took = began.elapsed().as_secs_f64();
+                if took >= 30.0 {
+                    eprintln!(
+                        "slow row: {:7.1}s  {}  key={key}  riven={}  evos={}  arcanes={}",
+                        took,
+                        v.weapon,
+                        v.riven.is_some(),
+                        v.evolutions.len(),
+                        v.arcanes.len(),
+                    );
+                }
                 s
             }
         };
