@@ -112,41 +112,40 @@ def main() -> None:
     # looks stale — and it is not, because the client updates itself on its
     # first run whichever copy was downloaded. The date said something untrue.
     # The SHA-256 tells the two apart, and more precisely.
+    # THE WORDING IS THE OWNER'S (2026-08-26), edited by hand in `dist/` and
+    # brought back here so the next build does not overwrite it. Only the
+    # SHA-256 is generated — everything else is his text, kept verbatim.
     notes = DIST / "使用说明.txt"
     notes.write_text(
-        "WFSim — Warframe 伤害计算器\n"
+        "WFSim: 终极 Warframe 计算器\n"
         "\n"
         "怎么用\n"
-        "  下载 WFSim.exe，双击打开。不需要安装，不需要解压。\n"
-        "\n"
-        "  source.zip 是源代码，开源许可证要求随程序一起提供，\n"
-        "  正常使用不需要下载它。\n"
-        "\n"
-        "不用担心这个文件新不新\n"
-        "  程序会自己更新。无论什么时候下载的，第一次联网后都会\n"
-        "  变成最新版本，不需要再回到网盘。\n"
+        "下载 WFSim.exe，双击打开。\n"
+        "程序会自动更新，不需要再次下载。\n"
+        "source.zip 是源代码，开源许可证要求随程序一起提供，正常使用不需要下载。\n"
         "\n"
         "第一次打开\n"
-        "  Windows 会弹蓝色提示「Windows 已保护你的电脑」，因为本程序\n"
-        "  没有购买代码签名证书（一年好几千，一个免费工具不值得）。\n"
-        "  点「更多信息」→「仍要运行」即可。\n"
+        "Windows 会弹出蓝色提示「Windows 已保护你的电脑」，\n"
+        "因为本程序没有购买代码签名证书（一年好几千，一个免费工具不值得）。\n"
+        "点「更多信息」→「仍要运行」即可。\n"
+        "如果杀毒软件报警，也是同样的原因（没有签名的新程序）。\n"
+        "介意的话可以校验下面的 SHA-256，或者直接用在线版。\n"
         "\n"
-        "  如果杀毒软件报警，是同样的原因（没有签名的新程序）。\n"
-        "  介意的话可以校验下面的 SHA-256，或者直接用在线版。\n"
+        "校验步骤（可选）\n"
+        "在文件所在文件夹按住 Shift 右键 →「在此处打开终端」，然后：\n"
+        "certutil -hashfile WFSim.exe SHA256\n"
+        f"应为 {digest}\n"
         "\n"
-        "想自己校验的话（可选）\n"
-        "  在文件所在文件夹按住 Shift 右键 →「在此处打开终端」，然后：\n"
-        "      certutil -hashfile WFSim.exe SHA256\n"
-        f"  应为  {digest}\n"
-        "\n"
-        "不想要了\n"
-        "  删掉 WFSim.exe 即可。程序数据在 %LOCALAPPDATA%\\WFSim，\n"
-        "  可一并删除。不写注册表。\n"
+        "卸载\n"
+        "删掉 WFSim.exe 即可。\n"
+        "程序数据在 %LOCALAPPDATA%\\WFSim，可一并删除。不写注册表。\n"
         "\n"
         "其他\n"
-        "  在线版本： https://wfsim.app\n"
-        "  QQ 群： 995078378\n"
-        "  许可证： AGPL-3.0\n",
+        "官网: https://wfsim.app\n"
+        "GitHub: https://github.com/magenie33/wfsim\n"
+        "QQ 群: 995078378\n"
+        "Discord: https://discord.gg/5GXgbtmxY\n"
+        "许可证: AGPL-3.0\n",
         encoding="utf-8",
     )
     # Names from when this shipped an installer as well.
