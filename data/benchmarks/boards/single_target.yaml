@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 2720
+submissions: 2759
 engine: aea6c42d029cb91ac237c1da90dd7069e84a3b13
 entries:
   - weapon: acceltra_prime
@@ -1550,6 +1550,14 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
+    score: 46.721889932338115
+    fp: ea8acd7745132736
+    exilus: primed_stabilizer
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
     score: 46.61275296467648
     fp: 1ef41fbef8b4e1b9
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
@@ -1634,6 +1642,14 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
+    score: 42.8623582664571
+    fp: ca78bffbea096763
+    exilus: primed_stabilizer
+    mods: [primary_acuity, serration, galvanized_scope, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
     score: 42.746155299080264
     fp: a9a2d91af10366aa
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, hammer_shot, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
@@ -1704,9 +1720,25 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston_prime
     mode: cycle
+    score: 39.70308556746279
+    fp: 04ae6c95dc88ebaf
+    exilus: primed_stabilizer
+    mods: [primary_acuity, serration, critical_delay, hammer_shot, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
     score: 39.673665033868744
     fp: ce5134af6c6df4e0
     mods: [amalgam_serration, primary_acuity, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 38.56924156588838
+    fp: 3383f4c6ebc0eea8
+    exilus: primed_stabilizer
+    mods: [heavy_caliber, primary_acuity, serration, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
@@ -1930,6 +1962,18 @@ entries:
     mods: [primary_acuity, serration, galvanized_scope, critical_delay, vital_sense, gilded_truth, magnetic_capacity, thermite_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    score: 6.277294165668609
+    fp: f01c922740610716
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, critical_delay, vital_sense, stormbringer, infected_clip, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_bulwark]
+    riven:
+      bonuses: [critical_damage, heat]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
   - weapon: cedo_prime
     mode: base
     score: 5.950652546283752
@@ -2442,6 +2486,13 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: dual_toxocyst
     mode: cycle
+    score: 46.47383168323334
+    fp: d9567968f278dc96
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [cascadia_flare]
+  - weapon: dual_toxocyst
+    mode: cycle
     score: 45.9636592811897
     fp: 94c92d9579080c54
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion]
@@ -2843,10 +2894,24 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
+    score: 49.22850624543676
+    fp: 0ae0f66bcc1e76ca
+    mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_elemental_balance]
+    arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
     score: 48.906708399865934
     fp: ae0681ca2b413440
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_elemental_balance]
+    arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
+    score: 48.906708399865934
+    fp: ee2f468c55038733
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
     arcanes: [cascadia_flare]
   - weapon: furis
     mode: cycle
@@ -3075,6 +3140,13 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
+    score: 40.251806213237536
+    fp: a5d689dc5763fe10
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
     score: 38.79381211413692
     fp: 1968059604f49a7c
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -3171,6 +3243,13 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: furis
     mode: cycle
+    score: 30.064264641218525
+    fp: de33e756ac9c7901
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
     score: 27.934365245985504
     fp: af904e7aeac82022
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
@@ -3213,10 +3292,24 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
+    score: 27.311420119880015
+    fp: 31c2d1e613803935
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
     score: 27.251663956820497
     fp: 8ba24b7087213b6a
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
+    score: 27.251663956820497
+    fp: 4446433ee678ca93
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
@@ -3246,6 +3339,13 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, primed_pistol_gambit, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_headcracker]
     arcanes: [secondary_outburst]
+  - weapon: furis
+    mode: cycle
+    score: 26.93850102139321
+    fp: 54c91b60a8f574a0
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, anemic_agility, pistol_elementalist, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: furis
     mode: cycle
     score: 25.68733591681312
@@ -4610,6 +4710,22 @@ entries:
     fp: f0fa9adb48dfb82f
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, frostbite, pistol_pestilence, heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_marksmans_hand, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+  - weapon: laetum
+    mode: cycle
+    score: 39.99691029108333
+    fp: 0910a9af2f990b90
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, accelerated_isotope, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+  - weapon: laetum
+    mode: cycle
+    score: 39.693473784349216
+    fp: 62b3616f48eebfb5
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
     arcanes: [cascadia_flare]
   - weapon: laetum
     mode: cycle

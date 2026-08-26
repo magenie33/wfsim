@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 2720
+submissions: 2759
 engine: aea6c42d029cb91ac237c1da90dd7069e84a3b13
 entries:
   - weapon: acceltra_prime
@@ -1460,6 +1460,18 @@ entries:
     mods: [primary_acuity, serration, galvanized_scope, critical_delay, vital_sense, gilded_truth, magnetic_capacity, thermite_rounds]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: base
+    score: 6.277294165668609
+    fp: b24ba5e9b8d63f04
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, critical_delay, vital_sense, stormbringer, infected_clip, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_bulwark]
+    riven:
+      bonuses: [critical_damage, heat]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
   - weapon: cedo_prime
     mode: base
     score: 12.29112238737271
@@ -2082,10 +2094,24 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
+    score: 49.22850624543676
+    fp: f640346bc3fbddf8
+    mods: [galvanized_diffusion, primed_target_cracker, primed_pistol_gambit, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_elemental_balance]
+    arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
     score: 48.906708399865934
     fp: a0bb9e53d890371e
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_elemental_balance]
+    arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
+    score: 48.906708399865934
+    fp: 2d9641a0e67c5ac5
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
     arcanes: [cascadia_flare]
   - weapon: furis
     mode: cycle
@@ -2314,6 +2340,13 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
+    score: 40.251806213237536
+    fp: 589ab6cdc550a116
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
     score: 38.79381211413692
     fp: 6ce88185f01bf60a
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
@@ -2410,6 +2443,13 @@ entries:
     arcanes: [cascadia_flare]
   - weapon: furis
     mode: cycle
+    score: 30.064264641218525
+    fp: 881c27af69e74d6b
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
     score: 27.934365245985504
     fp: df8af7e824069748
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
@@ -2452,10 +2492,24 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
+    score: 27.311420119880015
+    fp: 53ed34a00a7f7b97
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
     score: 27.251663956820497
     fp: c2bfa69ddf27abbc
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+  - weapon: furis
+    mode: cycle
+    score: 27.251663956820497
+    fp: a02f85e2e82de0d5
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
     arcanes: [secondary_enervate]
   - weapon: furis
     mode: cycle
@@ -2485,6 +2539,13 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, primed_pistol_gambit, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_headcracker]
     arcanes: [secondary_outburst]
+  - weapon: furis
+    mode: cycle
+    score: 26.93850102139321
+    fp: e76a6d472bc9738e
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, anemic_agility, pistol_elementalist, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [cascadia_flare]
   - weapon: furis
     mode: cycle
     score: 25.68733591681312
