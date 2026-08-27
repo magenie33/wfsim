@@ -286,6 +286,32 @@ pub enum Kind {
     },
     /// A pellet that went nowhere. It pops no number and it is why the pellet
     /// count and the damage-row count disagree.
+    /// A PELLET ARRIVED. One trigger pull is `Shot`; each pellet of it that
+    /// reaches a body is one of these, and the numbers it produces hang off it.
+    ///
+    /// IT IS NOT A DAMAGE ROW AND IT POPS NOTHING. What it carries is the
+    /// flight — where the round went and what it had left when it got there —
+    /// which belongs to no damage number and had nowhere else to live: a hit on
+    /// a shielded body produces TWO numbers and they are ONE arrival, and a
+    /// round with punch through strikes several bodies on one trigger pull.
+    /// Both facts were previously inferred from two rows sharing a timestamp
+    /// (owner, 2026-08-27).
+    Hit {
+        /// The part it landed on, and whether that part is a weak point — the
+        /// same pick every damage row of this pellet reports.
+        part: Option<String>,
+        head: bool,
+        /// How far the round actually flew: muzzle to the body's surface, the
+        /// number the arena prints (MECHANICS §11).
+        flew_m: f64,
+        /// What is left of the weapon's reach past this body, where it declares
+        /// one. `None` is every weapon that does not.
+        range_left_m: Option<f64>,
+        /// What is left of the punch-through budget after crossing this body —
+        /// `BODY_MATERIAL_M` scaled by the chord actually crossed, so a body
+        /// clipped at the rim costs almost nothing. `None` with no budget.
+        punch_through_left_m: Option<f64>,
+    },
     Miss {
         reason: &'static str,
     },
@@ -354,6 +380,8 @@ pub struct Record {
     from: f64,
     to: f64,
     limit: usize,
+    /// The pellet arrival being resolved, if any — see [`Record::begin_hit`].
+    hit: Option<u32>,
     events: Vec<Event>,
     /// EVENTS INSIDE THE WINDOW THAT DID NOT FIT. Carried because a cap nobody
     /// is told about reads as "that is everyone", which is this repo's rule
@@ -445,9 +473,30 @@ impl Record {
         // before it, which reads as a chain of shots causing shots (found by
         // looking at a real record, 2026-08-27).
         self.shot = None;
+        self.hit = None;
         let id = self.push(t, None, Kind::Shot { pellets });
         self.shot = id;
         id
+    }
+
+    /// Open a HIT: this pellet arrived, and what it goes on to do points back
+    /// at the arrival rather than straight at the trigger pull.
+    ///
+    /// The hit's OWN cause is the shot, because `self.hit` is cleared before it
+    /// is pushed — so the chain reads shot → hit → number, one level per thing
+    /// that actually happened.
+    pub fn begin_hit(&mut self, t: f64, subject: Option<u16>, kind: Kind) -> Option<u32> {
+        self.hit = None;
+        let id = self.push(t, subject, kind);
+        self.hit = id;
+        id
+    }
+
+    /// Close it. A pellet that MISSED causes nothing, and an explosion thrown
+    /// by a round that missed belongs to the shot rather than to an arrival
+    /// that never happened.
+    pub fn end_hit(&mut self) {
+        self.hit = None;
     }
 
     /// What the current shot's id is, for damage that resolves later — a DoT
@@ -459,6 +508,10 @@ impl Record {
     /// Attribute what follows to a shot other than the live one — a DoT tick
     /// belongs to the round that seeded it, not to whatever is being fired now.
     pub fn attribute_to(&mut self, cause: Option<u32>) -> Option<u32> {
+        // …AND NEVER TO A HIT THAT IS NO LONGER HAPPENING. A DoT tick names the
+        // round that seeded it; leaving a live hit in place would have it name
+        // whichever pellet the loop was on when the tick fell due.
+        self.hit = None;
         std::mem::replace(&mut self.shot, cause)
     }
 
@@ -478,7 +531,9 @@ impl Record {
             id,
             t,
             subject,
-            cause: self.shot,
+            // THE NEAREST THING THAT CAUSED IT: the arrival if a pellet is
+            // being resolved, the trigger pull otherwise.
+            cause: self.hit.or(self.shot),
             weapon: self.weapon,
             kind,
         });

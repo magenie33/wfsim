@@ -5678,6 +5678,21 @@ fn event_json(e: &wfsim_engine::record::Event) -> Value {
             m.insert("kind".into(), json!("shot"));
             m.insert("pellets".into(), json!(pellets));
         }
+        Kind::Hit { part, head, flew_m, range_left_m, punch_through_left_m } => {
+            m.insert("kind".into(), json!("hit"));
+            if let Some(p) = part {
+                m.insert("part".into(), json!(p));
+                m.insert("head".into(), json!(head));
+            }
+            // THE FLIGHT, which belongs to the ARRIVAL and to no damage number:
+            // one hit on a shielded body produces two of those.
+            m.insert("flew_m".into(), json!(r1(*flew_m)));
+            // …AND WHAT IS LEFT OF EACH BUDGET. `null` where the weapon
+            // declares none, which for range is nearly every weapon there is —
+            // an absent key reads as "unlimited" rather than as zero.
+            m.insert("range_left_m".into(), json!(range_left_m.map(r1)));
+            m.insert("punch_through_left_m".into(), json!(punch_through_left_m.map(r1)));
+        }
         Kind::Miss { reason } => {
             m.insert("kind".into(), json!("miss"));
             m.insert("reason".into(), json!(reason));

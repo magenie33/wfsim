@@ -1927,6 +1927,19 @@ tr.rec-evt td.rec-t{border-left-color:var(--accent)}
 tr.rec-reload_start td,tr.rec-reload_end td{background:color-mix(in srgb,var(--s1) 8%,transparent)}
 tr.rec-transform_start td,tr.rec-transform_end td{background:color-mix(in srgb,var(--gold) 10%,transparent)}
 .rec-cause{display:block;font-size:10px;color:var(--muted)}
+/* THE FLIGHT, on the arrival that owns it. A hit is not a damage row and does
+   not want a damage row's weight — it is the line that says the round got
+   there, how far it went and what it had left. */
+.rec-flight{display:inline-block;font-size:11px;margin-right:10px;
+  font-variant-numeric:tabular-nums;color:var(--text-2)}
+.rec-flight i{font-style:normal;color:var(--muted);font-size:10px;margin-right:4px}
+/* AN ARRIVAL AND A MISS MUST NOT LOOK ALIKE. `--s5` is a pink, which read as
+   an error beside the red a miss wears — and telling "the round got there"
+   from "the round did not" at a glance is the whole reason the pair exists. */
+tr.rec-hit td{background:color-mix(in srgb,var(--s3) 8%,transparent);font-size:11.5px}
+tr.rec-hit td.rec-t{border-left-color:var(--s3)}
+tr.rec-miss td{background:color-mix(in srgb,var(--critical) 8%,transparent);font-size:11.5px}
+tr.rec-miss td.rec-t{border-left-color:var(--critical)}
 .rec-pool{display:block;font-size:10px;color:var(--muted);font-weight:400}
 .rec-crit{display:inline-flex;align-items:center;height:15px;padding:0 4px;border-radius:3px;
   font-size:9.5px;font-weight:700;background:color-mix(in srgb,var(--s4) 26%,transparent);color:var(--s4)}

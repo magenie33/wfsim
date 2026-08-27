@@ -11285,6 +11285,53 @@ pub fn run_once_traced(
             if pellet_lands {
                 landed_this_shot = true;
             }
+            // THE ARRIVAL ITSELF IS AN EVENT (owner, 2026-08-27). A trigger
+            // pull is one `Shot`; each pellet of it either gets somewhere or
+            // does not, and until now only the numbers that came AFTERWARDS
+            // were written down — so a pellet that missed left no trace at all,
+            // and "why did a three-pellet shot pop two numbers" had no answer
+            // anywhere in the ledger.
+            //
+            // IT ALSO GIVES THE FLIGHT A HOME. How far the round went, what was
+            // left of the weapon's reach, what was left of the punch-through
+            // budget after crossing this body — none of that belongs to a
+            // damage NUMBER, and a hit on a shielded body produces two of those
+            // from one arrival.
+            if rec.is_on() {
+                rec.end_hit();
+                if !in_range {
+                    // OUT OF RANGE IS NOT A MISS in the aiming sense — the
+                    // round never arrived, so its explosion does not go off
+                    // either. Both facts are the same sentence to a reader.
+                    rec.push(t, Some(0), crate::record::Kind::Miss {
+                        reason: "out of the weapon's range",
+                    });
+                } else if !pellet_lands {
+                    rec.push(t, Some(0), crate::record::Kind::Miss {
+                        reason: "outside the cone",
+                    });
+                } else {
+                    let budget = ap.punch_through_m;
+                    rec.begin_hit(t, Some(0), crate::record::Kind::Hit {
+                        part: Some(part.name.clone()),
+                        head: part.is_head,
+                        flew_m: gap_m,
+                        range_left_m: ap.range_m.is_finite().then_some(ap.range_m - gap_m),
+                        // WHAT THIS BODY COST is the chord actually crossed, not
+                        // a flat figure: a body clipped at the rim costs almost
+                        // nothing (AGENTS.md, "PUNCH THROUGH IS METRES OF
+                        // MATERIAL").
+                        punch_through_left_m: (budget > 0.0).then(|| {
+                            (budget
+                                - crate::space::material_through(
+                                    crate::space::BODY_RADIUS_M,
+                                    aim_offset,
+                                ))
+                            .max(0.0)
+                        }),
+                    });
+                }
+            }
             // A TERMINAL BLAST GOES OFF WHERE THE ROUND DISSIPATES, not on the
             // first body it touched — see `weapons_data::BlastKind` and
             // MEASUREMENTS M53. The budget buys MATERIAL (owner, 2026-08-20),

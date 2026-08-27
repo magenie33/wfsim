@@ -155,6 +155,43 @@ const r = await evaluate(`(async () => {
     ? rows.some((x) => x !== gated[0] && t(x) === t(gated[0]) && /rec-shield/.test(x.className))
     : false;
 
+  // ---- SHOT, THEN ARRIVAL, THEN NUMBERS --------------------------------
+  //
+  // The chain the panel claims, asserted as a chain rather than as three kinds
+  // of row that happen to be present. A pellet ARRIVING is its own event: it
+  // pops no number, it is what the numbers hang off, and it is the only place
+  // the flight is written down — so a hit on a shielded body is TWO numbers
+  // and ONE arrival, which is the whole reason it exists (owner, 2026-08-27).
+  const ev = recordState.events || [];
+  const byId = new Map(ev.map((e) => [e.id, e]));
+  const hits = ev.filter((e) => e.kind === 'hit');
+  const misses = ev.filter((e) => e.kind === 'miss');
+  out.hits = hits.length;
+  out.misses = misses.length;
+  // A HIT'S OWN CAUSE IS THE TRIGGER PULL, never another hit.
+  out.hitsFromShots = hits.length > 0
+    && hits.every((e) => (byId.get(e.cause) || {}).kind === 'shot');
+  // …AND EVERY NUMBER A PELLET PRODUCED NAMES ITS ARRIVAL. A status tick names
+  // the shot that seeded it instead, which is a different question and stays
+  // that way.
+  const direct = ev.filter((e) => e.kind === 'damage'
+    && (e.origin === 'own' || e.origin === 'multishot'));
+  out.directRows = direct.length;
+  out.directFromHits = direct.length > 0
+    && direct.every((e) => (byId.get(e.cause) || {}).kind === 'hit');
+  // …AND THE ARRIVAL CARRIES THE FLIGHT, which no damage row does.
+  out.hitsCarryFlight = hits.length > 0 && hits.every((e) => typeof e.flew_m === 'number');
+  out.rowsHaveNoFlight = direct.every((e) => e.flew_m === undefined);
+  // ONE ARRIVAL, TWO NUMBERS on a shielded body — stated by the chain rather
+  // than inferred from two rows sharing a timestamp.
+  const perHit = new Map();
+  for (const e of direct) perHit.set(e.cause, (perHit.get(e.cause) || 0) + 1);
+  out.splitHits = [...perHit.values()].filter((n) => n > 1).length;
+  // A MISS CAUSES NOTHING. It is the answer to "why did a three-pellet shot
+  // pop two numbers", and it must not be anybody's cause.
+  out.missCausesNothing = ev.every((e) => (byId.get(e.cause) || {}).kind !== 'miss');
+  out.missesSayWhy = misses.every((e) => !!e.reason);
+
   // ---- THE STATE COLUMN IS THE TARGET BEFORE THE HIT -------------------
   out.statesDrawn = rows.filter((tr) =>
     tr.querySelector('.rec-state [data-pool="health"]')).length;
@@ -211,6 +248,23 @@ check(`${tag} the two halves are one instant`, r.pairedAtOneInstant,
 check(`${tag} each row says what the target was before it`, r.statesDrawn === r.rows,
   `${r.statesDrawn} of ${r.rows}`);
 
+// SHOT, THEN ARRIVAL, THEN NUMBERS.
+check(`${tag} a pellet ARRIVING is its own event`, r.hits > 0, `${r.hits} hits`);
+check(`${tag} ...caused by the trigger pull, not by another hit`,
+  r.hitsFromShots === true);
+check(`${tag} ...and every direct number names its arrival`,
+  r.directFromHits === true, `${r.directRows} direct rows`);
+check(`${tag} ...which carries the flight no damage row can`,
+  r.hitsCarryFlight === true && r.rowsHaveNoFlight === true,
+  "flew_m is the arrival's, not the number's");
+check(`${tag} one arrival, two numbers on a shielded body`,
+  r.splitHits > 0, `${r.splitHits} arrivals produced more than one number`);
+// A MISS is the answer to "where did my multishot go", and it was invisible
+// until the arrival existed to negate.
+check(`${tag} a pellet that went nowhere is a row that says why`,
+  r.misses === 0 || r.missesSayWhy === true, `${r.misses} misses`);
+check(`${tag} ...and causes nothing`, r.missCausesNothing === true);
+
 // A NEGATIVE CONTROL for the filter: it must REMOVE things, and put them back.
 check(`${tag} a filter shows only what it names`,
   r.filteredAllStatus && r.filtered < r.rows && r.restored === r.rows,
@@ -225,5 +279,56 @@ check(`${tag} the build reached it`, r.mods.length > 0, JSON.stringify(r.mods));
 check(`${tag} the rows add up to the report's own engagement`,
   r.reportTotal > 0 && Math.abs(r.recordTotal - r.reportTotal) / r.reportTotal < 0.01,
   `record ${Math.round(r.recordTotal).toLocaleString()} vs report ${Math.round(r.reportTotal).toLocaleString()}`);
+
+// ---- AND A MISS HAS TO HAPPEN FOR ANY OF THAT TO MEAN ANYTHING ------------
+//
+// Every assertion about misses above passes perfectly on a fight that has none,
+// which is the shape of a vacuous check this repo has been caught by before.
+// So a pellet is MADE to miss: the target is pushed out to 40 m, where the
+// cone is wider than a body, and the same claims are asked of a run that
+// actually produces them.
+const m = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const out = {};
+  // FAR ENOUGH THAT THE CONE IS WIDER THAN A BODY. The arena is the only place
+  // a position is set, so this moves the body rather than typing a distance.
+  sim.target_at = [0, 40];
+  sim.duration = 8; sim.runs = 8;
+  markScenarioDirty && markScenarioDirty();
+  await sleep(500);
+  document.querySelector('#run-sim').click();
+  for (let i = 0; i < 90 && !document.querySelector('#rec-host'); i++) await sleep(400);
+  await sleep(800);
+  const load = document.querySelector('#rec-load');
+  if (load) load.click();
+  for (let i = 0; i < 60 && !document.querySelector('.rec-t'); i++) await sleep(300);
+  await sleep(500);
+  const ev = (recordState && recordState.events) || [];
+  const byId = new Map(ev.map((e) => [e.id, e]));
+  const misses = ev.filter((e) => e.kind === 'miss');
+  out.misses = misses.length;
+  out.pellets = ev.filter((e) => e.kind === 'hit').length + misses.length;
+  out.reasons = [...new Set(misses.map((e) => e.reason))];
+  out.fromShots = misses.every((e) => (byId.get(e.cause) || {}).kind === 'shot');
+  out.causeNothing = ev.every((e) => (byId.get(e.cause) || {}).kind !== 'miss');
+  // …AND IT IS ON SCREEN, with its reason, under a filter of its own.
+  const chip = [...document.querySelectorAll('[data-reckind]')].find((b) => b.dataset.reckind === 'miss');
+  out.chip = !!chip;
+  if (chip) { chip.click(); await sleep(250); }
+  const shown = [...document.querySelectorAll('#rec-host tr.rec-miss')];
+  out.drawn = shown.length;
+  out.onlyMisses = shown.length === document.querySelectorAll('#rec-host tbody tr').length;
+  return out;
+})()`);
+
+check(`${tag} a wide shot MISSES, and the record says so`, m.misses > 0,
+  `${m.misses} of ${m.pellets} pellets at 40 m`);
+check(`${tag} ...each with a reason`, m.misses > 0 && m.reasons.every(Boolean),
+  (m.reasons || []).join(" / "));
+check(`${tag} ...caused by the shot and causing nothing`,
+  m.fromShots === true && m.causeNothing === true);
+check(`${tag} ...and "only the misses" is a view`,
+  m.chip === true && m.drawn > 0 && m.onlyMisses === true,
+  `${m.drawn} drawn`);
 
 await finish("every row of the record produces its own number");

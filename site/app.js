@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "8b03dc98+ · 2026-08-27 12:21Z";
+const BUILD_ID = "d90f5bb7+ · 2026-08-27 13:34Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -14364,7 +14364,12 @@ function recordBodies(events) {
 
 const REC_KINDS = [
   ["all", "everything"], ["own", "own"], ["multishot", "multishot"],
-  ["punch_through", "punch through"], ["status", "status"], ["event", "events"],
+  ["punch_through", "punch through"], ["status", "status"],
+  // A SHOT, AN ARRIVAL AND A MISS are weapon events rather than numbers, so
+  // they sit under one chip with the reloads and the transmutes — and "only
+  // the misses" is its own question, because a pellet that went nowhere is
+  // invisible in every other view this app has.
+  ["event", "events"], ["miss", "misses"],
 ];
 
 function recordBody(st) {
@@ -14427,6 +14432,7 @@ function recordBody(st) {
 function recordPasses(e, filter) {
   if (filter === "all") return true;
   if (filter === "event") return e.kind !== "damage";
+  if (filter === "miss") return e.kind === "miss";
   return e.kind === "damage" && e.origin === filter;
 }
 
@@ -14496,12 +14502,27 @@ function recordRow(e, rosters) {
       escHtml(tr("gauge"))} ${g[0]} / ${g[1]}</span>` : ""}`;
 
   if (e.kind !== "damage") {
+    // WHAT AN ARRIVAL KNOWS, and nothing else does: how far the round flew and
+    // what was left of each budget when it got there. A damage NUMBER cannot
+    // carry it — one hit on a shielded body produces two of them — so it is
+    // drawn on the hit (owner, 2026-08-27).
+    const m = (x) => `${x.toFixed(2)}m`;
+    const flight = e.kind === "hit"
+      ? `<span class="rec-flight"><i>${escHtml(tr("flew"))}</i>${m(e.flew_m || 0)}</span>${
+          e.range_left_m != null
+            ? `<span class="rec-flight"><i>${escHtml(tr("range left"))}</i>${m(e.range_left_m)}</span>` : ""}${
+          e.punch_through_left_m != null
+            ? `<span class="rec-flight"><i>${escHtml(tr("punch through left"))}</i>${m(e.punch_through_left_m)}</span>` : ""}`
+      : "";
     return `<tr class="rec-evt rec-${escHtml(e.kind)}" data-recevent="${e.id}">
-      <td class="rec-t">${e.t.toFixed(3)}</td>
-      <td colspan="7"><b>${escHtml(tr(recordEventName(e)))}</b>${
+      <td class="rec-t">${e.t.toFixed(3)}${e.cause != null ? `<span class="rec-cause">#${e.cause}</span>` : ""}</td>
+      <td colspan="2"><b>${escHtml(tr(recordEventName(e)))}</b>${
         e.into ? ` <span class="sim-hint">${escHtml(tr(e.into === "transmuted" ? "into the transmuted form" : "back to the base form"))}</span>` : ""}${
         e.seconds != null ? ` <span class="sim-hint">${e.seconds.toFixed(2)}s</span>` : ""}${
-        e.pellets != null ? ` <span class="sim-hint">${e.pellets} ${escHtml(tr("pellets"))}</span>` : ""}</td>
+        e.reason ? ` <span class="sim-hint">${escHtml(tr(e.reason))}</span>` : ""}${
+        e.pellets != null ? ` <span class="sim-hint">${e.pellets} ${escHtml(tr("pellets"))}</span>` : ""}${
+        e.part ? ` <span class="${e.head ? "rec-head" : ""}">${escHtml(tr(e.part))}${e.head ? " ⌖" : ""}</span>` : ""}</td>
+      <td colspan="5">${flight}</td>
       <td class="rec-wep">${wep}</td><td colspan="2"></td></tr>`;
   }
 
@@ -14564,7 +14585,8 @@ function recordRow(e, rosters) {
 
 function recordEventName(e) {
   return {
-    shot: "shot", miss: "missed", reload_start: "reload begins", reload_end: "reload ends",
+    shot: "shot", hit: "hit", miss: "missed",
+    reload_start: "reload begins", reload_end: "reload ends",
     transform_start: "transform begins", transform_end: "transform ends",
     status_expired: "status expired", killed: "killed",
   }[e.kind] || e.kind;
@@ -14595,6 +14617,13 @@ function wireRecord(r) {
 /// which is the thing nothing in this app could do before.
 function recordLine(e) {
   const t = e.t.toFixed(3).padStart(8);
+  if (e.kind === "hit") {
+    return `${t}  #${e.cause ?? "-"}  [hit]  ${e.part || "-"}${e.head ? " *" : ""}`
+      + `  flew ${(e.flew_m || 0).toFixed(2)}m`
+      + (e.range_left_m != null ? `  range left ${e.range_left_m.toFixed(2)}m` : "")
+      + (e.punch_through_left_m != null ? `  pt left ${e.punch_through_left_m.toFixed(2)}m` : "");
+  }
+  if (e.kind === "miss") return `${t}  #${e.cause ?? "-"}  [miss]  ${e.reason || ""}`;
   if (e.kind !== "damage") return `${t}  [${e.kind}]`;
   const chain = [...(e.steps || []), ...(e.mitigation || [])]
     .map(([k, v]) => `x${v} ${k}`).join("  ");
