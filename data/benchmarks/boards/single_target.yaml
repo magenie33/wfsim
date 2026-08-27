@@ -10,7 +10,7 @@
 benchmark: single_target
 source: submissions
 submissions: 2971
-engine: 789b4e4c9311dc433fef51b2e60225cccaa60f1c
+engine: 6236e88e6b84aebaa78a8ffc7eb8ac27ae171a47
 entries:
   - weapon: acceltra_prime
     mode: base
