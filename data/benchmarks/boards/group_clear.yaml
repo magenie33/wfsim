@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 3170
-engine: 29b06c88e74afede83a8a7575831a4c8732d2df4
+submissions: 3181
+engine: a802c69b344affe6fd2b22bb3d7feb2a918ab57c
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -65,6 +65,16 @@ entries:
     fp: 8df91a8994aae4e5
     mods: [galvanized_diffusion, hornet_strike, fulmination, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_fortifier]
+  - weapon: akarius_prime
+    mode: base
+    score: 48.67830073719711
+    fp: 89ef014d01c3b543
+    mods: [galvanized_diffusion, galvanized_shot, pistol_elementalist, magnetic_might, riven, ice_storm, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_chance, damage]
+      malus: weapon_recoil
+      rolls: [0.9, 1.1, 0.9]
   - weapon: akarius_prime
     mode: base
     score: 48.00970398860627
@@ -1145,6 +1155,17 @@ entries:
     mods: [primary_acuity, galvanized_aptitude, galvanized_scope, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, hellfire]
     evolutions: [braton_prime_evo1_incarnon_form, braton_prime_munitions_grit, braton_prime_mercenary_chamber, braton_prime_prelude_of_might]
     arcanes: [primary_deadhead]
+  - weapon: braton_vandal
+    mode: cycle
+    score: 50.2702135227186
+    fp: 8cee17b7b8e7578e
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, hammer_shot, speed_trigger, vile_acceleration, primed_cryo_rounds, riven]
+    evolutions: [braton_vandal_evo1_incarnon_form, braton_vandal_munitions_grit, braton_vandal_voids_guidance, braton_vandal_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: braton_vandal
     mode: cycle
     score: 29.75747397101997
@@ -3403,10 +3424,19 @@ entries:
     valence: toxin
   - weapon: kuva_zarr
     mode: base
-    score: 0.08525252389204341
-    fp: ce7a0974186c11ee
-    mods: [galvanized_chamber, heavy_caliber, primed_firestorm, serration, galvanized_aptitude, rifle_elementalist, primed_cryo_rounds, infected_clip]
+    score: 0.5650327349866566
+    fp: 883bbd0326a5c7a9
+    exilus: terminal_velocity
+    mods: [serration, vile_acceleration, magnetic_capacity, radiated_reload, rime_rounds, malignant_force, wildfire, thermite_rounds]
     arcanes: [primary_merciless]
+    valence: toxin
+  - weapon: kuva_zarr
+    mode: base
+    score: 0.4977380448363255
+    fp: b0cc87de440a8469
+    exilus: terminal_velocity
+    mods: [serration, vile_acceleration, magnetic_capacity, radiated_reload, rime_rounds, malignant_force, wildfire, thermite_rounds]
+    arcanes: [primary_debilitate]
     valence: toxin
   - weapon: laetum
     mode: cycle

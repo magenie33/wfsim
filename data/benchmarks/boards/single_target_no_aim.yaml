@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 3170
-engine: 29b06c88e74afede83a8a7575831a4c8732d2df4
+submissions: 3181
+engine: a802c69b344affe6fd2b22bb3d7feb2a918ab57c
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -101,6 +101,16 @@ entries:
     fp: 9c43a4d16ac7960f
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
+  - weapon: akarius_prime
+    mode: base
+    score: 5.596034150896422
+    fp: f582f7b27238a4fe
+    mods: [galvanized_diffusion, galvanized_shot, pistol_elementalist, magnetic_might, riven, ice_storm, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_chance, damage]
+      malus: weapon_recoil
+      rolls: [0.9, 1.1, 0.9]
   - weapon: alternox_prime
     mode: alternate
     score: 0.24440171586247988
@@ -818,6 +828,17 @@ entries:
     mods: [galvanized_chamber, serration, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [braton_vandal_evo1_incarnon_form, braton_vandal_munitions_grit, braton_vandal_voids_guidance, braton_vandal_survivors_edge]
     arcanes: [primary_merciless]
+  - weapon: braton_vandal
+    mode: cycle
+    score: 0.06445467797003346
+    fp: 8308fa3dee354a65
+    mods: [primary_acuity, galvanized_aptitude, galvanized_scope, hammer_shot, speed_trigger, vile_acceleration, primed_cryo_rounds, riven]
+    evolutions: [braton_vandal_evo1_incarnon_form, braton_vandal_munitions_grit, braton_vandal_voids_guidance, braton_vandal_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: bronco
     mode: cycle
     score: 1.9493699151405128
@@ -2562,10 +2583,19 @@ entries:
     valence: toxin
   - weapon: kuva_zarr
     mode: base
-    score: 0.062483458536967754
-    fp: 44b46df4d1e7a9b3
-    mods: [galvanized_chamber, heavy_caliber, primed_firestorm, serration, galvanized_aptitude, rifle_elementalist, primed_cryo_rounds, infected_clip]
+    score: 0.4874812510151643
+    fp: e25805f543bb80e8
+    exilus: terminal_velocity
+    mods: [serration, vile_acceleration, magnetic_capacity, radiated_reload, rime_rounds, malignant_force, wildfire, thermite_rounds]
     arcanes: [primary_merciless]
+    valence: toxin
+  - weapon: kuva_zarr
+    mode: base
+    score: 0.4144178824449537
+    fp: 8cec291e6adfd0b6
+    exilus: terminal_velocity
+    mods: [serration, vile_acceleration, magnetic_capacity, radiated_reload, rime_rounds, malignant_force, wildfire, thermite_rounds]
+    arcanes: [primary_debilitate]
     valence: toxin
   - weapon: laetum
     mode: cycle
@@ -4226,6 +4256,17 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: cycle
+    score: 0.9470423377314852
+    fp: 60139ece0b3111a5
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, vigilante_armaments, shell_shock, toxic_barrage, riven]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_frostbite]
+    riven:
+      bonuses: [cold, critical_chance, fire_rate]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: cycle
     score: 0.9150273844595916
     fp: 03e96506229a89e4
     mods: [galvanized_hell, primed_point_blank, primed_ravage, shotgun_barrage, riven, shell_shock, toxic_barrage, primed_chilling_grasp]
@@ -4526,6 +4567,28 @@ entries:
       rolls: [1.1, 1.1, 1.1]
   - weapon: torid
     mode: cycle
+    score: 7.335459055719194
+    fp: 98b229fd40d6e8e2
+    mods: [galvanized_chamber, serration, vital_sense, magnetic_capacity, riven, rime_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [critical_chance, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
+    score: 7.273048102000007
+    fp: 43d6791059ae1bec
+    mods: [galvanized_chamber, serration, vital_sense, magnetic_capacity, riven, rime_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_merciless]
+    riven:
+      bonuses: [critical_chance, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
     score: 6.006263183707652
     fp: 603bec00a75970ee
     mods: [galvanized_chamber, serration, point_strike, magnetic_capacity, riven, rime_rounds, malignant_force, thermite_rounds]
@@ -4558,6 +4621,17 @@ entries:
       bonuses: [critical_chance, critical_damage, damage]
       malus: damage_to_infested
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
+    score: 5.161024603960262
+    fp: 8ab82c90dbf6b979
+    mods: [galvanized_chamber, galvanized_aptitude, vile_acceleration, vital_sense, riven, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [critical_chance, damage]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     score: 5.11736072305917
