@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 3004
+submissions: 3055
 engine: 6236e88e6b84aebaa78a8ffc7eb8ac27ae171a47
 entries:
   - weapon: acceltra_prime
@@ -1402,11 +1402,47 @@ entries:
     arcanes: [primary_debilitate]
   - weapon: felarx
     mode: cycle
+    score: 7.276563768504976
+    fp: 7028c65f03e7185f
+    exilus: galvanized_acceleration
+    mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, riven, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [multishot, toxin]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: felarx
+    mode: cycle
+    score: 7.276563768504976
+    fp: 0d3f3c926868bebe
+    exilus: galvanized_acceleration
+    mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, riven, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_overcharge]
+    riven:
+      bonuses: [multishot, toxin]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: felarx
+    mode: cycle
     score: 7.092549113485533
     fp: 1fb1051459fec364
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_tactical_pump, magnetic_strafe, chilling_reload, toxic_barrage, blaze]
     evolutions: [felarx_evo1_incarnon_form, felarx_kinetic_baffle, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_crux]
+  - weapon: felarx
+    mode: cycle
+    score: 6.999896427822169
+    fp: 7028c65f03e7185f
+    exilus: galvanized_acceleration
+    mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, riven, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [multishot, toxin]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
   - weapon: felarx
     mode: cycle
     score: 6.344280780061802
@@ -1428,6 +1464,24 @@ entries:
     riven:
       bonuses: [multishot, toxin]
       rolls: [1.1, 1.1]
+  - weapon: felarx
+    mode: cycle
+    score: 6.344280780061802
+    fp: 7028c65f03e7185f
+    exilus: galvanized_acceleration
+    mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, riven, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [multishot, toxin]
+      rolls: [1.1, 1.1]
+  - weapon: felarx
+    mode: base
+    score: 6.086121441598171
+    fp: 79065740aa9768f2
+    mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_crux]
   - weapon: felarx
     mode: base
     score: 5.913029337374616
@@ -2003,6 +2057,20 @@ entries:
       rolls: [1.1, 0.9, 0.9]
   - weapon: kuva_grattler
     mode: base
+    score: 4
+    fp: d0b6267d4a8b92ab
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_crux, secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_grattler
+    mode: base
+    score: 3.637076852089911
+    fp: dc02f85051a3e1fd
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_merciless, secondary_enervate]
+    valence: heat
+  - weapon: kuva_grattler
+    mode: base
     score: 3.525675329416861
     fp: 5d4edce8f68354fb
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, primed_ammo_chain, riven, hypothermic_shell, contamination_casing, primed_combustion_rounds]
@@ -2060,6 +2128,13 @@ entries:
       rolls: [1.1, 0.9, 0.9, 0.9]
   - weapon: kuva_grattler
     mode: base
+    score: 2.624339619533783
+    fp: a21df20594bd2f0b
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, hollowed_bullets, magnetized_cycle, parallax_scope, primed_combustion_rounds, magma_chamber]
+    arcanes: [primary_merciless, cascadia_flare]
+    valence: heat
+  - weapon: kuva_grattler
+    mode: base
     score: 2.500689988871565
     fp: bf108c32ae1f862b
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, primed_ammo_chain, magnetized_cycle, riven, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
@@ -2098,6 +2173,13 @@ entries:
       rolls: [1.1, 0.9, 0.9, 0.9]
   - weapon: kuva_grattler
     mode: base
+    score: 2.302578106409697
+    fp: 9cb9cc4935aa3aab
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, parallax_scope, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_merciless, cascadia_flare]
+    valence: magnetic
+  - weapon: kuva_grattler
+    mode: base
     score: 2.2268280675809997
     fp: bb1e2aa7708d1095
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, parallax_scope, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
@@ -2112,23 +2194,16 @@ entries:
     valence: heat
   - weapon: kuva_grattler
     mode: base
+    score: 2.090178378714426
+    fp: 9cb9cc4935aa3aab
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, parallax_scope, hypothermic_shell, primed_venomous_clip, primed_combustion_rounds]
+    arcanes: [primary_merciless, cascadia_flare]
+    valence: heat
+  - weapon: kuva_grattler
+    mode: base
     score: 2.050045832687778
     fp: 2d653010e29937b5
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, containment_breach, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
-    arcanes: [primary_crux, secondary_enervate]
-    valence: heat
-  - weapon: kuva_grattler
-    mode: base
-    score: 1.7149659588543475
-    fp: 864a5198b6c0fd50
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, parallax_scope, primed_polar_magazine, primed_venomous_clip, primed_combustion_rounds]
-    arcanes: [primary_crux, cascadia_flare]
-    valence: heat
-  - weapon: kuva_grattler
-    mode: base
-    score: 1.7052258376142424
-    fp: 024983416beb4ba3
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     valence: heat
   - weapon: kuva_hek
@@ -2410,6 +2485,13 @@ entries:
     mods: [galvanized_chamber, primed_firestorm, serration, nightwatch_napalm, semi_rifle_cannonade, magnetic_capacity, primed_cryo_rounds, malignant_force]
     arcanes: [primary_crux]
     valence: heat
+  - weapon: kuva_sobek
+    mode: base
+    score: 0.44334654781321586
+    fp: b62bcaa177e8ef83
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, primed_charged_shell, contagious_spread, incendiary_coat]
+    arcanes: [shotgun_vendetta]
+    valence: toxin
   - weapon: kuva_tonkor
     mode: base
     score: 0.2068296957285057
@@ -3961,6 +4043,20 @@ entries:
     arcanes: [primary_crux]
   - weapon: strun_prime
     mode: cycle
+    score: 3.965530338253813
+    fp: af9fd50cccd35b29
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
+    arcanes: [shotgun_vendetta]
+  - weapon: strun_prime
+    mode: cycle
+    score: 2.7838439486250826
+    fp: bb9ce62234ce30a3
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
+    arcanes: [shotgun_vendetta]
+  - weapon: strun_prime
+    mode: cycle
     score: 2.061067203651373
     fp: e5676b0fc064fce0
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
@@ -3968,18 +4064,11 @@ entries:
     arcanes: [primary_merciless]
   - weapon: strun_prime
     mode: cycle
-    score: 1.691973233894433
-    fp: 14a96f96e37263b7
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
-    arcanes: [primary_compression]
-  - weapon: strun_prime
-    mode: cycle
-    score: 1.59556121397449
-    fp: ad2efdc0331a851b
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, contagious_spread, blaze]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
-    arcanes: [primary_deadhead]
+    score: 2.0608761046939876
+    fp: 5e4c0d8652f915a5
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, magnetic_strafe, primed_chilling_grasp, contagious_spread, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
+    arcanes: [shotgun_vendetta]
   - weapon: strun_prime
     mode: cycle
     score: 1.5605045115526894
@@ -4011,34 +4100,12 @@ entries:
       malus: weapon_recoil
       rolls: [1.1, 1.1, 0.9]
   - weapon: strun_prime
-    mode: cycle
-    score: 1.3509752819677707
-    fp: e7b111d701c1c1ac
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, chilling_reload, toxic_barrage, incendiary_coat]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
-    arcanes: [primary_crux]
-  - weapon: strun_prime
     mode: base
     score: 1.3354718259741165
     fp: 21ade6e609687e18
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_commodores_fortune]
     arcanes: [primary_crux]
-  - weapon: strun_prime
-    mode: cycle
-    score: 1.2497885877844337
-    fp: f87081a17f2d9d12
-    exilus: vigilante_supplies
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_commodores_fortune]
-    arcanes: [primary_compression]
-  - weapon: strun_prime
-    mode: cycle
-    score: 1.1776524770816124
-    fp: 4d39e0521eb6dcac
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, contagious_spread, incendiary_coat]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
-    arcanes: [primary_deadhead]
   - weapon: strun_prime
     mode: base
     score: 1.046068612269007
@@ -4357,6 +4424,17 @@ entries:
     arcanes: [pax_charge, secondary_fortifier]
   - weapon: torid
     mode: cycle
+    score: 7.688003109928789
+    fp: fca583261a42dd33
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, point_strike, magnetic_capacity, rime_rounds, malignant_force, hellfire, riven]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [critical_chance, critical_damage, heat]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: torid
+    mode: cycle
     score: 6.006263183707652
     fp: 21a30480d7046eb6
     mods: [galvanized_chamber, serration, point_strike, magnetic_capacity, riven, rime_rounds, malignant_force, thermite_rounds]
@@ -4553,30 +4631,6 @@ entries:
     mods: [split_chamber, serration, point_strike, vital_sense, magnetic_capacity, rime_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
-  - weapon: torid
-    mode: cycle
-    score: 3.6020376614877883
-    fp: 4200607767fde29a
-    exilus: terminal_velocity
-    mods: [amalgam_serration, galvanized_chamber, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, malignant_force, riven]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
-    arcanes: [primary_overcharge]
-    riven:
-      bonuses: [critical_chance, heat, multishot]
-      malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: torid
-    mode: cycle
-    score: 3.5908148483009845
-    fp: 3cb3ad985787351d
-    exilus: terminal_velocity
-    mods: [amalgam_serration, galvanized_chamber, galvanized_aptitude, critical_delay, vital_sense, stormbringer, malignant_force, riven]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
-    arcanes: [primary_overcharge]
-    riven:
-      bonuses: [damage, heat, multishot]
-      malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     score: 3.03931142045369
@@ -4795,6 +4849,29 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, rifle_elementalist, semi_rifle_cannonade, magnetic_capacity, rime_rounds, malignant_force, hellfire]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_survivors_edge]
     arcanes: [primary_merciless]
+  - weapon: vectis_prime
+    mode: base
+    score: 0.42534010607887346
+    fp: 2d6d78195289e0ab
+    mods: [galvanized_chamber, galvanized_aptitude, galvanized_scope, vile_acceleration, riven, primed_cryo_rounds, infected_clip, hellfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, damage]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: vectis_prime
+    mode: base
+    score: 0.27925156712436017
+    fp: 4d273947df15e485
+    exilus: vigilante_supplies
+    mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, riven, primed_cryo_rounds, infected_clip]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_damage, damage]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
   - weapon: vectis_prime
     mode: base
     score: 0.2695914402039859
