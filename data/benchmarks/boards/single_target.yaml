@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 2976
+submissions: 2990
 engine: 6236e88e6b84aebaa78a8ffc7eb8ac27ae171a47
 entries:
   - weapon: acceltra_prime
@@ -2394,6 +2394,16 @@ entries:
     arcanes: [primary_crux, secondary_enervate]
   - weapon: cyanex
     mode: base
+    score: 2.6965915311288406
+    fp: bbd340eaff684d8e
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [fire_rate, multishot, reload_speed]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: cyanex
+    mode: base
     score: 2.197948157130031
     fp: 8f1349a3852627c2
     mods: [pistol_acuity, primed_target_cracker, pistol_elementalist, pressurized_magazine, magnetic_might, sure_shot, primed_heated_charge, scorch]
@@ -2769,6 +2779,28 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: felarx
     mode: cycle
+    score: 59.35768353011321
+    fp: 968f7fda038d55c2
+    mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_charged_shell, riven, scattering_inferno]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [fire_rate, multishot, toxin]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: felarx
+    mode: cycle
+    score: 52.00240528740584
+    fp: 69d0435d0456f53c
+    mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_charged_shell, riven, primed_chilling_grasp]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [fire_rate, heat, toxin]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: felarx
+    mode: cycle
     score: 49.392785903644146
     fp: cb274c6301d44532
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_charged_shell, toxic_barrage]
@@ -2807,6 +2839,27 @@ entries:
     riven:
       bonuses: [multishot, toxin]
       rolls: [1.1, 1.1]
+  - weapon: felarx
+    mode: cycle
+    score: 47.6023647717365
+    fp: 8b605bcdd84b7009
+    mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, riven, blaze]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [multishot, toxin]
+      rolls: [1.1, 1.1]
+  - weapon: felarx
+    mode: cycle
+    score: 45.960003500429565
+    fp: 69d0435d0456f53c
+    mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, riven, primed_charged_shell]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [fire_rate, heat, toxin]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 1.1]
   - weapon: felarx
     mode: cycle
     score: 45.3428683572881
@@ -2853,6 +2906,16 @@ entries:
     mods: [galvanized_hell, galvanized_savvy, shotgun_barrage, shotgun_elementalist, magnetic_strafe, primed_chilling_grasp, contagious_spread, scattering_inferno]
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_deadhead]
+  - weapon: felarx
+    mode: cycle
+    score: 37.658669941758866
+    fp: 765527282c156ac5
+    mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, atomic_fallout, magnetic_strafe, primed_chilling_grasp, riven]
+    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [multishot, toxin]
+      rolls: [1.1, 1.1]
   - weapon: felarx
     mode: cycle
     score: 36.30380233270551
@@ -2945,16 +3008,6 @@ entries:
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, frail_momentum, magnetic_strafe, primed_charged_shell, toxic_barrage, primed_chilling_grasp]
     evolutions: [felarx_evo1_incarnon_form, felarx_kinetic_baffle, felarx_evolved_autoloader, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_deadhead]
-  - weapon: felarx
-    mode: cycle
-    score: 25.91804957188164
-    fp: 3bed03b6b8038bf0
-    mods: [galvanized_hell, galvanized_savvy, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, toxic_barrage, riven, scattering_inferno]
-    evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
-    arcanes: [primary_crux]
-    riven:
-      bonuses: [damage, toxin]
-      rolls: [1.1, 1.1]
   - weapon: felarx
     mode: base
     score: 25.544731753022187
@@ -4418,6 +4471,17 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: laetum
     mode: cycle
+    score: 70.50755838107315
+    fp: 5dc49565952bf022
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [fire_rate, multishot, toxin]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 1.1]
+  - weapon: laetum
+    mode: cycle
     score: 69.88265193007736
     fp: c785f45e7dd0880f
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, primed_convulsion, riven]
@@ -4427,6 +4491,17 @@ entries:
       bonuses: [critical_damage, multishot, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: cycle
+    score: 65.0205625626087
+    fp: 2902a0b383d415bd
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, primed_convulsion, riven, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [fire_rate, multishot, toxin]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 1.1]
   - weapon: laetum
     mode: cycle
     score: 63.31171216304874
@@ -4707,6 +4782,13 @@ entries:
     arcanes: [secondary_enervate]
   - weapon: laetum
     mode: cycle
+    score: 51.13261661369481
+    fp: 435f9862c6cb907b
+    mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+  - weapon: laetum
+    mode: cycle
     score: 51.02485585172759
     fp: 641901ccd5a1254d
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds, primed_heated_charge]
@@ -4968,6 +5050,13 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: laetum
     mode: cycle
+    score: 42.4352605707927
+    fp: 38a2de3089753425
+    mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
+  - weapon: laetum
+    mode: cycle
     score: 41.88259673660988
     fp: 5ddb6294ba8f7add
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, magnetic_might, deep_freeze, pistol_pestilence, primed_heated_charge]
@@ -5145,6 +5234,13 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, lethal_torrent, anemic_agility, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [laetum_evo1_incarnon_form, laetum_marksmans_hand, laetum_lethal_rearmament, laetum_elemental_excess, laetum_devouring_attrition]
     arcanes: [secondary_encumber]
+  - weapon: laetum
+    mode: cycle
+    score: 37.2327399568684
+    fp: 761ae56925bf9167
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, primed_convulsion, pistol_pestilence, primed_heated_charge]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_devouring_attrition]
+    arcanes: [cascadia_flare]
   - weapon: laetum
     mode: cycle
     score: 36.90610877442993
