@@ -312,13 +312,22 @@ def write_board() -> None:
             # not group riven rows, and TAKING one left an empty slot, because
             # `row.riven` never reached the page so the bare `riven` id resolved
             # to no mod.
-            # …MINUS `fp`, which is the SCORER'S REUSE KEY and not a fact about
-            # the build: it says which data files this row's score depends on so
-            # the next run can skip re-scoring it (`engine::data_fingerprint`).
-            # The Rust writer of this same file does not emit it, and the two
-            # have to agree byte for byte or every local build leaves board.json
-            # dirty.
-            row = {k: v for k, v in e.items() if k != "fp"}
+            # …MINUS TWO THAT ARE NOT FACTS ABOUT THE BUILD. `fp` is the
+            # SCORER'S REUSE KEY — which data files this row's score depends on,
+            # so the next run can skip re-scoring it
+            # (`engine::data_fingerprint`) — and `weapon` is the MAP KEY this
+            # row is filed under. The Rust writer of this same file emits
+            # neither, and the two have to agree byte for byte or every local
+            # build leaves board.json dirty.
+            #
+            # `weapon` was leaking, and it cost more than a churned file
+            # (2026-08-27). `_ident` is "every field but score/shown/source", so
+            # a row carrying an extra key had a DIFFERENT identity from the same
+            # row in the file already on disk — `prior` never matched, `shown`
+            # was dropped from all 118 rows, and the page fell back to rounding
+            # `score` itself. The `missing` assertion below has always named
+            # `weapon` as legitimately absent, which is the intent this restores.
+            row = {k: v for k, v in e.items() if k not in ("fp", "weapon")}
             row["benchmark"] = b.get("benchmark")
             row["source"] = b.get("source", "")
             # FLOAT, always: the yaml writes a whole score as `10` and the
@@ -330,6 +339,17 @@ def write_board() -> None:
             # would rather have `[]` than `undefined`.
             for k in ("mods", "evolutions", "arcanes"):
                 row.setdefault(k, [])
+            # A RIVEN'S MALUS IS ALWAYS A KEY, even when there is not one. The
+            # yaml omits it (serde skips a `None`) and the Rust writer of this
+            # file emits it as `null` unconditionally — `json!({"bonuses": …,
+            # "malus": rv.malus, "rolls": …})` — so a riven row read back from
+            # the yaml is a key short of the same row written by the scorer.
+            # Eight rows churned on every local build because of it, and they
+            # lost their `shown` string with it: `_ident` is the whole row bar
+            # three fields, so a riven that is a key short is a DIFFERENT build
+            # as far as the carry-over lookup is concerned (2026-08-27).
+            if isinstance(row.get("riven"), dict):
+                row["riven"].setdefault("malus", None)
             # THE ELEMENT AN ADVERSARY WEAPON WAS SCORED ON, and part of the
             # row's identity for the same reason `mode` is: two Kuva Nukors on
             # different valences are two entrants.

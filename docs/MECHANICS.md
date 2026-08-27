@@ -560,6 +560,32 @@ faster), on-headshot buffs trigger from any one pellet of a pull, and the
 reported headshot rate is pellets/pellets. Mean headshot rate is identical
 under either model; the per-pellet roll gives lower variance.
 
+### The order inside one trigger pull
+
+A volley leaves the muzzle at one instant and **does not settle at one
+instant**. Measured (MEASUREMENTS M62):
+
+1. A pellet resolves its own **explosion** before the next pellet's collision —
+   `P1 direct, P1 blast, P2 direct, P2 blast`, not every collision and then
+   every explosion.
+2. **Every instance re-reads the target**, not every shot and not even every
+   pellet: pellet 1's explosion already reads the stack pellet 1's collision
+   left one instant earlier.
+3. **An instance does not amplify itself.** Its own forced proc lands after it
+   has been settled, so the first collision of a volley reads whatever was on
+   the target before the trigger was pulled.
+
+The measurement that pins all three is a Laetum forcing a Viral proc on both
+halves of every pellet, into an unmitigated body: `200 / 1,200 / 450 / 1,500`,
+which is the Viral ladder read at 0 / 1 / 2 / 3 stacks and is the only
+assignment of those four numbers that has a stack count climbing.
+
+It matters wherever a proc a volley applies changes what the rest of the volley
+does — Viral and Disrupt amps, an armour strip, Condition Overload's type
+count — which is most status builds. In the engine, `DebuffState::amps` is read
+inside the stage loop for exactly this reason; `prune` stays once per pellet,
+since the whole volley is at one instant and pruning again is a no-op.
+
 ### A gauge is not an adapter
 
 A **gauge-switched form** is one you pay a meter to enter: fill it in the base

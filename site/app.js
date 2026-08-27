@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "340692a3+ · 2026-08-27 08:25Z";
+const BUILD_ID = "58db99bd+ · 2026-08-27 09:31Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -14403,8 +14403,9 @@ function recStacks(list, roster, cls) {
 
 /// THE BASE, OPENED UP. One number is an assertion; a chain is something a
 /// reader can check against the build panel — so where the engine can say where
-/// the base started and what took it there, the row says it (owner,
-/// 2026-08-27: "当成给最喜欢挑刺的人看的").
+/// the base started and what took it there, the row says it. The bar is a
+/// reader looking for a mistake, not one taking the number on trust (owner,
+/// 2026-08-27).
 function baseChain(e) {
   const n = (x) => Math.round(x).toLocaleString();
   if (e.base_from == null || !(e.base_steps || []).length) {
@@ -14443,7 +14444,7 @@ function recordRow(e, rosters) {
       escHtml(tr("gauge"))} ${g[0]} / ${g[1]}</span>` : ""}`;
 
   if (e.kind !== "damage") {
-    return `<tr class="rec-evt rec-${escHtml(e.kind)}">
+    return `<tr class="rec-evt rec-${escHtml(e.kind)}" data-recevent="${e.id}">
       <td class="rec-t">${e.t.toFixed(3)}</td>
       <td colspan="7"><b>${escHtml(tr(recordEventName(e)))}</b>${
         e.into ? ` <span class="sim-hint">${escHtml(tr(e.into === "transmuted" ? "into the transmuted form" : "back to the base form"))}</span>` : ""}${
@@ -14478,7 +14479,11 @@ function recordRow(e, rosters) {
     ? `<span class="rec-pel">${escHtml(tr("pellet"))} ${e.pellet}</span><span class="rec-half">${
         escHtml(tr(e.radial ? "explosion" : "direct"))}</span>`
     : "";
-  return `<tr class="rec-dmg rec-${escHtml(e.pool)}">
+  // THE ROW CARRIES ITS OWN NAME. The same id the floating number over the
+  // arena points at with `data-rpevent`, so a number on the scene and a line
+  // here are the same event under one name rather than two lists that happen
+  // to agree (owner, 2026-08-27).
+  return `<tr class="rec-dmg rec-${escHtml(e.pool)}" data-recevent="${e.id}">
     <td class="rec-t">${e.t.toFixed(3)}${e.cause != null ? `<span class="rec-cause">#${e.cause}</span>` : ""}</td>
     <td><span class="rec-org rec-o-${escHtml(e.origin)}">${escHtml(tr(e.origin.replace(/_/g, " ")))}</span>${which}</td>
     <td>${e.part ? `<span class="${e.head ? "rec-head" : ""}">${escHtml(e.part)}${e.head ? " ⌖" : ""}</span>` : "<span class=\"z\">—</span>"}</td>
@@ -14972,6 +14977,20 @@ function wireReplay(r) {
     st.playing = false; st.last = 0;
     $("rp-play").textContent = `▶ ${tr("play")}`;
   };
+  // THE NUMBERS ARE THE RECORD, so reaching for the replay is what asks for
+  // it — once, and only on a deliberate gesture. It is deliberately NOT
+  // fetched with the result: a dense fight's stream is megabytes and most runs
+  // are never replayed at all, which is the same reason `/api/log` is a query
+  // rather than a field on `/api/simulate` (owner, 2026-08-27).
+  let asked = false;
+  const withRecord = async () => {
+    if (asked || popFrames(rp)) return;
+    asked = true;
+    await loadRecord(r);
+    // The reader may have moved on — another run, another weapon — while the
+    // engagement was being re-run.
+    if (replayState === st) draw();
+  };
   const tick = (now) => {
     if (!st.playing) return;
     // Wall-clock paced, so `speed` means what it says however fast the
@@ -15037,6 +15056,7 @@ function wireReplay(r) {
     sceneEl.appendChild(layer);
   }
   $("rp-play").onclick = () => {
+    withRecord();
     if (st.playing) { stop(); return; }
     // Pressing play on a FINISHED fight rewinds it — that is what the button
     // means, and leaving it stuck at the end made it look broken.
@@ -15046,7 +15066,10 @@ function wireReplay(r) {
     st.raf = requestAnimationFrame(tick);
   };
   ddReg.get("rp-speed").onPick = (v) => { st.speed = Number(v) || 1; };
-  $("rp-scrub").oninput = () => { stop(); st.pos = Number($("rp-scrub").value); draw(); };
+  $("rp-scrub").oninput = () => {
+    withRecord();
+    stop(); st.pos = Number($("rp-scrub").value); draw();
+  };
   // Collapse one row without losing its place in the group.
   document.querySelectorAll(".rp-row .rp-head").forEach((h) => {
     h.onclick = () => {
@@ -15067,11 +15090,25 @@ function wireReplay(r) {
 // damage and the only view where "one big hit" and "twenty small ones" look
 // different rather than reading the same as an average (owner, 2026-08-22).
 //
-// THE ENGINE DECIDES WHAT POPS, not this. `Replay.pops` is one entry per frame
-// carrying the twelve BIGGEST numbers of that frame and a count of the rest —
-// the game caps its own display the same way ("a maximum of 10 tick numbers are
-// shown at once"), so the cap is faithful rather than a shortcut, and the
-// dropped count is shown rather than swallowed.
+// THEY ARE THE COMBAT RECORD, REPLAYED — not a second account of it (owner,
+// 2026-08-27). The engine used to carry a `Replay.pops` buffer beside the
+// record: the same nine damage sites written down twice, into two structures,
+// shipped on two endpoints, capped by two different rules. Both were filled
+// from one `log_damage` call, so they could not disagree about a number they
+// both held — but they held DIFFERENT SETS. The overlay kept the twelve
+// biggest of each frame and the table kept the first N of the fight, so a
+// number could float over a body with no row to explain it, and a row could
+// name a number that never appeared. For a panel whose entire claim is "this
+// is what happened", one-to-one IS the claim, and two lists cannot make it.
+//
+// So there is ONE stream. `/api/log` is the ledger, the table lists it and
+// this draws it, and every number on the scene carries the id of the row that
+// explains it. The CAP moved with it and is a DISPLAY decision now, made here,
+// where the numbers are actually being drawn — twelve a frame, biggest kept,
+// the rest counted. The game caps its own display the same way ("a maximum of
+// 10 tick numbers are shown at once"), so it is faithful rather than a
+// shortcut, and it is unavoidable besides: a dense fight deals ~320,000
+// instances against 600 frames.
 //
 // A DOM OVERLAY RATHER THAN THE CANVAS. The arena repaints itself on every
 // resize and every heat change, so anything drawn onto it is erased by the next
@@ -15092,6 +15129,42 @@ const popBodyAt = (i) => (i === 0
   ? (sim.target_at || [0, 0.5])
   : (((sim.formation || [])[i - 1] || {}).at || null));
 
+/// HOW MANY NUMBERS ONE FRAME MAY SHOW. Twelve, and the BIGGEST win: keeping
+/// the first twelve would be arbitrary — which twelve depends on the order the
+/// engine happened to settle them in — while a reader's eye goes to the big
+/// one. What did not fit is counted, never swallowed.
+const POPS_PER_FRAME = 12;
+
+/// THE RECORD, BUCKETED INTO THE REPLAY'S OWN FRAMES.
+///
+/// The engine quantises a replay by pushing a frame every `frame_seconds`, so
+/// frame `i` covers `(i x fs, (i+1) x fs]` — the same slice of the clock the
+/// curves beside it are drawn from. Computed once per record and cached on it,
+/// because a scrub redraws a frame on every pointer move.
+///
+/// It returns null when there is no record for the result on screen, which is
+/// the honest answer rather than an empty overlay: the numbers ARE the record,
+/// so before it is read there is nothing to draw. `wireReplay` asks for it.
+function popFrames(rp) {
+  const st = recordState && shownResult
+    && recordState.key === recordKey(shownResult.r) ? recordState : null;
+  if (!st || st.loading || !st.events) return null;
+  const n = rp.t.length;
+  if (st.popFrames && st.popFrames.length === n) return st.popFrames;
+  const frames = Array.from({ length: n }, () => []);
+  for (const e of st.events) {
+    if (e.kind !== "damage" || e.body == null || !(e.effective > 0)) continue;
+    const i = Math.min(n - 1, Math.max(0, Math.ceil(e.t / rp.frame_seconds) - 1));
+    frames[i].push(e);
+  }
+  st.popFrames = frames.map((list) => {
+    if (list.length <= POPS_PER_FRAME) return { v: list, n: 0 };
+    const by = [...list].sort((a, b) => b.effective - a.effective);
+    return { v: by.slice(0, POPS_PER_FRAME), n: list.length - POPS_PER_FRAME };
+  });
+  return st.popFrames;
+}
+
 /// Spawn one frame's numbers over the scene.
 ///
 /// `live` distinguishes PLAYING from SCRUBBING: playing spawns each frame once
@@ -15101,7 +15174,7 @@ const popBodyAt = (i) => (i === 0
 function popsDraw(rp, i, live) {
   const scene = $("rp-scene");
   const host = scene && scene.querySelector(".rp-pops");
-  if (!host || !rp || !rp.pops) return;
+  if (!host || !rp) return;
   // VIEWBOX TO PIXELS. The result's scene is the SVG mount, which draws in a
   // fixed coordinate space and lets the browser fit it to the box — so a
   // number's place is that map's answer put through the same fit. Doing the
@@ -15125,7 +15198,9 @@ function popsDraw(rp, i, live) {
   // float away.
   host.classList.toggle("live", !!live);
   if (!live) host.textContent = "";
-  const frame = rp.pops[i];
+  const all = popFrames(rp);
+  if (!all) return;
+  const frame = all[i];
   if (!frame) return;
   const box = scene.getBoundingClientRect();
   const dx = sb.left - box.left;
@@ -15139,8 +15214,12 @@ function popsDraw(rp, i, live) {
   // BIGGEST NEAREST THE BODY, because that is the one the reader came for; the
   // rest step outward and up from it.
   const perBody = new Map();
-  const ordered = [...(frame.v || [])].sort((a, b) => b[2] - a[2]);
-  for (const [t, body, amount, dtype, kind] of ordered) {
+  const ordered = [...(frame.v || [])].sort((a, b) => b.effective - a.effective);
+  for (const e of ordered) {
+    const body = e.body;
+    const amount = e.effective;
+    const dtype = e.type;
+    const kind = e.pop_kind || "direct";
     const at = popBodyAt(body);
     if (!at) continue;
     const [x, y] = map(at);
@@ -15163,7 +15242,12 @@ function popsDraw(rp, i, live) {
     const c = dtColor(dtype);
     if (c) el.style.setProperty("--pop-dt", c);
     el.textContent = Math.round(amount).toLocaleString();
-    el.title = `${DT(dtype)} · ${tr(kind)}`;
+    // THE ROW THIS NUMBER IS. `id` is the event's own place in the stream, so
+    // a number on the scene and a line in the table below are the same thing
+    // under the same name — which is what one-to-one has to mean to be worth
+    // claiming (owner, 2026-08-27).
+    el.dataset.rpevent = e.id;
+    el.title = `${DT(dtype)} · ${tr(kind)} · #${e.id}`;
     host.appendChild(el);
     if (live) el.addEventListener("animationend", () => el.remove());
   }

@@ -5607,6 +5607,10 @@ fn event_json(e: &wfsim_engine::record::Event) -> Value {
             }
             m.insert("pool".into(), json!(d.pool.name()));
             m.insert("type".into(), json!(d.dtype.name()));
+            // WHAT THE GAME DRAWS THIS AS — crit, headcrit, status tick, the
+            // radial half of a blast. It decides the floating number's colour
+            // and size, and it is on the ROW because the row IS that number.
+            m.insert("pop_kind".into(), json!(d.kind));
             if let Some(p) = &d.part {
                 m.insert("part".into(), json!(p));
                 m.insert("head".into(), json!(d.head));
@@ -6112,32 +6116,6 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             // that five more were hit and not followed. A cap nobody is told
             // about reads as "that is everyone".
             "tracked": rep.tracked,
-            // THE FLOATING NUMBERS, per frame. This is the one part of a
-            // replay that is an EVENT rather than a curve — `{t, body, amount,
-            // dtype, kind}` — and nothing else here can be turned into one
-            // afterwards, which is why it is carried rather than derived.
-            //
-            // BOUNDED BY CONSTRUCTION: twelve a frame, biggest kept, and the
-            // count of what did not fit beside them. 600 frames x 12 is ~7,200
-            // numbers against the ~320,000 damage instances a dense fight
-            // actually deals, so this rides along at a few tens of KB rather
-            // than at megabytes — and a replay never reaches the disk anyway
-            // (AGENTS.md, "A MEASUREMENT COSTS ITS SUMMARY").
-            //
-            // The DROPPED count travels because a cap that is not stated reads
-            // as "that is everyone".
-            "pops": rep.frames.iter().map(|f| json!({
-                "n": f.pops_dropped,
-                // …AND WHICH POOL IT CAME OUT OF, since 2026-08-27. A hit on a
-                // shielded body pops TWO of these — the half the shield stops
-                // and the Toxin half that goes straight through — which is what
-                // the game shows, so the page has to be able to tell them
-                // apart to draw them the way a player saw them.
-                "v": f.pops.iter().map(|p| json!([
-                    r1(p.t as f64), p.body, r1(p.amount as f64), p.dtype.name(), p.kind,
-                    p.pool.name(),
-                ])).collect::<Vec<_>>(),
-            })).collect::<Vec<_>>(),
             "dstacks": (0..rep.tracked.len())
                 .map(|b| {
                     (0..wfsim_engine::dummy::DEBUFF_ROSTER.len())

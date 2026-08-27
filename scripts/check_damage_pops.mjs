@@ -7,15 +7,23 @@
 // reading identically as an average.
 //
 // WHICH IS ALSO WHY IT IS THE EASIEST THING HERE TO FAKE. A layer that floated
-// plausible numbers over the bodies would look exactly right and mean nothing,
-// so every assertion below ties what is ON SCREEN to what the ENGINE said: the
-// text of a number must be one the replay's own `pops` carries, and it must sit
-// over the body that took it.
+// plausible numbers over the bodies would look exactly right and mean nothing.
 //
-// THE CAP IS PART OF THE FEATURE. The engine keeps the twelve biggest numbers
-// of a frame and counts the rest — the game caps its own display the same way
-// ("a maximum of 10 tick numbers are shown at once") — so a frame that dropped
-// any must SAY so. A cap nobody is told about reads as "that is everyone".
+// SO THE PROPERTY IS ONE-TO-ONE, AND IT IS CHECKED BY NAME (owner, 2026-08-27).
+// The engine used to carry a `Replay.pops` buffer beside the combat record —
+// the same nine damage sites written down twice, capped by two different rules
+// — so a number could float over a body with no row to explain it and a row
+// could name a number that never appeared. Both were "the engine's", so a
+// check that only asked "is this text one the engine produced" passed on it.
+// There is ONE stream now: every drawn number carries `data-rpevent`, the id of
+// the row it IS, and this asserts that the row exists, that its effective
+// damage is the text on screen, and that it belongs to the frame being shown.
+// An overlay drawing plausible numbers now has to forge an id as well.
+//
+// THE CAP IS PART OF THE FEATURE and it moved with the stream: it is a DISPLAY
+// decision now, twelve a frame with the biggest kept, made where the numbers
+// are drawn. A frame that dropped any must SAY so — a cap nobody is told about
+// reads as "that is everyone".
 
 import { openApp } from "./cdp.mjs";
 
@@ -54,43 +62,74 @@ const r = await evaluate(`(async () => {
   out.hasReplay = !!(rp && rp.t && rp.t.length > 1);
   if (!out.hasReplay) return out;
 
-  // ---- 1. THE ENGINE CARRIES THEM ---------------------------------------
-  const pops = rp.pops || [];
-  out.frames = pops.length;
-  out.sameLength = pops.length === rp.t.length;
-  const all = pops.flatMap((f) => f.v || []);
-  out.count = all.length;
-  out.dropped = pops.reduce((n, f) => n + (f.n || 0), 0);
-  out.perFrameMax = Math.max(0, ...pops.map((f) => (f.v || []).length));
-  out.kinds = [...new Set(all.map((p) => p[4]))].sort();
-  out.bodies = [...new Set(all.map((p) => p[1]))].sort((a, b) => a - b);
+  // ---- 0. THE REPLAY NO LONGER CARRIES A SECOND ACCOUNT -------------------
+  // The negative control for the whole change: if \`pops\` came back on the wire
+  // there would be two lists again, and every assertion below would pass just
+  // as happily against the wrong one.
+  out.noPopBuffer = rp.pops === undefined;
+
+  // ---- 1. REACHING FOR THE REPLAY ASKS FOR THE RECORD ---------------------
+  // The numbers ARE the record, so a scrub is what fetches it — deliberately
+  // not the result, whose stream would be megabytes on a dense build.
+  const scrub = document.getElementById('rp-scrub');
+  out.beforeScrub = !(recordState && recordState.events);
+  scrub.value = '0';
+  scrub.dispatchEvent(new Event('input'));
+  for (let i = 0; i < 60 && !(recordState && recordState.events); i++) await sleep(500);
+  out.recordArrived = !!(recordState && recordState.events);
+  if (!out.recordArrived) return out;
+
+  const fs = rp.frame_seconds;
+  const nf = rp.t.length;
+  const frameOf = (t) => Math.min(nf - 1, Math.max(0, Math.ceil(t / fs) - 1));
+  const rows = recordState.events.filter((e) =>
+    e.kind === 'damage' && e.body != null && e.effective > 0);
+  out.rows = rows.length;
+  out.dropped = recordState.dropped || 0;
+  out.kinds = [...new Set(rows.map((e) => e.pop_kind))].sort();
+  out.bodies = [...new Set(rows.map((e) => e.body))].sort((a, b) => a - b);
   // EVERY NUMBER IS POSITIVE AND INSIDE THE CLOCK. A zero would be a number
   // nobody would see and a negative one would be a bug wearing a number's
   // clothes.
-  out.allPositive = all.every((p) => p[2] > 0);
-  out.allInClock = all.every((p) => p[0] >= 0 && p[0] <= rp.t[rp.t.length - 1] + 1e-6);
+  out.allPositive = rows.every((e) => e.effective > 0);
+  out.allInClock = rows.every((e) => e.t >= 0 && e.t <= rp.t[nf - 1] + 1e-6);
+  // …AND EVERY ROW HAS A NAME OF ITS OWN, which is what the overlay points at.
+  out.idsUnique = new Set(rows.map((e) => e.id)).size === rows.length;
 
-  // ---- 2. THE PAGE DRAWS THEM, AND THEY ARE THE ENGINE'S ------------------
-  // Scrub to the frame with the most numbers, which is the one that exercises
-  // both the layout and the cap.
-  let best = 0;
-  pops.forEach((f, i) => { if ((f.v || []).length > (pops[best].v || []).length) best = i; });
+  // ---- 2. THE PAGE DRAWS THEM, AND EACH ONE NAMES ITS ROW -----------------
+  // Scrub to the busiest frame, which is the one that exercises both the
+  // layout and the cap.
+  const per = new Map();
+  for (const e of rows) {
+    const i = frameOf(e.t);
+    per.set(i, (per.get(i) || 0) + 1);
+  }
+  let best = 0, bestN = 0;
+  for (const [i, n] of per) if (n > bestN) { best = i; bestN = n; }
   out.bestFrame = best;
-  out.bestCount = (pops[best].v || []).length;
-  const scrub = document.getElementById('rp-scrub');
+  out.bestCount = bestN;
   scrub.value = String(best);
   scrub.dispatchEvent(new Event('input'));
-  await sleep(300);
+  await sleep(400);
   const layer = document.querySelector('#rp-scene .rp-pops');
   out.hasLayer = !!layer;
   const drawn = layer ? [...layer.querySelectorAll('.rp-pop')] : [];
   out.drawn = drawn.length;
-  // THE TEXT MUST BE THE ENGINE'S. Every drawn number (bar the "+N more" chip)
-  // has to be one this frame actually popped.
-  const want = new Set((pops[best].v || []).map((p) => Math.round(p[2]).toLocaleString()));
-  const got = drawn.filter((el) => !el.classList.contains('p-more'))
-    .map((el) => el.textContent);
-  out.everyDrawnIsReal = got.length > 0 && got.every((tx) => want.has(tx));
+  const byId = new Map(rows.map((e) => [String(e.id), e]));
+  const numbers = drawn.filter((el) => !el.classList.contains('p-more'));
+  out.drawnNumbers = numbers.length;
+  // ONE-TO-ONE, BY NAME. Not "the text is a number the engine produced" — the
+  // id has to resolve to a row, that row's damage has to be the text, and the
+  // row has to belong to the frame on screen.
+  out.everyDrawnNamesItsRow = numbers.length > 0 && numbers.every((el) => {
+    const e = byId.get(el.dataset.rpevent || '');
+    return !!e
+      && el.textContent === Math.round(e.effective).toLocaleString()
+      && frameOf(e.t) === best;
+  });
+  // …AND NO ROW IS DRAWN TWICE, which is the other direction of the same claim.
+  out.noDuplicates =
+    new Set(numbers.map((el) => el.dataset.rpevent)).size === numbers.length;
   // …AND IT MUST BE INSIDE THE SCENE. A number placed off-canvas is a number
   // nobody sees, which is the failure a screenshot would not catch either.
   const sceneEl = document.getElementById('rp-scene');
@@ -107,12 +146,16 @@ const r = await evaluate(`(async () => {
   out.rollCall = ((shownResult.r || {}).bodies || []).length;
 
   // ---- 3. THE CAP IS STATED ----------------------------------------------
-  const capped = pops.findIndex((f) => (f.n || 0) > 0);
+  let capped = -1;
+  for (const [i, n] of per) if (n > 12) { capped = i; break; }
   out.hasCappedFrame = capped >= 0;
+  out.perFrameMax = Math.max(0, ...[...per.values()]);
   if (capped >= 0) {
     scrub.value = String(capped);
     scrub.dispatchEvent(new Event('input'));
-    await sleep(300);
+    await sleep(400);
+    const shown = document.querySelectorAll('#rp-scene .rp-pops .rp-pop:not(.p-more)');
+    out.cappedDrawn = shown.length;
     out.saysMore = !!document.querySelector('#rp-scene .rp-pops .p-more');
   }
 
@@ -121,37 +164,80 @@ const r = await evaluate(`(async () => {
   // distinction a scrub either piles up hundreds of numbers or shows none.
   scrub.value = String(best);
   scrub.dispatchEvent(new Event('input'));
-  await sleep(200);
+  await sleep(300);
   const once = document.querySelectorAll('#rp-scene .rp-pops .rp-pop').length;
   scrub.dispatchEvent(new Event('input'));
-  await sleep(200);
+  await sleep(300);
   out.scrubReplaces =
     document.querySelectorAll('#rp-scene .rp-pops .rp-pop').length === once;
+
+  // ---- 5. THE TABLE BELOW IS THE SAME STREAM ------------------------------
+  // The claim this whole thing rests on, asserted rather than assumed: the
+  // panel that LISTS the rows and the layer that DRAWS them read one array.
+  const host = document.getElementById('rec-host');
+  // The table shows ONE body at a time — a reload belongs to nobody and a
+  // per-enemy view is a filter over the one stream — so the comparison is
+  // against the body whose chip is selected.
+  const sel = host && host.querySelector('.pchip.sel[data-recbody]');
+  out.tablePick = sel ? Number(sel.dataset.recbody) : null;
+  out.tableRows = host ? host.querySelectorAll('tr.rec-dmg').length : -1;
+  out.tableIsTheStream = out.tablePick != null && out.tableRows === recordState.events
+    .filter((e) => e.kind === 'damage' && e.body === out.tablePick).length;
+  // …AND THE TWO VIEWS MEET ON THE ID. Every number drawn over the body the
+  // table is showing must be findable as a LINE in it, by name.
+  const mine = numbers.filter((el) => {
+    const e = byId.get(el.dataset.rpevent || '');
+    return e && e.body === out.tablePick;
+  });
+  out.drawnForPick = mine.length;
+  out.tableHasEveryDrawn = mine.length > 0 && mine.every((el) =>
+    !!host.querySelector('tr[data-recevent="' + el.dataset.rpevent + '"]'));
   return out;
 })()`);
 
 check("the run produced a replay", r.hasReplay === true);
-check("the engine carries one pop entry per frame", r.sameLength === true,
-  `${r.frames} vs the clock`);
-check("...and the fight popped numbers", r.count > 20, `${r.count} numbers`);
-check("...never more than twelve in a frame", r.perFrameMax <= 12, `${r.perFrameMax}`);
+check("the replay carries NO second account of the numbers", r.noPopBuffer === true,
+  "rp.pops must be gone — one stream, not two");
+check("the record is not fetched with the result", r.beforeScrub === true);
+check("...and reaching for the replay asks for it", r.recordArrived === true);
+check("...and the fight wrote rows", r.rows > 20, `${r.rows} rows`);
 check("...every one positive", r.allPositive === true);
 check("...every one inside the clock", r.allInClock === true);
+check("...every one with an id of its own", r.idsUnique === true);
 check("more than one KIND of number", (r.kinds || []).length >= 2, (r.kinds || []).join(","));
 check("...and they land on more than one body",
   (r.bodies || []).length >= 2, `bodies ${(r.bodies || []).join(",")}`);
 
-check("the scene has a pop layer", r.hasLayer === true, `scene=${r.hasScene} rollCall=${r.rollCall} bodies=${(r.bodies||[]).join(",")}`);
-check("...it draws this frame's numbers", r.drawn > 0, `${r.drawn} of ${r.bestCount}`);
-check("...and every one of them is a number the ENGINE popped",
-  r.everyDrawnIsReal === true);
+check("the scene has a pop layer", r.hasLayer === true,
+  `scene=${r.hasScene} rollCall=${r.rollCall} bodies=${(r.bodies || []).join(",")}`);
+check("...it draws this frame's numbers", r.drawnNumbers > 0,
+  `${r.drawnNumbers} of ${r.bestCount}`);
+check("...and every one of them NAMES the record row it is",
+  r.everyDrawnNamesItsRow === true,
+  "id resolves, damage matches, frame matches");
+check("...and no row is drawn twice", r.noDuplicates === true);
+// THE OTHER DIRECTION, and the one a shrunken list slips past. "Every number
+// on screen is a row" is satisfied perfectly by drawing ONE of them, which is
+// the shape of the bug this whole change was about: two lists over one fight,
+// where the smaller one looked right. So the frame's rows must ALL be drawn,
+// up to the display cap and not one short of it.
+check("...and every row in the frame is drawn, up to the cap",
+  r.drawnNumbers === Math.min(12, r.bestCount),
+  `${r.drawnNumbers} drawn of ${r.bestCount} rows in frame ${r.bestFrame}`);
 check("...placed inside the scene", r.allInside === true);
 check("...and the layer never eats a click", r.layerIgnoresPointer === true);
 
+check("no frame shows more than twelve",
+  !r.hasCappedFrame || r.cappedDrawn <= 12, `${r.cappedDrawn}`);
 check("a frame that dropped numbers SAYS so",
   !r.hasCappedFrame || r.saysMore === true,
-  r.hasCappedFrame ? `dropped ${r.dropped}` : "no frame hit the cap in this fight");
+  r.hasCappedFrame ? `busiest frame ${r.perFrameMax}` : "no frame hit the cap in this fight");
 check("scrubbing REPLACES rather than piling up", r.scrubReplaces === true);
+check("the table below lists the SAME stream the scene draws",
+  r.tableIsTheStream === true,
+  `${r.tableRows} rows in the table for body ${r.tablePick}`);
+check("...and every number on the scene is a LINE in it, by id",
+  r.tableHasEveryDrawn === true, `${r.drawnForPick} drawn for that body`);
 
 // ---- AND A SINGLE-TARGET FIGHT IS THE SAME PANEL ---------------------------
 //
@@ -167,14 +253,13 @@ check("scrubbing REPLACES rather than piling up", r.scrubReplaces === true);
 // draws for it. This asserts the panel does not change shape with the body
 // count, which is the property, not the pops.
 const one = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   history.pushState({}, '', '/weapons/Braton_Prime/simulator'); route();
-  await new Promise(r => setTimeout(r, 6000));
+  await sleep(6000);
   sim.formation = [];
   sim.runs = 20;
   document.getElementById('run-sim').click();
-  for (let i = 0; i < 90 && !document.getElementById('rp-scene'); i++) {
-    await new Promise(r => setTimeout(r, 700));
-  }
+  for (let i = 0; i < 90 && !document.getElementById('rp-scene'); i++) await sleep(700);
   const sc = document.getElementById('rp-scene');
   const rp = (shownResult && shownResult.r && shownResult.r.replay) || {};
   const out = {
@@ -183,17 +268,24 @@ const one = await evaluate(`(async () => {
     svg: !!(sc && sc.querySelector('.ar-svg')),
     roll: document.querySelectorAll('.rp-roll tr').length,
   };
+  const scrub = document.getElementById('rp-scrub');
+  scrub.value = '0';
+  scrub.dispatchEvent(new Event('input'));
+  for (let i = 0; i < 60 && !(recordState && recordState.events); i++) await sleep(500);
+  const rows = (recordState && recordState.events || [])
+    .filter((e) => e.kind === 'damage' && e.body != null && e.effective > 0);
   // A FRAME THAT ACTUALLY POPPED, found rather than guessed: most frames of a
   // 20 s fight are between shots.
-  const idx = (rp.pops || []).findIndex((f) => f && (f.v || []).length);
-  out.hasPops = idx >= 0;
+  const fs = rp.frame_seconds, nf = (rp.t || []).length;
+  const frameOf = (t) => Math.min(nf - 1, Math.max(0, Math.ceil(t / fs) - 1));
+  const idx = rows.length ? frameOf(rows[0].t) : -1;
+  out.hasRows = rows.length > 0;
   if (sc && idx >= 0) {
-    const scrub = document.getElementById('rp-scrub');
     scrub.value = String(idx);
     scrub.dispatchEvent(new Event('input'));
-    await new Promise(r => setTimeout(r, 600));
+    await sleep(600);
     out.drawn = sc.querySelectorAll('.rp-pop').length;
-    out.engineCount = (rp.pops[idx].v || []).length;
+    out.engineCount = rows.filter((e) => frameOf(e.t) === idx).length;
   }
   return out;
 })()`);
@@ -203,7 +295,7 @@ check("...and it draws the same scene", one.scene === true && one.svg === true,
   JSON.stringify({ scene: one.scene, svg: one.svg }));
 check("...and the same roll call, one row long", one.roll === 1, String(one.roll));
 check("...and it pops numbers like any other fight",
-  one.hasPops === true && one.drawn > 0,
-  `${one.drawn} drawn of ${one.engineCount} the engine popped`);
+  one.hasRows === true && one.drawn > 0,
+  `${one.drawn} drawn of ${one.engineCount} rows in that frame`);
 
 await finish("the numbers a fight pops");

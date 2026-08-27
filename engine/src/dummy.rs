@@ -483,11 +483,10 @@ pub struct Settled {
 /// THE LEDGER OF ONE INSTANCE'S MITIGATION — up to three numbers and every
 /// factor behind each.
 ///
-/// Filled by [`TargetState::apply`] only while a replay is being traced, and
-/// read by [`RunResult::pop_settled`] immediately afterwards. It lives on
-/// `RunResult` rather than on the return value for the cost reason above, and
-/// beside the `pops` buffer because the two are the same fact seen twice: the
-/// numbers that popped, and why each is the size it is.
+/// Filled by [`TargetState::apply`] only while the combat record is being
+/// taken, and read by [`log_damage`] immediately afterwards. It lives on
+/// `RunResult` rather than on the return value for the cost reason above:
+/// returning it measured +13.3% on a run nobody reads it for.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Breakdown {
     /// The shield-gate window's ×0.05, or 1. Outside every portion because it
@@ -1122,10 +1121,9 @@ impl TargetState {
         // game shows them and skipped where nothing landed, so `portions()` is
         // exactly the numbers that popped.
         //
-        // ONLY THE RUN BEING REPLAYED PAYS FOR THEM. This is the same rule
-        // `RunResult::pops_on` states one struct over, and for the same reason:
-        // the breakdown is read by exactly one consumer and a Monte Carlo pays
-        // for it 999 times out of 1000. Filling it unconditionally measured
+        // ONLY THE RUN BEING RECORDED PAYS FOR THEM. The breakdown is read by
+        // exactly one consumer — the combat record — and a Monte Carlo would
+        // pay for it 999 times out of 1000. Filling it unconditionally measured
         // +13.3% on `one_fight`'s four shapes with every answer unchanged —
         // a pure tax (2026-08-27).
         let mut out = Settled {
@@ -1138,7 +1136,7 @@ impl TargetState {
         };
         // EMPTIED FIRST — the slot is reused for every instance in the fight,
         // so a breakdown that only ever appended would grow into a record of
-        // the whole run and `pop_settled` would pop somebody else's numbers.
+        // the whole run and one instance's row would carry another's numbers.
         b.reset(gate, led_armor_effective, before);
         b.push(Portion {
             pool: Pool::Overguard,
@@ -2347,6 +2345,23 @@ impl DebuffState {
         aura_armor: f64,
     ) -> Mitigation {
         self.prune(now, status_damage);
+        self.amps(now, status_damage, puncture_strip_per, aura_armor)
+    }
+
+    /// THE AMPS ALONE, of a target already pruned at this instant.
+    ///
+    /// Split out because the pellet loop reads them ONCE PER INSTANCE and
+    /// prunes once per pellet: an explosion settles against the state its own
+    /// collision left, but the two are at the same instant `t`, so pruning
+    /// again could only be a no-op — an O(stacks) walk per instance, measured
+    /// at +4.6% on `one_fight` when `mitigation` was called instead.
+    fn amps(
+        &self,
+        now: f64,
+        status_damage: f64,
+        puncture_strip_per: f64,
+        aura_armor: f64,
+    ) -> Mitigation {
         Mitigation {
             disrupt_amp: ten_stack_amp(self.disrupt.len()),
             virus_amp: ten_stack_amp(self.virus.len()),
@@ -2929,11 +2944,6 @@ pub struct DummyParams {
 #[derive(Debug, Clone, Default)]
 pub struct Frame {
     pub t: f64,
-    /// The numbers that popped since the previous frame, biggest kept — see
-    /// [`PopBuf`]. `pops_dropped` is how many more there were, stated rather
-    /// than swallowed.
-    pub pops: Vec<Pop>,
-    pub pops_dropped: u32,
     /// The target's pools as they stood. A respawn (InstantRespawn) shows as
     /// them jumping back up, which is the truth of that scenario.
     pub overguard: f64,
@@ -3075,112 +3085,6 @@ pub enum PopKind {
     Extra,
     /// An arcane's own instance, and a syndicate proc's.
     Arcane,
-}
-
-/// ONE DAMAGE NUMBER, as the game pops it above a body.
-///
-/// This is the one output that is an EVENT rather than an aggregate. Every
-/// other thing the replay carries is a curve or a total; a floating number is a
-/// discrete thing that happened at a place at a time, and nothing else here can
-/// be turned into one after the fact.
-/// NOT serde-derived: `DamageType` is not `Serialize`, and the wire wants its
-/// NAME rather than whatever a derive would pick. `webapi` writes the tuple by
-/// hand, which is also what keeps the payload as short as it is.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Pop {
-    /// Seconds into the engagement.
-    pub t: f32,
-    /// Which body: 0 is the aimed one, 1.. index the formation, exactly as
-    /// `damage_by_body` and `Replay::follow` do.
-    pub body: u16,
-    pub amount: f32,
-    /// The type it read as. A mixed hit carries its DOMINANT component — see
-    /// `DamageVector::dominant` — because "what colour is this number" has no
-    /// exact answer for a vector. Carried as the TYPE and not as an index into
-    /// it: an index would couple the wire to `DamageType::ALL`'s order.
-    pub dtype: DamageType,
-    pub kind: PopKind,
-    /// WHICH POOL IT CAME OUT OF. A hit on a shielded body pops TWO of these —
-    /// the half a shield stops and the Toxin half that goes straight through —
-    /// which is what the game shows and what this engine reported as one number
-    /// until 2026-08-27.
-    pub pool: Pool,
-}
-
-/// HOW MANY NUMBERS ONE FRAME MAY CARRY.
-///
-/// The game caps its own display — the wiki says so for Toxin in as many words,
-/// "a maximum of 10 tick numbers are shown at once" — so a cap here is faithful
-/// rather than a shortcut. It is also unavoidable: the Larkspur Prime lands
-/// ~1,800 status procs a second on the group ruler and no screen shows 1,800
-/// numbers.
-///
-/// TWELVE, AND THE BIGGEST WIN. Keeping the first twelve of a frame would be
-/// arbitrary — which twelve depends on the order the engine happened to settle
-/// them in. A reader's eye goes to the big number, so that is what survives,
-/// and the count of what did not is kept beside it: an absence that is not
-/// stated reads as "that is everyone", which is this repo's own rule about
-/// caps.
-pub const POPS_PER_FRAME: usize = 12;
-
-/// The current frame's numbers, drained by the sampler.
-///
-/// A FIXED ARRAY because `RunResult` is `Copy` and is copied per run — the same
-/// reason `damage_by_body` is one. It holds ONE frame, never the engagement, so
-/// it cannot grow with the fight's length.
-#[derive(Debug, Clone, Copy)]
-pub struct PopBuf {
-    pops: [Pop; POPS_PER_FRAME],
-    len: u8,
-    /// How many this frame had beyond the twelve kept.
-    dropped: u32,
-}
-
-impl Default for PopBuf {
-    fn default() -> Self {
-        Self {
-            pops: [Pop {
-                t: 0.0,
-                body: 0,
-                amount: 0.0,
-                dtype: DamageType::Impact,
-                kind: PopKind::Direct,
-                pool: Pool::Health,
-            }; POPS_PER_FRAME],
-            len: 0,
-            dropped: 0,
-        }
-    }
-}
-
-impl PopBuf {
-    /// Keep it if it is bigger than the smallest one held.
-    fn push(&mut self, p: Pop) {
-        if (self.len as usize) < POPS_PER_FRAME {
-            self.pops[self.len as usize] = p;
-            self.len += 1;
-            return;
-        }
-        self.dropped += 1;
-        let mut min_i = 0;
-        for i in 1..POPS_PER_FRAME {
-            if self.pops[i].amount < self.pops[min_i].amount {
-                min_i = i;
-            }
-        }
-        if p.amount > self.pops[min_i].amount {
-            self.pops[min_i] = p;
-        }
-    }
-
-    /// Take this frame's numbers and reset for the next one.
-    fn drain(&mut self) -> (Vec<Pop>, u32) {
-        let out = self.pops[..self.len as usize].to_vec();
-        let dropped = self.dropped;
-        self.len = 0;
-        self.dropped = 0;
-        (out, dropped)
-    }
 }
 
 /// Frames in a replay, whatever the engagement length. 600 over 300 s is one
@@ -4148,69 +4052,6 @@ impl RunResult {
         self.note_kills(killed, at);
     }
 
-    /// RECORD ONE FLOATING NUMBER. Cheap and dead when no replay is tracing.
-    ///
-    /// Called beside `timeline.add` at every site where damage lands, which is
-    /// what makes the log complete: the timeline is the aggregate view of the
-    /// same nine events and the two cannot drift apart without one of the two
-    /// calls being dropped.
-    fn pop_from(
-        &mut self,
-        t: f64,
-        body: usize,
-        amount: f64,
-        dtype: DamageType,
-        kind: PopKind,
-        pool: Pool,
-    ) {
-        if !self.pops_on || amount <= 0.0 {
-            return;
-        }
-        self.pops.push(Pop {
-            t: t as f32,
-            body: body.min(u16::MAX as usize) as u16,
-            amount: amount as f32,
-            dtype,
-            kind,
-            pool,
-        });
-    }
-
-    /// RECORD WHAT ONE INSTANCE POPPED — one number per pool it landed in.
-    ///
-    /// THE GAME SHOWS THE SPLIT AND THIS ENGINE DID NOT. `apply` has always
-    /// routed the Toxin share past a shield and its siblings into it, and then
-    /// reported their sum; on a shielded Corpus unit that is one number where
-    /// the game pops two, so the one output that could be checked against a
-    /// recording could not be (owner, 2026-08-27).
-    ///
-    /// A SINGLE PORTION KEEPS THE CALLER'S TYPE, which is every instance in
-    /// every fight without shields and therefore every number this engine has
-    /// ever produced. It matters because a caller sometimes means something the
-    /// vector does not say — a lingering field pops as `Cinematic` — and only a
-    /// SPLIT has no honest single answer, so only a split overrides it.
-    fn pop_settled(
-        &mut self,
-        t: f64,
-        body: usize,
-        breakdown: &Breakdown,
-        dtype: DamageType,
-        kind: PopKind,
-    ) {
-        if !self.pops_on {
-            return;
-        }
-        match breakdown.portions() {
-            [] => {}
-            [one] => self.pop_from(t, body, one.effective, dtype, kind, one.pool),
-            many => {
-                for p in many {
-                    self.pop_from(t, body, p.effective, p.dtype, kind, p.pool);
-                }
-            }
-        }
-    }
-
     /// Record what a body took, growing the list as bodies appear in it.
     fn note_body_damage(&mut self, body: usize, eff: f64) {
         if let Some(slot) = self.damage_by_body.0.get_mut(body) {
@@ -4510,11 +4351,10 @@ impl SourceDamage {
 /// together or not at all — a fight where one was on and the other off would be
 /// two different accounts of one hit.
 fn watching<'a>(
-    r: &RunResult,
     rec: &crate::record::Record,
     breakdown: &'a mut Breakdown,
 ) -> Option<&'a mut Breakdown> {
-    (r.pops_on || rec.is_on()).then_some(breakdown)
+    rec.is_on().then_some(breakdown)
 }
 
 /// WHAT ONE DAMAGE INSTANCE WAS, from the attacker's side.
@@ -4555,8 +4395,8 @@ struct Instance<'a> {
 /// ARGUMENTS are never built: an `Instance` is assembled from a dozen locals at
 /// nine sites and a `TargetAt` re-runs the armour scaling curve, and paying for
 /// both on the 999 runs nobody reads measured +4.0% on `one_fight` (2026-08-27).
-fn recording(r: &RunResult, rec: &crate::record::Record) -> bool {
-    r.pops_on || rec.is_on()
+fn recording(rec: &crate::record::Record) -> bool {
+    rec.is_on()
 }
 
 /// THE ONE PLACE A DAMAGE INSTANCE IS WRITTEN DOWN — the floating numbers and
@@ -4570,7 +4410,6 @@ fn recording(r: &RunResult, rec: &crate::record::Record) -> bool {
 /// construction (see [`crate::record`]).
 #[allow(clippy::too_many_arguments)]
 fn log_damage(
-    r: &mut RunResult,
     rec: &mut crate::record::Record,
     t: f64,
     body: usize,
@@ -4581,10 +4420,6 @@ fn log_damage(
     debuffs: Option<&DebuffState>,
     inst: Instance<'_>,
 ) {
-    r.pop_settled(t, body, breakdown, dtype, kind);
-    if !rec.is_on() {
-        return;
-    }
     let stacks = debuffs.map(|d| d.sample(t)).unwrap_or_default();
     // WHAT THE SHOOTER HAD UP, held by the recorder the way the weapon is — see
     // `Record::set_stacks`. Sampling it here would mean threading a dozen run
@@ -4623,10 +4458,14 @@ fn log_damage(
                 pellet: inst.pellet,
                 radial: inst.radial,
                 pool: p.pool,
-                // A SINGLE PORTION KEEPS THE CALLER'S TYPE — the same rule
-                // `pop_settled` follows one function over, and for the same
-                // reason: only a split has no honest single answer.
+                // A SINGLE PORTION KEEPS THE CALLER'S TYPE, which is every
+                // instance in every fight without shields and therefore every
+                // number this engine has ever produced. It matters because a
+                // caller sometimes means something the vector does not say — a
+                // lingering field reads as `Cinematic` — and only a SPLIT has
+                // no honest single answer, so only a split overrides it.
                 dtype: if one { dtype } else { p.dtype },
+                kind,
                 part: inst.part.map(str::to_string),
                 head: inst.head,
                 crit_tier: inst.crit_tier,
@@ -4670,14 +4509,6 @@ fn add_by_type(
 /// Result of a single engagement.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct RunResult {
-    /// THE NUMBERS THIS FRAME POPPED — see [`PopBuf`]. Filled only while a
-    /// replay is being traced (`pops_on`), because it is the one thing here
-    /// that no aggregate can be turned back into and the one thing no other
-    /// consumer wants.
-    pub pops: PopBuf,
-    /// Whether to fill it at all. Off for the 999 runs nobody replays, so an
-    /// ordinary run pays one branch per damage instance and nothing else.
-    pub pops_on: bool,
     /// Raw damage dealt (pre-mitigation), direct hits + DoT ticks.
     pub total_damage: f64,
     /// Damage after target mitigation (overguard neutrality / armor DR).
@@ -5326,7 +5157,7 @@ fn fire_extra_hits(
             &params.target,
             false,
             mit,
-            watching(r, rec, &mut breakdown),
+            watching(rec, &mut breakdown),
         );
         let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
         r.total_damage += raw;
@@ -5334,9 +5165,9 @@ fn fire_extra_hits(
         r.sources.extra_hit += eff;
         r.sources.extra_hit_by_type[ty as usize] += eff;
         r.timeline.add(at, eff);
-        if recording(r, rec) {
+        if recording(rec) {
             log_damage(
-                r, rec, at, 0, ty, PopKind::Extra, &breakdown, settled, Some(debuffs),
+                rec, at, 0, ty, PopKind::Extra, &breakdown, settled, Some(debuffs),
                 Instance {
                     origin: crate::record::Origin::ExtraHit,
                     // THE TRIGGERING HIT'S OWN DAMAGE is the base, and the four
@@ -5643,7 +5474,7 @@ fn drain_area_procs(
                 fp,
                 false,
                 &mit,
-                watching(r, rec, &mut breakdown),
+                watching(rec, &mut breakdown),
             );
             let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
             r.total_damage += dmg;
@@ -5652,9 +5483,9 @@ fn drain_area_procs(
             r.note_body_damage(j, eff);
             r.sources.add_status(hit.shares.dominant(), eff);
             r.timeline.add(at_now, eff);
-            if recording(r, rec) {
+            if recording(rec) {
                 log_damage(
-                    r, rec, at_now, j, hit.shares.dominant(), PopKind::BlastArea,
+                    rec, at_now, j, hit.shares.dominant(), PopKind::BlastArea,
                     &breakdown, settled, Some(dbf),
                     Instance {
                         origin: crate::record::Origin::Splash,
@@ -6072,7 +5903,7 @@ fn settle_procs(
                         foe,
                         false,
                         &mit,
-                        watching(r, rec, &mut breakdown),
+                        watching(rec, &mut breakdown),
                     );
                     let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
                     r.total_damage += total;
@@ -6080,9 +5911,9 @@ fn settle_procs(
                     r.dot_damage += eff;
                     r.sources.add_status(DamageType::Blast, eff);
                     r.timeline.add(at, eff);
-                    if recording(r, rec) {
+                    if recording(rec) {
                         log_damage(
-                            r, rec, at, 0, DamageType::Blast, PopKind::Blast,
+                            rec, at, 0, DamageType::Blast, PopKind::Blast,
                             &breakdown, settled, Some(debuffs),
                             Instance {
                                 origin: crate::record::Origin::Status,
@@ -6300,7 +6131,7 @@ fn settle_procs(
                 foe,
                 false,
                 mit,
-                watching(r, rec, &mut breakdown),
+                watching(rec, &mut breakdown),
             );
             let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
             r.total_damage += amt;
@@ -6308,9 +6139,9 @@ fn settle_procs(
             r.sources.arcane_on_status += eff;
             r.sources.arcane_by_type[proc as usize] += eff;
             r.timeline.add(at, eff);
-            if recording(r, rec) {
+            if recording(rec) {
                 log_damage(
-                    r, rec, at, 0, proc, PopKind::Arcane, &breakdown, settled,
+                    rec, at, 0, proc, PopKind::Arcane, &breakdown, settled,
                     Some(debuffs),
                     Instance {
                         origin: crate::record::Origin::Arcane,
@@ -6608,7 +6439,7 @@ fn spread_hit(
         &spec.params,
         false,
         &mit,
-        watching(r, rec, &mut breakdown),
+        watching(rec, &mut breakdown),
     );
     let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
     r.total_damage += raw;
@@ -6616,9 +6447,9 @@ fn spread_hit(
     r.timeline.add(t, eff);
     // A SPREAD INSTANCE IS A WHOLE VECTOR, so the number reads as its biggest
     // component — see `DamageVector::dominant`. Computed only while tracing.
-    if recording(r, rec) {
+    if recording(rec) {
         log_damage(
-            r, rec, t, inst.target, shares.dominant(),
+            rec, t, inst.target, shares.dominant(),
             if inst.headshot { PopKind::Head } else { PopKind::Direct },
             &breakdown, settled, Some(&foe.debuffs),
             Instance {
@@ -7473,7 +7304,7 @@ fn fire_syndicate_radial(
         &params.target,
         false,
         &mit,
-        watching(r, rec, &mut breakdown),
+        watching(rec, &mut breakdown),
     );
     let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
     r.total_damage += amt;
@@ -7481,9 +7312,9 @@ fn fire_syndicate_radial(
     r.sources.syndicate += eff;
     r.sources.syndicate_by_type[sy.element as usize] += eff;
     r.timeline.add(at, eff);
-    if recording(r, rec) {
+    if recording(rec) {
         log_damage(
-            r, rec, at, 0, sy.element, PopKind::Arcane, &breakdown, settled,
+            rec, at, 0, sy.element, PopKind::Arcane, &breakdown, settled,
             Some(debuffs),
             Instance {
                 origin: crate::record::Origin::Arcane,
@@ -7876,7 +7707,7 @@ fn field_tick(
         foe,
         false,
         &mit,
-        watching(r, rec, &mut breakdown),
+        watching(rec, &mut breakdown),
     );
     let (effective, killed, broke) = (settled.effective, settled.killed, settled.broken);
     r.total_damage += raw;
@@ -7884,9 +7715,9 @@ fn field_tick(
     r.sources.field += effective;
     add_by_type(&mut r.sources.field_by_type, &qvec, effective, &col);
     r.timeline.add(at, effective);
-    if recording(r, rec) {
+    if recording(rec) {
         log_damage(
-            r, rec, at, 0, DamageType::Cinematic, PopKind::Field, &breakdown, settled,
+            rec, at, 0, DamageType::Cinematic, PopKind::Field, &breakdown, settled,
             Some(debuffs),
             Instance {
                 origin: crate::record::Origin::Field,
@@ -8311,7 +8142,7 @@ fn process_ticks(
             p,
             ignores_armor,
             &mit,
-            watching(r, rec, &mut breakdown),
+            watching(rec, &mut breakdown),
         );
         let (effective, killed, broke) = (settled.effective, settled.killed, settled.broken);
         r.total_damage += value;
@@ -8322,10 +8153,10 @@ fn process_ticks(
         r.note_body_damage(body, effective);
         r.sources.add_status(src, effective);
         r.timeline.add(now, effective);
-        if recording(r, rec) {
+        if recording(rec) {
             let was = rec.attribute_to((seeded_by != u32::MAX).then_some(seeded_by));
             log_damage(
-                r, rec, now, body, src,
+                rec, now, body, src,
                 if src == DamageType::Blast { PopKind::Blast } else { PopKind::Status },
                 &breakdown, settled, Some(debuffs),
                 Instance {
@@ -9473,11 +9304,6 @@ pub fn run_once_traced(
     let mut opening_closed = false;
     let mut r = RunResult {
         rng_state: started_at,
-        // THE NUMBERS ARE ONLY COLLECTED FOR THE ONE RUN THAT IS REPLAYED.
-        // 999 of a thousand runs are summed and thrown away, and a floating
-        // number is the one output nobody sums — so the collector is off for
-        // them and an ordinary instance pays a single branch.
-        pops_on: trace.is_some(),
         ..Default::default()
     };
     // ROUNDS FIRED SINCE THE MAGAZINE WAS FILLED, which is what says when a
@@ -9964,15 +9790,8 @@ pub fn run_once_traced(
                         combo_at(combo_spec, params.combo_held, combo_count,
                             combo_last_hit, next_frame),
                     );
-                    // THE FRAME TAKES THIS FRAME'S NUMBERS AND EMPTIES THE
-                    // BUFFER. Drained HERE, at the one place that advances time,
-                    // so a number belongs to the frame it happened in and cannot
-                    // be counted twice.
-                    let (pops, pops_dropped) = r.pops.drain();
                     rep.frames.push(Frame {
                         t: next_frame,
-                        pops,
-                        pops_dropped,
                         overguard: target.overguard,
                         shield: target.shield,
                         health: target.health,
@@ -10989,10 +10808,20 @@ pub fn run_once_traced(
             } else {
                 1.0
             };
-            // Live target-side state for THIS pellet (earlier pellets'
-            // procs already count): mitigation amps, Cold's flat crit
-            // damage received, and Condition Overload's type count.
-            let mit = debuffs.mitigation(t, status_damage, ap.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
+            // EXPIRE WHAT HAS RUN OUT, before anything reads a stack count.
+            //
+            // It used to happen as a side effect of taking the mitigation
+            // snapshot here; the snapshot moved into the stage loop, and the
+            // per-pellet reads below — Cold's flat crit damage received and
+            // Condition Overload's type count — went with it by accident,
+            // counting a stack that had already expired. `mitigation` still
+            // prunes and pruning is idempotent, so this is the one call that
+            // decides WHEN, rather than a second copy of the rule.
+            debuffs.prune(t, status_damage);
+            // Live target-side state for THIS pellet (earlier pellets' procs
+            // already count): Cold's flat crit damage received, and Condition
+            // Overload's type count. The MITIGATION amps are read one level
+            // further in — see the stage loop.
             // Crit damage: resolved multiplier + Cold's flat bonus received
             // + Sharpened Bullets' live on-kill buff + the arcane's
             // assumed-max conditional (Outburst).
@@ -11490,6 +11319,28 @@ pub fn run_once_traced(
             for stage in 0..(1 + radial_stage.is_some() as usize) {
                 let rad = if stage == 1 { radial_stage } else { None };
                 let direct = rad.is_none();
+                // EVERY INSTANCE RE-READS THE TARGET — not every shot, and not
+                // even every pellet (owner measured it, 2026-08-27).
+                //
+                // A pellet that carries an explosion is TWO instances, and the
+                // explosion settles against the state its own collision left
+                // one instant earlier: a weapon forcing a Viral proc on both
+                // halves pops `200 / 1,200 / 450 / 1,500`, which is the ladder
+                // read at 0 / 1 / 2 / 3 stacks. Reading it once per pellet gave
+                // `200 / 600 / 450 / 1,350` — each explosion sharing its
+                // collision's snapshot, a step behind all fight. It is a few
+                // per cent on a status build, always in the direction of "this
+                // build is good", and invisible in every mean this engine
+                // reports; the combat record is what made it visible, because
+                // the row states the stacks it read.
+                // `a_volley_settles_pellet_by_pellet_and_each_instance_re_reads_the_target`
+                // is the golden test.
+                let mit = debuffs.amps(
+                    t,
+                    status_damage,
+                    ap.armor_strip_per_puncture,
+                    params.squad.enemy_armor_multiplier,
+                );
                 // A MISSED PELLET DEALS NOTHING AND DOES NOTHING. Skipping the
                 // stage rather than zeroing its damage is the whole point: the
                 // status draw, the gauge charge, the on-hit buffs and the combo
@@ -11858,7 +11709,7 @@ pub fn run_once_traced(
                     &params.target,
                     false,
                     &mit,
-                    watching(&r, rec, &mut breakdown),
+                    watching(rec, &mut breakdown),
                 );
                 let (effective, killed, broke) =
                     (settled.effective, settled.killed, settled.broken);
@@ -12369,9 +12220,8 @@ pub fn run_once_traced(
                     // else it needs was snapshotted at the moment it landed
                     // (`before`, `breakdown`, `settled`), so waiting costs nothing and
                     // buys the one column a reader checks a status build with.
-                    if recording(&r, rec) {
+                    if recording(rec) {
                         log_damage(
-                            &mut r,
                             rec,
                             t,
                             0,
@@ -21111,6 +20961,128 @@ mod tests {
         assert_eq!(quiet.shots, forced.shots, "a forced proc does not move the cadence");
     }
 
+    /// A VOLLEY SETTLES PELLET BY PELLET, AND EVERY INSTANCE RE-READS THE
+    /// TARGET — measured in game (owner, 2026-08-27).
+    ///
+    /// A weapon whose pellets each carry an explosion, one Viral damage mod, an
+    /// effect forcing a Viral proc on every instance, 110% multishot, and a
+    /// body with no mitigation at all. Four numbers popped, and the target
+    /// finished on four Viral stacks:
+    ///
+    /// ```text
+    /// 200   450   1200   1500
+    /// ```
+    ///
+    /// # The order is FORCED by the arithmetic
+    ///
+    /// The two instances are 200 and 600 — the weapon's own 1:3 — and Viral is
+    /// +100% on the first stack and +25% on each after it, so the ladder an
+    /// instance can read is 1 / 2 / 2.25 / 2.5. Divide the four numbers by the
+    /// two bases and exactly one assignment survives:
+    ///
+    /// | # | instance | stacks BEFORE it | Viral | damage |
+    /// |---|---|---|---|---|
+    /// | 1 | pellet 1 direct | 0 | x1.00 | 200 |
+    /// | 2 | pellet 1 radial | 1 | x2.00 | 1,200 |
+    /// | 3 | pellet 2 direct | 2 | x2.25 | 450 |
+    /// | 4 | pellet 2 radial | 3 | x2.50 | 1,500 |
+    ///
+    /// 200 cannot be an explosion (that would need x0.667, and stacks only
+    /// climb) and neither can 450 (x0.75, below the x2.00 the second number has
+    /// already used), so the two small numbers are the COLLISIONS and the two
+    /// large ones the EXPLOSIONS. From there only one ordering has multipliers
+    /// that climb.
+    ///
+    /// # It pins three things, and the third is why it is a golden test
+    ///
+    /// * **PELLET-MAJOR.** A pellet resolves its own explosion before the next
+    ///   pellet's collision. Stage-major — every collision, then every
+    ///   explosion — would put pellet 2's direct second at `200 x 2.00 = 400`,
+    ///   which is not one of the four numbers, while `600 x 2.00 = 1,200` is.
+    /// * **AN INSTANCE DOES NOT AMPLIFY ITSELF.** The first collision reads
+    ///   x1.00: its own forced proc lands after it has been settled.
+    /// * **EVERY INSTANCE RE-READS THE TARGET** — not every shot, and not even
+    ///   every pellet. Pellet 1's explosion already reads the stack pellet 1's
+    ///   collision left one instant earlier. A mitigation snapshot hoisted out
+    ///   of the instance loop for speed would leave every number in a volley
+    ///   reading the stacks the volley STARTED with; on a status build that is
+    ///   a few per cent, in the direction of "this build is good", and it is
+    ///   invisible in every mean this engine reports.
+    #[test]
+    fn a_volley_settles_pellet_by_pellet_and_each_instance_re_reads_the_target() {
+        let mut blast = DamageVector::default();
+        blast.set(DamageType::Impact, 600.0);
+        let p = DummyParams {
+            damage: DamageVector::new().with(DamageType::Impact, 200.0),
+            // FORCED ON BOTH HALVES, which is what makes the fourth stack the
+            // fourth instance's and the ladder one step per row.
+            forced_procs: vec![DamageType::Viral],
+            radial: Some(crate::loadout::ResolvedRadial {
+                forced_procs: crate::damage::ForcedProcs::from_types([DamageType::Viral]),
+                damage: blast,
+                modified_base: 600.0,
+                // AT THE EPICENTRE, so the explosion's number is its own and
+                // not a falloff curve's.
+                falloff_reduction: 0.0,
+                ..radial_of(0.0, 0.0)
+            }),
+            // EXACTLY TWO PELLETS, so the volley is four instances every time.
+            multishot: 2.0,
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            status_chance: 0.0,
+            base_status_chance: 0.0,
+            arcane: ArcaneFx::none(),
+            body_parts: mono_body(1.0),
+            // NOTHING IN THE WAY — no shield, no armour, no overguard, no
+            // vulnerability column — so each number is its base times Viral and
+            // the arithmetic above is the whole of it.
+            target: frail_target(TargetMode::InfiniteHealth, 0.0, 0.0),
+            // ONE TRIGGER PULL inside the window: a second volley would start
+            // from the stacks the first one left.
+            fire_rate: 1.0,
+            duration_seconds: 0.5,
+            magazine_size: 100.0,
+            ..no_status()
+        };
+
+        let rec = record(&p, 0, 0.0, f64::INFINITY, 1_000);
+        let rows: Vec<(Option<u32>, bool, f64)> = rec
+            .events()
+            .iter()
+            .filter_map(|e| match &e.kind {
+                crate::record::Kind::Damage(d) => Some((d.pellet, d.radial, d.effective)),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(rows.len(), 4, "one volley is four numbers: {rows:?}");
+
+        let want = [
+            (Some(1), false, 200.0),
+            (Some(1), true, 1200.0),
+            (Some(2), false, 450.0),
+            (Some(2), true, 1500.0),
+        ];
+        for (i, (pellet, radial, damage)) in want.iter().enumerate() {
+            let (gp, gr, gd) = rows[i];
+            assert_eq!(
+                (gp, gr),
+                (*pellet, *radial),
+                "row {} is pellet {pellet:?} {} — a volley settles pellet by \
+                 pellet, got {rows:?}",
+                i + 1,
+                if *radial { "radial" } else { "direct" }
+            );
+            assert!(
+                (gd - damage).abs() < 0.5,
+                "row {} (pellet {pellet:?} {}) is {damage}, got {gd} — the \
+                 whole volley: {rows:?}",
+                i + 1,
+                if *radial { "radial" } else { "direct" }
+            );
+        }
+    }
+
     /// …AND IT IS NOT THE DIRECT HIT'S. The same weapon says one and not the
     /// other, so a shared list would be wrong for whichever it was not written
     /// for.
@@ -22016,19 +21988,6 @@ mod tests {
     /// version of this did, passing identically with the guard removed.
     ///
     /// Measured: 48,000 with the guard, 47,400 without — sixteen burnt ticks.
-    /// EVERY DAMAGE SITE POPS A NUMBER, and the log cannot drift from the
-    /// curve.
-    ///
-    /// A `pop` sits beside every `timeline.add` — nine of them — because the
-    /// timeline is the AGGREGATE view of exactly the same nine events. So a
-    /// tenth damage site added later without a `pop` shows up here as damage
-    /// that moved a curve and popped nothing.
-    ///
-    /// It cannot be an equality: the buffer keeps the twelve BIGGEST numbers a
-    /// frame and counts the rest, which is what the game itself does ("a
-    /// maximum of 10 tick numbers are shown at once"). So the property is
-    /// COVERAGE — every frame that gained damage popped or dropped something —
-    /// and it is exact in the direction that matters.
     /// THE RECORD IS THE WHOLE FIGHT — every number, and nothing invented.
     ///
     /// This is the assertion the combat record exists for, and it is the one
@@ -22236,53 +22195,60 @@ mod tests {
             ..no_status()
         };
         let s = monte_carlo(&p, 4, 11);
-        let rep = replay(&p, s.median_run.rng_state, 40);
-        let pops: Vec<Pop> = rep
-            .frames
+        let state = s.median_run.rng_state;
+        let rec = record(&p, state, 0.0, f64::INFINITY, 1_000_000);
+        let rows: Vec<&crate::record::Damage> = rec
+            .events()
             .iter()
-            .flat_map(|f| f.pops.iter().copied())
+            .filter_map(|e| match &e.kind {
+                crate::record::Kind::Damage(d) => Some(&**d),
+                _ => None,
+            })
             .collect();
-        assert!(!pops.is_empty(), "the fixture lands hits");
+        assert!(!rows.is_empty(), "the fixture lands hits");
 
-        let shield: Vec<&Pop> = pops.iter().filter(|p| p.pool == Pool::Shield).collect();
-        let health: Vec<&Pop> = pops.iter().filter(|p| p.pool == Pool::Health).collect();
+        let shield: Vec<&&crate::record::Damage> =
+            rows.iter().filter(|d| d.pool == Pool::Shield).collect();
+        let health: Vec<&&crate::record::Damage> =
+            rows.iter().filter(|d| d.pool == Pool::Health).collect();
         assert!(
             !shield.is_empty() && !health.is_empty(),
-            "one pellet, two numbers: {} on the shield, {} through it",
+            "one pellet, two rows: {} on the shield, {} through it",
             shield.len(),
             health.len()
         );
         // …AND THEY ARE TOLD APART BY WHAT THEY ARE. The half a shield stops is
         // the physical one; the half that goes through is Toxin.
         assert!(
-            shield.iter().all(|p| p.dtype == DamageType::Impact),
+            shield.iter().all(|d| d.dtype == DamageType::Impact),
             "the shield half reads Impact"
         );
         assert!(
-            health.iter().all(|p| p.dtype == DamageType::Toxin),
+            health.iter().all(|d| d.dtype == DamageType::Toxin),
             "the half that got through reads Toxin"
         );
         // …AND THEY ARE DIFFERENT SIZES, because only one of them met armour.
         // Equal numbers would mean the split was cosmetic.
-        let (a, b) = (shield[0].amount, health[0].amount);
+        let (a, b) = (shield[0].effective, health[0].effective);
         assert!(
             (a - b).abs() > 1e-3,
             "the two halves take different mitigation: {a} vs {b}"
         );
 
-        // NO DAMAGE WAS INVENTED. The pops of one instance sum to what the
+        // NO DAMAGE WAS INVENTED. The two rows of one instance sum to what the
         // damage meter counted — which is the property that makes this a
         // presentation fix and not a rebalance.
-        let popped: f64 = pops.iter().map(|p| f64::from(p.amount)).sum();
-        let last = rep.frames.last().expect("frames").damage;
+        let same = run_once(&p, &mut Rng::new(state));
+        let sum: f64 = rows.iter().map(|d| d.effective).sum();
         assert!(
-            (popped - last).abs() / last < 2e-6,
-            "popped {popped} vs meter {last}"
+            (sum - same.effective_damage).abs() / same.effective_damage < 1e-9,
+            "rows {sum} vs meter {}",
+            same.effective_damage
         );
     }
 
     #[test]
-    fn every_frame_that_took_damage_popped_a_number() {
+    fn every_frame_that_took_damage_wrote_a_row() {
         // A build that exercises several of the nine at once: a direct hit, a
         // crit, a weak point, a Slash bleed and a Heat tick.
         let mut p = DummyParams {
@@ -22292,45 +22258,62 @@ mod tests {
         p.base_crit_chance = 0.5;
         p.crit_multiplier = 2.0;
         let rep = replay(&p, 0, 60);
+        let rec = record(&p, 0, 0.0, f64::INFINITY, 1_000_000);
+        assert_eq!(rec.dropped(), 0, "the cap is not what this is measuring");
+        let rows: Vec<(f64, &crate::record::Damage)> = rec
+            .events()
+            .iter()
+            .filter_map(|e| match &e.kind {
+                crate::record::Kind::Damage(d) => Some((e.t, &**d)),
+                _ => None,
+            })
+            .collect();
 
+        // ONE FRAME IS ONE HALF-OPEN SLICE OF THE CLOCK, and a frame's damage
+        // is what the curve gained over it — so a frame that gained damage and
+        // holds no row is a damage site that moved a curve and wrote nothing.
         let mut frames_with_damage = 0;
-        let mut frames_with_pops = 0;
+        let mut frames_with_rows = 0;
         let mut prev = 0.0;
+        let mut prev_t = 0.0;
         for f in &rep.frames {
             let gained = f.damage - prev;
             prev = f.damage;
+            let (from, to) = (prev_t, f.t);
+            prev_t = f.t;
             if gained <= 1e-9 {
                 continue;
             }
             frames_with_damage += 1;
-            if !f.pops.is_empty() || f.pops_dropped > 0 {
-                frames_with_pops += 1;
+            if rows.iter().any(|(t, _)| *t > from - 1e-9 && *t <= to + 1e-9) {
+                frames_with_rows += 1;
             }
         }
         assert!(frames_with_damage > 5, "the fixture deals damage: {frames_with_damage}");
         assert_eq!(
-            frames_with_damage, frames_with_pops,
-            "{} frames gained damage and {} popped a number — a damage site \
-             without a `pop` beside its `timeline.add`",
-            frames_with_damage, frames_with_pops
+            frames_with_damage, frames_with_rows,
+            "{} frames gained damage and {} carry a row — a damage site              without a `log_damage` beside its `timeline.add`",
+            frames_with_damage, frames_with_rows
         );
 
         // …AND THE KINDS ARE TOLD APART. A run with crits, weak points and a
         // DoT must produce more than one kind, or the classifier is a constant.
         let kinds: std::collections::BTreeSet<PopKind> =
-            rep.frames.iter().flat_map(|f| f.pops.iter().map(|p| p.kind)).collect();
+            rows.iter().map(|(_, d)| d.kind).collect();
         assert!(kinds.len() >= 2, "a fight has more than one kind of number: {kinds:?}");
         assert!(
             kinds.contains(&PopKind::Status),
             "a Slash bleed and a Heat tick are statuses: {kinds:?}"
         );
 
-        // …AND NOTHING POPS WHEN NOBODY IS WATCHING. The collector is off for
-        // the 999 runs that are summed and thrown away, which is what keeps it
-        // free — asserted because "it is only on while tracing" is exactly the
-        // kind of claim that quietly stops being true.
-        let plain = run_once(&p, &mut Rng::new(0));
-        assert!(!plain.pops_on, "an untraced run collects nothing");
+        // …AND NOTHING IS WRITTEN DOWN WHEN NOBODY IS READING. The recorder is
+        // off for the 999 runs that are summed and thrown away, which is what
+        // keeps it free — asserted because "it is only on while recording" is
+        // exactly the kind of claim that quietly stops being true.
+        let mut off = crate::record::Record::off();
+        assert!(!off.is_on(), "an untraced run collects nothing");
+        run_once_traced(&p, &mut Rng::new(0), None, &mut off);
+        assert!(off.events().is_empty(), "and it collected nothing");
     }
 
     #[test]

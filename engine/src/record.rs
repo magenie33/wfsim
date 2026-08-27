@@ -211,6 +211,15 @@ pub struct Damage {
     /// Which pool it came out of, and what colour it read as.
     pub pool: crate::dummy::Pool,
     pub dtype: DamageType,
+    /// WHAT KIND OF NUMBER THE GAME DRAWS THIS AS — a crit, a headcrit, a
+    /// status tick, a blast's radial. It is what decides the number's colour
+    /// and size on screen, so it travels on the row that IS that number.
+    ///
+    /// Not derivable from the fields around it, which is why it is stored: a
+    /// blast on the body that carried the stack and the radial it throws at
+    /// everything else are the same [`Origin`], the same pool and the same
+    /// type, and the game draws them differently.
+    pub kind: crate::dummy::PopKind,
     /// The body part it landed on, where the instance had one. A status tick
     /// and an explosion do not, and saying so is not the same as leaving it
     /// blank — see MEASUREMENTS M54 for the rule about which DoTs inherit a

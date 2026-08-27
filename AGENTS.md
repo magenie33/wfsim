@@ -1267,38 +1267,86 @@ around (decision 2026-07-31).
   on the page was right and the page said something else produced them. A test
   reads the RAW yaml (the grid is expanded into 361 positions at load) and
   asserts the prose quotes the field.
-- **A FIGHT POPS NUMBERS, AND THEY ARE EVENTS** (owner, 2026-08-22). Everything
-  else a replay carries is a CURVE — a pool falling, a stack count, a running
-  total — and an aggregate cannot tell one hit for 400,000 from twenty for
-  20,000. `Replay.pops` is the one output that is a discrete thing that happened
-  at a place at a time, which is why it is carried rather than derived.
-  A `pop` SITS BESIDE EVERY `timeline.add`, all nine of them, because the
-  timeline is the aggregate view of exactly those nine events — so the log and
-  the curve cannot drift without one of the two calls being dropped, and a tenth
-  damage site added later shows up as damage that moved a curve and popped
-  nothing.
-  BOUNDED BY THE GAME'S OWN CAP. Twelve a frame, biggest kept, and the count of
-  what did not fit — DE caps its display the same way ("a maximum of 10 tick
-  numbers are shown at once"), so the cap is faithful rather than a shortcut, and
-  it is unavoidable besides: a dense fight deals ~320,000 instances against 600
-  frames. Keeping the FIRST twelve would be arbitrary — which twelve depends on
-  the order the engine settled them in — so the BIGGEST survive, and the dropped
-  count is on screen because a cap nobody is told about reads as "that is
-  everyone".
-  IT COSTS THE OTHER 999 RUNS ONE BRANCH. `pops_on` is set only for the run that
-  is replayed; `PopBuf` is a fixed array because `RunResult` is `Copy`, and it
-  holds ONE frame, drained by the sampler at the only place that advances time.
+- **A FIGHT POPS NUMBERS, THEY ARE EVENTS, AND THERE IS ONE LIST OF THEM**
+  (owner, 2026-08-22; amended 2026-08-27). Everything else a replay carries is a
+  CURVE — a pool falling, a stack count, a running total — and an aggregate
+  cannot tell one hit for 400,000 from twenty for 20,000. A floating number is
+  the one output that is a discrete thing that happened at a place at a time,
+  which is why it is carried rather than derived.
+  IT IS THE COMBAT RECORD, REPLAYED. For five days it was a SECOND account of
+  it: `Replay.pops` beside `engine::record`, the same nine damage sites written
+  down twice, into two structures, shipped on two endpoints, capped by two
+  different rules. Both were filled by one `log_damage` call from one
+  `Breakdown`, so they could not disagree about a number they BOTH held — and
+  they held different SETS, because the overlay kept the twelve biggest of each
+  frame and the table kept the first N of the fight. So a number could float
+  over a body with no row to explain it, and a row could name a number that
+  never appeared. For a panel whose whole claim is "this is what happened",
+  ONE-TO-ONE IS THE CLAIM, and two lists cannot make it however carefully they
+  are filled from one place. It was asked for on day one — the floating numbers
+  replayed FROM the record, one thing serving two purposes — and built beside
+  the answer instead of as it.
+  THE CAP MOVED WITH IT AND IS NOW A DISPLAY DECISION, made in `popsDraw` where
+  the numbers are actually drawn: twelve a frame, biggest kept, the rest
+  counted. DE caps its own display the same way ("a maximum of 10 tick numbers
+  are shown at once"), so it is faithful rather than a shortcut, and it is
+  unavoidable besides — a dense fight deals ~320,000 instances against 600
+  frames. Keeping the FIRST twelve would be arbitrary; the dropped count is on
+  screen because a cap nobody is told about reads as "that is everyone".
+  IT COST NOTHING AND PAID FOR SOMETHING. Deleting `Pop`, `PopBuf`, `pops_on`,
+  `pop_from` and `pop_settled` took the per-instance write down to one, which
+  is what funded reading the target's amps ONCE PER INSTANCE below: the two
+  together measure **-1.5%** against the same `one_fight` baseline.
+  THE TWO VIEWS MEET ON AN ID. A drawn number carries `data-rpevent` and a table
+  line carries `data-recevent`, both the event's own place in the stream, so
+  "the same event" is a name rather than a coincidence of two numbers matching.
   ON THE PAGE it is a DOM overlay appended AFTER `mountArena`, never before —
   the mount takes the host over and rewrites it, so a layer created first is
   wiped by the scene it was meant to sit on. The analysis mount publishes
   `host.__arena` the way the canvas one always has, and the overlay puts that
   viewBox through the svg's own fit: ONE geometry, whatever the map says is where
   the body was drawn.
+  IT IS FETCHED ON A GESTURE. Pressing play or scrubbing is what asks for the
+  record; it does NOT ride along with the result, for the reason `/api/log` is a
+  query in the first place — a dense build's stream is megabytes and most runs
+  are never replayed.
   `node scripts/check_damage_pops.mjs` is the THIRTY-SIXTH check and it is
   written against the one thing that makes this feature easy to fake: a layer
   floating plausible numbers would look exactly right and mean nothing. Every
-  drawn number must be one the replay's own `pops` carries. Verified to bite —
-  nudging the text by 1% reddens it.
+  drawn number must NAME the record row it is — the id resolves, that row's
+  damage is the text on screen, and the row belongs to the frame being shown —
+  and every row in that frame must be drawn, up to the cap. The second half is
+  not decoration: "every number on screen is a row" is satisfied perfectly by
+  drawing ONE of them, which is the exact shape of the bug this replaced.
+  Verified to bite in both directions — offsetting the id by one reddens the
+  first, truncating a frame's list reddens the second.
+- **A VOLLEY HAS AN ORDER, AND EVERY INSTANCE RE-READS THE TARGET** (owner,
+  2026-08-27, MEASUREMENTS M62). Pellets leave the muzzle at one instant and
+  they do NOT settle at one instant: a pellet resolves its own explosion before
+  the next pellet's collision, and each of those four instances reads the target
+  as the one before it left it. A Laetum forcing a Viral proc on both halves
+  pops `200 / 1,200 / 450 / 1,500` — the Viral ladder read at 0 / 1 / 2 / 3
+  stacks — and no other assignment of those numbers to those instances survives
+  the arithmetic, which is what makes an ORDER measurable at all.
+  THE ENGINE READ IT ONCE PER PELLET and produced `200 / 600 / 450 / 1,350`:
+  the right order, with every explosion a step behind, sharing its collision's
+  snapshot. `DebuffState::amps` is read inside the STAGE loop now; `prune` stays
+  once per pellet, because the whole volley is at one instant `t` and pruning
+  again could only be a no-op — which is what makes the fix free (measured
+  **-1.5%** on `one_fight` alongside the `Replay.pops` deletion, every answer
+  unchanged on all four shapes).
+  AN INSTANCE DOES NOT AMPLIFY ITSELF: the first collision reads x1.00 because
+  its own forced proc lands after it has been settled.
+  IT WAS THE COMBAT RECORD THAT FOUND IT, and nothing else could have. Summed,
+  the four numbers are a 1.5% difference in a mean whose own standard error is
+  larger; a record ROW states the stacks it READ beside the number they
+  produced, so "600 at 0 stacks" and "1,200 at 1 stack" are two different
+  sentences rather than one average. This is the first bug the panel caught that
+  no aggregate in this app could express.
+  The golden test is
+  `a_volley_settles_pellet_by_pellet_and_each_instance_re_reads_the_target` and
+  it pins the four NUMBERS rather than the rule, so any of the three properties
+  regressing reddens it.
 - **PROGRESS BELONGS WHERE THE WORK IS BEING READ** (owner, 2026-08-22). The
   quick calc counted itself in exactly one place — the panel at the top of the
   page — and the LIST it was ranking said nothing. A pool of ninety mods at a
