@@ -3044,11 +3044,6 @@ pub struct Replay {
     /// they come from one place: [`DummyParams::buff_roster`].
     pub buffs: Vec<BuffSeries>,
     pub frames: Vec<Frame>,
-    /// One worked example per attack part — see [`HitAccount`]. First come,
-    /// first recorded: the first direct hit of the engagement and the first
-    /// explosion, which is enough to check both paths and cheap enough to do
-    /// inside the shot loop.
-    pub accounts: Vec<HitAccount>,
 }
 
 /// WHAT KIND OF NUMBER THIS IS, so a reader can tell a crit from a tick at a
@@ -3186,44 +3181,6 @@ impl PopBuf {
         self.dropped = 0;
         (out, dropped)
     }
-}
-
-/// ONE DAMAGE INSTANCE, FULLY DECOMPOSED — the account of a single hit.
-///
-/// Every other number this sim reports is an aggregate, and an aggregate hides
-/// an error inside an average: a factor applied twice, or in the wrong bracket,
-/// moves a mean by a few per cent and cannot be told from a build being good.
-/// This is the one output that can be FALSIFIED — every line is a factor with
-/// its value, the product is the number that went into the damage meter, and
-/// anyone with the wiki and a calculator can check it by hand (owner,
-/// 2026-08-11).
-///
-/// It is recorded from the MEDIAN ENGAGEMENT, the same run the replay plays
-/// back, so the account and the curves are the same fight.
-#[derive(Debug, Clone, Default)]
-pub struct HitAccount {
-    /// Which attack part: `direct`, `radial`.
-    pub source: &'static str,
-    /// The body part it landed on, and whether that part is a head.
-    pub part: String,
-    pub head: bool,
-    /// The crit TIER this instance rolled — 0 = no crit, 1 = crit, 2+ = red.
-    pub tier: u32,
-    /// When it happened, so it can be found in the replay.
-    pub t: f64,
-    /// The instance's own damage before anything below it: this attack part's
-    /// modded vector, divided by nothing. On a multishot weapon it is ONE
-    /// pellet's share.
-    pub base: f64,
-    /// `(what it is, the factor)`, in the order the engine applies them. A
-    /// factor of exactly 1.0 is kept rather than dropped — "faction ×1.00" is
-    /// the answer to "why is my Bane doing nothing", and a missing line is not.
-    pub steps: Vec<(&'static str, f64)>,
-    /// The product of `base` and every step — what the meter counts as dealt.
-    pub raw: f64,
-    /// …and what the target actually took, after armour, its damage-type
-    /// column and any attenuation. `raw / effective` is the mitigation.
-    pub effective: f64,
 }
 
 /// Frames in a replay, whatever the engagement length. 600 over 300 s is one
@@ -4775,12 +4732,6 @@ pub struct RunResult {
     pub first_magazine_damage: f64,
     /// The single biggest damage INSTANCE of the run — the number people chase.
     pub max_hit: f64,
-    /// Every hit sorted by what it was: `[head][tier]`, tier capped at 2 (red
-    /// and above share a bucket, since that is where the multiplier stops
-    /// naming itself). An impossible number stands out in a histogram and
-    /// disappears in a mean.
-    pub hit_count: [[u32; 3]; 2],
-    pub hit_damage: [[f64; 3]; 2],
     /// Effective damage by time bucket (the damage-over-time curve).
     pub timeline: Timeline,
     /// The `Rng` state this run STARTED from. SplitMix64 keeps all of its
@@ -9066,9 +9017,15 @@ mod pellet_volley {
         // that reached the meter — so this asserts the mechanic rather than a
         // consequence of it that a dozen other things also move.
         let factor = |mods: &[&str]| {
-            let rep = replay(&arbucep(mods), 12345, 20);
-            let a = rep.accounts.iter().find(|a| a.source == "direct").expect("a direct hit");
-            a.steps
+            let rec = record(&arbucep(mods), 12345, 0.0, f64::INFINITY, 5_000);
+            rec.events()
+                .iter()
+                .find_map(|e| match &e.kind {
+                    crate::record::Kind::Damage(d) if d.part.is_some() => Some(d.clone()),
+                    _ => None,
+                })
+                .expect("a direct hit")
+                .steps
                 .iter()
                 .find(|(n, _)| *n == "multishot-as-damage")
                 .map(|(_, v)| *v)
@@ -12075,15 +12032,9 @@ pub fn run_once_traced(
                 if !others.is_empty() {
                     r.note_body_damage(0, effective);
                 }
-                // WHAT KIND OF HIT THAT WAS. Sorted rather than averaged: a
-                // number that cannot happen stands out in a histogram and
-                // disappears in a mean. Tier is capped at 2 because that is
-                // where the multiplier stops naming itself — red and above
-                // share a bucket.
-                let bucket_row = usize::from(part.is_head);
-                let bucket_col = (tier as usize).min(2);
-                r.hit_count[bucket_row][bucket_col] += 1;
-                r.hit_damage[bucket_row][bucket_col] += effective;
+                // THE BIGGEST SINGLE NUMBER the build produced, which is a
+                // headline the Pace block reports and not an aggregate: it is
+                // the one instance nothing averages away.
                 if effective > r.max_hit {
                     r.max_hit = effective;
                 }
@@ -12096,7 +12047,7 @@ pub fn run_once_traced(
                 // combat record's row for this hit are the same list of
                 // factors, so it is built once and handed to both. Two lists
                 // would be two things to keep in step.
-                let hit_steps: Vec<crate::record::Step> = if rec.is_on() || trace.is_some() {
+                let hit_steps: Vec<crate::record::Step> = if rec.is_on() {
                     vec![
                         ("body part", part_factor),
                         ("critical", crit_multiplier),
@@ -12107,10 +12058,10 @@ pub fn run_once_traced(
                         ("Warframe ability", params.ability_final_at(t)),
                         ("beam ramp", beam_ramp),
                         // DOUBLE TAP and SYNTH CHARGE were applied and
-                        // never listed, which is the exact failure
-                        // `check_hit_account` exists to catch — it only
-                        // slipped because both are 1.0 in every build
-                        // the check had run.
+                        // never listed, which is the exact failure a ledger
+                        // exists to catch — it only slipped because both are
+                        // 1.0 in every build the check had run.
+                        // `check_combat_record` asks it of EVERY row now.
                         ("Double Tap", dt_mult),
                         ("Synth Charge", sc_mult),
                         ("Chamber (first round)", cc_mult),
@@ -12127,22 +12078,6 @@ pub fn run_once_traced(
                 } else {
                     Vec::new()
                 };
-                if let Some(rep) = trace.as_deref_mut() {
-                    let kind = if direct { "direct" } else { "radial" };
-                    if !rep.accounts.iter().any(|a| a.source == kind) {
-                        rep.accounts.push(HitAccount {
-                            source: kind,
-                            part: part.name.clone(),
-                            head: part.is_head,
-                            tier,
-                            t,
-                            base: qtotal,
-                            steps: hit_steps.clone(),
-                            raw,
-                            effective,
-                        });
-                    }
-                }
                 if direct {
                     // ONE PER LANDING PELLET. *"Weapons with Multishot will
                     // count each successful hit from the same shot as multiple
@@ -13196,7 +13131,6 @@ pub fn replay(params: &DummyParams, rng_state: u64, frames: usize) -> Replay {
         frame_seconds: (params.duration_seconds / frames as f64).max(1e-6),
         buffs: params.buff_roster(),
         frames: Vec::with_capacity(frames),
-        accounts: Vec::new(),
     };
     run_once_traced(
         params,
@@ -13320,10 +13254,6 @@ pub struct Summary {
     /// finite reserve it is the whole magazine's worth of a mod.
     pub damage_per_shot: f64,
     pub damage_per_pellet: f64,
-    /// EVERY HIT SORTED BY WHAT IT WAS: `[head][tier]`, summed over every run.
-    /// A number that cannot happen stands out here and vanishes in a mean.
-    pub hit_count: [[u32; 3]; 2],
-    pub hit_damage: [[f64; 3]; 2],
     /// Mean effective damage by source (the damage-meter view).
     pub source_damage: SourceDamage,
     /// The complete MEDIAN engagement (by total effective damage). The
@@ -13465,8 +13395,6 @@ pub struct Shard {
     max_hit_sum: f64,
     biggest: f64,
     ttks: Vec<f64>,
-    hit_count: [[u32; 3]; 2],
-    hit_damage: [[f64; 3]; 2],
     shots: u64,
     pellets: u64,
     crits: u64,
@@ -13514,8 +13442,6 @@ impl Default for Shard {
             max_hit_sum: 0.0,
             biggest: 0.0,
             ttks: Vec::new(),
-            hit_count: [[0; 3]; 2],
-            hit_damage: [[0.0; 3]; 2],
             shots: 0,
             pellets: 0,
             crits: 0,
@@ -13559,12 +13485,6 @@ impl Shard {
         self.max_hit_sum += o.max_hit_sum;
         self.biggest = self.biggest.max(o.biggest);
         self.ttks.extend_from_slice(&o.ttks);
-        for row in 0..2 {
-            for col in 0..3 {
-                self.hit_count[row][col] += o.hit_count[row][col];
-                self.hit_damage[row][col] += o.hit_damage[row][col];
-            }
-        }
         self.shots += o.shots;
         self.pellets += o.pellets;
         self.crits += o.crits;
@@ -13693,12 +13613,6 @@ pub fn shard(
         if let Some(at) = r.first_kill_at {
             a.ttks.push(at);
         }
-        for row in 0..2 {
-            for col in 0..3 {
-                a.hit_count[row][col] += r.hit_count[row][col];
-                a.hit_damage[row][col] += r.hit_damage[row][col];
-            }
-        }
         a.shots += u64::from(r.shots);
         a.pellets += u64::from(r.pellets);
         a.crits += u64::from(r.crits);
@@ -13742,7 +13656,6 @@ impl Shard {
             let i = ((v.len() as f64 - 1.0) * q).round() as usize;
             v[i.min(v.len() - 1)]
         };
-        let (hit_count, hit_damage) = (self.hit_count, self.hit_damage);
         let (shots, pellets, crits, big_crits) =
             (self.shots, self.pellets, self.crits, self.big_crits);
         let (crit_tier_sum, headshots) = (self.crit_tier_sum, self.headshots);
@@ -13815,8 +13728,6 @@ impl Shard {
         mean_max_hit: max_hit_sum / runs as f64,
         damage_per_shot: effective / (total_shots as f64).max(1.0),
         damage_per_pellet: effective / total_pellets,
-        hit_count,
-        hit_damage,
         source_damage: {
             let mut s = sources;
             s.direct /= n;
@@ -14879,7 +14790,6 @@ mod tests {
         assert_eq!(part.min_kills, whole.min_kills);
         assert_eq!(part.max_kills, whole.max_kills);
         assert_eq!(part.ttk_runs, whole.ttk_runs);
-        assert_eq!(part.hit_count, whole.hit_count);
         // …AND THE MEDIAN ENGAGEMENT, which the shard finds by ranking one
         // number per run and REPLAYING the winner.
         assert_eq!(

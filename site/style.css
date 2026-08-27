@@ -1520,14 +1520,6 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 /* THE ACCOUNT OF ONE HIT — a ledger, so it reads down a column and the
    products line up. Monospace figures on the right, because the whole point is
    that a reader can multiply them. */
-.accts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin:8px 0 4px}
-.acct{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-.acct-h{font-size:11px;color:var(--muted);margin-bottom:6px}
-.acct-t{width:100%;border-collapse:collapse;font-size:12px}
-.acct-t td{padding:2px 0}
-.acct-t td.mul{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;padding-left:12px}
-.acct-t tr.base td,.acct-t tr.sum td{font-weight:600}
-.acct-t tr.sum td{border-top:1px solid var(--line)}
 
 /* A BLOCK FOLDS. The caret turns, the body goes; the heading stays so the page
    keeps its shape and you can find the thing you closed. */
@@ -1549,13 +1541,6 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .modedef-l{font-size:11px;line-height:1.45;color:var(--text-2);max-width:60ch}
 /* EVERY HIT, SORTED. Tabular figures, because the whole point is comparing a
    column down its length. */
-.hits{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
-.hits th{text-align:right;color:var(--muted);font-weight:500;font-size:11px;padding:2px 0 4px}
-.hits th:first-child{text-align:left}
-.hits td{text-align:right;padding:3px 0;border-top:1px solid var(--line)}
-.hits td:first-child{text-align:left;color:var(--muted)}
-.hits td.z{color:var(--muted)}
-.hits .ct{display:block;font-size:10px;color:var(--muted)}
 .kpi .ksub{font-size:10px;color:var(--muted)}
 
 /* An option the scan has not reached yet. Muted and non-committal on purpose:

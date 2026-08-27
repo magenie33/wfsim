@@ -432,31 +432,57 @@ around (decision 2026-07-31).
   same damage over the time the trigger was actually down, and the check
   RECOMPUTES it rather than trusting it. Beside it: time to the first kill with
   its spread (a mean alone reads as a promise), the opening magazine, the
-  biggest single instance, damage per shot and per pellet. The HISTOGRAM is the
-  other half — every hit sorted by crit tier and body part, because the same
-  damage spread over "one in twelve hits did 40x" and "every hit did 3.3x" reads
-  identically as an average and is two different weapons, only one of them a
-  bug; its counts have to add up to the pellets that were fired. And every block
+  biggest single instance, damage per shot and per pellet. Its HISTOGRAM half was retired on
+  2026-08-27 when the combat record landed — six means of something a reader can
+  now read row by row. And every block
   folds and REMEMBERS across a re-render and a reload (owner, 2026-08-11) — a
   panel that re-opens everything on every Run Sim is a panel you re-close on
   every Run Sim, so the state lives outside the markup. It caught a real one on
   the way in: the opening window never closed on a weapon that TRANSMUTES
   instead of reloading, because it was recorded at the
   reload rather than at the refill.
-  `node scripts/check_hit_account.mjs` is the TWENTY-FOURTH: THE ACCOUNT OF ONE
-  HIT HAS TO MULTIPLY OUT. Every other number the sim reports is an aggregate,
-  and an aggregate hides an error inside an average — a factor applied twice, or
-  in the wrong bracket, moves a mean by a few per cent and reads as "this build
-  is good". The account is the one output that can be FALSIFIED (owner,
-  2026-08-11): one damage instance per attack part from the median engagement,
-  every factor listed with its value in the order the engine applies them, and
-  the product is the number that went into the damage meter. The check does the
-  arithmetic a reader would do, so a factor
-  applied and not listed — or listed and not applied — fails it. That is why the
-  account is written at the ONE site where every factor exists at the same time
-  rather than reconstructed afterwards. Verified to bite: dropping the crit line
-  gives 1,510 against a claimed 13,292. It also asserts the panel draws it, since
-  a ledger nobody can see is a ledger nobody checks.
+  `node scripts/check_combat_record.mjs` is the FORTIETH, and it REPLACED the
+  account-of-one-hit check that stood here (2026-08-27). The property is the
+  same and the scope is not: a ledger has to multiply out, asked of EVERY row of
+  the fight instead of two. `engine::record` is one ordered stream of everything
+  that happened — damage, shots, reloads, transmutes — where **a row is one
+  number the game POPS**, not one hit. That 1:1 with the screen is the whole
+  point: it is the only output of this app that can be laid beside a recording
+  and checked number for number, which for a product promising "matches in-game
+  measurements" is the final arbiter. A pellet landing on a shielded body pops
+  TWO numbers, because Toxin bypasses a shield and the rest does not.
+  IT IS THE WRITE PATH, NOT A REPORT. The stream is filled by the same call that
+  moves the target's pools, from the same numbers, which makes "the sum of the
+  record is the damage total" true by construction rather than by assertion.
+  What it is authoritative about is bounded and the bounds are in
+  `engine/src/record.rs`: WHAT happened by construction, WHY only half (a factor
+  NAME is a hand-written string and nothing ties `"critical"` to the 4.4 beside
+  it), and ONE engagement rather than a score.
+  THE CHECK DOES THE ARITHMETIC OFF THE SCREEN — it reads the factors as DRAWN,
+  multiplies them, and compares with the two totals the same row prints. It
+  found three real faults in the ledger it was written to check, all the same
+  shape: a factor applied and not named. The shield pool running out
+  mid-instance, the share of the instance that got past the shield at all, and
+  the Disrupt amp — which lives in the overflow because the overflow is measured
+  against amplified shield damage, and which also proved that Toxin's bypass and
+  a broken shield's leak cannot share one row: they both land in health and got
+  there by different chains. Verified to bite: dropping one factor from the wire
+  reddens three assertions.
+  A QUERY, NOT A PAYLOAD. `/api/log` is deliberately not a field on
+  `/api/simulate`. Measured 2026-08-27: an ordinary fight deals **2,000–5,000**
+  damage instances over 180 s and the densest build measured deals **408,817**,
+  so a log that rode along would be free on most builds and megabytes on exactly
+  the ones a player is most likely to be arguing about. Asking separately costs
+  ONE re-run of the engagement — about a millisecond single-target — and keeps
+  "A MEASUREMENT COSTS ITS SUMMARY" intact, because a record is never part of
+  the thing that gets saved. `/api/simulate` answers with the median run's RNG
+  state as two u32 halves, which is the handle that makes the log the report's
+  own fight rather than a similar one.
+  WHAT IT RETIRED. "Every hit, sorted" — six buckets of mean damage by crit tier
+  and body part — existed because the individual hits were not available, and
+  once every hit is a row with its own ledger, six means summarise something the
+  reader can simply read. It and `HitAccount` are gone from the engine, so
+  nothing is computed for a panel that no longer draws it.
   `node scripts/check_debuff_coverage.mjs` is the TWENTY-THIRD: the DEBUFF table
   is the BUFF table, read from the other side. The replay had always shown what
   the BUILD had up — live stacks, uptime, dead bands, the ramp — and said nothing

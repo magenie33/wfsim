@@ -1,26 +1,25 @@
-// WHAT A ROOM-CLEAR IS PACED BY, AND WHERE AN IMPOSSIBLE NUMBER HIDES.
+// WHAT A ROOM-CLEAR IS PACED BY — the TWENTY-FIFTH check, and every block
+// folding.
 //
-// Two blocks the result panel gained on 2026-08-11, and one affordance they
-// share.
+// `dps` is the whole engagement with its reloads in it: the honest number for a
+// long fight and the wrong one for a room. These are the others — the rate
+// while the trigger is actually down, how long the first body takes to fall,
+// what the magazine you walked in with was worth, the biggest single number the
+// build can produce — and burst DPS is RECOMPUTED here rather than trusted.
 //
-// PACE: `dps` is the whole engagement, reloads included — the honest number for
-// a long fight and the wrong one for a room. Burst DPS is the same damage over
-// the time the trigger was actually down, and the identity between them is
-// arithmetic this check does rather than trusts: damage / (fight − downtime).
+// IT USED TO CHECK A HISTOGRAM TOO, and does not since 2026-08-27: the six
+// buckets existed because the individual hits were not available, and the
+// combat record makes every one of them a row with its own ledger. What
+// replaced the property — "an impossible number cannot hide in a mean" — is
+// `check_combat_record.mjs`, which reads every row and does its arithmetic.
 //
-// HITS: a mean is where an impossible number goes to hide. The same damage
-// spread over "one in twelve hits did 40×" and "every hit did 3.3×" reads
-// identically as an average and is two different weapons — only one of them a
-// bug. So the histogram's counts must add up to the pellets that were fired,
-// and its damage must add up to what the meter counted.
+// AND EVERY BLOCK FOLDS AND REMEMBERS across a re-render and a reload: a panel
+// that re-opens everything on every Run Sim is a panel you re-close on every
+// Run Sim, so the state lives outside the markup.
 //
-// FOLDS: every block folds and REMEMBERS, across a re-render and a reload
-// (owner). A panel that re-opens everything on every Run Sim is a
-// panel you re-close on every Run Sim.
-//
+// Usage:
 //   node scripts/check_pace_and_hits.mjs
-//
-// Exits non-zero on the first failure.
+
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });
@@ -67,13 +66,6 @@ const r = await evaluate(`(async () => {
   out.shots = shot.shots;
   out.pellets = shot.pellets;
 
-  // ---- HITS -----------------------------------------------------------
-  const hits = shot.hits || [];
-  out.hitCount = hits.flat().reduce((a, b) => a + b.count, 0);
-  out.hitDamage = hits.flat().reduce((a, b) => a + b.damage, 0);
-  out.headRow = hits[1] ? hits[1].reduce((a, b) => a + b.count, 0) : -1;
-  out.critRow = hits.reduce((a, row) => a + row[1].count + row[2].count, 0);
-
   // ---- FOLDS ----------------------------------------------------------
   await sleep(300);
   const ids = [...document.querySelectorAll('#sim-results .fold')].map(f => f.dataset.fold);
@@ -107,19 +99,10 @@ check("per shot and per pellet agree with the shot count",
   Math.abs(r.perShot * r.shots - r.perPellet * r.pellets) / (r.perShot * r.shots) < 0.02,
   `${Math.round(r.perShot)}×${r.shots} vs ${Math.round(r.perPellet)}×${r.pellets}`);
 
-// The histogram is the MEAN over runs and `pellets` is the MEDIAN run's, so
-// they agree to within the spread rather than exactly — which is the honest
-// comparison between a mean and a median of the same thing.
-check("every hit is in the histogram",
-  Math.abs(r.hitCount - r.pellets) / r.pellets < 0.02,
-  `${r.hitCount.toFixed(1)} vs ${r.pellets} pellets`);
-check("...and the head row is not empty on a 100% headshot fight", r.headRow > 0, String(r.headRow));
-check("...with crits among them", r.critRow > 0, String(r.critRow));
-
 check("every block folds", (r.foldIds || []).length >= 5, String(r.foldIds));
 check("...open to begin with", r.openAtFirst === true);
 check("...shut when clicked", r.shutAfterClick === true && r.bodyHidden === true);
 check("...and still shut after a re-render", r.stillShut === true);
 check("...remembered across a reload", r.persisted === true);
 
-await app.finish("the pace, the histogram, and every block folding");
+await app.finish("the pace, and every block folding");

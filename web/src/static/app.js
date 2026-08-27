@@ -14227,80 +14227,18 @@ function speedMarkup(r) {
   return foldBlock("speed", tr("Pace"), tr("what a room-clear is paced by, as opposed to a long fight"), body);
 }
 
-// ---- EVERY HIT, SORTED BY WHAT IT WAS ----------------------------------
+// ---- WHAT USED TO BE HERE ---------------------------------------------
 //
-// A mean is where an impossible number goes to hide. The same damage spread
-// over "one in twelve hits did 40x" and "every hit did 3.3x" reads identically
-// as an average and is two completely different weapons — and only one of them
-// is a bug.
-function hitTableMarkup(r) {
-  const hits = r && r.hits;
-  if (!hits || !hits.length) return "";
-  const n = (x) => Math.round(x || 0).toLocaleString();
-  const TIERS = ["no crit", "crit", "red crit"];
-  const total = hits.flat().reduce((a, b) => a + b.count, 0);
-  if (!total) return "";
-  const row = (label, cells) =>
-    `<tr><td>${escHtml(label)}</td>${cells.map((c) => {
-      if (!c.count) return `<td class="z">—</td>`;
-      return `<td><b>${n(c.damage / c.count)}</b><span class="ct">${
-        n(c.count)} · ${((c.count / total) * 100).toFixed(1)}%</span></td>`;
-    }).join("")}</tr>`;
-  const body = `<table class="hits">
-    <tr><th></th>${TIERS.map((t) => `<th>${escHtml(tr(t))}</th>`).join("")}</tr>
-    ${row(tr("body"), hits[0])}
-    ${row(tr("head"), hits[1])}
-  </table>`;
-  return foldBlock("hits", tr("Every hit, sorted"),
-    tr("mean damage per hit and how often it happened — an impossible number hides in an average"), body);
-}
-
-// ---- THE ACCOUNT OF ONE HIT --------------------------------------------
+// "Every hit, sorted" and "The account of one hit" both stood here, and the
+// COMBAT RECORD below replaced them (owner, 2026-08-27). The account explained
+// two instances of an engagement; the record explains every one. The histogram
+// was the aggregate that existed because the individual hits were not
+// available — it sorted them into six buckets so an impossible number could not
+// hide in a mean — and once every hit is a row with its own ledger, six means
+// are a summary of something the reader can now simply read.
 //
-// Every other number on this page is an aggregate, and an aggregate hides an
-// error inside an average: a factor applied twice, or in the wrong bracket,
-// moves a mean by a few per cent and reads as "this build is good". This is the
-// one output that can be FALSIFIED — each line is a factor with its value, the
-// product is the number that went into the damage meter, and anyone with the
-// wiki and a calculator can check it (owner, 2026-08-11).
-//
-// It is the MEDIAN engagement's, the same run the replay plays back, so the
-// account and the curves are the same fight. A factor of exactly 1.00 is drawn
-// rather than dropped: "faction ×1.00" is the answer to "why is my Bane doing
-// nothing", and a missing line is not an answer.
-const TIER_NAME = ["no crit", "crit", "red crit", "orange crit", "purple crit"];
-function hitAccountsMarkup(r) {
-  const acc = (r && r.replay && r.replay.accounts) || [];
-  if (!acc.length) return "";
-  const n = (x) => Math.round(x || 0).toLocaleString();
-  const f = (x) => (Math.abs(x - 1) < 1e-9 ? "×1.00" : "×" + sig2(x));
-  const rows = acc.map((a) => {
-    const steps = a.steps
-      // A step that is exactly 1 and was NEVER going to be anything else is
-      // noise; one that could have moved is evidence. The line is kept when the
-      // build could produce it at all, which is what `mult !== 1` cannot say —
-      // so the rule is simpler: keep them all, and let the eye skip the ones.
-      .map((s) => `<tr><td>${escHtml(tr(s.label))}</td><td class="mul">${f(s.mult)}</td></tr>`)
-      .join("");
-    const mitigation = a.raw > 0 ? a.effective / a.raw : 1;
-    return `<div class="acct">
-      <div class="acct-h">${escHtml(tr(a.source === "direct" ? "direct hit" : "explosion"))}
-        · ${escHtml(a.part)}${a.head ? " ⌖" : ""}
-        · ${escHtml(tr(TIER_NAME[a.tier] || `crit ×${a.tier}`))}
-        · ${a.t.toFixed(2)}s</div>
-      <table class="acct-t">
-        <tr class="base"><td>${escHtml(tr("this instance's modded damage"))}</td><td class="mul">${n(a.base)}</td></tr>
-        ${steps}
-        <tr class="sum"><td>${escHtml(tr("dealt"))}</td><td class="mul">${n(a.raw)}</td></tr>
-        <tr><td>${escHtml(tr("the target's armour, column and attenuation"))}</td><td class="mul">${f(mitigation)}</td></tr>
-        <tr class="sum"><td>${escHtml(tr("taken"))}</td><td class="mul">${n(a.effective)}</td></tr>
-      </table>
-    </div>`;
-  }).join("");
-  return foldBlock("accounts", tr("The account of one hit"),
-    tr("every factor, in the order the engine applies them — the product is what the meter counted"),
-    `<div class="accts">${rows}</div>`);
-}
+// The engine lost `HitAccount` and the two `[[_; 3]; 2]` counters with them, so
+// nothing is being computed for a panel that no longer draws it.
 
 // ---- THE COMBAT RECORD -------------------------------------------------
 //
@@ -15380,7 +15318,7 @@ function renderResults(r, testedAt) {
       <div class="kpi-row">${kpis}</div>
       ${foldBlock("meter", tr("Damage by source"), "",
         `<div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${composition}`)}
-      ${speedMarkup(r)}${hitTableMarkup(r)}${hitAccountsMarkup(r)}${recordMarkup(r)}${chart}${replayCurves}
+      ${speedMarkup(r)}${recordMarkup(r)}${chart}${replayCurves}
       ${foldBlock("detail", tr("Detail"), "", `<div class="stat-table">${detail}</div>`)}
       ${ask}
     </div>`;

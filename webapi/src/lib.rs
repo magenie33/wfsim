@@ -6045,23 +6045,6 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
                 "headshot_rate": rep.frames.iter()
                     .map(|f| r3(f.headshots as f64 / pel(f))).collect::<Vec<_>>(),
             },
-            // THE ACCOUNT OF ONE HIT PER ATTACK PART — every factor with its
-            // value, in the order the engine applies them, so the product can
-            // be checked by hand against the wiki. The one output here that can
-            // be falsified rather than merely read.
-            "accounts": rep.accounts.iter().map(|a| json!({
-                "source": a.source,
-                "part": a.part,
-                "head": a.head,
-                "tier": a.tier,
-                "t": (a.t * 100.0).round() / 100.0,
-                "base": a.base,
-                "steps": a.steps.iter()
-                    .map(|(k, v)| json!({ "label": k, "mult": v }))
-                    .collect::<Vec<_>>(),
-                "raw": a.raw,
-                "effective": a.effective,
-            })).collect::<Vec<_>>(),
             "sources": rp_sources,
             // Per BUFF, not per frame: a flat array per series is what a chart
             // wants, and it compresses far better than 600 tiny objects.
@@ -6215,13 +6198,6 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         "damage_per_shot": s.damage_per_shot,
         "damage_per_pellet": s.damage_per_pellet,
         // EVERY HIT SORTED BY WHAT IT WAS — [head][tier], tier capped at 2.
-        // PER RUN, like `shots` and `pellets` beside it — the counts are summed
-        // over every run in the engine, and a payload that mixes per-run and
-        // total numbers is one a reader has to remember the units of.
-        "hits": (0..2).map(|row| (0..3).map(|col| json!({
-            "count": s.hit_count[row][col] as f64 / s.runs.max(1) as f64,
-            "damage": s.hit_damage[row][col] / s.runs.max(1) as f64,
-        })).collect::<Vec<_>>()).collect::<Vec<_>>(),
         "field_ticks": m.field_ticks,
         "damage_sources": damage_sources,
         "timeline": m.timeline.0[..nb].to_vec(),
