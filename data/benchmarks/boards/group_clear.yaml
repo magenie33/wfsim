@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 2990
+submissions: 3004
 engine: 6236e88e6b84aebaa78a8ffc7eb8ac27ae171a47
 entries:
   - weapon: acceltra_prime
@@ -1852,6 +1852,14 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: dread
     mode: cycle
+    score: 1407.9402279114934
+    fp: 052f7851dfae4813
+    exilus: vigilante_supplies
+    mods: [heavy_caliber, split_flights, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, thermite_rounds]
+    evolutions: [dread_evo1_incarnon_form, dread_hitmans_opportunity, dread_swift_deliverance, dread_zeroed_in]
+    arcanes: [primary_deadhead]
+  - weapon: dread
+    mode: cycle
     score: 1180.3333333333333
     fp: ef037e18afd43782
     mods: [primary_acuity, serration, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
@@ -1890,6 +1898,27 @@ entries:
     fp: 42b15fb4a964c411
     mods: [pistol_acuity, hornet_strike, primed_target_cracker, galvanized_crosshairs, galvanized_shot, creeping_bullseye, primed_convulsion, pistol_pestilence]
     arcanes: [secondary_deadhead]
+  - weapon: epitaph_prime
+    mode: alternate
+    score: 0.21959976652101823
+    fp: b459cc1d86c7315a
+    exilus: pistol_ammo_mutation
+    mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, pathogen_rounds]
+    arcanes: [secondary_enervate]
+  - weapon: epitaph_prime
+    mode: alternate
+    score: 0.17197364193160206
+    fp: b965f0b64c231829
+    exilus: pistol_ammo_mutation
+    mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, pathogen_rounds]
+    arcanes: [secondary_enervate]
+  - weapon: epitaph_prime
+    mode: alternate
+    score: 0.16691569901957964
+    fp: f00d5430463ff93b
+    exilus: pistol_ammo_mutation
+    mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, gunslinger, pathogen_rounds]
+    arcanes: [secondary_enervate]
   - weapon: felarx
     mode: cycle
     score: 4180.205817592369
@@ -3071,6 +3100,28 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, hollowed_bullets, magnetized_cycle, polar_magazine, primed_venomous_clip, primed_combustion_rounds]
     arcanes: [primary_deadhead, secondary_enervate]
     valence: magnetic
+  - weapon: kuva_hek
+    mode: alternate
+    score: 65.22612719396702
+    fp: 2944061800db349c
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, primed_ammo_stock, critical_deceleration, semi_shotgun_cannonade, riven, primed_charged_shell]
+    arcanes: [shotgun_vendetta]
+    valence: toxin
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: kuva_hek
+    mode: alternate
+    score: 61.42207100950414
+    fp: 2944061800db349c
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, primed_ammo_stock, critical_deceleration, semi_shotgun_cannonade, riven, primed_charged_shell]
+    arcanes: [shotgun_vendetta]
+    valence: toxin
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: kuva_hek
     mode: alternate
     score: 32.11046442674878

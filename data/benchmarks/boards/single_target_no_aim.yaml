@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 2990
+submissions: 3004
 engine: 6236e88e6b84aebaa78a8ffc7eb8ac27ae171a47
 entries:
   - weapon: acceltra_prime
@@ -1262,11 +1262,12 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: dread
     mode: cycle
-    score: 0.1089350838742402
-    fp: 2391d4f0c3c53fc1
-    mods: [amalgam_serration, galvanized_chamber, critical_delay, vigilante_fervor, vital_sense, unseen_dread, rime_rounds, malignant_force]
-    evolutions: [dread_evo1_incarnon_form, dread_hitmans_opportunity, dread_hitmans_hoard, dread_zeroed_in]
-    arcanes: [longbow_sharpshot]
+    score: 0.7406027182942826
+    fp: c22cab67512b7e7c
+    exilus: vigilante_supplies
+    mods: [heavy_caliber, split_flights, galvanized_aptitude, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, thermite_rounds]
+    evolutions: [dread_evo1_incarnon_form, dread_hitmans_opportunity, dread_swift_deliverance, dread_zeroed_in]
+    arcanes: [primary_deadhead]
   - weapon: dread
     mode: base
     score: 0.031084650833180315
@@ -1340,6 +1341,27 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, primed_pistol_gambit, lethal_torrent, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
     arcanes: [cascadia_flare]
+  - weapon: epitaph_prime
+    mode: alternate
+    score: 0.0826618181753532
+    fp: d8616afa47c80b8d
+    exilus: pistol_ammo_mutation
+    mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, pathogen_rounds]
+    arcanes: [secondary_enervate]
+  - weapon: epitaph_prime
+    mode: alternate
+    score: 0.0467229424862059
+    fp: d8e957321aefaa30
+    exilus: pistol_ammo_mutation
+    mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, gunslinger, pathogen_rounds]
+    arcanes: [secondary_enervate]
+  - weapon: epitaph_prime
+    mode: alternate
+    score: 0.04576025218419122
+    fp: 5594ebd64d28a58c
+    exilus: pistol_ammo_mutation
+    mods: [primed_fulmination, galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, anemic_agility, pathogen_rounds]
+    arcanes: [secondary_enervate]
   - weapon: epitaph_prime
     mode: base
     score: 0.04239953125510317
@@ -2109,6 +2131,28 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
     valence: heat
+  - weapon: kuva_hek
+    mode: alternate
+    score: 1.9490084290811451
+    fp: 3b8a335389427017
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, primed_ammo_stock, critical_deceleration, semi_shotgun_cannonade, riven, primed_charged_shell]
+    arcanes: [shotgun_vendetta]
+    valence: toxin
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: kuva_hek
+    mode: alternate
+    score: 1.635925083066763
+    fp: 3b8a335389427017
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, primed_ammo_stock, critical_deceleration, semi_shotgun_cannonade, riven, primed_charged_shell]
+    arcanes: [shotgun_vendetta]
+    valence: toxin
+    riven:
+      bonuses: [critical_chance, critical_damage, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: kuva_hek
     mode: base
     score: 0.9450419843724566
