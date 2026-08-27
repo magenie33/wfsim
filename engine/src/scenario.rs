@@ -85,6 +85,36 @@ pub enum AxisValue {
 /// — the lesson `docs/CATALOGS.md` records in another domain. A capability that
 /// needed its own data field would be a taxonomy inventing facts, not reading
 /// them.
+/// **WHY A WEAPON LACKS A CAPABILITY — and therefore whether a SCENARIO may
+/// argue with it** (owner, 2026-08-27).
+///
+/// The four capabilities are not the same kind of thing, and the difference
+/// decides what a scenario file is allowed to CLAIM:
+///
+///   * a GAME FACT is the game's own rule. A Sentinel cannot put a shot on a
+///     head; a scenario that said otherwise would produce a number nobody can
+///     reproduce in game, which is the opposite of this product's promise.
+///   * a HOUSE RULE is OURS. "Infinite ammo" is already a stand-in for ammo
+///     PICKUPS the sim has no entities for — the finite reserve is "the
+///     pessimistic half of a mechanic we only half have" (`parse_fight`). Which
+///     half a fight is scored under is a RULER'S CHOICE, and the official
+///     rulers already make it in prose: *"Ammo pickups are modelled. An entry
+///     that cannot be resupplied runs on its own reserve."*
+///
+/// SO OVERRIDES SIT BEHIND LEGALITY, and that is the whole guard: a scenario
+/// may say "in my fight, Arch-Guns have infinite ammo" and may not say "in my
+/// fight, Sentinels land headshots". Exactly one of today's four is a house
+/// rule, and it is the one the owner reached for first — which is a sign the
+/// distinction was already there and merely unwritten.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Absence {
+    /// The game's rule. A scenario may not override it.
+    GameFact,
+    /// Our own stand-in for something the sim does not model. A scenario may
+    /// override it per weapon class.
+    HouseRule,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Capability {
     /// The wielder decides whether to aim.
@@ -107,6 +137,23 @@ pub enum Capability {
     ///
     /// False only for a ground Arch-Gun, which is removed when empty.
     CanResupply,
+}
+
+impl Capability {
+    /// Is its absence the GAME's rule, or ours?
+    pub fn absence(self) -> Absence {
+        match self {
+            // A Sentinel really does aim, really does never aim at a head, and
+            // really has no reserve. None of the three is a simplification.
+            Capability::ChoosesAim | Capability::AimsAtHead | Capability::HasReserve => {
+                Absence::GameFact
+            }
+            // …but whether an unrefillable reserve should be SCORED as running
+            // dry is our question, not the game's: the game removes the weapon
+            // and the sim has no pickups either way. A scenario may pick.
+            Capability::CanResupply => Absence::HouseRule,
+        }
+    }
 }
 
 impl Capability {
@@ -221,6 +268,12 @@ pub const SCENARIO_AXES: &[ScenarioAxis] = &[
     // ---- the target ------------------------------------------------------
     ScenarioAxis { id: "enemy", kind: AxisKind::Id, group: Group::Target, requires: FREE },
     ScenarioAxis { id: "level", kind: AxisKind::Number { min: 1.0, max: 9999.0 }, group: Group::Target, requires: FREE },
+    // THE SCENARIO'S OWN HOUSE RULES, per weapon class — the field that makes a
+    // fight a complete document rather than one that describes the weapon in
+    // front of you (owner, 2026-08-27). It is FREE because it is about the
+    // OTHER classes: a rule for Arch-Guns is legible, editable and travels on a
+    // Burston's page, which is the whole point of it.
+    ScenarioAxis { id: "class_rules", kind: AxisKind::Structured, group: Group::Engagement, requires: FREE },
     ScenarioAxis { id: "steel_path", kind: AxisKind::Flag, group: Group::Target, requires: FREE },
     // NULL is a real third state — "whatever this unit is by default" — so the
     // page stores it as `null | true | false`. Only an explicit choice is
@@ -303,11 +356,7 @@ pub fn settled_for(
     axis: &ScenarioAxis,
     weapon_id: &str,
 ) -> Option<(AxisValue, &'static str)> {
-    let spec = crate::weapons_data::spec(weapon_id)?;
-    axis.requires
-        .iter()
-        .find(|r| !r.cap.of(spec))
-        .map(|r| (r.absent, r.cap.why_absent()))
+    settled_by(axis, weapon_id).map(|(v, why, _)| (v, why))
 }
 
 /// The axis with this id, for a caller holding a wire field.
@@ -315,9 +364,236 @@ pub fn axis(id: &str) -> Option<&'static ScenarioAxis> {
     SCENARIO_AXES.iter().find(|a| a.id == id)
 }
 
+/// **THE WEAPON CLASSES A SCENARIO RECORDS ITS RULES AGAINST** (owner,
+/// 2026-08-27), in the order a panel lists them.
+///
+/// The SLOT, and nothing invented beside it: a house rule is about a family of
+/// weapons that share a capability, and the slot is already the field that
+/// decides every capability there is — a companion weapon aims where its
+/// carrier looks because it is a companion weapon, an Arch-Gun is taken away
+/// when empty because it is an Arch-Gun.
+pub const WEAPON_CLASSES: &[&str] = &["primary", "secondary", "archgun", "sentinel"];
+
+/// Which class's rules this weapon reads.
+pub fn class_of(weapon_id: &str) -> Option<&'static str> {
+    let spec = crate::weapons_data::spec(weapon_id)?;
+    WEAPON_CLASSES.iter().copied().find(|c| *c == spec.slot)
+}
+
+/// What an axis is, for this weapon, under this scenario.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Resolution {
+    /// The scenario's own value for this axis applies, as typed.
+    Free,
+    /// A capability the weapon lacks settles it. `overridable` says whether a
+    /// class rule COULD have argued — a reader looking at a settled row wants
+    /// to know whether it is the game's answer or one they may change.
+    Settled { value: AxisValue, why: &'static str, overridable: bool },
+    /// The scenario's own class rule settles it, because what it argued with
+    /// was a house rule rather than a game fact.
+    ByScenario { value: AxisValue, cap_why: &'static str },
+    /// The scenario tried to argue with the GAME. Refused — the capability's
+    /// value runs — and said out loud, because a rule stated in a file and not
+    /// applied by the engine is worse than one that was never written: to
+    /// anyone auditing, it reads as if it were being applied.
+    Refused { value: AxisValue, why: &'static str, wanted: AxisValue },
+}
+
+impl Resolution {
+    /// What actually RUNS: the settled value where something settled it, and
+    /// otherwise the reader's own — which the caller passes in, since only the
+    /// caller has read the request.
+    ///
+    /// Generic on purpose. There is no per-axis code in this module and this is
+    /// the reason it can stay that way: a consumer holding a wire field and its
+    /// typed value gets the fight's answer without naming which axis it is.
+    pub fn value(self, readers: AxisValue) -> AxisValue {
+        match self {
+            Resolution::Free => readers,
+            Resolution::Settled { value, .. }
+            | Resolution::ByScenario { value, .. }
+            | Resolution::Refused { value, .. } => value,
+        }
+    }
+
+    /// Did anything but the reader decide this?
+    pub fn is_settled(self) -> bool {
+        !matches!(self, Resolution::Free)
+    }
+}
+
+impl AxisValue {
+    pub fn as_flag(self) -> Option<bool> {
+        match self {
+            AxisValue::Flag(b) => Some(b),
+            AxisValue::Number(_) => None,
+        }
+    }
+
+    pub fn as_number(self) -> Option<f64> {
+        match self {
+            AxisValue::Number(n) => Some(n),
+            AxisValue::Flag(_) => None,
+        }
+    }
+}
+
+/// **THE WHOLE RULE, IN ONE FUNCTION.**
+///
+/// `class_rule` is what this scenario says about this axis for THIS weapon's
+/// class — the caller looks it up, so this module stays free of the wire format
+/// and the function stays trivially testable.
+///
+/// OVERRIDES SIT BEHIND LEGALITY, which is the entire guard: a scenario may say
+/// "in my fight, Arch-Guns have infinite ammo" and may not say "in my fight,
+/// Sentinels land headshots". The first is arguing with OUR stand-in for ammo
+/// pickups; the second would produce a number nobody can reproduce in game,
+/// which is the opposite of what this product promises.
+pub fn resolve(
+    axis: &ScenarioAxis,
+    weapon_id: &str,
+    class_rule: Option<AxisValue>,
+) -> Resolution {
+    let Some((value, why, cap)) = settled_by(axis, weapon_id) else {
+        // Nothing settles it, so a class rule has nothing to argue with and the
+        // scenario's own value is already the answer. A rule here is not
+        // refused, it is simply the same field said twice.
+        return Resolution::Free;
+    };
+    let overridable = cap.absence() == Absence::HouseRule;
+    match (class_rule, overridable) {
+        (Some(wanted), true) => Resolution::ByScenario { value: wanted, cap_why: why },
+        (Some(wanted), false) => Resolution::Refused { value, why, wanted },
+        (None, _) => Resolution::Settled { value, why, overridable },
+    }
+}
+
+/// The capability that settles this axis for this weapon, if any.
+fn settled_by(
+    axis: &ScenarioAxis,
+    weapon_id: &str,
+) -> Option<(AxisValue, &'static str, Capability)> {
+    let spec = crate::weapons_data::spec(weapon_id)?;
+    axis.requires
+        .iter()
+        .find(|r| !r.cap.of(spec))
+        .map(|r| (r.absent, r.cap.why_absent(), r.cap))
+}
+
+/// Every (class, axis) pair a scenario is ALLOWED to carry a rule for.
+///
+/// DERIVED from the two tables rather than listed: a class may argue with an
+/// axis exactly when some weapon in it lacks a capability that axis requires
+/// AND that capability's absence is ours rather than the game's. So a
+/// capability reclassified tomorrow moves this list by itself, and a class with
+/// nothing to argue about offers nothing.
+pub fn overridable_pairs() -> Vec<(&'static str, &'static str)> {
+    let mut out = Vec::new();
+    for class in WEAPON_CLASSES {
+        for a in SCENARIO_AXES {
+            let argues = a.requires.iter().any(|r| {
+                r.cap.absence() == Absence::HouseRule
+                    && crate::weapons_data::all()
+                        .iter()
+                        .any(|w| w.slot == *class && !r.cap.of(w))
+            });
+            if argues {
+                out.push((*class, a.id));
+            }
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// **A SCENARIO MAY ARGUE WITH OUR STAND-IN AND NOT WITH THE GAME.**
+    ///
+    /// The guard the whole class-rule feature rests on, held from both sides on
+    /// the SAME weapon so neither arm can pass by the axis being absent.
+    ///
+    /// An Arch-Gun's finite reserve is `infinite_ammo` OFF because it cannot be
+    /// resupplied, and that is OUR pessimistic reading of a mechanic the sim
+    /// only half has — so a scenario saying "Arch-Guns have infinite ammo here"
+    /// is honoured. Its `aiming` is the reader's already, so the case is taken
+    /// from a Sentinel, whose headshot rate is 0 because the game says a
+    /// companion cannot put a shot on a head: that rule is refused, the game's
+    /// value runs, and the refusal is REPORTED rather than swallowed.
+    #[test]
+    fn a_scenario_may_argue_with_our_stand_in_and_not_with_the_game() {
+        let ammo = axis("infinite_ammo").unwrap();
+        assert_eq!(
+            resolve(ammo, "larkspur", None),
+            Resolution::Settled {
+                value: AxisValue::Flag(false),
+                why: Capability::CanResupply.why_absent(),
+                overridable: true,
+            },
+            "an Arch-Gun runs dry by default, and a reader may say otherwise",
+        );
+        assert_eq!(
+            resolve(ammo, "larkspur", Some(AxisValue::Flag(true))),
+            Resolution::ByScenario {
+                value: AxisValue::Flag(true),
+                cap_why: Capability::CanResupply.why_absent(),
+            },
+            "…and saying so is honoured",
+        );
+
+        let head = axis("headshot_pct").unwrap();
+        assert_eq!(
+            resolve(head, "artax", Some(AxisValue::Number(100.0))),
+            Resolution::Refused {
+                value: AxisValue::Number(0.0),
+                why: Capability::AimsAtHead.why_absent(),
+                wanted: AxisValue::Number(100.0),
+            },
+            "a companion cannot be granted headshots by a file",
+        );
+    }
+
+    /// **WHAT A SCENARIO IS ALLOWED TO SAY IS DERIVED**, and today it is one
+    /// sentence: Arch-Guns and their ammo.
+    ///
+    /// Pinned as an exact set rather than as "contains", because the failure
+    /// this guards against is the list GROWING — a capability reclassified to
+    /// `HouseRule` without anyone deciding it, which is precisely the change
+    /// that quietly lets a scenario publish an unreproducible number. Widening
+    /// it is a deliberate edit here, with the reason in the diff.
+    #[test]
+    fn a_scenario_may_say_exactly_one_thing_today() {
+        assert_eq!(overridable_pairs(), vec![("archgun", "infinite_ammo")]);
+    }
+
+    /// **A RULE ABOUT AN AXIS NOTHING SETTLES IS NOT REFUSED — IT IS NOTHING.**
+    ///
+    /// A class rule can only ever argue with a capability. On a Laetum the ammo
+    /// box is already the reader's, so a rule for `primary` has no opponent and
+    /// the scenario's own field is the answer it would have given anyway.
+    /// Reporting that as `Refused` would put a warning on screen for a reader
+    /// who has done nothing wrong.
+    #[test]
+    fn a_rule_with_nothing_to_argue_with_is_not_a_refusal() {
+        let ammo = axis("infinite_ammo").unwrap();
+        assert_eq!(resolve(ammo, "laetum", None), Resolution::Free);
+        assert_eq!(resolve(ammo, "laetum", Some(AxisValue::Flag(true))), Resolution::Free);
+    }
+
+    /// **EVERY WEAPON HAS A CLASS**, or a rule written for its family would
+    /// never reach it and the panel could not say which column it reads.
+    #[test]
+    fn every_weapon_belongs_to_a_class() {
+        for w in crate::weapons_data::all() {
+            assert!(
+                class_of(&w.id).is_some(),
+                "{} is in slot {:?}, which no class covers",
+                w.id,
+                w.slot,
+            );
+        }
+    }
 
     /// **NO ID IS DECLARED TWICE**, which would make one unreachable through
     /// `axis()` and leave a surface reading the wrong rule.

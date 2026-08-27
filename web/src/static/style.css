@@ -1892,3 +1892,19 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .wf-why{grid-column:1/-1;font-size:10.5px;color:var(--muted);line-height:1.35;padding-bottom:2px}
 .wf-absent{color:var(--muted)}
 .wf-ctl input[type=number]{width:6.5em}
+/* THE HOUSE RULES: one column per weapon class, so a reader can see at a glance
+   that this fight has an opinion about Arch-Guns while standing on a Burston.
+   `auto-fit` rather than a fixed count — a phone gets one column per row and
+   the grid still fits, which is `check_mobile`'s rule. */
+.wf-hr{grid-template-columns:minmax(0,11em) minmax(0,1fr);align-items:start}
+.hr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,10.5em),1fr));
+  gap:6px 10px;min-width:0}
+.hr-col{min-width:0}
+.hr-h{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.hr-col.here .hr-h{color:var(--gold)}
+.hr-col .check{display:flex;align-items:center;gap:4px;font-size:11px;min-width:0}
+.hr-col .check code{font-size:10.5px}
+/* A box that is writing a RULE rather than the fight's own field says so
+   without a legend: the reader is looking at a control whose scope is the whole
+   class, which is not what any other checkbox on this page means. */
+.check.ruled{color:var(--gold)}

@@ -3093,22 +3093,29 @@ impl ResolvedPanel {
     /// (`infinite_ammo || !finite_reserve`). The simulator is the truth and the
     /// optimizer obeys it, so the optimizer must CALL this, not restate it.
     ///
-    /// Three facts meet here, and two of them were one field until 2026-08-04:
+    /// IT TAKES THE FIGHT'S ANSWER, NOT THE READER'S BOX (2026-08-27). The
+    /// resupply half of this used to live here as `&& !self.no_resupply`, and
+    /// by then the same rule was ALSO `scenario::Capability::CanResupply` —
+    /// two spellings of one sentence, which is the drift AGENTS.md warns about
+    /// in every other domain. `scenario::resolve` is the one that survives,
+    /// because it is the only one that can also hear a SCENARIO argue with it:
+    /// a fight may now declare "in here, Arch-Guns have infinite ammo", and a
+    /// rule buried in this method could never have been told.
+    ///
+    /// So `ammo_is_infinite` arrives already resolved — the reader's box, the
+    /// weapon's capability and the scenario's class rule folded into one
+    /// answer — and two facts meet here instead of three:
     ///
     /// - `has_reserve` — is there a pool behind the magazine at all? A sentinel
-    ///   weapon has none, so nothing can make it run out.
-    /// - `no_resupply` — can the game refill it mid-fight? False for everything
-    ///   but a ground Arch-Gun, which is REMOVED when empty and cannot be
-    ///   called back down for five minutes.
-    /// - `infinite_ammo` — the scenario's setting, which is how the sim stands
-    ///   in for ammo PICKUPS, since it models none of them.
+    ///   weapon has none, so nothing can make it run out, whatever anyone says.
+    /// - `ammo_is_infinite` — the fight's answer for THIS weapon.
     ///
-    /// The setting is therefore about PICKUPS, and a weapon that cannot receive
-    /// one is not covered by it. That is what lets a single benchmark term be
-    /// right for the whole roster: reserves ignored where the game would refill
-    /// them, real where it cannot (owner, 2026-08-04).
-    pub fn reserve_is_infinite(&self, infinite_ammo: bool) -> bool {
-        !self.has_reserve || (infinite_ammo && !self.no_resupply)
+    /// NOTHING MOVED. For every scenario expressible before this change the two
+    /// forms agree, because `parse_fight` now applies the same `!no_resupply`
+    /// through the capability: an Arch-Gun with the box ticked resolved to
+    /// `false` there instead of being turned to `false` here.
+    pub fn reserve_is_infinite(&self, ammo_is_infinite: bool) -> bool {
+        !self.has_reserve || ammo_is_infinite
     }
 }
 

@@ -486,6 +486,72 @@ fn value_json(v: Option<wfsim_engine::dummy::StackValue>) -> Value {
     }
 }
 
+/// **WHAT THIS FIGHT SAYS ABOUT THE CLASS THIS WEAPON IS IN.**
+///
+/// `class_rules` is `{ "<slot>": { "<axis>": value } }` on the wire — a fight
+/// carries rules for every class, and a weapon reads only its own column.
+/// Returned typed, so `scenario::resolve` never sees a `serde_json::Value`.
+///
+/// A RULE FOR AN AXIS THAT TAKES NEITHER SHAPE IS DROPPED here rather than
+/// reaching the resolver as a guess: the resolver's own answer for an axis
+/// nobody ruled is the capability's, which is the safe direction.
+fn class_rules_for(
+    v: &Value,
+    weapon_id: &str,
+) -> std::collections::BTreeMap<String, wfsim_engine::scenario::AxisValue> {
+    use wfsim_engine::scenario::AxisValue;
+    let mut out = std::collections::BTreeMap::new();
+    let Some(class) = wfsim_engine::scenario::class_of(weapon_id) else {
+        return out;
+    };
+    let Some(map) = v.get("class_rules").and_then(|c| c.get(class)).and_then(|c| c.as_object())
+    else {
+        return out;
+    };
+    for (k, val) in map {
+        let typed = match val {
+            Value::Bool(b) => Some(AxisValue::Flag(*b)),
+            Value::Number(n) => n.as_f64().map(AxisValue::Number),
+            _ => None,
+        };
+        if let Some(t) = typed {
+            out.insert(k.clone(), t);
+        }
+    }
+    out
+}
+
+/// The fight's answer for a FLAG axis: the reader's box, the weapon's
+/// capability and this scenario's class rule folded into one.
+fn resolved_flag(
+    axis_id: &str,
+    weapon_id: &str,
+    rule: Option<wfsim_engine::scenario::AxisValue>,
+    readers: bool,
+) -> bool {
+    use wfsim_engine::scenario::{self, AxisValue};
+    let Some(a) = scenario::axis(axis_id) else { return readers };
+    scenario::resolve(a, weapon_id, rule)
+        .value(AxisValue::Flag(readers))
+        .as_flag()
+        .unwrap_or(readers)
+}
+
+/// The same, for a NUMBER axis.
+fn resolved_number(
+    axis_id: &str,
+    weapon_id: &str,
+    rule: Option<wfsim_engine::scenario::AxisValue>,
+    readers: f64,
+) -> f64 {
+    use wfsim_engine::scenario::{self, AxisValue};
+    let Some(a) = scenario::axis(axis_id) else { return readers };
+    scenario::resolve(a, weapon_id, rule)
+        .value(AxisValue::Number(readers))
+        .as_number()
+        .unwrap_or(readers)
+}
+
 fn default_headshot_pct(info: &WeaponInfo) -> f64 {
     if info.sentinel {
         0.0
@@ -1161,20 +1227,22 @@ pub fn meta_json() -> Value {
                     .is_some_and(|s| s.no_resupply),
                 // …AND THE CONSEQUENCE, so the page stops deriving it. The two
                 // flags above stay because the roster grid reads them, but a
-                // CONTROL now asks this: `{ "<axis>": [value, "why"] }` for
-                // every axis this weapon forces, absent when the choice is the
-                // reader's. `engine::scenario::forced_for` is the one rule, so
-                // the number that runs and the sentence on screen cannot
-                // describe different ones (owner, 2026-08-27).
-                // …AND THE CONSEQUENCE, so the page stops deriving it. A
-                // SETTLED axis is one the weapon decides rather than the reader
-                // — derived from the capabilities it lacks, never written down
-                // — as `{ "<axis>": [value, "why"] }`, absent when the choice
-                // is the reader's (owner, 2026-08-27).
+                // CONTROL now asks this. A SETTLED axis is one the weapon
+                // decides rather than the reader — derived from the
+                // capabilities it lacks, never written down — as
+                // `{ "<axis>": [value, "why", overridable] }`, absent when the
+                // choice is the reader's (owner, 2026-08-27).
                 //
                 // The VALUE keeps its json type: a flag arrives as a bool and a
                 // number as a number, so a control can be drawn from it without
                 // the page knowing which axis it is looking at.
+                //
+                // OVERRIDABLE is the third element and it is the guard made
+                // visible: it says whether this weapon's class may argue with
+                // the rule in a SCENARIO's own house rules, which is true only
+                // where the capability's absence is OUR stand-in rather than
+                // the game's rule. A reader looking at a greyed row wants to
+                // know which of the two they are looking at.
                 "settled": wfsim_engine::scenario::SCENARIO_AXES.iter()
                     .filter_map(|a| wfsim_engine::scenario::settled_for(a, &w.id)
                         .map(|(v, why)| (a.id.to_string(), json!([
@@ -1183,8 +1251,16 @@ pub fn meta_json() -> Value {
                                 wfsim_engine::scenario::AxisValue::Number(n) => json!(n),
                             },
                             why,
+                            wfsim_engine::scenario::overridable_pairs().iter().any(|(c, id)| {
+                                Some(*c) == wfsim_engine::scenario::class_of(&w.id) && *id == a.id
+                            }),
                         ]))))
                     .collect::<serde_json::Map<_, _>>(),
+                // WHICH CLASS'S HOUSE RULES THIS WEAPON READS. The slot, served
+                // rather than re-derived, so the page can point a Burston at
+                // the `primary` column and an Arch-Gun at its own without
+                // holding a copy of the mapping.
+                "weapon_class": wfsim_engine::scenario::class_of(&w.id),
                 // A PASSIVE WE DO NOT MODEL, so the page can say the number is
                 // a floor rather than let it read as the weapon's real output.
                 // Empty today — Gotva Prime's was the only one and it is
@@ -1675,6 +1751,30 @@ pub fn meta_json() -> Value {
                 },
             })
         }).collect::<Vec<_>>(),
+        // **WHAT A SCENARIO IS ALLOWED TO SAY ABOUT A CLASS IT IS NOT POINTED
+        // AT** (owner, 2026-08-27) — the "global edit" the whole-fight panel
+        // draws, served rather than derived.
+        //
+        // `classes` is the order to list them in; `overridable` is the legal
+        // (class, axis) pairs, which is the guard: a scenario may argue with
+        // OUR stand-in for a mechanic and never with the game's own rule, so
+        // "Arch-Guns have infinite ammo in here" is offered and "Sentinels land
+        // headshots" is not offered at all. The page draws exactly what is
+        // listed, which is why a capability reclassified in the engine moves
+        // the editor by itself and a page that re-derived legality would go
+        // stale the first time one was.
+        //
+        // Today it is one pair. That is not a placeholder — it is the honest
+        // size of "things the sim simplifies that a fight might reasonably want
+        // to unsimplify", and `overridable_pairs` grows only when a capability
+        // is deliberately reclassified.
+        "class_rules": {
+            "classes": wfsim_engine::scenario::WEAPON_CLASSES,
+            "overridable": wfsim_engine::scenario::overridable_pairs()
+                .iter()
+                .map(|(c, a)| json!([c, a]))
+                .collect::<Vec<_>>(),
+        },
         "tenno_floor": floor_json(wfsim_engine::tenno_data::default_tenno()),
         "sentinel_floor": floor_json(wfsim_engine::tenno_data::sentinel_wielder()),
         "factions": factions,
@@ -4844,11 +4944,29 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // differ only in the player's aim therefore give a sentinel the same score
     // twice, which is the honest answer to "how much of this weapon is your
     // aim": none of it.
-    let headshot_pct = if info.sentinel {
-        0.0
-    } else {
-        get_f64(v, "headshot_pct", default_headshot_pct(info))
-    };
+    // THE SCENARIO'S OWN HOUSE RULES, per weapon class (owner, 2026-08-27). A
+    // fight is ONE DOCUMENT that any weapon can be tested against, so the rules
+    // it holds for the classes it is not currently pointed at travel with it and
+    // are legible on any weapon's page. Looked up once here and handed to
+    // `scenario::resolve`, which keeps that module free of the wire format.
+    let class_rules = class_rules_for(v, &info.id);
+    let rule = |id: &str| class_rules.get(id).copied();
+    // OVERRIDES SIT BEHIND LEGALITY. A companion cannot put a shot on a head,
+    // so `AimsAtHead` is a GAME FACT and a scenario saying otherwise is refused
+    // — the engine decides that, here and on the page, from the one table.
+    //
+    // It used to be only a DEFAULT, which was enough while no benchmark pinned
+    // the field; the aimed board pins 100 now, and without this a sentinel
+    // would be ranked at a headshot rate it cannot reach. Two boards that
+    // differ only in the player's aim therefore give a sentinel the same score
+    // twice, which is the honest answer to "how much of this weapon is your
+    // aim": none of it.
+    let headshot_pct = resolved_number(
+        "headshot_pct",
+        &info.id,
+        rule("headshot_pct"),
+        get_f64(v, "headshot_pct", default_headshot_pct(info)),
+    );
     let tenno = tenno_from(v, info);
     // INFINITE AMMO, and it is the DEFAULT for every weapon (user, 2026-08-01).
     // The sim models no ammo PICKUPS, so a finite reserve is the pessimistic
@@ -4860,7 +4978,19 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     //
     // The MAGAZINE is unaffected either way: this is the reserve behind it, so
     // reload cadence — and `ammo_cost` — still bite.
-    let infinite_ammo = get_bool(v, "infinite_ammo", true);
+    //
+    // THE RESUPPLY HALF IS RESOLVED HERE rather than inside
+    // `reserve_is_infinite` (2026-08-27): it is `Capability::CanResupply`, and
+    // it is the one capability whose absence is OURS rather than the game's, so
+    // it is also the one a scenario may argue with. `false` for a ground
+    // Arch-Gun as it always was — unless this fight's class rules say Arch-Guns
+    // are resupplied in here, which is a legal thing for a fight to say.
+    let infinite_ammo = resolved_flag(
+        "infinite_ammo",
+        &info.id,
+        rule("infinite_ammo"),
+        get_bool(v, "infinite_ammo", true),
+    );
     let duration = get_f64(v, "duration", 180.0).clamp(1.0, 3600.0);
     // WHERE THE TWO OF THEM STAND, in metres — the fight's 2D layer. Two
     // POINTS, which is what the engine takes and what a dragged scene produces;

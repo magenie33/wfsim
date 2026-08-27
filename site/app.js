@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "dd2e22cb+ · 2026-08-26 22:42Z";
+const BUILD_ID = "94764209+ · 2026-08-27 00:51Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -2350,7 +2350,58 @@ const eximusField = (en) => {
 const settledAxis = (w, id) => {
   const f = (w || {}).settled || {};
   const hit = f[id];
-  return hit ? { value: hit[0], why: hit[1] } : null;
+  return hit ? { value: hit[0], why: hit[1], overridable: !!hit[2] } : null;
+};
+
+/// **A FIGHT'S OWN HOUSE RULES, PER WEAPON CLASS** (owner, 2026-08-27).
+///
+/// A scenario is ONE DOCUMENT that any weapon can be tested against, so it
+/// carries the rules for classes it is not currently pointed at — which is what
+/// makes "in my fight, Arch-Guns have infinite ammo" a thing you can write on a
+/// Burston's page and have apply the next time you open the Larkspur.
+///
+/// OVERRIDES SIT BEHIND LEGALITY and the engine draws that line, never this
+/// file: `META.class_rules.overridable` is the (class, axis) pairs a scenario
+/// may argue with, which is exactly where the capability's absence is OUR
+/// stand-in rather than the game's rule. So a control is offered for
+/// Arch-Gun ammo and no control exists anywhere for a Sentinel's headshots.
+const overridablePairs = () => ((META && META.class_rules) || {}).overridable || [];
+const isOverridable = (cls, id) => overridablePairs().some((p) => p[0] === cls && p[1] === id);
+const classRuleOf = (cls, id) => ((sim.class_rules || {})[cls] || {})[id];
+/// Read a class-rule control and store what it says. Returns whether it WAS
+/// one, so a generic `[data-k]` handler can delegate and return early.
+///
+/// A RULE THAT AGREES WITH THE DEFAULT IS NOT A RULE. `data-crdef` carries the
+/// value the capability would have given, and ticking back to it CLEARS the key
+/// rather than storing the same answer twice — the absent-key mechanism a
+/// Warframe override already uses, for the same reason: a scenario's stored
+/// rules should say what it actually decided.
+const applyClassRule = (el) => {
+  const cr = el.dataset.cr;
+  if (!cr) return false;
+  const [cls, id] = cr.split("|");
+  const v = el.type === "checkbox" ? el.checked : Number(el.value);
+  const dflt = el.dataset.crdef;
+  const same = dflt !== undefined
+    && String(v) === (dflt === "true" || dflt === "false" ? dflt : String(Number(dflt)));
+  setClassRule(cls, id, same ? undefined : v);
+  return true;
+};
+
+/// Write one, or clear it with `undefined`.
+///
+/// AN ABSENT KEY IS THE MECHANISM, exactly as a Warframe override's is: the
+/// engine falls back to the capability when nothing is written, so a rule that
+/// merely AGREES with the default is pruned rather than stored. That keeps a
+/// scenario's diff about what it actually decided, and keeps the fingerprint a
+/// board row stores from moving on a no-op tick.
+const setClassRule = (cls, id, v) => {
+  const rules = { ...(sim.class_rules || {}) };
+  const col = { ...(rules[cls] || {}) };
+  if (v === undefined) delete col[id]; else col[id] = v;
+  if (Object.keys(col).length) rules[cls] = col; else delete rules[cls];
+  if (Object.keys(rules).length) sim.class_rules = rules; else delete sim.class_rules;
+  markScenarioDirty();
 };
 // A SENTINEL WEAPON IS ALWAYS AIMING (user, 2026-08-01) — it just never aims
 // at the HEAD, which is why its headshot default is 0 and every on-headshot
@@ -2390,14 +2441,33 @@ const headshotField = (w, state) => {
     : tr("a per-PELLET aim weight on the body the shot STRUCK, not a whole-spread promise — the landing spot is rolled for each pellet, and nothing a blast or a chain reaches can be a headshot");
   return `<label title="${escHtml(why)}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${val}"${forced ? " disabled" : ""}></label>`;
 };
+/// …AND THE AMMO BOX IS THE ONE FIELD A FIGHT MAY ARGUE WITH (owner,
+/// 2026-08-27).
+///
+/// Settled OFF on a ground Arch-Gun because it cannot be resupplied — but that
+/// is OUR pessimistic stand-in for ammo pickups the sim has no entities for,
+/// not a rule of the game, so a scenario is allowed to say otherwise. When it
+/// is, the box stays LIVE and writes this fight's rule for the class rather
+/// than the scenario's own field: the setting is about Arch-Guns, so it is
+/// stored against Arch-Guns and applies to every one of them.
 const ammoField = (w, state) => {
   const f = settledAxis(w, "infinite_ammo");
-  const forced = !!f;
-  const on = forced ? !!f.value : state.infinite_ammo !== false;
-  const why = forced
-    ? tr(f.why)
-    : tr("on = ammo pickups keep the reserve topped up, which the sim has no entities for; off = it runs dry. The magazine and its reloads apply either way");
-  return `<label class="check" title="${escHtml(why)}"><input type="checkbox" data-k="infinite_ammo"${on ? " checked" : ""}${forced ? " disabled" : ""}> ${escHtml(tr("Infinite ammo"))}</label>`;
+  const cls = w && w.weapon_class;
+  const ruled = f && f.overridable && cls;
+  const rule = ruled ? classRuleOf(cls, "infinite_ammo") : undefined;
+  const forced = !!f && !ruled;
+  const on = ruled
+    ? (rule === undefined ? !!f.value : !!rule)
+    : (f ? !!f.value : state.infinite_ammo !== false);
+  const why = ruled
+    ? tr(f.why) + " — " + tr("this fight can rule otherwise for the whole class, and that is what this box writes")
+    : f
+      ? tr(f.why)
+      : tr("on = ammo pickups keep the reserve topped up, which the sim has no entities for; off = it runs dry. The magazine and its reloads apply either way");
+  const attr = ruled
+    ? `data-cr="${escHtml(cls)}|infinite_ammo" data-crdef="${!!f.value}"`
+    : `data-k="infinite_ammo"`;
+  return `<label class="check${ruled && rule !== undefined ? " ruled" : ""}" title="${escHtml(why)}"><input type="checkbox" ${attr}${on ? " checked" : ""}${forced ? " disabled" : ""}> ${escHtml(tr("Infinite ammo"))}</label>`;
 };
 
 function weaponAxes(weaponId) {
@@ -11938,6 +12008,58 @@ const wfOverride = (key, label, floorKey, min, max, step, why) => {
 /// a formation, a buff map or an aura list is shown as what it holds and edited
 /// in its own panel, because two controls over one document is how one of them
 /// silently undoes the other (the arena's own rule, 2026-08-16).
+/// **EVERY RULE THIS FIGHT MAKES, FOR EVERY CLASS** — the one surface where a
+/// scenario is edited as the whole document it is (owner, 2026-08-27).
+///
+/// DERIVED FROM THE ENGINE'S OWN LEGALITY TABLE. It draws exactly the (class,
+/// axis) pairs `META.class_rules.overridable` lists, so a capability
+/// reclassified in Rust moves this editor by itself and no rule about what a
+/// fight may claim is ever written down twice. Today that is one pair, which is
+/// the honest size of "things the sim simplifies that a fight might reasonably
+/// want to unsimplify" rather than a placeholder.
+///
+/// A CLASS WITH NOTHING TO ARGUE ABOUT IS STILL LISTED, saying so. An empty
+/// column is a fact about the fight — "there is nothing to decide here" — and
+/// dropping it would read as "we did not check".
+function houseRulesRow(w) {
+  const classes = ((META && META.class_rules) || {}).classes || [];
+  const here = w && w.weapon_class;
+  const NAMES = {
+    primary: tr("Primary"), secondary: tr("Secondary"),
+    archgun: tr("Arch-Gun"), sentinel: tr("Companion"),
+  };
+  const cols = classes.map((cls) => {
+    const pairs = overridablePairs().filter((p) => p[0] === cls);
+    const body = pairs.length
+      ? pairs.map(([, id]) => {
+          const rule = classRuleOf(cls, id);
+          // The value the CAPABILITY gives, read off any weapon of this class —
+          // which is what the tick falls back to and what clearing it restores.
+          const sample = (META.weapons || []).find((x) => x.weapon_class === cls);
+          const f = settledAxis(sample, id);
+          const dflt = f ? f.value : false;
+          const on = rule === undefined ? !!dflt : !!rule;
+          return `<label class="check" title="${escHtml(f ? tr(f.why) : "")}">`
+            + `<input type="checkbox" data-cr="${escHtml(cls)}|${escHtml(id)}" data-crdef="${!!dflt}"`
+            + `${on ? " checked" : ""}> <code>${escHtml(id)}</code>`
+            + (rule === undefined
+                ? ` <span class="wf-was">${escHtml(tr("default"))}</span>`
+                : ` <b>${escHtml(tr("ruled by this fight"))}</b>`)
+            + `</label>`;
+        }).join("")
+      : `<i class="wf-absent">${escHtml(tr("nothing to decide"))}</i>`;
+    return `<div class="hr-col${cls === here ? " here" : ""}">`
+      + `<div class="hr-h">${escHtml(NAMES[cls] || cls)}`
+      + (cls === here ? ` <span class="wf-was">${escHtml(tr("this weapon"))}</span>` : "")
+      + `</div>${body}</div>`;
+  }).join("");
+  return `<div class="wf-row wf-hr"><code>class_rules</code>`
+    + `<div class="hr-grid">${cols}</div>`
+    + `<span class="wf-why">${escHtml(tr(
+        "rules this fight makes for a whole weapon class, so any weapon can be measured against this one document. Only what the sim SIMPLIFIES can be ruled on — the game's own limits are not offered"))}</span>`
+    + `</div>`;
+}
+
 function renderWholeFight() {
   const host = $("sim-whole-fight-body");
   if (!host) return;
@@ -11956,14 +12078,31 @@ function renderWholeFight() {
   };
   host.innerHTML = GROUPS.map(([g, label]) => {
     const rows = axes.filter((a) => a.group === g).map((a) => {
+      // THE HOUSE RULES ARE THE "GLOBAL EDIT" (owner, 2026-08-27), and they are
+      // the reason this panel is more than a reading surface: the ordinary
+      // blocks show the fight AS IT APPLIES TO THE WEAPON IN FRONT OF YOU,
+      // which is the right default and cannot say what this same document does
+      // to an Arch-Gun. This row is where a reader edits the classes they are
+      // not currently pointed at.
+      if (a.id === "class_rules") return houseRulesRow(w);
       const f = settledAxis(w, a.id);
       const live = sim[a.id];
       // THE FORCED ROW SHOWS BOTH NUMBERS. What the document says and what the
       // run will use are different facts, and the gap between them is the one
       // thing this panel exists to make visible.
+      // A CLASS RULE BEATS THE CAPABILITY where the capability's absence was
+      // ours to begin with, so the row must show the RULED value — otherwise
+      // the one panel whose job is "what will actually run" would be the last
+      // place still reporting the default.
+      const cls = w && w.weapon_class;
+      const rule = f && f.overridable && cls ? classRuleOf(cls, a.id) : undefined;
+      const runs = rule === undefined ? (f ? f.value : undefined) : rule;
       const val = f
-        ? `<b>${escHtml(String(f.value))}</b> <span class="wf-was">${
-            escHtml(tr("document says"))} ${shown(live)}</span>`
+        ? `<b>${escHtml(String(runs))}</b> <span class="wf-was">${
+            rule === undefined
+              ? escHtml(tr("document says")) + " " + shown(live)
+              : escHtml(tr("ruled by this fight for the {c} class").replace("{c}", cls))
+          }</span>`
         : shown(live);
       const editable = !f && (a.kind.t === "flag" || a.kind.t === "number");
       const ctl = editable
@@ -11983,6 +12122,9 @@ function renderWholeFight() {
   }).join("");
   // The same generic binding every other scenario field uses, so a change here
   // is a change to the fight and nothing else has to know about this panel.
+  host.querySelectorAll("[data-cr]").forEach((el) => {
+    el.addEventListener("change", () => { applyClassRule(el); renderSim(); });
+  });
   host.querySelectorAll("[data-k]").forEach((el) => {
     el.addEventListener("change", () => {
       const k = el.dataset.k;
@@ -12203,6 +12345,9 @@ function renderScenarioFields(ids, opts = {}) {
   // function that draws the target card, on either tab.
   loadTargetStats().then((changed) => { if (changed) paintTargetMeta(); });
   boxes.forEach((box) =>
+    box.querySelectorAll("[data-cr]").forEach((el) =>
+      el.addEventListener("change", () => { applyClassRule(el); renderSim(); })));
+  boxes.forEach((box) =>
     box.querySelectorAll("[data-k]").forEach((el) => {
       el.addEventListener("change", () => {
         const k = el.dataset.k;
@@ -12220,6 +12365,7 @@ function renderScenarioFields(ids, opts = {}) {
           markScenarioDirty();
           return;
         }
+        if (applyClassRule(el)) { renderSim(); return; }
         if (el.dataset.wfovnum) { sim[k] = Number(el.value); }
         else if (el.type === "checkbox") sim[k] = el.checked;
         else if (el.type === "number") sim[k] = Number(el.value);
@@ -13562,7 +13708,16 @@ function lockOfficialBuild() {
 function lockOfficialScenario() {
   const note = $("sim-official");
   const on = officialScenarioActive();
-  const boxes = ["sim-target", "sim-technique", "sim-wfbuffs", "sim-limits", "sim-run", "sim-buffs"]
+  // `sim-whole-fight-body` IS IN THE SWEEP, and it was missing for as long as
+  // the panel existed (2026-08-27). It draws a live control for every editable
+  // axis of the fight, so a ruler's pinned level, duration and distance were
+  // all editable there — auto-save refuses to write them, which hides the fault
+  // rather than preventing it: `sim` still moves in memory, so Run Sim reports
+  // a modified ruler under the ruler's own name, which is the exact thing this
+  // lock exists to stop. An escape hatch is a place to LOOK at the whole
+  // document, not a second editor that outranks the rule.
+  const boxes = ["sim-target", "sim-technique", "sim-wfbuffs", "sim-limits", "sim-run",
+                 "sim-buffs", "sim-whole-fight-body"]
     .map((id) => $(id)).filter(Boolean);
   // The ARENA's bodies are SVG circles and the input sweep below cannot reach
   // them, so the scene is marked here and refuses the gesture itself.

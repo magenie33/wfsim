@@ -4346,24 +4346,55 @@ mod tests {
     }
 
     /// The scenario's setting stands in for PICKUPS, so it cannot give ammo to
-    /// a weapon that can receive none. One rule, on the panel, called by both
-    /// the web api and the optimizer.
+    /// a weapon that can receive none.
+    ///
+    /// IT ASSERTS THE WHOLE CHAIN, not the last method in it (2026-08-27). The
+    /// resupply rule moved out of `reserve_is_infinite` and into
+    /// `scenario::Capability::CanResupply`, where a scenario can also argue
+    /// with it — so a test that called the method with a raw box value would
+    /// now be testing half a rule and would go green on an Arch-Gun that had
+    /// silently become bottomless. It resolves first, exactly as `parse_fight`
+    /// does.
     #[test]
     fn the_infinite_ammo_setting_cannot_resupply_an_arch_gun() {
         use crate::loadout::{resolve, StackPolicy, WeaponBase};
-        let p = |id| resolve(&WeaponBase::from_data(id, true, &[]), &[], StackPolicy::Emergent);
+        use crate::scenario::{self, AxisValue};
+        let ammo = scenario::axis("infinite_ammo").unwrap();
+        let run = |id: &str, ticked: bool| {
+            let panel =
+                resolve(&WeaponBase::from_data(id, true, &[]), &[], StackPolicy::Emergent);
+            let v = scenario::resolve(ammo, id, None)
+                .value(AxisValue::Flag(ticked))
+                .as_flag()
+                .unwrap();
+            panel.reserve_is_infinite(v)
+        };
 
         // Sentinel: infinite either way, nothing to decide.
-        assert!(p("verglas_prime").reserve_is_infinite(true));
-        assert!(p("verglas_prime").reserve_is_infinite(false));
+        assert!(run("verglas_prime", true));
+        assert!(run("verglas_prime", false));
 
         // Primary: the setting decides, which is the point.
-        assert!(p("torid").reserve_is_infinite(true));
-        assert!(!p("torid").reserve_is_infinite(false));
+        assert!(run("torid", true));
+        assert!(!run("torid", false));
 
         // Ground Arch-Gun: finite either way — 400 rounds is the engagement.
-        assert!(!p("larkspur_prime").reserve_is_infinite(true));
-        assert!(!p("larkspur_prime").reserve_is_infinite(false));
+        assert!(!run("larkspur_prime", true));
+        assert!(!run("larkspur_prime", false));
+
+        // …UNLESS THE FIGHT ITSELF SAYS OTHERWISE, which is the one thing a
+        // scenario is allowed to argue with. Same weapon, same ticked box, a
+        // class rule that says Arch-Guns are resupplied in here.
+        let panel = resolve(
+            &WeaponBase::from_data("larkspur_prime", true, &[]),
+            &[],
+            StackPolicy::Emergent,
+        );
+        let ruled = scenario::resolve(ammo, "larkspur_prime", Some(AxisValue::Flag(true)))
+            .value(AxisValue::Flag(true))
+            .as_flag()
+            .unwrap();
+        assert!(panel.reserve_is_infinite(ruled));
     }
 
 

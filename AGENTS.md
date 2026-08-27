@@ -887,6 +887,46 @@ around (decision 2026-07-31).
   followed"), never applied silently: an absence would read as "that is
   everyone". One body draws no chips at all, so the fight this app ran until now
   looks exactly as it did.
+- **A FIGHT IS ONE DOCUMENT, AND A SCENARIO'S OVERRIDES SIT BEHIND LEGALITY**
+  (owner, 2026-08-27). A scenario holds everything a measurement needs — the
+  target, the buffs, the wielder — AND what it rules for each weapon CLASS, so
+  any weapon can be tested against the one file and the official rulers are
+  written in the same language a player's own fight is.
+  THE ENGINE DECIDES WHAT MAY BE RULED ON, and it is derived rather than listed.
+  `scenario::Capability::absence()` sorts every capability into two kinds and
+  that is the whole guard: a GAME FACT is the game's own rule — a Sentinel
+  cannot put a shot on a head — and a HOUSE RULE is OURS. "Infinite ammo" was
+  always a stand-in for ammo PICKUPS the sim has no entities for, so which half
+  of that mechanic a fight is scored under is a RULER'S CHOICE, and the group
+  ruler already made it in PROSE ("an entry that cannot be resupplied runs on
+  its own reserve"). A scenario may therefore say *"in my fight, Arch-Guns have
+  infinite ammo"* and may not say *"in my fight, Sentinels land headshots"* —
+  the second would publish a number nobody can reproduce in game, which is the
+  opposite of what this product promises.
+  EXACTLY ONE OF THE FOUR CAPABILITIES IS A HOUSE RULE TODAY, and it is the one
+  the owner reached for first when asking for the feature — a sign the
+  distinction was already there and merely unwritten. `overridable_pairs()`
+  derives the legal (class, axis) set from the two tables, `/api/meta` serves
+  it, and the page draws exactly what is listed, so a capability reclassified in
+  Rust moves the editor by itself. It is pinned as an EXACT set by a test,
+  because the failure to guard against is the list GROWING without anyone
+  deciding it.
+  THE RESUPPLY RULE MOVED OUT OF `reserve_is_infinite`, which had been "the one
+  place the rule is written" while the same sentence was also
+  `Capability::CanResupply` — two spellings, and only one of them could ever
+  hear a scenario argue. It takes the RESOLVED answer now; nothing moved,
+  because `parse_fight` applies the same `!no_resupply` through the capability.
+  THE DEFAULT IS STILL THE WEAPON IN FRONT OF YOU. The scenario blocks show what
+  applies here, which is the right thing for reading a build; the whole-fight
+  panel is where the other classes are edited, and an absent rule is the
+  mechanism — a rule that merely AGREES with the capability is pruned rather
+  than stored, so a scenario's rules say what it actually decided.
+  AND A RULER REFUSES ONE, like every other edit. Adding this exposed that
+  `sim-whole-fight-body` had never been in `lockOfficialScenario`'s sweep, so
+  the panel had been a second editor that outranked the pin for EVERY editable
+  axis — auto-save refused to write them, which hides the fault rather than
+  preventing it, since `sim` still moved and Run Sim reported a modified ruler
+  under the ruler's own name.
 - **THERE IS ONE FIGHT, AND EVERY MODULE SENDS IT** (owner, 2026-08-17). The
   PAGE's half of the rule above. The server's half has held since `parse_fight`;
   the page had none, and grew FIVE spellings of "the fight" — Run Sim's, the

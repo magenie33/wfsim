@@ -847,6 +847,20 @@ ui:
   "What the Warframe brings": 战甲带来的
   "not set — the default": 未设置 —— 用默认
   "document says": 文档里是
+
+  # THE FIGHT'S OWN HOUSE RULES, per weapon class. 类别 is DE's own word for a
+  # weapon slot on the arsenal screen, so the columns read as the game's.
+  "rules this fight makes for a whole weapon class, so any weapon can be measured against this one document. Only what the sim SIMPLIFIES can be ruled on — the game's own limits are not offered": 本场景为整个武器类别定下的规则，所以任何武器都能对着这同一份文档来测。只有模拟器自己做的简化才允许改写——游戏本身的限制不会提供选项
+  "this fight can rule otherwise for the whole class, and that is what this box writes": 本场景可以为整个类别定下相反的规则，这个勾选框写的就是它
+  "ruled by this fight": 本场景已改写
+  "ruled by this fight for the {c} class": 本场景为 {c} 类别改写
+  "nothing to decide": 无可改写项
+  "this weapon": 当前武器
+  "default": 默认
+  # Primary / Secondary are already above — a class column reuses them rather
+  # than growing a second spelling of the same word.
+  "Arch-Gun": 空战武器
+  "Companion": 守护武器
   "empty": 空
   "{n} entries": "{n} 项"
   "baseline — the floor every board is scored on": 基准战甲 —— 所有榜单都按它计算
