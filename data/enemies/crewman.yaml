@@ -56,6 +56,20 @@ body_parts:
     is_head: true
     crit_bonus: true
 
+unmodeled:
+  # THE HELMET, and it is the reason a headshot measurement on this unit does
+  # not reproduce (owner, 2026-08-27). A Crewman wears one, it is its own
+  # destructible hitbox, and while it is on it takes MORE than the head under
+  # it; destroy it and headshots read the ordinary `Head: 3.0x`. This sim has
+  # one head per body and no way for a part to be destroyed and reveal another,
+  # so it aims at the bare head from the first shot — which is the ANSWER a
+  # player gets after the helmet is off, and not the one they get before.
+  #
+  # An unmodded Laetum measured 860 on the helmet against the 480 this sim
+  # computes for the head, i.e. the helmet reads about 6x where the head reads
+  # 3x (MEASUREMENTS M61).
+  - "its helmet is not modelled: in game it is a separate destructible hitbox that takes more damage than the head beneath it, and this fight aims at the bare head from the first shot"
+
 source:
   url: https://wiki.warframe.com/w/Module:Enemies/data/corpus
   # note: >-

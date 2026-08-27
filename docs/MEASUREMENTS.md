@@ -4401,20 +4401,62 @@ first one.
 
 ### What would close it
 
-**An unmodded white headshot on a Crewman whose shield is genuinely at zero.**
-Everything above turns on 50 points of shield inferred from a fitted intercept,
-which is the one number here that was not read off a pop-up.
-
-* reads **480** → the engine is right, and the first capture's "no shield"
-  readings simply had shield left.
-* reads **960** → white headshots are ×2 everywhere, and the tier-0 rung of the
-  headshot ladder is wrong.
-
-Nothing in the head path should move until that pop-up exists. The BODY rule is
+**ANSWERED: neither.** The readings were taken through the unit's HELMET — see
+the section above. The engine's `Head: 3.0x` is right and nothing in the head
+path needed to move. The BODY rule is
 implemented (`ENEMY_SHIELD_GATE_LEAK`, `dummy::TargetState::apply`) and
 reproduces all eight of its numbers; the head path still charges the shield once
 rather than twice, and is therefore known to be off by one shield pool on a
 weakpoint hit against a shielded target.
+
+### RESOLVED: the headshot readings were on the HELMET
+
+A Crewman wears one, it is its own destructible hitbox, and while it is on it
+takes MORE than the head beneath it — destroy it and headshots read the
+ordinary `Head: 3.0x` (owner, 2026-08-27). Every head reading above was taken
+through a helmet, and this engine has one head per body and no way for a part
+to be destroyed and reveal another, so it aims at the bare head from the first
+shot.
+
+**The engine's head multiplier was never wrong.** An unmodded body shot is 160,
+this sim computes `160 × 3.0 = 480` for the head, and the capture read 860.
+
+WHAT THE HELMET ACTUALLY IS, IS NOT MEASURED (owner, 2026-08-27). Its
+multiplier, whether it has a health pool of its own, how much, and what
+destroying it costs are all unknown; the readings are consistent with something
+near 6x and that is an inference from four numbers taken through it, not a
+figure anybody has read off a page. Nothing should be built on it — the entry
+here exists so the next person does not re-derive the anomaly from scratch.
+
+**AND THE CRIT READING'S APPARENT AGREEMENT WAS A COINCIDENCE**, which is worth
+recording because it nearly bought a wrong conclusion. `3.0 × 4.4` (the wiki's
+head multiplier under M60's critical-headshot ladder) and `6.0 × 2.2` (a 6x
+helmet under a plain crit multiplier) are **both 13.2**, so the critical
+headshot number cannot tell the two apart and it matched the ladder to 0.14%.
+Only the WHITE headshot separates them — 480 against 960 — and it says helmet.
+
+The gap is admitted on the unit (`data/enemies/crewman.yaml`, `unmodeled:`).
+Modelling it would need two things this engine does not have — a part with its
+own health that can be destroyed, and a part REVEALED by another one breaking —
+and a measurement of both, which is the part that does not exist yet.
+
+### Still open: a flat ~100
+
+`head = 6.00 × body − 100` fits all four helmet readings, across two mod levels
+and both crit tiers, and the `−100` does not scale with a +385% damage bucket.
+It is not a multiplier, not the shield (those readings are single numbers, and
+a shielded hit pops two), and not rounding — it is 11.6% of the smallest
+reading. It appears only on the head; the four body numbers are exact.
+
+The likeliest explanation is that it is not real: the unmodded capture and the
+modded one were separate sessions, and a line fitted through two different
+loadouts has an intercept that belongs to neither. **One capture would settle
+it** — three damage levels in ONE session, same evolutions and arcanes, only
+the mods changed, white headshots. Three points on a line through the origin
+means the `−100` was an artifact of the fit.
+
+It changes no model either way while the helmet is unmodelled, so it is a loose
+end rather than a bug.
 
 ### What is NOT settled — three arithmetic facts that need the owner
 
