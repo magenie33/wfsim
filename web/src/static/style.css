@@ -1970,6 +1970,8 @@ tr.rec-transform_start td,tr.rec-transform_end td{background:color-mix(in srgb,v
 .rec-form.inc{background:color-mix(in srgb,var(--gold) 26%,transparent);color:var(--gold)}
 .rec-gauge{display:block;height:3px;border-radius:2px;background:var(--line);margin-top:3px;overflow:hidden}
 .rec-gauge>i{display:block;height:100%;background:var(--gold);border-radius:2px}
+.rec-mag.firing{color:var(--text)}
+.rec-mag.idle{opacity:.62}
 .rec-mag{display:block;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:2px}
 .rec-state{width:180px}
 .rec-state span{display:block;font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}

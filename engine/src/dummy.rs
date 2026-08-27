@@ -9853,6 +9853,16 @@ pub fn run_once_traced(
                         .filter(|_| in_base_form)
                         .map_or(mag_cap, |cy| cy.base_form.magazine_size)
                         as u32,
+                    // THE FORM THAT IS NOT FIRING, so the free reload a
+                    // transmute performs on the base magazine is visible rather
+                    // than inferred.
+                    idle_magazine: params.cycle.as_ref().map(|cy| {
+                        if in_base_form {
+                            (magazine.max(0.0) as u32, mag_cap as u32)
+                        } else {
+                            (base_mag.max(0.0) as u32, cy.base_form.magazine_size as u32)
+                        }
+                    }),
                     // THE GAUGE, and it starts EMPTY — which is the model's own
                     // rule and was nowhere on screen.
                     // INFINITE IS `None` rather than a very large number: a
@@ -10314,8 +10324,6 @@ pub fn run_once_traced(
                 r.downtime_seconds += spent;
                 t += spent;
                 magazine_refilled!();
-                weapon_now!();
-                rec.push(t, None, crate::record::Kind::ReloadEnd);
                 r.reloads += 1;
                 if let Some(b) = cy.base_form.fire_rate_on_reload {
                     fire_rate_reload_expiry_seconds = t + b.duration;
@@ -10328,6 +10336,8 @@ pub fn run_once_traced(
                 let loaded = draw_from(&mut reserve, params.infinite_reserve,
                     reload_draw(cy.base_form.magazine_size, base_mag));
                 base_mag += loaded;
+                weapon_now!();
+                rec.push(t, None, crate::record::Kind::ReloadEnd);
                 // ONE STACK PER SHELL THIS RELOAD LOADED, counted here and not
                 // from a number resolved once at the panel.
                 //
@@ -10381,8 +10391,6 @@ pub fn run_once_traced(
             r.downtime_seconds += spent;
             t += spent;
             magazine_refilled!();
-            weapon_now!();
-            rec.push(t, None, crate::record::Kind::ReloadEnd);
             r.reloads += 1;
             if let Some(b) = params.fire_rate_on_reload {
                 fire_rate_reload_expiry_seconds = t + b.duration;
@@ -10397,6 +10405,12 @@ pub fn run_once_traced(
             let want = reload_draw(mag_cap, magazine);
             let loaded = draw_from(&mut reserve, params.infinite_reserve, want);
             magazine += loaded;
+            // THE ROW LANDS HERE, after the rounds are actually in. Announced
+            // one line earlier it read `0 / 6` — a reload that had just
+            // finished reporting an empty magazine, which is the one thing that
+            // row exists to deny (found by reading a Felarx record, 2026-08-27).
+            weapon_now!();
+            rec.push(t, None, crate::record::Kind::ReloadEnd);
             // …AND THE SHELLS IT LOADED PAY THEIR STACKS. One per shell, from
             // the count the draw actually produced — see the note at the cycle's
             // base-form reload for why this is per-site rather than a single
@@ -12331,6 +12345,99 @@ pub fn run_once_traced(
                 if let Some(pool) = broke {
                     push_break_proc(&mut debuffs, params, t, pool);
                 }
+                // THE ROW FOR THIS PELLET — a MACRO with two call sites,
+                // because a pellet has two ways of ending and the row has to
+                // survive both.
+                //
+                // It was written once, just before `settle_procs`, so it could
+                // name what the instance APPLIED. That is right for a pellet
+                // that leaves the target standing and wrong for one that KILLS:
+                // the kill branch below `continue`s — correctly, since the
+                // killing instance's procs die with the old individual — and
+                // took the row with it. Against a level 1 Crewman that is most
+                // of the shots, and the record reported a fight with no kills
+                // in it while the meter beside it counted six (owner,
+                // 2026-08-27).
+                //
+                // The killing call passes NO procs, which is not a shortcut: it
+                // is the same sentence that branch already makes.
+                macro_rules! log_this_pellet {
+                    ($procs:expr) => {
+                    // THE ROW FOR THIS PELLET, written HERE rather than beside
+                    // `apply` — because a row says what the instance APPLIED, and
+                    // the proc list is not final until the line above. Everything
+                    // else it needs was snapshotted at the moment it landed
+                    // (`before`, `breakdown`, `settled`), so waiting costs nothing and
+                    // buys the one column a reader checks a status build with.
+                    if recording(&r, rec) {
+                        log_damage(
+                            &mut r,
+                            rec,
+                            t,
+                            0,
+                            qvec.dominant(),
+                            match (part.is_head, tier > 0) {
+                                (true, true) => PopKind::HeadCrit,
+                                (true, false) => PopKind::Head,
+                                (false, true) => PopKind::Crit,
+                                (false, false) => PopKind::Direct,
+                            },
+                            &breakdown, settled,
+                            Some(&debuffs),
+                            Instance {
+                                // WHICH PELLET OF THE PULL THIS WAS. The first is the one
+                                // the trigger would have fired with no multishot at all;
+                                // every one after it is multishot's, and telling them apart
+                                // is the difference between "my multishot works" and
+                                // "something is double-counting" (owner, 2026-08-27).
+                                //
+                                // THE ORIGIN IS THE PELLET'S, NOT THE STAGE'S. A
+                                // pellet with an explosion produces two rows and
+                                // they are the SAME pellet — `radial` says which
+                                // half and `pellet` says whose — so a Laetum
+                                // Incarnon's three pellets read as six numbers in
+                                // three pairs rather than as three plus three
+                                // (owner, 2026-08-27). The engine already settles
+                                // them in that order: the stage loop is inside the
+                                // pellet loop, so only the LABEL was missing.
+                                origin: if pellet_idx == 0 {
+                                    crate::record::Origin::Own
+                                } else {
+                                    crate::record::Origin::Multishot
+                                },
+                                pellet: Some(pellet_idx + 1),
+                                radial: !direct,
+                                base: qtotal,
+                                // HOW THAT BASE WAS BUILT. `qtotal` is one number
+                                // and it is three facts: this attack part's
+                                // ModifiedBase, the elemental hierarchy expanding
+                                // it, and the quantization the wiki rounds it
+                                // through. A reader auditing a build wants the
+                                // middle one, and reading it off the row beats
+                                // deriving it from the panel (owner, 2026-08-27).
+                                base_from: stage_mb,
+                                base_steps: &[
+                                    ("element bracket + quantization",
+                                        if stage_mb > 0.0 { pre_ability_total / stage_mb } else { 1.0 }),
+                                    ("Warframe ability element",
+                                        if pre_ability_total > 0.0 { qvec.total() / pre_ability_total } else { 1.0 }),
+                                    ("merged beams", beam_merge),
+                                ],
+                                // …AND WHAT THE CRIT FACTOR IS MADE OF:
+                                // `1 + tier x (crit damage - 1)`, which is a
+                                // formula a reader can check against the card and
+                                // `x4.40` is not.
+                                crit_damage: cd,
+                                steps: &hit_steps,
+                                part: Some(&part.name),
+                                head: part.is_head,
+                                crit_tier: tier,
+                                procs: $procs,
+                            },
+                        );
+                    }
+                    };
+                }
                 if killed {
                     gal.bump_on_kill(params, t);
                     arc.on_kill(params, t);
@@ -12353,6 +12460,7 @@ pub fn run_once_traced(
                     // `field_tick`. What follows hits the fresh spawn, standing
                     // in whatever is still burning where it spawned.
                     debuffs.on_death(params.acid_shells, &params.target);
+                    log_this_pellet!(&[]);
                     continue;
                 }
                 // THE EXTRA HIT, off a WEAPON damage instance — the direct
@@ -12574,79 +12682,9 @@ pub fn run_once_traced(
                 let until = t + LIFTED_SECONDS * params.status_duration_multiplier;
                 debuffs.lifted = Some(debuffs.lifted.map_or(until, |e| e.max(until)));
             }
-                // THE ROW FOR THIS PELLET, written HERE rather than beside
-                // `apply` — because a row says what the instance APPLIED, and
-                // the proc list is not final until the line above. Everything
-                // else it needs was snapshotted at the moment it landed
-                // (`before`, `breakdown`, `settled`), so waiting costs nothing and
-                // buys the one column a reader checks a status build with.
-                if recording(&r, rec) {
-                    log_damage(
-                        &mut r,
-                        rec,
-                        t,
-                        0,
-                        qvec.dominant(),
-                        match (part.is_head, tier > 0) {
-                            (true, true) => PopKind::HeadCrit,
-                            (true, false) => PopKind::Head,
-                            (false, true) => PopKind::Crit,
-                            (false, false) => PopKind::Direct,
-                        },
-                        &breakdown, settled,
-                        Some(&debuffs),
-                        Instance {
-                            // WHICH PELLET OF THE PULL THIS WAS. The first is the one
-                            // the trigger would have fired with no multishot at all;
-                            // every one after it is multishot's, and telling them apart
-                            // is the difference between "my multishot works" and
-                            // "something is double-counting" (owner, 2026-08-27).
-                            //
-                            // THE ORIGIN IS THE PELLET'S, NOT THE STAGE'S. A
-                            // pellet with an explosion produces two rows and
-                            // they are the SAME pellet — `radial` says which
-                            // half and `pellet` says whose — so a Laetum
-                            // Incarnon's three pellets read as six numbers in
-                            // three pairs rather than as three plus three
-                            // (owner, 2026-08-27). The engine already settles
-                            // them in that order: the stage loop is inside the
-                            // pellet loop, so only the LABEL was missing.
-                            origin: if pellet_idx == 0 {
-                                crate::record::Origin::Own
-                            } else {
-                                crate::record::Origin::Multishot
-                            },
-                            pellet: Some(pellet_idx + 1),
-                            radial: !direct,
-                            base: qtotal,
-                            // HOW THAT BASE WAS BUILT. `qtotal` is one number
-                            // and it is three facts: this attack part's
-                            // ModifiedBase, the elemental hierarchy expanding
-                            // it, and the quantization the wiki rounds it
-                            // through. A reader auditing a build wants the
-                            // middle one, and reading it off the row beats
-                            // deriving it from the panel (owner, 2026-08-27).
-                            base_from: stage_mb,
-                            base_steps: &[
-                                ("element bracket + quantization",
-                                    if stage_mb > 0.0 { pre_ability_total / stage_mb } else { 1.0 }),
-                                ("Warframe ability element",
-                                    if pre_ability_total > 0.0 { qvec.total() / pre_ability_total } else { 1.0 }),
-                                ("merged beams", beam_merge),
-                            ],
-                            // …AND WHAT THE CRIT FACTOR IS MADE OF:
-                            // `1 + tier x (crit damage - 1)`, which is a
-                            // formula a reader can check against the card and
-                            // `x4.40` is not.
-                            crit_damage: cd,
-                            steps: &hit_steps,
-                            part: Some(&part.name),
-                            head: part.is_head,
-                            crit_tier: tier,
-                            procs: &procs,
-                        },
-                    );
-                }
+                // …AND THE ORDINARY END OF A PELLET, which does get to name
+                // what it applied.
+                log_this_pellet!(&procs);
                 settle_procs(
                     procs,
                     t,
@@ -12999,8 +13037,6 @@ pub fn run_once_traced(
                     // THE ROW LANDS HERE, not beside the push above: an event
                     // is stamped with the weapon AS IT NOW IS, and until this
                     // line the form and the magazine are still the old ones.
-                    weapon_now!();
-                    rec.push(t, None, crate::record::Kind::TransformEnd { transmuted: true });
                     // The base magazine's refill IS a reload (user,
                     // 2026-07-30): whole rounds off whatever is already in it,
                     // and out of the same reserve as every other reload. This
@@ -13010,6 +13046,13 @@ pub fn run_once_traced(
                     let loaded = draw_from(&mut reserve, params.infinite_reserve,
                         reload_draw(cy.base_form.magazine_size, base_mag));
                     base_mag += loaded;
+                    // THE ROW LANDS HERE, once BOTH magazines are what the
+                    // transmute made them: the charge magazine it filled and the
+                    // base one it silently reloaded. Announced any earlier and
+                    // the free reload — the whole reason both magazines are on
+                    // every row — is missing from the row that performed it.
+                    weapon_now!();
+                    rec.push(t, None, crate::record::Kind::TransformEnd { transmuted: true });
                     // …AND THAT RELOAD PAYS ITS SHELLS. One as you go in, the
                     // rest owed until you come out (owner, 2026-08-08).
                     //

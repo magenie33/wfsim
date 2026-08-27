@@ -66,8 +66,18 @@ use crate::damage::DamageType;
 pub struct WeaponAt {
     /// True while the weapon is in a transmuted (Incarnon) form.
     pub transmuted: bool,
+    /// The magazine the ACTIVE form spends — what the next shot comes out of.
     pub magazine: u32,
     pub magazine_max: u32,
+    /// …AND THE ONE THAT IS NOT FIRING: the base form's while transmuted, the
+    /// charge magazine while not. `None` on a weapon with no cycle.
+    ///
+    /// Both are drawn ALWAYS, because entering the form REFILLS the base
+    /// magazine behind the scenes — "swapping either way fully reloads the base
+    /// form's magazine" — and a column that showed only the firing one made
+    /// that free reload invisible. A reader auditing a cycle wants to see it
+    /// happen (owner, 2026-08-27).
+    pub idle_magazine: Option<(u32, u32)>,
     /// THE INCARNON GAUGE, and how much of it fills the form — `None` on a
     /// weapon that has no cycle.
     ///

@@ -41,7 +41,17 @@ const r = await evaluate(`(async () => {
   sim.duration = 6; sim.runs = 12; sim.headshot_pct = 0;
   sim.formation = []; sim.aim_at = null;
   markScenarioDirty && markScenarioDirty();
-  await sleep(400);
+  // A BUILD, and the check needs one. Every assertion below passed for a month
+  // while the record was being computed for a BLANK build, because the fixture
+  // was blank too and the two were indistinguishable — the panel sent the
+  // SCENARIO and not the mods, so it explained a fight nobody had run (owner,
+  // 2026-08-27). A damage mod makes the two tell apart.
+  slots[0] = { mod: 'hornet_strike', pol: slots[0] && slots[0].pol, rank: null };
+  // …AND MULTISHOT, so 'own' and 'multishot' both exist and the filter has
+  // something to remove.
+  slots[1] = { mod: 'barrel_diffusion', pol: slots[1] && slots[1].pol, rank: null };
+  if (typeof renderAll === 'function') renderAll();
+  await sleep(600);
 
   const run = document.querySelector('#run-sim');
   run.click();
@@ -54,6 +64,14 @@ const r = await evaluate(`(async () => {
   const fold = document.querySelector('.fold[data-fold="record"]');
   out.block = !!fold;
   if (fold && fold.classList.contains('shut')) { fold.querySelector('.fold-h').click(); await sleep(200); }
+  out.mods = (typeof buildPayload === 'function' ? buildPayload().mods : []) || [];
+  // WHAT THE REPORT SAID THIS ENGAGEMENT WAS WORTH. The dps it prints is the
+  // MEDIAN run's effective damage over the duration, and the record is that
+  // same run — so the rows have to add up to it. It is the one assertion that
+  // tells "the record explains this report" from "a similar fight".
+  out.reportTotal = (shownResult && shownResult.r)
+    ? shownResult.r.dps * shownResult.r.duration : 0;
+
   const load = document.querySelector('#rec-load');
   out.button = !!load;
   if (load) load.click();
@@ -137,12 +155,17 @@ const r = await evaluate(`(async () => {
   out.statesDrawn = rows.filter((tr) => /health/i.test(tr.querySelector('.rec-state').textContent)).length;
 
   // ---- A FILTER SHOWS ONLY WHAT IT NAMES -------------------------------
-  const kind = [...document.querySelectorAll('[data-reckind]')].find((b) => b.dataset.reckind === 'status');
+  // A KIND THE FIXTURE ACTUALLY PRODUCES. Asserting on one it does not is a
+  // check that fails for being unlucky rather than for being wrong.
+  const want = rows.some((tr) => /multishot/i.test(tr.querySelector('.rec-org').textContent))
+    ? 'multishot' : 'own';
+  out.want = want;
+  const kind = [...document.querySelectorAll('[data-reckind]')].find((b) => b.dataset.reckind === want);
   if (kind) { kind.click(); await sleep(250); }
   const after = [...document.querySelectorAll('tr.rec-dmg')];
   out.filtered = after.length;
   out.filteredAllStatus = after.length > 0
-    && after.every((tr) => /status/i.test(tr.querySelector('.rec-org').textContent));
+    && after.every((tr) => tr.querySelector('.rec-org').textContent.trim().replace(/ /g, '_') === want);
   const all = [...document.querySelectorAll('[data-reckind]')].find((b) => b.dataset.reckind === 'all');
   if (all) { all.click(); await sleep(250); }
   out.restored = document.querySelectorAll('tr.rec-dmg').length;
@@ -151,6 +174,10 @@ const r = await evaluate(`(async () => {
   // A record that can only be looked at cannot be DIFFED, and a diff of two
   // records is the thing that says which row moved when a number changes.
   out.copy = !!document.querySelector('#rec-copy');
+  // …AND THE SUM OF EVERY ROW, over the WHOLE fight rather than a window.
+  out.recordTotal = (recordState.events || [])
+    .filter((e) => e.kind === 'damage')
+    .reduce((a, e) => a + e.effective, 0);
   return out;
 })()`);
 
@@ -179,7 +206,16 @@ check(`${tag} each row says what the target was before it`, r.statesDrawn === r.
 // A NEGATIVE CONTROL for the filter: it must REMOVE things, and put them back.
 check(`${tag} a filter shows only what it names`,
   r.filteredAllStatus && r.filtered < r.rows && r.restored === r.rows,
-  `status ${r.filtered} of ${r.rows}, restored ${r.restored}`);
+  `${r.want}: ${r.filtered} of ${r.rows}, restored ${r.restored}`);
 check(`${tag} the record can be taken away as text`, r.copy, "no copy control");
+
+// THE PAIRING, and it is the whole claim this panel makes: the rows are THIS
+// report's own engagement, not a similar one. Anything that reaches the engine
+// for the run and not for the record — a mod, a mode, an evolution, a riven —
+// moves this sum and nothing else on the page would notice.
+check(`${tag} the build reached it`, r.mods.length > 0, JSON.stringify(r.mods));
+check(`${tag} the rows add up to the report's own engagement`,
+  r.reportTotal > 0 && Math.abs(r.recordTotal - r.reportTotal) / r.reportTotal < 0.01,
+  `record ${Math.round(r.recordTotal).toLocaleString()} vs report ${Math.round(r.reportTotal).toLocaleString()}`);
 
 await finish("every row of the record produces its own number");

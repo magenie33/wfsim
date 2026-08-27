@@ -14284,7 +14284,22 @@ async function loadRecord(r, from, to) {
   const key = recordKey(r);
   recordState = { key, from, to, loading: true, body: null, filter: "all" };
   paintRecord(r);
-  const out = await api("/api/log", theFight({ run: r.run, from, to, limit: 20000 }));
+  // THE BUILD AND THE FIGHT, exactly as `runSim` sends them. `theFight()` is
+  // the SCENARIO — it carries no mods, no mode, no evolutions, no riven — so a
+  // record asked for with it alone was computed for a BLANK build and explained
+  // a fight nobody ran. Worse than wrong: with no `evolutions` the parser hands
+  // the Incarnon form over free, so the record opened already transmuted while
+  // the report beside it had earned the form (owner spotted it on the board's
+  // #1 build, 2026-08-27).
+  //
+  // The pairing is the whole claim this panel makes, so it is written the same
+  // way the run is: `buildPayload()` then the fight, one line apart.
+  // `to` IS OMITTED WHEN THERE IS NONE, never sent as null: the server reads a
+  // missing key as "the whole fight" and a null one as zero, which silently
+  // truncated the window to nothing after the opening events (2026-08-27).
+  const win = to == null ? { from } : { from, to };
+  const out = await api("/api/log",
+    { ...buildPayload(), ...theFight({ run: r.run, ...win, limit: 20000 }) });
   if (!recordState || recordState.key !== key) return;   // the result moved on
   recordState.loading = false;
   recordState.events = (out && out.events) || [];
@@ -14408,9 +14423,20 @@ function recordRow(e, rosters) {
   // firing, and what is it about to become") and a reader should not have to
   // hold three columns in their head (owner, 2026-08-27).
   const g = w.gauge;
-  const wep = `<span class="rec-form ${w.form === "transmuted" ? "inc" : "base"}">${
-    escHtml(tr(w.form === "transmuted" ? "transmuted" : "base"))}</span>${
-    w.magazine_max ? `<span class="rec-mag">${w.magazine} / ${w.magazine_max}</span>` : ""}${
+  const idle = w.idle_magazine;
+  const inc = w.form === "transmuted";
+  // NOTHING IS HIDDEN HERE (owner, 2026-08-27). Both magazines are drawn on
+  // every row — the one being fired and the one that is not — because a
+  // transmute REFILLS the base form's behind the scenes, and a column that
+  // showed only the active one made that free reload invisible. Same for the
+  // gauge: it is what decides when the form arrives, so it is on every row of
+  // the fight rather than only the ones where it moved.
+  const wep = `<span class="rec-form ${inc ? "inc" : "base"}">${
+    escHtml(tr(inc ? "transmuted" : "base"))}</span>${
+    w.magazine_max ? `<span class="rec-mag firing">${escHtml(tr(inc ? "charges" : "magazine"))} ${
+      w.magazine} / ${w.magazine_max}</span>` : ""}${
+    idle ? `<span class="rec-mag idle">${escHtml(tr(inc ? "magazine" : "charges"))} ${
+      idle[0]} / ${idle[1]}</span>` : ""}${
     w.reserve != null ? `<span class="rec-mag">${escHtml(tr("reserve"))} ${n(w.reserve)}</span>` : ""}${
     g ? `<span class="rec-gauge" title="${escHtml(tr("Incarnon gauge"))}"><i style="width:${
       Math.min(100, (g[0] / Math.max(1, g[1])) * 100).toFixed(0)}%"></i></span><span class="rec-mag">${

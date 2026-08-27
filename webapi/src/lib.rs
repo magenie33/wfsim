@@ -5574,6 +5574,10 @@ fn event_json(e: &wfsim_engine::record::Event) -> Value {
             "form": if e.weapon.transmuted { "transmuted" } else { "base" },
             "magazine": e.weapon.magazine,
             "magazine_max": e.weapon.magazine_max,
+            // THE FORM THAT IS NOT FIRING — drawn always, because a transmute
+            // silently refills the base magazine and a column showing only the
+            // active one hid it.
+            "idle_magazine": e.weapon.idle_magazine.map(|(at, of)| json!([at, of])),
             // WHAT IS LEFT IN RESERVE — `null` where the fight grants infinite
             // ammo, which every ruler does.
             "reserve": e.weapon.reserve.map(r1),
