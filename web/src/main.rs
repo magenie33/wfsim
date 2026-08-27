@@ -18,7 +18,8 @@ use std::sync::{Arc, Mutex, OnceLock};
 use serde_json::{json, Value};
 use wfsim_optimizer::FunnelState;
 use wfsim_webapi::{
-    board_check_json, err_json, i18n_json, meta_json, opt_buffs_json, pairings_json, panel_json,
+    board_check_json, err_json, i18n_json, log_json, meta_json, opt_buffs_json, pairings_json,
+    panel_json,
     parse_optimize, riven_json,
     run_optimize,
     targets_json,
@@ -222,6 +223,10 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
         ("POST", "/api/simulate") => {
             let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
             respond_json(&mut stream, &simulate_json(&value))
+        }
+        ("POST", "/api/log") => {
+            let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);
+            respond_json(&mut stream, &log_json(&value))
         }
         ("POST", "/api/optimize") => {
             let value = serde_json::from_slice::<Value>(&req.body).unwrap_or(Value::Null);

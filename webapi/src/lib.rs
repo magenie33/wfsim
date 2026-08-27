@@ -5415,6 +5415,272 @@ enum Work {
     Merged(Box<wfsim_engine::dummy::Shard>),
 }
 
+/// THE PANEL AND THE ENGINE PARAMS a parsed fight resolves to.
+///
+/// Lifted out of `simulate_from` so `/api/log` runs the SAME fight rather than
+/// a second spelling of it — which is the server's half of "THERE IS ONE
+/// FIGHT" said about the thing `parse_fight` hands over rather than about the
+/// request. Nothing is decided here that is not decided here for both.
+#[allow(clippy::too_many_arguments)]
+fn sim_params(
+    v: &Value,
+    info: &'static WeaponInfo,
+    policy: StackPolicy,
+    evo_refs: &[&str],
+    refs: &[&ModDef],
+    tenno: &wfsim_engine::tenno_data::Tenno,
+    arena: &wfsim_engine::arena::Arena,
+    run_cycle: bool,
+    single_form: &str,
+    infinite_ammo: bool,
+    frenzy_single: bool,
+    cycle_frenzy_lock: wfsim_engine::dummy::LockMode,
+    frenzy_locks: &[BuffLock],
+) -> (ResolvedPanel, DummyParams) {
+    let arcane_fx = {
+        let ab = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, evo_refs);
+        arcane_fx_for(v, info, &ab, policy)
+    };
+    // Either ONE registered form, or the real two-form cycle (which needs the
+    // gauge form and the form it transforms out of, so it resolves both).
+    let panel_of = |id: &str| resolve_for(&base_for(v, id, evo_refs), refs, policy, tenno);
+    if run_cycle {
+        let incarnon_panel = panel_of(incarnon_id(info).unwrap_or(&info.id));
+        let base_panel = panel_of(&info.id);
+        let params = DummyParams::incarnon_cycle_from_panels(
+            &incarnon_panel,
+            &base_panel,
+            frenzy_single,
+            cycle_frenzy_lock,
+            arena,
+            &arcane_fx,
+        );
+        // The cycle reports the form it transforms INTO, as it always has.
+        let mut params = params;
+        params.infinite_reserve = incarnon_panel.reserve_is_infinite(infinite_ammo);
+        (incarnon_panel, params)
+    } else {
+        let panel = panel_of(single_form);
+        let mut d = DummyParams::from_panel(&panel, arena, &arcane_fx);
+        d.infinite_reserve = panel.reserve_is_infinite(infinite_ammo);
+        // Frenzy is the WEAPON's passive: it persists across its forms
+        // (user-confirmed 2026-07-24), so it rides whichever one is fired.
+        d.frenzy = frenzy_single;
+        d.locked_buffs = frenzy_locks.to_vec();
+        (panel, d)
+    }
+}
+
+/// THE COMBAT RECORD of one engagement — see [`wfsim_engine::record`].
+///
+/// **A QUERY, NOT A PAYLOAD.** It is deliberately not a field on
+/// `/api/simulate`: an ordinary fight deals 2,000–5,000 damage instances over
+/// 180 s and the densest measured deals 408,817, so a log that rode along would
+/// be free on most builds and megabytes on exactly the ones a player is most
+/// likely to be arguing about. Asking separately costs ONE re-run of the
+/// engagement — about a millisecond single-target — and lets a reader pan,
+/// filter and page without re-simulating the thousand runs behind the report.
+///
+/// It also keeps the storage rule intact: a record never reaches the disk,
+/// because it is never part of the thing that gets saved.
+///
+/// Request: the fight, exactly as `/api/simulate` was sent it, plus
+/// `run: [hi, lo]` from that call's answer, and optionally `from`, `to`,
+/// `body` and `limit`. Same fight + same run = the same numbers, bit for bit.
+pub fn log_json(v: &Value) -> Value {
+    let fight = match parse_fight(v) {
+        Ok(f) => f,
+        Err(e) => return e,
+    };
+    let Fight {
+        info, policy, buff_cfg, arena, evos, run_cycle, single_form, tenno,
+        infinite_ammo, frenzy_single, frenzy_locks, cycle_frenzy_lock, ..
+    } = fight;
+    let evo_refs: Vec<&str> = evos.iter().map(String::as_str).collect();
+    let mod_ids: Vec<String> = v
+        .get("mods")
+        .and_then(|x| x.as_array())
+        .map(|a| a.iter().filter_map(|m| m.as_str().map(String::from)).collect())
+        .unwrap_or_default();
+    let pool = mod_pool_with_rivens(v, info, &evo_refs);
+    let refs: Vec<&ModDef> = mod_ids
+        .iter()
+        .filter_map(|id| pool.iter().find(|m| m.id == *id))
+        .collect();
+    let (_, mut params) = sim_params(
+        v, info, policy, &evo_refs, &refs, &tenno, &arena,
+        run_cycle, single_form, infinite_ammo, frenzy_single, cycle_frenzy_lock,
+        &frenzy_locks,
+    );
+    if let Some(cfg) = &buff_cfg {
+        params.apply_buff_config(cfg);
+    }
+
+    // THE RUN, as two u32 halves — see the `run` key `/api/simulate` answers
+    // with. A caller that sends none gets the run that state 0 produces, which
+    // is a legal engagement and not the one the report is about; the answer
+    // says which it used rather than letting a reader assume.
+    let run = v.get("run").and_then(|x| x.as_array());
+    let half = |i: usize| -> u64 {
+        run.and_then(|a| a.get(i)).and_then(Value::as_u64).unwrap_or(0)
+    };
+    let state = (half(0) << 32) | (half(1) & 0xffff_ffff);
+
+    let from = get_f64(v, "from", 0.0);
+    let to = get_f64(v, "to", f64::INFINITY);
+    // A CEILING THE READER SETS, and one this endpoint will not exceed. 60,000
+    // is twelve times an ordinary fight's whole stream and a seventh of the
+    // worst one measured, so the common case is never truncated and the
+    // pathological one is answered rather than refused.
+    let limit = get_f64(v, "limit", 60_000.0).clamp(1.0, 200_000.0) as usize;
+    let rec = wfsim_engine::dummy::record(&params, state, from, to, limit);
+
+    // ONE BODY'S VIEW IS A FILTER, never a different query: a weapon event
+    // belongs to nobody, so it belongs in every body's timeline (owner,
+    // 2026-08-27).
+    let only = v.get("body").and_then(Value::as_u64).map(|b| b as u16);
+    let events: Vec<Value> = rec
+        .events()
+        .iter()
+        .filter(|e| only.is_none_or(|b| e.subject.is_none_or(|s| s == b)))
+        .map(event_json)
+        .collect();
+    json!({
+        "ok": true,
+        "run": [(state >> 32) as u32, (state & 0xffff_ffff) as u32],
+        "from": from,
+        "to": if to.is_finite() { json!(to) } else { Value::Null },
+        // WHAT DID NOT FIT, stated rather than swallowed — a cap nobody is told
+        // about reads as "that is everyone".
+        "dropped": rec.dropped(),
+        "events": events,
+    })
+}
+
+/// One event, on the wire. Written by hand rather than derived: the enum's
+/// shape is the ENGINE's business and the page joins on names it can translate.
+fn event_json(e: &wfsim_engine::record::Event) -> Value {
+    use wfsim_engine::record::Kind;
+    let mut o = json!({
+        "id": e.id,
+        "t": (e.t * 1000.0).round() / 1000.0,
+        "weapon": {
+            "form": if e.weapon.transmuted { "transmuted" } else { "base" },
+            "magazine": e.weapon.magazine,
+            "magazine_max": e.weapon.magazine_max,
+        },
+    });
+    let m = o.as_object_mut().expect("object");
+    if let Some(s) = e.subject {
+        m.insert("body".into(), json!(s));
+    }
+    if let Some(c) = e.cause {
+        m.insert("cause".into(), json!(c));
+    }
+    match &e.kind {
+        Kind::Damage(d) => {
+            m.insert("kind".into(), json!("damage"));
+            m.insert("origin".into(), json!(d.origin.name()));
+            m.insert("pool".into(), json!(d.pool.name()));
+            m.insert("type".into(), json!(d.dtype.name()));
+            if let Some(p) = &d.part {
+                m.insert("part".into(), json!(p));
+                m.insert("head".into(), json!(d.head));
+            }
+            if d.crit_tier > 0 {
+                m.insert("crit".into(), json!(d.crit_tier));
+            }
+            m.insert("base".into(), json!(r1(d.base)));
+            // THE FACTORS THAT MOVED, and the NAMES of the ones that did not.
+            //
+            // A `×1.00` is noise on a row and its ABSENCE is not the same fact:
+            // "the faction term was there and paid nothing" is the answer to
+            // "why is my Bane doing nothing", while "this weapon has no sniper
+            // combo" is not worth a line (owner, 2026-08-27). So the engine
+            // keeps every factor — the product has to check out — and the wire
+            // splits them: values for what bit, names alone for what did not.
+            // On a plain rifle hit that is 15 entries down to 2 plus a list.
+            let (live, inert): (Vec<_>, Vec<_>) =
+                d.steps.iter().partition(|(_, v)| (v - 1.0).abs() > 1e-12);
+            m.insert("steps".into(), json!(steps_json(&live)));
+            if !inert.is_empty() {
+                m.insert("steps_inert".into(),
+                    json!(inert.iter().map(|(k, _)| *k).collect::<Vec<_>>()));
+            }
+            m.insert("raw".into(), json!(r1(d.raw)));
+            m.insert("mitigation".into(),
+                json!(steps_json(&d.mitigation.iter().collect::<Vec<_>>())));
+            m.insert("effective".into(), json!(r1(d.effective)));
+            m.insert("before".into(), json!({
+                "overguard": r1(d.before.overguard),
+                "shield": r1(d.before.shield),
+                "health": r1(d.before.health),
+                "armor": r1(d.before.armor),
+                // THE WINDOW NOBODY TAKES, YET — see `record::TargetAt`. Drawn
+                // rather than dropped because the day melee lands, this is how
+                // the claim gets checked.
+                "shield_gate_until": d.before.shield_gate_until.map(r1),
+            }));
+            m.insert("debuffs".into(), json!(d.debuffs));
+            if !d.procs.is_empty() {
+                m.insert(
+                    "procs".into(),
+                    json!(d.procs.iter().map(|p| p.name()).collect::<Vec<_>>()),
+                );
+            }
+            if d.killed {
+                m.insert("killed".into(), json!(true));
+            }
+        }
+        Kind::Shot { pellets } => {
+            m.insert("kind".into(), json!("shot"));
+            m.insert("pellets".into(), json!(pellets));
+        }
+        Kind::Miss { reason } => {
+            m.insert("kind".into(), json!("miss"));
+            m.insert("reason".into(), json!(reason));
+        }
+        Kind::ReloadStart { seconds } => {
+            m.insert("kind".into(), json!("reload_start"));
+            m.insert("seconds".into(), json!(r1(*seconds)));
+        }
+        Kind::ReloadEnd => {
+            m.insert("kind".into(), json!("reload_end"));
+        }
+        Kind::TransformStart { seconds, into_transmuted } => {
+            m.insert("kind".into(), json!("transform_start"));
+            m.insert("seconds".into(), json!(r1(*seconds)));
+            m.insert(
+                "into".into(),
+                json!(if *into_transmuted { "transmuted" } else { "base" }),
+            );
+        }
+        Kind::TransformEnd { transmuted } => {
+            m.insert("kind".into(), json!("transform_end"));
+            m.insert(
+                "into".into(),
+                json!(if *transmuted { "transmuted" } else { "base" }),
+            );
+        }
+        Kind::StatusExpired { dtype, remaining } => {
+            m.insert("kind".into(), json!("status_expired"));
+            m.insert("type".into(), json!(dtype.name()));
+            m.insert("remaining".into(), json!(remaining));
+        }
+        Kind::Killed => {
+            m.insert("kind".into(), json!("killed"));
+        }
+    }
+    o
+}
+
+/// A ledger, as `[label, value]` pairs. An ARRAY rather than an object because
+/// ORDER is the information: the factors are listed in the order the engine
+/// applies them, and a JSON object does not promise one.
+fn steps_json(steps: &[&wfsim_engine::record::Step]) -> Vec<Value> {
+    steps.iter().map(|(k, v)| json!([k, r3(*v)])).collect()
+}
+
 fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Value {
     // THE FIGHT, parsed by the ONE function that parses it. The optimizer
     // calls the same one — see `parse_fight`.
@@ -5525,38 +5791,11 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     // silences an arcane's buff), and an argument cannot be forgotten the way
     // a follow-up assignment can — the Incarnon cycle's inner base form never
     // got one.
-    let arcane_fx = {
-        let ab = WeaponBase::from_data(incarnon_id(info).unwrap_or(&info.id), true, &evo_refs);
-        arcane_fx_for(v, info, &ab, policy)
-    };
-    let (report_panel, mut params): (ResolvedPanel, DummyParams) = {
-        let panel_of = |id: &str| resolve_for(&base_for(v, id, &evo_refs), &refs, policy, &tenno);
-        if run_cycle {
-            let incarnon_panel = panel_of(incarnon_id(info).unwrap_or(&info.id));
-            let base_panel = panel_of(&info.id);
-            let params = DummyParams::incarnon_cycle_from_panels(
-                &incarnon_panel,
-                &base_panel,
-                frenzy_single,
-                cycle_frenzy_lock,
-                &arena,
-                &arcane_fx,
-            );
-            // The cycle reports the form it transforms INTO, as it always has.
-            let mut params = params;
-            params.infinite_reserve = incarnon_panel.reserve_is_infinite(infinite_ammo);
-            (incarnon_panel, params)
-        } else {
-            let panel = panel_of(single_form);
-            let mut d = DummyParams::from_panel(&panel, &arena, &arcane_fx);
-            d.infinite_reserve = panel.reserve_is_infinite(infinite_ammo);
-            // Frenzy is the WEAPON's passive: it persists across its forms
-            // (user-confirmed 2026-07-24), so it rides whichever one is fired.
-            d.frenzy = frenzy_single;
-            d.locked_buffs = frenzy_locks.clone();
-            (panel, d)
-        }
-    };
+    let (report_panel, mut params) = sim_params(
+        v, info, policy, &evo_refs, &refs, &tenno, &arena,
+        run_cycle, single_form, infinite_ammo, frenzy_single, cycle_frenzy_lock,
+        &frenzy_locks,
+    );
     // An arcane the weapon cannot seat is an ERROR here, not a silent drop:
     // the sim is the one place a visitor is owed a reason.
     for (pool, aid, _) in arcane_choices(v, info) {
@@ -5868,8 +6107,14 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             // as "that is everyone".
             "pops": rep.frames.iter().map(|f| json!({
                 "n": f.pops_dropped,
+                // …AND WHICH POOL IT CAME OUT OF, since 2026-08-27. A hit on a
+                // shielded body pops TWO of these — the half the shield stops
+                // and the Toxin half that goes straight through — which is what
+                // the game shows, so the page has to be able to tell them
+                // apart to draw them the way a player saw them.
                 "v": f.pops.iter().map(|p| json!([
                     r1(p.t as f64), p.body, r1(p.amount as f64), p.dtype.name(), p.kind,
+                    p.pool.name(),
                 ])).collect::<Vec<_>>(),
             })).collect::<Vec<_>>(),
             "dstacks": (0..rep.tracked.len())
@@ -5891,6 +6136,16 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
 
     json!({
         "ok": true,
+        // WHICH ENGAGEMENT THIS REPORT IS ABOUT — the median run's own RNG
+        // state, as TWO u32 halves.
+        //
+        // It is the handle `/api/log` needs: the combat record re-runs the same
+        // fight from this state and gets the same numbers bit for bit, which is
+        // what makes the log the report's OWN fight rather than a similar one.
+        // Two halves because a JSON number in JavaScript is a double and a
+        // 64-bit state comes back ROUNDED — the same lesson `dummy::RunKey`
+        // records, learnt the same way (2026-08-18).
+        "run": [(m.rng_state >> 32) as u32, (m.rng_state & 0xffff_ffff) as u32],
         "score": m.kill_progress,
         "kills": m.kills,
         "kills_std": s.std_kills,
