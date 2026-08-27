@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 3158
+submissions: 3170
 engine: 29b06c88e74afede83a8a7575831a4c8732d2df4
 entries:
   - weapon: acceltra_prime
@@ -3494,6 +3494,17 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
+    score: 55.0165824545148
+    fp: 3eafa73ed084138f
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, pistol_elementalist, magnetic_might, riven, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_extended_volley, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [cold, damage, multishot]
+      malus: critical_chance
+      rolls: [0.9, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
     score: 53.727736539690014
     fp: 93aaca1cb51a4224
     mods: [galvanized_diffusion, primed_target_cracker, anemic_agility, pistol_elementalist, stunning_speed, magnetic_might, primed_heated_charge, riven]
@@ -3503,6 +3514,17 @@ entries:
       bonuses: [damage, heat, multishot]
       malus: damage_to_infested
       rolls: [1.1, 0.9, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
+    score: 52.84995793191631
+    fp: ec39113309a80264
+    mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, pistol_elementalist, magnetic_might, riven, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_extended_volley, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [cold, damage, multishot]
+      malus: critical_chance
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
     score: 51.67570954386076
@@ -3685,6 +3707,17 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, pistol_elementalist, magnetic_might, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
     arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
+    score: 45.879952079238265
+    fp: d5d00063f9b913a0
+    mods: [galvanized_diffusion, primed_target_cracker, pistol_elementalist, magnetic_might, frostbite, riven, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_haven_foray, furis_extended_volley, furis_elemental_balance]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [cold, damage, multishot]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
     score: 45.74000251112806
@@ -5841,14 +5874,14 @@ entries:
   - weapon: larkspur_prime
     mode: base
     score: 20.333333333333332
-    fp: 31894a025a0d7d84
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
+    fp: f7aac539533b14f8
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
     score: 20.333333333333332
-    fp: f7aac539533b14f8
-    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, critical_focus, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds]
+    fp: 31894a025a0d7d84
+    mods: [primed_dual_rounds, primed_rubedo_lined_barrel, hollowed_bullets, magnetized_cycle, hypothermic_shell, contamination_casing, primed_combustion_rounds, magma_chamber]
     arcanes: [primary_crux, secondary_enervate]
   - weapon: larkspur_prime
     mode: base
@@ -9153,6 +9186,13 @@ entries:
     mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_crux]
+  - weapon: torid
+    mode: base
+    score: 1.229524399808493
+    fp: 2dc33d1d0703f181
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, vile_acceleration, vital_sense, rime_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_dexterity]
   - weapon: torid
     mode: base
     score: 1.1046087422680415
