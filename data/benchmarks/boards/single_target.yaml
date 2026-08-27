@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 2971
+submissions: 2972
 engine: 6236e88e6b84aebaa78a8ffc7eb8ac27ae171a47
 entries:
   - weapon: acceltra_prime
@@ -7976,6 +7976,16 @@ entries:
     mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_survivors_edge]
     arcanes: [primary_deadhead]
+  - weapon: torid
+    mode: cycle
+    score: 28.6371165177344
+    fp: be0610f2567f4c16
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, riven]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_swift_deliverance, torid_commodores_fortune]
+    arcanes: [primary_merciless]
+    riven:
+      bonuses: [critical_chance, critical_damage, heat]
+      rolls: [1.1, 1.1, 1.1]
   - weapon: torid
     mode: cycle
     score: 28.206106151915684
