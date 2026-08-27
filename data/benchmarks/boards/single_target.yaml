@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 3115
+submissions: 3120
 engine: 02fa8334cba21a84c06dc4f0c5c062d1ba77035b
 entries:
   - weapon: acceltra_prime
@@ -737,6 +737,28 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage]
       malus: impact
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: base
+    score: 42.96634742316109
+    fp: e79cc1aabcaed529
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, repeater_clip, magnetic_strafe, riven, primed_charged_shell, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage]
+      malus: slash
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: base
+    score: 30.489846131272277
+    fp: 81b28e84e898e296
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, primed_chilling_grasp, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage]
+      malus: slash
       rolls: [1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: base
@@ -9337,6 +9359,24 @@ entries:
     riven:
       bonuses: [cold, critical_chance, critical_damage]
       malus: magazine_capacity
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas
+    mode: base
+    score: 0.735523554752091
+    fp: 4bb1dfa172800d81
+    mods: [split_chamber, serration, critical_delay, rifle_elementalist, rime_rounds, malignant_force, hellfire, riven]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas
+    mode: base
+    score: 0.3924879982013693
+    fp: 4bb1dfa172800d81
+    mods: [split_chamber, serration, critical_delay, rifle_elementalist, riven, rime_rounds, malignant_force, hellfire]
+    riven:
+      bonuses: [critical_chance, critical_damage, fire_rate]
+      malus: damage_to_infested
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: verglas
     mode: base
