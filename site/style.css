@@ -1942,6 +1942,21 @@ tr.rec-transform_start td,tr.rec-transform_end td{background:color-mix(in srgb,v
   margin-right:3px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap;
   font-variant-numeric:tabular-nums}
 .rec-f i{font-style:normal;color:var(--muted);font-size:10px}
+.rec-b0.sub{background:transparent;border:1px dashed var(--line);font-weight:600}
+.rec-b0 i{font-style:normal;color:var(--muted);font-size:10px;margin-left:4px;font-weight:400}
+.rec-f.base{border-style:dashed}
+.rec-pel{display:inline-block;font-size:10px;color:var(--muted);margin-left:4px;font-variant-numeric:tabular-nums}
+.rec-half{display:block;font-size:10px;color:var(--text-2);font-weight:600}
+.rec-stk{display:flex;flex-wrap:wrap;gap:3px}
+.rec-s{display:inline-flex;align-items:baseline;gap:2px;padding:0 5px;height:16px;line-height:16px;
+  border-radius:3px;font-size:10px;font-weight:600;font-variant-numeric:tabular-nums}
+.rec-s.up{background:color-mix(in srgb,var(--gold) 22%,transparent);color:var(--gold)}
+.rec-s.on{background:color-mix(in srgb,var(--s7) 20%,transparent);color:var(--s7)}
+.rec-p{display:inline-flex;align-items:center;height:16px;padding:0 5px;border-radius:3px;
+  font-size:10px;font-weight:600;margin:0 2px 2px 0;
+  background:color-mix(in srgb,var(--s8) 20%,transparent);color:var(--s8)}
+.rec-buff,.rec-dbf{width:140px}
+.rec-wep{width:110px}
 .rec-f.mit{border-color:color-mix(in srgb,var(--critical) 40%,transparent);
   background:color-mix(in srgb,var(--critical) 9%,transparent)}
 /* THE FACTORS THAT DID NOTHING, as a count you can hover. They are noise on a
@@ -1953,6 +1968,8 @@ tr.rec-transform_start td,tr.rec-transform_end td{background:color-mix(in srgb,v
   font-size:9.5px;font-weight:700;line-height:1}
 .rec-form.base{background:color-mix(in srgb,var(--muted) 22%,transparent);color:var(--text-2)}
 .rec-form.inc{background:color-mix(in srgb,var(--gold) 26%,transparent);color:var(--gold)}
+.rec-gauge{display:block;height:3px;border-radius:2px;background:var(--line);margin-top:3px;overflow:hidden}
+.rec-gauge>i{display:block;height:100%;background:var(--gold);border-radius:2px}
 .rec-mag{display:block;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:2px}
 .rec-state{width:180px}
 .rec-state span{display:block;font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}

@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "a5df2c3b+ · 2026-08-27 07:37Z";
+const BUILD_ID = "cab42381+ · 2026-08-27 07:59Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -14289,6 +14289,10 @@ async function loadRecord(r, from, to) {
   recordState.loading = false;
   recordState.events = (out && out.events) || [];
   recordState.dropped = (out && out.dropped) || 0;
+  // THE TWO ROSTERS the rows' stack lists index into — the shooter's buffs and
+  // the target's debuffs, both positional and both named once rather than per
+  // row.
+  recordState.rosters = { buffs: (out && out.buffs) || [], debuffs: (out && out.debuffs) || [] };
   recordState.error = out && out.ok === false ? out.error : null;
   paintRecord(r);
 }
@@ -14349,12 +14353,16 @@ function recordBody(st) {
     <div class="rec-scroll"><table class="rec-t">
       <thead><tr>
         <th>${escHtml(tr("time"))}</th><th>${escHtml(tr("source"))}</th>
-        <th>${escHtml(tr("weapon"))}</th><th>${escHtml(tr("part"))}</th>
+        <th>${escHtml(tr("part"))}</th>
         <th class="num">${escHtml(tr("damage"))}</th>
+        <th>${escHtml(tr("procs"))}</th>
         <th>${escHtml(tr("where the number comes from"))}</th>
-        <th>${escHtml(tr("before · target"))}</th><th>${escHtml(tr("procs"))}</th>
+        <th>${escHtml(tr("weapon"))}</th>
+        <th>${escHtml(tr("buffs up"))}</th>
+        <th>${escHtml(tr("before · target"))}</th>
+        <th>${escHtml(tr("on the target"))}</th>
       </tr></thead>
-      <tbody>${shown.map(recordRow).join("")}</tbody>
+      <tbody>${shown.map((e) => recordRow(e, st.rosters || { buffs: [], debuffs: [] })).join("")}</tbody>
     </table></div>`;
 }
 
@@ -14366,22 +14374,66 @@ function recordPasses(e, filter) {
 
 const REC_POOL = { shield: "on the shield", health: "through to health", overguard: "on overguard" };
 
-function recordRow(e) {
+/// A STACK LIST AS CHIPS, with the ones at zero left out. Both sides of a row
+/// use it: the shooter's buffs and the target's debuffs are the same shape seen
+/// from opposite ends, so they are drawn by one function (owner, 2026-08-27).
+function recStacks(list, roster, cls) {
+  const on = (list || [])
+    .map((n, i) => [roster[i], n])
+    .filter(([id, n]) => id && n > 0);
+  if (!on.length) return `<span class="z">—</span>`;
+  return `<div class="rec-stk">${on.map(([id, n]) =>
+    `<span class="rec-s ${cls}">${escHtml(tr(id))}<b>${n}</b></span>`).join("")}</div>`;
+}
+
+/// THE BASE, OPENED UP. One number is an assertion; a chain is something a
+/// reader can check against the build panel — so where the engine can say where
+/// the base started and what took it there, the row says it (owner,
+/// 2026-08-27: "当成给最喜欢挑刺的人看的").
+function baseChain(e) {
+  const n = (x) => Math.round(x).toLocaleString();
+  if (e.base_from == null || !(e.base_steps || []).length) {
+    return `<span class="rec-b0">${n(e.base)}</span>`;
+  }
+  return `<span class="rec-b0 sub">${n(e.base_from)}<i>${escHtml(tr("ModifiedBase"))}</i></span>${
+    e.base_steps.map(([k, v]) => `<span class="rec-f base">×${v}<i>${escHtml(tr(k))}</i></span>`).join("")
+  }<span class="rec-b0">= ${n(e.base)}</span>`;
+}
+
+function recordRow(e, rosters) {
   const n = (x) => Math.round(x).toLocaleString();
   const w = e.weapon || {};
+  // THE WHOLE AMMO PICTURE IN ONE COLUMN — magazine, what is left in reserve,
+  // and the Incarnon gauge. They are one question ("can this weapon keep
+  // firing, and what is it about to become") and a reader should not have to
+  // hold three columns in their head (owner, 2026-08-27).
+  const g = w.gauge;
   const wep = `<span class="rec-form ${w.form === "transmuted" ? "inc" : "base"}">${
     escHtml(tr(w.form === "transmuted" ? "transmuted" : "base"))}</span>${
-    w.magazine_max ? `<span class="rec-mag">${w.magazine} / ${w.magazine_max}</span>` : ""}`;
+    w.magazine_max ? `<span class="rec-mag">${w.magazine} / ${w.magazine_max}</span>` : ""}${
+    w.reserve != null ? `<span class="rec-mag">${escHtml(tr("reserve"))} ${n(w.reserve)}</span>` : ""}${
+    g ? `<span class="rec-gauge" title="${escHtml(tr("Incarnon gauge"))}"><i style="width:${
+      Math.min(100, (g[0] / Math.max(1, g[1])) * 100).toFixed(0)}%"></i></span><span class="rec-mag">${
+      escHtml(tr("gauge"))} ${g[0]} / ${g[1]}</span>` : ""}`;
+
   if (e.kind !== "damage") {
     return `<tr class="rec-evt rec-${escHtml(e.kind)}">
       <td class="rec-t">${e.t.toFixed(3)}</td>
-      <td colspan="6"><b>${escHtml(tr(recordEventName(e)))}</b>${
+      <td colspan="7"><b>${escHtml(tr(recordEventName(e)))}</b>${
+        e.into ? ` <span class="sim-hint">${escHtml(tr(e.into === "transmuted" ? "into the transmuted form" : "back to the base form"))}</span>` : ""}${
         e.seconds != null ? ` <span class="sim-hint">${e.seconds.toFixed(2)}s</span>` : ""}${
         e.pellets != null ? ` <span class="sim-hint">${e.pellets} ${escHtml(tr("pellets"))}</span>` : ""}</td>
-      <td>${wep}</td></tr>`;
+      <td>${wep}</td><td colspan="2"></td></tr>`;
   }
+
+  // THE CRIT FACTOR CARRIES ITS FORMULA. `×4.40` is a product; `1 + 2 × (2.20
+  // − 1)` is something a reader can check against the weapon's card, and the
+  // two numbers in it are the only ones they have to trust.
   const steps = (e.steps || []).map(([k, v]) =>
-    `<span class="rec-f">×${v}<i>${escHtml(tr(k))}</i></span>`).join("");
+    k === "critical" && e.crit_damage
+      ? `<span class="rec-f hi">×${v}<i>${escHtml(tr("critical"))} = 1 + ${e.crit} × (${
+          e.crit_damage} − 1)</i></span>`
+      : `<span class="rec-f">×${v}<i>${escHtml(tr(k))}</i></span>`).join("");
   const mit = (e.mitigation || []).map(([k, v]) =>
     `<span class="rec-f mit">×${v}<i>${escHtml(tr(k))}</i></span>`).join("");
   // EVERY FACTOR THAT MOVED, and the NAMES of the ones that did not. A ×1.00 is
@@ -14393,13 +14445,22 @@ function recordRow(e) {
     : "";
   const b = e.before || {};
   const crit = e.crit ? `<span class="rec-crit">${escHtml(tr("crit"))} ${e.crit}</span>` : "";
+  // WHICH PELLET, AND WHICH HALF OF ITS ATTACK. A pellet that has an explosion
+  // is TWO rows and one pellet, so the two facts are drawn together: three
+  // pellets with a radial read as six numbers in three pairs.
+  const which = e.pellet != null
+    ? `<span class="rec-pel">${escHtml(tr("pellet"))} ${e.pellet}</span><span class="rec-half">${
+        escHtml(tr(e.radial ? "explosion" : "direct"))}</span>`
+    : "";
   return `<tr class="rec-dmg rec-${escHtml(e.pool)}">
     <td class="rec-t">${e.t.toFixed(3)}${e.cause != null ? `<span class="rec-cause">#${e.cause}</span>` : ""}</td>
-    <td><span class="rec-org rec-o-${escHtml(e.origin)}">${escHtml(tr(e.origin.replace(/_/g, " ")))}</span></td>
-    <td>${wep}</td>
+    <td><span class="rec-org rec-o-${escHtml(e.origin)}">${escHtml(tr(e.origin.replace(/_/g, " ")))}</span>${which}</td>
     <td>${e.part ? `<span class="${e.head ? "rec-head" : ""}">${escHtml(e.part)}${e.head ? " ⌖" : ""}</span>` : "<span class=\"z\">—</span>"}</td>
     <td class="num"><b>${n(e.effective)}</b><span class="rec-pool">${escHtml(tr(REC_POOL[e.pool] || e.pool))}</span>${crit}</td>
-    <td class="rec-calc"><span class="rec-b0">${n(e.base)}</span>${steps}<span class="rec-mid">= ${n(e.raw)}</span>${mit}<span class="rec-eq">= ${n(e.effective)}</span>${inert}</td>
+    <td class="rec-proc">${(e.procs || []).map((p) => `<span class="rec-p">${escHtml(DT(p))}</span>`).join("") || "<span class=\"z\">—</span>"}</td>
+    <td class="rec-calc">${baseChain(e)}${steps}<span class="rec-mid">= ${n(e.raw)}</span>${mit}<span class="rec-eq">= ${n(e.effective)}</span>${inert}</td>
+    <td class="rec-wep">${wep}</td>
+    <td class="rec-buff">${recStacks(e.buffs, rosters.buffs, "up")}</td>
     <td class="rec-state">${
       b.overguard > 0 ? `<span><i>OG</i>${n(b.overguard)}</span>` : ""}<span><i>${escHtml(tr("shield"))}</i>${n(b.shield || 0)}</span><span><i>${escHtml(tr("health"))}</i>${n(b.health || 0)}</span>${
       b.armor > 0 ? `<span><i>${escHtml(tr("armour"))}</i>${n(b.armor)}</span>` : ""}${
@@ -14409,7 +14470,7 @@ function recordRow(e) {
       b.shield_gate_until != null
         ? `<span class="rec-gate"><i>${escHtml(tr("gate"))}</i>${b.shield_gate_until.toFixed(2)}s</span>`
         : ""}</td>
-    <td>${(e.procs || []).map((p) => `<span class="rec-proc">${escHtml(DT(p))}</span>`).join("") || "<span class=\"z\">—</span>"}</td>
+    <td class="rec-dbf">${recStacks(e.debuffs, rosters.debuffs, "on")}</td>
   </tr>`;
 }
 

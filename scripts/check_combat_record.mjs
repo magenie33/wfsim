@@ -74,10 +74,24 @@ const r = await evaluate(`(async () => {
   for (const tr of rows) {
     const calc = tr.querySelector('.rec-calc');
     if (!calc) continue;
-    const base = num(calc.querySelector('.rec-b0').textContent);
+    // THE BASE IS THE LAST rec-b0 chip: where it can be opened up, the row
+    // draws the ModifiedBase it started from, the factors, then the base.
+    const b0 = [...calc.querySelectorAll('.rec-b0')];
+    const base = num(b0[b0.length - 1].textContent);
+    // …AND WHEN IT IS OPENED UP, that chain has to multiply out too.
+    if (b0.length > 1) {
+      const from = num(b0[0].textContent);
+      const bs = [...calc.querySelectorAll('.rec-f.base')].map((f) => num(f.firstChild.textContent));
+      const got = bs.reduce((a, x) => a * x, from);
+      if (Math.abs(got - base) > Math.max(1.0, Math.abs(base) * 0.005)) {
+        bad.push('ModifiedBase x base steps = ' + got.toFixed(1) + ' but row says ' + base);
+        checked++;
+        continue;
+      }
+    }
     const mid = num(calc.querySelector('.rec-mid').textContent);
     const eq = num(calc.querySelector('.rec-eq').textContent);
-    const off = [...calc.querySelectorAll('.rec-f:not(.mit)')].map((f) => num(f.firstChild.textContent));
+    const off = [...calc.querySelectorAll('.rec-f:not(.mit):not(.base)')].map((f) => num(f.firstChild.textContent));
     const def = [...calc.querySelectorAll('.rec-f.mit')].map((f) => num(f.firstChild.textContent));
     const raw = off.reduce((a, b) => a * b, base);
     const eff = def.reduce((a, b) => a * b, mid);

@@ -4533,6 +4533,17 @@ struct Instance<'a> {
     part: Option<&'a str>,
     head: bool,
     crit_tier: u32,
+    /// The crit damage the crit factor was built from — see
+    /// [`crate::record::Damage::crit_damage`].
+    crit_damage: f64,
+    /// Where `base` started, and what took it there.
+    base_from: f64,
+    base_steps: &'a [crate::record::Step],
+    /// Which pellet of the trigger pull, counting from 1 — see
+    /// [`crate::record::Damage::pellet`].
+    pellet: Option<u32>,
+    /// The EXPLOSION half of an attack that has one.
+    radial: bool,
     /// What this instance APPLIED — a different question from what it was.
     procs: &'a [DamageType],
 }
@@ -4575,6 +4586,10 @@ fn log_damage(
         return;
     }
     let stacks = debuffs.map(|d| d.sample(t)).unwrap_or_default();
+    // WHAT THE SHOOTER HAD UP, held by the recorder the way the weapon is — see
+    // `Record::set_stacks`. Sampling it here would mean threading a dozen run
+    // loop locals into nine functions.
+    let rec_buffs = rec.stacks().to_vec();
     let subject = Some(body.min(u16::MAX as usize) as u16);
     let one = breakdown.portions().len() == 1;
     for p in breakdown.portions() {
@@ -4605,6 +4620,8 @@ fn log_damage(
             subject,
             crate::record::Kind::Damage(Box::new(crate::record::Damage {
                 origin: inst.origin,
+                pellet: inst.pellet,
+                radial: inst.radial,
                 pool: p.pool,
                 // A SINGLE PORTION KEEPS THE CALLER'S TYPE — the same rule
                 // `pop_settled` follows one function over, and for the same
@@ -4614,6 +4631,9 @@ fn log_damage(
                 head: inst.head,
                 crit_tier: inst.crit_tier,
                 base: inst.base,
+                base_from: inst.base_from,
+                base_steps: inst.base_steps.to_vec(),
+                crit_damage: inst.crit_damage,
                 steps: inst.steps.to_vec(),
                 // A SPLIT SHARES ONE RAW NUMBER between its portions, and the
                 // share is already the first term of the ledger below — so the
@@ -4624,6 +4644,7 @@ fn log_damage(
                 effective: p.effective,
                 before: breakdown.before,
                 debuffs: stacks.clone(),
+                buffs: rec_buffs.clone(),
                 procs: inst.procs.to_vec(),
                 killed: settled.killed,
             })),
@@ -8508,7 +8529,10 @@ fn live_reload_speed(
 #[allow(clippy::too_many_arguments)]
 fn sample_stacks(
     params: &DummyParams,
-    rep: &Replay,
+    // THE ROSTER the answer is positional against — `DummyParams::buff_roster`.
+    // It used to be `&Replay`, which is the only consumer that had one; the
+    // combat record needs the same list and never builds a replay.
+    roster: &[BuffSeries],
     now: f64,
     arc: &mut ArcRuntime,
     gal: &mut GalStacks,
@@ -8528,7 +8552,7 @@ fn sample_stacks(
     // capped curve would be a chart that lies about the fight it draws.
     let cap = |n: u32| n.min(u32::from(u16::MAX)) as u16;
     let live = |on: bool| u16::from(on);
-    rep.buffs
+    roster
         .iter()
         .map(|b| match b.id.as_str() {
             // A weapon passive, not a stack: it is up or it is not.
@@ -9808,6 +9832,38 @@ pub fn run_once_traced(
         .cycle
         .as_ref()
         .map_or(0.0, |c| c.base_form.magazine_size);
+    // THE WEAPON AS IT STANDS, stamped onto the combat record.
+    //
+    // A MACRO BECAUSE IT IS CALLED WHERE STATE CHANGES, and those are six
+    // places that each own a different set of locals: the shot that spends a
+    // round, the two ends of a reload, and the two ends of each transform. It
+    // used to be written at the SHOT only, so every event between two shots
+    // carried the previous shot's weapon — a `transform_end` that had just put
+    // 216 charges in an Incarnon magazine reported `base 0/12`, which is the
+    // one row a reader opens the record to see (owner, 2026-08-27).
+    macro_rules! weapon_now {
+        () => {
+            if rec.is_on() {
+                rec.set_weapon(crate::record::WeaponAt {
+                    transmuted: !in_base_form,
+                    magazine: (if in_base_form { base_mag } else { magazine }).max(0.0) as u32,
+                    magazine_max: params
+                        .cycle
+                        .as_ref()
+                        .filter(|_| in_base_form)
+                        .map_or(mag_cap, |cy| cy.base_form.magazine_size)
+                        as u32,
+                    // THE GAUGE, and it starts EMPTY — which is the model's own
+                    // rule and was nowhere on screen.
+                    // INFINITE IS `None` rather than a very large number: a
+                    // ruler grants it, and a column reading "1e9" is a column a
+                    // reader has to decode.
+                    reserve: (!params.infinite_reserve).then_some(reserve),
+                    gauge: params.cycle.as_ref().map(|cy| (charges, cy.charges_to_fill)),
+                });
+            }
+        };
+    }
     // THE OCUCOR'S TENDRILS, tracked as two watermarks rather than as a
     // counter incremented at every kill.
     //
@@ -9892,7 +9948,7 @@ pub fn run_once_traced(
             if let Some(rep) = trace.as_deref_mut() {
                 while next_frame <= $until && next_frame < params.duration_seconds {
                     let stacks = sample_stacks(
-                        params, rep, next_frame, &mut arc, &mut gal, &mut buff_stacks,
+                        params, &rep.buffs, next_frame, &mut arc, &mut gal, &mut buff_stacks,
                         &ch_stacks, ch_buff_expiry, fire_rate_reload_expiry_seconds, base_damage_reload_expiry_seconds,
                         base_damage_eximus_expiry_seconds, streak_expiry, tendrils, crit_chance_hit_stacks, &bar,
                         combo_at(combo_spec, params.combo_held, combo_count,
@@ -10206,8 +10262,9 @@ pub fn run_once_traced(
                 // …but it is NOT a reload, and one perk can tell the difference:
                 // see `ClearedBy::Reload`.
                 magazine_refilled!(also_a_reload: false);
-                rec.push(t, None, crate::record::Kind::TransformEnd { transmuted: false });
                 in_base_form = true;
+                weapon_now!();
+                rec.push(t, None, crate::record::Kind::TransformEnd { transmuted: false });
                 charges = 0;
                 // The swap's auto-reload is the SAME mechanism as a normal one
                 // (user, 2026-07-30), so it draws whole rounds rather than
@@ -10257,6 +10314,7 @@ pub fn run_once_traced(
                 r.downtime_seconds += spent;
                 t += spent;
                 magazine_refilled!();
+                weapon_now!();
                 rec.push(t, None, crate::record::Kind::ReloadEnd);
                 r.reloads += 1;
                 if let Some(b) = cy.base_form.fire_rate_on_reload {
@@ -10323,6 +10381,7 @@ pub fn run_once_traced(
             r.downtime_seconds += spent;
             t += spent;
             magazine_refilled!();
+            weapon_now!();
             rec.push(t, None, crate::record::Kind::ReloadEnd);
             r.reloads += 1;
             if let Some(b) = params.fire_rate_on_reload {
@@ -10777,15 +10836,22 @@ pub fn run_once_traced(
         // stamped, so a row four seconds later still says which form fired it
         // and what was left in the magazine at the time.
         if rec.is_on() {
-            rec.set_weapon(crate::record::WeaponAt {
-                transmuted: !in_base_form,
-                magazine: (if in_base_form { base_mag } else { magazine }).max(0.0) as u32,
-                magazine_max: params
-                    .cycle
-                    .as_ref()
-                    .filter(|_| in_base_form)
-                    .map_or(mag_cap, |cy| cy.base_form.magazine_size) as u32,
-            });
+            weapon_now!();
+            // …AND WHAT THE SHOOTER HAS UP. Sampled at the SHOT, which is the
+            // one place in this loop that holds every local the sampler reads —
+            // the same reason `weapon_now!` is a macro. A row between two shots
+            // carries the count as of the shot before it, which is exact for
+            // everything a shot changes and up to one shot stale for a buff
+            // that expires on a clock of its own.
+            let roster = params.buff_roster();
+            let stacks = sample_stacks(
+                params, &roster, t, &mut arc, &mut gal, &mut buff_stacks,
+                &ch_stacks, ch_buff_expiry, fire_rate_reload_expiry_seconds,
+                base_damage_reload_expiry_seconds, base_damage_eximus_expiry_seconds,
+                streak_expiry, tendrils, crit_chance_hit_stacks, &bar,
+                combo_at(combo_spec, params.combo_held, combo_count, combo_last_hit, t),
+            );
+            rec.set_stacks(stacks);
             rec.begin_shot(t, n_pellets);
         }
         // BLAZING BARREL: the round is SPENT, so it was fired. Here and not in
@@ -11526,6 +11592,10 @@ pub fn run_once_traced(
                     None => modded_base,
                     Some(r) => r.modified_base,
                 };
+                // THE VECTOR BEFORE THE ABILITY'S ELEMENTS, kept so the row
+                // can show how its base was built rather than asserting one
+                // number. See `Damage::base_steps`.
+                let pre_ability_total = qvec.total();
                 let qvec = params.with_ability_elements(qvec, stage_mb, t);
                 // A merged beam tick carries the SUM of its beams. `qtotal`
                 // is what the instance deals; the crit CHANCE that produced
@@ -12531,14 +12601,44 @@ pub fn run_once_traced(
                             // every one after it is multishot's, and telling them apart
                             // is the difference between "my multishot works" and
                             // "something is double-counting" (owner, 2026-08-27).
-                            origin: if !direct {
-                                crate::record::Origin::Radial
-                            } else if pellet_idx == 0 {
+                            //
+                            // THE ORIGIN IS THE PELLET'S, NOT THE STAGE'S. A
+                            // pellet with an explosion produces two rows and
+                            // they are the SAME pellet — `radial` says which
+                            // half and `pellet` says whose — so a Laetum
+                            // Incarnon's three pellets read as six numbers in
+                            // three pairs rather than as three plus three
+                            // (owner, 2026-08-27). The engine already settles
+                            // them in that order: the stage loop is inside the
+                            // pellet loop, so only the LABEL was missing.
+                            origin: if pellet_idx == 0 {
                                 crate::record::Origin::Own
                             } else {
                                 crate::record::Origin::Multishot
                             },
+                            pellet: Some(pellet_idx + 1),
+                            radial: !direct,
                             base: qtotal,
+                            // HOW THAT BASE WAS BUILT. `qtotal` is one number
+                            // and it is three facts: this attack part's
+                            // ModifiedBase, the elemental hierarchy expanding
+                            // it, and the quantization the wiki rounds it
+                            // through. A reader auditing a build wants the
+                            // middle one, and reading it off the row beats
+                            // deriving it from the panel (owner, 2026-08-27).
+                            base_from: stage_mb,
+                            base_steps: &[
+                                ("element bracket + quantization",
+                                    if stage_mb > 0.0 { pre_ability_total / stage_mb } else { 1.0 }),
+                                ("Warframe ability element",
+                                    if pre_ability_total > 0.0 { qvec.total() / pre_ability_total } else { 1.0 }),
+                                ("merged beams", beam_merge),
+                            ],
+                            // …AND WHAT THE CRIT FACTOR IS MADE OF:
+                            // `1 + tier x (crit damage - 1)`, which is a
+                            // formula a reader can check against the card and
+                            // `x4.40` is not.
+                            crit_damage: cd,
                             steps: &hit_steps,
                             part: Some(&part.name),
                             head: part.is_head,
@@ -12886,7 +12986,6 @@ pub fn run_once_traced(
                     r.downtime_seconds += spent;
                     t += spent;
                     magazine_refilled!();
-                    rec.push(t, None, crate::record::Kind::TransformEnd { transmuted: true });
                     if transformed_from_empty {
                         bump_on_trigger!(
                             crate::loadout::BuffTrigger::ReloadFromEmpty, t, d.spine);
@@ -12897,6 +12996,11 @@ pub fn run_once_traced(
                     // from reserve — it is outside the ammo economy, takes no
                     // efficiency, and so is always whole anyway.
                     magazine = mag_cap;
+                    // THE ROW LANDS HERE, not beside the push above: an event
+                    // is stamped with the weapon AS IT NOW IS, and until this
+                    // line the form and the magazine are still the old ones.
+                    weapon_now!();
+                    rec.push(t, None, crate::record::Kind::TransformEnd { transmuted: true });
                     // The base magazine's refill IS a reload (user,
                     // 2026-07-30): whole rounds off whatever is already in it,
                     // and out of the same reserve as every other reload. This
@@ -13161,6 +13265,9 @@ pub fn record(
     limit: usize,
 ) -> crate::record::Record {
     let mut rec = crate::record::Record::window(from, to, limit);
+    // WHAT THE ROWS' STACK LISTS ARE CALLED — the buff cards' own ids, because
+    // they come from one place.
+    rec.set_buffs(params.buff_roster().into_iter().map(|b| b.id).collect());
     run_once_traced(params, &mut Rng::new(rng_state), None, &mut rec);
     rec
 }

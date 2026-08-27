@@ -5553,6 +5553,12 @@ pub fn log_json(v: &Value) -> Value {
         // WHAT DID NOT FIT, stated rather than swallowed — a cap nobody is told
         // about reads as "that is everyone".
         "dropped": rec.dropped(),
+        // THE TWO ROSTERS the rows' stack lists index into: the shooter's, whose
+        // ids are the buff cards' own, and the target's, which is a constant of
+        // the engine.
+        "buffs": rec.buffs(),
+        "debuffs": wfsim_engine::dummy::DEBUFF_ROSTER
+            .iter().map(|(id, _)| *id).collect::<Vec<_>>(),
         "events": events,
     })
 }
@@ -5568,6 +5574,12 @@ fn event_json(e: &wfsim_engine::record::Event) -> Value {
             "form": if e.weapon.transmuted { "transmuted" } else { "base" },
             "magazine": e.weapon.magazine,
             "magazine_max": e.weapon.magazine_max,
+            // WHAT IS LEFT IN RESERVE — `null` where the fight grants infinite
+            // ammo, which every ruler does.
+            "reserve": e.weapon.reserve.map(r1),
+            // THE INCARNON GAUGE, `null` on a weapon with no cycle. It starts
+            // EMPTY, which is the model's own rule and was nowhere on screen.
+            "gauge": e.weapon.gauge.map(|(at, of)| json!([at, of])),
         },
     });
     let m = o.as_object_mut().expect("object");
@@ -5581,6 +5593,14 @@ fn event_json(e: &wfsim_engine::record::Event) -> Value {
         Kind::Damage(d) => {
             m.insert("kind".into(), json!("damage"));
             m.insert("origin".into(), json!(d.origin.name()));
+            // WHICH PELLET, and which half of its attack. A pellet with an
+            // explosion is TWO rows and one pellet.
+            if let Some(n) = d.pellet {
+                m.insert("pellet".into(), json!(n));
+            }
+            if d.radial {
+                m.insert("radial".into(), json!(true));
+            }
             m.insert("pool".into(), json!(d.pool.name()));
             m.insert("type".into(), json!(d.dtype.name()));
             if let Some(p) = &d.part {
@@ -5591,6 +5611,18 @@ fn event_json(e: &wfsim_engine::record::Event) -> Value {
                 m.insert("crit".into(), json!(d.crit_tier));
             }
             m.insert("base".into(), json!(r1(d.base)));
+            // HOW THAT BASE WAS BUILT — see `record::Damage::base_from`. Sent
+            // only where the site has something to say, so a status tick's row
+            // stays one number rather than an empty chain.
+            if d.base_from > 0.0 {
+                let live: Vec<_> = d.base_steps.iter()
+                    .filter(|(_, v)| (v - 1.0).abs() > 1e-12).collect();
+                m.insert("base_from".into(), json!(r1(d.base_from)));
+                m.insert("base_steps".into(), json!(steps_json(&live)));
+            }
+            if d.crit_tier > 0 {
+                m.insert("crit_damage".into(), json!(r3(d.crit_damage)));
+            }
             // THE FACTORS THAT MOVED, and the NAMES of the ones that did not.
             //
             // A `×1.00` is noise on a row and its ABSENCE is not the same fact:
@@ -5622,6 +5654,8 @@ fn event_json(e: &wfsim_engine::record::Event) -> Value {
                 "shield_gate_until": d.before.shield_gate_until.map(r1),
             }));
             m.insert("debuffs".into(), json!(d.debuffs));
+            // …AND THE SHOOTER'S OWN SIDE, positional against `buffs` below.
+            m.insert("buffs".into(), json!(d.buffs));
             if !d.procs.is_empty() {
                 m.insert(
                     "procs".into(),

@@ -68,6 +68,21 @@ pub struct WeaponAt {
     pub transmuted: bool,
     pub magazine: u32,
     pub magazine_max: u32,
+    /// THE INCARNON GAUGE, and how much of it fills the form — `None` on a
+    /// weapon that has no cycle.
+    ///
+    /// WHAT IS LEFT IN RESERVE, or `None` where the fight grants infinite ammo
+    /// (which every ruler does). Beside the magazine because they are one
+    /// question — "can this weapon keep firing" — and a reader asking it should
+    /// not have to hold two columns in their head (owner, 2026-08-27).
+    pub reserve: Option<f64>,
+    /// A fight STARTS WITH AN EMPTY ONE, which is a real property of the model
+    /// and was invisible: the record showed a base form firing and then, with
+    /// no warning, a transform. What charges it is the weapon's own rule —
+    /// weak-point hits, direct hits, or kills — so a reader watching this
+    /// number climb is watching the thing that decides when the earned form
+    /// arrives (owner, 2026-08-27).
+    pub gauge: Option<(u32, u32)>,
 }
 
 /// WHY THIS ROW EXISTS — what brought this damage instance into being.
@@ -98,8 +113,6 @@ pub enum Origin {
     Ricochet,
     /// An arcane's echo — a second firing of the same shot.
     Echo,
-    /// The explosion half of an attack that has one.
-    Radial,
     /// An area a detonation threw at everything around the body that carried it.
     Splash,
     /// A status effect settling: a bleed, a burn, a tick.
@@ -121,7 +134,6 @@ impl Origin {
             Origin::Chain => "chain",
             Origin::Ricochet => "ricochet",
             Origin::Echo => "echo",
-            Origin::Radial => "radial",
             Origin::Splash => "splash",
             Origin::Status => "status",
             Origin::Field => "field",
@@ -170,6 +182,22 @@ pub struct TargetAt {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Damage {
     pub origin: Origin,
+    /// WHICH PELLET OF THE TRIGGER PULL, counting from 1 — `None` for anything
+    /// a pellet did not fire (a status tick, a field's clock).
+    ///
+    /// It is separate from [`Origin`] because a pellet that has an explosion
+    /// produces TWO rows and they are the SAME pellet: the Laetum's Incarnon
+    /// form fires three, so a shot is six numbers, and reading them as
+    /// "pellet 1 direct, pellet 1 radial, pellet 2 direct, …" is the only
+    /// arrangement in which the six add up to something a reader recognises
+    /// (owner, 2026-08-27). The engine already settles them in that order — the
+    /// stage loop is inside the pellet loop — so what was missing was the
+    /// label, and a radial row could not say which pellet threw it.
+    pub pellet: Option<u32>,
+    /// The EXPLOSION half of an attack that has one, rather than its collision.
+    /// Not an [`Origin`]: it is not why the row exists, it is which part of the
+    /// attack this is, and the two are asked of the same pellet.
+    pub radial: bool,
     /// Which pool it came out of, and what colour it read as.
     pub pool: crate::dummy::Pool,
     pub dtype: DamageType,
@@ -186,6 +214,20 @@ pub struct Damage {
     /// `base` is this instance's own modded damage before anything below it —
     /// one pellet's share on a multishot weapon.
     pub base: f64,
+    /// WHERE `base` STARTED, when the engine can say — this attack part's
+    /// ModifiedBase. `base_from x Pi base_steps = base`, and the two together
+    /// turn one opaque number into a chain a reader can check against the
+    /// build panel (owner, 2026-08-27).
+    ///
+    /// 0.0 where the site has nothing more to say: a status tick's base IS the
+    /// seed it was frozen with, and decomposing it means naming facts about a
+    /// hit that is over — the row `Event::cause` points at carries those.
+    pub base_from: f64,
+    pub base_steps: Vec<Step>,
+    /// THE CRIT DAMAGE the crit factor was built from: the factor itself is
+    /// `1 + crit_tier x (crit_damage - 1)`, and a reader checking a card wants
+    /// the formula rather than the product.
+    pub crit_damage: f64,
     pub steps: Vec<Step>,
     pub raw: f64,
     /// THE DEFENSIVE LEDGER: `raw × Π mitigation = effective`. Written from
@@ -198,6 +240,13 @@ pub struct Damage {
     /// [`crate::dummy::DEBUFF_ROSTER`] — the target's own half of "why is this
     /// number this size".
     pub debuffs: Vec<u16>,
+    /// LIVE BUFF STACKS on the shooter, positionally matching the roster in
+    /// [`crate::record::Record::buffs`] — the other side of `debuffs`.
+    ///
+    /// A row's factors say what was multiplied in; this says what the build had
+    /// UP at that instant, which is the question a reader asks when a factor is
+    /// smaller than they expected (owner, 2026-08-27).
+    pub buffs: Vec<u16>,
     /// What this instance APPLIED, which is a different question from what it
     /// was: a Corrosive hit can proc nothing.
     pub procs: Vec<DamageType>,
@@ -298,6 +347,11 @@ pub struct Record {
     /// The shot currently being resolved, so what it spawns can point back at
     /// it. Set by [`Self::begin_shot`].
     shot: Option<u32>,
+    /// WHAT THE BUFF STACKS ON EACH ROW ARE CALLED, in the order they are held.
+    /// The same vocabulary the buff cards use, because they come from one place
+    /// (`DummyParams::buff_roster`).
+    buffs: Vec<String>,
+    stacks: Vec<u16>,
 }
 
 impl Record {
@@ -319,6 +373,30 @@ impl Record {
 
     pub fn is_on(&self) -> bool {
         self.on
+    }
+
+    /// Name the buff roster the rows' stack lists index into.
+    pub fn set_buffs(&mut self, ids: Vec<String>) {
+        self.buffs = ids;
+    }
+
+    pub fn buffs(&self) -> &[String] {
+        &self.buffs
+    }
+
+    /// THE SHOOTER'S LIVE STACKS from here on, positionally against
+    /// [`Self::buffs`]. Held rather than sampled per row for the same reason
+    /// the weapon is: the sampler needs a dozen of the run loop's own locals.
+    ///
+    /// A row between two shots therefore carries the count as of the shot that
+    /// preceded it — which is exact for everything a shot changes, and up to
+    /// one shot stale for a buff that expires on its own clock.
+    pub fn set_stacks(&mut self, stacks: Vec<u16>) {
+        self.stacks = stacks;
+    }
+
+    pub fn stacks(&self) -> &[u16] {
+        &self.stacks
     }
 
     pub fn events(&self) -> &[Event] {
