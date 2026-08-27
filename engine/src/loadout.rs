@@ -6362,7 +6362,7 @@ mod tests {
             let arena = crate::arena::Arena::training(secs);
             let p = crate::dummy::DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
             let mut rng = crate::rng::Rng::new(7);
-            crate::dummy::run_once(&p, &mut rng).total_damage / secs
+            crate::dummy::run_once(&p, &mut rng).total_damage() / secs
         };
         let (d30, d300, d600) = (dps(30.0), dps(300.0), dps(600.0));
         // PAST THE FIRST MAGAZINE the rate is flat: every magazine after it

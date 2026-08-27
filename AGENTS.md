@@ -1320,6 +1320,42 @@ around (decision 2026-07-31).
   drawing ONE of them, which is the exact shape of the bug this replaced.
   Verified to bite in both directions — offsetting the id by one reddens the
   first, truncating a frame's list reddens the second.
+- **DAMAGE COMES THROUGH ONE DOOR, AND THE COMPILER HOLDS IT** (owner,
+  2026-08-27). `engine::dummy::ledger` owns the run's totals and the DPS curve
+  in types whose fields are PRIVATE TO IT, so the only thing in this crate that
+  can move them is `ledger::settle` — which books the number and writes the row
+  that explains it in the same call. A damage site that moves every curve on
+  the page and appears in no ledger is no longer something a person has to
+  remember not to write; it does not compile.
+  IT WAS NINE SITES AND A CONVENTION. Each one had `total_damage += x`,
+  `effective_damage += y`, `timeline.add(t, y)` and then, separately, a
+  `log_damage` call behind an `if recording(rec)` gate — five things to
+  remember, kept in step by whoever was editing, with a test comparing the sum
+  against the meter as the only guard. The owner named it: a guard rather than
+  a guarantee. Asked whether the architecture was elegant, the honest answer
+  was "the write path is one function and nine call sites are trusted to call
+  it", and he asked for the other half.
+  THE RAW TRAVELS ON `Settled`. Every site used to add its own local to
+  `total_damage` — nine spellings of "the number I just handed over", with
+  nothing tying it to what `apply` actually settled. `apply` carries it back
+  now, so a site cannot book one figure and settle another.
+  THE ARGUMENTS ARE A CLOSURE, which is what let the per-site gate go. An
+  `Instance` is a dozen locals, three Vecs and a String, and a `TargetAt`
+  re-runs the armour scaling curve — +4.0% on `one_fight` if the 999 runs
+  nobody reads pay for it. `settle` takes `impl FnOnce() -> Instance` and calls
+  it only when the record is on, so the gate is one place and forgetting it is
+  not something the language allows.
+  AND THE GENERIC HALF IS TINY, measured. With the whole body inside the
+  closure-generic function it is stamped out once per damage site and cost
+  **+2.7%**; splitting the cold half into a non-generic `write_row` put it
+  back. `Curve` is its own type rather than a third field on `Meter` for the
+  same kind of reason: it is a 600-slot array, `RunResult` is `Copy`, and
+  grouping 4.8 KB with the two hot scalars cost **2.4%**.
+  THE WHOLE THING MEASURES **+2.3%** with every answer unchanged on all four
+  shapes — paid on purpose for a guarantee that used to be a habit.
+  VERIFIED TO BITE, which for a compile-time guard means the sabotage must fail
+  to COMPILE: a would-be tenth site writing `r.meter.raw += 1.0` is rejected
+  with "field `raw` of struct `Meter` is private".
 - **THE STREAM IS THE FOUR THINGS A FIGHT DOES, PLUS A MISS** (owner,
   2026-08-27). A shot, a reload's two ends, a transmute's two ends, and the
   numbers the enemy takes. That list is the owner's, and it is shorter than the

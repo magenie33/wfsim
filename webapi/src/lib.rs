@@ -5978,7 +5978,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         })
         .collect();
     // One-second buckets, sliced to the engagement's actual duration.
-    let nb = (s.duration_seconds.ceil() as usize).clamp(1, m.timeline.0.len());
+    let nb = (s.duration_seconds.ceil() as usize).clamp(1, m.curve.buckets().len());
     let pel = m.pellets.max(1) as f64;
 
     // THE REPLAY: the median engagement, re-run from the RNG state it started
@@ -6177,7 +6177,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             / s.duration_seconds.max(1e-9),
         "kills_min": s.min_kills,
         "kills_max": s.max_kills,
-        "dps": m.effective_damage / s.duration_seconds.max(1e-9),
+        "dps": m.effective_damage() / s.duration_seconds.max(1e-9),
         "shots": m.shots,
         "pellets": m.pellets,
         "crit_rate": m.crits as f64 / pel,
@@ -6216,7 +6216,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // EVERY HIT SORTED BY WHAT IT WAS — [head][tier], tier capped at 2.
         "field_ticks": m.field_ticks,
         "damage_sources": damage_sources,
-        "timeline": m.timeline.0[..nb].to_vec(),
+        "timeline": m.curve.buckets()[..nb].to_vec(),
         "replay": replay,
         "transforms": m.transforms,
         "reloads": m.reloads,

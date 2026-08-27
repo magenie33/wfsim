@@ -475,6 +475,12 @@ impl Default for Portion {
 /// `RunResult` that is copied once per RUN.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Settled {
+    /// WHAT `apply` WAS ASKED TO SETTLE, carried back rather than re-stated by
+    /// the caller. Every damage site used to add its own local to
+    /// `total_damage` — nine spellings of "the number I just handed over" —
+    /// with nothing tying the two together, so a site could book one figure and
+    /// settle another. [`settle`] books this one.
+    pub raw: f64,
     pub effective: f64,
     pub killed: bool,
     broken: Option<BrokenPool>,
@@ -1127,6 +1133,7 @@ impl TargetState {
         // +13.3% on `one_fight`'s four shapes with every answer unchanged —
         // a pure tax (2026-08-27).
         let mut out = Settled {
+            raw,
             effective,
             killed: false,
             broken: None,
@@ -4244,15 +4251,6 @@ pub const TIMELINE_BUCKETS: usize = 600;
 /// `RunResult` is `Copy` and derives `Default`, and an array this long has
 /// neither.
 #[derive(Debug, Clone, Copy)]
-pub struct BodyDamage(pub [f64; crate::formation::MAX_BODIES + 1]);
-
-impl Default for BodyDamage {
-    fn default() -> Self {
-        BodyDamage([0.0; crate::formation::MAX_BODIES + 1])
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
 pub struct Timeline(pub [f64; TIMELINE_BUCKETS]);
 
 impl Default for Timeline {
@@ -4261,10 +4259,12 @@ impl Default for Timeline {
     }
 }
 
-impl Timeline {
-    fn add(&mut self, t: f64, v: f64) {
-        let i = t.max(0.0) as usize;
-        self.0[i.min(TIMELINE_BUCKETS - 1)] += v;
+#[derive(Debug, Clone, Copy)]
+pub struct BodyDamage(pub [f64; crate::formation::MAX_BODIES + 1]);
+
+impl Default for BodyDamage {
+    fn default() -> Self {
+        BodyDamage([0.0; crate::formation::MAX_BODIES + 1])
     }
 }
 
@@ -4365,12 +4365,12 @@ fn watching<'a>(
 /// crit tier, and saying so by omission is how those two stopped being told
 /// apart in the first place.
 #[derive(Default)]
-struct Instance<'a> {
+struct Instance {
     origin: crate::record::Origin,
     /// The offensive ledger: `base × Π steps` is what the target was handed.
     base: f64,
-    steps: &'a [crate::record::Step],
-    part: Option<&'a str>,
+    steps: Vec<crate::record::Step>,
+    part: Option<String>,
     head: bool,
     crit_tier: u32,
     /// The crit damage the crit factor was built from — see
@@ -4378,38 +4378,137 @@ struct Instance<'a> {
     crit_damage: f64,
     /// Where `base` started, and what took it there.
     base_from: f64,
-    base_steps: &'a [crate::record::Step],
+    base_steps: Vec<crate::record::Step>,
     /// Which pellet of the trigger pull, counting from 1 — see
     /// [`crate::record::Damage::pellet`].
     pellet: Option<u32>,
     /// The EXPLOSION half of an attack that has one.
     radial: bool,
     /// What this instance APPLIED — a different question from what it was.
-    procs: &'a [DamageType],
+    procs: Vec<DamageType>,
 }
 
-/// IS THIS INSTANCE BEING WRITTEN DOWN AT ALL? The gate every damage site puts
-/// its [`log_damage`] call behind.
+/// THE ONLY DOOR DAMAGE COMES THROUGH.
 ///
-/// The call itself would return immediately, so this exists purely so the
-/// ARGUMENTS are never built: an `Instance` is assembled from a dozen locals at
-/// nine sites and a `TargetAt` re-runs the armour scaling curve, and paying for
-/// both on the 999 runs nobody reads measured +4.0% on `one_fight` (2026-08-27).
-fn recording(rec: &crate::record::Record) -> bool {
-    rec.is_on()
+/// A module rather than a convention. `Meter`'s fields are private to it, so
+/// the ONLY thing in this crate that can move a run's damage totals is
+/// [`ledger::settle`] — which books the number and writes the row that
+/// explains it in the same call. Adding a tenth damage site that moves every
+/// curve on the page and appears in no ledger is not something a person has to
+/// remember not to do any more; it does not compile.
+///
+/// It is the shape the owner asked for (2026-08-27) after the honest answer to
+/// "is this architecture elegant" was: the write path is one function, and
+/// nine call sites are trusted to call it.
+pub mod ledger {
+    use super::*;
+
+    /// A run's damage, raw and after mitigation.
+    #[derive(Debug, Clone, Copy, Default)]
+    pub struct Meter {
+        raw: f64,
+        effective: f64,
+    }
+
+    /// THE DPS-OVER-TIME CURVE, and the same rule: a damage site that moved
+    /// this curve and wrote no row is precisely the drift this module exists to
+    /// make impossible, and that was the shape of the old `timeline.add`
+    /// sitting beside a `log_damage` call.
+    ///
+    /// A TYPE OF ITS OWN rather than a third field on `Meter`, for a measured
+    /// reason: it is a 600-slot array and `RunResult` is `Copy`, so grouping
+    /// 4.8 KB with the two hot scalars cost 2.4% on `one_fight` — the totals
+    /// want to sit near the run's other counters and the curve does not.
+    #[derive(Debug, Clone, Copy, Default)]
+    pub struct Curve(Timeline);
+
+    impl Curve {
+        /// The buckets, for the one reader there is (`webapi`'s DPS chart).
+        pub fn buckets(&self) -> &[f64] {
+            &self.0 .0
+        }
+    }
+
+    impl Meter {
+        /// Raw damage dealt (pre-mitigation), direct hits + DoT ticks.
+        #[inline]
+        pub fn raw(&self) -> f64 {
+            self.raw
+        }
+
+        /// Damage after target mitigation (overguard neutrality / armour DR).
+        #[inline]
+        pub fn effective(&self) -> f64 {
+            self.effective
+        }
+
+        /// PRIVATE ON PURPOSE — see the module's own doc. `settle` is the only
+        /// caller there can be.
+        #[inline]
+        fn book(&mut self, raw: f64, effective: f64) {
+            self.raw += raw;
+            self.effective += effective;
+        }
+    }
+
+    /// THE ONE PLACE A DAMAGE INSTANCE IS WRITTEN DOWN — the floating numbers and
+    /// the combat record, from the same breakdown, at every site where damage
+    /// lands.
+    ///
+    /// Both outputs come from `TargetState::apply`'s own portions, so they cannot
+    /// disagree about how many numbers there were or how big each one was; and the
+    /// record is filled by the same call that moved the pools rather than beside
+    /// it, which is what makes "the sum of the record is the damage total" true by
+    /// construction (see [`crate::record`]).
+    // INLINED ON PURPOSE: the generic half is three additions and a branch,
+    // and it sits on the hottest path this engine has.
+    #[inline]
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::dummy) fn settle(
+        r: &mut RunResult,
+        rec: &mut crate::record::Record,
+        t: f64,
+        body: usize,
+        dtype: DamageType,
+        kind: PopKind,
+        breakdown: &Breakdown,
+        settled: Settled,
+        debuffs: Option<&DebuffState>,
+        inst: impl FnOnce() -> Instance,
+    ) {
+        // THE BOOKING FIRST, and it is why this function exists. A damage site used
+        // to add to the totals on one line and write its row on another, so the two
+        // were kept in step by whoever remembered — and a tenth site added later
+        // could move every curve on the page and appear in no ledger at all. The
+        // only guard was a test comparing the sum against the meter, which is a
+        // guard rather than a guarantee. There is one door now.
+        //
+        // AND THE ARGUMENTS ARE BUILT ONLY IF ANYONE IS READING. An `Instance` is a
+        // dozen locals, three Vecs and a String, and a `TargetAt` re-runs the
+        // armour scaling curve; paying for all of it on the 999 runs nobody reads
+        // measured +4.0% on `one_fight` (2026-08-27). That gate used to be an
+        // `if recording(rec)` at each call site, which is exactly the second thing
+        // a new site had to remember. It is a closure now, and forgetting it is not
+        // something the language will let you do.
+            r.meter.book(settled.raw, settled.effective);
+        let i = t.max(0.0) as usize;
+        r.curve.0 .0[i.min(TIMELINE_BUCKETS - 1)] += settled.effective;
+        if rec.is_on() {
+            write_row(rec, t, body, dtype, kind, breakdown, settled, debuffs, inst());
+        }
+    }
 }
 
-/// THE ONE PLACE A DAMAGE INSTANCE IS WRITTEN DOWN — the floating numbers and
-/// the combat record, from the same breakdown, at every site where damage
-/// lands.
+/// THE ROW ITSELF — [`ledger::settle`]'s cold half, and NOT generic.
 ///
-/// Both outputs come from `TargetState::apply`'s own portions, so they cannot
-/// disagree about how many numbers there were or how big each one was; and the
-/// record is filled by the same call that moved the pools rather than beside
-/// it, which is what makes "the sum of the record is the damage total" true by
-/// construction (see [`crate::record`]).
+/// The split is a cost decision, measured. `settle` is generic over the closure
+/// that produces its arguments, so it is stamped out once per damage site, and
+/// with the whole body inside that it cost **+2.7%** on `one_fight` — nine
+/// copies of a hundred lines that run on one run in a thousand, for the sake of
+/// three additions that run on all of them. Keeping the generic part down to
+/// the booking and the branch puts the code back where it was (2026-08-27).
 #[allow(clippy::too_many_arguments)]
-fn log_damage(
+fn write_row(
     rec: &mut crate::record::Record,
     t: f64,
     body: usize,
@@ -4418,7 +4517,7 @@ fn log_damage(
     breakdown: &Breakdown,
     settled: Settled,
     debuffs: Option<&DebuffState>,
-    inst: Instance<'_>,
+    inst: Instance,
 ) {
     let stacks = debuffs.map(|d| d.sample(t)).unwrap_or_default();
     // WHAT THE SHOOTER HAD UP, held by the recorder the way the weapon is — see
@@ -4466,14 +4565,14 @@ fn log_damage(
                 // no honest single answer, so only a split overrides it.
                 dtype: if one { dtype } else { p.dtype },
                 kind,
-                part: inst.part.map(str::to_string),
+                part: inst.part.clone(),
                 head: inst.head,
                 crit_tier: inst.crit_tier,
                 base: inst.base,
                 base_from: inst.base_from,
-                base_steps: inst.base_steps.to_vec(),
+                base_steps: inst.base_steps.clone(),
                 crit_damage: inst.crit_damage,
-                steps: inst.steps.to_vec(),
+                steps: inst.steps.clone(),
                 // A SPLIT SHARES ONE RAW NUMBER between its portions, and the
                 // share is already the first term of the ledger below — so the
                 // raw is the instance's either way, and only what happens to it
@@ -4484,7 +4583,7 @@ fn log_damage(
                 before: breakdown.before,
                 debuffs: stacks.clone(),
                 buffs: rec_buffs.clone(),
-                procs: inst.procs.to_vec(),
+                procs: inst.procs.clone(),
                 killed: settled.killed,
             })),
         );
@@ -4506,13 +4605,23 @@ fn add_by_type(
     }
 }
 
+impl RunResult {
+    /// Raw damage dealt (pre-mitigation), direct hits + DoT ticks.
+    #[inline]
+    pub fn total_damage(&self) -> f64 {
+        self.meter.raw()
+    }
+
+    /// Damage after target mitigation (overguard neutrality / armour DR).
+    #[inline]
+    pub fn effective_damage(&self) -> f64 {
+        self.meter.effective()
+    }
+}
+
 /// Result of a single engagement.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct RunResult {
-    /// Raw damage dealt (pre-mitigation), direct hits + DoT ticks.
-    pub total_damage: f64,
-    /// Damage after target mitigation (overguard neutrality / armor DR).
-    pub effective_damage: f64,
     /// Effective damage contributed by DoT ticks (subset of the above).
     pub dot_damage: f64,
     pub shots: u32,      // trigger pulls
@@ -4585,12 +4694,23 @@ pub struct RunResult {
     /// The single biggest damage INSTANCE of the run — the number people chase.
     pub max_hit: f64,
     /// Effective damage by time bucket (the damage-over-time curve).
-    pub timeline: Timeline,
     /// The `Rng` state this run STARTED from. SplitMix64 keeps all of its
     /// state in one `u64`, so this is the whole of what it takes to replay
     /// the run bit-for-bit — which is how the MEDIAN engagement gets traced
     /// without every run carrying a trace (see [`Replay`]).
     pub rng_state: u64,
+    /// THE RUN'S DAMAGE, and the only way in is [`ledger::settle`].
+    ///
+    /// Its fields are private to `ledger`, which is the whole point: a damage
+    /// site CANNOT book a number without writing the row that explains it,
+    /// because the language will not let it reach the field. It used to be two
+    /// `+=` lines beside a `log_damage` call, kept in step by whoever
+    /// remembered, with a test comparing the sum against the meter as the only
+    /// guard — a guard rather than a guarantee (owner, 2026-08-27).
+    pub meter: ledger::Meter,
+    /// The DPS-over-time curve — booked by [`ledger::settle`] and by nothing
+    /// else, for the same reason the totals are.
+    pub curve: ledger::Curve,
 }
 
 /// Devouring Attrition's multiplier for ONE damage instance: a
@@ -5160,32 +5280,27 @@ fn fire_extra_hits(
             watching(rec, &mut breakdown),
         );
         let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
-        r.total_damage += raw;
-        r.effective_damage += eff;
         r.sources.extra_hit += eff;
         r.sources.extra_hit_by_type[ty as usize] += eff;
-        r.timeline.add(at, eff);
-        if recording(rec) {
-            log_damage(
-                rec, at, 0, ty, PopKind::Extra, &breakdown, settled, Some(debuffs),
-                Instance {
-                    origin: crate::record::Origin::ExtraHit,
-                    // THE TRIGGERING HIT'S OWN DAMAGE is the base, and the four
-                    // factors below are the whole of docs/EXTRA_HIT.md: an
-                    // Extra Hit is a percentage of something else, in one
-                    // element, on the body part that thing struck.
-                    base: trigger_raw,
-                    steps: &[
-                        ("extra hit share", fraction),
-                        ("element bracket", bracket),
-                        ("body part", part_again),
-                        ("faction", f),
-                    ],
-                    head: head_direct,
-                    ..Instance::default()
-                },
-            );
-        }
+        ledger::settle(
+            r, rec, at, 0, ty, PopKind::Extra, &breakdown, settled, Some(debuffs),
+            || Instance {
+                origin: crate::record::Origin::ExtraHit,
+                // THE TRIGGERING HIT'S OWN DAMAGE is the base, and the four
+                // factors below are the whole of docs/EXTRA_HIT.md: an
+                // Extra Hit is a percentage of something else, in one
+                // element, on the body part that thing struck.
+                base: trigger_raw,
+                steps: vec![
+                    ("extra hit share", fraction),
+                    ("element bracket", bracket),
+                    ("body part", part_again),
+                    ("faction", f),
+                ],
+                head: head_direct,
+                ..Instance::default()
+            },
+        );
         r.note_kills(u32::from(killed), at);
         if let Some(pool) = broke {
             push_break_proc(debuffs, params, at, pool);
@@ -5477,29 +5592,24 @@ fn drain_area_procs(
                 watching(rec, &mut breakdown),
             );
             let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
-            r.total_damage += dmg;
-            r.effective_damage += eff;
             r.dot_damage += eff;
             r.note_body_damage(j, eff);
             r.sources.add_status(hit.shares.dominant(), eff);
-            r.timeline.add(at_now, eff);
-            if recording(rec) {
-                log_damage(
-                    rec, at_now, j, hit.shares.dominant(), PopKind::BlastArea,
-                    &breakdown, settled, Some(dbf),
-                    Instance {
-                        origin: crate::record::Origin::Splash,
-                        // THE DETONATION'S OWN NUMBER, and how much of it
-                        // reached this far. `share` is the falloff over the
-                        // radius, which is the only thing that separates a
-                        // neighbour's number from the body that carried the
-                        // stack.
-                        base: hit.damage,
-                        steps: &[("radial falloff", share)],
-                        ..Instance::default()
-                    },
-                );
-            }
+            ledger::settle(
+                r, rec, at_now, j, hit.shares.dominant(), PopKind::BlastArea,
+                &breakdown, settled, Some(dbf),
+                || Instance {
+                    origin: crate::record::Origin::Splash,
+                    // THE DETONATION'S OWN NUMBER, and how much of it
+                    // reached this far. `share` is the falloff over the
+                    // radius, which is the only thing that separates a
+                    // neighbour's number from the body that carried the
+                    // stack.
+                    base: hit.damage,
+                    steps: vec![("radial falloff", share)],
+                    ..Instance::default()
+                },
+            );
             r.note_kills(u32::from(killed), at_now);
             if killed {
                 // A CHAIN, and it needs no arranging: this body's own corpse
@@ -5906,27 +6016,22 @@ fn settle_procs(
                         watching(rec, &mut breakdown),
                     );
                     let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
-                    r.total_damage += total;
-                    r.effective_damage += eff;
                     r.dot_damage += eff;
                     r.sources.add_status(DamageType::Blast, eff);
-                    r.timeline.add(at, eff);
-                    if recording(rec) {
-                        log_damage(
-                            rec, at, 0, DamageType::Blast, PopKind::Blast,
-                            &breakdown, settled, Some(debuffs),
-                            Instance {
-                                origin: crate::record::Origin::Status,
-                                // EVERY STACK AT ONCE. Ten stacks detonating
-                                // together are ONE number in game, so the base
-                                // is their sum and the count is what a reader
-                                // checks it against.
-                                base: total,
-                                steps: &[],
-                                ..Instance::default()
-                            },
-                        );
-                    }
+                    ledger::settle(
+                        r, rec, at, 0, DamageType::Blast, PopKind::Blast,
+                        &breakdown, settled, Some(debuffs),
+                        || Instance {
+                            origin: crate::record::Origin::Status,
+                            // EVERY STACK AT ONCE. Ten stacks detonating
+                            // together are ONE number in game, so the base
+                            // is their sum and the count is what a reader
+                            // checks it against.
+                            base: total,
+                            steps: Vec::new(),
+                            ..Instance::default()
+                        },
+                    );
                     r.note_kills(killed as u32, at);
                     if let Some(pool) = broke {
                         push_break_proc(debuffs, params, at, pool);
@@ -6134,26 +6239,21 @@ fn settle_procs(
                 watching(rec, &mut breakdown),
             );
             let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
-            r.total_damage += amt;
-            r.effective_damage += eff;
             r.sources.arcane_on_status += eff;
             r.sources.arcane_by_type[proc as usize] += eff;
-            r.timeline.add(at, eff);
-            if recording(rec) {
-                log_damage(
-                    rec, at, 0, proc, PopKind::Arcane, &breakdown, settled,
-                    Some(debuffs),
-                    Instance {
-                        origin: crate::record::Origin::Arcane,
-                        // A FLAT NUMBER AND ONE MULTIPLIER, which is the whole
-                        // of this arcane: "unaffected by damage/element/crit
-                        // mods … faction bonuses apply ONCE".
-                        base: params.arcane.flat_damage_on_status,
-                        steps: &[("faction", params.faction_at_time(at))],
-                        ..Instance::default()
-                    },
-                );
-            }
+            ledger::settle(
+                r, rec, at, 0, proc, PopKind::Arcane, &breakdown, settled,
+                Some(debuffs),
+                || Instance {
+                    origin: crate::record::Origin::Arcane,
+                    // A FLAT NUMBER AND ONE MULTIPLIER, which is the whole
+                    // of this arcane: "unaffected by damage/element/crit
+                    // mods … faction bonuses apply ONCE".
+                    base: params.arcane.flat_damage_on_status,
+                    steps: vec![("faction", params.faction_at_time(at))],
+                    ..Instance::default()
+                },
+            );
             r.note_kills(killed as u32, at);
             if let Some(pool) = broke {
                 push_break_proc(debuffs, params, at, pool);
@@ -6442,44 +6542,39 @@ fn spread_hit(
         watching(rec, &mut breakdown),
     );
     let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
-    r.total_damage += raw;
-    r.effective_damage += eff;
-    r.timeline.add(t, eff);
     // A SPREAD INSTANCE IS A WHOLE VECTOR, so the number reads as its biggest
     // component — see `DamageVector::dominant`. Computed only while tracing.
-    if recording(rec) {
-        log_damage(
-            rec, t, inst.target, shares.dominant(),
-            if inst.headshot { PopKind::Head } else { PopKind::Direct },
-            &breakdown, settled, Some(&foe.debuffs),
-            Instance {
-                // WHY THIS BODY GOT HIT AT ALL — the one column a formation
-                // fight cannot be read without. `SpreadBy` already names the
-                // five mechanisms; this is the same list said to a reader.
-                origin: match by {
-                    SpreadBy::Chain => crate::record::Origin::Chain,
-                    SpreadBy::Blast => crate::record::Origin::Splash,
-                    SpreadBy::Cloud => crate::record::Origin::Field,
-                    SpreadBy::Tendril => crate::record::Origin::Chain,
-                    SpreadBy::Echo => crate::record::Origin::Echo,
-                    SpreadBy::Ricochet => crate::record::Origin::Ricochet,
-                    SpreadBy::PunchThrough => crate::record::Origin::PunchThrough,
-                },
-                // THE AIMED PELLET'S OWN NUMBER with its Condition Overload
-                // bucket divided back out, so this body multiplies in its own —
-                // which is why a neighbour's row can read a different CO term
-                // from the body that was aimed at.
-                base: raw_per_bucket,
-                steps: &[
-                    ("Condition Overload bracket", bucket),
-                    ("hop falloff", inst.share),
-                    ("body part", inst.part_factor),
-                ],
-                head: inst.headshot,
-                ..Instance::default()
+    ledger::settle(
+        r, rec, t, inst.target, shares.dominant(),
+        if inst.headshot { PopKind::Head } else { PopKind::Direct },
+        &breakdown, settled, Some(&foe.debuffs),
+        || Instance {
+            // WHY THIS BODY GOT HIT AT ALL — the one column a formation
+            // fight cannot be read without. `SpreadBy` already names the
+            // five mechanisms; this is the same list said to a reader.
+            origin: match by {
+                SpreadBy::Chain => crate::record::Origin::Chain,
+                SpreadBy::Blast => crate::record::Origin::Splash,
+                SpreadBy::Cloud => crate::record::Origin::Field,
+                SpreadBy::Tendril => crate::record::Origin::Chain,
+                SpreadBy::Echo => crate::record::Origin::Echo,
+                SpreadBy::Ricochet => crate::record::Origin::Ricochet,
+                SpreadBy::PunchThrough => crate::record::Origin::PunchThrough,
             },
-        );
-    }
+            // THE AIMED PELLET'S OWN NUMBER with its Condition Overload
+            // bucket divided back out, so this body multiplies in its own —
+            // which is why a neighbour's row can read a different CO term
+            // from the body that was aimed at.
+            base: raw_per_bucket,
+            steps: vec![
+                ("Condition Overload bracket", bucket),
+                ("hop falloff", inst.share),
+                ("body part", inst.part_factor),
+            ],
+            head: inst.headshot,
+            ..Instance::default()
+        },
+    );
     r.note_body_damage(inst.target, eff);
     // …AND IT REACHES THE DAMAGE METER (player report, 2026-08-19: the
     // explosion looked overestimated).
@@ -7307,23 +7402,18 @@ fn fire_syndicate_radial(
         watching(rec, &mut breakdown),
     );
     let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
-    r.total_damage += amt;
-    r.effective_damage += eff;
     r.sources.syndicate += eff;
     r.sources.syndicate_by_type[sy.element as usize] += eff;
-    r.timeline.add(at, eff);
-    if recording(rec) {
-        log_damage(
-            rec, at, 0, sy.element, PopKind::Arcane, &breakdown, settled,
-            Some(debuffs),
-            Instance {
-                origin: crate::record::Origin::Arcane,
-                base: sy.damage,
-                steps: &[("faction", params.faction_at_time(at))],
-                ..Instance::default()
-            },
-        );
-    }
+    ledger::settle(
+        r, rec, at, 0, sy.element, PopKind::Arcane, &breakdown, settled,
+        Some(debuffs),
+        || Instance {
+            origin: crate::record::Origin::Arcane,
+            base: sy.damage,
+            steps: vec![("faction", params.faction_at_time(at))],
+            ..Instance::default()
+        },
+    );
     r.note_kills(u32::from(killed), at);
     // GUARANTEED, for five of the six — Justice stuns instead of applying
     // Blast, the one place these effects differ in kind rather than in element.
@@ -7710,33 +7800,28 @@ fn field_tick(
         watching(rec, &mut breakdown),
     );
     let (effective, killed, broke) = (settled.effective, settled.killed, settled.broken);
-    r.total_damage += raw;
-    r.effective_damage += effective;
     r.sources.field += effective;
     add_by_type(&mut r.sources.field_by_type, &qvec, effective, &col);
-    r.timeline.add(at, effective);
-    if recording(rec) {
-        log_damage(
-            rec, at, 0, DamageType::Cinematic, PopKind::Field, &breakdown, settled,
-            Some(debuffs),
-            Instance {
-                origin: crate::record::Origin::Field,
-                // A CLOUD'S TICK IS WEAPON DAMAGE ON ITS OWN CLOCK — neither a
-                // hit nor a status — so it carries a hit's factors and no body
-                // part: the grenade sticks to the target, which is why there is
-                // no falloff term here either.
-                base: qtotal,
-                steps: &[
-                    ("critical", crit_multiplier),
-                    ("Condition Overload bracket", bucket),
-                    ("faction", faction_at(params.faction_at_time(at), DEPTH_HIT)),
-                    ("field damage", damage_multiplier),
-                    ("Warframe ability", params.ability_final_at(at)),
-                ],
-                ..Instance::default()
-            },
-        );
-    }
+    ledger::settle(
+        r, rec, at, 0, DamageType::Cinematic, PopKind::Field, &breakdown, settled,
+        Some(debuffs),
+        || Instance {
+            origin: crate::record::Origin::Field,
+            // A CLOUD'S TICK IS WEAPON DAMAGE ON ITS OWN CLOCK — neither a
+            // hit nor a status — so it carries a hit's factors and no body
+            // part: the grenade sticks to the target, which is why there is
+            // no falloff term here either.
+            base: qtotal,
+            steps: vec![
+                ("critical", crit_multiplier),
+                ("Condition Overload bracket", bucket),
+                ("faction", faction_at(params.faction_at_time(at), DEPTH_HIT)),
+                ("field damage", damage_multiplier),
+                ("Warframe ability", params.ability_final_at(at)),
+            ],
+            ..Instance::default()
+        },
+    );
     r.field_ticks += 1;
     r.note_kills(killed as u32, at);
     if let Some(pool) = broke {
@@ -8145,37 +8230,32 @@ fn process_ticks(
             watching(rec, &mut breakdown),
         );
         let (effective, killed, broke) = (settled.effective, settled.killed, settled.broken);
-        r.total_damage += value;
-        r.effective_damage += effective;
         r.dot_damage += effective;
         // …AND WHOSE BODY IT WAS. Only worth recording once there is more than
         // one to tell apart, which is the same rule the direct hit follows.
         r.note_body_damage(body, effective);
         r.sources.add_status(src, effective);
-        r.timeline.add(now, effective);
-        if recording(rec) {
-            let was = rec.attribute_to((seeded_by != u32::MAX).then_some(seeded_by));
-            log_damage(
-                rec, now, body, src,
-                if src == DamageType::Blast { PopKind::Blast } else { PopKind::Status },
-                &breakdown, settled, Some(debuffs),
-                Instance {
-                    origin: crate::record::Origin::Status,
-                    // THE SEED, AND ONE LIVE FACTOR. A tick's own half —
-                    // coefficient, ModifiedBase, status damage, and the crit and
-                    // body part of the hit that applied it — is frozen into one
-                    // number at the moment the status landed (`Dot::frozen`), so
-                    // decomposing it here would mean reporting facts about a hit
-                    // this function can no longer see. It is the ROW THE TICK
-                    // POINTS AT that carries them: `Event::cause` names the shot
-                    // that seeded this, and that row has the full ledger.
-                    base: unfortified,
-                    steps: &[("Secondary Fortifier", fortifier)],
-                    ..Instance::default()
-                },
-            );
-            rec.attribute_to(was);
-        }
+        let was = rec.attribute_to((seeded_by != u32::MAX).then_some(seeded_by));
+        ledger::settle(
+            r, rec, now, body, src,
+            if src == DamageType::Blast { PopKind::Blast } else { PopKind::Status },
+            &breakdown, settled, Some(debuffs),
+            || Instance {
+                origin: crate::record::Origin::Status,
+                // THE SEED, AND ONE LIVE FACTOR. A tick's own half —
+                // coefficient, ModifiedBase, status damage, and the crit and
+                // body part of the hit that applied it — is frozen into one
+                // number at the moment the status landed (`Dot::frozen`), so
+                // decomposing it here would mean reporting facts about a hit
+                // this function can no longer see. It is the ROW THE TICK
+                // POINTS AT that carries them: `Event::cause` names the shot
+                // that seeded this, and that row has the full ledger.
+                base: unfortified,
+                steps: vec![("Secondary Fortifier", fortifier)],
+                ..Instance::default()
+            },
+        );
+        rec.attribute_to(was);
         r.dot_ticks += is_dot_tick as u32;
         r.note_kills(killed as u32, now);
         if let Some(pool) = broke {
@@ -8739,7 +8819,7 @@ mod every_form_runs {
             assert_eq!(a.crits, b.crits, "{id}: crits");
             assert_eq!(a.procs, b.procs, "{id}: procs");
             assert_eq!(a.kills, b.kills, "{id}: kills");
-            assert_eq!(a.total_damage.to_bits(), b.total_damage.to_bits(), "{id}: damage");
+            assert_eq!(a.total_damage().to_bits(), b.total_damage().to_bits(), "{id}: damage");
         }
     }
 
@@ -9394,7 +9474,7 @@ pub fn run_once_traced(
             mag_refills += 1;
             if !opening_closed {
                 opening_closed = true;
-                r.first_magazine_damage = r.effective_damage;
+                r.first_magazine_damage = r.effective_damage();
             }
             for (i, b) in params.stacking_buffs.iter().enumerate() {
                 let cleared = match b.cleared_by {
@@ -9801,7 +9881,7 @@ pub fn run_once_traced(
                         overguard: target.overguard,
                         shield: target.shield,
                         health: target.health,
-                        damage: r.effective_damage,
+                        damage: r.effective_damage(),
                         kills: r.kills,
                         shots: r.shots,
                         pellets: r.pellets,
@@ -12020,8 +12100,6 @@ pub fn run_once_traced(
                         );
                     }
                 }
-                r.total_damage += raw;
-                r.effective_damage += effective;
                 // …AND WHOSE IT WAS. Only worth recording once there is more
                 // than one body to tell apart.
                 if !others.is_empty() {
@@ -12090,7 +12168,6 @@ pub fn run_once_traced(
                     r.sources.radial += effective;
                     add_by_type(&mut r.sources.radial_by_type, &qvec, effective, &col);
                 }
-                r.timeline.add(t, effective);
                 // THE ONE SITE THAT KNOWS ALL FOUR SHAPES: a hit is plain, a
                 // crit, a weak point, or both — and "both" is its own number in
                 // game, not a crit with a multiplier on it.
@@ -12280,72 +12357,70 @@ pub fn run_once_traced(
                     // else it needs was snapshotted at the moment it landed
                     // (`before`, `breakdown`, `settled`), so waiting costs nothing and
                     // buys the one column a reader checks a status build with.
-                    if recording(rec) {
-                        log_damage(
-                            rec,
-                            t,
-                            0,
-                            qvec.dominant(),
-                            match (part.is_head, tier > 0) {
-                                (true, true) => PopKind::HeadCrit,
-                                (true, false) => PopKind::Head,
-                                (false, true) => PopKind::Crit,
-                                (false, false) => PopKind::Direct,
+                    ledger::settle(
+                        &mut r, rec,
+                        t,
+                        0,
+                        qvec.dominant(),
+                        match (part.is_head, tier > 0) {
+                            (true, true) => PopKind::HeadCrit,
+                            (true, false) => PopKind::Head,
+                            (false, true) => PopKind::Crit,
+                            (false, false) => PopKind::Direct,
+                        },
+                        &breakdown, settled,
+                        Some(&debuffs),
+                        || Instance {
+                            // WHICH PELLET OF THE PULL THIS WAS. The first is the one
+                            // the trigger would have fired with no multishot at all;
+                            // every one after it is multishot's, and telling them apart
+                            // is the difference between "my multishot works" and
+                            // "something is double-counting" (owner, 2026-08-27).
+                            //
+                            // THE ORIGIN IS THE PELLET'S, NOT THE STAGE'S. A
+                            // pellet with an explosion produces two rows and
+                            // they are the SAME pellet — `radial` says which
+                            // half and `pellet` says whose — so a Laetum
+                            // Incarnon's three pellets read as six numbers in
+                            // three pairs rather than as three plus three
+                            // (owner, 2026-08-27). The engine already settles
+                            // them in that order: the stage loop is inside the
+                            // pellet loop, so only the LABEL was missing.
+                            origin: if pellet_idx == 0 {
+                                crate::record::Origin::Own
+                            } else {
+                                crate::record::Origin::Multishot
                             },
-                            &breakdown, settled,
-                            Some(&debuffs),
-                            Instance {
-                                // WHICH PELLET OF THE PULL THIS WAS. The first is the one
-                                // the trigger would have fired with no multishot at all;
-                                // every one after it is multishot's, and telling them apart
-                                // is the difference between "my multishot works" and
-                                // "something is double-counting" (owner, 2026-08-27).
-                                //
-                                // THE ORIGIN IS THE PELLET'S, NOT THE STAGE'S. A
-                                // pellet with an explosion produces two rows and
-                                // they are the SAME pellet — `radial` says which
-                                // half and `pellet` says whose — so a Laetum
-                                // Incarnon's three pellets read as six numbers in
-                                // three pairs rather than as three plus three
-                                // (owner, 2026-08-27). The engine already settles
-                                // them in that order: the stage loop is inside the
-                                // pellet loop, so only the LABEL was missing.
-                                origin: if pellet_idx == 0 {
-                                    crate::record::Origin::Own
-                                } else {
-                                    crate::record::Origin::Multishot
-                                },
-                                pellet: Some(pellet_idx + 1),
-                                radial: !direct,
-                                base: qtotal,
-                                // HOW THAT BASE WAS BUILT. `qtotal` is one number
-                                // and it is three facts: this attack part's
-                                // ModifiedBase, the elemental hierarchy expanding
-                                // it, and the quantization the wiki rounds it
-                                // through. A reader auditing a build wants the
-                                // middle one, and reading it off the row beats
-                                // deriving it from the panel (owner, 2026-08-27).
-                                base_from: stage_mb,
-                                base_steps: &[
-                                    ("element bracket + quantization",
-                                        if stage_mb > 0.0 { pre_ability_total / stage_mb } else { 1.0 }),
-                                    ("Warframe ability element",
-                                        if pre_ability_total > 0.0 { qvec.total() / pre_ability_total } else { 1.0 }),
-                                    ("merged beams", beam_merge),
-                                ],
-                                // …AND WHAT THE CRIT FACTOR IS MADE OF:
-                                // `1 + tier x (crit damage - 1)`, which is a
-                                // formula a reader can check against the card and
-                                // `x4.40` is not.
-                                crit_damage: cd,
-                                steps: &hit_steps,
-                                part: Some(&part.name),
-                                head: part.is_head,
-                                crit_tier: tier,
-                                procs: $procs,
-                            },
-                        );
-                    }
+                            pellet: Some(pellet_idx + 1),
+                            radial: !direct,
+                            base: qtotal,
+                            // HOW THAT BASE WAS BUILT. `qtotal` is one number
+                            // and it is three facts: this attack part's
+                            // ModifiedBase, the elemental hierarchy expanding
+                            // it, and the quantization the wiki rounds it
+                            // through. A reader auditing a build wants the
+                            // middle one, and reading it off the row beats
+                            // deriving it from the panel (owner, 2026-08-27).
+                            base_from: stage_mb,
+                            base_steps: vec![
+                                ("element bracket + quantization",
+                                    if stage_mb > 0.0 { pre_ability_total / stage_mb } else { 1.0 }),
+                                ("Warframe ability element",
+                                    if pre_ability_total > 0.0 { qvec.total() / pre_ability_total } else { 1.0 }),
+                                ("merged beams", beam_merge),
+                            ],
+                            // …AND WHAT THE CRIT FACTOR IS MADE OF:
+                            // `1 + tier x (crit damage - 1)`, which is a
+                            // formula a reader can check against the card and
+                            // `x4.40` is not.
+                            crit_damage: cd,
+                            steps: hit_steps,
+                            part: Some(part.name.clone()),
+                            head: part.is_head,
+                            crit_tier: tier,
+                            procs: $procs,
+                        },
+                    );
                     };
                 }
                 if killed {
@@ -12370,7 +12445,7 @@ pub fn run_once_traced(
                     // `field_tick`. What follows hits the fresh spawn, standing
                     // in whatever is still burning where it spawned.
                     debuffs.on_death(params.acid_shells, &params.target);
-                    log_this_pellet!(&[]);
+                    log_this_pellet!(Vec::new());
                     continue;
                 }
                 // THE EXTRA HIT, off a WEAPON damage instance — the direct
@@ -12594,7 +12669,7 @@ pub fn run_once_traced(
             }
                 // …AND THE ORDINARY END OF A PELLET, which does get to name
                 // what it applied.
-                log_this_pellet!(&procs);
+                log_this_pellet!(procs.clone());
                 settle_procs(
                     procs,
                     t,
@@ -13642,18 +13717,18 @@ pub fn shard(
         // with.
         let state = seed ^ u64::from(i).wrapping_mul(GOLDEN_GAP);
         let r = run_once(params, &mut Rng::new(state));
-        a.index.push(RunKey::new(r.effective_damage, state));
+        a.index.push(RunKey::new(r.effective_damage(), state));
         on_run(a.index.len() as u32);
         if keep {
             a.series.kill_progress.push(r.kill_progress);
-            a.series.effective.push(r.effective_damage);
+            a.series.effective.push(r.effective_damage());
         }
-        a.sum += r.total_damage;
-        a.sum_sq += r.total_damage * r.total_damage;
-        a.min = a.min.min(r.total_damage);
-        a.max = a.max.max(r.total_damage);
-        a.effective += r.effective_damage;
-        a.effective_sq += r.effective_damage * r.effective_damage;
+        a.sum += r.total_damage();
+        a.sum_sq += r.total_damage() * r.total_damage();
+        a.min = a.min.min(r.total_damage());
+        a.max = a.max.max(r.total_damage());
+        a.effective += r.effective_damage();
+        a.effective_sq += r.effective_damage() * r.effective_damage();
         a.dot += r.dot_damage;
         a.procs += u64::from(r.procs);
         a.field_ticks += u64::from(r.field_ticks);
@@ -14333,7 +14408,7 @@ mod tests {
                 gap + crate::space::CONTACT_RANGE_M,
             );
             let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
-            run_once(&p, &mut Rng::new(0x5EED)).effective_damage
+            run_once(&p, &mut Rng::new(0x5EED)).effective_damage()
         };
 
         // THE BASE IS 20 m AND THE PRIME IS 25 — the wiki's own numbers, and
@@ -14420,7 +14495,7 @@ mod tests {
 
         let alone = build(Vec::new());
         assert!(alone.beam.is_some(), "the Incarnon form is a beam and must say so");
-        let lone = run_once(&alone, &mut Rng::new(0x5EED)).effective_damage;
+        let lone = run_once(&alone, &mut Rng::new(0x5EED)).effective_damage();
 
         // …AND THE SAME SHOT INTO A FORMATION. The grid is built around where
         // the aimed body already stands, so the fight it opens with is the one
@@ -14441,7 +14516,7 @@ mod tests {
             .map(|(_, f)| f.clone())
             .collect();
         assert_eq!(others.len(), 8);
-        let crowd = run_once(&build(others.clone()), &mut Rng::new(0x5EED)).effective_damage;
+        let crowd = run_once(&build(others.clone()), &mut Rng::new(0x5EED)).effective_damage();
 
         assert!(
             crowd > lone * 1.5,
@@ -14456,7 +14531,7 @@ mod tests {
         if let Some(b) = primed.beam.as_mut() {
             b.damage_radius_m *= 1.44;
         }
-        let wide = run_once(&primed, &mut Rng::new(0x5EED)).effective_damage;
+        let wide = run_once(&primed, &mut Rng::new(0x5EED)).effective_damage();
         assert!(
             wide > crowd * 1.5,
             "a wider radius seeds more chains: {wide} against {crowd}"
@@ -14470,7 +14545,7 @@ mod tests {
             b.damage_radius_m *= 1.44;
         }
         assert_eq!(
-            run_once(&primed_alone, &mut Rng::new(0x5EED)).effective_damage,
+            run_once(&primed_alone, &mut Rng::new(0x5EED)).effective_damage(),
             lone,
             "a damage radius has nothing to act on against one target"
         );
@@ -14561,8 +14636,8 @@ mod tests {
 
         // ONE BODY: four tendrils are worth exactly nothing, asserted as
         // equality, because they all home on the body the beam is already on.
-        let lone0 = run_once(&build(Vec::new(), 0), &mut Rng::new(0x5EED)).effective_damage;
-        let lone4 = run_once(&build(Vec::new(), 4), &mut Rng::new(0x5EED)).effective_damage;
+        let lone0 = run_once(&build(Vec::new(), 0), &mut Rng::new(0x5EED)).effective_damage();
+        let lone4 = run_once(&build(Vec::new(), 4), &mut Rng::new(0x5EED)).effective_damage();
         assert_eq!(lone4, lone0, "a tendril on the main beam's own target is cosmetic");
 
         // FOUR MORE BODIES, inside the reticle cone and the reach.
@@ -14574,8 +14649,8 @@ mod tests {
                 at: crate::space::Vec2::new(i as f64 * 0.6, 4.0),
             })
             .collect();
-        let crowd0 = run_once(&build(others.clone(), 0), &mut Rng::new(0x5EED)).effective_damage;
-        let crowd4 = run_once(&build(others.clone(), 4), &mut Rng::new(0x5EED)).effective_damage;
+        let crowd0 = run_once(&build(others.clone(), 0), &mut Rng::new(0x5EED)).effective_damage();
+        let crowd4 = run_once(&build(others.clone(), 4), &mut Rng::new(0x5EED)).effective_damage();
         assert!(
             crowd4 > crowd0 * 1.5,
             "four tendrils are four more beams: {crowd4} against {crowd0}"
@@ -14591,8 +14666,8 @@ mod tests {
             })
             .collect();
         assert_eq!(
-            run_once(&build(far.clone(), 4), &mut Rng::new(0x5EED)).effective_damage,
-            run_once(&build(far, 0), &mut Rng::new(0x5EED)).effective_damage,
+            run_once(&build(far.clone(), 4), &mut Rng::new(0x5EED)).effective_damage(),
+            run_once(&build(far, 0), &mut Rng::new(0x5EED)).effective_damage(),
             "past their reach a tendril takes nobody"
         );
     }
@@ -14676,23 +14751,23 @@ mod tests {
 
         // ONE BODY: worth exactly nothing, as an equality — there is nobody to
         // echo TO however irradiated the target is.
-        let a = run_once(&build(Vec::new(), false, true), &mut Rng::new(0x5EED)).effective_damage;
-        let b = run_once(&build(Vec::new(), true, true), &mut Rng::new(0x5EED)).effective_damage;
+        let a = run_once(&build(Vec::new(), false, true), &mut Rng::new(0x5EED)).effective_damage();
+        let b = run_once(&build(Vec::new(), true, true), &mut Rng::new(0x5EED)).effective_damage();
         assert_eq!(b, a, "an echo with nobody to echo to is worth nothing");
 
         // A CROWD AND NO RADIATION: also exactly nothing, and this is the one
         // that was wrong. An equality rather than a bound, because a gate that
         // is read either holds or does not.
-        let c0 = run_once(&build(others.clone(), false, false), &mut Rng::new(0x5EED)).effective_damage;
-        let c1 = run_once(&build(others.clone(), true, false), &mut Rng::new(0x5EED)).effective_damage;
+        let c0 = run_once(&build(others.clone(), false, false), &mut Rng::new(0x5EED)).effective_damage();
+        let c1 = run_once(&build(others.clone(), true, false), &mut Rng::new(0x5EED)).effective_damage();
         assert_eq!(
             c1, c0,
             "no Radiation on the target, no echo — the arcane's own condition"
         );
 
         // A CROWD AND A RADIATION BUILD: it lands.
-        let d0 = run_once(&build(others.clone(), false, true), &mut Rng::new(0x5EED)).effective_damage;
-        let d1 = run_once(&build(others, true, true), &mut Rng::new(0x5EED)).effective_damage;
+        let d0 = run_once(&build(others.clone(), false, true), &mut Rng::new(0x5EED)).effective_damage();
+        let d1 = run_once(&build(others, true, true), &mut Rng::new(0x5EED)).effective_damage();
         assert!(d1 > d0, "irradiated and in a crowd, the echo lands: {d1} against {d0}");
     }
 
@@ -14856,7 +14931,7 @@ mod tests {
             part.median_run.rng_state, whole.median_run.rng_state,
             "the same run must be the median either way"
         );
-        assert!((part.median_run.effective_damage - whole.median_run.effective_damage).abs() < 1e-9);
+        assert!((part.median_run.effective_damage() - whole.median_run.effective_damage()).abs() < 1e-9);
         // …AND WHO TOOK WHAT, which only a crowd can test.
         assert!(part.mean_damage_by_body.0[1] > 0.0, "the fixture must reach a neighbour");
         for i in 0..6 {
@@ -15843,7 +15918,7 @@ mod tests {
         };
         let dmg = |p: &DummyParams| {
             let r = run_once(p, &mut Rng::new(5));
-            r.total_damage / f64::from(r.shots)
+            r.total_damage() / f64::from(r.shots)
         };
         // WITH DEADHEAD the two readings are 8% apart, and additive is the one
         // the card describes. The measured ratio sits a hair UNDER 1.3846
@@ -15887,7 +15962,7 @@ mod tests {
         };
         let per_shot = |p: &DummyParams| {
             let r = run_once(p, &mut Rng::new(5));
-            r.total_damage / f64::from(r.shots)
+            r.total_damage() / f64::from(r.shots)
         };
         // TEN SHOTS A SECOND: the second one arms it and it never lapses.
         let fast = per_shot(&at_rate(10.0));
@@ -15936,7 +16011,7 @@ mod tests {
         };
         let dmg = |p: &DummyParams| {
             let r = run_once(p, &mut Rng::new(5));
-            r.total_damage / f64::from(r.pellets.max(1))
+            r.total_damage() / f64::from(r.pellets.max(1))
         };
         // TWO TYPES, ten stacks each — the card's own example. The perk runs,
         // and a flat +1.0 on a 2.0 multiplier is exactly 1.5x the damage.
@@ -17638,7 +17713,7 @@ mod tests {
         let crowd = |n: usize| {
             let p = latron_incarnon_in_a_line(n, 0.5);
             let out = run_once(&p, &mut Rng::new(0x5EED));
-            (out.bodies_touched(), out.effective_damage)
+            (out.bodies_touched(), out.effective_damage())
         };
         let (one, dmg_one) = crowd(0);
         assert_eq!(one, 1, "a formation of one bounces nowhere — no terrain here");
@@ -20709,7 +20784,7 @@ mod tests {
             p.target.eximus = eximus;
             p
         };
-        let dmg = |p: &DummyParams| run_once(p, &mut Rng::new(21)).effective_damage;
+        let dmg = |p: &DummyParams| run_once(p, &mut Rng::new(21)).effective_damage();
 
         // The two halves of the trigger, each denied in turn.
         let armed = dmg(&build(true, 1.0));
@@ -21467,7 +21542,7 @@ mod tests {
             p.base_crit_chance = 0.0;
             p.status_chance = 0.0;
             p.forced_procs = Vec::new();
-            run_once(&p, &mut Rng::new(11)).total_damage
+            run_once(&p, &mut Rng::new(11)).total_damage()
         };
         let without = |fire_rate: f64, secs: f64| {
             run_once(
@@ -21481,7 +21556,7 @@ mod tests {
                 },
                 &mut Rng::new(11),
             )
-            .total_damage
+            .total_damage()
         };
 
         // ---- 1 shot/s, 10 s buff: nothing ever expires ---------------------
@@ -22091,9 +22166,9 @@ mod tests {
         let same = run_once(&p, &mut Rng::new(state));
         let sum: f64 = damage.iter().map(|d| d.effective).sum();
         assert!(
-            (sum - same.effective_damage).abs() / same.effective_damage < 1e-9,
+            (sum - same.effective_damage()).abs() / same.effective_damage() < 1e-9,
             "record {sum} vs run {}",
-            same.effective_damage
+            same.effective_damage()
         );
 
         // EVERY ROW MULTIPLIES OUT. `base × Π steps = raw`, and `raw × Π
@@ -22301,9 +22376,9 @@ mod tests {
         let same = run_once(&p, &mut Rng::new(state));
         let sum: f64 = rows.iter().map(|d| d.effective).sum();
         assert!(
-            (sum - same.effective_damage).abs() / same.effective_damage < 1e-9,
+            (sum - same.effective_damage()).abs() / same.effective_damage() < 1e-9,
             "rows {sum} vs meter {}",
-            same.effective_damage
+            same.effective_damage()
         );
     }
 
@@ -24422,10 +24497,10 @@ mod tests {
         // with the summary beside it, which is the bug this exists for.
         assert_eq!(last.kills, s.median_run.kills, "kills after the last shot are lost");
         assert!(
-            (last.damage - s.median_run.effective_damage).abs() <= 1e-6,
+            (last.damage - s.median_run.effective_damage()).abs() <= 1e-6,
             "{} vs {}",
             last.damage,
-            s.median_run.effective_damage
+            s.median_run.effective_damage()
         );
         // …and the clock never goes backwards over the join.
         for w in rep.frames.windows(2) {
@@ -24448,14 +24523,14 @@ mod tests {
 
         // Re-running from the same state gives the identical RunResult.
         let again = run_once(&p, &mut Rng::new(s.median_run.rng_state));
-        assert_eq!(again.total_damage.to_bits(), s.median_run.total_damage.to_bits());
+        assert_eq!(again.total_damage().to_bits(), s.median_run.total_damage().to_bits());
         assert_eq!(again.pellets, s.median_run.pellets);
         assert_eq!(again.crits, s.median_run.crits);
 
         // The last frame's cumulative damage is the run's own effective total
         // minus whatever landed after the final sample — never more.
         let last = rep.frames.last().unwrap();
-        assert!(last.damage <= s.median_run.effective_damage + 1e-6);
+        assert!(last.damage <= s.median_run.effective_damage() + 1e-6);
         assert!(last.damage > 0.0, "something happened");
         // Frames advance in time and never go backwards.
         for w in rep.frames.windows(2) {
@@ -25408,7 +25483,7 @@ mod attrition_times_co_tests {
             p.noncrit_bonus = attrition.then_some((1.0, 20.0));
             p.co_per_type = if co { 0.8 } else { 0.0 };
             let mut rng = crate::rng::Rng::new(11);
-            run_once(&p, &mut rng).total_damage
+            run_once(&p, &mut rng).total_damage()
         };
         let plain = run(false, false);
         let with_attr = run(true, false);
