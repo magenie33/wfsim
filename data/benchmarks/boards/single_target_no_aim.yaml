@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 3214
+submissions: 3220
 engine: a802c69b344affe6fd2b22bb3d7feb2a918ab57c
 entries:
   - weapon: acceltra_prime
@@ -5393,6 +5393,11 @@ entries:
     score: 0.7906405647268963
     fp: 65e90927d6bdbf85
     mods: [heavy_caliber, split_chamber, rifle_elementalist, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire]
+  - weapon: verglas_prime
+    mode: base
+    score: 0.7888914010410921
+    fp: 41a66724efa90e4c
+    mods: [split_chamber, serration, hammer_shot, speed_trigger, magnetic_capacity, rime_rounds, malignant_force, hellfire]
   - weapon: verglas_prime
     mode: base
     score: 0.7475899601674969

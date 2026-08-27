@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 3214
+submissions: 3220
 engine: a802c69b344affe6fd2b22bb3d7feb2a918ab57c
 entries:
   - weapon: acceltra_prime
@@ -1348,6 +1348,14 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: burston
     mode: cycle
+    score: 31.08571415060448
+    fp: 9e7148abd57083c9
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, hammer_shot, speed_trigger, vital_sense, cryo_rounds, infected_clip, malignant_force]
+    evolutions: [burston_evo1_incarnon_form, burston_forceful_finality, burston_ready_retaliation, burston_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston
+    mode: cycle
     score: 25.245541880843227
     fp: e85ab61016d31447
     mods: [amalgam_serration, galvanized_chamber, critical_delay, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force]
@@ -1950,6 +1958,14 @@ entries:
     score: 39.62693167470613
     fp: d25bf13676d69294
     mods: [amalgam_serration, primary_acuity, critical_delay, vital_sense, gilded_truth, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 39.29021780207801
+    fp: 4e5fe5f4272fc667
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, hammer_shot, vital_sense, gilded_truth, cryo_rounds, infected_clip, malignant_force]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
@@ -2774,6 +2790,16 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: dual_toxocyst
     mode: cycle
+    score: 117.38285368983163
+    fp: 269d4761fd86ee99
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, riven, primed_convulsion]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [fire_rate, multishot]
+      rolls: [1.1, 1.1]
+  - weapon: dual_toxocyst
+    mode: cycle
     score: 83.2531065089126
     fp: 8fff47be121b23ed
     exilus: trick_mag
@@ -2806,6 +2832,16 @@ entries:
       bonuses: [critical_damage, fire_rate, multishot]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: dual_toxocyst
+    mode: cycle
+    score: 79.8751288713133
+    fp: a5f42fb63cb0357f
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, riven, frostbite]
+    evolutions: [dual_toxocyst_evo1_incarnon_form, dual_toxocyst_fevered_frenzy, dual_toxocyst_marksmans_hand, dual_toxocyst_commodores_fortune]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [fire_rate, multishot]
+      rolls: [1.1, 1.1]
   - weapon: dual_toxocyst
     mode: cycle
     score: 78.91955915489933
@@ -9838,6 +9874,11 @@ entries:
     score: 0.7906405647268963
     fp: c570898e4aaaaf90
     mods: [heavy_caliber, split_chamber, rifle_elementalist, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, hellfire]
+  - weapon: verglas_prime
+    mode: base
+    score: 0.7888914010410921
+    fp: 945e215ebfe7d2c1
+    mods: [split_chamber, serration, hammer_shot, speed_trigger, magnetic_capacity, rime_rounds, malignant_force, hellfire]
   - weapon: verglas_prime
     mode: base
     score: 0.7475899601674969

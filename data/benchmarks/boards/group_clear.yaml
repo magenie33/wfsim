@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 3214
+submissions: 3220
 engine: a802c69b344affe6fd2b22bb3d7feb2a918ab57c
 entries:
   - weapon: acceltra_prime
@@ -1242,6 +1242,14 @@ entries:
     fp: 2582fd2c011a9df2
     mods: [amalgam_serration, primary_acuity, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
     evolutions: [burston_evo1_incarnon_form, burston_fortress_salvo, burston_kinetic_battle, burston_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston
+    mode: cycle
+    score: 31.08571415060448
+    fp: 7c99c27473cce393
+    exilus: vigilante_supplies
+    mods: [primary_acuity, galvanized_scope, hammer_shot, speed_trigger, vital_sense, cryo_rounds, infected_clip, malignant_force]
+    evolutions: [burston_evo1_incarnon_form, burston_forceful_finality, burston_ready_retaliation, burston_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston
     mode: cycle
