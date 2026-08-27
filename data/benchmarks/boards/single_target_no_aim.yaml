@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 3136
-engine: f7b355c9d7fbba50617fb1ba3cd76bca8a37b316
+submissions: 3158
+engine: 29b06c88e74afede83a8a7575831a4c8732d2df4
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -3477,6 +3477,16 @@ entries:
       bonuses: [critical_damage, damage, toxin]
       malus: zoom
       rolls: [1.1, 1.1, 0.9, 0.9]
+  - weapon: ocucor
+    mode: base
+    score: 1.3237245999864
+    fp: 759f6e2cfad89e6d
+    mods: [seeker, galvanized_diffusion, pistol_elementalist, magnetic_might, sentient_surge, frostbite, pistol_pestilence, riven]
+    arcanes: [cascadia_flare]
+    riven:
+      bonuses: [critical_damage, heat]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
   - weapon: paris_prime
     mode: cycle
     score: 0.530519767500648
@@ -4791,6 +4801,13 @@ entries:
     score: 2.776043756042761
     fp: 042e01e4ea690818
     mods: [galvanized_chamber, heavy_caliber, serration, hammer_shot, point_strike, vigilante_armaments, vital_sense, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+  - weapon: torid
+    mode: cycle
+    score: 2.6587958598232087
+    fp: 65042aa422d38507
+    mods: [galvanized_chamber, serration, point_strike, vital_sense, magnetic_capacity, high_voltage, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_debilitate]
   - weapon: torid
