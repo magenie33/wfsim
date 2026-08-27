@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "665d68c8+ · 2026-08-27 13:36Z";
+const BUILD_ID = "aeca312c+ · 2026-08-27 14:47Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -14415,7 +14415,7 @@ function recordBody(st) {
       st.dropped ? ` · ${escHtml(tr("{n} more did not fit").replace("{n}", n(st.dropped)))}` : ""}</div>
     <div class="rec-scroll"><table class="rec-t">
       <thead><tr>
-        <th>${escHtml(tr("time"))}</th><th>${escHtml(tr("source"))}</th>
+        <th>${escHtml(tr("time"))}</th><th>${escHtml(tr("damage source"))}</th>
         <th>${escHtml(tr("part"))}</th>
         <th class="num">${escHtml(tr("damage"))}</th>
         <th>${escHtml(tr("procs"))}</th>
@@ -14423,7 +14423,7 @@ function recordBody(st) {
         <th>${escHtml(tr("weapon"))}</th>
         <th>${escHtml(tr("buffs up"))}</th>
         <th>${escHtml(tr("before · target"))}</th>
-        <th>${escHtml(tr("on the target"))}</th>
+        <th>${escHtml(tr("statuses on the target"))}</th>
       </tr></thead>
       <tbody>${shown.map((e) => recordRow(e, st.rosters || { buffs: [], debuffs: [] })).join("")}</tbody>
     </table></div>`;
@@ -14502,27 +14502,13 @@ function recordRow(e, rosters) {
       escHtml(tr("gauge"))} ${g[0]} / ${g[1]}</span>` : ""}`;
 
   if (e.kind !== "damage") {
-    // WHAT AN ARRIVAL KNOWS, and nothing else does: how far the round flew and
-    // what was left of each budget when it got there. A damage NUMBER cannot
-    // carry it — one hit on a shielded body produces two of them — so it is
-    // drawn on the hit (owner, 2026-08-27).
-    const m = (x) => `${x.toFixed(2)}m`;
-    const flight = e.kind === "hit"
-      ? `<span class="rec-flight"><i>${escHtml(tr("flew"))}</i>${m(e.flew_m || 0)}</span>${
-          e.range_left_m != null
-            ? `<span class="rec-flight"><i>${escHtml(tr("range left"))}</i>${m(e.range_left_m)}</span>` : ""}${
-          e.punch_through_left_m != null
-            ? `<span class="rec-flight"><i>${escHtml(tr("punch through left"))}</i>${m(e.punch_through_left_m)}</span>` : ""}`
-      : "";
     return `<tr class="rec-evt rec-${escHtml(e.kind)}" data-recevent="${e.id}">
       <td class="rec-t">${e.t.toFixed(3)}${e.cause != null ? `<span class="rec-cause">#${e.cause}</span>` : ""}</td>
-      <td colspan="2"><b>${escHtml(tr(recordEventName(e)))}</b>${
+      <td colspan="7"><b>${escHtml(tr(recordEventName(e)))}</b>${
         e.into ? ` <span class="sim-hint">${escHtml(tr(e.into === "transmuted" ? "into the transmuted form" : "back to the base form"))}</span>` : ""}${
         e.seconds != null ? ` <span class="sim-hint">${e.seconds.toFixed(2)}s</span>` : ""}${
         e.reason ? ` <span class="sim-hint">${escHtml(tr(e.reason))}</span>` : ""}${
-        e.pellets != null ? ` <span class="sim-hint">${e.pellets} ${escHtml(tr("pellets"))}</span>` : ""}${
-        e.part ? ` <span class="${e.head ? "rec-head" : ""}">${escHtml(tr(e.part))}${e.head ? " ⌖" : ""}</span>` : ""}</td>
-      <td colspan="5">${flight}</td>
+        e.pellets != null ? ` <span class="sim-hint">${e.pellets} ${escHtml(tr("pellets"))}</span>` : ""}</td>
       <td class="rec-wep">${wep}</td><td colspan="2"></td></tr>`;
   }
 
@@ -14561,16 +14547,22 @@ function recordRow(e, rosters) {
   // arena points at with `data-rpevent`, so a number on the scene and a line
   // here are the same event under one name rather than two lists that happen
   // to agree (owner, 2026-08-27).
+  // EVERY CELL CARRIES ITS OWN HEADING. On a phone the table becomes a stack
+  // of cards — a ten-column, 1080px-wide ledger cannot be read through a 326px
+  // window, and the column that matters most is the one furthest off the right
+  // edge (owner, 2026-08-27) — and a stacked cell with no heading is a number
+  // with nothing to say what it is.
+  const L = (k) => ` data-label="${escHtml(tr(k))}"`;
   return `<tr class="rec-dmg rec-${escHtml(e.pool)}" data-recevent="${e.id}">
-    <td class="rec-t">${e.t.toFixed(3)}${e.cause != null ? `<span class="rec-cause">#${e.cause}</span>` : ""}</td>
-    <td><span class="rec-org rec-o-${escHtml(e.origin)}" data-origin="${escHtml(e.origin)}">${escHtml(tr(e.origin.replace(/_/g, " ")))}</span>${which}</td>
-    <td>${e.part ? `<span class="${e.head ? "rec-head" : ""}">${escHtml(tr(e.part))}${e.head ? " ⌖" : ""}</span>` : "<span class=\"z\">—</span>"}</td>
-    <td class="num"><b>${n(e.effective)}</b><span class="rec-pool">${escHtml(tr(REC_POOL[e.pool] || e.pool))}</span>${crit}</td>
-    <td class="rec-proc">${(e.procs || []).map((p) => `<span class="rec-p">${escHtml(DT(p))}</span>`).join("") || "<span class=\"z\">—</span>"}</td>
-    <td class="rec-calc">${baseChain(e)}${steps}<span class="rec-mid">= ${n(e.raw)}</span>${mit}<span class="rec-eq">= ${n(e.effective)}</span>${inert}</td>
-    <td class="rec-wep">${wep}</td>
-    <td class="rec-buff">${recStacks(e.buffs, rosters.buffs, "up")}</td>
-    <td class="rec-state">${
+    <td class="rec-t"${L("time")}>${e.t.toFixed(3)}${e.cause != null ? `<span class="rec-cause">#${e.cause}</span>` : ""}</td>
+    <td${L("damage source")}><span class="rec-org rec-o-${escHtml(e.origin)}" data-origin="${escHtml(e.origin)}">${escHtml(tr(e.origin.replace(/_/g, " ")))}</span>${which}</td>
+    <td${L("part")}>${e.part ? `<span class="${e.head ? "rec-head" : ""}">${escHtml(tr(e.part))}${e.head ? " ⌖" : ""}</span>` : "<span class=\"z\">—</span>"}</td>
+    <td class="num"${L("damage")}><b>${n(e.effective)}</b><span class="rec-pool">${escHtml(tr(REC_POOL[e.pool] || e.pool))}</span>${crit}</td>
+    <td class="rec-proc"${L("procs")}>${(e.procs || []).map((p) => `<span class="rec-p">${escHtml(DT(p))}</span>`).join("") || "<span class=\"z\">—</span>"}</td>
+    <td class="rec-calc"${L("where the number comes from")}>${baseChain(e)}${steps}<span class="rec-mid">= ${n(e.raw)}</span>${mit}<span class="rec-eq">= ${n(e.effective)}</span>${inert}</td>
+    <td class="rec-wep"${L("weapon")}>${wep}</td>
+    <td class="rec-buff"${L("buffs up")}>${recStacks(e.buffs, rosters.buffs, "up")}</td>
+    <td class="rec-state"${L("before · target")}>${
       b.overguard > 0 ? `<span data-pool="overguard"><i>${escHtml(tr("overguard"))}</i>${n(b.overguard)}</span>` : ""}<span data-pool="shield"><i>${escHtml(tr("shield"))}</i>${n(b.shield || 0)}</span><span data-pool="health"><i>${escHtml(tr("health"))}</i>${n(b.health || 0)}</span>${
       b.armor > 0 ? `<span data-pool="armour"><i>${escHtml(tr("armour"))}</i>${n(b.armor)}</span>` : ""}${
       // THE SHIELD-GATE WINDOW, drawn even though nothing this app fires takes
@@ -14579,13 +14571,13 @@ function recordRow(e, rosters) {
       b.shield_gate_until != null
         ? `<span class="rec-gate"><i>${escHtml(tr("gate"))}</i>${b.shield_gate_until.toFixed(2)}s</span>`
         : ""}</td>
-    <td class="rec-dbf">${recStacks(e.debuffs, rosters.debuffs, "on")}</td>
+    <td class="rec-dbf"${L("statuses on the target")}>${recStacks(e.debuffs, rosters.debuffs, "on")}</td>
   </tr>`;
 }
 
 function recordEventName(e) {
   return {
-    shot: "shot", hit: "hit", miss: "missed",
+    shot: "shot", miss: "missed",
     reload_start: "reload begins", reload_end: "reload ends",
     transform_start: "transform begins", transform_end: "transform ends",
     status_expired: "status expired", killed: "killed",
@@ -14617,12 +14609,6 @@ function wireRecord(r) {
 /// which is the thing nothing in this app could do before.
 function recordLine(e) {
   const t = e.t.toFixed(3).padStart(8);
-  if (e.kind === "hit") {
-    return `${t}  #${e.cause ?? "-"}  [hit]  ${e.part || "-"}${e.head ? " *" : ""}`
-      + `  flew ${(e.flew_m || 0).toFixed(2)}m`
-      + (e.range_left_m != null ? `  range left ${e.range_left_m.toFixed(2)}m` : "")
-      + (e.punch_through_left_m != null ? `  pt left ${e.punch_through_left_m.toFixed(2)}m` : "");
-  }
   if (e.kind === "miss") return `${t}  #${e.cause ?? "-"}  [miss]  ${e.reason || ""}`;
   if (e.kind !== "damage") return `${t}  [${e.kind}]`;
   const chain = [...(e.steps || []), ...(e.mitigation || [])]

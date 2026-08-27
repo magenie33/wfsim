@@ -11285,20 +11285,25 @@ pub fn run_once_traced(
             if pellet_lands {
                 landed_this_shot = true;
             }
-            // THE ARRIVAL ITSELF IS AN EVENT (owner, 2026-08-27). A trigger
-            // pull is one `Shot`; each pellet of it either gets somewhere or
-            // does not, and until now only the numbers that came AFTERWARDS
-            // were written down — so a pellet that missed left no trace at all,
-            // and "why did a three-pellet shot pop two numbers" had no answer
-            // anywhere in the ledger.
+            // A PELLET THAT WENT NOWHERE IS STILL SOMETHING THAT HAPPENED.
             //
-            // IT ALSO GIVES THE FLIGHT A HOME. How far the round went, what was
-            // left of the weapon's reach, what was left of the punch-through
-            // budget after crossing this body — none of that belongs to a
-            // damage NUMBER, and a hit on a shielded body produces two of those
-            // from one arrival.
+            // Three exits below produce no damage at all — outside the cone,
+            // out of the weapon's range, an explosion that reached nobody — and
+            // until this landed they produced no ROW either, so "why did a
+            // three-pellet shot pop two numbers" had no answer anywhere in the
+            // ledger. It is not a per-pellet row: on every official ruler the
+            // target is at contact and this never fires at all.
+            //
+            // THE ARRIVAL ITSELF IS NOT A ROW. It was, for an afternoon, with
+            // the flight on it — how far the round went, what was left of the
+            // reach and of the punch-through budget. Against a target at
+            // contact that is one row per pellet saying "it arrived, 0.00 m",
+            // which is half the stream to say nothing, and the owner took it
+            // back out the same day (2026-08-27). What it was going to answer —
+            // which numbers are one arrival — is still answerable from the shot
+            // they share; what is genuinely lost is the flight, and no scenario
+            // this app ships makes that a number worth a row.
             if rec.is_on() {
-                rec.end_hit();
                 if !in_range {
                     // OUT OF RANGE IS NOT A MISS in the aiming sense — the
                     // round never arrived, so its explosion does not go off
@@ -11309,26 +11314,6 @@ pub fn run_once_traced(
                 } else if !pellet_lands {
                     rec.push(t, Some(0), crate::record::Kind::Miss {
                         reason: "outside the cone",
-                    });
-                } else {
-                    let budget = ap.punch_through_m;
-                    rec.begin_hit(t, Some(0), crate::record::Kind::Hit {
-                        part: Some(part.name.clone()),
-                        head: part.is_head,
-                        flew_m: gap_m,
-                        range_left_m: ap.range_m.is_finite().then_some(ap.range_m - gap_m),
-                        // WHAT THIS BODY COST is the chord actually crossed, not
-                        // a flat figure: a body clipped at the rim costs almost
-                        // nothing (AGENTS.md, "PUNCH THROUGH IS METRES OF
-                        // MATERIAL").
-                        punch_through_left_m: (budget > 0.0).then(|| {
-                            (budget
-                                - crate::space::material_through(
-                                    crate::space::BODY_RADIUS_M,
-                                    aim_offset,
-                                ))
-                            .max(0.0)
-                        }),
                     });
                 }
             }

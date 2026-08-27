@@ -1320,41 +1320,32 @@ around (decision 2026-07-31).
   drawing ONE of them, which is the exact shape of the bug this replaced.
   Verified to bite in both directions — offsetting the id by one reddens the
   first, truncating a frame's list reddens the second.
-- **A SHOT, AN ARRIVAL, THEN THE NUMBERS** (owner, 2026-08-27). The combat
-  record had two levels — the trigger pull, and the numbers it eventually
-  produced — and the thing BETWEEN them was missing: the pellet getting
-  somewhere. `Kind::Hit` is that level, and adding it filled three holes that
-  were each real on their own.
-  A MISS HAD NO ROW AT ALL. Three exits in the pellet loop produce nothing —
-  outside the cone, out of the weapon's range, and an explosion that reached
-  nobody — so "why did a three-pellet shot pop two numbers" had no answer
-  anywhere in the ledger, and `Kind::Miss` sat declared-and-never-emitted
-  because there was no arrival for it to be the negation of.
-  THE FLIGHT HAD NOWHERE TO LIVE. How far the round went, what is left of the
-  weapon's reach, what is left of the punch-through budget after crossing this
-  body — the owner asked for the last two as COLUMNS weeks ago and they never
-  landed, because they are not facts about a damage NUMBER: one hit on a
-  shielded body produces two of those, and a round with punch through strikes
-  several bodies on one pull. They are facts about the ARRIVAL.
-  AND "TWO NUMBERS, ONE HIT" BECAME A STATEMENT. It was the founding claim of
-  this panel and it was inferred from two rows sharing a timestamp; now the two
-  rows name the same `Hit` as their cause, which is a fact rather than a
-  coincidence a reader has to spot.
-  THE CAUSE IS THE NEAREST THING THAT CAUSED IT — `self.hit.or(self.shot)` —
-  so the chain reads shot → hit → number, one level per thing that actually
-  happened. A hit's own cause is the shot (`begin_hit` clears `hit` before
-  pushing), a miss causes nothing, and an explosion thrown by a round that
-  MISSED belongs to the shot rather than to an arrival that never happened.
-  `attribute_to` clears it too, or a DoT tick falling due mid-volley would name
-  whichever pellet the loop was on.
-  IT COSTS ROWS AND THAT IS THE ONLY COST. Measured on the board's leading
-  Laetum: 6,192 arrivals against 12,404 damage rows, so the stream grows about
-  half again and the window shrinks to match — which is affordable only because
-  the window follows the playhead. `one_fight` reports every answer unchanged
-  and no measurable time.
-  `check_combat_record` asserts the CHAIN rather than the presence of three
-  kinds of row, and it MAKES a miss happen — the target is pushed to 40 m,
-  where the cone is wider than a body — because every claim about misses passes
+- **THE STREAM IS THE FOUR THINGS A FIGHT DOES, PLUS A MISS** (owner,
+  2026-08-27). A shot, a reload's two ends, a transmute's two ends, and the
+  numbers the enemy takes. That list is the owner's, and it is shorter than the
+  one tried first.
+  AN ARRIVAL WAS A ROW FOR AN AFTERNOON. `Kind::Hit` sat between the trigger
+  pull and the numbers, carrying the flight — how far the round went, what was
+  left of the reach, what was left of the punch-through budget after crossing
+  this body. The reasoning was sound and the result was not: against a target
+  at CONTACT, which is every official ruler, it is one row per pellet reading
+  "it arrived, 0.00 m" — measured at 6,192 arrivals against 12,404 damage rows
+  on the board's leading Laetum, half the stream to say nothing. It was taken
+  back out the same day. What it was going to answer, which numbers are one
+  arrival, is still answerable from the shot they share; what is genuinely lost
+  is the flight, and no scenario this app ships makes that worth a row per
+  pellet.
+  THE MISS STAYED, and it is the half that was actually missing. Three exits in
+  the pellet loop produce no damage at all — outside the cone, out of the
+  weapon's range, an explosion that reached nobody — so "why did a three-pellet
+  shot pop two numbers" had no answer anywhere in the ledger, and `Kind::Miss`
+  sat declared-and-never-emitted for months because there was nothing to hang
+  it on. It is NOT a per-pellet row: on every official ruler the target is at
+  contact and it never fires at all, which is the difference between it and the
+  arrival.
+  `check_combat_record` pins the KIND LIST so a fifth thing cannot arrive
+  unnoticed, and it MAKES a miss happen — the target pushed out to 40 m, where
+  the cone is wider than a body — because every claim about misses passes
   perfectly on a fight that has none.
 - **A ROW'S STATE COLUMNS ARE THE INSTANCE'S, AND ITS LABELS ARE NOT ITS
   IDENTITY** (owner, 2026-08-27). Two things the combat record got wrong the

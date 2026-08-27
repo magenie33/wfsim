@@ -405,4 +405,72 @@ for (const lang of ["en", "zh"]) {
   }
 }
 
+// ---- THE COMBAT RECORD IS READABLE ON A PHONE ----------------------------
+//
+// It was technically there and effectively not: a ten-column ledger with a
+// 1080px minimum, scrolling sideways inside a 326px window, with the column the
+// whole panel exists for — where the number came from — furthest off the right
+// edge (owner, 2026-08-27). Everything else this file measures is a page AT
+// REST; this is the one block that is deliberately WIDER than any phone, so it
+// is the one that has to be asked whether it changed shape.
+//
+// A ROW BECOMES A CARD below 720px, so the property is: the table fits, every
+// stacked cell says what it is, and the calculation is on screen.
+{
+  const w = 390;
+  await send("Emulation.setDeviceMetricsOverride",
+    { width: w, height: 844, deviceScaleFactor: 2, mobile: true });
+  await send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 });
+  // A REAL NAVIGATION, and then a WAIT. `openApp` here is opened with `boot: 0`
+  // because every other block on this page drives the SPA through `route()`, so
+  // `app.load`'s default wait is zero and the page-side body ran before the app
+  // existed.
+  await send("Page.navigate", { url: BASE + "/weapons/Laetum/simulator" });
+  const rec = await evaluate(`(async () => {
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    for (let i = 0; i < 60 && typeof sim === "undefined"; i++) await sleep(500);
+    const o = { vw: document.documentElement.clientWidth };
+    sim.duration = 8; sim.runs = 6;
+    document.getElementById('run-sim').click();
+    for (let i = 0; i < 120 && !document.getElementById('rp-scrub'); i++) await sleep(500);
+    o.block = !!document.querySelector('.fold[data-fold="record"]');
+    const btn = document.getElementById('rec-load');
+    o.button = !!btn;
+    if (btn) btn.click();
+    for (let i = 0; i < 60 && !document.querySelector('table.rec-t'); i++) await sleep(300);
+    await sleep(600);
+    const tbl = document.querySelector('table.rec-t');
+    o.table = !!tbl;
+    if (!tbl) return o;
+    o.tableW = Math.round(tbl.getBoundingClientRect().width);
+    // NOTHING RUNS OFF THE RIGHT EDGE — not the table, not a cell inside it.
+    const over = [];
+    tbl.querySelectorAll('td').forEach((el) => {
+      const b = el.getBoundingClientRect();
+      if (b.right > o.vw + 0.5) over.push(el.className || 'td');
+    });
+    o.over = [...new Set(over)].slice(0, 3);
+    o.scrollW = document.documentElement.scrollWidth;
+    // …AND A STACKED CELL SAYS WHAT IT IS, or it is a number with no name.
+    const cells = [...tbl.querySelectorAll('tr.rec-dmg td')];
+    o.cells = cells.length;
+    o.labelled = cells.filter((el) => el.dataset.label).length;
+    // THE COLUMN THE PANEL EXISTS FOR is the one that used to be off-screen.
+    const calc = tbl.querySelector('tr.rec-dmg .rec-calc');
+    o.calcOnScreen = !!calc && calc.getBoundingClientRect().right <= o.vw + 0.5
+      && calc.getBoundingClientRect().width > 0;
+    return o;
+  })()`);
+  check("phone 390 the combat record is on the panel",
+    rec.block === true && rec.button === true && rec.table === true);
+  check("phone 390 ...and it fits the screen",
+    rec.tableW <= rec.vw + 0.5 && (rec.over || []).length === 0
+      && rec.scrollW <= rec.vw + 0.5,
+    `table ${rec.tableW} in ${rec.vw}, ${(rec.over || []).join(" | ") || "no cell over"}`);
+  check("phone 390 ...every stacked cell says what it is",
+    rec.cells > 0 && rec.labelled === rec.cells, `${rec.labelled} of ${rec.cells}`);
+  check("phone 390 ...and the calculation is on screen, not off the right edge",
+    rec.calcOnScreen === true);
+}
+
 await app.finish("the page fits every screen it was measured on, in both languages");

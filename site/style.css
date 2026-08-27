@@ -1927,17 +1927,46 @@ tr.rec-evt td.rec-t{border-left-color:var(--accent)}
 tr.rec-reload_start td,tr.rec-reload_end td{background:color-mix(in srgb,var(--s1) 8%,transparent)}
 tr.rec-transform_start td,tr.rec-transform_end td{background:color-mix(in srgb,var(--gold) 10%,transparent)}
 .rec-cause{display:block;font-size:10px;color:var(--muted)}
-/* THE FLIGHT, on the arrival that owns it. A hit is not a damage row and does
-   not want a damage row's weight — it is the line that says the round got
-   there, how far it went and what it had left. */
-.rec-flight{display:inline-block;font-size:11px;margin-right:10px;
-  font-variant-numeric:tabular-nums;color:var(--text-2)}
-.rec-flight i{font-style:normal;color:var(--muted);font-size:10px;margin-right:4px}
-/* AN ARRIVAL AND A MISS MUST NOT LOOK ALIKE. `--s5` is a pink, which read as
-   an error beside the red a miss wears — and telling "the round got there"
-   from "the round did not" at a glance is the whole reason the pair exists. */
-tr.rec-hit td{background:color-mix(in srgb,var(--s3) 8%,transparent);font-size:11.5px}
-tr.rec-hit td.rec-t{border-left-color:var(--s3)}
+/* ---- THE RECORD ON A PHONE -------------------------------------------
+   A ten-column ledger with a 1080px minimum cannot be READ through a 326px
+   window. It was technically there — the block drew, the button worked, the
+   table scrolled sideways — and the column the whole panel exists for, the one
+   that says where the number came from, sat furthest off the right edge, so a
+   reader on a phone could see a damage figure and never its arithmetic (owner
+   reported it as not being there at all, 2026-08-27).
+
+   So on a narrow screen a ROW BECOMES A CARD: the header row goes away, each
+   cell stacks with its own heading (`data-label`, filled by `recordRow`), and
+   nothing scrolls sideways. It is taller per row, which is the trade a phone
+   forces — and the filter chips above are what a reader shortens the list
+   with. */
+@media (max-width:720px){
+  .rec-scroll{overflow-x:visible;max-height:none}
+  table.rec-t{min-width:0;display:block}
+  .rec-t thead{display:none}
+  .rec-t tbody{display:block}
+  .rec-t tr{display:block;padding:6px 0 8px;border-bottom:2px solid var(--line)}
+  .rec-t td{display:flex;gap:8px;align-items:baseline;border-bottom:0;
+    padding:2px 8px;width:auto !important;min-width:0 !important}
+  /* A CELL WITH NOTHING IN IT IS NOT A LINE. On a desktop an empty cell is an
+     empty column; stacked, it is a heading followed by a dash on every row. */
+  .rec-t td:empty{display:none}
+  .rec-t td::before{content:attr(data-label);flex:0 0 5.5em;color:var(--muted);
+    font-size:10px;text-transform:uppercase;letter-spacing:.04em;line-height:1.5}
+  .rec-t td:not([data-label])::before{content:none}
+  /* THE TIME IS THE CARD'S TITLE rather than one more labelled line. */
+  .rec-t td.rec-t{width:auto;text-align:left;border-left:4px solid transparent;
+    font-weight:700;font-size:12.5px}
+  .rec-t td.num{text-align:left}
+  .rec-t td.num b{font-size:15px}
+  .rec-calc{min-width:0}
+  .rec-buff,.rec-dbf,.rec-wep{width:auto}
+  .rec-t td.rec-calc{flex-wrap:wrap}
+  .rec-t td.rec-calc::before{flex-basis:100%}
+  /* An event row spans columns on a desktop; stacked, a colspan is just a
+     block and the empty ones are gone by the rule above. */
+  tr.rec-evt td[colspan],tr.rec-miss td[colspan]{display:block}
+}
 tr.rec-miss td{background:color-mix(in srgb,var(--critical) 8%,transparent);font-size:11.5px}
 tr.rec-miss td.rec-t{border-left-color:var(--critical)}
 .rec-pool{display:block;font-size:10px;color:var(--muted);font-weight:400}
