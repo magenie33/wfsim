@@ -331,6 +331,212 @@ enum BrokenPool {
     Shield,
 }
 
+/// WHICH POOL a portion of a damage instance landed in.
+///
+/// The game pops ONE NUMBER PER POOL, which is why this is carried rather than
+/// summed away: Toxin bypasses a shield while its siblings do not, so a single
+/// pellet on a shielded Corpus unit shows two numbers side by side. An engine
+/// that reports their sum cannot be checked against a recording.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Default,
+    serde::Serialize,
+    serde::Deserialize,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum Pool {
+    Overguard,
+    Shield,
+    /// THE DEFAULT, because it is the pool every fight ends in and the only one
+    /// a target is guaranteed to have.
+    #[default]
+    Health,
+}
+
+impl Pool {
+    pub fn name(self) -> &'static str {
+        match self {
+            Pool::Overguard => "overguard",
+            Pool::Shield => "shield",
+            Pool::Health => "health",
+        }
+    }
+}
+
+/// ONE POOL'S SHARE of a damage instance, with every factor between the raw
+/// number and what the pool actually lost.
+///
+/// This is the DEFENSIVE half of a hit's account, and it is a list rather than
+/// a single mitigation ratio because the ratio hides everything that makes it:
+/// a wrong vulnerability column and a wrong armour value produce the same
+/// `×0.081` and are two different bugs (owner, 2026-08-27).
+///
+/// The product is exact: `raw × gate × share × column × disrupt_amp ×
+/// virus_amp × armor × attenuation = effective`.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Portion {
+    pub pool: Pool,
+    /// WHAT COLOUR THIS NUMBER IS — the dominant type of the share that landed
+    /// here, which on a split is NOT the instance's own: the half a shield
+    /// stops is the physical one and the half that goes through is Toxin, so
+    /// the two numbers the game shows are two different colours.
+    pub dtype: DamageType,
+    /// The fraction of the instance's damage VECTOR routed into this pool,
+    /// before the vulnerability column. 1.0 unless a shield split the instance.
+    pub share: f64,
+    /// The column that share read — the weighted mean over the types in it, so
+    /// `share × column` is exactly the portion `apply` computed. The Overguard
+    /// layer reads its own table (wiki `Overguard`), which is why this is per
+    /// portion rather than per instance.
+    pub column: f64,
+    pub disrupt_amp: f64,
+    /// HOW MUCH OF THE INSTANCE THE SHIELD DID NOT ABSORB — the overflow as a
+    /// fraction of what arrived, or 1.0 where no shield stood in the way.
+    ///
+    /// It is a separate question from the gate beside it, and the two are
+    /// multiplied in order: a 160-damage hit on a 120-point shield has 40 of
+    /// overflow (`past_shield` = 0.25) and five per cent of THAT reaches health
+    /// (`shield_gate` = 0.05), which is the 2 the game pops. Folding them into
+    /// one factor would report `×0.0125` and name it nothing a reader could
+    /// check against the wiki.
+    pub past_shield: f64,
+    /// WHAT GOT THROUGH A SHIELD THIS INSTANCE BROKE — 0.05, or 1.0 for a
+    /// weakpoint hit that ignored the gate, or 1.0 where no shield broke.
+    ///
+    /// wiki `Shield`: *"5% of the damage dealt when hitting the shield gate
+    /// will target enemy Health"*, and *"Any Headshots or shots to Weakspots
+    /// completely bypass Corpus enemy Shield Gating"*. See
+    /// [`ENEMY_SHIELD_GATE_LEAK`] and MEASUREMENTS M61.
+    pub shield_gate: f64,
+    pub virus_amp: f64,
+    /// The armour term ACTUALLY APPLIED — normally `1 − DR`, but the health
+    /// path floors a mitigated instance at 1 damage, and a ledger that printed
+    /// `1 − DR` there would not multiply out. [`Self::floored`] says which of
+    /// the two this is.
+    pub armor: f64,
+    pub floored: bool,
+    /// The clamp an attenuating target applied, or 1.
+    pub attenuation: f64,
+    /// WHAT WAS LEFT IN THE POOL, as a factor — 1.0 unless the pool ran out
+    /// mid-instance.
+    ///
+    /// A shield with 88 points left takes 88 from a 228-damage hit, not 228,
+    /// and without this the ledger would describe an instance the pool never
+    /// took: `base × steps × mitigation` would come out at 228 beside a row
+    /// reading 88, which is precisely the shape of error this whole record
+    /// exists to make visible (found by `check_combat_record`, 2026-08-27).
+    ///
+    /// It is a fact about the TARGET rather than about the hit, which is why it
+    /// is here and last: everything above it is what the attacker and the
+    /// defender did to the number, and this is the pool simply not having that
+    /// much left to lose.
+    pub pool_remaining: f64,
+    pub effective: f64,
+}
+
+/// A portion of nothing: the slot a [`Settled`] starts its three with. Written
+/// by hand because `DamageType` has no default and should not gain one — there
+/// is no neutral damage type, only an unused slot.
+impl Default for Portion {
+    fn default() -> Self {
+        Self {
+            pool: Pool::Health,
+            dtype: DamageType::Impact,
+            share: 0.0,
+            column: 1.0,
+            disrupt_amp: 1.0,
+            past_shield: 1.0,
+            shield_gate: 1.0,
+            virus_amp: 1.0,
+            armor: 1.0,
+            floored: false,
+            attenuation: 1.0,
+            pool_remaining: 1.0,
+            effective: 0.0,
+        }
+    }
+}
+
+/// WHAT ONE DAMAGE INSTANCE DID, as every aggregate in this engine reads it.
+///
+/// DELIBERATELY THE SIZE OF THE TUPLE IT REPLACED. `apply` is called once per
+/// damage instance — about five million times in a thousand-run Monte Carlo,
+/// and four hundred million on the densest build measured — so what it returns
+/// travels in registers or it is a tax on every fight nobody is watching. The
+/// first version of this carried the whole breakdown here and cost **+13.3%**
+/// across `one_fight`'s four shapes with every answer unchanged (2026-08-27).
+/// The breakdown lives in [`Breakdown`] instead, written into a slot on
+/// `RunResult` that is copied once per RUN.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct Settled {
+    pub effective: f64,
+    pub killed: bool,
+    broken: Option<BrokenPool>,
+}
+
+/// THE LEDGER OF ONE INSTANCE'S MITIGATION — up to three numbers and every
+/// factor behind each.
+///
+/// Filled by [`TargetState::apply`] only while a replay is being traced, and
+/// read by [`RunResult::pop_settled`] immediately afterwards. It lives on
+/// `RunResult` rather than on the return value for the cost reason above, and
+/// beside the `pops` buffer because the two are the same fact seen twice: the
+/// numbers that popped, and why each is the size it is.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct Breakdown {
+    /// The shield-gate window's ×0.05, or 1. Outside every portion because it
+    /// is applied to the instance before it is routed anywhere.
+    pub gate: f64,
+    /// The live armour VALUE the health portion's term read, after strips.
+    /// Reported beside the multiplier because "why is my armour term 0.08" is
+    /// answered by the value and not by the ratio.
+    pub armor_effective: f64,
+    /// THE TARGET AS IT STOOD, the instant before this instance landed.
+    ///
+    /// Taken HERE rather than by each of the nine callers, and that is a cost
+    /// decision as much as a tidiness one: `apply` spends the pools and, on a
+    /// kill, respawns the body outright, so every caller had to snapshot on the
+    /// line above and hold the value across the call. Nine gated blocks and
+    /// nine live 32-byte locals across the hottest call in the engine measured
+    /// **+9%** on `one_fight` with every answer unchanged (2026-08-27) — and
+    /// `apply` is already the one place that knows whether anyone is reading.
+    pub before: crate::record::TargetAt,
+    /// One per pool that took something, in the order the game shows them.
+    /// `len` is 0 (nothing landed), 1 (the ordinary case), or 2 (a shield split
+    /// the instance) — three is unreachable today and costs nothing to allow.
+    portions: [Portion; 3],
+    n_portions: u8,
+}
+
+impl Breakdown {
+    pub fn portions(&self) -> &[Portion] {
+        &self.portions[..self.n_portions as usize]
+    }
+
+    fn reset(&mut self, gate: f64, armor_effective: f64, before: crate::record::TargetAt) {
+        self.gate = gate;
+        self.armor_effective = armor_effective;
+        self.before = before;
+        self.n_portions = 0;
+    }
+
+    fn push(&mut self, p: Portion) {
+        if p.effective <= 0.0 {
+            return;
+        }
+        if let Some(slot) = self.portions.get_mut(self.n_portions as usize) {
+            *slot = p;
+            self.n_portions += 1;
+        }
+    }
+}
+
 /// The simulated target: base stats + level, scaled via [`scaling`].
 ///
 /// Prefer building this through `enemy_data::EnemySpec::target_params`, which
@@ -468,6 +674,24 @@ impl TypeShares {
     /// The Toxin part, already column-scaled. Goes straight to health.
     fn toxin_portion(&self, col: &crate::factions_data::Column) -> f64 {
         self.toxin() * col.get(DamageType::Toxin)
+    }
+
+    /// THE BIGGEST SHARE THAT A SHIELD ACTUALLY STOPS — what the non-Toxin
+    /// half of a split instance reads as. Same contract as [`Self::dominant`]
+    /// and, like it, display only. Falls back to the whole instance's dominant
+    /// where there is no non-Toxin share to speak of.
+    fn dominant_non_toxin(&self) -> DamageType {
+        let mut best: Option<usize> = None;
+        for i in 0..self.0.len() {
+            if DamageType::ALL[i] == DamageType::Toxin {
+                continue;
+            }
+            if best.is_none_or(|b| self.0[i] > self.0[b]) {
+                best = Some(i);
+            }
+        }
+        best.filter(|&b| self.0[b] > 0.0)
+            .map_or_else(|| self.dominant(), |b| DamageType::ALL[b])
     }
 }
 
@@ -623,6 +847,25 @@ impl TargetState {
         }
     }
 
+    /// THE POOLS AND THE LIVE ARMOUR, as a row of the combat record needs them.
+    ///
+    /// Taken BEFORE the instance lands, which is what makes the record a chain
+    /// a reader can walk: row `n`'s pools are row `n−1`'s minus what row `n−1`
+    /// took out of them, so damage counted twice or never recorded breaks the
+    /// chain where it happened (see [`crate::record::TargetAt`]).
+    fn snapshot(&self, p: &TargetParams, mit: &Mitigation, now: f64) -> crate::record::TargetAt {
+        crate::record::TargetAt {
+            overguard: self.overguard,
+            shield: self.shield,
+            health: self.health,
+            // `TargetParams::armor` re-runs the level-scaling curve on every
+            // call, so this is not the free field read it looks like — which is
+            // why every caller takes the snapshot behind `watching`.
+            armor: p.armor() * mit.armor_multiplier,
+            shield_gate_until: (self.gate_until > now).then_some(self.gate_until),
+        }
+    }
+
     /// Which vulnerability column an instance landing RIGHT NOW would read.
     /// Same rule [`apply`](Self::apply) uses — the Overguard layer has its
     /// own table — exposed so a caller can split the reported damage by type
@@ -667,34 +910,132 @@ impl TargetState {
         p: &TargetParams,
         ignores_armor: bool,
         mit: &Mitigation,
-    ) -> (f64, bool, Option<BrokenPool>) {
-        // Shield gate: a unit-state window multiplying incoming damage.
-        let gated = if now < self.gate_until && !head_direct {
-            raw * 0.05
+        // WHERE THE BREAKDOWN GOES, when anyone is watching. `None` is the
+        // 999 runs of a thousand that are never replayed.
+        led: Option<&mut Breakdown>,
+    ) -> Settled {
+        // THE 0.1 s WINDOW IS NOBODY'S, YET. It is set on a shield break below
+        // and read by nothing, and that is the measurement rather than an
+        // omission: only a melee GROUND SLAM takes it — gunfire does not, and
+        // neither does a gun's AoE (owner, 2026-08-27; MEASUREMENTS M61).
+        //
+        // This engine fires guns and nothing else, so applying it to every
+        // instance was quartering shots the game does not quarter. The state
+        // stays because it is the TARGET's and it is correct; what is missing
+        // is an attack that reads it, and that arrives with melee.
+        //
+        // It is DRAWN, in the combat record's `shield_gate_until` — a window
+        // nobody can see is a window nobody can check when the time comes.
+        let gate = 1.0;
+        let gated = raw;
+        // THE TARGET AS IT STOOD, before any of this. Read while `led` is still
+        // `Some` — i.e. only when somebody is reading — and before the pools
+        // below are spent, since a killing instance respawns the body outright
+        // and a snapshot taken afterwards would describe a different fight.
+        let before = if led.is_some() {
+            self.snapshot(p, mit, now)
         } else {
-            raw
+            crate::record::TargetAt::default()
         };
 
         // Route into pools (no spill). The vulnerability COLUMN is chosen by
         // the pool, not only by the enemy: Overguard has its own table (wiki
         // Overguard — neutral but ×1.5 Void), and it is a layer over the unit
         // rather than part of it, so the unit's own column never reaches it.
+        //
+        // THE LEDGER IS DERIVED FROM THESE VERY NUMBERS, never from a second
+        // pass over `shares`. `TypeShares::whole` and its siblings each walk
+        // the seventeen damage types, and asking them again for the display
+        // half cost **+10.3%** on `one_fight` with every answer unchanged
+        // (2026-08-27) — so `share × column` is recovered by dividing the
+        // portion this function already computed, which is O(1) and cannot
+        // disagree with it by construction.
         let mut shield_part = 0.0f64;
         let mut health_part = 0.0f64;
         let mut og_part = 0.0f64;
+        let mut led_armor_effective = 0.0f64;
+        let mut led_hp_armor = 1.0f64;
+        let mut led_hp_floored = false;
+        // What the overflow past a broken shield was multiplied by on its way
+        // into health: the gate's 5%, or 1.0 for a weakpoint hit that ignored
+        // it. Left at 0.0 while no shield broke, which is not a factor and is
+        // why the ledger only lists it when it happened.
+        let mut led_gate_leak = 0.0f64;
+        let mut led_shield_cap = 1.0f64;
+        let mut led_past_shield = 1.0f64;
+        // The half of `health_part` that came over a broken shield rather than
+        // straight through it — see the Toxin split above.
+        let mut leak_part = 0.0f64;
+        let mut led_health_scale = 1.0f64;
+        let mut led_og_column = 1.0f64;
+        let mut led_sh = (0.0f64, 1.0f64);
+        let mut led_hp = (0.0f64, 1.0f64);
+        let mut led_sh_dtype = DamageType::Impact;
+        let mut led_hp_dtype = DamageType::Impact;
         if self.overguard > 0.0 {
-            og_part = gated * shares.whole(&p.type_mods.overguard) * mit.disrupt_amp;
+            let whole = shares.whole(&p.type_mods.overguard);
+            og_part = gated * whole * mit.disrupt_amp;
+            if led.is_some() {
+                led_og_column = whole;
+            }
         } else {
             let col = &p.type_mods.faction;
             let toxin = gated * shares.toxin_portion(col);
             let rest = gated * shares.non_toxin_portion(col);
             if self.shield > 0.0 {
-                shield_part = rest * mit.disrupt_amp;
+                // THE SHIELD GATE, AND IT BELONGS TO THE HIT THAT BREAKS THE
+                // SHIELD (owner measured it, 2026-08-27 — MEASUREMENTS M61).
+                //
+                // wiki `Shield`: *"Enemies have a shield gate that lasts 0.1
+                // seconds, during which only 5% of the damage dealt will damage
+                // their health"* and *"5% of the damage dealt when hitting the
+                // shield gate will target enemy Health"*. This engine had the
+                // 0.1 s WINDOW and nothing else: the breaking hit's excess was
+                // charged to the shield in full and thrown away (`// no spill`),
+                // so a 10,000-damage shot on a 120-point shield left the target
+                // at full health. In game it kills.
+                //
+                // Measured exactly, on four body shots spanning 160 to 1,710
+                // damage against a 120-shield level 1 Crewman: health took
+                // 2 / 12 / 33 / 80, which is `0.05 × (damage − 120)` to the last
+                // digit every time. The five per cent is of the OVERFLOW, not of
+                // the whole hit — `0.05 × 160` would be 8 and the pop-up read 2.
+                let to_shield = rest * mit.disrupt_amp;
+                if to_shield > self.shield {
+                    // …AND A WEAKPOINT HIT IGNORES IT COMPLETELY: *"Any
+                    // Headshots or shots to Weakspots completely bypass Corpus
+                    // enemy Shield Gating"* — the same bool the 0.1 s window
+                    // already reads, so the two halves of one rule are one
+                    // question asked once.
+                    let overflow = to_shield - self.shield;
+                    shield_part = self.shield;
+                    if to_shield > 0.0 {
+                        // TWO SIDES OF ONE DIVISION: what the pool had left to
+                        // lose (`Portion::pool_remaining`, on the shield's row)
+                        // and what it did not absorb (`Portion::past_shield`, on
+                        // the health row the overflow becomes).
+                        led_shield_cap = self.shield / to_shield;
+                        led_past_shield = overflow / to_shield;
+                    }
+                    led_gate_leak = if head_direct { 1.0 } else { ENEMY_SHIELD_GATE_LEAK };
+                    // KEPT APART FROM THE TOXIN THAT BYPASSED. Both end up in
+                    // health and they got there by different routes: Toxin
+                    // never met the shield, this crossed a broken one — so it
+                    // carries the Disrupt amp the shield damage was computed
+                    // with, and Toxin does not. One portion cannot describe a
+                    // sum of two chains, so they are two (found by
+                    // `check_combat_record`, 2026-08-27).
+                    leak_part = overflow * led_gate_leak;
+                    health_part += leak_part;
+                } else {
+                    shield_part = to_shield;
+                }
             } else {
                 health_part += rest;
             }
             health_part += toxin;
             // Health mitigation: virus amp + (live) armor.
+            let before = health_part;
             if health_part > 0.0 {
                 let dr = if ignores_armor {
                     0.0
@@ -707,11 +1048,52 @@ impl TargetState {
                 } else {
                     boosted
                 };
+                if led.is_some() {
+                    // WHAT VIRUS AND ARMOUR DID, as one factor — it is the same
+                    // for both halves of `health_part`, so applying it to the
+                    // leak's share is exact rather than proportional.
+                    led_health_scale = if before > 0.0 { health_part / before } else { 1.0 };
+                    led_armor_effective = p.armor() * mit.armor_multiplier;
+                    // THE TERM ACTUALLY APPLIED, floor included. `1 − DR` is
+                    // the formula and is not always the number: the health path
+                    // floors a mitigated instance at 1 damage, so on a target
+                    // thick enough to reach it a ledger printing `1 − DR` would
+                    // stop multiplying out.
+                    led_hp_armor = if boosted > 0.0 {
+                        health_part / boosted
+                    } else {
+                        1.0
+                    };
+                    led_hp_floored = dr > 0.0 && (boosted * (1.0 - dr)) < 1.0;
+                }
+            }
+            if led.is_some() && gated != 0.0 {
+                // THE SPLIT, named. A shapeless instance is one neutral lump —
+                // all of it non-Toxin at ×1.00 — which is what `TypeShares`
+                // answers from the other side.
+                let toxin_share = shares.toxin();
+                let split = |portion: f64, share: f64| {
+                    if share > 1e-12 {
+                        (share, portion / gated / share)
+                    } else {
+                        (share, 1.0)
+                    }
+                };
+                if self.shield > 0.0 {
+                    led_sh = split(rest, 1.0 - toxin_share);
+                    led_hp = split(toxin, toxin_share);
+                    led_sh_dtype = shares.dominant_non_toxin();
+                    led_hp_dtype = DamageType::Toxin;
+                } else {
+                    led_hp = split(before, 1.0);
+                    led_hp_dtype = shares.dominant();
+                }
             }
         }
 
         // Attenuation: clamp the instance total, then the 1 s bucket.
         let mut effective = og_part + shield_part + health_part;
+        let mut atten = 1.0f64;
         if let Some(a) = p.attenuation {
             while now >= self.atten_window_start + 1.0 {
                 self.atten_window_start += 1.0;
@@ -731,20 +1113,132 @@ impl TargetState {
                 shield_part *= k;
                 health_part *= k;
                 effective = allowed;
+                atten = k;
             }
             self.atten_window_damage += effective;
         }
 
+        // THE PORTIONS, once every factor is final. Pushed in the order the
+        // game shows them and skipped where nothing landed, so `portions()` is
+        // exactly the numbers that popped.
+        //
+        // ONLY THE RUN BEING REPLAYED PAYS FOR THEM. This is the same rule
+        // `RunResult::pops_on` states one struct over, and for the same reason:
+        // the breakdown is read by exactly one consumer and a Monte Carlo pays
+        // for it 999 times out of 1000. Filling it unconditionally measured
+        // +13.3% on `one_fight`'s four shapes with every answer unchanged —
+        // a pure tax (2026-08-27).
+        let mut out = Settled {
+            effective,
+            killed: false,
+            broken: None,
+        };
+        let Some(b) = led else {
+            return Self::finish(self, p, now, og_part, shield_part, health_part, out);
+        };
+        // EMPTIED FIRST — the slot is reused for every instance in the fight,
+        // so a breakdown that only ever appended would grow into a record of
+        // the whole run and `pop_settled` would pop somebody else's numbers.
+        b.reset(gate, led_armor_effective, before);
+        b.push(Portion {
+            pool: Pool::Overguard,
+            dtype: shares.dominant(),
+            share: 1.0,
+            column: led_og_column,
+            disrupt_amp: mit.disrupt_amp,
+            past_shield: 1.0,
+            shield_gate: 1.0,
+            virus_amp: 1.0,
+            armor: 1.0,
+            floored: false,
+            attenuation: atten,
+            pool_remaining: 1.0,
+            effective: og_part,
+        });
+        b.push(Portion {
+            pool: Pool::Shield,
+            dtype: led_sh_dtype,
+            share: led_sh.0,
+            column: led_sh.1,
+            disrupt_amp: mit.disrupt_amp,
+            past_shield: 1.0,
+            shield_gate: 1.0,
+            virus_amp: 1.0,
+            armor: 1.0,
+            floored: false,
+            attenuation: atten,
+            pool_remaining: led_shield_cap,
+            effective: shield_part,
+        });
+        // TWO WAYS INTO HEALTH, and each gets its own row when both happened.
+        // Toxin never met the shield; the leak crossed a broken one, so it
+        // carries the Disrupt amp and the gate and Toxin carries neither.
+        let leak_effective = leak_part * led_health_scale;
+        b.push(Portion {
+            pool: Pool::Health,
+            dtype: led_hp_dtype,
+            share: led_hp.0,
+            column: led_hp.1,
+            disrupt_amp: 1.0,
+            past_shield: 1.0,
+            shield_gate: 1.0,
+            virus_amp: mit.virus_amp,
+            armor: led_hp_armor,
+            floored: led_hp_floored,
+            attenuation: atten,
+            pool_remaining: 1.0,
+            effective: health_part - leak_effective,
+        });
+        b.push(Portion {
+            pool: Pool::Health,
+            dtype: led_sh_dtype,
+            share: led_sh.0,
+            column: led_sh.1,
+            // THE SHIELD'S OWN AMP IS IN THIS NUMBER, because the overflow was
+            // measured against shield damage — `to_shield` is `rest x
+            // disrupt_amp`, so what got past it carries that factor whether or
+            // not Disrupt does anything to health.
+            disrupt_amp: mit.disrupt_amp,
+            past_shield: led_past_shield,
+            // THE GATE, on the portion it actually multiplied. A field of its
+            // own rather than folded into a neighbour, because a ledger whose
+            // point is that every line is nameable cannot afford a line whose
+            // name is somebody else's.
+            shield_gate: led_gate_leak,
+            virus_amp: mit.virus_amp,
+            armor: led_hp_armor,
+            floored: led_hp_floored,
+            attenuation: atten,
+            pool_remaining: 1.0,
+            effective: leak_effective,
+        });
+
+        out = Self::finish(self, p, now, og_part, shield_part, health_part, out);
+        out
+    }
+
+    /// SPEND THE POOLS. Split out of [`Self::apply`] because the ledger's
+    /// early exit and the full path must not be two spellings of the pool
+    /// arithmetic — a fight whose numbers depended on whether anyone was
+    /// watching would be the one bug this whole feature exists to prevent.
+    fn finish(
+        &mut self,
+        p: &TargetParams,
+        now: f64,
+        og_part: f64,
+        shield_part: f64,
+        health_part: f64,
+        mut out: Settled,
+    ) -> Settled {
         if p.mode == TargetMode::InfiniteHealth {
-            return (effective, false, None);
+            return out;
         }
 
-        let mut broke = None;
         if og_part > 0.0 {
             self.overguard -= og_part;
             if self.overguard <= 0.0 {
                 self.overguard = 0.0; // no spill
-                broke = Some(BrokenPool::Overguard);
+                out.broken = Some(BrokenPool::Overguard);
             }
         }
         if shield_part > 0.0 {
@@ -752,16 +1246,15 @@ impl TargetState {
             if self.shield <= 0.0 {
                 self.shield = 0.0; // no spill
                 self.gate_until = now + 0.1;
-                broke = Some(BrokenPool::Shield);
+                out.broken = Some(BrokenPool::Shield);
             }
         }
         self.health -= health_part;
         if self.health <= 0.0 {
             *self = TargetState::spawn_at(p, now); // instant respawn
-            (effective, true, broke)
-        } else {
-            (effective, false, broke)
+            out.killed = true;
         }
+        out
     }
 }
 
@@ -776,6 +1269,17 @@ impl TargetState {
 struct Dot {
     next_tick: f64,
     ticks_left: u32,
+    /// WHICH SHOT SEEDED THIS, by combat-record event id (`record::Event::id`).
+    ///
+    /// A bleed that settles four seconds after the round that applied it is the
+    /// one damage in this engine whose origin nothing could name: by the time
+    /// it pays, the shot is long gone. Carrying the id is what lets a reader
+    /// ask what a trigger pull was ACTUALLY worth — its pellets, its explosion
+    /// AND the burns it left — which is a number no aggregate here can produce.
+    ///
+    /// `u32::MAX` is "nobody recorded it", which is every run that is not being
+    /// read and every DoT applied before recording began.
+    cause: u32,
     /// THE INSTANCE'S OWN HALF of the tick — coefficient, ModifiedBase, status
     /// damage, and the crit and body part of the hit that applied it. Frozen,
     /// because those are facts about a hit that has already happened.
@@ -1185,6 +1689,19 @@ struct Mitigation {
     /// (1 − heat strip) × (1 − corrosive strip), applied to armor VALUE.
     armor_multiplier: f64,
 }
+
+/// WHAT REACHES HEALTH THROUGH A BROKEN ENEMY SHIELD — five per cent of the
+/// overflow.
+///
+/// wiki `Shield`: *"Enemies have a shield gate that lasts 0.1 seconds, during
+/// which only 5% of the damage dealt will damage their health"*. Both halves of
+/// that sentence are real and they are different: the 0.1 s WINDOW applies to
+/// instances that arrive AFTER the break, and this applies to the excess of the
+/// instance that broke it. This engine had only the window until 2026-08-27,
+/// and threw the excess away entirely.
+///
+/// Confirmed exactly against four measured body shots (MEASUREMENTS M61).
+const ENEMY_SHIELD_GATE_LEAK: f64 = 0.05;
 
 /// The +100%/+25% ten-stack amp curve shared by Disrupt and Virus.
 fn ten_stack_amp(stacks: usize) -> f64 {
@@ -2588,6 +3105,11 @@ pub struct Pop {
     /// it: an index would couple the wire to `DamageType::ALL`'s order.
     pub dtype: DamageType,
     pub kind: PopKind,
+    /// WHICH POOL IT CAME OUT OF. A hit on a shielded body pops TWO of these —
+    /// the half a shield stops and the Toxin half that goes straight through —
+    /// which is what the game shows and what this engine reported as one number
+    /// until 2026-08-27.
+    pub pool: Pool,
 }
 
 /// HOW MANY NUMBERS ONE FRAME MAY CARRY.
@@ -2622,9 +3144,14 @@ pub struct PopBuf {
 impl Default for PopBuf {
     fn default() -> Self {
         Self {
-            pops: [Pop { t: 0.0, body: 0, amount: 0.0,
-                dtype: DamageType::Impact, kind: PopKind::Direct };
-                POPS_PER_FRAME],
+            pops: [Pop {
+                t: 0.0,
+                body: 0,
+                amount: 0.0,
+                dtype: DamageType::Impact,
+                kind: PopKind::Direct,
+                pool: Pool::Health,
+            }; POPS_PER_FRAME],
             len: 0,
             dropped: 0,
         }
@@ -3670,7 +4197,15 @@ impl RunResult {
     /// what makes the log complete: the timeline is the aggregate view of the
     /// same nine events and the two cannot drift apart without one of the two
     /// calls being dropped.
-    fn pop(&mut self, t: f64, body: usize, amount: f64, dtype: DamageType, kind: PopKind) {
+    fn pop_from(
+        &mut self,
+        t: f64,
+        body: usize,
+        amount: f64,
+        dtype: DamageType,
+        kind: PopKind,
+        pool: Pool,
+    ) {
         if !self.pops_on || amount <= 0.0 {
             return;
         }
@@ -3680,7 +4215,43 @@ impl RunResult {
             amount: amount as f32,
             dtype,
             kind,
+            pool,
         });
+    }
+
+    /// RECORD WHAT ONE INSTANCE POPPED — one number per pool it landed in.
+    ///
+    /// THE GAME SHOWS THE SPLIT AND THIS ENGINE DID NOT. `apply` has always
+    /// routed the Toxin share past a shield and its siblings into it, and then
+    /// reported their sum; on a shielded Corpus unit that is one number where
+    /// the game pops two, so the one output that could be checked against a
+    /// recording could not be (owner, 2026-08-27).
+    ///
+    /// A SINGLE PORTION KEEPS THE CALLER'S TYPE, which is every instance in
+    /// every fight without shields and therefore every number this engine has
+    /// ever produced. It matters because a caller sometimes means something the
+    /// vector does not say — a lingering field pops as `Cinematic` — and only a
+    /// SPLIT has no honest single answer, so only a split overrides it.
+    fn pop_settled(
+        &mut self,
+        t: f64,
+        body: usize,
+        breakdown: &Breakdown,
+        dtype: DamageType,
+        kind: PopKind,
+    ) {
+        if !self.pops_on {
+            return;
+        }
+        match breakdown.portions() {
+            [] => {}
+            [one] => self.pop_from(t, body, one.effective, dtype, kind, one.pool),
+            many => {
+                for p in many {
+                    self.pop_from(t, body, p.effective, p.dtype, kind, p.pool);
+                }
+            }
+        }
     }
 
     /// Record what a body took, growing the list as bodies appear in it.
@@ -3975,6 +4546,134 @@ impl SourceDamage {
 /// instead would report a 50/50 Impact/Slash hit on a Grineer unit as 50/50
 /// when Impact actually did 60% of the damage, which is exactly the number a
 /// reader consults to decide what to add next.
+/// IS ANYONE READING? The gate `TargetState::apply` fills its breakdown behind.
+///
+/// TWO CONSUMERS, ONE ANSWER: the replay's floating numbers and the combat
+/// record are both explanations of the same instance, so they are recorded
+/// together or not at all — a fight where one was on and the other off would be
+/// two different accounts of one hit.
+fn watching<'a>(
+    r: &RunResult,
+    rec: &crate::record::Record,
+    breakdown: &'a mut Breakdown,
+) -> Option<&'a mut Breakdown> {
+    (r.pops_on || rec.is_on()).then_some(breakdown)
+}
+
+/// WHAT ONE DAMAGE INSTANCE WAS, from the attacker's side.
+///
+/// Handed to [`log_damage`] by each of the nine sites where damage lands. A
+/// struct rather than a dozen positional arguments because most sites fill most
+/// of it with a default: a status tick has no body part, an explosion has no
+/// crit tier, and saying so by omission is how those two stopped being told
+/// apart in the first place.
+#[derive(Default)]
+struct Instance<'a> {
+    origin: crate::record::Origin,
+    /// The offensive ledger: `base × Π steps` is what the target was handed.
+    base: f64,
+    steps: &'a [crate::record::Step],
+    part: Option<&'a str>,
+    head: bool,
+    crit_tier: u32,
+    /// What this instance APPLIED — a different question from what it was.
+    procs: &'a [DamageType],
+}
+
+/// IS THIS INSTANCE BEING WRITTEN DOWN AT ALL? The gate every damage site puts
+/// its [`log_damage`] call behind.
+///
+/// The call itself would return immediately, so this exists purely so the
+/// ARGUMENTS are never built: an `Instance` is assembled from a dozen locals at
+/// nine sites and a `TargetAt` re-runs the armour scaling curve, and paying for
+/// both on the 999 runs nobody reads measured +4.0% on `one_fight` (2026-08-27).
+fn recording(r: &RunResult, rec: &crate::record::Record) -> bool {
+    r.pops_on || rec.is_on()
+}
+
+/// THE ONE PLACE A DAMAGE INSTANCE IS WRITTEN DOWN — the floating numbers and
+/// the combat record, from the same breakdown, at every site where damage
+/// lands.
+///
+/// Both outputs come from `TargetState::apply`'s own portions, so they cannot
+/// disagree about how many numbers there were or how big each one was; and the
+/// record is filled by the same call that moved the pools rather than beside
+/// it, which is what makes "the sum of the record is the damage total" true by
+/// construction (see [`crate::record`]).
+#[allow(clippy::too_many_arguments)]
+fn log_damage(
+    r: &mut RunResult,
+    rec: &mut crate::record::Record,
+    t: f64,
+    body: usize,
+    dtype: DamageType,
+    kind: PopKind,
+    breakdown: &Breakdown,
+    settled: Settled,
+    debuffs: Option<&DebuffState>,
+    inst: Instance<'_>,
+) {
+    r.pop_settled(t, body, breakdown, dtype, kind);
+    if !rec.is_on() {
+        return;
+    }
+    let stacks = debuffs.map(|d| d.sample(t)).unwrap_or_default();
+    let subject = Some(body.min(u16::MAX as usize) as u16);
+    let one = breakdown.portions().len() == 1;
+    for p in breakdown.portions() {
+        // THE DEFENSIVE LEDGER, in the order `apply` uses its factors, with
+        // the ones that did nothing left out — a `×1.00` from a term this
+        // fight never had is noise, and the owner asked for it gone
+        // (2026-08-27). What is NOT left out is a term that exists and paid
+        // nothing; that distinction lives on the page, which knows what the
+        // build is carrying and this does not.
+        let mut mit: Vec<crate::record::Step> = Vec::with_capacity(6);
+        let mut keep = |name: &'static str, v: f64| {
+            if (v - 1.0).abs() > 1e-12 {
+                mit.push((name, v));
+            }
+        };
+        keep("shield gate", breakdown.gate);
+        keep("pool share", p.share);
+        keep("damage type column", p.column);
+        keep("Disrupt amp", p.disrupt_amp);
+        keep("past the shield", p.past_shield);
+        keep("shield gate", p.shield_gate);
+        keep("Viral amp", p.virus_amp);
+        keep("armour", p.armor);
+        keep("attenuation", p.attenuation);
+        keep("the pool ran out", p.pool_remaining);
+        rec.push(
+            t,
+            subject,
+            crate::record::Kind::Damage(Box::new(crate::record::Damage {
+                origin: inst.origin,
+                pool: p.pool,
+                // A SINGLE PORTION KEEPS THE CALLER'S TYPE — the same rule
+                // `pop_settled` follows one function over, and for the same
+                // reason: only a split has no honest single answer.
+                dtype: if one { dtype } else { p.dtype },
+                part: inst.part.map(str::to_string),
+                head: inst.head,
+                crit_tier: inst.crit_tier,
+                base: inst.base,
+                steps: inst.steps.to_vec(),
+                // A SPLIT SHARES ONE RAW NUMBER between its portions, and the
+                // share is already the first term of the ledger below — so the
+                // raw is the instance's either way, and only what happens to it
+                // after it arrives differs.
+                raw: inst.base * inst.steps.iter().map(|(_, v)| v).product::<f64>(),
+                mitigation: mit,
+                effective: p.effective,
+                before: breakdown.before,
+                debuffs: stacks.clone(),
+                procs: inst.procs.to_vec(),
+                killed: settled.killed,
+            })),
+        );
+    }
+}
+
 fn add_by_type(
     dst: &mut [f64; DamageType::ALL.len()],
     v: &DamageVector,
@@ -4378,6 +5077,8 @@ fn push_break_proc(debuffs: &mut DebuffState, params: &DummyParams, now: f64, po
     debuffs.dots.push(Dot {
         next_tick: now,
         ticks_left: 6,
+        // A BROKEN POOL is the TARGET's own doing, so it points at no shot.
+        cause: u32::MAX,
         frozen: total / 6.0,
         // A SHARE OF THE TARGET'S OWN POOL, so nothing the shooter carries
         // scales it — not the element bracket, not faction, not Eclipse, and
@@ -4634,6 +5335,7 @@ fn fire_extra_hits(
     ap: &DummyParams,
     mit: &Mitigation,
     r: &mut RunResult,
+    rec: &mut crate::record::Record,
     rng: &mut Rng,
 ) -> bool {
     let hits = crate::abilities_data::extra_hits_at(&params.abilities, at);
@@ -4643,7 +5345,8 @@ fn fire_extra_hits(
     let f = params.faction_at_time(at);
     for crate::abilities_data::ExtraHitLive { element: ty, fraction, forced_status } in hits {
         let raw = trigger_raw * fraction * bracket * part_again * f;
-        let (eff, killed, broke) = target.apply(
+        let mut breakdown = Breakdown::default();
+        let settled = target.apply(
             raw,
             TypeShares::single(ty),
             head_direct,
@@ -4651,13 +5354,35 @@ fn fire_extra_hits(
             &params.target,
             false,
             mit,
+            watching(r, rec, &mut breakdown),
         );
+        let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
         r.total_damage += raw;
         r.effective_damage += eff;
         r.sources.extra_hit += eff;
         r.sources.extra_hit_by_type[ty as usize] += eff;
         r.timeline.add(at, eff);
-        r.pop(at, 0, eff, ty, PopKind::Extra);
+        if recording(r, rec) {
+            log_damage(
+                r, rec, at, 0, ty, PopKind::Extra, &breakdown, settled, Some(debuffs),
+                Instance {
+                    origin: crate::record::Origin::ExtraHit,
+                    // THE TRIGGERING HIT'S OWN DAMAGE is the base, and the four
+                    // factors below are the whole of docs/EXTRA_HIT.md: an
+                    // Extra Hit is a percentage of something else, in one
+                    // element, on the body part that thing struck.
+                    base: trigger_raw,
+                    steps: &[
+                        ("extra hit share", fraction),
+                        ("element bracket", bracket),
+                        ("body part", part_again),
+                        ("faction", f),
+                    ],
+                    head: head_direct,
+                    ..Instance::default()
+                },
+            );
+        }
         r.note_kills(u32::from(killed), at);
         if let Some(pool) = broke {
             push_break_proc(debuffs, params, at, pool);
@@ -4735,6 +5460,7 @@ fn fire_extra_hits(
             ap,
             mit,
             r,
+            rec,
             rng,
             // The extra hit is one derivation past the hit, so a status IT
             // applies is one past that. Void applies none that pay damage, so
@@ -4824,6 +5550,7 @@ fn dot_family_cap(dtype: DamageType) -> Option<usize> {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn drain_area_procs(
     debuffs: &mut DebuffState,
     target: &mut TargetState,
@@ -4835,6 +5562,7 @@ fn drain_area_procs(
     // 88 with the spread off, entirely on that scan (2026-08-18).
     near: &crate::space::Neighbours,
     r: &mut RunResult,
+    rec: &mut crate::record::Record,
     at_now: f64,
 ) {
     if params.others.is_empty() {
@@ -4934,7 +5662,8 @@ fn drain_area_procs(
             }
             let dmg = hit.damage * share;
             let mit = dbf.mitigation(at_now, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
-            let (eff, killed, _broke) = state.apply(
+            let mut breakdown = Breakdown::default();
+            let settled = state.apply(
                 dmg,
                 hit.shares,
                 false,
@@ -4942,14 +5671,32 @@ fn drain_area_procs(
                 fp,
                 false,
                 &mit,
+                watching(r, rec, &mut breakdown),
             );
+            let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
             r.total_damage += dmg;
             r.effective_damage += eff;
             r.dot_damage += eff;
             r.note_body_damage(j, eff);
             r.sources.add_status(hit.shares.dominant(), eff);
             r.timeline.add(at_now, eff);
-            r.pop(at_now, j, eff, hit.shares.dominant(), PopKind::BlastArea);
+            if recording(r, rec) {
+                log_damage(
+                    r, rec, at_now, j, hit.shares.dominant(), PopKind::BlastArea,
+                    &breakdown, settled, Some(dbf),
+                    Instance {
+                        origin: crate::record::Origin::Splash,
+                        // THE DETONATION'S OWN NUMBER, and how much of it
+                        // reached this far. `share` is the falloff over the
+                        // radius, which is the only thing that separates a
+                        // neighbour's number from the body that carried the
+                        // stack.
+                        base: hit.damage,
+                        steps: &[("radial falloff", share)],
+                        ..Instance::default()
+                    },
+                );
+            }
             r.note_kills(u32::from(killed), at_now);
             if killed {
                 // A CHAIN, and it needs no arranging: this body's own corpse
@@ -4985,6 +5732,7 @@ fn settle_procs(
     ap: &DummyParams,
     mit: &Mitigation,
     r: &mut RunResult,
+    rec: &mut crate::record::Record,
     rng: &mut Rng,
     // WHICH BODY THIS LANDS ON — `params.target` until a formation could hold
     // more than one (2026-08-17). Its stack caps and its status immunities are
@@ -5041,6 +5789,10 @@ fn settle_procs(
     // a status inherits; the faction bracket is, twice over. So it is read HERE,
     // at `at`, and lives in the tick's frozen half.
     let ecl = params.ability_final_at(at);
+    // WHICH SHOT IS APPLYING THESE. Read once, here, so every DoT this call
+    // seeds points back at the same trigger pull — including the ones a
+    // detonation or an echo applies, which are still that shot's doing.
+    let seeded_by = rec.shot().unwrap_or(u32::MAX);
     // RETURNS THE DOT IT PUSHED, so an AREA proc can post a copy to
     // `DebuffState::area_out` for everybody standing near this body.
     let push_dot = |debuffs: &mut DebuffState,
@@ -5065,6 +5817,7 @@ fn settle_procs(
         let dot = Dot {
                 next_tick: at + delay,
                 ticks_left: ticks,
+                cause: seeded_by,
                 // `bracket` is `1 + Σ this element's bonuses`, and an ability
                 // that adds this element is "additive with elemental mods" —
                 // so its share belongs in the same sum, which is what makes
@@ -5332,23 +6085,45 @@ fn settle_procs(
                     // an expiring Nourish between the first and the tenth would
                     // make their brackets differ.
                     let xh_total: f64 = fired.iter().map(|b| b.value * b.xh_bracket).sum();
-                    let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
-                    let (eff, killed, broke) =
-                        target.apply(
-                            total,
-                            TypeShares::single(DamageType::Blast),
-                            false,
-                            at,
-                            foe,
-                            false,
-                            &mit,
-                        );
+                    let mit = debuffs.mitigation(
+                        at,
+                        status_damage,
+                        params.armor_strip_per_puncture,
+                        params.squad.enemy_armor_multiplier,
+                    );
+                    let mut breakdown = Breakdown::default();
+                    let settled = target.apply(
+                        total,
+                        TypeShares::single(DamageType::Blast),
+                        false,
+                        at,
+                        foe,
+                        false,
+                        &mit,
+                        watching(r, rec, &mut breakdown),
+                    );
+                    let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
                     r.total_damage += total;
                     r.effective_damage += eff;
                     r.dot_damage += eff;
                     r.sources.add_status(DamageType::Blast, eff);
                     r.timeline.add(at, eff);
-                    r.pop(at, 0, eff, DamageType::Blast, PopKind::Blast);
+                    if recording(r, rec) {
+                        log_damage(
+                            r, rec, at, 0, DamageType::Blast, PopKind::Blast,
+                            &breakdown, settled, Some(debuffs),
+                            Instance {
+                                origin: crate::record::Origin::Status,
+                                // EVERY STACK AT ONCE. Ten stacks detonating
+                                // together are ONE number in game, so the base
+                                // is their sum and the count is what a reader
+                                // checks it against.
+                                base: total,
+                                steps: &[],
+                                ..Instance::default()
+                            },
+                        );
+                    }
                     r.note_kills(killed as u32, at);
                     if let Some(pool) = broke {
                         push_break_proc(debuffs, params, at, pool);
@@ -5376,6 +6151,7 @@ fn settle_procs(
                             ap,
                             &mit,
                             r,
+                            rec,
                             rng,
                         );
                     }
@@ -5526,6 +6302,7 @@ fn settle_procs(
                     ap,
                     mit,
                     r,
+                    rec,
                     rng,
                     &params.target,
                     DEPTH_DERIVED_PROC,
@@ -5542,7 +6319,8 @@ fn settle_procs(
         // column factor alike.
         if params.arcane.flat_damage_on_status > 0.0 {
             let amt = params.arcane.flat_damage_on_status * params.faction_at_time(at);
-            let (eff, killed, broke) = target.apply(
+            let mut breakdown = Breakdown::default();
+            let settled = target.apply(
                 amt,
                 TypeShares::single(proc),
                 false,
@@ -5550,13 +6328,29 @@ fn settle_procs(
                 foe,
                 false,
                 mit,
+                watching(r, rec, &mut breakdown),
             );
+            let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
             r.total_damage += amt;
             r.effective_damage += eff;
             r.sources.arcane_on_status += eff;
             r.sources.arcane_by_type[proc as usize] += eff;
             r.timeline.add(at, eff);
-            r.pop(at, 0, eff, proc, PopKind::Arcane);
+            if recording(r, rec) {
+                log_damage(
+                    r, rec, at, 0, proc, PopKind::Arcane, &breakdown, settled,
+                    Some(debuffs),
+                    Instance {
+                        origin: crate::record::Origin::Arcane,
+                        // A FLAT NUMBER AND ONE MULTIPLIER, which is the whole
+                        // of this arcane: "unaffected by damage/element/crit
+                        // mods … faction bonuses apply ONCE".
+                        base: params.arcane.flat_damage_on_status,
+                        steps: &[("faction", params.faction_at_time(at))],
+                        ..Instance::default()
+                    },
+                );
+            }
             r.note_kills(killed as u32, at);
             if let Some(pool) = broke {
                 push_break_proc(debuffs, params, at, pool);
@@ -5780,6 +6574,7 @@ fn spread_hit(
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
+    rec: &mut crate::record::Record,
     d: &mut crate::rng::Draws,
     t: f64,
     // WHICH MECHANISM PUT IT HERE — see [`SpreadBy`]. The only thing it
@@ -5822,7 +6617,8 @@ fn spread_hit(
     // column the next read returns, and the split belongs to the hit that
     // broke it rather than to the state it left behind.
     let col = foe.state.incoming_column(&spec.params);
-    let (eff, killed, _broke) = foe.state.apply(
+    let mut breakdown = Breakdown::default();
+    let settled = foe.state.apply(
         raw,
         shares,
         // THE SHIELD GATE'S QUESTION, and the only thing this bool decides: a
@@ -5840,15 +6636,46 @@ fn spread_hit(
         &spec.params,
         false,
         &mit,
+        watching(r, rec, &mut breakdown),
     );
+    let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
     r.total_damage += raw;
     r.effective_damage += eff;
     r.timeline.add(t, eff);
     // A SPREAD INSTANCE IS A WHOLE VECTOR, so the number reads as its biggest
     // component — see `DamageVector::dominant`. Computed only while tracing.
-    if r.pops_on {
-        r.pop(t, inst.target, eff, shares.dominant(),
-            if inst.headshot { PopKind::Head } else { PopKind::Direct });
+    if recording(r, rec) {
+        log_damage(
+            r, rec, t, inst.target, shares.dominant(),
+            if inst.headshot { PopKind::Head } else { PopKind::Direct },
+            &breakdown, settled, Some(&foe.debuffs),
+            Instance {
+                // WHY THIS BODY GOT HIT AT ALL — the one column a formation
+                // fight cannot be read without. `SpreadBy` already names the
+                // five mechanisms; this is the same list said to a reader.
+                origin: match by {
+                    SpreadBy::Chain => crate::record::Origin::Chain,
+                    SpreadBy::Blast => crate::record::Origin::Splash,
+                    SpreadBy::Cloud => crate::record::Origin::Field,
+                    SpreadBy::Tendril => crate::record::Origin::Chain,
+                    SpreadBy::Echo => crate::record::Origin::Echo,
+                    SpreadBy::Ricochet => crate::record::Origin::Ricochet,
+                    SpreadBy::PunchThrough => crate::record::Origin::PunchThrough,
+                },
+                // THE AIMED PELLET'S OWN NUMBER with its Condition Overload
+                // bucket divided back out, so this body multiplies in its own —
+                // which is why a neighbour's row can read a different CO term
+                // from the body that was aimed at.
+                base: raw_per_bucket,
+                steps: &[
+                    ("Condition Overload bracket", bucket),
+                    ("hop falloff", inst.share),
+                    ("body part", inst.part_factor),
+                ],
+                head: inst.headshot,
+                ..Instance::default()
+            },
+        );
     }
     r.note_body_damage(inst.target, eff);
     // …AND IT REACHES THE DAMAGE METER (player report, 2026-08-19: the
@@ -5918,6 +6745,7 @@ fn spread_hit(
         ap,
         &mit,
         r,
+        rec,
         &mut d.status,
         &spec.params,
         DEPTH_PROC,
@@ -5994,6 +6822,7 @@ fn spread_from_punch_through(
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
+    rec: &mut crate::record::Record,
     d: &mut crate::rng::Draws,
     t: f64,
 ) {
@@ -6055,8 +6884,25 @@ fn spread_from_punch_through(
         };
         let foe = &mut others[idx];
         spread_hit(
-            &inst, foe, fs, raw_per_bucket, shares, crit_multiplier, attrition, modded_base,
-            status_chance, forced, vector, params, ap, gal, arc, r, d, t,
+            &inst,
+            foe,
+            fs,
+            raw_per_bucket,
+            shares,
+            crit_multiplier,
+            attrition,
+            modded_base,
+            status_chance,
+            forced,
+            vector,
+            params,
+            ap,
+            gal,
+            arc,
+            r,
+            rec,
+            d,
+            t,
             SpreadBy::PunchThrough,
         );
     }
@@ -6117,6 +6963,7 @@ fn spread_from_ricochet(
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
+    rec: &mut crate::record::Record,
     d: &mut crate::rng::Draws,
     t: f64,
 ) {
@@ -6137,8 +6984,25 @@ fn spread_from_ricochet(
             part_factor: if head { head_factor(fs) } else { 1.0 },
         };
         spread_hit(
-            &inst, &mut others[idx], fs, raw_per_bucket, shares, crit_multiplier, attrition,
-            modded_base, status_chance, forced, vector, params, ap, gal, arc, r, d, t,
+            &inst,
+            &mut others[idx],
+            fs,
+            raw_per_bucket,
+            shares,
+            crit_multiplier,
+            attrition,
+            modded_base,
+            status_chance,
+            forced,
+            vector,
+            params,
+            ap,
+            gal,
+            arc,
+            r,
+            rec,
+            d,
+            t,
             SpreadBy::Ricochet,
         );
     }
@@ -6180,6 +7044,7 @@ fn spread_from_echo(
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
+    rec: &mut crate::record::Record,
     d: &mut crate::rng::Draws,
     t: f64,
 ) {
@@ -6220,8 +7085,26 @@ fn spread_from_echo(
         };
         let (foe, fs) = (&mut others[i], &params.others[i]);
         spread_hit(
-            &inst, foe, fs, raw_per_bucket, shares, crit_multiplier, attrition, modded_base,
-            status_chance, forced, vector, params, ap, gal, arc, r, d, t, SpreadBy::Echo,
+            &inst,
+            foe,
+            fs,
+            raw_per_bucket,
+            shares,
+            crit_multiplier,
+            attrition,
+            modded_base,
+            status_chance,
+            forced,
+            vector,
+            params,
+            ap,
+            gal,
+            arc,
+            r,
+            rec,
+            d,
+            t,
+            SpreadBy::Echo,
         );
     }
 }
@@ -6267,6 +7150,7 @@ fn spread_from_tendrils(
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
+    rec: &mut crate::record::Record,
     d: &mut crate::rng::Draws,
     t: f64,
 ) {
@@ -6303,8 +7187,26 @@ fn spread_from_tendrils(
         };
         let (foe, fs) = (&mut others[i], &params.others[i]);
         spread_hit(
-            &inst, foe, fs, raw_per_bucket, shares, crit_multiplier, attrition, modded_base,
-            status_chance, forced, vector, params, ap, gal, arc, r, d, t, SpreadBy::Tendril,
+            &inst,
+            foe,
+            fs,
+            raw_per_bucket,
+            shares,
+            crit_multiplier,
+            attrition,
+            modded_base,
+            status_chance,
+            forced,
+            vector,
+            params,
+            ap,
+            gal,
+            arc,
+            r,
+            rec,
+            d,
+            t,
+            SpreadBy::Tendril,
         );
     }
 }
@@ -6353,12 +7255,30 @@ fn spread_from_blast(
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
+    rec: &mut crate::record::Record,
     d: &mut crate::rng::Draws,
     t: f64,
 ) {
     blast_at(
-        det, others, params, ap, rad, raw_per_bucket_per_falloff, shares, crit_multiplier,
-        attrition, modded_base, status_chance, forced, vector, gal, arc, r, d, t,
+        det,
+        others,
+        params,
+        ap,
+        rad,
+        raw_per_bucket_per_falloff,
+        shares,
+        crit_multiplier,
+        attrition,
+        modded_base,
+        status_chance,
+        forced,
+        vector,
+        gal,
+        arc,
+        r,
+        rec,
+        d,
+        t,
         SpreadBy::Blast,
     );
 }
@@ -6387,6 +7307,7 @@ fn blast_at(
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
+    rec: &mut crate::record::Record,
     d: &mut crate::rng::Draws,
     t: f64,
     by: SpreadBy,
@@ -6411,9 +7332,26 @@ fn blast_at(
             part_factor: 1.0,
         };
         spread_hit(
-            &inst, &mut others[i], spec, raw_per_bucket_per_falloff, shares, crit_multiplier,
-            attrition, modded_base, status_chance, forced, vector, params, ap, gal, arc,
-            r, d, t, by,
+            &inst,
+            &mut others[i],
+            spec,
+            raw_per_bucket_per_falloff,
+            shares,
+            crit_multiplier,
+            attrition,
+            modded_base,
+            status_chance,
+            forced,
+            vector,
+            params,
+            ap,
+            gal,
+            arc,
+            r,
+            rec,
+            d,
+            t,
+            by,
         );
     }
 }
@@ -6451,6 +7389,7 @@ fn spread_from_seeds(
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
+    rec: &mut crate::record::Record,
     d: &mut crate::rng::Draws,
     t: f64,
     layout: Option<&crate::chain::Layout>,
@@ -6502,8 +7441,26 @@ fn spread_from_seeds(
         let idx = inst.target - 1;
         let (foe, fs) = (&mut others[idx], &params.others[idx]);
         spread_hit(
-            inst, foe, fs, raw_per_bucket, shares, crit_multiplier, attrition, modded_base,
-            status_chance, forced, vector, params, ap, gal, arc, r, d, t, SpreadBy::Chain,
+            inst,
+            foe,
+            fs,
+            raw_per_bucket,
+            shares,
+            crit_multiplier,
+            attrition,
+            modded_base,
+            status_chance,
+            forced,
+            vector,
+            params,
+            ap,
+            gal,
+            arc,
+            r,
+            rec,
+            d,
+            t,
+            SpreadBy::Chain,
         );
     }
 }
@@ -6523,6 +7480,7 @@ fn spread_from_seeds(
 fn fire_syndicate_radial(
     sy: &crate::syndicates_data::SyndicateDef,
     r: &mut RunResult,
+    rec: &mut crate::record::Record,
     target: &mut TargetState,
     debuffs: &mut DebuffState,
     gal: &mut GalStacks,
@@ -6534,7 +7492,8 @@ fn fire_syndicate_radial(
     let status_damage = params.status_duration_multiplier;
     let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
     let amt = sy.damage * params.faction_at_time(at);
-    let (eff, killed, _broke) = target.apply(
+    let mut breakdown = Breakdown::default();
+    let settled = target.apply(
         amt,
         TypeShares::single(sy.element),
         false,
@@ -6542,13 +7501,26 @@ fn fire_syndicate_radial(
         &params.target,
         false,
         &mit,
+        watching(r, rec, &mut breakdown),
     );
+    let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
     r.total_damage += amt;
     r.effective_damage += eff;
     r.sources.syndicate += eff;
     r.sources.syndicate_by_type[sy.element as usize] += eff;
     r.timeline.add(at, eff);
-    r.pop(at, 0, eff, sy.element, PopKind::Arcane);
+    if recording(r, rec) {
+        log_damage(
+            r, rec, at, 0, sy.element, PopKind::Arcane, &breakdown, settled,
+            Some(debuffs),
+            Instance {
+                origin: crate::record::Origin::Arcane,
+                base: sy.damage,
+                steps: &[("faction", params.faction_at_time(at))],
+                ..Instance::default()
+            },
+        );
+    }
     r.note_kills(u32::from(killed), at);
     // GUARANTEED, for five of the six — Justice stuns instead of applying
     // Blast, the one place these effects differ in kind rather than in element.
@@ -6582,6 +7554,7 @@ fn fire_syndicate_radial(
             params,
             &mit,
             r,
+            rec,
             rng,
             &params.target,
             DEPTH_PROC,
@@ -6722,6 +7695,7 @@ fn process_field_ticks(
     ap: &DummyParams,
     ctx: &FieldCtx,
     r: &mut RunResult,
+    rec: &mut crate::record::Record,
     // A field tick decides BOTH a crit and its procs, so it takes the whole
     // set of streams rather than one of them.
     d: &mut crate::rng::Draws,
@@ -6741,13 +7715,38 @@ fn process_field_ticks(
         .map(|(i, f)| (i, f.next_tick))
     {
         // Status events strictly before this tick land first.
-        process_ticks(debuffs, gal, arc, at + 1e-9, target, params, ap, r, &mut d.status, &params.target, 0);
+        process_ticks(
+            debuffs,
+            gal,
+            arc,
+            at + 1e-9,
+            target,
+            params,
+            ap,
+            r,
+            rec,
+            &mut d.status,
+            &params.target,
+            0,
+        );
         let part = fields[i].part;
         let damage_multiplier = fields[i].damage_multiplier;
         fields[i].next_tick += 1.0 / part.tick_rate;
         fields[i].ticks_left -= 1;
         let killed = field_tick(
-            &part, damage_multiplier, at, ctx, debuffs, gal, arc, target, params, ap, r, d,
+            &part,
+            damage_multiplier,
+            at,
+            ctx,
+            debuffs,
+            gal,
+            arc,
+            target,
+            params,
+            ap,
+            r,
+            rec,
+            d,
             &params.target,
         );
         // …AND EVERY OTHER BODY STANDING IN IT. The cloud is stuck to the body
@@ -6766,8 +7765,20 @@ fn process_field_ticks(
             }
             let SpreadFoe { state, debuffs: fd } = &mut others[bi];
             field_tick(
-                &part, damage_multiplier * part.falloff_at(crate::space::blast_reach(dist)),
-                at, ctx, fd, gal, arc, state, params, ap, r, d, &spec.params,
+                &part,
+                damage_multiplier * part.falloff_at(crate::space::blast_reach(dist)),
+                at,
+                ctx,
+                fd,
+                gal,
+                arc,
+                state,
+                params,
+                ap,
+                r,
+                rec,
+                d,
+                &spec.params,
             );
         }
         if killed {
@@ -6819,6 +7830,7 @@ fn field_tick(
     params: &DummyParams,
     ap: &DummyParams,
     r: &mut RunResult,
+    rec: &mut crate::record::Record,
     d: &mut crate::rng::Draws,
     // WHICH BODY THIS BURNS — `params.target` until a cloud could stand over
     // more than one (2026-08-17). Its pools, its stack caps, its immunities.
@@ -6883,14 +7895,45 @@ fn field_tick(
             * damage_multiplier
             * params.ability_final_at(at);
     let col = target.incoming_column(foe);
-    let (effective, killed, broke) =
-        target.apply(raw, shares, false, at, foe, false, &mit);
+    let mut breakdown = Breakdown::default();
+    let settled = target.apply(
+        raw,
+        shares,
+        false,
+        at,
+        foe,
+        false,
+        &mit,
+        watching(r, rec, &mut breakdown),
+    );
+    let (effective, killed, broke) = (settled.effective, settled.killed, settled.broken);
     r.total_damage += raw;
     r.effective_damage += effective;
     r.sources.field += effective;
     add_by_type(&mut r.sources.field_by_type, &qvec, effective, &col);
     r.timeline.add(at, effective);
-    r.pop(at, 0, effective, DamageType::Cinematic, PopKind::Field);
+    if recording(r, rec) {
+        log_damage(
+            r, rec, at, 0, DamageType::Cinematic, PopKind::Field, &breakdown, settled,
+            Some(debuffs),
+            Instance {
+                origin: crate::record::Origin::Field,
+                // A CLOUD'S TICK IS WEAPON DAMAGE ON ITS OWN CLOCK — neither a
+                // hit nor a status — so it carries a hit's factors and no body
+                // part: the grenade sticks to the target, which is why there is
+                // no falloff term here either.
+                base: qtotal,
+                steps: &[
+                    ("critical", crit_multiplier),
+                    ("Condition Overload bracket", bucket),
+                    ("faction", faction_at(params.faction_at_time(at), DEPTH_HIT)),
+                    ("field damage", damage_multiplier),
+                    ("Warframe ability", params.ability_final_at(at)),
+                ],
+                ..Instance::default()
+            },
+        );
+    }
     r.field_ticks += 1;
     r.note_kills(killed as u32, at);
     if let Some(pool) = broke {
@@ -6936,6 +7979,7 @@ fn field_tick(
         ap,
         &mit,
         r,
+        rec,
         &mut d.status,
         foe,
         DEPTH_PROC,
@@ -7073,6 +8117,7 @@ fn process_ticks(
     params: &DummyParams,
     ap: &DummyParams,
     r: &mut RunResult,
+    rec: &mut crate::record::Record,
     rng: &mut Rng,
     // WHICH BODY'S ticks these are — see `settle_procs`'s parameter of the
     // same name.
@@ -7119,6 +8164,8 @@ fn process_ticks(
     // identical whichever side of the threshold a body falls on.
     //
     // An empty `BinaryHeap` allocates nothing, so the scan path pays no setup.
+    // WHICH SHOT THE EVENT BEING SETTLED BELONGS TO — set by each arm below.
+    let mut seeded_by;
     let use_queue = debuffs.dots.len() > TICK_QUEUE_MIN;
     let mut q = std::mem::take(&mut debuffs.tick_q);
     if use_queue {
@@ -7165,6 +8212,11 @@ fn process_ticks(
             Ev::Dot(i) => {
                 let dtype = debuffs.dots[*i].dtype;
                 let ignores_armor = debuffs.dots[*i].ignores_armor;
+                // THE ROW POINTS BACK AT THE ROUND THAT SEEDED IT, not at
+                // whatever the weapon is doing four seconds later. Swapped for
+                // the duration of this settlement and put back below, so the
+                // recorder's "current shot" stays the loop's business.
+                seeded_by = debuffs.dots[*i].cause;
                 // A CONSOLIDATED FAMILY PAYS ONCE — one damage instance for
                 // every live stack, which is the number the game pops.
                 //
@@ -7219,6 +8271,11 @@ fn process_ticks(
                 (value, ignores_armor, true, hit_type, dtype, None)
             }
             Ev::Heat => {
+                // A SINGLETON HAS NO ONE SEEDER: every proc refreshes the same
+                // entity, so the tick belongs to all of them and to none. Left
+                // unattributed rather than credited to whichever proc came
+                // first, which would read as a fact and be an arbitrary pick.
+                seeded_by = u32::MAX;
                 let h = debuffs.heat.as_mut().expect("heat event needs entity");
                 h.next_tick += 1.0;
                 // AT `now`. See `Dot::live` — the same rule, on the one status
@@ -7232,6 +8289,7 @@ fn process_ticks(
                 (paid, false, true, DamageType::Heat, DamageType::Heat, None)
             }
             Ev::Blast(i) => {
+                seeded_by = u32::MAX;
                 let b = debuffs.blast.remove(*i);
                 (
                     b.value,
@@ -7265,13 +8323,15 @@ fn process_ticks(
         // instance's payload landing later (owner). The multiplier's own VALUE
         // is a separate open question: our data reads DE's "x8" as the total
         // and it may be a total of x9 (MEASUREMENTS M38).
-        let value = value
-            * if target.overguard > 0.0 {
-                params.arcane.overguard_multiplier
-            } else {
-                1.0
-            };
-        let (effective, killed, broke) = target.apply(
+        let fortifier = if target.overguard > 0.0 {
+            params.arcane.overguard_multiplier
+        } else {
+            1.0
+        };
+        let unfortified = value;
+        let value = value * fortifier;
+        let mut breakdown = Breakdown::default();
+        let settled = target.apply(
             value,
             TypeShares::single(hit_type),
             false,
@@ -7279,7 +8339,9 @@ fn process_ticks(
             p,
             ignores_armor,
             &mit,
+            watching(r, rec, &mut breakdown),
         );
+        let (effective, killed, broke) = (settled.effective, settled.killed, settled.broken);
         r.total_damage += value;
         r.effective_damage += effective;
         r.dot_damage += effective;
@@ -7288,8 +8350,29 @@ fn process_ticks(
         r.note_body_damage(body, effective);
         r.sources.add_status(src, effective);
         r.timeline.add(now, effective);
-        r.pop(now, body, effective, src,
-            if src == DamageType::Blast { PopKind::Blast } else { PopKind::Status });
+        if recording(r, rec) {
+            let was = rec.attribute_to((seeded_by != u32::MAX).then_some(seeded_by));
+            log_damage(
+                r, rec, now, body, src,
+                if src == DamageType::Blast { PopKind::Blast } else { PopKind::Status },
+                &breakdown, settled, Some(debuffs),
+                Instance {
+                    origin: crate::record::Origin::Status,
+                    // THE SEED, AND ONE LIVE FACTOR. A tick's own half —
+                    // coefficient, ModifiedBase, status damage, and the crit and
+                    // body part of the hit that applied it — is frozen into one
+                    // number at the moment the status landed (`Dot::frozen`), so
+                    // decomposing it here would mean reporting facts about a hit
+                    // this function can no longer see. It is the ROW THE TICK
+                    // POINTS AT that carries them: `Event::cause` names the shot
+                    // that seeded this, and that row has the full ledger.
+                    base: unfortified,
+                    steps: &[("Secondary Fortifier", fortifier)],
+                    ..Instance::default()
+                },
+            );
+            rec.attribute_to(was);
+        }
         r.dot_ticks += is_dot_tick as u32;
         r.note_kills(killed as u32, now);
         if let Some(pool) = broke {
@@ -7310,8 +8393,22 @@ fn process_ticks(
         // is a percentage of. No body part: a detonation struck none.
         if let Some(bracket) = xh {
             if fire_extra_hits(
-                value, bracket, 1.0, false, ap.status_chance, now, debuffs, gal, arc, target,
-                params, ap, &mit, r, rng,
+                value,
+                bracket,
+                1.0,
+                false,
+                ap.status_chance,
+                now,
+                debuffs,
+                gal,
+                arc,
+                target,
+                params,
+                ap,
+                &mit,
+                r,
+                rec,
+                rng,
             ) {
                 break;
             }
@@ -8194,7 +9291,7 @@ fn dur(spec: &Option<crate::loadout::StackSpec>) -> f64 {
 }
 
 pub fn run_once(params: &DummyParams, rng: &mut Rng) -> RunResult {
-    run_once_traced(params, rng, None)
+    run_once_traced(params, rng, None, &mut crate::record::Record::off())
 }
 
 /// One engagement, optionally SAMPLED into a [`Replay`].
@@ -8208,6 +9305,10 @@ pub fn run_once_traced(
     params: &DummyParams,
     rng: &mut Rng,
     mut trace: Option<&mut Replay>,
+    // THE COMBAT RECORD — see [`crate::record`]. `Record::off()` for every run
+    // nobody is reading, which is 999 of a thousand: it allocates nothing and
+    // costs one branch per event.
+    rec: &mut crate::record::Record,
 ) -> RunResult {
     // THE ENGAGEMENT'S SEED, and the three streams derived from it. The master
     // `rng` is only a seed source from here on: it is advanced once so the next
@@ -9111,8 +10212,16 @@ pub fn run_once_traced(
                 syndicate_points = 0.0;
                 syndicate_ready_at = t + sy.cooldown_seconds;
                 fire_syndicate_radial(
-                    &sy, &mut r, &mut target, &mut debuffs, &mut gal, &mut arc, params,
-                    &mut d.status, t,
+                    &sy,
+                    &mut r,
+                    rec,
+                    &mut target,
+                    &mut debuffs,
+                    &mut gal,
+                    &mut arc,
+                    params,
+                    &mut d.status,
+                    t,
                 );
             }
         }
@@ -9131,11 +10240,16 @@ pub fn run_once_traced(
                 // also why this animation is scaled by reload speed at all.
                 let spent = rescale_reload(cy.transmute_out_seconds, cy.reload_bucket,
                     live_reload_speed(params, &cy.base_form, rs_armed, &mut buff_stacks, t));
+                rec.push(t, None, crate::record::Kind::TransformStart {
+                    seconds: spent,
+                    into_transmuted: false,
+                });
                 r.downtime_seconds += spent;
                 t += spent;
                 // …but it is NOT a reload, and one perk can tell the difference:
                 // see `ClearedBy::Reload`.
                 magazine_refilled!(also_a_reload: false);
+                rec.push(t, None, crate::record::Kind::TransformEnd { transmuted: false });
                 in_base_form = true;
                 charges = 0;
                 // The swap's auto-reload is the SAME mechanism as a normal one
@@ -9182,9 +10296,11 @@ pub fn run_once_traced(
                 // THE OPENING WINDOW closes when the first reload STARTS, which
                 // is here — everything dealt up to this instant is what the
                 // magazine you walked in with was worth.
+                rec.push(t, None, crate::record::Kind::ReloadStart { seconds: spent });
                 r.downtime_seconds += spent;
                 t += spent;
                 magazine_refilled!();
+                rec.push(t, None, crate::record::Kind::ReloadEnd);
                 r.reloads += 1;
                 if let Some(b) = cy.base_form.fire_rate_on_reload {
                     fire_rate_reload_expiry_seconds = t + b.duration;
@@ -9242,9 +10358,15 @@ pub fn run_once_traced(
             // reloads when it cannot fire — which is exactly the condition.
             let rs = live_reload_speed(params, params, rs_armed, &mut buff_stacks, t);
             let spent = live_reload_time(params, params, &mut arc, rs, t);
+            // TWO ROWS, THE START AND THE END, and nothing in between (owner,
+            // 2026-08-27). What is between them is not a reload event — it is
+            // whatever the fight went on doing while the weapon was down, which
+            // for a status build is most of its damage.
+            rec.push(t, None, crate::record::Kind::ReloadStart { seconds: spent });
             r.downtime_seconds += spent;
             t += spent;
             magazine_refilled!();
+            rec.push(t, None, crate::record::Kind::ReloadEnd);
             r.reloads += 1;
             if let Some(b) = params.fire_rate_on_reload {
                 fire_rate_reload_expiry_seconds = t + b.duration;
@@ -9311,6 +10433,7 @@ pub fn run_once_traced(
             params,
             ap,
             &mut r,
+            rec,
             &mut d.status,
             &params.target,
             0,
@@ -9691,6 +10814,23 @@ pub fn run_once_traced(
             magazine -= spend;
         }
         rounds_this_mag += 1;
+        // THE TRIGGER PULL ITSELF — the row every pellet, every explosion and
+        // every status this shot goes on to cause points back at
+        // (`record::Event::cause`). It is also where the weapon's state is
+        // stamped, so a row four seconds later still says which form fired it
+        // and what was left in the magazine at the time.
+        if rec.is_on() {
+            rec.set_weapon(crate::record::WeaponAt {
+                transmuted: !in_base_form,
+                magazine: (if in_base_form { base_mag } else { magazine }).max(0.0) as u32,
+                magazine_max: params
+                    .cycle
+                    .as_ref()
+                    .filter(|_| in_base_form)
+                    .map_or(mag_cap, |cy| cy.base_form.magazine_size) as u32,
+            });
+            rec.begin_shot(t, n_pellets);
+        }
         // BLAZING BARREL: the round is SPENT, so it was fired. Here and not in
         // the pellet loop — one shot is one stack however many pellets it threw
         // — and after `ms_eff` was rolled, so the shot that earns the stack does
@@ -9779,6 +10919,7 @@ pub fn run_once_traced(
             field_ap,
             &field_ctx,
             &mut r,
+            rec,
             d,
             &mut others,
         );
@@ -10663,7 +11804,12 @@ pub fn run_once_traced(
                     * falloff;
                 let head_direct = direct && part.is_head;
                 let col = target.incoming_column(&params.target);
-                let (effective, killed, broke) = target.apply(
+                // THE TARGET AS IT STOOD, before this instance touched it. Read
+                // HERE and not afterwards: `apply` spends the pools and, on a
+                // kill, respawns the body outright, so a snapshot taken on the
+                // next line would be a snapshot of a different fight.
+                let mut breakdown = Breakdown::default();
+                let settled = target.apply(
                     raw,
                     shares,
                     head_direct,
@@ -10671,7 +11817,10 @@ pub fn run_once_traced(
                     &params.target,
                     false,
                     &mit,
+                    watching(&r, rec, &mut breakdown),
                 );
+                let (effective, killed, broke) =
+                    (settled.effective, settled.killed, settled.broken);
                 // THE AIMED SEED'S CHAINS, HERE, so they take multishot the
                 // only way that is honest: by being inside the pellet loop.
                 // *"only targets directly hit by the beam benefit"*, and a
@@ -10686,10 +11835,29 @@ pub fn run_once_traced(
                 // falloff.
                 if let (Some(rr), false) = (rad, others.is_empty()) {
                     spread_from_blast(
-                        det, &mut others, params, ap, &rr,
-                        if falloff > 0.0 { body_only(raw / bucket / falloff) } else { 0.0 },
-                        shares, crit_multiplier, attrition, modded_base, status_chance,
-                        forced, &qvec, &mut gal, &mut arc, &mut r, d, t,
+                        det,
+                        &mut others,
+                        params,
+                        ap,
+                        &rr,
+                        if falloff > 0.0 {
+                            body_only(raw / bucket / falloff)
+                        } else {
+                            0.0
+                        },
+                        shares,
+                        crit_multiplier,
+                        attrition,
+                        modded_base,
+                        status_chance,
+                        forced,
+                        &qvec,
+                        &mut gal,
+                        &mut arc,
+                        &mut r,
+                        rec,
+                        d,
+                        t,
                     );
                 }
                 // …AND ONE EXPLOSION PER BOUNCE, centred on the body the
@@ -10702,11 +11870,32 @@ pub fn run_once_traced(
                         let Some(idx) = body.checked_sub(1) else { continue };
                         let Some(fs) = params.others.get(idx) else { continue };
                         blast_at(
-                            crate::space::Detonation { at: fs.at, height_m: 0.0 },
-                            &mut others, params, ap, &rr,
-                            if falloff > 0.0 { body_only(raw / bucket / falloff) } else { 0.0 },
-                            shares, crit_multiplier, attrition, modded_base, status_chance,
-                            forced, &qvec, &mut gal, &mut arc, &mut r, d, t,
+                            crate::space::Detonation {
+                                at: fs.at,
+                                height_m: 0.0,
+                            },
+                            &mut others,
+                            params,
+                            ap,
+                            &rr,
+                            if falloff > 0.0 {
+                                body_only(raw / bucket / falloff)
+                            } else {
+                                0.0
+                            },
+                            shares,
+                            crit_multiplier,
+                            attrition,
+                            modded_base,
+                            status_chance,
+                            forced,
+                            &qvec,
+                            &mut gal,
+                            &mut arc,
+                            &mut r,
+                            rec,
+                            d,
+                            t,
                             SpreadBy::Ricochet,
                         );
                     }
@@ -10779,18 +11968,48 @@ pub fn run_once_traced(
                     // spread that may land on a head.
                     if let Some(path) = ric_path.as_deref() {
                         spread_from_ricochet(
-                            &mut others, params, ap, path, body_only(raw / bucket), shares,
-                            crit_multiplier, attrition, modded_base, status_chance, forced, &qvec,
-                            &head_factor, &mut gal, &mut arc, &mut r, d, t,
+                            &mut others,
+                            params,
+                            ap,
+                            path,
+                            body_only(raw / bucket),
+                            shares,
+                            crit_multiplier,
+                            attrition,
+                            modded_base,
+                            status_chance,
+                            forced,
+                            &qvec,
+                            &head_factor,
+                            &mut gal,
+                            &mut arc,
+                            &mut r,
+                            rec,
+                            d,
+                            t,
                         );
                     }
                     // …AND THE ECHO, per landing pellet, because the arcane
                     // says each one triggers it.
                     spread_from_echo(
-                        &mut others, debuffs.confusion.len(), params, ap,
-                        body_only(raw / bucket), shares, crit_multiplier,
-                        attrition, modded_base, status_chance, forced, &qvec,
-                        &mut gal, &mut arc, &mut r, d, t,
+                        &mut others,
+                        debuffs.confusion.len(),
+                        params,
+                        ap,
+                        body_only(raw / bucket),
+                        shares,
+                        crit_multiplier,
+                        attrition,
+                        modded_base,
+                        status_chance,
+                        forced,
+                        &qvec,
+                        &mut gal,
+                        &mut arc,
+                        &mut r,
+                        rec,
+                        d,
+                        t,
                     );
                     // …AND EVERYTHING BEHIND THE TARGET that this pellet
                     // punched through to, at full damage. Only where there is
@@ -10798,10 +12017,25 @@ pub fn run_once_traced(
                     // and `spread_from_seeds` below already pays them.
                     if params.beam.is_none() {
                         spread_from_punch_through(
-                            &mut others, params, ap, &struck, raw / bucket, shares,
-                            crit_multiplier, attrition, modded_base, status_chance,
-                            forced, &qvec, head_direct,
-                            &mut gal, &mut arc, &mut r, d, t,
+                            &mut others,
+                            params,
+                            ap,
+                            &struck,
+                            raw / bucket,
+                            shares,
+                            crit_multiplier,
+                            attrition,
+                            modded_base,
+                            status_chance,
+                            forced,
+                            &qvec,
+                            head_direct,
+                            &mut gal,
+                            &mut arc,
+                            &mut r,
+                            rec,
+                            d,
+                            t,
                         );
                     }
                     // THE AIMED SEED'S CHAINS take multishot by firing per
@@ -10810,10 +12044,27 @@ pub fn run_once_traced(
                     // after the loop, miss or not.
                     if let Some(beam) = params.beam {
                         spread_from_seeds(
-                            &mut others, params, ap, beam, body_only(raw / bucket), shares,
-                            crit_multiplier, attrition, modded_base, status_chance,
-                            forced, &qvec, &mut gal, &mut arc, &mut r, d, t,
-                            chain_layout.as_ref(), true, &struck,
+                            &mut others,
+                            params,
+                            ap,
+                            beam,
+                            body_only(raw / bucket),
+                            shares,
+                            crit_multiplier,
+                            attrition,
+                            modded_base,
+                            status_chance,
+                            forced,
+                            &qvec,
+                            &mut gal,
+                            &mut arc,
+                            &mut r,
+                            rec,
+                            d,
+                            t,
+                            chain_layout.as_ref(),
+                            true,
+                            &struck,
                         );
                     }
                 }
@@ -10836,11 +12087,46 @@ pub fn run_once_traced(
                 if effective > r.max_hit {
                     r.max_hit = effective;
                 }
-                // THE ACCOUNT OF THIS HIT, taken once per attack part and only
-                // while a replay is being traced. Written HERE because this is
-                // the one place every factor exists at the same time — anywhere
-                // else and the list would be reconstructed, which is how a
-                // breakdown comes to disagree with the number it explains.
+                // THE ACCOUNT OF THIS HIT — written HERE because this is the
+                // one place every factor exists at the same time. Anywhere else
+                // and the list would be reconstructed, which is how a breakdown
+                // comes to disagree with the number it explains.
+                //
+                // ONE WRITER, TWO READERS. The panel's worked example and the
+                // combat record's row for this hit are the same list of
+                // factors, so it is built once and handed to both. Two lists
+                // would be two things to keep in step.
+                let hit_steps: Vec<crate::record::Step> = if rec.is_on() || trace.is_some() {
+                    vec![
+                        ("body part", part_factor),
+                        ("critical", crit_multiplier),
+                        ("Condition Overload bracket", bucket),
+                        ("faction", params.faction_at_time(t)),
+                        ("arcane (final)", arc_final),
+                        ("attrition", attrition),
+                        ("Warframe ability", params.ability_final_at(t)),
+                        ("beam ramp", beam_ramp),
+                        // DOUBLE TAP and SYNTH CHARGE were applied and
+                        // never listed, which is the exact failure
+                        // `check_hit_account` exists to catch — it only
+                        // slipped because both are 1.0 in every build
+                        // the check had run.
+                        ("Double Tap", dt_mult),
+                        ("Synth Charge", sc_mult),
+                        ("Chamber (first round)", cc_mult),
+                        ("sniper combo", combo_mult),
+                        ("multishot-as-damage", ms_damage),
+                        ("multishot-generated", pm_mult),
+                        // DISTANCE. Listed even when it is 1.0 — this
+                        // ledger keeps a factor of exactly 1.0 rather
+                        // than dropping it, because "falloff ×1.00" is
+                        // the answer to "why does range not hurt me"
+                        // and a missing line is not.
+                        ("damage falloff", falloff),
+                    ]
+                } else {
+                    Vec::new()
+                };
                 if let Some(rep) = trace.as_deref_mut() {
                     let kind = if direct { "direct" } else { "radial" };
                     if !rep.accounts.iter().any(|a| a.source == kind) {
@@ -10851,34 +12137,7 @@ pub fn run_once_traced(
                             tier,
                             t,
                             base: qtotal,
-                            steps: vec![
-                                ("body part", part_factor),
-                                ("critical", crit_multiplier),
-
-                                ("Condition Overload bracket", bucket),
-                                ("faction", params.faction_at_time(t)),
-                                ("arcane (final)", arc_final),
-                                ("attrition", attrition),
-                                ("Warframe ability", params.ability_final_at(t)),
-                                ("beam ramp", beam_ramp),
-                                // DOUBLE TAP and SYNTH CHARGE were applied and
-                                // never listed, which is the exact failure
-                                // `check_hit_account` exists to catch — it only
-                                // slipped because both are 1.0 in every build
-                                // the check had run.
-                                ("Double Tap", dt_mult),
-                                ("Synth Charge", sc_mult),
-                                ("Chamber (first round)", cc_mult),
-                                ("sniper combo", combo_mult),
-                                ("multishot-as-damage", ms_damage),
-                                ("multishot-generated", pm_mult),
-                                // DISTANCE. Listed even when it is 1.0 — this
-                                // ledger keeps a factor of exactly 1.0 rather
-                                // than dropping it, because "falloff ×1.00" is
-                                // the answer to "why does range not hurt me"
-                                // and a missing line is not.
-                                ("damage falloff", falloff),
-                            ],
+                            steps: hit_steps.clone(),
                             raw,
                             effective,
                         });
@@ -10905,14 +12164,6 @@ pub fn run_once_traced(
                 // THE ONE SITE THAT KNOWS ALL FOUR SHAPES: a hit is plain, a
                 // crit, a weak point, or both — and "both" is its own number in
                 // game, not a crit with a multiplier on it.
-                if r.pops_on {
-                r.pop(t, 0, effective, qvec.dominant(), match (part.is_head, tier > 0) {
-                    (true, true) => PopKind::HeadCrit,
-                    (true, false) => PopKind::Head,
-                    (false, true) => PopKind::Crit,
-                    (false, false) => PopKind::Direct,
-                });
-                }
                 r.note_kills(killed as u32, t);
                 // EXECUTIONER'S FORTUNE. Rolled HERE and nowhere else, because
                 // this is the only place that knows both halves of its
@@ -11135,6 +12386,7 @@ pub fn run_once_traced(
                     ap,
                     &mit,
                     &mut r,
+                    rec,
                     &mut d.status,
                 ) {
                     // …and the clouds stay where they were. See `field_tick`.
@@ -11317,42 +12569,86 @@ pub fn run_once_traced(
                 let until = t + LIFTED_SECONDS * params.status_duration_multiplier;
                 debuffs.lifted = Some(debuffs.lifted.map_or(until, |e| e.max(until)));
             }
-            settle_procs(
-                procs,
-                t,
-                // THE HIT'S ATTRITION ROLL TRAVELS WITH ITS STATUSES. A proc's
-                // magnitude is the applying instance's — which is why
-                // `crit_multiplier` is already here — and Devouring/Devastating
-                // Attrition is a per-instance multiplier of exactly that shape,
-                // so a DoT applied by a 21x hit ticks for 21x.
-                //
-                // Measured through the Debilitate chain (owner, 2026-08-08): the
-                // final DoT eats, i.e. 21x21. Two layers for three faction
-                // layers — the split instance rolls one, and the other can
-                // only be the applying hit's, carried here. A DoT is not a
-                // hit, so it never rolls one of its own. MEASUREMENTS M37.
-                InstanceScale {
-                    mb_live,
-                    crit_multiplier,
-                    part_factor,
-                    attrition,
-                    // The BASE ATTACK's, so a Blast stack this instance applies
-                    // remembers the bracket its detonation's extra hit takes —
-                    // not this stage's, which the detonation itself never gets.
-                    xh_bracket: ap.extra_hit_bracket(t),
-                },
-                &mut debuffs,
-                &mut gal,
-                &mut arc,
-                &mut target,
-                params,
-                ap,
-                &mit,
-                &mut r,
-                &mut d.status,
-                &params.target,
-                DEPTH_PROC,
-            );
+                // THE ROW FOR THIS PELLET, written HERE rather than beside
+                // `apply` — because a row says what the instance APPLIED, and
+                // the proc list is not final until the line above. Everything
+                // else it needs was snapshotted at the moment it landed
+                // (`before`, `breakdown`, `settled`), so waiting costs nothing and
+                // buys the one column a reader checks a status build with.
+                if recording(&r, rec) {
+                    log_damage(
+                        &mut r,
+                        rec,
+                        t,
+                        0,
+                        qvec.dominant(),
+                        match (part.is_head, tier > 0) {
+                            (true, true) => PopKind::HeadCrit,
+                            (true, false) => PopKind::Head,
+                            (false, true) => PopKind::Crit,
+                            (false, false) => PopKind::Direct,
+                        },
+                        &breakdown, settled,
+                        Some(&debuffs),
+                        Instance {
+                            // WHICH PELLET OF THE PULL THIS WAS. The first is the one
+                            // the trigger would have fired with no multishot at all;
+                            // every one after it is multishot's, and telling them apart
+                            // is the difference between "my multishot works" and
+                            // "something is double-counting" (owner, 2026-08-27).
+                            origin: if !direct {
+                                crate::record::Origin::Radial
+                            } else if pellet_idx == 0 {
+                                crate::record::Origin::Own
+                            } else {
+                                crate::record::Origin::Multishot
+                            },
+                            base: qtotal,
+                            steps: &hit_steps,
+                            part: Some(&part.name),
+                            head: part.is_head,
+                            crit_tier: tier,
+                            procs: &procs,
+                        },
+                    );
+                }
+                settle_procs(
+                    procs,
+                    t,
+                    // THE HIT'S ATTRITION ROLL TRAVELS WITH ITS STATUSES. A proc's
+                    // magnitude is the applying instance's — which is why
+                    // `crit_multiplier` is already here — and Devouring/Devastating
+                    // Attrition is a per-instance multiplier of exactly that shape,
+                    // so a DoT applied by a 21x hit ticks for 21x.
+                    //
+                    // Measured through the Debilitate chain (owner, 2026-08-08): the
+                    // final DoT eats, i.e. 21x21. Two layers for three faction
+                    // layers — the split instance rolls one, and the other can
+                    // only be the applying hit's, carried here. A DoT is not a
+                    // hit, so it never rolls one of its own. MEASUREMENTS M37.
+                    InstanceScale {
+                        mb_live,
+                        crit_multiplier,
+                        part_factor,
+                        attrition,
+                        // The BASE ATTACK's, so a Blast stack this instance applies
+                        // remembers the bracket its detonation's extra hit takes —
+                        // not this stage's, which the detonation itself never gets.
+                        xh_bracket: ap.extra_hit_bracket(t),
+                    },
+                    &mut debuffs,
+                    &mut gal,
+                    &mut arc,
+                    &mut target,
+                    params,
+                    ap,
+                    &mit,
+                    &mut r,
+                    rec,
+                    &mut d.status,
+                    &params.target,
+                    DEPTH_PROC,
+                );
             }
         }
 
@@ -11362,9 +12658,24 @@ pub fn run_once_traced(
         // not the one the main beam is on (`spread_from_tendrils`).
         if let (Some(s), false) = (&shot_spread, others.is_empty()) {
             spread_from_tendrils(
-                &mut others, params, ap, tendrils, s.raw_per_bucket, s.shares,
-                s.crit_multiplier, s.attrition, s.modded_base, s.status_chance,
-                &s.forced, &s.vector, &mut gal, &mut arc, &mut r, d, t,
+                &mut others,
+                params,
+                ap,
+                tendrils,
+                s.raw_per_bucket,
+                s.shares,
+                s.crit_multiplier,
+                s.attrition,
+                s.modded_base,
+                s.status_chance,
+                &s.forced,
+                &s.vector,
+                &mut gal,
+                &mut arc,
+                &mut r,
+                rec,
+                d,
+                t,
             );
         }
         // …AND THE RADIUS-CAUGHT SEEDS' CHAINS, ONCE FOR THE SHOT. The other
@@ -11374,10 +12685,26 @@ pub fn run_once_traced(
         // inside the pellet loop above.
         if let (Some(s), Some(beam), false) = (&shot_spread, params.beam, others.is_empty()) {
             spread_from_seeds(
-                &mut others, params, ap, beam, s.raw_per_bucket, s.shares,
-                s.crit_multiplier, s.attrition, s.modded_base, s.status_chance,
-                &s.forced, &s.vector, &mut gal, &mut arc, &mut r, d, t,
-                chain_layout.as_ref(), false,
+                &mut others,
+                params,
+                ap,
+                beam,
+                s.raw_per_bucket,
+                s.shares,
+                s.crit_multiplier,
+                s.attrition,
+                s.modded_base,
+                s.status_chance,
+                &s.forced,
+                &s.vector,
+                &mut gal,
+                &mut arc,
+                &mut r,
+                rec,
+                d,
+                t,
+                chain_layout.as_ref(),
+                false,
                 // THE SAME STRUCK LIST the per-pellet half used — this pass
                 // fires the seeds the RADIUS caught, and it tells them apart by
                 // filtering on `multishot`, so it has to agree with that half
@@ -11401,8 +12728,18 @@ pub fn run_once_traced(
                 continue;
             }
             process_ticks(
-                &mut f.debuffs, &mut gal, &mut arc, t + 1e-9, &mut f.state,
-                params, ap, &mut r, &mut d.status, &params.others[bi].params, bi + 1,
+                &mut f.debuffs,
+                &mut gal,
+                &mut arc,
+                t + 1e-9,
+                &mut f.state,
+                params,
+                ap,
+                &mut r,
+                rec,
+                &mut d.status,
+                &params.others[bi].params,
+                bi + 1,
             );
         }
 
@@ -11412,7 +12749,14 @@ pub fn run_once_traced(
         // same instant, and the drain is where a body's outbox becomes its
         // neighbours' DoTs (`DebuffState::area_out`).
         drain_area_procs(
-            &mut debuffs, &mut target, &mut others, params, &area_near, &mut r, t,
+            &mut debuffs,
+            &mut target,
+            &mut others,
+            params,
+            &area_near,
+            &mut r,
+            rec,
+            t,
         );
 
         // A SHOT THAT HIT NOTHING DROPS THE SHOT COMBO COUNTER.
@@ -11600,9 +12944,14 @@ pub fn run_once_traced(
                     let transformed_from_empty = !can_fire(base_mag, 1.0);
                     let spent = rescale_reload(cy.transmute_seconds, cy.reload_bucket,
                         live_reload_speed(params, &cy.base_form, rs_armed, &mut buff_stacks, t));
+                    rec.push(t, None, crate::record::Kind::TransformStart {
+                        seconds: spent,
+                        into_transmuted: true,
+                    });
                     r.downtime_seconds += spent;
                     t += spent;
                     magazine_refilled!();
+                    rec.push(t, None, crate::record::Kind::TransformEnd { transmuted: true });
                     if transformed_from_empty {
                         bump_on_trigger!(
                             crate::loadout::BuffTrigger::ReloadFromEmpty, t, d.spine);
@@ -11735,6 +13084,7 @@ pub fn run_once_traced(
         field_ap,
         &field_ctx,
         &mut r,
+        rec,
         d,
         &mut others,
     );
@@ -11748,6 +13098,7 @@ pub fn run_once_traced(
         params,
         field_ap,
         &mut r,
+        rec,
         &mut d.status,
         &params.target,
         0,
@@ -11847,8 +13198,37 @@ pub fn replay(params: &DummyParams, rng_state: u64, frames: usize) -> Replay {
         frames: Vec::with_capacity(frames),
         accounts: Vec::new(),
     };
-    run_once_traced(params, &mut Rng::new(rng_state), Some(&mut rep));
+    run_once_traced(
+        params,
+        &mut Rng::new(rng_state),
+        Some(&mut rep),
+        &mut crate::record::Record::off(),
+    );
     rep
+}
+
+/// THE COMBAT RECORD of one engagement — see [`crate::record`].
+///
+/// The same run [`replay`] plays back, asked a different question: not "what
+/// did the curves look like" but "what happened, in order, and why was each
+/// number the size it was". It re-runs from `rng_state`, so the record and the
+/// replay are the same fight rather than two fights that agree on their totals.
+///
+/// A SEPARATE ENTRY POINT because the cost is the reader's to spend. The whole
+/// stream of an ordinary fight is a few thousand events and can be handed over
+/// entire; the densest build measured deals 408,817 damage instances in 180 s
+/// (2026-08-27), which is why the window and the cap are arguments rather than
+/// constants.
+pub fn record(
+    params: &DummyParams,
+    rng_state: u64,
+    from: f64,
+    to: f64,
+    limit: usize,
+) -> crate::record::Record {
+    let mut rec = crate::record::Record::window(from, to, limit);
+    run_once_traced(params, &mut Rng::new(rng_state), None, &mut rec);
+    rec
 }
 
 /// Aggregate statistics over many engagements.
@@ -13614,6 +14994,7 @@ mod tests {
     #[test]
     fn a_gas_cloud_survives_the_death_and_nothing_else_does() {
         let dot = |dtype| Dot {
+            cause: u32::MAX,
             next_tick: 5.0, ticks_left: 4, frozen: 100.0, bracket: 1.0, depth: 0,
             source_scaled: false, unit: 0.0, dtype, ignores_armor: false,
         };
@@ -19058,8 +20439,11 @@ mod tests {
         let with = field_damage(&[by("nightwatch_napalm")]);
         assert!(with > 0.0, "and burns with it: {with}");
         // BASE DAMAGE FEEDS THE FIRE…
-        let bd = field_damage(&[by("nightwatch_napalm"), by("serration")]);
-        assert!(bd > with * 1.5, "Serration reaches it: {bd} against {with}");
+        let breakdown = field_damage(&[by("nightwatch_napalm"), by("serration")]);
+        assert!(
+            breakdown > with * 1.5,
+            "Serration reaches it: {breakdown} against {with}"
+        );
         // …AND AN ELEMENT DOES NOT, in the fight and not just on the panel.
         let el = field_damage(&[by("nightwatch_napalm"), by("cryo_rounds")]);
         assert!(
@@ -20585,6 +21969,258 @@ mod tests {
     /// maximum of 10 tick numbers are shown at once"). So the property is
     /// COVERAGE — every frame that gained damage popped or dropped something —
     /// and it is exact in the direction that matters.
+    /// THE RECORD IS THE WHOLE FIGHT — every number, and nothing invented.
+    ///
+    /// This is the assertion the combat record exists for, and it is the one
+    /// that makes it a LEDGER rather than a report: the effective damage of
+    /// every event in the stream must add up to the run's own damage total. A
+    /// damage site that moved a pool and recorded nothing fails it low, and one
+    /// that recorded an instance twice fails it high — neither shows up in any
+    /// aggregate this engine reports, because both are already inside the mean.
+    ///
+    /// THE FIXTURE IS DELIBERATELY BUSY: multishot, crits, a weak point, a
+    /// Slash bleed and a Heat burn, so the stream is exercising the direct
+    /// path, the status path and the consolidated-tick path at once rather than
+    /// proving the property about one of them.
+    #[test]
+    fn the_record_adds_up_to_the_damage_total() {
+        let mut p = DummyParams {
+            forced_procs: vec![DamageType::Slash, DamageType::Heat],
+            ..bare(DamageType::Slash)
+        };
+        p.base_crit_chance = 0.5;
+        p.crit_multiplier = 2.0;
+        p.multishot = 2.4;
+
+        let s = monte_carlo(&p, 8, 5);
+        let state = s.median_run.rng_state;
+        let rec = record(&p, state, 0.0, f64::INFINITY, 1_000_000);
+        assert_eq!(rec.dropped(), 0, "the cap is not what this is measuring");
+
+        let damage: Vec<&crate::record::Damage> = rec
+            .events()
+            .iter()
+            .filter_map(|e| match &e.kind {
+                crate::record::Kind::Damage(d) => Some(&**d),
+                _ => None,
+            })
+            .collect();
+        assert!(damage.len() > 50, "the fixture is busy: {} rows", damage.len());
+
+        // …AND IT IS THE SAME FIGHT. `record` re-runs from the median run's own
+        // RNG state, so this is not "a fight with a similar total".
+        let same = run_once(&p, &mut Rng::new(state));
+        let sum: f64 = damage.iter().map(|d| d.effective).sum();
+        assert!(
+            (sum - same.effective_damage).abs() / same.effective_damage < 1e-9,
+            "record {sum} vs run {}",
+            same.effective_damage
+        );
+
+        // EVERY ROW MULTIPLIES OUT. `base × Π steps = raw`, and `raw × Π
+        // mitigation = effective` — the arithmetic a reader would do by hand.
+        // Rows whose armour term hit the 1-damage floor are exempt and say so.
+        let mut checked = 0;
+        for d in &damage {
+            if d.steps.is_empty() {
+                continue;
+            }
+            let raw: f64 = d.base * d.steps.iter().map(|(_, v)| v).product::<f64>();
+            assert!(
+                (raw - d.raw).abs() <= 1e-6 * d.raw.abs().max(1.0),
+                "{:?} at {:?}: base x steps = {raw}, row says {}",
+                d.origin, d.pool, d.raw
+            );
+            let eff: f64 = d.raw * d.mitigation.iter().map(|(_, v)| v).product::<f64>();
+            assert!(
+                (eff - d.effective).abs() <= 1e-6 * d.effective.abs().max(1.0),
+                "{:?} at {:?}: raw x mitigation = {eff}, row says {}",
+                d.origin, d.pool, d.effective
+            );
+            checked += 1;
+        }
+        assert!(checked > 20, "most rows carry a ledger: {checked} of {}", damage.len());
+
+        // A ROW SAYS WHICH PELLET IT WAS. With multishot above 1 the stream has
+        // to contain both, or the column is a constant.
+        let origins: std::collections::BTreeSet<_> =
+            damage.iter().map(|d| d.origin).collect();
+        assert!(
+            origins.contains(&crate::record::Origin::Own)
+                && origins.contains(&crate::record::Origin::Multishot),
+            "multishot is told apart from the pellet that was fired anyway: {origins:?}"
+        );
+        assert!(
+            origins.contains(&crate::record::Origin::Status),
+            "a burn is not a hit: {origins:?}"
+        );
+    }
+
+    /// THE ENEMY SHIELD GATE, REPRODUCED FROM THE POP-UPS (MEASUREMENTS M61).
+    ///
+    /// An unmodded **Laetum in its base form** (160 = 64 Impact + 96 Slash,
+    /// crit multiplier 2.20x) into the BODY of a level 1 Corpus Crewman with
+    /// 120 shield, at four damage levels an hour apart in size. Each pop-up was
+    /// two numbers, shield then health:
+    ///
+    /// | hit | shield | health |
+    /// |---|---|---|
+    /// | 160 | 158 | 2 |
+    /// | 353 | 341 | 12 |
+    /// | 776 | 743 | 33 |
+    /// | 1710 | 1630 | 80 |
+    ///
+    /// Every one of them is `0.05 × (hit − 120)` on the health side — which is
+    /// the wiki's *"5% of the damage dealt when hitting the shield gate will
+    /// target enemy Health"* said about the OVERFLOW rather than about the whole
+    /// hit: five per cent of 160 is 8, and the pop-up read 2.
+    ///
+    /// THE ENGINE USED TO ANSWER ZERO. `apply` charged the whole hit to the
+    /// shield and discarded the excess (`// no spill`), so the shot that kills
+    /// this Crewman in game left it at full health here — and the entire Corpus
+    /// half of the mitigation model went unexercised, because all three entries
+    /// in `data/enemies/` carry `shield: 0`.
+    #[test]
+    fn a_hit_that_breaks_a_shield_leaks_five_per_cent_to_health() {
+        // The measurement's target, as the pop-ups describe it: 120 shield,
+        // enough health to survive so the leak can be read off the pool.
+        let target = TargetParams {
+            base_shield: 120.0,
+            base_armor: 0.0,
+            base_health: 1e9,
+            ..frail_target(TargetMode::InstantRespawn, 0.0, 0.0)
+        };
+        // ONE HIT, then read what each pool lost. `Cinematic` is the one type
+        // that neither bypasses a shield nor reads a column, so the fixture
+        // measures the GATE and nothing else.
+        let leak_for = |hit: f64, head: bool| -> (f64, f64) {
+            let mut st = TargetState::spawn(&target);
+            let before_shield = st.shield;
+            let before_health = st.health;
+            st.apply(
+                hit,
+                TypeShares::single(DamageType::Impact),
+                head,
+                0.0,
+                &target,
+                true,
+                &Mitigation { disrupt_amp: 1.0, virus_amp: 1.0, armor_multiplier: 1.0 },
+                None,
+            );
+            (before_shield - st.shield, before_health - st.health)
+        };
+
+        // The four pop-ups, to the digit the game rounds to.
+        for (hit, health) in [(160.0, 2.0), (353.0, 12.0), (776.0, 33.0), (1710.0, 80.0)] {
+            let (shield_lost, health_lost) = leak_for(hit, false);
+            assert!(
+                (shield_lost - 120.0).abs() < 1e-9,
+                "the shield gives up its whole pool: {shield_lost}"
+            );
+            assert!(
+                (health_lost.round() - health).abs() < 1e-9,
+                "hit {hit}: health took {health_lost}, the game popped {health}"
+            );
+        }
+
+        // …AND A WEAKPOINT HIT IGNORES THE GATE ENTIRELY — *"Any Headshots or
+        // shots to Weakspots completely bypass Corpus enemy Shield Gating"*. The
+        // whole overflow lands, which is twenty times the body shot's.
+        let (_, head_leak) = leak_for(160.0, true);
+        assert!(
+            (head_leak - 40.0).abs() < 1e-9,
+            "a weakpoint hit pays the whole overflow: {head_leak}"
+        );
+
+        // A HIT THAT DOES NOT BREAK THE SHIELD REACHES NOTHING. Without this the
+        // rule above would pass just as well on an engine that leaked 5% of
+        // every hit, which is the reading of the wiki sentence this measurement
+        // ruled out.
+        let (shield_lost, health_lost) = leak_for(100.0, false);
+        assert!(
+            (shield_lost - 100.0).abs() < 1e-9 && health_lost.abs() < 1e-9,
+            "an absorbed hit stays absorbed: shield {shield_lost}, health {health_lost}"
+        );
+    }
+
+    /// A HIT ON A SHIELDED BODY POPS TWO NUMBERS, and the game shows two.
+    ///
+    /// *"the Toxin portion bypasses straight to health"* is what `apply` has
+    /// always done — and it reported the SUM, so the one output of this app
+    /// that could be laid beside a recording and checked number for number was
+    /// the one output that could not (owner, 2026-08-27). The split is not new
+    /// damage: the total is unchanged and only its presentation was wrong.
+    ///
+    /// The fixture is a half-Toxin vector on a shielded target with armour, so
+    /// the two halves take DIFFERENT mitigation — the shield half none, the
+    /// Toxin half the armour term — which is what makes them two numbers rather
+    /// than one number written twice.
+    #[test]
+    fn a_hit_on_a_shielded_body_pops_the_toxin_half_separately() {
+        let target = TargetParams {
+            base_shield: 400.0,
+            base_armor: 300.0,
+            base_health: 1e12,
+            mode: TargetMode::InfiniteHealth,
+            ..frail_target(TargetMode::InfiniteHealth, 300.0, 0.0)
+        };
+        let p = DummyParams {
+            damage: DamageVector::new()
+                .with(DamageType::Impact, 50.0)
+                .with(DamageType::Toxin, 50.0),
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: ArcaneFx::none(),
+            body_parts: mono_body(1.0),
+            target,
+            ..no_status()
+        };
+        let s = monte_carlo(&p, 4, 11);
+        let rep = replay(&p, s.median_run.rng_state, 40);
+        let pops: Vec<Pop> = rep
+            .frames
+            .iter()
+            .flat_map(|f| f.pops.iter().copied())
+            .collect();
+        assert!(!pops.is_empty(), "the fixture lands hits");
+
+        let shield: Vec<&Pop> = pops.iter().filter(|p| p.pool == Pool::Shield).collect();
+        let health: Vec<&Pop> = pops.iter().filter(|p| p.pool == Pool::Health).collect();
+        assert!(
+            !shield.is_empty() && !health.is_empty(),
+            "one pellet, two numbers: {} on the shield, {} through it",
+            shield.len(),
+            health.len()
+        );
+        // …AND THEY ARE TOLD APART BY WHAT THEY ARE. The half a shield stops is
+        // the physical one; the half that goes through is Toxin.
+        assert!(
+            shield.iter().all(|p| p.dtype == DamageType::Impact),
+            "the shield half reads Impact"
+        );
+        assert!(
+            health.iter().all(|p| p.dtype == DamageType::Toxin),
+            "the half that got through reads Toxin"
+        );
+        // …AND THEY ARE DIFFERENT SIZES, because only one of them met armour.
+        // Equal numbers would mean the split was cosmetic.
+        let (a, b) = (shield[0].amount, health[0].amount);
+        assert!(
+            (a - b).abs() > 1e-3,
+            "the two halves take different mitigation: {a} vs {b}"
+        );
+
+        // NO DAMAGE WAS INVENTED. The pops of one instance sum to what the
+        // damage meter counted — which is the property that makes this a
+        // presentation fix and not a rebalance.
+        let popped: f64 = pops.iter().map(|p| f64::from(p.amount)).sum();
+        let last = rep.frames.last().expect("frames").damage;
+        assert!(
+            (popped - last).abs() / last < 2e-6,
+            "popped {popped} vs meter {last}"
+        );
+    }
+
     #[test]
     fn every_frame_that_took_damage_popped_a_number() {
         // A build that exercises several of the nine at once: a direct hit, a
@@ -21840,11 +23476,28 @@ mod tests {
     }
 
     #[test]
-    fn shield_gate_multiplies_damage_for_a_tenth_second() {
-        // Shield 100, 75-damage shots at 20/s (0.05 s cadence): shots at
-        // 0 and 0.05 break the shield (gate until 0.15); the 0.10 shot is
-        // gated ×0.05 (3.75); the 0.15 shot is full again.
-        // Effective = 75 + 75 + 3.75 + 75 = 228.75.
+    fn a_broken_shield_leaks_and_the_window_costs_gunfire_nothing() {
+        // Shield 100, 75-damage shots at 20/s (0.05 s cadence).
+        //
+        //   t=0.00  75 into a 100 shield  -> 75 absorbed, 25 left
+        //   t=0.05  75 into the last 25   -> 25 absorbed, 50 overflow, of which
+        //                                    5% (2.50) reaches health
+        //   t=0.10  the window is up      -> 75, because no gun takes it
+        //   t=0.15  the window is over    -> 75
+        //
+        // Effective = 75 + 27.50 + 75 + 75 = **252.50**.
+        //
+        // TWO CORRECTIONS, BOTH MEASURED, AND THEY PULL OPPOSITE WAYS
+        // (MEASUREMENTS M61, wiki `Shield`). It read 228.75 when the breaking
+        // hit was charged to the shield IN FULL — counted as 75 of damage dealt
+        // while the 50 it had left over went nowhere — and 181.25 once the
+        // overflow landed but the 0.1 s window still quartered the next shot.
+        //
+        // The window is real and it is not gunfire's: only a melee GROUND SLAM
+        // was measured taking it, and a gun's AoE does not either (owner,
+        // 2026-08-27). This engine fires guns and nothing else, so nothing here
+        // takes it — the state is still set, and `record::TargetAt` draws it,
+        // so the day melee lands the field it needs is already right.
         let p = DummyParams {
             crit_multiplier: 1.0,
             base_crit_chance: 0.0,
@@ -21858,11 +23511,30 @@ mod tests {
         };
         let s = monte_carlo(&p, 20, 5);
         assert!(
-            (s.mean_effective_damage - 228.75).abs() < 1e-9,
+            (s.mean_effective_damage - 252.5).abs() < 1e-9,
             "eff {}",
             s.mean_effective_damage
         );
-        // Weakpoint hits bypass the gate: all-head aim -> 4 × 75 = 300.
+        // …AND THE WINDOW IS STILL RECORDED, which is the half that has to
+        // survive for melee to be one line of work rather than a rebuild: a row
+        // that lands while it is up says so, and nothing reduces it.
+        let rec = record(&p, monte_carlo(&p, 4, 5).median_run.rng_state, 0.0, 1.0, 5_000);
+        let windows: Vec<f64> = rec
+            .events()
+            .iter()
+            .filter_map(|e| match &e.kind {
+                crate::record::Kind::Damage(d) => d.before.shield_gate_until,
+                _ => None,
+            })
+            .collect();
+        assert!(
+            !windows.is_empty(),
+            "a broken shield still opens a window, even though nothing reads it"
+        );
+        // Weakpoint hits bypass the breaking hit's overflow gate, so all-head
+        // aim delivers every shot whole: 4 × 75 = 300. It was 300 under both
+        // earlier readings too, which is what makes it the control: neither fix
+        // may move the case the rule says it does not touch.
         let head = DummyParams {
             body_parts: vec![BodyPart {
                 name: "head".into(),
@@ -22190,6 +23862,7 @@ mod tests {
     #[test]
     fn independent_dots_cap_per_type_fifo() {
         let dot = |v: f64, ty| Dot {
+            cause: u32::MAX,
             next_tick: 0.0,
             ticks_left: 6,
             frozen: v,

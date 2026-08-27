@@ -50,6 +50,7 @@ pub mod mods_data;
 pub mod perks;
 pub mod shards_data;
 pub mod rivens_data;
+pub mod record;
 pub mod rng;
 pub mod scaling;
 pub mod sim;
