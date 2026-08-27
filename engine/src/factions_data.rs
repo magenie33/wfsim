@@ -268,6 +268,16 @@ mod tests {
                     vec![(DamageType::Impact, 1.5), (DamageType::Corrosive, 1.5)],
                     "{key}"
                 ),
+                // THE ROSTER'S FIRST CORPUS UNIT — Puncture and Magnetic x1.5.
+                // It is also the first with a SHIELD, and post-U36 the shield
+                // and the health read the same column, so this one table is the
+                // whole of what its two pools do differently to a damage type
+                // (which is nothing).
+                "crewman" => assert_eq!(
+                    listed,
+                    vec![(DamageType::Puncture, 1.5), (DamageType::Magnetic, 1.5)],
+                    "{key}"
+                ),
                 // The six Acolytes: faction "Stalker", which the table skips.
                 _ => assert!(listed.is_empty(), "{}: unexpected column {key}", e.id),
             }

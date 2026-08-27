@@ -1,0 +1,89 @@
+id: crewman
+name: Crewman
+# Portrait, hosted on the WIKI — same arrangement as every other enemy here
+# (WFCD's export carries no usable enemy art), pulled through Special:FilePath
+# by scripts/fetch_images.py.
+image: CrewmanNormal.png
+# THE FIRST TARGET IN THIS ROSTER WITH A SHIELD, and that is why it is here.
+#
+# All three units that came before it — Thrax Centurion, Corrupted Heavy Gunner,
+# Demolisher Devourer — carry `shield: 0`, so every ruler, every golden test and
+# every board row has been fought against a body with no shields. The entire
+# Corpus half of the mitigation model was unreachable, and it was WRONG: the
+# enemy shield gate reached the engine as a 0.1 s window and nothing else, so a
+# hit that broke a shield had its whole excess thrown away and health took
+# nothing (owner measured it, 2026-08-27 — MEASUREMENTS M61).
+#
+# The plainest Corpus unit there is: no armour, no overguard, no boss mechanic,
+# no attenuation. Everything that happens to a shot fired at it is the shield.
+faction: corpus
+# Corpus, and here the two faction systems agree — no FactionDamageOverride on
+# this unit, so Bane of Corpus and the vulnerability column read the same key
+# (MECHANICS.md §8).
+scaling_faction: corpus            # level-scaling curves (MECHANICS.md §8)
+# Wiki Eximus/Compatibilities lists "Crewman" among the Corpus base units.
+can_be_eximus: true
+# Not in the Parazon §Mercy list, which names heavy units — a Crewman is not
+# one, so there is no Mercy window and Impact (Stagger) stacks'
+# parazon_mercy_threshold modifier does nothing on it.
+mercy_eligible: false
+type: light_ranged
+weapons: [dera]
+planets: [venus, jupiter, neptune, pluto]
+tilesets: [corpus_ship]
+
+# Base stats at base_level (scale per docs/MECHANICS.md §8 level-scaling;
+# corpus faction curves). base_level is 1, so a level 1 Crewman IS these
+# numbers — which is what makes it the right target to measure against.
+stats:
+  base_level: 1
+  health: 90
+  shield: 120
+  armor: 0
+  overguard: 0
+  affinity: 50
+
+# Module Multis: "Head: 3.0x". Standard humanoid layout; crit_bonus on the head
+# is assumed (no wiki exception listed) — unverified, the same standing
+# assumption the other three units carry.
+body_parts:
+  - name: body
+    multiplier: 1.0
+    is_head: false
+    crit_bonus: false
+  - name: head
+    multiplier: 3.0
+    is_head: true
+    crit_bonus: true
+
+source:
+  url: https://wiki.warframe.com/w/Module:Enemies/data/corpus
+  # note: >-
+  # Stats and Multis from the wiki's structured Lua enemy data module, entry
+  # /Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/RifleSpacemanAgent: BaseLevel 1,
+  # Health 90, Shield 120, Affinity 50, Multis "Head: 3.0x".
+  #
+  # THE CROSS-CHECK DISAGREES AND THE WIKI WINS — and here the reason is not
+  # staleness, which is worth writing down because staleness is the usual one.
+  #
+  # WFCD's Enemy.json carries 60 health / 150 shield for a Crewman, against the
+  # wiki's 90 / 120. The vendored export was refreshed to v1.1275.74, built the
+  # same day (2026-08-27), and it still says 60 / 150 — so this is a standing
+  # disagreement rather than a lag.
+  #
+  # IT IS A DIFFERENT ENTITY. The wiki module's entry is
+  # `/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/RifleSpacemanAgent`; WFCD's is
+  # the same path ending `RifleSpacemanAvatar`, and its export contains **no
+  # Agent records at all** (0 of 638). DE keeps both and they carry different
+  # stats, so the export is not wrong about the Avatar — it simply cannot be
+  # asked about the unit the game spawns and the Simulacrum shows.
+  #
+  # The owner's own Simulacrum reading of a level 1 Crewman is 120 shield /
+  # 90 health — the wiki's numbers, to the digit — and the measurement this
+  # unit exists to reproduce (M61) only resolves at a shield of exactly 120:
+  # the health leak fits `0.05 x (damage - 120)` on four shots and fits
+  # nothing at 150.
+  #
+  # Health/Armor/Shield classes do not exist post-U36 — resistances are
+  # faction-wide (see data/factions/damage_modifiers.yaml), which is also why
+  # this unit's shield and health read the same damage column.

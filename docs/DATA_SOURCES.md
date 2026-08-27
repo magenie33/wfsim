@@ -40,6 +40,19 @@ its ground damage.
 The lesson generalises past Arch-Guns: **an export cannot tell you that a
 question has two answers.** A page can, because a human wrote the tab.
 
+**And it cannot tell you the question is about a different THING.** The export
+carries ENEMIES as `…Avatar` records and DE also keeps a `…Agent` for the same
+unit; the two hold different stats, and `Enemy.json` contains **no Agent record
+at all** (0 of 638, checked on v1.1275.74). The wiki's enemy module reads the
+Agent, which is what the Simulacrum spawns and what a player measures: a level 1
+Crewman is 90 health / 120 shield on the wiki and in game, and 60 / 150 in the
+export. Refreshing the vendored copy to a build from the same day did not move
+it — this is a standing disagreement about which record answers, not a lag.
+
+It is the Arch-Gun lesson in a second domain, and the tell is the same: the
+export agreed on every other field. Join by `uniqueName`, then check that the
+uniqueName is the one the wiki is talking about.
+
 **The one standing exception** is `base_drain` / `max_rank` on MODS, where the
 wiki is wrong for about twenty of them and WFCD is right. It is an exception
 held up by its own evidence, and it does not license a second one by analogy.
