@@ -139,11 +139,15 @@ const r = await evaluate(`(async () => {
   const pools = rows.map((tr) => (tr.className.match(/rec-(shield|health|overguard)/) || [])[1]);
   out.shieldRows = pools.filter((p) => p === 'shield').length;
   out.healthRows = pools.filter((p) => p === 'health').length;
-  const gated = rows.filter((tr) => /shield gate/i.test(tr.querySelector('.rec-calc').textContent));
+  // BY THE FACTOR'S OWN KEY, never by its label. The label is translated and
+  // this page defaults to Chinese, so matching the English sentence passed
+  // only for as long as the panel was untranslated — and then failed on the
+  // day it was translated, which is a check reporting the wrong thing twice
+  // (2026-08-27). data-factor is the engine's own spelling and does not move.
+  const gated = rows.filter((tr) => tr.querySelector('.rec-calc [data-factor="shield gate"]'));
   out.gateRows = gated.length;
   out.gateFactor = gated.length
-    ? num([...gated[0].querySelectorAll('.rec-f.mit')]
-        .find((f) => /shield gate/i.test(f.textContent)).firstChild.textContent)
+    ? num(gated[0].querySelector('.rec-f.mit[data-factor="shield gate"]').firstChild.textContent)
     : null;
   // …and the two halves are ONE instant, which is what makes them one hit.
   const t = (tr) => tr.querySelector('.rec-t').firstChild.textContent.trim();
@@ -152,20 +156,24 @@ const r = await evaluate(`(async () => {
     : false;
 
   // ---- THE STATE COLUMN IS THE TARGET BEFORE THE HIT -------------------
-  out.statesDrawn = rows.filter((tr) => /health/i.test(tr.querySelector('.rec-state').textContent)).length;
+  out.statesDrawn = rows.filter((tr) =>
+    tr.querySelector('.rec-state [data-pool="health"]')).length;
 
   // ---- A FILTER SHOWS ONLY WHAT IT NAMES -------------------------------
   // A KIND THE FIXTURE ACTUALLY PRODUCES. Asserting on one it does not is a
   // check that fails for being unlucky rather than for being wrong.
-  const want = rows.some((tr) => /multishot/i.test(tr.querySelector('.rec-org').textContent))
+  const want = rows.some((tr) => tr.querySelector('[data-origin="multishot"]'))
     ? 'multishot' : 'own';
   out.want = want;
   const kind = [...document.querySelectorAll('[data-reckind]')].find((b) => b.dataset.reckind === want);
   if (kind) { kind.click(); await sleep(250); }
   const after = [...document.querySelectorAll('tr.rec-dmg')];
   out.filtered = after.length;
+  // BY THE ORIGIN'S OWN KEY, for the reason the gate is: the chip's LABEL is
+  // translated and reading it back turned a passing check into a failing one
+  // the day the panel was.
   out.filteredAllStatus = after.length > 0
-    && after.every((tr) => tr.querySelector('.rec-org').textContent.trim().replace(/ /g, '_') === want);
+    && after.every((tr) => !!tr.querySelector('[data-origin="' + want + '"]'));
   const all = [...document.querySelectorAll('[data-reckind]')].find((b) => b.dataset.reckind === 'all');
   if (all) { all.click(); await sleep(250); }
   out.restored = document.querySelectorAll('tr.rec-dmg').length;

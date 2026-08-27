@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "6e045646+ · 2026-08-27 09:35Z";
+const BUILD_ID = "560bd0fc+ · 2026-08-27 12:19Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -14155,6 +14155,36 @@ const rpCap = (b) => {
     : `${b.value.max}${b.value.unit}`;
   return rpUncapped(b) ? "∞" : b.max;
 };
+/// A BUFF SERIES' NAME, from the CARDS — same ids, so the chart, the record's
+/// "buffs up" column and the card a reader clicks can never disagree about what
+/// a series is called.
+const buffRosterName = (id) => {
+  const b = (buffList || []).find((x) => x.id === id);
+  return b ? buffCardName(b.name) : id;
+};
+
+/// A DEBUFF ROW IS NAMED BY ITS DAMAGE TYPE, which is already translated
+/// everywhere else on the page (`DT`). The alternative was a new i18n family
+/// for the proc names — Virus, Corrosion, Disrupt — and DE's Chinese for those
+/// is not something to invent: a string is transcribed, never translated
+/// (AGENTS.md). The damage type says the same thing in words the reader has
+/// already seen on the damage meter, and it is 1:1 with the proc everywhere
+/// except Cold, whose two states are told apart by a suffix of our own.
+const DEBUFF_TYPE = {
+  virus: "viral", corrosion: "corrosive", disrupt: "magnetic",
+  confusion: "radiation", blast: "blast", freeze: "cold", frozen: "cold",
+  stagger: "impact", weakened: "puncture", attractor: "void",
+  bleed: "slash", poison: "toxin", ignite: "heat",
+};
+// MICROWAVE is not a damage type, so it has no `DT` name to borrow — it is
+// its own thing and DE named it, so it keeps that name rather than being
+// translated into a description of what it does, which is exactly what the
+// transcribe-never-translate rule forbids.
+const DB_OWN_NAME = { microwave: "Microwave", lifted: "Lifted" };
+const debuffRosterName = (id) =>
+  (DB_OWN_NAME[id] || DT(DEBUFF_TYPE[id] || id)) +
+  (id === "frozen" ? ` (${tr("frozen")})` : "");
+
 let replayState = null; // { data, i, playing, speed, raf }
 
 // ---- EVERY BLOCK FOLDS -------------------------------------------------
@@ -14357,6 +14387,12 @@ function recordBody(st) {
     `<button class="pchip${st.filter === k ? " sel" : ""}" data-reckind="${k}">${escHtml(tr(label))}</button>`).join("");
 
   const dmg = shown.filter((e) => e.kind === "damage").length;
+  // THE SLICE THIS STREAM ACTUALLY COVERS: where it was asked to start, and
+  // where it ran out — which is the LAST EVENT in it when the cap bit, not the
+  // window it asked for.
+  const cut = st.dropped > 0 || (st.from || 0) > 0;
+  const window0 = cut ? (st.from || 0) : null;
+  const window1 = cut ? events[events.length - 1].t : null;
   return `<div class="rec-tools">
       ${bodies.length > 1 ? `<span class="tlabel">${escHtml(tr("whose"))}</span>${chips}<span class="rec-sep"></span>` : ""}
       <span class="tlabel">${escHtml(tr("only"))}</span>${kinds}
@@ -14364,6 +14400,13 @@ function recordBody(st) {
       <button class="ghost-btn small" id="rec-copy">${escHtml(tr("Copy as text"))}</button>
     </div>
     <div class="rec-count">${escHtml(tr("{n} numbers popped").replace("{n}", n(dmg)))}${
+      // WHICH SLICE OF THE FIGHT THIS IS. Silent for a stream that covers the
+      // whole engagement, which is most of them — and never silent when it does
+      // not, because a window nobody is told about reads as the whole fight.
+      window0 != null
+        ? ` · ${escHtml(tr("{a}s to {b}s of the fight")
+            .replace("{a}", window0.toFixed(1)).replace("{b}", window1.toFixed(1)))}`
+        : ""}${
       st.dropped ? ` · ${escHtml(tr("{n} more did not fit").replace("{n}", n(st.dropped)))}` : ""}</div>
     <div class="rec-scroll"><table class="rec-t">
       <thead><tr>
@@ -14392,13 +14435,21 @@ const REC_POOL = { shield: "on the shield", health: "through to health", overgua
 /// A STACK LIST AS CHIPS, with the ones at zero left out. Both sides of a row
 /// use it: the shooter's buffs and the target's debuffs are the same shape seen
 /// from opposite ends, so they are drawn by one function (owner, 2026-08-27).
+///
+/// IT NAMES THEM THE WAY THE REPLAY'S OWN TABLES DO. It used to print `tr(id)`,
+/// which for a roster id is the id — so a Chinese reader got `corrosion`,
+/// `on_kill_multishot` and `arcane:secondary_enervate` in a column whose whole
+/// job is to say what was up, while the chart two blocks down said 腐蚀 and the
+/// buff's own card name. Two spellings of one thing, which is the mistake this
+/// panel exists to stop making (owner, 2026-08-27).
 function recStacks(list, roster, cls) {
+  const nameOf = cls === "on" ? debuffRosterName : buffRosterName;
   const on = (list || [])
     .map((n, i) => [roster[i], n])
     .filter(([id, n]) => id && n > 0);
   if (!on.length) return `<span class="z">—</span>`;
   return `<div class="rec-stk">${on.map(([id, n]) =>
-    `<span class="rec-s ${cls}">${escHtml(tr(id))}<b>${n}</b></span>`).join("")}</div>`;
+    `<span class="rec-s ${cls}">${escHtml(nameOf(id))}<b>${n}</b></span>`).join("")}</div>`;
 }
 
 /// THE BASE, OPENED UP. One number is an assertion; a chain is something a
@@ -14412,7 +14463,8 @@ function baseChain(e) {
     return `<span class="rec-b0">${n(e.base)}</span>`;
   }
   return `<span class="rec-b0 sub">${n(e.base_from)}<i>${escHtml(tr("ModifiedBase"))}</i></span>${
-    e.base_steps.map(([k, v]) => `<span class="rec-f base">×${v}<i>${escHtml(tr(k))}</i></span>`).join("")
+    e.base_steps.map(([k, v]) =>
+      `<span class="rec-f base" data-factor="${escHtml(k)}">×${v}<i>${escHtml(tr(k))}</i></span>`).join("")
   }<span class="rec-b0">= ${n(e.base)}</span>`;
 }
 
@@ -14450,19 +14502,24 @@ function recordRow(e, rosters) {
         e.into ? ` <span class="sim-hint">${escHtml(tr(e.into === "transmuted" ? "into the transmuted form" : "back to the base form"))}</span>` : ""}${
         e.seconds != null ? ` <span class="sim-hint">${e.seconds.toFixed(2)}s</span>` : ""}${
         e.pellets != null ? ` <span class="sim-hint">${e.pellets} ${escHtml(tr("pellets"))}</span>` : ""}</td>
-      <td>${wep}</td><td colspan="2"></td></tr>`;
+      <td class="rec-wep">${wep}</td><td colspan="2"></td></tr>`;
   }
 
   // THE CRIT FACTOR CARRIES ITS FORMULA. `×4.40` is a product; `1 + 2 × (2.20
   // − 1)` is something a reader can check against the weapon's card, and the
   // two numbers in it are the only ones they have to trust.
+  // A FACTOR CARRIES ITS OWN KEY. The label is translated and the key is not,
+  // which is what lets anything asking "did the shield gate apply here" — a
+  // check, a bug report, the browser's own find — ask about the FACTOR rather
+  // than about the sentence a particular reader happens to see. `data-rpevent`
+  // is the same idea for a floating number (owner, 2026-08-27).
   const steps = (e.steps || []).map(([k, v]) =>
     k === "critical" && e.crit_damage
-      ? `<span class="rec-f hi">×${v}<i>${escHtml(tr("critical"))} = 1 + ${e.crit} × (${
+      ? `<span class="rec-f hi" data-factor="critical">×${v}<i>${escHtml(tr("critical"))} = 1 + ${e.crit} × (${
           e.crit_damage} − 1)</i></span>`
-      : `<span class="rec-f">×${v}<i>${escHtml(tr(k))}</i></span>`).join("");
+      : `<span class="rec-f" data-factor="${escHtml(k)}">×${v}<i>${escHtml(tr(k))}</i></span>`).join("");
   const mit = (e.mitigation || []).map(([k, v]) =>
-    `<span class="rec-f mit">×${v}<i>${escHtml(tr(k))}</i></span>`).join("");
+    `<span class="rec-f mit" data-factor="${escHtml(k)}">×${v}<i>${escHtml(tr(k))}</i></span>`).join("");
   // EVERY FACTOR THAT MOVED, and the NAMES of the ones that did not. A ×1.00 is
   // noise on a row; WHICH ones were ×1.00 is a clue, so they are a count you
   // can hover rather than fifteen lines you have to skip (owner, 2026-08-27).
@@ -14485,16 +14542,16 @@ function recordRow(e, rosters) {
   // to agree (owner, 2026-08-27).
   return `<tr class="rec-dmg rec-${escHtml(e.pool)}" data-recevent="${e.id}">
     <td class="rec-t">${e.t.toFixed(3)}${e.cause != null ? `<span class="rec-cause">#${e.cause}</span>` : ""}</td>
-    <td><span class="rec-org rec-o-${escHtml(e.origin)}">${escHtml(tr(e.origin.replace(/_/g, " ")))}</span>${which}</td>
-    <td>${e.part ? `<span class="${e.head ? "rec-head" : ""}">${escHtml(e.part)}${e.head ? " ⌖" : ""}</span>` : "<span class=\"z\">—</span>"}</td>
+    <td><span class="rec-org rec-o-${escHtml(e.origin)}" data-origin="${escHtml(e.origin)}">${escHtml(tr(e.origin.replace(/_/g, " ")))}</span>${which}</td>
+    <td>${e.part ? `<span class="${e.head ? "rec-head" : ""}">${escHtml(tr(e.part))}${e.head ? " ⌖" : ""}</span>` : "<span class=\"z\">—</span>"}</td>
     <td class="num"><b>${n(e.effective)}</b><span class="rec-pool">${escHtml(tr(REC_POOL[e.pool] || e.pool))}</span>${crit}</td>
     <td class="rec-proc">${(e.procs || []).map((p) => `<span class="rec-p">${escHtml(DT(p))}</span>`).join("") || "<span class=\"z\">—</span>"}</td>
     <td class="rec-calc">${baseChain(e)}${steps}<span class="rec-mid">= ${n(e.raw)}</span>${mit}<span class="rec-eq">= ${n(e.effective)}</span>${inert}</td>
     <td class="rec-wep">${wep}</td>
     <td class="rec-buff">${recStacks(e.buffs, rosters.buffs, "up")}</td>
     <td class="rec-state">${
-      b.overguard > 0 ? `<span><i>OG</i>${n(b.overguard)}</span>` : ""}<span><i>${escHtml(tr("shield"))}</i>${n(b.shield || 0)}</span><span><i>${escHtml(tr("health"))}</i>${n(b.health || 0)}</span>${
-      b.armor > 0 ? `<span><i>${escHtml(tr("armour"))}</i>${n(b.armor)}</span>` : ""}${
+      b.overguard > 0 ? `<span data-pool="overguard"><i>${escHtml(tr("overguard"))}</i>${n(b.overguard)}</span>` : ""}<span data-pool="shield"><i>${escHtml(tr("shield"))}</i>${n(b.shield || 0)}</span><span data-pool="health"><i>${escHtml(tr("health"))}</i>${n(b.health || 0)}</span>${
+      b.armor > 0 ? `<span data-pool="armour"><i>${escHtml(tr("armour"))}</i>${n(b.armor)}</span>` : ""}${
       // THE SHIELD-GATE WINDOW, drawn even though nothing this app fires takes
       // it: only a melee ground slam does (MEASUREMENTS M61), and melee is not
       // modelled. It is on screen so the claim can be checked the day it is.
@@ -14551,39 +14608,9 @@ function recordLine(e) {
 function replayMarkup(r) {
   const rp = r && r.replay;
   if (!rp || !rp.t || rp.t.length < 2) return { bar: "", curves: "" };
-  // Buff names come from the CARDS — same ids, so the two can never disagree
-  // about what a series is called.
-  const named = (id) => {
-    const b = (buffList || []).find((x) => x.id === id);
-    return b ? buffCardName(b.name) : id;
-  };
-  // A DEBUFF ROW IS NAMED BY ITS DAMAGE TYPE, which is already translated
-  // everywhere else on the page (`DT`). The alternative was a new i18n family
-  // for the proc names — Virus, Corrosion, Disrupt — and DE's Chinese for those
-  // is not something to invent: a string is transcribed, never translated
-  // (AGENTS.md). The damage type says the same thing in words the reader has
-  // already seen on the damage meter, and it is 1:1 with the proc everywhere
-  // except Cold, whose two states are told apart by a suffix of our own.
-  const DEBUFF_TYPE = {
-    virus: "viral", corrosion: "corrosive", disrupt: "magnetic",
-    confusion: "radiation", blast: "blast", freeze: "cold", frozen: "cold",
-    stagger: "impact", weakened: "puncture", attractor: "void",
-    bleed: "slash", poison: "toxin", ignite: "heat",
-  };
+  const named = buffRosterName;
+  const dbName = debuffRosterName;
   // MICROWAVE is not a damage type, so it has no `DT` name to borrow — it is
-  // the Nukor family's own status and DE's own word for it. Left in English on
-  // a Chinese page for the same reason "Overshields" is: a string is
-  // TRANSCRIBED, never translated, and DE's Chinese for this one could not be
-  // reached from here (its status has no page of its own in the CN wiki). The
-  // weapon's own name contains 微波, which is evidence and not a source.
-  // LIFTED is the second of those and gets the same treatment: DE's own word,
-  // left in English because its Chinese could not be reached from here. The CN
-  // wiki has no page for the status, and deriving one from the English is
-  // exactly what the transcribe-never-translate rule forbids.
-  const DB_OWN_NAME = { microwave: "Microwave", lifted: "Lifted" };
-  const dbName = (id) =>
-    (DB_OWN_NAME[id] || DT(DEBUFF_TYPE[id] || id)) +
-    (id === "frozen" ? ` (${tr("frozen")})` : "");
   // WHOSE DEBUFFS. `rp.tracked` names the bodies the replay followed — the
   // aimed one first — and this is the index into it. The selection lives
   // OUTSIDE the render (`replayFoe`) so picking an enemy survives a scrub and
@@ -14978,15 +15005,41 @@ function wireReplay(r) {
     $("rp-play").textContent = `▶ ${tr("play")}`;
   };
   // THE NUMBERS ARE THE RECORD, so reaching for the replay is what asks for
-  // it — once, and only on a deliberate gesture. It is deliberately NOT
+  // it — and it asks for the WINDOW it is looking at. It is deliberately NOT
   // fetched with the result: a dense fight's stream is megabytes and most runs
   // are never replayed at all, which is the same reason `/api/log` is a query
   // rather than a field on `/api/simulate` (owner, 2026-08-27).
-  let asked = false;
+  //
+  // A RECORD IS A WINDOW, AND THE PLAYHEAD SETS IT. The cap is real and it
+  // bites on exactly the builds people argue about: the board's leading Laetum
+  // deals ~230,000 damage instances over 180 s, so a stream asked for from zero
+  // runs out after 14 seconds — 8% of the fight, with the other 92% drawing no
+  // numbers at all and nothing on screen saying why. Following the playhead is
+  // what makes "the numbers are the record" survive the cap, rather than being
+  // true only for the opening.
+  let loading = false;
+  const recordFor = () => (recordState && shownResult
+    && recordState.key === recordKey(r) ? recordState : null);
+  /// Is `t` inside the stream we hold? A CUT stream covers only as far as it
+  /// actually got, which is the last event in it — not the window it asked for.
+  const covers = (t) => {
+    const rst = recordFor();
+    if (!rst || !rst.events || !rst.events.length) return false;
+    const lo = rst.from || 0;
+    const hi = rst.dropped
+      ? rst.events[rst.events.length - 1].t
+      : (rst.to == null ? Infinity : rst.to);
+    return t >= lo - 1e-9 && t <= hi + 1e-9;
+  };
   const withRecord = async () => {
-    if (asked || popFrames(rp)) return;
-    asked = true;
-    await loadRecord(r);
+    const at = rp.t[st.i] || 0;
+    if (loading || covers(at)) return;
+    loading = true;
+    // A SECOND BEFORE THE PLAYHEAD, running forward as far as the cap allows.
+    // The lead-in is there so a scrub that lands just after a shot still shows
+    // the shot's own row rather than starting mid-volley.
+    await loadRecord(r, Math.max(0, at - 1));
+    loading = false;
     // The reader may have moved on — another run, another weapon — while the
     // engagement was being re-run.
     if (replayState === st) draw();
@@ -15000,6 +15053,10 @@ function wireReplay(r) {
     st.pos += (dtms / 1000) * st.speed / rp.frame_seconds;
     if (st.pos >= rp.t.length - 1) { st.pos = rp.t.length - 1; stop(); }
     draw();
+    // …AND PLAYING OFF THE END OF THE WINDOW FETCHES THE NEXT ONE. Cheap to
+    // ask: `covers` is two comparisons, and `withRecord` returns immediately
+    // unless the playhead has actually left the stream we hold.
+    withRecord();
     if (st.playing) st.raf = requestAnimationFrame(tick);
   };
   // PICK AN ENEMY — from a chip, from a roll-call row, or from the map. Three
@@ -15056,19 +15113,21 @@ function wireReplay(r) {
     sceneEl.appendChild(layer);
   }
   $("rp-play").onclick = () => {
-    withRecord();
     if (st.playing) { stop(); return; }
     // Pressing play on a FINISHED fight rewinds it — that is what the button
     // means, and leaving it stuck at the end made it look broken.
-    if (st.pos >= rp.t.length - 1) st.pos = 0;
+    if (st.pos >= rp.t.length - 1) { st.pos = 0; draw(); }
+    withRecord();
     st.playing = true; st.last = 0;
     $("rp-play").textContent = `❚❚ ${tr("pause")}`;
     st.raf = requestAnimationFrame(tick);
   };
   ddReg.get("rp-speed").onPick = (v) => { st.speed = Number(v) || 1; };
   $("rp-scrub").oninput = () => {
-    withRecord();
+    // AFTER the playhead moves, never before: `withRecord` asks for the window
+    // around `st.i`, so asking first fetches the window the reader just left.
     stop(); st.pos = Number($("rp-scrub").value); draw();
+    withRecord();
   };
   // Collapse one row without losing its place in the group.
   document.querySelectorAll(".rp-row .rp-head").forEach((h) => {
@@ -15214,6 +15273,10 @@ function popsDraw(rp, i, live) {
   // BIGGEST NEAREST THE BODY, because that is the one the reader came for; the
   // rest step outward and up from it.
   const perBody = new Map();
+  // HOW MANY DID NOT FIT ON SCREEN, as opposed to how many the frame's own cap
+  // dropped. They are the same fact to a reader — "there were more than this" —
+  // so they are counted together and stated in one chip.
+  let skipped = 0;
   const ordered = [...(frame.v || [])].sort((a, b) => b.effective - a.effective);
   for (const e of ordered) {
     const body = e.body;
@@ -15230,10 +15293,26 @@ function popsDraw(rp, i, live) {
     // still overlaps; stacking upward only has to clear the line height. The
     // small left/right alternation is there to break the column's edge so two
     // equal numbers are still visibly two.
-    const fx = seen === 0 ? 0 : (seen % 2 ? 11 : -11);
+    // …AND THE COLUMN STAYS INSIDE THE SCENE, or it is not drawn at all.
+    //
+    // Twelve numbers can all land on ONE body, and twelve is 250 px of column —
+    // taller than the gap above a body standing near the top of the map, so the
+    // biggest numbers, which are the ones a reader came for, climbed off the
+    // panel entirely (seen on the board's leading Laetum, 2026-08-27). A second
+    // COLUMN was the first fix and was worse: a six-figure number is ~110 px
+    // wide, so the columns ran through each other and produced digits that
+    // belonged to neither.
+    //
+    // So the geometry decides how many fit, and what does not fit joins the
+    // count already beside them. That keeps the two claims this layer makes
+    // both true: every number drawn names the row it is, and everything not
+    // drawn is stated rather than silently missing.
+    const fits = Math.max(1, Math.floor((dy + y - 36) / 21) + 1);
+    if (seen >= fits) { skipped += 1; continue; }
     // The step clears the LARGEST line here: a headcrit is set at 19 px, so 17
     // put two of them on top of each other. Starting at -32 clears the body's
     // own name and distance labels rather than landing in them.
+    const fx = seen === 0 ? 0 : (seen % 2 ? 11 : -11);
     const fy = -32 - seen * 21;
     const el = document.createElement("span");
     el.className = `rp-pop ${POP_KIND_CLASS[kind] || "p-direct"}`;
@@ -15253,24 +15332,24 @@ function popsDraw(rp, i, live) {
   }
   // …AND WHAT DID NOT FIT. Never silent: a cap nobody is told about reads as
   // "that is all of them", which is the one thing it must not.
-  if (frame.n > 0) {
-    const more = document.createElement("span");
-    more.className = "rp-pop p-more";
-    // ABOVE THE TALLEST COLUMN, computed rather than guessed: the aimed body
-    // carries the most numbers and a fixed offset lands the chip inside them.
-    let tall = 0, at0 = 0;
-    for (const [b, n] of perBody) {
-      const [, by] = map(popBodyAt(b) || [0, 0.5]);
-      const top = by - 32 - (n - 1) * 21;
-      if (!tall || top < tall) { tall = top; at0 = b; }
-    }
-    const [mx] = map(popBodyAt(at0) || [0, 0.5]);
-    more.style.left = `${dx + mx}px`;
-    more.style.top = `${dy + tall - 20}px`;
-    more.textContent = `+${frame.n}`;
-    more.title = tr("more numbers than fit — the biggest twelve are shown");
-    host.appendChild(more);
-    if (live) more.addEventListener("animationend", () => more.remove());
+  const more = (frame.n || 0) + skipped;
+  if (more > 0) {
+    const chip = document.createElement("span");
+    chip.className = "rp-pop p-more";
+    // IN THE CORNER, not above the tallest column. It used to sit one line
+    // above the topmost number, which by construction is the last line that
+    // fits — so the chip itself never did, and the one thing on this layer
+    // whose whole job is to say "there were more" was the thing clipped off
+    // the top (2026-08-27). It is a statement about the FRAME rather than
+    // about a body, so the frame's own corner is where it belongs.
+    // `.rp-pop` is centred on its point, so the corner needs half a chip of
+    // clearance or it hangs over the edge it was moved here to stay inside.
+    chip.style.left = `${dx + 26}px`;
+    chip.style.top = `${dy + 16}px`;
+    chip.textContent = `+${more}`;
+    chip.title = tr("more numbers than fit here — the biggest are drawn");
+    host.appendChild(chip);
+    if (live) chip.addEventListener("animationend", () => chip.remove());
   }
 }
 

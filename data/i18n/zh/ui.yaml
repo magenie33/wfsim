@@ -1438,6 +1438,117 @@ ui:
   "damage for ONE element — this engine has no per-element damage bucket": "只加**单一元素**的伤害 —— 本引擎没有按元素分开的伤害加成桶"
   "earned per kill — not built as a stacking buff yet": "靠击杀累积 —— 还没有做成可叠加的增益"
 
+  # ---- THE COMBAT RECORD ------------------------------------------------
+  #
+  # The panel a reader opens to argue with a number, so every column heading
+  # and every factor NAME in it has to be readable — an all-English ledger on
+  # a Chinese page is a ledger nobody here can check (2026-08-27).
+  #
+  # THE FACTOR NAMES COME FROM THE ENGINE as `&'static str`, the same strings
+  # the ledger multiplies, so they are keyed here exactly as the engine writes
+  # them. A key that drifts shows up as English on the page rather than as an
+  # error, which is why `check_disclosure`'s own rule applies: run the pass in
+  # both languages.
+  "Combat record": "战斗记录"
+  "overguard": "超保护"
+  "transform begins": "变形开始"
+  "transform ends": "变形结束"
+  "reload begins": "换弹开始"
+  "reload ends": "换弹结束"
+  # BODY PARTS as the record's own column names them. They are per-enemy data,
+  # so this covers the ones the roster actually uses and anything new falls
+  # back to the English the yaml carries — visible rather than silently wrong.
+  "Head": "头部"
+  "Body": "身体"
+  # TESLA keeps DE's own name: it is not a damage type, so it has no `DT` name
+  # to borrow, and DE's Chinese for it is not something to invent — a string is
+  # transcribed, never translated (AGENTS.md). Same rule as Microwave.
+  "one row per number the game pops, and everything behind it": "游戏里每弹出一个数字就是一行，连同它背后的全部计算"
+  "Read the record": "读取记录"
+  "re-runs this engagement to list every damage instance": "会重跑这场战斗，列出每一次伤害结算"
+  "reading…": "读取中…"
+  "nothing happened in this window": "这个时间窗口里什么都没发生"
+  "{n} numbers popped": "弹出了 {n} 个数字"
+  "{n} more did not fit": "还有 {n} 个没装下"
+  "{a}s to {b}s of the fight": "战斗的 {a}s 到 {b}s"
+  "Copy as text": "复制为文本"
+  "Copied": "已复制"
+  "whose": "看谁"
+  "everything": "全部"
+  "events": "武器事件"
+  # ---- the columns ----
+  "time": "时间"
+  "damage": "伤害"
+  "procs": "触发"
+  "where the number comes from": "这个数字怎么来的"
+  "weapon": "武器"
+  "buffs up": "自身增益"
+  "before · target": "命中前 · 目标"
+  # ---- what a row is ----
+  "pellet": "弹头"
+  "pellets": "发弹头"
+  "direct": "直击"
+  "shot": "开火"
+  "own": "本体"
+  "multishot": "多重"
+  "punch through": "穿透"
+  "chain": "连锁"
+  "ricochet": "跳弹"
+  "echo": "回响"
+  "splash": "溅射"
+  "status": "异常"
+  "field": "力场"
+  "extra hit": "额外伤害"
+  "arcane": "赋能"
+  # ---- the pools a number lands in ----
+  "on the shield": "打在护盾上"
+  "through to health": "穿透到血量"
+  "on overguard": "打在超保护上"
+  "shield": "护盾"
+  "health": "血量"
+  "armour": "护甲"
+  "gate": "破盾保护"
+  # ---- the weapon column ----
+  "base": "常态"
+  "transmuted": "灵化"
+  "magazine": "弹匣"
+  "charges": "充能"
+  "reserve": "备弹"
+  "gauge": "灵化槽"
+  "Incarnon gauge": "灵化槽"
+  "into the transmuted form": "进入灵化形态"
+  "back to the base form": "回到常态"
+  # ---- the offensive ledger, in the order the engine applies it ----
+  "ModifiedBase": "改装后基伤"
+  "element bracket + quantization": "元素加成 + 量化"
+  "Double Tap": "二连击"
+  "Synth Charge": "合成充能"
+  "Chamber (first round)": "弹膛（首发）"
+  "sniper combo": "狙击连击"
+  "multishot-as-damage": "多重折算为伤害"
+  "damage falloff": "伤害衰减"
+  "radial falloff": "范围衰减"
+  "hop falloff": "弹跳衰减"
+  "merged beams": "光束合并"
+  "extra hit share": "额外伤害占比"
+  "field damage": "力场伤害"
+  "Secondary Fortifier": "次要强化"
+  # ---- the defensive ledger ----
+  "shield gate": "破盾保护"
+  "pool share": "血条分配"
+  "damage type column": "伤害类型系数"
+  "Disrupt amp": "磁力增伤"
+  "past the shield": "越过护盾的部分"
+  "Viral amp": "病毒增伤"
+  "attenuation": "伤害衰减保护"
+  "the pool ran out": "这一条血用完了"
+  # ---- the floating numbers ----
+  "head_crit": "爆头暴击"
+  "blast": "爆炸"
+  "blast_area": "爆炸范围"
+  "extra": "额外伤害"
+  "more numbers than fit here — the biggest are drawn": "这里放不下这么多数字 —— 只画最大的那些"
+
 effect_phrases:
   - ['Ammo Pickup Conversion', '弹药拾取转换']
   - ['Self-Stagger Reduction', '自我击退减免']

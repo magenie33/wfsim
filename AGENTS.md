@@ -1320,6 +1320,35 @@ around (decision 2026-07-31).
   drawing ONE of them, which is the exact shape of the bug this replaced.
   Verified to bite in both directions — offsetting the id by one reddens the
   first, truncating a frame's list reddens the second.
+- **A ROW'S STATE COLUMNS ARE THE INSTANCE'S, AND ITS LABELS ARE NOT ITS
+  IDENTITY** (owner, 2026-08-27). Two things the combat record got wrong the
+  moment anyone read it closely, and they are the same mistake in two places.
+  THE BUFF COLUMN WAS SAMPLED AT THE SHOT. Every pellet, explosion and status of
+  a trigger pull carried one snapshot, while the FACTORS beside them were read
+  per instance — so two rows one pellet apart showed the same buffs and the same
+  stacks on the target, and one carried a Condition Overload bracket the other
+  did not. Every state column on a row now belongs to that row: `set_stacks` is
+  called in the stage loop beside `DebuffState::amps`, the roster is built once
+  per run because `buff_roster` allocates, and it costs nothing measurable
+  because it only ever runs while a record is being taken. A state column that
+  does not match the number beside it is worse than no column — it is the panel
+  telling a reader their own arithmetic is wrong.
+  A LABEL IS TRANSLATED; A KEY IS NOT. `check_combat_record` matched the English
+  words "shield gate", "health" and "multishot" in the rendered page, which
+  passed for as long as the panel was untranslated and went red the day it was
+  translated — a check that reported the wrong thing twice, once by passing and
+  once by failing. Every factor chip carries `data-factor`, every pool in the
+  state column `data-pool`, every origin chip `data-origin`, all in the ENGINE's
+  own spelling, and the check asks those. It is `data-rpevent`'s rule for a
+  floating number applied to the rest of the row: the DOM carries the identity,
+  the text carries the language.
+  AND THE RECORD IS A WINDOW THE PLAYHEAD SETS. The 20,000-event cap bites on
+  exactly the builds people argue about — the board's leading Laetum deals
+  ~230,000 damage instances over 180 s, so a stream asked for from zero runs out
+  after 14 seconds, and the replay's numbers went dark for the other 92% with
+  nothing saying why. Scrubbing or playing past the end of the window fetches
+  the next one, the panel states the slice it is showing, and how many did not
+  fit is counted in the chip already beside them.
 - **A VOLLEY HAS AN ORDER, AND EVERY INSTANCE RE-READS THE TARGET** (owner,
   2026-08-27, MEASUREMENTS M62). Pellets leave the muzzle at one instant and
   they do NOT settle at one instant: a pellet resolves its own explosion before

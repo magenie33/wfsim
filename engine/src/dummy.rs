@@ -9306,6 +9306,12 @@ pub fn run_once_traced(
         rng_state: started_at,
         ..Default::default()
     };
+    // THE BUFF ROSTER the record's stack lists are positional against, built
+    // ONCE. It is read per damage instance while a record is being taken, and
+    // `buff_roster` allocates — so on a dense build the list would be rebuilt a
+    // few hundred thousand times for an answer that cannot change inside a run.
+    let rec_roster: Vec<BuffSeries> =
+        if rec.is_on() { params.buff_roster() } else { Vec::new() };
     // ROUNDS FIRED SINCE THE MAGAZINE WAS FILLED, which is what says when a
     // BURST completes: Reaver's Rapture wants a full burst, and a burst is
     // `burst.count` consecutive rounds out of one magazine. It restarts with
@@ -10676,9 +10682,8 @@ pub fn run_once_traced(
             // carries the count as of the shot before it, which is exact for
             // everything a shot changes and up to one shot stale for a buff
             // that expires on a clock of its own.
-            let roster = params.buff_roster();
             let stacks = sample_stacks(
-                params, &roster, t, &mut arc, &mut gal, &mut buff_stacks,
+                params, &rec_roster, t, &mut arc, &mut gal, &mut buff_stacks,
                 &ch_stacks, ch_buff_expiry, fire_rate_reload_expiry_seconds,
                 base_damage_reload_expiry_seconds, base_damage_eximus_expiry_seconds,
                 streak_expiry, tendrils, crit_chance_hit_stacks, &bar,
@@ -11341,6 +11346,29 @@ pub fn run_once_traced(
                     ap.armor_strip_per_puncture,
                     params.squad.enemy_armor_multiplier,
                 );
+                // …AND WHAT THE SHOOTER HAD UP, for THIS instance. The same
+                // rule as the line above, on the other side of the fight: a
+                // volley changes the SHOOTER's state too — Secondary Enervate
+                // stacks on a headshot, so pellet 1's hit is what pellet 2
+                // reads — and it was sampled once at the shot and stamped on
+                // every row of it.
+                //
+                // That made the panel say something its own numbers denied: two
+                // rows one pellet apart showed the same buffs and the same
+                // stacks on the target, and one carried a Condition Overload
+                // bracket the other did not, because the factor was current and
+                // the column was not. A state column that does not match the
+                // number beside it is worse than no column (owner, 2026-08-27).
+                if rec.is_on() {
+                    let stacks = sample_stacks(
+                        params, &rec_roster, t, &mut arc, &mut gal, &mut buff_stacks,
+                        &ch_stacks, ch_buff_expiry, fire_rate_reload_expiry_seconds,
+                        base_damage_reload_expiry_seconds, base_damage_eximus_expiry_seconds,
+                        streak_expiry, tendrils, crit_chance_hit_stacks, &bar,
+                        combo_at(combo_spec, params.combo_held, combo_count, combo_last_hit, t),
+                    );
+                    rec.set_stacks(stacks);
+                }
                 // A MISSED PELLET DEALS NOTHING AND DOES NOTHING. Skipping the
                 // stage rather than zeroing its damage is the whole point: the
                 // status draw, the gauge charge, the on-hit buffs and the combo

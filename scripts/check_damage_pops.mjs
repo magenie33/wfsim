@@ -115,6 +115,10 @@ const r = await evaluate(`(async () => {
   out.hasLayer = !!layer;
   const drawn = layer ? [...layer.querySelectorAll('.rp-pop')] : [];
   out.drawn = drawn.length;
+  // WHAT THE LAYER SAYS IT LEFT OUT — the frame's own cap plus whatever the
+  // scene had no room for, in one chip.
+  const chip = layer && layer.querySelector('.p-more');
+  out.more = chip ? Number((chip.textContent || '').replace('+', '')) : 0;
   const byId = new Map(rows.map((e) => [String(e.id), e]));
   const numbers = drawn.filter((el) => !el.classList.contains('p-more'));
   out.drawnNumbers = numbers.length;
@@ -134,11 +138,21 @@ const r = await evaluate(`(async () => {
   // nobody sees, which is the failure a screenshot would not catch either.
   const sceneEl = document.getElementById('rp-scene');
   const sbox = sceneEl ? sceneEl.getBoundingClientRect() : { left: 0, right: 0, top: 0, bottom: 0 };
+  // INSIDE THE SCENE, and this is tight on purpose: the numbers used to stack
+  // straight off the top of the panel, which a generous margin would have
+  // called fine.
   out.allInside = drawn.every((el) => {
     const b = el.getBoundingClientRect();
     return b.left >= sbox.left - 40 && b.right <= sbox.right + 40
-      && b.top >= sbox.top - 40 && b.bottom <= sbox.bottom + 40;
+      && b.top >= sbox.top - 2 && b.bottom <= sbox.bottom + 40;
   });
+  // …AND NO TWO OF THEM SIT ON TOP OF EACH OTHER. A second column was tried
+  // and produced digits belonging to neither number; this is what would have
+  // caught it.
+  const boxes = drawn.map((el) => el.getBoundingClientRect());
+  out.noOverlap = boxes.every((a, i) => boxes.every((b, j) => i === j
+    || a.right <= b.left + 1 || b.right <= a.left + 1
+    || a.bottom <= b.top + 1 || b.bottom <= a.top + 1));
   // …AND THE LAYER MUST NOT EAT A CLICK: the scene under it still picks.
   out.layerIgnoresPointer =
     !!layer && getComputedStyle(layer).pointerEvents === 'none';
@@ -219,11 +233,16 @@ check("...and no row is drawn twice", r.noDuplicates === true);
 // THE OTHER DIRECTION, and the one a shrunken list slips past. "Every number
 // on screen is a row" is satisfied perfectly by drawing ONE of them, which is
 // the shape of the bug this whole change was about: two lists over one fight,
-// where the smaller one looked right. So the frame's rows must ALL be drawn,
-// up to the display cap and not one short of it.
-check("...and every row in the frame is drawn, up to the cap",
-  r.drawnNumbers === Math.min(12, r.bestCount),
-  `${r.drawnNumbers} drawn of ${r.bestCount} rows in frame ${r.bestFrame}`);
+// where the smaller one looked right.
+//
+// It is a CONSERVATION property rather than a count, because how many fit is
+// geometry — twelve numbers do not go above a body standing near the top of a
+// small scene — so what is asserted is that nothing vanishes: every row of the
+// frame is either drawn or counted in the chip that says how many were not.
+check("...and every row in the frame is drawn or counted",
+  r.drawnNumbers + r.more === r.bestCount,
+  `${r.drawnNumbers} drawn + ${r.more} stated = ${r.bestCount} rows in frame ${r.bestFrame}`);
+check("...and no two numbers sit on top of each other", r.noOverlap === true);
 check("...placed inside the scene", r.allInside === true);
 check("...and the layer never eats a click", r.layerIgnoresPointer === true);
 

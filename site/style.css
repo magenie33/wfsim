@@ -1957,6 +1957,24 @@ tr.rec-transform_start td,tr.rec-transform_end td{background:color-mix(in srgb,v
   background:color-mix(in srgb,var(--s8) 20%,transparent);color:var(--s8)}
 .rec-buff,.rec-dbf{width:140px}
 .rec-wep{width:110px}
+/* NO COLUMN IS SQUEEZED INTO A STACK OF LETTERS. `.rec-calc` asks for 340px
+   inside a 1080px table, and the two narrow columns beside it lost so much
+   room that a two-character Chinese label wrapped one character per line —
+   "头 部" over two rows and the proc chips turned on their side (seen on the
+   Chinese page, 2026-08-27). A minimum keeps them readable; the table already
+   scrolls sideways inside its own container, which is where the extra width
+   comes from. */
+.rec-t td:nth-child(3){min-width:66px;white-space:nowrap}
+.rec-proc{min-width:86px;vertical-align:top}
+.rec-p{white-space:nowrap}
+.rec-t td.num{min-width:104px}
+/* THE WEAPON COLUMN SETS THE ROW HEIGHT, so it decides how much of the ledger
+   fits on a screen. Five facts stacked one per line made every row 129px tall
+   for 40px of content — a 20,000-row stream is then two million pixels of
+   scroll (measured 2026-08-27). They are short, so they flow. */
+.rec-wep{width:168px}
+.rec-mag{display:inline-block;margin:0 6px 0 0}
+.rec-gauge{width:56px;vertical-align:middle;display:inline-block;margin:0 6px 1px 0}
 .rec-f.mit{border-color:color-mix(in srgb,var(--critical) 40%,transparent);
   background:color-mix(in srgb,var(--critical) 9%,transparent)}
 /* THE FACTORS THAT DID NOTHING, as a count you can hover. They are noise on a
@@ -1968,7 +1986,7 @@ tr.rec-transform_start td,tr.rec-transform_end td{background:color-mix(in srgb,v
   font-size:9.5px;font-weight:700;line-height:1}
 .rec-form.base{background:color-mix(in srgb,var(--muted) 22%,transparent);color:var(--text-2)}
 .rec-form.inc{background:color-mix(in srgb,var(--gold) 26%,transparent);color:var(--gold)}
-.rec-gauge{display:block;height:3px;border-radius:2px;background:var(--line);margin-top:3px;overflow:hidden}
+.rec-gauge{height:3px;border-radius:2px;background:var(--line);overflow:hidden}
 .rec-gauge>i{display:block;height:100%;background:var(--gold);border-radius:2px}
 .rec-mag.firing{color:var(--text)}
 .rec-mag.idle{opacity:.62}
@@ -1976,9 +1994,11 @@ tr.rec-transform_start td,tr.rec-transform_end td{background:color-mix(in srgb,v
 .rec-state{width:180px}
 .rec-state span{display:block;font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .rec-state i{font-style:normal;color:var(--muted);font-size:10px;margin-right:4px}
-.rec-proc{display:inline-flex;align-items:center;height:16px;padding:0 5px;border-radius:3px;
-  font-size:10px;font-weight:600;margin:0 2px 2px 0;
-  background:color-mix(in srgb,var(--s7) 20%,transparent);color:var(--s7)}
+/* `.rec-proc` USED TO BE A CHIP RULE, and the markup put it on the `<td>` —
+   so every row with no proc drew an empty coloured 16px box where its procs
+   would have been, and every row with one drew the chip inside a second box
+   the same colour. The chip is `.rec-p`; the CELL is this, and it is a width
+   and nothing else (2026-08-27). */
 .rec-org{display:inline-flex;align-items:center;height:17px;padding:0 6px;border-radius:4px;
   font-size:10.5px;font-weight:700;line-height:1;white-space:nowrap;
   background:color-mix(in srgb,var(--text-2) 13%,transparent);color:var(--text-2)}
