@@ -1908,3 +1908,80 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    without a legend: the reader is looking at a control whose scope is the whole
    class, which is not what any other checkbox on this page means. */
 .check.ruled{color:var(--gold)}
+
+/* ---- THE COMBAT RECORD -------------------------------------------------
+   One row per number the game pops. It is the WIDEST thing on the panel by
+   design — every column is a fact a reader checks a number against — so it
+   scrolls inside itself and the page never scrolls sideways for it. */
+.rec-idle{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 0}
+.rec-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:2px 0 8px}
+.rec-tools .tlabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.rec-tools .pchip .ct{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.rec-sep{width:1px;height:18px;background:var(--line);margin:0 3px}
+.rec-count{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;margin-bottom:6px}
+.rec-scroll{overflow-x:auto;max-height:520px;overflow-y:auto;
+  border:1px solid var(--line);border-radius:10px}
+table.rec-t{width:100%;min-width:1080px;border-collapse:separate;border-spacing:0;font-size:12px}
+.rec-t thead th{position:sticky;top:0;z-index:2;background:var(--panel3);text-align:left;
+  font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;
+  padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.rec-t thead th.num{text-align:right}
+.rec-t td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.rec-t tbody tr:hover td{background:var(--panel2)}
+.rec-t td.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.rec-t td.rec-t{width:72px;text-align:right;font-variant-numeric:tabular-nums;
+  color:var(--text-2);white-space:nowrap;border-left:3px solid transparent}
+.rec-t .z{color:var(--muted)}
+/* WHICH POOL THE NUMBER CAME OUT OF, as a stripe — a hit on a shielded body
+   pops two rows and the eye has to pair them at a glance. */
+tr.rec-shield td.rec-t{border-left-color:var(--s1)}
+tr.rec-health td.rec-t{border-left-color:var(--good)}
+tr.rec-overguard td.rec-t{border-left-color:var(--gold)}
+tr.rec-evt td{background:color-mix(in srgb,var(--accent) 6%,transparent);font-size:11.5px}
+tr.rec-evt td.rec-t{border-left-color:var(--accent)}
+tr.rec-reload_start td,tr.rec-reload_end td{background:color-mix(in srgb,var(--s1) 8%,transparent)}
+tr.rec-transform_start td,tr.rec-transform_end td{background:color-mix(in srgb,var(--gold) 10%,transparent)}
+.rec-cause{display:block;font-size:10px;color:var(--muted)}
+.rec-pool{display:block;font-size:10px;color:var(--muted);font-weight:400}
+.rec-crit{display:inline-flex;align-items:center;height:15px;padding:0 4px;border-radius:3px;
+  font-size:9.5px;font-weight:700;background:color-mix(in srgb,var(--s4) 26%,transparent);color:var(--s4)}
+.rec-head{color:var(--s1);font-weight:600}
+/* Where the number comes from: base, the factors that MOVED, the two totals. */
+.rec-calc{min-width:340px}
+.rec-b0,.rec-mid,.rec-eq{display:inline-block;padding:1px 5px;border-radius:4px;margin-right:3px;
+  font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rec-b0{background:color-mix(in srgb,var(--text-2) 15%,transparent)}
+.rec-mid{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)}
+.rec-eq{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good-text)}
+.rec-f{display:inline-flex;align-items:baseline;gap:3px;padding:1px 5px;border-radius:4px;
+  margin-right:3px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+.rec-f i{font-style:normal;color:var(--muted);font-size:10px}
+.rec-f.mit{border-color:color-mix(in srgb,var(--critical) 40%,transparent);
+  background:color-mix(in srgb,var(--critical) 9%,transparent)}
+/* THE FACTORS THAT DID NOTHING, as a count you can hover. They are noise on a
+   row and their NAMES are a clue — "the Bane is there and it paid ×1.00" is
+   why a build is not working (owner, 2026-08-27). */
+.rec-inert{display:inline-block;font-size:10px;color:var(--muted);border-bottom:1px dotted var(--muted);
+  cursor:help;margin-left:2px}
+.rec-form{display:inline-flex;align-items:center;height:15px;padding:0 5px;border-radius:3px;
+  font-size:9.5px;font-weight:700;line-height:1}
+.rec-form.base{background:color-mix(in srgb,var(--muted) 22%,transparent);color:var(--text-2)}
+.rec-form.inc{background:color-mix(in srgb,var(--gold) 26%,transparent);color:var(--gold)}
+.rec-mag{display:block;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:2px}
+.rec-state{width:180px}
+.rec-state span{display:block;font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rec-state i{font-style:normal;color:var(--muted);font-size:10px;margin-right:4px}
+.rec-proc{display:inline-flex;align-items:center;height:16px;padding:0 5px;border-radius:3px;
+  font-size:10px;font-weight:600;margin:0 2px 2px 0;
+  background:color-mix(in srgb,var(--s7) 20%,transparent);color:var(--s7)}
+.rec-org{display:inline-flex;align-items:center;height:17px;padding:0 6px;border-radius:4px;
+  font-size:10.5px;font-weight:700;line-height:1;white-space:nowrap;
+  background:color-mix(in srgb,var(--text-2) 13%,transparent);color:var(--text-2)}
+.rec-o-multishot{background:color-mix(in srgb,var(--s5) 20%,transparent);color:var(--s5)}
+.rec-o-punch_through{background:color-mix(in srgb,var(--s1) 18%,transparent);color:var(--s1)}
+.rec-o-status{background:color-mix(in srgb,var(--s7) 18%,transparent);color:var(--s7)}
+.rec-o-chain,.rec-o-splash,.rec-o-radial{background:color-mix(in srgb,var(--s3) 18%,transparent);color:var(--s3)}
+/* The shield-gate window, which nothing this app fires takes — drawn so the
+   claim can be checked the day melee lands (MEASUREMENTS M61). */
+.rec-gate{color:var(--s1)}

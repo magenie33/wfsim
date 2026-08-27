@@ -6,7 +6,7 @@ let wasm_bindgen = (function(exports) {
 
     /**
      * Dispatch a quick endpoint call: `endpoint` is the API path as the
-     * frontend knows it ("/api/meta", "/api/panel", "/api/simulate", "/api/targets",
+     * frontend knows it ("/api/meta", "/api/panel", "/api/simulate", "/api/log", "/api/targets",
      * "/api/opt-buffs"), `body` the request JSON ("" or "{}" for /api/meta).
      * Returns the response JSON as a string.
      * @param {string} endpoint

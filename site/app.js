@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "94764209+ · 2026-08-27 00:51Z";
+const BUILD_ID = "7d6dcb33+ · 2026-08-27 07:12Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -14302,6 +14302,222 @@ function hitAccountsMarkup(r) {
     `<div class="accts">${rows}</div>`);
 }
 
+// ---- THE COMBAT RECORD -------------------------------------------------
+//
+// One row per number the game pops, in order, with everything behind it. Every
+// other block on this panel is an aggregate, and an aggregate hides an error
+// inside an average — a factor applied twice moves a mean by a few per cent and
+// reads as a build being good. This is the one output that can be laid beside a
+// recording and checked number for number (owner, 2026-08-27).
+//
+// IT IS FETCHED, NOT CARRIED. `/api/log` re-runs the median engagement from its
+// own RNG state — about a millisecond single-target — so the record costs
+// nothing until somebody opens it, nothing on the wire for the runs nobody
+// reads, and nothing on disk ever. An ordinary fight is a few thousand rows and
+// the densest measured is 408,817, which is why the request takes a WINDOW.
+let recordState = null;
+
+/// The fight this record is about, as the key that says whether it is stale.
+/// A record is only meaningful for the run it was taken from, so it is thrown
+/// away whenever the result it explains is.
+function recordKey(r) {
+  return `${simKey()}|${(r.run || []).join(",")}`;
+}
+
+function recordMarkup(r) {
+  if (!r || !r.run) return "";
+  const st = recordState && recordState.key === recordKey(r) ? recordState : null;
+  const body = `<div class="rec" id="rec-host">${st ? recordBody(st) : recordIdle()}</div>`;
+  return foldBlock("record", tr("Combat record"),
+    tr("one row per number the game pops, and everything behind it"), body);
+}
+
+function recordIdle() {
+  return `<div class="rec-idle">
+    <button class="ghost-btn small" id="rec-load">${escHtml(tr("Read the record"))}</button>
+    <span class="sim-hint">${escHtml(tr("re-runs this engagement to list every damage instance"))}</span>
+  </div>`;
+}
+
+/// FETCH A WINDOW. `from`/`to` are seconds; the whole fight is the default and
+/// is the right answer for almost every build — only a status weapon over a
+/// formation reaches the cap, and when it does the answer says so.
+async function loadRecord(r, from, to) {
+  const key = recordKey(r);
+  recordState = { key, from, to, loading: true, body: null, filter: "all" };
+  paintRecord(r);
+  const out = await api("/api/log", theFight({ run: r.run, from, to, limit: 20000 }));
+  if (!recordState || recordState.key !== key) return;   // the result moved on
+  recordState.loading = false;
+  recordState.events = (out && out.events) || [];
+  recordState.dropped = (out && out.dropped) || 0;
+  recordState.error = out && out.ok === false ? out.error : null;
+  paintRecord(r);
+}
+
+function paintRecord(r) {
+  const host = $("rec-host");
+  if (!host) return;
+  host.innerHTML = recordState ? recordBody(recordState) : recordIdle();
+  wireRecord(r);
+}
+
+/// WHO THE ROWS ARE ABOUT. A weapon event belongs to NOBODY — a reload is not
+/// an enemy's business — so a per-enemy view is a FILTER over one stream rather
+/// than the same event copied into every table (owner, 2026-08-27).
+function recordBodies(events) {
+  const seen = new Map();
+  for (const e of events) {
+    if (e.body == null) continue;
+    const cur = seen.get(e.body) || 0;
+    seen.set(e.body, cur + (e.kind === "damage" ? e.effective : 0));
+  }
+  return [...seen.entries()].sort((a, b) => b[1] - a[1]);
+}
+
+const REC_KINDS = [
+  ["all", "everything"], ["own", "own"], ["multishot", "multishot"],
+  ["punch_through", "punch through"], ["status", "status"], ["event", "events"],
+];
+
+function recordBody(st) {
+  if (st.loading) return `<div class="rec-idle"><span class="sim-hint">${escHtml(tr("reading…"))}</span></div>`;
+  if (st.error) return `<div class="rec-idle"><span class="sim-hint">${escHtml(st.error)}</span></div>`;
+  const events = st.events || [];
+  if (!events.length) {
+    return `<div class="rec-idle"><span class="sim-hint">${escHtml(tr("nothing happened in this window"))}</span></div>`;
+  }
+  const bodies = recordBodies(events);
+  const pick = st.body == null ? (bodies.length ? bodies[0][0] : null) : st.body;
+  const rows = events.filter((e) => e.body == null || e.body === pick);
+  const shown = rows.filter((e) => recordPasses(e, st.filter));
+  const n = (x) => Math.round(x).toLocaleString();
+
+  const chips = bodies.map(([b, dmg]) =>
+    `<button class="pchip${b === pick ? " sel" : ""}" data-recbody="${b}">${
+      escHtml(b === 0 ? tr("aimed") : `e${b + 1}`)}<span class="ct">${n(dmg)}</span></button>`).join("");
+  const kinds = REC_KINDS.map(([k, label]) =>
+    `<button class="pchip${st.filter === k ? " sel" : ""}" data-reckind="${k}">${escHtml(tr(label))}</button>`).join("");
+
+  const dmg = shown.filter((e) => e.kind === "damage").length;
+  return `<div class="rec-tools">
+      ${bodies.length > 1 ? `<span class="tlabel">${escHtml(tr("whose"))}</span>${chips}<span class="rec-sep"></span>` : ""}
+      <span class="tlabel">${escHtml(tr("only"))}</span>${kinds}
+      <span class="rec-sep"></span>
+      <button class="ghost-btn small" id="rec-copy">${escHtml(tr("Copy as text"))}</button>
+    </div>
+    <div class="rec-count">${escHtml(tr("{n} numbers popped").replace("{n}", n(dmg)))}${
+      st.dropped ? ` · ${escHtml(tr("{n} more did not fit").replace("{n}", n(st.dropped)))}` : ""}</div>
+    <div class="rec-scroll"><table class="rec-t">
+      <thead><tr>
+        <th>${escHtml(tr("time"))}</th><th>${escHtml(tr("source"))}</th>
+        <th>${escHtml(tr("weapon"))}</th><th>${escHtml(tr("part"))}</th>
+        <th class="num">${escHtml(tr("damage"))}</th>
+        <th>${escHtml(tr("where the number comes from"))}</th>
+        <th>${escHtml(tr("before · target"))}</th><th>${escHtml(tr("procs"))}</th>
+      </tr></thead>
+      <tbody>${shown.map(recordRow).join("")}</tbody>
+    </table></div>`;
+}
+
+function recordPasses(e, filter) {
+  if (filter === "all") return true;
+  if (filter === "event") return e.kind !== "damage";
+  return e.kind === "damage" && e.origin === filter;
+}
+
+const REC_POOL = { shield: "on the shield", health: "through to health", overguard: "on overguard" };
+
+function recordRow(e) {
+  const n = (x) => Math.round(x).toLocaleString();
+  const w = e.weapon || {};
+  const wep = `<span class="rec-form ${w.form === "transmuted" ? "inc" : "base"}">${
+    escHtml(tr(w.form === "transmuted" ? "transmuted" : "base"))}</span>${
+    w.magazine_max ? `<span class="rec-mag">${w.magazine} / ${w.magazine_max}</span>` : ""}`;
+  if (e.kind !== "damage") {
+    return `<tr class="rec-evt rec-${escHtml(e.kind)}">
+      <td class="rec-t">${e.t.toFixed(3)}</td>
+      <td colspan="6"><b>${escHtml(tr(recordEventName(e)))}</b>${
+        e.seconds != null ? ` <span class="sim-hint">${e.seconds.toFixed(2)}s</span>` : ""}${
+        e.pellets != null ? ` <span class="sim-hint">${e.pellets} ${escHtml(tr("pellets"))}</span>` : ""}</td>
+      <td>${wep}</td></tr>`;
+  }
+  const steps = (e.steps || []).map(([k, v]) =>
+    `<span class="rec-f">×${v}<i>${escHtml(tr(k))}</i></span>`).join("");
+  const mit = (e.mitigation || []).map(([k, v]) =>
+    `<span class="rec-f mit">×${v}<i>${escHtml(tr(k))}</i></span>`).join("");
+  // EVERY FACTOR THAT MOVED, and the NAMES of the ones that did not. A ×1.00 is
+  // noise on a row; WHICH ones were ×1.00 is a clue, so they are a count you
+  // can hover rather than fifteen lines you have to skip (owner, 2026-08-27).
+  const inert = (e.steps_inert || []).length
+    ? `<span class="rec-inert" title="${escHtml((e.steps_inert || []).map((k) => tr(k)).join(" · "))}">${
+        e.steps_inert.length} ×1.00</span>`
+    : "";
+  const b = e.before || {};
+  const crit = e.crit ? `<span class="rec-crit">${escHtml(tr("crit"))} ${e.crit}</span>` : "";
+  return `<tr class="rec-dmg rec-${escHtml(e.pool)}">
+    <td class="rec-t">${e.t.toFixed(3)}${e.cause != null ? `<span class="rec-cause">#${e.cause}</span>` : ""}</td>
+    <td><span class="rec-org rec-o-${escHtml(e.origin)}">${escHtml(tr(e.origin.replace(/_/g, " ")))}</span></td>
+    <td>${wep}</td>
+    <td>${e.part ? `<span class="${e.head ? "rec-head" : ""}">${escHtml(e.part)}${e.head ? " ⌖" : ""}</span>` : "<span class=\"z\">—</span>"}</td>
+    <td class="num"><b>${n(e.effective)}</b><span class="rec-pool">${escHtml(tr(REC_POOL[e.pool] || e.pool))}</span>${crit}</td>
+    <td class="rec-calc"><span class="rec-b0">${n(e.base)}</span>${steps}<span class="rec-mid">= ${n(e.raw)}</span>${mit}<span class="rec-eq">= ${n(e.effective)}</span>${inert}</td>
+    <td class="rec-state">${
+      b.overguard > 0 ? `<span><i>OG</i>${n(b.overguard)}</span>` : ""}<span><i>${escHtml(tr("shield"))}</i>${n(b.shield || 0)}</span><span><i>${escHtml(tr("health"))}</i>${n(b.health || 0)}</span>${
+      b.armor > 0 ? `<span><i>${escHtml(tr("armour"))}</i>${n(b.armor)}</span>` : ""}${
+      // THE SHIELD-GATE WINDOW, drawn even though nothing this app fires takes
+      // it: only a melee ground slam does (MEASUREMENTS M61), and melee is not
+      // modelled. It is on screen so the claim can be checked the day it is.
+      b.shield_gate_until != null
+        ? `<span class="rec-gate"><i>${escHtml(tr("gate"))}</i>${b.shield_gate_until.toFixed(2)}s</span>`
+        : ""}</td>
+    <td>${(e.procs || []).map((p) => `<span class="rec-proc">${escHtml(DT(p))}</span>`).join("") || "<span class=\"z\">—</span>"}</td>
+  </tr>`;
+}
+
+function recordEventName(e) {
+  return {
+    shot: "shot", miss: "missed", reload_start: "reload begins", reload_end: "reload ends",
+    transform_start: "transform begins", transform_end: "transform ends",
+    status_expired: "status expired", killed: "killed",
+  }[e.kind] || e.kind;
+}
+
+function wireRecord(r) {
+  const load = $("rec-load");
+  if (load) load.onclick = () => loadRecord(r, 0, null);
+  document.querySelectorAll("[data-recbody]").forEach((b) => {
+    b.onclick = () => { recordState.body = Number(b.dataset.recbody); paintRecord(r); };
+  });
+  document.querySelectorAll("[data-reckind]").forEach((b) => {
+    b.onclick = () => { recordState.filter = b.dataset.reckind; paintRecord(r); };
+  });
+  const copy = $("rec-copy");
+  if (copy) {
+    copy.onclick = () => {
+      const txt = (recordState.events || []).map(recordLine).join("\n");
+      if (navigator.clipboard) navigator.clipboard.writeText(txt);
+      copy.textContent = tr("Copied");
+      setTimeout(() => { copy.textContent = tr("Copy as text"); }, 1500);
+    };
+  }
+}
+
+/// ONE ROW AS TEXT, so two runs can be DIFFED. `one_fight` says an answer moved;
+/// a diff of two records says WHICH row, which factor, and from what to what —
+/// which is the thing nothing in this app could do before.
+function recordLine(e) {
+  const t = e.t.toFixed(3).padStart(8);
+  if (e.kind !== "damage") return `${t}  [${e.kind}]`;
+  const chain = [...(e.steps || []), ...(e.mitigation || [])]
+    .map(([k, v]) => `x${v} ${k}`).join("  ");
+  const b = e.before || {};
+  return `${t}  #${e.cause ?? "-"}  ${e.origin}  ${e.part || "-"}  ${e.pool}  ${Math.round(e.effective)}`
+    + `  | ${Math.round(e.base)}  ${chain}  = ${Math.round(e.raw)}`
+    + `  | og ${Math.round(b.overguard || 0)} sh ${Math.round(b.shield || 0)} hp ${Math.round(b.health || 0)}`
+    + `  | ${(e.procs || []).join("+") || "-"}`;
+}
+
 function replayMarkup(r) {
   const rp = r && r.replay;
   if (!rp || !rp.t || rp.t.length < 2) return { bar: "", curves: "" };
@@ -15164,7 +15380,7 @@ function renderResults(r, testedAt) {
       <div class="kpi-row">${kpis}</div>
       ${foldBlock("meter", tr("Damage by source"), "",
         `<div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${composition}`)}
-      ${speedMarkup(r)}${hitTableMarkup(r)}${hitAccountsMarkup(r)}${chart}${replayCurves}
+      ${speedMarkup(r)}${hitTableMarkup(r)}${hitAccountsMarkup(r)}${recordMarkup(r)}${chart}${replayCurves}
       ${foldBlock("detail", tr("Detail"), "", `<div class="stat-table">${detail}</div>`)}
       ${ask}
     </div>`;
@@ -15190,6 +15406,11 @@ function renderResults(r, testedAt) {
     });
   });
   wireFolds();
+  // THE RECORD'S OWN CONTROLS. Its body is rebuilt with the rest of the panel,
+  // so its buttons are rebound here rather than kept — and the state that says
+  // WHICH body and WHICH filter lives outside the markup, the same rule the
+  // fold state follows one function over.
+  wireRecord(r);
   wireReplay(r);
   // Chart hover: crosshair + tooltip on the nearest time bucket.
   const wrap = $("sim-results").querySelector(".tl-wrap");
