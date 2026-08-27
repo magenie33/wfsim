@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 3120
-engine: 02fa8334cba21a84c06dc4f0c5c062d1ba77035b
+submissions: 3136
+engine: f7b355c9d7fbba50617fb1ba3cd76bca8a37b316
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -671,6 +671,17 @@ entries:
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, repeater_clip, magnetic_strafe, primed_charged_shell, contagious_spread]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_critical_parallel]
     arcanes: [primary_deadhead]
+  - weapon: boar_prime
+    mode: base
+    score: 29.309046212132063
+    fp: e7ce731775c00f91
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, repeater_clip, magnetic_strafe, riven, primed_charged_shell, toxic_barrage]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage]
+      malus: slash
+      rolls: [1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: base
     score: 29.018137045263583
@@ -1759,6 +1770,34 @@ entries:
     mods: [primary_acuity, serration, galvanized_aptitude, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     evolutions: [dread_evo1_incarnon_form, dread_hitmans_opportunity, dread_swift_deliverance, dread_survivors_edge]
     arcanes: [primary_deadhead]
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 10.061779616660637
+    fp: b5b1ea3dd849703c
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence]
+    arcanes: [secondary_encumber]
+    valence: impact
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 9.001806575084801
+    fp: 1d09791628105d17
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence]
+    arcanes: [secondary_enervate]
+    valence: impact
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 6.686287378192579
+    fp: dfa24fc25f04276c
+    mods: [galvanized_diffusion, hornet_strike, magnum_force, lethal_torrent, pistol_elementalist, magnetic_might, primed_convulsion, pistol_pestilence]
+    arcanes: [secondary_enervate]
+    valence: impact
+  - weapon: dual_coda_torxica
+    mode: base
+    score: 5.964117168018026
+    fp: d26ff710031af61b
+    mods: [galvanized_diffusion, hornet_strike, magnum_force, primed_target_cracker, lethal_torrent, magnetic_might, primed_convulsion, pistol_pestilence]
+    arcanes: [secondary_enervate]
+    valence: impact
   - weapon: dual_toxocyst
     mode: cycle
     score: 644.7406855882441
@@ -3313,6 +3352,17 @@ entries:
     valence: toxin
   - weapon: kuva_tonkor
     mode: base
+    score: 12.014462288515931
+    fp: 013f35984a21c448
+    mods: [amalgam_serration, galvanized_chamber, primed_firestorm, critical_delay, semi_rifle_cannonade, vital_sense, riven, primed_cryo_rounds]
+    arcanes: [primary_compression]
+    valence: toxin
+    riven:
+      bonuses: [critical_chance, critical_damage]
+      malus: puncture
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: kuva_tonkor
+    mode: base
     score: 10.174063790084633
     fp: 4681fb2bbb44250a
     mods: [primed_firestorm, serration, critical_delay, hammer_shot, semi_rifle_cannonade, vital_sense, radiated_reload, primed_cryo_rounds]
@@ -4192,6 +4242,12 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: phantasma_prime
     mode: base
+    score: 99.31776693558754
+    fp: 1f7a2956eb76c0fb
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, toxic_barrage]
+    arcanes: [primary_debilitate]
+  - weapon: phantasma_prime
+    mode: base
     score: 93.76119089024895
     fp: 41ce4e0334758d1b
     mods: [galvanized_hell, galvanized_savvy, shotgun_elementalist, vigilante_armaments, magnetic_strafe, primed_chilling_grasp, toxic_barrage, scattering_inferno]
@@ -4262,6 +4318,17 @@ entries:
     fp: 7a6f29851e5b0c59
     mods: [primed_point_blank, magnetic_strafe, shotgun_savvy, frigid_blast, shell_shock, incendiary_coat, blaze, scattering_inferno]
     arcanes: [primary_merciless]
+  - weapon: phenmor
+    mode: cycle
+    score: 1102.203359311639
+    fp: 5702bd19e1c759a0
+    mods: [galvanized_chamber, primed_shred, serration, galvanized_aptitude, vile_acceleration, magnetic_capacity, primed_cryo_rounds, riven]
+    evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_ready_retaliation, phenmor_elemental_excess, phenmor_devouring_attrition]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [heat, multishot, toxin]
+      malus: critical_chance
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: phenmor
     mode: cycle
     score: 821.2649814992409
@@ -4346,17 +4413,6 @@ entries:
     mods: [galvanized_chamber, galvanized_aptitude, vile_acceleration, magnetic_capacity, primed_cryo_rounds, rime_rounds, infected_clip, thermite_rounds]
     evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_retributions_vessel, phenmor_elemental_excess, phenmor_devouring_attrition]
     arcanes: [primary_deadhead]
-  - weapon: phenmor
-    mode: cycle
-    score: 284.7032488230684
-    fp: 72d97f99b71d03f2
-    mods: [galvanized_chamber, primed_shred, galvanized_aptitude, rifle_elementalist, vile_acceleration, riven, high_voltage, malignant_force]
-    evolutions: [phenmor_evo1_incarnon_form, phenmor_rapid_wrath, phenmor_ready_retaliation, phenmor_elemental_excess, phenmor_devouring_attrition]
-    arcanes: [primary_debilitate]
-    riven:
-      bonuses: [damage, multishot, status_chance]
-      malus: critical_chance
-      rolls: [1.1, 1.1, 0.9, 0.9]
   - weapon: prisma_angstrum
     mode: cycle
     score: 39.289008590923224
@@ -5473,25 +5529,18 @@ entries:
       rolls: [1.1, 1.1, 0.9]
   - weapon: torid
     mode: base
+    score: 3.5093832511941874
+    fp: 8ad7a711cbe20443
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, vital_sense, magnetic_capacity, primed_cryo_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_merciless]
+  - weapon: torid
+    mode: base
     score: 1.795986384841601
     fp: ec5a437e4accdf04
     mods: [galvanized_chamber, heavy_caliber, critical_delay, vigilante_armaments, vital_sense, primed_cryo_rounds, malignant_force, thermite_rounds]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
     arcanes: [primary_merciless]
-  - weapon: torid
-    mode: base
-    score: 1.404192019702844
-    fp: 85727df5aa400922
-    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_crux]
-  - weapon: torid
-    mode: base
-    score: 1.1255736034659325
-    fp: 895cec0588f5c573
-    mods: [primary_acuity, galvanized_scope, bladed_rounds, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force, hellfire]
-    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_survivors_edge]
-    arcanes: [primary_deadhead]
   - weapon: trumna_prime
     mode: base
     score: 14.003358945931517
