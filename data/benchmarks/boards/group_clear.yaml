@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 3402
+submissions: 3418
 engine: afe6c5fdcd7ad115bc0f0c8379542b5db607830f
 entries:
   - weapon: acceltra_prime
@@ -196,6 +196,13 @@ entries:
       bonuses: [critical_damage, fire_rate, multishot]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: atomos
+    mode: cycle
+    score: 26.2524537547796
+    fp: d1fb8e6e28388d96
+    mods: [galvanized_diffusion, lethal_torrent, creeping_bullseye, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, scorch]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_mercenary_chamber, atomos_survivors_edge]
+    arcanes: [cascadia_flare]
   - weapon: atomos
     mode: cycle
     score: 25.82417995074703

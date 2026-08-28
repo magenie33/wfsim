@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 3402
+submissions: 3418
 engine: afe6c5fdcd7ad115bc0f0c8379542b5db607830f
 entries:
   - weapon: acceltra_prime
@@ -286,6 +286,13 @@ entries:
       bonuses: [critical_damage, damage, multishot]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: atomos
+    mode: cycle
+    score: 9.395756772808518
+    fp: 782afc30233807e8
+    mods: [galvanized_diffusion, lethal_torrent, creeping_bullseye, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, scorch]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_mercenary_chamber, atomos_survivors_edge]
+    arcanes: [cascadia_flare]
   - weapon: atomos
     mode: base
     score: 9.343038670933556
@@ -1598,6 +1605,17 @@ entries:
       rolls: [1.1, 1.1, 1.1, 1.1]
   - weapon: burston_prime
     mode: cycle
+    score: 71.31701159763686
+    fp: 6ee957ca10f8b793
+    mods: [primary_acuity, serration, hammer_shot, gilded_truth, magnetic_capacity, primed_cryo_rounds, riven, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
     score: 70.5931915333693
     fp: 28bf068c6b8a6168
     exilus: vigilante_supplies
@@ -1642,6 +1660,17 @@ entries:
     riven:
       bonuses: [cold, damage, multishot]
       malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 65.62811159039217
+    fp: b727b21b302e33fe
+    mods: [primary_acuity, serration, hammer_shot, gilded_truth, magnetic_capacity, rime_rounds, riven, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: damage_to_grineer
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
@@ -1815,6 +1844,17 @@ entries:
     riven:
       bonuses: [cold, damage, multishot]
       malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 51.55836282743404
+    fp: 61592dce376dc307
+    mods: [primary_acuity, serration, hammer_shot, gilded_truth, magnetic_capacity, rime_rounds, riven, hellfire]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_reavers_rapture]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: damage_to_grineer
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
@@ -5310,6 +5350,17 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: laetum
     mode: cycle
+    score: 71.71447128193839
+    fp: 9cd56b2cd453e271
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, gunslinger, magnetic_might, primed_convulsion, riven]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, multishot, toxin]
+      malus: zoom
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: laetum
+    mode: cycle
     score: 70.6007158343431
     fp: 3c4cf55d7e69ca71
     mods: [galvanized_diffusion, galvanized_shot, lethal_torrent, anemic_agility, magnetic_might, primed_convulsion, riven, primed_heated_charge]
@@ -5558,6 +5609,17 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, magnetic_might, primed_convulsion, pathogen_rounds]
     evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
     arcanes: [secondary_enervate]
+  - weapon: laetum
+    mode: cycle
+    score: 54.5405566159993
+    fp: 8a119098174df449
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, accelerated_isotope, magnetic_might, convulsion, riven]
+    evolutions: [laetum_evo1_incarnon_form, laetum_rapid_wrath, laetum_lethal_rearmament, laetum_caput_mortuum, laetum_overwhelming_attrition]
+    arcanes: [secondary_enervate]
+    riven:
+      bonuses: [critical_damage, toxin]
+      malus: slash
+      rolls: [1.1, 1.1, 0.9]
   - weapon: laetum
     mode: cycle
     score: 53.87699075200631
@@ -9555,6 +9617,17 @@ entries:
     score: 25.588771249098063
     fp: f4b786268a18e0a2
     mods: [galvanized_chamber, serration, point_strike, vile_acceleration, vital_sense, primed_cryo_rounds, hellfire, riven]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_merciless]
+    riven:
+      bonuses: [critical_chance, critical_damage, electricity]
+      malus: magazine_capacity
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
+    score: 25.588771249098063
+    fp: f94588de256e38d1
+    mods: [galvanized_chamber, heavy_caliber, point_strike, vile_acceleration, vital_sense, primed_cryo_rounds, hellfire, riven]
     evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
     arcanes: [primary_merciless]
     riven:
