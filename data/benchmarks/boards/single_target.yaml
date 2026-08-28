@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 3220
+submissions: 3240
 engine: a802c69b344affe6fd2b22bb3d7feb2a918ab57c
 entries:
   - weapon: acceltra_prime
@@ -1400,6 +1400,17 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, toxin]
       malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: burston_prime
+    mode: cycle
+    score: 86.56697705440416
+    fp: ae2add140b54a6cd
+    mods: [primary_acuity, primed_shred, galvanized_scope, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, riven]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: burston_prime
     mode: cycle
@@ -4275,6 +4286,36 @@ entries:
     fp: 621f146a685ed496
     mods: [heavy_caliber, primary_acuity, serration, hammer_shot, vile_acceleration, vital_sense, hellfire, thermite_rounds]
     arcanes: [primary_crux]
+  - weapon: knell_prime
+    mode: base
+    score: 0.2579054731499179
+    fp: 5d50c19beb24f377
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, lethal_torrent, riven, primed_convulsion, pathogen_rounds]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage]
+      malus: puncture
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: knell_prime
+    mode: base
+    score: 0.24857270694566047
+    fp: e6725751698f6c45
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, primed_pistol_gambit, lethal_torrent, riven, primed_convulsion, pathogen_rounds]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage]
+      malus: puncture
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: knell_prime
+    mode: base
+    score: 0.22744233151174392
+    fp: 4b68976d316df098
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, primed_pistol_gambit, lethal_torrent, riven, deep_freeze, pathogen_rounds]
+    arcanes: [secondary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage]
+      malus: puncture
+      rolls: [1.1, 1.1, 0.9]
   - weapon: komorex
     mode: base
     score: 9.637214178552757
@@ -7105,6 +7146,17 @@ entries:
     arcanes: [primary_debilitate]
   - weapon: phantasma
     mode: base
+    score: 14.761021479195907
+    fp: d967bd3e90959d7e
+    exilus: sinister_reach
+    mods: [galvanized_hell, galvanized_savvy, shotgun_elementalist, vigilante_armaments, magnetic_strafe, frigid_blast, toxic_barrage, riven]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: impact
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: phantasma
+    mode: base
     score: 14.560424408141564
     fp: 05c8cec5a88f0c04
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_barrage, magnetic_strafe, chilling_reload, toxic_barrage, riven]
@@ -7113,6 +7165,40 @@ entries:
       bonuses: [heat, multishot, status_chance]
       malus: weapon_recoil
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: phantasma
+    mode: base
+    score: 14.008887797928296
+    fp: 148a0434284f84d9
+    exilus: shotgun_ammo_mutation
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, riven, toxic_barrage, primed_charged_shell]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [cold, damage, status_chance]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: phantasma
+    mode: base
+    score: 11.965270038205968
+    fp: d967bd3e90959d7e
+    exilus: sinister_reach
+    mods: [galvanized_hell, galvanized_savvy, shotgun_elementalist, vigilante_armaments, magnetic_strafe, frigid_blast, toxic_barrage, riven]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [damage, heat, multishot]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: phantasma
+    mode: base
+    score: 11.52827677780888
+    fp: f8fe37e66fa766fb
+    exilus: shotgun_ammo_mutation
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, repeater_clip, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
+    arcanes: [primary_debilitate]
+  - weapon: phantasma
+    mode: base
+    score: 11.347213631928668
+    fp: a15b80201ebff872
+    exilus: shotgun_ammo_mutation
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, primed_charged_shell]
+    arcanes: [primary_debilitate]
   - weapon: phantasma
     mode: base
     score: 10.957114030347086
@@ -7155,9 +7241,37 @@ entries:
     arcanes: [primary_crux]
   - weapon: phantasma
     mode: base
+    score: 9.17092358044157
+    fp: 21758f09c44aea72
+    exilus: sinister_reach
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, incendiary_coat]
+    arcanes: [primary_debilitate]
+  - weapon: phantasma
+    mode: base
     score: 8.90033816164888
     fp: 4d2363d15090e3a2
     mods: [galvanized_hell, galvanized_savvy, shotgun_barrage, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, blaze]
+    arcanes: [primary_debilitate]
+  - weapon: phantasma
+    mode: base
+    score: 8.320648350727392
+    fp: 109539c871b104a0
+    exilus: shotgun_ammo_mutation
+    mods: [galvanized_hell, galvanized_savvy, point_blank, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, charged_shell]
+    arcanes: [primary_debilitate]
+  - weapon: phantasma
+    mode: base
+    score: 8.19494193741466
+    fp: dde7d20c56beaae8
+    exilus: sinister_reach
+    mods: [galvanized_hell, galvanized_savvy, shotgun_elementalist, vigilante_armaments, magnetic_strafe, frigid_blast, toxic_barrage, incendiary_coat]
+    arcanes: [primary_debilitate]
+  - weapon: phantasma
+    mode: base
+    score: 8.170360843008229
+    fp: daf744548a994789
+    exilus: shotgun_ammo_mutation
+    mods: [galvanized_hell, galvanized_savvy, point_blank, repeater_clip, magnetic_strafe, frigid_blast, toxic_barrage, charged_shell]
     arcanes: [primary_debilitate]
   - weapon: phantasma
     mode: base
@@ -7165,6 +7279,13 @@ entries:
     fp: c4c1dbe48dc42635
     mods: [galvanized_hell, primed_point_blank, galvanized_savvy, vigilante_armaments, magnetic_strafe, primed_chilling_grasp, contagious_spread, incendiary_coat]
     arcanes: [primary_deadhead]
+  - weapon: phantasma
+    mode: base
+    score: 8.097885201817753
+    fp: af00d0e57fc8649c
+    exilus: sinister_reach
+    mods: [galvanized_hell, galvanized_savvy, point_blank, shotgun_elementalist, magnetic_strafe, frigid_blast, toxic_barrage, incendiary_coat]
+    arcanes: [primary_debilitate]
   - weapon: phantasma
     mode: base
     score: 7.313299700913586
@@ -8461,6 +8582,13 @@ entries:
     arcanes: [secondary_deadhead]
   - weapon: stug
     mode: cycle
+    score: 41.8295791422372
+    fp: 4f4958b49f7bc56d
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [stug_evo1_incarnon_form, stug_overcharge_blast, stug_rapid_reinforcement, stug_deathtrap_trigger]
+    arcanes: [secondary_deadhead]
+  - weapon: stug
+    mode: cycle
     score: 39.214782194721536
     fp: afc5145677202bd5
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_crosshairs, lethal_torrent, frostbite, primed_convulsion, primed_heated_charge]
@@ -8534,6 +8662,13 @@ entries:
     score: 4.8247692591261435
     fp: 5d7ae08b6fa0f345
     mods: [galvanized_diffusion, hornet_strike, primed_pistol_gambit, lethal_torrent, pistol_elementalist, deep_freeze, pistol_pestilence, primed_heated_charge]
+    evolutions: [synoid_gammacor_evo1_incarnon_form, synoid_gammacor_sages_resolve, synoid_gammacor_extended_volley, synoid_gammacor_critical_parallel]
+    arcanes: [cascadia_flare]
+  - weapon: synoid_gammacor
+    mode: cycle
+    score: 4.3353367457595535
+    fp: fee1b453401d25eb
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, creeping_bullseye, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [synoid_gammacor_evo1_incarnon_form, synoid_gammacor_sages_resolve, synoid_gammacor_extended_volley, synoid_gammacor_critical_parallel]
     arcanes: [cascadia_flare]
   - weapon: telos_boltor
