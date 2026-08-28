@@ -10,8 +10,10 @@ exilus: true
 
 # Rank 0: Enables Tennokai. Increases Tennokai damage by 10%.
 effects:
-  # +60% damage on a Tennokai attack - the window is not modelled
-  - kind: unmodeled
+  # `Increases Tennokai damage by 60%` — on the swing the window bought and
+  # on no other.
+  - kind: tennokai
+    damage: 0.6
 
 family: tennokai
 

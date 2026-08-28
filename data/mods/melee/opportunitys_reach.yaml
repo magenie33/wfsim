@@ -10,7 +10,13 @@ exilus: true
 
 # Rank 0: Enables Tennokai. Increases opportunity window to 2.8s and melee range by 0.75m for Tennokai attacks.
 effects:
-  # a 4s Tennokai window and +3m reach on a Tennokai attack - the window is not modelled
+  # `Increases opportunity window to 4.0s` — double the base 2 s, which on a
+  # 0.9 s swing is the difference between catching the flash and missing it.
+  #
+  # THE `+3m melee range for Tennokai attacks` HALF IS NOT MODELLED: reach is
+  # resolved once at build time and this one is per swing.
+  - kind: tennokai
+    window_seconds: 4.0
   - kind: unmodeled
 
 family: tennokai

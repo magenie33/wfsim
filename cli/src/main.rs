@@ -25,6 +25,8 @@ fn dual_toxocyst_baseline() -> DummyParams {
         combo_script: Vec::new(),
         follow_through: None,
         slam: None,
+        heavy: None,
+        tennokai: wfsim_engine::loadout::Tennokai::default(),
         spends_combo: false,
         combo_duration_seconds: 0.0,
         initial_combo: 0.0,

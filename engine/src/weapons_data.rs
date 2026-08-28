@@ -458,6 +458,16 @@ pub struct AttackSpec {
     /// attack that shoots projectiles or deals AoE."*
     #[serde(default)]
     pub follow_through: Option<f64>,
+    /// THE WEAPON CLASS'S HEAVY ATTACK MULTIPLIER, and its wind-up.
+    ///
+    /// `(6.0, 1.2)` for a Hammer — the wiki's per-weapon-type table, which is a
+    /// property of the CLASS rather than of the stance. It is stated on EVERY
+    /// melee form, including the light ones, because TENNOKAI turns one of
+    /// their swings into a heavy attack: a 15% roll on a direct hit opens a
+    /// window in which a heavy costs no combo, and a light form with no heavy
+    /// multiplier of its own could not fire the swing the window buys.
+    #[serde(default)]
+    pub heavy: Option<HeavyAttack>,
     /// THE WEAPON'S OWN SLAM, fired by any swing whose `slam_multiplier` says
     /// so — the trailing hit of three of Crushing Ruin's four combos.
     ///
@@ -1047,6 +1057,16 @@ pub enum BlastKind {
     /// is aimed at, nothing flies, and nothing has to be hit for it to go off,
     /// which is also why a slam is the one melee mode that works at any range.
     Slam,
+}
+
+/// THE CLASS'S HEAVY ATTACK, as the wiki's per-weapon-type table states it.
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct HeavyAttack {
+    /// The class multiplier — 6.0 for a Hammer, 5.0 for a Sword.
+    pub multiplier: f64,
+    /// The charge before it, in seconds at 1.0x wind-up speed. Attack speed
+    /// does not shorten it (wiki, Melee).
+    pub windup_seconds: f64,
 }
 
 /// ONE SWING OF A STANCE COMBO.
@@ -3778,6 +3798,7 @@ pub fn base_panel_assembled(
         windup_seconds: s.attack.windup_seconds,
         no_magazine: s.attack.no_magazine,
         combo_script: s.attack.combo_script.clone(),
+        heavy: s.attack.heavy,
         // A GENESIS FILLS THESE IN, and an entry states none of them.
         evo_base_damage_bonus: 0.0,
         evo_initial_combo: 0.0,

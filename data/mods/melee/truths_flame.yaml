@@ -10,8 +10,17 @@ exilus: true
 
 # Rank 0: Enables Tennokai.\nTennokai kills grant an additional 4s Tennokai opportunity and increase Tennokai damage by 30%.\n\nCURSE: Suffer 25 <DT_FIRE_COLOR>Heat Damage/s for 6s.\n / +0.3 'Truth'
 effects:
-  # the seventh Tennokai card - the window is not modelled, and its CURSE (100 Heat/s to the wielder for 6s) is out of scope besides, nothing damaging the Tenno here
+  # `Tennokai kills grant an additional 4s Tennokai opportunity and increase
+  # Tennokai damage by 120%` — the damage half is unconditional enough to pay
+  # (a Tennokai attack is a Tennokai attack), and the KILL half is not: it
+  # extends a window this loop closes when the swing is spent.
+  #
+  # THE CURSE is out of scope besides — 100 Heat/s to the WIELDER, and nothing
+  # damages the Tenno in this arena.
+  - kind: tennokai
+    damage: 1.2
   - kind: unmodeled
+  - kind: out_of_scope
 
 family: tennokai
 

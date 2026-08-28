@@ -10,8 +10,10 @@ exilus: true
 
 # Rank 0: (no ladder)
 effects:
-  # enables Tennokai - a 15% chance on a direct hit to open a 2s window in which a heavy attack costs no combo and winds up faster. The window is not modelled
-  - kind: unmodeled
+  # THE BASE CARD: it enables the mechanic and turns no other knob. Three of
+  # the seven do that, and a build needs exactly one of them for any of the
+  # rest to be worth anything.
+  - kind: tennokai
 
 family: tennokai
 

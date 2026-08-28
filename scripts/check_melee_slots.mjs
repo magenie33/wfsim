@@ -18,11 +18,12 @@
 // `mods`, and the round trip through `stateFromBuild` has to put it back in the
 // slot it came out of rather than in slot 9.
 //
-// THE EXILUS SLOT IS HERE FOR THE OPPOSITE REASON: every one of its eleven
-// melee cards is either Tennokai (a window this engine does not model) or
-// blocking and movement (which this arena has neither of), so the slot draws,
-// offers, equips and pays NOTHING — and each card says which of the two it is.
-// A slot that silently paid something would be the worse bug.
+// THE EXILUS SLOT IS HERE FOR THE OTHER REASON: it is the one slot in this app
+// whose whole pool is a single mechanic plus four cards this arena has no room
+// for. Since Tennokai landed, seven of the eleven PAY and four declare — so the
+// assertion is not "nothing pays", which was true for a day and is now false,
+// but the invariant underneath it: NO CARD IS SILENT. Every one of them either
+// has an effect the engine computes or says on its own card why it has none.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 22000 });
@@ -125,15 +126,25 @@ const exilus = await evaluate(`(() => {
     n: pool.length,
     // not_modeled is META's own spelling of the yaml's unmodeled flag —
     // asked by the NAME the wire uses, not by the one the data file uses.
+    // A card is SILENT when it neither computes anything nor admits anything.
     silent: pool
-      .filter((m) => !m.not_modeled && !m.out_of_scope
+      .filter((m) => !(m.effects || []).length
+        && !m.not_modeled && !m.out_of_scope
         && !(m.unmodeled_effects || []).length)
       .map((m) => m.id),
+    // …and how the eleven actually split, so a change in the ratio is visible
+    // in the output rather than only in a pass or a fail.
+    paying: pool.filter((m) => (m.effects || []).length).length,
   };
 })()`);
 check(`${tag} the melee exilus slot offers its whole pool`,
   exilus.n >= 8, JSON.stringify(exilus.n));
-check(`${tag} ...and not one of them pays without saying why`,
+check(`${tag} ...and no card in it is silent`,
   (exilus.silent || []).length === 0, JSON.stringify(exilus.silent));
+// TENNOKAI IS WHAT MAKES THE SLOT A DECISION, so the count that pays is
+// asserted rather than left to the eye: at zero this slot is eleven cards a
+// player would never open the picker for.
+check(`${tag} ...and Tennokai gives it something to decide`,
+  exilus.paying >= 5, JSON.stringify(exilus.paying));
 
 await finish("a melee weapon's two extra slots");

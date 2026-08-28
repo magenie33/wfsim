@@ -253,28 +253,23 @@ carries the rule rather than the bucket. `20 x (1 + 1.20)` is 44% on a swing and
 Each of these is on the page, in both languages, on the entry or the card it
 applies to.
 
-1. **Tennokai.** 15% on a direct hit for a 2 s window in which a heavy attack is
-   free and faster. Its seven cards ARE in the pool — they are the whole melee
-   exilus slot — and each says the window is not modelled. Until it lands, the
-   melee exilus slot pays nothing at all, which is why it is worth doing next:
-   it is the only thing that would make that slot a decision.
-2. **Melee Duplicate**, and the eight other arcanes whose triggers this arena
+1. **Melee Duplicate**, and the eight other arcanes whose triggers this arena
    has not got — see §5.
-3. **Melee rivens.** No pool has been surveyed; a melee card rolls Range, Attack
+2. **Melee rivens.** No pool has been surveyed; a melee card rolls Range, Attack
    Speed, Combo Duration and Heavy Attack Efficiency, none of which any existing
    riven pool contains.
-4. **Power Spike's partial combo decay** — a Warframe passive, so the counter
+3. **Power Spike's partial combo decay** — a Warframe passive, so the counter
    here drops to zero where a real build keeps most of it.
-5. **A swing's own animation length.** The module publishes a combo's DURATION
+4. **A swing's own animation length.** The module publishes a combo's DURATION
    and not a per-swing split, so the swings share it evenly. It moves a status
    tick's start by fractions of a second and moves no total.
-6. **`Sweep` and `Thrust` are one shape here** — the forward half-plane. A
+5. **`Sweep` and `Thrust` are one shape here** — the forward half-plane. A
    sweep is a wide arc and a thrust is not, and nothing published gives either
    an angle.
-7. **A stance's capacity.** In game a stance GRANTS capacity and this engine's
+6. **A stance's capacity.** In game a stance GRANTS capacity and this engine's
    drain is a `u32`, so it is held at zero — the conservative direction: a build
    that fits here fits in game.
-8. **Six cards that name a state this arena has not got**: Enduring Strike and
+7. **Six cards that name a state this arena has not got**: Enduring Strike and
    Enduring Affliction want "the target is Lifted", Relentless Combination wants
    a combo point when a Slash DoT ticks, Spring-Loaded Blade wants a stacking
    reach buff, Galvanized Reflex wants stacking initial combo, and Shattering
@@ -287,6 +282,11 @@ applies to.
   does. Every slam forces a knockdown, so on a slam build this decides whether
   Condition Overload reads one more type between slams — 80% of a base-damage
   bucket either way.
+- **`TENNOKAI_WINDUP_SPEED` is the other.** *"Performing a Heavy Attack or
+  Heavy Slam during this flash increases its Wind Up Speed"*, and DE publishes
+  no figure. It stands at +100% (half the charge) and is bounded either way: at
+  0% the window is still worth a free heavy attack, and at +100% it is worth
+  that plus a fifth of a second.
 - **Where the stance multiplier sits relative to QUANTIZATION.** It is folded
   into the swing's base here, which makes the snap grid scale with it. That is
   the reading with an argument behind it (DE publishes a damage figure per combo

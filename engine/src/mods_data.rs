@@ -299,6 +299,18 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         // on True Steel, Sacrificial Steel and Galvanized Steel, and on nothing
         // else in the melee pool.
         "crit_chance_bonus_heavy_doubled" => ModEffect::CritChanceHeavyDoubled(max("rankMax")),
+        // TENNOKAI. Every card turns a different subset of the same seven
+        // knobs, so one kind with seven optional fields rather than seven kinds
+        // — a build SUMS them, and a missing knob is a zero.
+        "tennokai" => ModEffect::Tennokai {
+            enabled: v.get("enables").and_then(Value::as_bool).unwrap_or(true),
+            chance: f(v, "chance").unwrap_or(0.0),
+            every_n_hits: v.get("every_n_hits").and_then(Value::as_u64).unwrap_or(0) as u32,
+            window_seconds: f(v, "window_seconds").unwrap_or(0.0),
+            damage: f(v, "damage").unwrap_or(0.0),
+            crit_damage: f(v, "crit_damage").unwrap_or(0.0),
+            status_chance: f(v, "status_chance").unwrap_or(0.0),
+        },
         "status_chance_per_combo" => ModEffect::StatusChancePerCombo(max("rankMax")),
         // MELEE'S CONDITION OVERLOAD, which is the ORIGINAL one and is not a
         // buff at all: no trigger, no stacks, no clock — it reads the target's

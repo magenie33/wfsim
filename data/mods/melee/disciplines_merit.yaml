@@ -10,8 +10,11 @@ exilus: true
 
 # Rank 0: Enables Tennokai. Opportunities occur every <LOWER_IS_BETTER>7 melee hits instead of at random.
 effects:
-  # Tennokai every 4 hits instead of at random - the window is not modelled
-  - kind: unmodeled
+  # A CADENCE IN PLACE OF THE ROLL. `Opportunities occur every 4 melee hits
+  # instead of at random`, which is what makes a light build able to PLAN
+  # around the window rather than wait for it.
+  - kind: tennokai
+    every_n_hits: 4
 
 family: tennokai
 

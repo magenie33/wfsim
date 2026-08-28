@@ -57,7 +57,7 @@ co_behavior: additive_with_base_damage
 unmodeled:
   - "the STANCE SLOT is not modelled: these four ground combos are Crushing Ruin's, transcribed from its published table, and equipping a different hammer stance would script them differently — the engine has no way to hear that yet, so a build on Shattering Storm or Fracturing Wind reads this one's numbers"
   - "a swing's own animation length is not published anywhere: the wiki gives a combo's total damage-per-second at 1.0x attack speed, so the combo's DURATION is exact (sum of multipliers / that rate) and the split between its swings is even. It moves a status tick's start by fractions of a second inside a combo and moves no total"
-  - "the Tennokai window is not modelled — a 15% chance on a direct hit to make the next heavy attack free and faster, which on a heavy build is a real share of the damage. The mods that drive it (Mentor's Legacy, Discipline's Merit, Master's Edge, Dreamer's Wrath, Opportunity's Reach, Condition's Perfection) are therefore not in the pool"
+  - "the Tennokai window's WIND-UP SPEED is a stand-in: DE publishes no figure for how much faster a heavy attack charges inside the flash, and this uses +100%. The window itself, its chance, its cadence and everything the seven cards do to it are modelled"
   - "Power Spike's partial combo decay is a Warframe passive and is not modelled: this counter drops to zero when its clock runs out, so a build running that passive keeps far more of it than this reports"
   - "melee RIVENS are not modelled — there is no melee riven pool yet, so the riven editor offers this weapon nothing"
 
@@ -81,6 +81,11 @@ attack:
   range_m: 2.5
   # `FT^(n-1)` — wiki's Follow Through table, Hammer.
   follow_through: 0.4
+  # THE CLASS'S HEAVY ATTACK — 6x with a 1.2 s charge, from the wiki's
+  # per-weapon-type table. Stated on EVERY form including the light ones,
+  # because TENNOKAI turns one of their swings into a heavy attack and a form
+  # with no heavy of its own could not fire the swing the window buys.
+  heavy: { multiplier: 6.0, windup_seconds: 1.2 }
   damage: { impact: 168, puncture: 31.5, slash: 10.5 }   # total 210
 
   # THE WEAPON'S OWN SLAM, at 100% of base — a combo's trailing hit states its

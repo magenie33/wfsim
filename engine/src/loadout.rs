@@ -489,6 +489,45 @@ pub enum ModEffect {
     /// HEAVY ATTACK DAMAGE (Killing Blow's `+120% Melee Damage on Heavy
     /// Attack`), paid only on a form that spends the combo counter.
     HeavyAttackDamage(f64),
+    /// TENNOKAI, and the five knobs its seven cards turn.
+    ///
+    /// *"Landing direct melee hits has a 15% chance of flashing a sword icon
+    /// ... for 2 seconds. Performing a Heavy Attack or Heavy Slam during this
+    /// flash increases its Wind Up Speed and does not consume Combo Counter."*
+    ///
+    /// IT IS A BEHAVIOUR, NOT A STAT, and that is what makes it the only melee
+    /// mechanic that changes what the LOOP DOES rather than what a number is:
+    /// when the window is open, the next swing of a light combo becomes a heavy
+    /// attack. The owner said what to do with it in one clause — use it the
+    /// moment it fires — so there is no play pattern to invent.
+    ///
+    /// A LIGHT BUILD IS WHERE IT PAYS: a heavy attack reads the combo counter
+    /// and a Tennokai one does not SPEND it, so a combo mode that has climbed
+    /// to 12x fires free 12x heavy attacks between its swings.
+    ///
+    /// One variant with five fields rather than five variants, because the
+    /// seven cards each turn a DIFFERENT subset and a build sums them: a
+    /// missing knob is a zero, and `enabled` is what says the mechanic is on
+    /// at all (three of the seven cards enable it and nothing else does).
+    Tennokai {
+        /// Does this card switch the mechanic on? (Every card whose text opens
+        /// "Enables Tennokai".)
+        enabled: bool,
+        /// Added to the 15% base chance (Dreamer's Wrath: +50%).
+        chance: f64,
+        /// Replaces the roll with a fixed cadence (Discipline's Merit: every 4
+        /// melee hits). Zero means "roll".
+        every_n_hits: u32,
+        /// Seconds the window stays open, if this card sets one (Opportunity's
+        /// Reach: 4.0). Zero means the base 2.
+        window_seconds: f64,
+        /// Damage on a Tennokai attack (Master's Edge: +60%).
+        damage: f64,
+        /// Crit damage on a Tennokai attack (Dreamer's Wrath: +32%).
+        crit_damage: f64,
+        /// Status chance on a Tennokai attack (Condition's Perfection: +100%).
+        status_chance: f64,
+    },
     /// A CRIT-CHANCE CARD THAT READS x2 ON A HEAVY ATTACK.
     ///
     /// `+120% Critical Chance (x2 for Heavy Attacks)` is True Steel's own card,
@@ -1086,6 +1125,21 @@ impl ModEffect {
             ComboCountChance(v) => format!(
                 "+{} chance of an extra melee combo point per landed hit", pct(v)
             ),
+            Tennokai { enabled, chance, every_n_hits, window_seconds, damage, crit_damage, status_chance } => {
+                let mut parts: Vec<String> = Vec::new();
+                if enabled {
+                    parts.push("enables Tennokai — a 15% chance on a direct hit to open a 2s                                 window in which a heavy attack costs no combo".into());
+                }
+                if every_n_hits > 0 {
+                    parts.push(format!("the window opens every {every_n_hits} hits instead of at random"));
+                }
+                if chance > 0.0 { parts.push(format!("+{} chance of it", pct(chance))); }
+                if window_seconds > 0.0 { parts.push(format!("a {window_seconds}s window")); }
+                if damage > 0.0 { parts.push(format!("+{} damage on a Tennokai attack", pct(damage))); }
+                if crit_damage > 0.0 { parts.push(format!("+{} critical damage on one", pct(crit_damage))); }
+                if status_chance > 0.0 { parts.push(format!("+{} status chance on one", pct(status_chance))); }
+                parts.join(", ")
+            }
             CritChanceHeavyDoubled(v) => format!(
                 "+{} critical chance, and +{} on a heavy attack — the card's own x2",
                 pct(v), pct(v * 2.0)
@@ -1368,6 +1422,23 @@ pub struct StackSpec {
     /// Stacks at t = 0 (user setting: full by default, 0 for a cold
     /// start; afterwards mechanics rule either way).
     pub initial_stacks: u32,
+}
+
+/// TENNOKAI, resolved: what the equipped cards came to.
+///
+/// `enabled` is the gate and the rest are sums. Default is OFF, which is every
+/// build that carries none of the seven cards — and the mechanic genuinely does
+/// not exist without one, so this is the game's own answer rather than a
+/// modelling shortcut.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct Tennokai {
+    pub enabled: bool,
+    pub chance: f64,
+    pub every_n_hits: u32,
+    pub window_seconds: f64,
+    pub damage: f64,
+    pub crit_damage: f64,
+    pub status_chance: f64,
 }
 
 /// HATA-SATYA's pile: a rate per hit and the CEILING ON WHAT IT IS WORTH.
@@ -1721,6 +1792,10 @@ pub struct WeaponBase {
     /// See [`crate::weapons_data::AttackSpec::slam`] — the weapon's own slam,
     /// unmodded, fired by a combo swing that ends on one.
     pub slam: Option<RadialBase>,
+    /// See [`crate::weapons_data::AttackSpec::heavy`] — the class's heavy
+    /// attack, stated on every melee form because Tennokai turns a LIGHT swing
+    /// into one.
+    pub heavy: Option<crate::weapons_data::HeavyAttack>,
     /// See [`crate::weapons_data::AttackSpec::spends_combo`].
     pub spends_combo: bool,
     /// See [`crate::weapons_data::WeaponSpec::combo_duration_seconds`] —
@@ -3161,6 +3236,11 @@ pub struct ResolvedPanel {
     /// THE WEAPON'S OWN SLAM, resolved: what a combo swing that ends on one
     /// detonates. `None` on everything else.
     pub slam: Option<ResolvedRadial>,
+    /// THE CLASS'S HEAVY ATTACK — its multiplier, and its wind-up already
+    /// shortened by the wind-up bucket. What a Tennokai swing fires.
+    pub heavy: Option<crate::weapons_data::HeavyAttack>,
+    /// TENNOKAI, resolved from whichever of the seven cards are equipped.
+    pub tennokai: Tennokai,
     /// Does a swing of this form spend the combo counter?
     pub spends_combo: bool,
     /// Seconds the combo counter survives untouched, mods included.
@@ -3845,6 +3925,8 @@ pub fn resolve_for(
     let mut heavy_damage = 0.0f64;
     let mut combo_count_chance = 0.0f64;
     let mut windup_speed = 0.0f64;
+    // TENNOKAI: off until a card says otherwise, and every knob a sum.
+    let mut tk = Tennokai::default();
     // Seconds a mod adds to the sniper combo's decay window (Harkonar Scope).
     let mut combo_seconds_bonus = 0.0f64;
     // Assembled from the card's three columns; `seen` is what tells "no augment"
@@ -4008,6 +4090,27 @@ pub fn resolve_for(
                 ModEffect::HeavyAttackDamage(v) => heavy_damage += v,
                 ModEffect::ComboCountChance(v) => combo_count_chance += v,
                 ModEffect::HeavyWindUpSpeed(v) => windup_speed += v,
+                ModEffect::Tennokai {
+                    enabled, chance, every_n_hits, window_seconds, damage, crit_damage,
+                    status_chance,
+                } => {
+                    tk.enabled |= enabled;
+                    tk.chance += chance;
+                    // A CADENCE REPLACES THE ROLL and the SHORTEST one wins,
+                    // which is the only reading that composes: two cards each
+                    // promising "every N hits" cannot both be waited for.
+                    if every_n_hits > 0 {
+                        tk.every_n_hits = if tk.every_n_hits == 0 {
+                            every_n_hits
+                        } else {
+                            tk.every_n_hits.min(every_n_hits)
+                        };
+                    }
+                    tk.window_seconds = tk.window_seconds.max(window_seconds);
+                    tk.damage += damage;
+                    tk.crit_damage += crit_damage;
+                    tk.status_chance += status_chance;
+                }
                 // …AND THE ONE THAT NAMES THE SLIDE. It joins the ordinary
                 // relative crit bucket, but only on the form that IS a slide —
                 // which is a question `resolve` can answer and the fight loop
@@ -4956,6 +5059,15 @@ pub fn resolve_for(
         // Reflex Coil, 10% of the combo counter will still be consumed"*.
         heavy_attack_efficiency: heavy_efficiency.clamp(0.0, 0.9),
         slam,
+        // THE HEAVY'S WIND-UP TAKES THE SAME BUCKET the script's does, because
+        // it is the same clock: a Tennokai swing is a heavy attack, and the
+        // window's own speed bonus is on top of whatever the build bought.
+        heavy: base.heavy.map(|h| crate::weapons_data::HeavyAttack {
+            windup_seconds: h.windup_seconds
+                / (1.0 + windup_speed + base.evo_heavy_windup_speed).max(1e-9),
+            ..h
+        }),
+        tennokai: tk,
         crit_chance_per_combo: cc_per_combo,
         status_chance_per_combo: sc_per_combo,
         combo_count_chance,

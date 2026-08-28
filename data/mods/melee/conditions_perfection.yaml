@@ -10,8 +10,10 @@ exilus: true
 
 # Rank 0: Enables Tennokai. Increases status chance by +25% on Tennokai attacks.
 effects:
-  # +100% status chance on a Tennokai attack - the window is not modelled
-  - kind: unmodeled
+  # `Increases status chance by +100% on Tennokai attacks` — the ordinary
+  # status bracket, on the one swing.
+  - kind: tennokai
+    status_chance: 1.0
 
 family: tennokai
 

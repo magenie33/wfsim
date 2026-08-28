@@ -10,8 +10,12 @@ exilus: true
 
 # Rank 0: Enables Tennokai. Increases opportunity chance by 12.5% and critical damage by 8% for Tennokai attacks.
 effects:
-  # +50% Tennokai chance and +32% critical damage on a Tennokai attack - the window is not modelled
-  - kind: unmodeled
+  # `Increases opportunity chance by 50% and Heavy Attack critical damage by
+  # 32% for Tennokai attacks` — two knobs on one card, and the crit damage is
+  # the window's own rather than the build's.
+  - kind: tennokai
+    chance: 0.5
+    crit_damage: 0.32
 
 family: tennokai
 

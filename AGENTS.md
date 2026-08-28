@@ -147,11 +147,20 @@ around (decision 2026-07-31).
   that NAME an attack — Killing Blow on a heavy, Seismic Wave on a slam, Maiming
   Strike on a slide — and the seven modes are what make each one checkable in
   both directions.
-  THE MELEE EXILUS SLOT PAYS NOTHING, and every one of its eleven cards says
-  which of two reasons it is: seven are Tennokai (a window this engine does not
-  model) and four are blocking and movement, which this arena has neither of.
-  That is the strongest argument for doing Tennokai next — it is the only thing
-  that would make the slot a decision.
+  TENNOKAI IS THE ONE MELEE MECHANIC THAT CHANGES WHAT THE LOOP DOES rather
+  than what a number is, and it is what makes the melee exilus slot a decision:
+  when its window is open, the next swing of a light combo becomes a HEAVY
+  ATTACK — the class's multiplier in place of the stance's, times a combo
+  multiplier it reads AND DOES NOT SPEND. That last clause is the mechanic: a
+  combo build climbs the counter to 12x with its swings and fires FREE 12x heavy
+  attacks between them, which is why a 15% chance is worth nearly three times
+  the build. The owner settled what to do with the window in one clause — use it
+  the moment it fires — so there was no play pattern to invent.
+  ALL SEVEN CARDS ENABLE IT, and the test asserting otherwise was written first:
+  every one of them opens with the same three words on its own card, and only
+  then says what else it does. The negative control is a build carrying NONE of
+  them, which is where the mechanic genuinely does not exist. The other four
+  exilus cards are blocking and movement, which this arena has neither of.
 - `docs/CATALOGS.md` — THE PER-WEAPON TABLES, in one place. Some mechanics are a
   formula plus a published table with one ROW PER WEAPON, and the row says what
   the weapon's own stats never would — this one multiplies where everyone else

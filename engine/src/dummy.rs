@@ -1753,6 +1753,16 @@ const MELEE_COMBO_POINTS_PER_TIER: f64 = 20.0;
 /// The cap. *"you will also increment a Melee Combo Multiplier from 2x to 12x"*.
 const MELEE_COMBO_MAX: f64 = 12.0;
 
+/// TENNOKAI'S BASE CHANCE, per landed direct hit.
+///
+/// *"Landing direct melee hits ... have a 15% chance of flashing a sword icon
+/// resembling the Skana Prime on the reticle for 2 seconds"* (wiki, Melee).
+const TENNOKAI_BASE_CHANCE: f64 = 0.15;
+
+/// …AND HOW LONG THE FLASH LASTS, from the same sentence. Opportunity's Reach
+/// replaces it with 4.0.
+const TENNOKAI_WINDOW_SECONDS: f64 = 2.0;
+
 /// POINTS A HEAVY ATTACK'S FLOOR REFILLS AT, per second.
 ///
 /// *"Heavy attacks spend initial combo, which regenerates at a rate of 40 combo
@@ -2915,6 +2925,12 @@ pub struct DummyParams {
     /// THE WEAPON'S OWN SLAM, fired by a combo swing that ends on one — three
     /// of Crushing Ruin's four combos do. `None` everywhere else.
     pub slam: Option<crate::loadout::ResolvedRadial>,
+    /// THE CLASS'S HEAVY ATTACK, on every melee form — what a TENNOKAI swing
+    /// fires when the window is open on a light combo.
+    pub heavy: Option<crate::weapons_data::HeavyAttack>,
+    /// TENNOKAI, resolved. `enabled` false on every build carrying none of its
+    /// seven cards, which is the game's own answer.
+    pub tennokai: crate::loadout::Tennokai,
     /// Does a swing SPEND the combo counter? True on the two heavy forms.
     pub spends_combo: bool,
     /// SECONDS THE COUNTER SURVIVES with nothing added to it. 5.0 on almost
@@ -4270,6 +4286,8 @@ impl DummyParams {
             combo_script: panel.combo_script.clone(),
             follow_through: panel.follow_through,
             slam: panel.slam,
+            heavy: panel.heavy,
+            tennokai: panel.tennokai,
             spends_combo: panel.spends_combo,
             combo_duration_seconds: panel.combo_duration_seconds,
             initial_combo: panel.initial_combo,
@@ -4585,6 +4603,8 @@ impl Default for DummyParams {
             combo_script: Vec::new(),
             follow_through: None,
             slam: None,
+            heavy: None,
+            tennokai: crate::loadout::Tennokai::default(),
             spends_combo: false,
             combo_duration_seconds: 0.0,
             initial_combo: 0.0,
@@ -10641,6 +10661,92 @@ mod melee {
         );
     }
 
+
+    /// **TENNOKAI IS THE ONE MELEE MECHANIC THAT CHANGES WHAT THE LOOP DOES**,
+    /// rather than what a number is: when its window is open, the next swing of
+    /// a light combo becomes a HEAVY ATTACK — the class's multiplier in place
+    /// of the stance's, times a combo multiplier it reads AND DOES NOT SPEND.
+    ///
+    /// That last clause is the whole mechanic. A combo build climbs the counter
+    /// to 12x with its swings and then fires FREE 12x heavy attacks between
+    /// them, which is why a 15% chance is worth nearly three times the build.
+    ///
+    /// IT NEEDS A CARD. Three of the seven "enable Tennokai" and the mechanic
+    /// does not exist without one — the game's own answer, not a modelling
+    /// shortcut — so the negative control is a build carrying none of them.
+    #[test]
+    fn tennokai_turns_a_swing_into_a_free_heavy_attack() {
+        let dps = |mods: &[&str]| magistar("magistar", mods, 60.0, None).mean_damage;
+        let off = dps(&[]);
+        let on = dps(&["mentors_legacy"]);
+        assert!(
+            on > off * 1.8,
+            "a 15% chance of a free heavy attack bought {off:.0} -> {on:.0}",
+        );
+        // …AND THE BIGGEST SINGLE NUMBER GOES UP BY MORE THAN THE TOTAL, which
+        // is what says the swing CHANGED rather than the build getting a
+        // uniform bonus: the class multiplier is 6x where the biggest stance
+        // swing is 5x, and the combo multiplier rides on top of it.
+        let hit_off = magistar("magistar", &[], 60.0, None).mean_max_hit;
+        let hit_on = magistar("magistar", &["mentors_legacy"], 60.0, None).mean_max_hit;
+        assert!(
+            hit_on > hit_off * 3.0,
+            "the biggest hit barely moved: {hit_off:.0} -> {hit_on:.0}",
+        );
+    }
+
+    /// **EVERY TENNOKAI CARD ENABLES IT**, and that is why they are a family
+    /// rather than a base card with six accessories.
+    ///
+    /// All seven open with the same three words — *"Enables Tennokai."* — and
+    /// only then say what else they do. This was asserted the other way round
+    /// first, on the assumption that Mentor's Legacy was a prerequisite; the
+    /// export's own card text says otherwise, on all six of the others.
+    ///
+    /// SO THE NEGATIVE CONTROL IS A BUILD WITH NONE OF THEM, which is where the
+    /// mechanic genuinely does not exist — the game's own answer, not a
+    /// modelling shortcut.
+    #[test]
+    fn every_tennokai_card_enables_it_and_a_build_with_none_has_no_window() {
+        let dps = |mods: &[&str]| magistar("magistar", mods, 60.0, None).mean_damage;
+        let none = dps(&[]);
+        for card in [
+            "mentors_legacy", "disciplines_merit", "dreamers_wrath", "masters_edge",
+            "opportunitys_reach", "conditions_perfection", "truths_flame",
+        ] {
+            assert!(
+                dps(&[card]) > none * 1.5,
+                "{card} says `Enables Tennokai` and opened no window: {none:.0} -> {:.0}",
+                dps(&[card]),
+            );
+        }
+        // …AND A CADENCE BEATS THE ROLL. `every 4 melee hits` is 25% against
+        // the base 15%, so the two together are worth more than either alone.
+        let roll = dps(&["mentors_legacy"]);
+        let both = dps(&["mentors_legacy", "disciplines_merit"]);
+        assert!(
+            both > roll * 1.2,
+            "every-4-hits bought nothing over the 15% roll: {roll:.0} -> {both:.0}",
+        );
+    }
+
+    /// MASTER'S EDGE PAYS THE WINDOW'S SWING AND NO OTHER.
+    ///
+    /// `+60% Tennokai damage`, on a build where the window is most of the
+    /// output — so the whole fight moves by less than 60% and by a lot more
+    /// than nothing, and both bounds are the assertion.
+    #[test]
+    fn masters_edge_pays_only_what_the_window_bought() {
+        let dps = |mods: &[&str]| magistar("magistar", mods, 60.0, None).mean_damage;
+        let base = dps(&["mentors_legacy"]);
+        let edged = dps(&["mentors_legacy", "masters_edge"]);
+        let gain = edged / base;
+        assert!(
+            (1.05..1.60).contains(&gain),
+            "+60% on the Tennokai swing alone came to x{gain:.3} of the whole fight",
+        );
+    }
+
     /// THE COMBO LADDER, as the wiki publishes it: 2x at 20 hits, one more
     /// every 20, 12x at 220 and no further.
     ///
@@ -11912,6 +12018,19 @@ pub fn run_once_traced(
     // WHICH SWING OF THE SCRIPT IS NEXT. A gun leaves the script empty and
     // never reads this.
     let mut swing_idx = 0usize;
+    // ---- TENNOKAI --------------------------------------------------------
+    //
+    // A window a landed hit opens, in which a HEAVY attack costs no combo. The
+    // owner settled what to do with it in one clause — use it the moment it
+    // fires — so the loop takes the very next swing rather than inventing a
+    // policy (2026-08-29).
+    //
+    // TWO NUMBERS AND NOTHING ELSE: when the window closes, and how many hits
+    // have landed since the last one opened (Discipline's Merit replaces the
+    // roll with "every 4 hits", which is the one card that makes the count
+    // load-bearing).
+    let mut tennokai_until = f64::NEG_INFINITY;
+    let mut tennokai_hits = 0u32;
     // WHEN THE LAST SHOT ACTUALLY WENT OFF, which is NOT `spool_due`. That one
     // is when the next shot was DUE, so the interval is already inside it and
     // the difference is zero on every ordinary pull — right for a spool, which
@@ -12452,6 +12571,26 @@ pub fn run_once_traced(
         // is also the harmless one, since quantizing `kX` against `ks` is `k`
         // times quantizing `X` against `s` (see `pellet_layers`). UNMEASURED
         // either way, and flagged as such.
+        // ---- IS THIS SWING A TENNOKAI HEAVY? --------------------------
+        //
+        // Only on a form that is not ALREADY a heavy one — the window makes a
+        // heavy attack free, and a mode whose every swing is a heavy has
+        // nothing to convert. `heavy` is the CLASS's multiplier and wind-up,
+        // stated on every melee form for exactly this.
+        // THE WINDOW IS OPEN, and what it BUYS depends on the mode.
+        //
+        // On a LIGHT form the swing becomes a heavy attack — the class's
+        // multiplier in place of the stance's, times a combo multiplier it does
+        // not spend. On a form that is ALREADY heavy there is nothing to
+        // convert, and the window's other half is what pays: the swing costs no
+        // combo, so the counter it read is still there for the next one.
+        //
+        // ONE WINDOW, ONE SWING, either way: the flash goes out with it.
+        let tennokai = ap.tennokai.enabled && t < tennokai_until;
+        let tennokai_heavy = tennokai && !ap.spends_combo && ap.heavy.is_some();
+        if tennokai {
+            tennokai_until = f64::NEG_INFINITY;
+        }
         // KILLING BLOW AND SEISMIC WAVE, which pay in some modes and not
         // others. Both are *"+X% Melee Damage on <kind of attack>"* cards, so
         // they multiply the swing the way the stance multiplier does rather
@@ -12466,9 +12605,25 @@ pub fn run_once_traced(
             .is_some_and(|r| r.blast_kind == crate::weapons_data::BlastKind::Slam);
         let mode_damage = (1.0 + if ap.spends_combo { ap.heavy_attack_damage } else { 0.0 })
             * (1.0 + if is_slam { ap.slam_damage } else { 0.0 });
-        let swing_mult = swing.as_ref().map_or(1.0, |h| h.multiplier)
-            * if ap.spends_combo { combo_mult } else { 1.0 }
-            * mode_damage;
+        // …AND WHAT THE SWING IS WORTH.
+        //
+        // A TENNOKAI SWING IS A HEAVY ATTACK: the class multiplier in place of
+        // the stance's, times the combo multiplier it READS AND DOES NOT SPEND
+        // — which is the whole of the mechanic. A light build that has climbed
+        // to 12x fires free 12x heavy attacks between its swings.
+        //
+        // Killing Blow's `on Heavy Attack` bonus rides it too, because this IS
+        // one; Master's Edge and Truth's Flame are the window's own.
+        let swing_mult = if tennokai_heavy {
+            ap.heavy.map_or(1.0, |h| h.multiplier)
+                * combo_mult
+                * (1.0 + ap.heavy_attack_damage)
+                * (1.0 + ap.tennokai.damage)
+        } else {
+            swing.as_ref().map_or(1.0, |h| h.multiplier)
+                * if ap.spends_combo { combo_mult } else { 1.0 }
+                * mode_damage
+        };
         // WHO THIS SWING REACHES. A `360deg` swing is a spin and takes
         // everything within the weapon's range; an ordinary one sweeps in
         // front. Empty for a gun, which never asks.
@@ -13283,6 +13438,10 @@ pub fn run_once_traced(
             // every stage takes as-is.
             let crit_damage_relative = arc.total(&params.arcane.buffs, ArcGrant::CritDamage, t)
                 + arc.cd_bonus(ap, t)
+                + buff_total!(ap, crate::loadout::BuffGrant::CritDamage, t)
+                // DREAMER'S WRATH: `+32% critical damage for Tennokai attacks`
+                // — on the one swing the window bought and no other.
+                + if tennokai { ap.tennokai.crit_damage } else { 0.0 }
                 + params.arcane.crit_damage_relative;
             // SPITEFUL DEFILEMENT rides the same after-mods FLAT bucket Cold's
             // received bonus does — "Bonus is added after mods as a flat value"
@@ -15566,6 +15725,36 @@ pub fn run_once_traced(
         // award points"*, so a miss neither adds nor refreshes.
         if let Some(h) = &swing {
             let landed = (r.pellets - pellets_before) as f64;
+            // …AND A LANDED HIT MAY OPEN THE TENNOKAI WINDOW.
+            //
+            // *"Triggering Tennokai requires directly striking an enemy ...
+            // striking multiple enemies from a single hit and multi-strike
+            // attacks do not count as hits"* — so it is ONE roll per swing that
+            // landed, not one per body, which is why `landed > 0` rather than
+            // `landed` times anything.
+            //
+            // A CADENCE REPLACES THE ROLL where a card sets one (Discipline's
+            // Merit: every 4 hits), and the count only advances while the
+            // window is SHUT: a hit landed during the flash is a hit the player
+            // is about to spend it on.
+            if ap.tennokai.enabled && landed > 0.0 && t >= tennokai_until {
+                tennokai_hits += 1;
+                let opens = if ap.tennokai.every_n_hits > 0 {
+                    tennokai_hits.is_multiple_of(ap.tennokai.every_n_hits)
+                } else {
+                    // 15% BASE, and the cards add to it.
+                    d.spine.chance(TENNOKAI_BASE_CHANCE + ap.tennokai.chance)
+                };
+                if opens {
+                    let w = if ap.tennokai.window_seconds > 0.0 {
+                        ap.tennokai.window_seconds
+                    } else {
+                        TENNOKAI_WINDOW_SECONDS
+                    };
+                    tennokai_until = t + w;
+                    tennokai_hits = 0;
+                }
+            }
             if landed > 0.0 {
                 combo_points += h.multiplier * landed;
                 // …PLUS THE EXTRA POINT SOME CARDS BUY. *"Certain mods award
@@ -15593,7 +15782,13 @@ pub fn run_once_traced(
             // IT SPENDS WHETHER OR NOT IT LANDED, because the counter is paid
             // at the swing rather than at the hit, and it restarts the
             // initial-combo floor's clock either way.
-            if ap.spends_combo {
+            // A TENNOKAI HEAVY SPENDS NOTHING — *"does not consume Combo
+            // Counter"* — which is the difference that makes it worth having
+            // at all: the counter it read is still there for the next one.
+            // …AND A TENNOKAI SWING SPENDS NOTHING — *"does not consume Combo
+            // Counter"* — which on a HEAVY mode is the whole of what the window
+            // buys, and on a light one is what makes a free 12x heavy free.
+            if ap.spends_combo && !tennokai {
                 combo_points *= ap.heavy_attack_efficiency;
                 combo_spent_t = t;
             }

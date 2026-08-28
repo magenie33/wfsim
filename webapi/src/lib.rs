@@ -3502,6 +3502,12 @@ pub fn panel_json(v: &Value) -> Value {
                 // the weapon at rest, and at rest there is no swing to be a
                 // heavy one — so it is a line rather than a number, the same
                 // answer the two cards below get.
+                // TENNOKAI IS A BEHAVIOUR, not a stat: it turns a swing into a
+                // heavy attack when a window is open, so there is no number the
+                // panel could put on a weapon at rest.
+                Tennokai { .. } => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "a window this build opens during the fight, in which a heavy attack                             costs no combo — so what it is worth depends on how much counter the                             build has climbed to when it fires"})),
                 CritChanceHeavyDoubled(_) => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": "the card reads x2 on a heavy attack, so what it is worth depends on                             which of the seven melee modes this build is"})),

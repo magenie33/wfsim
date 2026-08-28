@@ -34,6 +34,11 @@ attack:
   punch_through_m: 0.0
   range_m: 2.5
   follow_through: 0.4
+  # THE CLASS'S HEAVY ATTACK — 6x with a 1.2 s charge, from the wiki's
+  # per-weapon-type table. Stated on EVERY form including the light ones,
+  # because TENNOKAI turns one of their swings into a heavy attack and a form
+  # with no heavy of its own could not fire the swing the window buys.
+  heavy: { multiplier: 6.0, windup_seconds: 1.2 }
   spends_combo: true
   damage: { impact: 168, puncture: 31.5, slash: 10.5 }
   # THE WIND-UP IS ON THE SWING, not on the attack: the attack-level field is a
