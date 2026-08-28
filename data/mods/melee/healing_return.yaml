@@ -1,0 +1,16 @@
+id: healing_return
+name: Healing Return
+rarity: rare
+polarity: vazarin
+base_drain: 6
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponHealOnHitEnemyWithProc
+description: "Restores 11 Health per Status Type affecting the target"
+
+# Rank 0: Restores 1 Health per Status Type affecting the target
+effects:
+  # health per status type on the target - nothing damages the Tenno in this arena
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Healing_Return

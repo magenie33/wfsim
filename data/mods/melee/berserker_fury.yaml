@@ -1,0 +1,26 @@
+id: berserker_fury
+name: Berserker Fury
+# ON A KILL, not on a crit: the wiki's own patch history records the change
+# from the original Berserker. Two stacks of ten seconds.
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponCritFireRateBonusMod
+description: "On Melee Kill:\n+35% Attack Speed for 10s. Stacks up to 2x."
+
+# Rank 0: On Melee Kill:\n+5.8% Attack Speed for 10s. Stacks up to 2x.
+effects:
+  # On a KILL, two stacks of ten seconds.
+  - kind: buff
+    trigger: on_kill
+    grants: fire_rate
+    rank0: 0.058333
+    rankMax: 0.35
+    max_stacks: 2
+    duration: 10
+
+family: fury
+
+source:
+  url: https://wiki.warframe.com/w/Berserker_Fury

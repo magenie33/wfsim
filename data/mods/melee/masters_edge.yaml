@@ -1,0 +1,19 @@
+id: masters_edge
+name: Master's Edge
+rarity: uncommon
+polarity: madurai
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/EmpoweredHeavyMelee/HeavyAgression
+description: "Enables Tennokai. Increases Tennokai damage by 60%."
+exilus: true
+
+# Rank 0: Enables Tennokai. Increases Tennokai damage by 10%.
+effects:
+  # +60% damage on a Tennokai attack - the window is not modelled
+  - kind: unmodeled
+
+family: tennokai
+
+source:
+  url: https://wiki.warframe.com/w/Master%27s_Edge

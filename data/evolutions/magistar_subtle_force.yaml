@@ -1,0 +1,15 @@
+id: magistar_subtle_force
+name: Subtle Force
+weapon: magistar
+tier: 4
+description: "Critical Chance +8%. Status Chance +8%."
+selection: choose_one
+
+effects:
+  - kind: flat_base_crit_chance
+    value: 0.08
+  - kind: flat_base_status_chance
+    value: 0.08
+
+source:
+  url: https://wiki.warframe.com/w/Magistar_Incarnon_Genesis

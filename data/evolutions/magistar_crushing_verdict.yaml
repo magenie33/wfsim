@@ -1,0 +1,24 @@
+id: magistar_crushing_verdict
+name: Crushing Verdict
+weapon: magistar
+tier: 2
+description: "Base Damage +100. Follow Through +40% with a Channeled Ability active."
+# THE GENESIS IS THE FAMILY'S. +100 is the Magistar's column; the Sancti
+# Magistar's is +20 and belongs to that entry.
+selection: choose_one
+
+effects:
+  # from: "Base Damage +100" — FLAT, unlike EVO1's percentage. Both spellings
+  # appear in this one Genesis, which is why the engine needs both kinds.
+  - kind: flat_base_damage
+    value: 100.0
+  # from: "Follow Through +40%" — a bigger share for every body a swing reaches
+  # past the first, which on a hammer's 0.4 takes the second body from 40% to
+  # 56%. Its gate is a CHANNELED ABILITY, which is the same Tenno state
+  # `data/mods/` already models as assumed-on: this arena runs one weapon and
+  # casts nothing, so the state is declared rather than simulated.
+  - kind: follow_through_bonus
+    value: 0.4
+
+source:
+  url: https://wiki.warframe.com/w/Magistar_Incarnon_Genesis

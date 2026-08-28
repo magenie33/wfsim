@@ -1,0 +1,17 @@
+id: parry
+name: Parry
+rarity: common
+polarity: vazarin
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarParryMeleeMod
+description: "+96% chance to open enemies to Finisher Attacks after Warframe blocks Melee"
+exilus: true
+
+# Rank 0: +16% chance to open enemies to Finisher Attacks after Warframe blocks Melee
+effects:
+  # opens enemies to finishers after a block - neither blocking nor finishers are modelled
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Parry

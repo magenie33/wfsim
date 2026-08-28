@@ -924,6 +924,37 @@ mods:
   vome_invocation: Vome 神祈
   weeping_wounds: 创口溃烂
   xata_invocation: Xata 神祈
+  amalgam_organ_shatter: 并合 肢解
+  berserker_fury: 嗜血 狂暴
+  conditions_perfection: 极致境地
+  corrupt_charge: 邪恶蓄力
+  disciplines_merit: 纪律之功
+  dispatch_overdrive: 超速击杀
+  dreamers_wrath: 梦者之怒
+  enduring_strike: 不朽打击
+  focused_defense: 重点防御
+  guardian_derision: 奚落守护
+  healing_return: 治愈归复
+  jagged_edge: 锯刃
+  killing_blow: 一击必杀
+  life_strike: 生命打击
+  masters_edge: 宗师锐势
+  mentors_legacy: 师传秘技
+  opportunitys_reach: 机遇所至
+  parry: 招架
+  primed_heavy_trauma: 重创 Prime
+  primed_reach: 剑风 Prime
+  primed_smite_corpus: 毁灭 Corpus Prime
+  primed_smite_corrupted: 毁灭奥罗金 Prime
+  primed_smite_grineer: 毁灭 Grineer Prime
+  primed_smite_infested: 毁灭 Infested Prime
+  quickening: 加速
+  reach: 剑风
+  relentless_combination: 残酷组合
+  seismic_wave: 震波
+  smite_grineer: 毁灭 Grineer
+  spring_loaded_blade: 簧压刀刃
+  true_punishment: 真实惩罚
 
 arcanes:
   akimbo_slip_shot: 双枪·滑射

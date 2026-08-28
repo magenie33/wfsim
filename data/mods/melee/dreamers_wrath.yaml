@@ -1,0 +1,19 @@
+id: dreamers_wrath
+name: Dreamer's Wrath
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Upgrades/EmpoweredHeavyMelee/FocusedAttack
+description: "Enables Tennokai. Increases opportunity chance by 50% and critical damage by 32% for Tennokai attacks."
+exilus: true
+
+# Rank 0: Enables Tennokai. Increases opportunity chance by 12.5% and critical damage by 8% for Tennokai attacks.
+effects:
+  # +50% Tennokai chance and +32% critical damage on a Tennokai attack - the window is not modelled
+  - kind: unmodeled
+
+family: tennokai
+
+source:
+  url: https://wiki.warframe.com/w/Dreamer%27s_Wrath

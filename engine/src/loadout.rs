@@ -458,6 +458,47 @@ pub enum ModEffect {
     /// Reflex Coil). *"stacks additively and is capped at 90%"* — the cap is
     /// applied where the sum is taken, not here.
     HeavyAttackEfficiency(f64),
+    /// A RELATIVE change to the combo clock (Corrupt Charge's `-50% Combo
+    /// Duration`).
+    ///
+    /// Its own bucket beside [`ModEffect::MeleeComboDuration`] because the two
+    /// cards genuinely say different things — Body Count adds twelve SECONDS
+    /// and Corrupt Charge halves whatever is there — and folding one into the
+    /// other would make the pair's order matter.
+    MeleeComboDurationMultiplier(f64),
+    /// METRES OF REACH (Reach, Primed Reach).
+    ///
+    /// FLAT, not a percentage, and that is DE's own card: *"+2.3 Range"* and
+    /// *"+3 Range"*. It was a percentage historically and the wiki's own module
+    /// carries the metres now — which matters, because a flat 3 m more than
+    /// doubles a hammer's 2.5 and would be a rounding error on a whip.
+    MeleeRange(f64),
+    /// SLAM DAMAGE (Seismic Wave's `+200% Slam Attack Damage`).
+    ///
+    /// It pays only on an attack that IS a slam, which in this model is a form
+    /// whose explosion is `BlastKind::Slam` — so it is worth exactly nothing in
+    /// the five modes that swing and everything in the one that lands.
+    SlamDamage(f64),
+    /// HEAVY ATTACK DAMAGE (Killing Blow's `+120% Melee Damage on Heavy
+    /// Attack`), paid only on a form that spends the combo counter.
+    HeavyAttackDamage(f64),
+    /// HEAVY ATTACK WIND UP SPEED (Killing Blow, Amalgam Organ Shatter).
+    ///
+    /// Its own bucket rather than the fire-rate one, and the wiki says why in
+    /// one sentence: *"Increasing melee attack speed does not reduce the wind-up
+    /// time; rather, it reduces the interval between heavy attacks."* Two
+    /// clocks, two buckets — and folding them would make every attack-speed mod
+    /// a heavy-attack mod and every wind-up card a light-attack one.
+    HeavyWindUpSpeed(f64),
+    /// ADDITIONAL COMBO COUNT CHANCE (Quickening, True Punishment, Enduring
+    /// Strike).
+    ///
+    /// *"Certain mods award extra combo points on hit/block additively"*. A
+    /// CHANCE of one EXTRA point per landed hit rather than a multiplier on the
+    /// swing's own points — above 100% it is a guaranteed point plus a roll for
+    /// the next, which is how every other over-100% chance in this engine
+    /// behaves.
+    ComboCountChance(f64),
     /// ...and that refill: a fraction of the magazine back on every kill,
     /// drawn from the reserve ("This mod does not generate ammo").
     MagazineRefillOnKill(f64),
@@ -1005,6 +1046,24 @@ impl ModEffect {
             }
             InitialCombo(v) => format!(
                 "the melee combo counter opens at {v:.0} and returns to it, regenerating 40 points                  a second — which is what a pure heavy build spends"
+            ),
+            MeleeComboDurationMultiplier(v) => format!(
+                "{} on the melee combo counter's clock", pct(v)
+            ),
+            MeleeRange(v) => format!("+{v:.1} m of melee reach"),
+            SlamDamage(v) => format!(
+                "+{} slam damage — which pays on a slam and on nothing else, so it is worth                  zero in every mode that swings",
+                pct(v)
+            ),
+            HeavyAttackDamage(v) => format!(
+                "+{} damage on a heavy attack, and nothing on an ordinary swing", pct(v)
+            ),
+            ComboCountChance(v) => format!(
+                "+{} chance of an extra melee combo point per landed hit", pct(v)
+            ),
+            HeavyWindUpSpeed(v) => format!(
+                "+{} heavy attack wind up speed — the charge before a heavy swing, which                  attack speed does not touch",
+                pct(v)
             ),
             HeavyAttackEfficiency(v) => format!(
                 "a heavy attack spends {} less of the combo counter (the game caps the total at 90%)",
@@ -1867,6 +1926,29 @@ pub struct WeaponBase {
     /// Evolution-granted additive fire rate (Rapid Wrath) — joins the
     /// fire-rate-mod bucket.
     pub evo_fire_rate_bonus: f64,
+    // ---- WHAT A MELEE GENESIS GRANTS ------------------------------------
+    //
+    // Their own channels rather than the mod buckets, for the reason
+    // `evo_fire_rate_bonus` has one: an evolution is applied to the WeaponBase
+    // before `resolve` runs, and a stat that is locked by an Acuity has to be
+    // able to refuse the evolution's share separately from the mods'.
+    /// A relative damage bonus from an evolution — the Pressure Point bucket.
+    /// `+100% Melee Damage` is the Magistar Incarnon Form's whole first line.
+    pub evo_base_damage_bonus: f64,
+    /// Points the melee combo counter opens at, from an evolution.
+    pub evo_initial_combo: f64,
+    /// Metres of melee reach, from an evolution (Orokin Reach).
+    pub evo_melee_range_m: f64,
+    /// A relative change to Follow Through, from an evolution.
+    pub evo_follow_through_bonus: f64,
+    /// A relative change to a slam's radius, from an evolution.
+    pub evo_slam_radius_bonus: f64,
+    /// A relative change to HEAVY ATTACK WIND UP SPEED, from an evolution
+    /// (the Magistar's Incarnon Form is +50% and its Swift Break another +30%).
+    pub evo_heavy_windup_speed: f64,
+    /// A proc conversion granted by an evolution — `(from, to, chance)`.
+    /// See [`ModEffect::ProcConversion`], whose runtime this shares.
+    pub evo_proc_conversion: Option<(crate::damage::DamageType, crate::damage::DamageType, f64)>,
     /// Reload-speed bonus from evolutions, into the same bucket the mods feed.
     pub evo_reload_bonus: f64,
     /// READY RETALIATION's window — see
@@ -2939,9 +3021,10 @@ pub struct ResolvedPanel {
     /// declares none. See [`crate::weapons_data::AttackSpec::range_m`]: past it
     /// there is nothing, which is a different fact from `falloff`, a ramp.
     ///
-    /// NOT SCALED BY ANY MOD. Beam Range is an `IndirectStat` — reported on the
-    /// card, not applied — and stays that way until a weapon that takes one is
-    /// transcribed with a measurement behind it.
+    /// SCALED BY BEAM RANGE AND BY MELEE REACH, and by nothing else. Beam Range
+    /// was an `IndirectStat` — reported on the card, not applied — until a
+    /// weapon that takes one was transcribed with a measurement behind it;
+    /// melee's Reach pair is the same quantity said the other way, in metres.
     pub range_m: f64,
     /// Post-hierarchy damage vector (physical × (1+base_damage) + combined elements).
     pub damage: DamageVector,
@@ -3017,6 +3100,13 @@ pub struct ResolvedPanel {
     pub crit_chance_per_combo: f64,
     /// Weeping Wounds' per-combo-tier status chance.
     pub status_chance_per_combo: f64,
+    /// Chance of an EXTRA combo point per landed hit (Quickening, True
+    /// Punishment). Above 1.0 it is a guaranteed point plus a roll for another.
+    pub combo_count_chance: f64,
+    /// `+X%` damage on a heavy attack alone (Killing Blow).
+    pub heavy_attack_damage: f64,
+    /// `+X%` damage on a slam alone (Seismic Wave).
+    pub slam_damage: f64,
     /// See [`crate::weapons_data::AttackSpec::no_magazine`] — carried through
     /// unmodded, because no bucket can give a weapon a clip it does not have.
     pub no_magazine: bool,
@@ -3574,7 +3664,14 @@ pub fn resolve_for(
         // worth LESS the more Serration is already in the sum, which is the
         // whole reason a reader wants to see them in it rather than as a final
         // multiplier (2026-08-21).
-        fb.base_damage + tenno.aura_damage_bonus(base.class, base.mod_pools),
+        // …AND A MELEE GENESIS, for the same reason and in the same bucket: the
+        // Magistar Incarnon Form's `+100% Melee Damage` is a bracket term
+        // beside Pressure Point, so it is worth less the more Pressure Point is
+        // already in the sum. That is the whole difference from a gun Genesis's
+        // `+14 Base Damage`, which is added to the weapon's own number.
+        fb.base_damage
+            + tenno.aura_damage_bonus(base.class, base.mod_pools)
+            + base.evo_base_damage_bonus,
         fb.multishot,
         fb.crit_chance + shards.crit_chance,
         fb.crit_damage,
@@ -3667,6 +3764,12 @@ pub fn resolve_for(
     let mut combo_duration_add = 0.0f64;
     let mut initial_combo = 0.0f64;
     let mut heavy_efficiency = 0.0f64;
+    let mut combo_duration_mult = 1.0f64;
+    let mut melee_range_add = 0.0f64;
+    let mut slam_damage = 0.0f64;
+    let mut heavy_damage = 0.0f64;
+    let mut combo_count_chance = 0.0f64;
+    let mut windup_speed = 0.0f64;
     // Seconds a mod adds to the sniper combo's decay window (Harkonar Scope).
     let mut combo_seconds_bonus = 0.0f64;
     // Assembled from the card's three columns; `seen` is what tells "no augment"
@@ -3699,7 +3802,13 @@ pub fn resolve_for(
         }
         _ => 0.0,
     };
-    let mut proc_conv: Option<ProcConv> = None;
+    // SEEDED FROM THE EVOLUTION, so a Genesis and a mod reach the one runtime.
+    // A mod overwrites it — a build cannot hold two of these and a rule for a
+    // case that cannot arise is a rule nobody can check, which is the same
+    // argument `StripOnKillInRange` makes one screen down.
+    let mut proc_conv: Option<ProcConv> = base.evo_proc_conversion.map(|(from, to, chance)| {
+        ProcConv { from, to, chance, low_rate_threshold: 0.0, low_rate_multiplier: 1.0 }
+    });
     let mut elem_bonus: Vec<(DamageType, f64)> = Vec::new();
     // SEEDED from the weapon, not empty: an evolution's indirect stat is a
     // property of the weapon by the time `resolve` runs (evolutions are folded
@@ -3815,6 +3924,15 @@ pub fn resolve_for(
                 ModEffect::MeleeComboDuration(v) => combo_duration_add += v,
                 ModEffect::InitialCombo(v) => initial_combo += v,
                 ModEffect::HeavyAttackEfficiency(v) => heavy_efficiency += v,
+                // MULTIPLICATIVE, so two of them compose rather than cancel —
+                // which is what a relative card means and is why it is not in
+                // the seconds bucket beside Body Count.
+                ModEffect::MeleeComboDurationMultiplier(v) => combo_duration_mult *= 1.0 + v,
+                ModEffect::MeleeRange(v) => melee_range_add += v,
+                ModEffect::SlamDamage(v) => slam_damage += v,
+                ModEffect::HeavyAttackDamage(v) => heavy_damage += v,
+                ModEffect::ComboCountChance(v) => combo_count_chance += v,
+                ModEffect::HeavyWindUpSpeed(v) => windup_speed += v,
                 ModEffect::MagazineRefillOnKill(v) => mag_refill += v,
                 // The card names one of six; the payload is the syndicate's.
                 ModEffect::SyndicateRadial { syndicate, .. } => {
@@ -4380,7 +4498,17 @@ pub fn resolve_for(
             // area of effect" is the roster's first exception, and it is worth
             // a branch rather than a comment because Primary Compression pays
             // per metre of this number.
-            radius_m: r.radius_m * if r.takes_blast_radius_mods { 1.0 + br } else { 1.0 },
+            // …AND A SLAM'S OWN RADIUS CARD. Seismic Slam is `+100% Slam
+            // Radius`, which is a different bucket from the blast-radius mods
+            // above: those are Firestorm and Fulmination, which no melee weapon
+            // can hold, and this one pays on a slam and on nothing else.
+            radius_m: r.radius_m
+                * if r.takes_blast_radius_mods { 1.0 + br } else { 1.0 }
+                * if r.blast_kind == crate::weapons_data::BlastKind::Slam {
+                    1.0 + base.evo_slam_radius_bonus
+                } else {
+                    1.0
+                },
             falloff_start_m: r.falloff_start_m
                 * if r.takes_blast_radius_mods { 1.0 + br } else { 1.0 },
             falloff_reduction: r.falloff_reduction,
@@ -4542,7 +4670,12 @@ pub fn resolve_for(
             .filter(|(s, _)| *s == IndirectStat::BeamRangePercent)
             .map(|(_, v)| *v)
             .sum();
-        (base.range_m * (1.0 + pct) + flat).max(0.0)
+        // …AND MELEE REACH, which is the same quantity by another name: a
+        // hammer's 2.5 m is the distance a body has to stand within to be hit,
+        // exactly as a beam's range is. Reach and Primed Reach add METRES —
+        // DE's own cards say `+2.3 Range` and `+3 Range` — so they join `flat`
+        // rather than `pct`, and on a hammer Primed Reach more than doubles it.
+        (base.range_m * (1.0 + pct) + flat + melee_range_add + base.evo_melee_range_m).max(0.0)
     };
 
     // PUNCH THROUGH: the weapon's own plus every grant, in metres of material.
@@ -4659,22 +4792,49 @@ pub fn resolve_for(
         // is `base_fire_rate * (1 + mods)` — the whole attack speed in one
         // number — so the loop divides by it the same way a charge weapon
         // divides its draw, and Berserker Fury will shorten a swing for free.
-        combo_script: base.combo_script.clone(),
-        // FOLLOW THROUGH IS NOT MODDABLE. No card in the pool moves it, and
-        // the wiki's own table is per weapon class, so it comes across as the
-        // entry states it.
-        follow_through: base.follow_through,
+        // THE WIND-UP IS SHORTENED HERE and the DELAY is not, which is the two
+        // clocks made concrete: this bucket is Killing Blow's and the two
+        // evolutions', and the delay divides by the live attack speed in the
+        // fight loop where a buff can still reach it.
+        combo_script: base
+            .combo_script
+            .iter()
+            .map(|h| crate::weapons_data::ComboHit {
+                windup_seconds: h.windup_seconds
+                    / (1.0 + windup_speed + base.evo_heavy_windup_speed).max(1e-9),
+                ..h.clone()
+            })
+            .collect(),
+        // FOLLOW THROUGH IS NOT MODDABLE — no card in the pool moves it, and
+        // the wiki's own table is per weapon class — but an EVOLUTION is
+        // (Crushing Verdict's `+40% Follow Through`), so the entry's value is
+        // the base and a Genesis scales it.
+        follow_through: base
+            .follow_through
+            .map(|f| f * (1.0 + base.evo_follow_through_bonus)),
         spends_combo: base.spends_combo,
         // *"Melee Combo duration cannot be reduced below 0.1 seconds"* (wiki),
         // which is a floor rather than a clamp on the bucket: a negative mod
         // could otherwise stop the counter existing at all.
-        combo_duration_seconds: (base.combo_duration_seconds + combo_duration_add).max(0.1),
-        initial_combo,
+        // SECONDS FIRST, THEN THE RELATIVE CARD, which is the order the cards
+        // themselves imply: Body Count adds twelve seconds to the weapon's
+        // five, and Corrupt Charge halves what you have. The wiki's floor is
+        // applied last — *"Melee Combo duration cannot be reduced below 0.1
+        // seconds"* — so a build stacking penalties still has a counter.
+        combo_duration_seconds: ((base.combo_duration_seconds + combo_duration_add)
+            * combo_duration_mult)
+            .max(0.1),
+        // …PLUS WHAT A GENESIS OPENS THE COUNTER AT. The Magistar's Incarnon
+        // Form is +30, which is 0.75 s of refill against a 0.8 s wind-up.
+        initial_combo: initial_combo + base.evo_initial_combo,
         // *"stacks additively and is capped at 90%; with both Focus Energy and
         // Reflex Coil, 10% of the combo counter will still be consumed"*.
         heavy_attack_efficiency: heavy_efficiency.clamp(0.0, 0.9),
         crit_chance_per_combo: cc_per_combo,
         status_chance_per_combo: sc_per_combo,
+        combo_count_chance,
+        heavy_attack_damage: heavy_damage,
+        slam_damage,
         no_magazine: base.no_magazine,
         // THE ORB'S GEOMETRY, MODDED — and one of the three distances is NOT.
         //

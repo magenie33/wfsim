@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: c1fe8bec18f510bd
-count: 1610
+digest: 6be5fbeaed946fa5
+count: 1650
 ids:
   - acceltra
   - acceltra_prime
@@ -1620,3 +1620,43 @@ ids:
   - volcanic_edge
   - voltaic_strike
   - weeping_wounds
+  - amalgam_organ_shatter
+  - berserker_fury
+  - conditions_perfection
+  - corrupt_charge
+  - disciplines_merit
+  - dispatch_overdrive
+  - dreamers_wrath
+  - enduring_strike
+  - focused_defense
+  - guardian_derision
+  - healing_return
+  - jagged_edge
+  - killing_blow
+  - life_strike
+  - masters_edge
+  - mentors_legacy
+  - opportunitys_reach
+  - parry
+  - primed_heavy_trauma
+  - primed_reach
+  - primed_smite_corpus
+  - primed_smite_corrupted
+  - primed_smite_grineer
+  - primed_smite_infested
+  - quickening
+  - reach
+  - relentless_combination
+  - seismic_wave
+  - smite_grineer
+  - spring_loaded_blade
+  - true_punishment
+  - magistar_critical_parallel
+  - magistar_crushing_verdict
+  - magistar_edge_of_justice
+  - magistar_evo1_incarnon_form
+  - magistar_flashing_bleed
+  - magistar_orokin_reach
+  - magistar_seismic_slam
+  - magistar_subtle_force
+  - magistar_swift_break

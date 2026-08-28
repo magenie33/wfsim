@@ -1,0 +1,20 @@
+id: magistar_flashing_bleed
+name: Flashing Bleed
+weapon: magistar
+tier: 4
+description: "+50% Chance of a Slash Status Effect on an Impact Status Effect."
+# AN IMPACT-TO-SLASH PROC CONVERSION — the same mechanic Hemorrhage carries on
+# the mod side, reaching the same runtime. It matters more here than on most
+# weapons: the Magistar is 80% Impact and all four of its combos force an Impact
+# proc somewhere in the sequence, so this is a Slash bleed off every one of them.
+selection: choose_one
+
+effects:
+  # from: "+50% Chance of a Slash Status Effect on an Impact Status Effect"
+  - kind: proc_conversion
+    trigger: impact
+    applies: slash
+    value: 0.5
+
+source:
+  url: https://wiki.warframe.com/w/Magistar_Incarnon_Genesis

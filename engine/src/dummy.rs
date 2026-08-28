@@ -2941,6 +2941,16 @@ pub struct DummyParams {
     /// WEEPING WOUNDS, the same shape on the status side:
     /// `status = base x [1 + mods + this x (combo - 1)]`.
     pub status_chance_per_combo: f64,
+    /// CHANCE OF AN EXTRA COMBO POINT per landed hit (Quickening, True
+    /// Punishment, Enduring Strike). Above 1.0 it is a guaranteed point plus a
+    /// roll for the next.
+    pub combo_count_chance: f64,
+    /// `+X%` on a HEAVY attack alone (Killing Blow). Read only where
+    /// `spends_combo` is true, which is what "heavy attack" means here.
+    pub heavy_attack_damage: f64,
+    /// `+X%` on a SLAM alone (Seismic Wave). Read only where the form's
+    /// explosion is `BlastKind::Slam`, which is what "slam" means here.
+    pub slam_damage: f64,
     /// The stacks Hata-Satya's card OPENS with, and whether an event may take
     /// them — the same two knobs the tendrils carry, and for the same reason:
     /// a pile that costs hits is unmeasurable against a target that dies before
@@ -3846,6 +3856,54 @@ impl DummyParams {
         if hit.first() == Some(&0) { hit } else { vec![0] }
     }
 
+    /// WHO A MELEE SWING REACHES, nearest first, the aimed body always first.
+    ///
+    /// A swing has a REACH rather than a cone: a body either stands inside the
+    /// weapon's range or it does not, and everything inside takes the hit with
+    /// Follow Through's geometric decay in the order the swing got to them.
+    ///
+    /// TWO SHAPES, because a stance's own table marks them. A `360deg` swing is
+    /// a spin and reaches everything within range; an ordinary one sweeps in
+    /// FRONT of the wielder, which is modelled as the forward half-plane. That
+    /// half-plane is the one invented number in this function — the game
+    /// publishes an arc for no stance — and it is declared on every melee
+    /// entry. It is bounded: the alternative readings are "everything within
+    /// range" (which is the 360deg case, already available) and "the aimed body
+    /// alone" (which is what the roster did before Follow Through existed).
+    ///
+    /// STATIC FOR THE ENGAGEMENT like `struck_bodies`, and computed per swing
+    /// anyway because a combo alternates the two shapes and the list is short.
+    pub fn melee_struck(&self, all_around: bool) -> Vec<usize> {
+        let reach = match self.range_m {
+            r if r.is_finite() && r > 0.0 => r,
+            _ => return vec![0],
+        };
+        if self.others.is_empty() {
+            return vec![0];
+        }
+        // WHICH WAY THE SWING FACES — the same line the shot leaves on.
+        let aim = self.aim_point();
+        let facing = crate::space::Vec2::new(aim.x - self.player_at.x, aim.y - self.player_at.y);
+        let mut out: Vec<(usize, f64)> = vec![(0, crate::space::gap(self.player_at, self.target_at))];
+        for (i, f) in self.others.iter().enumerate() {
+            let gap = crate::space::gap(self.player_at, f.at);
+            if gap > reach {
+                continue;
+            }
+            if !all_around {
+                let to = crate::space::Vec2::new(f.at.x - self.player_at.x, f.at.y - self.player_at.y);
+                if to.x * facing.x + to.y * facing.y <= 0.0 {
+                    continue;
+                }
+            }
+            out.push((i + 1, gap));
+        }
+        // NEAREST FIRST, because Follow Through decays in the order the swing
+        // reached them and a swing reaches what is closest to it first.
+        out.sort_by(|a, b| a.1.total_cmp(&b.1));
+        out.into_iter().map(|(i, _)| i).collect()
+    }
+
     /// THE GAP between the two bodies — surface to surface, zero at contact,
     /// and THE DISTANCE A SHOT FLIES.
     ///
@@ -4214,6 +4272,9 @@ impl DummyParams {
             heavy_attack_efficiency: panel.heavy_attack_efficiency,
             crit_chance_per_combo: panel.crit_chance_per_combo,
             status_chance_per_combo: panel.status_chance_per_combo,
+            combo_count_chance: panel.combo_count_chance,
+            heavy_attack_damage: panel.heavy_attack_damage,
+            slam_damage: panel.slam_damage,
             // A fight in contact has not built a pile; the card moves it.
             crit_chance_per_hit_initial_stacks: 0,
             crit_chance_per_hit_held: false,
@@ -4525,6 +4586,9 @@ impl Default for DummyParams {
             heavy_attack_efficiency: 0.0,
             crit_chance_per_combo: 0.0,
             status_chance_per_combo: 0.0,
+            combo_count_chance: 0.0,
+            heavy_attack_damage: 0.0,
+            slam_damage: 0.0,
             crit_chance_per_hit_initial_stacks: 0,
             crit_chance_per_hit_held: false,
             super_crit_on_status: None,
@@ -7078,6 +7142,15 @@ enum SpreadBy {
     /// It is here because it routes through `spread_hit` like the others, and
     /// it is told apart from them because it is the only one that may headshot.
     PunchThrough,
+    /// …AND THE MELEE ONE: the same SWING, reaching past the first body.
+    ///
+    /// *"Each melee weapon has a Follow Through statistic that tells what
+    /// proportion of damage is dealt to successive targets in a single melee
+    /// strike"*, `FT^(n-1)` (wiki, Melee). It is punch through's opposite in
+    /// every way that matters: nothing is SPENT, there is no budget to run out,
+    /// the decay is geometric rather than distance-based, and it never
+    /// headshots — so it is its own arm rather than a flag on that one.
+    FollowThrough,
 }
 
 impl SpreadBy {
@@ -7223,6 +7296,7 @@ fn spread_hit(
                 SpreadBy::Echo => crate::record::Origin::Echo,
                 SpreadBy::Ricochet => crate::record::Origin::Ricochet,
                 SpreadBy::PunchThrough => crate::record::Origin::PunchThrough,
+                SpreadBy::FollowThrough => crate::record::Origin::FollowThrough,
             },
             // THE AIMED PELLET'S OWN NUMBER with its Condition Overload
             // bucket divided back out, so this body multiplies in its own —
@@ -7361,6 +7435,61 @@ struct SpreadShot {
 /// already emits these bodies — they are its seeds, which is the wiki's own
 /// rule for the two together: *"Each enemy hit by the main beam from Punch
 /// Through can generate a new set of 3 chains."* Firing both would pay twice.
+/// EVERY BODY A MELEE SWING REACHED PAST THE FIRST, at `FT^(n-1)`.
+///
+/// `struck` is `melee_struck`'s answer — nearest first, the aimed body at index
+/// 0 — so `n` is simply the position in it. NEVER A HEADSHOT: this arena's
+/// melee weapons put nothing on a head at all (`Capability::AimsAtHead`), and
+/// even if they did a swing that carried on past one body is not aimed at the
+/// next.
+///
+/// A ZERO FOLLOW THROUGH IS A REAL WEAPON — nothing in the roster has one, but
+/// the arithmetic gives it the aimed body alone, which is what it means.
+#[allow(clippy::too_many_arguments)]
+fn spread_from_follow_through(
+    others: &mut [SpreadFoe],
+    params: &DummyParams,
+    ap: &DummyParams,
+    struck: &[usize],
+    follow_through: f64,
+    raw_per_bucket: f64,
+    shares: TypeShares,
+    crit_multiplier: f64,
+    attrition: f64,
+    modded_base: f64,
+    status_chance: f64,
+    forced: &[DamageType],
+    vector: &DamageVector,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    r: &mut RunResult,
+    rec: &mut crate::record::Record,
+    d: &mut crate::rng::Draws,
+    t: f64,
+) {
+    for (n, &sidx) in struck.iter().enumerate().skip(1) {
+        let share = follow_through.powi(n as i32);
+        if share <= 0.0 {
+            break;
+        }
+        let Some(idx) = sidx.checked_sub(1) else { continue };
+        let Some(fs) = params.others.get(idx) else { continue };
+        let inst = crate::chain::Instance {
+            target: sidx,
+            share,
+            multishot: true,
+            headshot: false,
+            part_factor: 1.0,
+        };
+        let foe = &mut others[idx];
+        spread_hit(
+            &inst, foe, fs, raw_per_bucket, shares, crit_multiplier, attrition,
+            modded_base, status_chance, forced, vector, params, ap, gal, arc, r, rec, d, t,
+            SpreadBy::FollowThrough,
+        );
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 fn spread_from_punch_through(
     others: &mut [SpreadFoe],
@@ -10113,6 +10242,254 @@ mod melee {
     use super::*;
 
 
+
+    fn magistar_evo(form: &str, evos: &[&str]) -> Summary {
+        let base = crate::loadout::WeaponBase::from_data(form, true, evos);
+        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        let arena = crate::arena::Arena::training(60.0);
+        let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+        monte_carlo(&p, 30, 3)
+    }
+
+    /// **A MELEE INCARNON IS A BUFF, NOT A FORM** (owner, confirmed in game
+    /// 2026-08-29): it changes numbers and not animations, so there is no
+    /// second weapon entry and the whole Genesis is stat changes on the seven
+    /// ways the weapon is already swung.
+    ///
+    /// EVO1 IS EXACTLY 2x on a build with nothing else in the base-damage
+    /// bucket, which is what `+100% Melee Damage` means when it is a BRACKET
+    /// term rather than a flat addition — and telling those two apart is the
+    /// whole reason `EvoEffect::BaseDamageBonus` exists beside
+    /// `FlatBaseDamage`.
+    #[test]
+    fn the_incarnon_form_is_a_hundred_per_cent_in_the_pressure_point_bucket() {
+        let bare = magistar_evo("magistar", &[]).mean_damage;
+        let form = magistar_evo("magistar", &["magistar_evo1_incarnon_form"]).mean_damage;
+        assert!(
+            (form / bare - 2.0).abs() < 0.02,
+            "+100% in an empty bucket should be exactly 2x: {bare:.0} -> {form:.0}",
+        );
+    }
+
+    /// **THE PURE-HEAVY BUILD IS THREE MULTIPLIERS, AND THE THIRD IS A CLOCK.**
+    ///
+    /// The Magistar's Incarnon Form is worth 6x to a heavy loop against 2x to a
+    /// light one, and the difference is not a bigger number — it is the same
+    /// `+100%` damage, TIMES a combo multiplier the +30 initial combo buys
+    /// (1x to 2x), TIMES half again as many swings from `+50% Heavy Attack Wind
+    /// Up Speed`, which shortens a clock attack speed cannot touch.
+    ///
+    /// THE WIND-UP IS THE ONE THAT COULD SILENTLY NOT WORK, so it is asserted
+    /// on the SHOT COUNT: 1.2 s becomes 0.8 s, and 60 seconds holds 50 swings
+    /// or 75.
+    #[test]
+    fn the_incarnon_form_pays_a_heavy_build_three_ways() {
+        let bare = magistar_evo("magistar_heavy", &[]);
+        let form = magistar_evo("magistar_heavy", &["magistar_evo1_incarnon_form"]);
+        assert!(
+            (form.mean_shots / bare.mean_shots - 1.5).abs() < 0.05,
+            "a 1.2 s wind-up at +50% speed is 0.8 s, so 1.5x the swings: {:.0} -> {:.0}",
+            bare.mean_shots, form.mean_shots,
+        );
+        let gain = form.mean_damage / bare.mean_damage;
+        assert!(
+            (5.0..7.0).contains(&gain),
+            "damage 2x, combo 1x->2x and swings 1.5x should be about 6x, got x{gain:.2}",
+        );
+        // …AND SWIFT BREAK IS ADDITIVE WITH IT, in the same bucket: 1.2 / 1.8
+        // is 0.667 s, which is another fifth of a swing per second.
+        let swift = magistar_evo(
+            "magistar_heavy",
+            &["magistar_evo1_incarnon_form", "magistar_swift_break"],
+        );
+        assert!(
+            swift.mean_shots > form.mean_shots * 1.15,
+            "+30% more wind-up speed bought nothing: {:.0} -> {:.0}",
+            form.mean_shots, swift.mean_shots,
+        );
+    }
+
+    /// **FLASHING BLEED IS WORTH A THIRD OF THIS WEAPON**, which is why it is
+    /// modelled rather than declared.
+    ///
+    /// The Magistar is 80% Impact and every one of its four combos forces an
+    /// Impact proc somewhere in the sequence, so `+50% Chance of a Slash Status
+    /// Effect on an Impact Status Effect` is a bleed off most of them. It
+    /// reaches the same runtime Hemorrhage does.
+    #[test]
+    fn flashing_bleed_turns_this_weapons_impact_into_bleeds() {
+        let form = magistar_evo("magistar", &["magistar_evo1_incarnon_form"]);
+        let bleed = magistar_evo(
+            "magistar",
+            &["magistar_evo1_incarnon_form", "magistar_flashing_bleed"],
+        );
+        assert!(
+            bleed.mean_damage > form.mean_damage * 1.15,
+            "an Impact-to-Slash roll on an 80% Impact weapon bought only {:.0} -> {:.0}",
+            form.mean_damage, bleed.mean_damage,
+        );
+        assert!(
+            bleed.mean_dot_damage > form.mean_dot_damage * 1.5,
+            "the extra damage did not arrive as a DoT: {:.0} -> {:.0}",
+            form.mean_dot_damage, bleed.mean_dot_damage,
+        );
+    }
+
+    /// REACH IS METRES AND METRES ARE BODIES — so an evolution that buys reach
+    /// buys NOTHING against one target, and that is the assertion.
+    ///
+    /// Orokin Reach is `+1.4 Range`, which on a hammer's 2.5 m is more than half
+    /// again. Against a lone body at contact it is worth exactly zero, and a
+    /// perk that quietly paid damage for reach would be caught here.
+    #[test]
+    fn orokin_reach_buys_metres_and_not_damage() {
+        let form = magistar_evo("magistar", &["magistar_evo1_incarnon_form"]).mean_damage;
+        let reach = magistar_evo(
+            "magistar",
+            &["magistar_evo1_incarnon_form", "magistar_orokin_reach"],
+        )
+        .mean_damage;
+        assert!(
+            (reach / form - 1.0).abs() < 0.01,
+            "reach paid damage against one body: {form:.0} -> {reach:.0}",
+        );
+        let base = crate::loadout::WeaponBase::from_data(
+            "magistar", true, &["magistar_evo1_incarnon_form", "magistar_orokin_reach"],
+        );
+        let refs: Vec<&crate::loadout::ModDef> = Vec::new();
+        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        assert!(
+            (panel.range_m - 3.9).abs() < 1e-9,
+            "2.5 m + 1.4 m should be 3.9 m, got {:.2}",
+            panel.range_m,
+        );
+    }
+
+    /// **A MOD THAT NAMES AN ATTACK PAYS ON THAT ATTACK AND ON NO OTHER.**
+    ///
+    /// Three cards say so in their own words — Killing Blow is "+120% Melee
+    /// Damage on Heavy Attack", Seismic Wave is "+200% Slam Attack Damage" —
+    /// and the seven melee modes are what makes that checkable at all: the same
+    /// build, the same target, one card, and it moves one mode and not another.
+    ///
+    /// THE NEGATIVE HALF IS THE POINT. A bucket wired into the base-damage
+    /// bracket would pass the first assertion of each pair perfectly and pay
+    /// every mode, which is the exact bug these two cards invite.
+    #[test]
+    fn a_card_that_names_an_attack_pays_on_that_attack_alone() {
+        let gain = |form: &str, m: &str| {
+            magistar(form, &[m], 30.0, None).mean_damage / magistar(form, &[], 30.0, None).mean_damage
+        };
+        let kb_heavy = gain("magistar_heavy", "killing_blow");
+        let kb_light = gain("magistar", "killing_blow");
+        assert!(kb_heavy > 1.5, "Killing Blow bought a heavy build nothing: x{kb_heavy:.3}");
+        assert!(
+            (kb_light - 1.0).abs() < 0.02,
+            "Killing Blow paid an ordinary swing x{kb_light:.3} — it says `on Heavy Attack`",
+        );
+
+        let sw_slam = gain("magistar_heavy_slam", "seismic_wave");
+        let sw_light = gain("magistar", "seismic_wave");
+        assert!(sw_slam > 1.5, "Seismic Wave bought a slam build nothing: x{sw_slam:.3}");
+        assert!(
+            (sw_light - 1.0).abs() < 0.02,
+            "Seismic Wave paid an ordinary swing x{sw_light:.3} — it says `Slam Attack Damage`",
+        );
+    }
+
+    /// REACH IS METRES, AND METRES ARE BODIES.
+    ///
+    /// DE's card reads `+3 Range`, not a percentage, which on a hammer's 2.5 m
+    /// is more than a doubling — so the assertion is not that the number went
+    /// up but that the SWING FOUND MORE PEOPLE. A ring at 4.0 m centre to
+    /// centre is a gap of 3.5 m: outside a bare hammer's reach and inside a
+    /// Primed Reach one.
+    #[test]
+    fn reach_is_metres_and_metres_are_bodies() {
+        let bare = crate::loadout::WeaponBase::from_data("magistar", false, &[]);
+        let pool = crate::mods_data::pool_for_weapon("magistar");
+        let pr: Vec<&crate::loadout::ModDef> =
+            pool.iter().filter(|m| m.id == "primed_reach").collect();
+        let panel = crate::loadout::resolve(&bare, &pr, crate::loadout::StackPolicy::Emergent);
+        assert!(
+            (panel.range_m - 5.5).abs() < 1e-9,
+            "2.5 m + 3 m should be 5.5 m, got {:.2}",
+            panel.range_m,
+        );
+        let reached = |mods: &[&str]| {
+            let r = magistar("magistar", mods, 20.0, Some(4.0));
+            r.mean_damage_by_body.0.iter().filter(|d| **d > 0.0).count()
+        };
+        assert_eq!(reached(&[]), 1, "a 2.5 m swing should find only the body at contact");
+        assert!(
+            reached(&["primed_reach"]) > 1,
+            "a 5.5 m swing found nobody 3.5 m away",
+        );
+    }
+
+    /// **CORRUPT CHARGE IS A TRADE, AND BOTH HALVES REACH THE FIGHT** — but
+    /// only one of them can be MEASURED on this weapon, and that is a finding
+    /// rather than a gap.
+    ///
+    /// `+30 Initial Combo, -50% Combo Duration`. The floor pays a heavy build,
+    /// which is the first half. The clock is halved from 5.0 s to 2.5 s and
+    /// costs the Magistar NOTHING, because it swings every 0.90 s and refreshes
+    /// the counter four times over inside even the shortened window. That is
+    /// why the card is a staple rather than a trade for most of the roster: the
+    /// penalty bites a slow weapon and a build that stops hitting, and a hammer
+    /// on a target that never dies is neither.
+    ///
+    /// So the clock is asserted where it is exact — on the PANEL, including the
+    /// order it composes with Body Count in, which is the one thing that could
+    /// silently go wrong.
+    #[test]
+    fn corrupt_charge_buys_the_floor_and_sells_the_clock() {
+        let heavy = magistar("magistar_heavy", &["corrupt_charge"], 30.0, None).mean_damage
+            / magistar("magistar_heavy", &[], 30.0, None).mean_damage;
+        assert!(
+            heavy > 1.3,
+            "+30 initial combo should put every heavy at 2x: x{heavy:.3}",
+        );
+        let clock = |mods: &[&str]| {
+            let base = crate::loadout::WeaponBase::from_data("magistar", false, &[]);
+            let pool = crate::mods_data::pool_for_weapon("magistar");
+            let refs: Vec<&crate::loadout::ModDef> =
+                mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
+            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent)
+                .combo_duration_seconds
+        };
+        assert!((clock(&[]) - 5.0).abs() < 1e-9, "the weapon's own clock is 5 s");
+        assert!((clock(&["corrupt_charge"]) - 2.5).abs() < 1e-9, "-50% of 5 s is 2.5 s");
+        // SECONDS FIRST, THEN THE RELATIVE CARD. `(5 + 12) x 0.5 = 8.5`, and the
+        // other order would give `5 x 0.5 + 12 = 14.5` — a 70% difference from
+        // one line of arithmetic, which is why it is pinned.
+        assert!(
+            (clock(&["body_count", "corrupt_charge"]) - 8.5).abs() < 1e-9,
+            "(5 + 12) x 0.5 should be 8.5, got {:.2}",
+            clock(&["body_count", "corrupt_charge"]),
+        );
+    }
+
+    /// AN EXTRA COMBO POINT PER HIT IS WORTH WHAT READS THE COUNTER.
+    ///
+    /// Quickening's `+20% Combo Count Chance` is one point on a fifth of the
+    /// hits — against a neutral combo whose swings are already worth 3.5 points
+    /// each, so it is a small push on a big number, and the fixture pairs it
+    /// with Blood Rush because the counter is worth nothing to a build that
+    /// reads it with nothing.
+    #[test]
+    fn an_extra_combo_point_pays_whatever_reads_the_counter() {
+        let with_reader = |mods: &[&str]| magistar("magistar", mods, 30.0, None).mean_damage;
+        let plain = with_reader(&["blood_rush"]);
+        let quicker = with_reader(&["blood_rush", "true_punishment"]);
+        assert!(
+            quicker > plain,
+            "+100% combo count chance bought a Blood Rush build nothing: {plain:.0} -> {quicker:.0}",
+        );
+    }
+
+
     /// THE COMBO LADDER, as the wiki publishes it: 2x at 20 hits, one more
     /// every 20, 12x at 220 and no further.
     ///
@@ -10232,27 +10609,101 @@ mod melee {
         );
     }
 
+    /// A SWING REACHES WHAT IS INSIDE ITS RANGE AND NOTHING OUTSIDE IT.
+    ///
+    /// The positive control for Follow Through, and the fixture is chosen so
+    /// the boundary is unambiguous: a ring at 3.0 m centre to centre is a GAP
+    /// of exactly 2.5 m, which is exactly a hammer's reach, and a test standing
+    /// on a knife edge tells you nothing. 2.6 m is comfortably inside and 4.0 m
+    /// comfortably outside.
+    #[test]
+    fn a_swing_reaches_a_crowd_inside_its_range_and_no_further() {
+        let alone = magistar("magistar", &[], 20.0, None).mean_damage;
+        let near = magistar("magistar", &[], 20.0, Some(2.6)).mean_damage;
+        let far = magistar("magistar", &[], 20.0, Some(4.0)).mean_damage;
+        assert!(
+            near > alone * 1.2,
+            "a crowd inside a 2.5 m reach took nothing: {alone:.0} -> {near:.0}",
+        );
+        assert!(
+            (far - alone).abs() < alone * 0.02,
+            "a crowd 3.5 m from a 2.5 m swing took something: {alone:.0} -> {far:.0}",
+        );
+    }
+
+    /// FOLLOW THROUGH DECAYS GEOMETRICALLY, and a hammer's 0.4 is steep enough
+    /// to see: the second body takes 40%, the third 16%, the fourth 6.4%.
+    ///
+    /// Asserted as a CEILING on what the crowd can add rather than as a ratio,
+    /// because every body settles its own armour, its own status count and its
+    /// own death — `spread_hit`'s whole point. Eight bodies at full damage
+    /// would be 9x the lone fight; at `0.4^n` the series sums to 1.67x, and the
+    /// gap between those two is what this is about.
+    #[test]
+    fn follow_through_decays_by_the_order_the_swing_reached_them() {
+        let alone = magistar("magistar", &[], 20.0, None).mean_damage;
+        let crowd = magistar("magistar", &[], 20.0, Some(2.6)).mean_damage;
+        let ratio = crowd / alone;
+        assert!(
+            ratio < 3.0,
+            "eight bodies added {ratio:.2}x — a hammer's 0.4 follow through cannot pay that",
+        );
+        assert!(ratio > 1.2, "eight bodies in reach added only {ratio:.2}x");
+    }
+
     /// A SLAM IGNORES THE REACH THAT DECIDES EVERY OTHER MELEE MODE.
     ///
     /// A hammer swings 2.5 m; its heavy slam is a 10 m sphere centred on the
-    /// wielder's own feet. So on a crowd spaced wider than the reach, the combo
-    /// modes hit the one body in front and the slam hits the room — which is
-    /// the whole reason the Magistar is played the way it is, and the reason
+    /// wielder's own feet. So on a crowd standing further apart than the reach,
+    /// the combo modes hit the one body in front and the slam hits the room —
+    /// which is why the Magistar is played the way it is, and the reason
     /// `BlastKind::Slam` exists.
     #[test]
     fn only_the_slam_reaches_a_crowd_a_swing_cannot() {
         let alone = |f: &str| magistar(f, &[], 20.0, None).mean_damage;
-        let crowd = |f: &str| magistar(f, &[], 20.0, Some(3.0)).mean_damage;
+        let crowd = |f: &str| magistar(f, &[], 20.0, Some(4.0)).mean_damage;
         let swing = crowd("magistar") / alone("magistar");
         let slam = crowd("magistar_heavy_slam") / alone("magistar_heavy_slam");
         assert!(
             swing < 1.02,
-            "a 2.5 m swing found a crowd on a 3 m grid: x{swing:.4}",
+            "a 2.5 m swing found a crowd 3.5 m away: x{swing:.4}",
         );
         assert!(
             slam > 1.5,
             "a 10 m slam sphere did not reach the crowd around it: x{slam:.4}",
         );
+    }
+
+    /// A 360deg SWING IS THE ONLY ONE THAT TAKES A BODY BEHIND YOU.
+    ///
+    /// The stance tables mark them, and it is the one spatial fact that
+    /// separates two combos of the same weapon. The fixture puts the crowd in a
+    /// full ring, so half of it is behind the wielder: an ordinary sweep gets
+    /// the front, a spin gets all of it.
+    ///
+    /// IT COUNTS BODIES, NOT DAMAGE, and that is the model teaching rather than
+    /// the test being lazy. A hammer's Follow Through is 0.4, so the bodies a
+    /// spin adds are the FOURTH onward and they are worth `0.4^3 = 6.4%` and
+    /// less: the front three come to 0.624 of a body and all eight to 0.666, a
+    /// 3% difference in damage for a 2.7x difference in bodies reached. The
+    /// claim is about who was hit; asserting it on a total would be asserting
+    /// it on the one number that cannot see it.
+    #[test]
+    fn a_spin_reaches_behind_the_wielder_and_a_sweep_does_not() {
+        let reached = |f: &str| {
+            let r = magistar(f, &[], 20.0, Some(2.6));
+            r.mean_damage_by_body.0.iter().filter(|d| **d > 0.0).count()
+        };
+        // Hell's Wave is one 200% spin; Winding Temper's three swings are all
+        // ordinary sweeps.
+        let spin = reached("magistar_slide");
+        let sweep = reached("magistar_block");
+        assert_eq!(spin, 9, "a spin should reach the aimed body and all eight around it");
+        assert!(
+            sweep < spin,
+            "a sweep reached {sweep} bodies and a spin {spin} — the forward test did nothing",
+        );
+        assert!(sweep >= 2, "a sweep reached only {sweep} — it should still get the front");
     }
 }
 
@@ -11850,8 +12301,37 @@ pub fn run_once_traced(
         // is also the harmless one, since quantizing `kX` against `ks` is `k`
         // times quantizing `X` against `s` (see `pellet_layers`). UNMEASURED
         // either way, and flagged as such.
+        // KILLING BLOW AND SEISMIC WAVE, which pay in some modes and not
+        // others. Both are *"+X% Melee Damage on <kind of attack>"* cards, so
+        // they multiply the swing the way the stance multiplier does rather
+        // than joining the base-damage bracket — a bracket term would pay on
+        // every mode, which is the one thing these two cards say they do not.
+        //
+        // A SLAM IS A FORM WHOSE EXPLOSION IS A SLAM. Reading the form rather
+        // than a flag is what keeps this true for the next slam weapon.
+        let is_slam = ap
+            .radial
+            .as_ref()
+            .is_some_and(|r| r.blast_kind == crate::weapons_data::BlastKind::Slam);
+        let mode_damage = (1.0 + if ap.spends_combo { ap.heavy_attack_damage } else { 0.0 })
+            * (1.0 + if is_slam { ap.slam_damage } else { 0.0 });
         let swing_mult = swing.as_ref().map_or(1.0, |h| h.multiplier)
-            * if ap.spends_combo { combo_mult } else { 1.0 };
+            * if ap.spends_combo { combo_mult } else { 1.0 }
+            * mode_damage;
+        // WHO THIS SWING REACHES. A `360deg` swing is a spin and takes
+        // everything within the weapon's range; an ordinary one sweeps in
+        // front. Empty for a gun, which never asks.
+        let melee_struck = match &swing {
+            Some(h) if ap.follow_through.is_some() => params.melee_struck(h.all_around),
+            _ => Vec::new(),
+        };
+        // WHAT THIS SWING FORCES, split into the two machines that carry it —
+        // damage types compete for the proc roll, independent procs never do.
+        // Resolved once per swing rather than per pellet: a melee swing is one
+        // instance, and the split is a string comparison over a list of at most
+        // two.
+        let (swing_forced_types, swing_forced_independent) =
+            swing.as_ref().map_or_else(|| (Vec::new(), Vec::new()), |h| h.split_forced());
         let swung;
         let (qvec, modded_base) = if (swing_mult - 1.0).abs() > 1e-12 {
             swung = qvec.scale(swing_mult);
@@ -13454,6 +13934,17 @@ pub fn run_once_traced(
                         (Some(r), _) => r.forced_procs.fill(&mut forced_buf),
                         _ => 0,
                     };
+                    // …AND THE SWING'S OWN, on a DIRECT melee hit. A stance
+                    // marks them per attack — Crushing Ruin's first swing
+                    // forces Impact and its last forces Knockdown — so they
+                    // belong to the swing rather than to the weapon, which is
+                    // why `ap.forced_procs` above cannot carry them.
+                    for ty in &swing_forced_types {
+                        if !forced_buf[..n].contains(ty) && n < forced_buf.len() {
+                            forced_buf[n] = *ty;
+                            n += 1;
+                        }
+                    }
                     for ty in &ability_forced {
                         // A weapon that already forces this element does not
                         // force it twice: `procs_for_hit` copies the list
@@ -13783,6 +14274,36 @@ pub fn run_once_traced(
                     // punched through to, at full damage. Only where there is
                     // no beam: with one, these bodies are the chain's seeds
                     // and `spread_from_seeds` below already pays them.
+                    // …AND EVERY BODY THIS SWING REACHED, at `FT^(n-1)`.
+                    //
+                    // MELEE'S OWN ANSWER TO "who else did that hit", and it is
+                    // exclusive with punch through rather than beside it: a
+                    // swing has no punch-through budget (nothing in the melee
+                    // pool grants one and the wiki excludes slams and AoE from
+                    // Follow Through by name), so the two can never both fire.
+                    if let Some(ft) = ap.follow_through.filter(|_| direct) {
+                        spread_from_follow_through(
+                            &mut others,
+                            params,
+                            ap,
+                            &melee_struck,
+                            ft,
+                            raw / bucket,
+                            shares,
+                            crit_multiplier,
+                            attrition,
+                            modded_base,
+                            status_chance,
+                            forced,
+                            &qvec,
+                            &mut gal,
+                            &mut arc,
+                            &mut r,
+                            rec,
+                            d,
+                            t,
+                        );
+                    }
                     if params.beam.is_none() {
                         spread_from_punch_through(
                             &mut others,
@@ -14412,6 +14933,17 @@ pub fn run_once_traced(
                 let until = t + LIFTED_SECONDS * params.status_duration_multiplier;
                 debuffs.lifted = Some(debuffs.lifted.map_or(until, |e| e.max(until)));
             }
+            // …AND THE SWING'S OWN, which a stance marks per attack. Same rule
+            // as the weapon-level pair one line up: applied on the HIT rather
+            // than through the roll, and refreshed rather than stacked.
+            if swing_forced_independent.contains(&"lifted") {
+                let until = t + LIFTED_SECONDS * params.status_duration_multiplier;
+                debuffs.lifted = Some(debuffs.lifted.map_or(until, |e| e.max(until)));
+            }
+            if swing_forced_independent.contains(&"knockdown") {
+                let until = t + KNOCKDOWN_SECONDS * params.status_duration_multiplier;
+                debuffs.knockdown = Some(debuffs.knockdown.map_or(until, |e| e.max(until)));
+            }
             if ap.independent_procs.contains(&"knockdown") {
                 let until = t + KNOCKDOWN_SECONDS * params.status_duration_multiplier;
                 debuffs.knockdown = Some(debuffs.knockdown.map_or(until, |e| e.max(until)));
@@ -14823,6 +15355,21 @@ pub fn run_once_traced(
             let landed = (r.pellets - pellets_before) as f64;
             if landed > 0.0 {
                 combo_points += h.multiplier * landed;
+                // …PLUS THE EXTRA POINT SOME CARDS BUY. *"Certain mods award
+                // extra combo points on hit/block additively"* — ONE point, per
+                // HIT rather than per stance multiplier, which is what makes
+                // Quickening worth so much less on a 400% swing than on a 100%
+                // one. Above 100% it is a guaranteed point plus a roll for the
+                // next, the way every other over-100% chance here behaves.
+                if ap.combo_count_chance > 0.0 {
+                    for _ in 0..(landed as u32) {
+                        let whole = ap.combo_count_chance.floor();
+                        combo_points += whole;
+                        if d.spine.chance(ap.combo_count_chance - whole) {
+                            combo_points += 1.0;
+                        }
+                    }
+                }
                 combo_expiry = t + ap.combo_duration_seconds;
             }
             // …AND A HEAVY SWING EMPTIES IT. `heavy_attack_efficiency` is the
@@ -14924,9 +15471,20 @@ pub fn run_once_traced(
             // so Fury is an ordinary fire-rate mod here and an on-kill speed
             // buff shortens a swing without knowing melee exists.
             None if !ap.combo_script.is_empty() => {
-                let d = swing.as_ref().map_or(0.0, |h| h.delay_seconds);
+                // TWO CLOCKS, and only one of them is attack speed's.
+                //
+                // *"Increasing melee attack speed does not reduce the wind-up
+                // time; rather, it reduces the interval between heavy
+                // attacks"* (wiki, Melee) — so the charge before a heavy swing
+                // is divided by its OWN bucket, already applied where the
+                // script was resolved, and the animation after it is divided by
+                // the live attack speed here. A light swing carries no wind-up
+                // and is unaffected by the split.
+                let (w, d) = swing
+                    .as_ref()
+                    .map_or((0.0, 0.0), |h| (h.windup_seconds, h.delay_seconds));
                 swing_idx += 1;
-                (d / rate.max(1e-9)).max(1e-6)
+                (w + d / rate.max(1e-9)).max(1e-6)
             }
             None => match ap.burst {
                 Some(b) if b.count > 1 => {

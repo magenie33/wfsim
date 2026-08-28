@@ -1,0 +1,19 @@
+id: reach
+name: Reach
+rarity: common
+polarity: madurai
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeRangeIncMod
+description: "+1.5 Range"
+
+# Rank 0: +0.4 Range
+effects:
+  - kind: melee_range_bonus_m
+    rank0: 0.375
+    rankMax: 1.5
+
+family: reach
+
+source:
+  url: https://wiki.warframe.com/w/Reach

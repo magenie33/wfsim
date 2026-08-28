@@ -1,0 +1,16 @@
+id: relentless_combination
+name: Relentless Combination
+rarity: uncommon
+polarity: naramon
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeComboChanceFromDot
+description: "+100% chance to increase Melee Combo Counter when <DT_SLASH_COLOR>Slash Status deals damage."
+
+# Rank 0: +25% chance to increase Melee Combo Counter when <DT_SLASH_COLOR>Slash Status deals damage.
+effects:
+  # a combo point when a Slash DoT TICKS - the counter is fed from the hit path and a status tick is a different one, so this is not paid
+  - kind: unmodeled
+
+source:
+  url: https://wiki.warframe.com/w/Relentless_Combination

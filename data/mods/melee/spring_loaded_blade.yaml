@@ -1,0 +1,16 @@
+id: spring_loaded_blade
+name: Spring-Loaded Blade
+rarity: rare
+polarity: vazarin
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Syndicate/MeleeRangeOnProcMod
+description: "On Status Effect: +1 Range for 24s. Stacks up to 2 times."
+
+# Rank 0: On Status Effect: +0.2 Range for 4s. Stacks up to 2 times.
+effects:
+  # +1 Range per status effect, 2 stacks - reach is resolved once at build time and has no stacking buff behind it yet
+  - kind: unmodeled
+
+source:
+  url: https://wiki.warframe.com/w/Spring-Loaded_Blade

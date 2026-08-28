@@ -1,0 +1,30 @@
+id: amalgam_organ_shatter
+name: Amalgam Organ Shatter
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/DualSource/Melee/CritDamageChargeSpeedMod
+description: "+85% Critical Damage / +60% Heavy Attack Wind Up Speed"
+
+# DE's own incompatibility tags, from the wiki's `Module:Mods/data` — every
+# Amalgam mod carries them, and a companion weapon is never a melee weapon
+# anyway, so this is the family's rule rather than this card's.
+excludes_weapon: [sentinel_weapon]
+
+# Rank 0: +14% Critical Damage / +10% Heavy Attack Wind Up Speed
+effects:
+  - kind: crit_damage_bonus
+    rank0: 0.141667
+    rankMax: 0.85
+  # THE CHARGE BEFORE A HEAVY SWING, on its own clock — attack speed does not
+  # touch it, which is the wiki's own sentence and the reason it is not the
+  # fire-rate bucket.
+  - kind: heavy_windup_speed_bonus
+    rank0: 0.1
+    rankMax: 0.6
+
+family: organ_shatter
+
+source:
+  url: https://wiki.warframe.com/w/Amalgam_Organ_Shatter

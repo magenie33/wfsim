@@ -1558,3 +1558,22 @@ evolution_descriptions:
     基础暴击几率增加+10%，基础触发几率增加+10%。
   boltor_prime_commodores_fortune: |-
     基础暴击几率增加+14%。
+
+  # ---- 执法者灵化之源 (2026-08-29) — DELIBERATELY UNNAMED --------------------
+  #
+  # The Magistar's nine perks have NO Chinese name here, and that is a decision
+  # rather than an omission. DE's own strings for evolutions are not in any
+  # export (see the header), the English wiki carries only English, and the CN
+  # wiki answers 403 to this repo's fetcher. A search summary is not a source:
+  # it paraphrases, and a paraphrase transcribed into this file becomes DE's
+  # name for a card it is not.
+  #
+  # "A STRING IS TRANSCRIBED, NEVER TRANSLATED. If a source cannot be reached,
+  # LEAVE IT EMPTY AND SAY SO" (owner, 2026-08-03). Five Boar Prime evolution
+  # names were translated once and four of them were wrong.
+  #
+  # WHAT TO DO: read them off the card in the Chinese client and paste them in.
+  #   magistar_evo1_incarnon_form, magistar_crushing_verdict,
+  #   magistar_edge_of_justice, magistar_seismic_slam, magistar_orokin_reach,
+  #   magistar_swift_break, magistar_flashing_bleed, magistar_subtle_force,
+  #   magistar_critical_parallel

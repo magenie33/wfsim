@@ -30,6 +30,9 @@ fn dual_toxocyst_baseline() -> DummyParams {
         heavy_attack_efficiency: 0.0,
         crit_chance_per_combo: 0.0,
         status_chance_per_combo: 0.0,
+        combo_count_chance: 0.0,
+        heavy_attack_damage: 0.0,
+        slam_damage: 0.0,
         // Ordinary — only the Laetum's Incarnon form differs, and this is not it.
         echo_multiplier: 1.0,
         // NO WARFRAME behind this fixture: no auras, no shards.

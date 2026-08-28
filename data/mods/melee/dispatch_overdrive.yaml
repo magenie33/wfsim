@@ -1,0 +1,17 @@
+id: dispatch_overdrive
+name: Dispatch Overdrive
+rarity: uncommon
+polarity: naramon
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/MoveSpeedOnChannelKillMod
+description: "On Heavy Attack Hit:\n+60% Movement Speed for 15s"
+exilus: true
+
+# Rank 0: On Heavy Attack Hit:\n+10% Movement Speed for 3s
+effects:
+  # movement speed on a heavy attack hit - this arena has no movement
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Dispatch_Overdrive

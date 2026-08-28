@@ -117,6 +117,15 @@ pub enum Origin {
     Multishot,
     /// The same round, still flying, arriving at a body behind the first.
     PunchThrough,
+    /// The same SWING, reaching past the first body — melee's Follow Through.
+    ///
+    /// Its own origin rather than `PunchThrough`'s, because a reader laying the
+    /// panel beside the game is looking at two different mechanics: punch
+    /// through spends a budget and decays with the distance flown, a swing
+    /// spends nothing and decays geometrically by the order it got to bodies
+    /// in. Sharing a row would make the one column that says WHY this body was
+    /// hit answer the wrong question.
+    FollowThrough,
     /// A chaining beam's hop.
     Chain,
     /// A projectile that bounced.
@@ -148,6 +157,7 @@ impl Origin {
             Origin::Own => "own",
             Origin::Multishot => "multishot",
             Origin::PunchThrough => "punch_through",
+            Origin::FollowThrough => "follow_through",
             Origin::Chain => "chain",
             Origin::Ricochet => "ricochet",
             Origin::Echo => "echo",

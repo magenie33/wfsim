@@ -1,0 +1,16 @@
+id: life_strike
+name: Life Strike
+rarity: rare
+polarity: vazarin
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Melee/Channel/ChannelVampireMod
+description: "+20% Life Steal on Heavy Attack"
+
+# Rank 0: +5% Life Steal on Heavy Attack
+effects:
+  # life steal on a heavy attack - nothing damages the Tenno in this arena
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Life_Strike

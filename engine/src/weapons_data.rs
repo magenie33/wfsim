@@ -1061,7 +1061,22 @@ pub struct ComboHit {
     /// two jobs, and they are the same number in game.
     pub multiplier: f64,
     /// Seconds from this swing to the next, at 1.0x attack speed.
+    ///
+    /// The ANIMATION, and attack speed shortens it. It does NOT include the
+    /// wind-up below, which is a separate clock scaled by a separate bucket.
     pub delay_seconds: f64,
+    /// THE CHARGE BEFORE A HEAVY SWING, in seconds at 1.0x wind-up speed.
+    ///
+    /// A SEPARATE CLOCK, because DE says so: *"Increasing melee attack speed
+    /// does not reduce the wind-up time; rather, it reduces the interval
+    /// between heavy attacks"* (wiki, Melee). Four cards move it and none of
+    /// them moves attack speed — Killing Blow, Amalgam Organ Shatter, and two
+    /// of the Magistar's own evolutions — so a model with one delay could not
+    /// pay any of them without also shortening every light swing.
+    ///
+    /// Zero on every light swing and on every gun.
+    #[serde(default)]
+    pub windup_seconds: f64,
     /// Does it reach every body in range rather than the one in front?
     ///
     /// The stance tables mark these `(360deg)`. It is a SPATIAL fact and it is
@@ -1069,9 +1084,43 @@ pub struct ComboHit {
     /// Follow Through walks a line and this does not.
     #[serde(default)]
     pub all_around: bool,
-    /// Types this swing applies whatever the status roll says.
+    /// WHAT THIS SWING APPLIES WHATEVER THE ROLL SAYS.
+    ///
+    /// ONE LIST FOR TWO MECHANISMS, because the stance table is one column:
+    /// Crushing Ruin marks its first swing forced Impact and its last forced
+    /// Knockdown, and a reader transcribing the table should not have to know
+    /// that one of those is a DAMAGE TYPE competing for the proc roll and the
+    /// other is an INDEPENDENT proc that never does. The split is made where
+    /// the swing lands (`ComboHit::split_forced`), which is the one place that
+    /// has both machines in front of it.
     #[serde(default)]
     pub forced_procs: Vec<String>,
+}
+
+impl ComboHit {
+    /// The two kinds of forced proc this swing carries, told apart by name.
+    ///
+    /// A name the engine does not know is a LOUD failure rather than a silent
+    /// drop: a stance table transcribed with a typo would otherwise ship a
+    /// swing that forces nothing and reads as merely weak.
+    pub fn split_forced(&self) -> (Vec<crate::damage::DamageType>, Vec<&'static str>) {
+        let mut types = Vec::new();
+        let mut independent = Vec::new();
+        for p in &self.forced_procs {
+            if let Some(ty) = crate::damage::DamageType::from_name(p) {
+                types.push(ty);
+            } else {
+                match p.as_str() {
+                    "lifted" => independent.push("lifted"),
+                    "knockdown" => independent.push("knockdown"),
+                    other => panic!(
+                        "combo swing forces `{other}`, which is neither a damage type nor an                          independent proc the engine implements (`lifted`, `knockdown`)"
+                    ),
+                }
+            }
+        }
+        (types, independent)
+    }
 }
 
 /// The radial (explosion) part of an attack — MECHANICS §7. Crit/status
@@ -3673,6 +3722,14 @@ pub fn base_panel_assembled(
         windup_seconds: s.attack.windup_seconds,
         no_magazine: s.attack.no_magazine,
         combo_script: s.attack.combo_script.clone(),
+        // A GENESIS FILLS THESE IN, and an entry states none of them.
+        evo_base_damage_bonus: 0.0,
+        evo_initial_combo: 0.0,
+        evo_melee_range_m: 0.0,
+        evo_follow_through_bonus: 0.0,
+        evo_slam_radius_bonus: 0.0,
+        evo_heavy_windup_speed: 0.0,
+        evo_proc_conversion: None,
         follow_through: s.attack.follow_through,
         spends_combo: s.attack.spends_combo,
         combo_duration_seconds: s.combo_duration_seconds,

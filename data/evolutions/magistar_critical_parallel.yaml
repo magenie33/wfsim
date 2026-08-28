@@ -1,0 +1,20 @@
+id: magistar_critical_parallel
+name: Critical Parallel
+weapon: magistar
+tier: 4
+description: "Critical Chance +16%. Critical Damage +1x."
+# THE MAGISTAR'S COLUMN. The Sancti Magistar's is +12% and +0.2x, which is the
+# largest per-variant gap in this Genesis and belongs to that entry when it
+# lands — a shared adapter does not make two weapons one (docs/CATALOGS.md).
+selection: choose_one
+
+effects:
+  # BASE crit chance, so every crit mod multiplies it: 20% becomes 36%, and
+  # True Steel's +120% takes that to 79.2% rather than to 60.0%.
+  - kind: flat_base_crit_chance
+    value: 0.16
+  - kind: flat_base_crit_multiplier
+    value: 1.0
+
+source:
+  url: https://wiki.warframe.com/w/Magistar_Incarnon_Genesis

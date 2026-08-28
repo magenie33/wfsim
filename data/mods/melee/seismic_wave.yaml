@@ -1,0 +1,17 @@
+id: seismic_wave
+name: Seismic Wave
+rarity: uncommon
+polarity: madurai
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeSlamDamageMod
+description: "+200% Slam Attack Damage"
+
+# Rank 0: +50% Slam Attack Damage
+effects:
+  - kind: slam_damage_bonus
+    rank0: 0.5
+    rankMax: 2.0
+
+source:
+  url: https://wiki.warframe.com/w/Seismic_Wave

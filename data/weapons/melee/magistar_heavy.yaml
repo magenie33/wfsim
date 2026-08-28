@@ -21,7 +21,6 @@ transform_group: magistar
 co_behavior: additive_with_base_damage
 unmodeled:
   - "melee CRITICAL CHANCE mods read x2 on a heavy attack — True Steel, Sacrificial Steel and Galvanized Steel all say so on their own cards — and this entry does not double them, so a crit build reads LOW in this mode"
-  - "attack speed shortens this mode's whole cadence, and in game it should not: the 1.2s heavy wind-up is fixed and only the interval BETWEEN heavy attacks is shortened. The swing delay here is one number covering both, so an attack-speed build reads HIGH in this mode"
 attack:
   trigger: semi_auto
   shot_type: hit_scan
@@ -29,7 +28,6 @@ attack:
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
-  windup_seconds: 1.2
   crit_chance: 0.2
   crit_multiplier: 2.0
   status_chance: 0.1
@@ -38,9 +36,12 @@ attack:
   follow_through: 0.4
   spends_combo: true
   damage: { impact: 168, puncture: 31.5, slash: 10.5 }
+  # THE WIND-UP IS ON THE SWING, not on the attack: the attack-level field is a
+  # one-off delay before the fight's first shot, and a heavy attack pays its
+  # charge before EVERY swing. Attack speed does not shorten it — see
+  # `ComboHit::windup_seconds`.
   combo_script:
-    - { multiplier: 6.0, delay_seconds: 1.2, forced_procs: [lifted] }
-    - { multiplier: 6.0, delay_seconds: 1.2, forced_procs: [knockdown] }
-  independent_procs: [lifted, knockdown]
+    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [lifted] }
+    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [knockdown] }
 source:
   url: https://wiki.warframe.com/w/Magistar

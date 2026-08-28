@@ -1,0 +1,20 @@
+id: primed_heavy_trauma
+name: Primed Heavy Trauma
+rarity: legendary
+polarity: naramon
+base_drain: 2
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponImpactDamageModExpert
+description: "+165% <DT_IMPACT_COLOR>Impact"
+
+# Rank 0: +15% <DT_IMPACT_COLOR>Impact
+effects:
+  - kind: physical_damage_bonus
+    element: impact
+    rank0: 0.15
+    rankMax: 1.65
+
+family: heavy_trauma
+
+source:
+  url: https://wiki.warframe.com/w/Primed_Heavy_Trauma

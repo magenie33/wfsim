@@ -1,0 +1,19 @@
+id: opportunitys_reach
+name: Opportunity's Reach
+rarity: uncommon
+polarity: madurai
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/EmpoweredHeavyMelee/PerfectReach
+description: "Enables Tennokai. Increases opportunity window to 4.0s and melee range by 3m for Tennokai attacks."
+exilus: true
+
+# Rank 0: Enables Tennokai. Increases opportunity window to 2.8s and melee range by 0.75m for Tennokai attacks.
+effects:
+  # a 4s Tennokai window and +3m reach on a Tennokai attack - the window is not modelled
+  - kind: unmodeled
+
+family: tennokai
+
+source:
+  url: https://wiki.warframe.com/w/Opportunity%27s_Reach

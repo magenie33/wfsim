@@ -1,0 +1,19 @@
+id: mentors_legacy
+name: Mentor's Legacy
+rarity: uncommon
+polarity: naramon
+base_drain: 4
+max_rank: 0
+internal_name: /Lotus/Upgrades/EmpoweredHeavyMelee/TennokaiBaseMod
+description: "Enables Tennokai."
+exilus: true
+
+# Rank 0: (no ladder)
+effects:
+  # enables Tennokai - a 15% chance on a direct hit to open a 2s window in which a heavy attack costs no combo and winds up faster. The window is not modelled
+  - kind: unmodeled
+
+family: tennokai
+
+source:
+  url: https://wiki.warframe.com/w/Mentor%27s_Legacy

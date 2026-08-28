@@ -3484,6 +3484,24 @@ pub fn panel_json(v: &Value) -> Value {
                 // conditionals for the same reason Double Tap's stacks are —
                 // the alternative is a crit-chance figure on the panel that no
                 // swing in the fight ever has.
+                // THE FIVE THAT PAY ONLY IN SOME MODES, or not as a stat at
+                // all. Each says what it is worth and WHERE, because a panel
+                // number would be a lie in five of the seven melee modes.
+                MeleeComboDurationMultiplier(_) | MeleeRange(_) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "it changes the fight rather than a damage stat — reach decides how many                             bodies a swing reaches, and the clock decides how long the counter lives"})),
+                SlamDamage(_) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "it pays on a SLAM and on nothing else, so it is worth zero in every                             mode that swings"})),
+                HeavyWindUpSpeed(_) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "it shortens the CHARGE before a heavy swing, which attack speed does                             not touch — so it pays in the two heavy modes and nowhere else"})),
+                HeavyAttackDamage(_) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "it pays on a HEAVY attack and on nothing else"})),
+                ComboCountChance(_) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "extra combo points per hit — what they are worth depends on what reads                             the counter, which is Blood Rush and Weeping Wounds in a combo mode                             and the heavy multiplier in a heavy one"})),
                 CritChancePerCombo(v) => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": format!(

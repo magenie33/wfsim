@@ -1,0 +1,19 @@
+id: conditions_perfection
+name: Condition's Perfection
+rarity: uncommon
+polarity: vazarin
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/EmpoweredHeavyMelee/PerfectCondition
+description: "Enables Tennokai. Increases status chance by +100% on Tennokai attacks."
+exilus: true
+
+# Rank 0: Enables Tennokai. Increases status chance by +25% on Tennokai attacks.
+effects:
+  # +100% status chance on a Tennokai attack - the window is not modelled
+  - kind: unmodeled
+
+family: tennokai
+
+source:
+  url: https://wiki.warframe.com/w/Condition%27s_Perfection

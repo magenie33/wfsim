@@ -619,6 +619,7 @@ mods:
   aero_periphery: HawksPeriphery.jpg
   agile_aim: FasterMovementWhileAimingRifle.jpg
   amalgam_barrel_diffusion: TacticalDiffusion.jpg
+  amalgam_organ_shatter: SwiftShatter.jpg
   amalgam_serration: SerratedRush.jpg
   amalgam_shotgun_barrage: VampireShot.jpg
   ammo_chain: ArchwingRifleAmmoMaxMod.jpg
@@ -640,6 +641,7 @@ mods:
   bane_of_orokin: RifleDamageCorrupted.jpg
   bane_of_the_murmur: WeaponFactionDamageMurmurs.jpg
   barrel_diffusion: PistolFireIterationsMod.jpg
+  berserker_fury: MeleeBerserkerMod.jpg
   bhisaj_bal: ParisPrimeStatusHealMod.jpg
   bladed_rounds: CritDamageWhileAimingMods.jpg
   blaze: ShotgunBlazeMod.jpg
@@ -671,11 +673,13 @@ mods:
   comet_rounds: DamageBiasImpactRifleMod.jpg
   concussion_rounds: ImpactDamagePistolMod.jpg
   condition_overload: WeaponDamageIfVictimProcActive.jpg
+  conditions_perfection: PerfectCondition.jpg
   contagious_spread: PoisonDamageShotgunMod.jpg
   containment_breach: ArchwingEventRadiationFireIterationRifleMod.jpg
   contamination_casing: ArchwingEventToxinStatusRifleMod.jpg
   continuous_misery: WeaponProcTimeRifleMod.jpg
   convulsion: PistolElectricityDamageMod.jpg
+  corrupt_charge: ChannelingCorruptChargeMod.jpg
   counterbalance: WeaponRecoilShotgunMod.jpg
   crash_course: EventImpactDamageRifleMod.jpg
   creeping_bullseye: CorruptedCritChanceFireRatePistolMod.jpg
@@ -686,17 +690,21 @@ mods:
   deadly_efficiency: ArchwingDamageAfterReloadMod.jpg
   deadly_sequence: Grinlok.jpg
   deep_freeze: PistolFreezeDamageMod.jpg
+  disciplines_merit: CertainStrike.jpg
+  dispatch_overdrive: MoveSpeedOnChannelKillMod.jpg
   disruptor: ImpactDamageShotgunMod.jpg
   dizzying_rounds: BroncoNightwaveMod.jpg
   double_barrel_drift: LessRecoilMoreAccuracyShotgunMod.jpg
   double_tap: LatronThree.jpg
   dreadful_killshot: NightwaveBasmuAugmentMod.jpg
+  dreamers_wrath: FocusedAttack.jpg
   drifting_contact: ComboTimeStatusChanceMod.jpg
   dual_rounds: ArchwingRifleFireIterationsMod.jpg
   eagle_eye: RifleZoomMod.jpg
   eject_magazine: PassiveReloadPistolMod.jpg
   electrified_barrel: ArchwingWeaponElectricityDamageModRifle.jpg
   embedded_catalyzer: StatusChanceWhileAimingMods.jpg
+  enduring_strike: ChannelingStatusChance.jpg
   eximus_advantage: NightwaveZylokAugmentMod.jpg
   expel_corpus: PistolDamageCorpus.jpg
   expel_grineer: PistolDamageGrineer.jpg
@@ -711,6 +719,7 @@ mods:
   firestorm: FirestormMod.jpg
   flechette: ShotgunPunctureDepthMod.jpg
   focus_energy: MeleeFocusEnergyMod.jpg
+  focused_defense: ChannelingArmour.jpg
   frail_momentum: CorruptedFireRateDamageShotgunMod.jpg
   frigid_blast: IceEventShotgunMod.jpg
   frostbite: IceEventPistolMod.jpg
@@ -727,6 +736,7 @@ mods:
   galvanized_scope: CritChanceWhileAimingRifleSPMod.jpg
   galvanized_shot: WeaponStatusChanceSPModMods.jpg
   gilded_truth: BurstonPrime.jpg
+  guardian_derision: WeaponBlockingTauntMod.jpg
   guided_ordnance: AccuracyWhileAimingMods.jpg
   gun_glide: LessRecoilMoreAccuracyRifleMod.jpg
   gunslinger: PistolFireRateMod.jpg
@@ -734,6 +744,7 @@ mods:
   harkonar_scope: VulkarNightwatchMod.jpg
   hata_satya: SomaPrimeCritChanceMod.jpg
   hawk_eye: PistolZoomMod.jpg
+  healing_return: WeaponHealOnHitEnemyWithProc.jpg
   heated_charge: PistolFireDamageMod.jpg
   heavy_caliber: CorruptedDmgForRecoilRifleMod.jpg
   hellfire: RifleFireDamageMod.jpg
@@ -752,13 +763,16 @@ mods:
   incendiary_coat: ShotgunFireDamageMod.jpg
   infected_clip: PoisonDamageRifleMod.jpg
   internal_bleeding: WeaponBleedOnImpactProcRifleMod.jpg
+  jagged_edge: BleedDamageMeleeMod.jpg
   jahu_canticle: ImmortalRuneForm.png
   jolt: ElectEventPistolMod.jpg
   jugulus_spines: BonebladeSpines.jpg
   khra_canticle: ImmortalRuneTime.png
+  killing_blow: ChannelingKillingBlow.jpg
   laser_sight: CritChanceWhileAiming.jpg
   lethal_momentum: WeaponProjectileSpeedPistolMod.jpg
   lethal_torrent: Grinder.jpg
+  life_strike: ChannelingLifeDrain.jpg
   lingering_torment: WeaponProcTimeShotgunMod.jpg
   lock_and_load: PassiveReloadShotgunMod.jpg
   lohk_canticle: ImmortalRuneVoid.png
@@ -775,7 +789,9 @@ mods:
   maim: EventSlashDamagePistolMod.jpg
   malignant_force: PoisonEventRifleMod.jpg
   marked_target: ArchwingRifleStatusChanceAimingMod.jpg
+  masters_edge: HeavyAggression.jpg
   melee_prowess: StatusChanceMeleeMod.jpg
+  mentors_legacy: TennokaiBaseMod.jpg
   merciless_gunfight: CriticalDamagePunchThroughMod.jpg
   metal_auger: RiflePunctureDepthMod.jpg
   metamorphic_magazine: NightwaveGorgonAugmentMod.jpg
@@ -788,9 +804,11 @@ mods:
   neutralizing_justice: Miter.jpg
   nightwatch_napalm: OgrisNightwatchMod.jpg
   north_wind: MeleeFreezeDamageMod.jpg
+  opportunitys_reach: PerfectReach.jpg
   organ_shatter: MeleeCritDamageMod.jpg
   overview: HigherAirAimFoVRifleMod.jpg
   parallax_scope: ArchwingRifleCritChanceMod.jpg
+  parry: ChannelingParryMod.jpg
   pathogen_rounds: PoisonDamagePistolMod.jpg
   perpetual_agony: WeaponProcTimePistolMod.jpg
   piercing_caliber: EventPunctureDamageModRifle.jpg
@@ -839,6 +857,7 @@ mods:
   primed_fulmination: SecondaryFirestormMod.jpg
   primed_fury: MeleeFireRateMod.jpg
   primed_heated_charge: PistolFireDamageMod.jpg
+  primed_heavy_trauma: ImpactDamageMeleeMod.jpg
   primed_magazine_warp: RifleClipMaxMod.jpg
   primed_pistol_ammo_mutation: PistolAmmoMutatorMod.jpg
   primed_pistol_gambit: PistolCritChanceMod.jpg
@@ -847,11 +866,16 @@ mods:
   primed_pressure_point: MeleeDamageMod.jpg
   primed_quickdraw: PistolReloadSpeedMod.jpg
   primed_ravage: ShotgunCritDamageMod.jpg
+  primed_reach: MeleeRangeMod.jpg
   primed_rifle_ammo_mutation: RifleAmmoMutatorMod.jpg
   primed_rubedo_lined_barrel: ArchwingRifleDamageAmountMod.jpg
   primed_shotgun_ammo_mutation: ShotgunAmmoMutatorMod.jpg
   primed_shred: Shred.jpg
   primed_slip_magazine: PistolClipMax.jpg
+  primed_smite_corpus: MeleeDamageCorpus.jpg
+  primed_smite_corrupted: MeleeDamageCorrupted.jpg
+  primed_smite_grineer: MeleeDamageGrineer.jpg
+  primed_smite_infested: MeleeDamageInfested.jpg
   primed_stabilizer: RifleRecoilReductionMod.jpg
   primed_steady_hands: PistolRecoilReductionMod.jpg
   primed_tactical_pump: ShotgunReloadSpeedMod.jpg
@@ -862,11 +886,14 @@ mods:
   quasar_drill: ArchwingDualStatPunctureStatusRifleMod.jpg
   quick_reload: ArchwingRifleReloadSpeedMod.jpg
   quickdraw: PistolReloadSpeedMod.jpg
+  quickening: ChannelingAttackSpeed.jpg
   radiated_reload: RadiationReloadRifleMod.jpg
   ravage: ShotgunCritDamageMod.jpg
   razor_shot: BleedDamagePistolMod.jpg
+  reach: MeleeRangeMod.jpg
   reflex_coil: MeleeChargeRateMod.jpg
   reflex_draw: PvPWeaponSwapSpeedPistol.jpg
+  relentless_combination: WeaponMeleeComboChanceFromDot.jpg
   repeater_clip: FireRateWhileAiming.jpg
   resolute_focus: ArchwingCCImmunityIfAimingMod.jpg
   rifle_ammo_mutation: RifleAmmoMutatorMod.jpg
@@ -889,6 +916,7 @@ mods:
   seeker: PistolPunctureDepthMod.jpg
   seeking_force: ShotgunArmorPiercingDamageMod.jpg
   seeking_fury: SeekingFury.jpg
+  seismic_wave: WeaponMeleeSlamDamageMod.jpg
   semi_pistol_cannonade: PistolSemiAutoFantasyMod.jpg
   semi_rifle_cannonade: RifleSemiAutoFantasyMod.jpg
   semi_shotgun_cannonade: ShotgunSemiAutoFantasyMod.jpg
@@ -911,6 +939,7 @@ mods:
   silent_battery: WeaponNoiseReductionMod.jpg
   sinister_reach: WeaponBeamDistanceRifleMod.jpg
   slip_magazine: PistolClipMax.jpg
+  smite_grineer: MeleeDamageGrineer.jpg
   snap_shot: FasterMovementWhileAimingShotgun.jpg
   soft_hands: PvPWeaponSwapSpeedShotgun.jpg
   spectral_serration: WeaponDamageAmountInvisibleMod.jpg
@@ -918,6 +947,7 @@ mods:
   split_chamber: RifleFireIterationsMod.jpg
   split_flights: BowMultiShotOnHitMod.jpg
   spoiled_strike: CorruptedChargeDmgForChargeSpeedMod.jpg
+  spring_loaded_blade: MeleeRangeOnProcMod.jpg
   spring_loaded_chamber: FireRateWhileAimingMods.jpg
   stabilizer: RifleRecoilReductionMod.jpg
   steady_hands: PistolRecoilReductionMod.jpg
@@ -938,6 +968,7 @@ mods:
   thermite_rounds: DualStatFireProcRifle.jpg
   toxic_barrage: PoisonEventShotgunMod.jpg
   trick_mag: PistolAmmoMaxMod.jpg
+  true_punishment: ChannelingCritChance.jpg
   true_steel: MeleeCritChanceMod.jpg
   twitch: PvPWeaponSwapSpeedRifle.jpg
   unseen_dread: NightwaveStalkerBowAugmentMod.jpg

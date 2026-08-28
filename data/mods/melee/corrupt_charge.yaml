@@ -1,0 +1,22 @@
+id: corrupt_charge
+name: Corrupt Charge
+# A corrupted mod: it buys the counter's FLOOR and sells its CLOCK, which is
+# exactly the trade a pure-heavy build wants and a combo build refuses.
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Melee/DualStat/CorruptedHeavyDamageChargeSpeedMod
+description: "+30 Initial Combo / -50% Combo Duration"
+
+# Rank 0: +7.5 Initial Combo / -12.5% Combo Duration
+effects:
+  - kind: initial_combo
+    rank0: 7.5
+    rankMax: 30.0
+  - kind: melee_combo_duration_multiplier
+    rank0: -0.125
+    rankMax: -0.5
+
+source:
+  url: https://wiki.warframe.com/w/Corrupt_Charge

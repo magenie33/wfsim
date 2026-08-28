@@ -1,0 +1,17 @@
+id: focused_defense
+name: Focused Defense
+rarity: common
+polarity: vazarin
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Melee/Channel/ChannelArmourMod
+description: "+20 Parry Angle"
+exilus: true
+
+# Rank 0: +5 Parry Angle
+effects:
+  # +20 Parry Angle - blocking is not modelled and nobody shoots back
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Focused_Defense

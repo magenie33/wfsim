@@ -110,6 +110,37 @@ enum EvoEffect {
     /// Adds to the BASE damage TOTAL, distributed pro-rata across the
     /// vector, BEFORE mods (inside ModifiedBase).
     FlatBaseDamage(f64),
+    /// A RELATIVE base-damage bonus — the Pressure Point / Serration bucket.
+    ///
+    /// Its own variant beside `FlatBaseDamage` because DE writes the two
+    /// differently and means different things by them: a gun's Genesis says
+    /// `+14 Base Damage` and a melee one says `+100% Melee Damage`, and the
+    /// second is a bracket term while the first is a number added to the
+    /// weapon's own. The Magistar's Incarnon Form carries both, one in EVO1 and
+    /// one in EVO2, which is what makes the distinction unavoidable.
+    BaseDamageBonus(f64),
+    /// POINTS THE MELEE COMBO COUNTER OPENS AT and returns to.
+    InitialCombo(f64),
+    /// METRES OF MELEE REACH (Orokin Reach's `+1.4 Range`).
+    MeleeRange(f64),
+    /// A RELATIVE change to FOLLOW THROUGH — what a second body in the same
+    /// swing takes (Crushing Verdict's `+40% Follow Through`).
+    FollowThroughBonus(f64),
+    /// A RELATIVE change to a SLAM's radius (Seismic Slam's `+100% Slam
+    /// Radius`).
+    SlamRadiusBonus(f64),
+    /// A RELATIVE change to HEAVY ATTACK WIND UP SPEED — the charge before a
+    /// heavy swing, which attack speed does not touch.
+    HeavyWindUpSpeed(f64),
+    /// A PROC THAT ROLLS ANOTHER PROC — Flashing Bleed's `+50% Chance of a
+    /// Slash Status Effect on an Impact Status Effect`.
+    ///
+    /// The same mechanic Hemorrhage carries on the mod side, and the same
+    /// runtime: one roll per damage instance, never alongside another `to` proc
+    /// in the same instance. It matters on this weapon more than on most —
+    /// the Magistar is 80% Impact and all four of its combos force an Impact
+    /// proc somewhere in the sequence.
+    ProcConversion { from: crate::damage::DamageType, to: crate::damage::DamageType, chance: f64 },
     /// Adds into the BASE crit chance (crit mods multiply the new base).
     FlatBaseCritChance(f64),
     /// A flat addition to BASE multishot — the Braton family's Munitions Grit
@@ -786,6 +817,16 @@ impl EvolutionDef {
     pub fn buff_cards(&self) -> Vec<EvoBuffCard> {
         self.active_effects()
             .filter_map(|e| match e {
+                // THE MELEE FIVE. Unconditional stat changes — no trigger, no
+                // stacks, nothing to configure — so no card, the same answer
+                // `FlatBaseDamage` and its siblings get one arm down.
+                EvoEffect::BaseDamageBonus(_)
+                | EvoEffect::InitialCombo(_)
+                | EvoEffect::MeleeRange(_)
+                | EvoEffect::FollowThroughBonus(_)
+                | EvoEffect::SlamRadiusBonus(_)
+                | EvoEffect::HeavyWindUpSpeed(_)
+                | EvoEffect::ProcConversion { .. } => None,
                 // No card: nothing to configure about a payout that cannot
                 // happen. The disclosure line is what this perk gets.
                 EvoEffect::OutOfScope { .. } => None,
@@ -1110,6 +1151,31 @@ impl EvolutionDef {
                 EvoEffect::FlatBaseDamage(v) => {
                     format!("+{v:.0} base damage (pro-rata, before mods)")
                 }
+                EvoEffect::BaseDamageBonus(v) => format!(
+                    "+{:.0}% damage, in the same bucket Pressure Point is in",
+                    v * 100.0
+                ),
+                EvoEffect::InitialCombo(v) => format!(
+                    "the melee combo counter opens at +{v:.0} and returns to it, regenerating 40                      points a second — which is what a heavy build spends"
+                ),
+                EvoEffect::MeleeRange(v) => format!("+{v:.1} m of melee reach"),
+                EvoEffect::FollowThroughBonus(v) => format!(
+                    "+{:.0}% follow through — a bigger share for every body a swing reaches                      past the first",
+                    v * 100.0
+                ),
+                EvoEffect::SlamRadiusBonus(v) => {
+                    format!("+{:.0}% slam radius", v * 100.0)
+                }
+                EvoEffect::ProcConversion { from, to, chance } => format!(
+                    "{:.0}% chance for a {} status to also apply a {} one, rolled once per                      damage instance",
+                    chance * 100.0,
+                    from.name(),
+                    to.name()
+                ),
+                EvoEffect::HeavyWindUpSpeed(v) => format!(
+                    "+{:.0}% heavy attack wind up speed — the charge before a heavy swing,                      which attack speed does not touch",
+                    v * 100.0
+                ),
                 EvoEffect::FlatBaseCritChance(v) => {
                     format!("+{:.0}% BASE crit chance (crit mods multiply it)", v * 100.0)
                 }
@@ -1426,6 +1492,29 @@ fn effect(v: &Value) -> Option<EvoEffect> {
     }
     Some(match kind {
         "flat_base_damage" => EvoEffect::FlatBaseDamage(f(v, "value").unwrap_or(0.0)),
+        // …AND THE RELATIVE ONE, which is how a MELEE Genesis is written.
+        "base_damage_bonus" => EvoEffect::BaseDamageBonus(f(v, "value").unwrap_or(0.0)),
+        "initial_combo" => EvoEffect::InitialCombo(f(v, "value").unwrap_or(0.0)),
+        "melee_range_bonus_m" => EvoEffect::MeleeRange(f(v, "value").unwrap_or(0.0)),
+        "follow_through_bonus" => EvoEffect::FollowThroughBonus(f(v, "value").unwrap_or(0.0)),
+        "slam_radius_bonus" => EvoEffect::SlamRadiusBonus(f(v, "value").unwrap_or(0.0)),
+        "heavy_windup_speed_bonus" => EvoEffect::HeavyWindUpSpeed(f(v, "value").unwrap_or(0.0)),
+        "proc_conversion" => {
+            let ty = |k: &str| {
+                v.get(k).and_then(Value::as_str).and_then(crate::damage::DamageType::from_name)
+            };
+            match (ty("trigger"), ty("applies")) {
+                (Some(from), Some(to)) => EvoEffect::ProcConversion {
+                    from,
+                    to,
+                    chance: f(v, "value").unwrap_or(0.0),
+                },
+                // A TYPE THE ENGINE DOES NOT KNOW IS INERT, not a panic: an
+                // evolution is transcribed by hand and a typo should read as a
+                // perk that does nothing rather than take the roster down.
+                _ => EvoEffect::Inert("proc_conversion with an unknown damage type".into()),
+            }
+        }
         "flat_base_crit_chance" => EvoEffect::FlatBaseCritChance(f(v, "value").unwrap_or(0.0)),
         "flat_base_multishot" => EvoEffect::FlatBaseMultishot(f(v, "value").unwrap_or(0.0)),
         "stacking_fire_rate_per_shell_reloaded" => {
@@ -1956,6 +2045,24 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // projectile already (`radius_takes_multishot`), so adding it
                 // there would count the same pellets twice.
                 EvoEffect::FlatBaseMultishot(v) => base.base_multishot += v,
+                // ---- THE MELEE FIVE ------------------------------------
+                //
+                // Each one lands in the channel `resolve` reads it from, so an
+                // Acuity that locks the stat can refuse the evolution's share
+                // separately from the mods' — the reason `evo_fire_rate_bonus`
+                // is a channel of its own rather than a term folded into `fr`.
+                EvoEffect::BaseDamageBonus(v) => base.evo_base_damage_bonus += v,
+                EvoEffect::InitialCombo(v) => base.evo_initial_combo += v,
+                EvoEffect::MeleeRange(v) => base.evo_melee_range_m += v,
+                EvoEffect::FollowThroughBonus(v) => base.evo_follow_through_bonus += v,
+                EvoEffect::SlamRadiusBonus(v) => base.evo_slam_radius_bonus += v,
+                EvoEffect::HeavyWindUpSpeed(v) => base.evo_heavy_windup_speed += v,
+                // THE SAME RUNTIME HEMORRHAGE USES, reached from the evolution
+                // side. `low_rate_*` is the mod's own clause and has no
+                // evolution spelling, so it is the identity.
+                EvoEffect::ProcConversion { from, to, chance } => {
+                    base.evo_proc_conversion = Some((*from, *to, *chance));
+                }
                 EvoEffect::StackingFireRatePerShellReloaded { per_stack, max_stacks } => {
                     base.stacking_buffs.push(crate::loadout::StackingBuff {
                         id: "per_shell_fire_rate",

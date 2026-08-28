@@ -307,6 +307,15 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         "melee_combo_duration_bonus" => ModEffect::MeleeComboDuration(max("rankMax")),
         "initial_combo" => ModEffect::InitialCombo(max("rankMax")),
         "heavy_attack_efficiency" => ModEffect::HeavyAttackEfficiency(max("rankMax")),
+        "melee_combo_duration_multiplier" => {
+            ModEffect::MeleeComboDurationMultiplier(max("rankMax"))
+        }
+        // METRES, not a percentage — DE's own card reads `+3 Range`.
+        "melee_range_bonus_m" => ModEffect::MeleeRange(max("rankMax")),
+        "slam_damage_bonus" => ModEffect::SlamDamage(max("rankMax")),
+        "heavy_attack_damage_bonus" => ModEffect::HeavyAttackDamage(max("rankMax")),
+        "combo_count_chance" => ModEffect::ComboCountChance(max("rankMax")),
+        "heavy_windup_speed_bonus" => ModEffect::HeavyWindUpSpeed(max("rankMax")),
         "crit_damage_bonus" => ModEffect::CritDamage(max("rankMax")),
         "status_chance_bonus" => ModEffect::StatusChance(max("rankMax")),
         "status_damage_bonus" => ModEffect::StatusDamage(max("rankMax")),
@@ -1302,10 +1311,20 @@ mod tests {
     /// a charged form's cadence IS its draw, so that was DPS being discarded.
     #[test]
     fn no_mod_loads_with_nothing() {
+        // …UNLESS IT SAYS SO. `unmodeled` and `out_of_scope` are flags rather
+        // than effects, so a card whose ENTIRE content is one of them loads
+        // with an empty list — and that is the honest state rather than the
+        // fault this test is about, which is an effect being silently dropped.
+        //
+        // MELEE IS WHERE THAT FIRST HAPPENED (2026-08-29). Its exilus pool is
+        // eleven cards and every one of them is either Tennokai (a window this
+        // engine does not model) or blocking and movement (which this arena has
+        // neither of), so eleven mods equip, pay nothing, and each says which of
+        // the two it is on its own card.
         let mut empty: Vec<&str> = Vec::new();
         for class in classes() {
             for m in class_pool(class) {
-                if m.effects.is_empty() {
+                if m.effects.is_empty() && !m.unmodeled && !m.out_of_scope {
                     empty.push(m.id);
                 }
             }
@@ -1990,9 +2009,10 @@ mod class_tests {
     ///     the condition cannot change a number this calculator produces).
     #[test]
     fn a_condition_on_the_card_is_a_condition_in_the_model() {
-        const DAMAGE_KINDS: [&str; 15] = [
+        const DAMAGE_KINDS: [&str; 18] = [
             "base_damage_bonus", "crit_chance_bonus", "crit_damage_bonus",
             "crit_chance_per_combo", "status_chance_per_combo",
+            "slam_damage_bonus", "heavy_attack_damage_bonus", "combo_count_chance",
             "melee_combo_duration_bonus", "initial_combo", "heavy_attack_efficiency",
             "multishot_bonus", "status_chance_bonus", "fire_rate_bonus",
             "elemental_damage_bonus", "physical_damage_bonus",

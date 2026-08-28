@@ -1,0 +1,19 @@
+id: disciplines_merit
+name: Discipline's Merit
+rarity: rare
+polarity: naramon
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/EmpoweredHeavyMelee/CertainStrike
+description: "Enables Tennokai. Opportunities occur every <LOWER_IS_BETTER>4 melee hits instead of at random."
+exilus: true
+
+# Rank 0: Enables Tennokai. Opportunities occur every <LOWER_IS_BETTER>7 melee hits instead of at random.
+effects:
+  # Tennokai every 4 hits instead of at random - the window is not modelled
+  - kind: unmodeled
+
+family: tennokai
+
+source:
+  url: https://wiki.warframe.com/w/Discipline%27s_Merit
