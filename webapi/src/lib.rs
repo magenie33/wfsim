@@ -2091,6 +2091,59 @@ pub(crate) fn riven_shape_from(v: &Value) -> Option<wfsim_engine::rivens_data::R
     })
 }
 
+/// THE BOARD'S ROW KEY FOR EACH OF A LIST OF BUILDS.
+///
+/// It answers one question the page could not ask before: **is what I am
+/// looking at already a row?** The pointer it used instead (`officialBuildActive`)
+/// says only whether the ACTIVE PRESET is a builtin, so a board build copied
+/// into a preset of your own, or arrived at independently, or reached by moving
+/// one mod between two slots, was offered for upload as if it were new — which
+/// is what a player reported (owner, 2026-08-28).
+///
+/// IT IS THE ENGINE'S ANSWER, and that is the whole point of the endpoint. The
+/// normalisation behind it is not something a page can reproduce: a mod list is
+/// canonicalised (`canonical_mods` sorts the non-elementals by drain and leaves
+/// the elementals in the order that PAIRS them), evolutions are a set, a riven
+/// is its shape. A JS copy of that is a second answer, and this repo has been
+/// bitten three times by one axis spelled in two places.
+///
+/// A LIST rather than one build, because the caller's question is a MEMBERSHIP
+/// one: it keys its own build and every row its weapon holds in the same call,
+/// so the two sides cannot be keyed by two different builds of the engine.
+/// A build that does not validate answers `null` rather than failing the batch
+/// — a stored row this engine can no longer read is not an error in the build
+/// on screen.
+pub fn build_keys_json(v: &Value) -> Value {
+    let keys: Vec<Value> = v
+        .get("builds")
+        .and_then(Value::as_array)
+        .map(Vec::as_slice)
+        .unwrap_or(&[])
+        .iter()
+        .map(|b| {
+            let list = |k: &str| -> Vec<String> {
+                b.get(k)
+                    .and_then(Value::as_array)
+                    .map(|a| a.iter().filter_map(Value::as_str).map(String::from).collect())
+                    .unwrap_or_default()
+            };
+            match wfsim_engine::builds::validate_with(
+                get_str(b, "weapon", ""),
+                &list("mods"),
+                &list("evolutions"),
+                &list("arcanes"),
+                get_str(b, "valence", ""),
+                riven_shape_from(b).as_ref(),
+                Some(get_str(b, "exilus", "")).filter(|x| !x.is_empty()),
+            ) {
+                Ok(vb) => json!(wfsim_engine::builds::board_key(&vb, get_str(b, "mode", ""))),
+                Err(_) => Value::Null,
+            }
+        })
+        .collect();
+    json!({ "ok": true, "keys": keys })
+}
+
 pub fn board_check_json(v: &Value) -> Value {
     let bench = get_str(v, "benchmark", "");
     let weapon = get_str(v, "weapon", "");

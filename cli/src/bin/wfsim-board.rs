@@ -331,8 +331,7 @@ fn reuse_prior(path: &str, code_fp: &str, bench_id: &str) -> Result<Prior, Strin
             out.stale += 1;
             continue;
         }
-        let mode = if e.mode.is_empty() { "base" } else { e.mode.as_str() };
-        let key = format!("{}#{}", wfsim_engine::builds::identity(&v), mode);
+        let key = wfsim_engine::builds::board_key(&v, &e.mode);
         if let Some(rv) = &e.riven {
             if !rv.rolls.is_empty() {
                 out.rolls.insert(key.clone(), rv.rolls.clone());
@@ -632,7 +631,7 @@ fn main() {
         // `validate` has already put both into the same canonical form. The
         // MODE is part of that identity: one build played two ways is two
         // entrants, and collapsing them would keep whichever arrived first.
-        let key = format!("{}#{}", wfsim_engine::builds::identity(&v), played.id);
+        let key = wfsim_engine::builds::board_key(&v, played.id);
         if !seen_ids.insert(key.clone()) {
             continue;
         }

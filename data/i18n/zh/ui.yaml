@@ -400,6 +400,11 @@ ui:
   "It does take money and time to run. If it has ever saved you a Forma, you can chip in.":
     它确实要花钱和时间来维持。如果它替你省下过一根 Forma，可以来投喂一下。
   "It is NOT a way to play a whole engagement — the form has to be bought and runs out, so no ruler ranks it. It is here so you can read the form's own numbers.": 这并不是一种能打满整场交战的玩法 —— 这个形态要花代价换取，而且会耗尽，所以没有标尺给它排名。它在这里是为了让你看到这个形态自己的数值。
+  "the record is open in its own window": 战斗记录已在它自己的窗口里打开。
+  "Bring it back here": 收回本页
+  "Open in its own window": 在新窗口打开
+  "{a}–{b} of {n}": 第 {a}–{b} 行，共 {n} 行
+  "this build is already on the board ({row}) — nothing was sent": 这套配装已经在榜上了（{row}），所以没有上传。
   "It is already a row on the board, so nothing here can be edited and its runs are not submitted. Copy it and everything opens up — mods, arcanes, evolutions and the mode — and what you run goes to the board as your own entry.": 它本身就是榜上的一行，所以这里什么都改不了，跑出来的结果也不会提交。复制一份，全部就都能改了——mod、赋能、进化，还有形态——而且你跑出来的成绩会作为你自己的一行进榜。
   "It tells you what it cannot model, on the card where you are standing: on a weapon, an evolution, a mod, an arcane, an enemy. It lists those itself rather than waiting to be asked.":
     它会在你正看着的那张卡上告诉你它算不准什么：武器上、进化词条上、MOD 上、赋能上、敌人上。这些是它自己列出来的，不用你来问。

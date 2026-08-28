@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "d2805d48+ · 2026-08-28 10:53Z";
+const BUILD_ID = "0908bf07+ · 2026-08-28 11:58Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -13302,7 +13302,10 @@ function boardPayload() {
   };
 }
 
-let boardState = "";   // "" | "sent" | "failed"
+let boardState = "";   // "" | "sent" | "failed" | "onboard"
+/// THE ROW THIS BUILD ALREADY IS, when it is one — a `builtinBuilds()` entry,
+/// so it can be NAMED ("#1 · Incarnon cycle") rather than merely asserted.
+let boardOnBoard = null;
 
 /// How many mods a board build is, from the ENGINE via META — never a literal
 /// here. The rule is `builds::validate_for_board`; this is the page repeating
@@ -13416,6 +13419,60 @@ async function boardVerdict(body) {
   return { ok: true, accepted: accepted > 0, reason, boards: accepted, of: ids.length };
 }
 
+/// **IS THIS BUILD ALREADY A ROW?** — asked of the ENGINE, in one call.
+///
+/// The page used to answer it with a POINTER: `officialBuildActive()` says
+/// whether the ACTIVE PRESET is a builtin, which is true of a board row opened
+/// from the picker and false of the same build reached any other way. So a
+/// player who copied a board build into a preset of their own, or arrived at it
+/// independently, or moved one mod between two slots, was told their run was
+/// being uploaded to a board that already holds it (owner, 2026-08-28).
+///
+/// A BUILD IS NOT ITS SPELLING, which is why this cannot be a comparison here.
+/// `builds::canonical_mods` sorts the non-elementals by drain and leaves the
+/// elementals in the order that PAIRS them, evolutions are a set, a riven is a
+/// shape and not its rolls — and the mod POOL is what tells an elemental mod
+/// from any other, which only the engine has. `/api/build/keys` is
+/// `builds::board_key` itself, the same key the scorer files rows under, so the
+/// two sides cannot be keyed by two different answers.
+///
+/// BOTH SIDES IN ONE CALL for the same reason: the build on screen and every
+/// row this weapon holds are keyed by one engine, in one pass.
+///
+/// A MATCH IS PROOF, AN ABSENCE IS NOT. The board LISTS only builds scoring at
+/// least half their weapon's leading row, so a build the store already holds
+/// can be missing from `board.json` — which is why this only ever suppresses an
+/// upload it can prove is redundant, and never claims the reverse.
+async function boardRowMatching(body) {
+  const rows = builtinBuilds();
+  if (!rows.length) return null;
+  const asBuild = (r) => ({
+    weapon: body.weapon,
+    mods: r.board.mods || [],
+    evolutions: r.board.evolutions || [],
+    arcanes: r.board.arcanes || [],
+    valence: r.board.valence || "",
+    exilus: r.board.exilus || undefined,
+    mode: r.board.mode || "base",
+    // A ROW'S RIVEN IS A SHAPE, in the same two fields the submission uses —
+    // the ROLLS beside it are what this engine happened to settle on and are
+    // not part of the build.
+    riven_pos: (r.board.riven || {}).bonuses || [],
+    riven_neg: (r.board.riven || {}).malus || "",
+  });
+  const res = await api("/api/build/keys", { builds: [body].concat(rows.map(asBuild)) });
+  const keys = res && res.ok ? res.keys || [] : [];
+  if (!keys[0]) return null;
+  const i = keys.findIndex((k, n) => n > 0 && k === keys[0]);
+  return i > 0 ? rows[i - 1] : null;
+}
+
+/// That row, named the way the picker names it: the ruler it is on and its rank
+/// within it. A bare "already on the board" would leave the reader hunting for
+/// which row they are looking at.
+const boardRowLabel = (r) =>
+  `${r.group}${r.name ? ` · ${r.name}` : ""}`;
+
 async function offerBoardSubmit() {
   // NO RULER GATE. Any fight can upload, because what is uploaded is the BUILD
   // and the number is produced by the scorer under ITS fight (owner,
@@ -13431,6 +13488,17 @@ async function offerBoardSubmit() {
   if (!buildIsComplete()) { renderBoardConsent(); renderBoardOutcome(); return; }
   const body = boardPayload();
   if (!body) return;
+  // ALREADY A ROW? Asked before the door is, because a build the board already
+  // holds has nothing to be refused ABOUT — sending it again would be answered
+  // by the store collapsing it onto the row it is, silently, after the reader
+  // has been told it was uploaded.
+  boardOnBoard = await boardRowMatching(body);
+  if (boardOnBoard) {
+    boardState = "onboard";
+    renderBoardConsent();
+    renderBoardOutcome();
+    return;
+  }
   // THE BOARD'S OWN DOOR, ASKED BEFORE KNOCKING. The store accepts anything;
   // the SCORER decides, an hour later, in a workflow log — so a build the board
   // will never take looked exactly like one it took, forever. Three Kuva Nukor
@@ -13507,6 +13575,14 @@ function boardRunOutcome() {
     return { kind: "short",
       text: tr("{what} — the board takes a weapon built as far as it goes, so this one is not sent")
         .replace("{what}", short.join(tr(", "))) };
+  }
+  if (boardState === "onboard" && boardOnBoard) {
+    // NAMED, not merely asserted. "It is already there" that cannot say WHERE
+    // is indistinguishable from a page that declined to send for its own
+    // reasons, which is the silence this whole panel exists to end.
+    return { kind: "none",
+      text: tr("this build is already on the board ({row}) — nothing was sent")
+        .replace("{row}", boardRowLabel(boardOnBoard)) };
   }
   if (boardState === "refused") {
     return { kind: "refused",
@@ -13999,6 +14075,12 @@ async function runSim() {
       $("sim-results").innerHTML = `<div class="error">sim failed: ${r ? r.error : "no data"}</div>`;
       return;
     }
+    // A NEW RUN IS A NEW VERDICT. `renderResults` draws the outcome line
+    // itself, so leaving the last run's answer standing would state it under a
+    // build that has not been asked about yet — and now that one of the answers
+    // is "already on the board", a stale one is a claim about the wrong build.
+    boardState = "";
+    boardOnBoard = null;
     renderResults(r);
     saveSimResult(r);
     // A run under the OFFICIAL scenario is the only thing that can reach the
@@ -14310,10 +14392,13 @@ function recordMarkup(r) {
       `<div class="rec-idle"><span class="sim-hint">${escHtml(
         tr("this result was saved before the record existed — run the fight again to read it"))}</span></div>`);
   }
-  const st = recordState && recordState.key === recordKey(r) ? recordState : null;
-  const body = `<div class="rec" id="rec-host">${st ? recordBody(st) : recordIdle()}</div>`;
+  // AN EMPTY HOST, filled by `paintRecord` in the same wire pass. It used to
+  // render the table here as well, which built it TWICE on every result — and,
+  // once the record could live in its own window, built it into the wrong
+  // document before the paint moved it out again.
   return foldBlock("record", tr("Combat record"),
-    tr("one row per number the game pops, and everything behind it"), body);
+    tr("one row per number the game pops, and everything behind it"),
+    `<div class="rec" id="rec-host"></div>`);
 }
 
 function recordIdle() {
@@ -14358,7 +14443,7 @@ const RECORD_MAX_PAGES = 40;
 /// stream and a floating number can still name its row across a boundary.
 async function loadRecord(r, from, to, limit = RECORD_LIMIT, pages = 1) {
   const key = recordKey(r);
-  recordState = { key, from, to, limit, loading: true, body: null, filter: "all",
+  recordState = { key, from, to, limit, loading: true, body: null, filter: "all", at: 0,
                   page: 0, pages };
   paintRecord(r);
   // THE BUILD AND THE FIGHT, exactly as `runSim` sends them. `theFight()` is
@@ -14422,11 +14507,101 @@ async function loadRecord(r, from, to, limit = RECORD_LIMIT, pages = 1) {
   paintRecord(r);
 }
 
+/// HOW MANY ROWS THE TABLE HOLDS AT ONCE.
+///
+/// The record covers the WHOLE fight — that was the point of paging the fetch
+/// — and the densest build measured is 24,652 events. A table of 24,652 rows is
+/// ~250,000 cells, and the browser lays every one of them out on every repaint
+/// of the result panel: picking an enemy, scrubbing the replay, or simply
+/// re-rendering froze the page for seconds (owner, 2026-08-28).
+///
+/// SO THE FETCH AND THE VIEW ARE PAGED SEPARATELY, which is the whole fix: the
+/// stream in memory is still the entire fight — `Copy as text` writes all of
+/// it, and a floating number can still name its row — and only what is on
+/// SCREEN is bounded. A reader looks at one screenful either way.
+const REC_PAGE = 500;
+
+/// THE RECORD'S OWN WINDOW, while one is open.
+///
+/// Asked for as "open the combat record in a whole new page, it is very long
+/// and very big and should not be in this window" (owner, 2026-08-28). It is
+/// the same markup: the parent keeps the state and calls the same
+/// `recordBody`/`wireRecord` against the child's host, so there is ONE
+/// implementation of the table and the window is only where it is drawn.
+let recWin = null;
+/// The result the open record explains, so the window can be repainted — and
+/// handed back to the panel — without the caller that opened it.
+let recordResult = null;
+
+const recWinOpen = () => !!(recWin && !recWin.closed && recWin.document);
+
+/// WHERE THE TABLE GOES: the child's host while a window is open, this page's
+/// otherwise. Every paint goes through it, so nothing else has to know.
+function recordHostEl() {
+  if (recWinOpen()) {
+    const el = recWin.document.getElementById("rec-host");
+    if (el) return el;
+  }
+  return $("rec-host");
+}
+
+/// OPEN IT. The child is written rather than fetched: it is this app's own
+/// stylesheet over one host element, and a real navigation would boot a second
+/// copy of the whole SPA — a second wasm module, a second worker fleet — to
+/// display a table the parent already holds.
+function openRecordWindow() {
+  if (recWinOpen()) { recWin.focus(); return; }
+  const w = window.open("", "wfsim-record", "width=1500,height=900");
+  // A BLOCKED POPUP IS NOT AN ERROR AND NOT A SILENCE: the table stays where it
+  // is and the panel says why, which is the only outcome the reader can act on.
+  if (!w) { recWin = null; paintRecord(recordResult); return; }
+  recWin = w;
+  const doc = w.document;
+  doc.open();
+  doc.write(`<!doctype html><meta charset="utf-8">`
+    + `<meta name="viewport" content="width=device-width,initial-scale=1">`
+    + `<title>${escHtml(tr("Combat record"))} · WFSim</title>`
+    + `<link rel="stylesheet" href="/style.css">`
+    + `<body><div class="rec recwin" id="rec-host"></div>`);
+  doc.close();
+  // THE READER'S OWN THEME AND LANGUAGE, copied rather than re-derived — the
+  // page decides both and a second answer here would be a second setting.
+  doc.documentElement.lang = document.documentElement.lang || "en";
+  doc.documentElement.className = document.documentElement.className;
+  doc.body.className = document.body.className;
+  // CLOSING IT HANDS THE TABLE BACK, rather than leaving the panel showing a
+  // window that is not there any more.
+  w.addEventListener("pagehide", () => {
+    recWin = null;
+    paintRecord(recordResult);
+  });
+  paintRecord(recordResult);
+}
+
 function paintRecord(r) {
-  const host = $("rec-host");
-  if (!host) return;
-  host.innerHTML = recordState ? recordBody(recordState) : recordIdle();
-  wireRecord(r);
+  if (r) recordResult = r;
+  const host = recordHostEl();
+  if (host) {
+    // THE STATE HAS TO BE ABOUT THIS RUN. A record explains ONE engagement, and
+    // this now paints on every result render — a stored result picked from the
+    // list, an enemy chosen in the roll call — so a record left over from the
+    // previous run would be drawn under the new one's heading.
+    const st = recordState && recordResult && recordState.key === recordKey(recordResult)
+      ? recordState : null;
+    host.innerHTML = st ? recordBody(st) : recordIdle();
+    wireRecord(recordResult, host);
+  }
+  // …AND THE PANEL SAYS WHERE IT WENT. An empty block where a table used to be
+  // reads as the feature breaking, which is exactly the report this came from.
+  const inline = $("rec-host");
+  if (inline && inline !== host) {
+    inline.innerHTML = `<div class="rec-idle">`
+      + `<span class="sim-hint">${escHtml(tr("the record is open in its own window"))}</span>`
+      + `<button class="ghost-btn small" id="rec-back">${escHtml(tr("Bring it back here"))}</button>`
+      + `</div>`;
+    const back = inline.querySelector("#rec-back");
+    if (back) back.onclick = () => { if (recWinOpen()) recWin.close(); recWin = null; paintRecord(recordResult); };
+  }
 }
 
 /// WHO THE ROWS ARE ABOUT. A weapon event belongs to NOBODY — a reload is not
@@ -14468,6 +14643,12 @@ function recordBody(st) {
   const rows = events.filter((e) => e.body == null || e.body === pick);
   const shown = rows.filter((e) => recordPasses(e, st.filter));
   const n = (x) => Math.round(x).toLocaleString();
+  // ONE SCREENFUL OF THE STREAM — see `REC_PAGE`. `at` is clamped rather than
+  // trusted: the list under it changes length whenever the filter or the body
+  // does, and a stale offset past the end would draw an empty table over a
+  // fight that has thousands of rows in it.
+  const at = Math.max(0, Math.min(st.at || 0, Math.max(0, shown.length - 1)));
+  const page = shown.slice(at, at + REC_PAGE);
 
   const chips = bodies.map(([b, dmg]) =>
     `<button class="pchip${b === pick ? " sel" : ""}" data-recbody="${b}">${
@@ -14486,7 +14667,10 @@ function recordBody(st) {
       ${bodies.length > 1 ? `<span class="tlabel">${escHtml(tr("whose"))}</span>${chips}<span class="rec-sep"></span>` : ""}
       <span class="tlabel">${escHtml(tr("only"))}</span>${kinds}
       <span class="rec-sep"></span>
-      <button class="ghost-btn small" id="rec-copy">${escHtml(tr("Copy as text"))}</button>
+      <button class="ghost-btn small" id="rec-copy">${escHtml(tr("Copy as text"))}</button>${
+      // …AND A WINDOW OF ITS OWN, offered only where it is not already in one.
+      recWinOpen() ? "" :
+        ` <button class="ghost-btn small" id="rec-pop">${escHtml(tr("Open in its own window"))}</button>`}
     </div>
     <div class="rec-count">${escHtml(tr("{n} numbers popped").replace("{n}", n(dmg)))}${
       // WHICH SLICE OF THE FIGHT THIS IS. Silent for a stream that covers the
@@ -14506,6 +14690,7 @@ function recordBody(st) {
           + `<span class="sim-hint"> ${escHtml(tr("about {mb} MB").replace("{mb}",
               (((events.length + st.dropped) * 481) / 1e6).toFixed(0)))}</span>`
         : ""}</div>
+    ${recordPager(at, shown.length)}
     <div class="rec-scroll"><table class="rec-t">
       <thead><tr>
         <th>${escHtml(tr("time"))}</th><th>${escHtml(tr("damage source"))}</th>
@@ -14518,8 +14703,34 @@ function recordBody(st) {
         <th>${escHtml(tr("before · target"))}</th>
         <th>${escHtml(tr("statuses on the target"))}</th>
       </tr></thead>
-      <tbody>${shown.map((e) => recordRow(e, st.rosters || { buffs: [], debuffs: [] })).join("")}</tbody>
-    </table></div>`;
+      <tbody>${page.map((e) => recordRow(e, st.rosters || { buffs: [], debuffs: [] })).join("")}</tbody>
+    </table></div>
+    ${recordPager(at, shown.length)}`;
+}
+
+/// WHICH SCREENFUL OF THE LIST THIS IS, above the table and below it — a reader
+/// who has scrolled to the bottom of five hundred rows is exactly the reader
+/// who wants the next five hundred, and sending them back to the top for the
+/// control would be the whole point of paging thrown away.
+///
+/// It draws NOTHING for a list that fits, which is most of them: a pager on a
+/// forty-row record is furniture that says the same thing twice.
+function recordPager(at, total) {
+  if (total <= REC_PAGE) return "";
+  const to = Math.min(total, at + REC_PAGE);
+  const step = (target, label, on) => on
+    ? `<button class="pchip" data-recat="${target}">${escHtml(label)}</button>`
+    : `<button class="pchip" disabled>${escHtml(label)}</button>`;
+  return `<div class="rec-pager">
+    ${step(0, "«", at > 0)}
+    ${step(Math.max(0, at - REC_PAGE), "‹", at > 0)}
+    <span class="tlabel">${escHtml(tr("{a}–{b} of {n}")
+      .replace("{a}", (at + 1).toLocaleString())
+      .replace("{b}", to.toLocaleString())
+      .replace("{n}", total.toLocaleString()))}</span>
+    ${step(at + REC_PAGE, "›", to < total)}
+    ${step(Math.max(0, (Math.ceil(total / REC_PAGE) - 1) * REC_PAGE), "»", to < total)}
+  </div>`;
 }
 
 function recordPasses(e, filter) {
@@ -14740,10 +14951,22 @@ function recordEventName(e) {
   }[e.kind] || e.kind;
 }
 
-function wireRecord(r) {
-  const load = $("rec-load");
+/// EVERY CONTROL IS FOUND INSIDE THE HOST, never in `document`.
+///
+/// The table draws into this page or into the record's own window, and the two
+/// are different documents — a `$("rec-copy")` would reach the wrong one, or
+/// nothing at all, the moment the window opened. The host is the one thing both
+/// paths have (owner, 2026-08-28).
+function wireRecord(r, host) {
+  const el = (sel) => (host || document).querySelector(sel);
+  const load = el("#rec-load");
   if (load) load.onclick = () => loadRecord(r, 0, null);
-  const all = $("rec-all");
+  const pop = el("#rec-pop");
+  if (pop) pop.onclick = () => openRecordWindow();
+  (host || document).querySelectorAll("[data-recat]").forEach((b) => {
+    b.onclick = () => { recordState.at = Number(b.dataset.recat); paintRecord(r); };
+  });
+  const all = el("#rec-all");
   // ROOM FOR WHAT IT SAID DID NOT FIT, plus a fifth — `dropped` is counted one
   // per INSTANCE and a hit on a shielded body is two rows, so asking for
   // exactly the shortfall would come up short again on the one target shape
@@ -14754,13 +14977,16 @@ function wireRecord(r) {
       loadRecord(r, st.from || 0, st.to, st.limit || RECORD_LIMIT, RECORD_MAX_PAGES);
     };
   }
-  document.querySelectorAll("[data-recbody]").forEach((b) => {
-    b.onclick = () => { recordState.body = Number(b.dataset.recbody); paintRecord(r); };
+  // CHANGING WHAT IS LISTED GOES BACK TO THE TOP OF IT. Keeping the row
+  // offset across a filter change lands the reader in the middle of a
+  // different list, at a position that means nothing.
+  (host || document).querySelectorAll("[data-recbody]").forEach((b) => {
+    b.onclick = () => { recordState.body = Number(b.dataset.recbody); recordState.at = 0; paintRecord(r); };
   });
-  document.querySelectorAll("[data-reckind]").forEach((b) => {
-    b.onclick = () => { recordState.filter = b.dataset.reckind; paintRecord(r); };
+  (host || document).querySelectorAll("[data-reckind]").forEach((b) => {
+    b.onclick = () => { recordState.filter = b.dataset.reckind; recordState.at = 0; paintRecord(r); };
   });
-  const copy = $("rec-copy");
+  const copy = el("#rec-copy");
   if (copy) {
     copy.onclick = () => {
       const txt = (recordState.events || []).map(recordLine).join("\n");
@@ -15781,7 +16007,7 @@ function renderResults(r, testedAt) {
   // so its buttons are rebound here rather than kept — and the state that says
   // WHICH body and WHICH filter lives outside the markup, the same rule the
   // fold state follows one function over.
-  wireRecord(r);
+  paintRecord(r);
   wireReplay(r);
   // Chart hover: crosshair + tooltip on the nearest time bucket.
   const wrap = $("sim-results").querySelector(".tl-wrap");

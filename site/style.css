@@ -1904,6 +1904,17 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .rec-tools .pchip .ct{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
 .rec-sep{width:1px;height:18px;background:var(--line);margin:0 3px}
 .rec-count{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;margin-bottom:6px}
+/* WHICH SCREENFUL — drawn above the table and below it, because a reader who
+   has scrolled five hundred rows is the one who wants the next five hundred. */
+.rec-pager{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 0;
+  font-variant-numeric:tabular-nums}
+.rec-pager .tlabel{font-size:11px;color:var(--muted);letter-spacing:.03em}
+.rec-pager .pchip[disabled]{opacity:.35;cursor:default}
+/* THE RECORD IN ITS OWN WINDOW. The child document is this stylesheet over one
+   host element, so it needs only the page margin the app's own layout supplies
+   here — and the table gets the whole viewport to be long in. */
+.recwin{padding:14px 16px;max-width:none}
+.recwin .rec-scroll{max-height:calc(100vh - 190px)}
 /* THE ONE BLOCK THAT NEEDS THE SCREEN.
    The record is a ten-column ledger and the column it exists for — where the
    number comes from — is the widest of them, so inside the page's own reading

@@ -1344,6 +1344,75 @@ around (decision 2026-07-31).
   at the bottom of `recordRow` while the factor lookups sit above it is a
   temporal dead zone, and it throws from inside an async paint — which surfaces
   as the panel sitting on "reading…" for ever with nothing in the console.
+- **A BUILD THE BOARD ALREADY HOLDS IS NOT SENT TO IT AGAIN, AND THE PAGE ASKS
+  THE ENGINE WHICH** (owner, 2026-08-28). The page answered "is this already a
+  row?" with a POINTER: `officialBuildActive()` says whether the ACTIVE PRESET
+  is a builtin, which is true of a board row opened from the picker and false of
+  the same build reached any other way. So the ⧉ the picker offers on every
+  benchmark row produced a build the panel then announced it was uploading to a
+  board that already holds it — reported from the owner's own session.
+  A BUILD IS NOT ITS SPELLING, which is why this could never be a comparison on
+  the page. `builds::canonical_mods` sorts the non-elementals by drain and
+  leaves the elementals in the order that PAIRS them, evolutions are a set, a
+  riven is a shape and not its rolls — and the mod POOL is what tells an
+  elemental mod from any other, which only the engine has (`META.mods` carries
+  no element, deliberately). `/api/build/keys` keys a LIST of builds through
+  `builds::board_key`, so the build on screen and every row its weapon holds are
+  keyed by one engine in one pass, and there is no second answer to grow apart
+  from the scorer's.
+  `builds::board_key` IS THAT ONE SPELLING, and it moved out of the scorer to
+  become it: `format!("{}#{}", identity(&v), mode)` was written at two call
+  sites in `wfsim-board` and is now written once, defaulting a blank mode to
+  `base` where both callers can see it. THE MODE IS PART OF THE KEY because one
+  build played two ways is two entrants.
+  A MATCH IS PROOF AND AN ABSENCE IS NOT. The board LISTS only builds scoring at
+  least half their weapon's leading row, so a build the store already holds can
+  be missing from `board.json` — the page therefore only ever suppresses an
+  upload it can prove is redundant, and never claims the reverse.
+  SWAPPING A MOD WAS ALREADY THE SAME BUILD and needed no change: it was the
+  only one of the three things reported that the engine had right, because
+  `canonical_mods` has normalised it since the board began. The one order that
+  IS the identity is the elemental one, and it is a different fight — Torid
+  Heat/Cold/Toxin/Electric is Blast+Corrosive at 12,424 DPS against
+  Heat/Toxin/Cold/Electric's Gas+Magnetic at 46,583.
+  `node scripts/check_board_dedup.mjs` is the FORTY-FIRST check and its NEGATIVE
+  CONTROL is the half that matters: "nothing is uploaded" passes perfectly on a
+  page that has stopped uploading altogether, which would be a far worse bug
+  than the one this fixes, so a build the board does not hold must still be
+  offered. Verified to bite: restoring the pointer answer reddens two, one
+  reading the reported sentence verbatim.
+- **A LONG RECORD IS PAGED, AND IT CAN LEAVE THIS WINDOW** (owner, 2026-08-28).
+  Paging the FETCH made the record cover the whole fight, which made the VIEW
+  the problem: the densest build measured is 24,652 events, a table of 24,652
+  rows is ~250,000 cells, and the browser lays every one of them out again on
+  every repaint of the result panel — so picking an enemy in the roll call or
+  scrubbing the replay froze the page for seconds.
+  THE FETCH AND THE VIEW ARE PAGED SEPARATELY, and that split is the fix. The
+  stream in memory is still the entire fight — `Copy as text` writes all of it
+  and a floating number can still name its row across a page boundary — and only
+  what is on SCREEN is bounded (`REC_PAGE`, 500). A reader looks at one
+  screenful either way, and the pager is drawn above the table AND below it,
+  because a reader who has scrolled five hundred rows is exactly the one who
+  wants the next five hundred.
+  AND IT OPENS IN A WINDOW OF ITS OWN, which is what was asked for. The parent
+  keeps the state and calls the same `recordBody`/`wireRecord` against the
+  child's host, so there is ONE implementation of the table and the window is
+  only where it is drawn — every control is found inside the HOST rather than in
+  `document`, because the two are different documents and a `$("rec-copy")`
+  would reach the wrong one. The child is WRITTEN rather than navigated to: a
+  real navigation would boot a second copy of the whole SPA — a second wasm
+  module, a second worker fleet — to display a table the parent already holds.
+  A BLOCKED POPUP IS NOT A SILENCE (the table stays where it is), and closing
+  the window hands it back.
+  `recordMarkup` now emits an EMPTY host and `paintRecord` fills it, which also
+  fixed something older: the table was being built twice on every result, once
+  into the markup and once by the paint.
+  Its assertions live in `check_combat_record.mjs`, on a fixture that had to be
+  lengthened to 60 s to reach them — every paging claim passes VACUOUSLY on a
+  record that fits on one page. The popup half needs `evaluate(…, { userGesture:
+  true })`: `window.open` outside a gesture is blocked, so a check that clicks
+  the button without one watches the feature fail for a reason no reader would
+  ever hit. Verified to bite: removing the pager and the window reddens five.
 - **`one_fight` COMPARES TWO BINARIES, NOT TWO MOMENTS** (2026-08-28). Its
   baseline is a property of the machine on the day, and a day of driving
   headless browsers moves that machine: three changes measured at +2.3%, +4.9%

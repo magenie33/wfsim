@@ -415,6 +415,14 @@ const live = await evaluate(`(async () => {
   const row = b.find((x) => !x.riven && x.mode === 'cycle') || b[0];
   if (row) pickPreset(buildBarCfg(), presetId(row));
   await sleep(2500);
+  // A LONG ENOUGH FIGHT TO NEED PAGING. The scenario above is six seconds,
+  // which is right for reading one instance's arithmetic and is nowhere near
+  // the fights this panel had to be paged for — and the paging assertions at
+  // the bottom of this file pass VACUOUSLY on a record that fits on one page.
+  // A real board build over a minute is thousands of rows.
+  sim.duration = 60; sim.runs = 3;
+  markScenarioDirty && markScenarioDirty();
+  await sleep(400);
   document.getElementById('run-sim').click();
   for (let i = 0; i < 300 && !document.getElementById('rp-scrub'); i++) await sleep(500);
   const btn = document.getElementById('rec-load');
@@ -459,5 +467,64 @@ check(`${tag} ...and a stack carries an expiry still ahead of its own row`,
   live.clocked > 0 && live.ahead === true, `${live.clocked} with a clock`);
 check(`${tag} ...drawn as a countdown beside the count`,
   live.drawn > 0, `${live.drawn} chips with a time`);
+
+// ---------------------------------------------------------------------------
+// A LONG RECORD IS PAGED, AND IT CAN LEAVE THIS WINDOW.
+//
+// The record covers the whole fight, and the fights people argue about are tens
+// of thousands of rows — which the browser lays out again on every repaint of
+// the result panel, so picking an enemy or scrubbing the replay froze the page
+// for seconds (owner, 2026-08-28). Two answers, and this asserts both on the
+// SAME fixture as above, which is a real board build and long enough to reach
+// them: the table draws one screenful, and the whole thing can be moved into a
+// window of its own.
+//
+// THE WINDOW NEEDS A GESTURE. `window.open` outside one is blocked, so the
+// click is evaluated as the reader's — without it the button would look broken
+// for a reason nobody using the app would ever hit.
+const paged = await evaluate(`(() => ({
+  rows: document.querySelectorAll('#rec-host > .rec-scroll > table.rec-t > tbody > tr').length,
+  total: (recordState && recordState.events || []).length,
+  pager: !!document.querySelector('.rec-pager'),
+  page: REC_PAGE,
+}))()`);
+
+check(`${tag} the table draws one screenful, however long the fight is`,
+  paged.total > paged.page && paged.rows <= paged.page,
+  `${paged.rows} rows of ${paged.total}`);
+check(`${tag} ...and says which screenful it is`,
+  paged.pager === true, JSON.stringify(paged));
+
+const win = await evaluate(`(() => {
+  const b = document.querySelector('#rec-pop');
+  if (!b) return { noButton: true };
+  b.click();
+  const d = recWin && recWin.document;
+  return {
+    opened: !!(recWin && !recWin.closed),
+    childRows: d ? d.querySelectorAll('#rec-host > .rec-scroll > table.rec-t > tbody > tr').length : -1,
+    styled: d ? !!d.querySelector('link[rel="stylesheet"]') : false,
+    // …AND OUT OF THIS ONE, which is the whole point: a table that is drawn in
+    // both places has moved nothing off the page that was freezing.
+    handedOver: !document.querySelector('#rec-host table.rec-t'),
+    back: !!document.querySelector('#rec-back'),
+  };
+})()`, { userGesture: true });
+
+check(`${tag} ...and the whole record opens in a window of its own`,
+  win.opened === true && win.childRows > 0 && win.styled === true, JSON.stringify(win));
+check(`${tag} ...drawn THERE and not here`,
+  win.handedOver === true && win.back === true, JSON.stringify(win));
+
+const back = await evaluate(`(() => {
+  // GUARDED, so a build where the window never opened FAILS the assertion
+  // rather than throwing out of the check — a crash reports the wrong thing.
+  const b = document.querySelector('#rec-back');
+  if (b) b.click();
+  return { clicked: !!b, table: !!document.querySelector('#rec-host table.rec-t'),
+           closed: !recWin || recWin.closed };
+})()`);
+check(`${tag} ...and comes back when it is closed`,
+  back.clicked === true && back.table === true && back.closed === true, JSON.stringify(back));
 
 await finish("every row of the record produces its own number");

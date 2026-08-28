@@ -227,9 +227,14 @@ export async function openApp(o = {}) {
     /// the copies of this helper did that and half did not, so the same bug
     /// read as "the assertion is false" in one check and "the value is
     /// missing" in another.
-    async evaluate(expr) {
+    /// `opts.userGesture` marks the evaluation as one the reader made. It is
+    /// what a POPUP needs: `window.open` outside a gesture is blocked, so a
+    /// check that clicks the button without it watches the feature fail for a
+    /// reason no reader would ever hit.
+    async evaluate(expr, opts = {}) {
       const r = await send("Runtime.evaluate", {
         expression: expr, awaitPromise: true, returnByValue: true,
+        userGesture: !!opts.userGesture,
       });
       const ex = r.result?.exceptionDetails;
       if (ex) {

@@ -1087,6 +1087,18 @@ fn check_riven_shape(
     Ok(())
 }
 
+/// THE BOARD'S OWN ROW KEY: an [`identity`] and the MODE it was played in.
+///
+/// One row per (build, mode) — a build played two ways is two entrants, and
+/// collapsing them would keep whichever arrived first. It is here rather than
+/// at the scorer's two call sites because the PAGE asks the same question now
+/// ("is what I am looking at already a row?") and a second spelling of a key is
+/// how one side quietly stops matching the other (owner, 2026-08-28).
+pub fn board_key(b: &ValidBuild, mode: &str) -> String {
+    let mode = if mode.is_empty() { "base" } else { mode };
+    format!("{}#{}", identity(b), mode)
+}
+
 /// The FIGHT this build is, as one stable string.
 ///
 /// Everything that changes the number and nothing that does not — see the
@@ -1682,6 +1694,20 @@ mod tests {
     /// Electric pairs to Gas + Magnetic and scores 46,583 (measured
     /// 2026-08-04). One row for both would have published a number belonging
     /// to neither.
+    #[test]
+    fn a_row_key_is_an_identity_and_the_mode_it_was_played_in() {
+        let v = |x: &[&str]| x.iter().map(|s| (*s).to_string()).collect::<Vec<_>>();
+        let b = validate("torid", &v(&["serration"]), &[], &[], "").unwrap();
+        // ONE ROW PER (BUILD, MODE): a build played two ways is two entrants.
+        assert_ne!(board_key(&b, "base"), board_key(&b, "cycle"));
+        // …AND A BLANK MODE IS `base`, which is what every row written before
+        // the dimension existed means. The page and the scorer both hand over
+        // whatever they were given, so the default belongs here rather than at
+        // two call sites that could disagree about it.
+        assert_eq!(board_key(&b, ""), board_key(&b, "base"));
+        assert_eq!(board_key(&b, "base"), format!("{}#base", identity(&b)));
+    }
+
     #[test]
     fn the_order_of_the_mods_is_part_of_the_identity() {
         let a = validate("torid", &v(&["hellfire", "cryo_rounds", "infected_clip", "stormbringer"]), &[], &[], "").unwrap();
