@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 3280
-engine: 7176e9fd5bb89c6c960f827a9e0f758c6ce7dca0
+submissions: 3318
+engine: d62c1a7e0ba3620b9ba7be9afea54573640cddd8
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -262,6 +262,14 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, primed_heated_charge]
     evolutions: [atomos_evo1_incarnon_form, atomos_hoplite_virtue, atomos_moonrise_velocity, atomos_elemental_balance]
     arcanes: [secondary_enervate]
+  - weapon: atomos
+    mode: base
+    score: 4.762980451619209
+    fp: c48e2704f54dcab1
+    exilus: ruinous_extension
+    mods: [galvanized_diffusion, lethal_torrent, creeping_bullseye, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, scorch]
+    evolutions: [atomos_evo1_incarnon_form, atomos_paladin_virtue, atomos_mercenary_chamber, atomos_survivors_edge]
+    arcanes: [cascadia_flare]
   - weapon: atomos
     mode: base
     score: 4.666706500502713
@@ -1141,6 +1149,15 @@ entries:
     valence: electricity
   - weapon: corinth_prime
     mode: base
+    score: 0.9407791764566836
+    fp: a1c783c51fb45775
+    mods: [galvanized_hell, primed_point_blank, galvanized_savvy, critical_deceleration, magnetic_strafe, riven, primed_charged_shell, toxic_barrage]
+    arcanes: [shotgun_vendetta]
+    riven:
+      bonuses: [critical_damage, damage, multishot]
+      rolls: [1.1, 1.1, 1.1]
+  - weapon: corinth_prime
+    mode: base
     score: 0.6569262028291404
     fp: 3bdd17438ccf6790
     exilus: galvanized_acceleration
@@ -1172,17 +1189,6 @@ entries:
     fp: 759a3faf74b0dbb9
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, semi_shotgun_cannonade, magnetic_strafe, incendiary_coat, blaze]
     arcanes: [primary_crux]
-  - weapon: corinth_prime
-    mode: base
-    score: 0.32955889047098175
-    fp: 3bdd17438ccf6790
-    exilus: galvanized_acceleration
-    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, magnetic_strafe, riven, primed_charged_shell, toxic_barrage]
-    arcanes: [shotgun_vendetta]
-    riven:
-      bonuses: [critical_damage, damage_to_grineer, fire_rate]
-      malus: reload_speed
-      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: corinth_prime
     mode: base
     score: 0.31455130059029635
@@ -2131,6 +2137,34 @@ entries:
     mods: [primed_dual_rounds, primed_rubedo_lined_barrel, automatic_trigger, hollowed_bullets, parallax_scope, primed_electrified_barrel, contamination_casing, magma_chamber]
     arcanes: [primary_crux, cascadia_flare]
     valence: impact
+  - weapon: kuva_bramma
+    mode: base
+    score: 0.2343830281689104
+    fp: 104073115ca0f6aa
+    mods: [galvanized_chamber, heavy_caliber, primed_firestorm, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
+    arcanes: [primary_merciless]
+    valence: toxin
+  - weapon: kuva_bramma
+    mode: base
+    score: 0.2312806216689497
+    fp: c735cefca410765a
+    mods: [galvanized_chamber, heavy_caliber, primed_firestorm, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
+    arcanes: [primary_merciless]
+    valence: toxin
+  - weapon: kuva_bramma
+    mode: base
+    score: 0.12147643041559032
+    fp: 1f6af0792fa17376
+    mods: [galvanized_chamber, primed_firestorm, critical_delay, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, malignant_force]
+    arcanes: [primary_merciless]
+    valence: toxin
+  - weapon: kuva_bramma
+    mode: base
+    score: 0.11827850810661898
+    fp: 65eda5cc0205f154
+    mods: [galvanized_chamber, primed_firestorm, critical_delay, vigilante_armaments, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip]
+    arcanes: [primary_merciless]
+    valence: toxin
   - weapon: kuva_drakgoon
     mode: base
     score: 0.6135173520017677
@@ -2366,6 +2400,18 @@ entries:
       rolls: [0.9, 1.1, 0.9]
   - weapon: kuva_nukor
     mode: base
+    score: 10
+    fp: 62c77cc1de086edb
+    exilus: trick_mag
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, frostbite, riven, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+    riven:
+      bonuses: [critical_chance, multishot, toxin]
+      malus: reload_speed
+      rolls: [1.1, 1.1, 0.9, 1.1]
+  - weapon: kuva_nukor
+    mode: base
     score: 9.964965105906751
     fp: a99f1d477c3b2fe8
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, magnetic_might, riven, primed_heated_charge]
@@ -2388,6 +2434,14 @@ entries:
     mode: base
     score: 9.931074514190469
     fp: 9cdf702aadbc96b2
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    score: 9.931074514190469
+    fp: 84a64aff90127af0
+    exilus: trick_mag
     mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
@@ -2444,6 +2498,18 @@ entries:
     valence: magnetic
   - weapon: kuva_nukor
     mode: base
+    score: 8.168548487435276
+    fp: 1013f05a7eaa0cc2
+    exilus: trick_mag
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, lethal_torrent, magnetic_might, frostbite, riven, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: impact
+    riven:
+      bonuses: [critical_damage, damage, toxin]
+      malus: damage_to_grineer
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: kuva_nukor
+    mode: base
     score: 7.931336415430517
     fp: dd77c4f1aefc9ca7
     mods: [galvanized_diffusion, hornet_strike, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge, scorch]
@@ -2456,6 +2522,13 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, galvanized_shot, pistol_elementalist, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: heat
+  - weapon: kuva_nukor
+    mode: base
+    score: 7.33371066339429
+    fp: ed48213b0aab97d3
+    mods: [seeker, galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
   - weapon: kuva_nukor
     mode: base
     score: 7.061785293626883
@@ -2495,6 +2568,13 @@ entries:
     score: 6.060892292100966
     fp: 888409787b20aab2
     mods: [seeker, galvanized_diffusion, hornet_strike, primed_target_cracker, lethal_torrent, frostbite, pistol_pestilence, primed_heated_charge]
+    arcanes: [secondary_enervate]
+    valence: magnetic
+  - weapon: kuva_nukor
+    mode: base
+    score: 6.034524787698944
+    fp: f16a9651babac602
+    mods: [merciless_gunfight, seeker, galvanized_diffusion, hornet_strike, pistol_elementalist, frostbite, pistol_pestilence, primed_heated_charge]
     arcanes: [secondary_enervate]
     valence: magnetic
   - weapon: kuva_nukor
@@ -4822,6 +4902,17 @@ entries:
     riven:
       bonuses: [damage, heat, multishot]
       malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
+    score: 4.039206703580001
+    fp: aca6640575cb57a1
+    mods: [galvanized_chamber, heavy_caliber, critical_delay, vital_sense, riven, primed_cryo_rounds, malignant_force, hellfire]
+    evolutions: [torid_evo1_incarnon_form, torid_final_fusillade, torid_extended_volley, torid_commodores_fortune]
+    arcanes: [primary_merciless]
+    riven:
+      bonuses: [critical_chance, critical_damage, fire_rate]
+      malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
