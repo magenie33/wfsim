@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "35be2a05+ · 2026-08-28 07:10Z";
+const BUILD_ID = "90caa521+ · 2026-08-28 08:05Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -14569,8 +14569,13 @@ function ledgerRows(e) {
   const n2 = (x) => x.toLocaleString(undefined, { maximumFractionDigits: 2 });
   const sign = (v) => (v < 0 ? "−" : "+");
   // A TERM OF A BRACKET, with the pair it is a product of where it has one.
-  const term = (t) => `<span class="lg-term"><i class="lg-op">${sign(t.v)}</i>${
-    n2(Math.abs(t.v))}<b>${escHtml(tr(F(t.f)))}</b>${
+  // A TERM NAMES ITSELF ONLY WHEN THE NAME IS EXACT. Where the engine holds a
+  // SUM and cannot say which cards are in it, the number goes on alone — a
+  // category label there sends a reader looking for a card that matches it and
+  // there is none, which is worse than saying nothing (owner, 2026-08-28).
+  const term = (t) => `<span class="lg-term"${t.f == null ? "" : ` data-factor="${
+    escHtml(F(t.f))}"`}><i class="lg-op">${sign(t.v)}</i>${n2(Math.abs(t.v))}${
+    t.f == null ? "" : `<b>${escHtml(tr(F(t.f)))}</b>`}${
     t.o ? `<em>${n2(t.o[0])} × ${n2(t.o[1])}</em>` : ""}</span>`;
 
   return (e.layers || []).map((l) => {
@@ -14587,10 +14592,14 @@ function ledgerRows(e) {
       return `<div class="lg lg-q">
         <span class="lg-lbl">${escHtml(tr("quantization"))}</span>
         <span class="lg-body"><span class="lg-scale">${escHtml(tr("grid"))} ${
-          n2(l.scale)}</span><table class="lg-snap">${(l.c || []).map(([ty, from, units, to]) =>
-          `<tr><td>${escHtml(DT(ty))}</td><td class="num">${n2(from)}</td><td class="ar">→</td>${
-            ""}<td class="num">${n2(units)}</td><td class="ar">→</td><td class="num sn">${
-            Math.round(units)}</td><td class="num to">${n2(to)}</td></tr>`).join("")}</table><span class="lg-out">${n(l.o)}</span></span></div>`;
+          n2(l.scale)}</span><table class="lg-snap"><thead><tr><td></td><td class="num pc">${
+          escHtml(tr("of base"))}</td><td class="num">${escHtml(tr("before"))}</td><td></td><td class="num">${
+          escHtml(tr("units"))}</td><td></td><td class="num sn">${escHtml(tr("snapped"))}</td><td class="num to">${
+          escHtml(tr("after"))}</td></tr></thead>${(l.c || []).map(([ty, from, units, to]) =>
+          `<tr><td>${escHtml(DT(ty))}</td><td class="num pc">${
+            l.o ? "+" + ((from / (l.scale * 32)) * 100).toFixed(1) + "%" : ""}</td><td class="num">${
+            n2(from)}</td><td class="ar">→</td><td class="num">${n2(units)}</td><td class="ar">→</td>${
+            ""}<td class="num sn">${Math.round(units)}</td><td class="num to">${n2(to)}</td></tr>`).join("")}</table><span class="lg-out">${n(l.o)}</span></span></div>`;
     }
     // A MULTIPLICATIVE BRACKET — the only shape that earns a sign.
     return `<div class="lg lg-m">

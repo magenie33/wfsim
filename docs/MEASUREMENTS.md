@@ -4736,38 +4736,122 @@ takes the critical-location fold-in like any other hit on an eligible weak point
 — no exception was invented for it, because inventing one would be a claim with
 no measurement behind it.
 
-### What the position model found
+### What the position model found: six is not reachable
 
-**Four strikes reach a lone standing enemy, not six.** It is the weapon's own
-numbers: 2 m/s onward with six metres of reach puts a stationary body out of
-range after three seconds. Six is what the ORB does; how many reach one enemy
-who does not move is a question only a position model can ask, and this is the
-first thing it answered.
+**Four strikes land on a lone standing enemy, and no throw distance buys six.**
+It is arithmetic rather than a simulation result. A stationary body is inside
+the reach for a bounded window:
 
-That is not a contradiction of the measurement — the owner's six is the count of
-strikes the orb makes — but it IS a number a player will notice, so it is on the
-weapon's page rather than buried: read the single-target figure as a floor, and
-expect more from a crowd, where the orb drifting on is exactly what lets it
-reach the next body.
+```
+  approach   (reach + body radius) / launch speed   6.25 / 6 = 1.04 s
+  departure  (reach + body radius) / slowed speed   6.25 / 2 = 3.13 s
 
-`an_orb_that_drifts_leaves_a_lone_target_behind` pins it at four against the
-same orb held still at six, so the two arms differ by distance and nothing else.
-If the post-contact speed or the reach is ever measured directly, that test says
-what the old answer was worth.
+  at contact                          (no approach)            3.13 s  ->  4
+  thrown from beyond the reach                                 4.17 s  ->  5
+```
+
+Six strikes a second apart need the body in reach for more than five seconds,
+and 4.17 s is the most these numbers can buy. The owner proposed that a
+mid-range throw would fix it — *"如果是有一定距离，例如10m，那么飞行4m以后，就会
+开始第一下（因为半径是6m），那应该就可以完整打完"* — and the model says it does
+not: the approach is worth at most another second, so the count goes 4, 4, 5, 4,
+5, 4… across the whole range and never six. Measured every metre from contact to
+30 m.
+
+WHAT WOULD BUY SIX, measured rather than derived, so the bound above is a
+statement about these two numbers and not about the model:
+
+| post-contact speed | reach | strikes at contact |
+| --- | --- | --- |
+| 2.0 m/s | 6.0 m | 4 |
+| 1.5 m/s | 6.0 m | 5 |
+| **1.2 m/s** | 6.0 m | **6** |
+| 2.0 m/s | 7.5 m | 5 |
+| 2.0 m/s | 8.0 m | 5 |
+| **0.0 m/s** (it stops) | 6.0 m | **6** |
+
+So the measured six needs the post-contact speed at **1.25 m/s or below**, or a
+reach of **9.75 m or more**, or an orb that stays near what it touched.
+
+### …and it is the third one, for a reason the arena cannot have
+
+> 我确定这是对的，之前可以打6个是因为有墙，碰见墙就反弹
+
+**The orb bounces off walls.** Every number in the entry is right and the model
+is right; what produced six in game is a room. An orb thrown at a body at
+contact meets a wall or the floor within a metre or two, comes back, and spends
+its whole fuse near what it was thrown at — so it strikes six times and
+detonates on the target. In an open field it drifts twelve metres and does
+neither.
+
+THIS ARENA HAS NO WALLS, which is a standing limitation rather than anything new
+(the same sentence `ricochet_terrain` has carried since the Latron Incarnons
+landed). What is new is a weapon where it is worth a great deal: measured on the
+same fight, an orb held near its target against one that drifts away is
+**12,611.6 DPS against 8,105.7 — +55.6%**, and the difference is four strikes
+becoming six plus a detonation that lands at all.
+
+So the single-target number this app reports for the Grimoire's alt fire is a
+FLOOR, and an unusually loose one. It is on the weapon's own page in both
+languages rather than left in a yaml, because a player comparing this weapon
+against another needs to know that one of them is being measured in a field and
+played in a corridor.
+
+The three-row table above stays because it is what MADE the answer findable: it
+turned "your six and my four disagree" into three numbers, each checkable in
+game, and the owner recognised the mechanism from the third row. That is the
+useful thing a position model produces and no aggregate could.
+
+`an_orb_that_drifts_leaves_a_lone_target_behind` pins the whole finding: four at
+contact, five as the ceiling over thirty metres, and six at 1.2 m/s and at a
+standstill. Whichever of the three turns out to be right, that test says what
+the old answer was worth.
+
+### The chain, settled
+
+*"不受增益"* meant the RANGE bucket, not the damage one:
+
+> 这里的增益，是指范围增益，就是跳的距离永远是6m，那些其他的什么暴击等等的都是
+> 正常加成的 … 你就认为是chain起来没有衰减的beam chain那种方式就可以，并且存在
+> multishot增加跳数的机制
+
+So a hop deals the strike in full — a beam chain with no falloff — and takes
+crit, status and every damage mod normally. What it does NOT take is a range
+mod: **the jump is always six metres**, while the orb's reach and its detonation
+radius both grow with Fulmination. Three distances on one attack, all six metres
+unmodded, and only two of them move.
+
+`a_range_mod_widens_an_orbs_reach_and_not_its_chain_hop` asserts the asymmetry
+rather than the three numbers, because a test that only read them apart would
+pass on an engine that scaled none of them — the mod has to be seen to bite on
+two before "and not the third" says anything. Verified to bite: scaling the hop
+again reddens it at `7.44 against 6`.
+
+### A bug the question found
+
+Asking it was what exposed the chain's share riding the wrong bracket. It was on
+`damage_multiplier`, which is Plentiful Mayhem's and is documented as leaving
+the status payload OUT — so a hop at 0.31 of the strike still seeded a full-size
+Electricity DoT, and the two readings of the ambiguity came out 4.6% apart when
+one of them should have been half the other.
+
+`chain::Instance::share` says which bracket a chain belongs in, and it is
+explicit: *"a beam with a smaller base damage, so it scales the hit AND the
+status base that hit computes its DoTs from"*. Scaling the part's own
+`modified_base` is that, and it put the two readings 1.92x apart (146,590 DPS
+against 76,306, three bodies, Hornet Strike) — which is what made the question
+worth asking out loud rather than guessing at.
+
+The answer is the first reading, so nothing in the entry changed. The bug did,
+and it would have been silently wrong on every chaining orb in a crowd.
 
 ### Still open
-
-**Does a chain hop take your mods?** The owner's note is *"chain机制（不受增
-益）"*, which reads either as "no falloff along the path" or as "a hop takes no
-mods at all". The entry transcribes what the page supports — a count and no
-stated reduction, so `chain_damage_per_hop: 1.0` — and flags the ambiguity in
-place. It is worth nothing against one target and a great deal against a crowd,
-and it is one number when it is settled.
 
 **`AttackSpec::locks` came and went.** It was added on *"这个球无法multishot，永
 远只有一个"* and removed on the correction two messages later: multishot does not
 add orbs, it adds CHAIN TARGETS (`multishot + 2` bodies a strike). Pinning the
 bucket would have been the right answer to the wrong question, and would have
-told a reader the mod is worthless when what it actually does is unmodelled. The
-orb path gives one orb by construction — a deploying shot fires no pellets — so
-nothing was needed in its place.
+told a reader the mod is worthless where it is in fact most of what a crowd
+build buys. The orb path gives one orb by construction — a deploying shot fires
+no pellets — so nothing was needed in its place, and the count goes where the
+game puts it.

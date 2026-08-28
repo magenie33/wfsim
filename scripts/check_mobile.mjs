@@ -458,7 +458,10 @@ for (const lang of ["en", "zh"]) {
     o.over = [...new Set(over)].slice(0, 3);
     o.scrollW = document.documentElement.scrollWidth;
     // …AND A STACKED CELL SAYS WHAT IT IS, or it is a number with no name.
-    const cells = [...tbl.querySelectorAll('tr.rec-dmg td')];
+    // DIRECT CHILDREN ONLY. The calculation cell now contains a nested table —
+    // quantization's own grid — and a descendant selector counted its cells as
+    // unlabelled row cells (2026-08-28).
+    const cells = [...tbl.querySelectorAll('tr.rec-dmg > td')];
     o.cells = cells.length;
     o.labelled = cells.filter((el) => el.dataset.label).length;
     // THE COLUMN THE PANEL EXISTS FOR is the one that used to be off-screen.

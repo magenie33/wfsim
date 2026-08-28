@@ -2271,8 +2271,10 @@ pub struct ResolvedOrb {
     /// affected by Multishot"* and multishot buys chain targets here rather
     /// than more orbs.
     pub chain_bodies: f64,
-    /// A hop's reach, AFTER the blast-radius bucket for the same reason the
-    /// strike's is.
+    /// A hop's reach — UNMODDED, and the one distance here that is. A range
+    /// mod widens what the orb can touch and what its detonation covers, and
+    /// leaves the jump between two bodies at the six metres the page states
+    /// (owner, 2026-08-28).
     pub chain_range_m: f64,
     pub chain_damage_per_hop: f64,
 }
@@ -4394,11 +4396,18 @@ pub fn resolve_for(
         }),
         ricochet: base.ricochet,
         unaimed_headshot_chance: base.unaimed_headshot_chance,
-        // THE ORB'S GEOMETRY, MODDED. Both radii take the blast-radius bucket
-        // (owner, 2026-08-28: "电球的射程和最终爆炸的范围都是 6m，受范围增益
-        // 影响"), and MULTISHOT lands in the chain count rather than making a
-        // second orb — which is why it is added here, where the resolved
-        // multishot is, instead of in the fight.
+        // THE ORB'S GEOMETRY, MODDED — and one of the three distances is NOT.
+        //
+        // The orb's REACH and its detonation RADIUS take the blast-radius
+        // bucket; a chain HOP does not, and stays at the six metres the page
+        // gives it however much Fulmination is on the build (owner,
+        // 2026-08-28). That asymmetry is the whole reason the hop's range is
+        // carried as its own field rather than read off the reach: the two are
+        // the same number today and only one of them moves.
+        //
+        // MULTISHOT lands in the chain COUNT rather than making a second orb,
+        // which is why it is added here, where the resolved multishot is,
+        // instead of in the fight.
         orb: base.orb.map(|o| ResolvedOrb {
             fuse_seconds: o.fuse_seconds,
             strike_interval_seconds: o.strike_interval_seconds,
@@ -4406,7 +4415,7 @@ pub fn resolve_for(
             launch_speed_mps: o.speed_mps,
             speed_after_contact_mps: o.speed_after_contact_mps,
             chain_bodies: o.chain_bodies + base.base_multishot * (1.0 + evo_ms_bonus + multishot),
-            chain_range_m: o.chain_range_m * (1.0 + br),
+            chain_range_m: o.chain_range_m,
             chain_damage_per_hop: o.chain_damage_per_hop,
         }),
         modified_base,
@@ -5976,6 +5985,52 @@ mod tests {
         let emerg = resolve(&base, &[&cb], StackPolicy::Emergent);
         assert!((amax.status_chance - base.base_status_chance * 1.90).abs() < 1e-9);
         assert!((emerg.status_chance - base.base_status_chance).abs() < 1e-9);
+    }
+
+    /// A RANGE MOD WIDENS WHAT AN ORB CAN TOUCH, AND NOT HOW FAR IT JUMPS.
+    ///
+    /// Three distances on this attack and only two of them move: Fulmination
+    /// enlarges the orb's REACH and its detonation RADIUS, and leaves a chain
+    /// HOP at the six metres the page gives it (owner, 2026-08-28 — his
+    /// *"不受增益"* was about the range bucket, not the damage one).
+    ///
+    /// Asserted as an asymmetry rather than as three numbers, because the three
+    /// are all six metres unmodded and a test that only read them apart would
+    /// pass on an engine that scaled none of them. The MOD has to be seen to
+    /// bite on two before "and not the third" says anything.
+    #[test]
+    fn a_range_mod_widens_an_orbs_reach_and_not_its_chain_hop() {
+        let base = WeaponBase::from_data("grimoire_active", true, &[]);
+        let bare = resolve(&base, &[], StackPolicy::AssumedMax);
+        let bare_orb = bare.orb.expect("the Grimoire's alt fire deploys an orb");
+        let pool = crate::mods_data::pool_for_build("grimoire_active", &[]);
+        let fulm = pool
+            .iter()
+            .find(|m| m.id == "fulmination")
+            .expect("Fulmination is in this weapon's pool");
+        let wide = resolve(&base, &[fulm], StackPolicy::AssumedMax);
+        let wide_orb = wide.orb.expect("still an orb");
+
+        assert!(
+            wide_orb.strike_radius_m > bare_orb.strike_radius_m + 1e-9,
+            "the reach grows: {} against {}",
+            wide_orb.strike_radius_m,
+            bare_orb.strike_radius_m
+        );
+        let (bare_blast, wide_blast) = (
+            bare.radial.expect("and it detonates").radius_m,
+            wide.radial.expect("and it detonates").radius_m,
+        );
+        assert!(
+            wide_blast > bare_blast + 1e-9,
+            "…and so does the detonation: {wide_blast} against {bare_blast}"
+        );
+        assert!(
+            (wide_orb.chain_range_m - bare_orb.chain_range_m).abs() < 1e-9,
+            "…and a hop does not: {} against {}",
+            wide_orb.chain_range_m,
+            bare_orb.chain_range_m
+        );
     }
 
     /// A LOCK REACHES A LIVE BUFF, not just the static buckets.

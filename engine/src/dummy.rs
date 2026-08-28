@@ -4453,13 +4453,18 @@ fn pellet_layers(
     arcane_base_damage: f64,
     // The element hierarchy and the quantization it is rounded through, as one
     // factor for now — the snap's own per-component table is the next step.
-    elements: f64,
+    // The vector BEFORE quantization, and the base it was quantized against —
+    // the snap is a per-component rounding and the only way to draw it as a
+    // multiplier was the ratio of its two totals.
+    pre_quantization: &DamageVector,
     ability_elements: f64,
     beam_merge: f64,
     steps: &[crate::record::Step],
     part_multiplier: f64,
     headshot_bonus: f64,
     is_head: bool,
+    crit_damage: f64,
+    crit_damage_base: f64,
 ) -> Vec<crate::record::Layer> {
     use crate::record::{Factor, Layer, Term};
     // THE WEAPON'S OWN DAMAGE, before any bracket. `stage_mb` is it times the
@@ -4469,15 +4474,19 @@ fn pellet_layers(
     let base = if (1.0 + base_damage).abs() > 1e-12 { stage_mb / (1.0 + base_damage) } else { stage_mb };
 
     let mut terms: Vec<Term> = Vec::new();
-    let mut push = |factor: Factor, value: f64, of: Option<(f64, f64)>| {
+    let mut push = |factor: Option<Factor>, value: f64, of: Option<(f64, f64)>| {
         if value.abs() > 1e-12 {
             terms.push(Term { factor, value, of });
         }
     };
-    push(Factor::BaseDamageMods, base_damage, None);
-    push(Factor::ConditionOverload, gunco.co, Some((gunco.rate, gunco.types)));
-    push(Factor::ArcaneFinal, arcane_base_damage, None);
-    push(Factor::HalfHealth, gunco.half_hp, None);
+    // UNNAMED, because the engine holds a SUM here and not the cards in it.
+    push(None, base_damage, None);
+    // …and NAMED, because this one is exact: Condition Overload is the
+    // mechanic, and the two numbers behind it are its rate and the count it
+    // read.
+    push(Some(Factor::ConditionOverload), gunco.co, Some((gunco.rate, gunco.types)));
+    push(None, arcane_base_damage, None);
+    push(None, gunco.half_hp, None);
 
     let mut at = base;
     let mut out: Vec<Layer> = Vec::new();
@@ -4488,8 +4497,33 @@ fn pellet_layers(
         at = base * sum;
         out.push(Layer::Bracket { factor: Factor::BaseDamageBracket, terms, sum, out: at });
     }
+    // THE SNAP, drawn as a snap. Each component goes to the nearest multiple of
+    // `ModdedBase / 32` (`DamageVector::quantized_against`), so the only way to
+    // fit it into a chain of multipliers was the ratio of the two totals — the
+    // same fiction as the bracket above, in a different place.
+    //
+    // IT IS RECOMPUTED AGAINST THE BRACKET'S OWN OUT rather than against the
+    // engine's ModdedBase, and the two are exactly proportional: quantizing
+    // `kX` against `ks` is `k` times quantizing `X` against `s`. So this is the
+    // GAME's grid, on the game's base, and it lands on the same number.
+    let scale = at / crate::damage::QUANTIZATION_DENOMINATOR;
+    if scale > 0.0 && pre_quantization.total() > 0.0 {
+        let k = if stage_mb > 0.0 { at / stage_mb } else { 1.0 };
+        let mut components = Vec::new();
+        let mut total = 0.0;
+        for (dtype, amount) in pre_quantization.iter_nonzero() {
+            let before = amount * k;
+            let units = before / scale;
+            let after = units.round() * scale;
+            total += after;
+            components.push(crate::record::Snap { dtype, before, units, after });
+        }
+        if !components.is_empty() {
+            at = total;
+            out.push(Layer::Quantize { scale, components, out: at });
+        }
+    }
     for (factor, v) in [
-        (crate::record::Factor::ElementBracketQuantized, elements),
         (crate::record::Factor::WarframeAbilityElement, ability_elements),
         (crate::record::Factor::MergedBeams, beam_merge),
     ] {
@@ -4509,12 +4543,27 @@ fn pellet_layers(
         // A BODY PART IS ITSELF A BRACKET: `3.00 x (1 + 0.50 headshot damage)`,
         // and the pair is what a reader checks against the enemy card
         // (MEASUREMENTS M60 — headshot bonuses ADD).
+        // A BODY PART IS ITSELF A BRACKET, and a CRIT is itself a formula —
+        // `1 + tier x (crit damage - 1)` where the crit damage is a sum of its
+        // own. Both are drawn open rather than as one number a reader has to
+        // take on trust.
         let of = if *factor == Factor::BodyPart && is_head && headshot_bonus.abs() > 1e-12 {
-            vec![Term { factor: Factor::HeadshotDamage, value: headshot_bonus, of: None }]
+            vec![Term { factor: Some(Factor::HeadshotDamage), value: headshot_bonus, of: None }]
+        } else if *factor == Factor::Critical && (crit_damage - crit_damage_base).abs() > 1e-9 {
+            // THE CRIT DAMAGE, OPENED UP: the weapon's own, plus what the build
+            // adds. Unnamed for the same reason the base bucket's sum is — the
+            // resolver folds every crit-damage source into one number.
+            vec![Term { factor: None, value: crit_damage - crit_damage_base, of: None }]
         } else {
             Vec::new()
         };
-        let head = if of.is_empty() { *v } else { part_multiplier };
+        let head = if of.is_empty() {
+            *v
+        } else if *factor == Factor::Critical {
+            crit_damage_base
+        } else {
+            part_multiplier
+        };
         out.push(Layer::Mul { factor: *factor, value: *v, of, head, out: at });
     }
     out
@@ -8128,19 +8177,34 @@ fn orb_strike(
     d: &mut crate::rng::Draws,
     others: &mut [SpreadFoe],
 ) -> bool {
-    let Some(part) = ap.orb_strike else { return false };
-    let mult = orb.damage_multiplier * share;
+    let Some(mut part) = ap.orb_strike else { return false };
+    // A CHAINED BODY TAKES A SMALLER STRIKE, and "smaller" means a smaller BASE
+    // — not a multiplier on the finished number. `chain::Instance::share` is
+    // explicit about which: *"a beam with a smaller base damage, so it scales
+    // the hit AND the status base that hit computes its DoTs from"*, and the
+    // hop's own page states its fraction of the beam rather than of the hit.
+    //
+    // Riding `damage_multiplier` instead was wrong and measurably so: that
+    // bracket is Plentiful Mayhem's and is documented as leaving the status
+    // payload out, so a hop at 0.31 of the strike still seeded a full-size
+    // Electricity DoT — 4.6% off the crowd number where it should have been a
+    // third of it (2026-08-28).
+    if share != 1.0 {
+        part.damage = part.damage.scale(share);
+        part.modified_base *= share;
+    }
+    let mult = orb.damage_multiplier;
     match b.checked_sub(1) {
         None => field_tick(
             &part, mult, at, ctx, debuffs, gal, arc, target, params, ap, r, rec, d,
-            &params.target, crate::record::Origin::Orb,
+            &params.target, crate::record::Origin::Orb, false,
         ),
         Some(bi) => {
             let Some(spec) = params.others.get(bi) else { return false };
             let Some(SpreadFoe { state, debuffs: fd }) = others.get_mut(bi) else { return false };
             field_tick(
                 &part, mult, at, ctx, fd, gal, arc, state, params, ap, r, rec, d,
-                &spec.params, crate::record::Origin::Orb,
+                &spec.params, crate::record::Origin::Orb, false,
             )
         }
     }
@@ -8183,7 +8247,7 @@ fn orb_detonation(
             None => {
                 field_tick(
                     &part, mult, at, ctx, debuffs, gal, arc, target, params, ap, r, rec, d,
-                    &params.target, crate::record::Origin::Orb,
+                    &params.target, crate::record::Origin::Orb, true,
                 );
             }
             Some(bi) => {
@@ -8192,7 +8256,7 @@ fn orb_detonation(
                 {
                     field_tick(
                         &part, mult, at, ctx, fd, gal, arc, state, params, ap, r, rec, d,
-                        &spec.params, crate::record::Origin::Orb,
+                        &spec.params, crate::record::Origin::Orb, true,
                     );
                 }
             }
@@ -8276,6 +8340,7 @@ fn process_field_ticks(
             d,
             &params.target,
             crate::record::Origin::Field,
+            false,
         );
         // …AND EVERY OTHER BODY STANDING IN IT. The cloud is stuck to the body
         // it was left on, so that is its centre, and the three blast rules
@@ -8308,6 +8373,7 @@ fn process_field_ticks(
                 d,
                 &spec.params,
                 crate::record::Origin::Field,
+                false,
             );
         }
         if killed {
@@ -8370,6 +8436,12 @@ fn field_tick(
     // because they are different mechanics and a reader laying the panel beside
     // the game needs to tell them apart.
     origin: crate::record::Origin,
+    // …AND WHICH METER IT GOES IN. An orb ends its fuse in an EXPLOSION, and an
+    // explosion belongs in the radial bucket wherever it was fired from — a
+    // reader looking for what the blast was worth must not have to know that
+    // this engine happens to settle it through the same function a cloud's tick
+    // goes through (2026-08-28).
+    is_blast: bool,
 ) -> bool {
     let status_damage = params.status_duration_multiplier;
     let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
@@ -8474,10 +8546,18 @@ fn field_tick(
         watching(rec, &mut breakdown),
     );
     let (effective, killed, broke) = (settled.effective, settled.killed, settled.broken);
-    r.sources.field += effective;
-    add_by_type(&mut r.sources.field_by_type, &qvec, effective, &col);
+    if is_blast {
+        r.sources.radial += effective;
+        add_by_type(&mut r.sources.radial_by_type, &qvec, effective, &col);
+    } else {
+        r.sources.field += effective;
+        add_by_type(&mut r.sources.field_by_type, &qvec, effective, &col);
+    }
     ledger::settle(
-        r, rec, at, 0, DamageType::Cinematic, PopKind::Field, &breakdown, settled,
+        r, rec, at, 0, DamageType::Cinematic,
+        // THE NUMBER'S OWN SHAPE ON SCREEN: a blast draws as a blast.
+        if is_blast { PopKind::BlastArea } else { PopKind::Field },
+        &breakdown, settled,
         Some(debuffs),
         ledger::Clock::Hit,
         || Instance {
@@ -8502,7 +8582,10 @@ fn field_tick(
             ..Instance::default()
         },
     );
-    r.field_ticks += 1;
+    // AND IT IS NOT A TICK. `field_ticks` is how many times a CLOCK paid out;
+    // a fuse running out once is not one of them, and counting it there made
+    // the orb report 6.88 strikes an orb when it makes at most six.
+    r.field_ticks += u32::from(!is_blast);
     r.note_kills(killed as u32, at);
     if let Some(pool) = broke {
         push_break_proc(debuffs, params, at, pool);
@@ -10468,7 +10551,21 @@ pub fn run_once_traced(
                     // than inferred.
                     idle_magazine: params.cycle.as_ref().map(|cy| {
                         if in_base_form {
-                            (magazine.max(0.0) as u32, mag_cap as u32)
+                            // THE CHARGES ARE THE GAUGE IN ANOTHER UNIT (owner,
+                            // 2026-08-28). A Laetum's 216 charges over a
+                            // 12-unit gauge is 18 a unit exactly, and the row
+                            // used to print `216 / 216` from the moment the
+                            // fight opened — a full Incarnon magazine on a
+                            // weapon that has not earned a single unit of it,
+                            // which is the one column a reader opens this panel
+                            // to check. The gauge decides it; `charges` can run
+                            // past the fill mark, so the share is clamped.
+                            let share = if cy.charges_to_fill > 0 {
+                                (f64::from(charges) / f64::from(cy.charges_to_fill)).min(1.0)
+                            } else {
+                                0.0
+                            };
+                            ((share * mag_cap).round().max(0.0) as u32, mag_cap as u32)
                         } else {
                             (base_mag.max(0.0) as u32, cy.base_form.magazine_size as u32)
                         }
@@ -12402,6 +12499,15 @@ pub fn run_once_traced(
                 // THE VECTOR BEFORE THE ABILITY'S ELEMENTS, kept so the row
                 // can show how its base was built rather than asserting one
                 // number. See `Damage::base_steps`.
+                // THE VECTOR BEFORE THE SNAP, for the ledger's quantization
+                // layer. Read from the ACTIVE stage rather than reconstructed:
+                // the radial has its own, and a row that showed the direct
+                // hit's grid for an explosion would be a different weapon's
+                // arithmetic (2026-08-28).
+                let pre_quantization = match &rad {
+                    None => ap.damage,
+                    Some(r) => r.damage,
+                };
                 let pre_ability_total = qvec.total();
                 let qvec = params.with_ability_elements(qvec, stage_mb, t);
                 // A merged beam tick carries the SUM of its beams. `qtotal`
@@ -13208,13 +13314,15 @@ pub fn run_once_traced(
                                 gunco,
                                 base_damage,
                                 arcane_base_damage,
-                                if stage_mb > 0.0 { pre_ability_total / stage_mb } else { 1.0 },
+                                &pre_quantization,
                                 if pre_ability_total > 0.0 { qvec.total() / pre_ability_total } else { 1.0 },
                                 beam_merge,
                                 &hit_steps,
                                 part.multiplier,
                                 params.headshot_damage_bonus,
                                 part.is_head,
+                                cd,
+                                ap.unmodded_crit_damage,
                             ),
                             crit_damage: cd,
                             part: Some(part.name.clone()),
@@ -20496,38 +20604,74 @@ mod tests {
         );
     }
 
-    /// AN ORB THAT DRIFTS LEAVES A LONE TARGET BEHIND, and that is the
-    /// geometry rather than a rule anybody wrote down.
+    /// AN ORB THAT DRIFTS LEAVES A LONE TARGET BEHIND, and six strikes on one
+    /// standing body is GEOMETRICALLY IMPOSSIBLE at the numbers we have.
     ///
-    /// The Grimoire's own numbers: 2 m/s after contact, six metres of reach. A
-    /// stationary body is inside that for three seconds, so FOUR of the six
-    /// strikes land on it and the last two find nobody. Six is what the orb
-    /// DOES; how many reach one enemy standing still is a question only a
-    /// position model can answer, and this is it answering.
+    /// A stationary body is inside the reach for a bounded window, and the
+    /// window is arithmetic rather than a simulation result:
     ///
-    /// Pinned so the answer cannot drift silently — if the post-contact speed
-    /// or the reach is ever re-measured, this is the test that says what it was
-    /// worth (MEASUREMENTS M63 §"Still open").
+    /// ```text
+    ///   approach   (reach + body) / launch speed   6.25 / 6 = 1.04 s
+    ///   departure  (reach + body) / slowed speed   6.25 / 2 = 3.13 s
+    ///                                              ------------------
+    ///   at contact                    (no approach)          3.13 s   -> 4
+    ///   thrown from beyond the reach                         4.17 s   -> 5
+    /// ```
+    ///
+    /// Six strikes a second apart need the body in reach for more than five
+    /// seconds, and 4.17 is the most this weapon's numbers can buy — so the
+    /// count tops out at FIVE however far the throw is.
+    ///
+    /// AND THE ANSWER IS THE ARENA, not any of these numbers. The orb BOUNCES
+    /// off walls, and this arena has none (owner, 2026-08-28), so in a room it
+    /// comes straight back and spends its fuse beside what it was thrown at.
+    /// Every value here is right and the fight they are fired in is an open
+    /// field — worth measured at +55.6% on the same build, which is why the
+    /// weapon's own page calls this number a floor.
+    ///
+    /// IT IS PINNED SO THE OPEN-FIELD ANSWER CANNOT MOVE IN SILENCE, and the
+    /// last two arms are what made the mechanism findable: they say what a
+    /// slower drift and a standstill would be worth, and the standstill is what
+    /// a wall amounts to.
     #[test]
     fn an_orb_that_drifts_leaves_a_lone_target_behind() {
-        let drifting = monte_carlo(
-            &DummyParams { orb: Some(orb_spec()), ..orb_thrower() },
-            4,
-            3,
-        )
-        .mean_damage;
+        let strikes = |gap_m: f64, orb: crate::loadout::ResolvedOrb| {
+            let p = DummyParams {
+                target_at: crate::space::Vec2::new(gap_m, 0.0),
+                orb: Some(orb),
+                ..orb_thrower()
+            };
+            (monte_carlo(&p, 4, 3).mean_damage / 280.0).round() as u32
+        };
+        // AT CONTACT the departure window alone decides it: 6.25 / 2 = 3.13 s,
+        // which holds four strike instants.
+        assert_eq!(strikes(crate::space::CONTACT_RANGE_M, orb_spec()), 4, "at contact");
+        // …AND NO THROW DISTANCE BUYS SIX. The approach adds at most another
+        // 1.04 s, so five is the ceiling — asserted across the whole range
+        // rather than at a distance somebody picked, because "six somewhere"
+        // is exactly the claim being tested.
+        let ladder: Vec<u32> = (0..=30)
+            .map(|g| strikes(f64::from(g).max(crate::space::CONTACT_RANGE_M), orb_spec()))
+            .collect();
         assert!(
-            (drifting - 4.0 * 280.0).abs() < 1e-9,
-            "four of the six strikes reach a body that does not follow: {drifting}"
+            ladder.iter().all(|&n| n <= 5),
+            "the in-reach window cannot hold six: {ladder:?}"
         );
-        // …AND THE OTHER TWO ARE NOT LOST TO THE CLOCK. The same orb held still
-        // lands all six, so what the two arms differ by is distance and nothing
-        // else.
-        let held = monte_carlo(&orb_thrower(), 4, 3).mean_damage;
-        assert!(
-            (held - 6.0 * 280.0).abs() < 1e-9,
-            "the clock still pays six: {held}"
-        );
+        assert!(ladder.contains(&5), "and it does reach five: {ladder:?}");
+        // WHAT WOULD BUY SIX, which is how the wall was found: neither of
+        // these is the real answer, and the second one is what a room does to
+        // an orb that bounces. A slower drift does…
+        let slower = crate::loadout::ResolvedOrb {
+            speed_after_contact_mps: 1.2,
+            ..orb_spec()
+        };
+        assert_eq!(strikes(crate::space::CONTACT_RANGE_M, slower), 6, "at 1.2 m/s");
+        // …and so does an orb that stops where it touches.
+        let held = crate::loadout::ResolvedOrb {
+            speed_after_contact_mps: 0.0,
+            ..orb_spec()
+        };
+        assert_eq!(strikes(crate::space::CONTACT_RANGE_M, held), 6, "held still");
     }
 
     /// Overlapping fields STACK    /// Overlapping fields STACK — ✅ measured (MEASUREMENTS M13). Both branches

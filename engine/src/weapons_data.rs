@@ -672,13 +672,22 @@ pub struct OrbSpec {
     /// 4.6 at a panel reading x2.6, which is four for certain and a fifth 60%
     /// of the time (2026-08-28).
     pub chain_bodies: f64,
-    /// How far a chain hop may reach, body to body.
+    /// How far a chain hop may reach, body to body — and it is the one
+    /// distance on this attack that a RANGE MOD does not move.
+    ///
+    /// The orb's reach and its detonation radius both take the blast-radius
+    /// bucket; the jump between two bodies stays at what the page gives it
+    /// (owner, 2026-08-28). So the two sixes below are the same number by
+    /// coincidence rather than by construction, and only one of them grows.
     pub chain_range_m: f64,
     /// What a hop deals relative to the hop before it.
     ///
-    /// 1.0 — UNDILUTED — is what the page supports: it names a count and no
-    /// reduction, and absence means ordinary. Per entry rather than a constant,
-    /// because a chain's falloff is per weapon everywhere else in this roster.
+    /// 1.0 — UNDILUTED — for the Grimoire: *"chain 起来没有衰减的 beam chain
+    /// 那种方式"* (owner, 2026-08-28), which is also what the page supports on
+    /// its own (it names a count and no reduction). Per entry rather than a
+    /// constant, because a chain's falloff is per weapon everywhere else in
+    /// this roster — the Atomos compounds at 0.75 and the Kuva Nukor does not
+    /// compound at all.
     #[serde(default = "one")]
     pub chain_damage_per_hop: f64,
 }

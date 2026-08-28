@@ -5778,7 +5778,13 @@ fn layer_json(l: &wfsim_engine::record::Layer) -> Value {
 /// One term of an additive bracket. `o` is the pair it is a product of, where
 /// it is one — Condition Overload is `rate x status types`.
 fn term_json(t: &wfsim_engine::record::Term) -> Value {
-    let mut o = json!({ "f": t.factor.index(), "v": r3(t.value) });
+    // NO `f` WHERE THERE IS NO EXACT NAME — see `record::Term::factor`. The
+    // page draws the number alone rather than a category a reader would go
+    // looking for a card to match.
+    let mut o = match t.factor {
+        Some(f) => json!({ "f": f.index(), "v": r3(t.value) }),
+        None => json!({ "v": r3(t.value) }),
+    };
     if let Some((a, b)) = t.of {
         o.as_object_mut().expect("object")
             .insert("o".into(), json!([r3(a), r3(b)]));

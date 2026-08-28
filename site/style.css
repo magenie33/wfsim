@@ -1904,6 +1904,18 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .rec-tools .pchip .ct{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
 .rec-sep{width:1px;height:18px;background:var(--line);margin:0 3px}
 .rec-count{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;margin-bottom:6px}
+/* THE ONE BLOCK THAT NEEDS THE SCREEN.
+   The record is a ten-column ledger and the column it exists for — where the
+   number comes from — is the widest of them, so inside the page's own reading
+   column it is the one always half off the right edge. Every other block on
+   this panel is a summary and belongs at reading width; this one is a table
+   somebody is auditing, and it gets the window. Below 900px it goes back to
+   the column, and below 720px a row becomes a card. */
+@media (min-width:900px){
+  .rec-scroll{width:calc(100vw - 56px);max-width:calc(100vw - 56px);
+    margin-left:calc(50% - 50vw + 28px)}
+  .rec-tools,.rec-count{width:calc(100vw - 56px);margin-left:calc(50% - 50vw + 28px)}
+}
 .rec-scroll{overflow-x:auto;max-height:520px;overflow-y:auto;
   border:1px solid var(--line);border-radius:10px}
 table.rec-t{width:100%;min-width:1080px;border-collapse:separate;border-spacing:0;font-size:12px}
@@ -2006,10 +2018,18 @@ tr.rec-miss td.rec-t{border-left-color:var(--critical)}
 .lg-m .lg-body b{font-weight:400;color:var(--muted);font-size:10.5px}
 .lg-of{color:var(--muted);font-size:10px;font-variant-numeric:tabular-nums}
 .lg-scale{color:var(--muted);font-size:10px;white-space:nowrap}
-table.lg-snap{border-collapse:collapse;font-size:10.5px;font-variant-numeric:tabular-nums}
-table.lg-snap td{padding:0 4px 0 0;color:var(--muted);white-space:nowrap}
+/* THE SNAP SPANS THE WHOLE CELL. It is a seven-column table and it was living
+   in the layer's 1fr body lane, which a grid is entitled to squeeze — so the
+   before and after columns, which are the mechanic, were the ones clipped. */
+.lg-q{display:block}
+.lg-q .lg-lbl{display:inline-block;min-width:6.5em}
+.lg-q .lg-body{display:block;margin-top:2px}
+table.lg-snap{border-collapse:collapse;font-size:10.5px;font-variant-numeric:tabular-nums;
+  white-space:nowrap}
+table.lg-snap td{padding:0 7px 0 0;color:var(--muted);white-space:nowrap}
 table.lg-snap td.num{text-align:right;color:var(--text-2)}
 table.lg-snap td.sn{color:var(--accent);font-weight:600}
+table.lg-snap td.pc{color:var(--muted);padding-right:8px}
 table.lg-snap td.to{color:var(--text)}
 table.lg-snap td.ar{color:var(--line);padding:0 2px}
 .lg-base .lg-out,.lg-base .lg-lbl{color:var(--text)}

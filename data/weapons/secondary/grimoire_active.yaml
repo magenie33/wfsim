@@ -120,11 +120,12 @@ attack:
     # 2026-08-28).
     chain_bodies: 2.0
     chain_range_m: 6.0
-    # UNDILUTED, which is what the page supports — it names a count and no
-    # reduction, and absence means ordinary. UNCONFIRMED: the owner's note that
-    # the chain is "不受增益" may mean a hop takes no mods at all rather than
-    # no falloff, and the two differ only against a crowd. Flagged rather than
-    # decided, and it is one number when it is.
+    # UNDILUTED — ✅ confirmed (owner, 2026-08-28): a beam chain with no
+    # falloff, so the second and third body take the strike in full. His
+    # earlier note that the chain is "不受增益" meant the RANGE bucket and not
+    # the damage one: a hop is always six metres, and everything else about it
+    # — crit, status, your damage mods — is ordinary. `chain_range_m` above is
+    # the half that does not move; this is the half that was never diluted.
     chain_damage_per_hop: 1.0
   # THE FINAL EXPLOSION — rules in MECHANICS §7. "Explosion has linear Damage
   # Falloff from 100% to 20% from central impact", over the same six metres the
@@ -154,12 +155,6 @@ unmodeled:
   - reason: tome_meter
     rate: 1
     seconds: 45
-  # THE ORB IS MODELLED as of 2026-08-28 (M63) — `orb:` above, an entity that
-  # flies, slows, strikes and detonates where it got to. What `orb_shocks_over_
-  # time` used to cover is gone; what is LEFT is the chain.
-  - reason: orb_chain
-    radius: 6
-    chains: 2
   - reason: explosion_ignores_cover
   - reason: self_stagger
   # THE ORB'S HEADSHOT RATE IS AN ASSUMPTION and a player deciding whether to
@@ -173,16 +168,15 @@ unmodeled:
     model and DE publishes no rate for. It is the same 10% for all six and for
     the Electricity each one forces, so nothing here rides on which of them is
     which"
-  # WHAT THE POSITION MODEL FOUND, and it is a finding rather than a gap: the
-  # orb's own numbers say a lone standing enemy does not get all six.
-  - "the orb keeps MOVING while it strikes — 2 m/s onward after it touches
-    something, with six metres of reach — so against a single enemy who stays
-    put it is out of range after three seconds and FOUR of its six strikes
-    land, not six. That is this weapon's own geometry rather than a shortcut,
-    and it is the arena that makes it bite: real enemies move, stand in groups
-    and follow you, and the orb drifting on is what lets it reach the next one.
-    Read this number as the floor for a lone target and expect more from a
-    crowd"
+  # WHAT THE POSITION MODEL FOUND, and the answer turned out to be the arena
+  # rather than any of this entry's numbers (owner, 2026-08-28): the orb bounces
+  # off walls, and this arena has none. Everything here is right and the fight
+  # it is fired in is an open field.
+  - reason: orb_bounces_off_walls
+    speed: 2
+    open_field: four
+    total: six
+    worth: 55%
 
 source:
   url: https://wiki.warframe.com/w/Grimoire

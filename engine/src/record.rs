@@ -390,7 +390,17 @@ pub struct TargetAt {
 /// ONE TERM INSIDE AN ADDITIVE BRACKET — `+0.80 Galvanized Shot`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Term {
-    pub factor: Factor,
+    /// WHAT IT IS, or nothing.
+    ///
+    /// `None` where the engine holds only a SUM and cannot say which cards are
+    /// in it — the base-damage bucket is resolved to one number long before a
+    /// fight starts. A category label there ("mods", "arcane") invites a reader
+    /// to look for a card that matches it and there is none, which is worse
+    /// than a bare number: the point of this panel is that everything on it can
+    /// be checked, and a name that cannot be is the one thing that breaks that.
+    /// So it is the number alone until the resolver can name the card (owner,
+    /// 2026-08-28).
+    pub factor: Option<Factor>,
     /// The term's own value, signed. `-0.15` for Anemic Agility.
     pub value: f64,
     /// What it is made of, when it is itself a product — Condition Overload is

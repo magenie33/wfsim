@@ -75,8 +75,13 @@ reasons:
   # on contact, strikes one body inside its reach six times and detonates where
   # it got to. Its movement is not a gap any more; it is the model. What is left
   # is the chain, which is a damage source this engine has no shape for.
-  orb_chain:
-    text: "each of the orb's strikes CHAINS, and the chain is not modelled: it picks one enemy inside {radius} m and jumps to {chains} more, and Multishot buys MORE OF THEM rather than more orbs — 'multishot + {chains}' enemies a strike, so a panel reading x2.6 is four for certain and a fifth 60% of the time. Against ONE target it is worth nothing and every number below stands; against a crowd the chain is missing and Multishot is pinned at the weapon's default because of it, which understates both"
+  # THE ARENA HAS NO WALLS, which `ricochet_terrain` has said since the Latron
+  # Incarnons landed. This is the same gap costing a great deal more: the
+  # Grimoire's orb bounces off surfaces, so in a room it stays with what it was
+  # thrown at instead of drifting away from it (owner, 2026-08-28 — the reason
+  # his six strikes and this model's four disagreed).
+  orb_bounces_off_walls:
+    text: "the orb BOUNCES off walls and the floor, and this arena has neither — so here it drifts on at {speed} m/s and leaves a standing target behind after about three seconds, landing {open_field} of its {total} strikes and detonating too far away to matter. In a real room it comes back and spends its fuse near what you threw it at, which is worth about {worth} more damage. Everything below for this form is a FLOOR, and an unusually loose one"
   self_stagger:
     text: "the blast staggers the WIELDER in game — this arena gives the player no body, so a build that would be unplayable in a corridor costs nothing here"
   # A SECOND EXPLOSION FROM ONE SHOT. An attack carries ONE `radial:`, and the
