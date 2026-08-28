@@ -49,6 +49,8 @@ fn scenario(duration: f64, level: u32) -> Scenario {
         arena: Arena {
             target_id: "e1".to_string(),
             abilities: Vec::new(),
+            ability_picks: Vec::new(),
+            ability_strength: 1.0,
             tenno: wfsim_engine::tenno_data::default_tenno().clone(),
             // Point blank: this test grades the SEARCH against an exhaustive
             // reference, so the fight has to be the plainest one there is.

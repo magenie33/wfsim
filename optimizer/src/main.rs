@@ -99,6 +99,8 @@ fn main() {
             // …and nothing is being cast on them either. A CLI search is a
             // statement about the WEAPON.
             abilities: Vec::new(),
+            ability_picks: Vec::new(),
+            ability_strength: 1.0,
             // ONE BODY — a fixture, not a formation.
             others: Vec::new(),
             // …and the weapon points AT it.

@@ -32,6 +32,8 @@ fn main() {
         target_at: Vec2::new(0.0, wfsim_engine::space::CONTACT_RANGE_M),
         duration_seconds: 60.0,
         abilities: Vec::new(),
+        ability_picks: Vec::new(),
+        ability_strength: 1.0,
         others: Vec::new(),
         aim_at: None,
     };

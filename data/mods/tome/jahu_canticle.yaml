@@ -21,20 +21,32 @@ max_rank: 3
 internal_name: /Lotus/Upgrades/Grimoire/JahuAuraMod
 description: "Killing enemies reduces the Armor and Shields of other enemies within Affinity Range by X%."
 effects:
-  # THE ONE THAT COULD PAY, and does not yet. Armour is the binding
-  # constraint on most of this board (check_squad had to build a fight
-  # where it binds before an aura could be measured at all), and a strip
-  # that reaches OTHER bodies on every kill is a real term in a group
-  # fight. What is missing is the trigger: `SpreadFoe` carries per-body
-  # debuffs, but nothing yet turns one body's DEATH into a debuff on its
-  # neighbours. Filed as a todo rather than an edge, because the arena
-  # HAS the crowd this needs (2026-08-25).
-  - kind: strip_on_kill
+  # ARMOUR, and it is the half that decides a fight. This board's own tooling
+  # had to build a scenario where armour BINDS before an aura could be measured
+  # at all (`check_squad`), so a strip that reaches every body in range on every
+  # kill is a real term in a group fight.
+  #
+  # AFFINITY RANGE IS 50 m AND IS MEASURED FROM YOU — *"Affinity will be shared
+  # among the squad if they are within a 50-meter radius"* (wiki `Affinity`),
+  # not from the enemy that died. That is what makes it modellable at all: which
+  # body died does not matter, only that one did.
+  #
+  # THE SHARES COMPOSE. Each kill takes 5% of what is LEFT, which is the rule
+  # every other strip in this engine follows and the only one under which
+  # repeated kills cannot take armour past zero. UNCONFIRMED against the game —
+  # the card states a percentage and no stacking rule, and the alternative
+  # (5% flat, once) would make the card worth almost nothing.
+  - kind: strip_on_kill_in_range
     rank0: 0.02
     rankMax: 0.05
-  # …AND WHAT IT IS WORTH HERE, said on the card rather than left to be
-  # inferred from a number that never moves the answer.
+    range_m: 50.0
+  # …AND THE SHIELD HALF, which this engine has no term for: `Mitigation`
+  # carries an armour multiplier and nothing that shrinks a shield POOL
+  # mid-fight. It costs less than it sounds — a shield is a small pool that a
+  # damaging build breaks in the first second — but it is a real part of the
+  # card and is admitted rather than folded into the line above.
   - kind: unmodeled
+    clause: "and Shields"
 
 source:
   url: https://wiki.warframe.com/w/Tome_Mods

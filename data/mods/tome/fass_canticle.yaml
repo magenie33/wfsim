@@ -21,11 +21,16 @@ max_rank: 3
 internal_name: /Lotus/Upgrades/Grimoire/FassAuraMod
 description: "Killing enemies grants Allies in Affinity Range X% Shield Recharge Rate and -X% Shield Recharge Delay for 15s."
 effects:
-  # NOBODY ELSE IS HERE. This arena is one Tenno (docs/UNMODELLED.md,
-  # "no allies"), and every point of this card is spent on them — an ally
-  # shield rate and an ally recharge delay, both of which need a squad to
-  # pay out at all. It cannot be worth anything here, which is a different
-  # statement from "not modelled yet" and is why it is `out_of_scope`.
+  # THE PLAYER IS AN ALLY, so this DOES land on the wielder — which is the
+  # opposite of what stood here. It was filed out of scope on the reading that
+  # "Allies in Affinity Range" means other people and this arena has none; its
+  # sibling Lohk Canticle pays the player (owner, 2026-08-28) and so does this.
+  #
+  # WHAT STOPS IT IS THE OTHER HALF OF THE FIGHT. Nobody shoots back here
+  # (docs/UNMODELLED.md), so the player's shields never fall and there is
+  # nothing for a recharge rate or a recharge delay to be worth. That is a
+  # statement about the arena and it changes the day the arena has an enemy that
+  # fires — where "there are no allies" would have been wrong for ever.
   - kind: ally_buff
     rank0: 0.25
     rankMax: 0.4
@@ -36,8 +41,6 @@ effects:
   - kind: ally_buff
     rank0: -0.07
     rankMax: -0.28
-  # …AND WHAT IT IS WORTH HERE, said on the card rather than left to be
-  # inferred from a number that never moves the answer.
   - kind: out_of_scope
 
 source:

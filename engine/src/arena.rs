@@ -93,6 +93,29 @@ pub struct Arena {
     /// and the same-family conflicts settled, so nothing downstream can forget
     /// that two Roars do not stack.
     pub abilities: Vec<crate::abilities_data::ActiveAbility>,
+    /// WHAT WAS PICKED, unresolved, and the strength it was resolved AT.
+    ///
+    /// Carried beside the resolved list because a MOD can raise Ability
+    /// Strength — the Invocations do, +1% to +4% a stack — and a mod belongs to
+    /// the BUILD while an ability belongs to the FIGHT. The two meet in
+    /// `DummyParams::from_panel`, which is the one place that holds both, so
+    /// the picks have to survive that far to be resolved again there.
+    ///
+    /// `abilities` above is what a fight with no such card runs, which is every
+    /// fight but one — so nothing re-resolves unless a card asks it to.
+    pub ability_picks: Vec<OwnedAbilityPick>,
+    pub ability_strength: f64,
+}
+
+/// An [`crate::abilities_data::AbilityPick`] that owns its strings.
+///
+/// The borrowed form points into the request's JSON and cannot outlive the
+/// parse; this one rides on the Arena to the place where the build is known.
+#[derive(Debug, Clone, Default)]
+pub struct OwnedAbilityPick {
+    pub id: String,
+    pub duration_seconds: Option<f64>,
+    pub element: Option<String>,
 }
 
 impl Arena {
@@ -139,6 +162,10 @@ impl Arena {
             // The fixture is the NEUTRAL player, and no frame is running
             // anything for them.
             abilities: Vec::new(),
+            ability_picks: Vec::new(),
+            // 100%, which is what a frame with no Strength mods brings and what
+            // a fight that never mentions abilities is resolved at.
+            ability_strength: 1.0,
         }
     }
 }

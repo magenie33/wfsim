@@ -184,6 +184,8 @@ fn arena_for(c: &Cfg) -> Arena {
         target_at: wfsim_engine::space::Vec2::new(0.0, wfsim_engine::space::CONTACT_RANGE_M),
         duration_seconds: c.duration,
         abilities: Vec::new(),
+        ability_picks: Vec::new(),
+        ability_strength: 1.0,
         // ONE BODY — a fixture, not a formation.
         others: Vec::new(),
         // …and the weapon points AT it.

@@ -37,6 +37,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         // A ROUND LEAVES ON THE TRIGGER, like every gun but one.
         windup_seconds: 0.0,
         no_magazine: false,
+        strip_on_kill_in_range: None,
         // NO METER: this fixture has nothing gated behind a clock, and one
         // player is behind it.
         meter: None,

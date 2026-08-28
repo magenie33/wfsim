@@ -21,14 +21,18 @@ max_rank: 3
 internal_name: /Lotus/Upgrades/Grimoire/KhraAuraMod
 description: "Enemies have a X% chance to drop a Universal Orb on death."
 effects:
-  # A DROP IS NOT A DAMAGE MODEL. What falls on the floor decides how long
-  # a mission lasts, which is the one thing an engagement of fixed length
-  # cannot measure. Nothing here picks anything up.
+  # A DROP THIS ENGINE HAS NO POOL FOR. `engine::ammo` models what a kill leaves
+  # on the floor and the Grimoire's meter reads it, so "a drop is not a damage
+  # model" is no longer the reason — a drop can be one now.
+  #
+  # WHAT IS MISSING IS WHAT A UNIVERSAL ORB CONTAINS: health and energy. This
+  # arena gives the player neither — nothing damages the Tenno and no ability is
+  # cast — so the orb falls, is picked up by the standing rule that everything
+  # is, and there is nothing for it to fill. Ammo is the one pickup that reaches
+  # a number here and a Universal Orb is not one.
   - kind: orb_drop_chance
     rank0: 0.03
     rankMax: 0.12
-  # …AND WHAT IT IS WORTH HERE, said on the card rather than left to be
-  # inferred from a number that never moves the answer.
   - kind: out_of_scope
 
 source:

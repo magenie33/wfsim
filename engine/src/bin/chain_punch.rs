@@ -52,6 +52,8 @@ fn arena(weapon_bodies: usize, spacing_m: f64) -> Arena {
         target_at,
         duration_seconds: DURATION,
         abilities: Vec::new(),
+        ability_picks: Vec::new(),
+        ability_strength: 1.0,
         others,
         aim_at: None,
     }

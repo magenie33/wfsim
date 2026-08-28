@@ -21,14 +21,26 @@ max_rank: 3
 internal_name: /Lotus/Upgrades/Grimoire/XataStrikeMod
 description: "Alternate Fire grants X Energy Regen/s for 20s for each enemy hit. Stacks up to 10 times."
 effects:
-  # ENERGY, which this sim does not spend and therefore cannot regenerate
-  # into anything — the same reason as Netra Invocation.
-  - kind: energy_regen_bonus
+  # ONE CARD WITH THE STAT SWAPPED. All four Invocations read "Alternate Fire
+  # increases <stat> by X% for 20s for each enemy hit", and they are loaded the
+  # same way whether or not the stat reaches a number here — a card a player
+  # owns and cannot find in the builder is indistinguishable from one the app
+  # got wrong.
+  #
+  # TAKEN AT THE CAP, and on this weapon that is nearly exact rather than a
+  # convention. One thrown orb strikes six times and each strike reaches
+  # `floor(3 x multishot)` bodies, so a bare build lands 18 hits with the FIRST
+  # orb against a 15-stack cap; the buff lasts 20 s and the meter throws another
+  # orb about every 18 s once the primary fire is filling it.
+  #
+  # AND IT PAYS NOTHING HERE, for the same reason its sibling does not: there is
+  # no energy pool. A Warframe buff in this arena is a setting on the fight, not
+  # something you pay for.
+  - kind: ability_stat
+    stat: energy_regen
     rank0: 0.25
     rankMax: 1.0
-  # …AND WHAT IT IS WORTH HERE, said on the card rather than left to be
-  # inferred from a number that never moves the answer.
-  - kind: out_of_scope
+    max_stacks: 10
 
 source:
   url: https://wiki.warframe.com/w/Tome_Mods

@@ -3039,6 +3039,32 @@ pub fn panel_json(v: &Value) -> Value {
             };
             match *e {
                 WhileTenno(..) => unreachable!("unwrapped above"),
+                // JAHU CANTICLE. Not a term in any bucket — it takes armour off
+                // OTHER bodies, so what it is worth is a property of the fight
+                // rather than of the build, and it says so on its own line the
+                // way Acid Shells does.
+                // THE INVOCATIONS. Two of them raise a knob that belongs to the
+                // FIGHT rather than to any bucket on this weapon, and two pay
+                // nothing at all — so all four say what they do on a line of
+                // their own, and the two that pay nothing say why.
+                AbilityStat(stat, ..) => {
+                    conditionals.push(json!({
+                        "mod": name,
+                        "desc": e.describe(),
+                        "active": stat.unmodelled_reason().is_none(),
+                        "why": stat.unmodelled_reason().unwrap_or(
+                            "it raises the FIGHT's own Warframe-buff knob, so it is worth exactly what the buff you have ticked is worth — and nothing with none ticked",
+                        ),
+                    }));
+                }
+                StripOnKillInRange(..) => {
+                    conditionals.push(json!({
+                        "mod": name,
+                        "desc": e.describe(),
+                        "active": true,
+                        "why": "it needs KILLS and it needs a crowd — against one target there is nobody left to strip, and against none that dies it never fires at all",
+                    }));
+                }
                 // ACID SHELLS. Three columns of one card, each its own effect,
                 // and none of them a term in anybody's damage sum — what it
                 // produces is an explosion at a CORPSE, so the panel says what
@@ -5325,6 +5351,23 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         } else {
             abilities
         },
+        // …AND THE PICKS THAT PRODUCED THEM, so a build carrying an Invocation
+        // can resolve them again at its own Ability Strength. A Nullifier eats
+        // the picks too: what it dispels is the ability, not the number that
+        // scaled it.
+        ability_picks: if spec.nullifies_warframe_abilities {
+            Vec::new()
+        } else {
+            picks
+                .iter()
+                .map(|p| wfsim_engine::arena::OwnedAbilityPick {
+                    id: p.id.to_string(),
+                    duration_seconds: p.duration_seconds,
+                    element: p.element.map(str::to_string),
+                })
+                .collect()
+        },
+        ability_strength: strength,
     };
     Ok(Fight {
         info,

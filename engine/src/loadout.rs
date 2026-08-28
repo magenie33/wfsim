@@ -270,6 +270,25 @@ pub enum ModEffect {
     StatusChance(f64),
     /// Relative fire rate (negative for Creeping Bullseye's downside).
     FireRate(f64),
+    /// JAHU CANTICLE: `(fraction, radius_m)` — what one KILL takes off the
+    /// armour of every enemy inside Affinity Range.
+    ///
+    /// AFFINITY RANGE IS CENTRED ON THE PLAYER rather than on the corpse:
+    /// *"Affinity will be shared among the squad if they are within a 50-meter
+    /// radius"* (wiki `Affinity`), so the range this card names is a distance
+    /// from YOU. Which body died therefore does not matter, only that one did —
+    /// and that is what makes it a count rather than a position.
+    StripOnKillInRange(f64, f64),
+    /// THE INVOCATIONS: a stacking bonus to one of the frame's own stats, earned
+    /// by the alt fire and capped.
+    ///
+    /// `(stat, per_stack, max_stacks)`. Taken at the CAP rather than tracked
+    /// live, and on this weapon that is very nearly exact rather than a
+    /// convention: one thrown orb strikes six times and each strike reaches
+    /// `floor(3 × multishot)` bodies, so a bare build lands 18 hits with the
+    /// first orb against a 15-stack cap. The cards last 20 s and an orb every
+    /// 18 s refreshes them.
+    AbilityStat(AbilityStat, f64, u32),
     /// Relative CHARGE rate — shortens the draw ONLY (Shell Rush "+50% Charge
     /// Rate"). Its own bucket rather than `FireRate` because a charge-rate mod
     /// must not also speed up an uncharged form: on the Larkspur Prime that
@@ -822,6 +841,56 @@ pub fn pct(x: f64) -> String {
     if x >= 0.0 { format!("+{s}%") } else { format!("−{s}%") }
 }
 
+/// WHICH OF THE FRAME'S STATS an Invocation raises.
+///
+/// Four cards, four stats, and only two of them reach a damage number today —
+/// which is why this is an enum rather than two fields: the pair that pays
+/// nothing is transcribed with the pair that does, and each says which it is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AbilityStat {
+    /// Vome Invocation. Multiplies what Roar, Eclipse and Nourish are worth —
+    /// `abilities_data::at_strength` is linear, so a strength bonus is a
+    /// straight multiplier on the ability's own number.
+    Strength,
+    /// Ris Invocation. Extends how long they last.
+    Duration,
+    /// Netra Invocation. NOTHING READS IT: this arena configures an ability
+    /// buff rather than casting one, so there is no energy cost for efficiency
+    /// to reduce. Carried so the card can say that in one place.
+    Efficiency,
+    /// Xata Invocation. NOTHING READS IT either, and for the same reason —
+    /// there is no energy pool to regenerate.
+    EnergyRegen,
+}
+
+impl AbilityStat {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Strength => "Ability Strength",
+            Self::Duration => "Ability Duration",
+            Self::Efficiency => "Ability Efficiency",
+            Self::EnergyRegen => "Energy Regen",
+        }
+    }
+
+    /// WHY THIS ONE PAYS NOTHING, or `None` where it pays.
+    ///
+    /// The same shape `ShardEffect::unmodelled_reason` uses, and for the same
+    /// reason: an effect is applied or it says why not, never neither and never
+    /// both.
+    pub fn unmodelled_reason(self) -> Option<&'static str> {
+        match self {
+            Self::Strength | Self::Duration => None,
+            Self::Efficiency => Some(
+                "this arena CONFIGURES a Warframe buff rather than casting one, so there is no                  energy cost for efficiency to reduce",
+            ),
+            Self::EnergyRegen => Some(
+                "this arena has no energy pool — a Warframe buff here is a setting on the                  fight, not something you pay for",
+            ),
+        }
+    }
+}
+
 impl ModEffect {
     /// One display line for this effect — OUR statement of what the model
     /// actually computes (true values; tooltip lies already corrected in
@@ -831,6 +900,21 @@ impl ModEffect {
         match *self {
             // The gate is stated as a suffix so the inner line reads normally.
             WhileTenno(c, ref inner) => format!("{} ({})", inner.describe(), c.label()),
+            // WHAT THE MODEL ACTUALLY COMPUTES, which is the armour half of the
+            // card: this engine has no term for a shield POOL shrinking, so the
+            // line says armour and the mod's own `unmodeled` says the rest.
+            AbilityStat(stat, per, max) => match stat.unmodelled_reason() {
+                None => format!(
+                    "+{} {} for 20s per enemy an alt-fire strike hits, up to {max} — taken at                      the cap, which one orb reaches",
+                    pct(per * f64::from(max)),
+                    stat.label()
+                ),
+                Some(why) => format!("+{} {} — {why}", pct(per * f64::from(max)), stat.label()),
+            },
+            StripOnKillInRange(f, r) => format!(
+                "each kill takes {} off the armour of every enemy within {r:.0} m of you, and                  keeps taking it — the shares compose, so two kills leave                  (1−x)² of it",
+                pct(f)
+            ),
             TennoScaled { stat, above, unit, per_unit, cap, grant } => format!(
                 "{} {} per {:.0} of the Warframe's {}{} — capped at {}, and NOTHING with no                  frame, because the neutral player has none of it",
                 pct(per_unit),
@@ -3147,6 +3231,14 @@ pub struct ResolvedPanel {
     pub rs_on_reload: f64,
     /// Flensing Spikes' rate — see [`WeaponBase::armor_strip_per_puncture`].
     pub armor_strip_per_puncture: f64,
+    /// JAHU CANTICLE — see [`ModEffect::StripOnKillInRange`]. `(fraction,
+    /// radius_m)`, `None` with the card off the build.
+    pub strip_on_kill_in_range: Option<(f64, f64)>,
+    /// VOME INVOCATION: what the build adds to the FIGHT's Ability Strength,
+    /// at the cap. Zero without the card.
+    pub ability_strength_bonus: f64,
+    /// RIS INVOCATION: the same for Ability Duration.
+    pub ability_duration_bonus: f64,
     /// EXECUTIONER'S FORTUNE — see [`InstantReload`]. Carried straight to the
     /// sim under every policy: it is an EVENT, and there is no panel stat an
     /// assumed-max reading could spend it into (a magazine that refills itself
@@ -3546,6 +3638,11 @@ pub fn resolve_for(
     // Charge-rate bonuses, summed apart from fire rate: both shorten the draw,
     // only fire rate also raises an uncharged form's cadence.
     let mut cr = 0.0f64;
+    // JAHU CANTICLE's strip, `(fraction, radius_m)` — see
+    // `ModEffect::StripOnKillInRange`.
+    let mut strip_on_kill_in_range: Option<(f64, f64)> = None;
+    // THE INVOCATIONS' contributions to the FIGHT's own knobs.
+    let (mut ability_strength_bonus, mut ability_duration_bonus) = (0.0f64, 0.0f64);
     let mut faction_bonus: Vec<(Faction, f64)> = Vec::new();
     // Physical (IPS) bonuses, per type — scale the base of that physical type.
     let mut phys_bonus: Vec<(DamageType, f64)> = Vec::new();
@@ -3633,6 +3730,22 @@ pub fn resolve_for(
                 // (Critical Delay reads −40% on a bow). Buff-granted fire rate
                 // joins the bucket further down UNDOUBLED: no such card says it.
                 ModEffect::FireRate(v) => fr += v * base.fire_rate_mod_multiplier,
+                // ONE CARD, so the last one wins rather than the two adding —
+                // a build cannot hold two Jahus, and a rule for a case that
+                // cannot arise is a rule nobody can check.
+                ModEffect::StripOnKillInRange(f, r) => strip_on_kill_in_range = Some((f, r)),
+                // AT THE CAP. See `ModEffect::AbilityStat` for why that is
+                // nearly exact on the one weapon that can carry these.
+                ModEffect::AbilityStat(stat, per, max) => {
+                    let total = per * f64::from(max);
+                    match stat {
+                        AbilityStat::Strength => ability_strength_bonus += total,
+                        AbilityStat::Duration => ability_duration_bonus += total,
+                        // The other two are transcribed and pay nothing — the
+                        // card says which, and there is no bucket to add to.
+                        AbilityStat::Efficiency | AbilityStat::EnergyRegen => {}
+                    }
+                }
                 // The draw's own bucket. `fire_rate_mod_multiplier` is the
                 // bow x2, which belongs to fire-rate mods and not to this.
                 ModEffect::ChargeRate(v) => cr += v,
@@ -4779,6 +4892,9 @@ pub fn resolve_for(
         fire_rate_on_reload,
         rs_on_reload,
         armor_strip_per_puncture: base.armor_strip_per_puncture,
+        strip_on_kill_in_range,
+        ability_strength_bonus,
+        ability_duration_bonus,
         instant_reload: base.instant_reload_on_headshot,
         headshot_streak: base.headshot_streak,
         crit_damage_below_status_count: base.crit_damage_below_status_count,

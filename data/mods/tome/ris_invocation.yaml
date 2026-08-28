@@ -21,17 +21,27 @@ max_rank: 3
 internal_name: /Lotus/Upgrades/Grimoire/RisStrikeMod
 description: "Alternate Fire increases Ability Duration by X% for 20s for each enemy hit. Stacks up to 15 times."
 effects:
-  # ABILITY DURATION IS A NUMBER THIS SIM HAS — every buff in
-  # data/abilities/ carries one, and the panel lets a reader type it. What
-  # is missing is the WEAPON feeding it: this raises Duration by hitting
-  # enemies with the alt fire, which is a loop from the gun back into the
-  # ability layer that nothing here closes. A todo, not an edge.
-  - kind: ability_duration_bonus
+  # ONE CARD WITH THE STAT SWAPPED. All four Invocations read "Alternate Fire
+  # increases <stat> by X% for 20s for each enemy hit", and they are loaded the
+  # same way whether or not the stat reaches a number here — a card a player
+  # owns and cannot find in the builder is indistinguishable from one the app
+  # got wrong.
+  #
+  # TAKEN AT THE CAP, and on this weapon that is nearly exact rather than a
+  # convention. One thrown orb strikes six times and each strike reaches
+  # `floor(3 x multishot)` bodies, so a bare build lands 18 hits with the FIRST
+  # orb against a 15-stack cap; the buff lasts 20 s and the meter throws another
+  # orb about every 18 s once the primary fire is filling it.
+  #
+  # AND IT PAYS, when the buff you ticked has an END. Ability Duration extends
+  # how long Roar and its siblings last, so it is worth more uptime rather than
+  # a bigger number — and nothing at all on a buff set to "the whole fight",
+  # which cannot be extended.
+  - kind: ability_stat
+    stat: duration
     rank0: 0.01
     rankMax: 0.04
-  # …AND WHAT IT IS WORTH HERE, said on the card rather than left to be
-  # inferred from a number that never moves the answer.
-  - kind: unmodeled
+    max_stacks: 15
 
 source:
   url: https://wiki.warframe.com/w/Tome_Mods

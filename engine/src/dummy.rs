@@ -1611,6 +1611,10 @@ struct DebuffState {
     virus: Vec<f64>,
     /// Corrosion stacks (8 s): armor × (1 − (0.20 + 0.06·stacks)).
     corrosion: Vec<f64>,
+    /// JAHU CANTICLE'S accumulated armour strip on THIS body — see
+    /// [`DebuffState::canticle_strip`]. A fraction, never a count, and it never
+    /// expires: the card states no duration.
+    canticle_armor_strip: f64,
     /// Confusion (Radiation): no single-target combat payload; tracked for
     /// CO type counting.
     confusion: Vec<f64>,
@@ -2355,6 +2359,18 @@ impl DebuffState {
         }
     }
 
+    /// JAHU CANTICLE: armour this body has lost to KILLS rather than to a
+    /// status — *"Killing enemies reduces the Armor and Shields of other
+    /// enemies within Affinity Range by X%"*.
+    ///
+    /// Stored as the accumulated FRACTION rather than as a count, because that
+    /// is what it is: each kill removes a share of what is LEFT, which is the
+    /// rule every other strip in this engine composes by and the only reading
+    /// under which repeated kills cannot take armour below zero.
+    fn canticle_strip(&self) -> f64 {
+        self.canticle_armor_strip
+    }
+
     /// FLENSING SPIKES: a WEAPON removing armour off a status that strips
     /// none by itself. `per` is the perk's rate per live Puncture stack, and
     /// Puncture caps at five — so 20% a stack is the whole of the armour at the
@@ -2409,6 +2425,11 @@ impl DebuffState {
             armor_multiplier: (1.0 - self.heat_strip(now, status_damage))
                 * (1.0 - self.corrosive_strip())
                 * (1.0 - self.puncture_strip(puncture_strip_per))
+                // …AND WHAT THE KILLS TOOK. A fourth source, composed the same
+                // way the three above are: each removes a share of what is
+                // left. It owes nothing to a proc and never expires — the card
+                // states no duration, and a strip with no clock is permanent.
+                * (1.0 - self.canticle_strip())
                 // …AND THE SQUAD'S, which is not a strip: an aura is up from
                 // the first shot and owes nothing to a proc.
                 * (1.0 + aura_armor).max(0.0),
@@ -2820,6 +2841,11 @@ pub struct DummyParams {
     /// carry, nothing to lapse mid-reload, and nothing left over afterwards for
     /// a transmute animation to pick up. A reload from empty is simply faster.
     pub rs_on_reload: f64,
+    /// JAHU CANTICLE — see
+    /// [`crate::loadout::ModEffect::StripOnKillInRange`]. `(fraction,
+    /// radius_m)`; every kill takes that share off the armour of every body
+    /// inside the radius OF THE PLAYER.
+    pub strip_on_kill_in_range: Option<(f64, f64)>,
     /// FLENSING SPIKES: armour removed per live Puncture status (0.0 = none).
     /// A third strip source beside Corrosive and Heat, multiplying with them.
     pub armor_strip_per_puncture: f64,
@@ -3753,11 +3779,52 @@ impl DummyParams {
             body_parts,
             duration_seconds,
             abilities,
+            ability_picks,
+            ability_strength,
             player_at,
             target_at,
             others,
             aim_at,
         } = arena.clone();
+        // THE INVOCATIONS MEET THE ABILITIES HERE, and here is the only place
+        // they can: a mod belongs to the BUILD and an ability to the FIGHT, and
+        // this function is the one that holds both.
+        //
+        // RE-RESOLVED rather than rescaled. `abilities_data::resolve` applies
+        // the strength AND settles the same-family contest, and the contest is
+        // decided BY the resolved value — so a bonus big enough to make a
+        // Helminth Roar beat a Rhino's has to be in hand before the winner is
+        // picked, not multiplied onto the loser afterwards. Rescaling would
+        // also have to know which abilities take strength at all, which is a
+        // second copy of a rule `resolve` already owns.
+        //
+        // NOTHING RE-RESOLVES WITHOUT A CARD ASKING. Every fight but one takes
+        // the list the arena already carries, byte for byte.
+        let abilities = if panel.ability_strength_bonus > 0.0
+            || panel.ability_duration_bonus > 0.0
+        {
+            let picks: Vec<crate::abilities_data::AbilityPick<'_>> = ability_picks
+                .iter()
+                .map(|p| crate::abilities_data::AbilityPick {
+                    id: p.id.as_str(),
+                    // DURATION IS A MULTIPLIER ON WHAT WAS ASKED FOR. "The
+                    // whole fight" is already the whole fight and cannot be
+                    // extended, which is why the `None` case is left alone
+                    // rather than given a number.
+                    duration_seconds: p
+                        .duration_seconds
+                        .map(|d| d * (1.0 + panel.ability_duration_bonus)),
+                    element: p.element.as_deref(),
+                })
+                .collect();
+            crate::abilities_data::resolve(
+                &picks,
+                ability_strength + panel.ability_strength_bonus,
+                panel.class,
+            )
+        } else {
+            abilities
+        };
         // LONE ENFORCER: "+25% Multishot if no enemies are within 5m".
         //
         // HERE, and not in `resolve`, because this is the first clause in the
@@ -4021,6 +4088,7 @@ impl DummyParams {
             crit_chance_per_hit_held: false,
             rs_on_reload: panel.rs_on_reload,
             armor_strip_per_puncture: panel.armor_strip_per_puncture,
+            strip_on_kill_in_range: panel.strip_on_kill_in_range,
             instant_reload: panel.instant_reload,
             headshot_streak: panel.headshot_streak,
             crit_damage_below_status_count: panel.crit_damage_below_status_count,
@@ -4363,6 +4431,8 @@ impl Default for DummyParams {
             windup_seconds: 0.0,
             // …AND IT HAS A CLIP, like every gun but one.
             no_magazine: false,
+            // NO CANTICLE on the calibration fixture.
+            strip_on_kill_in_range: None,
             // NOTHING IS DEPLOYED: the calibration fixture throws no orb.
             orb: None,
             orb_strike: None,
@@ -10701,6 +10771,10 @@ pub fn run_once_traced(
     // …and how far the clock has already been credited, so the seconds are
     // counted once however many times the loop looks at it.
     let mut meter_clocked = 0.0f64;
+    // KILLS JAHU CANTICLE HAS ALREADY STRIPPED FOR, read as a delta off the
+    // run's own counter for the same reason the meter's pickups are: there are
+    // nine places a body can die and a tenth would silently stop paying.
+    let mut strip_kills_seen = 0u32;
     // KILLS ALREADY PAID FOR, so the pickup roll happens once per body.
     //
     // Read as a DELTA off the run's own counter rather than hooked onto each
@@ -11980,6 +12054,37 @@ pub fn run_once_traced(
             d,
             &mut others,
         );
+        // JAHU CANTICLE. Every kill takes a share off the armour of every enemy
+        // inside Affinity Range — which is measured from the PLAYER, not from
+        // the corpse (wiki `Affinity`: the squad shares within a 50 m radius),
+        // so which body died does not matter and a count is enough.
+        //
+        // THE SHARES COMPOSE rather than adding: each kill removes a share of
+        // what is LEFT, which is the rule every other strip in this engine
+        // follows and the only one under which repeated kills cannot take
+        // armour past zero. Two kills at 5% leave 0.9025 of it, not 0.90.
+        //
+        // NO CLOCK. The card states no duration, so what it takes it keeps.
+        if let Some((share, radius)) = ap.strip_on_kill_in_range {
+            let fresh = r.kills.saturating_sub(strip_kills_seen);
+            strip_kills_seen = r.kills;
+            if fresh > 0 && share > 0.0 {
+                let keep = (1.0 - share).powi(fresh as i32);
+                if crate::space::gap(params.player_at, params.target_at) <= radius {
+                    debuffs.canticle_armor_strip =
+                        1.0 - (1.0 - debuffs.canticle_armor_strip) * keep;
+                }
+                for (bi, spec) in params.others.iter().enumerate() {
+                    if crate::space::gap(params.player_at, spec.at) > radius {
+                        continue;
+                    }
+                    if let Some(SpreadFoe { debuffs: fd, .. }) = others.get_mut(bi) {
+                        fd.canticle_armor_strip =
+                            1.0 - (1.0 - fd.canticle_armor_strip) * keep;
+                    }
+                }
+            }
+        }
         // THE RECHARGE METER, credited with the seconds since it was last
         // looked at. A shot boundary is where every other clock in this loop is
         // read, and the meter is coarse enough not to care: it is 45 seconds
@@ -21039,6 +21144,87 @@ mod tests {
             ..orb_spec()
         };
         assert_eq!(strikes(crate::space::CONTACT_RANGE_M, held), 6, "held still");
+    }
+
+    /// JAHU CANTICLE: A KILL STRIPS EVERYONE INSIDE AFFINITY RANGE, and the
+    /// range is measured from the PLAYER.
+    ///
+    /// *"Killing enemies reduces the Armor and Shields of other enemies within
+    /// Affinity Range by X%"*, and Affinity Range is *"a 50-meter radius"*
+    /// around the squad (wiki `Affinity`) — so the distance that matters is
+    /// yours to the body, not the corpse's.
+    ///
+    /// THE RANGE ASSERTION IS THE ONE THAT MATTERS. A strip that ignored the
+    /// radius entirely would pass any test that only checked it fires, so the
+    /// second arm puts the crowd beyond it and asserts nothing moves.
+    #[test]
+    fn a_kill_strips_the_armour_of_everyone_inside_affinity_range() {
+        let mut damage = DamageVector::default();
+        damage.set(DamageType::Impact, 400.0);
+        let armoured = |at: crate::space::Vec2| {
+            let mut params = DummyParams::default().target.clone();
+            params.base_health = 400.0;
+            params.base_armor = 600.0;
+            params.base_shield = 0.0;
+            params.level = 1;
+            params.base_level = 1;
+            params.mode = TargetMode::InstantRespawn;
+            crate::formation::FoeSpec {
+                id: "e2".into(),
+                params,
+                body_parts: DummyParams::humanoid_parts(),
+                at,
+            }
+        };
+        let fought = |strip: Option<(f64, f64)>, at: crate::space::Vec2| {
+            let mut p = DummyParams {
+                damage,
+                // AN EXPLOSION, so the shot reaches the crowd body at all. A
+                // plain single-target pellet lands on the aimed one and nothing
+                // else, and a strip nobody is standing in the blast of is a
+                // strip nothing can measure.
+                radial: Some(crate::loadout::ResolvedRadial {
+                    radius_m: 8.0,
+                    falloff_reduction: 0.0,
+                    ..radial_of(0.0, 0.0)
+                }),
+                strip_on_kill_in_range: strip,
+                magazine_size: 1e9,
+                infinite_reserve: true,
+                fire_rate: 4.0,
+                duration_seconds: 30.0,
+                crit_multiplier: 1.0,
+                base_crit_chance: 0.0,
+                arcane: ArcaneFx::none(),
+                others: vec![armoured(at)],
+                ..no_status()
+            };
+            // THE AIMED BODY DIES AND COMES BACK, which is what produces the
+            // kills; the CROWD body is what the strip is measured on.
+            p.target.mode = TargetMode::InstantRespawn;
+            p.target.base_health = 1.0;
+            p.target.base_shield = 0.0;
+            p.target.base_armor = 0.0;
+            p.target.level = 1;
+            p.target.base_level = 1;
+            let s = monte_carlo(&p, 8, 3);
+            s.mean_damage_by_body.0[1]
+        };
+        let near = crate::space::Vec2::new(3.0, 0.0);
+        let far = crate::space::Vec2::new(400.0, 0.0);
+        let bare = fought(None, near);
+        let stripped = fought(Some((0.05, 50.0)), near);
+        assert!(bare > 0.0, "the fixture reaches the crowd body: {bare}");
+        assert!(
+            stripped > bare * 1.05,
+            "a stripped body takes more: {stripped} against {bare}"
+        );
+        // …AND NOTHING 400 m AWAY IS TOUCHED, which is what makes the radius a
+        // radius rather than a decoration.
+        assert!(
+            (fought(Some((0.05, 50.0)), far) - fought(None, far)).abs() < 1e-9,
+            "outside Affinity Range the card does nothing"
+        );
     }
 
     /// A WEAPON WITH NO MAGAZINE NEVER RELOADS, so nothing keyed to a reload

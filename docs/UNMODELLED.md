@@ -539,3 +539,31 @@ at contact for all of them.
 **A chain hop still inherits the direct hit's falloff, and that is deliberate:**
 a hop is defined as a percentage of the previous instance's damage, so it is a
 share of what the beam delivered rather than a shot of its own.
+
+## A BUFF CAN DEPEND ON THE WEAPON BEING IN YOUR HANDS
+
+**Open decision** (owner, 2026-08-28). Reported off the Grimoire's Invocations:
+
+> 次要射击的时候，如果我装了一个vome的，是不是理论上每次攻击都会叠层，但是如果我
+> 期间切换武器，整个叠层就不会生效，但是我切回去，叠层又可以了。那就说明有些东西
+> 生效完全取决于当前的武器是不是在场的
+
+An Invocation's stacks are earned by the tome's alt fire and are worth something
+only while the tome is OUT. Swap to the primary and the buff stops paying; swap
+back and it pays again — the stacks are not lost, they are dormant.
+
+THIS ENGINE HAS ONE WEAPON AND IT IS ALWAYS OUT, so nothing can be dormant and
+the question cannot arise. It is recorded here rather than in a comment because
+it is not a gap in a number — it is a rule the model has no PLACE for, and it
+becomes a real decision the day weapon swapping lands:
+
+* a buff would need to know whether its SOURCE is equipped, which is a third
+  state beside "up" and "expired"
+* a swap would have to be a play pattern somebody chose — how long you spend on
+  each weapon is exactly the kind of thing this file says is the owner's call
+  and not the model's
+
+It is written down now because the observation is cheap to lose and expensive to
+rediscover: every buff card in the roster is currently modelled as paying
+whenever it is up, and that is right for one weapon and wrong for two.
+
