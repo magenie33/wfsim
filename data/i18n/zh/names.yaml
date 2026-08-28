@@ -416,6 +416,16 @@ weapons:
   hikou_prime: 飞扬 Prime
   knell: 丧钟
   kraken: 北海巨妖
+  # 执法者 — DE 自己的译名（灰机 wiki / 游戏内）。七个条目共用一个名字，
+  # 因为它们是同一把武器的七种挥法，不是七件东西：形态由 Mode 控件命名，
+  # 而那个名字是从架势的连段名推导出来的，不在这里。
+  magistar: 执法者
+  magistar_forward: 执法者
+  magistar_block: 执法者
+  magistar_block_forward: 执法者
+  magistar_heavy: 执法者
+  magistar_slide: 执法者
+  magistar_heavy_slam: 执法者
   magnus: 麦格努斯
   marelok: 玛瑞火枪
   nukor: 努寇微波枪
@@ -874,6 +884,46 @@ mods:
   charged_chamber: 蓄力装填
   primed_chamber: 膛室 Prime
   split_flights: 分裂飞行
+  acid_shells: 酸性弹药
+  auger_strike: 螺钻打击
+  blood_rush: 急进猛突
+  body_count: 杀伤计数
+  buzz_kill: 败兴虐杀
+  collision_force: 冲击巨力
+  condition_overload: 异况超量
+  drifting_contact: 漂移接触
+  fass_canticle: Fass 颂歌
+  fever_strike: 热病打击
+  focus_energy: 聚焦能量
+  fury: 狂暴
+  harkonar_scope: 哈库那瞄准镜
+  jahu_canticle: Jahu 颂歌
+  khra_canticle: Khra 颂歌
+  lohk_canticle: Lohk 颂歌
+  melee_prowess: 非凡技巧
+  molten_impact: 熔岩冲击
+  netra_invocation: Netra 神祈
+  north_wind: 北风
+  organ_shatter: 肢解
+  pressure_point: 压迫点
+  primed_fever_strike: 热病打击 Prime
+  primed_fury: 狂暴 Prime
+  primed_polar_magazine: 极地弹仓 Prime
+  primed_pressure_point: 压迫点 Prime
+  reflex_coil: 增幅线圈
+  ris_invocation: Ris 神祈
+  sacrificial_pressure: 牺牲 压迫点
+  sacrificial_steel: 牺牲 斩铁
+  shocking_touch: 电击触点
+  spoiled_strike: 腐坏打击
+  true_steel: 斩铁
+  vicious_frost: 蚀骨寒霜
+  virulent_scourge: 剧毒灾害
+  volcanic_edge: 爆裂刀刃
+  voltaic_strike: 伏打电能
+  vome_invocation: Vome 神祈
+  weeping_wounds: 创口溃烂
+  xata_invocation: Xata 神祈
 
 arcanes:
   akimbo_slip_shot: 双枪·滑射

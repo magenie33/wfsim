@@ -1,0 +1,18 @@
+id: molten_impact
+name: Molten Impact
+rarity: uncommon
+polarity: naramon
+base_drain: 6
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponFireDamageMod
+description: "+90% <DT_FIRE_COLOR>Heat"
+
+# Rank 0: +15% <DT_FIRE_COLOR>Heat
+effects:
+  - kind: elemental_damage_bonus
+    element: heat
+    rank0: 0.15
+    rankMax: 0.9
+
+source:
+  url: https://wiki.warframe.com/w/Molten_Impact

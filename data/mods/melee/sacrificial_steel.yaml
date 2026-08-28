@@ -1,0 +1,23 @@
+id: sacrificial_steel
+name: Sacrificial Steel
+rarity: legendary
+polarity: umbra
+base_drain: 6
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Sets/Sacrifice/MeleeSacrificeModB
+description: "+220% Critical Chance (x2 for Heavy Attacks) / x1.33 Damage to Sentients"
+
+# Rank 0: +20% Critical Chance (x2 for Heavy Attacks) / x1.03 Damage to Sentients
+effects:
+  - kind: crit_chance_bonus
+    rank0: 0.2
+    rankMax: 2.2
+  # x1.33 Damage to Sentients — no target in this roster is one.
+  - kind: out_of_scope
+
+family: true_steel
+
+set: sacrifice
+
+source:
+  url: https://wiki.warframe.com/w/Sacrificial_Steel

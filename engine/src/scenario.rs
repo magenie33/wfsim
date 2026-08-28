@@ -162,9 +162,13 @@ impl Capability {
         // ONE PLACE READS THE SLOT, so "what a companion weapon is" is written
         // once rather than in each arm.
         let companion = spec.slot == "sentinel";
+        // …AND ONE PLACE READS MELEE, for the same reason. A swing is not
+        // aimed and cannot be put on a head, and both of those are the GAME's
+        // rules rather than ours — see `absence`.
+        let melee = spec.slot == "melee";
         match self {
-            Capability::ChoosesAim => !companion,
-            Capability::AimsAtHead => !companion,
+            Capability::ChoosesAim => !companion && !melee,
+            Capability::AimsAtHead => !companion && !melee,
             // The same two facts `/api/meta` serves to the roster grid, read
             // from the same place: a pool behind the magazine at all, and
             // whether the game gives any way to refill it.
@@ -175,23 +179,38 @@ impl Capability {
 
     /// What to tell a reader whose weapon does NOT have it.
     ///
-    /// ONE SENTENCE PER CAPABILITY, not one per (axis, weapon) pair — which is
-    /// the whole reason a new weapon class costs no new prose. It states a fact
-    /// about the WEAPON rather than about the field, so it reads correctly
-    /// wherever it is shown.
+    /// ONE SENTENCE PER (CAPABILITY, KIND OF WEAPON), and it took the WEAPON
+    /// until melee landed. It was one sentence per capability, on the reasoning
+    /// that a sentence about the weapon reads correctly wherever it is shown —
+    /// which was true while a companion was the only thing that could not aim.
+    /// A melee weapon cannot either, for a completely different reason, and
+    /// "a sentinel weapon is fired by the companion" printed under a hammer is
+    /// worse than no sentence at all (2026-08-28).
+    ///
+    /// So it takes the spec. It still states a fact about the WEAPON rather
+    /// than about the field, which is what makes it correct in the panel, in
+    /// the ruler's own prose and in the disclosure banner alike.
     ///
     /// English is the source, as everywhere; the overlay translates it. A full
     /// sentence because it is the only thing the reader gets in exchange for
     /// losing the control, and a disabled box with a one-word tooltip reads as
     /// broken.
-    pub fn why_absent(self) -> &'static str {
+    pub fn why_absent(self, spec: &crate::weapons_data::WeaponSpec) -> &'static str {
+        let melee = spec.slot == "melee";
         match self {
+            Capability::ChoosesAim if melee => {
+                "a melee swing is not aimed down sights, so nothing gated on aiming pays here"
+            }
+            Capability::AimsAtHead if melee => {
+                "a melee weapon does not put a swing on a head in this arena, so this is 0 whatever is typed — and every on-headshot effect stays dead"
+            }
             Capability::ChoosesAim => {
                 "a sentinel weapon is fired by the companion and is always aiming — the state is real, the choice is not"
             }
             Capability::AimsAtHead => {
                 "a sentinel weapon never aims at the head, so this is 0 whatever is typed — and every on-headshot effect stays dead"
             }
+            Capability::HasReserve if melee => "a melee weapon has no ammo at all",
             Capability::HasReserve => "this weapon has no ammo reserve to run out of",
             Capability::CanResupply => {
                 "this weapon cannot be resupplied — once its reserve is gone it is removed for five minutes, so the setting has nothing to stand in for"
@@ -372,7 +391,7 @@ pub fn axis(id: &str) -> Option<&'static ScenarioAxis> {
 /// decides every capability there is — a companion weapon aims where its
 /// carrier looks because it is a companion weapon, an Arch-Gun is taken away
 /// when empty because it is an Arch-Gun.
-pub const WEAPON_CLASSES: &[&str] = &["primary", "secondary", "archgun", "sentinel"];
+pub const WEAPON_CLASSES: &[&str] = &["primary", "secondary", "archgun", "sentinel", "melee"];
 
 /// Which class's rules this weapon reads.
 pub fn class_of(weapon_id: &str) -> Option<&'static str> {
@@ -477,7 +496,7 @@ fn settled_by(
     axis.requires
         .iter()
         .find(|r| !r.cap.of(spec))
-        .map(|r| (r.absent, r.cap.why_absent(), r.cap))
+        .map(|r| (r.absent, r.cap.why_absent(spec), r.cap))
 }
 
 /// Every (class, axis) pair a scenario is ALLOWED to carry a rule for.
@@ -507,6 +526,12 @@ pub fn overridable_pairs() -> Vec<(&'static str, &'static str)> {
 
 #[cfg(test)]
 mod tests {
+    /// The spec a capability's sentence is about. Every `why_absent` here names
+    /// the weapon it is explaining, because the sentence is that weapon's.
+    fn sp(id: &str) -> &'static crate::weapons_data::WeaponSpec {
+        crate::weapons_data::spec(id).expect("roster weapon")
+    }
+
     use super::*;
 
     /// **A SCENARIO MAY ARGUE WITH OUR STAND-IN AND NOT WITH THE GAME.**
@@ -528,7 +553,7 @@ mod tests {
             resolve(ammo, "larkspur", None),
             Resolution::Settled {
                 value: AxisValue::Flag(false),
-                why: Capability::CanResupply.why_absent(),
+                why: Capability::CanResupply.why_absent(sp("larkspur")),
                 overridable: true,
             },
             "an Arch-Gun runs dry by default, and a reader may say otherwise",
@@ -537,7 +562,7 @@ mod tests {
             resolve(ammo, "larkspur", Some(AxisValue::Flag(true))),
             Resolution::ByScenario {
                 value: AxisValue::Flag(true),
-                cap_why: Capability::CanResupply.why_absent(),
+                cap_why: Capability::CanResupply.why_absent(sp("larkspur")),
             },
             "…and saying so is honoured",
         );
@@ -547,7 +572,7 @@ mod tests {
             resolve(head, "artax", Some(AxisValue::Number(100.0))),
             Resolution::Refused {
                 value: AxisValue::Number(0.0),
-                why: Capability::AimsAtHead.why_absent(),
+                why: Capability::AimsAtHead.why_absent(sp("artax")),
                 wanted: AxisValue::Number(100.0),
             },
             "a companion cannot be granted headshots by a file",
@@ -666,7 +691,7 @@ mod tests {
         };
         let (v, why) = settled_for(&first_wins, "artax").unwrap();
         assert_eq!(v, AxisValue::Flag(true), "the SECOND requirement answered");
-        assert_eq!(why, Capability::AimsAtHead.why_absent());
+        assert_eq!(why, Capability::AimsAtHead.why_absent(sp("artax")));
 
         // …and reversing the list reverses the answer, which is what makes the
         // line above about ORDER rather than about which capability is missing.
@@ -702,10 +727,17 @@ mod tests {
             Capability::CanResupply,
         ];
         for c in caps {
-            let why = c.why_absent();
-            assert!(why.len() > 30 && why.contains(' '), "{c:?}: {why:?}");
-            let missing = crate::weapons_data::roster().filter(|s| !c.of(s)).count();
-            assert!(missing > 0, "{c:?} is missing from no weapon — nothing tests it");
+            // EVERY WEAPON THAT LACKS IT GETS A SENTENCE, not just the first
+            // one found. The prose is per (capability, kind of weapon) as of
+            // 2026-08-28, so asking one weapon would let a whole class print
+            // another class's reason — which is exactly the fault that split
+            // it (a companion's explanation under a hammer).
+            let missing: Vec<_> = crate::weapons_data::roster().filter(|s| !c.of(s)).collect();
+            assert!(!missing.is_empty(), "{c:?} is missing from no weapon — nothing tests it");
+            for spec in &missing {
+                let why = c.why_absent(spec);
+                assert!(why.len() > 30 && why.contains(' '), "{c:?} on {}: {why:?}", spec.id);
+            }
         }
     }
 }

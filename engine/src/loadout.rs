@@ -429,6 +429,35 @@ pub enum ModEffect {
     /// other and the bonus it would carry to 500.4% simply reads 500% —
     /// see [`CritPerHit`].
     CritChancePerHit(CritPerHit),
+    /// BLOOD RUSH: crit chance per COMBO TIER above the first.
+    ///
+    /// `Crit Chance = Weapon Crit Chance x [1 + Mod Crit Bonus + Blood Rush
+    /// Bonus x (Combo Multi - 1)] + Static Crit Bonus` (wiki, verbatim), so it
+    /// is the bracket Point Strike is already in and never a layer of its own.
+    ///
+    /// IT IS WHY THE COMBO COUNTER MATTERS TO A LIGHT BUILD AT ALL. The counter
+    /// does not multiply a normal swing's damage — *"Melee Combo Multiplier
+    /// does not multiply the damage of your normal attacks"* — so this and
+    /// Weeping Wounds are the entire payoff of building it.
+    CritChancePerCombo(f64),
+    /// WEEPING WOUNDS, the same sentence on the status side: `Status Chance =
+    /// Weapon Status Chance x [1 + Mod Status Bonus + Weeping Wounds Bonus x
+    /// (Combo Multi - 1)]`.
+    StatusChancePerCombo(f64),
+    /// SECONDS ADDED TO THE MELEE COMBO CLOCK (Drifting Contact, Body Count).
+    ///
+    /// Flat and additive; the wiki floors the result at 0.1 s. `Melee` is in
+    /// the name because [`ModEffect::ComboDuration`] above is the SNIPER
+    /// combo's, and the two are unrelated systems that a bare `ComboDuration`
+    /// would silently merge.
+    MeleeComboDuration(f64),
+    /// POINTS THE COUNTER OPENS WITH and returns to (Corrupt Charge, Ready
+    /// Steel). Spent by a heavy attack and regenerated at 40 points a second.
+    InitialCombo(f64),
+    /// FRACTION OF THE COUNTER A HEAVY ATTACK DOES NOT SPEND (Focus Energy,
+    /// Reflex Coil). *"stacks additively and is capped at 90%"* — the cap is
+    /// applied where the sum is taken, not here.
+    HeavyAttackEfficiency(f64),
     /// ...and that refill: a fraction of the magazine back on every kill,
     /// drawn from the reserve ("This mod does not generate ammo").
     MagazineRefillOnKill(f64),
@@ -960,6 +989,27 @@ impl ModEffect {
             // THE CEILING IS THE CARD'S OWN NUMBER, and the hit count under it
             // is the thing the card never states — so both are said, in that
             // order.
+            // THE FOUR COMBO LINES SAY WHICH COUNTER, because a reader with a
+            // sniper in their hands and a reader with a hammer are reading the
+            // same word for two different systems.
+            CritChancePerCombo(v) => format!(
+                "+{} critical chance per melee combo tier above 1x — additive with Point Strike                  inside the same bracket, so it scales the weapon's own base",
+                pct(v)
+            ),
+            StatusChancePerCombo(v) => format!(
+                "+{} status chance per melee combo tier above 1x — additive with the status mods                  inside the same bracket",
+                pct(v)
+            ),
+            MeleeComboDuration(v) => {
+                format!("+{v:.0}s on the melee combo counter's clock")
+            }
+            InitialCombo(v) => format!(
+                "the melee combo counter opens at {v:.0} and returns to it, regenerating 40 points                  a second — which is what a pure heavy build spends"
+            ),
+            HeavyAttackEfficiency(v) => format!(
+                "a heavy attack spends {} less of the combo counter (the game caps the total at 90%)",
+                pct(v)
+            ),
             CritChancePerHit(c) => format!(
                 "On Hit: {} Crit Chance per stack, capped at {} ({} hits), cleared by a reload",
                 pct(c.per_stack),
@@ -1544,6 +1594,18 @@ pub struct WeaponBase {
     pub windup_seconds: f64,
     /// See [`crate::weapons_data::AttackSpec::no_magazine`].
     pub no_magazine: bool,
+    // ---- MELEE, as the ENTRY states it -----------------------------------
+    /// See [`crate::weapons_data::AttackSpec::combo_script`] — the swings a
+    /// melee form loops, unmodded. `resolve` shortens the delays by the
+    /// attack-speed bucket and nothing else touches them.
+    pub combo_script: Vec<crate::weapons_data::ComboHit>,
+    /// See [`crate::weapons_data::AttackSpec::follow_through`].
+    pub follow_through: Option<f64>,
+    /// See [`crate::weapons_data::AttackSpec::spends_combo`].
+    pub spends_combo: bool,
+    /// See [`crate::weapons_data::WeaponSpec::combo_duration_seconds`] —
+    /// unmodded; `resolve` adds the Drifting Contact bucket and floors it.
+    pub combo_duration_seconds: f64,
     /// See [`crate::weapons_data::OrbSpec`] — unmodded; `resolve` scales the
     /// two radii and adds multishot to the body count.
     pub orb: Option<crate::weapons_data::OrbSpec>,
@@ -2936,6 +2998,25 @@ pub struct ResolvedPanel {
     /// See [`crate::weapons_data::AttackSpec::windup_seconds`], after the
     /// fire-rate bucket.
     pub windup_seconds: f64,
+    // ---- MELEE ----------------------------------------------------------
+    /// The melee combo script, delays already shortened by attack speed.
+    pub combo_script: Vec<crate::weapons_data::ComboHit>,
+    /// `FT^(n-1)` — what the n-th body a swing reaches takes.
+    pub follow_through: Option<f64>,
+    /// Does a swing of this form spend the combo counter?
+    pub spends_combo: bool,
+    /// Seconds the combo counter survives untouched, mods included.
+    pub combo_duration_seconds: f64,
+    /// The floor the counter returns to, in points, mods and evolutions
+    /// included.
+    pub initial_combo: f64,
+    /// Fraction of the counter a heavy attack does NOT spend, clamped to the
+    /// wiki's 0.9 cap.
+    pub heavy_attack_efficiency: f64,
+    /// Blood Rush's per-combo-tier crit chance.
+    pub crit_chance_per_combo: f64,
+    /// Weeping Wounds' per-combo-tier status chance.
+    pub status_chance_per_combo: f64,
     /// See [`crate::weapons_data::AttackSpec::no_magazine`] — carried through
     /// unmodded, because no bucket can give a weapon a clip it does not have.
     pub no_magazine: bool,
@@ -3579,6 +3660,13 @@ pub fn resolve_for(
     let mut base_damage_on_reload: Option<TimedBuff> = None;
     let mut base_damage_on_eximus_weakpoint: Option<TimedBuff> = None;
     let mut crit_chance_per_hit: Option<CritPerHit> = None;
+    // MELEE COMBO. Four buckets and one clock — all zero on every gun, which is
+    // what keeps this function's answer unchanged for them.
+    let mut cc_per_combo = 0.0f64;
+    let mut sc_per_combo = 0.0f64;
+    let mut combo_duration_add = 0.0f64;
+    let mut initial_combo = 0.0f64;
+    let mut heavy_efficiency = 0.0f64;
     // Seconds a mod adds to the sniper combo's decay window (Harkonar Scope).
     let mut combo_seconds_bonus = 0.0f64;
     // Assembled from the card's three columns; `seen` is what tells "no augment"
@@ -3718,6 +3806,15 @@ pub fn resolve_for(
                     StackPolicy::Emergent => crit_chance_per_hit = Some(c),
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
                 },
+                // THE FOUR MELEE COMBO BUCKETS. Each is a plain sum: the wiki
+                // writes Blood Rush and Weeping Wounds INSIDE the same bracket
+                // as Point Strike and Rime Rounds, heavy efficiency "stacks
+                // additively", and combo duration is seconds added to seconds.
+                ModEffect::CritChancePerCombo(v) => cc_per_combo += v,
+                ModEffect::StatusChancePerCombo(v) => sc_per_combo += v,
+                ModEffect::MeleeComboDuration(v) => combo_duration_add += v,
+                ModEffect::InitialCombo(v) => initial_combo += v,
+                ModEffect::HeavyAttackEfficiency(v) => heavy_efficiency += v,
                 ModEffect::MagazineRefillOnKill(v) => mag_refill += v,
                 // The card names one of six; the payload is the syndicate's.
                 ModEffect::SyndicateRadial { syndicate, .. } => {
@@ -4549,6 +4646,35 @@ pub fn resolve_for(
         // A FIRE-RATE MOD SHORTENS THE WIND-UP, the same bucket and the same
         // reciprocal application the throw animation and a charge draw get.
         windup_seconds: base.windup_seconds / (1.0 + fr).max(1e-9),
+        // ---- MELEE ------------------------------------------------------
+        //
+        // THE SCRIPT COMES ACROSS AT 1.0x, which is what the stance publishes,
+        // and the FIGHT divides by the live attack speed.
+        //
+        // It was scaled here by `1 + fr` first, and that was wrong twice over:
+        // it missed the WEAPON's own attack speed (a Magistar swings at 0.833x,
+        // so its 3.00 s combo takes 3.60 s and the fixture was firing 80 swings
+        // a minute where the game fires 66), and it froze the answer at build
+        // time, which no live attack-speed buff could then reach. `panel.fire_rate`
+        // is `base_fire_rate * (1 + mods)` — the whole attack speed in one
+        // number — so the loop divides by it the same way a charge weapon
+        // divides its draw, and Berserker Fury will shorten a swing for free.
+        combo_script: base.combo_script.clone(),
+        // FOLLOW THROUGH IS NOT MODDABLE. No card in the pool moves it, and
+        // the wiki's own table is per weapon class, so it comes across as the
+        // entry states it.
+        follow_through: base.follow_through,
+        spends_combo: base.spends_combo,
+        // *"Melee Combo duration cannot be reduced below 0.1 seconds"* (wiki),
+        // which is a floor rather than a clamp on the bucket: a negative mod
+        // could otherwise stop the counter existing at all.
+        combo_duration_seconds: (base.combo_duration_seconds + combo_duration_add).max(0.1),
+        initial_combo,
+        // *"stacks additively and is capped at 90%; with both Focus Energy and
+        // Reflex Coil, 10% of the combo counter will still be consumed"*.
+        heavy_attack_efficiency: heavy_efficiency.clamp(0.0, 0.9),
+        crit_chance_per_combo: cc_per_combo,
+        status_chance_per_combo: sc_per_combo,
         no_magazine: base.no_magazine,
         // THE ORB'S GEOMETRY, MODDED — and one of the three distances is NOT.
         //

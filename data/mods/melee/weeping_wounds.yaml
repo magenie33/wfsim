@@ -1,0 +1,17 @@
+id: weeping_wounds
+name: Weeping Wounds
+rarity: uncommon
+polarity: madurai
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/Event/ComboStatusChanceMod
+description: "+40% Status Chance per Combo Multiplier"
+
+# Rank 0: +6.7% Status Chance per Combo Multiplier
+effects:
+  - kind: status_chance_per_combo
+    rank0: 0.066667
+    rankMax: 0.4
+
+source:
+  url: https://wiki.warframe.com/w/Weeping_Wounds

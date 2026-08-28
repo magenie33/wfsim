@@ -1,0 +1,19 @@
+id: body_count
+name: Body Count
+rarity: common
+polarity: naramon
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/Event/ComboDurationMod
+description: "+12s Combo Duration"
+
+# Rank 0: +2s Combo Duration
+effects:
+  - kind: melee_combo_duration_bonus
+    rank0: 2.0
+    rankMax: 12.0
+
+family: combo_duration
+
+source:
+  url: https://wiki.warframe.com/w/Body_Count

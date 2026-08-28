@@ -1,0 +1,46 @@
+id: magistar_heavy
+name: Magistar
+# CROWD FALL — nothing but heavy attacks.
+#
+# A HAMMER'S HEAVY IS 6x (wiki's per-weapon-type table), delivered as Crushing
+# Ruin's two-move pair: 600% Lifted, then 600% Knockdown. Both are 6x, which is
+# the table's "First Heavy Attack 6x / Second Heavy Attack 6x" — the stance
+# decides the animation and the forced procs, not the multiplier.
+#
+# THE COMBO COUNTER IS SPENT HERE, so this mode is a different BUILD and not a
+# different animation: Blood Rush and Weeping Wounds read a counter that is
+# emptied by the swing that read it, and initial combo is worth everything.
+#
+# THE CADENCE IS THE WIND-UP. 1.2 s at 1.0x, and attack speed does NOT shorten
+# it — *"Increasing melee attack speed does not reduce the wind-up time; rather,
+# it reduces the interval between heavy attacks"* — which this entry cannot yet
+# express, so it is declared below.
+inherits: magistar
+form: heavy
+transform_group: magistar
+co_behavior: additive_with_base_damage
+unmodeled:
+  - "melee CRITICAL CHANCE mods read x2 on a heavy attack — True Steel, Sacrificial Steel and Galvanized Steel all say so on their own cards — and this entry does not double them, so a crit build reads LOW in this mode"
+  - "attack speed shortens this mode's whole cadence, and in game it should not: the 1.2s heavy wind-up is fixed and only the interval BETWEEN heavy attacks is shortened. The swing delay here is one number covering both, so an attack-speed build reads HIGH in this mode"
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 0.833
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  windup_seconds: 1.2
+  crit_chance: 0.2
+  crit_multiplier: 2.0
+  status_chance: 0.1
+  punch_through_m: 0.0
+  range_m: 2.5
+  follow_through: 0.4
+  spends_combo: true
+  damage: { impact: 168, puncture: 31.5, slash: 10.5 }
+  combo_script:
+    - { multiplier: 6.0, delay_seconds: 1.2, forced_procs: [lifted] }
+    - { multiplier: 6.0, delay_seconds: 1.2, forced_procs: [knockdown] }
+  independent_procs: [lifted, knockdown]
+source:
+  url: https://wiki.warframe.com/w/Magistar

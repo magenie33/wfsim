@@ -1,0 +1,18 @@
+id: auger_strike
+name: Auger Strike
+rarity: rare
+polarity: naramon
+base_drain: 6
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponEventPunctureDamageMod
+description: "+120% <DT_PUNCTURE_COLOR>Puncture"
+
+# Rank 0: +20% <DT_PUNCTURE_COLOR>Puncture
+effects:
+  - kind: physical_damage_bonus
+    element: puncture
+    rank0: 0.2
+    rankMax: 1.2
+
+source:
+  url: https://wiki.warframe.com/w/Auger_Strike

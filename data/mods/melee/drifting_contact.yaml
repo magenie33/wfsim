@@ -1,0 +1,22 @@
+id: drifting_contact
+name: Drifting Contact
+rarity: rare
+polarity: vazarin
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Melee/DualStat/ComboTimeStatusChanceMod
+description: "+10s Combo Duration / +40% Status Chance"
+
+# Rank 0: +2.5s Combo Duration / +10% Status Chance
+effects:
+  - kind: melee_combo_duration_bonus
+    rank0: 2.5
+    rankMax: 10.0
+  - kind: status_chance_bonus
+    rank0: 0.1
+    rankMax: 0.4
+
+family: combo_duration
+
+source:
+  url: https://wiki.warframe.com/w/Drifting_Contact

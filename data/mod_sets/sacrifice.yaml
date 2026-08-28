@@ -1,0 +1,19 @@
+id: sacrifice
+name: Sacrificial
+# THE SET BONUS IS OUT OF SCOPE, and that is a statement about the ARENA rather
+# than about the mods. The two Sacrificial cards each carry their own
+# `x1.33 Damage to Sentients`, and the SET bonus on top of them is "+X% Damage
+# to Sentients" per equipped member — so every part of the bonus is conditional
+# on a faction no target in this roster belongs to.
+#
+# It is declared rather than omitted for the reason `data/README.md` gives: a
+# set the loader cannot find is an error, and a set it finds and cannot pay is
+# a fact a reader can check. `kind` falls through to `SetBonusKind::Unmodeled`,
+# which is the honest arm — there is nothing here to compute.
+members: 2
+bonus:
+  kind: damage_to_sentients
+  per_mod: 0.0
+
+source:
+  url: https://wiki.warframe.com/w/Sacrificial_Set

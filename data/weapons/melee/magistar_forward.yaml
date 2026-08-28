@@ -1,0 +1,30 @@
+id: magistar_forward
+name: Magistar
+# TIDAL FORCE — Crushing Ruin's forward combo, and the only one of the four
+# with no forced proc anywhere in it. 800% over 2.60 s (800 / 307.7).
+inherits: magistar
+form: forward
+transform_group: magistar
+co_behavior: additive_with_base_damage
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 0.833
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.2
+  crit_multiplier: 2.0
+  status_chance: 0.1
+  punch_through_m: 0.0
+  range_m: 2.5
+  follow_through: 0.4
+  damage: { impact: 168, puncture: 31.5, slash: 10.5 }
+  combo_script:
+    - { multiplier: 1.0, delay_seconds: 0.52 }
+    - { multiplier: 1.0, delay_seconds: 0.52, all_around: true }
+    - { multiplier: 1.0, delay_seconds: 0.52, all_around: true }
+    - { multiplier: 2.0, delay_seconds: 0.52 }
+    - { multiplier: 3.0, delay_seconds: 0.52 }
+source:
+  url: https://wiki.warframe.com/w/Crushing_Ruin

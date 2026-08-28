@@ -21,6 +21,15 @@ use wfsim_engine::scaling;
 fn dual_toxocyst_baseline() -> DummyParams {
     DummyParams {
         acid_shells: None,
+        // NOT A MELEE WEAPON: no combo counter, no script, no follow through.
+        combo_script: Vec::new(),
+        follow_through: None,
+        spends_combo: false,
+        combo_duration_seconds: 0.0,
+        initial_combo: 0.0,
+        heavy_attack_efficiency: 0.0,
+        crit_chance_per_combo: 0.0,
+        status_chance_per_combo: 0.0,
         // Ordinary — only the Laetum's Incarnon form differs, and this is not it.
         echo_multiplier: 1.0,
         // NO WARFRAME behind this fixture: no auras, no shards.

@@ -1,0 +1,19 @@
+id: organ_shatter
+name: Organ Shatter
+rarity: common
+polarity: madurai
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponCritDamageMod
+description: "+90% Critical Damage"
+
+# Rank 0: +15% Critical Damage
+effects:
+  - kind: crit_damage_bonus
+    rank0: 0.15
+    rankMax: 0.9
+
+family: organ_shatter
+
+source:
+  url: https://wiki.warframe.com/w/Organ_Shatter

@@ -11,7 +11,7 @@
 # refuse on purpose, and the reason rides beside it. The export answers "does
 # a mod for this weapon exist", which is not "may a player equip it here".
 #
-# 88 of 197 carried, 7 excluded on purpose, 102 still to transcribe.
+# 88 of 199 carried, 7 excluded on purpose, 104 still to transcribe.
 #
 # THE ROSTER THIS WAS JOINED AGAINST, because a survey nobody re-runs
 # reports the question it was asked LAST time. This file sat at 20 rows
@@ -24,7 +24,7 @@
 # stale and RED. Only this script can clear it, and only on a machine
 # with `vendor/` — which is why the guard is a comparison here rather
 # than a regeneration in CI, where the export does not exist.
-roster: 452
+roster: 453
 mods:
   - name: Acid Shells
     compat: Sobek
@@ -549,6 +549,11 @@ mods:
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Rifle/Event/ProjectNightwatch/OgrisNightwatchMod
     carried: data/mods/rifle/nightwatch_napalm.yaml
+  - name: Overpressured Rounds
+    compat: EFV-5 Jupiter
+    kind: Primary Mod
+    internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Nightwave/NightwaveLasGooAKAugmentMod
+    carried: ~
   - name: Pain Points
     compat: Athodai
     kind: Secondary Mod
@@ -669,6 +674,11 @@ mods:
     kind: Primary Mod
     internal_name: /Lotus/Upgrades/Mods/Sets/Spider/SpiderModB
     carried: data/mods/rifle/proton_jet.yaml
+  - name: Prototype Shock Coils
+    compat: EFV-8 Mars
+    kind: Secondary Mod
+    internal_name: /Lotus/Upgrades/Mods/Pistol/Event/Nightwave/NightwaveLasGooPistolAugmentMod
+    carried: ~
   - name: Radiated Reload
     compat: Rifle
     kind: Primary Mod

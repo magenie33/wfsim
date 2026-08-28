@@ -1,0 +1,20 @@
+id: fever_strike
+name: Fever Strike
+rarity: uncommon
+polarity: naramon
+base_drain: 6
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponToxinDamageMod
+description: "+90% <DT_POISON_COLOR>Toxin"
+
+# Rank 0: +15% <DT_POISON_COLOR>Toxin
+effects:
+  - kind: elemental_damage_bonus
+    element: toxin
+    rank0: 0.15
+    rankMax: 0.9
+
+family: fever_strike
+
+source:
+  url: https://wiki.warframe.com/w/Fever_Strike

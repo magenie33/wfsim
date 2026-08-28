@@ -256,6 +256,16 @@ weapons:
   larkspur: ShieldFrameArchGun.png
   larkspur_charged: ShieldFrameArchGun.png
   lenz: Lenz.png
+  # THE FIRST MELEE WEAPON (2026-08-28). All seven forms point at the one
+  # picture, the way every transform group here does — a form is not a
+  # separate ITEM on the page, it is the same hammer swung differently.
+  magistar: Magistar.png
+  magistar_forward: Magistar.png
+  magistar_block: Magistar.png
+  magistar_block_forward: Magistar.png
+  magistar_heavy: Magistar.png
+  magistar_slide: Magistar.png
+  magistar_heavy_slam: Magistar.png
   magnus: Magnus.png
   magnus_prime: MagnusPrime.png
   mandonel: TnConcreteArchgun.png
@@ -598,6 +608,10 @@ mods:
   # (RifleChargedChamberMod.jpg), which is the export being wrong about a card
   # that has looked different since 2013 — so the fetcher takes this one from
   # the wiki, where the mod's own page links it.
+
+  # THE MELEE POOL (2026-08-28). A Primed card shares its ordinary twin's
+  # image, which is this file's own convention — `primed_cryo_rounds` and
+  # `cryo_rounds` have pointed at one file since the rifle pool landed.
   accelerated_blast: ShotgunAcceleratedBlast.jpg
   accelerated_isotope: RadiationFireratePistolMod.jpg
   acid_shells: SobekNightwatchMod.jpg
@@ -615,6 +629,7 @@ mods:
   archgun_ace: ArchwingHeadshotKillAmmoEfficiencyMod.jpg
   argon_scope: CritChanceWhileAimingMods.jpg
   atomic_fallout: RadiationClipShotgunMod.jpg
+  auger_strike: EventPunctureDamageModMelee.jpg
   augur_pact: AugurPact.jpg
   augur_seeker: AugurSeeker.jpg
   automatic_trigger: ArchwingRifleFireRateMod.jpg
@@ -628,11 +643,14 @@ mods:
   bhisaj_bal: ParisPrimeStatusHealMod.jpg
   bladed_rounds: CritDamageWhileAimingMods.jpg
   blaze: ShotgunBlazeMod.jpg
+  blood_rush: ComboCritChanceMod.jpg
   blunderbuss: ShotgunCriticalChanceMod.jpg
+  body_count: ComboDurationMod.jpg
   bore: EventPunctureDamageModPistol.jpg
   breach_loader: EventPunctureDamageModShotgun.jpg
   broad_eye: HigherAirAimFoVShotgunMod.jpg
   burdened_magazine: CorruptedClipsizeForReloadShotgunMod.jpg
+  buzz_kill: EventSlashDamageMeleeMod.jpg
   carnis_stinger: AshenStinger.jpg
   catalyzer_link: StatusChanceWhileAimingMods.jpg
   cautious_shot: WeaponResistSelfDamageMod.jpg
@@ -646,11 +664,13 @@ mods:
   cleanse_infested: ShotgunDamageInfested.jpg
   cleanse_orokin: ShotgunDamageCorrupted.jpg
   cleanse_the_murmur: WeaponShotgunFactionDamageMurmurs.jpg
+  collision_force: EventImpactDamageMeleeMod.jpg
   combustion_beam: WeaponBeamExplodeOnDeathMod.jpg
   combustion_rounds: ArchwingWeaponFireDamageModRifle.jpg
   comet_blast: ArchwingDualStatImpactStatusRifleMod.jpg
   comet_rounds: DamageBiasImpactRifleMod.jpg
   concussion_rounds: ImpactDamagePistolMod.jpg
+  condition_overload: WeaponDamageIfVictimProcActive.jpg
   contagious_spread: PoisonDamageShotgunMod.jpg
   containment_breach: ArchwingEventRadiationFireIterationRifleMod.jpg
   contamination_casing: ArchwingEventToxinStatusRifleMod.jpg
@@ -671,6 +691,7 @@ mods:
   double_barrel_drift: LessRecoilMoreAccuracyShotgunMod.jpg
   double_tap: LatronThree.jpg
   dreadful_killshot: NightwaveBasmuAugmentMod.jpg
+  drifting_contact: ComboTimeStatusChanceMod.jpg
   dual_rounds: ArchwingRifleFireIterationsMod.jpg
   eagle_eye: RifleZoomMod.jpg
   eject_magazine: PassiveReloadPistolMod.jpg
@@ -686,13 +707,16 @@ mods:
   fass_canticle: ImmortalRuneChaos.png
   fast_hands: RifleReloadSpeedMod.jpg
   fatal_acceleration: WeaponProjectileSpeedShotgunMod.jpg
+  fever_strike: PoisonDamageMeleeMod.jpg
   firestorm: FirestormMod.jpg
   flechette: ShotgunPunctureDepthMod.jpg
+  focus_energy: MeleeFocusEnergyMod.jpg
   frail_momentum: CorruptedFireRateDamageShotgunMod.jpg
   frigid_blast: IceEventShotgunMod.jpg
   frostbite: IceEventPistolMod.jpg
   full_contact: EventImpactDamageShotgunMod.jpg
   fulmination: SecondaryFirestormMod.jpg
+  fury: MeleeFireRateMod.jpg
   galvanized_acceleration: WeaponProjectileSpeedSPMod.jpg
   galvanized_aptitude: WeaponStatusChanceSPModMods.jpg
   galvanized_chamber: WeaponFireIterationsSPModMods.jpg
@@ -751,16 +775,20 @@ mods:
   maim: EventSlashDamagePistolMod.jpg
   malignant_force: PoisonEventRifleMod.jpg
   marked_target: ArchwingRifleStatusChanceAimingMod.jpg
+  melee_prowess: StatusChanceMeleeMod.jpg
   merciless_gunfight: CriticalDamagePunchThroughMod.jpg
   metal_auger: RiflePunctureDepthMod.jpg
   metamorphic_magazine: NightwaveGorgonAugmentMod.jpg
   modified_munitions: ArchwingStatusChanceModRifle.jpg
+  molten_impact: MeleeFireDamageMod.jpg
   motus_setup: RaptorsAmbush.jpg
   nano_applicator: StatusChanceWhileAiming.jpg
   narrow_barrel: AccuracyWhileAiming.jpg
   netra_invocation: ImmortalRuneDecay.png
   neutralizing_justice: Miter.jpg
   nightwatch_napalm: OgrisNightwatchMod.jpg
+  north_wind: MeleeFreezeDamageMod.jpg
+  organ_shatter: MeleeCritDamageMod.jpg
   overview: HigherAirAimFoVRifleMod.jpg
   parallax_scope: ArchwingRifleCritChanceMod.jpg
   pathogen_rounds: PoisonDamagePistolMod.jpg
@@ -775,6 +803,7 @@ mods:
   point_blank: ShotgunDamageAmountMod.jpg
   point_strike: RifleCritChanceMod.jpg
   polar_magazine: ArchwingWeaponFreezeDamageModRifle.jpg
+  pressure_point: MeleeDamageMod.jpg
   pressurized_magazine: FireRateWhileAimingMods.jpg
   primary_acuity: WeaponWeakpointCriticalChanceMod.jpg
   primed_ammo_chain: ArchwingRifleAmmoMaxMod.jpg
@@ -805,14 +834,17 @@ mods:
   primed_expel_orokin: PistolDamageCorrupted.jpg
   primed_expel_the_murmur: WeaponPistolFactionDamageMurmurs.jpg
   primed_fast_hands: RifleReloadSpeedMod.jpg
+  primed_fever_strike: PoisonDamageMeleeMod.jpg
   primed_firestorm: FirestormMod.jpg
   primed_fulmination: SecondaryFirestormMod.jpg
+  primed_fury: MeleeFireRateMod.jpg
   primed_heated_charge: PistolFireDamageMod.jpg
   primed_magazine_warp: RifleClipMaxMod.jpg
   primed_pistol_ammo_mutation: PistolAmmoMutatorMod.jpg
   primed_pistol_gambit: PistolCritChanceMod.jpg
   primed_point_blank: ShotgunDamageAmountMod.jpg
   primed_polar_magazine: wiki:PrimedPolarMagazineMod.png
+  primed_pressure_point: MeleeDamageMod.jpg
   primed_quickdraw: PistolReloadSpeedMod.jpg
   primed_ravage: ShotgunCritDamageMod.jpg
   primed_rifle_ammo_mutation: RifleAmmoMutatorMod.jpg
@@ -833,6 +865,7 @@ mods:
   radiated_reload: RadiationReloadRifleMod.jpg
   ravage: ShotgunCritDamageMod.jpg
   razor_shot: BleedDamagePistolMod.jpg
+  reflex_coil: MeleeChargeRateMod.jpg
   reflex_draw: PvPWeaponSwapSpeedPistol.jpg
   repeater_clip: FireRateWhileAiming.jpg
   resolute_focus: ArchwingCCImmunityIfAimingMod.jpg
@@ -847,6 +880,8 @@ mods:
   ruinous_extension: WeaponBeamDistancePistolMod.jpg
   rupture: ImpactDamageRifleMod.jpg
   sabot_rounds: ArchwingRiflePunchthroughMod.jpg
+  sacrificial_pressure: MeleeSacrificeModA.jpg
+  sacrificial_steel: MeleeSacrificeModB.jpg
   sawtooth_clip: BleedDamageRifleMod.jpg
   saxum_spittle: FemurSpittle.jpg
   scattering_inferno: DualStatFireProcShotgun.jpg
@@ -865,6 +900,7 @@ mods:
   shell_rush: ArchwingRifleChargeSpeedMod.jpg
   shell_shock: ElectEventShotgunMod.jpg
   shivering_contagion: WeaponSpreadFreezeProcsMod.jpg
+  shocking_touch: MeleeElectricityDamageMod.jpg
   shotgun_ammo_mutation: ShotgunAmmoMutatorMod.jpg
   shotgun_barrage: ShotgunFireRateMod.jpg
   shotgun_elementalist: ShotgunStatusDamageDuoMod.jpg
@@ -881,6 +917,7 @@ mods:
   speed_trigger: RifleFireRateMod.jpg
   split_chamber: RifleFireIterationsMod.jpg
   split_flights: BowMultiShotOnHitMod.jpg
+  spoiled_strike: CorruptedChargeDmgForChargeSpeedMod.jpg
   spring_loaded_chamber: FireRateWhileAimingMods.jpg
   stabilizer: RifleRecoilReductionMod.jpg
   steady_hands: PistolRecoilReductionMod.jpg
@@ -901,10 +938,12 @@ mods:
   thermite_rounds: DualStatFireProcRifle.jpg
   toxic_barrage: PoisonEventShotgunMod.jpg
   trick_mag: PistolAmmoMaxMod.jpg
+  true_steel: MeleeCritChanceMod.jpg
   twitch: PvPWeaponSwapSpeedRifle.jpg
   unseen_dread: NightwaveStalkerBowAugmentMod.jpg
   vanquished_prey: RestoreShieldsOnKillRifleMod.jpg
   venomous_clip: ArchwingWeaponToxinDamageModRifle.jpg
+  vicious_frost: IceEventMeleeMod.jpg
   vicious_spread: CorruptedDamageForSpreadShotgunMod.jpg
   vigilante_armaments: VigilanteArmaments.jpg
   vigilante_fervor: VigilanteFervor.jpg
@@ -912,13 +951,16 @@ mods:
   vigilante_supplies: VigilanteSupplies.jpg
   vile_acceleration: CorruptedFireRateDamageRifleMod.jpg
   vile_precision: CorruptedRecoilForFireRateMod.jpg
+  virulent_scourge: PoisonEventMeleeMod.jpg
   vital_sense: RifleCritDamageMod.jpg
+  volcanic_edge: DualStatFireProcMelee.jpg
+  voltaic_strike: ElectEventMeleeMod.jpg
   vome_invocation: ImmortalRuneOrder.png
+  weeping_wounds: ComboStatusChanceMod.jpg
   wildfire: RifleWildfireMod.jpg
   winds_of_purity: Furis.jpg
   xata_invocation: ImmortalRuneTruth.png
   zodiac_shred: ArchwingDualStatSlashStatusRifleMod.jpg
-
 arcanes:
 
   # THE EIGHT KITGUN ARCANES. WFCD's export carries no `imageName` for any of

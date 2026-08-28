@@ -1590,6 +1590,20 @@ struct DebuffState {
     /// ONE EXPIRY, not a stack list: it is a STATE, so a second application
     /// refreshes it rather than adding to it. 1 s (owner, 2026-08-15).
     lifted: Option<f64>,
+    /// KNOCKED DOWN — the third invisible status, and the one melee cannot
+    /// avoid: *"Universal: Players and enemies fall to the ground. Counts as
+    /// an individual status for Condition Overload, Galvanized Aptitude,
+    /// Galvanized Savvy, and Galvanized Shot"* (wiki, Status Effect
+    /// §"Independent from Damage", verbatim).
+    ///
+    /// EVERY SLAM FORCES IT, so on a slam build it is a permanent Condition
+    /// Overload stack and worth +80% — which is why it could not be left out
+    /// and why its duration matters. Its CC half is not modelled and cannot be:
+    /// this arena has no movement (docs/UNMODELLED.md).
+    ///
+    /// ONE EXPIRY, not a stack list, for the same reason `lifted` is: it is a
+    /// STATE, so a second application refreshes it.
+    knockdown: Option<f64>,
     /// Stagger stack expiries (6 s, FIFO). No combat payload on a dummy.
     stagger: Vec<f64>,
     /// Weakened stacks (10 s): +5% flat crit chance received per stack.
@@ -1662,6 +1676,21 @@ const STATUS_DURATION: f64 = 6.0; // the standard proc duration
 /// proc is its own effect with its own timer, and DE publishes none for this
 /// one. See [`DebuffState::lifted`].
 const LIFTED_SECONDS: f64 = 1.0;
+
+/// HOW LONG A KNOCKDOWN LASTS — **A STAND-IN, NOT A MEASUREMENT** (2026-08-28).
+///
+/// DE publishes none and the wiki's own row says only that the target "fall[s]
+/// to the ground"; the whole page is flagged by the wiki as under-researched.
+/// It takes `LIFTED_SECONDS`' value for the one reason available — the sibling
+/// status in the same table already stands at 1 s — and that is a symmetry
+/// argument, which is the weakest kind this repo accepts.
+///
+/// IT REACHES A NUMBER, so it must be measured. Every slam forces a knockdown,
+/// so on a slam build this decides whether Condition Overload reads one more
+/// type between slams: at 1 s a Magistar heavy-slam loop (about 1.5 s a swing)
+/// drops the stack before the next slam lands and at 2 s it never does, which
+/// is 80% of a base-damage bucket either way. Flagged for the owner.
+const KNOCKDOWN_SECONDS: f64 = 1.0;
 const CORROSION_DURATION: f64 = 8.0;
 /// Bullet Attractor (Void): "a small 2.5 metre radius field ... for 3 seconds"
 /// (wiki Damage/Void_Damage). Shorter than the standard 6 s, which is why it is
@@ -1712,6 +1741,48 @@ struct Mitigation {
 /// Confirmed exactly against four measured body shots (MEASUREMENTS M61).
 const ENEMY_SHIELD_GATE_LEAK: f64 = 0.05;
 
+/// POINTS ON THE MELEE COMBO COUNTER PER TIER above the first.
+///
+/// The wiki publishes the ladder rather than the formula — 2x at 20 hits, 3x at
+/// 40, one more every 20 up to 12x at 220 — and this is that ladder as
+/// arithmetic. Venka Prime's 13x and Dex Nikana's shortened 110 are the two
+/// exceptions the page names and neither is in the roster; when one arrives it
+/// states its own numbers rather than bending this.
+const MELEE_COMBO_POINTS_PER_TIER: f64 = 20.0;
+
+/// The cap. *"you will also increment a Melee Combo Multiplier from 2x to 12x"*.
+const MELEE_COMBO_MAX: f64 = 12.0;
+
+/// POINTS A HEAVY ATTACK'S FLOOR REFILLS AT, per second.
+///
+/// *"Heavy attacks spend initial combo, which regenerates at a rate of 40 combo
+/// points per second"* (wiki, Melee Combo). It is what makes a pure-heavy build
+/// work at all: a Magistar in Incarnon Form carries +30, which is back inside
+/// 0.75 s against a 0.8 s wind-up, so every heavy lands at 2x rather than 1x.
+const INITIAL_COMBO_REGEN_PER_SECOND: f64 = 40.0;
+
+/// THE MULTIPLIER THE COUNTER IS WORTH RIGHT NOW.
+///
+/// `1 + floor(points / 20)`, capped at 12. One at 0..19 points, which is the
+/// wiki's own table read as a step function — and 1x is a real state rather
+/// than "no combo": a heavy attack at 1x deals its class multiplier and nothing
+/// more.
+fn melee_combo_multiplier(points: f64) -> f64 {
+    (1.0 + (points / MELEE_COMBO_POINTS_PER_TIER).floor()).clamp(1.0, MELEE_COMBO_MAX)
+}
+
+/// THE COUNTER AS THIS SWING SEES IT: what was earned, or the floor, whichever
+/// is higher.
+///
+/// The floor is `initial_combo` filling at 40 points a second since the last
+/// heavy attack emptied the counter — so it is a FLOOR rather than a second
+/// pool, which is what makes "spend it and it comes back" and "build on top of
+/// it" the same number.
+fn melee_combo_points(earned: f64, initial: f64, since_spend_seconds: f64) -> f64 {
+    let floor = initial.min(since_spend_seconds.max(0.0) * INITIAL_COMBO_REGEN_PER_SECOND);
+    earned.max(floor)
+}
+
 /// The +100%/+25% ten-stack amp curve shared by Disrupt and Virus.
 fn ten_stack_amp(stacks: usize) -> f64 {
     if stacks == 0 {
@@ -1742,7 +1813,7 @@ fn ten_stack_amp(stacks: usize) -> f64 {
 /// run reached. Four rows changed to it on 2026-08-21: a stated cap the fight
 /// routinely exceeds is worse than no cap, because the chart pins at the
 /// stated one and the reader is told a pile of 22 is a pile of 10.
-pub const DEBUFF_ROSTER: [(&str, Option<u32>); 17] = [
+pub const DEBUFF_ROSTER: [(&str, Option<u32>); 18] = [
     // The 10-stack families, and the three that are not.
     ("virus", Some(TEN_STACK_CAP as u32)),
     ("corrosion", Some(TEN_STACK_CAP as u32)),
@@ -1802,6 +1873,12 @@ pub const DEBUFF_ROSTER: [(&str, Option<u32>); 17] = [
     // STACK cap where the other three state a DISPLAY one — see
     // `dot_family_cap` for all four sentences.
     ("gas", Some(TEN_STACK_CAP as u32)),
+    // …AND THE THIRD INVISIBLE ONE, appended for the reason the two DoT
+    // families above were: a series is read by INDEX. Melee is what brought it
+    // — every slam forces a knockdown — and like Lifted it is a status the
+    // target carries that no damage type explains, so a reader checking a
+    // Condition Overload bracket against the vector has to be able to see it.
+    ("knockdown", Some(1)),
 ];
 
 impl DebuffState {
@@ -1870,6 +1947,7 @@ impl DebuffState {
             // relabel every chart drawn from a stored replay.
             dots_of(DamageType::Electricity),
             dots_of(DamageType::Gas),
+            one(self.knockdown.is_some_and(|e| e > now), self.knockdown.unwrap_or(f64::NAN)),
         ]
     }
 }
@@ -2149,6 +2227,7 @@ impl DebuffState {
         }
         self.pruned_at = Some(now);
         self.lifted = self.lifted.filter(|&e| e > now);
+        self.knockdown = self.knockdown.filter(|&e| e > now);
         self.stagger.retain(|&e| e > now);
         self.weakened.retain(|&e| e > now);
         self.freeze.retain(|&e| e > now);
@@ -2444,6 +2523,8 @@ impl DebuffState {
         n += usize::from(self.microwave);
         // ...and so does LIFTED, for the same reason and with an end.
         n += usize::from(self.lifted.is_some());
+        // ...and KNOCKDOWN, which the same wiki row names in the same sentence.
+        n += usize::from(self.knockdown.is_some());
         n += usize::from(!self.stagger.is_empty());
         n += usize::from(!self.weakened.is_empty());
         n += usize::from(!self.freeze.is_empty());
@@ -2818,6 +2899,48 @@ pub struct DummyParams {
     /// takes it — so it is a rate and a cap here rather than a `TimedBuff`, the
     /// same shape `crit_chance_per_tendril` carries one field down.
     pub crit_chance_per_hit: Option<crate::loadout::CritPerHit>,
+    // ---- MELEE: the combo counter and what reads it ----------------------
+    //
+    // ONE COUNTER, THREE READERS, and they want opposite things from it. A
+    // HEAVY form spends it as a damage multiplier; Blood Rush and Weeping
+    // Wounds read it as a bracket term and never spend it. That is why the
+    // seven melee forms are seven builds rather than seven animations.
+    /// The swings this form loops — see [`crate::weapons_data::ComboHit`].
+    /// Empty on every gun, and its emptiness is what keeps this loop unchanged
+    /// for them.
+    pub combo_script: Vec<crate::weapons_data::ComboHit>,
+    /// `FT^(n-1)`, the share a swing has left for the n-th body it reaches.
+    /// `None` on anything that is not a melee swing.
+    pub follow_through: Option<f64>,
+    /// Does a swing SPEND the combo counter? True on the two heavy forms.
+    pub spends_combo: bool,
+    /// SECONDS THE COUNTER SURVIVES with nothing added to it. 5.0 on almost
+    /// every melee weapon; the wiki names the handful that differ (Guandao
+    /// Prime 6, Pulmonars 9, Vitrica 10) and the mods that extend it.
+    pub combo_duration_seconds: f64,
+    /// THE FLOOR THE COUNTER RETURNS TO, in points.
+    ///
+    /// *"Heavy attacks spend initial combo, which regenerates at a rate of 40
+    /// combo points per second"* (wiki, Melee Combo). It is the whole of the
+    /// pure-heavy build: a Magistar in Incarnon Form carries +30, which refills
+    /// in 0.75 s against a 0.8 s wind-up, so every heavy lands at 2x rather
+    /// than at 1x.
+    pub initial_combo: f64,
+    /// Fraction of the counter a heavy attack does NOT spend.
+    ///
+    /// *"40% heavy attack efficiency will change the amount spent to 60% combo
+    /// points"*, *"stacks additively and is capped at 90%"* (wiki, Melee
+    /// Combo) — so this is clamped to 0.9 where it is resolved, not here.
+    pub heavy_attack_efficiency: f64,
+    /// BLOOD RUSH: `crit = base x [1 + mods + this x (combo - 1)] + flat`.
+    ///
+    /// The bracket is the one Point Strike is already in — the wiki writes the
+    /// formula that way itself — so this joins `crit_chance_relative` rather
+    /// than getting a layer of its own.
+    pub crit_chance_per_combo: f64,
+    /// WEEPING WOUNDS, the same shape on the status side:
+    /// `status = base x [1 + mods + this x (combo - 1)]`.
+    pub status_chance_per_combo: f64,
     /// The stacks Hata-Satya's card OPENS with, and whether an event may take
     /// them — the same two knobs the tendrils carry, and for the same reason:
     /// a pile that costs hits is unmeasurable against a target that dies before
@@ -4083,6 +4206,14 @@ impl DummyParams {
             base_damage_on_eximus_weakpoint: panel.base_damage_on_eximus_weakpoint,
             acid_shells: panel.acid_shells,
             crit_chance_per_hit: panel.crit_chance_per_hit,
+            combo_script: panel.combo_script.clone(),
+            follow_through: panel.follow_through,
+            spends_combo: panel.spends_combo,
+            combo_duration_seconds: panel.combo_duration_seconds,
+            initial_combo: panel.initial_combo,
+            heavy_attack_efficiency: panel.heavy_attack_efficiency,
+            crit_chance_per_combo: panel.crit_chance_per_combo,
+            status_chance_per_combo: panel.status_chance_per_combo,
             // A fight in contact has not built a pile; the card moves it.
             crit_chance_per_hit_initial_stacks: 0,
             crit_chance_per_hit_held: false,
@@ -4386,6 +4517,14 @@ impl Default for DummyParams {
             base_damage_on_eximus_weakpoint: None,
             acid_shells: None,
             crit_chance_per_hit: None,
+            combo_script: Vec::new(),
+            follow_through: None,
+            spends_combo: false,
+            combo_duration_seconds: 0.0,
+            initial_combo: 0.0,
+            heavy_attack_efficiency: 0.0,
+            crit_chance_per_combo: 0.0,
+            status_chance_per_combo: 0.0,
             crit_chance_per_hit_initial_stacks: 0,
             crit_chance_per_hit_held: false,
             super_crit_on_status: None,
@@ -9732,8 +9871,13 @@ mod every_form_runs {
     /// and the entry carries the admission.
     #[test]
     fn an_entry_with_no_transcribed_spread_lands_everything_and_admits_it() {
+        // A GUN, because this is about the spread INTAKE's remaining gap. A
+        // melee entry has no cone by construction and it does miss — past its
+        // reach, which is a wall rather than a cone — so it answers this
+        // question with a completely different mechanic.
         let id = crate::weapons_data::all()
             .iter()
+            .filter(|w| w.slot != "melee")
             .map(|w| w.id.clone())
             .find(|id| crate::loadout::WeaponBase::from_data(id, false, &[]).spread.is_none())
             .expect("the roster still has entries waiting on the spread intake");
@@ -9910,6 +10054,15 @@ mod every_form_runs {
     fn every_entry_either_has_a_spread_or_admits_it_has_none() {
         let (mut with, mut without) = (0, 0);
         for w in crate::weapons_data::all() {
+            // A SWING HAS NO CONE, and that is the GAME's answer rather than a
+            // gap in ours — the same split `scenario::Absence` draws. A cone is
+            // where a projectile went; a melee attack has a REACH and a body
+            // either stands inside it or does not. So there is nothing to
+            // transcribe, and `spread_not_transcribed` would be a false
+            // admission: it says a number exists and we did not write it down.
+            if w.slot == "melee" {
+                continue;
+            }
             if crate::loadout::WeaponBase::from_data(&w.id, false, &[]).spread.is_some() {
                 with += 1;
                 continue;
@@ -9952,6 +10105,154 @@ mod every_form_runs {
             }
         }
         assert!(ran > 50, "only {ran} (entry, deployment) pairs built");
+    }
+}
+
+#[cfg(test)]
+mod melee {
+    use super::*;
+
+
+    /// THE COMBO LADDER, as the wiki publishes it: 2x at 20 hits, one more
+    /// every 20, 12x at 220 and no further.
+    ///
+    /// A STEP FUNCTION, and 1x is a real state rather than "no combo" — a heavy
+    /// attack at 1x deals its class multiplier and nothing more.
+    #[test]
+    fn the_combo_ladder_is_the_wikis_own_table() {
+        for (points, want) in [
+            (0.0, 1.0), (19.0, 1.0), (20.0, 2.0), (39.0, 2.0), (40.0, 3.0),
+            (100.0, 6.0), (219.0, 11.0), (220.0, 12.0), (1000.0, 12.0),
+        ] {
+            assert_eq!(
+                melee_combo_multiplier(points), want,
+                "{points} points should be {want}x",
+            );
+        }
+    }
+
+    /// INITIAL COMBO IS A FLOOR THAT REFILLS, not a second pool.
+    ///
+    /// *"Heavy attacks spend initial combo, which regenerates at a rate of 40
+    /// combo points per second"*. It is what makes a pure-heavy build work: the
+    /// Magistar's Incarnon Form carries +30, which is back inside 0.75 s
+    /// against a 0.8 s wind-up, so every heavy lands at 2x rather than 1x.
+    #[test]
+    fn initial_combo_is_a_floor_that_refills_at_forty_a_second() {
+        // Nothing earned, nothing granted: the floor is zero however long you
+        // wait.
+        assert_eq!(melee_combo_points(0.0, 0.0, 10.0), 0.0);
+        // …and with a grant it fills at 40 a second and stops at the grant.
+        assert_eq!(melee_combo_points(0.0, 30.0, 0.0), 0.0);
+        assert_eq!(melee_combo_points(0.0, 30.0, 0.5), 20.0);
+        assert_eq!(melee_combo_points(0.0, 30.0, 0.75), 30.0);
+        assert_eq!(melee_combo_points(0.0, 30.0, 5.0), 30.0);
+        // THE HIGHER OF THE TWO, which is what "floor" means: a light build
+        // that has earned 200 does not fall back to 30.
+        assert_eq!(melee_combo_points(200.0, 30.0, 5.0), 200.0);
+        // …and 0.75 s of refill is exactly the 2x tier, which is the whole
+        // arithmetic of the pure-heavy build stated as an assertion.
+        assert_eq!(melee_combo_multiplier(melee_combo_points(0.0, 30.0, 0.75)), 2.0);
+    }
+
+    fn magistar(form: &str, mods: &[&str], duration: f64, spacing: Option<f64>) -> Summary {
+        let base = crate::loadout::WeaponBase::from_data(form, false, &[]);
+        let pool = crate::mods_data::pool_for_weapon(form);
+        let refs: Vec<&crate::loadout::ModDef> =
+            mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
+        let panel = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+        let mut arena = crate::arena::Arena::training(duration);
+        // A RING OF BODIES AT `gap` METRES, built here rather than in `Arena`:
+        // the fixture is the one place that wants a crowd, and `training` is
+        // deliberately one body so no golden value depends on a formation.
+        if let Some(gap) = spacing {
+            arena.others = (1..9)
+                .map(|i| {
+                    let a = std::f64::consts::TAU * f64::from(i) / 8.0;
+                    crate::formation::FoeSpec {
+                        id: format!("e{}", i + 1),
+                        params: crate::dummy::TargetParams::training_dummy(),
+                        body_parts: crate::dummy::DummyParams::humanoid_parts(),
+                        at: crate::space::Vec2::new(gap * a.cos(), gap * a.sin()),
+                    }
+                })
+                .collect();
+        }
+        let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
+        monte_carlo(&p, 24, 909)
+    }
+
+    /// **THE SEVEN MODES ARE SEVEN BUILDS**, which is the claim the whole
+    /// melee model rests on (owner, 2026-08-28) — and the cheapest way for it
+    /// to be false is for them to share a number.
+    ///
+    /// Every one of them fires, and no two agree: they differ in the swing
+    /// multipliers, in the cadence those swings imply, in what they force on
+    /// the target and in whether they spend the combo counter.
+    #[test]
+    fn every_way_to_swing_it_is_a_different_fight() {
+        const FORMS: [&str; 7] = [
+            "magistar", "magistar_forward", "magistar_block", "magistar_block_forward",
+            "magistar_heavy", "magistar_slide", "magistar_heavy_slam",
+        ];
+        let mut seen: Vec<(&str, f64)> = Vec::new();
+        for f in FORMS {
+            let r = magistar(f, &[], 20.0, None);
+            assert!(r.mean_damage > 0.0, "{f}: swings and deals nothing");
+            for (other, d) in &seen {
+                assert!(
+                    (r.mean_damage - d).abs() > 1e-6,
+                    "{f} and {other} are the same fight: {:.3}", r.mean_damage,
+                );
+            }
+            seen.push((f, r.mean_damage));
+        }
+    }
+
+    /// BLOOD RUSH READS THE COUNTER; A HEAVY SWING EMPTIES IT.
+    ///
+    /// The two facts are one mechanic seen from both ends, and together they
+    /// are why `heavy` is a different BUILD from `neutral` rather than a
+    /// different animation. In a combo mode the counter climbs and the card
+    /// pays; in a heavy mode the swing that reads it is the swing that spends
+    /// it, so it is standing at the floor every time.
+    #[test]
+    fn blood_rush_pays_a_combo_build_and_not_a_heavy_one() {
+        let gain = |form: &str| {
+            let without = magistar(form, &[], 30.0, None).mean_damage;
+            let with = magistar(form, &["blood_rush"], 30.0, None).mean_damage;
+            with / without
+        };
+        let light = gain("magistar");
+        let heavy = gain("magistar_heavy");
+        assert!(light > 1.05, "Blood Rush bought a combo build nothing: x{light:.4}");
+        assert!(
+            heavy < light,
+            "Blood Rush is worth as much to a heavy build (x{heavy:.4}) as to a combo one              (x{light:.4}) — the counter is not being spent",
+        );
+    }
+
+    /// A SLAM IGNORES THE REACH THAT DECIDES EVERY OTHER MELEE MODE.
+    ///
+    /// A hammer swings 2.5 m; its heavy slam is a 10 m sphere centred on the
+    /// wielder's own feet. So on a crowd spaced wider than the reach, the combo
+    /// modes hit the one body in front and the slam hits the room — which is
+    /// the whole reason the Magistar is played the way it is, and the reason
+    /// `BlastKind::Slam` exists.
+    #[test]
+    fn only_the_slam_reaches_a_crowd_a_swing_cannot() {
+        let alone = |f: &str| magistar(f, &[], 20.0, None).mean_damage;
+        let crowd = |f: &str| magistar(f, &[], 20.0, Some(3.0)).mean_damage;
+        let swing = crowd("magistar") / alone("magistar");
+        let slam = crowd("magistar_heavy_slam") / alone("magistar_heavy_slam");
+        assert!(
+            swing < 1.02,
+            "a 2.5 m swing found a crowd on a 3 m grid: x{swing:.4}",
+        );
+        assert!(
+            slam > 1.5,
+            "a 10 m slam sphere did not reach the crowd around it: x{slam:.4}",
+        );
     }
 }
 
@@ -10985,6 +11286,30 @@ pub fn run_once_traced(
     // moment the next one was due. See `weapons_data::SustainedFireRate`.
     let mut spool_shots = 0.0f64;
     let mut spool_due = f64::NEG_INFINITY;
+    // ---- THE MELEE COMBO COUNTER ----------------------------------------
+    //
+    // POINTS, not tiers. *"Stance attacks add combo points, scaling with the
+    // attack's stance damage multiplier (100% stance damage multiplier = 1
+    // point)"*, and the tier is `1 + floor(points / 20)` capped at 12 — see
+    // `melee_combo_multiplier`.
+    //
+    // ONE COUNTER, TWO READERS THAT WANT OPPOSITE THINGS. A heavy swing SPENDS
+    // it as a damage multiplier; Blood Rush and Weeping Wounds read it as a
+    // bracket term and never touch it. That is the whole reason the seven melee
+    // forms are seven builds.
+    let mut combo_points = 0.0f64;
+    // WHEN THE COUNTER DIES with nothing added to it. Refreshed by any landed
+    // swing; five seconds on almost every weapon.
+    let mut combo_expiry = f64::NEG_INFINITY;
+    // WHEN THE COUNTER WAS LAST EMPTIED BY A HEAVY ATTACK, which is what the
+    // initial-combo floor regenerates from. It starts at 0 rather than at
+    // negative infinity because the floor also has to fill at the START of the
+    // fight: a build carrying +30 initial combo does not open with it, it
+    // reaches it 0.75 s in.
+    let mut combo_spent_t = 0.0f64;
+    // WHICH SWING OF THE SCRIPT IS NEXT. A gun leaves the script empty and
+    // never reads this.
+    let mut swing_idx = 0usize;
     // WHEN THE LAST SHOT ACTUALLY WENT OFF, which is NOT `spool_due`. That one
     // is when the next shot was DUE, so the interval is already inside it and
     // the difference is zero on every ordinary pull — right for a spool, which
@@ -11495,6 +11820,45 @@ pub fn run_once_traced(
         } else {
             (&main_pre.0, main_pre.2)
         };
+        // ---- THE MELEE SWING THIS SHOT IS -------------------------------
+        //
+        // A gun's script is empty and every line below is a no-op for it: the
+        // swing is `None`, the multiplier is 1.0, and the counter never moves.
+        let swing = ap.combo_script.get(swing_idx % ap.combo_script.len().max(1)).cloned();
+        // THE COUNTER, BEFORE THIS SWING. A heavy attack reads it and then
+        // empties it, so the multiplier it pays is the one that was standing
+        // when the trigger went down — the same rule the game states by
+        // spending "all or part of the combo counter" as part of the attack.
+        if t > combo_expiry {
+            // *"Melee Combo resets after this time"*. Power Spike's partial
+            // decay is a WARFRAME passive and is not modelled — declared,
+            // because a build running it keeps far more of the counter than
+            // this does and is therefore UNDER-reported here.
+            combo_points = 0.0;
+        }
+        let combo_now = melee_combo_points(combo_points, ap.initial_combo, t - combo_spent_t);
+        let combo_mult = melee_combo_multiplier(combo_now);
+        // THE STANCE MULTIPLIER SCALES THE SWING'S OWN DAMAGE, and a HEAVY form
+        // takes the combo multiplier on top of it.
+        //
+        // IT IS FOLDED INTO THE BASE rather than applied to the finished
+        // instance, and the difference is the QUANTIZATION GRID: the snap is
+        // per component against `ModdedBase / 32`, so a swing worth 4x either
+        // snaps on a grid four times as coarse or on the weapon's own. Folding
+        // is the reading with an argument behind it — DE publishes a damage
+        // figure per combo attack, so the swing IS the attack's damage — and it
+        // is also the harmless one, since quantizing `kX` against `ks` is `k`
+        // times quantizing `X` against `s` (see `pellet_layers`). UNMEASURED
+        // either way, and flagged as such.
+        let swing_mult = swing.as_ref().map_or(1.0, |h| h.multiplier)
+            * if ap.spends_combo { combo_mult } else { 1.0 };
+        let swung;
+        let (qvec, modded_base) = if (swing_mult - 1.0).abs() > 1e-12 {
+            swung = qvec.scale(swing_mult);
+            (&swung, modded_base * swing_mult)
+        } else {
+            (qvec, modded_base)
+        };
         // The per-projectile vectors belong to the FORM that is firing, like
         // everything else at this scope. A cycle whose base form has them and
         // whose Incarnon form does not simply reads an empty slice there.
@@ -11651,7 +12015,17 @@ pub fn run_once_traced(
             // it is the same one Point Strike is in.
             + params
                 .crit_chance_per_hit
-                .map_or(0.0, |c| c.bonus(crit_chance_hit_stacks));
+                .map_or(0.0, |c| c.bonus(crit_chance_hit_stacks))
+            // BLOOD RUSH. `Crit Chance = Weapon Crit Chance x [1 + Mod Crit
+            // Bonus + Blood Rush Bonus x (Combo Multi - 1)] + Static Crit
+            // Bonus` (wiki, verbatim) — so it belongs in this bracket beside
+            // Point Strike's, multiplying the UNMODDED base, and nowhere else.
+            //
+            // IT READS THE COUNTER AND NEVER SPENDS IT, which is why it is
+            // worth everything in the four combo modes and nothing in the two
+            // heavy ones: there the counter is emptied by the swing that reads
+            // it, so it is standing at the floor when the next one starts.
+            + ap.crit_chance_per_combo * (combo_mult - 1.0);
         // VICIOUS PROMISE, both halves of it. VERBATIM (wiki, Paris Incarnon
         // Genesis): "Enemies are undamaged as long as their health and shield
         // have not been damaged. Damaging Overguard is not taken into account."
@@ -11669,7 +12043,13 @@ pub fn run_once_traced(
         // The pellet loop below re-reads it for its own roll; this is the same
         // number, one scope out.
         let sc_arc_shot = arc.total(&params.arcane.buffs, ArcGrant::StatusChance, t)
-            + params.sc_per_tendril * f64::from(tendrils);
+            + params.sc_per_tendril * f64::from(tendrils)
+            // WEEPING WOUNDS, the same sentence on the status side: `Status
+            // Chance = Weapon Status Chance x [1 + Mod Status Bonus + Weeping
+            // Wounds Bonus x (Combo Multi - 1)]`. It rides `sc_arc_shot`
+            // because that is this loop's name for "relative status the panel
+            // could not fold in", which is exactly what a live counter is.
+            + ap.status_chance_per_combo * (combo_mult - 1.0);
         // HIGH GROUND, LIVE: "+25% of CURRENT Status Chance". The panel folded
         // in what it could see; this takes that back and pays what the shot
         // actually has, which is the panel's status plus whatever the arcanes
@@ -12726,7 +13106,17 @@ pub fn run_once_traced(
             // Only on a pellet that LANDS. One that missed never touched
             // anything to punch through, so where it ends up is the ordinary
             // miss geometry's question and is left to it.
-            let det = if pellet_lands
+            // A SLAM GOES OFF AT THE WIELDER'S OWN FEET, whatever the swing
+            // touched — which is what makes it the one melee attack with no
+            // reach problem: nothing has to be hit for it to detonate, and the
+            // 2.5 m a hammer swings has nothing to do with the 10 m the floor
+            // does. It is checked FIRST because it does not care whether the
+            // pellet landed.
+            let det = if ap.radial.as_ref().map(|r| r.blast_kind)
+                == Some(crate::weapons_data::BlastKind::Slam)
+            {
+                crate::space::Detonation { at: params.player_at, height_m: det.height_m }
+            } else if pellet_lands
                 && ap.radial.as_ref().map(|r| r.blast_kind)
                     == Some(crate::weapons_data::BlastKind::Terminal)
             {
@@ -12749,6 +13139,20 @@ pub fn run_once_traced(
             };
             let radial_stage = match ap.radial {
                 Some(r) if !r.takes_multishot && pellet_idx > 0 => None,
+                other => other,
+            };
+            // …AND THE SWING SCALES THE EXPLOSION, which on a SLAM is the whole
+            // attack. A heavy slam is `3x base` delivered as a radial and it
+            // takes the combo multiplier like any other heavy attack, so a
+            // swing multiplier that reached only the direct stage would leave
+            // the one melee mode that is entirely radial reading its unswung
+            // base — 630 at every combo tier (2026-08-28).
+            let radial_stage = match radial_stage {
+                Some(r) if (swing_mult - 1.0).abs() > 1e-12 => Some(crate::loadout::ResolvedRadial {
+                    damage: r.damage.scale(swing_mult),
+                    modified_base: r.modified_base * swing_mult,
+                    ..r
+                }),
                 other => other,
             };
             for stage in 0..(1 + radial_stage.is_some() as usize) {
@@ -14008,6 +14412,10 @@ pub fn run_once_traced(
                 let until = t + LIFTED_SECONDS * params.status_duration_multiplier;
                 debuffs.lifted = Some(debuffs.lifted.map_or(until, |e| e.max(until)));
             }
+            if ap.independent_procs.contains(&"knockdown") {
+                let until = t + KNOCKDOWN_SECONDS * params.status_duration_multiplier;
+                debuffs.knockdown = Some(debuffs.knockdown.map_or(until, |e| e.max(until)));
+            }
                 // …AND THE ORDINARY END OF A PELLET, which does get to name
                 // what it applied.
                 log_this_pellet!(procs.clone());
@@ -14396,6 +14804,41 @@ pub fn run_once_traced(
             }
         }
 
+        // ---- WHAT THIS SWING DID TO THE COMBO COUNTER -------------------
+        //
+        // GAIN FIRST, THEN SPEND, and the order is the game's: a heavy attack
+        // pays the multiplier that was standing when it went down (read above,
+        // into `combo_mult`), lands, and then empties the counter.
+        //
+        // POINTS ARE THE STANCE MULTIPLIER. *"Stance attacks add combo points,
+        // scaling with the attack's stance damage multiplier (100% stance
+        // damage multiplier = 1 point)"* — one number doing two jobs, and it is
+        // the same number in game. PER BODY LANDED, which is the wiki's own
+        // reading of the Rauta: *"generates 2 combo points per pellet landing
+        // on enemy (max 28 points across 14 pellets)"*.
+        //
+        // ONLY A LANDED SWING COUNTS: *"Only successful strikes against enemies
+        // award points"*, so a miss neither adds nor refreshes.
+        if let Some(h) = &swing {
+            let landed = (r.pellets - pellets_before) as f64;
+            if landed > 0.0 {
+                combo_points += h.multiplier * landed;
+                combo_expiry = t + ap.combo_duration_seconds;
+            }
+            // …AND A HEAVY SWING EMPTIES IT. `heavy_attack_efficiency` is the
+            // share NOT spent — *"40% heavy attack efficiency will change the
+            // amount spent to 60% combo points"* — already clamped to the
+            // game's 90% cap where it was resolved.
+            //
+            // IT SPENDS WHETHER OR NOT IT LANDED, because the counter is paid
+            // at the swing rather than at the hit, and it restarts the
+            // initial-combo floor's clock either way.
+            if ap.spends_combo {
+                combo_points *= ap.heavy_attack_efficiency;
+                combo_spent_t = t;
+            }
+        }
+
         // Next shot: cadence reflects the bar as of now (Frenzy just
         // granted/refreshed counts immediately), plus Pressurized
         // Magazine's live on-reload fire-rate buff.
@@ -14466,6 +14909,25 @@ pub fn run_once_traced(
             // exactly what the live buffs did, 1.0 when none are up. It is
             // clamped the same way, so a live fire-rate PENALTY does not
             // stretch the burst either.
+            // A MELEE SWING HAS ITS OWN LENGTH. A stance publishes a
+            // sequence and a per-combo damage-per-second, so the combo's
+            // duration is derived (`sum of multipliers / that rate`) and the
+            // swings share it — evenly, which is the ONE approximation in the
+            // script and is declared on every melee entry: nothing published
+            // states an individual swing's animation length. It moves a DoT's
+            // start by fractions of a second inside a combo and moves no total.
+            //
+            // DIVIDED BY THE LIVE ATTACK SPEED, which is the same reciprocal
+            // trick the charge draw above uses. The script is published at
+            // 1.0x and `rate` is the whole attack speed — the weapon's own
+            // 0.833x, the mod bucket, and whatever a buff is doing right now —
+            // so Fury is an ordinary fire-rate mod here and an on-kill speed
+            // buff shortens a swing without knowing melee exists.
+            None if !ap.combo_script.is_empty() => {
+                let d = swing.as_ref().map_or(0.0, |h| h.delay_seconds);
+                swing_idx += 1;
+                (d / rate.max(1e-9)).max(1e-6)
+            }
             None => match ap.burst {
                 Some(b) if b.count > 1 => {
                     let live = (rate / ap.fire_rate.max(1e-9)).max(1.0);

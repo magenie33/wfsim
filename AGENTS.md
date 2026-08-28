@@ -90,6 +90,26 @@ around (decision 2026-07-31).
   It is where the `f³` triple dip comes from, and where the 0% rule lives —
   an Extra Hit REPLACES the base its status burns off, so one that deals
   nothing leaves the level above standing (owner, 2026-08-09).
+- `docs/MELEE.md` — THE FIRST WEAPON FAMILY THAT IS NOT A GUN (2026-08-28), and
+  the one decision the rest of it follows from: **each way of swinging a melee
+  weapon is an independent BUILD** (owner). A melee player picks one loop and
+  runs it for the whole engagement, which is what `WeaponPlayMode::sustainable`
+  already asks — so the four stance combos, the heavy attack, the slide and the
+  heavy slam are seven `FormKind`s and seven MODES, and melee needed no new
+  build axis at all. Seven rows per weapon per ruler is seven builds being
+  ranked, which is what the board is for.
+  A MODE ID IS THE INPUT, NEVER THE COMBO'S NAME — a stance names its own combos
+  and a different stance names them differently, so a name here would bake one
+  stance into a durable id that every preset, share link and board row carries.
+  THE COUNTER DOES NOT MULTIPLY A NORMAL SWING, which is the most
+  counter-intuitive fact in melee and is verbatim: *"Melee Combo Multiplier does
+  not multiply the damage of your normal attacks. Instead, you can spend Melee
+  Combo Count to perform Heavy Attacks, which deals between 2x and 12x damage."*
+  So a combo mode's counter pays only through Blood Rush and Weeping Wounds —
+  which read it and never spend it — and a heavy mode's is emptied by the swing
+  that read it, leaving INITIAL COMBO (a floor refilling at 40 points a second)
+  as that build's whole engine. Both cards land in brackets this engine already
+  had, with one `(combo - 1)` term each.
 - `docs/CATALOGS.md` — THE PER-WEAPON TABLES, in one place. Some mechanics are a
   formula plus a published table with one ROW PER WEAPON, and the row says what
   the weapon's own stats never would — this one multiplies where everyone else

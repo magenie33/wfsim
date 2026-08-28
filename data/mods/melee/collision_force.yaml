@@ -1,0 +1,18 @@
+id: collision_force
+name: Collision Force
+rarity: rare
+polarity: naramon
+base_drain: 6
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponEventMeleeImpactDamageMod
+description: "+120% <DT_IMPACT_COLOR>Impact"
+
+# Rank 0: +20% <DT_IMPACT_COLOR>Impact
+effects:
+  - kind: physical_damage_bonus
+    element: impact
+    rank0: 0.2
+    rankMax: 1.2
+
+source:
+  url: https://wiki.warframe.com/w/Collision_Force

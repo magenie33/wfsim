@@ -1,0 +1,21 @@
+id: focus_energy
+name: Focus Energy
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Melee/DualStat/FocusEnergyMod
+description: "+40% Heavy Attack Efficiency / +60% <DT_ELECTRICITY_COLOR>Electricity"
+
+# Rank 0: +10% Heavy Attack Efficiency / +15% <DT_ELECTRICITY_COLOR>Electricity
+effects:
+  - kind: heavy_attack_efficiency
+    rank0: 0.1
+    rankMax: 0.4
+  - kind: elemental_damage_bonus
+    element: electricity
+    rank0: 0.15
+    rankMax: 0.6
+
+source:
+  url: https://wiki.warframe.com/w/Focus_Energy

@@ -221,6 +221,7 @@ resolved:
   lenz:                          /Lotus/Weapons/Corpus/Bow/Longbow/CrpBow
   lex:                           /Lotus/Weapons/Tenno/Pistol/HeavyPistol
   lex_prime:                     /Lotus/Weapons/Tenno/Pistols/PrimeLex/PrimeLex
+  magistar:                      /Lotus/Weapons/Tenno/Melee/Maces/PaladinMace/PaladinMaceWeapon
   magnus:                        /Lotus/Weapons/Tenno/Pistols/Magnum/Magnum
   magnus_prime:                  /Lotus/Weapons/Tenno/Pistols/PrimeMagnus/PrimeMagnusWeapon
   mandonel:                      /Lotus/Weapons/Tenno/Archwing/Primary/TnConcreteArchgun/TnConcreteArchgunWeapon

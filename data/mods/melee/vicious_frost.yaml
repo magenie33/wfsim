@@ -1,0 +1,21 @@
+id: vicious_frost
+name: Vicious Frost
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Melee/DualStat/IceEventMeleeMod
+description: "+60% <DT_FREEZE_COLOR>Cold / +60% Status Chance"
+
+# Rank 0: +15% <DT_FREEZE_COLOR>Cold / +15% Status Chance
+effects:
+  - kind: elemental_damage_bonus
+    element: cold
+    rank0: 0.15
+    rankMax: 0.6
+  - kind: status_chance_bonus
+    rank0: 0.15
+    rankMax: 0.6
+
+source:
+  url: https://wiki.warframe.com/w/Vicious_Frost

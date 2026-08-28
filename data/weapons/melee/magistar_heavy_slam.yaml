@@ -1,0 +1,54 @@
+id: magistar_heavy_slam
+name: Magistar
+# NOTHING BUT HEAVY SLAMS — the Magistar's own build, and the one melee mode
+# that needs no stance at all: a slam is the same attack whatever is in the
+# slot.
+#
+# IT IS ENTIRELY RADIAL. 630 Blast in a 10 m sphere, linear falloff to 70% at
+# the edge (wiki: "3x for heavy slam ... to 50% (70% for heavy slam) at the
+# edge of its radius"; WFCD's own `attacks[]` agrees: start 0, end 10,
+# reduction 0.3). The direct component is zero, so this entry carries no
+# `damage:` of its own beyond the base vector the swing scales.
+#
+# THE SPHERE IS CENTRED ON THE WIELDER (`blast_kind: slam`), which is why this
+# mode ignores the 2.5 m reach that leaves every other melee mode hitting one
+# body on a 3 m grid.
+inherits: magistar
+form: heavy_slam
+transform_group: magistar
+co_behavior: additive_with_base_damage
+unmodeled:
+  - "melee CRITICAL CHANCE mods read x2 on a heavy attack — True Steel, Sacrificial Steel and Galvanized Steel all say so on their own cards — and this entry does not double them, so a crit build reads LOW in this mode"
+  - "the slam's radius grows with the height it was dropped from — up to 150% at 15 m and down to a floor of 2.5m/radius — and this arena has no vertical axis, so the listed radius is what is used"
+  - "Condition Overload does not apply to slams, heavy slams or radial attacks (the mod's own words), and this entry does not yet exempt it — a build carrying Condition Overload therefore reads HIGH in this mode"
+  # THE SAME SENTENCE as the heavy form's, byte for byte: one gap, one
+  # translation (AGENTS.md "A GAP THAT REPEATS IS A REASON").
+  - "attack speed shortens this mode's whole cadence, and in game it should not: the 1.2s heavy wind-up is fixed and only the interval BETWEEN heavy attacks is shortened. The swing delay here is one number covering both, so an attack-speed build reads HIGH in this mode"
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 0.833
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  windup_seconds: 1.2
+  crit_chance: 0.2
+  crit_multiplier: 2.0
+  status_chance: 0.1
+  punch_through_m: 0.0
+  range_m: 2.5
+  spends_combo: true
+  damage: { impact: 0.0 }
+  radial:
+    damage: { blast: 630 }
+    radius_m: 10.0
+    blast_kind: slam
+    falloff_start_m: 0.0
+    falloff_reduction: 0.3
+    forced_procs: []
+    takes_multishot: false
+  combo_script:
+    - { multiplier: 1.0, delay_seconds: 1.5, forced_procs: [lifted] }
+  independent_procs: [lifted]
+source:
+  url: https://wiki.warframe.com/w/Magistar

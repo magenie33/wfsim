@@ -1,0 +1,24 @@
+id: sacrificial_pressure
+name: Sacrificial Pressure
+# The Sentient multiplier is out of scope: no target in this roster is one.
+rarity: legendary
+polarity: umbra
+base_drain: 6
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Sets/Sacrifice/MeleeSacrificeModA
+description: "+110% Melee Damage / x1.33 Damage to Sentients"
+
+# Rank 0: +10% Melee Damage / x1.03 Damage to Sentients
+effects:
+  - kind: base_damage_bonus
+    rank0: 0.1
+    rankMax: 1.1
+  # x1.33 Damage to Sentients — no target in this roster is one.
+  - kind: out_of_scope
+
+family: pressure_point
+
+set: sacrifice
+
+source:
+  url: https://wiki.warframe.com/w/Sacrificial_Pressure

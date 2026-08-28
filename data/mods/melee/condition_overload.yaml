@@ -1,0 +1,26 @@
+id: condition_overload
+name: Condition Overload
+rarity: rare
+polarity: madurai
+base_drain: 10
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponDamageIfVictimProcActive
+description: "+80% Melee Damage per Status Type affecting the target"
+
+# Rank 0: +13.3% Melee Damage per Status Type affecting the target
+effects:
+  # THE ORIGINAL CONDITION OVERLOAD, and unlike the Galvanized family it is
+  # unconditional: no kill to earn it, no stacks, no clock. It reads the
+  # target's live status TYPE count on every swing, and how the term enters the
+  # damage — which base, which attack parts — is the WEAPON's `co_behavior`.
+  #
+  # `+80% Melee Damage per Status Type affecting the target` (wiki, rank 5).
+  # Two of its own rules are NOT modelled yet and are declared on the weapon:
+  # it does not apply to slams, heavy slams or radial attacks, and the status
+  # that a hit APPLIES does not amplify that same hit.
+  - kind: condition_overload
+    rank0: 0.133333
+    rankMax: 0.8
+
+source:
+  url: https://wiki.warframe.com/w/Condition_Overload

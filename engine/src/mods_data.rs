@@ -283,6 +283,30 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         "base_damage_bonus" => ModEffect::BaseDamage(max("rankMax")),
         "multishot_bonus" => ModEffect::Multishot(max("rankMax")),
         "crit_chance_bonus" => ModEffect::CritChance(max("rankMax")),
+        // ---- MELEE COMBO. Five kinds, and the two that read the counter
+        // without spending it are the reason the counter matters to a light
+        // build at all — the multiplier itself does not touch a normal swing.
+        "crit_chance_per_combo" => ModEffect::CritChancePerCombo(max("rankMax")),
+        "status_chance_per_combo" => ModEffect::StatusChancePerCombo(max("rankMax")),
+        // MELEE'S CONDITION OVERLOAD, which is the ORIGINAL one and is not a
+        // buff at all: no trigger, no stacks, no clock — it reads the target's
+        // status types on every swing and always has. The Galvanized family
+        // spells the same payload as a `buff` with `grants: condition_overload`
+        // because on a GUN it is earned on a kill and decays; here there is
+        // nothing to earn, so a trigger would be a fiction.
+        //
+        // It reaches the engine as the same `ConditionOverload` effect at ONE
+        // permanent stack, so the weapon's own `co_behavior` — which base the
+        // term reads, which attack parts take it — decides the arithmetic
+        // exactly as it does for a gun.
+        "condition_overload" => ModEffect::ConditionOverload {
+            per_stack: max("rankMax"),
+            max_stacks: 1,
+            duration: crate::loadout::NO_TIMEOUT,
+        },
+        "melee_combo_duration_bonus" => ModEffect::MeleeComboDuration(max("rankMax")),
+        "initial_combo" => ModEffect::InitialCombo(max("rankMax")),
+        "heavy_attack_efficiency" => ModEffect::HeavyAttackEfficiency(max("rankMax")),
         "crit_damage_bonus" => ModEffect::CritDamage(max("rankMax")),
         "status_chance_bonus" => ModEffect::StatusChance(max("rankMax")),
         "status_damage_bonus" => ModEffect::StatusDamage(max("rankMax")),
@@ -1966,8 +1990,10 @@ mod class_tests {
     ///     the condition cannot change a number this calculator produces).
     #[test]
     fn a_condition_on_the_card_is_a_condition_in_the_model() {
-        const DAMAGE_KINDS: [&str; 10] = [
+        const DAMAGE_KINDS: [&str; 15] = [
             "base_damage_bonus", "crit_chance_bonus", "crit_damage_bonus",
+            "crit_chance_per_combo", "status_chance_per_combo",
+            "melee_combo_duration_bonus", "initial_combo", "heavy_attack_efficiency",
             "multishot_bonus", "status_chance_bonus", "fire_rate_bonus",
             "elemental_damage_bonus", "physical_damage_bonus",
             "faction_damage_bonus", "headshot_damage_bonus",
@@ -2375,7 +2401,14 @@ mod weapon_exclusive_survey {
     /// run.
     #[test]
     fn the_weapon_exclusive_mods_we_still_owe_only_goes_down() {
-        const OWED: usize = 102;
+        // RAISED FROM 102 ON 2026-08-28, and not by melee. The survey had gone
+        // stale against a roster that grew underneath it, and re-running it
+        // found two exclusives for weapons already in the file: Overpressured
+        // Rounds (EFV-5 Jupiter) and Prototype Shock Coils. THE MAGISTAR ADDS
+        // NONE — a melee weapon with no augment of its own — which is worth
+        // recording, because "the first melee weapon raised the debt" is what a
+        // reader would otherwise assume from the date.
+        const OWED: usize = 104;
         let text = crate::data::file("surveys/weapon_exclusive_mods.yaml")
             .expect("data/surveys/weapon_exclusive_mods.yaml — run scripts/survey_weapon_mods.py");
         let mut total = 0usize;

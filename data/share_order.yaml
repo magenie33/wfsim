@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: f8c72e213192939b
-count: 1574
+digest: c1fe8bec18f510bd
+count: 1610
 ids:
   - acceltra
   - acceltra_prime
@@ -1584,3 +1584,39 @@ ids:
   - vome_invocation
   - xata_invocation
   - dreadful_killshot
+  - magistar
+  - magistar_block
+  - magistar_block_forward
+  - magistar_forward
+  - magistar_heavy
+  - magistar_heavy_slam
+  - magistar_slide
+  - auger_strike
+  - blood_rush
+  - body_count
+  - buzz_kill
+  - collision_force
+  - condition_overload
+  - drifting_contact
+  - fever_strike
+  - focus_energy
+  - fury
+  - melee_prowess
+  - molten_impact
+  - north_wind
+  - organ_shatter
+  - pressure_point
+  - primed_fever_strike
+  - primed_fury
+  - primed_pressure_point
+  - reflex_coil
+  - sacrificial_pressure
+  - sacrificial_steel
+  - shocking_touch
+  - spoiled_strike
+  - true_steel
+  - vicious_frost
+  - virulent_scourge
+  - volcanic_edge
+  - voltaic_strike
+  - weeping_wounds

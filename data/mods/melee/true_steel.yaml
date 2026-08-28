@@ -1,0 +1,19 @@
+id: true_steel
+name: True Steel
+rarity: common
+polarity: madurai
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponCritChanceMod
+description: "+120% Critical Chance (x2 for Heavy Attacks)"
+
+# Rank 0: +20% Critical Chance (x2 for Heavy Attacks)
+effects:
+  - kind: crit_chance_bonus
+    rank0: 0.2
+    rankMax: 1.2
+
+family: true_steel
+
+source:
+  url: https://wiki.warframe.com/w/True_Steel

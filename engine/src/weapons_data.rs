@@ -435,6 +435,36 @@ pub struct AttackSpec {
     /// SHORTENED BY FIRE RATE, like the throw animation it is the sibling of.
     #[serde(default)]
     pub windup_seconds: f64,
+    /// THE SWINGS THIS FORM LOOPS, in order. Empty on every gun.
+    ///
+    /// A melee form IS its combo: the four ground combos differ in nothing else
+    /// (same weapon, same mods, same target) and each is a separate board row,
+    /// so the sequence is the entry rather than a decoration on it.
+    ///
+    /// `damage:` above stays the weapon's own per-swing base, and each entry
+    /// scales it — which is what makes the four combos share one transcription
+    /// of the weapon and differ only where they actually differ.
+    #[serde(default)]
+    pub combo_script: Vec<ComboHit>,
+    /// WHAT A SECOND BODY IN THE SAME SWING TAKES.
+    ///
+    /// *"Proportion of weapon damage = FT^(n-1)"* (wiki, Melee) where `n` is
+    /// the order the swing reached it in. A hammer is 0.4, so the third body a
+    /// swing crosses takes 16%.
+    ///
+    /// It is the melee answer to punch through and it is NOT one: nothing is
+    /// spent, there is no budget, and the wiki names the two things it does not
+    /// touch — *"Follow Through does not affect: (Heavy) Slam Attacks, Any
+    /// attack that shoots projectiles or deals AoE."*
+    #[serde(default)]
+    pub follow_through: Option<f64>,
+    /// Does swinging this form SPEND the melee combo counter?
+    ///
+    /// True on the two heavy forms. The fraction is not here: it is
+    /// `1 - heavy_attack_efficiency`, which is a BUILD number and lives with
+    /// the mods.
+    #[serde(default)]
+    pub spends_combo: bool,
     pub crit_chance: f64,
     pub crit_multiplier: f64,
     pub status_chance: f64,
@@ -997,6 +1027,51 @@ pub enum BlastKind {
     /// of, which in a crowd is deeper and better and against a lone enemy is
     /// past it and worse. `space::dissipation_point` is the geometry.
     Terminal,
+    /// A GROUND SLAM: the sphere is centred on the WIELDER'S OWN FEET, not on
+    /// anything the attack touched.
+    ///
+    /// Its own kind rather than a flag because it answers the same question the
+    /// other two do — where is the epicentre — and answering it with a third
+    /// variant is what keeps `detonation` a total function of the kind. Nothing
+    /// is aimed at, nothing flies, and nothing has to be hit for it to go off,
+    /// which is also why a slam is the one melee mode that works at any range.
+    Slam,
+}
+
+/// ONE SWING OF A STANCE COMBO.
+///
+/// A stance publishes a SEQUENCE — Crushing Ruin's neutral combo is
+/// `400% -> 200% -> 300% -> 500% -> 100%` — and every gun in this roster fires
+/// one identical shot on a loop, so this is the first attack in the file whose
+/// damage and cadence both move from swing to swing.
+///
+/// TWO NUMBERS THE WIKI PUBLISHES, AND A THIRD IT IMPLIES. It gives the
+/// per-swing multiplier and a per-combo "average damage per second", so the
+/// combo's own DURATION is `sum(multipliers) / average` — 1500% at 466.7%/s is
+/// 3.214 s for Raging Whirlwind. That is derived rather than guessed, which is
+/// the only reason this can be transcribed at all: nothing published states a
+/// swing's animation length directly.
+#[derive(Debug, Clone, Deserialize)]
+pub struct ComboHit {
+    /// The stance damage multiplier, as a FRACTION (400% -> 4.0).
+    ///
+    /// It is also the COMBO POINTS this swing is worth: *"Stance attacks add
+    /// combo points, scaling with the attack's stance damage multiplier (100%
+    /// stance damage multiplier = 1 point)"* (wiki, Melee Combo). One number,
+    /// two jobs, and they are the same number in game.
+    pub multiplier: f64,
+    /// Seconds from this swing to the next, at 1.0x attack speed.
+    pub delay_seconds: f64,
+    /// Does it reach every body in range rather than the one in front?
+    ///
+    /// The stance tables mark these `(360deg)`. It is a SPATIAL fact and it is
+    /// the only thing that makes a combo mode worth anything in a crowd, since
+    /// Follow Through walks a line and this does not.
+    #[serde(default)]
+    pub all_around: bool,
+    /// Types this swing applies whatever the status roll says.
+    #[serde(default)]
+    pub forced_procs: Vec<String>,
 }
 
 /// The radial (explosion) part of an attack — MECHANICS §7. Crit/status
@@ -1278,6 +1353,38 @@ pub enum FormKind {
     SemiAuto,
     /// See [`FormKind::SemiAuto`] — the fully automatic member of the same set.
     Auto,
+    // ---- MELEE. Seven ways to swing one weapon, and each of them is a
+    // BUILD (owner, 2026-08-28) --------------------------------------------
+    //
+    // A melee player picks one loop and runs it for the whole fight, which is
+    // the definition of a MODE in this file — so these are forms for exactly
+    // the reason a Kuva Hind's three triggers are, and they reach the board as
+    // seven independent rows for exactly the reason its three do.
+    //
+    // THE FIRST FOUR ARE THE STANCE'S GROUND COMBOS, named for their INPUT
+    // rather than for the combo. A stance names them itself — Crushing Ruin
+    // calls the neutral one "Raging Whirlwind" — so a name here would be one
+    // stance's name baked into a durable id that every saved preset and share
+    // link carries. The input is what does not change.
+    /// Stationary combo (melee alone). The arsenal's own, so it is the
+    /// weapon's default form and its mode is `base`.
+    Neutral,
+    /// Forward + melee.
+    Forward,
+    /// Block + melee.
+    Block,
+    /// Block + forward + melee.
+    BlockForward,
+    /// Nothing but heavy attacks. Its own mode because it is its own build:
+    /// the combo counter is SPENT rather than accumulated, so Blood Rush and
+    /// Weeping Wounds are worth nothing in it and initial combo is worth
+    /// everything.
+    Heavy,
+    /// Nothing but slide attacks.
+    Slide,
+    /// Nothing but heavy slams — the one melee mode that needs no stance at
+    /// all, because a slam is the same attack whatever is in the slot.
+    HeavySlam,
 }
 
 impl FormKind {
@@ -1291,6 +1398,13 @@ impl FormKind {
             FormKind::AltFire => "alt_fire",
             FormKind::SemiAuto => "semi_auto",
             FormKind::Auto => "auto",
+            FormKind::Neutral => "neutral",
+            FormKind::Forward => "forward",
+            FormKind::Block => "block",
+            FormKind::BlockForward => "block_forward",
+            FormKind::Heavy => "heavy",
+            FormKind::Slide => "slide",
+            FormKind::HeavySlam => "heavy_slam",
         }
     }
 
@@ -1303,6 +1417,17 @@ impl FormKind {
             FormKind::AltFire => "Alternate Fire",
             FormKind::SemiAuto => "Semi-Auto",
             FormKind::Auto => "Full-Auto",
+            // THE LABEL IS THE FALLBACK, not the name a reader sees. A stance
+            // names its own combos and `/api/meta` fills that in; this is what
+            // is drawn when no stance is equipped, where the input IS the only
+            // true thing to say.
+            FormKind::Neutral => "Neutral Combo",
+            FormKind::Forward => "Forward Combo",
+            FormKind::Block => "Block Combo",
+            FormKind::BlockForward => "Block Forward Combo",
+            FormKind::Heavy => "Heavy Attack",
+            FormKind::Slide => "Slide Attack",
+            FormKind::HeavySlam => "Heavy Slam",
         }
     }
 
@@ -1322,6 +1447,34 @@ impl FormKind {
         matches!(self, FormKind::Incarnon)
     }
 
+    /// Is this one of the seven ways to swing a melee weapon?
+    ///
+    /// Asked where a mode id is chosen and where a stance's own combo name is
+    /// filled in. It is a property of the KIND rather than of the weapon's
+    /// slot because that is what the two call sites have in hand.
+    pub fn is_melee(self) -> bool {
+        matches!(
+            self,
+            FormKind::Neutral
+                | FormKind::Forward
+                | FormKind::Block
+                | FormKind::BlockForward
+                | FormKind::Heavy
+                | FormKind::Slide
+                | FormKind::HeavySlam
+        )
+    }
+
+    /// Does this form SPEND the combo counter to swing?
+    ///
+    /// The two heavy kinds do, and it is what makes them different builds
+    /// rather than different animations: a heavy loop reads the combo counter
+    /// as a multiplier and empties it, so Blood Rush — which reads the same
+    /// counter as a crit bracket — is worth nothing there.
+    pub fn is_heavy(self) -> bool {
+        matches!(self, FormKind::Heavy | FormKind::HeavySlam)
+    }
+
     pub fn parse(s: &str) -> FormKind {
         match s {
             "base" => FormKind::Base,
@@ -1330,6 +1483,13 @@ impl FormKind {
             "alt_fire" => FormKind::AltFire,
             "semi_auto" => FormKind::SemiAuto,
             "auto" => FormKind::Auto,
+            "neutral" => FormKind::Neutral,
+            "forward" => FormKind::Forward,
+            "block" => FormKind::Block,
+            "block_forward" => FormKind::BlockForward,
+            "heavy" => FormKind::Heavy,
+            "slide" => FormKind::Slide,
+            "heavy_slam" => FormKind::HeavySlam,
             other => panic!("unknown form kind in weapon data: {other}"),
         }
     }
@@ -1397,6 +1557,14 @@ pub struct WeaponSpec {
     /// not, and each form is its own entry.
     #[serde(default)]
     pub cannot_zoom: bool,
+    /// SECONDS THE MELEE COMBO COUNTER SURVIVES with nothing added to it.
+    ///
+    /// Five on almost every melee weapon, and stated per weapon because the
+    /// wiki names the exceptions itself — Guandao Prime 6, Pulmonars 9,
+    /// Vitrica 10, Xoris infinite. A gun leaves it at 0, which is never read
+    /// there: nothing outside a melee form asks the combo counter anything.
+    #[serde(default)]
+    pub combo_duration_seconds: f64,
     /// WHAT THIS ENTRY DOES NOT MODEL, in the reader's own language, one
     /// sentence per gap.
     ///
@@ -2220,6 +2388,13 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
         let id = match (gauged, alt.kind) {
             (true, _) => mode.id(),
             (false, FormKind::SemiAuto | FormKind::Auto) => alt.kind.id(),
+            // EVERY MELEE FORM IS ITS OWN MODE, for the reason the Hind's two
+            // extra triggers are: they are all FREE, so `Alternate` cannot tell
+            // seven of them apart, and a mode id is what a board row carries.
+            // The owner settled the question the count raises — seven rows per
+            // weapon per ruler is not noise, because each one IS an
+            // independent build (2026-08-28).
+            (false, k) if k.is_melee() => k.id(),
             (false, _) => PlayMode::Alternate.id(),
         };
         out.push(WeaponPlayMode {
@@ -2938,8 +3113,9 @@ fn independent_procs_for(s: &WeaponSpec) -> &'static [&'static str] {
         .iter()
         .map(|p| match p.as_str() {
             "lifted" => "lifted",
+            "knockdown" => "knockdown",
             other => panic!(
-                "{}: unknown independent proc `{other}` — the engine implements `lifted`;                  add the effect to dummy::DebuffState before declaring it",
+                "{}: unknown independent proc `{other}` — the engine implements `lifted` and `knockdown`;                  add the effect to dummy::DebuffState before declaring it",
                 s.id
             ),
         })
@@ -3183,6 +3359,19 @@ pub fn base_panel_assembled(
     // pseudo-reload supplies the sim's magazine/reload reduction.
     let (magazine_size, base_reload) = match &s.pseudo_reload {
         Some(pr) => (pr.magazine, pr.reload_seconds),
+        // A WEAPON WITH NO MAGAZINE IS NOT ASKED FOR ONE.
+        //
+        // `no_magazine` used to be a flag on an entry that stated a magazine
+        // anyway (the Grimoire's 1), and melee is the first family where the
+        // field is not merely unused but has no value to state: a swing spends
+        // nothing and there is no reload to time. Requiring the number would
+        // mean writing a fiction into the data — which is the one thing
+        // data/README.md forbids — so the requirement reads the declaration.
+        //
+        // The loop tops the magazine up silently on such an entry, so the value
+        // is only ever the size of a batch it never runs out of; 1 is the
+        // smallest honest one.
+        None if s.attack.no_magazine => (s.magazine.unwrap_or(1.0), s.reload_seconds.unwrap_or(0.0)),
         None => (
             s.magazine.unwrap_or_else(|| panic!("{id}: magazine missing")),
             s.reload_seconds.unwrap_or_else(|| panic!("{id}: reload_seconds missing")),
@@ -3483,6 +3672,10 @@ pub fn base_panel_assembled(
         unaimed_headshot_chance: s.attack.unaimed_headshot_chance,
         windup_seconds: s.attack.windup_seconds,
         no_magazine: s.attack.no_magazine,
+        combo_script: s.attack.combo_script.clone(),
+        follow_through: s.attack.follow_through,
+        spends_combo: s.attack.spends_combo,
+        combo_duration_seconds: s.combo_duration_seconds,
         orb: s.attack.orb,
         meter: s.attack.meter,
         ricochet: s.attack.ricochet.as_ref().map(|r| crate::loadout::Ricochet {

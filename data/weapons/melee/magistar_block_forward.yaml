@@ -1,0 +1,33 @@
+id: magistar_block_forward
+name: Magistar
+# SHATTERED VILLAGE — Crushing Ruin's block-forward combo, the longest and the
+# only one with two forced procs. 1700% over 4.25 s (1700 / 400.0).
+inherits: magistar
+form: block_forward
+transform_group: magistar
+co_behavior: additive_with_base_damage
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 0.833
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.2
+  crit_multiplier: 2.0
+  status_chance: 0.1
+  punch_through_m: 0.0
+  range_m: 2.5
+  follow_through: 0.4
+  damage: { impact: 168, puncture: 31.5, slash: 10.5 }
+  combo_script:
+    - { multiplier: 3.0, delay_seconds: 0.53 }
+    - { multiplier: 0.5, delay_seconds: 0.53, all_around: true }
+    - { multiplier: 0.5, delay_seconds: 0.53, all_around: true }
+    - { multiplier: 3.0, delay_seconds: 0.53 }
+    - { multiplier: 0.5, delay_seconds: 0.53, all_around: true }
+    - { multiplier: 0.5, delay_seconds: 0.53, all_around: true }
+    - { multiplier: 4.0, delay_seconds: 0.53, all_around: true, forced_procs: [impact] }
+    - { multiplier: 5.0, delay_seconds: 0.53, forced_procs: [knockdown] }
+source:
+  url: https://wiki.warframe.com/w/Crushing_Ruin

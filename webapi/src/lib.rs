@@ -3477,6 +3477,32 @@ pub fn panel_json(v: &Value) -> Value {
                         Some("on reload, buff assumed up".into()),
                     ),
                 },
+                // ---- MELEE COMBO. All five are LIVE numbers, so none of them
+                // is a panel stat: what a card is worth here depends on where
+                // the combo counter is at the instant of the swing, and the
+                // panel describes a weapon at rest. They are stated as
+                // conditionals for the same reason Double Tap's stacks are —
+                // the alternative is a crit-chance figure on the panel that no
+                // swing in the fight ever has.
+                CritChancePerCombo(v) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": format!(
+                        "the combo counter is live, so this is worth nothing at 1x and {} at the 12x cap —                          and it is additive with Point Strike inside the same bracket",
+                        wfsim_engine::loadout::pct(v * 11.0))})),
+                StatusChancePerCombo(v) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": format!(
+                        "the combo counter is live, so this is worth nothing at 1x and {} at the 12x cap",
+                        wfsim_engine::loadout::pct(v * 11.0))})),
+                MeleeComboDuration(_) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "it buys TIME on the counter rather than a stat — what it is worth depends on                             how often this build lands a hit"})),
+                InitialCombo(_) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "the floor the counter returns to after a heavy attack, which is what a pure                             heavy build spends and what a light build never notices"})),
+                HeavyAttackEfficiency(_) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "it pays only on a form that SPENDS the counter — the two heavy modes"})),
                 // Event mechanic — no static stat; the sim rolls it per hit.
                 ProcConversion { .. } => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
@@ -8614,6 +8640,25 @@ mod asset_tests {
             let unmoddable = wfsim_engine::weapons_data::spec(&w.id)
                 .is_some_and(|s| s.mod_pools.is_empty());
             if unmoddable {
+                continue;
+            }
+            // …AND A MELEE WEAPON, until there is a melee riven pool.
+            //
+            // A riven CLASS is derived from the mod pools (`class_for_weapon`
+            // takes the narrowest one that has a riven file behind it), and
+            // `data/rivens/` holds rifle, shotgun, pistol and archgun. Melee is
+            // a whole family of stats nobody has surveyed — a card rolls Range,
+            // Attack Speed, Combo Duration and Heavy Attack Efficiency, none of
+            // which any existing pool contains — so an empty answer here is the
+            // truth rather than a wiring fault (2026-08-28).
+            //
+            // IT IS SAID ON THE PAGE, not only here: every melee entry carries
+            // "melee RIVENS are not modelled" in its `unmodeled:` list, so a
+            // reader finding the riven editor empty is told why. The skip is
+            // keyed on the SLOT, so it stops covering melee the day
+            // `data/rivens/melee.yaml` lands and every melee weapon is asked
+            // this question again.
+            if wfsim_engine::weapons_data::spec(&w.id).is_some_and(|s| s.slot == "melee") {
                 continue;
             }
             let class = riven_class(w);

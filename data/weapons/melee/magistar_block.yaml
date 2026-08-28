@@ -1,0 +1,29 @@
+id: magistar_block
+name: Magistar
+# WINDING TEMPER — Crushing Ruin's block combo, the shortest of the four.
+# 900% over 2.25 s (900 / 400.0). The table's trailing 100% radial slam is not
+# here; see the parent entry's `unmodeled`.
+inherits: magistar
+form: block
+transform_group: magistar
+co_behavior: additive_with_base_damage
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  fire_rate: 0.833
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.2
+  crit_multiplier: 2.0
+  status_chance: 0.1
+  punch_through_m: 0.0
+  range_m: 2.5
+  follow_through: 0.4
+  damage: { impact: 168, puncture: 31.5, slash: 10.5 }
+  combo_script:
+    - { multiplier: 3.0, delay_seconds: 0.75 }
+    - { multiplier: 2.0, delay_seconds: 0.75 }
+    - { multiplier: 4.0, delay_seconds: 0.75 }
+source:
+  url: https://wiki.warframe.com/w/Crushing_Ruin

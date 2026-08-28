@@ -1,0 +1,18 @@
+id: buzz_kill
+name: Buzz Kill
+rarity: rare
+polarity: naramon
+base_drain: 6
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponEventSlashDamageMod
+description: "+120% <DT_SLASH_COLOR>Slash"
+
+# Rank 0: +20% <DT_SLASH_COLOR>Slash
+effects:
+  - kind: physical_damage_bonus
+    element: slash
+    rank0: 0.2
+    rankMax: 1.2
+
+source:
+  url: https://wiki.warframe.com/w/Buzz_Kill

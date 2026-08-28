@@ -1,0 +1,101 @@
+id: magistar
+name: Magistar
+slot: melee
+class: hammer
+# THE STATIONARY COMBO, and the arsenal's own form — so its mode is `base`.
+form: neutral
+default_form: true
+transform_group: magistar
+mod_pools: [melee]
+mastery_rank: 1
+max_rank: 30
+
+# THE FIRST MELEE WEAPON IN THE ROSTER (2026-08-28). Seven entries, one per way
+# to swing it, because a melee player picks ONE loop and runs it for the whole
+# engagement — which is the definition of a mode in this repo, and why each of
+# the seven is an independent board row rather than an animation (owner).
+#
+# TWO CROSS-CHECK FINDINGS, both recorded because they cost nothing to write and
+# would cost an evening to re-derive:
+#
+#   1. WFCD's top-level `damage` object has PUNCTURE AND SLASH SWAPPED for this
+#      weapon (`puncture: 10.5, slash: 31.5`). Its own `damagePerShot` array and
+#      its own `attacks[0]` block both say the opposite, and both agree with the
+#      wiki's infobox (Puncture 31.5 = 15%, Slash 10.5 = 5%). The wiki wins, as
+#      always, and here two thirds of the export agrees with it.
+#   2. The export carries `slamAttack: 630` beside `slamRadialDamage: 420`, and
+#      `heavySlamAttack: 1050` beside `heavySlamRadialDamage: 630`. The wiki
+#      publishes only the radial figures and its own `attacks[]` array carries
+#      only those, so those are what is transcribed. What the other pair is —
+#      most likely a direct component on the body landed on — is UNKNOWN, and
+#      the slam entries declare it as a gap rather than guessing.
+accuracy: ~
+disposition: 1.35
+polarities: []
+# THE STANCE SLOT'S OWN POLARITY. Nothing reads it yet — the stance slot is not
+# modelled (see `unmodeled` below) — and it is transcribed so the slot costs no
+# research when it lands.
+stance_polarity: vazarin
+introduced: "Update 11.5"
+internal_name: /Lotus/Weapons/Tenno/Melee/Maces/PaladinMace/PaladinMaceWeapon
+
+# NO AMMO AT ALL. A melee weapon has no magazine, no reserve and no reload, so
+# the loop tops it up silently and `Capability::HasReserve` is false for it the
+# way it is for a companion weapon — a different reason, the same absence.
+ammo_max: ~
+
+# SECONDS THE COMBO COUNTER SURVIVES untouched. Five is this weapon's, and the
+# wiki names the handful that differ rather than stating a default.
+combo_duration_seconds: 5.0
+
+# No CO catalog row for any of this weapon's attacks, so the ordinary class.
+# ABSENCE MEANS ORDINARY — and it was checked against the PAGE, not against
+# docs/CATALOGS.md, which by construction holds only rows the roster already
+# has.
+co_behavior: additive_with_base_damage
+
+unmodeled:
+  - "the STANCE SLOT is not modelled: these four ground combos are Crushing Ruin's, transcribed from its published table, and equipping a different hammer stance would script them differently — the engine has no way to hear that yet, so a build on Shattering Storm or Fracturing Wind reads this one's numbers"
+  - "a swing's own animation length is not published anywhere: the wiki gives a combo's total damage-per-second at 1.0x attack speed, so the combo's DURATION is exact (sum of multipliers / that rate) and the split between its swings is even. It moves a status tick's start by fractions of a second inside a combo and moves no total"
+  - "the Tennokai window is not modelled — a 15% chance on a direct hit to make the next heavy attack free and faster, which on a heavy build is a real share of the damage. The mods that drive it (Mentor's Legacy, Discipline's Merit, Master's Edge, Dreamer's Wrath, Opportunity's Reach, Condition's Perfection) are therefore not in the pool"
+  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: this counter drops to zero when its clock runs out, so a build running that passive keeps far more of it than this reports"
+  - "melee RIVENS are not modelled — there is no melee riven pool yet, so the riven editor offers this weapon nothing"
+
+attack:
+  trigger: semi_auto
+  shot_type: hit_scan
+  # ATTACK SPEED, in the fire-rate bucket — which is what makes Fury and
+  # Berserker ordinary mods here. A stance's swing delays are published at 1.0x,
+  # and `loadout::resolve` divides the whole script by this bucket.
+  fire_rate: 0.833
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.2
+  crit_multiplier: 2.0
+  status_chance: 0.1
+  punch_through_m: 0.0
+  # REACH, and it is a real distance in this arena: 2.5 m from the wielder.
+  # On the group ruler's 3 m grid that is one body per swing, which is why
+  # Follow Through pays nothing there and a slam pays everything.
+  range_m: 2.5
+  # `FT^(n-1)` — wiki's Follow Through table, Hammer.
+  follow_through: 0.4
+  damage: { impact: 168, puncture: 31.5, slash: 10.5 }   # total 210
+
+  # RAGING WHIRLWIND — Crushing Ruin's neutral combo.
+  #
+  #   400% (forced Impact) -> 200% (360deg) -> 300% (360deg) -> 500% (forced Knockdown)
+  #
+  # 1400% over 3.00 s at 1.0x attack speed, which is the wiki's own two columns:
+  # 1400 / 466.7 = 3.000. The trailing 100% radial slam the table lists is NOT
+  # here — see `unmodeled` on the slam pair.
+  combo_script:
+    - { multiplier: 4.0, delay_seconds: 0.75, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.75, all_around: true }
+    - { multiplier: 3.0, delay_seconds: 0.75, all_around: true }
+    - { multiplier: 5.0, delay_seconds: 0.75, forced_procs: [knockdown] }
+
+source:
+  url: https://wiki.warframe.com/w/Magistar
+  # The combo table: https://wiki.warframe.com/w/Crushing_Ruin
