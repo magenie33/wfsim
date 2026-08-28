@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 3361
+submissions: 3371
 engine: 345a3ed6623145620e737022b98877fba0e96f36
 entries:
   - weapon: acceltra_prime
@@ -1355,6 +1355,14 @@ entries:
     fp: b652ee449b415097
     mods: [pistol_acuity, primed_target_cracker, galvanized_crosshairs, galvanized_shot, anemic_agility, primed_convulsion, pistol_pestilence, primed_heated_charge]
     evolutions: [cestra_evo1_incarnon_form, cestra_fortress_salvo, cestra_rapid_reinforcement, cestra_deathtrap_trigger]
+    arcanes: [secondary_deadhead]
+  - weapon: cestra
+    mode: cycle
+    score: 22.19531547384409
+    fp: cb40cd9aa9fdbd8c
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [cestra_evo1_incarnon_form, cestra_fortress_salvo, cestra_rapid_reinforcement, cestra_wisemans_regard]
     arcanes: [secondary_deadhead]
   - weapon: cestra
     mode: cycle

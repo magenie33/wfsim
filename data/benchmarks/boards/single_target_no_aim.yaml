@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 3361
+submissions: 3371
 engine: 345a3ed6623145620e737022b98877fba0e96f36
 entries:
   - weapon: acceltra_prime
@@ -1077,6 +1077,14 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, galvanized_shot, creeping_bullseye, magnetic_might, primed_convulsion, pathogen_rounds, primed_heated_charge]
     evolutions: [cestra_evo1_incarnon_form, cestra_fortress_salvo, cestra_rapid_reinforcement, cestra_deathtrap_trigger]
     arcanes: [cascadia_flare]
+  - weapon: cestra
+    mode: cycle
+    score: 0.3547632863558515
+    fp: b4c7e2e5a3ef8591
+    exilus: primed_steady_hands
+    mods: [galvanized_diffusion, primed_target_cracker, galvanized_crosshairs, galvanized_shot, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [cestra_evo1_incarnon_form, cestra_fortress_salvo, cestra_rapid_reinforcement, cestra_wisemans_regard]
+    arcanes: [secondary_deadhead]
   - weapon: coda_bassocyst
     mode: base
     score: 1.3160295794029149
@@ -1541,11 +1549,10 @@ entries:
   - weapon: felarx
     mode: cycle
     score: 7.276563768504976
-    fp: efc52de6e5900a56
-    exilus: galvanized_acceleration
+    fp: 44fb4d6e47fb0df8
     mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, riven, blaze]
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
-    arcanes: [primary_overcharge]
+    arcanes: [primary_deadhead]
     riven:
       bonuses: [multishot, toxin]
       malus: critical_chance
@@ -1553,10 +1560,11 @@ entries:
   - weapon: felarx
     mode: cycle
     score: 7.276563768504976
-    fp: 44fb4d6e47fb0df8
+    fp: efc52de6e5900a56
+    exilus: galvanized_acceleration
     mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, primed_chilling_grasp, riven, blaze]
     evolutions: [felarx_evo1_incarnon_form, felarx_attuned_accuracy, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
-    arcanes: [primary_deadhead]
+    arcanes: [primary_overcharge]
     riven:
       bonuses: [multishot, toxin]
       malus: critical_chance
@@ -1752,6 +1760,16 @@ entries:
     mods: [galvanized_diffusion, primed_target_cracker, lethal_torrent, anemic_agility, magnetic_might, frostbite, pistol_pestilence, primed_heated_charge]
     evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_prelude_of_might]
     arcanes: [cascadia_flare]
+  - weapon: furis
+    mode: cycle
+    score: 3.3676419872129233
+    fp: 7cf693b77c4e670f
+    mods: [galvanized_diffusion, hornet_strike, lethal_torrent, pistol_elementalist, riven, frostbite, pistol_pestilence, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_executioners_fortune, furis_elemental_balance]
+    arcanes: [secondary_encumber]
+    riven:
+      bonuses: [damage, multishot, status_duration]
+      rolls: [1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
     score: 3.3092118975638343
@@ -5527,6 +5545,24 @@ entries:
       rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: verglas_prime
     mode: base
+    score: 1.6755712677445826
+    fp: f4d12e12cf3605cc
+    mods: [split_chamber, rifle_elementalist, magnetic_capacity, riven, rime_rounds, malignant_force, hellfire, thermite_rounds]
+    riven:
+      bonuses: [damage, damage_to_grineer, multishot]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
+    score: 1.6373707190889648
+    fp: 161c8d5fce943cb5
+    mods: [rifle_elementalist, vile_acceleration, magnetic_capacity, riven, rime_rounds, malignant_force, hellfire, thermite_rounds]
+    riven:
+      bonuses: [damage, damage_to_grineer, multishot]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
     score: 1.578814797098293
     fp: a33cc749514b48de
     mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, magnetic_capacity, riven, malignant_force, hellfire]
@@ -5552,6 +5588,15 @@ entries:
       bonuses: [damage, heat]
       malus: magazine_capacity
       rolls: [1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
+    score: 1.45291064955833
+    fp: 0c07b4bade06f396
+    mods: [split_chamber, rifle_elementalist, vile_acceleration, magnetic_capacity, riven, rime_rounds, malignant_force, hellfire]
+    riven:
+      bonuses: [damage, damage_to_grineer, multishot]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: verglas_prime
     mode: base
     score: 1.4294954422051838
