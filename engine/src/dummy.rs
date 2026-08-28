@@ -2973,6 +2973,18 @@ pub struct DummyParams {
     /// …AND WHAT ITS FUSE ENDS IN: the attack's own `radial:`, in the same
     /// shape, fired from wherever the orb had got to.
     pub orb_blast: Option<crate::loadout::ResolvedLingering>,
+    /// THE RECHARGE METER THAT GATES THE ORB — see
+    /// [`crate::loadout::ResolvedMeter`].
+    ///
+    /// `Some` moves the throw off the TRIGGER and onto the clock: the shot loop
+    /// stops deploying, and an orb goes out whenever the meter fills. That is
+    /// the whole difference between "what this form is worth if you could hold
+    /// it" — which is what this weapon reported before the meter existed, and
+    /// an enormous overstatement — and what it is worth in a fight.
+    pub meter: Option<crate::loadout::ResolvedMeter>,
+    /// HOW BIG THE SQUAD IS, for the ammo drop table — see [`crate::ammo`].
+    /// One, because this arena has one player.
+    pub squad_size: u32,
     /// The TENNO — the other one. Who is holding this weapon, and what they
     /// are doing: `resolve` has already asked its state which conditional mods
     /// pay, and the arcanes that scale off Warframe armor or energy read its
@@ -3798,6 +3810,19 @@ impl DummyParams {
             ricochet: panel.ricochet,
             unaimed_headshot_chance: panel.unaimed_headshot_chance,
             orb: panel.orb,
+            // NO METER ON A SINGLE FORM, and that is the `transformed` mode's
+            // own definition rather than an omission: it is the form "all
+            // engagement", what this thing is worth while you are in it, which
+            // is exactly the question a gate must not answer. An Incarnon's
+            // transformed mode fires continuously and ignores its gauge for the
+            // same reason.
+            //
+            // The meter binds in the CYCLE, where you have to earn the throw —
+            // `tome_cycle_from_panels`.
+            meter: None,
+            // SOLO. This arena has one player, and the ammo drop table is a
+            // function of the squad rather than of the enemy.
+            squad_size: 1,
             // THE TWO PARTS AN ORB DELIVERS, derived from the attack rather
             // than declared beside it. A strike is the attack's own hit and the
             // detonation is its own explosion; the `orb:` block in the data is
@@ -4329,6 +4354,8 @@ impl Default for DummyParams {
             orb: None,
             orb_strike: None,
             orb_blast: None,
+            meter: None,
+            squad_size: 1,
         }
     }
 }
@@ -7993,6 +8020,100 @@ struct FieldCtx {
     head_factor: f64,
 }
 
+impl DummyParams {
+    /// A TOME'S CYCLE: fire the weapon, fill the meter, throw an orb, carry on.
+    ///
+    /// The params are the BASE form's — a Tome shoots its primary fire the
+    /// whole engagement and never leaves it — with the other form's ORB and
+    /// METER laid on top. There is no transformation and no second magazine,
+    /// which is what makes this a constructor rather than a second
+    /// [`IncarnonCycle`]: the orb is an ENTITY you throw, not a form you enter,
+    /// so nothing about the shot loop has to switch.
+    ///
+    /// That is the whole cycle. The meter's three terms (a second a second, a
+    /// second per landing pellet, ten a secondary ammo pickup) are read in the
+    /// run loop, and every one of them is a thing the BASE form is doing —
+    /// which is why they only ever pay here and not in `transformed`.
+    pub fn tome_cycle_from_panels(
+        base: &crate::loadout::ResolvedPanel,
+        orb_form: &crate::loadout::ResolvedPanel,
+        arena: &crate::arena::Arena,
+        arcane: &crate::arcanes_data::ArcaneFx,
+    ) -> Self {
+        let mut d = Self::from_panel(base, arena, arcane);
+        let thrown = Self::from_panel(orb_form, arena, arcane);
+        d.meter = orb_form.meter;
+        d.orb = thrown.orb;
+        d.orb_strike = thrown.orb_strike;
+        d.orb_blast = thrown.orb_blast;
+        // THE BASE FORM'S OWN AIM IS LEFT ALONE. You POINT a Tome's primary
+        // fire, so its pellets follow the scenario's headshot_pct; the orb does
+        // not, and its strikes read the chance carried on the orb itself. One
+        // field could not hold both answers, which is why that one lives on
+        // `ResolvedOrb` rather than beside this.
+        d
+    }
+}
+
+/// PUT AN ORB IN THE AIR at `t`, from the muzzle, along the aim.
+///
+/// ONE PLACE, because there are two ways to throw one and they must not differ:
+/// a TRIGGER pull throws it in the form's own `transformed` mode, and a full
+/// RECHARGE METER throws it in the cycle that is how the weapon is really
+/// played. Where it starts and how it flies is the same question both times,
+/// and the first version of the meter answered it by copying thirty lines.
+///
+/// IT LEAVES THE MUZZLE, which is a point on the shooter's own circumference —
+/// the same place every other shot in this arena leaves from, and the reason
+/// the orb's reach is measured from somewhere real rather than from the target
+/// (owner, 2026-08-28). A degenerate aim (nowhere to face) throws along +x.
+fn throw_orb(
+    o: crate::loadout::ResolvedOrb,
+    params: &DummyParams,
+    t: f64,
+    live: &mut Vec<OrbState>,
+) {
+    // ONE ORB AT A TIME. *"如果在前一个球存在的期间，再放，原来的球立刻消失"*
+    // (owner, 2026-08-28) — the one already out vanishes, with no detonation and
+    // no strikes it had left.
+    //
+    // It matters most where you would least expect it: in the CYCLE the meter
+    // puts throws tens of seconds apart and nothing ever overlaps, so this is
+    // free. In the `transformed` mode — the form held, throwing every second —
+    // it is the difference between thirty orbs living out six-second fuses on
+    // top of each other and one orb that gets a single strike before the next
+    // one replaces it.
+    live.clear();
+    let aim = params.aim_point();
+    let muzzle = crate::space::muzzle(params.player_at, aim);
+    let (dx, dy) = (aim.x - muzzle.x, aim.y - muzzle.y);
+    let len = dx.hypot(dy);
+    let dir = if len > 0.0 {
+        crate::space::Vec2::new(dx / len, dy / len)
+    } else {
+        crate::space::Vec2::new(1.0, 0.0)
+    };
+    // …AND IT LEAVES AFTER THE WIND-UP, not on the trigger pull. `t` is when
+    // you pressed; the orb exists `throw_seconds` later and its strike clock
+    // starts there.
+    let t = t + o.throw_seconds;
+    live.push(OrbState {
+        part: o,
+        at: muzzle,
+        dir,
+        at_time: t,
+        contacted: false,
+        // THE FIRST STRIKE IS AT THE THROW, and the clock runs from there
+        // rather than from a contact. A tick with nobody in reach is spent
+        // striking nobody, which is what turns "six strikes" into the owner's
+        // `ceil(6 - flight)` without anything having to know about flights.
+        next_strike: t,
+        strikes_left: (o.fuse_seconds / o.strike_interval_seconds).round() as u32,
+        fuse_at: t + o.fuse_seconds,
+        damage_multiplier: 1.0,
+    });
+}
+
 /// AN ORB IN THE AIR — a position, a heading, a clock and what is left of a
 /// fuse.
 ///
@@ -8165,7 +8286,10 @@ fn process_orbs(
         // the struck body included, with multishot already inside it — which is
         // what *"Number of chains is affected by Multishot"* buys on this
         // weapon instead of a second orb.
-        let reached = orb.part.bodies_this_strike(d.spine.next_f64()).max(1) as usize;
+        //
+        // NO DRAW. The count is `floor(3 x multishot)` and it is exact, so a
+        // strike reaches the same number of bodies every time (M63).
+        let reached = orb.part.chain_bodies.max(1) as usize;
         let mut path = vec![seed];
         if reached > 1 {
             let mut rest: Vec<usize> = in_reach.into_iter().filter(|&b| b != seed).collect();
@@ -8248,14 +8372,14 @@ fn orb_strike(
     match b.checked_sub(1) {
         None => field_tick(
             &part, mult, at, ctx, debuffs, gal, arc, target, params, ap, r, rec, d,
-            &params.target, crate::record::Origin::Orb, false,
+            &params.target, crate::record::Origin::Orb, orb.part.unaimed_headshot_chance, false,
         ),
         Some(bi) => {
             let Some(spec) = params.others.get(bi) else { return false };
             let Some(SpreadFoe { state, debuffs: fd }) = others.get_mut(bi) else { return false };
             field_tick(
                 &part, mult, at, ctx, fd, gal, arc, state, params, ap, r, rec, d,
-                &spec.params, crate::record::Origin::Orb, false,
+                &spec.params, crate::record::Origin::Orb, orb.part.unaimed_headshot_chance, false,
             )
         }
     }
@@ -8298,7 +8422,7 @@ fn orb_detonation(
             None => {
                 field_tick(
                     &part, mult, at, ctx, debuffs, gal, arc, target, params, ap, r, rec, d,
-                    &params.target, crate::record::Origin::Orb, true,
+                    &params.target, crate::record::Origin::Orb, None, true,
                 );
             }
             Some(bi) => {
@@ -8307,7 +8431,7 @@ fn orb_detonation(
                 {
                     field_tick(
                         &part, mult, at, ctx, fd, gal, arc, state, params, ap, r, rec, d,
-                        &spec.params, crate::record::Origin::Orb, true,
+                        &spec.params, crate::record::Origin::Orb, None, true,
                     );
                 }
             }
@@ -8391,6 +8515,7 @@ fn process_field_ticks(
             d,
             &params.target,
             crate::record::Origin::Field,
+            None,
             false,
         );
         // …AND EVERY OTHER BODY STANDING IN IT. The cloud is stuck to the body
@@ -8424,6 +8549,7 @@ fn process_field_ticks(
                 d,
                 &spec.params,
                 crate::record::Origin::Field,
+                None,
                 false,
             );
         }
@@ -8487,6 +8613,11 @@ fn field_tick(
     // because they are different mechanics and a reader laying the panel beside
     // the game needs to tell them apart.
     origin: crate::record::Origin,
+    // WHERE IT MAY LAND. `None` is a cloud, which is an area and finds no body
+    // part at all; a chance is an unaimed strike's, and it takes no draw unless
+    // it is stated — which is what keeps every existing field's dice where they
+    // were.
+    head_chance: Option<f64>,
     // …AND WHICH METER IT GOES IN. An orb ends its fuse in an EXPLOSION, and an
     // explosion belongs in the radial bucket wherever it was fired from — a
     // reader looking for what the blast was worth must not have to know that
@@ -8508,15 +8639,16 @@ fn field_tick(
     // roster but one, and it takes NO draw, which is what keeps their dice
     // exactly where they were.
     //
-    // The Grimoire's orb is the other kind. Its six strikes are one mechanic —
-    // the first is a field tick like the five after it (owner, 2026-08-28) —
-    // and the wiki says outright that they find weak points: *"The strikes and
-    // the forced Electricity proc can hit weakspots"*. So a tick of a field
-    // belonging to an UNAIMED attack picks a body part through the same helper
-    // the collision does, and everything below treats it as that part.
-    let part = ap
-        .unaimed_headshot_chance
-        .map(|c| unaimed_part(&params.body_parts, c, &mut d.spine));
+    // The Grimoire's orb is the other kind. The wiki says outright that its
+    // strikes find weak points — *"The strikes and the forced Electricity proc
+    // can hit weakspots"* — so a strike picks a body part through the same
+    // helper an unaimed shot does, and everything below treats it as that part.
+    //
+    // THE CHANCE IS AN ARGUMENT, not `ap.unaimed_headshot_chance`, because in a
+    // TOME'S CYCLE the two disagree on purpose: you POINT the primary fire, so
+    // its pellets follow the scenario's aim, and the orb you threw picks its
+    // own body. One field on the params could hold one of those answers.
+    let part = head_chance.map(|c| unaimed_part(&params.body_parts, c, &mut d.spine));
 
     // Crit: the field's OWN base stats. Relative bonuses scale its base,
     // absolute ones land flat (MECHANICS §7).
@@ -10531,6 +10663,7 @@ pub fn run_once_traced(
     // detonate where they have got to.
     let mut orbs: Vec<OrbState> = Vec::new();
     let mut field_ctx = FieldCtx::default();
+
     // The form whose panel SPAWNED the fields. Only one form of a transform
     // group has a lingering part (Torid's cloud belongs to the base form; its
     // Incarnon beam leaves none), so this is unambiguous - and it is the right
@@ -10539,6 +10672,29 @@ pub fn run_once_traced(
         Some(cy) if cy.base_form.lingering.is_some() => &cy.base_form,
         _ => params,
     };
+
+    // THE RECHARGE METER, in seconds toward `seconds_to_fill`. It opens FULL,
+    // and that is the one place a Tome parts company with the rule next door.
+    //
+    // An INCARNON gauge opens empty because a full one is a consumable the
+    // fight has not earned (docs/BUFFS.md) — and it matters most where the
+    // gauge cannot be refilled, so a free opening magazine was pure gift. A
+    // METER is a CLOCK: it fills at one second a second whether or not anyone
+    // is shooting, so it was filling while you ran to the room, and a player
+    // walks into an engagement with it full. Opening it empty would not be
+    // conservative, it would be wrong — and it would cost the first 45 seconds
+    // of every 180-second benchmark to model a state a player is rarely in.
+    let mut meter_seconds = field_ap.meter.map_or(0.0, |m| m.seconds_to_fill);
+    // …and how far the clock has already been credited, so the seconds are
+    // counted once however many times the loop looks at it.
+    let mut meter_clocked = 0.0f64;
+    // KILLS ALREADY PAID FOR, so the pickup roll happens once per body.
+    //
+    // Read as a DELTA off the run's own counter rather than hooked onto each
+    // place a body dies — there are nine of those, they are the same nine
+    // `ledger::settle` guards, and a tenth would silently stop dropping ammo.
+    // The counter cannot be missed because every kill already goes through it.
+    let mut meter_kills_seen = 0u32;
 
     // Initial locks: one natural-duration grant at t = 0 (at the set
     // stack count); afterwards only the buff's own mechanics govern it.
@@ -11672,15 +11828,22 @@ pub fn run_once_traced(
         if !can_fire(if in_base_form { base_mag } else { magazine }, ap.ammo_cost) {
             rs_armed = true;
         }
-        // AN ORB ATTACK FIRES NO PELLETS. The shot DEPLOYS: it settles no
-        // collision and no explosion here, because everything it deals is
-        // delivered later by the orb, from wherever the orb is at the time.
+        // AN ORB ATTACK FIRES NO PELLETS — when the TRIGGER is what deploys it.
+        // The shot settles no collision and no explosion, because everything it
+        // deals is delivered later by the orb from wherever the orb is.
+        //
+        // A METER MOVES THE THROW OFF THE TRIGGER, and then the trigger goes
+        // back to doing what it does: in a Tome's CYCLE the weapon is firing
+        // its primary the whole time and the orb goes out on the clock, so the
+        // pellets are the primary's and this must not touch them. Zeroing them
+        // regardless was worth the whole base form — a cycle reporting 169 DPS
+        // against the 1,419 its gun alone deals (2026-08-28).
         //
         // The COUNT is zeroed rather than the loop jumped past, and that is not
         // a style choice — a `continue` here skips the rest of the shot's own
         // body, which is where the clock, the magazine and the reload live. It
-        // hung the engine on the first run (2026-08-28).
-        let mut n_pellets = if ap.orb.is_some() { 0 } else { n_pellets };
+        // hung the engine on the first run.
+        let mut n_pellets = if ap.orb.is_some() && ap.meter.is_none() { 0 } else { n_pellets };
         if ap.multishot_ammo_bonus > 0.0 && rolled > 1 {
             // `ammo_efficiency_applies == false` IS the charge-backed marker —
             // such a magazine is "outside the ammo economy entirely", so it has
@@ -11782,6 +11945,52 @@ pub fn run_once_traced(
             d,
             &mut others,
         );
+        // THE RECHARGE METER, credited with the seconds since it was last
+        // looked at. A shot boundary is where every other clock in this loop is
+        // read, and the meter is coarse enough not to care: it is 45 seconds
+        // long and the fastest thing that fills it is worth one.
+        if let Some(m) = ap.meter {
+            meter_seconds += t - meter_clocked;
+            meter_clocked = t;
+            // …AND WHAT THE BODIES DROPPED. *"Picking up secondary or universal
+            // ammo reduces recharge time by 10 seconds"*, and this arena's rule
+            // is that everything a kill leaves is picked up the instant it dies
+            // (owner, 2026-08-28) — no vacuum radius, no walking back for it.
+            //
+            // ONLY SECONDARY COUNTS. A primary pickup does nothing for a tome's
+            // meter, and universal packs are placed in a Simulacrum rather than
+            // dropped by anything, so a kill can only ever contribute through
+            // the secondary half of its roll (`engine::ammo`).
+            //
+            // INFINITE AMMO DOES NOT REMOVE THE PICKUP. The house rule is about
+            // the reserve, and a real fight is under its cap almost all of the
+            // time — the pack is still on the floor either way (owner,
+            // 2026-08-28).
+            for _ in 0..r.kills.saturating_sub(meter_kills_seen) {
+                let (_, secondary) = crate::ammo::on_kill(
+                    params.squad_size,
+                    false,
+                    params.target.eximus,
+                    &mut d.spine,
+                );
+                meter_seconds += f64::from(secondary) * m.seconds_per_ammo_pickup;
+            }
+            meter_kills_seen = r.kills;
+            // A FULL METER IS ONE THROW. It is not a magazine — the page says
+            // "requires a fully filled meter in order to fire", so what is
+            // spent is the whole thing and what is bought is a single orb.
+            if meter_seconds >= m.seconds_to_fill {
+                meter_seconds -= m.seconds_to_fill;
+                if let Some(o) = ap.orb {
+                    throw_orb(o, params, t, &mut orbs);
+                    // …AND THE PRIMARY FIRE STOPS FOR THE ANIMATION. A throw is
+                    // a wind-up and a recovery, and the weapon can do nothing
+                    // else until both are over — which is the cycle's whole
+                    // price beyond the meter.
+                    t += o.throw_seconds + o.recovery_seconds;
+                }
+            }
+        }
         // …AND EVERY ORB EVENT DUE BEFORE THIS SHOT. Same boundary and the same
         // buff snapshot the field walk takes; an orb's clock is its own and no
         // fire-rate bucket reaches it, which is the wiki's *"Tick rate is not
@@ -11827,37 +12036,13 @@ pub fn run_once_traced(
         // TARGETS instead (*"Number of chains is affected by Multishot"*), and
         // that is already inside `ResolvedOrb::chain_bodies` — so the count is
         // spent where the game spends it rather than on a second projectile.
-        if let Some(o) = ap.orb {
-            let aim = params.aim_point();
-            let muzzle = crate::space::muzzle(params.player_at, aim);
-            let (dx, dy) = (aim.x - muzzle.x, aim.y - muzzle.y);
-            let len = dx.hypot(dy);
-            // THE THROW LEAVES THE MUZZLE, which is a point on the shooter's
-            // own circumference — the same place every other shot in this arena
-            // leaves from, and the reason the orb's reach is measured from
-            // somewhere real rather than from the target (owner, 2026-08-28).
-            // A degenerate aim (nowhere to face) throws straight along +x.
-            let dir = if len > 0.0 {
-                crate::space::Vec2::new(dx / len, dy / len)
-            } else {
-                crate::space::Vec2::new(1.0, 0.0)
-            };
-            orbs.push(OrbState {
-                part: o,
-                at: muzzle,
-                dir,
-                at_time: t,
-                contacted: false,
-                // THE FIRST STRIKE IS AT THE THROW, and the clock runs from
-                // there rather than from a contact. A tick with nobody in reach
-                // is spent striking nobody, which is what turns "six strikes"
-                // into the owner's `ceil(6 - flight)` without anything having
-                // to know about flights.
-                next_strike: t,
-                strikes_left: (o.fuse_seconds / o.strike_interval_seconds).round() as u32,
-                fuse_at: t + o.fuse_seconds,
-                damage_multiplier: 1.0,
-            });
+        // A METER MOVES THE THROW OFF THE TRIGGER. With one, the shot loop fires
+        // the weapon's ordinary attack and the orb goes out when the clock says
+        // so — which is the whole weapon: you shoot, and every so often you
+        // throw. Without one, the trigger deploys, which is what the form's own
+        // `transformed` mode shows.
+        if let Some(o) = ap.orb.filter(|_| ap.meter.is_none()) {
+            throw_orb(o, params, t, &mut orbs);
         }
 
         for pellet_idx in 0..n_pellets {
@@ -13274,6 +13459,17 @@ pub fn run_once_traced(
                     }
                 }
                 if direct {
+                    // A HIT TAKES A SECOND OFF THE RECHARGE. *"Hitting enemies
+                    // with the primary fire reduces recharge time by 1 second
+                    // per hit"*, and the page settles both of the questions
+                    // that raises without a field: *"Multishot will count as an
+                    // additional hit"* — so it is per landing PELLET, which is
+                    // what this branch counts — and *"Radial damage does not
+                    // count an additional hit"*, which is why it is inside
+                    // `direct` rather than beside it.
+                    if let Some(m) = ap.meter {
+                        meter_seconds += m.seconds_per_hit;
+                    }
                     r.pellets += 1;
                     r.crits += (tier >= 1) as u32;
                     r.big_crits += (tier >= 2) as u32;
@@ -14137,6 +14333,31 @@ pub fn run_once_traced(
         spool_due = t;
     }
 
+    // THE METER'S LAST FILLS, after the trigger stops. A weapon that is out of
+    // ammo still recharges, and an orb earned at t = 179 is an orb the fight
+    // gets — so the clock is run out to the end and every throw it buys is
+    // thrown, before the orbs are drained below.
+    if let (Some(m), Some(o)) = (field_ap.meter, field_ap.orb) {
+        meter_seconds += params.duration_seconds - meter_clocked;
+        while meter_seconds >= m.seconds_to_fill {
+            meter_seconds -= m.seconds_to_fill;
+            // AT THE INSTANT IT FILLED, not at the end: the orb has a six
+            // second fuse and the difference is whether its strikes land inside
+            // the engagement at all.
+            let at = params.duration_seconds - meter_seconds;
+            // WHAT IS ALREADY IN THE AIR GETS TO LIVE UNTIL IT IS REPLACED.
+            // Only one orb exists at a time, so throwing them all and walking
+            // the list afterwards would leave the LAST one and silently drop
+            // every other — which is what happened the day the replace rule
+            // landed (2026-08-28). Settling up to the throw is the same order
+            // the shot loop settles them in.
+            process_orbs(
+                &mut orbs, &mut debuffs, &mut gal, &mut arc, at, &mut target,
+                params, field_ap, &field_ctx, &mut r, rec, d, &mut others,
+            );
+            throw_orb(o, params, at, &mut orbs);
+        }
+    }
     // The orbs still in the air after the last shot — every strike they have
     // left and the detonation that ends them. Before the clouds for the same
     // reason the clouds come before the status drain: each event settles what
@@ -20396,9 +20617,17 @@ mod tests {
             // ONE BODY A STRIKE unless a test says otherwise: the chain is what
             // `chain_bodies` above 1 buys, and a count assertion should not be
             // reading a crowd it did not ask for.
-            chain_bodies: 1.0,
+            chain_bodies: 1,
             chain_range_m: 6.0,
             chain_damage_per_hop: 1.0,
+            // INSTANT unless a test says otherwise: an animation would move
+            // every strike time in the tests below by a fraction of a second
+            // and none of them are about it.
+            throw_seconds: 0.0,
+            recovery_seconds: 0.0,
+            // AIMED unless a test says otherwise, so a count assertion is not
+            // reading a head multiplier it did not ask for.
+            unaimed_headshot_chance: None,
         }
     }
 
@@ -20545,7 +20774,11 @@ mod tests {
         let run = |chance: Option<f64>| {
             monte_carlo(
                 &DummyParams {
-                    unaimed_headshot_chance: chance,
+                    orb: Some(crate::loadout::ResolvedOrb {
+                        unaimed_headshot_chance: chance,
+                        speed_after_contact_mps: 0.0,
+                        ..orb_spec()
+                    }),
                     // The aim weights say BODY, so an arm that comes back with
                     // heads can only have got them from the unaimed chance.
                     body_parts: vec![
@@ -20604,7 +20837,11 @@ mod tests {
             part.crit_damage = 2.0;
             monte_carlo(
                 &DummyParams {
-                    unaimed_headshot_chance: Some(1.0),
+                    orb: Some(crate::loadout::ResolvedOrb {
+                        unaimed_headshot_chance: Some(1.0),
+                        speed_after_contact_mps: 0.0,
+                        ..orb_spec()
+                    }),
                     orb_strike: Some(part),
                     body_parts: vec![BodyPart {
                         name: "head".into(),
@@ -20764,7 +21001,173 @@ mod tests {
         assert_eq!(strikes(crate::space::CONTACT_RANGE_M, held), 6, "held still");
     }
 
-    /// Overlapping fields STACK    /// Overlapping fields STACK — ✅ measured (MEASUREMENTS M13). Both branches
+    /// A METER THROWS ON A CLOCK, and the clock is the whole difference between
+    /// what a Tome's other form is worth and what it is worth in a fight.
+    ///
+    /// 45 seconds a throw, opening FULL — so a 180 s engagement with nothing
+    /// else happening gets the opening orb plus one every 45 s after it. The
+    /// count is the assertion because it is what the meter IS; the damage
+    /// follows from it.
+    fn metered() -> DummyParams {
+        DummyParams {
+            meter: Some(crate::loadout::ResolvedMeter {
+                seconds_to_fill: 45.0,
+                seconds_per_hit: 1.0,
+                seconds_per_ammo_pickup: 10.0,
+            }),
+            duration_seconds: 180.0,
+            ..orb_thrower()
+        }
+    }
+
+    #[test]
+    fn a_meter_opens_full_and_throws_one_orb_every_time_it_refills() {
+        // THE CLOCK ALONE. `seconds_per_hit` is zeroed because this fixture's
+        // gun deals nothing and would still be crediting hits — a metered form
+        // fires its base attack, so a zero-damage pellet is a landing pellet
+        // and the first version of this test was measuring two terms at once.
+        let mut p = metered();
+        p.meter = p.meter.map(|m| crate::loadout::ResolvedMeter { seconds_per_hit: 0.0, ..m });
+        let s = monte_carlo(&p, 4, 3);
+        // Four throws in 180 s: t=0 (it opens full), 45, 90, 135. The one at
+        // 180 does not happen — the engagement ends as it fills.
+        let strikes = s.mean_field_ticks / 6.0;
+        assert!(
+            (strikes - 4.0).abs() < 1e-9,
+            "four throws of six strikes in 180 s: {} ({} strikes)",
+            strikes,
+            s.mean_field_ticks
+        );
+        // …AND THE SAME FORM WITHOUT A METER THROWS ON EVERY TRIGGER PULL,
+        // which is the `transformed` mode and is the number this weapon used to
+        // report for everything. The two differ by 45x, which is what the meter
+        // was worth getting wrong.
+        // …AND THE SAME ORB WITHOUT A METER SHOWS THE REPLACE RULE INSTEAD.
+        // Throwing every second, each one wipes the last after a single strike
+        // — 180 throws worth 180 strikes, against 4 throws worth 24. Only one
+        // orb exists at a time (owner, 2026-08-28), and this is the arithmetic
+        // of that: six strikes an orb when it is left alone, one when it is not.
+        //
+        // It is not a MODE — a Tome has two and neither of them is "hold the
+        // alt fire" — but it is the cheapest way to see both rules at once.
+        let ungated = monte_carlo(
+            &DummyParams {
+                meter: None,
+                magazine_size: 1e9,
+                infinite_reserve: true,
+                fire_rate: 1.0,
+                ..p
+            },
+            4,
+            3,
+        );
+        assert!(
+            (ungated.mean_field_ticks - 180.0).abs() < 1e-9,
+            "throwing every second, each orb gets ONE strike before the next replaces it: {}",
+            ungated.mean_field_ticks
+        );
+    }
+
+    /// A HIT TAKES A SECOND OFF IT — *"Hitting enemies with the primary fire
+    /// reduces recharge time by 1 second per hit"* — and the page settles what
+    /// counts without a field: *"Multishot will count as an additional hit"*,
+    /// so it is per landing PELLET.
+    ///
+    /// The fixture fires 1/s and lands one pellet a shot, so the meter gains
+    /// two seconds a second and fills in 22.5 rather than 45: eight throws in
+    /// 180 s against four. Doubling the MULTISHOT doubles the hits and fills it
+    /// in 15, which is the half of the rule a per-shot reading would miss.
+    #[test]
+    fn a_landing_pellet_takes_a_second_off_the_meter() {
+        let mut direct = DamageVector::default();
+        direct.set(DamageType::Electricity, 10.0);
+        let shooting = |multishot: f64| {
+            monte_carlo(
+                &DummyParams {
+                    // A GUN THAT ALSO THROWS: the pellets are the base form's
+                    // and the orb rides the meter, which is the cycle's shape.
+                    damage: direct,
+                    multishot,
+                    base_multishot: multishot,
+                    fire_rate: 1.0,
+                    magazine_size: 1e9,
+                    infinite_reserve: true,
+                    ..metered()
+                },
+                4,
+                3,
+            )
+            .mean_field_ticks
+                / 6.0
+        };
+        let one = shooting(1.0);
+        let two = shooting(2.0);
+        assert!(
+            (one - 8.0).abs() < 1e-9,
+            "one pellet a second fills it in 22.5 s, so eight throws: {one}"
+        );
+        assert!(
+            two > one + 1e-9,
+            "and two pellets a second fill it faster: {two} against {one}"
+        );
+    }
+
+    /// A KILL MAY LEAVE AMMO, and picking it up is worth ten seconds.
+    ///
+    /// *"Picking up secondary or universal ammo reduces recharge time by 10
+    /// seconds"*, and this arena's rule is that a kill's drops arrive the
+    /// instant it dies — no vacuum radius, no walking back for them (owner,
+    /// 2026-08-28). Only the SECONDARY half of the roll counts, so the expected
+    /// credit is `0.45 x 0.5 x 10 = 2.25` seconds a kill.
+    ///
+    /// THE TWO ARMS ARE THE SAME FIGHT with the pickup WORTH different amounts,
+    /// which is what isolates the term — and the loop it closes is the point:
+    /// ammo off a kill fills the meter, a full meter is another orb, and
+    /// another orb kills again. Measured at 24 kills against 37.6.
+    #[test]
+    fn a_kill_that_drops_secondary_ammo_fills_the_meter() {
+        let worth = |seconds_per_ammo_pickup: f64| {
+            let mut p = metered();
+            p.meter = p.meter.map(|m| crate::loadout::ResolvedMeter {
+                seconds_per_hit: 0.0,
+                seconds_per_ammo_pickup,
+                ..m
+            });
+            // A BODY THAT DIES AND COMES BACK, so the run produces the kills
+            // whose drops are the thing under test. Its death ends the orb that
+            // killed it — which costs both arms the same strikes and leaves the
+            // difference to the ammo.
+            p.target.mode = TargetMode::InstantRespawn;
+            p.target.base_health = 1.0;
+            p.target.base_shield = 0.0;
+            p.target.base_armor = 0.0;
+            p.target.level = 1;
+            p.target.base_level = 1;
+            // A WEAPON THAT KEEPS FIRING, so the orb walk is settled shot by
+            // shot rather than in one block at the end. A kill ends the walk
+            // for that call — the rule `process_field_ticks` has always had —
+            // so a fixture that pulls the trigger once would abandon every orb
+            // after the first body dropped.
+            p.magazine_size = 1e9;
+            p.infinite_reserve = true;
+            p.fire_rate = 1.0;
+            let s = monte_carlo(&p, 24, 3);
+            (s.mean_kills, s.mean_field_ticks)
+        };
+        let (kills, none) = worth(0.0);
+        let (kills_with_ammo, ten) = worth(10.0);
+        assert!(kills > 1.0, "the fixture has to kill something: {kills}");
+        assert!(
+            ten > none,
+            "ammo off a kill fills the meter, so more orbs go out: {ten} against {none}"
+        );
+        assert!(
+            kills_with_ammo > kills,
+            "…and more orbs kill more, which is the loop closing: {kills_with_ammo} against {kills}"
+        );
+    }
+
+    /// Overlapping fields STACK — ✅ measured (MEASUREMENTS M13). Both branches
     /// stay pinned because the branch is weapon data, not a global rule: a
     /// future weapon may well refresh instead. Three grenades one second apart:
     /// stacking runs three concurrent streams, refresh keeps re-arming one.

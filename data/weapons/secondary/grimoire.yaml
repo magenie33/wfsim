@@ -8,6 +8,11 @@ class: pistol
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 transform_group: grimoire
+# WHAT THE OTHER FORM IS — the same declaration the Mausolon makes, and it is
+# what turns two entries into a CYCLE the sim can run: fire this one, fill the
+# meter, throw one orb, carry on. Without it the two forms are two separate
+# things you pick between, which is not how a Tome is played.
+transforms_to: grimoire_active
 mod_pools: [pistol, tome]   # wiki `Tome`: "Tomes can equip Pistol Mods but
                             # also have access to unique Tome Mods"
 mastery_rank: 10

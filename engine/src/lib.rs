@@ -18,6 +18,7 @@
 
 pub mod naming;
 pub mod abilities_data;
+pub mod ammo;
 pub mod arcanes_data;
 // WHAT THE WARFRAME BRINGS, which is neither the weapon's nor the target's.
 // Both ride on the fight's Tenno, so `parse_fight` carries them into the

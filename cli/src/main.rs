@@ -34,6 +34,10 @@ fn dual_toxocyst_baseline() -> DummyParams {
         orb: None,
         orb_strike: None,
         orb_blast: None,
+        // NO METER: this fixture has nothing gated behind a clock, and one
+        // player is behind it.
+        meter: None,
+        squad_size: 1,
         // No weapon: nothing to be out of range of.
         range_m: f64::INFINITY,
         super_crit_on_status: None,

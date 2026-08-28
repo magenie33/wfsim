@@ -5447,6 +5447,31 @@ fn sim_params(
     if run_cycle {
         let incarnon_panel = panel_of(incarnon_id(info).unwrap_or(&info.id));
         let base_panel = panel_of(&info.id);
+        // A TOME'S CYCLE IS NOT A TRANSFORMATION. Both are "fill a meter in one
+        // form, spend it in the other", and only one of them puts the weapon in
+        // the other form: a Tome shoots its primary fire the whole engagement
+        // and THROWS the other form's orb, which is an entity rather than a
+        // state you enter. So the params stay the base form's and the orb rides
+        // along — see `DummyParams::tome_cycle_from_panels`.
+        //
+        // Told apart by the METER rather than by the weapon, so the second Tome
+        // costs nothing here.
+        if incarnon_panel.meter.is_some() {
+            let mut params = DummyParams::tome_cycle_from_panels(
+                &base_panel,
+                &incarnon_panel,
+                arena,
+                &arcane_fx,
+            );
+            params.infinite_reserve = base_panel.reserve_is_infinite(infinite_ammo);
+            params.frenzy = frenzy_single;
+            params.locked_buffs = frenzy_locks.to_vec();
+            // THE CYCLE REPORTS THE FORM IT FIRES, which for a Tome is the one
+            // you are holding. An Incarnon cycle reports the form it transforms
+            // INTO because that is where its damage is; here the primary fire
+            // is a real part of the engagement and the panel is its own.
+            return (base_panel, params);
+        }
         let params = DummyParams::incarnon_cycle_from_panels(
             &incarnon_panel,
             &base_panel,

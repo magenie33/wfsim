@@ -35,6 +35,9 @@ name: Grimoire
 # of them, one that takes 2.5 s lands four, and against a body at contact it is
 # always six. That is the owner's `ceil(6 - flight)`, arriving on its own.
 inherits: grimoire
+# THE OTHER END OF THE CYCLE. A form you must pay a meter to reach names where
+# it comes from — that is how the sim finds the form to fill the meter in.
+transforms_from: grimoire
 form: alt_fire
 transform_group: grimoire
 
@@ -74,11 +77,16 @@ attack:
   # within 6 meters of it every 1 second" — so the scenario's headshot_pct,
   # which describes the player's aim, is the wrong number for all six strikes.
   #
-  # 10% IS ASSUMED, NOT MEASURED (owner, 2026-08-28), and this entry's
-  # `unmodeled:` block says so on the page rather than only here. That the
-  # strikes CAN find a weak point is the wiki's: "The strikes and the forced
-  # Electricity proc can hit weakspots" — which is also why the forced proc is
-  # scaled by the part its strike landed on.
+  # 10% IS MEASURED (M63, owner 2026-08-28), not assumed: six strikes at eight
+  # bodies each, 5 weak points out of 48 hits = 10.4%. A small sample, so the
+  # number is "about 10%" rather than 10.4%, and the entry says so.
+  #
+  # PER BODY HIT, including the chained ones — which is what the sample shows
+  # (3 and 2 heads inside single strikes of eight) and what this engine does by
+  # construction: every body a strike reaches is its own instance and rolls its
+  # own part. That the strikes CAN find a weak point at all is the wiki's: "The
+  # strikes and the forced Electricity proc can hit weakspots" — which is also
+  # why the forced proc is scaled by the part its strike landed on.
   unaimed_headshot_chance: 0.1
   ammo_cost: 1
   crit_chance: 0.2
@@ -101,6 +109,27 @@ attack:
   # is what it is: the orb is a delivery mechanism, and its strike is this
   # attack's hit arriving six times.
   damage: { electricity: 280 }   # total 280 (module 350 x0.8)
+  # THE RECHARGE METER THIS FORM IS GATED BEHIND, in the page's own units:
+  # "Requires a fully filled meter beneath the reticle in order to fire. The
+  # meter takes 45 seconds to completely recharge. Hitting enemies with the
+  # primary fire reduces recharge time by 1 second per hit. Picking up secondary
+  # or universal ammo reduces recharge time by 10 seconds."
+  #
+  # DECLARING IT IS WHAT MAKES THIS FORM GAUGE-FED, and the mode machinery does
+  # the rest on its own: `play_modes` reads the gate off the ENTRY rather than
+  # off the form's name, so this stops being a sustainable `alternate` a ruler
+  # may rank and becomes a `transformed` mode showing the form's own numbers,
+  # plus a `cycle` that is how a Tome is actually played. That was written for
+  # the Mausolon (owner, 2026-08-07) and this is the second weapon to use it.
+  #
+  # WHAT COUNTS AS A HIT needs no field: "Multishot will count as an additional
+  # hit" makes it per landing PELLET and "Radial damage does not count an
+  # additional hit" keeps the explosion out, and this engine already tells those
+  # two apart.
+  meter:
+    seconds_to_fill: 45.0
+    seconds_per_hit: 1.0
+    seconds_per_ammo_pickup: 10.0
   # THE ORB — geometry and a clock, and nothing about damage.
   orb:
     fuse_seconds: 6.0
@@ -114,11 +143,31 @@ attack:
     strike_radius_m: 6.0
     speed_mps: 6.0
     speed_after_contact_mps: 2.0
-    # "Each enemy hit chains to an additional 2 enemies within 6 meters", and
-    # multishot ADDS to the count: `multishot + 2` bodies a strike, so a panel
-    # reading x2.6 is four for certain and a fifth 60% of the time (owner,
-    # 2026-08-28).
-    chain_bodies: 2.0
+    # THE THROW ANIMATION — 0.15 s of wind-up before the orb leaves and 0.85 s
+    # of recovery before the weapon can do anything else (owner, 2026-08-28).
+    # A fire-rate mod shortens both.
+    #
+    # THEIR SUM IS THIS FORM'S LISTED FIRE RATE, which is not a coincidence: a
+    # second per throw IS the animation, and the `fire_rate: 1` above is the
+    # same fact said twice. The PRIMARY fire's own 0.1 s wind-up is not modelled
+    # and does not need to be — its interval "corresponds exactly to the fire
+    # rate" (owner), so the wind-up is latency at the start of holding the
+    # trigger and costs a sustained engagement nothing.
+    throw_seconds: 0.15
+    recovery_seconds: 0.85
+    # BODIES A STRIKE REACHES PER POINT OF MULTISHOT, the struck one included:
+    # the count is `floor(3 x multishot)` — ✅ MEASURED (M63) by counting
+    # Invocation stacks, which tick once per hit and so make a strike's body
+    # count readable rather than a guess.
+    #
+    #   multishot   1.0   1.6   2.1   2.7   3.6   3.9
+    #   measured      3     4     6     8    10    11
+    #
+    # The wiki's "chains to an additional 2 enemies" plus "Number of chains is
+    # affected by Multishot" reads equally well as `multishot + 2`, and the two
+    # agree at x1.0 and nowhere else — at x2.1 the sum says 5 and the product
+    # says 6. This entry carried the sum until the measurement separated them.
+    chain_bodies_per_multishot: 3.0
     chain_range_m: 6.0
     # UNDILUTED — ✅ confirmed (owner, 2026-08-28): a beam chain with no
     # falloff, so the second and third body take the strike in full. His
@@ -148,26 +197,23 @@ attack:
     damage: { electricity: 200 }   # total 200 (module 250 x0.8)
 
 unmodeled:
-  # THE ONE THAT MAKES THESE NUMBERS A CEILING. The stats above are measured,
-  # and the FIGHT they are fired in is not: this arena spends every second on
-  # the form you picked, and this form cannot be fired every second
-  # (2026-08-25).
-  - reason: tome_meter
-    rate: 1
-    seconds: 45
+  # THE METER IS MODELLED as of 2026-08-28 — `meter:` above — so the loudest
+  # admission this roster had ("everything below is the ceiling rather than the
+  # average, and by a wide margin") is retired outright rather than reworded.
+  # This form has no mode of its own any more: you never hold a Tome's alt fire,
+  # so there is no "while you are in it" to report. It is played in the CYCLE.
   - reason: explosion_ignores_cover
   - reason: self_stagger
   # THE ORB'S HEADSHOT RATE IS AN ASSUMPTION and a player deciding whether to
   # trust this weapon's number cannot read a yaml (the rule `ricochet:`
   # established, 2026-08-21). Prose rather than a reason because it is used
   # once and carries one number.
-  - "how often one of the orb's six strikes lands on a weak point is ASSUMED —
-    a flat 10% each (owner, 2026-08-28). That they CAN is the wiki's ('the
-    strikes and the forced Electricity proc can hit weakspots'), but the orb
-    picks its own target as it drifts, which is geometry this arena does not
-    model and DE publishes no rate for. It is the same 10% for all six and for
-    the Electricity each one forces, so nothing here rides on which of them is
-    which"
+  - "how often the orb's strikes land on a weak point is a MEASURED average
+    rather than geometry — about 10% per body hit, counted at 5 weak points in
+    48 hits. Where an orb drifting through a crowd actually puts them depends
+    on how everyone is standing, which this arena does not model, so a fight
+    where you can line them up beats this number and one against a single tall
+    target may not reach it"
   # WHAT THE POSITION MODEL FOUND, and the answer turned out to be the arena
   # rather than any of this entry's numbers (owner, 2026-08-28): the orb bounces
   # off walls, and this arena has none. Everything here is right and the fight

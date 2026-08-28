@@ -4722,13 +4722,49 @@ arithmetic of a damage instance on a clock of its own does not depend on what
 produced it — and sharing it is what stops the two drifting apart. What is NOT
 shared is who it lands on. The record tells them apart: `Origin::Orb`.
 
-### The one assumption, and where it is declared
+### The chain count and the headshot rate, measured off the Invocation mods
+
+The four Invocation mods gain a stack per HIT, which makes a strike's body count
+readable off a buff instead of inferred from a damage total. Against twenty
+enemies:
+
+| multishot | 1.0 | 1.6 | 2.1 | 2.7 | 3.6 | 3.9 |
+| --- | --- | --- | --- | --- | --- | --- |
+| bodies a strike reaches | 3 | 4 | 6 | 8 | 10 | 11 |
+| `floor(3 × multishot)` | 3 | 4 | 6 | 8 | 10 | 11 |
+
+**`floor(3 × multishot)`**, the struck body included, and a hard floor rather
+than a rolled remainder — x2.1 hits six every time, not six-or-seven.
+
+THE ENTRY HAD `multishot + 2` UNTIL THIS. The wiki's two sentences support it
+just as well — *"chains to an additional 2 enemies"* and *"Number of chains is
+affected by Multishot"* — and the two readings agree at x1.0 and part company
+immediately after: at x2.1 the sum says 5 and the product says 6. Both were
+consistent with everything known; only the measurement separates them, and it is
+worth 47% more bodies at x3.9.
+
+`the_orbs_chain_reaches_three_bodies_per_point_of_multishot` pins the whole
+table for exactly that reason — a test at the unmodded count alone passes on the
+reading it replaced. Verified to bite: restoring the sum reddens it at x1.6.
+
+**And the headshot rate is measured too, at about 10% per body hit** — five weak
+points in 48 hits, counted as hits/heads over six strikes of eight bodies:
+
+```
+8/3   8/0   8/0   8/0   8/0   8/2
+```
 
 `unaimed_headshot_chance` is declared on the ATTACK rather than on any of its
 parts, because the orb picks its own body and the scenario's `headshot_pct` — a
-statement about the player's aim — is the wrong number for every strike. The
-value is the owner's **10% flat**, an assumption rather than a measurement, and
-the weapon says so on its own page.
+statement about the player's aim — is the wrong number for every strike. Each
+body a strike reaches rolls its own, chained ones included, which the sample
+shows directly: three of the eight in one strike, two in another.
+
+It is a small sample, so the weapon says "about 10%" rather than 10.4%, and it
+is an AVERAGE over a crowd rather than geometry — a fight where the enemies line
+up beats it and one against a single tall target may not reach it. The owner's
+own framing: *"因为视觉上chain很少，但是实际上应该是这么计算的"* — the chain looks
+rare and is not.
 
 Both the collision path and the orb path draw their body part through one helper
 (`unaimed_part`), so the six strikes cannot answer differently. A head strike
@@ -4855,3 +4891,146 @@ told a reader the mod is worthless where it is in fact most of what a crowd
 build buys. The orb path gives one orb by construction — a deploying shot fires
 no pellets — so nothing was needed in its place, and the count goes where the
 game puts it.
+
+## M64 — a Tome's meter is a clock you spend, and a kill leaves ammo on it ✅ (owner, 2026-08-28)
+
+The Grimoire's alt fire has never been fireable at will, and the roster said so
+in the loudest admission it had: *"everything below for this form is the ceiling
+rather than the average, and by a wide margin"*. This is that sentence replaced
+by a number.
+
+The page, verbatim:
+
+> Requires a fully filled meter beneath the reticle in order to fire. The meter
+> takes 45 seconds to completely recharge. Hitting enemies with the primary fire
+> reduces recharge time by 1 second per hit. Picking up secondary or universal
+> ammo reduces recharge time by 10 seconds. … Radial damage does not count an
+> additional hit. Multishot will count as an additional hit.
+
+### It is a third kind of gate, and it gets its own type
+
+This roster already had two: a MAGAZINE you spend and reload, and an INCARNON
+GAUGE you fill with hits. A meter is neither — it fills with TIME. The owner's
+call on where to put it (2026-08-28):
+
+> 这个机制目前不多的，你完全可以单独一个类型，等我们真的全部做完，再思考可不可
+> 以重构为一种类型
+
+So `MeterSpec` is its own type rather than a bent `GaugeSpec`. One weapon has it;
+guessing the shared shape from one is how a wrong abstraction gets built.
+
+WHAT IT DID NOT NEED WAS NEW MODE MACHINERY. `play_modes` reads "does entering
+this form cost something you must earn" off the ENTRY rather than off its name,
+which was written for the Mausolon and says so in its own comment (owner,
+2026-08-07). Declaring a meter therefore moves the form from a sustainable
+`alternate` a ruler may rank to a `transformed` mode showing the form's own
+numbers, and adds the `cycle` that is how a Tome is played — none of it decided
+here. `WeaponSpec::has_gauge` is the one question and now knows both gates.
+
+### The cycle is not a transformation
+
+An Incarnon cycle puts the weapon in the other form. A Tome never leaves its
+primary fire — it THROWS the other form's orb, and the orb has been an entity
+rather than a state since M63. So `tome_cycle_from_panels` is the base form's
+params with the orb and the meter laid on top, and nothing in the shot loop has
+to switch.
+
+One thing had to move for it: `unaimed_headshot_chance` was on the ATTACK, and a
+cycle fires two forms at once that disagree about it — you POINT the primary
+fire and the orb picks its own body. It rides `ResolvedOrb` now, declared once in
+the yaml and read only by the strikes.
+
+### What a kill leaves, and why no enemy needed a drop table
+
+The owner asked how the ten catalogued enemies implement ammo drops. They do
+not, and they do not have to:
+
+> *"Chance to drop Primary or Secondary Ammo scales with squad size"* — solo 45%
+> (60% in Landscapes) … *"Eximus are guaranteed to drop either a Primary or
+> Secondary Ammo, each having the same chance of dropping. This does not
+> overwrite the enemies normal chance of dropping an Ammo pickup."*
+> (wiki `Pickups`)
+
+Ammo is a property of the SQUAD and the place, not of the body — a Lancer and a
+Crewman drop it at the same rate. `engine::ammo` is that table; the only
+per-enemy term is the Eximus guarantee, which is ADDITIONAL to the ordinary roll
+(1.45 expected pickups solo, not 1.0) and which this engine already knows.
+
+Only SECONDARY counts for a tome's meter, and universal packs are placed in a
+Simulacrum rather than dropped, so a kill contributes through half its roll:
+`0.45 × 0.5 × 10 = 2.25` seconds a kill.
+
+EVERY DROP ARRIVES INSTANTLY (owner: *"我们的场景就假设怪物死掉以后所有的pickup
+立刻马上到"*) — no vacuum radius, no walking back. And INFINITE AMMO does not
+remove it: the house rule is about the reserve, a real fight is under its cap
+almost always, and the pack is on the floor either way (owner, 2026-08-28).
+
+### One orb, and a throw costs an animation
+
+Two corrections that arrived after the meter did (owner, 2026-08-28):
+
+> 同一时间只能有一个球，如果在前一个球存在的期间，再放，原来的球立刻消失。并且这
+> 个球是有一个前摇时间的（类似投掷类武器那样），这个前摇时间是可以被fire rate降低）
+>
+> 主要应该是点击以后0.1s后射出去，间隔反正完美对应射击rate，次要是0.15s后射出去，
+> 接着0.85s硬直，才可以继续主要模式。射速mod可以加速这两个动作
+
+**One orb at a time.** A new throw makes the old one vanish — no detonation, no
+strikes it had left. In the cycle this is free, because the meter puts throws
+tens of seconds apart and a fuse is six; where it bites is anything that throws
+faster than the fuse, where six strikes an orb becomes one.
+
+**A throw is 0.15 s of wind-up and 0.85 s of recovery**, both shortened by fire
+rate, and their sum is this form's listed fire rate of 1 — the animation IS the
+cadence, which is the same fact the module states twice. In the cycle it is the
+only price beyond the meter: the primary fire stops for a second every time an
+orb goes out, measured at 256 pellets against 271.
+
+The primary's own 0.1 s wind-up is NOT modelled and does not need to be — its
+interval *"corresponds exactly to the fire rate"*, so it is latency at the start
+of holding the trigger and costs a sustained engagement nothing.
+
+### Two modes, and `transformed` is not one of them
+
+> transformed注意一点，不能套用！！！这个是灵化模式专属的 … 这本书我们应该有2个
+> mode，一个是只使用主要射击模式，另外一个是使用主要射击，次要槽满了，再使用次
+> 要，然后继续使用主要射击，就这两种
+
+`Transformed` is a state you are IN — an Incarnon window, a form that fires its
+own magazine for a few seconds — and the builder shows its numbers because
+"while you are in it" is a real thing to ask. A metered form is not a state: you
+throw one orb and you are back on the primary before it lands. So `play_modes`
+emits only the CYCLE for it, and a Tome has exactly two ways to be played:
+
+* `base` — the primary fire alone
+* `cycle` — the primary fire, an orb whenever the meter fills, then the primary
+  again
+
+### What it is worth
+
+Solo, unmodded, 180 s, the neutral Tenno:
+
+| mode | what it means | DPS | orbs |
+| --- | --- | --- | --- |
+| `base` | the primary fire alone | 1,419 | — |
+| `cycle` | the weapon | **1,795** | **10** |
+
+The cycle throws ten orbs where the clock alone would give four: the primary's
+hits take the 45 second meter down to about 18. Against a killable target the
+ammo term shows on top of that — 43 kills bought two more orbs. The throw
+animation is the other direction, and visible: 256 primary pellets rather than
+the 271 the base form fires.
+
+For scale, what this replaced: the alt fire used to be simulated as though you
+could throw an orb every second forever, and reported **8,113 DPS**.
+
+### Still not modelled, and one of them on purpose
+
+* **Health and energy orbs.** The same page lists them and publishes no drop
+  chance for either, and they would pay nothing here — this arena has no ability
+  economy and the player has no health.
+* **Resources.** The owner asked (*"甚至可不可以模拟素材掉落啊"*). A per-enemy
+  table, and it feeds none of BUILD, SIMULATE or SOLVE — a farming calculator is
+  a different product, which is the rule AGENTS.md states for anything new.
+* **Heavy ammo**, the one ammo kind that IS per enemy (5.01% on specific heavy
+  units). No Arch-Gun here reads a pickup yet.

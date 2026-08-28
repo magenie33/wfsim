@@ -550,6 +550,16 @@ pub struct AttackSpec {
     /// collision and no explosion of its own: the orb delivers both.
     #[serde(default)]
     pub orb: Option<OrbSpec>,
+    /// THE METER THAT GATES THIS FORM — see [`MeterSpec`].
+    ///
+    /// Declaring one makes this form GAUGE-FED, which `play_modes` reads off
+    /// the entry rather than off its name: the form stops being a sustainable
+    /// `alternate` a ruler may rank and becomes a `transformed` mode the
+    /// builder shows for its own numbers, plus a `cycle` that is how the weapon
+    /// is actually played. None of that is decided here — it falls out of the
+    /// declaration, which is what that machinery was built for.
+    #[serde(default)]
+    pub meter: Option<MeterSpec>,
     /// Continuous-beam geometry (Torid Incarnon). Shape, not a damage part.
     #[serde(default)]
     pub beam: Option<BeamSpec>,
@@ -605,6 +615,47 @@ pub struct SpreadSpec {
     pub min_deg: f64,
     /// Max Deviation — where sustained fire takes it.
     pub max_deg: f64,
+}
+
+/// A TOME'S RECHARGE METER — a clock you spend, and the third way this roster
+/// gates a form.
+///
+/// The other two are a MAGAZINE (you spend rounds and reload) and an INCARNON
+/// GAUGE (you land hits and earn a window). This is neither: *"Requires a fully
+/// filled meter beneath the reticle in order to fire. The meter takes 45
+/// seconds to completely recharge. Hitting enemies with the primary fire
+/// reduces recharge time by 1 second per hit. Picking up secondary or universal
+/// ammo reduces recharge time by 10 seconds"* (wiki `Grimoire`).
+///
+/// SO IT IS A COUNTDOWN, and everything you do takes seconds off it. Modelled
+/// as a gauge filling at one unit a second because the two are the same thing
+/// and a gauge is what the rest of the engine already speaks; the FIELD NAMES
+/// stay in the page's own units, since "one second per hit" is the sentence a
+/// reader will check.
+///
+/// ITS OWN TYPE, DELIBERATELY (owner, 2026-08-28). It could be bent onto
+/// [`GaugeSpec`] — both fill and both gate a form — and the mechanics differ in
+/// every particular that matters: that one counts weak-point hits and this one
+/// counts seconds, that one grants a magazine and this one grants a single
+/// throw, that one is emptied by firing and this one by one shot. One weapon
+/// has it today. When a second and a third arrive the shared shape will be
+/// visible; guessing at it from one is how a wrong abstraction gets built.
+///
+/// WHAT THE HITS ARE. *"Multishot will count as an additional hit"* and
+/// *"Radial damage does not count an additional hit"* — so it is one second per
+/// landing PELLET of the primary fire, and its explosion adds nothing. Both
+/// sentences are on the page and both are about a distinction this engine
+/// already makes, which is why neither needs a field.
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct MeterSpec {
+    /// How long it takes to refill with nothing else happening.
+    pub seconds_to_fill: f64,
+    /// What one landing pellet of the OTHER form takes off it.
+    pub seconds_per_hit: f64,
+    /// What one ammo pickup takes off it. *"Picking up secondary or universal
+    /// ammo"* — a PRIMARY pickup does nothing, which is why the drop model
+    /// behind it has to know which kind fell (`ammo::SECONDARY_PICKUP_ON_KILL`).
+    pub seconds_per_ammo_pickup: f64,
 }
 
 /// A DEPLOYED ORB — an entity with a POSITION, a clock and a reach, which is
@@ -663,15 +714,27 @@ pub struct OrbSpec {
     /// field 224 other entries assume has none.
     pub speed_mps: f64,
     pub speed_after_contact_mps: f64,
-    /// EXTRA BODIES ONE STRIKE REACHES, beyond the one it struck — *"Each
-    /// enemy hit chains to an additional 2 enemies within 6 meters"*.
+    /// BODIES ONE STRIKE REACHES PER POINT OF MULTISHOT — the struck one
+    /// included. The whole count is `floor(this x multishot)`.
     ///
-    /// Multishot adds to it rather than adding orbs: *"Number of chains is
-    /// affected by Multishot"*, and the owner gives the count as `multishot +
-    /// this`, total bodies a strike reaches — three at an unmodded x1.0, and
-    /// 4.6 at a panel reading x2.6, which is four for certain and a fifth 60%
-    /// of the time (2026-08-28).
-    pub chain_bodies: f64,
+    /// ✅ MEASURED (owner, 2026-08-28), by counting Invocation stacks: those
+    /// four mods gain a stack per hit, so a strike's body count is readable off
+    /// the buff rather than guessed at. Six points, and the formula reproduces
+    /// every one:
+    ///
+    /// ```text
+    ///   multishot   1.0   1.6   2.1   2.7   3.6   3.9
+    ///   measured      3     4     6     8    10    11
+    ///   3 x ms      3.0   4.8   6.3   8.1  10.8  11.7   -> floor
+    /// ```
+    ///
+    /// A FLOOR, not a coin. The count was `multishot + 2` for an afternoon,
+    /// read off *"chains to an additional 2 enemies"* plus *"Number of chains
+    /// is affected by Multishot"* with the remainder rolled — and the wiki's
+    /// two sentences are consistent with both readings at x1.0, which is
+    /// exactly where they agree and nowhere else: at x2.1 the sum gives 5 and
+    /// the product gives 6. The measurement separates them.
+    pub chain_bodies_per_multishot: f64,
     /// How far a chain hop may reach, body to body — and it is the one
     /// distance on this attack that a RANGE MOD does not move.
     ///
@@ -680,6 +743,22 @@ pub struct OrbSpec {
     /// (owner, 2026-08-28). So the two sixes below are the same number by
     /// coincidence rather than by construction, and only one of them grows.
     pub chain_range_m: f64,
+    /// THE THROW ANIMATION, in seconds, before the orb leaves — a wind-up like
+    /// any thrown weapon's (owner, 2026-08-28: 0.15 s).
+    ///
+    /// BOTH HALVES ARE SHORTENED BY FIRE RATE, which is why they are here and
+    /// not a constant: a fire-rate mod speeds the throw up exactly as it speeds
+    /// a trigger pull up.
+    pub throw_seconds: f64,
+    /// …and the RECOVERY after it, before the weapon can do anything else
+    /// (owner: 0.85 s). Together they are the second a throw costs, which on
+    /// this weapon is also its listed fire rate of 1 — the animation IS the
+    /// cadence.
+    ///
+    /// It is what a CYCLE pays: the primary fire stops for this long every time
+    /// an orb goes out, and that is the only price the cycle has beyond the
+    /// meter itself.
+    pub recovery_seconds: f64,
     /// What a hop deals relative to the hop before it.
     ///
     /// 1.0 — UNDILUTED — for the Grimoire: *"chain 起来没有衰减的 beam chain
@@ -1810,9 +1889,14 @@ impl WeaponSpec {
     /// The one question `has_gauge_switched_form` and the sim's cycle both ask,
     /// and it is answered by what the entry DECLARES — never by its form kind.
     /// An Incarnon adapter is one way to get here; five kills with a Mausolon
-    /// is another.
+    /// is another, and forty-five seconds with a Tome is a third.
+    ///
+    /// THE THIRD IS A DIFFERENT TYPE and answers the same question. A
+    /// [`GaugeFormSpec`] is filled by things you DO — hits, kills — and a
+    /// [`MeterSpec`] by time passing; what they share is that the form costs
+    /// something, which is all anything upstream of here wants to know.
     pub fn has_gauge(&self) -> bool {
-        self.gauge_form.is_some()
+        self.gauge_form.is_some() || self.attack.meter.is_some()
     }
 }
 
@@ -2010,6 +2094,26 @@ impl WeaponPlayMode {
     }
 }
 
+/// DOES ENTERING THIS FORM COST SOMETHING YOU HAVE TO EARN?
+///
+/// The question [`play_modes`] asks of every alternate form, and the whole of
+/// what decides its mode: a form you can simply hold is a `alternate` a ruler
+/// may rank, and one you have to pay for is a `transformed` mode plus a
+/// `cycle`. "Always in it" is not a playstyle when it costs something.
+///
+/// TWO GATES ANSWER YES and the answer does not distinguish them. An
+/// Incarnon-style [`GaugeFormSpec`] is earned with HITS; a Tome's
+/// [`MeterSpec`] is earned with SECONDS. A third will be earned with something
+/// else, and this is where it says so.
+///
+/// It is a function rather than a line inside `play_modes` because the roster's
+/// own ratchet has to ask the same question — it derived its own copy of the
+/// gauge test and went red the day a second gate arrived, which is the
+/// definition drifting in exactly the place built to catch drift.
+pub fn is_gauge_fed(weapon_id: &str) -> bool {
+    spec(weapon_id).is_some_and(WeaponSpec::has_gauge)
+}
+
 pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
     let forms = forms_of(weapon_id);
     let Some(default) = forms.iter().find(|f| f.is_default).or(forms.first()) else {
@@ -2025,7 +2129,8 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
     for alt in forms.iter().filter(|f| f.weapon_id != default.weapon_id) {
         // The GAUGE, not the kind: "does entering this cost a meter you must
         // earn" is the question, and the answer lives on the entry.
-        let gauged = spec(alt.weapon_id).is_some_and(|s| s.gauge_form.is_some());
+        //
+        let gauged = is_gauge_fed(alt.weapon_id);
         if gauged {
             out.push(WeaponPlayMode {
                 id: PlayMode::Cycle.id(),
@@ -2034,6 +2139,22 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
                 other_id: Some(alt.weapon_id),
                 sustainable: true,
             });
+        }
+        // …AND A FORM YOU NEVER HOLD GETS NO MODE OF ITS OWN.
+        //
+        // `Transformed` is a state you are IN: an Incarnon window, a form that
+        // fires its own magazine for a few seconds, and the builder shows its
+        // numbers because "while you are in it" is a real thing to ask about. A
+        // METERED form is not a state — you throw one orb and you are back on
+        // the primary before it lands. There is no "while you are in it" to
+        // show, so there is nothing to show it for (owner, 2026-08-28:
+        // `transformed` is the Incarnon's and is not to be borrowed).
+        //
+        // So a Tome has exactly TWO ways to be played and both are here: the
+        // primary alone (`base`), and the primary with the orb thrown whenever
+        // the meter fills (`cycle`).
+        if spec(alt.weapon_id).is_some_and(|s| s.attack.meter.is_some()) {
+            continue;
         }
         // ONE MODE PER ALTERNATE FORM, and the two kinds have DIFFERENT IDS —
         // a weapon may have more than one alternate (a bow with an adapter has
@@ -3316,6 +3437,7 @@ pub fn base_panel_assembled(
         // A BOUNCE IS NOT SCALED BY ANYTHING, so it comes across as written.
         unaimed_headshot_chance: s.attack.unaimed_headshot_chance,
         orb: s.attack.orb,
+        meter: s.attack.meter,
         ricochet: s.attack.ricochet.as_ref().map(|r| crate::loadout::Ricochet {
             bounces: r.bounces,
             headshot_chance: r.headshot_chance,
@@ -5963,18 +6085,33 @@ mod play_mode_tests {
             // more than one: a bow with an adapter has a tapped shot and an
             // Incarnon form.
             let alts: Vec<_> = forms.iter().filter(|f| !f.is_default).collect();
-            let gauged = |f: &FormRef| spec(f.weapon_id).is_some_and(|s| s.gauge_form.is_some());
+            // THE SAME QUESTION `play_modes` ASKS, asked through the same
+            // function. This used to derive its own copy and went red the day a
+            // second kind of gate arrived — a ratchet drifting from the thing it
+            // ratchets is worse than no ratchet (2026-08-28).
+            let gauged = |f: &FormRef| is_gauge_fed(f.weapon_id);
             let any_gauged = alts.iter().any(|f| gauged(f));
             let has = |m: PlayMode| multishot.iter().any(|x| x.mode == m);
             let rankable = |m: PlayMode| multishot.iter().any(|x| x.mode == m && x.sustainable);
 
+            // A METERED form contributes its CYCLE and no mode of its own —
+            // there is no state to be in, so `Transformed` would be a mode
+            // describing nothing (2026-08-28).
+            let metered = |f: &FormRef| {
+                spec(f.weapon_id).is_some_and(|s| s.attack.meter.is_some())
+            };
+            let own_modes = alts.iter().filter(|f| !metered(f)).count();
             assert_eq!(
-                multishot.len(), 1 + alts.len() + usize::from(any_gauged),
+                multishot.len(), 1 + own_modes + usize::from(any_gauged),
                 "{}: {} forms should give base + one mode each + a cycle: {:?}",
                 w.id, forms.len(), multishot.iter().map(|m| m.id).collect::<Vec<_>>()
             );
             assert_eq!(has(PlayMode::Cycle), any_gauged, "{}: cycle iff gauge", w.id);
-            assert_eq!(has(PlayMode::Transformed), any_gauged, "{}: gauge-fed mode iff gauge", w.id);
+            assert_eq!(
+                has(PlayMode::Transformed),
+                alts.iter().any(|f| gauged(f) && !metered(f)),
+                "{}: a gauge-fed mode iff a gauge you can be IN", w.id
+            );
             assert_eq!(
                 has(PlayMode::Alternate), alts.iter().any(|f| !gauged(f)),
                 "{}: a free second form is an alternate", w.id

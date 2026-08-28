@@ -1458,6 +1458,9 @@ pub struct WeaponBase {
     /// See [`crate::weapons_data::OrbSpec`] — unmodded; `resolve` scales the
     /// two radii and adds multishot to the body count.
     pub orb: Option<crate::weapons_data::OrbSpec>,
+    /// See [`crate::weapons_data::MeterSpec`] — the clock this form is gated
+    /// behind, unmodded.
+    pub meter: Option<crate::weapons_data::MeterSpec>,
     /// Extra additive multishot from non-mod sources at assumed-max
     /// (Fevered Frenzy's 20 stacks = +1.0).
     /// Flat BASE damage an evolution grants through a PERMANENT buff rather
@@ -2251,6 +2254,22 @@ pub struct LingeringBase {
     pub status_mods_apply: bool,
 }
 
+/// A TOME'S RECHARGE METER after mod resolution — see
+/// [`crate::weapons_data::MeterSpec`].
+///
+/// UNMODDED, every field. No bucket in this engine reaches a recharge clock and
+/// the wiki names none for it: fire rate does not shorten it (*"Tick rate is
+/// not affected by Fire Rate"* is the same weapon saying the same thing about
+/// its other clock), and no mod in the pistol or tome pools claims it. It is
+/// resolved rather than read straight off the spec so that the day one does,
+/// there is a place for it to land.
+#[derive(Debug, Clone, Copy)]
+pub struct ResolvedMeter {
+    pub seconds_to_fill: f64,
+    pub seconds_per_hit: f64,
+    pub seconds_per_ammo_pickup: f64,
+}
+
 /// A DEPLOYED ORB after mod resolution — see
 /// [`crate::weapons_data::OrbSpec`]. Geometry and a clock; what it DEALS is the
 /// attack's own parts, which are resolved beside this.
@@ -2266,27 +2285,32 @@ pub struct ResolvedOrb {
     pub strike_radius_m: f64,
     pub launch_speed_mps: f64,
     pub speed_after_contact_mps: f64,
-    /// TOTAL bodies one strike reaches, the struck one included: the spec's
-    /// `chain_bodies` plus live multishot, because *"Number of chains is
-    /// affected by Multishot"* and multishot buys chain targets here rather
-    /// than more orbs.
-    pub chain_bodies: f64,
+    /// TOTAL bodies one strike reaches, the struck one included —
+    /// `floor(spec x multishot)`, measured (M63). Multishot buys chain targets
+    /// on this weapon rather than more orbs, so it is spent here.
+    pub chain_bodies: u32,
     /// A hop's reach — UNMODDED, and the one distance here that is. A range
     /// mod widens what the orb can touch and what its detonation covers, and
     /// leaves the jump between two bodies at the six metres the page states
     /// (owner, 2026-08-28).
     pub chain_range_m: f64,
     pub chain_damage_per_hop: f64,
-}
-
-impl ResolvedOrb {
-    /// HOW MANY BODIES A STRIKE REACHES, this time. The count is fractional —
-    /// a panel reading x2.6 is 4.6 bodies — so the remainder is a COIN, which
-    /// is the same rule multishot itself follows for a fractional pellet.
-    pub fn bodies_this_strike(&self, roll: f64) -> u32 {
-        let whole = self.chain_bodies.floor();
-        (whole as u32) + u32::from(roll < self.chain_bodies - whole)
-    }
+    /// THE THROW AND ITS RECOVERY, already divided by the fire-rate bucket —
+    /// see [`crate::weapons_data::OrbSpec::throw_seconds`]. A live fire-rate
+    /// buff rescales them again in the fight, the same reciprocal trick a
+    /// charge draw and a burst delay use.
+    pub throw_seconds: f64,
+    pub recovery_seconds: f64,
+    /// WHERE A STRIKE LANDS — see
+    /// [`crate::weapons_data::AttackSpec::unaimed_headshot_chance`], resolved
+    /// onto the ORB rather than left on the attack.
+    ///
+    /// It is declared once, on the attack, because that is where a reader looks
+    /// for it; it is CARRIED here because a Tome's cycle fires two forms at
+    /// once and they disagree. You point the primary fire and its pellets take
+    /// the scenario's aim; the orb picks its own body, and its strikes are the
+    /// only thing that reads this.
+    pub unaimed_headshot_chance: Option<f64>,
 }
 
 /// The lingering field after mod resolution.
@@ -2823,6 +2847,8 @@ pub struct ResolvedPanel {
     /// See [`ResolvedOrb`]. `Some` means this attack settles no collision and
     /// no explosion at the impact — the orb delivers both, later and elsewhere.
     pub orb: Option<ResolvedOrb>,
+    /// See [`ResolvedMeter`] — the recharge clock this form is gated behind.
+    pub meter: Option<ResolvedMeter>,
     pub ricochet: Option<Ricochet>,
     /// Additive headshot-damage bonus from evolutions (Caput Mortuum).
     pub headshot_damage_bonus: f64,
@@ -4414,9 +4440,28 @@ pub fn resolve_for(
             strike_radius_m: o.strike_radius_m * (1.0 + br),
             launch_speed_mps: o.speed_mps,
             speed_after_contact_mps: o.speed_after_contact_mps,
-            chain_bodies: o.chain_bodies + base.base_multishot * (1.0 + evo_ms_bonus + multishot),
+            // FLOOR, not a coin — measured (M63). A panel reading x2.1 hits
+            // six bodies every strike, never five and never seven, which is
+            // what tells `3 x multishot` apart from `multishot + 2`.
+            chain_bodies: (o.chain_bodies_per_multishot
+                * base.base_multishot
+                * (1.0 + evo_ms_bonus + multishot))
+                .floor()
+                .max(1.0) as u32,
             chain_range_m: o.chain_range_m,
             chain_damage_per_hop: o.chain_damage_per_hop,
+            // A FIRE-RATE MOD SPEEDS THE THROW UP (owner, 2026-08-28), which is
+            // the same bucket and the same reciprocal application a charge
+            // draw gets: the animation is divided by what the bucket did.
+            throw_seconds: o.throw_seconds / (1.0 + fr).max(1e-9),
+            recovery_seconds: o.recovery_seconds / (1.0 + fr).max(1e-9),
+            unaimed_headshot_chance: base.unaimed_headshot_chance,
+        }),
+        // THE RECHARGE CLOCK, unmodded — see `ResolvedMeter`.
+        meter: base.meter.map(|m| ResolvedMeter {
+            seconds_to_fill: m.seconds_to_fill,
+            seconds_per_hit: m.seconds_per_hit,
+            seconds_per_ammo_pickup: m.seconds_per_ammo_pickup,
         }),
         modified_base,
         // Elemental Excess adds its crit/status FLAT, after the mod
@@ -5985,6 +6030,43 @@ mod tests {
         let emerg = resolve(&base, &[&cb], StackPolicy::Emergent);
         assert!((amax.status_chance - base.base_status_chance * 1.90).abs() < 1e-9);
         assert!((emerg.status_chance - base.base_status_chance).abs() < 1e-9);
+    }
+
+    /// THE SIX MEASURED CHAIN COUNTS, reproduced from the multishot alone.
+    ///
+    /// ✅ MEASURED (M63, owner 2026-08-28) by counting Invocation stacks — those
+    /// four mods gain one per hit, so how many bodies a strike reached is
+    /// readable off the buff instead of being inferred from a damage total:
+    ///
+    /// ```text
+    ///   multishot   1.0   1.6   2.1   2.7   3.6   3.9
+    ///   measured      3     4     6     8    10    11
+    /// ```
+    ///
+    /// IT IS THE PAIR AT 2.1 THAT MATTERS. `floor(3 x multishot)` and
+    /// `multishot + 2` agree at x1.0 and part company immediately after — 6
+    /// against 5 — so a test pinned only at the unmodded count would pass on
+    /// the reading this replaced. The whole table is asserted for that reason.
+    #[test]
+    fn the_orbs_chain_reaches_three_bodies_per_point_of_multishot() {
+        const MEASURED: [(f64, u32); 6] =
+            [(1.0, 3), (1.6, 4), (2.1, 6), (2.7, 8), (3.6, 10), (3.9, 11)];
+        let base = WeaponBase::from_data("grimoire_active", true, &[]);
+        for (multishot, bodies) in MEASURED {
+            // The BUILD is not the point here — what a strike reaches is a
+            // function of the resolved multishot, so it is set directly rather
+            // than assembled out of whichever mods happen to add up to 2.1.
+            let mut b = base.clone();
+            b.base_multishot = multishot;
+            let orb = resolve(&b, &[], StackPolicy::AssumedMax)
+                .orb
+                .expect("the alt fire deploys an orb");
+            assert_eq!(
+                orb.chain_bodies, bodies,
+                "at x{multishot} a strike reaches {bodies} bodies, got {}",
+                orb.chain_bodies
+            );
+        }
     }
 
     /// A RANGE MOD WIDENS WHAT AN ORB CAN TOUCH, AND NOT HOW FAR IT JUMPS.

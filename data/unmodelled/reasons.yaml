@@ -68,8 +68,12 @@ reasons:
   # folding in here next time one of them is touched.
   projectile_must_be_led:
     text: "the projectile has TRAVEL TIME and has to be led — 'hitting a target at range requires leading the target before firing'. Every shot here connects the instant it is fired, so this weapon's real hit rate against anything that moves is worse than the numbers below"
-  tome_meter:
-    text: "the alt fire needs a FULL METER and this arena fires it as fast as its {rate}/s trigger allows — the meter takes {seconds} s to refill and each primary-fire hit takes 1 s off, so a real Tome alternates between the two weapons and this sim fires only the one you picked. Everything below for this form is the ceiling rather than the average, and by a wide margin"
+  # NO `tome_meter` — IT IS MODELLED (2026-08-28). The 45 second recharge, the
+  # second a landing pellet takes off it and the ten seconds an ammo pickup is
+  # worth are `meter:` on the Grimoire's alt fire, and the mode it produces is a
+  # CYCLE: fire the primary, throw an orb when the clock says so. What used to
+  # be the loudest admission in the roster — "everything below is the ceiling
+  # rather than the average, and by a wide margin" — is a number now.
   # NO `orb_shocks_over_time`, AND NO `orb_strikes_do_not_travel` — the orb is
   # MODELLED (2026-08-28, M63), as an entity with a position that flies, slows
   # on contact, strikes one body inside its reach six times and detonates where
