@@ -56,6 +56,12 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 0.0
+  # A ROUND LEAVES 0.1 s AFTER THE TRIGGER (owner, 2026-08-28), where every
+  # other gun in this roster fires at zero. The interval between shots is still
+  # exactly the fire rate's, so this costs a sustained engagement nothing — what
+  # it moves is WHEN each number lands, which is what the combat record is
+  # checked against.
+  windup_seconds: 0.1
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 40

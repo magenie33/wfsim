@@ -34,6 +34,8 @@ fn dual_toxocyst_baseline() -> DummyParams {
         orb: None,
         orb_strike: None,
         orb_blast: None,
+        // A ROUND LEAVES ON THE TRIGGER, like every gun but one.
+        windup_seconds: 0.0,
         // NO METER: this fixture has nothing gated behind a clock, and one
         // player is behind it.
         meter: None,

@@ -2959,6 +2959,9 @@ pub struct DummyParams {
     /// attack is not pointed at anything, so where each of its instances lands
     /// is a flat chance of its own rather than the scenario's `headshot_pct`.
     pub unaimed_headshot_chance: Option<f64>,
+    /// See [`crate::loadout::ResolvedPanel::windup_seconds`] — how long after
+    /// the trigger a round actually leaves.
+    pub windup_seconds: f64,
     /// A DEPLOYED ORB'S geometry and clock — see [`crate::loadout::ResolvedOrb`].
     ///
     /// `Some` changes what a SHOT IS: it deploys rather than arrives, so the
@@ -3809,6 +3812,7 @@ impl DummyParams {
             beam: panel.beam,
             ricochet: panel.ricochet,
             unaimed_headshot_chance: panel.unaimed_headshot_chance,
+            windup_seconds: panel.windup_seconds,
             orb: panel.orb,
             // NO METER ON A SINGLE FORM, and that is the `transformed` mode's
             // own definition rather than an omission: it is the form "all
@@ -4350,6 +4354,8 @@ impl Default for DummyParams {
             ricochet: None,
             // AIMED, like every fixture but the one weapon that is not.
             unaimed_headshot_chance: None,
+            // A ROUND LEAVES ON THE TRIGGER, like every gun but one.
+            windup_seconds: 0.0,
             // NOTHING IS DEPLOYED: the calibration fixture throws no orb.
             orb: None,
             orb_strike: None,
@@ -10717,7 +10723,16 @@ pub fn run_once_traced(
     // Fire while t < duration; the inter-shot interval is 1/(base rate x
     // live BuffBar fire-rate multiplier), evaluated after each shot (a buff
     // expiring mid-interval is approximated to the shot boundary).
-    let mut t = 0.0f64;
+    //
+    // …AND THE FIRST ROUND LEAVES AFTER THE WIND-UP. `t` is when a shot
+    // RESOLVES, and the interval between resolutions is the fire rate's
+    // exactly — so the whole engagement is the wind-up later rather than each
+    // shot being delayed one at a time, and shot `k` lands at
+    // `windup + k / rate` by construction (owner, 2026-08-28).
+    //
+    // Zero for every gun but the Grimoire's primary fire, so nothing else moves
+    // by so much as a bit.
+    let mut t = field_ap.windup_seconds;
     let mut magazine = mag_cap;
     let mut reserve = params.reserve_ammo;
     // GOTVA PRIME'S PASSIVE, armed. Set by a pellet that landed a status, spent
@@ -11987,7 +12002,12 @@ pub fn run_once_traced(
                     // a wind-up and a recovery, and the weapon can do nothing
                     // else until both are over — which is the cycle's whole
                     // price beyond the meter.
-                    t += o.throw_seconds + o.recovery_seconds;
+                    //
+                    // THEN IT WINDS UP AGAIN. Coming back to the primary is
+                    // pressing its trigger, and that costs what pressing it
+                    // always costs; the interval only "corresponds exactly to
+                    // the fire rate" while you are holding it down.
+                    t += o.throw_seconds + o.recovery_seconds + ap.windup_seconds;
                 }
             }
         }
@@ -20999,6 +21019,61 @@ mod tests {
             ..orb_spec()
         };
         assert_eq!(strikes(crate::space::CONTACT_RANGE_M, held), 6, "held still");
+    }
+
+    /// A ROUND LEAVES AFTER THE WIND-UP, and the interval is still the rate's.
+    ///
+    /// Every gun in this roster fires at zero and the Grimoire's primary fires
+    /// at 0.1 s (owner, 2026-08-28). It costs a sustained engagement NOTHING —
+    /// which is why it was nearly written off as latency, and why this asserts
+    /// the TIMES rather than the total: a mean cannot tell a stream that starts
+    /// at 0.1 from one that starts at 0, and the combat record's whole claim is
+    /// that its timestamps can be laid beside a recording.
+    ///
+    /// Shot `k` lands at `windup + k / rate`, so the two arms are the same
+    /// numbers 0.1 s apart, and the LAST shot of the fight is the one that can
+    /// fall off the end.
+    #[test]
+    fn a_round_leaves_after_the_windup_and_the_interval_is_still_the_rates() {
+        let mut damage = DamageVector::default();
+        damage.set(DamageType::Electricity, 10.0);
+        let fired = |windup_seconds: f64| {
+            let p = DummyParams {
+                damage,
+                windup_seconds,
+                fire_rate: 2.0,
+                magazine_size: 1e9,
+                infinite_reserve: true,
+                duration_seconds: 3.0,
+                body_parts: vec![BodyPart {
+                    name: "body".into(),
+                    aim_weight: 1.0,
+                    multiplier: 1.0,
+                    is_head: false,
+                    crit_bonus: false,
+                }],
+                crit_multiplier: 1.0,
+                base_crit_chance: 0.0,
+                arcane: ArcaneFx::none(),
+                ..no_status()
+            };
+            let rec = record(&p, 7, 0.0, 10.0, 100, 0);
+            rec.events()
+                .iter()
+                .filter_map(|e| match &e.kind {
+                    crate::record::Kind::Damage(_) => Some(e.t),
+                    _ => None,
+                })
+                .collect::<Vec<f64>>()
+        };
+        let instant = fired(0.0);
+        let wound_up = fired(0.1);
+        assert_eq!(instant, vec![0.0, 0.5, 1.0, 1.5, 2.0, 2.5], "a gun fires on the trigger");
+        assert_eq!(
+            wound_up,
+            vec![0.1, 0.6, 1.1, 1.6, 2.1, 2.6],
+            "…and this one 0.1 s later, at the same interval"
+        );
     }
 
     /// A METER THROWS ON A CLOCK, and the clock is the whole difference between

@@ -4986,9 +4986,31 @@ cadence, which is the same fact the module states twice. In the cycle it is the
 only price beyond the meter: the primary fire stops for a second every time an
 orb goes out, measured at 256 pellets against 271.
 
-The primary's own 0.1 s wind-up is NOT modelled and does not need to be — its
-interval *"corresponds exactly to the fire rate"*, so it is latency at the start
-of holding the trigger and costs a sustained engagement nothing.
+**And the primary's own 0.1 s wind-up is modelled too**, which it nearly was
+not. It was written off here as latency on the reasoning that the interval
+*"corresponds exactly to the fire rate"*, so a sustained engagement fires the
+same rounds and the mean does not move. The owner's answer:
+
+> 为啥不建模啊，其他的枪械类武器都是0s子弹出膛，但是这个是0.1s啊，不也是变量吗 …
+> 我们要严谨肯定要建模的
+
+He is right, and the reason is the one this app is built on: the combat record's
+claim is that a row can be laid beside a recording and checked number for
+number, and a stream whose every timestamp is 0.1 s early fails that test. It
+also reaches time-to-first-kill and the opening of the DPS curve — the two
+figures a short engagement is read by — and it is a VARIABLE, shortened by fire
+rate, not a constant to be waved away.
+
+The implementation is one line, because the cadence being exact is what makes it
+one: shot `k` lands at `windup + k / rate`, so the engagement STARTS at the
+wind-up rather than each shot being delayed one at a time. Coming back from a
+throw costs it again — an interval only corresponds to the fire rate while you
+are holding the trigger down.
+
+`a_round_leaves_after_the_windup_and_the_interval_is_still_the_rates` asserts the
+TIMES rather than a total, which is the whole point: at 2/s it pins
+`0.0, 0.5, 1.0 …` against `0.1, 0.6, 1.1 …`, and no aggregate can tell those
+apart.
 
 ### Two modes, and `transformed` is not one of them
 

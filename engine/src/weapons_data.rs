@@ -390,6 +390,29 @@ pub struct AttackSpec {
     /// weapon says so on its own page.
     #[serde(default)]
     pub unaimed_headshot_chance: Option<f64>,
+    /// SECONDS BETWEEN THE TRIGGER AND THE ROUND LEAVING.
+    ///
+    /// Zero on every gun in this roster and 0.1 s on the Grimoire's primary
+    /// fire (owner, 2026-08-28), which is what makes it a field rather than a
+    /// constant: *"其他的枪械类武器都是0s子弹出膛，但是这个是0.1s"*.
+    ///
+    /// IT DOES NOT CHANGE THE CADENCE. The interval between shots is the fire
+    /// rate's, exactly — so a sustained engagement fires the same number of
+    /// rounds and this is not a DPS penalty. What it moves is WHEN each of them
+    /// lands: shot `k` resolves at `windup + k / rate` rather than at `k /
+    /// rate`, so the first damage of the fight is late by this much and every
+    /// number after it is too.
+    ///
+    /// THAT IS WORTH MODELLING even though the mean does not move, and the
+    /// owner said so when this was written off as latency: the combat record's
+    /// whole claim is that a row can be laid beside a recording and checked, and
+    /// a stream whose timestamps are all 0.1 s early fails that test. It also
+    /// reaches time-to-first-kill and the DPS curve's opening, which are the two
+    /// figures a short engagement is read by.
+    ///
+    /// SHORTENED BY FIRE RATE, like the throw animation it is the sibling of.
+    #[serde(default)]
+    pub windup_seconds: f64,
     pub crit_chance: f64,
     pub crit_multiplier: f64,
     pub status_chance: f64,
@@ -3436,6 +3459,7 @@ pub fn base_panel_assembled(
         continuous: s.attack.trigger == "held",
         // A BOUNCE IS NOT SCALED BY ANYTHING, so it comes across as written.
         unaimed_headshot_chance: s.attack.unaimed_headshot_chance,
+        windup_seconds: s.attack.windup_seconds,
         orb: s.attack.orb,
         meter: s.attack.meter,
         ricochet: s.attack.ricochet.as_ref().map(|r| crate::loadout::Ricochet {

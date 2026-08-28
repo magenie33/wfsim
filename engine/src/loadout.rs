@@ -1455,6 +1455,9 @@ pub struct WeaponBase {
     pub base_multishot: f64,
     /// See [`crate::weapons_data::AttackSpec::unaimed_headshot_chance`].
     pub unaimed_headshot_chance: Option<f64>,
+    /// See [`crate::weapons_data::AttackSpec::windup_seconds`] — unmodded here;
+    /// `resolve` divides it by the fire-rate bucket.
+    pub windup_seconds: f64,
     /// See [`crate::weapons_data::OrbSpec`] — unmodded; `resolve` scales the
     /// two radii and adds multishot to the body count.
     pub orb: Option<crate::weapons_data::OrbSpec>,
@@ -2844,6 +2847,9 @@ pub struct ResolvedPanel {
     /// See [`crate::weapons_data::AttackSpec::unaimed_headshot_chance`] — a
     /// property of the ATTACK, unmodded, read by every instance it produces.
     pub unaimed_headshot_chance: Option<f64>,
+    /// See [`crate::weapons_data::AttackSpec::windup_seconds`], after the
+    /// fire-rate bucket.
+    pub windup_seconds: f64,
     /// See [`ResolvedOrb`]. `Some` means this attack settles no collision and
     /// no explosion at the impact — the orb delivers both, later and elsewhere.
     pub orb: Option<ResolvedOrb>,
@@ -4422,6 +4428,9 @@ pub fn resolve_for(
         }),
         ricochet: base.ricochet,
         unaimed_headshot_chance: base.unaimed_headshot_chance,
+        // A FIRE-RATE MOD SHORTENS THE WIND-UP, the same bucket and the same
+        // reciprocal application the throw animation and a charge draw get.
+        windup_seconds: base.windup_seconds / (1.0 + fr).max(1e-9),
         // THE ORB'S GEOMETRY, MODDED — and one of the three distances is NOT.
         //
         // The orb's REACH and its detonation RADIUS take the blast-radius
