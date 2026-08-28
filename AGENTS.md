@@ -1320,6 +1320,40 @@ around (decision 2026-07-31).
   drawing ONE of them, which is the exact shape of the bug this replaced.
   Verified to bite in both directions — offsetting the id by one reddens the
   first, truncating a frame's list reddens the second.
+- **A FACTOR IS A TYPE, AND THE WIRE SENDS ITS INDEX** (owner, 2026-08-28).
+  `record::Factor` replaced the `&'static str` written at each call site, which
+  is what made the record only half authoritative about WHY: nothing tied the
+  word "critical" to the 4.4 beside it, a typo was a new factor nobody would
+  notice, and TWO different things were both called "shield gate" — the 0.1 s
+  window and the 5% leak past a broken shield. The type told them apart on the
+  first compile.
+  IT PAID FOR THE PANEL'S ONE REAL PERFORMANCE PROBLEM. A record window was
+  measured at **859 bytes an event, 17.2 MB and 1,811 ms** for 20,000 rows, and
+  the engine was **45 ms** of that — the rest was JSON. The largest single share
+  was the factors that did NOTHING, carried by name, thirteen of them on an
+  ordinary rifle hit and the same thirteen strings on every row of the fight.
+  The table is sent once and a row names its factors by index; the weapon state
+  and the two stack lists are omitted when unchanged from the row before and
+  filled forward on arrival. Together: **481 bytes an event, 9.6 MB, 546 ms** —
+  the same rows, 3.3x faster.
+  AND `Record::wants(t)` IS THE OTHER HALF. A row's arguments cost a `TargetAt`
+  snapshot, three Vecs and a String, and they were being built for the whole
+  fight and thrown away by `push` for anything outside the window — which on a
+  dense build is most of it.
+  ONE PAGE-SIDE TRAP CAME WITH IT: `const F` declared beside the other helpers
+  at the bottom of `recordRow` while the factor lookups sit above it is a
+  temporal dead zone, and it throws from inside an async paint — which surfaces
+  as the panel sitting on "reading…" for ever with nothing in the console.
+- **`one_fight` COMPARES TWO BINARIES, NOT TWO MOMENTS** (2026-08-28). Its
+  baseline is a property of the machine on the day, and a day of driving
+  headless browsers moves that machine: three changes measured at +2.3%, +4.9%
+  and +11.8% against a morning baseline turned out to cost NOTHING — building
+  the pre-change binary and running the two alternately gave **+11.5 / +11.0**
+  against **+11.6 / +10.1**, which is the same number twice. Every attribution
+  in between was drift.
+  So when a delta matters: `cargo build --release --bin one_fight`, copy the
+  exe, `git stash`, build again, and run them alternately against one baseline.
+  The tool's own noise column is measured in seconds and cannot see hours.
 - **DAMAGE COMES THROUGH ONE DOOR, AND THE COMPILER HOLDS IT** (owner,
   2026-08-27). `engine::dummy::ledger` owns the run's totals and the DPS curve
   in types whose fields are PRIVATE TO IT, so the only thing in this crate that
@@ -1351,8 +1385,9 @@ around (decision 2026-07-31).
   back. `Curve` is its own type rather than a third field on `Meter` for the
   same kind of reason: it is a 600-slot array, `RunResult` is `Copy`, and
   grouping 4.8 KB with the two hot scalars cost **2.4%**.
-  THE WHOLE THING MEASURES **+2.3%** with every answer unchanged on all four
-  shapes — paid on purpose for a guarantee that used to be a habit.
+  IT COSTS NOTHING, measured the only way that survives a busy machine — the
+  before and after binaries run alternately against one baseline (see the rule
+  above). Every answer unchanged on all four shapes.
   VERIFIED TO BITE, which for a compile-time guard means the sabotage must fail
   to COMPILE: a would-be tenth site writing `r.meter.raw += 1.0` is rejected
   with "field `raw` of struct `Meter` is private".

@@ -142,7 +142,7 @@ fn main() {
         let mut touched = 0usize;
         for r in 0..runs {
             let out = run_once(&p, &mut Rng::new(0x5EED ^ u64::from(r)));
-            touched = touched.max(out.bodies_touched());
+            touched = touched.max(out.spread.touched());
         }
         let multishot = t0.elapsed().as_secs_f64() * 1000.0 / f64::from(runs);
         if n == 1 {

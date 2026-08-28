@@ -157,8 +157,183 @@ impl Origin {
 ///
 /// A `&'static str` because every label in this engine is a literal: a factor
 /// whose name had to be built at runtime would be a factor nobody could join
+/// EVERY FACTOR A NUMBER CAN BE BUILT FROM — a TYPE, not a string.
+///
+/// It was `&'static str` written at the call site, which made the record only
+/// half authoritative about WHY: nothing tied the word "critical" to the 4.4
+/// beside it, a typo was a new factor nobody would notice, and two different
+/// things were both called "shield gate" — the 0.1 s window and the 5% leak
+/// past a broken shield (owner asked for this to be the type it should have
+/// been, 2026-08-28).
+///
+/// IT ALSO PAYS FOR ITSELF ON THE WIRE. A row carries the factors that did
+/// nothing by NAME, thirteen of them on an ordinary rifle hit, and the same
+/// thirteen strings on every row of the fight: measured at **859 bytes an
+/// event** and **17.2 MB** for a 20,000-row window, of which the repeated
+/// names were the largest single share. An index into this table costs one or
+/// two characters, and the table is sent once.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Factor {
+    /// `body part`
+    BodyPart,
+    /// `critical`
+    Critical,
+    /// `Condition Overload bracket`
+    ConditionOverload,
+    /// `faction`
+    Faction,
+    /// `arcane (final)`
+    ArcaneFinal,
+    /// `attrition`
+    Attrition,
+    /// `Warframe ability`
+    WarframeAbility,
+    /// `Warframe ability element`
+    WarframeAbilityElement,
+    /// `beam ramp`
+    BeamRamp,
+    /// `Double Tap`
+    DoubleTap,
+    /// `Synth Charge`
+    SynthCharge,
+    /// `Chamber (first round)`
+    ChamberFirstRound,
+    /// `sniper combo`
+    SniperCombo,
+    /// `multishot-as-damage`
+    MultishotAsDamage,
+    /// `multishot-generated`
+    MultishotGenerated,
+    /// `damage falloff`
+    DamageFalloff,
+    /// `radial falloff`
+    RadialFalloff,
+    /// `hop falloff`
+    HopFalloff,
+    /// `merged beams`
+    MergedBeams,
+    /// `element bracket`
+    ElementBracket,
+    /// `element bracket + quantization`
+    ElementBracketQuantized,
+    /// `extra hit share`
+    ExtraHitShare,
+    /// `field damage`
+    FieldDamage,
+    /// `Secondary Fortifier`
+    SecondaryFortifier,
+    /// `shield gate window`
+    ShieldGateWindow,
+    /// `pool share`
+    PoolShare,
+    /// `damage type column`
+    DamageTypeColumn,
+    /// `Disrupt amp`
+    DisruptAmp,
+    /// `past the shield`
+    PastTheShield,
+    /// `shield gate`
+    ShieldGate,
+    /// `Viral amp`
+    ViralAmp,
+    /// `armour`
+    Armour,
+    /// `attenuation`
+    Attenuation,
+    /// `the pool ran out`
+    PoolRanOut,
+}
+
+impl Factor {
+    /// Every factor, in the order their indices are on the wire. APPEND-ONLY
+    /// for as long as a client older than the server can exist — which for a
+    /// page served from the same deploy is never, so this is a convention
+    /// rather than a ratchet.
+    pub const ALL: [Factor; 34] = [
+        Factor::BodyPart,
+        Factor::Critical,
+        Factor::ConditionOverload,
+        Factor::Faction,
+        Factor::ArcaneFinal,
+        Factor::Attrition,
+        Factor::WarframeAbility,
+        Factor::WarframeAbilityElement,
+        Factor::BeamRamp,
+        Factor::DoubleTap,
+        Factor::SynthCharge,
+        Factor::ChamberFirstRound,
+        Factor::SniperCombo,
+        Factor::MultishotAsDamage,
+        Factor::MultishotGenerated,
+        Factor::DamageFalloff,
+        Factor::RadialFalloff,
+        Factor::HopFalloff,
+        Factor::MergedBeams,
+        Factor::ElementBracket,
+        Factor::ElementBracketQuantized,
+        Factor::ExtraHitShare,
+        Factor::FieldDamage,
+        Factor::SecondaryFortifier,
+        Factor::ShieldGateWindow,
+        Factor::PoolShare,
+        Factor::DamageTypeColumn,
+        Factor::DisruptAmp,
+        Factor::PastTheShield,
+        Factor::ShieldGate,
+        Factor::ViralAmp,
+        Factor::Armour,
+        Factor::Attenuation,
+        Factor::PoolRanOut,
+    ];
+
+    /// What a reader is shown, and the key the i18n overlay is written against.
+    pub fn name(self) -> &'static str {
+        match self {
+            Factor::BodyPart => "body part",
+            Factor::Critical => "critical",
+            Factor::ConditionOverload => "Condition Overload bracket",
+            Factor::Faction => "faction",
+            Factor::ArcaneFinal => "arcane (final)",
+            Factor::Attrition => "attrition",
+            Factor::WarframeAbility => "Warframe ability",
+            Factor::WarframeAbilityElement => "Warframe ability element",
+            Factor::BeamRamp => "beam ramp",
+            Factor::DoubleTap => "Double Tap",
+            Factor::SynthCharge => "Synth Charge",
+            Factor::ChamberFirstRound => "Chamber (first round)",
+            Factor::SniperCombo => "sniper combo",
+            Factor::MultishotAsDamage => "multishot-as-damage",
+            Factor::MultishotGenerated => "multishot-generated",
+            Factor::DamageFalloff => "damage falloff",
+            Factor::RadialFalloff => "radial falloff",
+            Factor::HopFalloff => "hop falloff",
+            Factor::MergedBeams => "merged beams",
+            Factor::ElementBracket => "element bracket",
+            Factor::ElementBracketQuantized => "element bracket + quantization",
+            Factor::ExtraHitShare => "extra hit share",
+            Factor::FieldDamage => "field damage",
+            Factor::SecondaryFortifier => "Secondary Fortifier",
+            Factor::ShieldGateWindow => "shield gate window",
+            Factor::PoolShare => "pool share",
+            Factor::DamageTypeColumn => "damage type column",
+            Factor::DisruptAmp => "Disrupt amp",
+            Factor::PastTheShield => "past the shield",
+            Factor::ShieldGate => "shield gate",
+            Factor::ViralAmp => "Viral amp",
+            Factor::Armour => "armour",
+            Factor::Attenuation => "attenuation",
+            Factor::PoolRanOut => "the pool ran out",
+        }
+    }
+
+    /// Its place in [`Factor::ALL`] — what travels instead of the name.
+    pub fn index(self) -> usize {
+        Factor::ALL.iter().position(|f| *f == self).expect("every factor is in ALL")
+    }
+}
+
 /// against a translation, and the page needs to translate all of them.
-pub type Step = (&'static str, f64);
+pub type Step = (Factor, f64);
 
 /// WHAT THE TARGET LOOKED LIKE THE INSTANT BEFORE THIS NUMBER LANDED.
 ///
@@ -460,6 +635,19 @@ impl Record {
     /// belongs to the round that seeded it, not to whatever is being fired now.
     pub fn attribute_to(&mut self, cause: Option<u32>) -> Option<u32> {
         std::mem::replace(&mut self.shot, cause)
+    }
+
+    /// IS ANYTHING AT `t` GOING TO BE KEPT? Asked BEFORE a row's arguments are
+    /// built, which is the difference between a windowed read costing what it
+    /// keeps and costing the whole fight.
+    ///
+    /// A window is the ordinary case on a dense build — the board's leading
+    /// Laetum deals ~230,000 damage instances over 180 s and the cap is a
+    /// fraction of that — so a reader scrubbed to the last ten seconds was
+    /// paying for a `TargetAt` snapshot, three Vecs and a String on every one
+    /// of the instances before it, all of them thrown away by `push`.
+    pub fn wants(&self, t: f64) -> bool {
+        self.on && t >= self.from && t < self.to && self.events.len() < self.limit
     }
 
     /// Append. Returns the event's id, or `None` when nothing was recorded —

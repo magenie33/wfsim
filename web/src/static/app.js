@@ -14354,6 +14354,22 @@ async function loadRecord(r, from, to) {
   // the target's debuffs, both positional and both named once rather than per
   // row.
   recordState.rosters = { buffs: (out && out.buffs) || [], debuffs: (out && out.debuffs) || [] };
+  // THE FACTOR TABLE, sent once. A row names its factors by their index here,
+  // because the same thirteen "did nothing" names on every row of a fight were
+  // the largest single share of a 17.2 MB window (2026-08-28).
+  recordState.factors = (out && out.factors) || [];
+  // …AND WHAT A ROW LEFT OUT, filled forward. The weapon's state is identical
+  // on every row of a trigger pull and the two stack lists change only when
+  // something is applied or expires, so an absent field means "the same as the
+  // row before". Done ONCE here rather than at each reader, so nothing
+  // downstream has to know the wire is compressed at all.
+  let carriedWeapon = null, carriedBuffs = null, carriedDebuffs = null;
+  for (const e of recordState.events) {
+    if (e.weapon) carriedWeapon = e.weapon; else e.weapon = carriedWeapon;
+    if (e.kind !== "damage") continue;
+    if (e.buffs) carriedBuffs = e.buffs; else e.buffs = carriedBuffs;
+    if (e.debuffs) carriedDebuffs = e.debuffs; else e.debuffs = carriedDebuffs;
+  }
   recordState.error = out && out.ok === false ? out.error : null;
   paintRecord(r);
 }
@@ -14480,18 +14496,25 @@ function recStacks(list, roster, cls) {
 /// reader looking for a mistake, not one taking the number on trust (owner,
 /// 2026-08-27).
 function baseChain(e) {
+  const F = (i) => ((recordState && recordState.factors) || [])[i] || String(i);
   const n = (x) => Math.round(x).toLocaleString();
   if (e.base_from == null || !(e.base_steps || []).length) {
     return `<span class="rec-b0">${n(e.base)}</span>`;
   }
   return `<span class="rec-b0 sub">${n(e.base_from)}<i>${escHtml(tr("ModifiedBase"))}</i></span>${
     e.base_steps.map(([k, v]) =>
-      `<span class="rec-f base" data-factor="${escHtml(k)}">×${v}<i>${escHtml(tr(k))}</i></span>`).join("")
+      `<span class="rec-f base" data-factor="${escHtml(F(k))}">×${v}<i>${escHtml(tr(F(k)))}</i></span>`).join("")
   }<span class="rec-b0">= ${n(e.base)}</span>`;
 }
 
 function recordRow(e, rosters) {
   const n = (x) => Math.round(x).toLocaleString();
+  // A FACTOR IS AN INDEX INTO THE RESPONSE'S OWN TABLE — see `loadRecord`.
+  // AT THE TOP, because `const` has no hoisting: declared beside the `return`
+  // where the other helpers live, every use above it threw a ReferenceError
+  // from inside an async paint, which surfaces as the panel sitting on
+  // "reading…" for ever and nothing in the console (2026-08-28).
+  const F = (i) => ((recordState && recordState.factors) || [])[i] || String(i);
   const w = e.weapon || {};
   // THE WHOLE AMMO PICTURE IN ONE COLUMN — magazine, what is left in reserve,
   // and the Incarnon gauge. They are one question ("can this weapon keep
@@ -14540,14 +14563,14 @@ function recordRow(e, rosters) {
     k === "critical" && e.crit_damage
       ? `<span class="rec-f hi" data-factor="critical">×${v}<i>${escHtml(tr("critical"))} = 1 + ${e.crit} × (${
           e.crit_damage} − 1)</i></span>`
-      : `<span class="rec-f" data-factor="${escHtml(k)}">×${v}<i>${escHtml(tr(k))}</i></span>`).join("");
+      : `<span class="rec-f" data-factor="${escHtml(F(k))}">×${v}<i>${escHtml(tr(F(k)))}</i></span>`).join("");
   const mit = (e.mitigation || []).map(([k, v]) =>
-    `<span class="rec-f mit" data-factor="${escHtml(k)}">×${v}<i>${escHtml(tr(k))}</i></span>`).join("");
+    `<span class="rec-f mit" data-factor="${escHtml(F(k))}">×${v}<i>${escHtml(tr(F(k)))}</i></span>`).join("");
   // EVERY FACTOR THAT MOVED, and the NAMES of the ones that did not. A ×1.00 is
   // noise on a row; WHICH ones were ×1.00 is a clue, so they are a count you
   // can hover rather than fifteen lines you have to skip (owner, 2026-08-27).
   const inert = (e.steps_inert || []).length
-    ? `<span class="rec-inert" title="${escHtml((e.steps_inert || []).map((k) => tr(k)).join(" · "))}">${
+    ? `<span class="rec-inert" title="${escHtml((e.steps_inert || []).map((k) => tr(F(k))).join(" · "))}">${
         e.steps_inert.length} ×1.00</span>`
     : "";
   const b = e.before || {};
@@ -14627,8 +14650,9 @@ function recordLine(e) {
   const t = e.t.toFixed(3).padStart(8);
   if (e.kind === "miss") return `${t}  #${e.cause ?? "-"}  [miss]  ${e.reason || ""}`;
   if (e.kind !== "damage") return `${t}  [${e.kind}]`;
+  const F = (i) => ((recordState && recordState.factors) || [])[i] || String(i);
   const chain = [...(e.steps || []), ...(e.mitigation || [])]
-    .map(([k, v]) => `x${v} ${k}`).join("  ");
+    .map(([k, v]) => `x${v} ${F(k)}`).join("  ");
   const b = e.before || {};
   return `${t}  #${e.cause ?? "-"}  ${e.origin}  ${e.part || "-"}  ${e.pool}  ${Math.round(e.effective)}`
     + `  | ${Math.round(e.base)}  ${chain}  = ${Math.round(e.raw)}`

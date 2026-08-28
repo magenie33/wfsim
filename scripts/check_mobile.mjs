@@ -431,8 +431,14 @@ for (const lang of ["en", "zh"]) {
     for (let i = 0; i < 60 && typeof sim === "undefined"; i++) await sleep(500);
     const o = { vw: document.documentElement.clientWidth };
     sim.duration = 8; sim.runs = 6;
+    markScenarioDirty && markScenarioDirty();
+    await sleep(400);
     document.getElementById('run-sim').click();
-    for (let i = 0; i < 120 && !document.getElementById('rp-scrub'); i++) await sleep(500);
+    // GENEROUS ON PURPOSE: this block runs last, after every other screen has
+    // driven a browser, and a loaded machine turns a two-second simulation into
+    // a failure that says "the record is not on the panel".
+    for (let i = 0; i < 400 && !document.getElementById('rp-scrub'); i++) await sleep(500);
+    o.ranSim = !!document.getElementById('rp-scrub');
     o.block = !!document.querySelector('.fold[data-fold="record"]');
     const btn = document.getElementById('rec-load');
     o.button = !!btn;
@@ -462,7 +468,8 @@ for (const lang of ["en", "zh"]) {
     return o;
   })()`);
   check("phone 390 the combat record is on the panel",
-    rec.block === true && rec.button === true && rec.table === true);
+    rec.block === true && rec.button === true && rec.table === true,
+    `ran=${rec.ranSim} block=${rec.block} button=${rec.button} table=${rec.table}`);
   check("phone 390 ...and it fits the screen",
     rec.tableW <= rec.vw + 0.5 && (rec.over || []).length === 0
       && rec.scrollW <= rec.vw + 0.5,

@@ -5099,7 +5099,7 @@ mod tests {
             let dp = crate::dummy::DummyParams::from_panel(
                 p, &arena, &crate::arcanes_data::ArcaneFx::none());
             let r = crate::dummy::run_once(&dp, &mut crate::rng::Rng::new(0x5EED));
-            r.damage_by_body.0.iter().filter(|d| **d > 0.0).count()
+            r.spread.by_body().0.iter().filter(|d| **d > 0.0).count()
         };
         assert_eq!(took(&bare), 1, "no mod: only the aimed body is paid");
         assert_eq!(took(&with), 4, "the mod's punch through must PAY the bodies behind");

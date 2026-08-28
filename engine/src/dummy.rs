@@ -4059,20 +4059,6 @@ impl RunResult {
         self.note_kills(killed, at);
     }
 
-    /// Record what a body took, growing the list as bodies appear in it.
-    fn note_body_damage(&mut self, body: usize, eff: f64) {
-        if let Some(slot) = self.damage_by_body.0.get_mut(body) {
-            *slot += eff;
-        }
-    }
-
-    /// HOW MANY BODIES THIS SHOT'S WEAPON ACTUALLY REACHED — the count a
-    /// formation exists to answer. The Ocucor's is five: its beam and four
-    /// tendrils.
-    pub fn bodies_touched(&self) -> usize {
-        self.damage_by_body.0.iter().filter(|d| **d > 0.0).count()
-    }
-
     fn note_kills(&mut self, killed: u32, at: f64) {
         if killed > 0 && self.first_kill_at.is_none() {
             self.first_kill_at = Some(at);
@@ -4408,6 +4394,8 @@ pub mod ledger {
     pub struct Meter {
         raw: f64,
         effective: f64,
+        dot: f64,
+        max_hit: f64,
     }
 
     /// THE DPS-OVER-TIME CURVE, and the same rule: a damage site that moved
@@ -4415,6 +4403,48 @@ pub mod ledger {
     /// make impossible, and that was the shape of the old `timeline.add`
     /// sitting beside a `log_damage` call.
     ///
+    /// WHOSE DAMAGE IT WAS, index for index with the arena's own numbering —
+    /// 0 is the aimed body, `i + 1` is `formation[i]`.
+    ///
+    /// Booked here for the same reason the totals are, and UNCONDITIONALLY,
+    /// which it was not: the pellet site asked `if !others.is_empty()` while
+    /// the status site did not, so a single-target fight credited its DoT ticks
+    /// to body 0 and its direct hits to nobody. Two answers to one question,
+    /// decided by which site happened to be running (2026-08-28).
+    #[derive(Debug, Clone, Copy, Default)]
+    pub struct Spread(BodyDamage);
+
+    impl Spread {
+        /// PRIVATE ON PURPOSE — `settle` is the only caller there can be.
+        fn credit(&mut self, body: usize, effective: f64) {
+            if let Some(slot) = self.0 .0.get_mut(body) {
+                *slot += effective;
+            }
+        }
+
+        pub fn by_body(&self) -> &BodyDamage {
+            &self.0
+        }
+
+        /// HOW MANY BODIES THIS RUN'S WEAPON ACTUALLY REACHED — the count a
+        /// formation exists to answer. The Ocucor's is five: its beam and four
+        /// tendrils.
+        pub fn touched(&self) -> usize {
+            self.0 .0.iter().filter(|d| **d > 0.0).count()
+        }
+    }
+
+    /// WHICH CLOCK AN INSTANCE WAS ON. The only thing `settle` cannot work out
+    /// for itself: a Heat tick and a Heat hit are the same type on the same
+    /// body, and only the caller knows which it just resolved.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum Clock {
+        /// The trigger's: a hit, an explosion, an extra hit, an arcane instance.
+        Hit,
+        /// Its own: a status DoT tick, a lingering field's tick.
+        Dot,
+    }
+
     /// A TYPE OF ITS OWN rather than a third field on `Meter`, for a measured
     /// reason: it is a 600-slot array and `RunResult` is `Copy`, so grouping
     /// 4.8 KB with the two hot scalars cost 2.4% on `one_fight` — the totals
@@ -4442,12 +4472,33 @@ pub mod ledger {
             self.effective
         }
 
+        /// The share of it that came from status DoT ticks and lingering
+        /// fields — the clock's damage rather than the trigger's.
+        pub fn dot(&self) -> f64 {
+            self.dot
+        }
+
+        /// THE BIGGEST SINGLE NUMBER the build produced. Every instance, not
+        /// just direct pellet hits: it used to be booked at the pellet site
+        /// alone, so a Slash tick or a Blast detonation larger than any hit
+        /// could not be it — which is not what the field says it is, and the
+        /// field is what a reader is shown (2026-08-28).
+        pub fn max_hit(&self) -> f64 {
+            self.max_hit
+        }
+
         /// PRIVATE ON PURPOSE — see the module's own doc. `settle` is the only
         /// caller there can be.
         #[inline]
-        fn book(&mut self, raw: f64, effective: f64) {
+        fn book(&mut self, raw: f64, effective: f64, clock: Clock) {
             self.raw += raw;
             self.effective += effective;
+            if clock == Clock::Dot {
+                self.dot += effective;
+            }
+            if effective > self.max_hit {
+                self.max_hit = effective;
+            }
         }
     }
 
@@ -4460,8 +4511,8 @@ pub mod ledger {
     /// record is filled by the same call that moved the pools rather than beside
     /// it, which is what makes "the sum of the record is the damage total" true by
     /// construction (see [`crate::record`]).
-    // INLINED ON PURPOSE: the generic half is three additions and a branch,
-    // and it sits on the hottest path this engine has.
+    // INLINED ON PURPOSE: the generic half is a handful of additions and a
+    // branch, and it sits on the hottest path this engine has.
     #[inline]
     #[allow(clippy::too_many_arguments)]
     pub(in crate::dummy) fn settle(
@@ -4474,6 +4525,7 @@ pub mod ledger {
         breakdown: &Breakdown,
         settled: Settled,
         debuffs: Option<&DebuffState>,
+        clock: Clock,
         inst: impl FnOnce() -> Instance,
     ) {
         // THE BOOKING FIRST, and it is why this function exists. A damage site used
@@ -4490,10 +4542,11 @@ pub mod ledger {
         // `if recording(rec)` at each call site, which is exactly the second thing
         // a new site had to remember. It is a closure now, and forgetting it is not
         // something the language will let you do.
-            r.meter.book(settled.raw, settled.effective);
+            r.meter.book(settled.raw, settled.effective, clock);
+        r.spread.credit(body, settled.effective);
         let i = t.max(0.0) as usize;
         r.curve.0 .0[i.min(TIMELINE_BUCKETS - 1)] += settled.effective;
-        if rec.is_on() {
+        if rec.wants(t) {
             write_row(rec, t, body, dtype, kind, breakdown, settled, debuffs, inst());
         }
     }
@@ -4534,21 +4587,21 @@ fn write_row(
         // nothing; that distinction lives on the page, which knows what the
         // build is carrying and this does not.
         let mut mit: Vec<crate::record::Step> = Vec::with_capacity(6);
-        let mut keep = |name: &'static str, v: f64| {
+        let mut keep = |factor: crate::record::Factor, v: f64| {
             if (v - 1.0).abs() > 1e-12 {
-                mit.push((name, v));
+                mit.push((factor, v));
             }
         };
-        keep("shield gate", breakdown.gate);
-        keep("pool share", p.share);
-        keep("damage type column", p.column);
-        keep("Disrupt amp", p.disrupt_amp);
-        keep("past the shield", p.past_shield);
-        keep("shield gate", p.shield_gate);
-        keep("Viral amp", p.virus_amp);
-        keep("armour", p.armor);
-        keep("attenuation", p.attenuation);
-        keep("the pool ran out", p.pool_remaining);
+        keep(crate::record::Factor::ShieldGateWindow, breakdown.gate);
+        keep(crate::record::Factor::PoolShare, p.share);
+        keep(crate::record::Factor::DamageTypeColumn, p.column);
+        keep(crate::record::Factor::DisruptAmp, p.disrupt_amp);
+        keep(crate::record::Factor::PastTheShield, p.past_shield);
+        keep(crate::record::Factor::ShieldGate, p.shield_gate);
+        keep(crate::record::Factor::ViralAmp, p.virus_amp);
+        keep(crate::record::Factor::Armour, p.armor);
+        keep(crate::record::Factor::Attenuation, p.attenuation);
+        keep(crate::record::Factor::PoolRanOut, p.pool_remaining);
         rec.push(
             t,
             subject,
@@ -4622,8 +4675,6 @@ impl RunResult {
 /// Result of a single engagement.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct RunResult {
-    /// Effective damage contributed by DoT ticks (subset of the above).
-    pub dot_damage: f64,
     pub shots: u32,      // trigger pulls
     pub pellets: u32,    // multishot instances (>= shots)
     pub crits: u32,      // tier >= 1, counted per pellet
@@ -4671,7 +4722,6 @@ pub struct RunResult {
     /// A FIXED ARRAY rather than a `Vec` because `RunResult` is `Copy` and is
     /// copied per run; index 0 is the aimed body and 1.. the formation, so it
     /// is one longer than the cap.
-    pub damage_by_body: BodyDamage,
     /// Kills + the depleted fraction of the CURRENT target's total pool
     /// (overguard + health) at engagement end — partial credit so the
     /// objective is not a step function (user, 2026-07-24: "draining 80%
@@ -4711,6 +4761,8 @@ pub struct RunResult {
     /// The DPS-over-time curve — booked by [`ledger::settle`] and by nothing
     /// else, for the same reason the totals are.
     pub curve: ledger::Curve,
+    /// Whose damage it was — same door, same reason.
+    pub spread: ledger::Spread,
 }
 
 /// Devouring Attrition's multiplier for ONE damage instance: a
@@ -5284,6 +5336,7 @@ fn fire_extra_hits(
         r.sources.extra_hit_by_type[ty as usize] += eff;
         ledger::settle(
             r, rec, at, 0, ty, PopKind::Extra, &breakdown, settled, Some(debuffs),
+            ledger::Clock::Hit,
             || Instance {
                 origin: crate::record::Origin::ExtraHit,
                 // THE TRIGGERING HIT'S OWN DAMAGE is the base, and the four
@@ -5292,10 +5345,10 @@ fn fire_extra_hits(
                 // element, on the body part that thing struck.
                 base: trigger_raw,
                 steps: vec![
-                    ("extra hit share", fraction),
-                    ("element bracket", bracket),
-                    ("body part", part_again),
-                    ("faction", f),
+                    (crate::record::Factor::ExtraHitShare, fraction),
+                    (crate::record::Factor::ElementBracket, bracket),
+                    (crate::record::Factor::BodyPart, part_again),
+                    (crate::record::Factor::Faction, f),
                 ],
                 head: head_direct,
                 ..Instance::default()
@@ -5592,12 +5645,11 @@ fn drain_area_procs(
                 watching(rec, &mut breakdown),
             );
             let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
-            r.dot_damage += eff;
-            r.note_body_damage(j, eff);
             r.sources.add_status(hit.shares.dominant(), eff);
             ledger::settle(
                 r, rec, at_now, j, hit.shares.dominant(), PopKind::BlastArea,
                 &breakdown, settled, Some(dbf),
+                ledger::Clock::Dot,
                 || Instance {
                     origin: crate::record::Origin::Splash,
                     // THE DETONATION'S OWN NUMBER, and how much of it
@@ -5606,7 +5658,7 @@ fn drain_area_procs(
                     // neighbour's number from the body that carried the
                     // stack.
                     base: hit.damage,
-                    steps: vec![("radial falloff", share)],
+                    steps: vec![(crate::record::Factor::RadialFalloff, share)],
                     ..Instance::default()
                 },
             );
@@ -6016,11 +6068,11 @@ fn settle_procs(
                         watching(rec, &mut breakdown),
                     );
                     let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
-                    r.dot_damage += eff;
                     r.sources.add_status(DamageType::Blast, eff);
                     ledger::settle(
                         r, rec, at, 0, DamageType::Blast, PopKind::Blast,
                         &breakdown, settled, Some(debuffs),
+                        ledger::Clock::Dot,
                         || Instance {
                             origin: crate::record::Origin::Status,
                             // EVERY STACK AT ONCE. Ten stacks detonating
@@ -6244,13 +6296,14 @@ fn settle_procs(
             ledger::settle(
                 r, rec, at, 0, proc, PopKind::Arcane, &breakdown, settled,
                 Some(debuffs),
+                ledger::Clock::Hit,
                 || Instance {
                     origin: crate::record::Origin::Arcane,
                     // A FLAT NUMBER AND ONE MULTIPLIER, which is the whole
                     // of this arcane: "unaffected by damage/element/crit
                     // mods … faction bonuses apply ONCE".
                     base: params.arcane.flat_damage_on_status,
-                    steps: vec![("faction", params.faction_at_time(at))],
+                    steps: vec![(crate::record::Factor::Faction, params.faction_at_time(at))],
                     ..Instance::default()
                 },
             );
@@ -6548,6 +6601,7 @@ fn spread_hit(
         r, rec, t, inst.target, shares.dominant(),
         if inst.headshot { PopKind::Head } else { PopKind::Direct },
         &breakdown, settled, Some(&foe.debuffs),
+        ledger::Clock::Hit,
         || Instance {
             // WHY THIS BODY GOT HIT AT ALL — the one column a formation
             // fight cannot be read without. `SpreadBy` already names the
@@ -6567,15 +6621,14 @@ fn spread_hit(
             // from the body that was aimed at.
             base: raw_per_bucket,
             steps: vec![
-                ("Condition Overload bracket", bucket),
-                ("hop falloff", inst.share),
-                ("body part", inst.part_factor),
+                (crate::record::Factor::ConditionOverload, bucket),
+                (crate::record::Factor::HopFalloff, inst.share),
+                (crate::record::Factor::BodyPart, inst.part_factor),
             ],
             head: inst.headshot,
             ..Instance::default()
         },
     );
-    r.note_body_damage(inst.target, eff);
     // …AND IT REACHES THE DAMAGE METER (player report, 2026-08-19: the
     // explosion looked overestimated).
     //
@@ -7407,10 +7460,11 @@ fn fire_syndicate_radial(
     ledger::settle(
         r, rec, at, 0, sy.element, PopKind::Arcane, &breakdown, settled,
         Some(debuffs),
+        ledger::Clock::Hit,
         || Instance {
             origin: crate::record::Origin::Arcane,
             base: sy.damage,
-            steps: vec![("faction", params.faction_at_time(at))],
+            steps: vec![(crate::record::Factor::Faction, params.faction_at_time(at))],
             ..Instance::default()
         },
     );
@@ -7805,6 +7859,7 @@ fn field_tick(
     ledger::settle(
         r, rec, at, 0, DamageType::Cinematic, PopKind::Field, &breakdown, settled,
         Some(debuffs),
+        ledger::Clock::Hit,
         || Instance {
             origin: crate::record::Origin::Field,
             // A CLOUD'S TICK IS WEAPON DAMAGE ON ITS OWN CLOCK — neither a
@@ -7813,11 +7868,11 @@ fn field_tick(
             // no falloff term here either.
             base: qtotal,
             steps: vec![
-                ("critical", crit_multiplier),
-                ("Condition Overload bracket", bucket),
-                ("faction", faction_at(params.faction_at_time(at), DEPTH_HIT)),
-                ("field damage", damage_multiplier),
-                ("Warframe ability", params.ability_final_at(at)),
+                (crate::record::Factor::Critical, crit_multiplier),
+                (crate::record::Factor::ConditionOverload, bucket),
+                (crate::record::Factor::Faction, faction_at(params.faction_at_time(at), DEPTH_HIT)),
+                (crate::record::Factor::FieldDamage, damage_multiplier),
+                (crate::record::Factor::WarframeAbility, params.ability_final_at(at)),
             ],
             ..Instance::default()
         },
@@ -8230,16 +8285,15 @@ fn process_ticks(
             watching(rec, &mut breakdown),
         );
         let (effective, killed, broke) = (settled.effective, settled.killed, settled.broken);
-        r.dot_damage += effective;
         // …AND WHOSE BODY IT WAS. Only worth recording once there is more than
         // one to tell apart, which is the same rule the direct hit follows.
-        r.note_body_damage(body, effective);
         r.sources.add_status(src, effective);
         let was = rec.attribute_to((seeded_by != u32::MAX).then_some(seeded_by));
         ledger::settle(
             r, rec, now, body, src,
             if src == DamageType::Blast { PopKind::Blast } else { PopKind::Status },
             &breakdown, settled, Some(debuffs),
+            ledger::Clock::Dot,
             || Instance {
                 origin: crate::record::Origin::Status,
                 // THE SEED, AND ONE LIVE FACTOR. A tick's own half —
@@ -8251,7 +8305,7 @@ fn process_ticks(
                 // POINTS AT that carries them: `Event::cause` names the shot
                 // that seeded this, and that row has the full ledger.
                 base: unfortified,
-                steps: vec![("Secondary Fortifier", fortifier)],
+                steps: vec![(crate::record::Factor::SecondaryFortifier, fortifier)],
                 ..Instance::default()
             },
         );
@@ -8962,7 +9016,7 @@ mod pellet_volley {
                 .expect("a direct hit")
                 .steps
                 .iter()
-                .find(|(n, _)| *n == "multishot-as-damage")
+                .find(|(n, _)| *n == crate::record::Factor::MultishotAsDamage)
                 .map(|(_, v)| *v)
                 .expect("the factor is listed")
         };
@@ -11471,7 +11525,7 @@ pub fn run_once_traced(
                 // bracket the other did not, because the factor was current and
                 // the column was not. A state column that does not match the
                 // number beside it is worse than no column (owner, 2026-08-27).
-                if rec.is_on() {
+                if rec.wants(t) {
                     let stacks = sample_stacks(
                         params, &rec_roster, t, &mut arc, &mut gal, &mut buff_stacks,
                         &ch_stacks, ch_buff_expiry, fire_rate_reload_expiry_seconds,
@@ -12100,17 +12154,6 @@ pub fn run_once_traced(
                         );
                     }
                 }
-                // …AND WHOSE IT WAS. Only worth recording once there is more
-                // than one body to tell apart.
-                if !others.is_empty() {
-                    r.note_body_damage(0, effective);
-                }
-                // THE BIGGEST SINGLE NUMBER the build produced, which is a
-                // headline the Pace block reports and not an aggregate: it is
-                // the one instance nothing averages away.
-                if effective > r.max_hit {
-                    r.max_hit = effective;
-                }
                 // THE ACCOUNT OF THIS HIT — written HERE because this is the
                 // one place every factor exists at the same time. Anywhere else
                 // and the list would be reconstructed, which is how a breakdown
@@ -12122,31 +12165,31 @@ pub fn run_once_traced(
                 // would be two things to keep in step.
                 let hit_steps: Vec<crate::record::Step> = if rec.is_on() {
                     vec![
-                        ("body part", part_factor),
-                        ("critical", crit_multiplier),
-                        ("Condition Overload bracket", bucket),
-                        ("faction", params.faction_at_time(t)),
-                        ("arcane (final)", arc_final),
-                        ("attrition", attrition),
-                        ("Warframe ability", params.ability_final_at(t)),
-                        ("beam ramp", beam_ramp),
+                        (crate::record::Factor::BodyPart, part_factor),
+                        (crate::record::Factor::Critical, crit_multiplier),
+                        (crate::record::Factor::ConditionOverload, bucket),
+                        (crate::record::Factor::Faction, params.faction_at_time(t)),
+                        (crate::record::Factor::ArcaneFinal, arc_final),
+                        (crate::record::Factor::Attrition, attrition),
+                        (crate::record::Factor::WarframeAbility, params.ability_final_at(t)),
+                        (crate::record::Factor::BeamRamp, beam_ramp),
                         // DOUBLE TAP and SYNTH CHARGE were applied and
                         // never listed, which is the exact failure a ledger
                         // exists to catch — it only slipped because both are
                         // 1.0 in every build the check had run.
                         // `check_combat_record` asks it of EVERY row now.
-                        ("Double Tap", dt_mult),
-                        ("Synth Charge", sc_mult),
-                        ("Chamber (first round)", cc_mult),
-                        ("sniper combo", combo_mult),
-                        ("multishot-as-damage", ms_damage),
-                        ("multishot-generated", pm_mult),
+                        (crate::record::Factor::DoubleTap, dt_mult),
+                        (crate::record::Factor::SynthCharge, sc_mult),
+                        (crate::record::Factor::ChamberFirstRound, cc_mult),
+                        (crate::record::Factor::SniperCombo, combo_mult),
+                        (crate::record::Factor::MultishotAsDamage, ms_damage),
+                        (crate::record::Factor::MultishotGenerated, pm_mult),
                         // DISTANCE. Listed even when it is 1.0 — this
                         // ledger keeps a factor of exactly 1.0 rather
                         // than dropping it, because "falloff ×1.00" is
                         // the answer to "why does range not hurt me"
                         // and a missing line is not.
-                        ("damage falloff", falloff),
+                        (crate::record::Factor::DamageFalloff, falloff),
                     ]
                 } else {
                     Vec::new()
@@ -12370,6 +12413,7 @@ pub fn run_once_traced(
                         },
                         &breakdown, settled,
                         Some(&debuffs),
+                        ledger::Clock::Hit,
                         || Instance {
                             // WHICH PELLET OF THE PULL THIS WAS. The first is the one
                             // the trigger would have fired with no multishot at all;
@@ -12403,11 +12447,11 @@ pub fn run_once_traced(
                             // deriving it from the panel (owner, 2026-08-27).
                             base_from: stage_mb,
                             base_steps: vec![
-                                ("element bracket + quantization",
+                                (crate::record::Factor::ElementBracketQuantized,
                                     if stage_mb > 0.0 { pre_ability_total / stage_mb } else { 1.0 }),
-                                ("Warframe ability element",
+                                (crate::record::Factor::WarframeAbilityElement,
                                     if pre_ability_total > 0.0 { qvec.total() / pre_ability_total } else { 1.0 }),
-                                ("merged beams", beam_merge),
+                                (crate::record::Factor::MergedBeams, beam_merge),
                             ],
                             // …AND WHAT THE CRIT FACTOR IS MADE OF:
                             // `1 + tier x (crit damage - 1)`, which is a
@@ -13238,7 +13282,7 @@ pub fn replay(params: &DummyParams, rng_state: u64, frames: usize) -> Replay {
     // Two runs of one engagement, against 400 series on the wire.
     let scout = run_once(params, &mut Rng::new(rng_state));
     let mut ranked: Vec<(usize, f64)> = (1..=params.others.len())
-        .map(|i| (i, scout.damage_by_body.0[i]))
+        .map(|i| (i, scout.spread.by_body().0[i]))
         .filter(|(_, d)| *d > 0.0)
         .collect();
     ranked.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal).then(a.0.cmp(&b.0)));
@@ -13729,7 +13773,7 @@ pub fn shard(
         a.max = a.max.max(r.total_damage());
         a.effective += r.effective_damage();
         a.effective_sq += r.effective_damage() * r.effective_damage();
-        a.dot += r.dot_damage;
+        a.dot += r.meter.dot();
         a.procs += u64::from(r.procs);
         a.field_ticks += u64::from(r.field_ticks);
         a.dot_ticks += u64::from(r.dot_ticks);
@@ -13743,8 +13787,8 @@ pub fn shard(
         a.max_kills = a.max_kills.max(r.kills);
         a.downtime += r.downtime_seconds;
         a.first_magazine += r.first_magazine_damage;
-        a.max_hit_sum += r.max_hit;
-        a.biggest = a.biggest.max(r.max_hit);
+        a.max_hit_sum += r.meter.max_hit();
+        a.biggest = a.biggest.max(r.meter.max_hit());
         if let Some(at) = r.first_kill_at {
             a.ttks.push(at);
         }
@@ -13755,7 +13799,7 @@ pub fn shard(
         a.crit_tier_sum += u64::from(r.crit_tier_sum);
         a.headshots += u64::from(r.headshots);
         add_sources(&mut a.sources, &r.sources);
-        for (acc, v) in a.by_body.iter_mut().zip(r.damage_by_body.0) {
+        for (acc, v) in a.by_body.iter_mut().zip(r.spread.by_body().0) {
             *acc += v;
         }
     }
@@ -14363,7 +14407,7 @@ mod tests {
         let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
         let r = run_once(&p, &mut Rng::new(0x5EED));
 
-        let bodies: f64 = r.damage_by_body.0.iter().sum();
+        let bodies: f64 = r.spread.by_body().0.iter().sum();
         let meter = r.sources.direct + r.sources.radial + r.sources.field
             + r.sources.arcane_on_status + r.sources.extra_hit + r.sources.syndicate
             + r.sources.status.iter().sum::<f64>();
@@ -14465,7 +14509,7 @@ mod tests {
             arena.aim_at = Some(crate::space::Vec2::new(aim_x, 10.0));
             let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
             let r = run_once(&p, &mut Rng::new(0x5EED));
-            r.damage_by_body.0.get(1).copied().unwrap_or(0.0)
+            r.spread.by_body().0.get(1).copied().unwrap_or(0.0)
         };
 
         let on_target = bystander_damage(0.0);
@@ -14975,7 +15019,7 @@ mod tests {
             .collect();
         let p = DummyParams::from_panel(&panel, &arena, &crate::arcanes_data::ArcaneFx::none());
         let r = run_once(&p, &mut Rng::new(0x5EED));
-        let d = &r.damage_by_body.0;
+        let d = &r.spread.by_body().0;
         assert!(d[1] > 0.0 && d[2] > 0.0, "both are inside the radius: {:?}", &d[..3]);
         assert!(
             d[2] < d[1] * 0.9,
@@ -15017,7 +15061,7 @@ mod tests {
             p
         };
         let r = run_once(&build(vec![DamageType::Blast]), &mut Rng::new(0x5EED));
-        let d = &r.damage_by_body.0;
+        let d = &r.spread.by_body().0;
         assert!(d[0] > 0.0, "the host takes the single-target half");
         assert!(d[1] > 0.0, "the body 3 m away takes the detonation: {:?}", &d[..3]);
         assert_eq!(d[2], 0.0, "20 m is outside the 5 m radius: {:?}", &d[..3]);
@@ -15025,7 +15069,7 @@ mod tests {
         // THE CONTROL: Impact stacks the same way and reaches nobody, so this
         // is Blast's own mechanic rather than any full stack bar detonating.
         let imp = run_once(&build(vec![DamageType::Impact]), &mut Rng::new(0x5EED));
-        assert_eq!(imp.bodies_touched(), 1, "{:?}", &imp.damage_by_body.0[..3]);
+        assert_eq!(imp.spread.touched(), 1, "{:?}", &imp.spread.by_body().0[..3]);
     }
 
     /// A GAS CLOUD OUTLIVES ITS HOST; EVERY OTHER DoT DIES WITH IT.
@@ -15117,7 +15161,7 @@ mod tests {
         };
         for element in ["gas", "electricity"] {
             let r = run_once(&build(element), &mut Rng::new(0x5EED));
-            let d = &r.damage_by_body.0;
+            let d = &r.spread.by_body().0;
             assert!(d[0] > 0.0, "{element}: the aimed body");
             assert!(
                 d[1] > 0.0 && d[2] > 0.0,
@@ -15134,7 +15178,7 @@ mod tests {
         // says this is the ELEMENT's mechanic and not the engine spreading
         // every DoT it has.
         let r = run_once(&build("toxin"), &mut Rng::new(0x5EED));
-        assert_eq!(r.bodies_touched(), 1, "{:?}", &r.damage_by_body.0[..5]);
+        assert_eq!(r.spread.touched(), 1, "{:?}", &r.spread.by_body().0[..5]);
     }
 
     /// WHAT THE WARFRAME BRINGS REACHES THE NUMBER — both halves, and they are
@@ -15262,7 +15306,7 @@ mod tests {
             let r = run_once(&build(head), &mut Rng::new(0x5EED));
             // EVERY BODY BUT THE AIMED ONE: the aimed body's own multiplier is
             // the thing being pinned, so counting it would measure the pin.
-            (r.damage_by_body.0[1..4].iter().sum::<f64>(), r.bodies_touched())
+            (r.spread.by_body().0[1..4].iter().sum::<f64>(), r.spread.touched())
         };
         let (body, nb) = dmg(false);
         let (heads, nh) = dmg(true);
@@ -15320,8 +15364,8 @@ mod tests {
         for (pt, want) in [(0.0, 1), (0.4, 1), (0.5, 2), (1.0, 3), (2.0, 5)] {
             let r = run_once(&build(4, pt), &mut Rng::new(0x5EED));
             assert_eq!(
-                r.bodies_touched(), want,
-                "{pt} m of punch through: {:?}", &r.damage_by_body.0[..5]
+                r.spread.touched(), want,
+                "{pt} m of punch through: {:?}", &r.spread.by_body().0[..5]
             );
         }
         // …AND ONLY ALONG THE LINE. Punch through penetrates what is in FRONT
@@ -15333,7 +15377,7 @@ mod tests {
             body_parts: DummyParams::humanoid_parts(),
             at: crate::space::Vec2::new(6.0, 4.0),
         }];
-        assert_eq!(run_once(&side, &mut Rng::new(0x5EED)).bodies_touched(), 1);
+        assert_eq!(run_once(&side, &mut Rng::new(0x5EED)).spread.touched(), 1);
     }
 
     /// AN AoE ATTACK TAKES NO PUNCH THROUGH, from its weapon or from a mod.
@@ -15415,24 +15459,24 @@ mod tests {
         };
         // EIGHT BODIES ON THE FLOOR, four tendrils up: five take damage.
         let r = run_once(&build(8, 4), &mut Rng::new(0x5EED));
-        assert_eq!(r.bodies_touched(), 5, "{:?}", &r.damage_by_body.0[..9]);
+        assert_eq!(r.spread.touched(), 5, "{:?}", &r.spread.by_body().0[..9]);
         // …and it is the AIMED one plus the four nearest the reticle, in order.
-        assert!(r.damage_by_body.0[0] > 0.0, "the beam's own body");
-        assert!(r.damage_by_body.0[1..=4].iter().all(|d| *d > 0.0), "the four tendrils");
-        assert!(r.damage_by_body.0[5..=8].iter().all(|d| *d == 0.0), "and nobody else");
+        assert!(r.spread.by_body().0[0] > 0.0, "the beam's own body");
+        assert!(r.spread.by_body().0[1..=4].iter().all(|d| *d > 0.0), "the four tendrils");
+        assert!(r.spread.by_body().0[5..=8].iter().all(|d| *d == 0.0), "and nobody else");
 
         // FEWER TENDRILS REACH FEWER BODIES, one for one — which is what says
         // the count is the tendrils' and not the formation's.
         for up in 0..=4u32 {
             assert_eq!(
-                run_once(&build(8, up), &mut Rng::new(0x5EED)).bodies_touched(),
+                run_once(&build(8, up), &mut Rng::new(0x5EED)).spread.touched(),
                 1 + up as usize,
                 "{up} tendrils"
             );
         }
         // …AND A SHORT FORMATION IS NOT PADDED: two bodies is two, however many
         // tendrils are up.
-        assert_eq!(run_once(&build(1, 4), &mut Rng::new(0x5EED)).bodies_touched(), 2);
+        assert_eq!(run_once(&build(1, 4), &mut Rng::new(0x5EED)).spread.touched(), 2);
     }
 
     /// A CONE IS SPELLED ONE WAY. Ten entries carried BOTH a parsed
@@ -17713,7 +17757,7 @@ mod tests {
         let crowd = |n: usize| {
             let p = latron_incarnon_in_a_line(n, 0.5);
             let out = run_once(&p, &mut Rng::new(0x5EED));
-            (out.bodies_touched(), out.effective_damage())
+            (out.spread.touched(), out.effective_damage())
         };
         let (one, dmg_one) = crowd(0);
         assert_eq!(one, 1, "a formation of one bounces nowhere — no terrain here");
@@ -21067,7 +21111,7 @@ mod tests {
             "100% radial SC = exactly one proc per landed explosion"
         );
         assert!(
-            loud.dot_damage > 0.0,
+            loud.meter.dot() > 0.0,
             "the explosion's Heat procs must burn on their own"
         );
         assert_eq!(quiet.shots, loud.shots, "status does not change the cadence");
@@ -22136,6 +22180,56 @@ mod tests {
     /// Slash bleed and a Heat burn, so the stream is exercising the direct
     /// path, the status path and the consolidated-tick path at once rather than
     /// proving the property about one of them.
+    /// THE DAMAGE METER'S PARTS ADD UP TO THE WHOLE.
+    ///
+    /// `SourceDamage` is the one family of aggregates that did NOT go behind
+    /// `ledger`'s door, and this is why it did not have to. The totals are one
+    /// question with one answer, so a private field and a single `book` closes
+    /// them; the buckets are EIGHT differently shaped answers — two of them
+    /// split a whole damage VECTOR across a faction column — so a descriptor
+    /// carrying all of that to `settle` would move the shapes rather than
+    /// remove them (2026-08-28).
+    ///
+    /// What the door would have guaranteed, this asserts: every instance is
+    /// credited to exactly one bucket, so a site that books damage and forgets
+    /// its bucket shows up as parts that no longer sum to the whole. The
+    /// fixture is deliberately busy — multishot, crits, a weak point, a Slash
+    /// bleed, a Heat burn and an explosion — so the direct, radial and status
+    /// paths are all live rather than one of them.
+    #[test]
+    fn the_damage_meters_parts_add_up_to_the_whole() {
+        let mut p = DummyParams {
+            forced_procs: vec![DamageType::Slash, DamageType::Heat],
+            radial: Some(radial_of(1.0, 0.0)),
+            ..bare(DamageType::Slash)
+        };
+        p.base_crit_chance = 0.5;
+        p.crit_multiplier = 2.0;
+        p.multishot = 2.4;
+
+        let r = run_once(&p, &mut Rng::new(0x5EED));
+        let s = &r.sources;
+        let parts = s.direct
+            + s.radial
+            + s.field
+            + s.arcane_on_status
+            + s.extra_hit
+            + s.syndicate
+            + s.status.iter().sum::<f64>();
+        let whole = r.effective_damage();
+        assert!(whole > 0.0, "the fixture deals damage");
+        // IT GRADES ITS OWN COVERAGE. A conservation test passes perfectly on a
+        // bucket the fixture never fills, which is how the first version of it
+        // survived having `sources.radial` deleted (2026-08-28).
+        assert!(s.direct > 0.0, "the fixture lands direct hits");
+        assert!(s.radial > 0.0, "…and explosions: {}", s.radial);
+        assert!(s.status.iter().sum::<f64>() > 0.0, "…and burns");
+        assert!(
+            (parts - whole).abs() <= 1e-6 * whole,
+            "the meter's parts sum to {parts} and the run dealt {whole} — a              damage site booked its number and not its bucket"
+        );
+    }
+
     #[test]
     fn the_record_adds_up_to_the_damage_total() {
         let mut p = DummyParams {
@@ -25577,7 +25671,7 @@ mod debilitate_attrition_tests {
                     }
                     p.noncrit_bonus = attrition.then_some((1.0, 20.0));
                     let mut rng = crate::rng::Rng::new(seed);
-                    run_once(&p, &mut rng).dot_damage
+                    run_once(&p, &mut rng).meter.dot()
                 })
                 .sum::<f64>()
         };
@@ -25628,7 +25722,7 @@ mod debilitate_attrition_tests {
                         .with(DamageType::Corrosive, total);
                     p.noncrit_bonus = Some((0.5, 20.0));
                     let mut rng = crate::rng::Rng::new(seed + k);
-                    run_once(&p, &mut rng).dot_damage
+                    run_once(&p, &mut rng).meter.dot()
                 })
                 .sum::<f64>()
         };
@@ -25696,7 +25790,7 @@ mod debilitate_attrition_tests {
                         .with(DamageType::Corrosive, tot);
                     p.noncrit_bonus = attrition.then_some((0.5, 20.0));
                     let mut rng = crate::rng::Rng::new(seed);
-                    run_once(&p, &mut rng).dot_damage
+                    run_once(&p, &mut rng).meter.dot()
                 })
                 .sum::<f64>()
         };
@@ -25897,7 +25991,7 @@ mod warframe_ability_tests {
             // the reading.
             p.fire_rate = 0.02;
             p.duration_seconds = 30.0;
-            run_once(&p, &mut crate::rng::Rng::new(3)).dot_damage
+            run_once(&p, &mut crate::rng::Rng::new(3)).meter.dot()
         };
         let none = bleed(Some(0.0));
         let whole = bleed(None);
@@ -25932,7 +26026,7 @@ mod warframe_ability_tests {
             p.target.base_health = 1e15;
             p.fire_rate = 0.02;
             p.duration_seconds = 30.0;
-            run_once(&p, &mut crate::rng::Rng::new(3)).dot_damage
+            run_once(&p, &mut crate::rng::Rng::new(3)).meter.dot()
         };
         let e_whole = ebleed(None);
         let e_brief = ebleed(Some(2.0));
@@ -25968,7 +26062,7 @@ mod warframe_ability_tests {
             p.status_chance = 1.0;
             p.base_status_chance = 1.0;
             p.target.base_health = 1e15;
-            run_once(&p, &mut crate::rng::Rng::new(3)).dot_damage
+            run_once(&p, &mut crate::rng::Rng::new(3)).meter.dot()
         };
         // A base large enough that the accumulator is below the tolerance.
         let big = 1e9;
@@ -26308,7 +26402,7 @@ mod warframe_ability_tests {
         p.status_chance = 0.0;
         p.forced_procs = vec![DamageType::Slash];
         let r = run_once(&p, &mut crate::rng::Rng::new(3));
-        assert!(r.dot_damage > 0.0, "the bleed has to be ticking for this to mean anything");
+        assert!(r.meter.dot() > 0.0, "the bleed has to be ticking for this to mean anything");
         // Only the hits paid one, so the ratio is the plain 0.26 x faction —
         // exactly as if the DoT were not there.
         let ratio = r.sources.extra_hit / r.sources.direct;
@@ -26612,7 +26706,7 @@ mod fortifier_tick_tests {
     fn the_arcane_multiplies_a_status_tick_exactly_once() {
         let dot = |og: f64, mult: f64| {
             let mut rng = crate::rng::Rng::new(4);
-            run_once(&bleeder(og, mult), &mut rng).dot_damage
+            run_once(&bleeder(og, mult), &mut rng).meter.dot()
         };
         // A pool deep enough that it survives the run, so every tick lands on
         // Overguard and the ratio is the multiplier itself.
@@ -26669,10 +26763,10 @@ mod overguard_status_tests {
         p.target.base_health = 1e15;
         let r = run_once(&p, &mut crate::rng::Rng::new(7));
         assert!(r.procs > 0, "the status has to land at all");
-        assert!(r.dot_damage > 0.0, "and its ticks have to do damage");
+        assert!(r.meter.dot() > 0.0, "and its ticks have to do damage");
         // UNMITIGATED: Overguard has no armor, so the tick keeps its full
         // value. At 2700 armor a tick that had landed on health would keep 10%.
-        let ticks = r.dot_damage / 35.0; // Slash is 35% of ModifiedBase (100)
+        let ticks = r.meter.dot() / 35.0; // Slash is 35% of ModifiedBase (100)
         assert!(ticks > 5.0, "ticks came out mitigated: {:.1}", ticks);
     }
 }

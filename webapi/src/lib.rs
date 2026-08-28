@@ -5539,11 +5539,18 @@ pub fn log_json(v: &Value) -> Value {
     // belongs to nobody, so it belongs in every body's timeline (owner,
     // 2026-08-27).
     let only = v.get("body").and_then(Value::as_u64).map(|b| b as u16);
+    // WHAT REPEATS IS SENT ONCE. The weapon's state is identical on every row
+    // of a trigger pull and usually across several; the two stack lists change
+    // only when something is applied or expires. A row that OMITS one means
+    // "the same as the row before", and the page fills it forward — which is
+    // the other half of the 17.2 MB above, and is exact rather than lossy
+    // because the previous value is on the wire either way (2026-08-28).
+    let mut carry = Carry::default();
     let events: Vec<Value> = rec
         .events()
         .iter()
         .filter(|e| only.is_none_or(|b| e.subject.is_none_or(|s| s == b)))
-        .map(event_json)
+        .map(|e| event_json(e, &mut carry))
         .collect();
     json!({
         "ok": true,
@@ -5556,6 +5563,13 @@ pub fn log_json(v: &Value) -> Value {
         // THE TWO ROSTERS the rows' stack lists index into: the shooter's, whose
         // ids are the buff cards' own, and the target's, which is a constant of
         // the engine.
+        // THE FACTOR TABLE, once. A row names the factors it was built from by
+        // their INDEX here, because a row carries the ones that did nothing by
+        // name too — thirteen of them on an ordinary rifle hit, the same
+        // thirteen strings on every row of the fight. Measured before this: 859
+        // bytes an event, 17.2 MB for a 20,000-row window (2026-08-28).
+        "factors": wfsim_engine::record::Factor::ALL
+            .iter().map(|f| f.name()).collect::<Vec<_>>(),
         "buffs": rec.buffs(),
         "debuffs": wfsim_engine::dummy::DEBUFF_ROSTER
             .iter().map(|(id, _)| *id).collect::<Vec<_>>(),
@@ -5565,12 +5579,31 @@ pub fn log_json(v: &Value) -> Value {
 
 /// One event, on the wire. Written by hand rather than derived: the enum's
 /// shape is the ENGINE's business and the page joins on names it can translate.
-fn event_json(e: &wfsim_engine::record::Event) -> Value {
+/// WHAT THE LAST ROW ALREADY SAID, so this one can leave it out.
+#[derive(Default)]
+struct Carry {
+    weapon: Option<Value>,
+    buffs: Option<Value>,
+    debuffs: Option<Value>,
+}
+
+impl Carry {
+    /// Emit `v` under `key` only if it differs from the last one sent. The
+    /// comparison is on the SERIALIZED value, so "unchanged" means what a
+    /// reader filling forward would reconstruct, not what the engine thinks.
+    fn once(&mut self, m: &mut serde_json::Map<String, Value>, key: &str, v: Value,
+            slot: fn(&mut Carry) -> &mut Option<Value>) {
+        if slot(self).as_ref() == Some(&v) {
+            return;
+        }
+        *slot(self) = Some(v.clone());
+        m.insert(key.into(), v);
+    }
+}
+
+fn event_json(e: &wfsim_engine::record::Event, carry: &mut Carry) -> Value {
     use wfsim_engine::record::Kind;
-    let mut o = json!({
-        "id": e.id,
-        "t": (e.t * 1000.0).round() / 1000.0,
-        "weapon": {
+    let weapon = json!({
             "form": if e.weapon.transmuted { "transmuted" } else { "base" },
             "magazine": e.weapon.magazine,
             "magazine_max": e.weapon.magazine_max,
@@ -5584,9 +5617,13 @@ fn event_json(e: &wfsim_engine::record::Event) -> Value {
             // THE INCARNON GAUGE, `null` on a weapon with no cycle. It starts
             // EMPTY, which is the model's own rule and was nowhere on screen.
             "gauge": e.weapon.gauge.map(|(at, of)| json!([at, of])),
-        },
+    });
+    let mut o = json!({
+        "id": e.id,
+        "t": (e.t * 1000.0).round() / 1000.0,
     });
     let m = o.as_object_mut().expect("object");
+    carry.once(m, "weapon", weapon, |c| &mut c.weapon);
     if let Some(s) = e.subject {
         m.insert("body".into(), json!(s));
     }
@@ -5645,7 +5682,7 @@ fn event_json(e: &wfsim_engine::record::Event) -> Value {
             m.insert("steps".into(), json!(steps_json(&live)));
             if !inert.is_empty() {
                 m.insert("steps_inert".into(),
-                    json!(inert.iter().map(|(k, _)| *k).collect::<Vec<_>>()));
+                    json!(inert.iter().map(|(k, _)| k.index()).collect::<Vec<_>>()));
             }
             m.insert("raw".into(), json!(r1(d.raw)));
             m.insert("mitigation".into(),
@@ -5661,9 +5698,9 @@ fn event_json(e: &wfsim_engine::record::Event) -> Value {
                 // the claim gets checked.
                 "shield_gate_until": d.before.shield_gate_until.map(r1),
             }));
-            m.insert("debuffs".into(), json!(d.debuffs));
+            carry.once(m, "debuffs", json!(d.debuffs), |c| &mut c.debuffs);
             // …AND THE SHOOTER'S OWN SIDE, positional against `buffs` below.
-            m.insert("buffs".into(), json!(d.buffs));
+            carry.once(m, "buffs", json!(d.buffs), |c| &mut c.buffs);
             if !d.procs.is_empty() {
                 m.insert(
                     "procs".into(),
@@ -5720,7 +5757,7 @@ fn event_json(e: &wfsim_engine::record::Event) -> Value {
 /// ORDER is the information: the factors are listed in the order the engine
 /// applies them, and a JSON object does not promise one.
 fn steps_json(steps: &[&wfsim_engine::record::Step]) -> Vec<Value> {
-    steps.iter().map(|(k, v)| json!([k, r3(*v)])).collect()
+    steps.iter().map(|(k, v)| json!([k.index(), r3(*v)])).collect()
 }
 
 fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Value {
