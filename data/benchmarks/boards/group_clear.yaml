@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 3425
-engine: ee33635e503c786babb32fa45d337372f863877b
+submissions: 3440
+engine: e0a212b8de95b97d892fe7eb20c0fe34f2a5f03d
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -1455,6 +1455,17 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, incendiary_coat, blaze]
     arcanes: [primary_crux]
     valence: magnetic
+  - weapon: coda_bassocyst
+    mode: base
+    score: 98.9703543394584
+    fp: c31f89d5cd05448a
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_elementalist, riven, primed_charged_shell]
+    arcanes: [primary_crux]
+    valence: electricity
+    riven:
+      bonuses: [critical_damage, fire_rate, status_chance]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: coda_bubonico
     mode: base
     score: 99.36543669317685
@@ -2131,6 +2142,18 @@ entries:
     score: 4.283512623201606
     fp: 36e885839e66533c
     mods: [primary_acuity, serration, galvanized_aptitude, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, infected_clip]
+    arcanes: [primary_deadhead]
+  - weapon: fulmin_prime
+    mode: base
+    score: 2.996780688215017
+    fp: ace5a0aa69fd70ee
+    mods: [primary_acuity, serration, hammer_shot, vile_acceleration, vital_sense, stormbringer, infected_clip, hellfire]
+    arcanes: [primary_deadhead]
+  - weapon: fulmin_prime
+    mode: base
+    score: 2.166282257070439
+    fp: 64003fa34a429a3f
+    mods: [heavy_caliber, primary_acuity, serration, hammer_shot, vile_acceleration, vital_sense, primed_cryo_rounds, malignant_force]
     arcanes: [primary_deadhead]
   - weapon: furis
     mode: cycle
@@ -3517,6 +3540,18 @@ entries:
     mods: [galvanized_chamber, primed_firestorm, serration, nightwatch_napalm, semi_rifle_cannonade, magnetic_capacity, primed_cryo_rounds, malignant_force]
     arcanes: [primary_crux]
     valence: heat
+  - weapon: kuva_ogris
+    mode: base
+    score: 0.390432224400812
+    fp: 7d2eda003859f0b6
+    exilus: ammo_drum
+    mods: [galvanized_chamber, primed_firestorm, galvanized_aptitude, magnetic_capacity, riven, stormbringer, infected_clip, hellfire]
+    arcanes: [primary_merciless]
+    valence: heat
+    riven:
+      bonuses: [damage, fire_rate]
+      malus: magazine_capacity
+      rolls: [1.1, 0.9, 0.9]
   - weapon: kuva_sobek
     mode: base
     score: 4.529771031165037
