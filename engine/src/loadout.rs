@@ -333,6 +333,13 @@ pub enum ModEffect {
         per_stack: f64,
         max_stacks: u32,
         duration: f64,
+        /// Does it open at full stacks?
+        ///
+        /// TRUE FOR MELEE'S CONDITION OVERLOAD, which is the original and is
+        /// unconditional; false for the Galvanized family, which earns the same
+        /// payload on a kill. The difference is a trigger, and a card with none
+        /// that waits for one pays nothing for the whole fight.
+        starts_full: bool,
     },
     /// Galvanized Crosshairs' single refreshable buff: on HEADSHOT,
     /// +bonus relative crit chance (while aiming) for `duration`.
@@ -482,6 +489,17 @@ pub enum ModEffect {
     /// HEAVY ATTACK DAMAGE (Killing Blow's `+120% Melee Damage on Heavy
     /// Attack`), paid only on a form that spends the combo counter.
     HeavyAttackDamage(f64),
+    /// A CRIT-CHANCE CARD THAT READS x2 ON A HEAVY ATTACK.
+    ///
+    /// `+120% Critical Chance (x2 for Heavy Attacks)` is True Steel's own card,
+    /// and Sacrificial Steel and Galvanized Steel say the same. It is a
+    /// property of the CARD rather than of the bucket: Blood Rush is in the same
+    /// bracket and says nothing of the kind, so doubling the bracket would
+    /// double a mod the game does not.
+    ///
+    /// It is the ordinary crit bucket, added TWICE on a heavy form — which is
+    /// what "x2" means for a term inside `base x (1 + this + that)`.
+    CritChanceHeavyDoubled(f64),
     /// CRIT CHANCE ON A SLIDE ATTACK ALONE (Maiming Strike's `+150% Critical
     /// Chance for Slide Attack`).
     ///
@@ -1068,6 +1086,10 @@ impl ModEffect {
             ComboCountChance(v) => format!(
                 "+{} chance of an extra melee combo point per landed hit", pct(v)
             ),
+            CritChanceHeavyDoubled(v) => format!(
+                "+{} critical chance, and +{} on a heavy attack — the card's own x2",
+                pct(v), pct(v * 2.0)
+            ),
             CritChanceOnSlide(v) => format!(
                 "+{} critical chance on a SLIDE attack, and nothing on any other swing",
                 pct(v)
@@ -1113,7 +1135,15 @@ impl ModEffect {
             OnKillMultishot { per_stack, max_stacks, duration } => {
                 format!("On Kill: {} Multishot per stack ×{max_stacks}, {duration}s", pct(per_stack))
             }
-            ConditionOverload { per_stack, max_stacks, duration } => {
+            // TWO SENTENCES FOR TWO CARDS, because they are two mechanics that
+            // share a payload: melee's Condition Overload is unconditional and
+            // the Galvanized family earns the same term on a kill.
+            ConditionOverload { per_stack, max_stacks, starts_full: true, .. } => format!(
+                "{} Damage per status type on the target, on direct hits{}",
+                pct(per_stack * f64::from(max_stacks)),
+                ""
+            ),
+            ConditionOverload { per_stack, max_stacks, duration, .. } => {
                 format!(
                     "On Kill: {} Damage per status type ×{max_stacks}, {duration}s (direct hits)",
                     pct(per_stack)
@@ -3982,6 +4012,15 @@ pub fn resolve_for(
                 // relative crit bucket, but only on the form that IS a slide —
                 // which is a question `resolve` can answer and the fight loop
                 // would have to ask again on every swing.
+                // …AND THE ONE THAT DOUBLES ON A HEAVY. The card's own words,
+                // so it is the card that carries the rule — Blood Rush sits in
+                // the same bracket and does not double.
+                ModEffect::CritChanceHeavyDoubled(v) => {
+                    cc += v;
+                    if base.form.is_heavy() {
+                        cc += v;
+                    }
+                }
                 ModEffect::CritChanceOnSlide(v) => {
                     if base.form == crate::weapons_data::FormKind::Slide {
                         cc += v;
@@ -4059,6 +4098,7 @@ pub fn resolve_for(
                     per_stack,
                     max_stacks,
                     duration,
+                    starts_full,
                 } => match policy {
                     StackPolicy::AssumedMax => co += per_stack * max_stacks as f64,
                     StackPolicy::Emergent => {
@@ -4066,7 +4106,25 @@ pub fn resolve_for(
                             per_stack,
                             max_stacks,
                             duration,
-                            initial_stacks: 0, // EARNED — docs/BUFFS.md §Activation policy
+                            // EARNED — docs/BUFFS.md §Activation policy — UNLESS
+                            // the card has nothing to earn.
+                            //
+                            // MELEE'S CONDITION OVERLOAD IS THE ORIGINAL and it
+                            // is unconditional: no kill, no stacks, no clock,
+                            // just the target's status count read on every
+                            // swing. The Galvanized family spells the same
+                            // PAYLOAD as a buff earned on a kill, and routing
+                            // melee's through that made it pay nothing at all —
+                            // it waited for a trigger it does not have, in all
+                            // seven modes (2026-08-29).
+                            //
+                            // NOT DERIVED FROM `duration == NO_TIMEOUT`, which
+                            // would have been the cheap test and is wrong:
+                            // LOCKING a buff card writes exactly that duration,
+                            // and locking "removes the expiry and nothing else
+                            // — the count still starts where the card sets it"
+                            // (user, 2026-08-02).
+                            initial_stacks: if starts_full { max_stacks } else { 0 },
                         })
                     }
                     StackPolicy::BaseOnly => {} // sentinel: conditional never fires
@@ -6720,6 +6778,7 @@ mod tests {
                         per_stack: 0.40,
                         max_stacks: 3,
                         duration: 14.0,
+                        starts_full: false,
                     },
                 ],
             ),

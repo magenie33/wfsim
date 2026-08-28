@@ -10554,6 +10554,93 @@ mod melee {
     }
 
 
+
+    /// **A CRIT CARD THAT READS x2 ON A HEAVY IS DOUBLED THERE AND NOWHERE
+    /// ELSE**, and the card carries the rule rather than the bucket.
+    ///
+    /// `+120% Critical Chance (x2 for Heavy Attacks)` is True Steel's own text,
+    /// and Sacrificial Steel and Galvanized Steel say the same. BLOOD RUSH IS
+    /// IN THE SAME BRACKET AND SAYS NOTHING OF THE KIND — which is why doubling
+    /// the bracket would have been wrong, and why this is asserted as a PAIR.
+    #[test]
+    fn a_crit_card_that_says_x2_on_a_heavy_is_doubled_only_there() {
+        let cc = |form: &str, mods: &[&str]| {
+            let base = crate::loadout::WeaponBase::from_data(form, false, &[]);
+            let pool = crate::mods_data::pool_for_weapon(form);
+            let refs: Vec<&crate::loadout::ModDef> =
+                mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
+            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent).crit_chance
+        };
+        // 20% base. `20 x (1 + 1.20)` is 44%, and doubled it is `20 x (1 + 2.40)`
+        // = 68% — the card's own arithmetic, on the two forms that spend combo.
+        assert!((cc("magistar", &["true_steel"]) - 0.44).abs() < 1e-9);
+        assert!((cc("magistar_slide", &["true_steel"]) - 0.44).abs() < 1e-9);
+        assert!((cc("magistar_heavy", &["true_steel"]) - 0.68).abs() < 1e-9);
+        assert!((cc("magistar_heavy_slam", &["true_steel"]) - 0.68).abs() < 1e-9);
+        // …AND BLOOD RUSH IS NOT DOUBLED. It reads the combo counter live, so
+        // the panel shows the weapon's own 20% either way — which is exactly
+        // the assertion: whatever the form, this card changed nothing here.
+        assert!((cc("magistar", &["blood_rush"]) - 0.20).abs() < 1e-9);
+        assert!((cc("magistar_heavy", &["blood_rush"]) - 0.20).abs() < 1e-9);
+    }
+
+    /// MAIMING STRIKE NAMES THE SLIDE, and nothing else is a slide.
+    #[test]
+    fn maiming_strike_pays_the_slide_and_no_other_swing() {
+        let cc = |form: &str| {
+            let base = crate::loadout::WeaponBase::from_data(form, false, &[]);
+            let pool = crate::mods_data::pool_for_weapon(form);
+            let refs: Vec<&crate::loadout::ModDef> =
+                pool.iter().filter(|m| m.id == "maiming_strike").collect();
+            crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent).crit_chance
+        };
+        // `20 x (1 + 1.50)` = 50% on the slide, and the weapon's own 20%
+        // everywhere else.
+        assert!((cc("magistar_slide") - 0.50).abs() < 1e-9, "{}", cc("magistar_slide"));
+        for f in ["magistar", "magistar_forward", "magistar_block", "magistar_heavy",
+                  "magistar_heavy_slam"] {
+            assert!((cc(f) - 0.20).abs() < 1e-9, "{f} took a slide-only card: {}", cc(f));
+        }
+    }
+
+    /// **CONDITION OVERLOAD IS UNCONDITIONAL, AND IT SKIPS A SLAM.**
+    ///
+    /// Two facts, one card, and this engine had the first one wrong for a day:
+    /// melee's Condition Overload was routed through the Galvanized family's
+    /// path, which EARNS the same payload on a kill and therefore opens at zero
+    /// stacks — so the most important mod in the melee pool paid exactly
+    /// nothing, in all seven modes. `starts_full` is the fix and this is what
+    /// pins it.
+    ///
+    /// THE SECOND FACT WAS ALREADY RIGHT and is asserted so it stays that way:
+    /// *"This damage does not apply to Slams, Heavy Slams, or Radial Attack
+    /// explosions"* — which falls out of `takes_condition_overload` defaulting
+    /// to false on an explosion, rather than being arranged.
+    ///
+    /// THE THREE MODES ARE THREE DIFFERENT ANSWERS and that is the point: a
+    /// light combo lands four swings a cycle into a target carrying statuses,
+    /// a heavy lands fewer, and a slam is a radial that takes none of it.
+    #[test]
+    fn condition_overload_pays_a_swing_and_never_a_slam() {
+        let gain = |form: &str| {
+            let with = magistar(
+                form, &["primed_fever_strike", "volcanic_edge", "condition_overload"], 60.0, None,
+            ).mean_damage;
+            let without =
+                magistar(form, &["primed_fever_strike", "volcanic_edge"], 60.0, None).mean_damage;
+            with / without
+        };
+        let light = gain("magistar");
+        let heavy = gain("magistar_heavy");
+        let slam = gain("magistar_heavy_slam");
+        assert!(light > 1.5, "Condition Overload bought a combo build x{light:.4}");
+        assert!(heavy > 1.1, "Condition Overload bought a heavy build x{heavy:.4}");
+        assert!(
+            (slam - 1.0).abs() < 1e-9,
+            "Condition Overload paid a SLAM x{slam:.6} — the card says it does not",
+        );
+    }
+
     /// THE COMBO LADDER, as the wiki publishes it: 2x at 20 hits, one more
     /// every 20, 12x at 220 and no further.
     ///

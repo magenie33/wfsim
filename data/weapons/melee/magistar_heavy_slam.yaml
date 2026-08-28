@@ -20,7 +20,6 @@ co_behavior: additive_with_base_damage
 unmodeled:
   - "melee CRITICAL CHANCE mods read x2 on a heavy attack — True Steel, Sacrificial Steel and Galvanized Steel all say so on their own cards — and this entry does not double them, so a crit build reads LOW in this mode"
   - "the slam's radius grows with the height it was dropped from — up to 150% at 15 m and down to a floor of 2.5m/radius — and this arena has no vertical axis, so the listed radius is what is used"
-  - "Condition Overload does not apply to slams, heavy slams or radial attacks (the mod's own words), and this entry does not yet exempt it — a build carrying Condition Overload therefore reads HIGH in this mode"
 attack:
   trigger: semi_auto
   shot_type: hit_scan

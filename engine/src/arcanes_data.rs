@@ -467,6 +467,19 @@ pub enum TennoStat {
     /// nothing in this fight damages the player, so the two are the same number
     /// for the whole engagement unless somebody types otherwise.
     Health,
+    /// Melee Retaliation: *"Gain 30% Melee Damage for every 200 current
+    /// Shields, up to 420%"*.
+    ///
+    /// CURRENT shields, and the arena's Tenno carries whatever the fight says —
+    /// which for the neutral player is ZERO, so the card pays nothing and the
+    /// panel says why. That is the honest answer rather than a broken gate:
+    /// Secondary Kinship reads the same way in a solo fight, and the difference
+    /// between "this reads a state you have not got" and "this does not work"
+    /// is exactly what `TennoScaled`'s own panel line exists to draw.
+    ///
+    /// THE OVERSHIELD HALF IS NOT MODELLED — *"Bonus halved for Overshields"* —
+    /// and the card says so.
+    Shields,
 }
 
 impl TennoStat {
@@ -476,6 +489,7 @@ impl TennoStat {
             TennoStat::Armor => "armor",
             TennoStat::MaxEnergy => "max energy",
             TennoStat::Health => "health",
+            TennoStat::Shields => "shields",
         }
     }
 
@@ -484,6 +498,7 @@ impl TennoStat {
             TennoStat::Armor => t.armor,
             TennoStat::MaxEnergy => t.energy,
             TennoStat::Health => t.health,
+            TennoStat::Shields => t.shield,
         }
     }
 }
@@ -787,6 +802,7 @@ fn effect(v: &Value) -> Option<ArcEffect> {
             stat: match s(v, "stat")? {
                 "armor" => TennoStat::Armor,
                 "max_energy" => TennoStat::MaxEnergy,
+                "shields" => TennoStat::Shields,
                 other => return inert(&format!("tenno stat {other}")),
             },
             above: f(v, "above").unwrap_or(0.0),
@@ -1190,6 +1206,7 @@ impl ArcaneDef {
                         TennoStat::Armor => "Warframe Armor",
                         TennoStat::MaxEnergy => "Warframe Max Energy",
                         TennoStat::Health => "Warframe Health",
+                        TennoStat::Shields => "Warframe Shields",
                     };
                     let past = if *above > 0.0 { format!(" past {above}") } else { String::new() };
                     let gate = if *min_energy_pct > 0.0 {

@@ -1,0 +1,16 @@
+id: melee_crescendo
+name: Melee Crescendo
+rarity: legendary
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/PermaComboOnFinisher
+description: "On Finisher Kill: Gain 6 Initial Combo for the rest of your mission"
+
+# Rank 0: On Finisher Kill: Gain 1 Initial Combo for the rest of your mission
+effects:
+  # +6 Initial Combo per FINISHER KILL, for the rest of the mission. A
+  # finisher is an animation this arena has no concept of, so the counter
+  # never opens.
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Melee_Crescendo

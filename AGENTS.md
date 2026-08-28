@@ -130,6 +130,23 @@ around (decision 2026-07-31).
   DERIVED durations exactly — 3.00 / 2.60 / 2.25 / 4.25 from the rendered
   table's two columns — which is what makes that derivation trustworthy for the
   stances past the point a module fetch truncates at.
+  CONDITION OVERLOAD PAID EXACTLY ZERO IN ALL SEVEN MELEE MODES until the audit
+  caught it, and the cause is worth keeping: melee's Condition Overload is the
+  ORIGINAL one and is unconditional — no kill, no stacks, no clock — and it was
+  routed through the GALVANIZED family's path, which earns the same PAYLOAD on a
+  kill and therefore opens at zero. It waited for a trigger it does not have, on
+  the single most important card in the melee pool. `starts_full` is the fix and
+  it is NOT derived from `duration == NO_TIMEOUT`, which would have been the
+  cheap test and is wrong: LOCKING a buff card writes exactly that duration, and
+  locking "removes the expiry and nothing else — the count still starts where
+  the card sets it" (user, 2026-08-02). Two cards sharing a payload are still
+  two cards.
+  A CRIT CARD THAT SAYS `(x2 for Heavy Attacks)` CARRIES THE RULE ITSELF, not
+  the bucket: True Steel, Sacrificial Steel and Galvanized Steel all print it
+  and Blood Rush sits in the same bracket and does not. Same for the three cards
+  that NAME an attack — Killing Blow on a heavy, Seismic Wave on a slam, Maiming
+  Strike on a slide — and the seven modes are what make each one checkable in
+  both directions.
   THE MELEE EXILUS SLOT PAYS NOTHING, and every one of its eleven cards says
   which of two reasons it is: seven are Tennokai (a window this engine does not
   model) and four are blocking and movement, which this arena has neither of.

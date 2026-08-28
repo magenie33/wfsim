@@ -1,0 +1,14 @@
+id: melee_fortification
+name: Melee Fortification
+rarity: common
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/ArmorOnMeleeKill
+description: "On Melee Kill: +210 Armor for 10s"
+
+# Rank 0: On Melee Kill: +35 Armor for 10s
+effects:
+  # +210 Armor for the WIELDER on a melee kill. Nobody shoots back here.
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Melee_Fortification

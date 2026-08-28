@@ -9,7 +9,11 @@ description: "+120% Critical Chance (x2 for Heavy Attacks)"
 
 # Rank 0: +20% Critical Chance (x2 for Heavy Attacks)
 effects:
-  - kind: crit_chance_bonus
+  # THE CARD SAYS `(x2 for Heavy Attacks)` and this kind is what carries it —
+  # the ordinary crit bucket, added twice on a heavy form. It is stated per CARD
+  # rather than by doubling the bucket, because Blood Rush is in the same
+  # bracket and says nothing of the kind.
+  - kind: crit_chance_bonus_heavy_doubled
     rank0: 0.2
     rankMax: 1.2
 

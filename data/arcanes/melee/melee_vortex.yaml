@@ -1,0 +1,16 @@
+id: melee_vortex
+name: Melee Vortex
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/PullEnemiesOnMeleeKill
+description: "Kill an enemy affected by <DT_MAGNETIC_COLOR>Magnetic Status for a 45% chance to pull in enemies within 18m radius"
+
+# Rank 0: Kill an enemy affected by <DT_MAGNETIC_COLOR>Magnetic Status for a 20% chance to pull in enemies within 18m radius
+effects:
+  # A 45% chance to PULL enemies in on killing a Magnetic-afflicted one.
+  # Movement, which this arena has none of — and a formation that moved
+  # would be a fight nobody set up.
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Melee_Vortex

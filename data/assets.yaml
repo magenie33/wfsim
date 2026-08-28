@@ -1037,14 +1037,7 @@ arcanes:
   # wiki hosts every one, so all eight take the `wiki:` prefix rather than two
   # of them being on the CDN and six not: one rule for one family reads better
   # than a split nobody can predict from the outside.
-  pax_bolt: wiki:PaxBolt.png
-  pax_charge: wiki:PaxCharge.png
-  pax_seeker: wiki:PaxSeeker.png
-  pax_soar: wiki:PaxSoar.png
-  residual_boils: wiki:ResidualBoils.png
-  residual_malodor: wiki:ResidualMalodor.png
-  residual_shock: wiki:ResidualShock.png
-  residual_viremia: wiki:ResidualViremia.png
+
 
   akimbo_slip_shot: ArcaneProjectionCT.png
   cascadia_accuracy: ArcaneProjectionBU.png
@@ -1054,6 +1047,22 @@ arcanes:
   conjunction_voltage: ArcaneProjectionCD.png
   fractalized_reset: ArcaneProjectionBO.png
   longbow_sharpshot: ArcaneProjectionCL.png
+  melee_afflictions: ArcaneProjectionDH.png
+  melee_animosity: ArcaneProjectionCV.png
+  melee_assimilation: MeleeArcaneShieldBreakMeleeUp.png
+  melee_careen: ArcaneProjectionDX.png
+  melee_crescendo: ArcaneProjectionDB.png
+  melee_doughty: ArcaneProjectionDM.png
+  melee_duplicate: ArcaneProjectionCW.png
+  melee_exposure: ArcaneProjectionCY.png
+  melee_fortification: ArcaneProjectionDA.png
+  melee_influence: ArcaneProjectionCZ.png
+  melee_retaliation: ArcaneProjectionCX.png
+  melee_vortex: ArcaneProjectionDC.png
+  pax_bolt: wiki:PaxBolt.png
+  pax_charge: wiki:PaxCharge.png
+  pax_seeker: wiki:PaxSeeker.png
+  pax_soar: wiki:PaxSoar.png
   primary_blight: ArcaneProjectionCS.png
   primary_bulwark: ArcaneProjectionDU.png
   primary_compression: PrimaryRadialAttack.png
@@ -1067,6 +1076,10 @@ arcanes:
   primary_obstruct: ArcaneProjectionCM.png
   primary_overcharge: ArcaneProjectionEA.png
   primary_plated_round: ArcaneProjectionCH.png
+  residual_boils: wiki:ResidualBoils.png
+  residual_malodor: wiki:ResidualMalodor.png
+  residual_shock: wiki:ResidualShock.png
+  residual_viremia: wiki:ResidualViremia.png
   secondary_cryogenic: SecondaryCritStrikeColdPunct.png
   secondary_deadhead: ArcaneProjectionSteelPathPrecisionHeadshotA.png
   secondary_dexterity: ArcaneProjectionSteelPathMeleeToolsA.png
@@ -1080,7 +1093,6 @@ arcanes:
   secondary_shiver: ArcaneProjectionCP.png
   secondary_surge: ArcaneProjectionDE.png
   shotgun_vendetta: ArcaneProjectionCO.png
-
 # DAMAGE TYPE ICONS — DE's own, via the wiki.
 #
 # `Module:DamageTypes/data` names the file for each type (`Icon`), and every

@@ -1,0 +1,16 @@
+id: melee_assimilation
+name: Melee Assimilation
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/HeavyAttackDamageAndShieldOnShieldBreak
+description: "On Shield Break: +150% Melee Damage on Heavy Attack and Heavy Attack kills restore +30% of max Shields for 20s."
+
+# Rank 0: On Shield Break:\n+25% Melee Damage on Heavy Attack and Heavy Attack kills restore +5% of max Shields for 20s.
+effects:
+  # +150% heavy attack damage ON THE PLAYER'S SHIELD BREAKING. Nothing
+  # damages the Tenno in this arena, so the trigger never fires — and the
+  # shield restore beside it has nothing to restore.
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Melee_Assimilation

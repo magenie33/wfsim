@@ -294,6 +294,11 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         // build at all — the multiplier itself does not touch a normal swing.
         "crit_chance_per_combo" => ModEffect::CritChancePerCombo(max("rankMax")),
         "crit_chance_on_slide" => ModEffect::CritChanceOnSlide(max("rankMax")),
+        // THE CARD CARRIES THE RULE, so the yaml states it per card rather than
+        // the bucket doubling for everyone: `(x2 for Heavy Attacks)` is printed
+        // on True Steel, Sacrificial Steel and Galvanized Steel, and on nothing
+        // else in the melee pool.
+        "crit_chance_bonus_heavy_doubled" => ModEffect::CritChanceHeavyDoubled(max("rankMax")),
         "status_chance_per_combo" => ModEffect::StatusChancePerCombo(max("rankMax")),
         // MELEE'S CONDITION OVERLOAD, which is the ORIGINAL one and is not a
         // buff at all: no trigger, no stacks, no clock — it reads the target's
@@ -310,6 +315,10 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
             per_stack: max("rankMax"),
             max_stacks: 1,
             duration: crate::loadout::NO_TIMEOUT,
+            // NOTHING TO EARN, so it opens full. Routing it through the
+            // Galvanized family's earned-on-a-kill path made it pay zero in all
+            // seven melee modes (2026-08-29).
+            starts_full: true,
         },
         "melee_combo_duration_bonus" => ModEffect::MeleeComboDuration(max("rankMax")),
         "initial_combo" => ModEffect::InitialCombo(max("rankMax")),
@@ -468,7 +477,11 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
                     ModEffect::OnKillMultishot { per_stack: per, max_stacks: stacks, duration: dur }
                 }
                 ("on_kill", "condition_overload") => {
-                    ModEffect::ConditionOverload { per_stack: per, max_stacks: stacks, duration: dur }
+                    // THE GALVANIZED FAMILY EARNS IT on a kill, so it opens at
+                    // zero — the difference from melee's own card one screen up.
+                    ModEffect::ConditionOverload {
+                        per_stack: per, max_stacks: stacks, duration: dur, starts_full: false,
+                    }
                 }
                 ("on_headshot", "crit_chance") => {
                     ModEffect::OnHeadshotCritChance { bonus: per, duration: dur }
@@ -2036,9 +2049,10 @@ mod class_tests {
     ///     the condition cannot change a number this calculator produces).
     #[test]
     fn a_condition_on_the_card_is_a_condition_in_the_model() {
-        const DAMAGE_KINDS: [&str; 18] = [
+        const DAMAGE_KINDS: [&str; 20] = [
             "base_damage_bonus", "crit_chance_bonus", "crit_damage_bonus",
             "crit_chance_per_combo", "status_chance_per_combo",
+            "crit_chance_bonus_heavy_doubled", "crit_chance_on_slide",
             "slam_damage_bonus", "heavy_attack_damage_bonus", "combo_count_chance",
             "melee_combo_duration_bonus", "initial_combo", "heavy_attack_efficiency",
             "multishot_bonus", "status_chance_bonus", "fire_rate_bonus",

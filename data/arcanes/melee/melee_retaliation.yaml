@@ -1,0 +1,27 @@
+id: melee_retaliation
+name: Melee Retaliation
+# The one melee arcane that reads a PLAYER stat rather than a fight state.
+rarity: common
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/MeleeDamageForActiveShields
+description: "Gain 30% Melee Damage for every 200 current Shields, up to 420%. Bonus halved for Overshields."
+
+# Rank 0: Gain 5% Melee Damage for every 200 current Shields, up to 420%. Bonus halved for Overshields.
+effects:
+  # WHAT THE PLAYER IS CARRYING, read the way Primary Bulwark reads armour.
+  # The NEUTRAL Tenno has ZERO shields, so this pays nothing and the panel
+  # says why — which is the honest answer rather than a broken gate, the same
+  # reading Secondary Kinship gets in a solo fight.
+  #
+  # THE OVERSHIELD HALF IS NOT MODELLED: the card halves the bonus for
+  # overshields, and this engine's Tenno has one shield number.
+  - kind: tenno_scaled
+    stat: shields
+    per_unit: 0.0015          # +30% per 200 shields
+    grants: base_damage
+    rank0: 4.2
+    rankMax: 4.2              # the 420% cap does not move with rank
+  - kind: unmodeled
+
+source:
+  url: https://wiki.warframe.com/w/Melee_Retaliation

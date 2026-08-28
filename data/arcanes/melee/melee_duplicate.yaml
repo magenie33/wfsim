@@ -1,0 +1,21 @@
+id: melee_duplicate
+name: Melee Duplicate
+# THE BIGGEST DECLARED GAP IN THIS POOL — see the effect's own note.
+rarity: legendary
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/ReplayLightCritHits
+description: "On Base Critical Hits: 100% chance for your attack to strike a second time"
+
+# Rank 0: On Base Critical Hits: 25% chance for your attack to strike a second time
+effects:
+  # ON A BASE CRIT, THE ATTACK STRIKES AGAIN — an EXTRA HIT in the sense
+  # docs/EXTRA_HIT.md means, worth up to a second copy of every critical
+  # swing. The engine's extra-hit machinery fires beside a hit from a
+  # PERCENTAGE and an element (Xata's Whisper, Primary Debilitate); this one
+  # repeats the instance itself off a crit ROLL, which is a trigger nothing
+  # here has. Declared rather than approximated, because at 100% on a crit
+  # build the approximation would be most of the weapon.
+  - kind: unmodeled
+
+source:
+  url: https://wiki.warframe.com/w/Melee_Duplicate

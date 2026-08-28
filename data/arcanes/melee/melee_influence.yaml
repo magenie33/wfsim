@@ -1,0 +1,21 @@
+id: melee_influence
+name: Melee Influence
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/MeleeProcsSpread
+description: "On Melee <DT_ELECTRICITY_COLOR>Electricity Status: 20% chance for elemental Melee Status Effects to apply to enemies within 20m for 18s. Cannot refresh while active."
+
+# Rank 0: On Melee <DT_ELECTRICITY_COLOR>Electricity Status: 20% chance for elemental Melee Status Effects to apply to enemies within 10m for 3s. Cannot refresh while active.
+effects:
+  # THE META ONE, and it is entirely a CROWD effect: an Electricity status
+  # spreads this weapon's elemental statuses to everything within 20 m for
+  # 18 s. Against one target it is worth nothing at all, which is why the
+  # arena that would show its value is the group ruler.
+  #
+  # `status_spread_chance` exists as an IndirectStat on the mod side and is
+  # REPORTED rather than applied; there is no arcane arm for it and no
+  # spreading machinery behind it either.
+  - kind: unmodeled
+
+source:
+  url: https://wiki.warframe.com/w/Melee_Influence

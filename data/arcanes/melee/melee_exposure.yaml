@@ -1,0 +1,21 @@
+id: melee_exposure
+name: Melee Exposure
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/CorrosiveMeleePerAbilityCast
+description: "On Ability Cast: Gain 60% Corrosive Damage on Melee strikes for 25s. Stacks up to 240%."
+
+# Rank 0: On Ability Cast: Gain 10% Corrosive Damage on Melee strikes for 25s. Stacks up to 240%.
+effects:
+  # +60% Corrosive per ABILITY CAST, stacking to 240%. The trigger is a
+  # Warframe action and this arena runs one weapon and casts nothing — the
+  # same reason Energy Channel pays nothing two files over.
+  #
+  # NOT ASSUMED-MAX. The house rule for a TENNO STATE is assumed-max (aim
+  # gliding, overshields), and this is not a state: it is a rate of casting,
+  # which nobody has said anything about. Paying 240% for it would be
+  # inventing a play pattern, which is the owner's call and not the model's.
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Melee_Exposure

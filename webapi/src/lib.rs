@@ -3498,6 +3498,13 @@ pub fn panel_json(v: &Value) -> Value {
                 SlamDamage(_) => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": "it pays on a SLAM and on nothing else, so it is worth zero in every                             mode that swings"})),
+                // A CRIT CARD WHOSE VALUE DEPENDS ON THE MODE. The panel shows
+                // the weapon at rest, and at rest there is no swing to be a
+                // heavy one — so it is a line rather than a number, the same
+                // answer the two cards below get.
+                CritChanceHeavyDoubled(_) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "the card reads x2 on a heavy attack, so what it is worth depends on                             which of the seven melee modes this build is"})),
                 CritChanceOnSlide(_) => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": "it names an attack — a SLIDE — so it is worth its whole number in                             that mode and exactly nothing in the other six"})),

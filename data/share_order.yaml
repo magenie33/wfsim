@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: e345a052e825bdad
-count: 1683
+digest: ba5990a71f935271
+count: 1695
 ids:
   - acceltra
   - acceltra_prime
@@ -1693,3 +1693,15 @@ ids:
   - truths_flame
   - primed_smite_the_murmur
   - smite_the_murmur
+  - melee_afflictions
+  - melee_animosity
+  - melee_assimilation
+  - melee_careen
+  - melee_crescendo
+  - melee_doughty
+  - melee_duplicate
+  - melee_exposure
+  - melee_fortification
+  - melee_influence
+  - melee_retaliation
+  - melee_vortex

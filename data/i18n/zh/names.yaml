@@ -1024,6 +1024,19 @@ arcanes:
   secondary_surge: 次要·激涌
   longbow_sharpshot: 弓箭·利矢
   shotgun_vendetta: 霰弹·仇杀
+  melee_afflictions: 近战·苦痛
+  melee_animosity: 近战·憎恶
+  melee_assimilation: 近战·同化
+
+  melee_careen: 近战·疾驰
+  melee_crescendo: 近战·渐强
+  melee_doughty: 近战·无畏
+  melee_duplicate: 近战·刃影
+  melee_exposure: 近战·暴露
+  melee_fortification: 近战·坚壁
+  melee_influence: 近战·侵染
+  melee_retaliation: 近战·报复
+  melee_vortex: 近战·漩涡
 
 # Incarnon evolution names live in evolutions.yaml, beside their card text:
 # both come from the same hand transcription, and neither has an export.

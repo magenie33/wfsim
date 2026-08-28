@@ -192,7 +192,63 @@ engine tests — the golden values among them — are unchanged.
 
 ---
 
-## 5. WHAT IS STILL OWED
+## 5. THE ARCANE SLOT, AND ONE BUG THE AUDIT FOUND
+
+A melee weapon seats a MELEE arcane, and `arcane_pools` already answered
+`["melee"]` before there was a pool behind it. All twelve are in now. **Two of
+them pay and ten declare**, which is an honest ratio for a family whose triggers
+are a Warframe casting, a Warframe's shields breaking, a roll, a finisher and a
+knockdown:
+
+- **Melee Retaliation** reads a PLAYER stat — `+30% Melee Damage per 200 current
+  Shields` — the way Primary Bulwark reads armour, through `tenno_scaled`. The
+  neutral Tenno has zero shields, so it pays nothing and the panel says why:
+  *"this Warframe has 0 shields — 0 whole steps of 200, so it pays 0%"*. That is
+  the honest answer rather than a broken gate, the same reading Secondary
+  Kinship gets in a solo fight.
+- **Melee Duplicate** is the biggest declared gap in the pool: *"On Base
+  Critical Hits: 100% chance for your attack to strike a second time"* — an
+  extra hit in exactly the sense `docs/EXTRA_HIT.md` means, and worth a second
+  copy of every critical swing. The engine's extra-hit machinery fires from a
+  PERCENTAGE and an element; this one repeats the instance off a crit roll,
+  which is a trigger nothing here has. Approximating it would be most of the
+  weapon.
+- **Melee Influence** is the meta card and it is entirely a CROWD effect: an
+  Electricity status spreads this weapon's elemental statuses to everything
+  within 20 m. Against one target it is worth nothing, which is why the arena
+  that would show its value is the group ruler.
+
+### …and the bug
+
+**Condition Overload paid EXACTLY ZERO in all seven melee modes**, and the audit
+caught it. Melee's Condition Overload is the ORIGINAL one and is unconditional —
+no kill, no stacks, no clock, just the target's status count read on every swing
+— and it was routed through the Galvanized family's path, which earns the same
+PAYLOAD on a kill and therefore opens at zero stacks. It waited for a trigger it
+does not have, for the whole fight, on the single most important card in the
+melee pool.
+
+`starts_full` is the fix, and it is NOT derived from `duration == NO_TIMEOUT`,
+which would have been the cheap test and is wrong: locking a buff card writes
+exactly that duration, and locking *"removes the expiry and nothing else — the
+count still starts where the card sets it"*.
+
+The three answers are now three different numbers, which is the assertion:
+**x2.29** in the light combo, **x1.44** in the pure heavy, and **x1.0000** in
+the heavy slam — the last one because *"this damage does not apply to Slams,
+Heavy Slams, or Radial Attack explosions"*, which falls out of
+`takes_condition_overload` defaulting to false on an explosion rather than being
+arranged.
+
+**And a crit card that says `(x2 for Heavy Attacks)` is doubled there and
+nowhere else.** True Steel, Sacrificial Steel and Galvanized Steel all print it;
+Blood Rush sits in the same bracket and prints nothing of the kind, so the CARD
+carries the rule rather than the bucket. `20 x (1 + 1.20)` is 44% on a swing and
+`20 x (1 + 2.40)` is 68% on a heavy, asserted as a pair.
+
+---
+
+## 6. WHAT IS STILL OWED
 
 Each of these is on the page, in both languages, on the entry or the card it
 applies to.
@@ -202,27 +258,23 @@ applies to.
    exilus slot — and each says the window is not modelled. Until it lands, the
    melee exilus slot pays nothing at all, which is why it is worth doing next:
    it is the only thing that would make that slot a decision.
-2. **Crit chance mods double on heavy attacks** — True Steel, Sacrificial Steel
-   and Galvanized Steel all say `(x2 for Heavy Attacks)` on their own cards.
-   The two heavy modes read LOW until this lands.
-3. **Condition Overload's slam exemption** — it does not apply to slams, heavy
-   slams or radial attacks, and this engine does not exempt it, so the heavy
-   slam mode reads HIGH with it equipped.
-4. **Melee rivens.** No pool has been surveyed; a melee card rolls Range, Attack
+2. **Melee Duplicate**, and the eight other arcanes whose triggers this arena
+   has not got — see §5.
+3. **Melee rivens.** No pool has been surveyed; a melee card rolls Range, Attack
    Speed, Combo Duration and Heavy Attack Efficiency, none of which any existing
    riven pool contains.
-5. **Power Spike's partial combo decay** — a Warframe passive, so the counter
+4. **Power Spike's partial combo decay** — a Warframe passive, so the counter
    here drops to zero where a real build keeps most of it.
-6. **A swing's own animation length.** The module publishes a combo's DURATION
+5. **A swing's own animation length.** The module publishes a combo's DURATION
    and not a per-swing split, so the swings share it evenly. It moves a status
    tick's start by fractions of a second and moves no total.
-7. **`Sweep` and `Thrust` are one shape here** — the forward half-plane. A
+6. **`Sweep` and `Thrust` are one shape here** — the forward half-plane. A
    sweep is a wide arc and a thrust is not, and nothing published gives either
    an angle.
-8. **A stance's capacity.** In game a stance GRANTS capacity and this engine's
+7. **A stance's capacity.** In game a stance GRANTS capacity and this engine's
    drain is a `u32`, so it is held at zero — the conservative direction: a build
    that fits here fits in game.
-9. **Six cards that name a state this arena has not got**: Enduring Strike and
+8. **Six cards that name a state this arena has not got**: Enduring Strike and
    Enduring Affliction want "the target is Lifted", Relentless Combination wants
    a combo point when a Slash DoT ticks, Spring-Loaded Blade wants a stacking
    reach buff, Galvanized Reflex wants stacking initial combo, and Shattering
@@ -243,7 +295,7 @@ applies to.
 
 ---
 
-## 6. THE INCARNON, WHICH IS NOT A FORM
+## 7. THE INCARNON, WHICH IS NOT A FORM
 
 The Magistar's Genesis is **not** modelled as an Incarnon form and must not be:
 
@@ -261,7 +313,7 @@ numbers rather than swapping in a new set of attacks.
 
 ---
 
-## 7. WHAT MELEE COSTS FROM HERE
+## 8. WHAT MELEE COSTS FROM HERE
 
 The Magistar paid for nearly all of the machinery. The second melee weapon is a
 `data/weapons/melee/<id>.yaml` per mode — about 40 lines each, every number from

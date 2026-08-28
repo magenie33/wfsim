@@ -1,0 +1,17 @@
+id: melee_animosity
+name: Melee Animosity
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/HeavyCritOnRegularMelee
+description: "On Melee Hit: Gain 42% Critical Chance on your next Heavy Attack, up to 420%"
+
+# Rank 0: On Melee Hit: Gain 7% Critical Chance on your next Heavy Attack, up to 70%
+effects:
+  # +42% crit chance per melee hit ON THE NEXT HEAVY ATTACK, up to 420%.
+  # It needs a stack that LIGHT swings build and a HEAVY swing spends, which
+  # is a shape this engine has no bucket for — every other stacking crit
+  # card here is spent by time or by a reload, not by one of seven modes.
+  - kind: unmodeled
+
+source:
+  url: https://wiki.warframe.com/w/Melee_Animosity

@@ -1,0 +1,17 @@
+id: melee_doughty
+name: Melee Doughty
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/CritDamageForPunctureStatus
+description: "Gain 1.0x Critical Damage for every 10% <DT_PUNCTURE_COLOR>Puncture Status chance on your Melee Weapon."
+
+# Rank 0: Gain 0.5x Critical Damage for every 10% <DT_PUNCTURE_COLOR>Puncture Status chance on your Melee Weapon.
+effects:
+  # +1.0x crit damage per 10% PUNCTURE status chance on the weapon. It reads
+  # a per-TYPE status chance, and this engine holds one status chance and a
+  # damage vector that decides which type a proc draws — so the number the
+  # card asks for does not exist here as a stat.
+  - kind: unmodeled
+
+source:
+  url: https://wiki.warframe.com/w/Melee_Doughty

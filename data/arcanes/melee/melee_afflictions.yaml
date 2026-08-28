@@ -1,0 +1,18 @@
+id: melee_afflictions
+name: Melee Afflictions
+# IT WOULD PAY A LOT IF IT LANDED: every slam forces a knockdown.
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/DuplicateStatusOnKnock
+description: "Enemies affected by Status Effects gain 6 additional stacks when they're knocked down or flung by melee attacks."
+
+# Rank 0: Enemies affected by Status Effects gain 1 additional stacks when they're knocked down or flung by melee attacks.
+effects:
+  # +6 stacks of whatever the target is already carrying when a melee attack
+  # KNOCKS IT DOWN or FLINGS it. Both are crowd control this arena does not
+  # model — it carries Knockdown as a status because Condition Overload
+  # counts it, and not as an event a card can hang extra stacks on.
+  - kind: unmodeled
+
+source:
+  url: https://wiki.warframe.com/w/Melee_Afflictions

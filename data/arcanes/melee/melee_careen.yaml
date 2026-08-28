@@ -1,0 +1,16 @@
+id: melee_careen
+name: Melee Careen
+rarity: rare
+max_rank: 5
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Utility/FreezeEnemiesOnRoll
+description: "x2.50 Melee Damage against Frozen enemies. On Roll: <DT_FREEZE_COLOR> Freeze enemies in a 5.5m radius with a 2s Cooldown."
+
+# Rank 0: x1.25 Melee Damage against Frozen enemies. On Roll: <DT_FREEZE_COLOR> Freeze enemies in a 3m radius with a 2s Cooldown.
+effects:
+  # x2.50 melee damage against FROZEN enemies, and a freeze on ROLL. The
+  # roll is movement this arena has none of, so nothing here freezes anyone
+  # — and the multiplier is real and would pay if something did.
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Melee_Careen
