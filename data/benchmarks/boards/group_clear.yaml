@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 3440
+submissions: 3448
 engine: e0a212b8de95b97d892fe7eb20c0fe34f2a5f03d
 entries:
   - weapon: acceltra_prime
@@ -2139,10 +2139,66 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: fulmin_prime
     mode: base
+    score: 4.901161528001314
+    fp: af76011e8feb396a
+    mods: [primary_acuity, galvanized_aptitude, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, riven, infected_clip]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, damage_to_infested]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: fulmin_prime
+    mode: base
+    score: 4.374723709107519
+    fp: 42d92486983e9811
+    mods: [primary_acuity, serration, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, riven, infected_clip]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, damage_to_infested]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: fulmin_prime
+    mode: base
     score: 4.283512623201606
     fp: 36e885839e66533c
     mods: [primary_acuity, serration, galvanized_aptitude, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, infected_clip]
     arcanes: [primary_deadhead]
+  - weapon: fulmin_prime
+    mode: base
+    score: 3.3772440169220905
+    fp: a256da39cbe4d3ce
+    mods: [primary_acuity, galvanized_aptitude, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, radiated_reload, infected_clip]
+    arcanes: [primary_deadhead]
+  - weapon: fulmin_prime
+    mode: base
+    score: 3.288558159647472
+    fp: 155c954c7c08571b
+    mods: [heavy_caliber, primary_acuity, hammer_shot, vile_acceleration, vital_sense, riven, primed_cryo_rounds, infected_clip]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, damage_to_infested]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: fulmin_prime
+    mode: base
+    score: 3.288558159647472
+    fp: f04e93a198b36786
+    mods: [primary_acuity, serration, hammer_shot, vile_acceleration, vital_sense, riven, primed_cryo_rounds, infected_clip]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, damage_to_infested]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: fulmin_prime
+    mode: base
+    score: 3.269949258079612
+    fp: 01e70254fb8cc396
+    mods: [primary_acuity, serration, hammer_shot, vile_acceleration, vital_sense, riven, primed_cryo_rounds, malignant_force]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, damage_to_infested]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: fulmin_prime
     mode: base
     score: 2.996780688215017

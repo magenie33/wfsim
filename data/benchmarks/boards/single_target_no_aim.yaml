@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 3440
+submissions: 3448
 engine: e0a212b8de95b97d892fe7eb20c0fe34f2a5f03d
 entries:
   - weapon: acceltra_prime
@@ -1681,6 +1681,46 @@ entries:
     mods: [galvanized_hell, galvanized_savvy, primed_tactical_pump, shotgun_barrage, magnetic_strafe, chilling_grasp, toxic_barrage, blaze]
     evolutions: [felarx_evo1_incarnon_form, felarx_frictionless_flight, felarx_mounting_momentum, felarx_racking_wrath, felarx_devastating_attrition]
     arcanes: [primary_deadhead]
+  - weapon: fulmin_prime
+    mode: base
+    score: 0.1321139414341126
+    fp: b0be0da5c10f2696
+    mods: [primary_acuity, serration, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, riven, infected_clip]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, damage_to_infested]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: fulmin_prime
+    mode: base
+    score: 0.08865450797914967
+    fp: 1ff05a2876ddcf25
+    mods: [primary_acuity, galvanized_aptitude, hammer_shot, vile_acceleration, vital_sense, magnetic_capacity, riven, infected_clip]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, damage_to_infested]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: fulmin_prime
+    mode: base
+    score: 0.0679009803772855
+    fp: bb61e50d6e3f68d8
+    mods: [heavy_caliber, primary_acuity, hammer_shot, vile_acceleration, vital_sense, riven, primed_cryo_rounds, infected_clip]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, damage_to_infested]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: fulmin_prime
+    mode: base
+    score: 0.0679009803772855
+    fp: 9a727aceeb6ba275
+    mods: [primary_acuity, serration, hammer_shot, vile_acceleration, vital_sense, riven, primed_cryo_rounds, infected_clip]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, damage, damage_to_infested]
+      malus: damage_to_corpus
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: fulmin_prime
     mode: base
     score: 0.06566950053534204
