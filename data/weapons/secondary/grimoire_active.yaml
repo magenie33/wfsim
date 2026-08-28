@@ -1,30 +1,62 @@
 id: grimoire_active
 name: Grimoire
-# THE ACTIVE ATTACK, and it is a THROWN ORB rather than a shot — ✅ MEASURED
-# (MEASUREMENTS M63, owner 2026-08-28). What the wiki's module publishes for it
-# is one direct hit of 350 and one blast of 250, and neither number nor the
-# shape is what the game does:
+# THE ACTIVE ATTACK, and it is a DEPLOYED ORB rather than a shot — ✅ MEASURED
+# (MEASUREMENTS M63, owner 2026-08-28), against a module that publishes it as
+# one 350 hit and one 250 blast.
 #
-#   * every number is the module's x0.8 — 280 direct, 200 blast
-#   * the orb PULSES. It flies at 6 m/s for a 6 s fuse; the moment it touches a
-#     body it slows to 2 m/s, keeps going, and lands a DIRECT hit on contact and
-#     once a second after that until the fuse runs out — then explodes. So the
-#     hit count is `ceil(6 - contact time)`, six at its ceiling, and flight time
-#     under one second costs nothing.
-#   * the pulses force Electricity and the final explosion does NOT.
+# WHAT IT ACTUALLY DOES. "Alternate Fire throws an orb that travels slowly then
+# explodes after 6 seconds. … Orb will shock 1 enemy within 6 meters of it every
+# 1 second. Each enemy hit chains to an additional 2 enemies within 6 meters"
+# (wiki `Grimoire`). So the orb lives 6 s and STRIKES SIX TIMES — one body
+# inside 6 m each second, picked by the orb — and then detonates where it has
+# got to. It leaves the muzzle at 6 m/s and drops to 2 m/s once it touches
+# something, still heading the way it was thrown.
 #
-# This arena fights at contact, so it is always the six-pulse ceiling. The
-# pulses are the `lingering:` field below; the CONTACT one is the attack's own
-# direct damage, which is why the field opens one second late.
+#   * every number is the module's x0.8 — 280 a strike, 200 the blast
+#   * "Every strike from the alternate fire has a forced Electricity status
+#     effect", and the final explosion does NOT force one
+#   * "The strikes and the forced Electricity proc can hit weakspots"
+#   * "Tick rate is not affected by Fire Rate"
+#   * "Number of chains is affected by Multishot" — the mod buys chain targets
+#     rather than a second orb
+#   * the strike's reach and the blast's radius are both 6 m and both take
+#     Fulmination (Primed)
+#
+# IT IS NOT A LINGERING FIELD, and that distinction is the owner's (2026-08-28).
+# A field is an AREA: everyone standing in it burns, at their own falloff
+# distance. This is an ENTITY with a position — it moves, and each strike
+# reaches exactly ONE body, all six for the same number. `orb:` below is the
+# geometry and the clock; what it DEALS is this attack's own `damage:` and its
+# own `radial:`, which is the same division `beam:` makes for a beam.
+#
+# THE STRIKE COUNT FALLS OUT OF THE GEOMETRY rather than being written down.
+# Six ticks over a six second fuse, and a tick with nobody inside the reach is
+# spent striking nobody — so a throw that connects in under a second loses none
+# of them, one that takes 2.5 s lands four, and against a body at contact it is
+# always six. That is the owner's `ceil(6 - flight)`, arriving on its own.
 inherits: grimoire
 form: alt_fire
 transform_group: grimoire
 
 introduced: "35"
 
-# NOT INHERITED — the CO catalog gives a class PER ATTACK, and none of
-# this weapon's is named. Absence means ORDINARY.
-co_behavior: additive_with_base_damage
+# NO CONDITION OVERLOAD ON ANY PART OF THIS ATTACK — ✅ measured (M63, owner
+# 2026-08-28): neither the pulses nor the final explosion take the term.
+#
+# The owner's reason is what a strike IS: the orb's, not the gun's — a ranged
+# strike that behaves like a field ("变相的范围，类似于field"), which is the
+# class of attack this roster already gives nothing to. "An AoE part takes no CO
+# unless its own row says so" is that standing rule, and the wiki's catalog was
+# re-read on the PAGE the same day with no Grimoire row of any kind — absence
+# meaning ORDINARY, and ordinary for a part of this class is nothing.
+#
+# NOT INHERITED, because the catalog gives a class per ATTACK: the primary
+# fire's page is a different attack and keeps the ordinary term.
+#
+# It is stated as `inert` rather than left to the field/radial default because
+# the FIRST strike is filed as this attack's own `damage:`. Without this line
+# that one strike of the six would take a term the other five do not.
+co_behavior: inert
 
 attack:
   # Cone half-angle from the reticle, degrees — wiki
@@ -38,6 +70,16 @@ attack:
   projectile_speed_mps: 6
   fire_rate: 1
   multishot: 1.0
+  # THIS ATTACK IS NOT AIMED. The orb picks its own body — "shock 1 enemy
+  # within 6 meters of it every 1 second" — so the scenario's headshot_pct,
+  # which describes the player's aim, is the wrong number for all six strikes.
+  #
+  # 10% IS ASSUMED, NOT MEASURED (owner, 2026-08-28), and this entry's
+  # `unmodeled:` block says so on the page rather than only here. That the
+  # strikes CAN find a weak point is the wiki's: "The strikes and the forced
+  # Electricity proc can hit weakspots" — which is also why the forced proc is
+  # scaled by the part its strike landed on.
+  unaimed_headshot_chance: 0.1
   ammo_cost: 1
   crit_chance: 0.2
   crit_multiplier: 2.0
@@ -46,53 +88,50 @@ attack:
   punch_through_m: 0.0
   # A GUARANTEED ELECTRICITY PROC — the module's ForcedProcs.
   forced_procs: [electricity]
-  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
-  # wiki: "Range: 6.0 m" on this attack.
+  # HOW FAR A STRIKE REACHES — "1 enemy within 6 meters of it". The module's
+  # "Range: 6.0 m" is that reach, confirmed by the owner (2026-08-28), and NOT
+  # a flight distance: the orb travels 6 m/s for 6 s and covers far more ground
+  # than six metres.
   range_m: 6.0
-  # THE CONTACT PULSE. 280, not the module's 350 — measured (M63): every number
-  # this attack deals is the published one x0.8, both halves of it, which is
-  # what makes it ONE multiplier rather than two transcription slips.
-  damage: { electricity: 280 }   # total 280 (module 350 x0.8)
-  # THE FIVE PULSES AFTER IT — the same 280 on a one second clock. Modelled as
-  # the lingering FIELD because that is exactly its shape: a repeating damage
-  # part on its own clock with its own radius. What is NOT a cloud about it, and
-  # is why the field spec grew three fields for this weapon:
+  # WHAT ONE STRIKE DEALS. 280, not the module's 350 — measured (M63): every
+  # number this attack deals is the published one x0.8, both halves of it,
+  # which is what makes it ONE multiplier rather than two transcription slips.
   #
-  #   * it opens ONE SECOND after the impact, because the contact pulse is the
-  #     direct hit above and a field starting at t would settle it twice
-  #   * its ticks are DIRECT hits: they force Electricity, and they can land on
-  #     a head
-  #   * `duration_seconds` is therefore 5 and not 6 — the sixth pulse is the
-  #     contact one, already paid for above
-  lingering:
-    damage: { electricity: 280 }   # total 280, the contact pulse repeated
-    tick_rate: 1.0                 # one pulse a second
-    duration_seconds: 5.0          # five of them; the sixth is the contact hit
-    first_tick_delay_seconds: 1.0
-    radius_m: 6.0
-    # NO FALLOFF — everything inside six metres takes the pulse in full
-    # (owner, 2026-08-28). The EXPLOSION below falls off and this does not,
-    # which is the one place the two parts' geometry differs.
-    falloff_start_m: 6.0
-    falloff_reduction: 0.0
-    # A DIRECT HIT FORCES ELECTRICITY. The explosion below declares none, which
-    # is the same split the Astilla has between its two parts.
-    forced_procs: [electricity]
-    # ASSUMED, NOT MEASURED — a flat 10% per pulse (owner, 2026-08-28), on the
-    # page in this entry's `unmodeled:` block rather than only here. The orb is
-    # not aimed, so the scenario's headshot_pct is the wrong number for it;
-    # `ricochet:` reached the same conclusion for the same reason.
-    headshot_chance: 0.1
-    # A PULSE IS A DIRECT HIT, so it takes Condition Overload the way the
-    # contact hit does. INFERRED from the pulses being direct hits rather than
-    # read off a catalog row — this weapon has no row, and absence means
-    # ORDINARY, which for a direct hit is the full additive term.
-    takes_condition_overload: true
-    # Two orbs in the air are two orbs.
-    stacking: stack
-  # THE FINAL EXPLOSION — rules in MECHANICS §7. It fires when the fuse runs
-  # out, six seconds after contact; this engine settles a radial AT the impact,
-  # which moves it earlier by the fuse and is stated in `unmodeled:` below.
+  # It is the ATTACK's damage rather than a number inside `orb:` because that
+  # is what it is: the orb is a delivery mechanism, and its strike is this
+  # attack's hit arriving six times.
+  damage: { electricity: 280 }   # total 280 (module 350 x0.8)
+  # THE ORB — geometry and a clock, and nothing about damage.
+  orb:
+    fuse_seconds: 6.0
+    # ONE A SECOND, and "Tick rate is not affected by Fire Rate" — which this
+    # engine gets right by construction: the orb's clock is its own and no mod
+    # bucket reaches it.
+    strike_interval_seconds: 1.0
+    # HOW FAR A STRIKE REACHES. The module's "Range: 6.0 m" is this, confirmed
+    # by the owner (2026-08-28), and NOT a flight distance — the orb covers
+    # 6 m/s x 6 s of ground. Fulmination (Primed) enlarges it.
+    strike_radius_m: 6.0
+    speed_mps: 6.0
+    speed_after_contact_mps: 2.0
+    # "Each enemy hit chains to an additional 2 enemies within 6 meters", and
+    # multishot ADDS to the count: `multishot + 2` bodies a strike, so a panel
+    # reading x2.6 is four for certain and a fifth 60% of the time (owner,
+    # 2026-08-28).
+    chain_bodies: 2.0
+    chain_range_m: 6.0
+    # UNDILUTED, which is what the page supports — it names a count and no
+    # reduction, and absence means ordinary. UNCONFIRMED: the owner's note that
+    # the chain is "不受增益" may mean a hop takes no mods at all rather than
+    # no falloff, and the two differ only against a crowd. Flagged rather than
+    # decided, and it is one number when it is.
+    chain_damage_per_hop: 1.0
+  # THE FINAL EXPLOSION — rules in MECHANICS §7. "Explosion has linear Damage
+  # Falloff from 100% to 20% from central impact", over the same six metres the
+  # strikes reach, and Fulmination (Primed) enlarges it. It goes off when the
+  # fuse runs out, six seconds after the throw; this engine settles a radial AT
+  # the impact, which moves it earlier by the fuse and is stated in
+  # `unmodeled:` below.
   radial:
     radius_m: 6.0
     falloff_start_m: 0.0
@@ -115,31 +154,35 @@ unmodeled:
   - reason: tome_meter
     rate: 1
     seconds: 45
-  # THE PULSES ARE MODELLED as of 2026-08-28 (M63) — `lingering:` above. What
-  # `orb_shocks_over_time` used to cover and this replaces is what is LEFT of
-  # the orb: its chain, and the fact that its pulses here stand still.
+  # THE ORB IS MODELLED as of 2026-08-28 (M63) — `orb:` above, an entity that
+  # flies, slows, strikes and detonates where it got to. What `orb_shocks_over_
+  # time` used to cover is gone; what is LEFT is the chain.
   - reason: orb_chain
-  - reason: orb_pulses_do_not_travel
-    speed: 2
+    radius: 6
+    chains: 2
   - reason: explosion_ignores_cover
   - reason: self_stagger
   # THE ORB'S HEADSHOT RATE IS AN ASSUMPTION and a player deciding whether to
   # trust this weapon's number cannot read a yaml (the rule `ricochet:`
   # established, 2026-08-21). Prose rather than a reason because it is used
   # once and carries one number.
-  - "how often one of the orb's pulses lands on a weak point is ASSUMED — a
-    flat 10% each (owner, 2026-08-28). The pulses ARE direct hits and can
-    headshot, but where an orb drifting through a crowd puts them is geometry
-    this arena does not model and DE publishes no rate. A pulse also takes no
-    critical-HEADSHOT bonus here: whether the 2x fold-in applies to one is
-    unmeasured, so this follows the ricochet's reading and takes none"
-  # THE FINAL EXPLOSION'S TIMING. Worth nothing over an engagement and worth
-  # something inside the first six seconds, so it is said rather than assumed
-  # away.
-  - "the final explosion is settled at the moment the orb makes contact rather
-    than when its 6 s fuse runs out — the same damage in the same fight, six
-    seconds early, which moves nothing over a long engagement and makes a short
-    one look slightly front-loaded"
+  - "how often one of the orb's six strikes lands on a weak point is ASSUMED —
+    a flat 10% each (owner, 2026-08-28). That they CAN is the wiki's ('the
+    strikes and the forced Electricity proc can hit weakspots'), but the orb
+    picks its own target as it drifts, which is geometry this arena does not
+    model and DE publishes no rate for. It is the same 10% for all six and for
+    the Electricity each one forces, so nothing here rides on which of them is
+    which"
+  # WHAT THE POSITION MODEL FOUND, and it is a finding rather than a gap: the
+  # orb's own numbers say a lone standing enemy does not get all six.
+  - "the orb keeps MOVING while it strikes — 2 m/s onward after it touches
+    something, with six metres of reach — so against a single enemy who stays
+    put it is out of range after three seconds and FOUR of its six strikes
+    land, not six. That is this weapon's own geometry rather than a shortcut,
+    and it is the arena that makes it bite: real enemies move, stand in groups
+    and follow you, and the orb drifting on is what lets it reach the next one.
+    Read this number as the floor for a lone target and expect more from a
+    crowd"
 
 source:
   url: https://wiki.warframe.com/w/Grimoire

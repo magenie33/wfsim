@@ -4588,3 +4588,186 @@ a Monte Carlo whose own standard error is larger. What made it visible is that
 a record ROW states the stacks it read, beside the number they produced, so
 "600 at 0 stacks" and "1,200 at 1 stack" are two different sentences instead of
 one average.
+
+## M63 — the Grimoire's orb is six unaimed strikes at ×0.8, and one of them is not a shot ✅ (owner, 2026-08-28)
+
+The report opened as a data question and turned out to be a mechanic. Verbatim,
+in the order it arrived — the last three messages CORRECT the first, and the
+corrections are kept rather than folded in, because two of them caught a wrong
+model that had already been built:
+
+> 我发现一个武器和wiki写的完全不一样，那就是grimorie，次要射击完全就不是面板上
+> 写的样子，例如我测试实际上次要射击的点球是每下280而不是350，最好的爆炸也是另
+> 外一个伤害，我很有理由怀疑，里面的百分比还是不对的
+
+> 实际会有6下直击加最后一个爆炸 … 数值上就是官方的*0.8，直击的时候会强
+> 制触发电，但是爆炸的时候没有这个强制触发
+
+> 然后那个球，完全不吃GunCO，直击部分以及爆炸部分都不吃，因为这个算范围直击
+> （也就是变相的范围，类似于field）
+
+> 还有这个球无法multishot，永远只有一个
+
+> 这个球实际上碰到以后马上开始电第一下，这个第一下就是field啊，和后面的5下是
+> 一摸一样的，然后结束爆炸（有正常falloff），range_m这个没有错，标识的是自己的攻
+> 击范围，飞行6m/s和总共飞6s也都是没错的数据
+
+> 我修正一下，电球实际上是选半径6m随机一个人射一下，只有一条chain，chain默认是2个，
+> 后续的multishot加成是1*multishot+2，也就是如果面板的multishot面板是2.6，那么就
+> 说明稳定4个，概率5个意思
+>
+> 后续爆炸才是范围内的全部（因为有falloff），电球的射程和最终爆炸的范围都是
+> 6m，受范围增益影响
+
+The wiki page agrees with all of it and adds the two lines nobody had read:
+*"Orb will shock 1 enemy within 6 meters of it every 1 second. Each enemy hit
+chains to an additional 2 enemies within 6 meters"*, *"Every strike from the
+alternate fire has a forced Electricity status effect. The strikes and the
+forced Electricity proc can hit weakspots"*, *"Tick rate is not affected by
+Fire Rate"*, *"Number of chains is affected by Multishot"*.
+
+### The numbers
+
+`Module:Weapons/data/secondary` gives the active attack one hit of 350
+Electricity and one blast of 250. Both are the module's own value ×0.8:
+
+| part | module | measured | ratio |
+| --- | --- | --- | --- |
+| strike | 350 | 280 | 0.800 |
+| blast | 250 | 200 | 0.800 |
+
+TWO RATIOS, ONE MULTIPLIER. That is why this was transcribed as one fact rather
+than as two corrected numbers: had the second come back at anything but 0.800,
+the two halves would be independent slips and each would need its own evidence.
+
+The measurement does NOT settle whether the ×0.8 lives in the weapon or in the
+module's column — `350 × 0.8` and a published 280 are indistinguishable under
+every later multiplier — and nothing downstream depends on which.
+
+### The shape
+
+The orb is not a shot with an explosion. It lives 6 s and STRIKES six times —
+one random body inside 6 m each second — then detonates. It flies at 6 m/s and
+drops to 2 m/s once it touches something, which changes WHERE the later strikes
+happen and not how many there are. `range_m: 6.0` is the strike's reach, not a
+flight distance.
+
+**All six strikes are the same thing.** The owner said it twice, the second time
+to correct a model that had made the first one special: *"碰到以后马上开始电第
+一下，这个第一下就是field啊"*. That is the property the engine now has to hold
+rather than a description of it.
+
+### Four rules, each a different mechanism
+
+**Every strike forces Electricity; the final explosion does not.** One attack
+answering the same question both ways, which is why `forced_procs` is declared
+per part — the Astilla splits the same way between its collision and its
+radial, the Scourge the other way round.
+
+**Nothing here takes Condition Overload** — not the strikes, not the blast. The
+owner's reason is what a strike IS: the orb's rather than the gun's, a ranged
+strike that behaves like a field. "An AoE part takes no CO unless its own row
+says so" is the standing rule, and the wiki's catalog was re-read on the PAGE
+the same day with **no Grimoire row of any kind**.
+
+**Multishot does not add orbs — it adds CHAIN TARGETS.** `multishot + 2` enemies
+a strike, so a panel reading ×2.6 is four for certain and a fifth 60% of the
+time. The chain is not modelled, so the bucket is pinned at the weapon's default
+(`locks: [multishot]`), which is the right answer against one target and an
+understatement against a crowd — and the weapon says both halves on its own
+page, because a padlock with no explanation reads as "worthless everywhere".
+
+**The strikes can find a weak point, and so can the Electricity they force.**
+How often is **assumed at a flat 10% each** — the owner's number, and an
+assumption rather than a measurement, on the page as well as in the yaml.
+
+### How it is modelled: an ENTITY, not a field
+
+The first two attempts filed the orb as a lingering FIELD, and the owner
+rejected the type rather than the numbers:
+
+> 我觉得这个不能算是field，因为field是殴打范围内全部的，有falloff的。这个应该是
+> 其他类型，是一个实体有范围的，打击范围内一个目标的，前6下伤害都是一样。以及严
+> 谨我们发射的时候，发射点是圆心你应该搞一个更准确的
+
+He is right, and the distinction is not cosmetic. A `lingering:` field is an
+AREA: it sits where it landed and burns everyone standing in it, each at their
+own falloff distance. An orb has a PLACE OF ITS OWN, it moves, and every strike
+reaches exactly one body — so who is in reach is a question about where the orb
+is, and a field cannot ask it.
+
+`weapons_data::OrbSpec` is that type. It carries geometry and a clock and
+nothing about damage: a fuse, a strike interval, a reach, the two speeds, and
+the chain. What a strike DEALS is the attack's own `damage:`, and what the fuse
+ends in is the attack's own `radial:` — the same division `beam:` already makes.
+An attack with an `orb:` settles no collision and no explosion when it is fired;
+it deploys, and everything it deals is delivered later and elsewhere.
+
+THE ORB LEAVES THE MUZZLE, which is the accuracy the owner asked for. It starts
+at `space::muzzle(player, aim)` — a point on the shooter's own circumference,
+the same place every other shot in this arena leaves from — travels along the
+aim ray at 6 m/s, and drops to 2 m/s at the first body it touches without
+turning. Its reach is measured from ITSELF, so "within 6 metres" is finally a
+statement about a real position rather than about the target.
+
+THE STRIKE COUNT IS NO LONGER WRITTEN DOWN. Six ticks over a six second fuse,
+and a tick with nobody inside the reach strikes nobody and is spent. `ceil(6 -
+flight)` — the owner's rule — falls out of that: a throw that connects in under
+a second loses none, one that takes 2.5 s lands four, and one thrown at nothing
+lands none. `a_strike_with_nobody_in_reach_is_spent` asserts both ends and the
+ladder between them.
+
+The strike itself is settled by the same function a cloud's tick is, because the
+arithmetic of a damage instance on a clock of its own does not depend on what
+produced it — and sharing it is what stops the two drifting apart. What is NOT
+shared is who it lands on. The record tells them apart: `Origin::Orb`.
+
+### The one assumption, and where it is declared
+
+`unaimed_headshot_chance` is declared on the ATTACK rather than on any of its
+parts, because the orb picks its own body and the scenario's `headshot_pct` — a
+statement about the player's aim — is the wrong number for every strike. The
+value is the owner's **10% flat**, an assumption rather than a measurement, and
+the weapon says so on its own page.
+
+Both the collision path and the orb path draw their body part through one helper
+(`unaimed_part`), so the six strikes cannot answer differently. A head strike
+takes the critical-location fold-in like any other hit on an eligible weak point
+— no exception was invented for it, because inventing one would be a claim with
+no measurement behind it.
+
+### What the position model found
+
+**Four strikes reach a lone standing enemy, not six.** It is the weapon's own
+numbers: 2 m/s onward with six metres of reach puts a stationary body out of
+range after three seconds. Six is what the ORB does; how many reach one enemy
+who does not move is a question only a position model can ask, and this is the
+first thing it answered.
+
+That is not a contradiction of the measurement — the owner's six is the count of
+strikes the orb makes — but it IS a number a player will notice, so it is on the
+weapon's page rather than buried: read the single-target figure as a floor, and
+expect more from a crowd, where the orb drifting on is exactly what lets it
+reach the next body.
+
+`an_orb_that_drifts_leaves_a_lone_target_behind` pins it at four against the
+same orb held still at six, so the two arms differ by distance and nothing else.
+If the post-contact speed or the reach is ever measured directly, that test says
+what the old answer was worth.
+
+### Still open
+
+**Does a chain hop take your mods?** The owner's note is *"chain机制（不受增
+益）"*, which reads either as "no falloff along the path" or as "a hop takes no
+mods at all". The entry transcribes what the page supports — a count and no
+stated reduction, so `chain_damage_per_hop: 1.0` — and flags the ambiguity in
+place. It is worth nothing against one target and a great deal against a crowd,
+and it is one number when it is settled.
+
+**`AttackSpec::locks` came and went.** It was added on *"这个球无法multishot，永
+远只有一个"* and removed on the correction two messages later: multishot does not
+add orbs, it adds CHAIN TARGETS (`multishot + 2` bodies a strike). Pinning the
+bucket would have been the right answer to the wrong question, and would have
+told a reader the mod is worthless when what it actually does is unmodelled. The
+orb path gives one orb by construction — a deploying shot fires no pellets — so
+nothing was needed in its place.

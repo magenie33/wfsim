@@ -5661,34 +5661,14 @@ fn event_json(e: &wfsim_engine::record::Event, carry: &mut Carry) -> Value {
                 m.insert("crit".into(), json!(d.crit_tier));
             }
             m.insert("base".into(), json!(r1(d.base)));
-            // HOW THAT BASE WAS BUILT — see `record::Damage::base_from`. Sent
-            // only where the site has something to say, so a status tick's row
-            // stays one number rather than an empty chain.
-            if d.base_from > 0.0 {
-                let live: Vec<_> = d.base_steps.iter()
-                    .filter(|(_, v)| (v - 1.0).abs() > 1e-12).collect();
-                m.insert("base_from".into(), json!(r1(d.base_from)));
-                m.insert("base_steps".into(), json!(steps_json(&live)));
-            }
             if d.crit_tier > 0 {
                 m.insert("crit_damage".into(), json!(r3(d.crit_damage)));
             }
-            // THE FACTORS THAT MOVED, and the NAMES of the ones that did not.
-            //
-            // A `×1.00` is noise on a row and its ABSENCE is not the same fact:
-            // "the faction term was there and paid nothing" is the answer to
-            // "why is my Bane doing nothing", while "this weapon has no sniper
-            // combo" is not worth a line (owner, 2026-08-27). So the engine
-            // keeps every factor — the product has to check out — and the wire
-            // splits them: values for what bit, names alone for what did not.
-            // On a plain rifle hit that is 15 entries down to 2 plus a list.
-            let (live, inert): (Vec<_>, Vec<_>) =
-                d.steps.iter().partition(|(_, v)| (v - 1.0).abs() > 1e-12);
-            m.insert("steps".into(), json!(steps_json(&live)));
-            if !inert.is_empty() {
-                m.insert("steps_inert".into(),
-                    json!(inert.iter().map(|(k, _)| k.index()).collect::<Vec<_>>()));
-            }
+            // THE LEDGER, LAYER BY LAYER — see `record::Layer`. The shape of a
+            // layer is the information: a bracket lists its terms, a snap shows
+            // its grid, and only a `mul` is drawn with a multiplication sign.
+            // Nothing here can express a quotient, which is the point.
+            m.insert("layers".into(), json!(d.layers.iter().map(layer_json).collect::<Vec<_>>()));
             m.insert("raw".into(), json!(r1(d.raw)));
             m.insert("mitigation".into(),
                 json!(steps_json(&d.mitigation.iter().collect::<Vec<_>>())));
@@ -5754,6 +5734,54 @@ fn event_json(e: &wfsim_engine::record::Event, carry: &mut Carry) -> Value {
         Kind::Killed => {
             m.insert("kind".into(), json!("killed"));
         }
+    }
+    o
+}
+
+/// ONE LAYER OF THE OFFENSIVE LEDGER.
+///
+/// `k` is the shape — `b` bracket, `q` quantize, `m` mul — because a row is
+/// read by its shape before it is read by its numbers, and the page draws three
+/// different things.
+fn layer_json(l: &wfsim_engine::record::Layer) -> Value {
+    use wfsim_engine::record::Layer;
+    match l {
+        Layer::Bracket { factor, terms, sum, out } => json!({
+            "k": "b",
+            "f": factor.index(),
+            "t": terms.iter().map(term_json).collect::<Vec<_>>(),
+            "s": r3(*sum),
+            "o": r1(*out),
+        }),
+        Layer::Quantize { scale, components, out } => json!({
+            "k": "q",
+            "scale": r3(*scale),
+            "c": components.iter().map(|c| json!([
+                c.dtype.name(), r1(c.before), r3(c.units), r1(c.after),
+            ])).collect::<Vec<_>>(),
+            "o": r1(*out),
+        }),
+        Layer::Mul { factor, value, of, head, out } => {
+            let mut o = json!({ "k": "m", "f": factor.index(), "v": r3(*value), "o": r1(*out) });
+            if !of.is_empty() {
+                let m = o.as_object_mut().expect("object");
+                // ITS OWN EXPANSION: a body part is `3.00 x (1 + 0.50)`, and
+                // the head of that product is what the enemy card states.
+                m.insert("head".into(), json!(r3(*head)));
+                m.insert("t".into(), json!(of.iter().map(term_json).collect::<Vec<_>>()));
+            }
+            o
+        }
+    }
+}
+
+/// One term of an additive bracket. `o` is the pair it is a product of, where
+/// it is one — Condition Overload is `rate x status types`.
+fn term_json(t: &wfsim_engine::record::Term) -> Value {
+    let mut o = json!({ "f": t.factor.index(), "v": r3(t.value) });
+    if let Some((a, b)) = t.of {
+        o.as_object_mut().expect("object")
+            .insert("o".into(), json!([r3(a), r3(b)]));
     }
     o
 }

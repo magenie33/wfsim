@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "68eb4755+ · 2026-08-28 04:52Z";
+const BUILD_ID = "78033831+ · 2026-08-28 07:08Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -14551,21 +14551,55 @@ function recStacks(list, roster, cls) {
     `<span class="rec-s ${cls}">${escHtml(nameOf(id))}<b>${n}</b></span>`).join("")}</div>`;
 }
 
-/// THE BASE, OPENED UP. One number is an assertion; a chain is something a
-/// reader can check against the build panel — so where the engine can say where
-/// the base started and what took it there, the row says it. The bar is a
-/// reader looking for a mistake, not one taking the number on trust (owner,
-/// 2026-08-27).
-function baseChain(e) {
+/// THE LEDGER, LAYER BY LAYER — and the SHAPE says which mechanic it is.
+///
+/// A bracket lists its terms and adds them; a snap shows its grid; only a real
+/// multiplicative bracket gets a `×`. That is not decoration: the panel used to
+/// print `×5.706 Condition Overload`, which is a QUOTIENT — the base-damage
+/// bracket divided by itself — with a multiplication sign in front of it, and
+/// `×4.156 element bracket + quantization`, which is the ratio of a per-element
+/// snap's two totals. Two numbers the game does not have, both looking exactly
+/// like a factor (owner, 2026-08-28).
+///
+/// There is no shape here that can draw a quotient, which is what stops it
+/// coming back.
+function ledgerRows(e) {
   const F = (i) => ((recordState && recordState.factors) || [])[i] || String(i);
   const n = (x) => Math.round(x).toLocaleString();
-  if (e.base_from == null || !(e.base_steps || []).length) {
-    return `<span class="rec-b0">${n(e.base)}</span>`;
-  }
-  return `<span class="rec-b0 sub">${n(e.base_from)}<i>${escHtml(tr("ModifiedBase"))}</i></span>${
-    e.base_steps.map(([k, v]) =>
-      `<span class="rec-f base" data-factor="${escHtml(F(k))}">×${v}<i>${escHtml(tr(F(k)))}</i></span>`).join("")
-  }<span class="rec-b0">= ${n(e.base)}</span>`;
+  const n2 = (x) => x.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const sign = (v) => (v < 0 ? "−" : "+");
+  // A TERM OF A BRACKET, with the pair it is a product of where it has one.
+  const term = (t) => `<span class="lg-term"><i class="lg-op">${sign(t.v)}</i>${
+    n2(Math.abs(t.v))}<b>${escHtml(tr(F(t.f)))}</b>${
+    t.o ? `<em>${n2(t.o[0])} × ${n2(t.o[1])}</em>` : ""}</span>`;
+
+  return (e.layers || []).map((l) => {
+    if (l.k === "b") {
+      return `<div class="lg lg-b">
+        <span class="lg-lbl">${escHtml(tr(F(l.f)))}</span>
+        <span class="lg-body">${(l.t || []).map(term).join("")}<span class="lg-sum">= ${
+          n2(l.s)}</span><span class="lg-out">${n(l.o)}</span></span></div>`;
+    }
+    if (l.k === "q") {
+      // THE GRID, and the units — because the mechanic IS integer units. A
+      // component going from 89.81 units to 90 is a sentence; 2,178.00 going to
+      // 2,182.50 is not.
+      return `<div class="lg lg-q">
+        <span class="lg-lbl">${escHtml(tr("quantization"))}</span>
+        <span class="lg-body"><span class="lg-scale">${escHtml(tr("grid"))} ${
+          n2(l.scale)}</span><table class="lg-snap">${(l.c || []).map(([ty, from, units, to]) =>
+          `<tr><td>${escHtml(DT(ty))}</td><td class="num">${n2(from)}</td><td class="ar">→</td>${
+            ""}<td class="num">${n2(units)}</td><td class="ar">→</td><td class="num sn">${
+            Math.round(units)}</td><td class="num to">${n2(to)}</td></tr>`).join("")}</table><span class="lg-out">${n(l.o)}</span></span></div>`;
+    }
+    // A MULTIPLICATIVE BRACKET — the only shape that earns a sign.
+    return `<div class="lg lg-m">
+      <span class="lg-lbl"><i class="lg-x">×</i>${n2(l.v)}</span>
+      <span class="lg-body"><b>${escHtml(tr(F(l.f)))}</b>${
+        l.t ? `<span class="lg-of">${n2(l.head)} × (1${(l.t || []).map(term).join("")})</span>` : ""}${
+        F(l.f) === "critical" && e.crit_damage
+          ? `<span class="lg-of">1 + ${e.crit} × (${e.crit_damage} − 1)</span>` : ""}<span class="lg-out">${n(l.o)}</span></span></div>`;
+  }).join("");
 }
 
 function recordRow(e, rosters) {
@@ -14620,20 +14654,8 @@ function recordRow(e, rosters) {
   // check, a bug report, the browser's own find — ask about the FACTOR rather
   // than about the sentence a particular reader happens to see. `data-rpevent`
   // is the same idea for a floating number (owner, 2026-08-27).
-  const steps = (e.steps || []).map(([k, v]) =>
-    k === "critical" && e.crit_damage
-      ? `<span class="rec-f hi" data-factor="critical">×${v}<i>${escHtml(tr("critical"))} = 1 + ${e.crit} × (${
-          e.crit_damage} − 1)</i></span>`
-      : `<span class="rec-f" data-factor="${escHtml(F(k))}">×${v}<i>${escHtml(tr(F(k)))}</i></span>`).join("");
   const mit = (e.mitigation || []).map(([k, v]) =>
     `<span class="rec-f mit" data-factor="${escHtml(F(k))}">×${v}<i>${escHtml(tr(F(k)))}</i></span>`).join("");
-  // EVERY FACTOR THAT MOVED, and the NAMES of the ones that did not. A ×1.00 is
-  // noise on a row; WHICH ones were ×1.00 is a clue, so they are a count you
-  // can hover rather than fifteen lines you have to skip (owner, 2026-08-27).
-  const inert = (e.steps_inert || []).length
-    ? `<span class="rec-inert" title="${escHtml((e.steps_inert || []).map((k) => tr(F(k))).join(" · "))}">${
-        e.steps_inert.length} ×1.00</span>`
-    : "";
   const b = e.before || {};
   const crit = e.crit ? `<span class="rec-crit">${escHtml(tr("crit"))} ${e.crit}</span>` : "";
   // WHICH PELLET, AND WHICH HALF OF ITS ATTACK. A pellet that has an explosion
@@ -14659,7 +14681,12 @@ function recordRow(e, rosters) {
     <td${L("part")}>${e.part ? `<span class="${e.head ? "rec-head" : ""}">${escHtml(tr(e.part))}${e.head ? " ⌖" : ""}</span>` : "<span class=\"z\">—</span>"}</td>
     <td class="num"${L("damage")}><b>${n(e.effective)}</b><span class="rec-pool">${escHtml(tr(REC_POOL[e.pool] || e.pool))}</span>${crit}</td>
     <td class="rec-proc"${L("procs")}>${(e.procs || []).map((p) => `<span class="rec-p">${escHtml(DT(p))}</span>`).join("") || "<span class=\"z\">—</span>"}</td>
-    <td class="rec-calc"${L("where the number comes from")}>${baseChain(e)}${steps}<span class="rec-mid">= ${n(e.raw)}</span>${mit}<span class="rec-eq">= ${n(e.effective)}</span>${inert}</td>
+    <td class="rec-calc"${L("where the number comes from")}><div class="lg lg-base"><span class="lg-lbl">${
+      escHtml(tr("base damage"))}</span><span class="lg-body"><span class="lg-out">${n(e.base)}</span></span></div>${
+      ledgerRows(e)}${mit ? `<div class="lg-mit">${mit}</div>` : ""}<div class="lg lg-end"><span class="lg-lbl">${
+      escHtml(tr("popped"))}</span><span class="lg-body"><span class="lg-exact">${
+      escHtml(tr("pool lost"))} ${e.effective.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span><span class="lg-out">${
+      n(e.effective)}</span></span></div></td>
     <td class="rec-wep"${L("weapon")}>${wep}</td>
     <td class="rec-buff"${L("buffs up")}>${recStacks(e.buffs, rosters.buffs, "up")}</td>
     <td class="rec-state"${L("before · target")}>${

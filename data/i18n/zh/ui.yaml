@@ -1400,7 +1400,9 @@ ui:
   # A Tome's alt fire needs a full meter; this arena fires it continuously.
   "the alt fire needs a FULL METER and this arena fires it as fast as its {rate}/s trigger allows — the meter takes {seconds} s to refill and each primary-fire hit takes 1 s off, so a real Tome alternates between the two weapons and this sim fires only the one you picked. Everything below for this form is the ceiling rather than the average, and by a wide margin": "副射击需要**蓄满的能量条**，而本战场是按它 {rate}/s 的扳机速度连续开火的 —— 能量条要 {seconds} 秒才回满，主射击每命中一次减 1 秒。真实的法典是在两种射击之间来回切换的，而这个模拟只开你选中的那一种。所以这个形态下面的所有数字是**上限**而不是平均值，而且差得很远"
   # The orb is a lingering thing, not an impact explosion.
-  "the thrown orb does not detonate where it lands — it travels, shocks ONE enemy within {radius} m every second (each shock chaining to 2 more), and explodes on its own after {fuse} s. This engine gives a projectile an impact and an explosion, so what is modelled here is the explosion alone: against a crowd the orb's own shocks are missing, and against a single target it goes off sooner than it would": "抛出的法球**不是落地就炸** —— 它会缓慢飞行，每秒电击 {radius} 米内的**一个**敌人（每次电击再连锁 2 个），并在 {fuse} 秒后自行爆炸。本引擎给一发抛射物一次撞击加一次爆炸，所以这里建模的只有那次爆炸：面对人群时法球自己的电击是缺失的，面对单体时它又比实际更早引爆"
+  "each of the orb's strikes CHAINS, and the chain is not modelled: it picks one enemy inside {radius} m and jumps to {chains} more, and Multishot buys MORE OF THEM rather than more orbs — 'multishot + {chains}' enemies a strike, so a panel reading x2.6 is four for certain and a fifth 60% of the time. Against ONE target it is worth nothing and every number below stands; against a crowd the chain is missing and Multishot is pinned at the weapon's default because of it, which understates both": "法球的每一下电击都会**连锁**，而这段连锁没有建模：它在 {radius} 米内选一个敌人，再跳到另外 {chains} 个；多重射击买到的是**更多连锁目标**而不是更多法球 —— 每次电击命中「多重射击 + {chains}」个敌人，所以面板 x2.6 就是稳定 4 个、60% 概率第 5 个。对**单体**它一文不值，下面每个数字照常成立；对人群，连锁是缺失的，而且多重射击也因此被钉死在武器默认值上，两边都被低估了"
+  "how often one of the orb's six strikes lands on a weak point is ASSUMED — a flat 10% each (owner, 2026-08-28). That they CAN is the wiki's ('the strikes and the forced Electricity proc can hit weakspots'), but the orb picks its own target as it drifts, which is geometry this arena does not model and DE publishes no rate for. It is the same 10% for all six and for the Electricity each one forces, so nothing here rides on which of them is which": "法球六下电击各有多大概率打在弱点上，是**假设**的 —— 每下固定 10%（owner，2026-08-28）。**能**打弱点是 wiki 写的（「电击和强制触发的电击异常都可以打中弱点」），但法球是一边飘一边自己选目标的，那是本战场没有建模的几何，DE 也没公开过这个比例。六下用的是同一个 10%，每下强制触发的电击也是，所以这里不存在「哪一下是哪一下」的问题"
+  "the orb keeps MOVING while it strikes — 2 m/s onward after it touches something, with six metres of reach — so against a single enemy who stays put it is out of range after three seconds and FOUR of its six strikes land, not six. That is this weapon's own geometry rather than a shortcut, and it is the arena that makes it bite: real enemies move, stand in groups and follow you, and the orb drifting on is what lets it reach the next one. Read this number as the floor for a lone target and expect more from a crowd": "法球在电击的同时是**一直在动**的 —— 碰到东西后以 2 m/s 继续前进，而攻击范围是 6 米，所以面对一个站着不动的单体，它三秒后就出了范围，六下电击里只有**四下**打得到。这是这把武器自己的几何，不是偷懒；真正让它咬人的是这个战场：真实的敌人会移动、会成群、会追着你跑，而法球往前飘正是它够到下一个的方式。把这个数字当作单体的**下限**，人群里会更高"
   "the blast staggers the WIELDER in game — this arena gives the player no body, so a build that would be unplayable in a corridor costs nothing here": "爆炸在游戏里会震退**开火者** — 本战场不给玩家实体，所以在走廊里根本没法用的配装，在这里不付任何代价"
   "the blast needs no line of sight and goes through walls — this arena has no geometry, so nothing is ever behind cover and the perk pays nothing extra": "爆炸不需要视线、能穿墙 — 本战场没有地形，没有任何东西躲在掩体后，所以这个特性在这里不额外产生价值"
   "this weapon is SILENT and this arena has nobody to alert — stealth is worth nothing here and a great deal in a real mission": "这把武器是**静音**的，而本战场没有可惊动的人 — 潜行在这里毫无价值，在真实任务里价值极大"
@@ -1450,6 +1452,15 @@ ui:
   # error, which is why `check_disclosure`'s own rule applies: run the pass in
   # both languages.
   "Combat record": "战斗记录"
+  "base damage": "基础伤害"
+  "base damage bracket": "基伤桶"
+  "base damage mods": "改装伤害"
+  "below half health": "半血以下加成"
+  "headshot damage": "爆头伤害"
+  "quantization": "量化"
+  "grid": "刻度"
+  "popped": "弹出"
+  "pool lost": "血条实际掉"
   "this result was saved before the record existed — run the fight again to read it": "这个结果是在战斗记录之前保存的 —— 重新运行一次就能读它的记录"
   "overguard": "超保护"
   "transform begins": "变形开始"

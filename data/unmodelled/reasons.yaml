@@ -70,8 +70,13 @@ reasons:
     text: "the projectile has TRAVEL TIME and has to be led — 'hitting a target at range requires leading the target before firing'. Every shot here connects the instant it is fired, so this weapon's real hit rate against anything that moves is worse than the numbers below"
   tome_meter:
     text: "the alt fire needs a FULL METER and this arena fires it as fast as its {rate}/s trigger allows — the meter takes {seconds} s to refill and each primary-fire hit takes 1 s off, so a real Tome alternates between the two weapons and this sim fires only the one you picked. Everything below for this form is the ceiling rather than the average, and by a wide margin"
-  orb_shocks_over_time:
-    text: "the thrown orb does not detonate where it lands — it travels, shocks ONE enemy within {radius} m every second (each shock chaining to 2 more), and explodes on its own after {fuse} s. This engine gives a projectile an impact and an explosion, so what is modelled here is the explosion alone: against a crowd the orb's own shocks are missing, and against a single target it goes off sooner than it would"
+  # NO `orb_shocks_over_time`, AND NO `orb_strikes_do_not_travel` — the orb is
+  # MODELLED (2026-08-28, M63), as an entity with a position that flies, slows
+  # on contact, strikes one body inside its reach six times and detonates where
+  # it got to. Its movement is not a gap any more; it is the model. What is left
+  # is the chain, which is a damage source this engine has no shape for.
+  orb_chain:
+    text: "each of the orb's strikes CHAINS, and the chain is not modelled: it picks one enemy inside {radius} m and jumps to {chains} more, and Multishot buys MORE OF THEM rather than more orbs — 'multishot + {chains}' enemies a strike, so a panel reading x2.6 is four for certain and a fifth 60% of the time. Against ONE target it is worth nothing and every number below stands; against a crowd the chain is missing and Multishot is pinned at the weapon's default because of it, which understates both"
   self_stagger:
     text: "the blast staggers the WIELDER in game — this arena gives the player no body, so a build that would be unplayable in a corridor costs nothing here"
   # A SECOND EXPLOSION FROM ONE SHOT. An attack carries ONE `radial:`, and the

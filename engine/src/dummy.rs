@@ -2926,6 +2926,24 @@ pub struct DummyParams {
     /// bounce is this attack's collision and this attack's explosion arriving
     /// again, at a body it has not hit yet.
     pub ricochet: Option<crate::loadout::Ricochet>,
+    /// See [`crate::weapons_data::AttackSpec::unaimed_headshot_chance`] — this
+    /// attack is not pointed at anything, so where each of its instances lands
+    /// is a flat chance of its own rather than the scenario's `headshot_pct`.
+    pub unaimed_headshot_chance: Option<f64>,
+    /// A DEPLOYED ORB'S geometry and clock — see [`crate::loadout::ResolvedOrb`].
+    ///
+    /// `Some` changes what a SHOT IS: it deploys rather than arrives, so the
+    /// pellet loop settles no collision and no explosion, and one orb goes out
+    /// however much multishot is on the build.
+    pub orb: Option<crate::loadout::ResolvedOrb>,
+    /// WHAT ONE OF ITS STRIKES DEALS — the attack's own hit, in the shape a
+    /// timed instance is resolved from. Built in [`Self::from_panel`] rather
+    /// than declared in the data, because it IS the attack's `damage:` and
+    /// writing it twice is how the two come to disagree.
+    pub orb_strike: Option<crate::loadout::ResolvedLingering>,
+    /// …AND WHAT ITS FUSE ENDS IN: the attack's own `radial:`, in the same
+    /// shape, fired from wherever the orb had got to.
+    pub orb_blast: Option<crate::loadout::ResolvedLingering>,
     /// The TENNO — the other one. Who is holding this weapon, and what they
     /// are doing: `resolve` has already asked its state which conditional mods
     /// pay, and the arcanes that scale off Warframe armor or energy read its
@@ -3749,6 +3767,63 @@ impl DummyParams {
             // been applied and what seeds the chains is what the player built.
             beam: panel.beam,
             ricochet: panel.ricochet,
+            unaimed_headshot_chance: panel.unaimed_headshot_chance,
+            orb: panel.orb,
+            // THE TWO PARTS AN ORB DELIVERS, derived from the attack rather
+            // than declared beside it. A strike is the attack's own hit and the
+            // detonation is its own explosion; the `orb:` block in the data is
+            // geometry and a clock, which is the same division `beam:` makes.
+            //
+            // Both arrive as the resolved TIMED-PART shape, because the
+            // arithmetic of a damage instance on a clock of its own is the same
+            // whichever mechanism produced it. What is NOT shared is who it
+            // lands on, and that is the whole difference between an orb and a
+            // field (owner, 2026-08-28) — decided in `process_orbs`, not here.
+            orb_strike: panel.orb.map(|_| crate::loadout::ResolvedLingering {
+                damage: panel.damage,
+                modified_base: panel.modified_base,
+                crit_chance: panel.crit_chance,
+                crit_damage: panel.crit_damage,
+                status_chance: panel.status_chance,
+                base_crit_chance: panel.base_crit_chance,
+                base_crit_damage: panel.base_crit_damage,
+                base_status_chance: panel.base_status_chance,
+                // The CLOCK belongs to the orb, not to the part; these two are
+                // read only by the field walk, which never sees this value.
+                tick_rate: 1.0,
+                duration_seconds: 0.0,
+                first_tick_delay_seconds: 0.0,
+                forced_procs: crate::damage::ForcedProcs::from_types(
+                    panel.forced_procs.iter().copied(),
+                ),
+                // A STRIKE HAS NO FALLOFF. It reaches one body, at full damage,
+                // wherever inside the orb's reach that body stands — the reach
+                // itself is the orb's and lives on `orb` above.
+                radius_m: f64::INFINITY,
+                falloff_start_m: f64::INFINITY,
+                falloff_reduction: 0.0,
+                stacking: crate::loadout::FieldStacking::Stack,
+                takes_condition_overload: false,
+            }),
+            orb_blast: panel.orb.and(panel.radial).map(|r| crate::loadout::ResolvedLingering {
+                damage: r.damage,
+                modified_base: r.modified_base,
+                crit_chance: r.crit_chance,
+                crit_damage: r.crit_damage,
+                status_chance: r.status_chance,
+                base_crit_chance: r.base_crit_chance,
+                base_crit_damage: r.base_crit_damage,
+                base_status_chance: r.base_status_chance,
+                tick_rate: 1.0,
+                duration_seconds: 0.0,
+                first_tick_delay_seconds: 0.0,
+                forced_procs: r.forced_procs,
+                radius_m: r.radius_m,
+                falloff_start_m: r.falloff_start_m,
+                falloff_reduction: r.falloff_reduction,
+                stacking: crate::loadout::FieldStacking::Stack,
+                takes_condition_overload: r.takes_condition_overload,
+            }),
             lingering: panel.lingering,
             continuous: panel.continuous,
             field_duration_on_empty_reload: panel.field_duration_on_empty_reload,
@@ -4219,6 +4294,12 @@ impl Default for DummyParams {
             // chain is something a weapon DECLARES.
             beam: None,
             ricochet: None,
+            // AIMED, like every fixture but the one weapon that is not.
+            unaimed_headshot_chance: None,
+            // NOTHING IS DEPLOYED: the calibration fixture throws no orb.
+            orb: None,
+            orb_strike: None,
+            orb_blast: None,
         }
     }
 }
@@ -4343,6 +4424,127 @@ fn watching<'a>(
     rec.is_on().then_some(breakdown)
 }
 
+/// What a layer leaves the running total at.
+fn layer_out(l: &crate::record::Layer) -> f64 {
+    use crate::record::Layer::*;
+    match l {
+        Bracket { out, .. } | Quantize { out, .. } | Mul { out, .. } => *out,
+    }
+}
+
+/// THE FULL LEDGER OF A PELLET, in the GAME's order rather than the engine's.
+///
+/// The engine evaluates in a cheaper order and is entitled to: a non-elemental
+/// base bonus multiplies the quantization numerator AND its scale, so it
+/// commutes with the snap — which is exactly why Condition Overload can be
+/// applied after quantization and still be right. What that licence does NOT
+/// license is printing the rearrangement as if it were the formula, and that is
+/// what `x5.706 Condition Overload` was: `(1 + base + co) / (1 + base)`, a
+/// quotient with a multiplication sign in front of it (owner, 2026-08-28).
+///
+/// So the bracket is a BRACKET here, with its terms, and the engine's quotient
+/// never reaches the page. The two agree on the product, which is the property
+/// `check_combat_record` already asserts of every row.
+#[allow(clippy::too_many_arguments)]
+fn pellet_layers(
+    stage_mb: f64,
+    gunco: Gunco,
+    base_damage: f64,
+    arcane_base_damage: f64,
+    // The element hierarchy and the quantization it is rounded through, as one
+    // factor for now — the snap's own per-component table is the next step.
+    elements: f64,
+    ability_elements: f64,
+    beam_merge: f64,
+    steps: &[crate::record::Step],
+    part_multiplier: f64,
+    headshot_bonus: f64,
+    is_head: bool,
+) -> Vec<crate::record::Layer> {
+    use crate::record::{Factor, Layer, Term};
+    // THE WEAPON'S OWN DAMAGE, before any bracket. `stage_mb` is it times the
+    // base-damage bucket, so the bucket divides back out — and this is the one
+    // division the ledger does, to find where the chain STARTS rather than to
+    // invent a factor in the middle of it.
+    let base = if (1.0 + base_damage).abs() > 1e-12 { stage_mb / (1.0 + base_damage) } else { stage_mb };
+
+    let mut terms: Vec<Term> = Vec::new();
+    let mut push = |factor: Factor, value: f64, of: Option<(f64, f64)>| {
+        if value.abs() > 1e-12 {
+            terms.push(Term { factor, value, of });
+        }
+    };
+    push(Factor::BaseDamageMods, base_damage, None);
+    push(Factor::ConditionOverload, gunco.co, Some((gunco.rate, gunco.types)));
+    push(Factor::ArcaneFinal, arcane_base_damage, None);
+    push(Factor::HalfHealth, gunco.half_hp, None);
+
+    let mut at = base;
+    let mut out: Vec<Layer> = Vec::new();
+    // AN EMPTY BRACKET IS NOT A LAYER. That is where the pile of `x1.00` went:
+    // a bracket with nothing in it has nothing to say, so it is not drawn.
+    if !terms.is_empty() {
+        let sum = 1.0 + terms.iter().map(|t| t.value).sum::<f64>();
+        at = base * sum;
+        out.push(Layer::Bracket { factor: Factor::BaseDamageBracket, terms, sum, out: at });
+    }
+    for (factor, v) in [
+        (crate::record::Factor::ElementBracketQuantized, elements),
+        (crate::record::Factor::WarframeAbilityElement, ability_elements),
+        (crate::record::Factor::MergedBeams, beam_merge),
+    ] {
+        if (v - 1.0).abs() > 1e-12 {
+            at *= v;
+            out.push(Layer::Mul { factor, value: v, of: Vec::new(), head: v, out: at });
+        }
+    }
+    for (factor, v) in steps {
+        // CONDITION OVERLOAD IS NOT HERE — it is a term of the bracket above,
+        // and a weapon whose catalog row says `Multiplying` gets its own layer
+        // rather than sharing this one.
+        if *factor == Factor::ConditionOverload || (v - 1.0).abs() <= 1e-12 {
+            continue;
+        }
+        at *= v;
+        // A BODY PART IS ITSELF A BRACKET: `3.00 x (1 + 0.50 headshot damage)`,
+        // and the pair is what a reader checks against the enemy card
+        // (MEASUREMENTS M60 — headshot bonuses ADD).
+        let of = if *factor == Factor::BodyPart && is_head && headshot_bonus.abs() > 1e-12 {
+            vec![Term { factor: Factor::HeadshotDamage, value: headshot_bonus, of: None }]
+        } else {
+            Vec::new()
+        };
+        let head = if of.is_empty() { *v } else { part_multiplier };
+        out.push(Layer::Mul { factor: *factor, value: *v, of, head, out: at });
+    }
+    out
+}
+
+/// A FLAT LIST OF MULTIPLIERS, as layers — what the eight simple damage sites
+/// have and all they need.
+///
+/// A factor of exactly 1 is DROPPED HERE rather than at the renderer, which is
+/// the whole of the "no pile of x1.00" rule: a layer that does nothing is not a
+/// layer, and there is nowhere downstream for it to reappear from.
+fn mul_layers(base: f64, steps: &[crate::record::Step]) -> Vec<crate::record::Layer> {
+    let mut at = base;
+    let mut out = Vec::with_capacity(steps.len());
+    for (factor, v) in steps {
+        if (v - 1.0).abs() <= 1e-12 {
+            continue;
+        }
+        at *= v;
+        out.push(crate::record::Layer::Mul {
+            factor: *factor,
+            value: *v,
+            of: Vec::new(),
+            head: *v,
+            out: at,
+        });
+    }
+    out
+}
+
 /// WHAT ONE DAMAGE INSTANCE WAS, from the attacker's side.
 ///
 /// Handed to [`log_damage`] by each of the nine sites where damage lands. A
@@ -4354,8 +4556,11 @@ fn watching<'a>(
 struct Instance {
     origin: crate::record::Origin,
     /// The offensive ledger: `base × Π steps` is what the target was handed.
+    /// The offensive ledger — see [`crate::record::Layer`]. `base` is the
+    /// weapon's own damage before any bracket, and each layer says what the
+    /// running total is after it.
     base: f64,
-    steps: Vec<crate::record::Step>,
+    layers: Vec<crate::record::Layer>,
     part: Option<String>,
     head: bool,
     crit_tier: u32,
@@ -4363,8 +4568,7 @@ struct Instance {
     /// [`crate::record::Damage::crit_damage`].
     crit_damage: f64,
     /// Where `base` started, and what took it there.
-    base_from: f64,
-    base_steps: Vec<crate::record::Step>,
+
     /// Which pellet of the trigger pull, counting from 1 — see
     /// [`crate::record::Damage::pellet`].
     pellet: Option<u32>,
@@ -4622,15 +4826,14 @@ fn write_row(
                 head: inst.head,
                 crit_tier: inst.crit_tier,
                 base: inst.base,
-                base_from: inst.base_from,
-                base_steps: inst.base_steps.clone(),
+
                 crit_damage: inst.crit_damage,
-                steps: inst.steps.clone(),
+                layers: inst.layers.clone(),
                 // A SPLIT SHARES ONE RAW NUMBER between its portions, and the
                 // share is already the first term of the ledger below — so the
                 // raw is the instance's either way, and only what happens to it
                 // after it arrives differs.
-                raw: inst.base * inst.steps.iter().map(|(_, v)| v).product::<f64>(),
+                raw: inst.layers.last().map_or(inst.base, layer_out),
                 mitigation: mit,
                 effective: p.effective,
                 before: breakdown.before,
@@ -4798,6 +5001,32 @@ fn roll_crit_tier(effective_cc: f64, rng: &mut Rng) -> u32 {
 }
 
 /// Pick the body part a shot lands on, by normalized aim weight.
+/// WHERE AN INSTANCE OF AN ATTACK THE PLAYER DOES NOT AIM LANDS.
+///
+/// [`pick_part`] draws against the scenario's aim weights, which is a statement
+/// about the player. Some attacks are not pointed at anything: the Grimoire
+/// throws an orb that drifts and *"shock[s] 1 enemy within 6 meters of it every
+/// 1 second"*, choosing a body itself, six times. For those the weapon states a
+/// flat chance of finding a weak point and this reads it.
+///
+/// ONE DRAW, exactly as `pick_part` takes one, so a weapon that states nothing
+/// consumes the stream identically to before this existed.
+///
+/// It returns a real [`BodyPart`], not a multiplier — which is the whole reason
+/// it is written this way. Everything downstream of a landing instance asks the
+/// part its own questions (is it a head for on-headshot buffs, is it eligible
+/// for the critical-location fold-in, what is it worth), and handing back a
+/// bare number would have made an unaimed hit a second kind of hit that
+/// answered some of them and not others.
+fn unaimed_part<'a>(parts: &'a [BodyPart], head_chance: f64, rng: &mut Rng) -> &'a BodyPart {
+    let head = rng.next_f64() < head_chance;
+    parts
+        .iter()
+        .find(|p| p.is_head == head)
+        .or_else(|| parts.iter().find(|p| !p.is_head))
+        .unwrap_or_else(|| parts.last().expect("dummy needs at least one body part"))
+}
+
 fn pick_part<'a>(parts: &'a [BodyPart], rng: &mut Rng) -> &'a BodyPart {
     let total: f64 = parts.iter().map(|p| p.aim_weight).sum();
     let mut x = rng.next_f64() * total;
@@ -5344,12 +5573,12 @@ fn fire_extra_hits(
                 // Extra Hit is a percentage of something else, in one
                 // element, on the body part that thing struck.
                 base: trigger_raw,
-                steps: vec![
+                layers: mul_layers(trigger_raw, &[
                     (crate::record::Factor::ExtraHitShare, fraction),
                     (crate::record::Factor::ElementBracket, bracket),
                     (crate::record::Factor::BodyPart, part_again),
                     (crate::record::Factor::Faction, f),
-                ],
+                ]),
                 head: head_direct,
                 ..Instance::default()
             },
@@ -5658,7 +5887,7 @@ fn drain_area_procs(
                     // neighbour's number from the body that carried the
                     // stack.
                     base: hit.damage,
-                    steps: vec![(crate::record::Factor::RadialFalloff, share)],
+                    layers: mul_layers(hit.damage, &[(crate::record::Factor::RadialFalloff, share)]),
                     ..Instance::default()
                 },
             );
@@ -6080,7 +6309,7 @@ fn settle_procs(
                             // is their sum and the count is what a reader
                             // checks it against.
                             base: total,
-                            steps: Vec::new(),
+                            layers: Vec::new(),
                             ..Instance::default()
                         },
                     );
@@ -6303,7 +6532,7 @@ fn settle_procs(
                     // of this arcane: "unaffected by damage/element/crit
                     // mods … faction bonuses apply ONCE".
                     base: params.arcane.flat_damage_on_status,
-                    steps: vec![(crate::record::Factor::Faction, params.faction_at_time(at))],
+                    layers: mul_layers(params.arcane.flat_damage_on_status, &[(crate::record::Factor::Faction, params.faction_at_time(at))]),
                     ..Instance::default()
                 },
             );
@@ -6365,6 +6594,28 @@ struct InstanceScale {
 /// | Torid | Toxin AoE Cloud | 40 | 40 | 100% | Multiplying |
 ///
 /// The counter is read HERE rather than snapshotted when the field spawned —
+/// WHAT THE CONDITION OVERLOAD BRACKET IS, and what it is MADE OF.
+///
+/// The quotient was the only thing that came back for months, and it is the
+/// reason the panel printed `x5.706 Condition Overload` — a number the game
+/// does not have. On an `Adding` weapon the bracket is
+/// `(1 + base + arcane + co + half-health) / (1 + base)`: a ratio of the base
+/// bracket to itself, which is exactly right as arithmetic and a fiction as a
+/// factor. The terms travel with it now, so the ledger can show the sum the
+/// game actually computes (owner, 2026-08-28).
+#[derive(Debug, Clone, Copy, Default)]
+struct Gunco {
+    /// What the engine multiplies by — unchanged, and still a quotient.
+    bucket: f64,
+    /// Condition Overload's own contribution to the base bracket.
+    co: f64,
+    /// …and the two numbers behind it, for a reader checking a card.
+    rate: f64,
+    types: f64,
+    /// The below-half-health bonus, which shares this bracket.
+    half_hp: f64,
+}
+
 /// Pox's row in the same catalog: "Damage recalculates on every tick".
 #[allow(clippy::too_many_arguments)]
 fn gunco_bucket(
@@ -6383,7 +6634,7 @@ fn gunco_bucket(
     // on `ap`; an explosion carries its own, because an evolution can raise
     // what the explosion deals without raising what CO reads.
     co_base_fraction: f64,
-) -> f64 {
+) -> Gunco {
     let co_rate = ap.co_per_type
         + params
             .co_stack
@@ -6408,15 +6659,24 @@ fn gunco_bucket(
     // and the third falls out of being CO's SIBLING here rather than nested
     // inside it.
     let half_hp = half_hp * co_base_fraction;
+    let terms = |bucket: f64| Gunco {
+        bucket,
+        co: gunco_total,
+        rate: co_rate,
+        types: debuffs.distinct_statuses() as f64,
+        half_hp,
+    };
     match ap.co_behavior {
         // Joins the base-damage bucket: diluted by Hornet Strike, sharing the
         // bracket with the arcane's bonus.
-        crate::loadout::CoBehavior::AdditiveWithBaseDamage => {
-            (1.0 + base_damage + arcane_base_damage + gunco_total + half_hp) / (1.0 + base_damage)
-        }
-        crate::loadout::CoBehavior::Independent => arc_ratio * (1.0 + gunco_total + half_hp),
+        crate::loadout::CoBehavior::AdditiveWithBaseDamage => terms(
+            (1.0 + base_damage + arcane_base_damage + gunco_total + half_hp) / (1.0 + base_damage),
+        ),
+        crate::loadout::CoBehavior::Independent => terms(arc_ratio * (1.0 + gunco_total + half_hp)),
         // No CO bracket to join, so the ordinary one: the base-damage bucket.
-        crate::loadout::CoBehavior::Inert => arc_ratio * (1.0 + base_damage + half_hp) / (1.0 + base_damage),
+        crate::loadout::CoBehavior::Inert => terms(
+            arc_ratio * (1.0 + base_damage + half_hp) / (1.0 + base_damage),
+        ),
     }
 }
 
@@ -6563,7 +6823,7 @@ fn spread_hit(
     // not interchangeable: `share` scales the hit AND the modded base its DoTs
     // are computed from, while a head multiplier scales the hit alone. 1.0 for
     // every mechanism but the ricochet, so this changes nothing anywhere else.
-    let raw = raw_per_bucket * bucket * inst.share * inst.part_factor;
+    let raw = raw_per_bucket * bucket.bucket * inst.share * inst.part_factor;
     if raw <= 0.0 {
         return;
     }
@@ -6620,11 +6880,11 @@ fn spread_hit(
             // which is why a neighbour's row can read a different CO term
             // from the body that was aimed at.
             base: raw_per_bucket,
-            steps: vec![
-                (crate::record::Factor::ConditionOverload, bucket),
+            layers: mul_layers(raw_per_bucket, &[
+                (crate::record::Factor::ConditionOverload, bucket.bucket),
                 (crate::record::Factor::HopFalloff, inst.share),
                 (crate::record::Factor::BodyPart, inst.part_factor),
-            ],
+            ]),
             head: inst.headshot,
             ..Instance::default()
         },
@@ -7464,7 +7724,7 @@ fn fire_syndicate_radial(
         || Instance {
             origin: crate::record::Origin::Arcane,
             base: sy.damage,
-            steps: vec![(crate::record::Factor::Faction, params.faction_at_time(at))],
+            layers: mul_layers(sy.damage, &[(crate::record::Factor::Faction, params.faction_at_time(at))]),
             ..Instance::default()
         },
     );
@@ -7633,6 +7893,313 @@ struct FieldCtx {
     head_factor: f64,
 }
 
+/// AN ORB IN THE AIR — a position, a heading, a clock and what is left of a
+/// fuse.
+///
+/// IT IS NOT A `FieldState`, and the two are kept apart on purpose (owner,
+/// 2026-08-28). A FIELD is an AREA: it sits where it landed and burns everyone
+/// standing in it, at each body's own falloff distance. This is an ENTITY: it
+/// has a place of its own, it MOVES, and each of its strikes reaches exactly
+/// ONE body inside its reach, all six for the same number. They share the
+/// arithmetic of settling a damage instance and nothing else.
+#[derive(Debug, Clone, Copy)]
+struct OrbState {
+    part: crate::loadout::ResolvedOrb,
+    /// Where it is. Advanced to each event's time as that event is settled,
+    /// which is all the resolution this needs — nothing between two strikes
+    /// asks where it is.
+    at: crate::space::Vec2,
+    /// Unit heading, fixed at the throw: touching a body slows it and does not
+    /// turn it (owner, 2026-08-28 — "还是朝着原先的方向").
+    dir: crate::space::Vec2,
+    /// The clock `at` was last advanced to.
+    at_time: f64,
+    /// Has it touched a body yet? The one thing that changes its speed.
+    contacted: bool,
+    next_strike: f64,
+    strikes_left: u32,
+    /// When it detonates — the last event of its life and the only one that is
+    /// not a strike.
+    fuse_at: f64,
+    /// Plentiful Mayhem's independent multiplier, carried from the shot that
+    /// threw it, exactly as a field carries it.
+    damage_multiplier: f64,
+}
+
+impl OrbState {
+    /// MOVE IT TO `to` at whichever speed it is travelling, noticing a contact
+    /// on the way.
+    ///
+    /// The speed change is a STEP at the first body it touches, so a leg
+    /// spanning that contact is walked in two: up to the body at the launch
+    /// speed, onward at the slowed one. Covering it in one piece at one speed
+    /// would put the orb somewhere it never was, which is the one thing a
+    /// position model exists to get right.
+    /// This orb `metres` further along its heading. `dir` is a unit vector, so
+    /// there is nothing to normalise.
+    fn step(&self, metres: f64) -> crate::space::Vec2 {
+        crate::space::Vec2::new(
+            self.at.x + self.dir.x * metres,
+            self.at.y + self.dir.y * metres,
+        )
+    }
+
+    fn advance(&mut self, to: f64, bodies: &[crate::space::Vec2]) {
+        while self.at_time < to - 1e-12 {
+            let speed = if self.contacted {
+                self.part.speed_after_contact_mps
+            } else {
+                self.part.launch_speed_mps
+            };
+            if speed <= 0.0 {
+                self.at_time = to;
+                return;
+            }
+            let reach = speed * (to - self.at_time);
+            let hit = if self.contacted {
+                None
+            } else {
+                crate::space::first_hit(self.at, self.dir, bodies).filter(|(_, d)| *d <= reach + 1e-9)
+            };
+            match hit {
+                Some((_, d)) => {
+                    self.at = self.step(d);
+                    self.at_time += d / speed;
+                    self.contacted = true;
+                }
+                None => {
+                    self.at = self.step(reach);
+                    self.at_time = to;
+                }
+            }
+        }
+    }
+}
+
+/// SETTLE EVERY ORB EVENT DUE STRICTLY BEFORE `until`, oldest first.
+///
+/// The same shape as [`process_field_ticks`] and for the same reason: an event
+/// changes what the next one sees, so the order is resolved live rather than
+/// planned. Everything that differs is about WHO —
+///
+///   * the orb is MOVED to the event's time first, because where it is decides
+///     who is a candidate at all
+///   * a STRIKE takes ONE body inside the reach, at random — *"Orb will shock 1
+///     enemy within 6 meters of it every 1 second"* — and chains from it
+///   * the last event is the DETONATION: the attack's own explosion, fired
+///     from wherever the orb had got to
+///
+/// A TICK WITH NOBODY IN REACH STRIKES NOBODY AND IS SPENT, which is what makes
+/// the measured count fall out of the geometry rather than being written down.
+/// Six ticks over a six second fuse: a throw that connects in under a second
+/// loses none of them, one that takes 2.5 s lands four, and against a body at
+/// contact it is always six — the owner's `ceil(6 - flight)` arriving on its
+/// own (MEASUREMENTS M63).
+#[allow(clippy::too_many_arguments)]
+fn process_orbs(
+    orbs: &mut Vec<OrbState>,
+    debuffs: &mut DebuffState,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    until: f64,
+    target: &mut TargetState,
+    params: &DummyParams,
+    ap: &DummyParams,
+    ctx: &FieldCtx,
+    r: &mut RunResult,
+    rec: &mut crate::record::Record,
+    d: &mut crate::rng::Draws,
+    others: &mut [SpreadFoe],
+) {
+    if orbs.is_empty() {
+        return;
+    }
+    // WHERE EVERY BODY STANDS, the aimed one first — the same numbering
+    // `RunResult::damage_by_body` uses, so an index here is an index there.
+    let mut bodies = Vec::with_capacity(params.others.len() + 1);
+    bodies.push(params.target_at);
+    bodies.extend(params.others.iter().map(|f| f.at));
+
+    while let Some((i, at, is_strike)) = orbs
+        .iter()
+        .enumerate()
+        .filter_map(|(i, o)| {
+            let strike_due = o.strikes_left > 0 && o.next_strike <= o.fuse_at;
+            let next = if strike_due { o.next_strike } else { o.fuse_at };
+            (next < until).then_some((i, next, strike_due))
+        })
+        .min_by(|a, b| a.1.total_cmp(&b.1))
+    {
+        // Status events strictly before this one land first, exactly as they do
+        // before a field tick.
+        process_ticks(
+            debuffs, gal, arc, at + 1e-9, target, params, ap, r, rec, &mut d.status,
+            &params.target, 0,
+        );
+        orbs[i].advance(at, &bodies);
+        let orb = orbs[i];
+        if !is_strike {
+            orbs.remove(i);
+            orb_detonation(&orb, at, ctx, debuffs, gal, arc, target, params, ap, r, rec, d, others, &bodies);
+            continue;
+        }
+        orbs[i].next_strike += orb.part.strike_interval_seconds;
+        orbs[i].strikes_left -= 1;
+
+        // WHO IS IN REACH. Any part of a body touching is enough — the rule
+        // every sphere in this engine uses.
+        let in_reach: Vec<usize> = (0..bodies.len())
+            .filter(|&b| {
+                crate::space::caught_by_blast(bodies[b].distance(orb.at), orb.part.strike_radius_m)
+            })
+            .collect();
+        if in_reach.is_empty() {
+            continue;
+        }
+        // ONE OF THEM, AT RANDOM. The page says the orb picks and does not say
+        // how; a uniform draw is the only reading that invents no preference.
+        let pick = ((d.spine.next_f64() * in_reach.len() as f64) as usize).min(in_reach.len() - 1);
+        let seed = in_reach[pick];
+
+        // …AND THE CHAIN OFF IT. `chain_bodies` is the TOTAL a strike reaches,
+        // the struck body included, with multishot already inside it — which is
+        // what *"Number of chains is affected by Multishot"* buys on this
+        // weapon instead of a second orb.
+        let reached = orb.part.bodies_this_strike(d.spine.next_f64()).max(1) as usize;
+        let mut path = vec![seed];
+        if reached > 1 {
+            let mut rest: Vec<usize> = in_reach.into_iter().filter(|&b| b != seed).collect();
+            // Nearest first from wherever the path has got to, ties by index —
+            // the same walk `chain::Layout` does, and nobody twice.
+            while path.len() < reached {
+                let from = *path.last().expect("seeded");
+                let Some((k, _)) = rest
+                    .iter()
+                    .enumerate()
+                    .map(|(k, &b)| (k, bodies[from].distance(bodies[b])))
+                    .filter(|(_, dist)| *dist <= orb.part.chain_range_m + 1e-9)
+                    .min_by(|a, b| a.1.total_cmp(&b.1))
+                else {
+                    break;
+                };
+                path.push(rest.remove(k));
+            }
+        }
+
+        let mut aimed_died = false;
+        let mut share = 1.0;
+        for (hop, &b) in path.iter().enumerate() {
+            if hop > 0 {
+                share *= orb.part.chain_damage_per_hop;
+            }
+            let killed = orb_strike(
+                &orb, share, at, ctx, b, debuffs, gal, arc, target, params, ap, r, rec, d, others,
+            );
+            aimed_died |= killed && b == 0;
+        }
+        if aimed_died {
+            debuffs.on_death(params.acid_shells, &params.target);
+            return;
+        }
+    }
+}
+
+/// ONE STRIKE, on body `b` — 0 is the aimed one and the rest index the
+/// formation, the numbering everything else here uses.
+///
+/// It is [`field_tick`] with the body chosen for it. Sharing that function is
+/// what stops a cloud's tick and an orb's strike drifting apart on the
+/// arithmetic; WHICH body is the part an orb decides for itself.
+#[allow(clippy::too_many_arguments)]
+fn orb_strike(
+    orb: &OrbState,
+    share: f64,
+    at: f64,
+    ctx: &FieldCtx,
+    b: usize,
+    debuffs: &mut DebuffState,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    target: &mut TargetState,
+    params: &DummyParams,
+    ap: &DummyParams,
+    r: &mut RunResult,
+    rec: &mut crate::record::Record,
+    d: &mut crate::rng::Draws,
+    others: &mut [SpreadFoe],
+) -> bool {
+    let Some(part) = ap.orb_strike else { return false };
+    let mult = orb.damage_multiplier * share;
+    match b.checked_sub(1) {
+        None => field_tick(
+            &part, mult, at, ctx, debuffs, gal, arc, target, params, ap, r, rec, d,
+            &params.target, crate::record::Origin::Orb,
+        ),
+        Some(bi) => {
+            let Some(spec) = params.others.get(bi) else { return false };
+            let Some(SpreadFoe { state, debuffs: fd }) = others.get_mut(bi) else { return false };
+            field_tick(
+                &part, mult, at, ctx, fd, gal, arc, state, params, ap, r, rec, d,
+                &spec.params, crate::record::Origin::Orb,
+            )
+        }
+    }
+}
+
+/// THE FUSE RUNNING OUT — the attack's own explosion, fired from wherever the
+/// orb had drifted to.
+///
+/// It is the ordinary radial with one thing changed, and that one thing is the
+/// point of the whole entity: its CENTRE. Every other explosion in this engine
+/// goes off AT a body, so where it goes off never had to be said; this one goes
+/// off at a place, which may be past the body it touched and may be nowhere
+/// near anybody.
+#[allow(clippy::too_many_arguments)]
+fn orb_detonation(
+    orb: &OrbState,
+    at: f64,
+    ctx: &FieldCtx,
+    debuffs: &mut DebuffState,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    target: &mut TargetState,
+    params: &DummyParams,
+    ap: &DummyParams,
+    r: &mut RunResult,
+    rec: &mut crate::record::Record,
+    d: &mut crate::rng::Draws,
+    others: &mut [SpreadFoe],
+    bodies: &[crate::space::Vec2],
+) {
+    let Some(part) = ap.orb_blast else { return };
+    for (b, &pos) in bodies.iter().enumerate() {
+        let dist = pos.distance(orb.at);
+        if !crate::space::caught_by_blast(dist, part.radius_m) {
+            continue;
+        }
+        // LINEAR FALLOFF MEASURED FROM THE ORB rather than from a body.
+        let mult = orb.damage_multiplier * part.falloff_at(crate::space::blast_reach(dist));
+        match b.checked_sub(1) {
+            None => {
+                field_tick(
+                    &part, mult, at, ctx, debuffs, gal, arc, target, params, ap, r, rec, d,
+                    &params.target, crate::record::Origin::Orb,
+                );
+            }
+            Some(bi) => {
+                if let (Some(spec), Some(SpreadFoe { state, debuffs: fd })) =
+                    (params.others.get(bi), others.get_mut(bi))
+                {
+                    field_tick(
+                        &part, mult, at, ctx, fd, gal, arc, state, params, ap, r, rec, d,
+                        &spec.params, crate::record::Origin::Orb,
+                    );
+                }
+            }
+        }
+    }
+}
+
 /// Settle every FIELD tick due strictly before `until`, oldest first.
 ///
 /// A separate pass from [`process_ticks`] on purpose — a field tick is weapon
@@ -7708,6 +8275,7 @@ fn process_field_ticks(
             rec,
             d,
             &params.target,
+            crate::record::Origin::Field,
         );
         // …AND EVERY OTHER BODY STANDING IN IT. The cloud is stuck to the body
         // it was left on, so that is its centre, and the three blast rules
@@ -7739,6 +8307,7 @@ fn process_field_ticks(
                 rec,
                 d,
                 &spec.params,
+                crate::record::Origin::Field,
             );
         }
         if killed {
@@ -7795,6 +8364,12 @@ fn field_tick(
     // WHICH BODY THIS BURNS — `params.target` until a cloud could stand over
     // more than one (2026-08-17). Its pools, its stack caps, its immunities.
     foe: &TargetParams,
+    // WHICH MECHANISM PRODUCED IT. The arithmetic of a damage instance on a
+    // clock of its own is the same for a cloud's tick and a deployed orb's
+    // strike, so the two share this function; the RECORD must still say which,
+    // because they are different mechanics and a reader laying the panel beside
+    // the game needs to tell them apart.
+    origin: crate::record::Origin,
 ) -> bool {
     let status_damage = params.status_duration_multiplier;
     let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
@@ -7804,9 +8379,24 @@ fn field_tick(
     let qtotal = qvec.total();
     let shares = TypeShares::of(&qvec);
 
+    // WHERE THIS TICK LANDED. A CLOUD lands nowhere — it is an area, and the
+    // radial's rule holds for it: *"Explosion has a headshot multiplier of 1x
+    // and cannot trigger headshot conditions"*. That is every field in the
+    // roster but one, and it takes NO draw, which is what keeps their dice
+    // exactly where they were.
+    //
+    // The Grimoire's orb is the other kind. Its six strikes are one mechanic —
+    // the first is a field tick like the five after it (owner, 2026-08-28) —
+    // and the wiki says outright that they find weak points: *"The strikes and
+    // the forced Electricity proc can hit weakspots"*. So a tick of a field
+    // belonging to an UNAIMED attack picks a body part through the same helper
+    // the collision does, and everything below treats it as that part.
+    let part = ap
+        .unaimed_headshot_chance
+        .map(|c| unaimed_part(&params.body_parts, c, &mut d.spine));
+
     // Crit: the field's OWN base stats. Relative bonuses scale its base,
-    // absolute ones land flat (MECHANICS §7) — and no `part.crit_bonus`
-    // doubling, which is the crit-HEADSHOT rule.
+    // absolute ones land flat (MECHANICS §7).
     let crit_chance_relative = ctx.crit_chance_relative_mods + params.arcane.crit_chance_relative;
     let cc = f.crit_chance + ctx.flat_crit + f.base_crit_chance * crit_chance_relative;
     let tier = upgrade_crit_tier(roll_crit_tier(cc, &mut d.spine), ap.crit_tier_upgrade_chance, &mut d.spine);
@@ -7814,6 +8404,14 @@ fn field_tick(
         + arc.cd_bonus(ap, at)
         + params.arcane.crit_damage_relative;
     let cd = f.crit_damage + f.base_crit_damage * crit_damage_relative + debuffs.cold_cd_bonus(at);
+    // …AND THE CRIT-HEADSHOT FOLD-IN, on a tick that found an eligible head.
+    // No exception is invented for it: a strike that can hit a weak point is a
+    // hit on a weak point, and `Critical_Hit` §Critical Headshots is the rule
+    // for one. A cloud never reaches this, because a cloud has no part.
+    let cd = match part {
+        Some(p) if p.is_head && p.crit_bonus && p.multiplier > 1.0 => 2.0 * cd,
+        _ => cd,
+    };
     let crit_multiplier = 1.0 + tier as f64 * (cd - 1.0);
 
     // Damage buckets: the same live base-damage additions the direct hit reads,
@@ -7833,30 +8431,19 @@ fn field_tick(
         // A FIELD TICK carries no half-health term: the bonus is a DIRECT-hit
         // bonus like CO itself, and nothing in the catalog says otherwise.
         gunco_bucket(params, ap, debuffs, gal, at, base_damage, arcane_base_damage, arc_ratio, 0.0, ap.co_base_fraction)
+            .bucket
     } else {
         arc_ratio
     };
     let mb_live = f.modified_base * arc_ratio;
 
-    // CAN THIS TICK FIND A HEAD? Every field in the roster but one cannot, and
-    // that is the radial's rule quoted above. The Grimoire's orb can: the owner
-    // measured its pulses as DIRECT hits (2026-08-28), and the chance is a flat
-    // one the weapon states rather than the scenario's `headshot_pct`, because
-    // an orb drifting through a crowd is not aimed — `RicochetSpec` reached the
-    // same conclusion for the same reason and is the precedent.
-    //
-    // NO CRIT-HEADSHOT FOLD-IN. The `2 × cd` doubling is the aimed shot's, and
-    // whether a pulse earns it is UNMEASURED — so this follows the ricochet
-    // path, which folds nothing in either. It is named in the weapon's
-    // `unmodeled:` block rather than left as a silent reading.
-    //
-    // The draw is taken ONLY where a chance is stated, which is what keeps
-    // every existing field's dice exactly where they were.
-    let head = match f.headshot_chance {
-        Some(c) => d.spine.next_f64() < c,
-        None => false,
+    // WHAT THE PART IS WORTH — the head ladder as of this shot (`FieldCtx`), or
+    // the part's own multiplier, or 1.0 for a field with no part at all.
+    let part_factor = match part {
+        Some(p) if p.is_head => ctx.head_factor,
+        Some(p) => p.multiplier,
+        None => 1.0,
     };
-    let part_factor = if head { ctx.head_factor } else { 1.0 };
 
     // Falloff is 1.0: the grenade STICKS to the target, so the target stands at
     // the epicentre for every tick — which is exactly why the wiki calls a
@@ -7894,7 +8481,7 @@ fn field_tick(
         Some(debuffs),
         ledger::Clock::Hit,
         || Instance {
-            origin: crate::record::Origin::Field,
+            origin,
             // A CLOUD'S TICK IS WEAPON DAMAGE ON ITS OWN CLOCK — neither a
             // hit nor a status — so it carries a hit's factors, and no falloff
             // term because the grenade sticks to the target.
@@ -7904,14 +8491,14 @@ fn field_tick(
             // ledger does not name is a row the reader cannot check, which is
             // the one thing this stream exists to prevent.
             base: qtotal,
-            steps: vec![
+            layers: mul_layers(qtotal, &[
                 (crate::record::Factor::BodyPart, part_factor),
                 (crate::record::Factor::Critical, crit_multiplier),
                 (crate::record::Factor::ConditionOverload, bucket),
                 (crate::record::Factor::Faction, faction_at(params.faction_at_time(at), DEPTH_HIT)),
                 (crate::record::Factor::FieldDamage, damage_multiplier),
                 (crate::record::Factor::WarframeAbility, params.ability_final_at(at)),
-            ],
+            ]),
             ..Instance::default()
         },
     );
@@ -8351,7 +8938,7 @@ fn process_ticks(
                 // POINTS AT that carries them: `Event::cause` names the shot
                 // that seeded this, and that row has the full ledger.
                 base: unfortified,
-                steps: vec![(crate::record::Factor::SecondaryFortifier, fortifier)],
+                layers: mul_layers(unfortified, &[(crate::record::Factor::SecondaryFortifier, fortifier)]),
                 ..Instance::default()
             },
         );
@@ -9060,11 +9647,18 @@ mod pellet_volley {
                     _ => None,
                 })
                 .expect("a direct hit")
-                .steps
+                .layers
                 .iter()
-                .find(|(n, _)| *n == crate::record::Factor::MultishotAsDamage)
-                .map(|(_, v)| *v)
-                .expect("the factor is listed")
+                .find_map(|l| match l {
+                    crate::record::Layer::Mul { factor, value, .. }
+                        if *factor == crate::record::Factor::MultishotAsDamage => Some(*value),
+                    _ => None,
+                })
+                // ABSENT MEANS 1.0. A factor of exactly one is dropped when the
+                // ledger is built rather than listed and hidden later, which is
+                // the whole of the "no pile of x1.00" rule — so the baseline
+                // build has no such layer at all and that IS its value.
+                .unwrap_or(1.0)
         };
         assert!((factor(&[]) - 1.0).abs() < 1e-9, "unmodded pays nothing: {}", factor(&[]));
         assert!(
@@ -9764,6 +10358,10 @@ pub fn run_once_traced(
     let mut field_duration_boost = false;
     // Live lingering FIELDS (Torid's clouds), one entry per grenade that stuck.
     let mut fields: Vec<FieldState> = Vec::new();
+    // …AND LIVE ORBS, which are not fields (owner, 2026-08-28): entities with a
+    // place of their own that move, strike ONE body inside their reach, and
+    // detonate where they have got to.
+    let mut orbs: Vec<OrbState> = Vec::new();
     let mut field_ctx = FieldCtx::default();
     // The form whose panel SPAWNED the fields. Only one form of a transform
     // group has a lingering part (Torid's cloud belongs to the base form; its
@@ -10888,7 +11486,15 @@ pub fn run_once_traced(
         if !can_fire(if in_base_form { base_mag } else { magazine }, ap.ammo_cost) {
             rs_armed = true;
         }
-        let mut n_pellets = n_pellets;
+        // AN ORB ATTACK FIRES NO PELLETS. The shot DEPLOYS: it settles no
+        // collision and no explosion here, because everything it deals is
+        // delivered later by the orb, from wherever the orb is at the time.
+        //
+        // The COUNT is zeroed rather than the loop jumped past, and that is not
+        // a style choice — a `continue` here skips the rest of the shot's own
+        // body, which is where the clock, the magazine and the reload live. It
+        // hung the engine on the first run (2026-08-28).
+        let mut n_pellets = if ap.orb.is_some() { 0 } else { n_pellets };
         if ap.multishot_ammo_bonus > 0.0 && rolled > 1 {
             // `ammo_efficiency_applies == false` IS the charge-backed marker —
             // such a magazine is "outside the ammo economy entirely", so it has
@@ -10990,6 +11596,25 @@ pub fn run_once_traced(
             d,
             &mut others,
         );
+        // …AND EVERY ORB EVENT DUE BEFORE THIS SHOT. Same boundary and the same
+        // buff snapshot the field walk takes; an orb's clock is its own and no
+        // fire-rate bucket reaches it, which is the wiki's *"Tick rate is not
+        // affected by Fire Rate"* holding by construction.
+        process_orbs(
+            &mut orbs,
+            &mut debuffs,
+            &mut gal,
+            &mut arc,
+            t,
+            &mut target,
+            params,
+            field_ap,
+            &field_ctx,
+            &mut r,
+            rec,
+            d,
+            &mut others,
+        );
         // Secondary Encumber: at most ONE extra proc per instant — pellets
         // of one pull land simultaneously, so one roll per pull.
         let mut encumber_done = false;
@@ -11006,6 +11631,49 @@ pub fn run_once_traced(
         // THE SHOT'S FACTORS, filled by its first landing pellet — see
         // `SpreadShot`. `None` when nothing landed, and then nothing spreads.
         let mut shot_spread: Option<SpreadShot> = None;
+
+        // A SHOT THAT DEPLOYS RATHER THAN ARRIVES. An orb attack settles no
+        // collision and no explosion here: everything it deals is delivered
+        // later, by the orb, from wherever the orb is at the time. So the
+        // pellet loop is skipped whole.
+        //
+        // ONE ORB, whatever multishot says. On this weapon multishot buys CHAIN
+        // TARGETS instead (*"Number of chains is affected by Multishot"*), and
+        // that is already inside `ResolvedOrb::chain_bodies` — so the count is
+        // spent where the game spends it rather than on a second projectile.
+        if let Some(o) = ap.orb {
+            let aim = params.aim_point();
+            let muzzle = crate::space::muzzle(params.player_at, aim);
+            let (dx, dy) = (aim.x - muzzle.x, aim.y - muzzle.y);
+            let len = dx.hypot(dy);
+            // THE THROW LEAVES THE MUZZLE, which is a point on the shooter's
+            // own circumference — the same place every other shot in this arena
+            // leaves from, and the reason the orb's reach is measured from
+            // somewhere real rather than from the target (owner, 2026-08-28).
+            // A degenerate aim (nowhere to face) throws straight along +x.
+            let dir = if len > 0.0 {
+                crate::space::Vec2::new(dx / len, dy / len)
+            } else {
+                crate::space::Vec2::new(1.0, 0.0)
+            };
+            orbs.push(OrbState {
+                part: o,
+                at: muzzle,
+                dir,
+                at_time: t,
+                contacted: false,
+                // THE FIRST STRIKE IS AT THE THROW, and the clock runs from
+                // there rather than from a contact. A tick with nobody in reach
+                // is spent striking nobody, which is what turns "six strikes"
+                // into the owner's `ceil(6 - flight)` without anything having
+                // to know about flights.
+                next_strike: t,
+                strikes_left: (o.fuse_seconds / o.strike_interval_seconds).round() as u32,
+                fuse_at: t + o.fuse_seconds,
+                damage_multiplier: 1.0,
+            });
+        }
+
         for pellet_idx in 0..n_pellets {
             // PLENTIFUL MAYHEM, discrete branch: "Damage bonus from multishot
             // consuming ammo only applies to projectiles GENERATED BY
@@ -11179,7 +11847,7 @@ pub fn run_once_traced(
                     params, ap, &mut debuffs, &mut gal, t, base_damage, arcane_base_damage, arc_ratio, 0.0,
                     r.co_base_fraction,
                 ),
-                _ => arc_ratio,
+                _ => Gunco { bucket: arc_ratio, ..Default::default() },
             };
 
             // Part FIRST, crit roll second: weak-point crit chance (Pistol
@@ -11194,7 +11862,15 @@ pub fn run_once_traced(
             // (multishot fills it faster), on-headshot buffs trigger from
             // any one pellet, and the reported headshot rate is
             // pellets/pellets. Do NOT "fix" this into a per-pull roll.
-            let part = pick_part(&params.body_parts, &mut d.spine);
+            // WHERE THIS PELLET LANDED. An aimed shot draws against the
+            // scenario's aim weights; an UNAIMED attack draws against its own
+            // flat chance, because `headshot_pct` describes the player and the
+            // player is not pointing this one. Same helper the field's ticks
+            // use, so the six strikes of one orb cannot answer differently.
+            let part = match ap.unaimed_headshot_chance {
+                Some(c) => unaimed_part(&params.body_parts, c, &mut d.spine),
+                None => pick_part(&params.body_parts, &mut d.spine),
+            };
             let cc_pellet = effective_cc
                 + if part.is_head {
                     // Weak-point-only crit chance is relative too, and it is
@@ -11771,11 +12447,15 @@ pub fn run_once_traced(
                 // receives CO bonus on target DIRECTLY HIT by bullet", which
                 // the single-target arena always is. Per-entry weapon data, so
                 // no roster weapon is affected until one declares it.
-                let bucket = match &rad {
+                // THE BRACKET, AND WHAT IT IS MADE OF. The engine multiplies
+                // by `gunco.bucket`; the ledger shows the terms, which is the
+                // difference between an algebraic rearrangement and a fiction.
+                let gunco = match &rad {
                     None => co_mult,
                     Some(r) if r.takes_condition_overload => co_mult_radial,
-                    Some(_) => arc_ratio,
+                    Some(_) => Gunco { bucket: arc_ratio, ..Default::default() },
                 };
+                let bucket = gunco.bucket;
                 // Primary Crux's stacks join the status-chance BUCKET (wiki:
                 // "additive to mods like Rifle Aptitude"), so the relative
                 // bonus multiplies THIS part's own unmodded base — the
@@ -12514,28 +13194,29 @@ pub fn run_once_traced(
                             },
                             pellet: Some(pellet_idx + 1),
                             radial: !direct,
-                            base: qtotal,
-                            // HOW THAT BASE WAS BUILT. `qtotal` is one number
-                            // and it is three facts: this attack part's
-                            // ModifiedBase, the elemental hierarchy expanding
-                            // it, and the quantization the wiki rounds it
-                            // through. A reader auditing a build wants the
-                            // middle one, and reading it off the row beats
-                            // deriving it from the panel (owner, 2026-08-27).
-                            base_from: stage_mb,
-                            base_steps: vec![
-                                (crate::record::Factor::ElementBracketQuantized,
-                                    if stage_mb > 0.0 { pre_ability_total / stage_mb } else { 1.0 }),
-                                (crate::record::Factor::WarframeAbilityElement,
-                                    if pre_ability_total > 0.0 { qvec.total() / pre_ability_total } else { 1.0 }),
-                                (crate::record::Factor::MergedBeams, beam_merge),
-                            ],
-                            // …AND WHAT THE CRIT FACTOR IS MADE OF:
-                            // `1 + tier x (crit damage - 1)`, which is a
-                            // formula a reader can check against the card and
-                            // `x4.40` is not.
+                            // THE WEAPON'S OWN DAMAGE, before any bracket —
+                            // the layers start here and the first one is the
+                            // base-damage bracket. It used to be `qtotal`,
+                            // which is the chain's MIDDLE.
+                            base: if (1.0 + base_damage).abs() > 1e-12 {
+                                stage_mb / (1.0 + base_damage)
+                            } else {
+                                stage_mb
+                            },
+                            layers: pellet_layers(
+                                stage_mb,
+                                gunco,
+                                base_damage,
+                                arcane_base_damage,
+                                if stage_mb > 0.0 { pre_ability_total / stage_mb } else { 1.0 },
+                                if pre_ability_total > 0.0 { qvec.total() / pre_ability_total } else { 1.0 },
+                                beam_merge,
+                                &hit_steps,
+                                part.multiplier,
+                                params.headshot_damage_bonus,
+                                part.is_head,
+                            ),
                             crit_damage: cd,
-                            steps: hit_steps,
                             part: Some(part.name.clone()),
                             head: part.is_head,
                             crit_tier: tier,
@@ -13258,6 +13939,25 @@ pub fn run_once_traced(
         spool_due = t;
     }
 
+    // The orbs still in the air after the last shot — every strike they have
+    // left and the detonation that ends them. Before the clouds for the same
+    // reason the clouds come before the status drain: each event settles what
+    // preceded it and pushes procs of its own.
+    process_orbs(
+        &mut orbs,
+        &mut debuffs,
+        &mut gal,
+        &mut arc,
+        params.duration_seconds,
+        &mut target,
+        params,
+        field_ap,
+        &field_ctx,
+        &mut r,
+        rec,
+        d,
+        &mut others,
+    );
     // The clouds still burning after the last shot, with the buff snapshot from
     // that shot (nothing refreshes it once firing stops). FIRST, because each
     // tick settles the status events before it and pushes procs of its own…
@@ -19439,6 +20139,12 @@ mod tests {
             base_status_chance: 0.25,
             tick_rate: 1.0,
             duration_seconds: 10.0,
+            // A CLOUD, in all three senses the Grimoire's orb is not one: it
+            // opens with the impact (M13), it forces nothing, and it cannot
+            // find a head. Stated rather than defaulted, because these are the
+            // values the ten-tick arithmetic below rests on.
+            first_tick_delay_seconds: 0.0,
+            forced_procs: crate::damage::ForcedProcs::from_types([]),
             radius_m: 3.0,
             falloff_start_m: 0.0,
             falloff_reduction: 1.0,
@@ -19479,7 +20185,352 @@ mod tests {
         );
     }
 
-    /// Overlapping fields STACK — ✅ measured (MEASUREMENTS M13). Both branches
+    /// A GRIMOIRE-SHAPED ORB: 280 a strike, one a second, six of them over a
+    /// six second fuse, then a 200 detonation. Geometry and a clock — what it
+    /// DEALS is the attack's own damage and radial, which `from_panel` derives.
+    fn orb_spec() -> crate::loadout::ResolvedOrb {
+        crate::loadout::ResolvedOrb {
+            fuse_seconds: 6.0,
+            strike_interval_seconds: 1.0,
+            strike_radius_m: 6.0,
+            launch_speed_mps: 6.0,
+            speed_after_contact_mps: 2.0,
+            // ONE BODY A STRIKE unless a test says otherwise: the chain is what
+            // `chain_bodies` above 1 buys, and a count assertion should not be
+            // reading a crowd it did not ask for.
+            chain_bodies: 1.0,
+            chain_range_m: 6.0,
+            chain_damage_per_hop: 1.0,
+        }
+    }
+
+    /// The part an orb strike settles — the attack's own hit, in the shape a
+    /// timed instance is resolved from. `from_panel` builds this from the
+    /// resolved panel; a unit fixture states it.
+    fn orb_part(damage: f64) -> crate::loadout::ResolvedLingering {
+        let mut v = DamageVector::default();
+        v.set(DamageType::Electricity, damage);
+        crate::loadout::ResolvedLingering {
+            damage: v,
+            modified_base: damage,
+            crit_chance: 0.0,
+            crit_damage: 2.0,
+            status_chance: 0.0,
+            base_crit_chance: 0.2,
+            base_crit_damage: 2.0,
+            base_status_chance: 0.26,
+            tick_rate: 1.0,
+            duration_seconds: 0.0,
+            first_tick_delay_seconds: 0.0,
+            forced_procs: crate::damage::ForcedProcs::from_types([]),
+            radius_m: f64::INFINITY,
+            falloff_start_m: f64::INFINITY,
+            falloff_reduction: 0.0,
+            stacking: crate::loadout::FieldStacking::Stack,
+            takes_condition_overload: false,
+        }
+    }
+
+    /// A THROWER: one orb, one target, nothing else in the way.
+    fn orb_thrower() -> DummyParams {
+        DummyParams {
+            // AN ORB ATTACK DEALS NOTHING ON ARRIVAL. Its `damage:` is what a
+            // STRIKE deals, delivered six times by the orb, so the pellet loop
+            // settles nothing at all.
+            damage: DamageVector::default(),
+            // HELD: it stops where it touches. Every fixture below but the
+            // drift one uses this, because a moving orb changes WHO is in
+            // reach, and a test about the clock, the crit or the forced proc
+            // should not be reading geometry it did not ask about.
+            orb: Some(crate::loadout::ResolvedOrb {
+                speed_after_contact_mps: 0.0,
+                ..orb_spec()
+            }),
+            orb_strike: Some(orb_part(280.0)),
+            orb_blast: None,
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: ArcaneFx::none(),
+            body_parts: vec![BodyPart {
+                name: "body".into(),
+                aim_weight: 1.0,
+                multiplier: 1.0,
+                is_head: false,
+                crit_bonus: false,
+            }],
+            magazine_size: 1.0,
+            reload_seconds: 999.0, // exactly one orb inside the window
+            infinite_reserve: false,
+            reserve_ammo: 0.0,
+            duration_seconds: 20.0,
+            ..no_status()
+        }
+    }
+
+    /// ONE THROW, SIX STRIKES, ONE A SECOND — and they are the orb's, not a
+    /// collision's.
+    ///
+    /// The whole difference between this and a lingering field is WHO gets hit
+    /// (owner, 2026-08-28), so the count is asserted against the COMBAT RECORD
+    /// rather than a total: six rows, every one of them `Orb`, at t=0..5. A
+    /// total cannot tell six strikes from one collision and five field ticks,
+    /// which is exactly the model this replaced.
+    #[test]
+    fn one_orb_strikes_six_times_a_second_apart_and_none_of_them_is_a_collision() {
+        let p = orb_thrower();
+        let s = monte_carlo(&p, 4, 3);
+        assert!((s.mean_shots - 1.0).abs() < 1e-9, "shots {}", s.mean_shots);
+        assert!(
+            (s.mean_damage - 6.0 * 280.0).abs() < 1e-9,
+            "dmg {} (expected six strikes of 280)",
+            s.mean_damage
+        );
+        let rec = record(&p, 7, 0.0, 20.0, 100, 0);
+        let rows: Vec<(f64, crate::record::Origin)> = rec
+            .events()
+            .iter()
+            .filter_map(|e| match &e.kind {
+                crate::record::Kind::Damage(d) => Some((e.t, d.origin)),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(rows.len(), 6, "six numbers, got {rows:?}");
+        for (k, (at, origin)) in rows.iter().enumerate() {
+            assert!(
+                (at - k as f64).abs() < 1e-9 && *origin == crate::record::Origin::Orb,
+                "the strikes are the ORB's, one a second from the throw: {rows:?}"
+            );
+        }
+    }
+
+    /// A STRIKE WITH NOBODY IN REACH IS SPENT, which is what makes the count
+    /// the geometry's rather than a number written down.
+    ///
+    /// The orb leaves the muzzle at 6 m/s and reaches 6 m of its own, so a
+    /// target further out than that has to be flown to — and every second of
+    /// the flight costs a strike. `ceil(6 - flight)` is the owner's rule
+    /// (M63); this asserts the two ends of it and the shape between them.
+    #[test]
+    fn a_strike_with_nobody_in_reach_is_spent() {
+        let strikes = |gap_m: f64| {
+            let p = DummyParams {
+                target_at: crate::space::Vec2::new(gap_m, 0.0),
+                ..orb_thrower()
+            };
+            (monte_carlo(&p, 4, 3).mean_damage / 280.0).round() as u32
+        };
+        // AT CONTACT the target is inside the reach from the muzzle, so the
+        // first strike lands at the throw and all six do.
+        assert_eq!(strikes(crate::space::CONTACT_RANGE_M), 6, "at contact");
+        // …and far enough out that the orb spends its whole fuse getting
+        // there, none of them does. 6 m/s x 6 s is 36 m of travel, and the
+        // reach adds 6 more.
+        assert_eq!(strikes(60.0), 0, "out of reach for the whole fuse");
+        // IN BETWEEN IT FALLS OFF ONE AT A TIME rather than all at once, which
+        // is the property a two-point test cannot see.
+        let ladder: Vec<u32> = [12.0, 18.0, 24.0, 30.0].iter().map(|&g| strikes(g)).collect();
+        assert!(
+            ladder.windows(2).all(|w| w[0] >= w[1]) && ladder[0] > ladder[3],
+            "strikes fall as the throw gets longer: {ladder:?}"
+        );
+    }
+
+    /// AN UNAIMED ATTACK DECIDES WHERE ITS OWN INSTANCES LAND.
+    ///
+    /// The orb picks its body — *"shock 1 enemy within 6 meters of it every 1
+    /// second"* — so the scenario's `headshot_pct`, which describes the
+    /// player's aim, is the wrong number for every strike. Pinned at 0 and 1
+    /// rather than the weapon's own 0.1 so both arms are arithmetic instead of
+    /// a sample.
+    #[test]
+    fn an_unaimed_attack_decides_where_its_own_strikes_land() {
+        let run = |chance: Option<f64>| {
+            monte_carlo(
+                &DummyParams {
+                    unaimed_headshot_chance: chance,
+                    // The aim weights say BODY, so an arm that comes back with
+                    // heads can only have got them from the unaimed chance.
+                    body_parts: vec![
+                        BodyPart {
+                            name: "head".into(),
+                            aim_weight: 0.0,
+                            multiplier: 3.0,
+                            is_head: true,
+                            crit_bonus: false,
+                        },
+                        BodyPart {
+                            name: "body".into(),
+                            aim_weight: 1.0,
+                            multiplier: 1.0,
+                            is_head: false,
+                            crit_bonus: false,
+                        },
+                    ],
+                    ..orb_thrower()
+                },
+                4,
+                3,
+            )
+            .mean_damage
+        };
+        assert!(
+            (run(None) - 6.0 * 280.0).abs() < 1e-9,
+            "with no unaimed chance the aim weights decide, and they say body: {}",
+            run(None)
+        );
+        assert!(
+            (run(Some(1.0)) - 6.0 * 3.0 * 280.0).abs() < 1e-9,
+            "all six on a 3x head: {}",
+            run(Some(1.0))
+        );
+    }
+
+    /// …AND A HEAD STRIKE TAKES THE CRITICAL-LOCATION FOLD-IN, because nothing
+    /// says it should not.
+    ///
+    /// `Critical_Hit` §Critical Headshots doubles `cd` inside the tier formula
+    /// on an eligible >1x location, and a strike that *"can hit weakspots"*
+    /// (wiki, this weapon) is a hit on one. Inventing an exception for the orb
+    /// would be a claim with no measurement behind it; taking the rule as it
+    /// stands is not.
+    ///
+    /// A 3x head at 100% crit: without the fold-in `1 + 1x(2 - 1) = 2`, with it
+    /// `1 + 1x(4 - 1) = 4`, so the eligible target is worth exactly twice the
+    /// ineligible one and `crit_bonus` is the only thing separating the arms.
+    #[test]
+    fn an_orb_strike_on_an_eligible_head_folds_the_crit_in() {
+        let run = |crit_bonus: bool| {
+            let mut part = orb_part(280.0);
+            part.crit_chance = 1.0;
+            part.base_crit_chance = 1.0;
+            part.crit_damage = 2.0;
+            monte_carlo(
+                &DummyParams {
+                    unaimed_headshot_chance: Some(1.0),
+                    orb_strike: Some(part),
+                    body_parts: vec![BodyPart {
+                        name: "head".into(),
+                        aim_weight: 1.0,
+                        multiplier: 3.0,
+                        is_head: true,
+                        crit_bonus,
+                    }],
+                    ..orb_thrower()
+                },
+                4,
+                3,
+            )
+            .mean_damage
+        };
+        let plain = run(false);
+        let folded = run(true);
+        assert!(
+            (plain - 6.0 * 3.0 * 280.0 * 2.0).abs() < 1e-6,
+            "the ineligible arm is six 3x heads at the plain 2x crit: {plain}"
+        );
+        assert!(
+            (folded - 2.0 * plain).abs() < 1e-6,
+            "an eligible head is worth twice an ineligible one: {folded} against {plain}"
+        );
+    }
+
+    /// A STRIKE FORCES ITS OWN PROCS, and the detonation forces none.
+    ///
+    /// *"Every strike from the alternate fire has a forced Electricity status
+    /// effect"* — and the explosion does not, which is one attack answering the
+    /// same question both ways. At ZERO status chance nothing can proc at all,
+    /// so any burn here came from the forced list, and the bare arm is the
+    /// negative control a presence-only assertion would not have.
+    #[test]
+    fn an_orb_strike_forces_its_own_procs_and_one_declaring_none_gets_none() {
+        let bare = monte_carlo(&orb_thrower(), 4, 3).mean_damage;
+        let forced = {
+            let mut part = orb_part(280.0);
+            part.forced_procs =
+                crate::damage::ForcedProcs::from_types([DamageType::Electricity]);
+            monte_carlo(&DummyParams { orb_strike: Some(part), ..orb_thrower() }, 4, 3)
+                .mean_damage
+        };
+        assert!(
+            (bare - 6.0 * 280.0).abs() < 1e-9,
+            "the control is the six bare strikes, got {bare}"
+        );
+        assert!(
+            forced > bare,
+            "a forced Electricity proc per strike must burn something: {forced} against {bare}"
+        );
+    }
+
+    /// THE FUSE ENDS IN A DETONATION, and it goes off WHERE THE ORB IS.
+    ///
+    /// Every other explosion in this engine goes off AT a body, so where it
+    /// happens never had to be said. This one happens at a PLACE the orb
+    /// reached, and the two arms are the same fight with the orb held and let
+    /// go: held, its blast lands on the body it stopped at; drifting at 2 m/s
+    /// for six seconds it is twelve metres away and its six-metre blast
+    /// reaches nobody.
+    ///
+    /// A detonation that landed either way would prove the position was
+    /// decoration, which is the one thing an entity model must not be.
+    #[test]
+    fn the_detonation_goes_off_where_the_orb_got_to() {
+        let mut blast = orb_part(200.0);
+        blast.radius_m = 6.0;
+        blast.falloff_start_m = 0.0;
+        blast.falloff_reduction = 0.8;
+        let held = DummyParams { orb_blast: Some(blast), ..orb_thrower() };
+        let held_damage = monte_carlo(&held, 4, 3).mean_damage;
+        assert!(
+            (held_damage - (6.0 * 280.0 + 200.0)).abs() < 1e-9,
+            "a stationary orb detonates on the body it stopped at: {held_damage}"
+        );
+        let drifting = monte_carlo(
+            &DummyParams { orb: Some(orb_spec()), ..held },
+            4,
+            3,
+        )
+        .mean_damage;
+        assert!(
+            drifting < held_damage - 199.0,
+            "an orb twelve metres past the target detonates on nobody: {drifting} against {held_damage}"
+        );
+    }
+
+    /// AN ORB THAT DRIFTS LEAVES A LONE TARGET BEHIND, and that is the
+    /// geometry rather than a rule anybody wrote down.
+    ///
+    /// The Grimoire's own numbers: 2 m/s after contact, six metres of reach. A
+    /// stationary body is inside that for three seconds, so FOUR of the six
+    /// strikes land on it and the last two find nobody. Six is what the orb
+    /// DOES; how many reach one enemy standing still is a question only a
+    /// position model can answer, and this is it answering.
+    ///
+    /// Pinned so the answer cannot drift silently — if the post-contact speed
+    /// or the reach is ever re-measured, this is the test that says what it was
+    /// worth (MEASUREMENTS M63 §"Still open").
+    #[test]
+    fn an_orb_that_drifts_leaves_a_lone_target_behind() {
+        let drifting = monte_carlo(
+            &DummyParams { orb: Some(orb_spec()), ..orb_thrower() },
+            4,
+            3,
+        )
+        .mean_damage;
+        assert!(
+            (drifting - 4.0 * 280.0).abs() < 1e-9,
+            "four of the six strikes reach a body that does not follow: {drifting}"
+        );
+        // …AND THE OTHER TWO ARE NOT LOST TO THE CLOCK. The same orb held still
+        // lands all six, so what the two arms differ by is distance and nothing
+        // else.
+        let held = monte_carlo(&orb_thrower(), 4, 3).mean_damage;
+        assert!(
+            (held - 6.0 * 280.0).abs() < 1e-9,
+            "the clock still pays six: {held}"
+        );
+    }
+
+    /// Overlapping fields STACK    /// Overlapping fields STACK — ✅ measured (MEASUREMENTS M13). Both branches
     /// stay pinned because the branch is weapon data, not a global rule: a
     /// future weapon may well refresh instead. Three grenades one second apart:
     /// stacking runs three concurrent streams, refresh keeps re-arming one.
@@ -22317,6 +23368,13 @@ mod tests {
         p.base_crit_chance = 0.5;
         p.crit_multiplier = 2.0;
         p.multishot = 2.4;
+        // SOMETHING IN THE BASE-DAMAGE BRACKET. An unmodded weapon's ledger is
+        // legitimately EMPTY — every factor is 1.0 and the base IS the raw —
+        // so a fixture with no mods cannot assert anything about the shape of
+        // a bracket (2026-08-28).
+        p.base_damage_bonus = 1.65;
+        p.co_per_type = 0.8;
+        p.co_behavior = crate::loadout::CoBehavior::AdditiveWithBaseDamage;
 
         let s = monte_carlo(&p, 8, 5);
         let state = s.median_run.rng_state;
@@ -22343,18 +23401,41 @@ mod tests {
             same.effective_damage()
         );
 
-        // EVERY ROW MULTIPLIES OUT. `base × Π steps = raw`, and `raw × Π
-        // mitigation = effective` — the arithmetic a reader would do by hand.
-        // Rows whose armour term hit the 1-damage floor are exempt and say so.
+        // EVERY ROW MULTIPLIES OUT — and now layer by layer, which is a
+        // stronger claim than the flat product was: each layer STATES the
+        // running total after it, so a bracket that adds its terms wrongly
+        // fails here even when the end of the chain happens to land right.
         let mut checked = 0;
         for d in &damage {
-            if d.steps.is_empty() {
-                continue;
+            let mut at = d.base;
+            for l in &d.layers {
+                at = match l {
+                    crate::record::Layer::Bracket { terms, sum, out, .. } => {
+                        let s: f64 = 1.0 + terms.iter().map(|t| t.value).sum::<f64>();
+                        assert!(
+                            (s - sum).abs() <= 1e-9,
+                            "{:?}: 1 + Σ terms = {s}, layer says {sum}", d.origin
+                        );
+                        assert!(
+                            (at * s - out).abs() <= 1e-6 * out.abs().max(1.0),
+                            "{:?}: bracket out {} vs {}", d.origin, at * s, out
+                        );
+                        *out
+                    }
+                    crate::record::Layer::Quantize { out, .. } => *out,
+                    crate::record::Layer::Mul { value, out, .. } => {
+                        assert!(
+                            (at * value - out).abs() <= 1e-6 * out.abs().max(1.0),
+                            "{:?}: mul out {} vs {}", d.origin, at * value, out
+                        );
+                        *out
+                    }
+                };
             }
-            let raw: f64 = d.base * d.steps.iter().map(|(_, v)| v).product::<f64>();
+            let raw: f64 = at;
             assert!(
                 (raw - d.raw).abs() <= 1e-6 * d.raw.abs().max(1.0),
-                "{:?} at {:?}: base x steps = {raw}, row says {}",
+                "{:?} at {:?}: base through the layers = {raw}, row says {}",
                 d.origin, d.pool, d.raw
             );
             let eff: f64 = d.raw * d.mitigation.iter().map(|(_, v)| v).product::<f64>();
@@ -22365,7 +23446,33 @@ mod tests {
             );
             checked += 1;
         }
-        assert!(checked > 20, "most rows carry a ledger: {checked} of {}", damage.len());
+        // EVERY ROW, not most of them. A row with no layers is not exempt —
+        // an empty ledger is the claim that the base IS the raw, and it is
+        // ordinary now that a factor of exactly 1 is dropped at construction.
+        assert_eq!(checked, damage.len(), "every row reconciles");
+        // …AND EVERY DIRECT HIT CARRIES ONE. A status tick whose every factor
+        // is 1.0 has an EMPTY ledger, which is correct and is most of a burn
+        // build's stream — so "most rows" was never the property. What has to
+        // hold is that a pellet, which always has a base-damage bracket, never
+        // comes back with nothing to show (2026-08-28).
+        let hits: Vec<_> = damage
+            .iter()
+            .filter(|d| matches!(d.origin, crate::record::Origin::Own
+                | crate::record::Origin::Multishot))
+            .collect();
+        assert!(hits.len() > 10, "the fixture lands hits: {}", hits.len());
+        assert!(
+            hits.iter().all(|d| !d.layers.is_empty()),
+            "every direct hit carries a ledger"
+        );
+        // …AND IT OPENS WITH THE BASE-DAMAGE BRACKET, which is where Condition
+        // Overload lives now. A row that opens with a `Mul` is one where the
+        // bracket was collapsed back into a quotient.
+        assert!(
+            hits.iter().all(|d| matches!(d.layers.first(),
+                Some(crate::record::Layer::Bracket { .. }))),
+            "a pellet's ledger opens with its base-damage bracket"
+        );
 
         // A ROW SAYS WHICH PELLET IT WAS. With multishot above 1 the stream has
         // to contain both, or the column is a constant.

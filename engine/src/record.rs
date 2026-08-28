@@ -127,6 +127,13 @@ pub enum Origin {
     Splash,
     /// A status effect settling: a bleed, a burn, a tick.
     Status,
+    /// A DEPLOYED ORB'S strike, or its detonation — an entity acting from
+    /// wherever it has drifted to, on a clock of its own.
+    ///
+    /// Told apart from `Field` because it is a different mechanic and a reader
+    /// laying the panel beside the game needs to know which: a field beats
+    /// everyone standing in its area, an orb picks ONE body inside its reach.
+    Orb,
     /// A lingering field's own clock (the Torid's cloud).
     Field,
     /// An EXTRA HIT — a second damage instance beside a hit (docs/EXTRA_HIT.md).
@@ -146,6 +153,7 @@ impl Origin {
             Origin::Echo => "echo",
             Origin::Splash => "splash",
             Origin::Status => "status",
+            Origin::Orb => "orb",
             Origin::Field => "field",
             Origin::ExtraHit => "extra_hit",
             Origin::Arcane => "arcane",
@@ -174,6 +182,14 @@ impl Origin {
 /// two characters, and the table is sent once.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Factor {
+    /// `base damage bracket`
+    BaseDamageBracket,
+    /// `base damage mods`
+    BaseDamageMods,
+    /// `below half health`
+    HalfHealth,
+    /// `headshot damage`
+    HeadshotDamage,
     /// `body part`
     BodyPart,
     /// `critical`
@@ -249,7 +265,11 @@ impl Factor {
     /// for as long as a client older than the server can exist — which for a
     /// page served from the same deploy is never, so this is a convention
     /// rather than a ratchet.
-    pub const ALL: [Factor; 34] = [
+    pub const ALL: [Factor; 38] = [
+        Factor::BaseDamageBracket,
+        Factor::BaseDamageMods,
+        Factor::HalfHealth,
+        Factor::HeadshotDamage,
         Factor::BodyPart,
         Factor::Critical,
         Factor::ConditionOverload,
@@ -289,6 +309,10 @@ impl Factor {
     /// What a reader is shown, and the key the i18n overlay is written against.
     pub fn name(self) -> &'static str {
         match self {
+            Factor::BaseDamageBracket => "base damage bracket",
+            Factor::BaseDamageMods => "base damage mods",
+            Factor::HalfHealth => "below half health",
+            Factor::HeadshotDamage => "headshot damage",
             Factor::BodyPart => "body part",
             Factor::Critical => "critical",
             Factor::ConditionOverload => "Condition Overload bracket",
@@ -363,6 +387,87 @@ pub struct TargetAt {
     pub shield_gate_until: Option<f64>,
 }
 
+/// ONE TERM INSIDE AN ADDITIVE BRACKET — `+0.80 Galvanized Shot`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Term {
+    pub factor: Factor,
+    /// The term's own value, signed. `-0.15` for Anemic Agility.
+    pub value: f64,
+    /// What it is made of, when it is itself a product — Condition Overload is
+    /// `rate x distinct status types`, and a reader checking a card wants the
+    /// two numbers rather than their product.
+    pub of: Option<(f64, f64)>,
+}
+
+/// ONE COMPONENT'S SNAP TO THE QUANTIZATION GRID.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Snap {
+    pub dtype: DamageType,
+    pub before: f64,
+    /// How many grid units that was, before rounding — the number that makes
+    /// the mechanic legible: 89.81 units becoming 90 is a sentence, 2,178.00
+    /// becoming 2,182.50 is not.
+    pub units: f64,
+    pub after: f64,
+}
+
+/// ONE LAYER OF THE OFFENSIVE LEDGER, and the shape SAYS which mechanic it is.
+///
+/// It was a flat list of multipliers, and that is what made the panel print
+/// things the game does not have. Condition Overload is an ADDITIVE term in the
+/// base-damage bracket on most weapons, so the only way to fit it into a chain
+/// of multipliers was to divide the bracket by itself — `(1 + base + co) /
+/// (1 + base)` — and print the quotient with a `x` in front of it. Quantization
+/// is a per-component snap to a grid, so the only way to fit THAT into a chain
+/// was the ratio of the totals. Two invented numbers, both looking exactly like
+/// a game multiplier (owner, 2026-08-28).
+///
+/// So a layer is one of three shapes, and the shape is the information:
+/// a BRACKET lists its terms and adds them, QUANTIZE shows the grid, and only a
+/// MUL gets a multiplication sign. Anything the engine divided out cannot be
+/// drawn at all, because there is no variant for it.
+///
+/// THE ENGINE MAY STILL EVALUATE IN ANY ORDER IT LIKES. A non-elemental base
+/// bonus multiplies the quantization numerator AND its scale, so it commutes
+/// with the snap — which is exactly why the engine can apply Condition Overload
+/// afterwards and still be right. The ledger presents the GAME's order; the two
+/// are not required to match, and the check that the row multiplies out is what
+/// holds them together.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Layer {
+    /// `x (1 + Σ terms)`. An empty bracket is never emitted — that is where the
+    /// pile of `x1.00` went.
+    Bracket {
+        factor: Factor,
+        terms: Vec<Term>,
+        /// `1 + Σ terms`.
+        sum: f64,
+        /// What the running total is after it.
+        out: f64,
+    },
+    /// Each component snaps to a multiple of `scale` — see
+    /// [`crate::damage::DamageVector::quantized_against`]. Not a multiplier and
+    /// never drawn as one.
+    Quantize {
+        /// `ModifiedBase / 32`.
+        scale: f64,
+        components: Vec<Snap>,
+        out: f64,
+    },
+    /// A real multiplicative bracket, and the only shape that earns a `x`.
+    Mul {
+        factor: Factor,
+        value: f64,
+        /// Its own expansion where it has one: a body part is
+        /// `3.00 x (1 + 0.50 headshot damage)`, and the pair is what a reader
+        /// checks against the enemy card.
+        of: Vec<Term>,
+        /// The head of that expansion — the part multiplier itself.
+        head: f64,
+        out: f64,
+    },
+}
+
 /// ONE NUMBER THE GAME POPPED, and everything behind it.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Damage {
@@ -403,26 +508,17 @@ pub struct Damage {
     pub head: bool,
     /// 0 = no crit, 1 = crit, 2+ = red and beyond.
     pub crit_tier: u32,
-    /// THE OFFENSIVE LEDGER: `base × Π steps = raw`.
+    /// THE OFFENSIVE LEDGER, layer by layer — see [`Layer`].
     ///
-    /// `base` is this instance's own modded damage before anything below it —
-    /// one pellet's share on a multishot weapon.
+    /// `base` is where it starts: this weapon's own base damage, before any
+    /// bracket. Every layer states what the running total is after it, so the
+    /// last one's `out` is `raw` and a reader can check any step alone.
     pub base: f64,
-    /// WHERE `base` STARTED, when the engine can say — this attack part's
-    /// ModifiedBase. `base_from x Pi base_steps = base`, and the two together
-    /// turn one opaque number into a chain a reader can check against the
-    /// build panel (owner, 2026-08-27).
-    ///
-    /// 0.0 where the site has nothing more to say: a status tick's base IS the
-    /// seed it was frozen with, and decomposing it means naming facts about a
-    /// hit that is over — the row `Event::cause` points at carries those.
-    pub base_from: f64,
-    pub base_steps: Vec<Step>,
     /// THE CRIT DAMAGE the crit factor was built from: the factor itself is
     /// `1 + crit_tier x (crit_damage - 1)`, and a reader checking a card wants
     /// the formula rather than the product.
     pub crit_damage: f64,
-    pub steps: Vec<Step>,
+    pub layers: Vec<Layer>,
     pub raw: f64,
     /// THE DEFENSIVE LEDGER: `raw × Π mitigation = effective`. Written from
     /// `TargetState::apply`'s own breakdown rather than reconstructed, which is

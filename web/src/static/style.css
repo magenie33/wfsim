@@ -1974,7 +1974,49 @@ tr.rec-miss td.rec-t{border-left-color:var(--critical)}
   font-size:9.5px;font-weight:700;background:color-mix(in srgb,var(--s4) 26%,transparent);color:var(--s4)}
 .rec-head{color:var(--s1);font-weight:600}
 /* Where the number comes from: base, the factors that MOVED, the two totals. */
-.rec-calc{min-width:340px}
+.rec-calc{min-width:440px}
+/* ---- THE LEDGER, LAYER BY LAYER ------------------------------------------
+   Three shapes, and the shape is the information: a BRACKET lists its terms, a
+   SNAP shows its grid, and only a MUL gets a multiplication sign. A quotient
+   has no shape here, which is what stops `×5.706 Condition Overload` — the
+   base bracket divided by itself — from coming back (owner, 2026-08-28). */
+/* TWO COLUMNS, NOT THREE. The running total used to have a lane of its own on
+   the right, which is the edge a 1080px table is cut off at — the one number a
+   reader checks against the next layer's start, off screen. It rides in the
+   body now and wraps with it. */
+.lg{display:grid;grid-template-columns:6.5em minmax(0,1fr);gap:2px 10px;
+  align-items:baseline;padding:3px 0;border-top:1px solid var(--line)}
+.lg:first-child{border-top:0}
+.lg-lbl{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;
+  white-space:nowrap;min-width:6.5em}
+.lg-body{display:flex;flex-wrap:wrap;gap:3px 8px;align-items:baseline;min-width:0}
+.lg-out{font-variant-numeric:tabular-nums;font-weight:600;color:var(--text-2);
+  white-space:nowrap;padding:0 5px;border-radius:4px;
+  background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good-text)}
+.lg-b .lg-lbl{color:var(--accent)}
+.lg-b{border-left:2px solid color-mix(in srgb,var(--accent) 40%,transparent);padding-left:8px}
+.lg-term{display:inline-flex;align-items:baseline;gap:3px;font-variant-numeric:tabular-nums}
+.lg-term .lg-op{font-style:normal;color:var(--muted)}
+.lg-term b{font-weight:400;color:var(--muted);font-size:10.5px}
+.lg-term em{font-style:normal;color:var(--muted);font-size:10px;opacity:.75}
+.lg-sum{font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums}
+.lg-x{font-style:normal;color:var(--accent);font-weight:600;margin-right:2px}
+.lg-m .lg-lbl{font-size:12px;color:var(--text);text-transform:none;letter-spacing:0;
+  font-variant-numeric:tabular-nums;min-width:4.5em}
+.lg-m .lg-body b{font-weight:400;color:var(--muted);font-size:10.5px}
+.lg-of{color:var(--muted);font-size:10px;font-variant-numeric:tabular-nums}
+.lg-scale{color:var(--muted);font-size:10px;white-space:nowrap}
+table.lg-snap{border-collapse:collapse;font-size:10.5px;font-variant-numeric:tabular-nums}
+table.lg-snap td{padding:0 4px 0 0;color:var(--muted);white-space:nowrap}
+table.lg-snap td.num{text-align:right;color:var(--text-2)}
+table.lg-snap td.sn{color:var(--accent);font-weight:600}
+table.lg-snap td.to{color:var(--text)}
+table.lg-snap td.ar{color:var(--line);padding:0 2px}
+.lg-base .lg-out,.lg-base .lg-lbl{color:var(--text)}
+.lg-mit{display:flex;flex-wrap:wrap;gap:3px;padding:4px 0 2px;border-top:1px solid var(--line)}
+.lg-end{border-top:1px solid var(--line)}
+.lg-end .lg-out{color:var(--good-text);font-size:14px}
+.lg-exact{color:var(--muted);font-size:10px;font-variant-numeric:tabular-nums}
 .rec-b0,.rec-mid,.rec-eq{display:inline-block;padding:1px 5px;border-radius:4px;margin-right:3px;
   font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .rec-b0{background:color-mix(in srgb,var(--text-2) 15%,transparent)}

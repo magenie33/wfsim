@@ -369,6 +369,27 @@ pub struct AttackSpec {
     pub burst: Option<BurstSpec>,
     #[serde(default = "one")]
     pub multishot: f64,
+    /// THIS ATTACK IS NOT AIMED, and this is the flat chance any one of its
+    /// damage instances lands on a weak point.
+    ///
+    /// The scenario's `headshot_pct` is a statement about the PLAYER'S AIM, so
+    /// it is the wrong number for an attack the player does not point: the
+    /// Grimoire throws an orb that drifts and then *"shock[s] 1 enemy within 6
+    /// meters of it every 1 second"* — a random body, of the game's choosing,
+    /// six times (wiki `Grimoire`). [`RicochetSpec::headshot_chance`] reached
+    /// the same conclusion first, for a bounce; this is the same idea one level
+    /// up, where the WHOLE attack is unaimed rather than one of its parts.
+    ///
+    /// IT IS READ BY EVERY INSTANCE THE ATTACK PRODUCES — the collision and the
+    /// `lingering:` field's ticks alike — which is the point of declaring it on
+    /// the attack. The orb's six strikes are one mechanic and the owner says so
+    /// outright (2026-08-28: the first is a field tick like the other five), so
+    /// a per-part spelling would be six chances to make them differ.
+    ///
+    /// Its value here is ASSUMED rather than measured (owner: 0.1) and the
+    /// weapon says so on its own page.
+    #[serde(default)]
+    pub unaimed_headshot_chance: Option<f64>,
     pub crit_chance: f64,
     pub crit_multiplier: f64,
     pub status_chance: f64,
@@ -525,6 +546,10 @@ pub struct AttackSpec {
     /// A LINGERING FIELD left by every landed projectile (Torid's cloud).
     #[serde(default)]
     pub lingering: Option<LingeringSpec>,
+    /// A DEPLOYED ORB — see [`OrbSpec`]. An attack that has one settles no
+    /// collision and no explosion of its own: the orb delivers both.
+    #[serde(default)]
+    pub orb: Option<OrbSpec>,
     /// Continuous-beam geometry (Torid Incarnon). Shape, not a damage part.
     #[serde(default)]
     pub beam: Option<BeamSpec>,
@@ -582,6 +607,82 @@ pub struct SpreadSpec {
     pub max_deg: f64,
 }
 
+/// A DEPLOYED ORB — an entity with a POSITION, a clock and a reach, which is
+/// none of the three things this engine had before it.
+///
+/// IT IS NOT A FIELD, and the difference is the whole reason for the type
+/// (owner, 2026-08-28). A [`LingeringSpec`] is an AREA: everyone standing in it
+/// burns, at their own falloff distance. An orb strikes exactly ONE body inside
+/// its reach — *"Orb will shock 1 enemy within 6 meters of it every 1 second"*
+/// (wiki `Grimoire`) — every strike deals the same number, and it MOVES between
+/// them, so where it is decides who is a candidate.
+///
+/// It is not a projectile either. A projectile in this engine arrives, deals
+/// its collision and its explosion, and is over; this one is thrown, lives out
+/// a fuse striking as it drifts, and detonates at the end wherever it has got
+/// to. So the attack it belongs to settles NO collision and no explosion at the
+/// impact — everything it deals is delivered by the orb.
+///
+/// WHAT THE ORB DEALS IS THE ATTACK'S OWN. Its strike is the attack's `damage`,
+/// crit, status, `forced_procs` and `unaimed_headshot_chance`; its detonation is
+/// the attack's `radial`, moved to wherever the orb was when the fuse ran out.
+/// This block is the GEOMETRY AND THE CLOCK and nothing else, the same division
+/// [`BeamSpec`] makes for a beam.
+///
+/// THE STRIKE CLOCK RUNS FROM THE THROW, not from a contact, and that is what
+/// reproduces the measured count. Six ticks over a six second fuse; a tick with
+/// nobody inside the reach strikes nobody and is spent. So a throw that reaches
+/// its target in under a second loses nothing, one that takes 2.5 s lands four
+/// strikes, and against a body at contact it is always six — which is the
+/// owner's `ceil(6 - flight)` arriving out of the geometry rather than being
+/// written down (MEASUREMENTS M63).
+// All f64, so it travels BY VALUE rather than as a leaked reference: the sim
+// carries one per orb in the air and a Copy is cheaper than a pointer chase.
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct OrbSpec {
+    /// How long the orb lives before it detonates — *"explodes after 6
+    /// seconds"*.
+    pub fuse_seconds: f64,
+    /// Seconds between strikes. *"Tick rate is not affected by Fire Rate"*
+    /// (wiki), which this engine gets right by construction: the orb's clock is
+    /// its own and no mod bucket reaches it.
+    pub strike_interval_seconds: f64,
+    /// How far a strike reaches from the orb. Fulmination (Primed) enlarges it
+    /// — the owner confirms the reach and the detonation radius both take the
+    /// blast-radius bucket (2026-08-28).
+    pub strike_radius_m: f64,
+    /// How fast it leaves the muzzle, and what it slows to once it has touched
+    /// a body — 6 m/s then 2 m/s (owner, 2026-08-28).
+    ///
+    /// The launch speed is HERE rather than read off the attack's
+    /// `projectile_speed_mps`, which this engine has never modelled: that field
+    /// is transcribed on every projectile weapon in the roster and read by
+    /// nothing, because a shot in this arena arrives the instant it is fired.
+    /// An orb is the first thing whose flight actually costs something, so it
+    /// states the number it flies at rather than quietly giving a meaning to a
+    /// field 224 other entries assume has none.
+    pub speed_mps: f64,
+    pub speed_after_contact_mps: f64,
+    /// EXTRA BODIES ONE STRIKE REACHES, beyond the one it struck — *"Each
+    /// enemy hit chains to an additional 2 enemies within 6 meters"*.
+    ///
+    /// Multishot adds to it rather than adding orbs: *"Number of chains is
+    /// affected by Multishot"*, and the owner gives the count as `multishot +
+    /// this`, total bodies a strike reaches — three at an unmodded x1.0, and
+    /// 4.6 at a panel reading x2.6, which is four for certain and a fifth 60%
+    /// of the time (2026-08-28).
+    pub chain_bodies: f64,
+    /// How far a chain hop may reach, body to body.
+    pub chain_range_m: f64,
+    /// What a hop deals relative to the hop before it.
+    ///
+    /// 1.0 — UNDILUTED — is what the page supports: it names a count and no
+    /// reduction, and absence means ordinary. Per entry rather than a constant,
+    /// because a chain's falloff is per weapon everywhere else in this roster.
+    #[serde(default = "one")]
+    pub chain_damage_per_hop: f64,
+}
+
 /// A lingering damage FIELD — MECHANICS §7 "Lingering damage FIELDS". Unlike
 /// the radial this is not one instance at impact: it persists and TICKS.
 #[derive(Debug, Clone, Deserialize)]
@@ -619,22 +720,6 @@ pub struct LingeringSpec {
     /// separate rather than shared.
     #[serde(default)]
     pub forced_procs: Vec<String>,
-    /// The chance ONE TICK lands on a head, when this field's ticks can land
-    /// on one at all.
-    ///
-    /// Absent — every field in the roster but one — means they cannot, which
-    /// is the radial's rule and the reason `field_tick` carries no body part:
-    /// *"Explosion has a headshot multiplier of 1x and cannot trigger headshot
-    /// conditions"*.
-    ///
-    /// Where it is stated, the number is a FLAT chance rather than the
-    /// scenario's `headshot_pct`, for [`RicochetSpec::headshot_chance`]'s
-    /// reason exactly: `headshot_pct` is a statement about the PLAYER'S AIM,
-    /// and a pulse from an orb drifting through a crowd is not aimed. Owner,
-    /// 2026-08-28: 0.1, and declared as an assumption rather than a
-    /// measurement — see the Grimoire's `unmodeled:` block.
-    #[serde(default)]
-    pub headshot_chance: Option<f64>,
     #[serde(default)]
     pub crit_chance: Option<f64>,
     #[serde(default)]
@@ -3012,7 +3097,6 @@ pub fn base_panel_assembled(
             forced_procs: crate::damage::ForcedProcs::from_types(
                 f.forced_procs.iter().map(|t| damage_type(t)),
             ),
-            headshot_chance: f.headshot_chance,
             radius_m: f.radius_m,
             falloff_start_m: f.falloff_start_m.unwrap_or(0.0),
             falloff_reduction: f.falloff_reduction.unwrap_or(0.0),
@@ -3221,6 +3305,8 @@ pub fn base_panel_assembled(
         // whether `fire_rate` means shots or TICKS and whether multishot merges.
         continuous: s.attack.trigger == "held",
         // A BOUNCE IS NOT SCALED BY ANYTHING, so it comes across as written.
+        unaimed_headshot_chance: s.attack.unaimed_headshot_chance,
+        orb: s.attack.orb,
         ricochet: s.attack.ricochet.as_ref().map(|r| crate::loadout::Ricochet {
             bounces: r.bounces,
             headshot_chance: r.headshot_chance,
@@ -4034,6 +4120,25 @@ mod tests {
             // absence means ordinary.
             ("castanas", "inert", 1.0),
             ("sancti_castanas", "inert", 1.0),
+            // THE ONE ENTRY HERE THAT NO CATALOG ROW NAMES, and it is not an
+            // exception to the rule above — it is the AoE rule below, reaching
+            // a part this engine has no other slot for.
+            //
+            // The Grimoire's orb pulses are RANGE DIRECT HITS: each lands on
+            // everything within six metres, which makes them an area attack
+            // wearing a direct hit's other properties (owner, 2026-08-28, M63).
+            // "AN AoE PART TAKES NO CO unless its own row says so" is therefore
+            // the whole answer, and the wiki's catalog was re-read on the PAGE
+            // the same day with no Grimoire row of any kind — absence meaning
+            // ORDINARY, and ordinary for an area attack is nothing.
+            //
+            // It has to be said HERE because the contact pulse is filed as the
+            // attack's own `damage:`, the only slot an engine that fires a
+            // field off an impact has for it; the five that follow are the
+            // `lingering:` field and the final blast is the `radial:`, and both
+            // of those take no CO by default. So this line is what makes the
+            // three halves of one attack agree.
+            ("grimoire_active", "inert", 1.0),
         ];
 
         let mut unexpected = Vec::new();

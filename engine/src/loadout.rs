@@ -1453,6 +1453,11 @@ pub struct WeaponBase {
     pub fire_rate_mod_multiplier: f64,
     /// Stored pellet count (wiki Multishot).
     pub base_multishot: f64,
+    /// See [`crate::weapons_data::AttackSpec::unaimed_headshot_chance`].
+    pub unaimed_headshot_chance: Option<f64>,
+    /// See [`crate::weapons_data::OrbSpec`] — unmodded; `resolve` scales the
+    /// two radii and adds multishot to the body count.
+    pub orb: Option<crate::weapons_data::OrbSpec>,
     /// Extra additive multishot from non-mod sources at assumed-max
     /// (Fevered Frenzy's 20 stacks = +1.0).
     /// Flat BASE damage an evolution grants through a PERMANENT buff rather
@@ -2225,9 +2230,6 @@ pub struct LingeringBase {
     /// See [`crate::weapons_data::LingeringSpec::forced_procs`] — the field's
     /// OWN, never the direct part's.
     pub forced_procs: crate::damage::ForcedProcs,
-    /// See [`crate::weapons_data::LingeringSpec::headshot_chance`]. `None` is
-    /// the radial's rule and every field in the roster but the Grimoire's orb.
-    pub headshot_chance: Option<f64>,
     pub radius_m: f64,
     pub falloff_start_m: f64,
     /// Torid's cloud is `reduction 1.0` — damage falls to ZERO at the rim,
@@ -2247,6 +2249,42 @@ pub struct LingeringBase {
     pub can_crit: bool,
     /// See [`crate::weapons_data::LingeringSpec::status_mods_apply`].
     pub status_mods_apply: bool,
+}
+
+/// A DEPLOYED ORB after mod resolution — see
+/// [`crate::weapons_data::OrbSpec`]. Geometry and a clock; what it DEALS is the
+/// attack's own parts, which are resolved beside this.
+///
+/// `Copy`, like every other resolved part, because the sim carries one per orb
+/// in the air.
+#[derive(Debug, Clone, Copy)]
+pub struct ResolvedOrb {
+    pub fuse_seconds: f64,
+    pub strike_interval_seconds: f64,
+    /// Reach, AFTER the blast-radius bucket — Fulmination (Primed) enlarges
+    /// what an orb can touch, which the owner confirms (2026-08-28).
+    pub strike_radius_m: f64,
+    pub launch_speed_mps: f64,
+    pub speed_after_contact_mps: f64,
+    /// TOTAL bodies one strike reaches, the struck one included: the spec's
+    /// `chain_bodies` plus live multishot, because *"Number of chains is
+    /// affected by Multishot"* and multishot buys chain targets here rather
+    /// than more orbs.
+    pub chain_bodies: f64,
+    /// A hop's reach, AFTER the blast-radius bucket for the same reason the
+    /// strike's is.
+    pub chain_range_m: f64,
+    pub chain_damage_per_hop: f64,
+}
+
+impl ResolvedOrb {
+    /// HOW MANY BODIES A STRIKE REACHES, this time. The count is fractional —
+    /// a panel reading x2.6 is 4.6 bodies — so the remainder is a COIN, which
+    /// is the same rule multishot itself follows for a fractional pellet.
+    pub fn bodies_this_strike(&self, roll: f64) -> u32 {
+        let whole = self.chain_bodies.floor();
+        (whole as u32) + u32::from(roll < self.chain_bodies - whole)
+    }
 }
 
 /// The lingering field after mod resolution.
@@ -2271,8 +2309,6 @@ pub struct ResolvedLingering {
     pub first_tick_delay_seconds: f64,
     /// See [`LingeringBase::forced_procs`].
     pub forced_procs: crate::damage::ForcedProcs,
-    /// See [`LingeringBase::headshot_chance`].
-    pub headshot_chance: Option<f64>,
     /// Geometry, carried through unmodded — single-target stands at the
     /// epicentre, but the panel states it (and Firestorm enlarges it in game).
     pub radius_m: f64,
@@ -2779,6 +2815,12 @@ pub struct ResolvedPanel {
     /// page gives no mod that changes how far or how often a projectile
     /// bounces, and Firestorm reaches the EXPLOSION each bounce sets off
     /// through the radial's own radius rather than through this.
+    /// See [`crate::weapons_data::AttackSpec::unaimed_headshot_chance`] — a
+    /// property of the ATTACK, unmodded, read by every instance it produces.
+    pub unaimed_headshot_chance: Option<f64>,
+    /// See [`ResolvedOrb`]. `Some` means this attack settles no collision and
+    /// no explosion at the impact — the orb delivers both, later and elsewhere.
+    pub orb: Option<ResolvedOrb>,
     pub ricochet: Option<Ricochet>,
     /// Additive headshot-damage bonus from evolutions (Caput Mortuum).
     pub headshot_damage_bonus: f64,
@@ -4176,7 +4218,6 @@ pub fn resolve_for(
             duration_seconds: f.duration_seconds,
             first_tick_delay_seconds: f.first_tick_delay_seconds,
             forced_procs: f.forced_procs,
-            headshot_chance: f.headshot_chance,
             radius_m: f.radius_m * (1.0 + br),
             falloff_start_m: f.falloff_start_m * (1.0 + br),
             falloff_reduction: f.falloff_reduction,
@@ -4352,6 +4393,22 @@ pub fn resolve_for(
             ..b
         }),
         ricochet: base.ricochet,
+        unaimed_headshot_chance: base.unaimed_headshot_chance,
+        // THE ORB'S GEOMETRY, MODDED. Both radii take the blast-radius bucket
+        // (owner, 2026-08-28: "电球的射程和最终爆炸的范围都是 6m，受范围增益
+        // 影响"), and MULTISHOT lands in the chain count rather than making a
+        // second orb — which is why it is added here, where the resolved
+        // multishot is, instead of in the fight.
+        orb: base.orb.map(|o| ResolvedOrb {
+            fuse_seconds: o.fuse_seconds,
+            strike_interval_seconds: o.strike_interval_seconds,
+            strike_radius_m: o.strike_radius_m * (1.0 + br),
+            launch_speed_mps: o.speed_mps,
+            speed_after_contact_mps: o.speed_after_contact_mps,
+            chain_bodies: o.chain_bodies + base.base_multishot * (1.0 + evo_ms_bonus + multishot),
+            chain_range_m: o.chain_range_m * (1.0 + br),
+            chain_damage_per_hop: o.chain_damage_per_hop,
+        }),
         modified_base,
         // Elemental Excess adds its crit/status FLAT, after the mod
         // multiply (wiki) — a different layer from the base-stat one.

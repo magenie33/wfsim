@@ -28,6 +28,12 @@ fn dual_toxocyst_baseline() -> DummyParams {
         abilities: Vec::new(),
         target_id: "e1".to_string(),
         punch_through_m: 0.0,
+        // AIMED: the calibration profile is a pistol pointed at a dummy.
+        unaimed_headshot_chance: None,
+        // …AND IT DEPLOYS NOTHING: this fixture throws no orb.
+        orb: None,
+        orb_strike: None,
+        orb_blast: None,
         // No weapon: nothing to be out of range of.
         range_m: f64::INFINITY,
         super_crit_on_status: None,

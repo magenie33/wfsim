@@ -212,6 +212,13 @@ EXPECTED = {
     ('deconstructor_prime', 'damage'): 'the three-attack type rotation, averaged',
     # A TOME HAS NO MAGAZINE and the sim cannot fire a zero — see the entry.
     ('grimoire', 'magazine'): 'a Tome has none; 1 so the sim can fire it',
+    # THE MEASUREMENT WINS. The module publishes 350 for the orb's hit and 250
+    # for its blast; in game both are that value x0.8 — 280 and 200 — measured
+    # by the owner 2026-08-28 (MEASUREMENTS M63). Two independent ratios of
+    # exactly 0.800 is what makes it ONE multiplier rather than two
+    # transcription slips, so it is registered here as a deliberate divergence
+    # rather than corrected back towards the module.
+    ('grimoire_active', 'damage'): 'measured at x0.8 of the module (M63)',
     # THE EMBEDDED DETONATION is the one modelled (the mine sticks), and it
     # shares its damage with the mid-flight one, which is what the matcher finds.
     ('sancti_castanas', 'attack.status_chance'): 'the EMBEDDED detonation, not the mid-flight',

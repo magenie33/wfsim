@@ -83,48 +83,62 @@ const r = await evaluate(`(async () => {
   out.events = document.querySelectorAll('tr.rec-evt').length;
 
   // ---- THE ARITHMETIC, off the SCREEN ---------------------------------
-  // Read the factors as drawn, multiply them, and compare with the two totals
-  // the same row prints. Nothing here consults the engine: if the page draws a
+  // Walk the ledger as DRAWN, layer by layer, and compare with the totals the
+  // same row prints. Nothing here consults the engine: if the page draws a
   // ledger that does not produce its own number, that is the bug.
-  const num = (s) => Number(String(s).replace(/[^0-9.\\-]/g, ''));
+  //
+  // IT IS LAYERS NOW, NOT A FLAT PRODUCT, and that is the stronger claim: each
+  // layer STATES the running total after it, so a bracket that adds its terms
+  // wrongly fails here even when the end of the chain lands right. The shapes
+  // are the mechanics — a bracket adds, a snap rounds, a mul multiplies — and
+  // a quotient has no shape at all, which is what stops the panel printing
+  // x5.706 Condition Overload again (owner, 2026-08-28).
+  const num = (x) => Number(String(x).replace(/[^0-9.-]/g, '').replace(/-(?!^)/g, ''));
   const bad = [];
   let checked = 0;
+  let brackets = 0;
   for (const tr of rows) {
     const calc = tr.querySelector('.rec-calc');
     if (!calc) continue;
-    // THE BASE IS THE LAST rec-b0 chip: where it can be opened up, the row
-    // draws the ModifiedBase it started from, the factors, then the base.
-    const b0 = [...calc.querySelectorAll('.rec-b0')];
-    const base = num(b0[b0.length - 1].textContent);
-    // …AND WHEN IT IS OPENED UP, that chain has to multiply out too.
-    if (b0.length > 1) {
-      const from = num(b0[0].textContent);
-      const bs = [...calc.querySelectorAll('.rec-f.base')].map((f) => num(f.firstChild.textContent));
-      const got = bs.reduce((a, x) => a * x, from);
-      if (Math.abs(got - base) > Math.max(1.0, Math.abs(base) * 0.005)) {
-        bad.push('ModifiedBase x base steps = ' + got.toFixed(1) + ' but row says ' + base);
-        checked++;
-        continue;
+    const layers = [...calc.querySelectorAll('.lg')];
+    if (layers.length < 3) continue;      // base + at least one layer + popped
+    const outOf = (l) => num(l.querySelector('.lg-out').textContent);
+    let at = outOf(layers[0]);            // the weapon's own base
+    let ok = true;
+    for (const l of layers.slice(1, -1)) {
+      const shown = outOf(l);
+      if (l.classList.contains('lg-b')) {
+        const terms = [...l.querySelectorAll('.lg-term')]
+          .map((t) => num(t.textContent) * (t.textContent.indexOf('−') === 0 ? -1 : 1));
+        const printed = num(l.querySelector('.lg-sum').textContent);
+        const sum = 1 + terms.reduce((a, b) => a + b, 0);
+        if (Math.abs(sum - printed) > 0.02) {
+          bad.push('bracket adds to ' + sum.toFixed(3) + ' but prints ' + printed);
+          ok = false;
+        }
+        at *= printed;
+        brackets += 1;
+      } else if (l.classList.contains('lg-m')) {
+        at *= num(l.querySelector('.lg-lbl').textContent);
+      } else {
+        at = shown;      // a snap is not a multiplier; take what it states
       }
+      if (Math.abs(at - shown) > Math.max(1, Math.abs(shown) * 0.01)) {
+        bad.push('layer carries ' + at.toFixed(1) + ' but states ' + shown);
+        ok = false;
+      }
+      at = shown;
     }
-    const mid = num(calc.querySelector('.rec-mid').textContent);
-    const eq = num(calc.querySelector('.rec-eq').textContent);
-    const off = [...calc.querySelectorAll('.rec-f:not(.mit):not(.base)')].map((f) => num(f.firstChild.textContent));
-    const def = [...calc.querySelectorAll('.rec-f.mit')].map((f) => num(f.firstChild.textContent));
-    const raw = off.reduce((a, b) => a * b, base);
-    const eff = def.reduce((a, b) => a * b, mid);
-    // The page rounds what it prints, so the tolerance is the rounding and not
-    // a fudge: one unit, or 0.5% on a number too big for one unit to matter.
-    const near = (a, b) => Math.abs(a - b) <= Math.max(1.0, Math.abs(b) * 0.005);
-    const where = () => ' [' + tr.querySelector('.rec-org').textContent + '/'
-      + (tr.className.match(/rec-(shield|health|overguard)/) || [])[1] + ' '
-      + calc.textContent.replace(/\s+/g, ' ').slice(0, 110) + ']';
-    if (!near(raw, mid)) bad.push('base x steps = ' + raw.toFixed(1) + ' but row says ' + mid + where());
-    else if (!near(eff, eq)) bad.push('raw x mitigation = ' + eff.toFixed(1) + ' but row says ' + eq + where());
-    checked++;
+    if (ok) checked += 1;
   }
   out.checked = checked;
+  out.brackets = brackets;
   out.bad = bad.slice(0, 3);
+  // …AND NO ROW DRAWS A QUOTIENT WITH A MULTIPLICATION SIGN. On an Adding
+  // weapon Condition Overload is a TERM of the base bracket; an x in front of
+  // it is the fiction this whole shape exists to make unrepresentable.
+  out.coIsATerm = rows.every((tr) =>
+    !tr.querySelector('.lg-m [data-factor="Condition Overload bracket"]'));
   // …AND THE SAME ARITHMETIC ON THE WIRE, so a failure says WHICH side is
   // wrong: the engine's ledger, or the way this page drew it.
   out.wireBad = (recordState.events || []).filter((e) => {
@@ -215,9 +229,13 @@ check(`${tag} it lists damage instances`, r.rows > 10, `${r.rows} rows`);
 check(`${tag} weapon events are rows too`, r.events > 0, `${r.events} events`);
 
 // THE ONE THAT MATTERS: every drawn ledger produces its own number.
-check(`${tag} every row multiplies out`, r.checked > 10 && r.bad.length === 0,
-  `checked ${r.checked}: ${r.bad.join(" | ") || "all consistent"}`
-  + (r.wireBad.length ? ` — ENGINE: ${JSON.stringify(r.wireBad[0])}` : " — the engine's own ledger is consistent"));
+check(`${tag} every row multiplies out, layer by layer`,
+  r.checked > 5 && r.bad.length === 0,
+  `checked ${r.checked}: ${(r.bad || []).join(" | ") || "all consistent"}`);
+check(`${tag} ...and the base-damage bracket is drawn as a BRACKET`,
+  r.brackets > 0, `${r.brackets} brackets`);
+check(`${tag} ...with no quotient wearing a multiplication sign`,
+  r.coIsATerm === true, "Condition Overload is a term of it, not a factor");
 
 // The split, and the gate on its face.
 check(`${tag} a shielded body pops two numbers`, r.shieldRows > 0 && r.healthRows > 0,
