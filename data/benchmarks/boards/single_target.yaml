@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 3240
-engine: a802c69b344affe6fd2b22bb3d7feb2a918ab57c
+submissions: 3242
+engine: aa2d0958625e6335b39ffae50a441301310795d3
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -8385,6 +8385,17 @@ entries:
     arcanes: [primary_crux]
   - weapon: strun_prime
     mode: cycle
+    score: 43.54968997694742
+    fp: 81cdf9a6b2d3c4ef
+    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, riven, blaze]
+    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
+    arcanes: [primary_compression]
+    riven:
+      bonuses: [fire_rate, toxin]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: strun_prime
+    mode: cycle
     score: 29.70597664154586
     fp: 5be2dcec915dd4e2
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_chilling_grasp, toxic_barrage, blaze]
@@ -8484,34 +8495,12 @@ entries:
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_galvanic_reload, strun_prime_elemental_balance]
     arcanes: [primary_compression]
   - weapon: strun_prime
-    mode: cycle
-    score: 14.665564701136883
-    fp: 220faeae5f6c1663
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, semi_shotgun_cannonade, riven, primed_charged_shell, toxic_barrage]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
-    arcanes: [primary_debilitate]
-    riven:
-      bonuses: [critical_damage, multishot]
-      malus: weapon_recoil
-      rolls: [1.1, 1.1, 0.9]
-  - weapon: strun_prime
     mode: base
     score: 14
     fp: e579ec068bc72ed7
     mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, magnetic_strafe, primed_charged_shell, contagious_spread, primed_chilling_grasp]
     evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_commodores_fortune]
     arcanes: [primary_deadhead]
-  - weapon: strun_prime
-    mode: cycle
-    score: 12.912462709700788
-    fp: 2188b04170e2ad55
-    mods: [galvanized_hell, primed_ravage, galvanized_savvy, critical_deceleration, semi_shotgun_cannonade, magnetic_strafe, riven, scattering_inferno]
-    evolutions: [strun_prime_evo1_incarnon_form, strun_prime_blazing_barrel, strun_prime_rapid_reinforcement, strun_prime_elemental_balance]
-    arcanes: [primary_crux]
-    riven:
-      bonuses: [critical_damage, multishot]
-      malus: weapon_recoil
-      rolls: [1.1, 1.1, 0.9]
   - weapon: strun_prime
     mode: base
     score: 11.313721703756023
