@@ -529,6 +529,9 @@ pub struct Record {
     from: f64,
     to: f64,
     limit: usize,
+    /// How many of this window's events to pass over before keeping any — see
+    /// [`Record::window`].
+    skip: usize,
     events: Vec<Event>,
     /// EVENTS INSIDE THE WINDOW THAT DID NOT FIT. Carried because a cap nobody
     /// is told about reads as "that is everyone", which is this repo's rule
@@ -554,13 +557,26 @@ impl Record {
         Self::default()
     }
 
-    /// Record everything in `[from, to)`, up to `limit` events.
-    pub fn window(from: f64, to: f64, limit: usize) -> Self {
+    /// Record everything in `[from, to)`, up to `limit` events, after skipping
+    /// the first `skip` of them.
+    ///
+    /// SKIP IS WHAT MAKES THE WHOLE FIGHT READABLE. A window bounds one read;
+    /// paging by OFFSET is what lets several reads cover a stream no single one
+    /// can hold, and it is offset rather than time because a page boundary can
+    /// fall in the middle of an instant — several numbers share a timestamp, so
+    /// "continue from t" either loses them or repeats them (owner: read it all,
+    /// however many runs it takes, 2026-08-28).
+    ///
+    /// IT ALSO MAKES AN ID MEAN SOMETHING. An event's id is its place in the
+    /// FIGHT, counted before the skip, so pages concatenate into one stream and
+    /// the floating numbers can still name their row across a boundary.
+    pub fn window(from: f64, to: f64, limit: usize, skip: usize) -> Self {
         Self {
             on: true,
             from,
             to,
             limit,
+            skip,
             ..Self::default()
         }
     }
@@ -646,8 +662,33 @@ impl Record {
     /// fraction of that — so a reader scrubbed to the last ten seconds was
     /// paying for a `TargetAt` snapshot, three Vecs and a String on every one
     /// of the instances before it, all of them thrown away by `push`.
-    pub fn wants(&self, t: f64) -> bool {
-        self.on && t >= self.from && t < self.to && self.events.len() < self.limit
+    /// IT COUNTS WHAT IT REFUSES, which the first version did not — and that
+    /// made the panel lie about its own cap. `dropped` is `push`'s counter, and
+    /// short-circuiting here meant a damage row past the limit never reached
+    /// it: on a 180 s fight cut off at 146 s, the panel reported **542** left
+    /// out when the truth was tens of thousands, because the only events still
+    /// calling `push` were the shots and reloads (owner spotted the number,
+    /// 2026-08-28). A cap that under-reports itself is worse than one that says
+    /// nothing.
+    ///
+    /// ONE PER INSTANCE, not per number: a hit on a shielded body is two rows
+    /// and this is asked before the portions are known. It undercounts a
+    /// shielded fight slightly and is exact everywhere else — which is the
+    /// honest trade against not building the row at all.
+    pub fn wants(&mut self, t: f64) -> bool {
+        if !self.on || t < self.from || t >= self.to {
+            return false;
+        }
+        if self.events.len() >= self.limit {
+            self.dropped += 1;
+            return false;
+        }
+        true
+    }
+
+    /// Is this page finished — i.e. would another read find more?
+    pub fn skipped(&self) -> usize {
+        self.skip
     }
 
     /// Append. Returns the event's id, or `None` when nothing was recorded —
@@ -656,12 +697,18 @@ impl Record {
         if !self.on || t < self.from || t >= self.to {
             return None;
         }
+        // THE ID IS THE PLACE IN THE FIGHT, assigned BEFORE the skip so pages
+        // concatenate into one stream rather than three streams each starting
+        // at zero.
+        let id = self.next_id;
+        self.next_id += 1;
+        if (id as usize) < self.skip {
+            return None;
+        }
         if self.events.len() >= self.limit {
             self.dropped += 1;
             return None;
         }
-        let id = self.next_id;
-        self.next_id += 1;
         self.events.push(Event {
             id,
             t,

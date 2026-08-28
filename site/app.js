@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "d8d7acac+ · 2026-08-28 03:48Z";
+const BUILD_ID = "68eb4755+ · 2026-08-28 04:52Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -14326,9 +14326,40 @@ function recordIdle() {
 /// FETCH A WINDOW. `from`/`to` are seconds; the whole fight is the default and
 /// is the right answer for almost every build — only a status weapon over a
 /// formation reaches the cap, and when it does the answer says so.
-async function loadRecord(r, from, to) {
+/// HOW MANY EVENTS A READ ASKS FOR, by default.
+///
+/// Not a limit on what the fight DID — a limit on what one read hands over. At
+/// the measured 481 bytes an event this is ~10 MB and about half a second, and
+/// it covers an ordinary fight several times over; what it does not cover is a
+/// dense build over the full 180 s, which is exactly the fight somebody is
+/// arguing about. So it is a DEFAULT rather than a ceiling: when something did
+/// not fit, the panel offers to go and get it, and says what that costs
+/// (owner, 2026-08-28).
+const RECORD_LIMIT = 20000;
+
+/// HOW MANY PAGES A "read the whole fight" WILL ASK FOR before giving up.
+///
+/// A backstop, not a budget: at `RECORD_LIMIT` a page it takes twelve to cover
+/// the densest build ever measured, and anything past that is a runaway rather
+/// than a fight.
+const RECORD_MAX_PAGES = 40;
+
+/// READ THE RECORD, in as many PAGES as it takes.
+///
+/// `pages` is 1 for the ordinary read and unbounded for "read the whole
+/// fight". Each page is one more re-run of the same engagement — about 45 ms of
+/// engine — which is the price the owner named when he asked for all of it
+/// however many runs that takes (2026-08-28).
+///
+/// PAGING IS BY OFFSET, never by time: a page boundary can fall in the middle
+/// of an instant, and several numbers share a timestamp — so "continue from t"
+/// either loses them or repeats them. The server skips a count instead, and an
+/// event's id is its place in the FIGHT, so the pages concatenate into one
+/// stream and a floating number can still name its row across a boundary.
+async function loadRecord(r, from, to, limit = RECORD_LIMIT, pages = 1) {
   const key = recordKey(r);
-  recordState = { key, from, to, loading: true, body: null, filter: "all" };
+  recordState = { key, from, to, limit, loading: true, body: null, filter: "all",
+                  page: 0, pages };
   paintRecord(r);
   // THE BUILD AND THE FIGHT, exactly as `runSim` sends them. `theFight()` is
   // the SCENARIO — it carries no mods, no mode, no evolutions, no riven — so a
@@ -14344,12 +14375,29 @@ async function loadRecord(r, from, to) {
   // missing key as "the whole fight" and a null one as zero, which silently
   // truncated the window to nothing after the opening events (2026-08-27).
   const win = to == null ? { from } : { from, to };
-  const out = await api("/api/log",
-    { ...buildPayload(), ...theFight({ run: r.run, ...win, limit: 20000 }) });
-  if (!recordState || recordState.key !== key) return;   // the result moved on
+  const events = [];
+  let out = null, dropped = 0;
+  for (let page = 0; page < Math.max(1, pages); page++) {
+    out = await api("/api/log",
+      { ...buildPayload(), ...theFight({ run: r.run, ...win, limit, skip: events.length }) });
+    if (!recordState || recordState.key !== key) return;  // the result moved on
+    const got = (out && out.events) || [];
+    events.push(...got);
+    dropped = (out && out.dropped) || 0;
+    // NOTHING LEFT, or nothing coming: a page that returns no events cannot be
+    // followed by one that does, and stopping on it is what keeps a runaway
+    // from turning into forty requests.
+    if (!dropped || !got.length) break;
+    // THE PANEL COUNTS ITSELF WHILE IT WORKS. A read that takes eight runs is a
+    // read that looks hung, which is this repo's own rule about long work.
+    recordState.page = page + 1;
+    recordState.events = events;
+    paintRecord(r);
+  }
+  if (!recordState || recordState.key !== key) return;
   recordState.loading = false;
-  recordState.events = (out && out.events) || [];
-  recordState.dropped = (out && out.dropped) || 0;
+  recordState.events = events;
+  recordState.dropped = dropped;
   // THE TWO ROSTERS the rows' stack lists index into — the shooter's buffs and
   // the target's debuffs, both positional and both named once rather than per
   // row.
@@ -14405,7 +14453,11 @@ const REC_KINDS = [
 ];
 
 function recordBody(st) {
-  if (st.loading) return `<div class="rec-idle"><span class="sim-hint">${escHtml(tr("reading…"))}</span></div>`;
+  if (st.loading) {
+    return `<div class="rec-idle"><span class="sim-hint">${escHtml(tr("reading…"))}${
+      st.page ? ` ${escHtml(tr("pass {n}").replace("{n}", st.page + 1))} · ${
+        (st.events || []).length.toLocaleString()}` : ""}</span></div>`;
+  }
   if (st.error) return `<div class="rec-idle"><span class="sim-hint">${escHtml(st.error)}</span></div>`;
   const events = st.events || [];
   if (!events.length) {
@@ -14444,7 +14496,16 @@ function recordBody(st) {
         ? ` · ${escHtml(tr("{a}s to {b}s of the fight")
             .replace("{a}", window0.toFixed(1)).replace("{b}", window1.toFixed(1)))}`
         : ""}${
-      st.dropped ? ` · ${escHtml(tr("{n} more did not fit").replace("{n}", n(st.dropped)))}` : ""}</div>
+      st.dropped ? ` · ${escHtml(tr("{n} more did not fit").replace("{n}", n(st.dropped)))}` : ""}${
+      // …AND AN OFFER TO GO AND GET THEM. The cap is a default, not a verdict:
+      // a reader who came here to check a number against a recording wants the
+      // whole fight, and the cost of that is theirs to spend. It says the size
+      // rather than hiding it, which is the same rule the cap itself follows.
+      st.dropped
+        ? ` <button class="ghost-btn small" id="rec-all">${escHtml(tr("read the whole fight"))}</button>`
+          + `<span class="sim-hint"> ${escHtml(tr("about {mb} MB").replace("{mb}",
+              (((events.length + st.dropped) * 481) / 1e6).toFixed(0)))}</span>`
+        : ""}</div>
     <div class="rec-scroll"><table class="rec-t">
       <thead><tr>
         <th>${escHtml(tr("time"))}</th><th>${escHtml(tr("damage source"))}</th>
@@ -14626,6 +14687,17 @@ function recordEventName(e) {
 function wireRecord(r) {
   const load = $("rec-load");
   if (load) load.onclick = () => loadRecord(r, 0, null);
+  const all = $("rec-all");
+  // ROOM FOR WHAT IT SAID DID NOT FIT, plus a fifth — `dropped` is counted one
+  // per INSTANCE and a hit on a shielded body is two rows, so asking for
+  // exactly the shortfall would come up short again on the one target shape
+  // where it matters. The server clamps at 200,000 either way.
+  if (all) {
+    all.onclick = () => {
+      const st = recordState || {};
+      loadRecord(r, st.from || 0, st.to, st.limit || RECORD_LIMIT, RECORD_MAX_PAGES);
+    };
+  }
   document.querySelectorAll("[data-recbody]").forEach((b) => {
     b.onclick = () => { recordState.body = Number(b.dataset.recbody); paintRecord(r); };
   });

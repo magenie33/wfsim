@@ -2217,8 +2217,17 @@ pub struct LingeringBase {
     pub base_status_chance: f64,
     /// Ticks per second (the data module's `FireRate` for the part: Torid 1).
     pub tick_rate: f64,
-    /// How long the field lives (`EffectDuration`: Torid 10 s).
+    /// How long the field lives (`EffectDuration`: Torid 10 s), from its own
+    /// first tick.
     pub duration_seconds: f64,
+    /// See [`crate::weapons_data::LingeringSpec::first_tick_delay_seconds`].
+    pub first_tick_delay_seconds: f64,
+    /// See [`crate::weapons_data::LingeringSpec::forced_procs`] — the field's
+    /// OWN, never the direct part's.
+    pub forced_procs: crate::damage::ForcedProcs,
+    /// See [`crate::weapons_data::LingeringSpec::headshot_chance`]. `None` is
+    /// the radial's rule and every field in the roster but the Grimoire's orb.
+    pub headshot_chance: Option<f64>,
     pub radius_m: f64,
     pub falloff_start_m: f64,
     /// Torid's cloud is `reduction 1.0` — damage falls to ZERO at the rim,
@@ -2257,6 +2266,13 @@ pub struct ResolvedLingering {
     pub base_status_chance: f64,
     pub tick_rate: f64,
     pub duration_seconds: f64,
+    /// See [`LingeringBase::first_tick_delay_seconds`]. Unmodded: nothing in
+    /// the game moves when a field starts, only how long it lasts.
+    pub first_tick_delay_seconds: f64,
+    /// See [`LingeringBase::forced_procs`].
+    pub forced_procs: crate::damage::ForcedProcs,
+    /// See [`LingeringBase::headshot_chance`].
+    pub headshot_chance: Option<f64>,
     /// Geometry, carried through unmodded — single-target stands at the
     /// epicentre, but the panel states it (and Firestorm enlarges it in game).
     pub radius_m: f64,
@@ -4158,6 +4174,9 @@ pub fn resolve_for(
             base_status_chance: f.base_status_chance,
             tick_rate: f.tick_rate,
             duration_seconds: f.duration_seconds,
+            first_tick_delay_seconds: f.first_tick_delay_seconds,
+            forced_procs: f.forced_procs,
+            headshot_chance: f.headshot_chance,
             radius_m: f.radius_m * (1.0 + br),
             falloff_start_m: f.falloff_start_m * (1.0 + br),
             falloff_reduction: f.falloff_reduction,

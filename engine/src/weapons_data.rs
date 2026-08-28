@@ -589,9 +589,52 @@ pub struct LingeringSpec {
     pub damage: BTreeMap<String, f64>,
     /// Ticks per second (the data module's per-attack `FireRate`).
     pub tick_rate: f64,
-    /// Field lifetime in seconds (`EffectDuration`).
+    /// Field lifetime in seconds (`EffectDuration`), measured from the field's
+    /// OWN first tick rather than from the impact — see
+    /// [`LingeringSpec::first_tick_delay_seconds`], which is zero for every
+    /// field but one and leaves the two readings identical.
     pub duration_seconds: f64,
     pub radius_m: f64,
+    /// HOW LONG AFTER THE IMPACT THE FIRST TICK LANDS.
+    ///
+    /// Zero for a CLOUD, and that is measured: the Torid's first tick lands
+    /// with the impact number (M13), and reading the wiki's "Clouds do not
+    /// instantly do damage" as a delayed first tick cost a tenth of the
+    /// field's damage.
+    ///
+    /// The Grimoire's orb is the other shape. Its contact is a DIRECT hit —
+    /// the attack's own damage part — and the pulses that follow are on a one
+    /// second clock from there, so its field must not settle a second number
+    /// at the instant the collision already settled one (owner, 2026-08-28).
+    #[serde(default)]
+    pub first_tick_delay_seconds: f64,
+    /// Damage types this field's tick applies regardless of status chance —
+    /// its OWN, exactly as [`RadialSpec::forced_procs`] is the explosion's.
+    ///
+    /// A cloud declares none, which is why this defaults to empty and why the
+    /// tick path passed a literal `&[]` before this existed. The Grimoire's
+    /// orb declares Electricity: the owner measured the pulses forcing it and
+    /// the final explosion NOT forcing it (2026-08-28), which is one attack
+    /// answering the question both ways and the reason the two lists are
+    /// separate rather than shared.
+    #[serde(default)]
+    pub forced_procs: Vec<String>,
+    /// The chance ONE TICK lands on a head, when this field's ticks can land
+    /// on one at all.
+    ///
+    /// Absent — every field in the roster but one — means they cannot, which
+    /// is the radial's rule and the reason `field_tick` carries no body part:
+    /// *"Explosion has a headshot multiplier of 1x and cannot trigger headshot
+    /// conditions"*.
+    ///
+    /// Where it is stated, the number is a FLAT chance rather than the
+    /// scenario's `headshot_pct`, for [`RicochetSpec::headshot_chance`]'s
+    /// reason exactly: `headshot_pct` is a statement about the PLAYER'S AIM,
+    /// and a pulse from an orb drifting through a crowd is not aimed. Owner,
+    /// 2026-08-28: 0.1, and declared as an assumption rather than a
+    /// measurement — see the Grimoire's `unmodeled:` block.
+    #[serde(default)]
+    pub headshot_chance: Option<f64>,
     #[serde(default)]
     pub crit_chance: Option<f64>,
     #[serde(default)]
@@ -2965,6 +3008,11 @@ pub fn base_panel_assembled(
             base_status_chance: f.status_chance.unwrap_or(s.attack.status_chance),
             tick_rate: f.tick_rate,
             duration_seconds: f.duration_seconds,
+            first_tick_delay_seconds: f.first_tick_delay_seconds,
+            forced_procs: crate::damage::ForcedProcs::from_types(
+                f.forced_procs.iter().map(|t| damage_type(t)),
+            ),
+            headshot_chance: f.headshot_chance,
             radius_m: f.radius_m,
             falloff_start_m: f.falloff_start_m.unwrap_or(0.0),
             falloff_reduction: f.falloff_reduction.unwrap_or(0.0),

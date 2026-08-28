@@ -549,6 +549,14 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
                 base_status_chance: n(v, "status_chance").unwrap_or(0.0),
                 tick_rate: n(v, "tick_rate")?,
                 duration_seconds: n(v, "duration_seconds")?,
+                // A GRANTED FIELD IS A CLOUD: it starts with the impact, forces
+                // nothing, and cannot find a head. All three are the roster's
+                // default and none of the three mods that grant one says
+                // otherwise; they are stated here rather than defaulted so a
+                // mod that DOES say otherwise has somewhere to say it.
+                first_tick_delay_seconds: 0.0,
+                forced_procs: crate::damage::ForcedProcs::from_types([]),
+                headshot_chance: None,
                 // Overwritten at resolve time from the weapon's own blast.
                 radius_m: 0.0,
                 falloff_start_m: n(v, "falloff_start_m").unwrap_or(0.0),

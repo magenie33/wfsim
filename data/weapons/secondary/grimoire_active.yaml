@@ -1,7 +1,21 @@
 id: grimoire_active
 name: Grimoire
-# THE ACTIVE ATTACK: 350 Electricity with a six-metre blast, at two thirds of
-# the fire rate.
+# THE ACTIVE ATTACK, and it is a THROWN ORB rather than a shot — ✅ MEASURED
+# (MEASUREMENTS M63, owner 2026-08-28). What the wiki's module publishes for it
+# is one direct hit of 350 and one blast of 250, and neither number nor the
+# shape is what the game does:
+#
+#   * every number is the module's x0.8 — 280 direct, 200 blast
+#   * the orb PULSES. It flies at 6 m/s for a 6 s fuse; the moment it touches a
+#     body it slows to 2 m/s, keeps going, and lands a DIRECT hit on contact and
+#     once a second after that until the fuse runs out — then explodes. So the
+#     hit count is `ceil(6 - contact time)`, six at its ceiling, and flight time
+#     under one second costs nothing.
+#   * the pulses force Electricity and the final explosion does NOT.
+#
+# This arena fights at contact, so it is always the six-pulse ceiling. The
+# pulses are the `lingering:` field below; the CONTACT one is the attack's own
+# direct damage, which is why the field opens one second late.
 inherits: grimoire
 form: alt_fire
 transform_group: grimoire
@@ -35,8 +49,50 @@ attack:
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki: "Range: 6.0 m" on this attack.
   range_m: 6.0
-  damage: { electricity: 350 }   # total 350
-  # THE EXPLOSION — rules in MECHANICS §7.
+  # THE CONTACT PULSE. 280, not the module's 350 — measured (M63): every number
+  # this attack deals is the published one x0.8, both halves of it, which is
+  # what makes it ONE multiplier rather than two transcription slips.
+  damage: { electricity: 280 }   # total 280 (module 350 x0.8)
+  # THE FIVE PULSES AFTER IT — the same 280 on a one second clock. Modelled as
+  # the lingering FIELD because that is exactly its shape: a repeating damage
+  # part on its own clock with its own radius. What is NOT a cloud about it, and
+  # is why the field spec grew three fields for this weapon:
+  #
+  #   * it opens ONE SECOND after the impact, because the contact pulse is the
+  #     direct hit above and a field starting at t would settle it twice
+  #   * its ticks are DIRECT hits: they force Electricity, and they can land on
+  #     a head
+  #   * `duration_seconds` is therefore 5 and not 6 — the sixth pulse is the
+  #     contact one, already paid for above
+  lingering:
+    damage: { electricity: 280 }   # total 280, the contact pulse repeated
+    tick_rate: 1.0                 # one pulse a second
+    duration_seconds: 5.0          # five of them; the sixth is the contact hit
+    first_tick_delay_seconds: 1.0
+    radius_m: 6.0
+    # NO FALLOFF — everything inside six metres takes the pulse in full
+    # (owner, 2026-08-28). The EXPLOSION below falls off and this does not,
+    # which is the one place the two parts' geometry differs.
+    falloff_start_m: 6.0
+    falloff_reduction: 0.0
+    # A DIRECT HIT FORCES ELECTRICITY. The explosion below declares none, which
+    # is the same split the Astilla has between its two parts.
+    forced_procs: [electricity]
+    # ASSUMED, NOT MEASURED — a flat 10% per pulse (owner, 2026-08-28), on the
+    # page in this entry's `unmodeled:` block rather than only here. The orb is
+    # not aimed, so the scenario's headshot_pct is the wrong number for it;
+    # `ricochet:` reached the same conclusion for the same reason.
+    headshot_chance: 0.1
+    # A PULSE IS A DIRECT HIT, so it takes Condition Overload the way the
+    # contact hit does. INFERRED from the pulses being direct hits rather than
+    # read off a catalog row — this weapon has no row, and absence means
+    # ORDINARY, which for a direct hit is the full additive term.
+    takes_condition_overload: true
+    # Two orbs in the air are two orbs.
+    stacking: stack
+  # THE FINAL EXPLOSION — rules in MECHANICS §7. It fires when the fuse runs
+  # out, six seconds after contact; this engine settles a radial AT the impact,
+  # which moves it earlier by the fuse and is stated in `unmodeled:` below.
   radial:
     radius_m: 6.0
     falloff_start_m: 0.0
@@ -46,21 +102,44 @@ attack:
     status_chance: 0.26
     takes_multishot: false
     takes_blast_radius_mods: true
-    damage: { electricity: 250 }   # total 250
+    # NO `forced_procs:` — and it is an ABSENCE THAT WAS MEASURED rather than
+    # one nobody asked about: the pulses force Electricity and this does not
+    # (owner, 2026-08-28).
+    damage: { electricity: 200 }   # total 200 (module 250 x0.8)
 
 unmodeled:
-  # THE TWO THAT MAKE THESE NUMBERS A CEILING. The stats above are the wiki's
-  # to the last decimal, and the FIGHT they are fired in is not: this arena
-  # spends every second on the form you picked, and this form cannot be fired
-  # every second (2026-08-25).
+  # THE ONE THAT MAKES THESE NUMBERS A CEILING. The stats above are measured,
+  # and the FIGHT they are fired in is not: this arena spends every second on
+  # the form you picked, and this form cannot be fired every second
+  # (2026-08-25).
   - reason: tome_meter
     rate: 1
     seconds: 45
-  - reason: orb_shocks_over_time
-    radius: 6
-    fuse: 6
+  # THE PULSES ARE MODELLED as of 2026-08-28 (M63) — `lingering:` above. What
+  # `orb_shocks_over_time` used to cover and this replaces is what is LEFT of
+  # the orb: its chain, and the fact that its pulses here stand still.
+  - reason: orb_chain
+  - reason: orb_pulses_do_not_travel
+    speed: 2
   - reason: explosion_ignores_cover
   - reason: self_stagger
+  # THE ORB'S HEADSHOT RATE IS AN ASSUMPTION and a player deciding whether to
+  # trust this weapon's number cannot read a yaml (the rule `ricochet:`
+  # established, 2026-08-21). Prose rather than a reason because it is used
+  # once and carries one number.
+  - "how often one of the orb's pulses lands on a weak point is ASSUMED — a
+    flat 10% each (owner, 2026-08-28). The pulses ARE direct hits and can
+    headshot, but where an orb drifting through a crowd puts them is geometry
+    this arena does not model and DE publishes no rate. A pulse also takes no
+    critical-HEADSHOT bonus here: whether the 2x fold-in applies to one is
+    unmeasured, so this follows the ricochet's reading and takes none"
+  # THE FINAL EXPLOSION'S TIMING. Worth nothing over an engagement and worth
+  # something inside the first six seconds, so it is said rather than assumed
+  # away.
+  - "the final explosion is settled at the moment the orb makes contact rather
+    than when its 6 s fuse runs out — the same damage in the same fight, six
+    seconds early, which moves nothing over a long engagement and makes a short
+    one look slightly front-loaded"
 
 source:
   url: https://wiki.warframe.com/w/Grimoire

@@ -7618,6 +7618,19 @@ struct FieldCtx {
     crit_chance_relative_mods: f64,
     /// Σ live base-damage bucket additions from MOD/evolution buffs.
     base_damage_add_mods: f64,
+    /// WHAT A HEAD ON THIS FIGHT'S TARGET IS WORTH — the location multiplier
+    /// with the whole additive headshot ladder folded on (M60: they ADD).
+    ///
+    /// Read by a field whose ticks can find a head at all (the Grimoire's orb;
+    /// [`crate::loadout::ResolvedLingering::headshot_chance`]), and by nothing
+    /// else — a cloud carries no body part.
+    ///
+    /// DELIBERATELY NOT the pellet loop's own copy of this ladder, which stays
+    /// per PELLET: Lingering Judgement's window can open on a headshot in the
+    /// middle of a pull, so the two are computed at different instants on
+    /// purpose. Snapshotting it here is this struct's whole convention, and it
+    /// is under a second of staleness for the same reason the crit buffs are.
+    head_factor: f64,
 }
 
 /// Settle every FIELD tick due strictly before `until`, oldest first.
@@ -7825,6 +7838,26 @@ fn field_tick(
     };
     let mb_live = f.modified_base * arc_ratio;
 
+    // CAN THIS TICK FIND A HEAD? Every field in the roster but one cannot, and
+    // that is the radial's rule quoted above. The Grimoire's orb can: the owner
+    // measured its pulses as DIRECT hits (2026-08-28), and the chance is a flat
+    // one the weapon states rather than the scenario's `headshot_pct`, because
+    // an orb drifting through a crowd is not aimed — `RicochetSpec` reached the
+    // same conclusion for the same reason and is the precedent.
+    //
+    // NO CRIT-HEADSHOT FOLD-IN. The `2 × cd` doubling is the aimed shot's, and
+    // whether a pulse earns it is UNMEASURED — so this follows the ricochet
+    // path, which folds nothing in either. It is named in the weapon's
+    // `unmodeled:` block rather than left as a silent reading.
+    //
+    // The draw is taken ONLY where a chance is stated, which is what keeps
+    // every existing field's dice exactly where they were.
+    let head = match f.headshot_chance {
+        Some(c) => d.spine.next_f64() < c,
+        None => false,
+    };
+    let part_factor = if head { ctx.head_factor } else { 1.0 };
+
     // Falloff is 1.0: the grenade STICKS to the target, so the target stands at
     // the epicentre for every tick — which is exactly why the wiki calls a
     // direct hit "the maximum possible damage".
@@ -7838,7 +7871,7 @@ fn field_tick(
     // `faction_at` like the other two rungs so the ladder is visible at every
     // level rather than only where it compounds.
     let raw =
-        qtotal * crit_multiplier * bucket * faction_at(params.faction_at_time(at), DEPTH_HIT)
+        qtotal * crit_multiplier * part_factor * bucket * faction_at(params.faction_at_time(at), DEPTH_HIT)
             * damage_multiplier
             * params.ability_final_at(at);
     let col = target.incoming_column(foe);
@@ -7863,11 +7896,16 @@ fn field_tick(
         || Instance {
             origin: crate::record::Origin::Field,
             // A CLOUD'S TICK IS WEAPON DAMAGE ON ITS OWN CLOCK — neither a
-            // hit nor a status — so it carries a hit's factors and no body
-            // part: the grenade sticks to the target, which is why there is
-            // no falloff term here either.
+            // hit nor a status — so it carries a hit's factors, and no falloff
+            // term because the grenade sticks to the target.
+            //
+            // THE BODY PART IS x1 FOR EVERY FIELD BUT ONE, and it is written
+            // down rather than omitted: a row whose number carries a x3 the
+            // ledger does not name is a row the reader cannot check, which is
+            // the one thing this stream exists to prevent.
             base: qtotal,
             steps: vec![
+                (crate::record::Factor::BodyPart, part_factor),
                 (crate::record::Factor::Critical, crit_multiplier),
                 (crate::record::Factor::ConditionOverload, bucket),
                 (crate::record::Factor::Faction, faction_at(params.faction_at_time(at), DEPTH_HIT)),
@@ -7887,15 +7925,20 @@ fn field_tick(
         arc.on_kill(params, at);
         return true;
     }
-    // Status per TICK, from the field's own vector and its own status chance.
-    // No forced procs: those are declared per attack part, and the cloud
-    // declares none.
+    // Status per TICK, from the field's own vector and its own status chance,
+    // plus THIS FIELD'S OWN forced procs — declared per attack part, which is
+    // why a cloud (declaring none) passes an empty set and lands exactly where
+    // it always did. The Grimoire's orb forces Electricity on every pulse and
+    // its final explosion forces nothing, which is one attack answering the
+    // question both ways (owner, 2026-08-28).
     //
     // A tick is its OWN damage instance, at its own time — so a per-instance
     // arcane cap resets here rather than sharing the shot's allowance.
     arc.next_instance();
+    let mut forced_buf = [DamageType::Impact; DamageType::ALL.len()];
+    let forced_n = f.forced_procs.fill(&mut forced_buf);
     let procs = status::procs_for_hit(
-        &[],
+        &forced_buf[..forced_n],
         f.status_chance,
         &qvec,
         &foe.status_immunities,
@@ -7907,7 +7950,10 @@ fn field_tick(
         InstanceScale {
             mb_live,
             crit_multiplier,
-            part_factor: 1.0,
+            // A STATUS IS STAMPED WITH THE MULTIPLIERS OF THE HIT THAT APPLIED
+            // IT — measured (M54), and 1.0 for every field that cannot find a
+            // head, which is the value this passed before the orb arrived.
+            part_factor,
             attrition: 1.0,
             // The BASE ATTACK's, not the cloud's: a Blast stack the cloud
             // applies still detonates off a gun, and the bracket its extra hit
@@ -9006,7 +9052,7 @@ mod pellet_volley {
         // that reached the meter — so this asserts the mechanic rather than a
         // consequence of it that a dozen other things also move.
         let factor = |mods: &[&str]| {
-            let rec = record(&arbucep(mods), 12345, 0.0, f64::INFINITY, 5_000);
+            let rec = record(&arbucep(mods), 12345, 0.0, f64::INFINITY, 5_000, 0);
             rec.events()
                 .iter()
                 .find_map(|e| match &e.kind {
@@ -10902,6 +10948,32 @@ pub fn run_once_traced(
                 + ap.compression_base_damage
                 + buff_total!(ap, crate::loadout::BuffGrant::BaseDamage, t)
                 + buff_total!(ap, crate::loadout::BuffGrant::FlatBaseDamage, t),
+            // The same ladder the pellet loop builds below, on the aimed body's
+            // own head — see the field's note on why it is computed twice
+            // rather than shared.
+            head_factor: {
+                let streak = match params.headshot_streak {
+                    Some(s) if t < streak_expiry => s.value,
+                    _ => 0.0,
+                } + buff_total!(ap, crate::loadout::BuffGrant::HeadshotDamage, t);
+                let (hb, hi) = if ap.headshot_bonus_multiplicative {
+                    (params.arcane.headshot_multiplier_bonus + streak, ap.headshot_damage_bonus)
+                } else {
+                    (
+                        params.arcane.headshot_multiplier_bonus
+                            + streak
+                            + ap.headshot_damage_bonus,
+                        0.0,
+                    )
+                };
+                let m = params
+                    .body_parts
+                    .iter()
+                    .find(|p| p.is_head)
+                    .map_or(1.0, |p| p.multiplier);
+                let m = ap.headshot_multiplier.unwrap_or(m);
+                (m + 1.5 * ap.weakpoint_damage) * (1.0 + hb) * (1.0 + hi)
+            },
         };
         process_field_ticks(
             &mut fields,
@@ -12302,7 +12374,12 @@ pub fn run_once_traced(
                         let mut part = *fp;
                         part.duration_seconds *= boost;
                         let fresh = FieldState {
-                            next_tick: t,
+                            // …AND THE GRIMOIRE'S ORB IS THE OTHER SHAPE. Its
+                            // contact is the direct hit this pellet already
+                            // settled, and its pulses run on a one second clock
+                            // from there — so its field opens one interval late
+                            // rather than doubling the collision.
+                            next_tick: t + part.first_tick_delay_seconds,
                             ticks_left: (part.duration_seconds * part.tick_rate).round() as u32,
                             part,
                             // Plentiful Mayhem follows a GENERATED grenade into
@@ -13335,8 +13412,9 @@ pub fn record(
     from: f64,
     to: f64,
     limit: usize,
+    skip: usize,
 ) -> crate::record::Record {
-    let mut rec = crate::record::Record::window(from, to, limit);
+    let mut rec = crate::record::Record::window(from, to, limit, skip);
     // WHAT THE ROWS' STACK LISTS ARE CALLED — the buff cards' own ids, because
     // they come from one place.
     rec.set_buffs(params.buff_roster().into_iter().map(|b| b.id).collect());
@@ -21225,7 +21303,7 @@ mod tests {
             ..no_status()
         };
 
-        let rec = record(&p, 0, 0.0, f64::INFINITY, 1_000);
+        let rec = record(&p, 0, 0.0, f64::INFINITY, 1_000, 0);
         let rows: Vec<(Option<u32>, bool, f64)> = rec
             .events()
             .iter()
@@ -22242,7 +22320,7 @@ mod tests {
 
         let s = monte_carlo(&p, 8, 5);
         let state = s.median_run.rng_state;
-        let rec = record(&p, state, 0.0, f64::INFINITY, 1_000_000);
+        let rec = record(&p, state, 0.0, f64::INFINITY, 1_000_000, 0);
         assert_eq!(rec.dropped(), 0, "the cap is not what this is measuring");
 
         let damage: Vec<&crate::record::Damage> = rec
@@ -22425,7 +22503,7 @@ mod tests {
         };
         let s = monte_carlo(&p, 4, 11);
         let state = s.median_run.rng_state;
-        let rec = record(&p, state, 0.0, f64::INFINITY, 1_000_000);
+        let rec = record(&p, state, 0.0, f64::INFINITY, 1_000_000, 0);
         let rows: Vec<&crate::record::Damage> = rec
             .events()
             .iter()
@@ -22487,7 +22565,7 @@ mod tests {
         p.base_crit_chance = 0.5;
         p.crit_multiplier = 2.0;
         let rep = replay(&p, 0, 60);
-        let rec = record(&p, 0, 0.0, f64::INFINITY, 1_000_000);
+        let rec = record(&p, 0, 0.0, f64::INFINITY, 1_000_000, 0);
         assert_eq!(rec.dropped(), 0, "the cap is not what this is measuring");
         let rows: Vec<(f64, &crate::record::Damage)> = rec
             .events()
@@ -23790,7 +23868,7 @@ mod tests {
         // …AND THE WINDOW IS STILL RECORDED, which is the half that has to
         // survive for melee to be one line of work rather than a rebuild: a row
         // that lands while it is up says so, and nothing reduces it.
-        let rec = record(&p, monte_carlo(&p, 4, 5).median_run.rng_state, 0.0, 1.0, 5_000);
+        let rec = record(&p, monte_carlo(&p, 4, 5).median_run.rng_state, 0.0, 1.0, 5_000, 0);
         let windows: Vec<f64> = rec
             .events()
             .iter()

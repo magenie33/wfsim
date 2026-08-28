@@ -5533,7 +5533,11 @@ pub fn log_json(v: &Value) -> Value {
     // worst one measured, so the common case is never truncated and the
     // pathological one is answered rather than refused.
     let limit = get_f64(v, "limit", 60_000.0).clamp(1.0, 200_000.0) as usize;
-    let rec = wfsim_engine::dummy::record(&params, state, from, to, limit);
+    // WHERE THIS PAGE STARTS. A window bounds one read; the skip is what lets
+    // several reads cover a stream no single one can hold, and the whole fight
+    // is then a matter of asking again (owner, 2026-08-28).
+    let skip = get_f64(v, "skip", 0.0).max(0.0) as usize;
+    let rec = wfsim_engine::dummy::record(&params, state, from, to, limit, skip);
 
     // ONE BODY'S VIEW IS A FILTER, never a different query: a weapon event
     // belongs to nobody, so it belongs in every body's timeline (owner,
@@ -5560,6 +5564,7 @@ pub fn log_json(v: &Value) -> Value {
         // WHAT DID NOT FIT, stated rather than swallowed — a cap nobody is told
         // about reads as "that is everyone".
         "dropped": rec.dropped(),
+        "skip": rec.skipped(),
         // THE TWO ROSTERS the rows' stack lists index into: the shooter's, whose
         // ids are the buff cards' own, and the target's, which is a constant of
         // the engine.
