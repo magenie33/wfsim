@@ -2962,6 +2962,10 @@ pub struct DummyParams {
     /// See [`crate::loadout::ResolvedPanel::windup_seconds`] — how long after
     /// the trigger a round actually leaves.
     pub windup_seconds: f64,
+    /// See [`crate::weapons_data::AttackSpec::no_magazine`]. The loop tops the
+    /// magazine up silently instead of reloading, so a reload never happens and
+    /// nothing keyed to one ever fires.
+    pub no_magazine: bool,
     /// A DEPLOYED ORB'S geometry and clock — see [`crate::loadout::ResolvedOrb`].
     ///
     /// `Some` changes what a SHOT IS: it deploys rather than arrives, so the
@@ -3813,6 +3817,7 @@ impl DummyParams {
             ricochet: panel.ricochet,
             unaimed_headshot_chance: panel.unaimed_headshot_chance,
             windup_seconds: panel.windup_seconds,
+            no_magazine: panel.no_magazine,
             orb: panel.orb,
             // NO METER ON A SINGLE FORM, and that is the `transformed` mode's
             // own definition rather than an omission: it is the form "all
@@ -4356,6 +4361,8 @@ impl Default for DummyParams {
             unaimed_headshot_chance: None,
             // A ROUND LEAVES ON THE TRIGGER, like every gun but one.
             windup_seconds: 0.0,
+            // …AND IT HAS A CLIP, like every gun but one.
+            no_magazine: false,
             // NOTHING IS DEPLOYED: the calibration fixture throws no orb.
             orb: None,
             orb_strike: None,
@@ -11210,6 +11217,19 @@ pub fn run_once_traced(
         }
 
         // Phase transitions and reloads.
+        // A WEAPON WITH NO MAGAZINE NEVER EMPTIES, so it never reaches the
+        // reload below. Topping it up here rather than making `can_fire` lie is
+        // what keeps the whole reload path — the event, the animation, the
+        // buffs, the windows, the ammo draw — from happening at all, which is
+        // the only way to be sure none of it fires: there is no list of
+        // reload-keyed effects to keep in step, because the reload does not
+        // occur (2026-08-28).
+        //  rather than the active form: having a clip is a property of
+        // the WEAPON, not of which of its forms is being fired, and this is
+        // read before the form is decided anyway.
+        if params.no_magazine {
+            magazine = mag_cap;
+        }
         if let Some(cy) = &params.cycle {
             if !in_base_form && magazine < 1e-9 {
                 // Charge magazine spent: revert to the base form. The swap
@@ -21019,6 +21039,73 @@ mod tests {
             ..orb_spec()
         };
         assert_eq!(strikes(crate::space::CONTACT_RANGE_M, held), 6, "held still");
+    }
+
+    /// A WEAPON WITH NO MAGAZINE NEVER RELOADS, so nothing keyed to a reload
+    /// ever fires.
+    ///
+    /// A Tome has no clip — the module gives the Grimoire a magazine of ZERO —
+    /// and this entry writes 1 because the sim cannot fire a magazine of zero.
+    /// The loop therefore emptied that round and RELOADED for zero seconds
+    /// after every shot, and a reload that costs no time is still an EVENT:
+    /// every reload-triggered buff fired on every shot and stayed up for the
+    /// whole engagement. Measured on the real weapon, Pressurized Magazine took
+    /// it from 1,409 DPS to 2,699 — on a weapon that does not reload (owner
+    /// spotted it, 2026-08-28).
+    ///
+    /// THE FIXTURE IS THE BUG. A one-round magazine, a zero-second reload and a
+    /// fire-rate buff on reload: the arm without the flag reloads
+    /// after every shot and rides the buff all engagement, and the arm with it
+    /// fires the same weapon with the buff never once triggered.
+    #[test]
+    fn a_weapon_with_no_magazine_never_reloads_so_no_reload_buff_fires() {
+        let mut damage = DamageVector::default();
+        damage.set(DamageType::Electricity, 10.0);
+        let fired = |no_magazine: bool| {
+            monte_carlo(
+                &DummyParams {
+                    damage,
+                    no_magazine,
+                    magazine_size: 1.0,
+                    reload_seconds: 0.0,
+                    infinite_reserve: true,
+                    fire_rate: 1.0,
+                    duration_seconds: 60.0,
+                    stacking_buffs: vec![crate::loadout::StackingBuff {
+                        id: "on_reload_fire_rate",
+                        trigger: crate::loadout::BuffTrigger::ReloadComplete,
+                        grant: crate::loadout::BuffGrant::FireRate,
+                        per_stack: 1.0,
+                        max_stacks: 1,
+                        duration: 60.0,
+                        chance: 1.0,
+                        decay: crate::loadout::BuffDecay::PerStackExpiry,
+                        initial_stacks: 0,
+                        stacks_per_trigger: 1,
+                        per_shell: false,
+                        cleared_by: crate::loadout::ClearedBy::Nothing,
+                        card_opens_full: false,
+                    }],
+                    crit_multiplier: 1.0,
+                    base_crit_chance: 0.0,
+                    arcane: ArcaneFx::none(),
+                    ..no_status()
+                },
+                4,
+                3,
+            )
+            .mean_shots
+        };
+        let reloading = fired(false);
+        let no_clip = fired(true);
+        assert!(
+            reloading > no_clip * 1.5,
+            "a weapon that reloads rides the buff: {reloading} against {no_clip}"
+        );
+        assert!(
+            (no_clip - 60.0).abs() < 1e-9,
+            "and one with no magazine fires its bare rate, buff never triggered: {no_clip}"
+        );
     }
 
     /// A ROUND LEAVES AFTER THE WIND-UP, and the interval is still the rate's.

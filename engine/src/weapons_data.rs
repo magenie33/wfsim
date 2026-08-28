@@ -390,6 +390,28 @@ pub struct AttackSpec {
     /// weapon says so on its own page.
     #[serde(default)]
     pub unaimed_headshot_chance: Option<f64>,
+    /// THIS WEAPON HAS NO MAGAZINE, so it never reloads.
+    ///
+    /// A TOME is the case: the module gives the Grimoire a magazine of ZERO,
+    /// which is a fact about the class — there is no clip and no reload in the
+    /// sense every gun here has one. The entry writes `magazine: 1` because
+    /// this sim cannot fire a magazine of zero, and until 2026-08-28 that stood
+    /// alone: the loop emptied the one round, RELOADED for zero seconds, and
+    /// did it again on the next shot.
+    ///
+    /// A ZERO-SECOND RELOAD COSTS NO TIME AND IS STILL AN EVENT. Every
+    /// reload-triggered buff in the game therefore fired on EVERY SHOT and
+    /// stayed up for the whole engagement — Pressurized Magazine took the
+    /// Grimoire from 1,409 DPS to 2,699, on a weapon that never reloads, and
+    /// would have won every build search run on it (owner spotted it,
+    /// 2026-08-28).
+    ///
+    /// Declaring it is what makes the loop skip the reload rather than perform
+    /// a free one, and skipping the EVENT is what makes every effect keyed to
+    /// it — the buff triggers, the fire-rate window, the base-damage window,
+    /// the instant reloads — inert without any of them being listed here.
+    #[serde(default)]
+    pub no_magazine: bool,
     /// SECONDS BETWEEN THE TRIGGER AND THE ROUND LEAVING.
     ///
     /// Zero on every gun in this roster and 0.1 s on the Grimoire's primary
@@ -3460,6 +3482,7 @@ pub fn base_panel_assembled(
         // A BOUNCE IS NOT SCALED BY ANYTHING, so it comes across as written.
         unaimed_headshot_chance: s.attack.unaimed_headshot_chance,
         windup_seconds: s.attack.windup_seconds,
+        no_magazine: s.attack.no_magazine,
         orb: s.attack.orb,
         meter: s.attack.meter,
         ricochet: s.attack.ricochet.as_ref().map(|r| crate::loadout::Ricochet {

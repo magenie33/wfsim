@@ -62,6 +62,14 @@ attack:
   # it moves is WHEN each number lands, which is what the combat record is
   # checked against.
   windup_seconds: 0.1
+  # NO CLIP AND NO RELOAD. The module gives a Tome a magazine of ZERO and this
+  # entry writes 1 below, because the sim cannot fire a magazine of zero — and
+  # for months that stood alone, so the loop emptied the one round and RELOADED
+  # for zero seconds after every shot. A reload that costs no time is still an
+  # EVENT: every reload-triggered buff fired on every shot and stayed up all
+  # engagement. Pressurized Magazine was worth +92% DPS on a weapon that does
+  # not reload (owner spotted it, 2026-08-28).
+  no_magazine: true
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 40

@@ -21,16 +21,32 @@ max_rank: 3
 internal_name: /Lotus/Upgrades/Grimoire/LohkAuraMod
 description: "Killing enemies grants Allies within Affinity Range +X% Fire Rate for 15s."
 effects:
-  # ALLIES ONLY, and there are none — the same reason as Fass Canticle.
-  # Worth naming because the STAT is one this sim models to the last
-  # decimal: it is not the fire rate that is out of scope, it is who
-  # gets it.
-  - kind: ally_buff
+  # THE PLAYER IS AN ALLY, and that is the whole difference between this card
+  # being worth nothing and being worth 30% fire rate.
+  #
+  # It was filed `out_of_scope` on the reading that "Allies within Affinity
+  # Range" means OTHER people and this arena has none. The owner plays the
+  # weapon and says the wielder gets it (2026-08-28): *"这个有个是可以增加射速
+  # 的，我们是可以吃到的，因为我们现在已经存在tenno了"*. The wiki's own wording
+  # settles nothing either way — it says "ally" and does not say whether the
+  # caster is one — so the measurement decides, which is this project's rule
+  # for exactly this situation.
+  #
+  # AFFINITY RANGE IS 50 m (wiki `Affinity` §Affinity Range: *"Affinity will be
+  # shared among the squad if they are within a 50-meter radius"*), and solo
+  # you are always inside your own. It is stated on the buff rather than left
+  # implicit because the number is what a squad reading of this card would
+  # need, and because the OTHER Canticle that uses the same phrase measures a
+  # distance to enemies where this one does not.
+  - kind: stacking_buff
+    grants: fire_rate
     rank0: 0.075
     rankMax: 0.3
-  # …AND WHAT IT IS WORTH HERE, said on the card rather than left to be
-  # inferred from a number that never moves the answer.
-  - kind: out_of_scope
+    # ONE STACK. The card grants a fixed bonus for 15 s and every kill refreshes
+    # it; it does not accumulate.
+    max_stacks: 1
+    duration: 15.0
+    trigger: on_kill
 
 source:
   url: https://wiki.warframe.com/w/Tome_Mods
