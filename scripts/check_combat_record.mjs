@@ -147,6 +147,41 @@ const r = await evaluate(`(async () => {
     return Math.abs(eff - e.effective) > Math.max(0.05, Math.abs(e.effective) * 0.005);
   }).slice(0, 2);
 
+  // ---- STATE, PLUS WHAT THIS ROW CHANGED, IS THE NEXT STATE -------------
+  //
+  // The two state columns said what was TRUE and never why it changed, so a
+  // reader could not check one row against the next. A row states what it put
+  // on the target (procs) and what it set off on the shooter (triggered),
+  // and both are deltas against the state column beside them: the next row's
+  // count for a buff this row triggered can never be LOWER (owner, 2026-08-28).
+  //
+  // It is one-directional on purpose. A buff can also expire between two rows,
+  // so "went up by exactly one" is not the property — "never went down after
+  // being triggered" is, and that is what a bump guarantees.
+  const dmg = (recordState.events || []).filter((e) => e.kind === 'damage');
+  let pairs = 0, fell = 0;
+  for (let i = 0; i < dmg.length - 1; i++) {
+    for (const k of dmg[i].triggered || []) {
+      pairs += 1;
+      if (((dmg[i + 1].buffs || [])[k] || [0])[0] < ((dmg[i].buffs || [])[k] || [0])[0]) fell += 1;
+    }
+  }
+  out.triggerPairs = pairs;
+  out.triggerFell = fell;
+  out.rowsWithTriggers = dmg.filter((e) => (e.triggered || []).length).length;
+  // …AND A DURATION IS THE ROW'S OWN CLOCK. The wire carries an ABSOLUTE
+  // expiry, so a buff seen on two rows a second apart must read one second
+  // shorter — a countdown baked in at application time would read the same.
+  const ticking = [];
+  for (const e of dmg) {
+    for (let k = 0; k < (e.debuffs || []).length; k++) {
+      const [n, until] = e.debuffs[k] || [];
+      if (n > 0 && typeof until === 'number') ticking.push([e.t, until, k]);
+    }
+  }
+  out.withDuration = ticking.length;
+  out.durationsAhead = ticking.every(([t, until]) => until >= t - 1e-6);
+
   // ---- THE SPLIT ------------------------------------------------------
   // A body hit on a shielded target pops two numbers. They are two ROWS at the
   // same instant, one per pool, and the health one wears the gate.
@@ -358,5 +393,71 @@ check(`${tag} a result saved before the record still shows the block`,
   stale.had === true && stale.block === true, "the block is drawn either way");
 check(`${tag} ...and says why it cannot be read`, stale.says === true && stale.noButton === true);
 check(`${tag} ...and running the fight again brings it back`, stale.backAgain === true);
+
+// ---- STATE, PLUS WHAT THIS ROW CHANGED, IS THE NEXT STATE ------------------
+//
+// The two state columns said what was TRUE and never why it changed, so a
+// reader could not check one row against the next. A row states what it put on
+// the target and what it set off on the shooter, and both are deltas against
+// the state column beside them (owner, 2026-08-28).
+//
+// ITS OWN FIXTURE, because the bare one above has neither: no stacking buff to
+// set off and a level-1 target whose statuses are over before the next row.
+// Both claims pass perfectly on a fight that has none of either, which is the
+// shape of vacuous this file has already been caught by twice.
+const live = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const out = {};
+  history.pushState({}, '', '/weapons/Laetum/simulator'); route();
+  await sleep(6000);
+  // THE BOARD'S OWN BUILD, which carries the stacking buffs a bare one cannot.
+  const b = builtinBuilds();
+  const row = b.find((x) => !x.riven && x.mode === 'cycle') || b[0];
+  if (row) pickPreset(buildBarCfg(), presetId(row));
+  await sleep(2500);
+  document.getElementById('run-sim').click();
+  for (let i = 0; i < 300 && !document.getElementById('rp-scrub'); i++) await sleep(500);
+  const btn = document.getElementById('rec-load');
+  if (btn) btn.click();
+  for (let i = 0; i < 120 && !document.querySelector('table.rec-t'); i++) await sleep(300);
+  await sleep(600);
+  const dmg = (recordState.events || []).filter((e) => e.kind === 'damage');
+  out.rows = dmg.length;
+  let pairs = 0, fell = 0;
+  for (let i = 0; i < dmg.length - 1; i++) {
+    for (const k of dmg[i].triggered || []) {
+      pairs += 1;
+      if (((dmg[i + 1].buffs || [])[k] || [0])[0] < ((dmg[i].buffs || [])[k] || [0])[0]) fell += 1;
+    }
+  }
+  out.pairs = pairs;
+  out.fell = fell;
+  out.withTriggers = dmg.filter((e) => (e.triggered || []).length).length;
+  // …AND A DURATION IS THE ROW'S OWN CLOCK. The wire carries an ABSOLUTE
+  // expiry, so a chip on two rows a second apart reads one second shorter — a
+  // countdown frozen at application time would read the same on both.
+  const clocked = [];
+  for (const e of dmg) {
+    for (const side of ['debuffs', 'buffs']) {
+      for (const pair of e[side] || []) {
+        if (pair && pair[0] > 0 && typeof pair[1] === 'number') clocked.push([e.t, pair[1]]);
+      }
+    }
+  }
+  out.clocked = clocked.length;
+  out.ahead = clocked.every(([t, until]) => until >= t - 1e-6);
+  // …AND IT IS ON SCREEN as a countdown beside the count.
+  out.drawn = document.querySelectorAll('#rec-host .rec-s em').length;
+  return out;
+})()`);
+
+check(`${tag} a row says what it set off on the shooter, not just on the target`,
+  live.withTriggers > 0, `${live.withTriggers} of ${live.rows} rows carry a trigger`);
+check(`${tag} ...and a buff it triggered never goes DOWN on the next row`,
+  live.pairs > 0 && live.fell === 0, `${live.fell} of ${live.pairs} fell`);
+check(`${tag} ...and a stack carries an expiry still ahead of its own row`,
+  live.clocked > 0 && live.ahead === true, `${live.clocked} with a clock`);
+check(`${tag} ...drawn as a countdown beside the count`,
+  live.drawn > 0, `${live.drawn} chips with a time`);
 
 await finish("every row of the record produces its own number");

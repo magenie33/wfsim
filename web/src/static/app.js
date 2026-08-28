@@ -14541,14 +14541,26 @@ const REC_POOL = { shield: "on the shield", health: "through to health", overgua
 /// job is to say what was up, while the chart two blocks down said 腐蚀 and the
 /// buff's own card name. Two spellings of one thing, which is the mistake this
 /// panel exists to stop making (owner, 2026-08-27).
-function recStacks(list, roster, cls) {
+function recStacks(list, roster, cls, now) {
   const nameOf = cls === "on" ? debuffRosterName : buffRosterName;
   const on = (list || [])
-    .map((n, i) => [roster[i], n])
+    .map(([n, until], i) => [roster[i], n, until])
     .filter(([id, n]) => id && n > 0);
   if (!on.length) return `<span class="z">—</span>`;
-  return `<div class="rec-stk">${on.map(([id, n]) =>
-    `<span class="rec-s ${cls}">${escHtml(nameOf(id))}<b>${n}</b></span>`).join("")}</div>`;
+  // …AND HOW LONG IT HAS LEFT. The wire carries an ABSOLUTE expiry, so the
+  // countdown is this row's own clock subtracted from it — which means two
+  // rows a second apart show a buff ticking down rather than both showing the
+  // number it had when it was applied. `null` is one whose end the loop does
+  // not track and it shows no time at all rather than a guess (owner,
+  // 2026-08-28: exact or absent).
+  const left = (until) => {
+    if (until == null) return "";
+    if (until === "inf") return "";
+    const s = until - now;
+    return s > 0 ? `<em>${s < 10 ? s.toFixed(1) : Math.round(s)}s</em>` : "";
+  };
+  return `<div class="rec-stk">${on.map(([id, n, until]) =>
+    `<span class="rec-s ${cls}">${escHtml(nameOf(id))}<b>${n}</b>${left(until)}</span>`).join("")}</div>`;
 }
 
 /// THE LEDGER, LAYER BY LAYER — and the SHAPE says which mechanic it is.
@@ -14689,7 +14701,15 @@ function recordRow(e, rosters) {
     <td${L("damage source")}><span class="rec-org rec-o-${escHtml(e.origin)}" data-origin="${escHtml(e.origin)}">${escHtml(tr(e.origin.replace(/_/g, " ")))}</span>${which}</td>
     <td${L("part")}>${e.part ? `<span class="${e.head ? "rec-head" : ""}">${escHtml(tr(e.part))}${e.head ? " ⌖" : ""}</span>` : "<span class=\"z\">—</span>"}</td>
     <td class="num"${L("damage")}><b>${n(e.effective)}</b><span class="rec-pool">${escHtml(tr(REC_POOL[e.pool] || e.pool))}</span>${crit}</td>
-    <td class="rec-proc"${L("procs")}>${(e.procs || []).map((p) => `<span class="rec-p">${escHtml(DT(p))}</span>`).join("") || "<span class=\"z\">—</span>"}</td>
+    <td class="rec-proc"${L("procs")}>${
+      // TWO SIDES, ONE COLUMN. What this instance put ON THE TARGET and what it
+      // set off ON THE SHOOTER — the deltas that turn the two state columns
+      // into something a reader can check: the next row's state is this row's
+      // state plus these (owner, 2026-08-28).
+      (e.procs || []).map((p) => `<span class="rec-p on">${escHtml(DT(p))}</span>`).join("")
+      + (e.triggered || []).map((i) => `<span class="rec-p up">${
+          escHtml(buffRosterName(((rosters.buffs || [])[i]) || String(i)))}</span>`).join("")
+      || "<span class=\"z\">—</span>"}</td>
     <td class="rec-calc"${L("where the number comes from")}><div class="lg lg-base"><span class="lg-lbl">${
       escHtml(tr("base damage"))}</span><span class="lg-body"><span class="lg-out">${n(e.base)}</span></span></div>${
       ledgerRows(e)}${mit ? `<div class="lg-mit">${mit}</div>` : ""}<div class="lg lg-end"><span class="lg-lbl">${
@@ -14697,7 +14717,7 @@ function recordRow(e, rosters) {
       escHtml(tr("pool lost"))} ${e.effective.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span><span class="lg-out">${
       n(e.effective)}</span></span></div></td>
     <td class="rec-wep"${L("weapon")}>${wep}</td>
-    <td class="rec-buff"${L("buffs up")}>${recStacks(e.buffs, rosters.buffs, "up")}</td>
+    <td class="rec-buff"${L("buffs up")}>${recStacks(e.buffs, rosters.buffs, "up", e.t)}</td>
     <td class="rec-state"${L("before · target")}>${
       b.overguard > 0 ? `<span data-pool="overguard"><i>${escHtml(tr("overguard"))}</i>${n(b.overguard)}</span>` : ""}<span data-pool="shield"><i>${escHtml(tr("shield"))}</i>${n(b.shield || 0)}</span><span data-pool="health"><i>${escHtml(tr("health"))}</i>${n(b.health || 0)}</span>${
       b.armor > 0 ? `<span data-pool="armour"><i>${escHtml(tr("armour"))}</i>${n(b.armor)}</span>` : ""}${
@@ -14707,7 +14727,7 @@ function recordRow(e, rosters) {
       b.shield_gate_until != null
         ? `<span class="rec-gate"><i>${escHtml(tr("gate"))}</i>${b.shield_gate_until.toFixed(2)}s</span>`
         : ""}</td>
-    <td class="rec-dbf"${L("statuses on the target")}>${recStacks(e.debuffs, rosters.debuffs, "on")}</td>
+    <td class="rec-dbf"${L("statuses on the target")}>${recStacks(e.debuffs, rosters.debuffs, "on", e.t)}</td>
   </tr>`;
 }
 

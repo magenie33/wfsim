@@ -539,17 +539,25 @@ pub struct Damage {
     /// Live stacks on the target, positionally matching
     /// [`crate::dummy::DEBUFF_ROSTER`] — the target's own half of "why is this
     /// number this size".
-    pub debuffs: Vec<u16>,
+    pub debuffs: Vec<(u16, f64)>,
     /// LIVE BUFF STACKS on the shooter, positionally matching the roster in
     /// [`crate::record::Record::buffs`] — the other side of `debuffs`.
     ///
     /// A row's factors say what was multiplied in; this says what the build had
     /// UP at that instant, which is the question a reader asks when a factor is
     /// smaller than they expected (owner, 2026-08-27).
-    pub buffs: Vec<u16>,
+    pub buffs: Vec<(u16, f64)>,
     /// What this instance APPLIED, which is a different question from what it
     /// was: a Corrosive hit can proc nothing.
     pub procs: Vec<DamageType>,
+    /// …AND WHAT IT SET OFF ON THE SHOOTER, positional against the buff roster.
+    ///
+    /// The other half of `procs`, and the reason both exist: a row states what
+    /// was up BEFORE it and what it set off, so the next row's state is the
+    /// previous row's state plus this. That is a property a reader can check
+    /// with their eyes, and it is what the two state columns were missing —
+    /// they said what was true and never why it changed (owner, 2026-08-28).
+    pub triggered: Vec<u16>,
     /// Did the target die to this one.
     pub killed: bool,
 }
@@ -635,6 +643,14 @@ pub struct Record {
     from: f64,
     to: f64,
     limit: usize,
+    /// What the instance being resolved has set off on the shooter so far.
+    ///
+    /// PENDING rather than written straight onto a row, because the bumps come
+    /// FIRST: a pellet's on-hit and on-status triggers all fire before its row
+    /// is pushed. Collected here and drained by the row, which is also what
+    /// keeps the state column honest — the column is what was up BEFORE the
+    /// instance, and this is what it changed.
+    pending_triggers: Vec<u16>,
     /// How many of this window's events to pass over before keeping any — see
     /// [`Record::window`].
     skip: usize,
@@ -654,7 +670,15 @@ pub struct Record {
     /// The same vocabulary the buff cards use, because they come from one place
     /// (`DummyParams::buff_roster`).
     buffs: Vec<String>,
-    stacks: Vec<u16>,
+    /// WHAT THE SHOOTER HAS UP, as `(stacks, expires at)`.
+    ///
+    /// An ABSOLUTE expiry rather than a countdown: it only moves when the buff
+    /// is actually refreshed, so a row carrying it is identical to the row
+    /// before it most of the time and the wire drops the repeat — a countdown
+    /// would change on every row of the fight. `INFINITY` is a buff with no
+    /// clock; `NAN` is one whose end this loop does not track, drawn as no time
+    /// rather than as a guess.
+    stacks: Vec<(u16, f64)>,
 }
 
 impl Record {
@@ -707,11 +731,11 @@ impl Record {
     /// A row between two shots therefore carries the count as of the shot that
     /// preceded it — which is exact for everything a shot changes, and up to
     /// one shot stale for a buff that expires on its own clock.
-    pub fn set_stacks(&mut self, stacks: Vec<u16>) {
+    pub fn set_stacks(&mut self, stacks: Vec<(u16, f64)>) {
         self.stacks = stacks;
     }
 
-    pub fn stacks(&self) -> &[u16] {
+    pub fn stacks(&self) -> &[(u16, f64)] {
         &self.stacks
     }
 
@@ -790,6 +814,27 @@ impl Record {
             return false;
         }
         true
+    }
+
+    /// A BUFF THIS INSTANCE SET OFF, held until the row is written.
+    pub fn triggered(&mut self, buff: usize) {
+        if !self.on {
+            return;
+        }
+        let b = buff.min(u16::MAX as usize) as u16;
+        if !self.pending_triggers.contains(&b) {
+            self.pending_triggers.push(b);
+        }
+    }
+
+    /// What this instance has set off so far — drained onto its row.
+    pub fn take_triggers(&mut self) -> Vec<u16> {
+        self.pending_triggers.clone()
+    }
+
+    /// Open a fresh instance: nothing it has not caused belongs to it.
+    pub fn begin_instance(&mut self) {
+        self.pending_triggers.clear();
     }
 
     /// Is this page finished — i.e. would another read find more?

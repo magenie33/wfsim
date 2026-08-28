@@ -2052,10 +2052,16 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
 .rec-pel{display:inline-block;font-size:10px;color:var(--muted);margin-left:4px;font-variant-numeric:tabular-nums}
 .rec-half{display:block;font-size:10px;color:var(--text-2);font-weight:600}
 .rec-stk{display:flex;flex-wrap:wrap;gap:3px}
+.rec-s em{font-style:normal;opacity:.62;font-size:9.5px;margin-left:1px}
 .rec-s{display:inline-flex;align-items:baseline;gap:2px;padding:0 5px;height:16px;line-height:16px;
   border-radius:3px;font-size:10px;font-weight:600;font-variant-numeric:tabular-nums}
 .rec-s.up{background:color-mix(in srgb,var(--gold) 22%,transparent);color:var(--gold)}
 .rec-s.on{background:color-mix(in srgb,var(--s7) 20%,transparent);color:var(--s7)}
+/* A PROC AND A TRIGGER SHARE A COLUMN AND NOT A COLOUR: one lands on the
+   target, one lands on you, and the two state columns they explain are
+   coloured the same way. */
+.rec-p.on{background:color-mix(in srgb,var(--s7) 20%,transparent);color:var(--s7)}
+.rec-p.up{background:color-mix(in srgb,var(--gold) 24%,transparent);color:var(--gold)}
 .rec-p{display:inline-flex;align-items:center;height:16px;padding:0 5px;border-radius:3px;
   font-size:10px;font-weight:600;margin:0 2px 2px 0;
   background:color-mix(in srgb,var(--s8) 20%,transparent);color:var(--s8)}

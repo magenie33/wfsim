@@ -5683,14 +5683,29 @@ fn event_json(e: &wfsim_engine::record::Event, carry: &mut Carry) -> Value {
                 // the claim gets checked.
                 "shield_gate_until": d.before.shield_gate_until.map(r1),
             }));
-            carry.once(m, "debuffs", json!(d.debuffs), |c| &mut c.debuffs);
+            // EACH SIDE AS `[stacks, expires at]`, and the expiry is ABSOLUTE
+            // so it only moves when something is applied or refreshed — which
+            // is what lets the carry drop the repeat. A countdown would change
+            // on every row of the fight and never dedup.
+            let pair = |v: &[(u16, f64)]| json!(v.iter()
+                .map(|(n, e)| json!([n, if e.is_finite() { json!(r1(*e)) } else if e.is_nan() {
+                    Value::Null
+                } else {
+                    json!("inf")
+                }]))
+                .collect::<Vec<_>>());
+            carry.once(m, "debuffs", pair(&d.debuffs), |c| &mut c.debuffs);
             // …AND THE SHOOTER'S OWN SIDE, positional against `buffs` below.
-            carry.once(m, "buffs", json!(d.buffs), |c| &mut c.buffs);
+            carry.once(m, "buffs", pair(&d.buffs), |c| &mut c.buffs);
             if !d.procs.is_empty() {
                 m.insert(
                     "procs".into(),
                     json!(d.procs.iter().map(|p| p.name()).collect::<Vec<_>>()),
                 );
+            }
+            // …AND WHAT IT SET OFF ON THE SHOOTER, the other half of `procs`.
+            if !d.triggered.is_empty() {
+                m.insert("triggered".into(), json!(d.triggered));
             }
             if d.killed {
                 m.insert("killed".into(), json!(true));

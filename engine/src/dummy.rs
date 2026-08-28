@@ -1804,14 +1804,35 @@ impl DebuffState {
     /// The roster's live counts at `now`, positionally matching
     /// [`DEBUFF_ROSTER`]. Expired entries are excluded rather than pruned —
     /// sampling must not change the fight it is sampling.
-    fn sample(&self, now: f64) -> Vec<u16> {
-        let live = |v: &Vec<f64>| v.iter().filter(|&&e| e > now).count() as u16;
+    /// WHAT IS ON THE TARGET, as `(stacks, expires at)` — the same shape the
+    /// shooter's own side answers in, because they are one question asked from
+    /// two ends and a reader should not have to learn two vocabularies for it
+    /// (owner, 2026-08-28).
+    ///
+    /// The expiry is ABSOLUTE for the reason the buff side's is: it moves only
+    /// when something is actually applied or refreshed, so the wire drops the
+    /// repeat. `NAN` is one this loop does not track.
+    fn sample(&self, now: f64) -> Vec<(u16, f64)> {
+        let unknown = f64::NAN;
+        // THE SOONEST ONE TO FALL DUE, which is what a reader is watching: the
+        // count drops when THAT one goes, not when the last one does.
+        let soonest = |v: &Vec<f64>| {
+            v.iter().copied().filter(|&e| e > now)
+                .fold(unknown, |a: f64, e| if a.is_nan() { e } else { a.min(e) })
+        };
+        let live = |v: &Vec<f64>| (v.iter().filter(|&&e| e > now).count() as u16, soonest(v));
         let dots_of = |t: DamageType| {
-            self.dots
+            let live: Vec<&Dot> = self
+                .dots
                 .iter()
                 .filter(|d| d.dtype == t && d.ticks_left > 0)
-                .count() as u16
+                .collect();
+            let next = live.iter().map(|d| d.next_tick).fold(unknown, |a: f64, e| {
+                if a.is_nan() { e } else { a.min(e) }
+            });
+            (live.len() as u16, next)
         };
+        let one = |on: bool, e: f64| (u16::from(on), if on { e } else { unknown });
         vec![
             live(&self.virus),
             live(&self.corrosion),
@@ -1819,18 +1840,26 @@ impl DebuffState {
             live(&self.confusion),
             // A Blast stack is a FUSE rather than an expiry: it is waiting to go
             // off, not waiting to wear off.
-            self.blast.iter().filter(|b| b.fuse > now).count() as u16,
+            (
+                self.blast.iter().filter(|b| b.fuse > now).count() as u16,
+                self.blast.iter().map(|b| b.fuse).filter(|&f| f > now)
+                    .fold(unknown, |a: f64, e| if a.is_nan() { e } else { a.min(e) }),
+            ),
             live(&self.freeze),
-            u16::from(self.frozen_until.is_some_and(|e| e > now)),
+            one(self.frozen_until.is_some_and(|e| e > now), self.frozen_until.unwrap_or(unknown)),
             live(&self.stagger),
             live(&self.weakened),
             live(&self.attractor),
             dots_of(DamageType::Slash),
             dots_of(DamageType::Toxin),
             // THE COUNT, not "is it burning". See `HeatEntity::stacks`.
-            self.heat.as_ref().map_or(0, |h| h.stacks.min(u32::from(u16::MAX)) as u16),
-            u16::from(self.microwave),
-            u16::from(self.lifted.is_some_and(|e| e > now)),
+            (
+                self.heat.as_ref().map_or(0, |h| h.stacks.min(u32::from(u16::MAX)) as u16),
+                self.heat.as_ref().map_or(unknown, |h| h.expiry),
+            ),
+
+            (u16::from(self.microwave), f64::INFINITY),
+            one(self.lifted.is_some_and(|e| e > now), self.lifted.unwrap_or(f64::NAN)),
             // POSITIONALLY MATCHING `DEBUFF_ROSTER`, which is why these two sit
             // at the END rather than beside the other DoTs: the series are
             // read by index, so inserting a row in the middle would silently
@@ -4826,6 +4855,9 @@ fn write_row(
     inst: Instance,
 ) {
     let stacks = debuffs.map(|d| d.sample(t)).unwrap_or_default();
+    // WHAT THIS INSTANCE SET OFF ON THE SHOOTER — collected by `bump_buffs!`
+    // before the row exists, and drained onto it here.
+    let triggered = rec.take_triggers();
     // WHAT THE SHOOTER HAD UP, held by the recorder the way the weapon is — see
     // `Record::set_stacks`. Sampling it here would mean threading a dozen run
     // loop locals into nine functions.
@@ -4889,6 +4921,7 @@ fn write_row(
                 debuffs: stacks.clone(),
                 buffs: rec_buffs.clone(),
                 procs: inst.procs.clone(),
+                triggered: triggered.clone(),
                 killed: settled.killed,
             })),
         );
@@ -5241,6 +5274,24 @@ impl LiveStacks {
     /// Seed from a configured buff card: its stacks, on its own clock. A
     /// LOCKED card arrives here as [`crate::loadout::NO_TIMEOUT`], so nothing
     /// on this path has to know what locking is.
+    /// WHEN THE NEXT STACK FALLS DUE, or `None` where nothing is up.
+    ///
+    /// An ABSOLUTE time rather than a remaining one, because that is what
+    /// travels well: an expiry only moves when the buff is actually refreshed,
+    /// so a row that carries it is identical to the row before it most of the
+    /// time and the wire drops the repeat. A countdown changes every row.
+    fn expires_at(&self) -> Option<f64> {
+        if self.per_stack {
+            self.each.iter().copied().fold(None, |a: Option<f64>, e| {
+                Some(a.map_or(e, |x| x.min(e)))
+            })
+        } else if self.stacks > 0 {
+            Some(self.expiry)
+        } else {
+            None
+        }
+    }
+
     fn seed(initial: u32, max: u32, duration: f64) -> Self {
         LiveStacks {
             stacks: initial.min(max),
@@ -9228,25 +9279,37 @@ fn sample_stacks(
     crit_chance_hit_stacks: u32,
     bar: &BuffBar,
     combo: u32,
-) -> Vec<u16> {
+) -> Vec<(u16, f64)> {
     // u16, not u8: the Shot Combo Counter runs into the hundreds and a
     // capped curve would be a chart that lies about the fight it draws.
     let cap = |n: u32| n.min(u32::from(u16::MAX)) as u16;
     let live = |on: bool| u16::from(on);
+    // WHEN IT RUNS OUT, beside how many are up. `f64::INFINITY` is a buff with
+    // no clock at all — a permanent grant, or one whose end this loop does not
+    // model — and `f64::NAN` is "the engine does not know", which the page
+    // draws as no time rather than as a guess. Exact or absent, which is the
+    // rule the ledger's own term names follow (owner, 2026-08-28).
+    let never = f64::INFINITY;
+    let unknown = f64::NAN;
+    let until = |on: bool, e: f64| if on { e } else { unknown };
     roster
         .iter()
         .map(|b| match b.id.as_str() {
             // A weapon passive, not a stack: it is up or it is not.
-            "frenzy" => live(bar.get(crate::perks::frenzy::BUFF_ID).is_some()),
+            "frenzy" => (live(bar.get(crate::perks::frenzy::BUFF_ID).is_some()), never),
             // PERMANENT (no trigger, no decay): whatever it was configured to,
             // for the whole run. `multishot` already carries it, so the count
             // is reconstructed from the fraction that survived the config.
-            "evo_multishot" => params.evo_multishot.map_or(0, |multishot| cap(multishot.stacks)),
+            "evo_multishot" => (params.evo_multishot.map_or(0, |m| cap(m.stacks)), never),
             // Permanent like the one above: whatever it was configured to.
-            "evo_reload_damage" => params.evo_base_damage.map_or(0, |base_damage| cap(base_damage.stacks)),
-            "condition_overload" => cap(gal.co.current(now, dur(&params.co_stack))),
-            "on_kill_multishot" => cap(gal.multishot.current(now, dur(&params.multishot_stack))),
-            "on_headshot_kill_cc" => cap(ch_stacks.iter().filter(|&&e| e > now).count() as u32),
+            "evo_reload_damage" => (params.evo_base_damage.map_or(0, |b| cap(b.stacks)), never),
+            "condition_overload" => (cap(gal.co.current(now, dur(&params.co_stack))), unknown),
+            "on_kill_multishot" => (cap(gal.multishot.current(now, dur(&params.multishot_stack))), unknown),
+            "on_headshot_kill_cc" => {
+                let n = ch_stacks.iter().filter(|&&e| e > now).count() as u32;
+                (cap(n), ch_stacks.iter().copied().filter(|&e| e > now)
+                    .fold(unknown, |a: f64, e| if a.is_nan() { e } else { a.min(e) }))
+            }
 
             // THE WHOLE STACKING FAMILY, by id. The roster pushed these ids
             // from the same Vec this reads, so a rostered buff can never fall
@@ -9254,32 +9317,36 @@ fn sample_stacks(
             other if params.stacking_buffs.iter().any(|b| b.id == other) => {
                 let i = params.stacking_buffs.iter().position(|b| b.id == other).unwrap_or(0);
                 let d = params.stacking_buffs[i].duration;
-                cap(buff_stacks[i].current(now, d))
+                let n = cap(buff_stacks[i].current(now, d));
+                (n, buff_stacks[i].expires_at().unwrap_or(unknown))
             }
             // Read off the loop's own counter rather than re-derived: the
             // fight is the only thing that knows how many are up.
-            "tendrils" => cap(tendrils),
+            "tendrils" => (cap(tendrils), never),
             // ...and the same for the combo, which is why the frame series is
             // u16: this is the first buff whose honest count runs past 255.
-            "sniper_combo" => cap(combo),
-            "on_headshot_cc" => live(now < ch_buff_expiry),
-            "on_kill_cd" => live(now < arc.crit_damage_kill_expiry_seconds()),
-            "on_reload_bd" => live(now < base_damage_reload_expiry_seconds),
-            "on_eximus_weakpoint_bd" => live(now < base_damage_eximus_expiry_seconds),
+            "sniper_combo" => (cap(combo), unknown),
+            "on_headshot_cc" => (live(now < ch_buff_expiry), until(now < ch_buff_expiry, ch_buff_expiry)),
+            "on_kill_cd" => {
+                let e = arc.crit_damage_kill_expiry_seconds();
+                (live(now < e), until(now < e, e))
+            }
+            "on_reload_bd" => (live(now < base_damage_reload_expiry_seconds), until(now < base_damage_reload_expiry_seconds, base_damage_reload_expiry_seconds)),
+            "on_eximus_weakpoint_bd" => (live(now < base_damage_eximus_expiry_seconds), until(now < base_damage_eximus_expiry_seconds, base_damage_eximus_expiry_seconds)),
             // Off the loop's own counter, like the tendrils: only the fight
             // knows how many hits are in the pile.
-            "crit_per_hit" => cap(crit_chance_hit_stacks),
-            "on_reload_fr" => live(now < fire_rate_reload_expiry_seconds),
-            "evo_headshot_streak" => live(now < streak_expiry),
+            "crit_per_hit" => (cap(crit_chance_hit_stacks), never),
+            "on_reload_fr" => (live(now < fire_rate_reload_expiry_seconds), until(now < fire_rate_reload_expiry_seconds, fire_rate_reload_expiry_seconds)),
+            "evo_headshot_streak" => (live(now < streak_expiry), until(now < streak_expiry, streak_expiry)),
             // The perk keeps its stacks on the BAR, not in `arcane.buffs`.
             "arcane:secondary_enervate" => {
-                cap(bar.get("secondary_enervate").map_or(0, |b| b.stacks))
+                (cap(bar.get("secondary_enervate").map_or(0, |b| b.stacks)), unknown)
             }
             other => match other.strip_prefix("arcane:") {
                 // One card per arcane: every spec it owns shares a count, so
                 // the first one answers for all of them.
-                Some(owner) => cap(arc.owner_stacks(&params.arcane, owner, now)),
-                None => 0,
+                Some(owner) => (cap(arc.owner_stacks(&params.arcane, owner, now)), unknown),
+                None => (0, unknown),
             },
         })
         .collect()
@@ -10169,6 +10236,18 @@ pub fn run_once_traced(
     // few hundred thousand times for an answer that cannot change inside a run.
     let rec_roster: Vec<BuffSeries> =
         if rec.is_on() { params.buff_roster() } else { Vec::new() };
+    // WHERE EACH STACKING BUFF SITS IN THE ROSTER. `bump_buffs!` indexes
+    // `stacking_buffs` and a row's list is positional against the roster, so
+    // the two are joined once here rather than searched per bump.
+    let rec_buff_index: Vec<Option<usize>> = if rec.is_on() {
+        params
+            .stacking_buffs
+            .iter()
+            .map(|b| rec_roster.iter().position(|r| r.id == b.id))
+            .collect()
+    } else {
+        Vec::new()
+    };
     // ROUNDS FIRED SINCE THE MAGAZINE WAS FILLED, which is what says when a
     // BURST completes: Reaver's Rapture wants a full burst, and a burst is
     // `burst.count` consecutive rounds out of one magazine. It restarts with
@@ -10193,6 +10272,12 @@ pub fn run_once_traced(
         ($trigger:expr, $t:expr, $rng:expr) => {
             for (i, b) in params.stacking_buffs.iter().enumerate() {
                 if b.trigger == $trigger && (b.chance >= 1.0 || $rng.chance(b.chance)) {
+                    // …AND THE ROW SAYS SO. One line here rather than at seven
+                    // call sites, so a trigger added later is covered by
+                    // nobody having to remember it.
+                    if let Some(k) = rec_buff_index.get(i).copied().flatten() {
+                        rec.triggered(k);
+                    }
                     // ONE TRIGGER, `stacks_per_trigger` STACKS. Every buff
                     // written before Mounting Momentum grants one, and that
                     // one grants a shell's worth each — so the bump repeats
@@ -10689,18 +10774,22 @@ pub fn run_once_traced(
                         reloads: r.reloads,
                         transforms: r.transforms,
                         sources: r.sources,
-                        stacks,
+                        stacks: stacks.iter().map(|(n, _)| *n).collect(),
                         // ONE SERIES PER FOLLOWED BODY, in `Replay::tracked`'s
                         // order — the aimed one first.
                         debuffs: rep
                             .follow
                             .iter()
                             .map(|&bi| {
-                                if bi == 0 {
+                                // THE CURVES WANT COUNTS. The expiry beside
+                                // each one is the RECORD's — a chart of a
+                                // stack count has no use for it.
+                                let one = if bi == 0 {
                                     debuffs.sample(next_frame)
                                 } else {
                                     others[bi - 1].debuffs.sample(next_frame)
-                                }
+                                };
+                                one.into_iter().map(|(n, _)| n).collect::<Vec<u16>>()
                             })
                             .collect(),
                     });
@@ -12351,6 +12440,7 @@ pub fn run_once_traced(
                 // the row states the stacks it read.
                 // `a_volley_settles_pellet_by_pellet_and_each_instance_re_reads_the_target`
                 // is the golden test.
+                rec.begin_instance();
                 let mit = debuffs.amps(
                     t,
                     status_damage,
@@ -25445,7 +25535,7 @@ mod tests {
         for _ in 0..7 {
             d.apply_heat(0.0, 3.0, 6.0, None, HeatOrigin { bracket: 1.0, depth: 0, unit: 0.0 });
         }
-        assert_eq!(d.sample(1.0)[ignite], 7, "seven procs, seven stacks");
+        assert_eq!(d.sample(1.0)[ignite].0, 7, "seven procs, seven stacks");
         // The DAMAGE was always right — this is the number that was thrown away.
         assert!((d.heat.as_ref().expect("burning").value - 21.0).abs() < 1e-9);
         // UNDER A CAP it holds at the cap, because the oldest contribution is
@@ -25454,10 +25544,10 @@ mod tests {
         for _ in 0..7 {
             c.apply_heat(0.0, 3.0, 6.0, Some(3), HeatOrigin { bracket: 1.0, depth: 0, unit: 0.0 });
         }
-        assert_eq!(c.sample(1.0)[ignite], 3);
+        assert_eq!(c.sample(1.0)[ignite].0, 3);
         // …and an expired burn is no stacks at all rather than a stale count.
         c.prune(99.0, 1.0);
-        assert_eq!(c.sample(99.0)[ignite], 0);
+        assert_eq!(c.sample(99.0)[ignite].0, 0);
     }
 
     #[test]
