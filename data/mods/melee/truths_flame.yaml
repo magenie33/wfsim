@@ -1,0 +1,19 @@
+id: truths_flame
+name: Truth's Flame
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Upgrades/EmpoweredHeavyMelee/CursedSyndicateEmpoweredHeavyMeleeMod
+description: "Enables Tennokai. Tennokai kills grant an additional 4s Tennokai opportunity and increase Tennokai damage by 120%.  CURSE: Suffer 100 <DT_FIRE_COLOR>Heat Damage/s for 6s.  / +1 'Truth'"
+exilus: true
+
+# Rank 0: Enables Tennokai.\nTennokai kills grant an additional 4s Tennokai opportunity and increase Tennokai damage by 30%.\n\nCURSE: Suffer 25 <DT_FIRE_COLOR>Heat Damage/s for 6s.\n / +0.3 'Truth'
+effects:
+  # the seventh Tennokai card - the window is not modelled, and its CURSE (100 Heat/s to the wielder for 6s) is out of scope besides, nothing damaging the Tenno here
+  - kind: unmodeled
+
+family: tennokai
+
+source:
+  url: https://wiki.warframe.com/w/Truth%27s_Flame

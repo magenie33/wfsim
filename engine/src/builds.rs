@@ -699,10 +699,20 @@ pub fn validate_for_board_with(
     // there the single row IS the board, the builder presents it as "Benchmark
     // build #1" with a ⧉ that copies it, and an unmodded build in that position
     // is misinformation with nothing to displace it.
-    if R::requires_full(&req.mods) && b.mods.len() != MAIN_SLOTS {
+    // …AND THE STANCE IS NOT A MAIN SLOT. A melee build carrying one is `8 + 1`
+    // in the same list, so counting the list would refuse a full build for
+    // having filled the slot the game gave it.
+    let pool = crate::mods_data::pool_for_weapon(&b.weapon);
+    let main = b
+        .mods
+        .iter()
+        .filter(|id| {
+            !pool.iter().any(|m| m.id == id.as_str() && m.stance.is_some())
+        })
+        .count();
+    if R::requires_full(&req.mods) && main != MAIN_SLOTS {
         return Err(format!(
-            "{} mods, and this benchmark wants all {MAIN_SLOTS} main slots",
-            b.mods.len()
+            "{main} mods, and this benchmark wants all {MAIN_SLOTS} main slots"
         ));
     }
 
@@ -896,8 +906,25 @@ pub fn validate_with(
     // AT MOST eight. Whether a build must be FULL is a board policy and not a
     // legality fact — four mods is a legal build in the game — so it lives in
     // `validate_for_board` rather than here.
-    if multishot.len() > MAIN_SLOTS {
-        return Err(format!("{} mods, and a benchmark build has {MAIN_SLOTS}", multishot.len()));
+    // …AND A STANCE IS NOT ONE OF THEM. A melee weapon has a slot of its own for
+    // it — eight main, one exilus, one STANCE — and a stance mod is legal in
+    // that slot and NOWHERE else, so a flat list can say which entry it is by
+    // looking at it. That is exactly what the exilus slot could not do, which
+    // is why THAT one travels in a field of its own (2026-08-25) and this one
+    // does not need to.
+    //
+    // AT MOST ONE, because there is one slot: two stances in a list is a build
+    // nobody can hold, and admitting it would let a submission ship two combo
+    // scripts with only the first ever read.
+    let stances = multishot.iter().filter(|id| def(id).stance.is_some()).count();
+    if stances > 1 {
+        return Err(format!("{stances} stances, and a melee weapon has one stance slot"));
+    }
+    if multishot.len() - stances > MAIN_SLOTS {
+        return Err(format!(
+            "{} mods, and a benchmark build has {MAIN_SLOTS}",
+            multishot.len() - stances
+        ));
     }
 
     // CAPACITY, with Forma unlimited. `plan_forma` answers both halves at once:

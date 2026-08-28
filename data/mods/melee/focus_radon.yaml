@@ -1,0 +1,21 @@
+id: focus_radon
+name: Focus Radon
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Melee/DualStat/RadiationEfficiencyMeleeMod
+description: "+60% <DT_RADIATION_COLOR>Radiation / +40% Heavy Attack Efficiency"
+
+# Rank 0: +15% <DT_RADIATION_COLOR>Radiation / +10% Heavy Attack Efficiency
+effects:
+  - kind: elemental_damage_bonus
+    element: radiation
+    rank0: 0.15
+    rankMax: 0.6
+  - kind: heavy_attack_efficiency
+    rank0: 0.1
+    rankMax: 0.4
+
+source:
+  url: https://wiki.warframe.com/w/Focus_Radon

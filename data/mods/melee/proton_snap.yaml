@@ -1,0 +1,18 @@
+id: proton_snap
+name: Proton Snap
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Sets/Spider/SpiderModC
+description: "Hold Wall Latch for 2s to gain +100% <DT_POISON_COLOR>Toxin Damage /  and +50% Status Chance for 20s."
+
+# Rank 0: Hold Wall Latch for 2s to gain +25% <DT_POISON_COLOR>Toxin Damage /  and +12.5% Status Chance for 5s.
+effects:
+  # toxin and status after a 2s wall latch - this arena has no walls
+  - kind: out_of_scope
+
+set: proton
+
+source:
+  url: https://wiki.warframe.com/w/Proton_Snap

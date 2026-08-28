@@ -1,0 +1,25 @@
+id: galvanized_elementalist
+name: Galvanized Elementalist
+rarity: rare
+polarity: vazarin
+base_drain: 2
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponMeleeStatusChanceSPMod
+description: "+80% Status Damage / On Melee Kill: +30% Status Chance for 20s. Stacks up to 4x."
+
+# Rank 0: +7.3% Status Damage / On Melee Kill:\n+2.7% Status Chance for 20s. Stacks up to 4x.
+effects:
+  - kind: status_damage_bonus
+    rank0: 0.072727
+    rankMax: 0.8
+  # On Melee Kill: +30% Status Chance for 20s, four stacks.
+  - kind: buff
+    trigger: on_kill
+    grants: status_chance
+    rank0: 0.027273
+    rankMax: 0.3
+    max_stacks: 4
+    duration: 20.0
+
+source:
+  url: https://wiki.warframe.com/w/Galvanized_Elementalist

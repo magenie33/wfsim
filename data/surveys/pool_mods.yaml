@@ -12,17 +12,19 @@
 # app refuses by RULE (flawed variants, riven placeholders, Conclave-only),
 # and the rule rides beside it.
 #
-# 296 of 469 carried, 145 excluded by rule, 28 still to transcribe.
+# 390 of 614 carried, 203 excluded by rule, 21 still to transcribe.
 #
 # Per pool (carried / in export, gap):
-#   archgun         37 /  37, gap 0
+#   archgun         38 /  38, gap 0
 #   assault_rifle    8 /  15, gap 0
-#   bow              1 /  10, gap 6
-#   pistol          81 / 138, gap 6
+#   bow              1 /  10, gap 4
+#   hammer           2 /   3, gap 0
+#   melee           91 / 141, gap 0
+#   pistol          81 / 138, gap 5
 #   primary         10 /  10, gap 0
-#   rifle           72 / 119, gap 7
+#   rifle           72 / 119, gap 4
 #   shotgun         76 / 118, gap 1
-#   sniper           3 /  14, gap 8
+#   sniper           3 /  14, gap 7
 #   tome             8 /   8, gap 0
 mods:
   - name: Ammo Chain
@@ -133,6 +135,10 @@ mods:
     pool: archgun
     internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/Expert/ArchwingWeaponElectricityDamageModExpert
     carried: data/mods/archgun/primed_electrified_barrel.yaml
+  - name: Primed Polar Magazine
+    pool: archgun
+    internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/Expert/ArchwingWeaponFreezeDamageModExpert
+    carried: data/mods/archgun/primed_polar_magazine.yaml
   - name: Primed Rubedo-Lined Barrel
     pool: archgun
     internal_name: /Lotus/Upgrades/Mods/Archwing/Rifle/Expert/ArchwingRifleDamageAmountModExpert
@@ -247,7 +253,8 @@ mods:
   - name: Arrow Mutation
     pool: bow
     internal_name: /Lotus/Upgrades/Mods/Rifle/Intermediate/WeaponBowConvertAmmoModIntermediate
-    carried: ~
+    carried: excluded
+    reason: "DE's own internal tier of a card the player holds under the same name (the bare path is the released one, and the wiki's rank table matches it)"
   - name: Arrow Mutation
     pool: bow
     internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponBowConvertAmmoMod
@@ -282,7 +289,635 @@ mods:
   - name: Thunderbolt
     pool: bow
     internal_name: /Lotus/Upgrades/Mods/Rifle/Intermediate/BowExplosionChanceModIntermediate
-    carried: ~
+    carried: excluded
+    reason: "DE's own internal tier of a card the player holds under the same name (the bare path is the released one, and the wiki's rank table matches it)"
+  - name: Crashing Havoc
+    pool: hammer
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Stances/PvPHammerStanceOne
+    carried: excluded
+    reason: "Conclave: a PvP-path mod the wiki mod tables leave tagged \"Exclusive to PvP\" (the PvE-legal ones are carried and pinned by name in the engine)"
+  - name: Crushing Ruin
+    pool: hammer
+    internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/HammerCmbTwoMeleeTree
+    carried: data/mods/hammer/crushing_ruin.yaml
+  - name: Shattering Storm
+    pool: hammer
+    internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/HammerCmbOneMeleeTree
+    carried: data/mods/hammer/shattering_storm.yaml
+  - name: Air Martial
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Melee/AirborneMeleeAutoTargetBonus
+    carried: excluded
+    reason: "Conclave: a PvP-path mod the wiki mod tables leave tagged \"Exclusive to PvP\" (the PvE-legal ones are carried and pinned by name in the engine)"
+  - name: Amalgam Organ Shatter
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/DualSource/Melee/CritDamageChargeSpeedMod
+    carried: data/mods/melee/amalgam_organ_shatter.yaml
+  - name: Auger Strike
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponEventPunctureDamageMod
+    carried: data/mods/melee/auger_strike.yaml
+  - name: Berserker Fury
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponCritFireRateBonusModBeginner
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Berserker Fury
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponCritFireRateBonusModExpert
+    carried: excluded
+    reason: "export duplicate: an /Expert/ entry under a name already carried, where the real Primed mod has its own uniqueName"
+  - name: Berserker Fury
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponCritFireRateBonusMod
+    carried: data/mods/melee/berserker_fury.yaml
+  - name: Blood Rush
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Event/ComboCritChanceMod
+    carried: data/mods/melee/blood_rush.yaml
+  - name: Body Count
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Event/ComboDurationMod
+    carried: data/mods/melee/body_count.yaml
+  - name: Buzz Kill
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponEventSlashDamageMod
+    carried: data/mods/melee/buzz_kill.yaml
+  - name: Carnis Mandible
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Sets/Ashen/AshenMandibleMod
+    carried: data/mods/melee/carnis_mandible.yaml
+  - name: Collision Force
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponEventMeleeImpactDamageMod
+    carried: data/mods/melee/collision_force.yaml
+  - name: Condition Overload
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponDamageIfVictimProcActive
+    carried: data/mods/melee/condition_overload.yaml
+  - name: Condition's Perfection
+    pool: melee
+    internal_name: /Lotus/Upgrades/EmpoweredHeavyMelee/PerfectCondition
+    carried: data/mods/melee/conditions_perfection.yaml
+  - name: Corrupt Charge
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/DualStat/CorruptedHeavyDamageChargeSpeedMod
+    carried: data/mods/melee/corrupt_charge.yaml
+  - name: Counterweight
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Melee/DamageBiasImpactMeleeMod
+    carried: excluded
+    reason: "Conclave: a PvP-path mod the wiki mod tables leave tagged \"Exclusive to PvP\" (the PvE-legal ones are carried and pinned by name in the engine)"
+  - name: Discipline's Merit
+    pool: melee
+    internal_name: /Lotus/Upgrades/EmpoweredHeavyMelee/CertainStrike
+    carried: data/mods/melee/disciplines_merit.yaml
+  - name: Dispatch Overdrive
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/MoveSpeedOnChannelKillMod
+    carried: data/mods/melee/dispatch_overdrive.yaml
+  - name: Dreamer's Wrath
+    pool: melee
+    internal_name: /Lotus/Upgrades/EmpoweredHeavyMelee/FocusedAttack
+    carried: data/mods/melee/dreamers_wrath.yaml
+  - name: Drifting Contact
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/DualStat/ComboTimeStatusChanceMod
+    carried: data/mods/melee/drifting_contact.yaml
+  - name: Enduring Affliction
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Channel/ChannelProcTimeExtendOnHitMod
+    carried: data/mods/melee/enduring_affliction.yaml
+  - name: Enduring Strike
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Channel/ChannelStatusMod
+    carried: data/mods/melee/enduring_strike.yaml
+  - name: Energy Channel
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponPowerDamageModExpert
+    carried: excluded
+    reason: "export duplicate: an /Expert/ entry under a name already carried, where the real Primed mod has its own uniqueName"
+  - name: Energy Channel
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Intermediate/WeaponPowerDamageModIntermediate
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Energy Channel
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponPowerDamageMod
+    carried: data/mods/melee/energy_channel.yaml
+  - name: Explosive Demise
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Melee/ExplodeOnMeleeDeath
+    carried: excluded
+    reason: "Conclave: a PvP-path mod the wiki mod tables leave tagged \"Exclusive to PvP\" (the PvE-legal ones are carried and pinned by name in the engine)"
+  - name: Fever Strike
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponToxinDamageModBeginner
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Fever Strike
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponToxinDamageMod
+    carried: data/mods/melee/fever_strike.yaml
+  - name: Finishing Touch
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponMeleeFinisherDamageModExpert
+    carried: excluded
+    reason: "export duplicate: an /Expert/ entry under a name already carried, where the real Primed mod has its own uniqueName"
+  - name: Finishing Touch
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Intermediate/WeaponMeleeFinisherDamageModIntermediate
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Finishing Touch
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeFinisherDamageMod
+    carried: data/mods/melee/finishing_touch.yaml
+  - name: Focus Energy
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/DualStat/FocusEnergyMod
+    carried: data/mods/melee/focus_energy.yaml
+  - name: Focus Radon
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/DualStat/RadiationEfficiencyMeleeMod
+    carried: data/mods/melee/focus_radon.yaml
+  - name: Focused Defense
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Channel/ChannelArmourMod
+    carried: data/mods/melee/focused_defense.yaml
+  - name: Fury
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponFireRateModBeginner
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Fury
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponFireRateMod
+    carried: data/mods/melee/fury.yaml
+  - name: Galvanized Elementalist
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponMeleeStatusChanceSPMod
+    carried: data/mods/melee/galvanized_elementalist.yaml
+  - name: Galvanized Reflex
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponHeavyAttackEfficiencySPMod
+    carried: data/mods/melee/galvanized_reflex.yaml
+  - name: Galvanized Steel
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponCritChanceSPMod
+    carried: data/mods/melee/galvanized_steel.yaml
+  - name: Gladiator Might
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Sets/Gladiator/MeleeGladiatorMightMod
+    carried: data/mods/melee/gladiator_might.yaml
+  - name: Gladiator Rush
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Sets/Gladiator/MeleeGladiatorRushMod
+    carried: data/mods/melee/gladiator_rush.yaml
+  - name: Gladiator Vice
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Sets/Gladiator/MeleeGladiatorViceMod
+    carried: data/mods/melee/gladiator_vice.yaml
+  - name: Guardian Derision
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponBlockingTauntMod
+    carried: data/mods/melee/guardian_derision.yaml
+  - name: Harrowed Hook
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Melee/GroundingMeleeMod
+    carried: excluded
+    reason: "Conclave: a PvP-path mod the wiki mod tables leave tagged \"Exclusive to PvP\" (the PvE-legal ones are carried and pinned by name in the engine)"
+  - name: Healing Return
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponHealOnHitEnemyWithProc
+    carried: data/mods/melee/healing_return.yaml
+  - name: Heavy Trauma
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponImpactDamageModBeginner
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Heavy Trauma
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponImpactDamageMod
+    carried: data/mods/melee/heavy_trauma.yaml
+  - name: Impenetrable Offense
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Melee/BlockMoreAttackSlowerMeleeMod
+    carried: excluded
+    reason: "Conclave: a PvP-path mod the wiki mod tables leave tagged \"Exclusive to PvP\" (the PvE-legal ones are carried and pinned by name in the engine)"
+  - name: Jagged Edge
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponSlashDamageModBeginner
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Jagged Edge
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponSlashDamageModExpert
+    carried: excluded
+    reason: "export duplicate: an /Expert/ entry under a name already carried, where the real Primed mod has its own uniqueName"
+  - name: Jagged Edge
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponSlashDamageMod
+    carried: data/mods/melee/jagged_edge.yaml
+  - name: Jugulus Barbs
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Sets/Boneblade/BonebladeBarbsMod
+    carried: data/mods/melee/jugulus_barbs.yaml
+  - name: Killing Blow
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeHeavyDamageMod
+    carried: data/mods/melee/killing_blow.yaml
+  - name: Lasting Sting
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponProcTimeMod
+    carried: data/mods/melee/lasting_sting.yaml
+  - name: Life Strike
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Channel/ChannelVampireMod
+    carried: data/mods/melee/life_strike.yaml
+  - name: Magnetic Rush
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/DualStat/MagneticAttackSpeedMeleeMod
+    carried: data/mods/melee/magnetic_rush.yaml
+  - name: Maiming Strike
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Event/SlideAttackCritChanceMod
+    carried: data/mods/melee/maiming_strike.yaml
+  - name: Martial Fury
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Melee/MeleeAutoTargetBonus
+    carried: excluded
+    reason: "Conclave: a PvP-path mod the wiki mod tables leave tagged \"Exclusive to PvP\" (the PvE-legal ones are carried and pinned by name in the engine)"
+  - name: Master's Edge
+    pool: melee
+    internal_name: /Lotus/Upgrades/EmpoweredHeavyMelee/HeavyAgression
+    carried: data/mods/melee/masters_edge.yaml
+  - name: Melee Elementalist
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/MeleeStatusDamageDuoMod
+    carried: data/mods/melee/melee_elementalist.yaml
+  - name: Melee Prowess
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponStunChanceModBeginner
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Melee Prowess
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponStunChanceModExpert
+    carried: excluded
+    reason: "export duplicate: an /Expert/ entry under a name already carried, where the real Primed mod has its own uniqueName"
+  - name: Melee Prowess
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Intermediate/WeaponStunChanceModIntermediate
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Melee Prowess
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponStunChanceMod
+    carried: data/mods/melee/melee_prowess.yaml
+  - name: Mentor's Legacy
+    pool: melee
+    internal_name: /Lotus/Upgrades/EmpoweredHeavyMelee/TennokaiBaseMod
+    carried: data/mods/melee/mentors_legacy.yaml
+  - name: Molten Impact
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponFireDamageModBeginner
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Molten Impact
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponFireDamageModExpert
+    carried: excluded
+    reason: "export duplicate: an /Expert/ entry under a name already carried, where the real Primed mod has its own uniqueName"
+  - name: Molten Impact
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponFireDamageMod
+    carried: data/mods/melee/molten_impact.yaml
+  - name: Mortal Conduct
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Melee/ChannelingEfficiencyOnLowHealth
+    carried: excluded
+    reason: "Conclave: a PvP-path mod the wiki mod tables leave tagged \"Exclusive to PvP\" (the PvE-legal ones are carried and pinned by name in the engine)"
+  - name: Motus Impact
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Sets/Raptor/RaptorModC
+    carried: data/mods/melee/motus_impact.yaml
+  - name: North Wind
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponFreezeDamageModBeginner
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: North Wind
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponFreezeDamageModExpert
+    carried: excluded
+    reason: "export duplicate: an /Expert/ entry under a name already carried, where the real Primed mod has its own uniqueName"
+  - name: North Wind
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponFreezeDamageMod
+    carried: data/mods/melee/north_wind.yaml
+  - name: Opportunity's Reach
+    pool: melee
+    internal_name: /Lotus/Upgrades/EmpoweredHeavyMelee/PerfectReach
+    carried: data/mods/melee/opportunitys_reach.yaml
+  - name: Organ Shatter
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponCritDamageModBeginner
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Organ Shatter
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponCritDamageModExpert
+    carried: excluded
+    reason: "export duplicate: an /Expert/ entry under a name already carried, where the real Primed mod has its own uniqueName"
+  - name: Organ Shatter
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponCritDamageMod
+    carried: data/mods/melee/organ_shatter.yaml
+  - name: Parry
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarParryMeleeMod
+    carried: data/mods/melee/parry.yaml
+  - name: Parry
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Warframe/Beginner/AvatarParryMeleeModBeginner
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Parry
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Warframe/Expert/AvatarParryMeleeModExpert
+    carried: excluded
+    reason: "export duplicate: an /Expert/ entry under a name already carried, where the real Primed mod has its own uniqueName"
+  - name: Parry
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Warframe/Intermediate/AvatarParryMeleeModIntermediate
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Pressure Point
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponMeleeDamageModBeginner
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Pressure Point
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeDamageMod
+    carried: data/mods/melee/pressure_point.yaml
+  - name: Pressure Point
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeDamageOnHeavyKillMod
+    carried: excluded
+    reason: "an unreleased variant sharing a released card's display name \u2014 the wiki's Pressure Point rank table is the bare path's, +120% at rank 5"
+  - name: Primed Fever Strike
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponToxinDamageModExpert
+    carried: data/mods/melee/primed_fever_strike.yaml
+  - name: Primed Fury
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponFireRateModExpert
+    carried: data/mods/melee/primed_fury.yaml
+  - name: Primed Heavy Trauma
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponImpactDamageModExpert
+    carried: data/mods/melee/primed_heavy_trauma.yaml
+  - name: Primed Pressure Point
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponMeleeDamageModExpert
+    carried: data/mods/melee/primed_pressure_point.yaml
+  - name: Primed Reach
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponMeleeRangeIncModExpert
+    carried: data/mods/melee/primed_reach.yaml
+  - name: Primed Smite Corpus
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponMeleeFactionDamageCorpusExpert
+    carried: data/mods/melee/primed_smite_corpus.yaml
+  - name: Primed Smite Grineer
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponMeleeFactionDamageGrineerExpert
+    carried: data/mods/melee/primed_smite_grineer.yaml
+  - name: Primed Smite Infested
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponMeleeFactionDamageInfestedExpert
+    carried: data/mods/melee/primed_smite_infested.yaml
+  - name: Primed Smite Orokin
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponMeleeFactionDamageCorruptedExpert
+    carried: data/mods/melee/primed_smite_corrupted.yaml
+  - name: Primed Smite The Murmur
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponMeleeFactionDamageMurmursExpert
+    carried: data/mods/melee/primed_smite_the_murmur.yaml
+  - name: Proton Snap
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Sets/Spider/SpiderModC
+    carried: data/mods/melee/proton_snap.yaml
+  - name: Quickening
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Channel/ChannelFireRateMod
+    carried: data/mods/melee/quickening.yaml
+  - name: Reach
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Intermediate/WeaponMeleeRangeIncModIntermediate
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Reach
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeRangeIncMod
+    carried: data/mods/melee/reach.yaml
+  - name: Reflex Coil
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponMeleeChannelingEfficiencyModBeginner
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Reflex Coil
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponMeleeChannelingEfficiencyModExpert
+    carried: excluded
+    reason: "export duplicate: an /Expert/ entry under a name already carried, where the real Primed mod has its own uniqueName"
+  - name: Reflex Coil
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Intermediate/WeaponMeleeChannelingEfficiencyeModIntermediate
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Reflex Coil
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeChargeRateMod
+    carried: data/mods/melee/reflex_coil.yaml
+  - name: Relentless Assault
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Melee/MeleeVictimStaminaDrain
+    carried: excluded
+    reason: "Conclave: a PvP-path mod the wiki mod tables leave tagged \"Exclusive to PvP\" (the PvE-legal ones are carried and pinned by name in the engine)"
+  - name: Relentless Combination
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeComboChanceFromDot
+    carried: data/mods/melee/relentless_combination.yaml
+  - name: Rending Strike
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/DualStat/RendingStrikeMod
+    carried: data/mods/melee/rending_strike.yaml
+  - name: Sacrificial Pressure
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Sets/Sacrifice/MeleeSacrificeModA
+    carried: data/mods/melee/sacrificial_pressure.yaml
+  - name: Sacrificial Steel
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Sets/Sacrifice/MeleeSacrificeModB
+    carried: data/mods/melee/sacrificial_steel.yaml
+  - name: Saxum Thorax
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Sets/Femur/FemurThoraxMod
+    carried: data/mods/melee/saxum_thorax.yaml
+  - name: Seismic Wave
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeSlamDamageMod
+    carried: data/mods/melee/seismic_wave.yaml
+  - name: Serrated Edges
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Melee/DamageBiasPunctureMeleeMod
+    carried: excluded
+    reason: "Conclave: a PvP-path mod the wiki mod tables leave tagged \"Exclusive to PvP\" (the PvE-legal ones are carried and pinned by name in the engine)"
+  - name: Sharpened Blade
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Melee/DamageBiasSlashMeleeMod
+    carried: excluded
+    reason: "Conclave: a PvP-path mod the wiki mod tables leave tagged \"Exclusive to PvP\" (the PvE-legal ones are carried and pinned by name in the engine)"
+  - name: Shattering Impact
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeArmorShatterMod
+    carried: data/mods/melee/shattering_impact.yaml
+  - name: Shocking Touch
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponElectricityDamageModBeginner
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Shocking Touch
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponElectricityDamageModExpert
+    carried: excluded
+    reason: "export duplicate: an /Expert/ entry under a name already carried, where the real Primed mod has its own uniqueName"
+  - name: Shocking Touch
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponElectricityDamageMod
+    carried: data/mods/melee/shocking_touch.yaml
+  - name: Smite Corpus
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponMeleeFactionDamageCorpusBeginner
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Smite Corpus
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeFactionDamageCorpus
+    carried: data/mods/melee/smite_corpus.yaml
+  - name: Smite Grineer
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponMeleeFactionDamageGrineerBeginner
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Smite Grineer
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeFactionDamageGrineer
+    carried: data/mods/melee/smite_grineer.yaml
+  - name: Smite Infested
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponMeleeFactionDamageInfestedBeginner
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Smite Infested
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeFactionDamageInfested
+    carried: data/mods/melee/smite_infested.yaml
+  - name: Smite Orokin
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeFactionDamageCorrupted
+    carried: data/mods/melee/smite_orokin.yaml
+  - name: Smite The Murmur
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeFactionDamageMurmurs
+    carried: data/mods/melee/smite_the_murmur.yaml
+  - name: Spoiled Strike
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/DualStat/CorruptedDamageSpeedMod
+    carried: data/mods/melee/spoiled_strike.yaml
+  - name: Spring-Loaded Blade
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Syndicate/MeleeRangeOnProcMod
+    carried: data/mods/melee/spring_loaded_blade.yaml
+  - name: Stand Ground
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Melee/AbilityDamageBlockMod
+    carried: excluded
+    reason: "Conclave: a PvP-path mod the wiki mod tables leave tagged \"Exclusive to PvP\" (the PvE-legal ones are carried and pinned by name in the engine)"
+  - name: Strain Infection
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Sets/Strain/MeleeStrainInfectionMod
+    carried: data/mods/melee/strain_infection.yaml
+  - name: Sundering Strike
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponArmorPiercingDamageModBeginner
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: Sundering Strike
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponArmorPiercingDamageModExpert
+    carried: excluded
+    reason: "export duplicate: an /Expert/ entry under a name already carried, where the real Primed mod has its own uniqueName"
+  - name: Sundering Strike
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponArmorPiercingDamageMod
+    carried: data/mods/melee/sundering_strike.yaml
+  - name: Sword Alone
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/PvPMods/Melee/IncreasedMobilityEquipped
+    carried: excluded
+    reason: "Conclave: a PvP-path mod the wiki mod tables leave tagged \"Exclusive to PvP\" (the PvE-legal ones are carried and pinned by name in the engine)"
+  - name: Tek Gravity
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Sets/Tek/MeleeTekGravityMod
+    carried: data/mods/melee/tek_gravity.yaml
+  - name: True Punishment
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Channel/ChannelCritsMod
+    carried: data/mods/melee/true_punishment.yaml
+  - name: True Steel
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Beginner/WeaponCritChanceModBeginner
+    carried: excluded
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
+  - name: True Steel
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponCritChanceModExpert
+    carried: excluded
+    reason: "export duplicate: an /Expert/ entry under a name already carried, where the real Primed mod has its own uniqueName"
+  - name: True Steel
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/WeaponCritChanceMod
+    carried: data/mods/melee/true_steel.yaml
+  - name: Truth's Flame
+    pool: melee
+    internal_name: /Lotus/Upgrades/EmpoweredHeavyMelee/CursedSyndicateEmpoweredHeavyMeleeMod
+    carried: data/mods/melee/truths_flame.yaml
+  - name: Vicious Frost
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/DualStat/IceEventMeleeMod
+    carried: data/mods/melee/vicious_frost.yaml
+  - name: Virulent Scourge
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/DualStat/PoisonEventMeleeMod
+    carried: data/mods/melee/virulent_scourge.yaml
+  - name: Volcanic Edge
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/DualStat/FireEventMeleeMod
+    carried: data/mods/melee/volcanic_edge.yaml
+  - name: Voltaic Strike
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/DualStat/ElectEventMeleeMod
+    carried: data/mods/melee/voltaic_strike.yaml
+  - name: Weeping Wounds
+    pool: melee
+    internal_name: /Lotus/Upgrades/Mods/Melee/Event/ComboStatusChanceMod
+    carried: data/mods/melee/weeping_wounds.yaml
   - name: Accelerated Isotope
     pool: pistol
     internal_name: /Lotus/Upgrades/Mods/Pistol/DualStat/RadiationFireratePistolMod
@@ -594,7 +1229,8 @@ mods:
   - name: No Return
     pool: pistol
     internal_name: /Lotus/Upgrades/Mods/Pistol/Beginner/WeaponArmorPiercingDamageModBeginner
-    carried: ~
+    carried: excluded
+    reason: "DE's own internal tier of a card the player holds under the same name (the bare path is the released one, and the wiki's rank table matches it)"
   - name: No Return
     pool: pistol
     internal_name: /Lotus/Upgrades/Mods/Pistol/Expert/WeaponArmorPiercingDamageModExpert
@@ -964,7 +1600,8 @@ mods:
   - name: Bane Of Corpus
     pool: rifle
     internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponFactionDamageCorpusBeginner
-    carried: ~
+    carried: excluded
+    reason: "DE's own internal tier of a card the player holds under the same name (the bare path is the released one, and the wiki's rank table matches it)"
   - name: Bane Of Corpus
     pool: rifle
     internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponFactionDamageCorpusExpert
@@ -976,7 +1613,8 @@ mods:
   - name: Bane Of Grineer
     pool: rifle
     internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponFactionDamageGrineerBeginner
-    carried: ~
+    carried: excluded
+    reason: "DE's own internal tier of a card the player holds under the same name (the bare path is the released one, and the wiki's rank table matches it)"
   - name: Bane Of Grineer
     pool: rifle
     internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponFactionDamageGrineerExpert
@@ -988,7 +1626,8 @@ mods:
   - name: Bane Of Infested
     pool: rifle
     internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponFactionDamageInfestedBeginner
-    carried: ~
+    carried: excluded
+    reason: "DE's own internal tier of a card the player holds under the same name (the bare path is the released one, and the wiki's rank table matches it)"
   - name: Bane Of Infested
     pool: rifle
     internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponFactionDamageInfestedExpert
@@ -2005,7 +2644,8 @@ mods:
   - name: Sniper Ammo Mutation
     pool: sniper
     internal_name: /Lotus/Upgrades/Mods/Rifle/Intermediate/WeaponSnipersConvertAmmoModIntermediate
-    carried: ~
+    carried: excluded
+    reason: "DE's own internal tier of a card the player holds under the same name (the bare path is the released one, and the wiki's rank table matches it)"
   - name: Sniper Ammo Mutation
     pool: sniper
     internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponSnipersConvertAmmoMod

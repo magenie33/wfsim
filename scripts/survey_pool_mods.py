@@ -59,6 +59,12 @@ POOL_TAG = {
     # (wiki `Tome`). The export files them as a Secondary Mod, which is why the
     # Grimoire carries both tags (2026-08-25).
     ('Secondary Mod', 'Tome'): 'tome',
+    # MELEE (2026-08-29). `Melee Mod`/`Melee` is the general pool every melee
+    # weapon draws; the per-class tag beside it holds the STANCES, which are the
+    # only cards DE files that narrowly for a hammer.
+    ('Melee Mod', 'Melee'): 'melee',
+    ('Stance Mod', 'Hammers'): 'hammer',
+    ('Warframe Mod', 'Melee'): 'melee',
 }
 
 # WHAT THE EXPORT HOLDS THAT NO PLAYER CAN EQUIP HERE, by RULE rather than by
@@ -91,6 +97,33 @@ def rule_out(uniq, name, carried_names):
     # PvP-path mod we do NOT carry is one the wiki's mod tables tag "Exclusive
     # to PvP". `engine::mods_data::only_pve_legal_conclave_mods_are_in_the_pools`
     # is the other half of the same rule, pinning the survivors by name.
+    # DE'S OWN INTERNAL TIERS. `/Beginner/` and `/Intermediate/` carry the same
+    # DISPLAY NAME as the card a player holds and different numbers — the
+    # export has three Pressure Points (+80% at rank 3, +120% at rank 5, and a
+    # rank-10 `WeaponMeleeDamageOnHeavyKillMod` reading +200%), and only the
+    # bare path is the one the wiki's own rank table describes. Verified by
+    # hand against the wiki for Pressure Point, True Steel and Berserker Fury,
+    # all three of which matched the BARE path row for row (2026-08-29).
+    #
+    # THIS IS THE `internal_name` RULE MADE EXECUTABLE. Joining by NAME put a
+    # phantom +200% Pressure Point in front of the melee intake for an hour;
+    # the rule the repo already states — never join by name — is what this
+    # encodes for the survey.
+    #
+    # NOTHING CARRIED USES ONE, checked: zero of the roster's mod files state a
+    # Beginner or Intermediate path.
+    if '/Beginner/' in uniq or '/Intermediate/' in uniq:
+        return ("DE's own internal tier of a card the player holds under the same name "
+                "(the bare path is the released one, and the wiki's rank table matches it)")
+    # …AND ONE UNRELEASED VARIANT THAT IS NOT A TIER. The export's third
+    # Pressure Point is `WeaponMeleeDamageOnHeavyKillMod`, rank 10, reading
+    # `+200% Melee Damage, +120% COMBO COUNT CHANCE` — a card the game has never
+    # shipped under that name and whose numbers contradict the wiki's own rank
+    # table for the mod players hold. Named rather than ruled out by shape,
+    # because its path carries no tier marker.
+    if uniq.endswith('WeaponMeleeDamageOnHeavyKillMod'):
+        return ("an unreleased variant sharing a released card's display name — the wiki's "
+                "Pressure Point rank table is the bare path's, +120% at rank 5")
     if '/PvPMods/' in uniq:
         return 'Conclave: a PvP-path mod the wiki mod tables leave tagged "Exclusive to PvP" (the PvE-legal ones are carried and pinned by name in the engine)'
     return None

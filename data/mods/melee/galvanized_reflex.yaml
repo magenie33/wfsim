@@ -1,0 +1,19 @@
+id: galvanized_reflex
+name: Galvanized Reflex
+rarity: rare
+polarity: madurai
+base_drain: 2
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponHeavyAttackEfficiencySPMod
+description: "+50% Heavy Attack Efficiency / On Melee Kill: +20 Initial Combo for 20s. Stacks up to 4x."
+
+# Rank 0: +4.5% Heavy Attack Efficiency / On Melee Kill:\n+2 Initial Combo for 20s. Stacks up to 4x.
+effects:
+  - kind: heavy_attack_efficiency
+    rank0: 0.045455
+    rankMax: 0.5
+  # On Melee Kill: +20 Initial Combo for 20s, four stacks - initial combo is resolved once at build time and has no stacking buff behind it
+  - kind: unmodeled
+
+source:
+  url: https://wiki.warframe.com/w/Galvanized_Reflex

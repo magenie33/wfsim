@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "dc92fd1f+ · 2026-08-28 15:48Z";
+const BUILD_ID = "9bdb4c82+ · 2026-08-28 18:12Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -945,6 +945,15 @@ let META = null;
 // Indices 0–7 are the regular slots; index 8 is the EXILUS slot (utility mods
 // only; drain counts toward capacity like any slot; absent on sentinels).
 const EXILUS = 8;
+// …AND THE STANCE SLOT, index 9, on a MELEE weapon and nowhere else.
+//
+// IT NEEDS NO FIELD OF ITS OWN ON THE WIRE, which is what made it cheap: a
+// stance mod is legal in the stance slot and NOWHERE else, so a flat mod list
+// can say which entry is the stance by looking at it. That is exactly what the
+// exilus slot could not do — an exilus-eligible mod is legal in a main slot too
+// — which is why THAT one travels in a field of its own (AGENTS.md,
+// 2026-08-25) and this one rides `mods` with the rest.
+const STANCE = 9;
 let slots = [];
 // 9 × innate polarity name|null — index 8 is the EXILUS slot, which HAS one on
 // most weapons (wiki "Exilus Polarity"). It used to be documented here as
@@ -2272,6 +2281,11 @@ const buildPool = () => {
 /// agreed only because no riven is exilus-eligible — a coincidence, not a
 /// rule, and the sort that stops being true without anyone noticing.
 const exilusPool = () => poolWithRivens().filter((m) => m.exilus);
+/// THE STANCE SLOT'S OWN POOL. A stance is legal there and nowhere else, which
+/// is the whole reason the slot costs no wire field — and it is why this filter
+/// runs in BOTH directions: the stance slot takes only stances, and the eight
+/// main slots take everything BUT.
+const stancePool = () => poolWithRivens().filter((m) => m.stance);
 
 /// THE WEAPON'S BUILD AXES — one description, read by BOTH modules.
 ///
@@ -2477,6 +2491,13 @@ function weaponAxes(weaponId) {
     mods: poolWithRivens(),
     exilus,
     hasExilus: exilus.length > 0,
+    // …AND THE STANCE SLOT, asked of the POOL rather than of the weapon's
+    // class: "this weapon's pool holds a stance" is the only honest test, since
+    // a melee class whose stances nobody has transcribed yet would otherwise
+    // show an empty slot with nothing to offer — which reads as a broken picker
+    // rather than as missing data.
+    stance: stancePool(),
+    hasStance: stancePool().length > 0,
     // One entry per arcane pool, in the weapon's own pool order.
     arcanes: (w.arcane_pools || []).map((pool, i) => ({ pool, options: arcanePool(i) })),
     // One entry per evolution tier — OF THE WEAPON THIS OBJECT IS ABOUT. It
@@ -7950,8 +7971,21 @@ const builtinBuilds = () => {
         // this side a mod id has to name an ITEM. The definition is registered
         // rather than written: `restoreState` creates it if and when this build
         // is actually taken.
-        slots: Array.from({ length: 9 }, (_, k) => {
-          const id = (row.mods || [])[k] || null;
+        // TEN SLOTS, because a melee row's mod list carries its STANCE with the
+        // rest — appended, and told apart by looking at it. A row from a gun
+        // has nine of these empty and is unchanged.
+        slots: (() => {
+          const ids = (row.mods || []).slice();
+          const si = ids.findIndex((id) => (modById(id) || {}).stance);
+          const stance = si >= 0 ? ids.splice(si, 1)[0] : null;
+          const out = Array.from({ length: 10 }, (_, k) => {
+            const id = ids[k] || null;
+            return { mod: id, pol: null, rank: null };
+          });
+          if (stance) out[STANCE].mod = stance;
+          return out;
+        })().map((s, k) => {
+          const id = s.mod;
           if (id !== BOARD_RIVEN_SLOT || !row.riven) return { mod: id, pol: null, rank: null };
           const local = RIVEN_PREFIX + boardRivenName(row.riven);
           boardRivenDefs[local] = row.riven;
@@ -8488,7 +8522,7 @@ function applyWeaponInner(id, presetMods) {
   arcanes = arcanesFor(w.id, arcanes);
   arcaneRanks = asArcaneList(arcaneRanks, arcanes.length).map((x) => x ?? null);
 
-  slots = Array.from({ length: 9 }, (_, i) => ({ mod: null, pol: innate[i], rank: null }));
+  slots = Array.from({ length: 10 }, (_, i) => ({ mod: null, pol: innate[i], rank: null }));
   (presetMods || []).filter((m) => modById(m)).slice(0, 8).forEach((m, i) => { slots[i].mod = m; slots[i].rank = modById(m).max_rank; });
   autoForma(); // sensible default: minimum-Forma polarities for the preset
 
@@ -8649,6 +8683,17 @@ function renderMods() {
   const ex = $("exilus");
   ex.innerHTML = "";
   if (hasExilus) ex.appendChild(buildSlot(EXILUS));
+
+  // THE STANCE SLOT, on a weapon that has stances to put in it. Asked of the
+  // POOL rather than of the slot — `hasStance` is "this weapon's pool holds a
+  // stance", which is the only honest test: a melee class whose stances nobody
+  // has transcribed yet would otherwise show an empty slot with nothing to
+  // offer, and that reads as a broken picker rather than as missing data.
+  const hasStance = weaponAxes().hasStance;
+  show("stance-block", hasStance);
+  const st = $("stance");
+  st.innerHTML = "";
+  if (hasStance) st.appendChild(buildSlot(STANCE));
   refreshPanel();
 }
 
@@ -8766,14 +8811,20 @@ function buildPayload() {
 function stateFromBuild(p, weapon, exilusId) {
   const w = weaponInfo(weapon) || {};
   const ids = (p.mods || []).filter(Boolean);
-  const main = ids.filter((id) => id !== exilusId);
-  const sl = Array.from({ length: 9 }, () => ({ mod: null, pol: null, rank: null }));
+  // THE STANCE IS TOLD APART BY LOOKING AT IT, which is the whole reason it
+  // needs no field of its own on the wire — where the exilus id has to be
+  // PASSED IN, because an exilus-eligible mod is legal in a main slot and the
+  // list alone cannot say which entry came out of which slot.
+  const stanceId = ids.find((id) => (modById(id) || {}).stance);
+  const main = ids.filter((id) => id !== exilusId && id !== stanceId);
+  const sl = Array.from({ length: 10 }, () => ({ mod: null, pol: null, rank: null }));
   main.slice(0, 8).forEach((id, i) => { sl[i].mod = id; });
   if (exilusId && exilusId !== "none" && ids.includes(exilusId)) {
     sl[EXILUS].mod = exilusId;
   } else if (main.length > 8) {
     sl[EXILUS].mod = main[8];
   }
+  if (stanceId) sl[STANCE].mod = stanceId;
   // A RANK IS THE CARD'S CEILING. The wire carries no mod rank at all — the
   // engine reads a maxed card, which is what every number in this app is
   // measured at — so this is the page filling in what it alone displays.
@@ -9255,7 +9306,10 @@ function buildSlot(i) {
 }
 
 // The DOM node for slot i (popover anchoring).
-const slotEl = (i) => i === EXILUS ? $("exilus").firstElementChild : $("mod-slots").children[i];
+const slotEl = (i) =>
+  i === EXILUS ? $("exilus").firstElementChild
+  : i === STANCE ? $("stance").firstElementChild
+  : $("mod-slots").children[i];
 
 // ---- popovers ----
 // EVERY popover, found by class rather than by a list that a new one has to
@@ -10862,6 +10916,11 @@ function renderMenu(slotIdx, query) {
     // The exilus slot takes what `exilusPool()` says, which is the same
     // question the optimizer's exilus scope asks.
     .filter((m) => slotIdx !== EXILUS || m.exilus)
+    // THE STANCE FILTER RUNS BOTH WAYS. A stance is legal in the stance slot
+    // and NOWHERE else — unlike an exilus mod, which the game lets sit in a
+    // main slot — so offering one in slot 3 would offer a build nobody can
+    // hold.
+    .filter((m) => (slotIdx === STANCE) === !!m.stance)
     .filter((m) => !pickerPrefs.pol || m.polarity === pickerPrefs.pol)
     .filter((m) => searchHit(m, q))
     .sort((a, b) => {
@@ -10906,7 +10965,10 @@ function renderMenu(slotIdx, query) {
     // the app names a slot, so a Chinese page read "slot 5" while everything
     // around it was translated — and the number badge on the slot itself now
     // has to agree with it word for word.
-    const slotName = (idx) => idx === EXILUS ? tr("exilus") : tr("slot") + " " + (idx + 1);
+    const slotName = (idx) =>
+      idx === EXILUS ? tr("exilus")
+      : idx === STANCE ? tr("stance")
+      : tr("slot") + " " + (idx + 1);
     const badge = isCur ? `<span class="slotchip cur">${slotName(slotIdx)}</span>`
       : at >= 0 ? `<span class="slotchip">${slotName(at)}</span>` : "";
     // The gain is THIS SLOT's — the same mod is worth something different in
@@ -13257,9 +13319,20 @@ function boardPayload() {
     // the list is sent AS PLACED rather than sorted. The endpoint's ids are
     // `[a-z0-9_]`, so the riven's local name cannot travel — and it should not:
     // a name is what one player called their item.
+    // …AND THE STANCE RIDES WITH THEM, appended. It needs no field of its own
+    // because a stance mod is legal in the stance slot and NOWHERE else, so
+    // both the engine and the worker can tell it from a main-slot mod by
+    // looking at it — which is exactly what the exilus slot could not do, and
+    // why THAT one is its own key two fields down.
+    //
+    // APPENDED RATHER THAN INSERTED, because the order of `mods` is the build:
+    // it pairs the elementals. A stance carries no element, so where it sits
+    // cannot change a pairing — and putting it last keeps every build already
+    // submitted byte-identical.
     mods: mainSlots()
       .filter((s) => s.mod)
-      .map((s) => (isRivenId(s.mod) ? BOARD_RIVEN_SLOT : s.mod)),
+      .map((s) => (isRivenId(s.mod) ? BOARD_RIVEN_SLOT : s.mod))
+      .concat((slots[STANCE] || {}).mod ? [slots[STANCE].mod] : []),
     // …AND WHAT THAT SLOT HOLDS, as a SHAPE. Which stats, and which is the
     // malus — never the rolls: the board scores a shape at its own ceiling, the
     // same way it scores every row at full Forma and every valence at the

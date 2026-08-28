@@ -1,0 +1,16 @@
+id: finishing_touch
+name: Finishing Touch
+rarity: uncommon
+polarity: madurai
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeFinisherDamageMod
+description: "+60% Finisher Damage"
+
+# Rank 0: +15% Finisher Damage
+effects:
+  # +60% Finisher Damage - a finisher is an animation this arena has no concept of
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Finishing_Touch

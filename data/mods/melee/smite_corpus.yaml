@@ -1,0 +1,20 @@
+id: smite_corpus
+name: Smite Corpus
+rarity: uncommon
+polarity: madurai
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeFactionDamageCorpus
+description: "x1.3 Damage to Corpus"
+
+# Rank 0: x1.05 Damage to Corpus
+effects:
+  - kind: faction_damage_bonus
+    faction: corpus
+    rank0: 0.05
+    rankMax: 0.3
+
+family: smite_corpus
+
+source:
+  url: https://wiki.warframe.com/w/Smite_Corpus

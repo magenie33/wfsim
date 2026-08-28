@@ -1,0 +1,21 @@
+id: gladiator
+name: Gladiator
+# THE SET BONUS READS THE MELEE COMBO COUNTER: "+X% Critical Chance for Melee
+# Weapons per Combo Multiplier" — 10% per equipped piece, 60% with all six.
+# It is Blood Rush's own bracket and its own scaling, bought with set pieces
+# instead of a mod slot.
+#
+# IT IS NOT MODELLED, and the reason is the same one the Vigilante set states
+# about its own last two members: THREE of the six Gladiator pieces are WARFRAME
+# mods (Aegis, Finesse, Resolve), and this engine has no Warframe loadout — so
+# the count a weapon build alone can reach is three, and the bonus that count
+# buys would be a number nobody can check against their own build.
+#
+# `kind` falls through to `SetBonusKind::Unmodeled`, which is the honest arm.
+members: 6
+bonus:
+  kind: crit_chance_per_combo
+  per_mod: 0.10
+
+source:
+  url: https://wiki.warframe.com/w/Gladiator_Set

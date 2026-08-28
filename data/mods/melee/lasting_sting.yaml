@@ -1,0 +1,17 @@
+id: lasting_sting
+name: Lasting Sting
+rarity: common
+polarity: madurai
+base_drain: 6
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponProcTimeMod
+description: "+110% Status Duration"
+
+# Rank 0: +10% Status Duration
+effects:
+  - kind: status_duration_bonus
+    rank0: 0.1
+    rankMax: 1.1
+
+source:
+  url: https://wiki.warframe.com/w/Lasting_Sting

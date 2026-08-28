@@ -1,0 +1,18 @@
+id: tek_gravity
+name: Tek Gravity
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Sets/Tek/MeleeTekGravityMod
+description: "Slam Attacks in the Marked Zone pull all enemies within 20m."
+
+# Rank 0: Slam Attacks in the Marked Zone pull all enemies within 5m.
+effects:
+  # slams pull enemies in - this arena has no movement
+  - kind: out_of_scope
+
+set: tek
+
+source:
+  url: https://wiki.warframe.com/w/Tek_Gravity

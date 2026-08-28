@@ -1,0 +1,18 @@
+id: strain_infection
+name: Strain Infection
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Sets/Strain/MeleeStrainInfectionMod
+description: "Melee Attacks gain +20% Critical Damage per Cyst."
+
+# Rank 0: Melee Attacks gain +5% Critical Damage per Cyst.
+effects:
+  # +20% Critical Damage per Cyst - a Warframe-layer resource
+  - kind: out_of_scope
+
+set: strain
+
+source:
+  url: https://wiki.warframe.com/w/Strain_Infection

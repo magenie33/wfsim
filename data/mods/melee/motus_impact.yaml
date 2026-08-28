@@ -1,0 +1,18 @@
+id: motus_impact
+name: Motus Impact
+rarity: uncommon
+polarity: madurai
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Sets/Raptor/RaptorModC
+description: "Increase range of aerial melee attacks by +2m."
+
+# Rank 0: Increase range of aerial melee attacks by +0.5m.
+effects:
+  # +2m range on AERIAL melee attacks - this arena has no vertical axis
+  - kind: out_of_scope
+
+set: motus
+
+source:
+  url: https://wiki.warframe.com/w/Motus_Impact

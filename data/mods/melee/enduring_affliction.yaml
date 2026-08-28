@@ -1,0 +1,16 @@
+id: enduring_affliction
+name: Enduring Affliction
+rarity: uncommon
+polarity: vazarin
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/Channel/ChannelProcTimeExtendOnHitMod
+description: "+100% Status Chance on Lifted enemies"
+
+# Rank 0: +16.7% Status Chance on Lifted enemies
+effects:
+  # +100% Status Chance ON LIFTED ENEMIES - the engine has no gate for 'the target is carrying this independent proc', so the bonus is not paid rather than paid unconditionally
+  - kind: unmodeled
+
+source:
+  url: https://wiki.warframe.com/w/Enduring_Affliction

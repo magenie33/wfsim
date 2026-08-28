@@ -1,0 +1,16 @@
+id: shattering_impact
+name: Shattering Impact
+rarity: common
+polarity: vazarin
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeArmorShatterMod
+description: "<DT_IMPACT_COLOR>Impact Damage reduces enemy Armor by 6."
+
+# Rank 0: <DT_IMPACT_COLOR>Impact Damage reduces enemy Armor by 1.
+effects:
+  # Impact damage removes 6 armour per hit - a FLAT armour strip, a different mechanic from the per-Puncture-status one this engine has, and 6 against a level 9999 target is a rounding error either way
+  - kind: unmodeled
+
+source:
+  url: https://wiki.warframe.com/w/Shattering_Impact

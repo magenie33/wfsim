@@ -955,6 +955,39 @@ mods:
   smite_grineer: 毁灭 Grineer
   spring_loaded_blade: 簧压刀刃
   true_punishment: 真实惩罚
+  carnis_mandible: 肉碾虫 巨颚
+  crushing_ruin: 月落乌啼
+  enduring_affliction: 长时苦难
+  energy_channel: 能量导引
+  finishing_touch: 画龙点睛
+  focus_radon: 聚焦氡气
+  galvanized_elementalist: 镀层 元素师
+  galvanized_reflex: 镀层 增幅线圈
+  galvanized_steel: 镀层 斩铁
+  gladiator_might: 角斗士 威猛
+  gladiator_rush: 角斗士 猛突
+  gladiator_vice: 角斗士 钳制
+  heavy_trauma: 重创
+  jugulus_barbs: 喉骨刃者 倒刺
+  lasting_sting: 未完之刺
+  magnetic_rush: 励磁加速
+  maiming_strike: 致残突击
+  melee_elementalist: 近战元素师
+  motus_impact: 跃动 冲击
+  primed_smite_the_murmur: 毁灭低语者 Prime
+  proton_snap: 质子 猛扑
+  rending_strike: 撕裂打击
+  saxum_thorax: 重岩者 胸腔
+  shattering_impact: 碎裂冲击
+  shattering_storm: 云暴山碎
+  smite_corpus: 毁灭 Corpus
+  smite_infested: 毁灭 Infested
+  smite_orokin: 毁灭奥罗金
+  smite_the_murmur: 毁灭低语者
+  strain_infection: 菌株 感染
+  sundering_strike: 破甲
+  tek_gravity: 技法 引力
+  truths_flame: 真相之焰
 
 arcanes:
   akimbo_slip_shot: 双枪·滑射

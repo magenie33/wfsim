@@ -2912,6 +2912,9 @@ pub struct DummyParams {
     /// `FT^(n-1)`, the share a swing has left for the n-th body it reaches.
     /// `None` on anything that is not a melee swing.
     pub follow_through: Option<f64>,
+    /// THE WEAPON'S OWN SLAM, fired by a combo swing that ends on one — three
+    /// of Crushing Ruin's four combos do. `None` everywhere else.
+    pub slam: Option<crate::loadout::ResolvedRadial>,
     /// Does a swing SPEND the combo counter? True on the two heavy forms.
     pub spends_combo: bool,
     /// SECONDS THE COUNTER SURVIVES with nothing added to it. 5.0 on almost
@@ -4266,6 +4269,7 @@ impl DummyParams {
             crit_chance_per_hit: panel.crit_chance_per_hit,
             combo_script: panel.combo_script.clone(),
             follow_through: panel.follow_through,
+            slam: panel.slam,
             spends_combo: panel.spends_combo,
             combo_duration_seconds: panel.combo_duration_seconds,
             initial_combo: panel.initial_combo,
@@ -4580,6 +4584,7 @@ impl Default for DummyParams {
             crit_chance_per_hit: None,
             combo_script: Vec::new(),
             follow_through: None,
+            slam: None,
             spends_combo: false,
             combo_duration_seconds: 0.0,
             initial_combo: 0.0,
@@ -10252,6 +10257,65 @@ mod melee {
         monte_carlo(&p, 30, 3)
     }
 
+    /// **A STANCE DECIDES WHAT THE WEAPON FIRES**, which no mod in this
+    /// roster had ever done before.
+    ///
+    /// Every other card changes what a weapon fires WITH. A stance publishes a
+    /// combo per form and installing one replaces the entry's own script, so
+    /// the same Magistar in the same mode is a different sequence of swings
+    /// under Crushing Ruin (Raging Whirlwind: 400/200/300/500 over 3.00 s) and
+    /// under Shattering Storm (Falling Rock: 400/300/400/200 over 3.03 s).
+    ///
+    /// IT NEEDS NO SLOT OF ITS OWN, and that is what made it cheap: a stance is
+    /// legal in the stance slot and nowhere else, so a flat mod list can say
+    /// which entry is the stance by looking at it — exactly what the exilus
+    /// slot could not do.
+    #[test]
+    fn a_stance_decides_what_the_weapon_fires() {
+        let script = |mods: &[&str], form: &str| {
+            let base = crate::loadout::WeaponBase::from_data(form, false, &[]);
+            let pool = crate::mods_data::pool_for_weapon(form);
+            let refs: Vec<&crate::loadout::ModDef> =
+                mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
+            let p = crate::loadout::resolve(&base, &refs, crate::loadout::StackPolicy::Emergent);
+            p.combo_script.iter().map(|h| h.multiplier).collect::<Vec<_>>()
+        };
+        let bare = script(&[], "magistar");
+        let ruin = script(&["crushing_ruin"], "magistar");
+        let storm = script(&["shattering_storm"], "magistar");
+        assert_eq!(bare, ruin, "the entry's own script IS Crushing Ruin's");
+        assert_ne!(
+            ruin, storm,
+            "two stances gave the same neutral combo: {ruin:?}",
+        );
+        // …AND ONLY THE FORM IT SUPPLIES. A stance's block combo replaces the
+        // block form's script and leaves the neutral one alone, which is what
+        // "keyed by form" has to mean.
+        assert_ne!(
+            script(&["shattering_storm"], "magistar_block"),
+            script(&["shattering_storm"], "magistar"),
+            "one stance gave the same script to two different forms",
+        );
+        // THE HEAVY IS THE SAME ON BOTH, which is a fact about hammers rather
+        // than about this code — a hammer's heavy is its class multiplier, and
+        // the stance decides only the animation. Asserted so a future stance
+        // that DOES differ cannot land unnoticed.
+        assert_eq!(
+            script(&["crushing_ruin"], "magistar_heavy"),
+            script(&["shattering_storm"], "magistar_heavy"),
+            "the two hammer stances' heavy attacks disagree",
+        );
+        // …and it reaches the FIGHT, not just the panel.
+        let dps = |mods: &[&str]| {
+            magistar("magistar", mods, 30.0, None).mean_damage
+        };
+        assert_ne!(
+            format!("{:.0}", dps(&["crushing_ruin"])),
+            format!("{:.0}", dps(&["shattering_storm"])),
+            "two stances produced the same fight",
+        );
+    }
+
     /// **A MELEE INCARNON IS A BUFF, NOT A FORM** (owner, confirmed in game
     /// 2026-08-29): it changes numbers and not animations, so there is no
     /// second weapon entry and the whole Genesis is stat changes on the seven
@@ -12332,10 +12396,35 @@ pub fn run_once_traced(
         // two.
         let (swing_forced_types, swing_forced_independent) =
             swing.as_ref().map_or_else(|| (Vec::new(), Vec::new()), |h| h.split_forced());
+        // …AND THE IMPACT BONUS SOME SWINGS CARRY. `ImpactMultiplier = { 1.5 }`
+        // in the wiki's own module — three of Crushing Ruin's swings have one,
+        // and it is a different thing from the forced Knockback proc several of
+        // the same swings ALSO carry.
+        //
+        // SCALING THE FINISHED VECTOR IS EXACT here, not an approximation:
+        // Impact never enters the elemental hierarchy, so nothing can have
+        // consumed it on the way and `Base x 1.5` on the component is the same
+        // number as `Base x 1.5` before the mods that multiply the whole thing.
+        let impact_bonus = swing.as_ref().map_or(1.0, |h| h.impact_multiplier);
         let swung;
-        let (qvec, modded_base) = if (swing_mult - 1.0).abs() > 1e-12 {
-            swung = qvec.scale(swing_mult);
-            (&swung, modded_base * swing_mult)
+        let (qvec, modded_base) = if (swing_mult - 1.0).abs() > 1e-12
+            || (impact_bonus - 1.0).abs() > 1e-12
+        {
+            let mut v = qvec.scale(swing_mult);
+            if (impact_bonus - 1.0).abs() > 1e-12 {
+                let extra = v.get(DamageType::Impact) * (impact_bonus - 1.0);
+                v.add(DamageType::Impact, extra);
+            }
+            let mb = modded_base * swing_mult * if (impact_bonus - 1.0).abs() > 1e-12 {
+                // The ModifiedBase grows by the same share the vector did, so
+                // the quantization grid stays proportional to what is on it.
+                let before = qvec.total() * swing_mult;
+                if before > 0.0 { v.total() / before } else { 1.0 }
+            } else {
+                1.0
+            };
+            swung = v;
+            (&swung, mb)
         } else {
             (qvec, modded_base)
         };
@@ -12529,7 +12618,10 @@ pub fn run_once_traced(
             // Wounds Bonus x (Combo Multi - 1)]`. It rides `sc_arc_shot`
             // because that is this loop's name for "relative status the panel
             // could not fold in", which is exactly what a live counter is.
-            + ap.status_chance_per_combo * (combo_mult - 1.0);
+            + ap.status_chance_per_combo * (combo_mult - 1.0)
+            // …AND AN ON-KILL STATUS BUFF (Galvanized Elementalist), which is
+            // relative like every other card in this bracket.
+            + buff_total!(ap, crate::loadout::BuffGrant::StatusChance, t);
         // HIGH GROUND, LIVE: "+25% of CURRENT Status Chance". The panel folded
         // in what it could see; this takes that back and pays what the shot
         // actually has, which is the panel's status plus whatever the arcanes
@@ -12813,6 +12905,21 @@ pub fn run_once_traced(
         // body, which is where the clock, the magazine and the reload live. It
         // hung the engine on the first run.
         let mut n_pellets = if ap.orb.is_some() && ap.meter.is_none() { 0 } else { n_pellets };
+        // A SWING THAT LANDS TWICE IS TWO INSTANCES. `Hits = { 1, 2 }` in the
+        // wiki's own module — Crushing Ruin's forward combo lands its second
+        // 100% twice and Shattered Village lands two 50% spins per attack — and
+        // each is its own crit roll, its own status roll and its own combo
+        // point, which is what makes it a COUNT here rather than a multiplier
+        // on the damage.
+        //
+        // It rides the pellet loop because that loop already means "this many
+        // instances of this attack", which is the same thing multishot means.
+        // Melee has no multishot mod in its pool, so the two can never compete.
+        if let Some(h) = &swing {
+            if h.hits > 1 {
+                n_pellets = n_pellets.saturating_mul(h.hits);
+            }
+        }
         if ap.multishot_ammo_bonus > 0.0 && rolled > 1 {
             // `ammo_efficiency_applies == false` IS the charge-backed marker —
             // such a magazine is "outside the ammo economy entirely", so it has
@@ -13617,7 +13724,20 @@ pub fn run_once_traced(
             } else {
                 det
             };
-            let radial_stage = match ap.radial {
+            // A COMBO SWING THAT ENDS ON A SLAM fires the weapon's own, and
+            // it REPLACES the attack's radial rather than joining it: a light
+            // melee attack has no explosion of its own, so there is never a
+            // second one to conflict with, and one radial stage per shot is
+            // what the loop is built around.
+            let attack_radial = match (swing.as_ref().and_then(|h| h.slam_multiplier), ap.slam) {
+                (Some(k), Some(slam)) => Some(crate::loadout::ResolvedRadial {
+                    damage: slam.damage.scale(k),
+                    modified_base: slam.modified_base * k,
+                    ..slam
+                }),
+                _ => ap.radial,
+            };
+            let radial_stage = match attack_radial {
                 Some(r) if !r.takes_multishot && pellet_idx > 0 => None,
                 other => other,
             };
@@ -14649,7 +14769,13 @@ pub fn run_once_traced(
                             // (owner, 2026-08-27). The engine already settles
                             // them in that order: the stage loop is inside the
                             // pellet loop, so only the LABEL was missing.
+                            // A MELEE SWING'S SECOND LANDING IS NOT MULTISHOT.
+                            // It rides the same loop, and the column that says
+                            // WHY this instance exists must not answer with a
+                            // mechanic melee has no card for.
                             origin: if pellet_idx == 0 {
+                                crate::record::Origin::Own
+                            } else if swing.as_ref().is_some_and(|h| h.hits > 1) {
                                 crate::record::Origin::Own
                             } else {
                                 crate::record::Origin::Multishot
@@ -20576,6 +20702,7 @@ mod tests {
         };
         use crate::mods::Polarity;
         let expel = ModDef {
+            stance: None,
             exclusive_to: &[],
             unmodeled: false,
             out_of_scope: false,

@@ -1,0 +1,80 @@
+id: crushing_ruin
+name: Crushing Ruin
+rarity: rare
+polarity: madurai
+# A STANCE GRANTS CAPACITY RATHER THAN COSTING IT — the export carries
+# `baseDrain: -2` — and this engine's capacity model has no room for that: a
+# drain is a `u32`. So it is held at ZERO and declared, which is the
+# conservative direction: a build that fits here fits in game, where the stance
+# would have handed capacity back rather than taken it.
+#
+# RANK 0 FOR THE SAME REASON. A stance's ranks buy capacity and nothing else —
+# the combo table is identical at every rank — so there is no ladder to state
+# and pretending there is one would only make the card ask for drain it does
+# not cost.
+base_drain: 0
+max_rank: 0
+internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/HammerCmbTwoMeleeTree
+description: "Wielders of this Stance thrust in strong whirlwind attacks."
+
+# THE COMBOS THIS STANCE SUPPLIES, keyed by the FORM they are — which is the
+# same id a MODE carries, so installing this replaces the weapon entry's own
+# script for each of them and leaves the rest alone.
+#
+# EVERY NUMBER FROM `Module:Stances/data`, the wiki's own Lua table: `Dmg` is
+# the percentages, `Hits` how many times each lands, `Procs` what it forces
+# ("Knockback" is Impact's own proc), `Types` marks 360-degree spins and the
+# slam a combo ends on, `ImpactMultiplier` is a bonus to the Impact component
+# alone, and `Duration` is the combo's length at 1.0x attack speed.
+#
+# THE SLAM TAKES NO TIME OF ITS OWN: it rides the swing it is listed with, so
+# the direct swings share the published duration.
+combos:
+  # Raging Whirlwind — 3.0 s at 1.0x, 4 swings
+  neutral:
+    - { multiplier: 4.0, delay_seconds: 0.75, impact_multiplier: 1.5, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.75, all_around: true }
+    - { multiplier: 3.0, delay_seconds: 0.75, all_around: true }
+    - { multiplier: 5.0, delay_seconds: 0.75, impact_multiplier: 1.5, forced_procs: [knockdown] }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0 }
+  # Tidal Force — 2.6 s at 1.0x, 4 swings
+  forward:
+    - { multiplier: 1.0, delay_seconds: 0.65 }
+    - { multiplier: 1.0, delay_seconds: 0.65, hits: 2, all_around: true }
+    - { multiplier: 2.0, delay_seconds: 0.65 }
+    - { multiplier: 3.0, delay_seconds: 0.65 }
+  # Winding Temper — 2.25 s at 1.0x, 3 swings
+  block:
+    - { multiplier: 3.0, delay_seconds: 0.75 }
+    - { multiplier: 2.0, delay_seconds: 0.75 }
+    - { multiplier: 4.0, delay_seconds: 0.75 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0, forced_procs: [knockdown] }
+  # Shattered Village — 4.25 s at 1.0x, 6 swings
+  block_forward:
+    - { multiplier: 3.0, delay_seconds: 0.7083 }
+    - { multiplier: 0.5, delay_seconds: 0.7083, hits: 2, all_around: true }
+    - { multiplier: 3.0, delay_seconds: 0.7083 }
+    - { multiplier: 0.5, delay_seconds: 0.7083, hits: 2, all_around: true }
+    - { multiplier: 4.0, delay_seconds: 0.7083, impact_multiplier: 1.5, all_around: true, forced_procs: [impact] }
+    - { multiplier: 5.0, delay_seconds: 0.7083 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0, forced_procs: [knockdown] }
+  # Crowd Fall — the heavy attack. IDENTICAL ON BOTH HAMMER STANCES, which is
+  # worth stating: a hammer's heavy is its class multiplier (6x) delivered as an
+  # alternating pair, and the stance decides only the animation and the procs.
+  # The 1.2 s wind-up is its own clock and attack speed does not shorten it.
+  heavy:
+    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [lifted] }
+    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [knockdown] }
+  # Hell's Wave — the slide attack, also identical on both.
+  slide:
+    - { multiplier: 2.0, delay_seconds: 0.97, all_around: true, forced_procs: [impact] }
+
+effects:
+  # A STANCE IS NOT A STAT. Its whole payload is the `combos:` above — the first
+  # mod in this roster that changes what a weapon FIRES rather than what it
+  # fires with — so it has no effect in the ordinary sense and says so.
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Crushing_Ruin
+  # The combo data: https://wiki.warframe.com/w/Module:Stances/data

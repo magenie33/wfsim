@@ -1,0 +1,27 @@
+id: galvanized_steel
+name: Galvanized Steel
+# ITS UNCONDITIONAL HALF READS x2 ON A HEAVY ATTACK (the card says so), and
+# that doubling is not modelled - declared on the two heavy entries.
+rarity: rare
+polarity: madurai
+base_drain: 2
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Melee/Expert/WeaponCritChanceSPMod
+description: "+110% Critical Chance (x2 for Heavy Attacks) / On Melee Kill: +30% Critical Damage for 20s. Stacks up to 4x."
+
+# Rank 0: +10% Critical Chance (x2 for Heavy Attacks) / On Melee Kill:\n+2.7% Critical Damage for 20s. Stacks up to 4x.
+effects:
+  - kind: crit_chance_bonus
+    rank0: 0.1
+    rankMax: 1.1
+  # On Melee Kill: +30% Critical Damage for 20s, four stacks.
+  - kind: buff
+    trigger: on_kill
+    grants: crit_damage
+    rank0: 0.027273
+    rankMax: 0.3
+    max_stacks: 4
+    duration: 20.0
+
+source:
+  url: https://wiki.warframe.com/w/Galvanized_Steel

@@ -482,6 +482,13 @@ pub enum ModEffect {
     /// HEAVY ATTACK DAMAGE (Killing Blow's `+120% Melee Damage on Heavy
     /// Attack`), paid only on a form that spends the combo counter.
     HeavyAttackDamage(f64),
+    /// CRIT CHANCE ON A SLIDE ATTACK ALONE (Maiming Strike's `+150% Critical
+    /// Chance for Slide Attack`).
+    ///
+    /// The melee counterpart of Killing Blow and Seismic Wave — a card that
+    /// names an attack — and the seven modes are what make it checkable: it is
+    /// worth 150% in `slide` and exactly nothing in the other six.
+    CritChanceOnSlide(f64),
     /// HEAVY ATTACK WIND UP SPEED (Killing Blow, Amalgam Organ Shatter).
     ///
     /// Its own bucket rather than the fire-rate one, and the wiki says why in
@@ -1061,6 +1068,10 @@ impl ModEffect {
             ComboCountChance(v) => format!(
                 "+{} chance of an extra melee combo point per landed hit", pct(v)
             ),
+            CritChanceOnSlide(v) => format!(
+                "+{} critical chance on a SLIDE attack, and nothing on any other swing",
+                pct(v)
+            ),
             HeavyWindUpSpeed(v) => format!(
                 "+{} heavy attack wind up speed — the charge before a heavy swing, which                  attack speed does not touch",
                 pct(v)
@@ -1185,6 +1196,23 @@ pub struct ModDef {
     /// regular slots. Exilus mods are handling/QoL effects with no damage
     /// model, so the optimizer skips them.
     pub exilus: bool,
+    /// A STANCE, and the combo scripts it supplies.
+    ///
+    /// THE FIRST MOD IN THIS REPO THAT CHANGES WHAT A WEAPON FIRES rather than
+    /// what it fires with. A stance publishes four ground combos, a slide and a
+    /// heavy, and installing one replaces the weapon entry's own scripts — so
+    /// the same Magistar in the same mode is a different sequence of swings on
+    /// Crushing Ruin and on Shattering Storm.
+    ///
+    /// IT NEEDS NO SLOT OF ITS OWN in the wire, which is the one thing that
+    /// makes it cheap: a stance mod is legal in the stance slot and NOWHERE
+    /// else, so a flat mod list can say which entry is the stance by looking at
+    /// it. That is exactly what the exilus slot could NOT do — an
+    /// exilus-eligible mod is legal in a main slot too, which is why that one
+    /// travels in a field of its own (AGENTS.md, 2026-08-25).
+    ///
+    /// Keyed by [`crate::weapons_data::FormKind::id`].
+    pub stance: Option<&'static [(&'static str, &'static [crate::weapons_data::ComboHit])]>,
     /// Mods sharing a family are mutually exclusive (wiki Incompatible).
     pub family: Option<&'static str>,
     /// Weapon property required to EQUIP this mod at all — "continuous" for
@@ -1660,6 +1688,9 @@ pub struct WeaponBase {
     pub combo_script: Vec<crate::weapons_data::ComboHit>,
     /// See [`crate::weapons_data::AttackSpec::follow_through`].
     pub follow_through: Option<f64>,
+    /// See [`crate::weapons_data::AttackSpec::slam`] — the weapon's own slam,
+    /// unmodded, fired by a combo swing that ends on one.
+    pub slam: Option<RadialBase>,
     /// See [`crate::weapons_data::AttackSpec::spends_combo`].
     pub spends_combo: bool,
     /// See [`crate::weapons_data::WeaponSpec::combo_duration_seconds`] —
@@ -2178,6 +2209,14 @@ pub enum BuffGrant {
     /// build carrying Hell's Chamber gets 0.05 x that bucket a stack, where
     /// [`BuffGrant::Multishot`] would have given it a flat 0.05.
     BaseMultishot,
+    /// The RELATIVE crit-damage bucket — Organ Shatter's, not a base grant.
+    /// Galvanized Steel's on-kill `+30% Critical Damage` is this one, and the
+    /// difference matters: a BASE grant is multiplied by the crit-damage mods
+    /// at resolve and this one is one of them.
+    CritDamage,
+    /// The RELATIVE status-chance bucket. Galvanized Elementalist's on-kill
+    /// `+30% Status Chance`.
+    StatusChance,
     /// Blazing Barrel on the Sybaris and the Stug: "+5% Multishot" — a
     /// PERCENTAGE of the weapon's base, which is what every multishot MOD
     /// grants, so it joins their bucket rather than either flat bracket.
@@ -2235,7 +2274,8 @@ impl BuffGrant {
             BuffGrant::ReloadSpeed => "reload_speed",
             BuffGrant::FireRate => "fire_rate",
             BuffGrant::Multishot => "multishot",
-            BuffGrant::BaseCritDamage => "crit_damage",
+            BuffGrant::BaseCritDamage | BuffGrant::CritDamage => "crit_damage",
+            BuffGrant::StatusChance => "status_chance",
             BuffGrant::HeadshotDamage => "headshot_damage",
         }
     }
@@ -2254,6 +2294,8 @@ impl BuffGrant {
             BuffGrant::ReloadSpeed => "Reload Speed",
             BuffGrant::FireRate => "Fire Rate",
             BuffGrant::BaseCritDamage => "Base Critical Damage",
+            BuffGrant::CritDamage => "Critical Damage",
+            BuffGrant::StatusChance => "Status Chance",
             BuffGrant::HeadshotDamage => "Headshot Damage",
         }
     }
@@ -3086,6 +3128,9 @@ pub struct ResolvedPanel {
     pub combo_script: Vec<crate::weapons_data::ComboHit>,
     /// `FT^(n-1)` — what the n-th body a swing reaches takes.
     pub follow_through: Option<f64>,
+    /// THE WEAPON'S OWN SLAM, resolved: what a combo swing that ends on one
+    /// detonates. `None` on everything else.
+    pub slam: Option<ResolvedRadial>,
     /// Does a swing of this form spend the combo counter?
     pub spends_combo: bool,
     /// Seconds the combo counter survives untouched, mods included.
@@ -3933,6 +3978,15 @@ pub fn resolve_for(
                 ModEffect::HeavyAttackDamage(v) => heavy_damage += v,
                 ModEffect::ComboCountChance(v) => combo_count_chance += v,
                 ModEffect::HeavyWindUpSpeed(v) => windup_speed += v,
+                // …AND THE ONE THAT NAMES THE SLIDE. It joins the ordinary
+                // relative crit bucket, but only on the form that IS a slide —
+                // which is a question `resolve` can answer and the fight loop
+                // would have to ask again on every swing.
+                ModEffect::CritChanceOnSlide(v) => {
+                    if base.form == crate::weapons_data::FormKind::Slide {
+                        cc += v;
+                    }
+                }
                 ModEffect::MagazineRefillOnKill(v) => mag_refill += v,
                 // The card names one of six; the payload is the syndicate's.
                 ModEffect::SyndicateRadial { syndicate, .. } => {
@@ -4470,7 +4524,7 @@ pub fn resolve_for(
         build(&base.base_vector.scale(charge_scale), Some(&mut elem_bonus));
     // The radial part (Laetum Incarnon's 300 Radiation explosion): its own
     // base vector, crit and status stats, modded by the same buckets.
-    let radial = base.radial.as_ref().map(|r| {
+    let a_resolved = |r: &RadialBase| {
         // THE EXPLOSION RIDES THE CHARGE TOO. "Damage dealt by the plasma bomb
         // is directly proportional to the amount of ammo consumed" — the bomb
         // IS the explosion on this weapon, and the direct hit is the smaller
@@ -4516,7 +4570,12 @@ pub fn resolve_for(
             takes_multishot: r.takes_multishot,
             co_base_fraction: r.co_base_fraction(),
         }
-    });
+    };
+    let radial = base.radial.as_ref().map(&a_resolved);
+    // THE WEAPON'S OWN SLAM, through the same buckets — it is the same attack
+    // part seen from a different swing, and a combo that ends on one should not
+    // read a different Serration from the swing it ends.
+    let slam = base.slam.as_ref().map(&a_resolved);
 
     // The lingering FIELD (Torid's Toxin cloud): its own base vector, crit and
     // status stats, through the SAME mod buckets — three patch notes settle
@@ -4796,8 +4855,16 @@ pub fn resolve_for(
         // clocks made concrete: this bucket is Killing Blow's and the two
         // evolutions', and the delay divides by the live attack speed in the
         // fight loop where a buff can still reach it.
-        combo_script: base
-            .combo_script
+        // AND THE STANCE DECIDES WHICH SCRIPT IT IS. A stance mod publishes a
+        // combo per FORM, and installing one REPLACES the entry's own — so the
+        // same weapon in the same mode is a different sequence of swings under
+        // Crushing Ruin and under Shattering Storm. The entry's own script is
+        // the UNSTANCED fallback, which is what an empty stance slot gives you.
+        combo_script: mods
+            .iter()
+            .find_map(|m| m.stance)
+            .and_then(|c| c.iter().find(|(f, _)| *f == base.form.id()).map(|(_, h)| h))
+            .map_or_else(|| base.combo_script.clone(), |h| h.to_vec())
             .iter()
             .map(|h| crate::weapons_data::ComboHit {
                 windup_seconds: h.windup_seconds
@@ -4830,6 +4897,7 @@ pub fn resolve_for(
         // *"stacks additively and is capped at 90%; with both Focus Energy and
         // Reflex Coil, 10% of the combo counter will still be consumed"*.
         heavy_attack_efficiency: heavy_efficiency.clamp(0.0, 0.9),
+        slam,
         crit_chance_per_combo: cc_per_combo,
         status_chance_per_combo: sc_per_combo,
         combo_count_chance,
@@ -5667,6 +5735,7 @@ mod tests {
 
     fn m(id: &'static str, effects: Vec<ModEffect>) -> ModDef {
         ModDef {
+            stance: None,
             exclusive_to: &[],
             unmodeled: false,
             out_of_scope: false,   // a hand-built test mod discloses nothing
@@ -5688,7 +5757,8 @@ mod tests {
     }
 
     fn m_req(id: &'static str, requires: Option<&'static str>, disables: Vec<&'static str>, effects: Vec<ModEffect>) -> ModDef {
-        ModDef { requires, disables, ..m(id, effects) }
+        ModDef {
+            stance: None, requires, disables, ..m(id, effects) }
     }
 
     /// The neutral Tenno with one state flipped — how a fight says "hip fire",

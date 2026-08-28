@@ -458,6 +458,17 @@ pub struct AttackSpec {
     /// attack that shoots projectiles or deals AoE."*
     #[serde(default)]
     pub follow_through: Option<f64>,
+    /// THE WEAPON'S OWN SLAM, fired by any swing whose `slam_multiplier` says
+    /// so — the trailing hit of three of Crushing Ruin's four combos.
+    ///
+    /// ITS OWN FIELD RATHER THAN `radial`, because they are two different
+    /// attacks with different numbers: a normal slam is `2x` in Impact over 9 m
+    /// falling to 50%, and a HEAVY slam is `3x` in Blast over 10 m falling to
+    /// 70%. The heavy slam is a whole MODE and carries its explosion in
+    /// `radial:` like any other AoE attack; this is the one a light combo ends
+    /// on, and it is stated at 100% so a swing's own multiplier scales it.
+    #[serde(default)]
+    pub slam: Option<RadialSpec>,
     /// Does swinging this form SPEND the melee combo counter?
     ///
     /// True on the two heavy forms. The fraction is not here: it is
@@ -1079,11 +1090,46 @@ pub struct ComboHit {
     pub windup_seconds: f64,
     /// Does it reach every body in range rather than the one in front?
     ///
-    /// The stance tables mark these `(360deg)`. It is a SPATIAL fact and it is
-    /// the only thing that makes a combo mode worth anything in a crowd, since
-    /// Follow Through walks a line and this does not.
+    /// `Types = { "360" }` in the wiki's own `Module:Stances/data`. It is a
+    /// SPATIAL fact and the only thing that makes a combo mode worth anything
+    /// in a crowd, since Follow Through walks a line and this does not.
+    ///
+    /// THE MODULE HAS FIVE TYPES AND THIS MODELS TWO OF THEM. `"360"` is here;
+    /// `"Sweep"`, `"Thrust"` and the empty string all become the forward
+    /// half-plane, which is a wide arc for the first and too wide for the other
+    /// two; `"Ranged"` and `"Slam"` are different mechanics and have their own
+    /// fields. Declared on every melee entry.
     #[serde(default)]
     pub all_around: bool,
+    /// HOW MANY TIMES THIS SWING LANDS.
+    ///
+    /// `Hits = { 1, 2 }` in the module: Crushing Ruin's forward combo lands its
+    /// second 100% TWICE, and Shattered Village lands two 50% spins per attack.
+    /// Each is a separate instance — its own crit roll, its own status roll,
+    /// its own combo point — which is why this is a count rather than a
+    /// multiplier on the damage.
+    #[serde(default = "one_hit")]
+    pub hits: u32,
+    /// A BONUS TO THE IMPACT COMPONENT of this swing alone.
+    ///
+    /// `ImpactMultiplier = { 1.5 }` in the module — Crushing Ruin marks three
+    /// of its swings — and it is a different thing from a forced Knockback
+    /// proc, which several of the same swings ALSO carry. On a Magistar (168 of
+    /// 210 Impact) a 1.5 takes the swing to 1.4x overall.
+    ///
+    /// IMPACT NEVER COMBINES, so scaling the finished vector's Impact component
+    /// is exact rather than an approximation: no elemental hierarchy can have
+    /// consumed it on the way.
+    #[serde(default = "one")]
+    pub impact_multiplier: f64,
+    /// …AND THE SLAM SOME COMBOS END ON, as a multiple of the weapon's own.
+    ///
+    /// `Types = { "", "Slam" }` with `Dmg = { 500, 100 }`: the last attack of
+    /// three of Crushing Ruin's four combos is a swing AND a slam, and the slam
+    /// is the only thing a combo mode has that reaches past the weapon's reach.
+    /// `None` on an ordinary swing.
+    #[serde(default)]
+    pub slam_multiplier: Option<f64>,
     /// WHAT THIS SWING APPLIES WHATEVER THE ROLL SAYS.
     ///
     /// ONE LIST FOR TWO MECHANISMS, because the stance table is one column:
@@ -1095,6 +1141,10 @@ pub struct ComboHit {
     /// has both machines in front of it.
     #[serde(default)]
     pub forced_procs: Vec<String>,
+}
+
+fn one_hit() -> u32 {
+    1
 }
 
 impl ComboHit {
@@ -3463,8 +3513,11 @@ pub fn base_panel_assembled(
         charge_rate: 0.0, // raised by evolutions (Incarnon Efficiency)
     });
 
-    // The radial (AoE) attack part, when the weapon data declares one.
-    let radial = s.attack.radial.as_ref().map(|r| {
+    // The radial (AoE) attack part, when the weapon data declares one — and the
+    // weapon's own SLAM, which is the same shape and a different attack: three
+    // of Crushing Ruin's four combos end on one, and it is the only thing a
+    // light combo has that reaches past the weapon's own reach.
+    let a_radial = |r: &RadialSpec| {
         let mut v = DamageVector::new();
         for (t, val) in &r.damage {
             v.add(damage_type(t), *val);
@@ -3490,7 +3543,9 @@ pub fn base_panel_assembled(
             // never grows.
             co_base: v.total(),
         }
-    });
+    };
+    let radial = s.attack.radial.as_ref().map(&a_radial);
+    let slam = s.attack.slam.as_ref().map(&a_radial);
 
     // The lingering FIELD (Torid's Toxin cloud). Each stat falls back to the
     // direct part's when unstated, same rule as the radial.
@@ -3691,6 +3746,7 @@ pub fn base_panel_assembled(
         traits: traits_for(s),
         gauge_form,
         radial,
+        slam,
         spread: s.attack.spread,
         // Only an EVOLUTION grants one (Lone Enforcer); no weapon declares it.
         multishot_beyond_range: None,
@@ -4812,6 +4868,7 @@ mod tests {
 
         let with = |e: Vec<ModEffect>| {
             let m = crate::loadout::ModDef {
+            stance: None,
                 exclusive_to: &[],
                 unmodeled: false,
             out_of_scope: false,

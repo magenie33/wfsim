@@ -844,6 +844,8 @@ impl RivenSpec {
             .filter_map(|(def, v)| effect_of(def, v))
             .collect();
         ModDef {
+            // A RIVEN IS NEVER A STANCE.
+            stance: None,
             // A riven fits whatever its family fits; it is never written for
             // one weapon the way an augment is.
             exclusive_to: &[],

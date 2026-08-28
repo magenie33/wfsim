@@ -24,6 +24,7 @@ fn dual_toxocyst_baseline() -> DummyParams {
         // NOT A MELEE WEAPON: no combo counter, no script, no follow through.
         combo_script: Vec::new(),
         follow_through: None,
+        slam: None,
         spends_combo: false,
         combo_duration_seconds: 0.0,
         initial_combo: 0.0,

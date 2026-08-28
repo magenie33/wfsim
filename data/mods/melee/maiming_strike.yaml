@@ -1,0 +1,19 @@
+id: maiming_strike
+name: Maiming Strike
+# IT NAMES AN ATTACK, like Killing Blow and Seismic Wave - so it is worth
+# +150% in the `slide` mode and exactly nothing in the other six.
+rarity: rare
+polarity: madurai
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/Event/SlideAttackCritChanceMod
+description: "+150% Critical Chance for Slide Attack"
+
+# Rank 0: +25% Critical Chance for Slide Attack
+effects:
+  - kind: crit_chance_on_slide
+    rank0: 0.25
+    rankMax: 1.5
+
+source:
+  url: https://wiki.warframe.com/w/Maiming_Strike

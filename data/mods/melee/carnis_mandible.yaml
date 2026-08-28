@@ -1,0 +1,23 @@
+id: carnis_mandible
+name: Carnis Mandible
+rarity: common
+polarity: naramon
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Sets/Ashen/AshenMandibleMod
+description: "+90% <DT_SLASH_COLOR>Slash / +60% Status Chance"
+
+# Rank 0: +15% <DT_SLASH_COLOR>Slash / +10% Status Chance
+effects:
+  - kind: physical_damage_bonus
+    element: slash
+    rank0: 0.15
+    rankMax: 0.9
+  - kind: status_chance_bonus
+    rank0: 0.1
+    rankMax: 0.6
+
+set: carnis
+
+source:
+  url: https://wiki.warframe.com/w/Carnis_Mandible

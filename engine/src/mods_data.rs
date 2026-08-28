@@ -63,6 +63,10 @@ struct ModFile {
     /// Stats this mod locks from being modified.
     #[serde(default)]
     disables: Vec<String>,
+    /// A STANCE'S COMBO SCRIPTS, one per form it supplies — see
+    /// [`crate::loadout::ModDef::stance`]. Absent on every other mod.
+    #[serde(default)]
+    combos: Option<std::collections::BTreeMap<String, Vec<crate::weapons_data::ComboHit>>>,
     effects: Vec<Value>,
 }
 
@@ -208,6 +212,8 @@ fn buff_grant(name: &str) -> Option<crate::loadout::BuffGrant> {
         "base_damage" | "damage" => G::BaseDamage,
         "flat_base_damage" => G::FlatBaseDamage,
         "base_crit_damage" => G::BaseCritDamage,
+        "crit_damage" => G::CritDamage,
+        "status_chance" => G::StatusChance,
         "headshot_damage" => G::HeadshotDamage,
         "fire_rate" => G::FireRate,
         "reload_speed" => G::ReloadSpeed,
@@ -287,6 +293,7 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         // without spending it are the reason the counter matters to a light
         // build at all — the multiplier itself does not touch a normal swing.
         "crit_chance_per_combo" => ModEffect::CritChancePerCombo(max("rankMax")),
+        "crit_chance_on_slide" => ModEffect::CritChanceOnSlide(max("rankMax")),
         "status_chance_per_combo" => ModEffect::StatusChancePerCombo(max("rankMax")),
         // MELEE'S CONDITION OVERLOAD, which is the ORIGINAL one and is not a
         // buff at all: no trigger, no stacks, no clock — it reads the target's
@@ -713,9 +720,29 @@ fn to_moddef(mf: ModFile) -> ModDef {
             .iter()
             .any(|e| e.get("kind").and_then(Value::as_str) == Some(k))
     };
+    // A STANCE'S COMBO SCRIPTS, keyed by form. Leaked because a `ModDef` is
+    // `'static` for the life of the process, the same way every other string on
+    // it is — the pool is built once at load.
+    let stance: Option<&'static [(&'static str, &'static [crate::weapons_data::ComboHit])]> =
+        mf.combos.as_ref().map(|m| {
+            let v: Vec<(&'static str, &'static [crate::weapons_data::ComboHit])> = m
+                .iter()
+                .map(|(form, hits)| {
+                    // A FORM NAME THE ENGINE DOES NOT KNOW IS A LOUD FAILURE:
+                    // a stance whose combo lands under a misspelt key would
+                    // read as a stance that simply has no such combo.
+                    let form: &'static str = crate::weapons_data::FormKind::parse(form).id();
+                    let hits: &'static [crate::weapons_data::ComboHit] =
+                        Box::leak(hits.clone().into_boxed_slice());
+                    (form, hits)
+                })
+                .collect();
+            &*Box::leak(v.into_boxed_slice())
+        });
     let unmodeled = has("unmodeled");
     let out_of_scope = has("out_of_scope");
     ModDef {
+        stance,
         unmodeled,
         out_of_scope,
         id: Box::leak(mf.id.into_boxed_str()),
@@ -2658,7 +2685,15 @@ mod pool_survey {
     /// gap 0) — which is what lowering this line is for.
     #[test]
     fn the_pool_mods_we_still_owe_only_goes_down() {
-        const OWED: usize = 28;
+        // LOWERED 28 -> 21 ON 2026-08-29, and not by transcribing seven cards.
+        // MELEE OWES NOTHING — all 89 of its cards and both hammer stances are
+        // carried — and the survey learned two exclusions on the way in: DE's
+        // own `/Beginner/` and `/Intermediate/` tiers, which carry a released
+        // card's display name and different numbers, and one unreleased
+        // Pressure Point variant that carries neither marker. That is the
+        // repo's `internal_name` rule made executable: joining by NAME is what
+        // put a phantom +200% Pressure Point in front of the melee intake.
+        const OWED: usize = 21;
         let text = crate::data::file("surveys/pool_mods.yaml")
             .expect("data/surveys/pool_mods.yaml — run scripts/survey_pool_mods.py");
         let mut total = 0usize;

@@ -1084,6 +1084,11 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
                 "polarity": format!("{:?}", m.polarity),
                 "rarity": format!("{:?}", m.rarity).to_lowercase(),
                 "exilus": m.exilus,
+                // A STANCE, so the page can put it in the stance slot and keep
+                // it out of the eight. The SCRIPTS are not sent: they are the
+                // engine's answer to "what does this weapon swing", and the
+                // page has never needed to know.
+                "stance": m.stance.is_some(),
                 "family": m.family,
                 "category": mod_category(m),
                 "image": assets().mods.get(m.id),
@@ -3493,6 +3498,9 @@ pub fn panel_json(v: &Value) -> Value {
                 SlamDamage(_) => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": "it pays on a SLAM and on nothing else, so it is worth zero in every                             mode that swings"})),
+                CritChanceOnSlide(_) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "it names an attack — a SLIDE — so it is worth its whole number in                             that mode and exactly nothing in the other six"})),
                 HeavyWindUpSpeed(_) => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": "it shortens the CHARGE before a heavy swing, which attack speed does                             not touch — so it pays in the two heavy modes and nowhere else"})),

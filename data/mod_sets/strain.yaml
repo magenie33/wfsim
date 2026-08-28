@@ -1,0 +1,13 @@
+id: strain
+name: Strain
+# DECLARED SO THE LOADER CAN FIND IT, with nothing to compute. This set's bonus
+# is a Warframe-layer effect (a Helminth Cyst for Strain, a marked zone for Tek)
+# and its melee member says so on its own card. `kind` falls through to
+# `SetBonusKind::Unmodeled`.
+members: 4
+bonus:
+  kind: warframe_layer
+  per_mod: 0.0
+
+source:
+  url: https://wiki.warframe.com/w/Strain_Set

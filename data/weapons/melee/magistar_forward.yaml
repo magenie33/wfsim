@@ -20,11 +20,20 @@ attack:
   range_m: 2.5
   follow_through: 0.4
   damage: { impact: 168, puncture: 31.5, slash: 10.5 }
+  # TIDAL FORCE — transcribed from the wiki's own `Module:Stances/data`,
+  # which publishes `Dmg`, `Hits`, `Procs`, `Types`, `ImpactMultiplier` and
+  # `Duration` per combo. The duration is the MODULE's (2.6 s at 1.0x attack
+  # speed), not derived — though deriving it from the rendered table's two
+  # columns gave the same number, which is how the derivation was checked.
+  #
+  # THE SLAM TAKES NO TIME OF ITS OWN: it rides the swing it is listed with, so
+  # the 4 direct swings share the 2.6 s and it lands alongside the last of them.
+  # `Knockback` is Impact's own proc and is transcribed as `impact`.
   combo_script:
-    - { multiplier: 1.0, delay_seconds: 0.52 }
-    - { multiplier: 1.0, delay_seconds: 0.52, all_around: true }
-    - { multiplier: 1.0, delay_seconds: 0.52, all_around: true }
-    - { multiplier: 2.0, delay_seconds: 0.52 }
-    - { multiplier: 3.0, delay_seconds: 0.52 }
+    - { multiplier: 1.0, delay_seconds: 0.65 }
+    - { multiplier: 1.0, delay_seconds: 0.65, hits: 2, all_around: true }
+    - { multiplier: 2.0, delay_seconds: 0.65 }
+    - { multiplier: 3.0, delay_seconds: 0.65 }
+
 source:
   url: https://wiki.warframe.com/w/Crushing_Ruin

@@ -1,0 +1,82 @@
+id: shattering_storm
+name: Shattering Storm
+rarity: uncommon
+polarity: vazarin
+# A STANCE GRANTS CAPACITY RATHER THAN COSTING IT — the export carries
+# `baseDrain: -2` — and this engine's capacity model has no room for that: a
+# drain is a `u32`. So it is held at ZERO and declared, which is the
+# conservative direction: a build that fits here fits in game, where the stance
+# would have handed capacity back rather than taken it.
+#
+# RANK 0 FOR THE SAME REASON. A stance's ranks buy capacity and nothing else —
+# the combo table is identical at every rank — so there is no ladder to state
+# and pretending there is one would only make the card ask for drain it does
+# not cost.
+base_drain: 0
+max_rank: 0
+internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/HammerCmbOneMeleeTree
+description: "A Stance of crushing blows and shattering impacts."
+
+# THE COMBOS THIS STANCE SUPPLIES, keyed by the FORM they are — which is the
+# same id a MODE carries, so installing this replaces the weapon entry's own
+# script for each of them and leaves the rest alone.
+#
+# EVERY NUMBER FROM `Module:Stances/data`, the wiki's own Lua table: `Dmg` is
+# the percentages, `Hits` how many times each lands, `Procs` what it forces
+# ("Knockback" is Impact's own proc), `Types` marks 360-degree spins and the
+# slam a combo ends on, `ImpactMultiplier` is a bonus to the Impact component
+# alone, and `Duration` is the combo's length at 1.0x attack speed.
+#
+# THE SLAM TAKES NO TIME OF ITS OWN: it rides the swing it is listed with, so
+# the direct swings share the published duration.
+combos:
+  # Falling Rock — 3.0331 s at 1.0x, 4 swings
+  neutral:
+    - { multiplier: 4.0, delay_seconds: 0.7583, impact_multiplier: 1.5, forced_procs: [impact] }
+    - { multiplier: 3.0, delay_seconds: 0.7583, impact_multiplier: 1.5, forced_procs: [impact] }
+    - { multiplier: 4.0, delay_seconds: 0.7583 }
+    - { multiplier: 2.0, delay_seconds: 0.7583, forced_procs: [knockdown] }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0 }
+  # Pounding Smite — 2.6 s at 1.0x, 4 swings
+  forward:
+    - { multiplier: 2.0, delay_seconds: 0.65, forced_procs: [impact] }
+    - { multiplier: 2.0, delay_seconds: 0.65 }
+    - { multiplier: 2.0, delay_seconds: 0.65, impact_multiplier: 1.5 }
+    - { multiplier: 3.0, delay_seconds: 0.65, impact_multiplier: 1.5, forced_procs: [lifted] }
+  # Rising Thunder — 3.3 s at 1.0x, 3 swings
+  block:
+    - { multiplier: 3.0, delay_seconds: 1.1 }
+    - { multiplier: 3.0, delay_seconds: 1.1, forced_procs: [lifted] }
+    - { multiplier: 5.0, delay_seconds: 1.1, forced_procs: [knockdown] }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0 }
+  # Smashing Fury — 3.1558 s at 1.0x, 5 swings
+  block_forward:
+    - { multiplier: 3.0, delay_seconds: 0.6312 }
+    - { multiplier: 2.0, delay_seconds: 0.6312 }
+    - { multiplier: 4.0, delay_seconds: 0.6312, all_around: true }
+    - { multiplier: 2.0, delay_seconds: 0.6312 }
+    - { multiplier: 5.0, delay_seconds: 0.6312, impact_multiplier: 1.5, forced_procs: [knockdown] }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0 }
+  # Crowd Fall — the heavy attack. IDENTICAL ON BOTH HAMMER STANCES, which is
+  # worth stating: a hammer's heavy is its class multiplier (6x) delivered as an
+  # alternating pair, and the stance decides only the animation and the procs.
+  # The 1.2 s wind-up is its own clock and attack speed does not shorten it.
+  heavy:
+    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [lifted] }
+    - { multiplier: 6.0, windup_seconds: 1.2, delay_seconds: 0.0, forced_procs: [knockdown] }
+  # Hell's Wave — the slide attack, also identical on both.
+  slide:
+    - { multiplier: 2.0, delay_seconds: 0.97, all_around: true, forced_procs: [impact] }
+
+effects:
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Shattering_Storm
+  # THE MODULE TRUNCATES ALPHABETICALLY on the way in and this stance is past
+  # the cut, so its numbers come from the RENDERED page — the fallback
+  # docs/DATA_SOURCES.md already names for a module fetch. Its durations are
+  # therefore DERIVED (the direct swings' total over the published
+  # damage-per-second) rather than read off the module, and that derivation
+  # reproduced all four of Crushing Ruin's module durations exactly, which is
+  # what makes it trustworthy here: 3.0331 / 2.60 / 3.30 / 3.1558 s.

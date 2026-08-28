@@ -1,0 +1,16 @@
+id: energy_channel
+name: Energy Channel
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponPowerDamageMod
+description: "Converts 200% of Energy used to up to 200 Bonus Damage on next Melee Attack."
+
+# Rank 0: Converts 50% of Energy used to up to 50 Bonus Damage on next Melee Attack.
+effects:
+  # bonus damage from Warframe energy spent - this arena runs one weapon and casts nothing
+  - kind: out_of_scope
+
+source:
+  url: https://wiki.warframe.com/w/Energy_Channel

@@ -21,9 +21,36 @@ attack:
   range_m: 2.5
   follow_through: 0.4
   damage: { impact: 168, puncture: 31.5, slash: 10.5 }
+  # THE WEAPON'S OWN SLAM, at 100% of base — a combo's trailing hit states its
+  # own multiplier (`Dmg = { 500, 100 }` in the module), so this is the unit it
+  # scales. The Magistar's standalone slam is the same attack at 200%, which is
+  # the 420 its arsenal card prints.
+  #
+  # EVERY NUMBER FROM THE EXPORT'S OWN `attacks[]` BLOCK, which agrees with the
+  # wiki's infobox: 100% Impact, 9 m, linear falloff from the point of impact to
+  # 50% at the edge, forced Knockdown.
+  slam:
+    damage: { impact: 210 }
+    radius_m: 9.0
+    blast_kind: slam
+    falloff_start_m: 0.0
+    falloff_reduction: 0.5
+    forced_procs: []
+    takes_multishot: false
+  # WINDING TEMPER — transcribed from the wiki's own `Module:Stances/data`,
+  # which publishes `Dmg`, `Hits`, `Procs`, `Types`, `ImpactMultiplier` and
+  # `Duration` per combo. The duration is the MODULE's (2.25 s at 1.0x attack
+  # speed), not derived — though deriving it from the rendered table's two
+  # columns gave the same number, which is how the derivation was checked.
+  #
+  # THE SLAM TAKES NO TIME OF ITS OWN: it rides the swing it is listed with, so
+  # the 3 direct swings share the 2.25 s and it lands alongside the last of them.
+  # `Knockback` is Impact's own proc and is transcribed as `impact`.
   combo_script:
     - { multiplier: 3.0, delay_seconds: 0.75 }
     - { multiplier: 2.0, delay_seconds: 0.75 }
     - { multiplier: 4.0, delay_seconds: 0.75 }
+    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0, forced_procs: [knockdown] }
+
 source:
   url: https://wiki.warframe.com/w/Crushing_Ruin

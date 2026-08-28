@@ -110,6 +110,31 @@ around (decision 2026-07-31).
   that read it, leaving INITIAL COMBO (a floor refilling at 40 points a second)
   as that build's whole engine. Both cards land in brackets this engine already
   had, with one `(combo - 1)` term each.
+  A STANCE IS THE FIRST MOD THAT CHANGES WHAT A WEAPON FIRES (2026-08-29) rather
+  than what it fires with: it publishes a combo per FORM and installing one
+  replaces the entry's own script, so the same Magistar in the same mode is a
+  different sequence of swings under Crushing Ruin and under Shattering Storm
+  (measured 1,275 against 1,162 DPS in the shipping build).
+  IT NEEDS NO FIELD OF ITS OWN ON THE WIRE, which is what made the slot cheap: a
+  stance mod is legal in the stance slot and NOWHERE else, so a flat mod list
+  can say which entry is the stance by looking at it. That is exactly what the
+  EXILUS slot could not do — an exilus-eligible mod is legal in a main slot too
+  — so that one travels in a field of its own and this one rides `mods`,
+  appended. Nothing about the share link, the board record, the worker's table
+  or `builds::identity` had to change.
+  THE COMBOS COME FROM `Module:Stances/data`, the wiki's own Lua table, and
+  finding it corrected a first transcription that had been read off the rendered
+  page: a swing that lands TWICE, a bonus to the Impact component ALONE
+  (different from the forced Knockback proc several of the same swings also
+  carry), and the SLAM three of four combos end on. It also confirmed the
+  DERIVED durations exactly — 3.00 / 2.60 / 2.25 / 4.25 from the rendered
+  table's two columns — which is what makes that derivation trustworthy for the
+  stances past the point a module fetch truncates at.
+  THE MELEE EXILUS SLOT PAYS NOTHING, and every one of its eleven cards says
+  which of two reasons it is: seven are Tennokai (a window this engine does not
+  model) and four are blocking and movement, which this arena has neither of.
+  That is the strongest argument for doing Tennokai next — it is the only thing
+  that would make the slot a decision.
 - `docs/CATALOGS.md` — THE PER-WEAPON TABLES, in one place. Some mechanics are a
   formula plus a published table with one ROW PER WEAPON, and the row says what
   the weapon's own stats never would — this one multiplies where everyone else
@@ -667,6 +692,16 @@ around (decision 2026-07-31).
   and says in its own text that it is the weaker half. Verified to bite: a fake
   axis added in Rust reddens all three surfaces, each naming it.
   `node scripts/check_page_bodies.mjs` is the THIRTY-NINTH and the cheapest: `node --check` over every script here, because a page-side body is a TEMPLATE LITERAL and an unescaped backtick in a COMMENT closes it — which has happened in seven checks, each costing a full browser run to find, since the parser reports it from inside `node:internal` naming the line the literal starts on. A scanner that hunted the backtick itself was written first and was wrong both ways: an escaped one in prose is legal, and the first unescaped one IS the terminator. The parser was always the authority; what was missing was running it unasked. Milliseconds, no browser, so it runs first in CI.
+  `node scripts/check_melee_slots.mjs` is the FORTY-SECOND: a melee weapon has
+  TWO slots a gun does not, and one of them decides what it swings. Every
+  assertion is on the WIRE or on a real `/api/simulate` in the shipping build,
+  because a slot that drew correctly and sent nothing would look exactly like a
+  working feature. Its sharpest pair is the ROUND TRIP — `buildPayload` into
+  `stateFromBuild` has to put the stance back in the STANCE slot rather than in
+  slot 9, which is the one thing a flat mod list makes easy to get wrong — and
+  the FALLBACK: an empty slot must fire the entry's own script, which happens to
+  be Crushing Ruin's, so a stance that failed to apply would otherwise read as a
+  pass. Verified to bite: emptying the stance pool reddens two.
   `node scripts/check_riven_pool.mjs` is the SEVENTEENTH: the riven editor
   offers the stats that weapon's rivens actually roll, in BOTH slots. What a
   riven can roll is DE's per-weapon table, published nowhere, and the wiki's

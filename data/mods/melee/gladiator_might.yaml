@@ -1,0 +1,19 @@
+id: gladiator_might
+name: Gladiator Might
+rarity: uncommon
+polarity: madurai
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Sets/Gladiator/MeleeGladiatorMightMod
+description: "+60% Critical Damage"
+
+# Rank 0: +10% Critical Damage
+effects:
+  - kind: crit_damage_bonus
+    rank0: 0.1
+    rankMax: 0.6
+
+set: gladiator
+
+source:
+  url: https://wiki.warframe.com/w/Gladiator_Might

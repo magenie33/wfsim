@@ -125,54 +125,108 @@ attacks, and the status a hit applies does not amplify that same hit.
 
 ---
 
-## 3. WHAT THE ENGINE GREW
+## 3. THE STANCE SLOT — the first mod that changes what a weapon FIRES
+
+Every other card in this app changes what a weapon fires WITH. A stance
+publishes a combo per FORM, and installing one replaces the weapon entry's own
+script — so the same Magistar in the same mode is a different sequence of swings
+under Crushing Ruin (Raging Whirlwind: 400/200/300/500 over 3.00 s) and under
+Shattering Storm (Falling Rock: 400/300/400/200 over 3.03 s), measured in the
+shipping build at 1,275 and 1,162 DPS.
+
+**IT NEEDS NO FIELD OF ITS OWN ON THE WIRE**, and that is what made it cheap. A
+stance mod is legal in the stance slot and NOWHERE else, so a flat mod list can
+say which entry is the stance by looking at it. That is exactly what the exilus
+slot could NOT do — an exilus-eligible mod is legal in a main slot too — which
+is why THAT one travels in a field of its own (AGENTS.md, 2026-08-25) and this
+one rides `mods`, appended. Nothing about the share link, the board record, the
+worker's table or `builds::identity` had to change.
+
+The slot is drawn on a melee weapon and on nothing else, the picker's filter
+runs BOTH ways (a stance is refused from the eight, and only a stance is offered
+in the tenth), and `builds::validate_with` does not count it against
+`MAIN_SLOTS` — a melee build carrying one is `8 + 1` in the same list.
+
+**THE COMBOS COME FROM `Module:Stances/data`**, the wiki's own Lua table, which
+publishes `Dmg`, `Hits`, `Procs`, `Types`, `ImpactMultiplier` and `Duration` per
+combo. It was found only after the first transcription, and it corrected three
+things: a swing that lands TWICE (`Hits = { 1, 2 }`), a bonus to the Impact
+component alone (`ImpactMultiplier = { 1.5 }`, which is a different thing from
+the forced Knockback proc several of the same swings also carry), and the SLAM
+three of Crushing Ruin's four combos end on. It also confirmed the durations
+that had been DERIVED from the rendered table's two columns — 3.00 / 2.60 / 2.25
+/ 4.25 — exactly, which is what makes the derivation trustworthy for Shattering
+Storm, whose entry is past the point the module fetch truncates at.
+
+The module's whole vocabulary, for whoever transcribes the next stance:
+
+- `Types`: `360` (a spin, reaching everything in range), `Sweep`, `Thrust`,
+  `Slam`, `Ranged`. Two are modelled — `360` and the slam — and `Sweep`,
+  `Thrust` and the empty string all become the forward half-plane, which is the
+  one invented number in the model and is declared.
+- `Procs`: `Knockback` (Impact's own), `Bleed` (Slash's), `Puncture`,
+  `Knockdown`, `Lifted`, plus `Ragdoll`, `Stun`, `Impair`, `Stagger`,
+  `Finisher`, `Detonate` — all crowd control with no damage payload here.
+
+---
+
+## 4. WHAT THE ENGINE GREW
 
 | piece | where |
 | --- | --- |
 | seven melee `FormKind`s, each its own mode | `weapons_data::FormKind`, `play_modes` |
-| the combo script — a sequence of swings, each with its own multiplier, delay, 360deg flag and forced procs | `weapons_data::ComboHit`, `AttackSpec::combo_script` |
+| the combo script — a swing with its own multiplier, delay, wind-up, hit count, Impact bonus, 360deg flag, forced procs and trailing slam | `weapons_data::ComboHit` |
+| a STANCE as a mod that supplies those scripts | `loadout::ModDef::stance`, `resolve` |
 | the combo counter, its ladder and its refilling floor | `dummy::melee_combo_multiplier`, `melee_combo_points` |
 | Blood Rush / Weeping Wounds | one `(combo - 1)` term in each of two existing brackets |
-| Follow Through, `spends_combo`, the combo clock | `AttackSpec`, `loadout`, `DummyParams` |
-| a slam's epicentre | `BlastKind::Slam` |
-| Knockdown as a real status | `dummy::DebuffState::knockdown` — it counts for Condition Overload, and every slam forces one |
-| melee has no ammo, aims at nothing, and puts nothing on a head | `scenario::Capability` |
-| five mod effect kinds | `crit_chance_per_combo`, `status_chance_per_combo`, `melee_combo_duration_bonus`, `initial_combo`, `heavy_attack_efficiency` |
+| Follow Through, `FT^(n-1)` over the bodies a swing reached | `spread_from_follow_through`, `Origin::FollowThrough` |
+| a slam's epicentre at the wielder's own feet | `BlastKind::Slam` |
+| the heavy wind-up as its own clock | `ComboHit::windup_seconds`, `ModEffect::HeavyWindUpSpeed` |
+| Knockdown as a real status | `dummy::DebuffState::knockdown` |
+| melee has no ammo, aims at nothing, puts nothing on a head | `scenario::Capability` |
+| eleven mod effect kinds | crit/status per combo, combo duration as seconds and as a multiplier, initial combo, heavy efficiency, heavy damage, slam damage, melee reach in metres, combo count chance, wind-up speed, crit chance on a slide |
+| six evolution effect kinds | relative base damage, initial combo, melee reach, follow through, slam radius, wind-up speed, proc conversion |
 
-**Nothing else moved.** Every new field is empty or zero on a gun, and all 807
+**Nothing else moved.** Every new field is empty or zero on a gun, and all 824
 engine tests — the golden values among them — are unchanged.
 
 ---
 
-## 4. WHAT IS STILL OWED
+## 5. WHAT IS STILL OWED
 
-Each of these is on the page, in both languages, on the entry it applies to.
+Each of these is on the page, in both languages, on the entry or the card it
+applies to.
 
-1. **The STANCE SLOT.** The four ground combos are Crushing Ruin's. A stance is
-   a real eleventh slot in game and it rewrites the attack script — the first
-   mod in this repo that would change what a weapon FIRES rather than what it
-   fires with. Until it lands, a build on Shattering Storm or Fracturing Wind
-   reads Crushing Ruin's numbers.
-2. **Tennokai.** 15% on a direct hit for a 2 s window in which a heavy attack is
-   free and faster. Its six mods are therefore out of the pool.
-3. **Crit chance mods double on heavy attacks** — True Steel, Sacrificial Steel
+1. **Tennokai.** 15% on a direct hit for a 2 s window in which a heavy attack is
+   free and faster. Its seven cards ARE in the pool — they are the whole melee
+   exilus slot — and each says the window is not modelled. Until it lands, the
+   melee exilus slot pays nothing at all, which is why it is worth doing next:
+   it is the only thing that would make that slot a decision.
+2. **Crit chance mods double on heavy attacks** — True Steel, Sacrificial Steel
    and Galvanized Steel all say `(x2 for Heavy Attacks)` on their own cards.
    The two heavy modes read LOW until this lands.
-4. **Condition Overload's slam exemption** — the heavy slam mode reads HIGH with
-   it equipped.
-5. **Attack speed and the heavy wind-up.** *"Increasing melee attack speed does
-   not reduce the wind-up time; rather, it reduces the interval between heavy
-   attacks."* One number covers both here, so an attack-speed build reads HIGH
-   in the two heavy modes.
-6. **Melee rivens.** No pool has been surveyed; a melee card rolls Range, Attack
+3. **Condition Overload's slam exemption** — it does not apply to slams, heavy
+   slams or radial attacks, and this engine does not exempt it, so the heavy
+   slam mode reads HIGH with it equipped.
+4. **Melee rivens.** No pool has been surveyed; a melee card rolls Range, Attack
    Speed, Combo Duration and Heavy Attack Efficiency, none of which any existing
    riven pool contains.
-7. **Power Spike's partial combo decay** — a Warframe passive, so the counter
+5. **Power Spike's partial combo decay** — a Warframe passive, so the counter
    here drops to zero where a real build keeps most of it.
-8. **A swing's own animation length.** The wiki publishes a combo's total
-   damage-per-second at 1.0x, so the combo's DURATION is exact and the split
-   between its swings is even. It moves a status tick's start by fractions of a
-   second and moves no total.
+6. **A swing's own animation length.** The module publishes a combo's DURATION
+   and not a per-swing split, so the swings share it evenly. It moves a status
+   tick's start by fractions of a second and moves no total.
+7. **`Sweep` and `Thrust` are one shape here** — the forward half-plane. A
+   sweep is a wide arc and a thrust is not, and nothing published gives either
+   an angle.
+8. **A stance's capacity.** In game a stance GRANTS capacity and this engine's
+   drain is a `u32`, so it is held at zero — the conservative direction: a build
+   that fits here fits in game.
+9. **Six cards that name a state this arena has not got**: Enduring Strike and
+   Enduring Affliction want "the target is Lifted", Relentless Combination wants
+   a combo point when a Slash DoT ticks, Spring-Loaded Blade wants a stacking
+   reach buff, Galvanized Reflex wants stacking initial combo, and Shattering
+   Impact wants a flat armour strip per Impact hit.
 
 ### …and two numbers that need measuring
 
@@ -189,7 +243,7 @@ Each of these is on the page, in both languages, on the entry it applies to.
 
 ---
 
-## 5. THE INCARNON, WHICH IS NOT A FORM
+## 6. THE INCARNON, WHICH IS NOT A FORM
 
 The Magistar's Genesis is **not** modelled as an Incarnon form and must not be:
 
@@ -207,7 +261,7 @@ numbers rather than swapping in a new set of attacks.
 
 ---
 
-## 6. WHAT MELEE COSTS FROM HERE
+## 7. WHAT MELEE COSTS FROM HERE
 
 The Magistar paid for nearly all of the machinery. The second melee weapon is a
 `data/weapons/melee/<id>.yaml` per mode — about 40 lines each, every number from

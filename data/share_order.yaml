@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: 6be5fbeaed946fa5
-count: 1650
+digest: e345a052e825bdad
+count: 1683
 ids:
   - acceltra
   - acceltra_prime
@@ -1660,3 +1660,36 @@ ids:
   - magistar_seismic_slam
   - magistar_subtle_force
   - magistar_swift_break
+  - crushing_ruin
+  - shattering_storm
+  - carnis_mandible
+  - enduring_affliction
+  - energy_channel
+  - finishing_touch
+  - focus_radon
+  - galvanized_elementalist
+  - galvanized_reflex
+  - galvanized_steel
+  - gladiator_might
+  - gladiator_rush
+  - gladiator_vice
+  - heavy_trauma
+  - jugulus_barbs
+  - lasting_sting
+  - magnetic_rush
+  - maiming_strike
+  - melee_elementalist
+  - motus_impact
+  - proton_snap
+  - rending_strike
+  - saxum_thorax
+  - shattering_impact
+  - smite_corpus
+  - smite_infested
+  - smite_orokin
+  - strain_infection
+  - sundering_strike
+  - tek_gravity
+  - truths_flame
+  - primed_smite_the_murmur
+  - smite_the_murmur
