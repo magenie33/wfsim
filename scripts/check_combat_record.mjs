@@ -304,4 +304,41 @@ check(`${tag} ...and "only the misses" is a view`,
   m.chip === true && m.drawn > 0 && m.onlyMisses === true,
   `${m.drawn} drawn`);
 
+// ---- A RESULT WITH NO ENGAGEMENT TO NAME SAYS SO ---------------------------
+//
+// The record is fetched by naming the run it explains, and a result SAVED
+// before that name existed has none to give. The block used to vanish, so a
+// reader coming back to a stored result found the feature absent with nothing
+// saying why — reported as "the combat record does not show" (owner, on a
+// phone, 2026-08-28). An unexplained absence reads as a missing feature, which
+// is the same rule this panel already follows about its own caps.
+const stale = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const out = {};
+  // THE SHAPE STORAGE ACTUALLY HOLDS: a result with its replay stripped and,
+  // for anything written before this feature, no run name either.
+  const was = shownResult && shownResult.r;
+  out.had = !!(was && was.run);
+  const { run, ...older } = was;
+  renderResults(older, (shownResult || {}).at);
+  await sleep(400);
+  const fold = document.querySelector('.fold[data-fold="record"]');
+  out.block = !!fold;
+  out.says = fold ? fold.textContent.trim().length > 20 : false;
+  out.noButton = !document.getElementById('rec-load');
+  // …AND RUNNING IT AGAIN BRINGS IT BACK, which is what the sentence promises.
+  renderResults(was, (shownResult || {}).at);
+  await sleep(400);
+  // Either the button or the table it already loaded — what matters is that
+  // the panel is a working one again rather than a sentence.
+  out.backAgain = !!document.getElementById('rec-load')
+    || !!document.querySelector('table.rec-t');
+  return out;
+})()`);
+
+check(`${tag} a result saved before the record still shows the block`,
+  stale.had === true && stale.block === true, "the block is drawn either way");
+check(`${tag} ...and says why it cannot be read`, stale.says === true && stale.noButton === true);
+check(`${tag} ...and running the fight again brings it back`, stale.backAgain === true);
+
 await finish("every row of the record produces its own number");

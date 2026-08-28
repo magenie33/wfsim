@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "a356493f+ · 2026-08-27 15:41Z";
+const BUILD_ID = "73194fb4+ · 2026-08-28 00:29Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -14293,7 +14293,23 @@ function recordKey(r) {
 }
 
 function recordMarkup(r) {
-  if (!r || !r.run) return "";
+  if (!r) return "";
+  // A RESULT FROM BEFORE THIS EXISTED SAYS SO, rather than drawing nothing.
+  //
+  // The record is fetched by naming the engagement it explains — the median
+  // run's own RNG state, which `/api/simulate` started returning the day this
+  // panel landed. A result SAVED before that has no name to give, so the block
+  // used to vanish: a reader coming back to a stored result found the feature
+  // simply absent, with nothing anywhere saying why, and reported it as "the
+  // combat record does not show" (owner, on a phone, 2026-08-28). An absence
+  // that is not explained reads as a feature that is not there — the same rule
+  // this panel already follows about its own caps.
+  if (!r.run) {
+    return foldBlock("record", tr("Combat record"),
+      tr("one row per number the game pops, and everything behind it"),
+      `<div class="rec-idle"><span class="sim-hint">${escHtml(
+        tr("this result was saved before the record existed — run the fight again to read it"))}</span></div>`);
+  }
   const st = recordState && recordState.key === recordKey(r) ? recordState : null;
   const body = `<div class="rec" id="rec-host">${st ? recordBody(st) : recordIdle()}</div>`;
   return foldBlock("record", tr("Combat record"),

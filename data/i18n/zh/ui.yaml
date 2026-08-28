@@ -1450,6 +1450,7 @@ ui:
   # error, which is why `check_disclosure`'s own rule applies: run the pass in
   # both languages.
   "Combat record": "战斗记录"
+  "this result was saved before the record existed — run the fight again to read it": "这个结果是在战斗记录之前保存的 —— 重新运行一次就能读它的记录"
   "overguard": "超保护"
   "transform begins": "变形开始"
   # THE RECORD'S OWN COLUMN NAMES. "source" was already taken by the footer's
