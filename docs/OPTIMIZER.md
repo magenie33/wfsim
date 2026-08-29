@@ -502,12 +502,12 @@ It was three different ways of saying one thing:
 
 | axis | slots | how it said it, before |
 |---|---|---|
-| mode | 1 | fixed at 1–1 — a build is played exactly one way |
+| mode | 1 | fixed at 1–1, and said nothing |
 | mods | 8 | a numeric range on screen (`build_min`/`build_size`) |
 | exilus | 1 | 0–1 reachable, but only by pooling a `none` row nothing pointed at |
 | arcane seat | 1 each | **0–1 not reachable at all** |
 | evolution tier | 1 each | **0–1 not reachable at all** |
-| valence | 1 | fixed at 1–1 |
+| valence | 1 | fixed at 1–1, and said nothing |
 
 …so on three of the four adjustable axes, which of 0–0 / 1–1 you got was
 decided by whether you had marked anything, and the middle answer did not
@@ -556,6 +556,52 @@ with an arcane in it. Both sides read the range now.
 asserts them ON THE WIRE, because a range that draws correctly and sends
 nothing looks exactly like a working control. Verified to bite: a `setSlotRange`
 that returns early reddens 8 of its 18.
+
+### All six axes, and what the count comes to (owner, 2026-08-29)
+
+| axis | slots | range | adjustable |
+|---|---|---|---|
+| mode | 1 | 1–1 | no — a build is played exactly one way |
+| mods | 8 | 0–8 | yes |
+| exilus | 1 | 0–0 / 0–1 / 1–1 | yes |
+| arcane seat | 1 each | 0–0 / 0–1 / 1–1 | yes |
+| evolution tier | 1 each | 0–0 / 0–1 / 1–1 | yes |
+| valence | 1 | 1–1 | no — the weapon always has one progenitor element |
+
+**THE TWO FIXED ONES CARRY THE ROW ANYWAY**, read-only. An axis that simply
+omitted it would be the axis the rule forgot, which is the shape this whole
+change is about; and "1–1, and here is why" is a fact worth stating once rather
+than a gap the reader has to explain to themselves.
+
+**THE COUNT IS THE PRODUCT OF ALL SIX**, and it was not. Completing the model
+found the estimate wrong in both directions at once:
+
+- `arcaneOptionsIn` counted `marked + 1` — the empty seat, always — while
+  `parse_optimize` has dropped it beside marked candidates since 2026-08-01.
+  **Over**-reported by a factor per arcane seat.
+- `modes` and `valence` were not factors at all, though the server's variant
+  table is `modes × evo_sets × valences`. Pooling a second mode genuinely
+  doubles the search and the panel said nothing. **Under**-reported by exactly
+  the two axes that had no range row — the same blind spot, seen from the
+  other side.
+
+**AND THE MODS CEILING MAY BE 0.** Every other axis can be set to "search this
+slot empty, and keep the marks"; this one was clamped to 1, so the only way to
+reach the bare weapon was to unmark everything — which costs the reader
+precisely what 0–0 exists to protect. A ceiling of 0 OUTRANKS the derived floor,
+in three places that all had to agree: `min_slots`, the guard that refuses
+pooled mods with no slot to reserve, and the page's own `poolStarved`. Without
+that the marks say "use these" and the ceiling says "not this time", the two
+contradict, and `SubsetSpace::new(1, 0)` enumerates nothing — a legal request
+reported as "no legal builds in this scope".
+
+**ONE ASYMMETRY IS DELIBERATE AND IS NOT AN OVERSIGHT.** On a single-slot axis
+the boxes show the EFFECTIVE range and lock when a pin forces it, because the
+typed answer and the derived one live in the same three states. On the mods
+axis the boxes show what YOU typed and the effective floor is a sentence beside
+them, because there they are different numbers in a 0..8 space and both matter:
+a derived floor of 2 does not stop you wanting 3. Stating it beside the boxes
+is the resolution, not a second control.
 
 ## How full a build must be is a RANGE (2026-08-03)
 

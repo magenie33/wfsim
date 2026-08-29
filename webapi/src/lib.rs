@@ -7028,10 +7028,17 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         })
         .collect();
 
-    // The MAXIMUM main slots a build may fill (1..=8; the exilus slot is the
+    // The MAXIMUM main slots a build may fill (0..=8; the exilus slot is the
     // +1 on top). Slots may stay empty — sizes 0..=build_size all enumerate,
-    // so a scope smaller than the cap (even zero mods) is legal.
-    let build_size = get_u32(v, "build_size", 8).clamp(1, 8) as usize;
+    // so a scope smaller than the cap is legal.
+    //
+    // ZERO IS ONE OF THEM (owner, 2026-08-29). Every other axis can be set to
+    // "search this slot empty, and keep the marks"; this one was clamped to 1,
+    // so the only way to reach the bare weapon was to unmark everything —
+    // which costs the reader exactly what 0–0 exists to protect. It also makes
+    // the ceiling mean the same thing on all five axes, which is the point of
+    // there being one control.
+    let build_size = get_u32(v, "build_size", 8).clamp(0, 8) as usize;
     let mut pool_ids: Vec<String> = fixed_ids.iter().chain(search_ids.iter()).cloned().collect();
     pool_ids.sort();
     pool_ids.dedup();
@@ -7045,7 +7052,12 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // searched build then uses at least one pooled mod (mark no pools for an
     // exactly-required build). Hence required can fill at most size−1 slots
     // while pools exist, and enumeration starts above the required count.
-    if !search_ids.is_empty() && fixed_ids.len() >= build_size {
+    //
+    // …UNLESS THE CEILING IS 0, which is the reader saying "not this time, but
+    // keep the marks" — the same 0–0 every other axis has. This guard is the
+    // derived floor in refusal form, so it must give way to the same rule
+    // `min_slots` does below, or a legal scope comes back as a contradiction.
+    if build_size > 0 && !search_ids.is_empty() && fixed_ids.len() >= build_size {
         return Err(err_json(format!(
             "pooled mods occupy at least one of the {build_size} slots — required ({}) leaves none",
             fixed_ids.len()
@@ -7079,7 +7091,13 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             "a build cannot hold at least {build_min} mods and at most {build_size}"
         )));
     }
-    let min_slots = derived_min.max(build_min);
+    // A CEILING OF 0 OUTRANKS THE DERIVED FLOOR, and it has to: `derived_min`
+    // is "the marks say use these", and 0–0 is the reader saying "not this
+    // time, but keep them". Without this the two contradict and the space is
+    // empty — `SubsetSpace::new(1, 0)` enumerates nothing, which would report
+    // a legal request as "no legal builds in this scope". It is the same rule
+    // `slotRange` writes as a pinned empty mark on every single-slot axis.
+    let min_slots = if build_size == 0 { 0 } else { derived_min.max(build_min) };
     let pool: Vec<ModDef> = full
         .iter()
         .filter(|m| pool_ids.iter().any(|id| id.as_str() == m.id))
@@ -9555,6 +9573,42 @@ mod equip_rule_tests {
         assert_eq!(one_tier(json!(["none"])), vec![0], "0–0");
     }
 
+    /// THE EMPTY MARK NAMES ITS SEAT, and this is the case that forces it.
+    ///
+    /// An Arch-Gun holds TWO arcanes — "Archguns possess two Arcane Enhancement
+    /// slots to equip one Primary Arcane and one Secondary Arcane" — and the
+    /// marks are ONE FLAT MAP, so a bare `none` could not say which seat a
+    /// range was about. `none:<pool>` can, and widening one seat must leave the
+    /// other exactly where it was.
+    #[test]
+    fn an_empty_arcane_mark_widens_only_the_seat_it_names() {
+        let pools = wfsim_engine::weapons_data::arcane_pools("mausolon");
+        assert_eq!(pools, vec!["primary", "secondary"], "an Arch-Gun seats two");
+        let plan = parse_optimize(&json!({
+            "weapon": "mausolon",
+            "build_size": 1,
+            "mods": {},
+            "build_min": 0,
+            "arcanes": {
+                "primary_merciless": "search",
+                "secondary_merciless": "search",
+                "none:primary": "search",
+            },
+        }))
+        .expect("a plan");
+        // `arcane_sets[i]` is one entry per seat, in pool order.
+        let primary: Vec<&str> = plan.arcane_sets.iter().map(|s| s[0].as_str()).collect();
+        let secondary: Vec<&str> = plan.arcane_sets.iter().map(|s| s[1].as_str()).collect();
+        assert!(primary.contains(&"none"), "the seat that was widened: {primary:?}");
+        assert!(
+            !secondary.contains(&"none"),
+            "…and the one that was not: {secondary:?}"
+        );
+        // Two options on one seat and one on the other is two pairs, which is
+        // also what the page's candidate count has to come to.
+        assert_eq!(plan.arcane_sets.len(), 2);
+    }
+
     /// …AND IT IS NEVER ADDED BY ITSELF. The 2026-08-01 decision, restated as
     /// an assertion: an arcane seat costs no capacity and no Forma, so an empty
     /// one can only ever tie the same build with the arcane in it. Marking a
@@ -9614,6 +9668,33 @@ mod equip_rule_tests {
         // …and a floor ABOVE the derived one is still the reader's to raise.
         let full = plan(json!({ "serration": "search" }), json!(8)).expect("a plan");
         assert_eq!(full.min_slots, 8, "exactly 8 mods");
+    }
+
+    /// A CEILING OF 0 IS "SEARCH IT EMPTY, AND KEEP THE MARKS" — the same thing
+    /// 0–0 means on every other axis (owner, 2026-08-29).
+    ///
+    /// It has to outrank the DERIVED floor, which is the sharp part: the marks
+    /// say "use these" and a 0 ceiling says "not this time", and without a rule
+    /// the two contradict — `SubsetSpace::new(1, 0)` enumerates nothing, so a
+    /// legal request would come back as "no legal builds in this scope".
+    #[test]
+    fn a_ceiling_of_zero_searches_the_bare_weapon_with_the_marks_kept() {
+        let plan = parse_optimize(&json!({
+            "weapon": "braton_prime",
+            "build_size": 0,
+            "mods": { "serration": "search", "split_chamber": "search" },
+        }))
+        .expect("0 mods per build is a legal scope");
+        assert_eq!(plan.min_slots, 0, "the ceiling outranks the derived floor");
+        assert_eq!(plan.build_size, 0);
+        // THE MARKS ARE KEPT — raising the ceiling back must cost nothing, so
+        // they are still in the pool the search would draw from.
+        let ids: Vec<&str> = plan.pool.iter().map(|m| m.id).collect();
+        assert!(ids.contains(&"serration") && ids.contains(&"split_chamber"), "{ids:?}");
+        // …and it really is one candidate rather than none.
+        let space =
+            wfsim_optimizer::space::SubsetSpace::new(&[], &[], &[], plan.min_slots, plan.build_size);
+        assert_eq!(space.len(), 1, "the bare weapon");
     }
 
     /// A mod the scope REQUIRES and no variant can equip is a contradiction: the

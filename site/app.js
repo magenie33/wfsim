@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "e2f54715+ · 2026-08-29 09:28Z";
+const BUILD_ID = "86afdc14+ · 2026-08-29 10:56Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -1478,7 +1478,11 @@ async function init() {
   // How full a build must be, as a RANGE. The two ends are one setting: a
   // ceiling below the floor is not a scope, so each end pushes the other.
   $("opt-size").addEventListener("input", () => {
-    opt.size = Math.max(1, Math.min(8, Number($("opt-size").value) || 8));
+    // THE CEILING MAY BE 0, like every other axis's (owner, 2026-08-29): 0–0
+    // is "search it empty, and keep the marks". On this axis that is the bare
+    // weapon, and reaching it by unmarking everything would cost the reader
+    // exactly what 0–0 exists to protect.
+    opt.size = Math.max(0, Math.min(8, Number($("opt-size").value) || 0));
     if (opt.min > opt.size) { opt.min = opt.size; $("opt-min").value = opt.min; }
     updateOptEstimate();
   });
@@ -16804,7 +16808,15 @@ function renderOptModes() {
         })}
       </div>`;
     })
-    .join("");
+    .join("")
+    // …AND ITS RANGE, READ-ONLY AT 1–1 (owner, 2026-08-29). A build is played
+    // exactly one way, so this axis has no range to adjust — and saying so is
+    // what makes the model complete rather than making this the axis the rule
+    // forgot. The same row, the same words, disabled.
+    + slotRangeHtml("mode", {
+      label: tr("Every build is played"), lo: 1, hi: 1, locked: true,
+      note: tr("one way — there is no build without a mode"),
+    });
   box.querySelectorAll(".seg:not(.dis)").forEach((el) =>
     el.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -16862,7 +16874,13 @@ function renderOptValence() {
         })}
       </div>`;
     })
-    .join("");
+    .join("")
+    // …and the same read-only 1–1 the mode axis carries: an adversary weapon
+    // has exactly one progenitor element, always.
+    + slotRangeHtml("valence", {
+      label: tr("Every build carries"), lo: 1, hi: 1, locked: true,
+      note: tr("one progenitor element — the weapon always has one"),
+    });
   box.querySelectorAll(".seg").forEach((el) =>
     el.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -17462,6 +17480,20 @@ function updateOptEstimate() {
   // because the best Primary and the best Secondary are not independent
   // questions.
   const arcCount = arcanePools().reduce((n, p) => n * arcaneOptionsIn(p), 1);
+  // MODE AND VALENCE ARE FACTORS TOO, and they were missing (found 2026-08-29,
+  // while completing the axis model). The server's variant table is
+  // `modes × evo_sets × valences` — pooling a second mode genuinely doubles
+  // the search — and this line counted only the evolution sets, so the
+  // candidate count UNDER-reported by exactly those two. It is the arcane
+  // over-count's mirror image, and both came from a factor written by hand
+  // instead of read off the axis.
+  const markedCount = (marks) => {
+    const ks = Object.keys(marks);
+    if (ks.some((k) => marks[k] === "fixed")) return 1;
+    return Math.max(1, ks.filter((k) => marks[k] === "search").length);
+  };
+  const modeCount = markedCount(opt.modes);
+  const valCount = valenceSpec($("weapon").value) ? markedCount(opt.valence) : 1;
   // ONE FACTOR PER TIER, from the tier's own RANGE — a pin is one option, an
   // empty tier is one option, and 0–1 is the marked ones plus that empty.
   let evoProduct = 1;
@@ -17476,7 +17508,11 @@ function updateOptEstimate() {
   // The pool group occupies ≥1 slot: with pools marked, every build carries
   // at least one pooled mod (k starts above the required count).
   // ...and `opt.min` raises that floor: "exactly 8 mods" is min 8, max 8.
-  const minK = Math.max(fixed + (search > 0 ? 1 : 0), opt.min);
+  // A CEILING OF 0 OUTRANKS THE DERIVED FLOOR — the page's half of the rule
+  // `min_slots` applies on the server. The marks say "use these" and 0–0 says
+  // "not this time, but keep them"; without this the two contradict and the
+  // count comes out empty for a request the server answers happily.
+  const minK = size === 0 ? 0 : Math.max(fixed + (search > 0 ? 1 : 0), opt.min);
   // …AND THE READER IS TOLD WHEN THE MARKS RAISE THEIR OWN FLOOR (owner,
   // 2026-08-29). The floor is the larger of what you TYPED and what the marks
   // IMPLY — every required mod is in every candidate, and pooling is the
@@ -17499,10 +17535,13 @@ function updateOptEstimate() {
   let subsets = 0;
   for (let k = minK; k <= size; k++) subsets += nChooseK(search, k - fixed);
   subsets *= evoProduct * exOptions;
-  const jobs = subsets * arcCount;
+  const jobs = subsets * arcCount * modeCount * valCount;
   // Pooled mods reserve ≥1 open slot (reachable only via shrinking max
   // mods after marking — req clicks are blocked before this point).
-  const poolStarved = search > 0 && fixed >= size;
+  // …and the same exemption for the refusal that states that floor. At a
+  // ceiling of 0 there is no slot for a pooled mod to reserve, and none is
+  // wanted.
+  const poolStarved = size > 0 && search > 0 && fixed >= size;
   const valid = fixed <= size && subsets > 0 && !dupReq && !poolStarved;
   // No cap (user: use local resources). Show the estimate + a heads-up when big;
   // only block genuinely invalid scopes.

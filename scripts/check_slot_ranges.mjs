@@ -125,6 +125,62 @@ const r = await evaluate(`(async () => {
   out.arcPinnedLocked = !!document.querySelector('[data-range-row="arc:' + seat + '"] input[disabled]');
   out.arcPinnedSent = (await sent()).arcanes;
 
+  // ---- THE TWO AXES THAT HAVE NO RANGE SAY SO ---------------------------
+  //
+  // A build is played exactly one way and an adversary weapon has exactly one
+  // progenitor element, so mode and valence are 1–1 and cannot be anything
+  // else. They carry the row anyway, read-only: an axis that simply omitted it
+  // would be the axis the rule forgot, which is the shape this whole change is
+  // about (owner, 2026-08-29).
+  const readonlyRow = (key) => {
+    const row = document.querySelector('[data-range-row="' + key + '"]');
+    if (!row) return null;
+    const v = (e) => row.querySelector('input[data-end="' + e + '"]');
+    return { at: v('lo').value + '-' + v('hi').value, locked: v('lo').disabled && v('hi').disabled };
+  };
+  out.modeRow = readonlyRow('mode');
+
+  // ---- …AND EVERY AXIS IS A FACTOR OF THE CANDIDATE COUNT ---------------
+  //
+  // The server's variant table is modes x evo_sets x valences, so pooling a
+  // second mode genuinely doubles the search. The estimate counted only the
+  // evolution sets, so it under-reported by exactly the two axes that had no
+  // range row — the same blind spot, seen from the other side.
+  // THE COUNT ITSELF, off its own element — reading the panel text with a
+  // regex picks up whatever number happens to be in an error message instead,
+  // which is how this first read "1 candidate" off "pooled mods reserve 1
+  // open slot" and called an invalid scope valid.
+  const jobsNow = () => {
+    const b = document.querySelector('#opt-estimate b');
+    return b ? Number(b.textContent.replace(/,/g, '')) : null;
+  };
+  opt.arcanes = {}; opt.evos = {}; opt.exilus = {};
+  opt.mods = { hornet_strike: 'search', barrel_diffusion: 'search' };
+  const modeIds = (weaponInfo('laetum').modes || []);
+  opt.modes = { [modeIds[0]]: 'fixed' };
+  renderOptMods(); updateOptEstimate(); await sleep(200);
+  out.jobsOneMode = jobsNow();
+  opt.modes = {}; modeIds.slice(0, 2).forEach(id => { opt.modes[id] = 'search'; });
+  renderOptModes(); updateOptEstimate(); await sleep(200);
+  out.jobsTwoModes = jobsNow();
+  out.modeCount = modeIds.length;
+  opt.modes = { [modeIds[0]]: 'fixed' };
+
+  // ---- A CEILING OF 0 IS THE BARE WEAPON, AND KEEPS THE MARKS -----------
+  const put = async (id, v) => {
+    const el = document.getElementById(id);
+    el.value = String(v); el.dispatchEvent(new Event('input', { bubbles: true }));
+    await sleep(200);
+  };
+  await put('opt-size', 0);
+  out.zeroCeilJobs = jobsNow();
+  out.zeroCeilRuns = !document.getElementById('run-opt').disabled;
+  const z = await sent();
+  out.zeroCeilSent = [z.build_min, z.build_size];
+  out.zeroCeilKept = Object.keys(opt.mods).length;
+  await put('opt-size', 8);
+  out.zeroCeilBack = jobsNow();
+
   // ---- AND IT SURVIVES A SEARCH-PRESET ROUND TRIP -----------------------
   opt.arcanes = { [arc[0].id]: 'search', ['none:' + seat]: 'search' };
   const snap = snapshotOpt();
@@ -183,5 +239,24 @@ check("...and no empty mark rides along to contradict it",
   j(r.arcPinnedSent));
 
 check("a range survives a search-preset round trip", r.roundTrip === "0-1", j(r.roundTrip));
+
+// ---- the two axes with no range still carry the row ----------------------
+check("the mode axis states its 1–1", r.modeRow && r.modeRow.at === "1-1", j(r.modeRow));
+check("...read-only, because a build is played exactly one way",
+  !!r.modeRow && r.modeRow.locked === true, j(r.modeRow));
+
+// ---- …and every axis is a factor of the candidate count ------------------
+check(`pooling a second mode doubles the candidate count (${r.jobsOneMode} → ${r.jobsTwoModes})`,
+  r.modeCount < 2 || r.jobsTwoModes === r.jobsOneMode * 2,
+  `${r.jobsOneMode} → ${r.jobsTwoModes} over ${r.modeCount} modes`);
+
+// ---- a ceiling of 0 is the bare weapon -----------------------------------
+check("a ceiling of 0 searches the bare weapon", r.zeroCeilJobs === 1 && r.zeroCeilRuns === true,
+  `${r.zeroCeilJobs} candidates, run enabled ${r.zeroCeilRuns}`);
+check("...and sends 0–0 rather than being refused",
+  String(r.zeroCeilSent) === "0,0", j(r.zeroCeilSent));
+check("...with the marks kept, so raising it back costs nothing",
+  r.zeroCeilKept === 2 && r.zeroCeilBack > 1,
+  `${r.zeroCeilKept} marks, back to ${r.zeroCeilBack}`);
 
 await app.finish("every axis says how many of its slots a build fills");

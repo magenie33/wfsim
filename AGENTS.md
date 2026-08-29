@@ -952,10 +952,23 @@ around (decision 2026-07-31).
   mark cannot outrank one. AND 0–0 KEEPS THE CANDIDATES, which forced the
   evolution LADDER to key on the RANGE rather than on the marks — a 0–0 tier
   still has marks, and counting them opened the tier above over sets whose
-  every rung `ladder_prefix` then truncates (`evoFillsRung`). It also found the
-  ESTIMATE disagreeing with the search: `arcaneOptionsIn` counted `marked + 1`
-  while `parse_optimize` has dropped the empty seat since 2026-08-01, so the
-  candidate count over-reported by a factor per arcane seat.
+  every rung `ladder_prefix` then truncates (`evoFillsRung`).
+  MODE AND VALENCE CARRY THE ROW TOO, read-only at 1–1: a build is played
+  exactly one way and an adversary weapon has exactly one progenitor element,
+  and an axis that simply omitted the row would be the axis the rule forgot.
+  THE COUNT IS THE PRODUCT OF ALL SIX, and completing the model found the
+  estimate wrong in BOTH directions: `arcaneOptionsIn` counted `marked + 1`
+  while `parse_optimize` has dropped the empty seat since 2026-08-01
+  (over-reported per arcane seat), and `modes`/`valence` were not factors at
+  all though the server's variant table is `modes × evo_sets × valences`
+  (under-reported — the same blind spot as the missing rows, from the other
+  side). AND THE MODS CEILING MAY BE 0, which every other axis could already
+  say: reaching the bare weapon by unmarking everything costs the reader what
+  0–0 exists to protect. A 0 ceiling OUTRANKS the derived floor in three places
+  that all had to agree — `min_slots`, the guard refusing pooled mods with no
+  slot to reserve, and the page's `poolStarved` — or the marks and the ceiling
+  contradict and `SubsetSpace::new(1, 0)` reports a legal request as "no legal
+  builds in this scope".
   THE FLOOR STARTS AT 0 AND CLOSES THE LIST (owner, 2026-08-29). How full a
   build must be is a CONCLUSION, not a filter and not a summary — it means
   nothing until the required and the pooled are chosen — so it is drawn AFTER
