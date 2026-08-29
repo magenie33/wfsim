@@ -30,8 +30,8 @@ effects:
   # The unconditional half. THIS number rests on the wiki's evolution table
   # alone — the CO catalog has no row for this weapon, so there is no second
   # source to cross-check it against, and none is borrowed from the sibling
-  # that does have one (owner, 2026-08-12: a file states its own weapon's
-  # numbers and nobody else's).
+  # that does have one — a file states its own weapon's numbers and nobody
+  # else's.
   - kind: flat_base_damage
     value: 34.0
   # …and the SAME statement, gated on the player. This effect was written under

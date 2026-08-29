@@ -82,8 +82,8 @@ reasons:
   # THE ARENA HAS NO WALLS, which `ricochet_terrain` has said since the Latron
   # Incarnons landed. This is the same gap costing a great deal more: the
   # Grimoire's orb bounces off surfaces, so in a room it stays with what it was
-  # thrown at instead of drifting away from it (owner, 2026-08-28 — the reason
-  # his six strikes and this model's four disagreed).
+  # thrown at instead of drifting away from it, which is why an in-game six
+  # strikes and this model's four disagree.
   orb_bounces_off_walls:
     text: "the orb BOUNCES off walls and the floor, and this arena has neither — so here it drifts on at {speed} m/s and leaves a standing target behind after about three seconds, landing {open_field} of its {total} strikes and detonating too far away to matter. In a real room it comes back and spends its fuse near what you threw it at, which is worth about {worth} more damage. Everything below for this form is a FLOOR, and an unusually loose one"
   self_stagger:

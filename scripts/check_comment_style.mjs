@@ -33,6 +33,9 @@ const EXTS = [".rs", ".js", ".mjs", ".html", ".css", ".md", ".py", ".yaml", ".ym
 
 const DATE = String.raw`20\d\d-\d\d-\d\d`;
 const ATTRIBUTION = [
+  // A parenthetical that OPENS with the attribution is provenance whatever
+  // follows it, so this is not bounded by a length or a date.
+  new RegExp(String.raw`[ 	]*\((owner|user), `, "g"),
   new RegExp(String.raw`\((owner|user)[^()]{0,90}${DATE}[^()]{0,40}\)`, "g"),
   // The lookbehind is what keeps this off CODE: `Some(owner)` is a match
   // binding, and prose never runs a word straight into the parenthesis.
@@ -50,7 +53,7 @@ const NARRATIVE = new RegExp(
 
 // THE CEILING MAY ONLY FALL. Lower it whenever a pass removes some; never raise
 // it to make a red run green — that is the one edit this file exists to refuse.
-const NARRATIVE_CEILING = 174;
+const NARRATIVE_CEILING = 173;
 
 const files = execFileSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8" })
   .split("\n")

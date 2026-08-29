@@ -10,8 +10,8 @@ description: "+X% Damage while Invisible"
 effects:
   # CONDITIONAL, not flat. This was a plain `base_damage_bonus`, so +330%
   # applied to every shot of every build — the card's "while Invisible" was
-  # stated in the description and modelled nowhere (user, 2026-08-02, the same
-  # report as Primary Acuity's "Weak Point").
+  # stated in the description and modelled nowhere — the same shape as Primary
+  # Acuity's "Weak Point".
   #
   # Invisibility is a WARFRAME state, and the calculator now has one to ask:
   # `condition: while_invisible` is read against `data/tenno/`, whose neutral

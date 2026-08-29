@@ -723,8 +723,8 @@ def main() -> None:
     # A fix that is deployed and a fix that is on the reader's screen are two
     # different things, and without a version on the page neither side of a bug
     # report can tell them apart: "still broken" and "still holding the old
-    # file" read identically (owner, 2026-08-18, after three rounds of that on
-    # one bug). The dev server ships the placeholder, which is the right answer
+    # file" read identically. The dev server ships the placeholder, which is
+    # the right answer
     # there — a page saying `dev` is not a deployed build.
     stamped = flagged.replace(
         '<span class="build-stamp" id="build-stamp" title="which build this page is">dev</span>',

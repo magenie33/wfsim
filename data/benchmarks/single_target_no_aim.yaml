@@ -20,8 +20,8 @@
 # something other than precision; the gap between a weapon's two positions is
 # how much of it is aim.
 #
-# A THIRD AT 50% WAS CONSIDERED AND DROPPED (owner, same day): a middle number
-# is not a way anyone plays, and a board whose terms nobody recognises is one
+# NO THIRD BOARD AT 50%: a middle number is not a way anyone plays, and a
+# board whose terms nobody recognises is one
 # nobody can argue with. Two boards that each mean something beat three where
 # the middle one means "some of the time".
 id: single_target_no_aim

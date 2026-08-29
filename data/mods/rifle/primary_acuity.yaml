@@ -18,8 +18,8 @@ effects:
   # WEAK POINT ONLY, exactly as the pistol twin has always been modelled. This
   # file had them as `base_damage_bonus` / `crit_chance_bonus` — +350% damage
   # and +350% crit chance on EVERY shot — so a build that never hit a head
-  # still collected both. That is how it was found (user, 2026-08-02: "the
-  # headshot rate is zero, why is there still a damage bonus?").
+  # still collected both, which is a damage bonus on a build whose headshot
+  # rate is zero.
   #
   # Weak Point Damage is ADDED to the enemy's weak-point multiplier at 1.5×
   # the listed value on true weak points (wiki: Butcher 3x head + rank 10 =

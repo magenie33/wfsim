@@ -19,8 +19,8 @@ mod_pools: [rifle]
 mastery_rank: 0
 max_rank: 30
 
-# A sentinel weapon has NO exilus slot and takes NO arcane (user, 2026-07-31;
-# the builder already says "sentinel weapons have no exilus slot"). Both follow
+# A sentinel weapon has NO exilus slot and takes NO arcane — the builder says
+# so ("sentinel weapons have no exilus slot"). Both follow
 # from `class` containing "sentinel", so there is nothing to declare here —
 # recorded so the ABSENCE of `exilus_polarity` reads as a fact, not an omission.
 

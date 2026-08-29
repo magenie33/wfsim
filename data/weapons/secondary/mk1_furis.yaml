@@ -23,8 +23,8 @@ max_rank: 30
 # Furis's and resolved the same way. WFCD's roll-up `damage` block reads
 # Puncture 1.95 / Slash 9.1 while its OWN `attacks[0]` reads Puncture 9.1 /
 # Slash 1.95, agreeing with the wiki. A source that contradicts itself is not
-# a second opinion (owner, 2026-08-06: the English wiki is first priority
-# absent an obvious error — and self-contradiction is one).
+# a second opinion: the English wiki is first priority absent an obvious
+# error, and self-contradiction is one.
 accuracy: 22.22              # identical to the Furis: the MK1 is not less
                              # accurate, it is weaker.
 disposition: 1.40            # riven disposition (●●●●●) — HIGHER than the

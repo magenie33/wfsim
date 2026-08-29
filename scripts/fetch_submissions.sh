@@ -22,7 +22,7 @@
 # about 220 ms apiece, **9 minutes of the 20 the schedule allows**, paid on every
 # run whether anything had been submitted or not. That is O(the store) against an
 # input of O(what is new), so it got worse with every user, and no shard count
-# could touch it: it is one unsharded job (owner, 2026-08-26).
+# could touch it: it is one unsharded job.
 #
 # 220 ms is not the network. Cloudflare's API allows 1200 requests per five
 # minutes, which is 4 a second, which is what this was already doing — so
