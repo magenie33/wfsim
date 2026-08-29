@@ -1311,6 +1311,15 @@ ui:
   "how many simulations each finalist gets in the last round. Yours, not the search's and not the fight's: it is saved by no preset and pinned by no ruler. A smaller number searches faster and is worth re-measuring in the simulator": 最后一轮里每个优胜跑多少次模拟。这是你的设置，既不属于搜索方案也不属于这场仗：没有任何预设保存它，也没有任何官方标尺钉死它。数字小搜得快，值得在模拟器里重测一遍
   "yours, in neither preset — the simulator's Runs is the same setting for the replay": 你的设置，不在任何一份预设里 —— 模拟器的「次数」是回放的同一个设置
   "what to search, and how hard — the fight is the simulator's": 搜什么、搜得多狠 —— 这场仗是模拟器的
+  "actually {min}–{max}: {why}": "实际 {min}–{max}：{why}"
+  "{n} required, plus at least one pooled": "{n} 张必带，加至少 1 张候选"
+  "{n} required": "{n} 张必带"
+  "at least one pooled": "至少 1 张候选"
+  "required": "必带"
+  "nothing marked — the search is the bare weapon. Mark mods below as pool or required.": "什么都没标 —— 搜索的就是这把裸武器。在下面把 MOD 标成候选或必带。"
+  "click to find it in the list below": "点一下在下面的列表里找到它"
+  "remove": "移除"
+  "the fewest a searched build may carry — 0 imposes no floor of your own, and the marks below still impose theirs; set both ends to 8 to search only full builds": "一套被搜索的配装最少装几张 —— 0 表示你不加下限，下面的标记仍然有它们自己的下限；两端都设成 8 就只搜满配装"
 
 # Effect-line phrase substitutions for mod/arcane/evolution descriptions
 # ("+X% Critical Chance" → "+X% 暴击几率"). ORDERED — longest phrases first

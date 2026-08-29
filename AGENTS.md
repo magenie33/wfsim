@@ -925,6 +925,23 @@ around (decision 2026-07-31).
   a searched build must be is a RANGE (`build_min`–`build_size`), so "exactly 8
   mods" is a setting rather than something the scope cannot express — both ends
   push each other, both ride the search preset, and both reach the request.
+  THE FLOOR STARTS AT 0 AND SITS WITH THE MARKS (owner, 2026-08-29). "Nothing
+  marked" is the EMPTY option on every other axis — an unmarked exilus slot
+  stays empty, an unmarked arcane seat searches no arcane — and the mods axis
+  alone answered it with "no legal builds in this scope", though
+  `updateOptEstimate` had carried "an empty scope = the bare weapon, still a
+  legal search" since it was written. It costs nothing elsewhere: once anything
+  is marked the DERIVED floor (every required mod, plus one pooled) is at least
+  1 and wins, so 0 and 1 differ in exactly that case. The other axes get no 0–1
+  box of their own — they are 0–1 by nature and their marks already say which,
+  so a control there would be a second control for one fact.
+  AND THE ROW SAYS WHAT THE MARKS RAISED IT TO, because the box could read 0
+  over a search that never looks below 3 — stated only when the two DIFFER,
+  since a line repeating the two numbers beside it distinguishes nothing.
+  It surfaced a bug older than itself: `switchWeapon` reset the scope without
+  `min`, so `Math.max(derived, undefined)` was NaN and every weapon with no
+  saved search reported its scope impossible until a control was touched. The
+  check could not see it, because its first act was to type a floor.
   `node scripts/check_buff_cards.mjs` is the seventh: buff
   cards are named in the display language (an EVOLUTION's buff was the last one
   left in English), open at the stack count the rule says, and report a

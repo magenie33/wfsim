@@ -508,6 +508,57 @@ it — it asks for builds the scope has already ruled out — while one above it
 wins. `scripts/check_build_size.mjs` asserts both ends on screen, in the preset
 and in the request.
 
+### The floor starts at 0, and it sits with the marks (owner, 2026-08-29)
+
+`Mods / build` shared a flex row with the mod search box, as a column-stacked
+label. That made the row four lines tall, dropped the filter to the bottom of
+it, and read as a setting **on the filter** — which it has nothing to do with.
+
+It is on the marks-summary rows now, and the three lines read down as one
+statement:
+
+```
+必带 (1/8)   [Serration]
+候选 (3)     [Split Chamber] [Point Strike] [Vital Sense]
+Mods / build [0] – [8]   actually 2–8: 1 required, plus at least one pooled
+```
+
+**THE THIRD LINE EXISTS BECAUSE THE CONTROL WAS LYING.** The floor the search
+uses is the larger of what you typed and what the marks imply
+(`min_slots = derived_min.max(build_min)`), so a box reading 0 could sit over a
+search that never looks below 3. It is stated only when the two DIFFER — a line
+repeating the two numbers beside it distinguishes nothing.
+
+**AND THE FLOOR STARTS AT 0** rather than at 1, which is the change that makes
+the axis consistent with every other one. "Nothing marked" means the EMPTY
+option everywhere else — an unmarked exilus slot stays empty, an unmarked
+arcane seat searches no arcane, an unmarked evolution tier installs nothing —
+and the mods axis alone answered it with *"no legal builds in this scope"*.
+`updateOptEstimate` has carried the sentence *"an empty scope = the bare
+weapon, still a legal search"* since it was written, and `build_min.clamp(1, 8)`
+made it false.
+
+It costs nothing anywhere else, by arithmetic: the moment anything is marked
+`derived_min` is at least 1 and wins, so 0 and 1 differ in exactly that one
+case. `an_empty_scope_searches_the_bare_weapon` pins both halves — the empty
+scope enumerates one candidate, and the derived floor still wins over a typed 0
+— and is verified to bite: restoring the clamp reddens it at `left: 1 right: 0`.
+
+**THE OTHER AXES DO NOT GET A BOX OF THEIR OWN.** They are 0–1 by nature — a
+slot holds one thing or nothing — and which of those it is, is already said by
+whether anything is marked. A 0–1 control beside them would be a second control
+for a fact the marks already state, which is the same shape as the CPU-threads
+box that just left. The consistency is reached by lowering this floor, not by
+adding boxes elsewhere.
+
+**IT SURFACED A BUG OLDER THAN ITSELF.** `switchWeapon` resets the scope and
+its object never carried `min` — the one field it forgot, since the range
+landed on 2026-08-03. `Math.max(derived, undefined)` is NaN, so
+`for (k = NaN; k <= size; k++)` never runs: on any weapon with no saved search,
+the scope reported itself impossible ("more required (0) than slots (8)") and
+Run stayed disabled until some control was touched. `check_build_size` could
+not see it, because its first act was to type a floor.
+
 ## The search (2026-08-03)
 
 Candidate GENERATION and candidate RANKING are different problems, and only

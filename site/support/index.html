@@ -704,7 +704,6 @@
               <h3 class="sim-h"><span class="axh"></span> <span class="sim-hint" data-i18n>search by name or effect; mark each as pool (search) or required</span></h3>
               <div class="opt-mods-head">
                 <input id="opt-mod-filter" type="text" placeholder="search mods by name or effect…" data-i18n-ph autocomplete="off">
-                <label class="opt-size" data-i18n>Mods / build <input id="opt-min" type="number" min="1" max="8" value="1" title="the fewest a searched build may carry — set both ends to 8 to search only full builds" data-i18n-title> – <input id="opt-size" type="number" min="1" max="8" value="8" title="the most a searched build may carry" data-i18n-title></label>
               </div>
               <div id="opt-picker-tools" class="picker-tools"></div>
               <!-- ELEMENT PAIRINGS. Three elemental mods are not one build but
@@ -713,6 +712,24 @@
                    never inside a row. -->
               <div id="opt-pairings"></div>
               <div id="opt-mods-sel"></div>
+              <!-- HOW FULL A SEARCHED BUILD MUST BE, beside the marks it
+                   constrains rather than beside the text filter it has nothing
+                   to do with (owner, 2026-08-29). Read down, the three rows are
+                   one sentence: what is marked, how many a build carries, and
+                   therefore what the search actually walks. It shared a flex
+                   row with the search box, where a column-stacked label pushed
+                   the filter to the bottom of a four-line row and read as a
+                   setting ON the filter.
+                   THE INPUTS STAY IN THE MARKUP because `init` wires them once;
+                   only the effective-range line is rendered, by
+                   `updateOptEstimate`, which is where the numbers already are. -->
+              <div id="opt-size-row" class="oselrow">
+                <label class="osellbl" for="opt-min" data-i18n>Mods / build</label>
+                <input id="opt-min" type="number" min="0" max="8" value="0" title="the fewest a searched build may carry — 0 imposes no floor of your own, and the marks below still impose theirs; set both ends to 8 to search only full builds" data-i18n-title>
+                <span class="osdash">–</span>
+                <input id="opt-size" type="number" min="1" max="8" value="8" title="the most a searched build may carry" data-i18n-title>
+                <span id="opt-size-eff" class="opt-size-eff"></span>
+              </div>
               <div id="opt-mods" class="combo-menu opt-modlist"></div>
               <div id="opt-exilus-sect">
                 <div class="exlabel" data-i18n>Exilus</div>
@@ -835,7 +852,7 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (owner, 2026-08-18, after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">078d1db2+ · 2026-08-29 04:24Z</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">9967e820+ · 2026-08-29 04:49Z</span>
     </div>
   </footer>
 

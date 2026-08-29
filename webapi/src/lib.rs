@@ -7061,8 +7061,19 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // and every required mod is in all of them. A `build_min` below that is
     // raised to it rather than rejected — it asks for builds the scope itself
     // has already ruled out.
+    //
+    // THE FLOOR STARTS AT 0, AND 0 IS THE DEFAULT (owner, 2026-08-29). Every
+    // other axis of a search reads "nothing marked" as the EMPTY option — an
+    // unmarked exilus slot stays empty (see `exilus_ids` above), an unmarked
+    // arcane seat searches no arcane — and the mods axis alone answered it with
+    // "no legal builds in this scope". The page has claimed "an empty scope =
+    // the bare weapon, still a legal search" since the estimate was written,
+    // and a floor of 1 made that sentence false.
+    // It changes nothing else, by arithmetic: the moment anything is marked,
+    // `derived_min` is at least 1 and wins, so 0 and 1 differ in exactly the
+    // one case above — pinned by `an_empty_scope_searches_the_bare_weapon`.
     let derived_min = fixed_ids.len() + usize::from(!search_ids.is_empty());
-    let build_min = get_u32(v, "build_min", 1).clamp(1, 8) as usize;
+    let build_min = get_u32(v, "build_min", 0).clamp(0, 8) as usize;
     if build_min > build_size {
         return Err(err_json(format!(
             "a build cannot hold at least {build_min} mods and at most {build_size}"
@@ -9440,6 +9451,48 @@ mod equip_rule_tests {
         assert!(inc.evo_sets.iter().all(|s| s.iter().any(|e| e == EVO1)));
         assert!(forbids(&inc, CANNON).iter().all(|&f| f), "the pair is illegal");
         assert!(forbids(&inc, "hornet_strike").iter().all(|&f| !f), "the pool is not");
+    }
+
+    /// AN EMPTY SCOPE IS THE BARE WEAPON, and it is a legal search.
+    ///
+    /// Every other axis reads "nothing marked" as the EMPTY option — an
+    /// unmarked exilus slot stays empty, an unmarked arcane seat searches no
+    /// arcane — and the mods axis alone answered it with "no legal builds in
+    /// this scope", because `build_min` was clamped to 1 (owner, 2026-08-29).
+    ///
+    /// The other half is the one that must not regress: 0 is now the DEFAULT,
+    /// so this also asserts that the derived floor still wins the moment
+    /// anything is marked. Without that, pooling would stop meaning "use these"
+    /// and every search would gain a candidate nobody asked for.
+    #[test]
+    fn an_empty_scope_searches_the_bare_weapon() {
+        let plan = |mods: Value, min: Value| {
+            let mut req = json!({ "weapon": "braton_prime", "build_size": 8, "mods": mods });
+            if !min.is_null() {
+                req["build_min"] = min;
+            }
+            parse_optimize(&req)
+        };
+        // Nothing marked, no `build_min` at all: the request an untouched
+        // optimizer tab sends, and it used to be refused.
+        let bare = plan(json!({}), Value::Null).expect("an empty scope is a scope");
+        assert_eq!(bare.min_slots, 0, "no floor of anyone's");
+        // …and it is genuinely ONE candidate rather than none.
+        let space = wfsim_optimizer::space::SubsetSpace::new(&[], &[], &[], bare.min_slots, 8);
+        assert_eq!(space.len(), 1, "the bare weapon");
+
+        // THE DERIVED FLOOR STILL WINS. One required and one pooled means every
+        // candidate carries both, so the floor is 2 however low the box is set.
+        let marked = plan(
+            json!({ "serration": "fixed", "split_chamber": "search" }),
+            json!(0),
+        )
+        .expect("a plan");
+        assert_eq!(marked.min_slots, 2, "1 required + at least 1 pooled");
+
+        // …and a floor ABOVE the derived one is still the reader's to raise.
+        let full = plan(json!({ "serration": "search" }), json!(8)).expect("a plan");
+        assert_eq!(full.min_slots, 8, "exactly 8 mods");
     }
 
     /// A mod the scope REQUIRES and no variant can equip is a contradiction: the

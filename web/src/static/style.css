@@ -689,8 +689,15 @@ label.check input{width:auto}
 /* ---- Optimizer: mod scope (rich searchable list) + results ---- */
 .opt-mods-head{display:flex;gap:10px;align-items:flex-end;margin-bottom:8px}
 .opt-mods-head #opt-mod-filter{flex:1 1 auto}
-.opt-size{flex:0 0 auto;flex-direction:column;font-size:12px;color:var(--text-2)}
-.opt-size input{width:64px}
+/* HOW FULL A BUILD MUST BE, on the marks-summary rows rather than on the
+   search box (owner, 2026-08-29). It used to share the head's flex row as a
+   column-stacked label, which made that row four lines tall, dropped the
+   filter to the bottom of it, and read as a setting ON the filter. `.oselrow`
+   is the summary's own row, so the three lines align and read as one
+   statement: what is marked, how many a build carries, what that comes to. */
+#opt-size-row input[type=number]{width:52px;padding:2px 6px;font-size:12px}
+#opt-size-row .osdash{color:var(--muted)}
+.opt-size-eff{font-size:11px;color:var(--muted);margin-left:4px}
 /* Every optimizer list reuses the picker's `.combo-menu .opt` rows verbatim
    (mod/arcane image, polarity icon, effect lines); only the trailing control
    differs (pool/req for mods, include/search for arcanes & evolutions). */

@@ -1136,7 +1136,7 @@ const simMeterOpen = new Set();
 // empty", "fixed" = pin it (max one). Plus the arcane set and per-tier
 // evolution option sets. Enemy + buffs are shared with the Sim panel
 // (`sim`). Seeded from the current build on weapon change.
-let opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, modes: {}, valence: {}, size: 8, min: 1 };
+let opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, modes: {}, valence: {}, size: 8, min: 0 };
 let optSeeded = false;
 // (The optimizer used to keep its own scope-wide buff list and config here.
 // It reads the SCENARIO's now — see `renderOptBuffs`.)
@@ -1482,8 +1482,17 @@ async function init() {
     if (opt.min > opt.size) { opt.min = opt.size; $("opt-min").value = opt.min; }
     updateOptEstimate();
   });
+  // THE FLOOR STARTS AT 0, AND 0 IS THE DEFAULT (owner, 2026-08-29). Every
+  // other axis here treats "nothing marked" as the EMPTY option — an unmarked
+  // exilus slot stays empty, an unmarked arcane seat searches no arcane — and
+  // the mods axis alone answered it with an error. `updateOptEstimate` has
+  // claimed "an empty scope = the bare weapon, still a legal search" since it
+  // was written, and a floor of 1 made that sentence false.
+  // It costs nothing anywhere else: the moment anything is marked, the DERIVED
+  // floor (every required mod, plus one pooled) is at least 1 and wins, so 0
+  // and 1 differ in exactly the one case above.
   $("opt-min").addEventListener("input", () => {
-    opt.min = Math.max(1, Math.min(8, Number($("opt-min").value) || 1));
+    opt.min = Math.max(0, Math.min(8, Number($("opt-min").value) || 0));
     if (opt.min > opt.size) { opt.size = opt.min; $("opt-size").value = opt.size; }
     updateOptEstimate();
   });
@@ -8423,7 +8432,17 @@ function applyWeaponInner(id, presetMods) {
   // the shared scenario every time you changed weapon, and auto-save would have
   // stored that.
   sim.__weapon = id;
-  opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, size: 8 }; optSeeded = false; // reset scope
+  // `min` IS IN HERE, and it was not — the one field of the scope this reset
+  // forgot, since the day the range landed (2026-08-03). `updateOptEstimate`
+  // reads it as `Math.max(derived, opt.min)`, and `Math.max(n, undefined)` is
+  // NaN, so `for (k = NaN; k <= size; k++)` never runs: every weapon with no
+  // saved search reported its scope as impossible ("more required (0) than
+  // slots (8)") and disabled Run until some control was touched. `modes`,
+  // `valence`, `arcanes` and `evos` are absent on purpose — `renderOpt`'s seed
+  // block fills those from the build you are holding — while `size` and `min`
+  // are this line's to state (owner asked for a floor of 0, 2026-08-29, which
+  // is what made the missing field visible).
+  opt = { mods: {}, exilus: {}, arcanes: {}, evos: {}, size: 8, min: 0 }; optSeeded = false; // reset scope
   optLast = null;                 // and the winner the quick calc could measure against
   // ...and how it RUNS, for the same reason the scenario resets: a weapon that
   // has never been searched must not inherit the last weapon's finalists or
@@ -16950,7 +16969,11 @@ function snapshotOpt() {
 
 // An empty search: nothing marked, a fresh size, the contract left alone (it
 // is how hard to search, not what to search).
-const blankOpt = () => ({ mods: {}, exilus: {}, size: 8, arcanes: {}, evos: {},
+// `min` IS IN HERE, and it was not: `sameState(snapshotOpt(), blankOpt())` is
+// the "has this search been touched" guard, and a field one side carries and
+// the other omits makes it answer "touched" for every input — the same shape as
+// the key-order bug `canon` was written for (2026-08-19).
+const blankOpt = () => ({ mods: {}, exilus: {}, size: 8, min: 0, arcanes: {}, evos: {},
   // The build's own mode, the way an empty scope seeds every other axis from
   // what you are holding.
   modes: { [mode]: "fixed" },
@@ -16969,8 +16992,12 @@ function applyOptState(st) {
   Object.entries(st.exilus || {}).forEach(([id, s]) => { const m = modById(id); if (m && m.exilus) opt.exilus[id] = norm(s); });
   delete opt.exilus["none"]; // brief None-row era
   if (st.size) opt.size = st.size;
-  // Presets written before the range existed carry no min; 1 is what they meant.
-  opt.min = Math.min(st.min || 1, opt.size);
+  // Presets written before the range existed carry no min, and `?? 0` is what
+  // they meant: with marks in them the DERIVED floor is at least 1 anyway, so
+  // the two readings differ only on a scope with nothing marked — which such a
+  // preset, by definition, is not. `??` rather than `||`, since 0 is now a
+  // value a reader can deliberately store.
+  opt.min = Math.min(st.min ?? 0, opt.size);
   // Arcanes: another SLOT's arcanes are not equippable here, so they drop
   // rather than becoming search dimensions the run cannot use.
   opt.arcanes = {};
@@ -17105,16 +17132,19 @@ function revealOptMod(id) {
 function renderOptModSel() {
   const chip = (id, cls) => {
     const m = modById(id);
-    return `<span class="oselchip ${cls}" data-m="${id}" title="click to find it in the list below">`
-      + `${m ? m.name : id}<button class="oselx" data-x="${id}" title="remove">✕</button></span>`;
+    return `<span class="oselchip ${cls}" data-m="${id}" title="${escHtml(tr("click to find it in the list below"))}">`
+      + `${m ? m.name : id}<button class="oselx" data-x="${id}" title="${escHtml(tr("remove"))}">✕</button></span>`;
   };
   const req = Object.keys(opt.mods).filter((id) => opt.mods[id] === "fixed").map((id) => chip(id, "fixed"));
   const pool = Object.keys(opt.mods).filter((id) => opt.mods[id] === "search").map((id) => chip(id, "search"));
   const box = $("opt-mods-sel");
+  // TRANSLATED, and it was not: these three lines and the size row under them
+  // are meant to read down as one sentence, and two of them were English on a
+  // Chinese page.
   box.innerHTML =
-    (req.length ? `<div class="oselrow"><span class="osellbl">required (${req.length}/${opt.size})</span>${req.join("")}</div>` : "") +
-    (pool.length ? `<div class="oselrow"><span class="osellbl">pool (${pool.length})</span>${pool.join("")}</div>` : "") +
-    (!req.length && !pool.length ? `<div class="sim-empty">nothing selected yet — mark mods below as pool or required.</div>` : "");
+    (req.length ? `<div class="oselrow"><span class="osellbl">${escHtml(tr("required"))} (${req.length}/${opt.size})</span>${req.join("")}</div>` : "") +
+    (pool.length ? `<div class="oselrow"><span class="osellbl">${escHtml(tr("pool"))} (${pool.length})</span>${pool.join("")}</div>` : "") +
+    (!req.length && !pool.length ? `<div class="sim-empty">${escHtml(tr("nothing marked — the search is the bare weapon. Mark mods below as pool or required."))}</div>` : "");
   box.querySelectorAll("[data-x]").forEach((el) =>
     el.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -17246,6 +17276,25 @@ function updateOptEstimate() {
   // at least one pooled mod (k starts above the required count).
   // ...and `opt.min` raises that floor: "exactly 8 mods" is min 8, max 8.
   const minK = Math.max(fixed + (search > 0 ? 1 : 0), opt.min);
+  // …AND THE READER IS TOLD WHEN THE MARKS RAISE THEIR OWN FLOOR (owner,
+  // 2026-08-29). The floor is the larger of what you TYPED and what the marks
+  // IMPLY — every required mod is in every candidate, and pooling is the
+  // statement that at least one pooled mod is too — so the box could say 0 over
+  // a search that never looks below 3, which is a control that lies about what
+  // it does. It is stated only when the two DIFFER: a line repeating the two
+  // numbers beside it distinguishes nothing.
+  const eff = $("opt-size-eff");
+  if (eff) {
+    eff.textContent = minK > opt.min
+      ? tr("actually {min}–{max}: {why}")
+        .replace("{min}", minK).replace("{max}", size)
+        .replace("{why}", fixed > 0 && search > 0
+          ? tr("{n} required, plus at least one pooled").replace("{n}", fixed)
+          : fixed > 0
+            ? tr("{n} required").replace("{n}", fixed)
+            : tr("at least one pooled"))
+      : "";
+  }
   let subsets = 0;
   for (let k = minK; k <= size; k++) subsets += nChooseK(search, k - fixed);
   subsets *= evoProduct * exOptions;
