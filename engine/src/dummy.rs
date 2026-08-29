@@ -476,10 +476,10 @@ impl Default for Portion {
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Settled {
     /// WHAT `apply` WAS ASKED TO SETTLE, carried back rather than re-stated by
-    /// the caller. Every damage site used to add its own local to
-    /// `total_damage` — nine spellings of "the number I just handed over" —
-    /// with nothing tying the two together, so a site could book one figure and
-    /// settle another. [`settle`] books this one.
+    /// the caller. A damage site adding its own local to a total is a second
+    /// spelling of "the number I just handed over", with nothing tying the two
+    /// together, so a site can book one figure and settle another. [`settle`]
+    /// books this one.
     pub raw: f64,
     pub effective: f64,
     pub killed: bool,
@@ -506,11 +506,11 @@ pub struct Breakdown {
     ///
     /// Taken HERE rather than by each of the nine callers, and that is a cost
     /// decision as much as a tidiness one: `apply` spends the pools and, on a
-    /// kill, respawns the body outright, so every caller had to snapshot on the
-    /// line above and hold the value across the call. Nine gated blocks and
-    /// nine live 32-byte locals across the hottest call in the engine measured
-    /// **+9%** on `one_fight` with every answer unchanged — and
-    /// `apply` is already the one place that knows whether anyone is reading.
+    /// kill, respawns the body outright, so a caller would have to snapshot on
+    /// the line above and hold the value across the call. Nine gated blocks and
+    /// nine live 32-byte locals across the hottest call in the engine measure
+    /// **+9%** on `one_fight` with every answer unchanged — and `apply` is
+    /// already the one place that knows whether anyone is reading.
     pub before: crate::record::TargetAt,
     /// One per pool that took something, in the order the game shows them.
     /// `len` is 0 (nothing landed), 1 (the ordinary case), or 2 (a shield split
@@ -602,9 +602,9 @@ pub struct TargetParams {
 /// The SHAPE of one damage instance — what fraction of it is each type.
 ///
 /// The defence side reads the shape twice: Toxin bypasses shields, and the
-/// vulnerability column is per component. Both used to be answered by passing
-/// a bare `toxin_frac` down; a second per-type question makes that a growing
-/// list of scalars, so the shape travels as one value instead.
+/// vulnerability column is per component. Passing a bare `toxin_frac` down
+/// answers one of them and makes the next per-type question a growing list of
+/// scalars, so the shape travels as one value.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TypeShares([f64; DamageType::ALL.len()]);
 
@@ -1442,15 +1442,15 @@ struct HeatEntity {
     /// Empty when uncapped (contributions just fold into `value`).
     recent: Vec<f64>,
     /// HOW MANY PROCS ARE IN `value`, which is the number a reader wants and
-    /// the one thing the accumulator used to throw away.
+    /// the one thing an accumulator has no other way to report.
     ///
     /// Heat is the only status DoT that CONSOLIDATES: every proc folds into one
     /// entity whose tick grows linearly and whose single clock is refreshed
     /// (data/debuffs/ignite.yaml, `dot_model: singleton_accumulator`). The
-    /// damage was always right; what the debuff table reported was
-    /// `heat.is_some()` — 0 or 1 — so a player watching a ten-stack burn was
-    /// told it was one stack, and had no way to see the ramp that is most of
-    /// what Heat does (player report reported).
+    /// damage is right either way; without this the debuff table can only say
+    /// `heat.is_some()` — 0 or 1 — so a player watching a ten-stack burn is
+    /// told it is one stack, with no way to see the ramp that is most of what
+    /// Heat does.
     ///
     /// UNCAPPED, because the spec says so: `max_stacks: null`, *"indefinite
     /// ramp while kept refreshed"*. Under a per-unit cap it holds at the cap,
@@ -1849,13 +1849,13 @@ pub const DEBUFF_ROSTER: [(&str, Option<u32>); 18] = [
     ("bleed", None),
     ("poison", None),
     ("ignite", None),
-    // …AND THE OTHER TWO DoT FAMILIES, which had no row at all until a player
-    // reported that their DoTs were on the enemy and not on the chart. FOUR damage types reach `push_dot` — Slash, Toxin,
-    // Electricity, Gas — and only the first two were listed, so a build running
-    // either of these could see the damage in the meter and never see WHEN it
-    // was up. Both are independent per-instance piles like bleed and poison,
-    // and both are AREA: a tesla arc and a gas cloud hand their tick to the
-    // neighbours too, which is the other reason a reader wants them drawn.
+    // …AND THE OTHER TWO DoT FAMILIES. FOUR damage types reach `push_dot` —
+    // Slash, Toxin, Electricity, Gas — and a chart listing only the first two
+    // lets a build running either of the others see the damage in the meter and
+    // never see WHEN it was up. Both are independent per-instance piles like
+    // bleed and poison, and both are AREA: a tesla arc and a gas cloud hand
+    // their tick to the neighbours too, which is the other reason a reader
+    // wants them drawn.
 
     // On or off, and off only because the target died. It is drawn like every
     // other row so the replay can show WHEN this weapon's invisible status
@@ -1866,14 +1866,14 @@ pub const DEBUFF_ROSTER: [(&str, Option<u32>); 18] = [
     // no damage type explains, so a reader comparing a Condition Overload
     // number against the vector has to be able to see it.
     ("lifted", Some(1)),
-    // …AND THE OTHER TWO DoT FAMILIES, which had no row at all until a player
-    // reported that their DoTs were on the enemy and not on the chart. FOUR damage types reach `push_dot` — Slash, Toxin,
-    // Electricity, Gas — and only the first two were listed, so a build running
-    // either could see the damage in the meter and never see WHEN it was up.
+    // …AND THE OTHER TWO DoT FAMILIES. FOUR damage types reach `push_dot` —
+    // Slash, Toxin, Electricity, Gas — and a chart listing only the first two
+    // lets a build running either of the others see the damage in the meter and
+    // never see WHEN it was up.
     //
     // APPENDED, NOT INSERTED beside the other DoTs: a series is read by INDEX,
-    // so a row added in the middle would relabel every chart drawn from a
-    // replay stored before it.
+    // so a row added in the middle relabels every chart drawn from a replay
+    // stored before it.
     ("tesla", None),
     // …AND THE ONE DoT FAMILY THAT REALLY IS CAPPED. The Gas page states a
     // STACK cap where the other three state a DISPLAY one — see
@@ -2542,26 +2542,20 @@ impl DebuffState {
         n += usize::from(!self.attractor.is_empty());
         n += usize::from(!self.blast.is_empty());
         n += usize::from(self.heat.is_some());
-        // NO `frozen` LINE. COLD IS ONE STATUS and its
-        // stacks are `freeze`, counted above; Frozen is a STATE the tenth of
-        // them trips, with its own crowd control and its own crit-damage
-        // bonus, and it is not a second type on the target.
-        //
-        // It used to be counted here as well, which was harmless only because
-        // the old model made the two mutually exclusive — exactly one of them
-        // was ever live, so Cold contributed one either way. Under a model
-        // where the chill STAYS while Frozen, the same two lines would have
-        // counted Cold twice and inflated every Condition Overload bracket on
-        // a frozen target. `has_status` had the other reading of the same
-        // question all along and is left as it is: that one answers "is this
-        // target cold-statused" for a perk, not "how many TYPES are on it".
-        // THE LIVE DoT TYPES, as a bitmask. This was a `Vec<DamageType>` with a
-        // linear `contains` per entry — a heap allocation and an O(n²) scan on
-        // a function Condition Overload asks per damage INSTANCE, which on a
+        // NO `frozen` LINE. COLD IS ONE STATUS and its stacks are `freeze`,
+        // counted above; Frozen is a STATE the tenth of them trips, with its
+        // own crowd control and its own crit-damage bonus, and it is not a
+        // second type on the target. Counting it here as well would count Cold
+        // twice on a frozen target — the chill STAYS while Frozen — and inflate
+        // every Condition Overload bracket. `has_status` answers the other
+        // reading of the same question, "is this target cold-statused" for a
+        // perk rather than "how many TYPES are on it".
+        // THE LIVE DoT TYPES, as a bitmask. A `Vec<DamageType>` with a linear
+        // `contains` per entry is a heap allocation and an O(n²) scan on a
+        // function Condition Overload asks per damage INSTANCE, which on a
         // launcher is a few thousand times a run. Seventeen damage types fit in
-        // a `u32`, so the same set is one word and `count_ones` is the answer.
-        //
-        // Identical by construction: a set of at most 17 things, counted.
+        // a `u32`, so the same set is one word and `count_ones` is the answer —
+        // identical by construction, a set of at most 17 things, counted.
         let mut seen: u32 = 0;
         for d in &self.dots {
             if d.ticks_left > 0 {
@@ -6601,13 +6595,12 @@ fn settle_procs(
             DamageType::Cold => {
                 // Primary Frostbite: each Cold status THIS WEAPON APPLIES
                 // grants one stack to both of its buffs (crit damage +
-                // multishot). "Applies" is the whole of it — the bump used to
-                // run before the proc and unconditionally, so a Cold proc that
-                // landed on a FROZEN target stacked the arcane even though
-                // `frozen.yaml` says such a proc is inert and no status
-                // exists. Frozen lasts 3 s against a 12 s
-                // buff, so it never showed as the arcane going dark — it
-                // showed as it never quite decaying.
+                // multishot). "Applies" is the whole of it: the bump runs AFTER
+                // the proc and only when one exists, so a Cold proc landing on
+                // a FROZEN target grants nothing — `frozen.yaml` says such a
+                // proc is inert. Frozen lasts 3 s against a 12 s buff, so
+                // getting this wrong never shows as the arcane going dark, only
+                // as it never quite decaying.
                 if debuffs.apply_cold_proc(at, status_damage, target.overguard > 0.0, caps, foe.cannot_be_frozen) {
                     arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ColdStatus, at);
                 }
@@ -6978,8 +6971,8 @@ struct InstanceScale {
     /// 1.0 everywhere but the Primary Debilitate split, and that is the whole
     /// claim: an ordinary status DoT is a tick of an effect, while the arcane's
     /// split is a damage INSTANCE the wiki names as one — so it rolls the
-    /// per-instance multipliers a hit rolls, this one included. Reported from
-    /// play through the owner. MEASUREMENTS M37.
+    /// per-instance multipliers a hit rolls, this one included.
+    /// MEASUREMENTS M37.
     attrition: f64,
     /// The EXTRA HIT bracket of the weapon that fired this instance —
     /// `1 + Σ elemental bonuses + Σ (base-attack IPS share × that IPS bonus)`,
@@ -7115,12 +7108,10 @@ struct SpreadFoe {
 /// WHICH MECHANISM PUT AN INSTANCE ON A BODY — one of the five in
 /// MECHANICS §12.
 ///
-/// A BOOL FIRST, AND IT BIT WITHIN THE HOUR: `spread_hit` took
-/// `by_tendril: bool` and `spread_from_seeds` takes `multishot_half: bool`, and
-/// the two sat one argument apart in calls that look alike. The wrong one got
-/// flipped, the chain stopped firing, and a test caught it — which is the good
-/// outcome and still an hour spent. An enum cannot be handed to the other
-/// parameter at all.
+/// AN ENUM AND NOT A BOOL: `spread_from_seeds` also takes
+/// `multishot_half: bool`, one argument away, in calls that look alike. Two
+/// bools there are two things that can be handed to the wrong parameter and
+/// still compile; an enum cannot be.
 ///
 /// It decides exactly ONE thing, and that is the whole of why it exists: a
 /// TENDRIL's own kill spawns no tendril, and every other kind of kill does.
@@ -7269,8 +7260,8 @@ fn spread_hit(
         // still flying in a straight line at one height, so it CARRIES the
         // aimed pellet's answer — a round that entered a head enters the head
         // of whatever is behind it, and a body shot stays a body shot all the
-        // way down the line. It read `true` unconditionally
-        // until then, so a body shot punched THROUGH a shield gate.
+        // way down the line. Reading `true` unconditionally would punch a body
+        // shot THROUGH a shield gate.
         inst.headshot,
         t,
         &spec.params,
@@ -7316,13 +7307,12 @@ fn spread_hit(
     );
     // …AND IT REACHES THE DAMAGE METER.
     //
-    // It did not, and the number was never wrong — `effective_damage`, the
-    // score and the DPS have always counted every body. What could not account
-    // for them was the METER, which is written on the aimed body's path alone
-    // (`r.sources.direct`/`.radial` at the end of the pellet loop) and was
-    // never given an arm here. So a four-body fight reported 5304 of damage by
-    // source against 15980 actually dealt, and a reader comparing the headline
-    // with the breakdown correctly concluded that one of them was made up.
+    // `effective_damage`, the score and the DPS count every body; the METER is
+    // written on the aimed body's path (`r.sources.direct`/`.radial` at the end
+    // of the pellet loop) and needs its own arm here. Without one a four-body
+    // fight reports 5304 of damage by source against 15980 actually dealt, and
+    // a reader comparing the headline with the breakdown correctly concludes
+    // that one of them is made up.
     //
     // THE CROWD IS NOT ITS OWN ROW. An explosion that reaches nine bodies is
     // the radial attack part nine times, not a tenth kind of damage — the
@@ -14110,13 +14100,12 @@ pub fn run_once_traced(
                 // own falloff a distance to read. Past the blast
                 // radius there is no explosion to resolve at all.
                 if let Some(r) = rad {
-                    // DOES IT REACH ANYBODY? It used to ask only about the
-                    // AIMED body, which threw the whole explosion away when a
-                    // wide shot left that one body out of range — including
-                    // for the bodies standing where it actually landed. And it
-                    // asked with `aim_offset` where the damage below asks with
-                    // `blast_reach(aim_offset)`, so it fired one body radius
-                    // early.
+                    // DOES IT REACH ANYBODY? Asked of the whole formation
+                    // and not of the AIMED body: a wide shot that leaves that
+                    // one body out of range still detonates on the bodies
+                    // standing where it landed. Asked with
+                    // `blast_reach(aim_offset)`, the same reach the damage
+                    // below uses, or it fires one body radius early.
                     let reaches = |b: crate::space::Vec2| {
                         r.falloff_at(crate::space::blast_reach(det.distance_to(b))) > 0.0
                     };
@@ -14301,10 +14290,10 @@ pub fn run_once_traced(
                 // proc", which is what keeps the rest of the status path — the
                 // immunity renormalisation, the DoT bookkeeping — from having to
                 // know an ability is involved. It is also what makes the
-                // interaction the owner reported fall out rather than be
-                // arranged: Overwhelming Attrition asks for a hit that "is
-                // neither Critical nor applies a Status Effect", and a hit that
-                // always procs can never be one.
+                // interaction fall out rather than be arranged: Overwhelming
+                // Attrition asks for a hit that "is neither Critical nor
+                // applies a Status Effect", and a hit that always procs can
+                // never be one.
                 let ability_forced =
                     crate::abilities_data::forced_status_elements_at(&params.abilities, t);
                 // ONE SLOT PER DAMAGE TYPE IS ENOUGH: both sources are sets of
@@ -14987,14 +14976,14 @@ pub fn run_once_traced(
                 // because a pellet has two ways of ending and the row has to
                 // survive both.
                 //
-                // It was written once, just before `settle_procs`, so it could
-                // name what the instance APPLIED. That is right for a pellet
-                // that leaves the target standing and wrong for one that KILLS:
-                // the kill branch below `continue`s — correctly, since the
-                // killing instance's procs die with the old individual — and
-                // took the row with it. Against a level 1 Crewman that is most
-                // of the shots, and the record reported a fight with no kills
-                // in it while the meter beside it counted six.
+                // A single write before `settle_procs` names what the instance
+                // APPLIED, which is right for a pellet that leaves the target
+                // standing and wrong for one that KILLS: the kill branch below
+                // `continue`s — correctly, since the killing instance's procs
+                // die with the old individual — and would take the row with it.
+                // Against a level 1 Crewman that is most of the shots, and the
+                // record would show a fight with no kills in it while the meter
+                // beside it counted six.
                 //
                 // The killing call passes NO procs, which is not a shortcut: it
                 // is the same sentence that branch already makes.
@@ -15050,8 +15039,8 @@ pub fn run_once_traced(
                             radial: !direct,
                             // THE WEAPON'S OWN DAMAGE, before any bracket —
                             // the layers start here and the first one is the
-                            // base-damage bracket. It used to be `qtotal`,
-                            // which is the chain's MIDDLE.
+                            // base-damage bracket. Never `qtotal`, which is the
+                            // chain's MIDDLE.
                             base: if (1.0 + base_damage).abs() > 1e-12 {
                                 stage_mb / (1.0 + base_damage)
                             } else {
@@ -16041,7 +16030,7 @@ pub fn run_once_traced(
     sample_frames_up_to!(params.duration_seconds);
 
     // Partial credit: the fraction of the current individual's TOTAL bar
-    // already depleted — overguard + shield + health (: the
+    // already depleted — overguard + shield + health: the
     // whole bar counts, so shield damage earns progress and shield REGEN
     // gives it back). If health has hit 0 the unit is DEAD, so the whole bar
     // is gone regardless of any overguard/shield left (e.g. a Toxin-bypass
@@ -24406,10 +24395,9 @@ mod tests {
     ///
     /// A tendril costs a KILL, so against a target that does not die the
     /// Ocucor's only augment is worth exactly nothing and the weapon reads as
-    /// if it were unmodded — which is what a player reported. The count is a buff by
-    /// every test that matters, so it takes a buff card's two knobs, and this
-    /// pins both: the seed is worth its stacks, and the LOCK is what carries
-    /// them past a reload.
+    /// if it were unmodded. The count is a buff by every test that matters, so
+    /// it takes a buff card's two knobs, and this pins both: the seed is worth
+    /// its stacks, and the LOCK is what carries them past a reload.
     #[test]
     fn the_tendril_card_seeds_the_count_and_the_lock_holds_it() {
         // No kills at all: the target never dies, so the sim can never grant a
@@ -24994,10 +24982,8 @@ mod tests {
             // AVERAGED, not one engagement. Adding the radial adds a real
             // extra instance that makes its own crit decision, so the two
             // builds do not share a sample path and one run of each is a coin
-            // flip — it used to be read as evidence, and it landed the right
-            // way up only because of the order the old single RNG stream
-            // happened to serve its numbers in. Over 200 engagements the
-            // mechanism is plain: 11867 -> 12842.
+            // flip rather than evidence. Over 200 engagements the mechanism is
+            // plain: 11867 -> 12842.
             let s = monte_carlo(&p, 200, 4);
             (s.source_damage.direct, s.source_damage.radial)
         };
@@ -25109,12 +25095,10 @@ mod tests {
 
     #[test]
     fn overwhelming_attrition_takes_the_buff_cards_two_knobs() {
-        // LOCKED = NO TIMEOUT, not frozen. This buff was
-        // left on the old reading when the rest moved: its stacks decayed from
-        // the seed and its trigger was skipped while locked, so "no timeout"
-        // meant "decays to zero and can never come back" — the exact opposite
-        // of the label, and a player reported it as the buff not working at
-        // all.
+        // LOCKED = NO TIMEOUT, not frozen. A locked buff whose stacks decay
+        // from the seed and whose trigger is skipped reads "no timeout" as
+        // "decays to zero and can never come back" — the exact opposite of the
+        // label, and indistinguishable from the buff not working at all.
         let mk = |initial: u32, locked: bool, fire_rate: f64, secs: f64| {
             let mut p = DummyParams {
                 stacking_buffs: vec![crate::loadout::StackingBuff {
@@ -25719,8 +25703,8 @@ mod tests {
     /// The density is what makes this test worth having: eight forced procs a
     /// shot at 10/s holds hundreds of stacks, well past the 32 that switches
     /// paths. At one proc a shot the fixture never leaves the scan and the
-    /// guard is dead code the test cannot see — which is exactly what the first
-    /// version of this did, passing identically with the guard removed.
+    /// guard is dead code the test cannot see — it would pass identically with
+    /// the guard removed.
     ///
     /// Measured: 48,000 with the guard, 47,400 without — sixteen burnt ticks.
     /// THE RECORD IS THE WHOLE FIGHT — every number, and nothing invented.
@@ -25738,15 +25722,15 @@ mod tests {
     /// proving the property about one of them.
     /// THE DAMAGE METER'S PARTS ADD UP TO THE WHOLE.
     ///
-    /// `SourceDamage` is the one family of aggregates that did NOT go behind
-    /// `ledger`'s door, and this is why it did not have to. The totals are one
-    /// question with one answer, so a private field and a single `book` closes
-    /// them; the buckets are EIGHT differently shaped answers — two of them
-    /// split a whole damage VECTOR across a faction column — so a descriptor
-    /// carrying all of that to `settle` would move the shapes rather than
-    /// remove them.
+    /// `SourceDamage` is the one family of aggregates that is NOT behind
+    /// `ledger`'s door, and this is why it does not have to be. The totals are
+    /// one question with one answer, so a private field and a single `book`
+    /// closes them; the buckets are EIGHT differently shaped answers — two of
+    /// them split a whole damage VECTOR across a faction column — so a
+    /// descriptor carrying all of that to `settle` would move the shapes rather
+    /// than remove them.
     ///
-    /// What the door would have guaranteed, this asserts: every instance is
+    /// What the door would guarantee, this asserts: every instance is
     /// credited to exactly one bucket, so a site that books damage and forgets
     /// its bucket shows up as parts that no longer sum to the whole. The
     /// fixture is deliberately busy — multishot, crits, a weak point, a Slash
@@ -27308,7 +27292,7 @@ mod tests {
     #[test]
     fn shield_depletion_counts_toward_kill_progress() {
         // Pure Impact never reaches health, but denting the SHIELD now earns
-        // partial credit (: the whole overguard+shield+health
+        // partial credit: the whole overguard+shield+health
         // bar counts, so shield damage — and regen — moves the score). One
         // 75-Impact shot into a 1000+1000 = 2000 bar -> 75/2000 = 0.0375,
         // with health still full (0 kills).
@@ -27718,7 +27702,7 @@ mod tests {
     /// single entity whose tick grows linearly — so there is no list to count
     /// and the debuff row read `heat.is_some()`, which is 0 or 1. A player
     /// watching a twenty-stack burn was told it was one stack, and the ramp is
-    /// most of what Heat does (report reported).
+    /// most of what Heat does (a player report).
     #[test]
     fn a_heat_pile_reports_its_depth_and_not_just_that_it_is_burning() {
         let ignite = DEBUFF_ROSTER.iter().position(|(k, _)| *k == "ignite").expect("ignite");
@@ -29310,8 +29294,8 @@ mod debilitate_attrition_tests {
         //     Nothing else in the fight moves, so the ratio against a run with
         //     the perk off is that expectation.
         // THE SAME 200 RUNS the baseline used. A ratio against a different
-        // number of runs is a ratio against a different fight, and it reads as
-        // a mechanic — this said x243 for a while, which is 121 x 2.
+        // number of runs is a ratio against a different fight and reads as a
+        // mechanic: at half the runs it prints x243, which is 121 x 2.
         let half = |seed: u64| {
             (0..200u64)
                 .map(|k| {
@@ -29573,12 +29557,11 @@ mod warframe_ability_tests {
     /// A DoT TRACKS ITS SOURCE, so a buff that ENDS mid-burn stops paying for
     /// the rest of it — and one that is up for the whole burn pays throughout.
     ///
-    /// Measured in game: a buff the shooter gains while a
-    /// DoT is burning strengthens the burn IMMEDIATELY, on an elemental bonus
-    /// (Lavos) and on a faction bonus. This engine snapshotted every factor at
-    /// the moment the proc landed and said so in a comment — *"a status takes
-    /// the faction bonus that was running when it was APPLIED"* — which was a
-    /// decision, and the measurement overturns it.
+    /// Measured in game: a buff the shooter gains while a DoT is burning
+    /// strengthens the burn IMMEDIATELY, on an elemental bonus (Lavos) and on a
+    /// faction bonus. So a tick reads its source LIVE; snapshotting every
+    /// factor at the moment the proc landed is the reading the measurement
+    /// rules out.
     ///
     /// THE TEST GOES THE OTHER WAY ROUND because it is the same claim and it is
     /// the one this harness can stage: abilities here start at zero, so a SHORT
@@ -29989,11 +29972,11 @@ mod warframe_ability_tests {
         // The extra hit off a Blast proc is worth about 89% of the proc, which
         // is only possible with both of the layers above.
         //
-        // THE BAND IS THE CAPTURE'S OWN. It read 63 and 71, each a whole number
-        // popped in game, so the ratio it pins is `[62.5/71.5, 63.5/70.5]` —
-        // 0.874 to 0.901, and nothing tighter is in the video. The 0.002 that
-        // used to be here claimed a precision two integers cannot carry, and it
-        // is what turned a 0.57% quantization correction into a red test.
+        // THE BAND IS THE CAPTURE'S OWN. It read 63 and 71, each a whole
+        // number popped in game, so the ratio it pins is `[62.5/71.5,
+        // 63.5/70.5]` — 0.874 to 0.901, and nothing tighter is in the video. A
+        // tighter band claims a precision two integers cannot carry and turns a
+        // 0.57% quantization correction into a red test.
         let ratio = from_deto / deto;
         assert!((0.874..=0.901).contains(&ratio), "{ratio:.4} outside the capture's 63/71");
     }
@@ -30209,13 +30192,13 @@ mod incarnon_reload_route_tests {
 
     /// ENTERING THE INCARNON FORM IS A RELOAD, and it pays a reload's stacks.
     ///
-    /// The owner's own account, and the transmute animation being
-    /// the weapon's reload time is how you can tell. The whole reload runs
-    /// across the cycle — one shell going in, the rest coming out — so nothing
-    /// here is a rule about transforming: it is a rule about shells.
+    /// The transmute animation IS the weapon's reload time, which is how you
+    /// can tell. The whole reload runs across the cycle — one shell going in,
+    /// the rest coming out — so nothing here is a rule about transforming: it
+    /// is a rule about shells.
     ///
-    /// This sim transmutes on a GAUGE, so before this the route was worth zero
-    /// stacks — on the exact mode the weapon is played in.
+    /// This sim transmutes on a GAUGE, so without this arm the route is worth
+    /// zero stacks on the exact mode the weapon is played in.
     #[test]
     fn the_incarnon_route_pays_the_shells_it_loads() {
         let with = monte_carlo(&cycle_with(true, 4.0), 1, 9);
