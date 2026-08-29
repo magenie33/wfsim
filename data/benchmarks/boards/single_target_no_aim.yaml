@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 3663
+submissions: 3697
 engine: 342eec467e0ec3205ad5c995004ec83be5f03878
 entries:
   - weapon: acceltra_prime
@@ -806,6 +806,17 @@ entries:
     arcanes: [primary_crux]
     riven:
       bonuses: [damage, heat, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: cycle
+    score: 1.8846340505511952
+    fp: 0f3eca3a47df0839
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, shotgun_barrage, riven, chilling_reload, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
+    arcanes: [primary_overcharge]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
@@ -2310,6 +2321,17 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
+    score: 5.564343325184326
+    fp: f45be330b1335a2b
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, primed_heated_charge, riven]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_elemental_balance]
+    arcanes: [secondary_encumber]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
     score: 4.933732395522574
     fp: 0a7535083cad62ce
     mods: [galvanized_diffusion, primed_target_cracker, pistol_elementalist, magnetic_might, frostbite, riven, pistol_pestilence, primed_heated_charge]
@@ -2330,6 +2352,17 @@ entries:
       bonuses: [damage, heat, multishot]
       malus: damage_to_infested
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: furis
+    mode: cycle
+    score: 4.18593203876753
+    fp: f45be330b1335a2b
+    mods: [galvanized_diffusion, hornet_strike, primed_target_cracker, galvanized_shot, lethal_torrent, pistol_elementalist, riven, primed_heated_charge]
+    evolutions: [furis_evo1_incarnon_form, furis_stormburst, furis_extended_volley, furis_elemental_balance]
+    arcanes: [secondary_encumber]
+    riven:
+      bonuses: [critical_damage, multishot]
+      malus: zoom
+      rolls: [1.1, 1.1, 0.9]
   - weapon: furis
     mode: cycle
     score: 3.987788229850671
@@ -3393,6 +3426,18 @@ entries:
       rolls: [1.1, 1.1, 0.9]
   - weapon: kuva_sobek
     mode: base
+    score: 0.5572032856877089
+    fp: 3d9c7078e49dabc1
+    exilus: vigilante_supplies
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_elementalist, magnetic_strafe, riven, primed_charged_shell]
+    arcanes: [primary_merciless]
+    valence: electricity
+    riven:
+      bonuses: [fire_rate, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: kuva_sobek
+    mode: base
     score: 0.44334654781321586
     fp: 6dfb214536b96764
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, primed_charged_shell, contagious_spread, incendiary_coat]
@@ -3400,16 +3445,36 @@ entries:
     valence: toxin
   - weapon: kuva_sobek
     mode: base
-    score: 0.2264271045185083
-    fp: fe21b28cd55423e0
-    exilus: galvanized_acceleration
-    mods: [galvanized_hell, primed_cleanse_corpus, primed_point_blank, acid_shells, shotgun_barrage, shotgun_elementalist, primed_charged_shell, riven]
-    arcanes: [primary_bulwark]
+    score: 0.28756298125563406
+    fp: 28423a759f425338
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, acid_shells, critical_deceleration, shotgun_elementalist, riven, primed_charged_shell]
+    arcanes: [primary_crux]
     valence: electricity
     riven:
-      bonuses: [electricity, fire_rate, multishot]
-      malus: status_duration
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      bonuses: [fire_rate, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: kuva_sobek
+    mode: base
+    score: 0.2836656465262649
+    fp: f43c922b05490fa4
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, acid_shells, critical_deceleration, shotgun_barrage, riven, primed_charged_shell]
+    arcanes: [primary_merciless]
+    valence: electricity
+    riven:
+      bonuses: [fire_rate, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: kuva_sobek
+    mode: base
+    score: 0.24215259716037388
+    fp: 08d51cd9c900f650
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, acid_shells, critical_deceleration, shotgun_barrage, shotgun_elementalist, primed_charged_shell]
+    arcanes: [primary_crux]
+    valence: electricity
   - weapon: kuva_tonkor
     mode: base
     score: 0.21883458119914903
@@ -3966,6 +4031,28 @@ entries:
     arcanes: [primary_debilitate]
   - weapon: latron_prime
     mode: cycle
+    score: 4.200460836960765
+    fp: 52983ea4e59684db
+    mods: [amalgam_serration, galvanized_chamber, double_tap, galvanized_aptitude, vile_acceleration, vital_sense, primed_cryo_rounds, riven]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_flensing_spikes]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_chance, critical_damage, toxin]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
+    score: 3.689751733265113
+    fp: 2d044a9965875961
+    mods: [amalgam_serration, galvanized_chamber, double_tap, galvanized_aptitude, vile_acceleration, riven, primed_cryo_rounds, malignant_force]
+    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_flensing_spikes]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: latron_prime
+    mode: cycle
     score: 2.61687408256424
     fp: ebf07c2af62abbfb
     mods: [galvanized_chamber, double_tap, critical_delay, vile_acceleration, vital_sense, riven, primed_cryo_rounds, malignant_force]
@@ -4054,46 +4141,13 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: cycle
-    score: 1.940124859777068
-    fp: 1021489a5efd0b63
-    mods: [amalgam_serration, galvanized_chamber, double_tap, galvanized_aptitude, vital_sense, riven, primed_cryo_rounds, infected_clip]
+    score: 2.166440101600327
+    fp: d7340e1425ebb237
+    mods: [amalgam_serration, galvanized_chamber, heavy_caliber, double_tap, galvanized_aptitude, vital_sense, primed_cryo_rounds, riven]
     evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_flensing_spikes]
     arcanes: [primary_crux]
     riven:
-      bonuses: [critical_chance, fire_rate, multishot]
-      malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: latron_prime
-    mode: cycle
-    score: 1.8339923249650076
-    fp: 45ff0ca6646f1bcb
-    mods: [amalgam_serration, galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, riven, primed_cryo_rounds, malignant_force]
-    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_flensing_spikes]
-    arcanes: [primary_crux]
-    riven:
-      bonuses: [critical_chance, critical_damage, fire_rate]
-      malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: latron_prime
-    mode: cycle
-    score: 1.802955793241377
-    fp: 12b7c1980106bfc9
-    mods: [amalgam_serration, galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, riven]
-    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_flensing_spikes]
-    arcanes: [primary_crux]
-    riven:
-      bonuses: [critical_chance, critical_damage, toxin]
-      malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: latron_prime
-    mode: cycle
-    score: 1.751167318768272
-    fp: 0dfbfdf281223573
-    mods: [amalgam_serration, galvanized_chamber, double_tap, galvanized_aptitude, vital_sense, riven, primed_cryo_rounds, malignant_force]
-    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_flensing_spikes]
-    arcanes: [primary_crux]
-    riven:
-      bonuses: [critical_chance, fire_rate, multishot]
+      bonuses: [critical_chance, fire_rate, toxin]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
@@ -4106,39 +4160,6 @@ entries:
     riven:
       bonuses: [critical_chance, critical_damage, puncture]
       malus: magazine_capacity
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: latron_prime
-    mode: cycle
-    score: 1.4768757237915455
-    fp: 12b7c1980106bfc9
-    mods: [amalgam_serration, galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, vital_sense, primed_cryo_rounds, riven]
-    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_flensing_spikes]
-    arcanes: [primary_crux]
-    riven:
-      bonuses: [critical_chance, multishot, toxin]
-      malus: ammo_maximum
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: latron_prime
-    mode: cycle
-    score: 1.3819440013646578
-    fp: c876a892b655347e
-    mods: [galvanized_chamber, double_tap, galvanized_aptitude, galvanized_scope, vile_acceleration, riven, primed_cryo_rounds, malignant_force]
-    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_critical_parallel]
-    arcanes: [primary_deadhead]
-    riven:
-      bonuses: [critical_chance, critical_damage, damage]
-      malus: zoom
-      rolls: [1.1, 1.1, 1.1, 0.9]
-  - weapon: latron_prime
-    mode: cycle
-    score: 1.3134734380066684
-    fp: 12b7c1980106bfc9
-    mods: [amalgam_serration, galvanized_chamber, double_tap, galvanized_aptitude, critical_delay, vital_sense, riven, primed_cryo_rounds]
-    evolutions: [latron_prime_evo1_incarnon_form, latron_prime_riddled_target, latron_prime_extended_volley, latron_prime_flensing_spikes]
-    arcanes: [primary_crux]
-    riven:
-      bonuses: [critical_chance, fire_rate, multishot]
-      malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: latron_prime
     mode: base
@@ -5537,6 +5558,14 @@ entries:
     valence: magnetic
   - weapon: tenet_glaxion
     mode: base
+    score: 1.4207190382779054
+    fp: 86c881424e69e00d
+    exilus: sinister_reach
+    mods: [heavy_caliber, primed_shred, spectral_serration, split_chamber, rime_rounds, malignant_force, hellfire, thermite_rounds]
+    arcanes: [primary_overcharge]
+    valence: magnetic
+  - weapon: tenet_glaxion
+    mode: base
     score: 1.404102308316722
     fp: fde917957f55faed
     mods: [heavy_caliber, primed_shred, split_chamber, serration, rifle_elementalist, rime_rounds, malignant_force, hellfire]
@@ -5604,6 +5633,14 @@ entries:
       bonuses: [cold, reload_speed, toxin]
       malus: damage
       rolls: [0.9, 0.9, 0.9, 0.9]
+  - weapon: tenet_glaxion
+    mode: base
+    score: 1.110577223843271
+    fp: be1a098d77366098
+    exilus: sinister_reach
+    mods: [heavy_caliber, spectral_serration, metal_auger, split_chamber, rime_rounds, malignant_force, hellfire, thermite_rounds]
+    arcanes: [primary_overcharge]
+    valence: magnetic
   - weapon: tenet_glaxion
     mode: base
     score: 0.9876832576733168
@@ -6419,6 +6456,16 @@ entries:
       malus: damage_to_infested
       rolls: [1.1, 1.1, 0.9]
   - weapon: vectis_prime
+    mode: base
+    score: 0.3610187816052377
+    fp: a03482c38f33b841
+    mods: [galvanized_chamber, serration, galvanized_scope, vital_sense, riven, primed_cryo_rounds, infected_clip, hellfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_chance, fire_rate]
+      rolls: [1.1, 1.1]
+  - weapon: vectis_prime
     mode: cycle
     score: 0.28276436020730333
     fp: 12ec89a8c8d96e70
@@ -6506,11 +6553,31 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: vectis_prime
     mode: cycle
+    score: 0.2055552071350636
+    fp: 6396ec1c66e5a19a
+    mods: [primary_acuity, serration, galvanized_scope, hammer_shot, hunter_munitions, vital_sense, riven, malignant_force]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, fire_rate]
+      rolls: [1.1, 1.1]
+  - weapon: vectis_prime
+    mode: cycle
     score: 0.1963719129689166
     fp: 625fe772af4261a2
     mods: [galvanized_chamber, serration, galvanized_scope, vile_acceleration, vital_sense, primed_cryo_rounds, infected_clip, hellfire]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
     arcanes: [primary_crux]
+  - weapon: vectis_prime
+    mode: cycle
+    score: 0.15332656072776263
+    fp: dcf1cb6e6395c546
+    mods: [primary_acuity, serration, bladed_rounds, vile_acceleration, vital_sense, riven, primed_cryo_rounds, malignant_force]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, fire_rate]
+      rolls: [1.1, 1.1]
   - weapon: vectis_prime
     mode: cycle
     score: 0.1526076098720609

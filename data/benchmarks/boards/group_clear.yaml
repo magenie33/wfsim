@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 3663
+submissions: 3697
 engine: 342eec467e0ec3205ad5c995004ec83be5f03878
 entries:
   - weapon: acceltra_prime
@@ -1324,6 +1324,17 @@ entries:
     fp: 59f2cc47b8e3514b
     mods: [galvanized_hell, primed_point_blank, critical_deceleration, shotgun_barrage, riven, chilling_reload, toxic_barrage, incendiary_coat]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
+    arcanes: [primary_overcharge]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: cycle
+    score: 13.704655258749684
+    fp: 0b9b6ea88374a1f2
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, shotgun_barrage, riven, chilling_reload, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
     arcanes: [primary_overcharge]
     riven:
       bonuses: [critical_chance, critical_damage, damage]
@@ -4214,6 +4225,30 @@ entries:
       rolls: [1.1, 0.9, 0.9]
   - weapon: kuva_sobek
     mode: base
+    score: 5.65979592402807
+    fp: af2648bcbfd49e3b
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, acid_shells, critical_deceleration, shotgun_elementalist, riven, primed_charged_shell]
+    arcanes: [primary_crux]
+    valence: electricity
+    riven:
+      bonuses: [fire_rate, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: kuva_sobek
+    mode: base
+    score: 5.6483537086109195
+    fp: 8d1c85e76ba3b3b1
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, acid_shells, critical_deceleration, shotgun_barrage, riven, primed_charged_shell]
+    arcanes: [primary_crux]
+    valence: electricity
+    riven:
+      bonuses: [fire_rate, multishot]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: kuva_sobek
+    mode: base
     score: 4.529771031165037
     fp: 2e077a240550fd13
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, primed_charged_shell, contagious_spread, incendiary_coat]
@@ -4221,16 +4256,12 @@ entries:
     valence: toxin
   - weapon: kuva_sobek
     mode: base
-    score: 0.5560884304487069
-    fp: 526fd7006ff8c275
-    exilus: galvanized_acceleration
-    mods: [galvanized_hell, primed_cleanse_corpus, primed_point_blank, acid_shells, shotgun_barrage, shotgun_elementalist, primed_charged_shell, riven]
-    arcanes: [primary_bulwark]
+    score: 3.258143589875215
+    fp: eee2e745b68bd2c3
+    exilus: primed_counterbalance
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, acid_shells, critical_deceleration, shotgun_barrage, shotgun_elementalist, primed_charged_shell]
+    arcanes: [primary_crux]
     valence: electricity
-    riven:
-      bonuses: [electricity, fire_rate, multishot]
-      malus: status_duration
-      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: kuva_tonkor
     mode: base
     score: 12.014462288515931
@@ -6423,9 +6454,25 @@ entries:
     valence: magnetic
   - weapon: tenet_glaxion
     mode: base
+    score: 12.323819465080335
+    fp: 20c327be9a4a91fe
+    exilus: sinister_reach
+    mods: [heavy_caliber, primed_shred, spectral_serration, split_chamber, rime_rounds, malignant_force, hellfire, thermite_rounds]
+    arcanes: [primary_overcharge]
+    valence: magnetic
+  - weapon: tenet_glaxion
+    mode: base
     score: 9.983213713017324
     fp: f95edd5af900cb65
     mods: [metal_auger, split_chamber, serration, critical_delay, rifle_elementalist, rime_rounds, malignant_force, hellfire]
+    arcanes: [primary_overcharge]
+    valence: magnetic
+  - weapon: tenet_glaxion
+    mode: base
+    score: 9.777110914283275
+    fp: 10b0169dc0e9c447
+    exilus: sinister_reach
+    mods: [heavy_caliber, spectral_serration, metal_auger, split_chamber, rime_rounds, malignant_force, hellfire, thermite_rounds]
     arcanes: [primary_overcharge]
     valence: magnetic
   - weapon: tenet_glaxion
@@ -7036,6 +7083,16 @@ entries:
     arcanes: [primary_crux]
   - weapon: vectis_prime
     mode: base
+    score: 162.87207344547846
+    fp: 8d5170aff242fd02
+    mods: [galvanized_chamber, serration, galvanized_scope, vital_sense, riven, primed_cryo_rounds, infected_clip, hellfire]
+    evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_chance, fire_rate]
+      rolls: [1.1, 1.1]
+  - weapon: vectis_prime
+    mode: base
     score: 161.64209153882442
     fp: ed20f106a9991f4d
     mods: [primary_acuity, serration, hunter_munitions, semi_rifle_cannonade, vital_sense, primed_cryo_rounds, infected_clip, thermite_rounds]
@@ -7064,15 +7121,14 @@ entries:
     arcanes: [primary_crux]
   - weapon: vectis_prime
     mode: cycle
-    score: 5.25653246796997
-    fp: ac7b24a7bf7cf1db
-    mods: [heavy_caliber, primary_acuity, hunter_munitions, semi_rifle_cannonade, continuous_misery, primed_chamber, riven, high_voltage]
+    score: 21.815930742615965
+    fp: 7d29aa16e3ce9c69
+    mods: [primary_acuity, serration, bladed_rounds, vile_acceleration, vital_sense, riven, primed_cryo_rounds, malignant_force]
     evolutions: [vectis_prime_evo1_incarnon_form, vectis_prime_inciting_incident, vectis_prime_rapid_reinforcement, vectis_prime_critical_parallel]
-    arcanes: [primary_frostbite]
+    arcanes: [primary_deadhead]
     riven:
-      bonuses: [critical_chance, critical_damage, multishot]
-      malus: magazine_capacity
-      rolls: [1.1, 1.1, 1.1, 0.9]
+      bonuses: [critical_chance, fire_rate]
+      rolls: [1.1, 1.1]
   - weapon: verglas
     mode: base
     score: 1.0709696217009028
