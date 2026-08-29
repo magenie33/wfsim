@@ -10,7 +10,7 @@
 benchmark: group_clear
 source: submissions
 submissions: 3464
-engine: e0a212b8de95b97d892fe7eb20c0fe34f2a5f03d
+engine: 3ce16aa24b5000fdcf6ee89640938ee9cfbde5c3
 entries:
   - weapon: acceltra_prime
     mode: base
