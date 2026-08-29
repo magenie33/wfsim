@@ -237,7 +237,8 @@ ui:
   "A body that dies respawns where it stood, so the arrangement is the same at the end as at the start and the score is a rate rather than a race to the last body.": 死掉的目标在原地重生，所以阵型从头到尾一样，分数是一个速率而不是清空最后一个的竞速。
   "A donation supports this site's running costs and nothing else — it is not a purchase, and nothing on this site is for sale.":
     捐助仅用于本站的运营成本，除此以外没有别的用途——它不是一次购买，本站也没有任何东西在出售。
-  "A desktop version is available for Windows and Linux.": "桌面版支持 Windows 和 Linux。"
+  "A desktop version is available for Windows.": "桌面版目前只支持 Windows。"
+  "hosted on {name} — this is where the file comes from": "文件存放在{name}，这就是它的源头"
   "A gauge bought with kills is worth what the fight lets you earn: against something that will not die, this mode is the base one.": 用击杀换来的充能条，值多少取决于这场战斗让你赚到多少 —— 面对一个打不死的目标，这个模式就等于基础模式。
   "A number. Nothing bought here moves a result by one decimal — an in-game measurement is the only thing that changes what the engine does.":
     一个数字。这里买到的东西不会让任何结果动一位小数——能改变引擎行为的只有游戏内实测，没有第二样。

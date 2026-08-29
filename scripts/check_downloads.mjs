@@ -1,22 +1,28 @@
-// THE DOWNLOAD OFFER ANSWERS THE MACHINE ASKING, and has four answers.
+// THE DOWNLOAD OFFER ANSWERS THE MACHINE ASKING, and has three answers.
 //
 // The home page offers the desktop build, and what it should say depends on
-// where it is read: a platform we build for gets its own button, a desktop we
+// where it is read: the platform we build for gets its own button, a desktop we
 // do NOT build for is told so instead of being shown an executable it cannot
 // run, and a phone is shown nothing at all — it is already running the thing a
 // download would install.
 //
-// Only ONE of those four is visible on the machine this is written on, so
-// checking by looking is checking a quarter of it. Worse, three of the four
-// failure modes are silent and plausible: a Mac reader shown `WFSim.exe`, a
-// phone reader shown a 34 MB download, a Linux reader shown Quark (which has
-// no Linux build in it). Each looks like a working page.
+// Only ONE of those is visible on the machine this is written on, so checking
+// by looking is checking a third of it. Worse, the failure modes are silent and
+// plausible: a Mac reader shown `WFSim.exe`, a phone reader shown a 34 MB
+// download. Each looks like a working page.
 //
-// IT ALSO PINS THE ORDER OF SOURCES, because that is the whole reason the table
-// is two levels deep (owner, 2026-08-26): which PLATFORM someone needs is
-// decided by their machine, which SOURCE is best is decided by where they are,
-// and Quark leads on Windows precisely because the readers this project is
-// mostly for are the ones GitHub is slowest for.
+// IT PINS THE SOURCE BADGE, which is the offer's other half (owner,
+// 2026-08-29). This site does not host the executable — it lives on a Quark
+// network drive — and a reader about to run a downloaded binary is entitled to
+// see whose drive it is on BEFORE they click. A badge that drew an icon and no
+// NAME would look finished and identify nothing, which is why the name is
+// asserted rather than the element.
+//
+// WINDOWS ONLY, FOR NOW. The Linux row was built before anyone asked for it and
+// cost the offer its shape; the AppImage is still cut by the release workflow
+// and still on the GitHub release page, it is simply not what the hero is
+// about. The assertions that used to cover it are now the negative control:
+// a Linux reader must be TOLD, not handed an .exe.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ base: process.argv[2] });
@@ -36,14 +42,21 @@ const READ = `(() => {
   const host = document.getElementById("hero-dl");
   if (!host) return { missing: true };
   const btn = host.querySelector(".dl-btn");
-  const links = [...host.querySelectorAll("a")].map((a) => a.href);
+  const src = host.querySelector(".dl-src");
   return {
     hidden: !!host.hidden,
     button: btn ? btn.textContent.trim() : null,
     buttonHref: btn ? btn.href : null,
-    links,
-    rows: [...host.querySelectorAll(".dl-row .dl-os")].map((e) => e.textContent.trim()),
-    text: (host.innerText || "").replace(/\\s+/g, " ").trim(),
+    srcName: src ? src.textContent.trim() : null,
+    srcHref: src ? src.href : null,
+    srcIcon: !!(src && src.querySelector("svg")),
+    links: [...host.querySelectorAll("a")].map((a) => a.href),
+    // NOT NORMALISED, deliberately. A whitespace regex here sits inside a
+    // TEMPLATE LITERAL, which eats the backslash — the page then runs /s+/g
+    // and replaces every letter s in the sentence with a space, so the
+    // assertion below read "only supports Window ." and failed on a correct
+    // page. It only greps this string, so there is nothing to normalise for.
+    text: host.innerText || "",
   };
 })()`;
 
@@ -56,8 +69,6 @@ for (const [name, ua] of Object.entries(UAS)) {
   seen[name] = await app.evaluate(READ);
 }
 
-const has = (v, s) => (v.links || []).some((u) => u.includes(s));
-
 // ---- 1. A PHONE IS SHOWN NOTHING ----------------------------------------
 // Not "a smaller button": an executable a phone cannot execute is noise on the
 // one screen with the least room for it, and the reader is already using the
@@ -66,52 +77,40 @@ check("a phone is offered nothing at all",
   seen.Android.hidden === true,
   JSON.stringify(seen.Android).slice(0, 160));
 
-// ---- 2. EACH BUILT PLATFORM GETS ITS OWN BUTTON --------------------------
+// ---- 2. THE PLATFORM WE BUILD FOR GETS ITS OWN BUTTON --------------------
 check("Windows is offered Windows",
   /Windows/.test(seen.Windows.button || ""),
   `button ${JSON.stringify(seen.Windows.button)}`);
-check("...and its first source is Quark, not GitHub",
+check("...and it goes to the network drive, not GitHub",
   (seen.Windows.buttonHref || "").includes("pan.quark.cn"),
   seen.Windows.buttonHref || "(no button)");
 
-check("Linux is offered Linux",
-  /Linux/.test(seen.Linux.button || ""),
-  `button ${JSON.stringify(seen.Linux.button)}`);
-check("...and its source is the AppImage",
-  (seen.Linux.buttonHref || "").endsWith("WFSim.AppImage"),
-  seen.Linux.buttonHref || "(no button)");
-
-// ---- 3. THE PLATFORM IT IS NOT STILL REACHABLE ---------------------------
-// Somebody downloading for another machine is being deliberate; the other rows
-// are listed rather than hidden behind a control they would have to find.
-check("Windows can still reach the Linux build",
-  has(seen.Windows, "WFSim.AppImage") && seen.Windows.rows.includes("Linux"),
-  `rows ${JSON.stringify(seen.Windows.rows)}`);
-check("Linux can still reach the Windows build",
-  has(seen.Linux, "pan.quark.cn") && seen.Linux.rows.includes("Windows"),
-  `rows ${JSON.stringify(seen.Linux.rows)}`);
+// ---- 3. THE SOURCE IS NAMED BESIDE IT -----------------------------------
+// The NAME is the assertion, not the element: an icon alone identifies nothing,
+// which is the whole failure this badge exists to prevent.
+check("the source is named beside the button",
+  (seen.Windows.srcName || "").includes("夸克网盘"),
+  `badge ${JSON.stringify(seen.Windows.srcName)}`);
+check("...with a mark, and pointing at the same place",
+  seen.Windows.srcIcon === true
+    && (seen.Windows.srcHref || "") === (seen.Windows.buttonHref || "x"),
+  `icon ${seen.Windows.srcIcon}, href ${seen.Windows.srcHref}`);
 
 // ---- 4. A PLATFORM WE DO NOT BUILD FOR IS TOLD SO ------------------------
 // The negative control, and the one a check that only tested Windows would
-// pass while the page handed a Mac reader an .exe. Warframe has no macOS
-// client either, so this is rarely anyone — which is exactly why it would go
-// unnoticed.
-check("macOS is offered no button",
-  seen.macOS.button === null && seen.macOS.hidden === false,
-  `button ${JSON.stringify(seen.macOS.button)}, hidden ${seen.macOS.hidden}`);
-check("...and is told which platforms exist",
-  seen.macOS.rows.includes("Windows") && seen.macOS.rows.includes("Linux"),
-  `rows ${JSON.stringify(seen.macOS.rows)}`);
+// pass while the page handed a Mac or Linux reader an .exe.
+for (const os of ["macOS", "Linux"]) {
+  check(`${os} is offered no button`,
+    seen[os].button === null && seen[os].hidden === false,
+    `button ${JSON.stringify(seen[os].button)}, hidden ${seen[os].hidden}`);
+  check(`...and ${os} is told the desktop build is Windows`,
+    /Windows/.test(seen[os].text || ""),
+    (seen[os].text || "").slice(0, 120));
+  // AND IS HANDED NOTHING IT CANNOT RUN. Saying the right sentence beside a
+  // live .exe link would read as a pass on every assertion above.
+  check(`...and ${os} is handed no executable`,
+    !(seen[os].links || []).some((u) => /\.exe|pan\.quark\.cn/.test(u)),
+    JSON.stringify(seen[os].links));
+}
 
-// ---- 5. EVERY SOURCE IN THE TABLE IS REACHABLE FROM SOMEWHERE ------------
-// A source added to `DOWNLOADS` and rendered by nothing is the failure this
-// two-level shape exists to prevent, and it would look exactly like a working
-// page from whichever machine the author happened to test on.
-const everywhere = [...new Set([...seen.Windows.links, ...seen.Linux.links, ...seen.macOS.links])];
-check("every configured source appears on the page",
-  everywhere.some((u) => u.includes("pan.quark.cn"))
-    && everywhere.some((u) => u.endsWith("WFSim.exe"))
-    && everywhere.some((u) => u.endsWith("WFSim.AppImage")),
-  everywhere.join(" "));
-
-await app.finish("the download offer answers the machine asking, on all four");
+await app.finish("the download offer answers the machine asking");

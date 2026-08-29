@@ -190,6 +190,33 @@ Upload once. It is a **download link, not an update channel** — a network driv
 has no stable direct URL, and automated downloads would not count as real
 traffic anyway.
 
+### What the home page offers, and what it says about it
+
+**Windows only, for now** (owner, 2026-08-29). The release workflow still cuts
+`WFSim.AppImage` and the GitHub release page still lists it; the hero simply is
+not about it. The Linux row was built before anyone asked for it and it cost the
+offer its shape — a Windows button, a GitHub link beside it, then a second row
+reading `Linux · GitHub`: four things for what is one decision. Warframe on Linux
+is Proton, a smaller audience than the row it was taking.
+
+**The source is named beside the button.** This site does not host the
+executable — it is on a Quark network drive — and a reader about to run a
+downloaded binary is entitled to see whose drive it is on BEFORE they click
+rather than after the tab has opened. The badge is a link to the same place, so
+"where does this come from" and "take me there to look first" are one click
+apart. Its mark is a **generic drive glyph, not Quark's own logo**: the badge has
+to say which service this is, which the name does; reproducing somebody else's
+trademark to do it would borrow their mark for a claim they have not made about
+this file.
+
+`scripts/check_downloads.mjs` holds all of it, and the NAME is what it asserts
+rather than the element — an icon alone identifies nothing, which is the failure
+the badge exists to prevent. Its negative control is the other two desktops: a
+Mac or Linux reader must be TOLD, and must be handed no `.exe` link, since
+printing the right sentence beside a live download would pass every other
+assertion.
+
+
 ## Three ways this builds cleanly and ships the wrong thing
 
 All three were found in one afternoon, all three produced a zero exit code, and

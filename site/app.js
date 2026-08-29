@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "8dadd720+ · 2026-08-29 01:06Z";
+const BUILD_ID = "66d55616+ · 2026-08-29 02:05Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -17732,50 +17732,51 @@ const DESKTOP_POLL_MS = 700;
 const DESKTOP_CHECK_MS = 60 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
-// THE DESKTOP DOWNLOADS — a PLATFORM, and the SOURCES it can be had from.
+// THE DESKTOP DOWNLOAD — one platform, and the SOURCE it comes from.
 //
-// TWO LEVELS, NOT A LINK (owner, 2026-08-26). Which platform someone needs is
-// decided by their machine; which source is best is decided by where they are,
-// and neither answer is the other's. A single URL modelled neither, and the day
-// that stopped working was the day Linux was added and GitHub became a mirror —
-// the same day it was written.
+// WINDOWS ONLY, FOR NOW (owner, 2026-08-29). The Linux entry was built and
+// listed before anyone had asked for it, and it cost the offer its shape: the
+// hero drew a Windows button, a GitHub link beside it, and then a second row
+// saying "Linux · GitHub" — four things for what is one decision. Warframe on
+// Linux is Proton, which is a smaller audience than the row it was taking.
 //
-// A SOURCE IS ORDERED, NOT RANKED BY US. The first one listed is what the
-// button offers, and for Windows that is the network drive, because the readers
-// this project is mostly for are the ones GitHub is slowest for. Everything
-// else is one click away rather than hidden: `latest/download/<file>` is a
-// permanent GitHub URL that always resolves to the newest release, so this
-// table does not go stale when a release is cut.
+// THE SOURCE IS NAMED BESIDE THE BUTTON, which is the whole point of the badge
+// (owner, 2026-08-29). The file is not hosted by this site: it lives on a Quark
+// network drive, and a reader about to run a downloaded executable is entitled
+// to see where it is coming from BEFORE they click rather than after the tab
+// has opened. That drive is also the reason the client exists — measured from
+// Shanghai, it serves 4.6x faster than Cloudflare does (AGENTS.md), and the
+// readers this project is mostly for are exactly the ones GitHub is slowest
+// for.
 const DOWNLOADS = [
   {
     os: "Windows",
     // Anything that says Windows and is not a phone claiming to be one.
     detect: (ua) => /Windows NT/i.test(ua),
     file: "WFSim.exe",
-    sources: [
-      { name: "夸克网盘", url: "https://pan.quark.cn/s/dc8fe9046d6a", note: "China" },
-      { name: "GitHub", url: "https://github.com/magenie33/wfsim/releases/latest/download/WFSim.exe" },
-    ],
-  },
-  {
-    os: "Linux",
-    // Android reports Linux too, and a phone cannot use a desktop build.
-    detect: (ua) => /Linux/i.test(ua) && !/Android/i.test(ua),
-    file: "WFSim.AppImage",
-    sources: [
-      { name: "GitHub", url: "https://github.com/magenie33/wfsim/releases/latest/download/WFSim.AppImage" },
-    ],
+    source: {
+      name: "夸克网盘",
+      url: "https://pan.quark.cn/s/dc8fe9046d6a",
+      // A GENERIC DRIVE MARK, not Quark's own. The badge has to SAY which
+      // service this is, which the name does; reproducing somebody else's
+      // logo to do it would be borrowing their trademark for a claim they
+      // have not made about this file.
+      icon: '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">'
+        + '<path fill="none" stroke="currentColor" stroke-width="1.7"'
+        + ' stroke-linecap="round" stroke-linejoin="round"'
+        + ' d="M6.5 18.5a4 4 0 0 1-.4-8A5.5 5.5 0 0 1 17 10.2a3.6 3.6 0 0 1 .3 8.3z'
+        + 'M12 9.5v6m0 0-2.4-2.4M12 15.5l2.4-2.4"/></svg>',
+    },
   },
 ];
 
 /// Draws the offer, and says nothing it cannot back.
 ///
 /// THREE ANSWERS, because there are three situations. A machine we build for
-/// gets its own button. A DESKTOP we do not build for (macOS) is told so
-/// plainly rather than shown a Windows button it cannot use — Warframe has no
-/// Mac client either, so this is rarely anyone. A PHONE is shown nothing at
-/// all: it is already running the thing a download would install, and an
-/// executable it cannot execute is noise.
+/// gets its own button. A DESKTOP we do not build for (macOS, Linux) is told so
+/// plainly rather than shown a Windows button it cannot use. A PHONE is shown
+/// nothing at all: it is already running the thing a download would install,
+/// and an executable it cannot execute is noise.
 function renderDownloads() {
   const host = document.getElementById("hero-dl");
   if (!host) return;
@@ -17785,32 +17786,24 @@ function renderDownloads() {
     return;
   }
   const mine = DOWNLOADS.find((d) => d.detect(ua));
-  const others = DOWNLOADS.filter((d) => d !== mine);
-
-  const srcLink = (s, cls) =>
-    `<a class="${cls}" href="${escHtml(s.url)}" target="_blank" rel="noopener">${escHtml(s.name)}</a>`;
 
   let head;
   if (mine) {
-    const [first, ...rest] = mine.sources;
-    head = `<a class="dl-btn" href="${escHtml(first.url)}" target="_blank" rel="noopener">`
+    const src = mine.source;
+    // THE BADGE IS A LINK TO THE SAME PLACE, so it is an answer rather than a
+    // label: "where does this come from" and "take me there to look first" are
+    // the same question, asked by the same reader, one click apart.
+    head = `<a class="dl-btn" href="${escHtml(src.url)}" target="_blank" rel="noopener">`
       + `${escHtml(tr("Download for {os}").replace("{os}", mine.os))}</a>`
-      + (rest.length ? `<span class="dl-alt">${rest.map((s) => srcLink(s, "wl")).join(" · ")}</span>` : "");
+      + `<a class="dl-src" href="${escHtml(src.url)}" target="_blank" rel="noopener"`
+      + ` title="${escHtml(trF("hosted on {name} — this is where the file comes from",
+        { name: src.name }))}">${src.icon}<span>${escHtml(src.name)}</span></a>`;
   } else {
-    head = `<span class="dl-why">${escHtml(tr("A desktop version is available for Windows and Linux."))}</span>`;
+    head = `<span class="dl-why">${escHtml(tr("A desktop version is available for Windows."))}</span>`;
   }
 
-  // The platforms that are not this machine's, one line each. Not a menu to
-  // open: two rows of small text cost less than a control that has to be
-  // discovered, and somebody downloading for another machine is deliberate.
-  const rows = (mine ? others : DOWNLOADS)
-    .map((d) => `<div class="dl-row"><span class="dl-os">${escHtml(d.os)}</span>`
-      + d.sources.map((s) => srcLink(s, "wl")).join(" · ") + "</div>")
-    .join("");
-
   host.innerHTML = `<div class="dl-head">${head}</div>`
-    + `<div class="dl-why">${escHtml(tr("The same calculator on your own machine — opens instantly, works offline, and updates itself."))}</div>`
-    + (rows ? `<div class="dl-more">${rows}</div>` : "");
+    + `<div class="dl-why">${escHtml(tr("The same calculator on your own machine — opens instantly, works offline, and updates itself."))}</div>`;
   host.hidden = false;
 }
 

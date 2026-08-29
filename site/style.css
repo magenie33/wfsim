@@ -1845,16 +1845,16 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .dl-btn{border:1px solid var(--gold);color:var(--gold);border-radius:8px;
   padding:7px 16px;text-decoration:none;white-space:nowrap;font-weight:600}
 .dl-btn:hover{background:var(--gold);color:var(--surface)}
-/* The other sources for THIS machine, beside the button rather than under it:
-   they are the same download, not a different one. */
-.dl-alt{font-size:13px;color:var(--muted)}
+/* WHERE THE FILE COMES FROM, beside the button rather than under it. This site
+   does not host the executable, and a reader about to run a downloaded binary
+   is entitled to see whose drive it is on BEFORE they click. Quiet by default
+   and it lights up on hover, because it is an identification first and a link
+   second. */
+.dl-src{display:inline-flex;align-items:center;gap:5px;font-size:13px;
+  color:var(--muted);text-decoration:none;white-space:nowrap}
+.dl-src:hover{color:var(--text-2)}
+.dl-src svg{flex:none;opacity:.85}
 .dl-why{color:var(--text-2);font-size:13px;margin-top:6px}
-/* The platforms that are not this machine's. Small, and always visible — two
-   rows of text cost less than a control somebody has to discover. */
-.dl-more{margin-top:8px;font-size:12px;color:var(--muted);
-  display:flex;flex-direction:column;gap:3px}
-.dl-row{display:flex;gap:8px;align-items:baseline}
-.dl-os{color:var(--text-2);min-width:62px}
 
 /* THE WHOLE FIGHT — a reading surface first, so it is dense and quiet. Folded
    shut by default; the ordinary reader is not asked to care. */
