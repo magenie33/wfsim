@@ -9,7 +9,7 @@
 # migrating anything, because the builds are still builds.
 benchmark: group_clear
 source: submissions
-submissions: 3505
+submissions: 3544
 engine: 553aae3cb1da2b327d9a56c7c4a7586fd3a704f5
 entries:
   - weapon: acceltra_prime
@@ -25,6 +25,12 @@ entries:
     exilus: vigilante_supplies
     mods: [galvanized_chamber, serration, galvanized_aptitude, magnetic_capacity, radiated_reload, high_voltage, malignant_force, primed_cryo_rounds]
     arcanes: [primary_frostbite]
+  - weapon: aeolak
+    mode: base
+    score: 23.09434443316296
+    fp: 430fb221e2464d86
+    mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, hellfire]
+    arcanes: [primary_deadhead]
   - weapon: aeolak
     mode: base
     score: 12.017049643465652
@@ -4338,6 +4344,16 @@ entries:
     mods: [galvanized_diffusion, hornet_strike, primed_pistol_gambit, lethal_torrent, pistol_elementalist, scorch, pistol_pestilence, jolt]
     evolutions: [mk1_furis_evo1_incarnon_form, mk1_furis_stormburst, mk1_furis_extended_volley, mk1_furis_elemental_balance]
     arcanes: [secondary_encumber]
+  - weapon: mutalist_cernos
+    mode: base
+    score: 1.3915991334099846
+    fp: b0ed4b40b997710f
+    mods: [amalgam_serration, galvanized_chamber, galvanized_aptitude, rifle_elementalist, riven, stormbringer, thermite_rounds, rime_rounds]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage_to_grineer]
+      malus: weapon_recoil
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: nataruk_perfect
     mode: base
     score: 65.34015785828082
@@ -6485,6 +6501,60 @@ entries:
       bonuses: [heat, multishot]
       malus: critical_chance
       rolls: [1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
+    score: 3.7508629366940136
+    fp: 31a487ad92718426
+    mods: [split_chamber, rifle_elementalist, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds, riven]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
+    score: 3.652153704058736
+    fp: 2ee5de2fccd3b989
+    mods: [split_chamber, serration, rifle_elementalist, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds, riven]
+    riven:
+      bonuses: [fire_rate, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
+    score: 3.652153704058736
+    fp: 15ad8629a4d58194
+    mods: [heavy_caliber, split_chamber, rifle_elementalist, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds, riven]
+    riven:
+      bonuses: [fire_rate, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
+    score: 3.576616861383543
+    fp: aafa45b6d0069e72
+    mods: [galvanized_chamber, serration, rifle_elementalist, magnetic_capacity, rime_rounds, malignant_force, thermite_rounds, riven]
+    riven:
+      bonuses: [fire_rate, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
+    score: 3.4621001825713735
+    fp: 67c833a527ae18ca
+    mods: [galvanized_chamber, serration, rifle_elementalist, magnetic_capacity, rime_rounds, malignant_force, hellfire, riven]
+    riven:
+      bonuses: [fire_rate, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: verglas_prime
+    mode: base
+    score: 3.4353029650239875
+    fp: 458d280b6e545b87
+    mods: [split_chamber, serration, rifle_elementalist, vile_acceleration, magnetic_capacity, rime_rounds, malignant_force, riven]
+    riven:
+      bonuses: [damage, heat, multishot]
+      malus: damage_to_infested
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: verglas_prime
     mode: base
     score: 2.735093527243121
