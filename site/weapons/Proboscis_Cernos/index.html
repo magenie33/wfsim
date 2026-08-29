@@ -115,7 +115,7 @@
            theme button carries its own handler, so a second copy would be a
            control that looks live and is not. That is why this is a container
            swap rather than a mobile menu built from a list of links.
-           WHAT IT MUST NOT LOSE (owner, 2026-08-07): the site's two
+           WHAT IT MUST NOT LOSE: the site's two
            destinations AND the right-hand row. Before this, a phone saw
            neither the nav (display:none under 700px) nor the support link, and
            the footer was the only way to either. -->
@@ -133,8 +133,7 @@
           <a class="tnav" data-nav="benchmark" href="/benchmark" data-i18n>Benchmark</a>
         </nav>
         <div class="tblinks">
-          <!-- THE RIGHT-HAND ROW IS THREE THINGS AND AN OVERFLOW (owner,
-               2026-08-19). It used to be seven ghost buttons of equal weight,
+          <!-- THE RIGHT-HAND ROW IS THREE THINGS AND AN OVERFLOW. It used to be seven ghost buttons of equal weight,
                which is three unrelated categories wearing one costume: page
                SETTINGS (compute, language, theme), this project ELSEWHERE
                (GitHub, QQ, Discord) and the one ASK (Support). A reader
@@ -152,7 +151,7 @@
                `applyCommunityOrder()` swaps it. -->
           <span id="lang-select"></span>
           <button id="theme-toggle" class="ghost-btn" title="Toggle light / dark" data-i18n-title aria-label="Toggle theme">◐</button>
-          <!-- The QQ mark is the penguin (user, 2026-07-31), drawn inline in
+          <!-- The QQ mark is the penguin, drawn inline in
                currentColor: an icon reads at topbar size where two letters did
                not, and a monochrome silhouette sits with the other ghost
                buttons instead of dropping a brand block into them. The QQ link
@@ -169,7 +168,7 @@
                button is a control; a control is not an ask, and a heart with
                no word beside it is read as "favourite" about as often as it is
                read as "donate".
-               THE RULE IT USED TO STATE WAS NARROWED (owner, 2026-08-19). It
+               THE RULE IT USED TO STATE WAS NARROWED. It
                read "no modal, no banner, no thank-you box after a run", which
                put the ask in the chrome and nowhere else — i.e. as far from
                the moment the tool delivers anything as a page can put it. What
@@ -221,7 +220,7 @@
          it is a TABLE rather than a link: one row per platform, and several
          SOURCES under each. A single hard-coded URL was fine for the hour there
          was one download; it stops being fine the moment there are two
-         platforms and a mirror, which is the same day (owner, 2026-08-26).
+         platforms and a mirror, which is the same day.
 
          Hidden inside the desktop app itself, where a download link is an
          invitation to install what is already running. -->
@@ -268,8 +267,7 @@
        what you make with them — so a donation buys no feature, no tier and no
        badge, and that is a constraint on the product, not copy.
 
-       THE PROMISE IS NARROW AND ABSOLUTE RATHER THAN BROAD AND HEDGED (owner,
-       2026-08-19). It used to be "no feature will ever be locked behind a
+       THE PROMISE IS NARROW AND ABSOLUTE RATHER THAN BROAD AND HEDGED. It used to be "no feature will ever be locked behind a
        payment", which is checkable and was therefore worth something; the
        draft that replaced it read "most core features stay free", which only
        the promiser can adjudicate — a promise nobody else can check is not a
@@ -284,31 +282,70 @@
        That is a stronger statement than any pledge on this page and it was
        being spent as the adjective in "free and open source".
 
-       NO CLAIM ABOUT ADVERTISING, in either direction (owner, 2026-08-19). The
+       NO CLAIM ABOUT ADVERTISING, in either direction. The
        page carried "no ads" as a promise; it is withdrawn rather than
        reversed, and withdrawing one nobody has relied on yet costs nothing
        where breaking it later would cost everything.
 
        There is NO SUGGESTED-AMOUNT LADDER here, and that is a decision rather
-       than an omission (owner, 2026-08-06): $5 to start, anything after that.
+       than an omission: $3 to start, anything after that.
        The cost list below states what the bill IS, which is the same
        information without ever reading as a price list — the one shape DE's
-       rule does not allow. Ko-fi carries the amounts itself: a $5 price per
+       rule does not allow. Ko-fi carries the amounts itself: its price per
        coffee gives its own x1/x3/x5 plus a free field, so a ladder on this page
-       would only be a second, staler copy of one. -->
+       would only be a second, staler copy of one.
+
+       THE ORDER IS THE ARGUMENT. What this is and what
+       it holds, then why it can be checked, then what the reader has already
+       got out of it, and only then the door. Three findings decide it:
+
+         - a page's strongest asset is a VALUE PROPOSITION stated before the
+           ask (NextAfter, whose donation-page experiments put a full statement
+           of why at +150% conversion and a redesign around one at +44.8%);
+         - a FACTS-first appeal beat a personal one about threefold in
+           Wikimedia's own banner testing, which is the closest published
+           analogue to this page — free, no perks, funded by saying what it
+           costs;
+         - a request that LEGITIMISES a small gift takes participation up
+           without taking the average down (Cialdini & Schroeder 1976: 29% to
+           50%, mean gift unchanged), and is strongest beside social proof.
+
+       EVERY NUMBER ON IT IS COUNTED, NOT TYPED: `PROJECT_FACTS` (the site
+       build) and `META`/`BOARD` (the page itself) supply them, so nothing here
+       is a number anybody has to remember to update. And a figure is claimed
+       only if a READER can check it against the public repository — a count of
+       in-game measurements cannot be, so it is not on the page. -->
+  <!-- WHAT A MONTHLY SUBSCRIPTION BUYS, and the line it may not cross. DE's Content Policy forbids charging for access to what is
+       made with Warframe assets, and this project's own promise is that
+       nothing bought moves a result. Both survive, because what a subscription
+       buys is ORDER and PRESENCE rather than product: a channel where the
+       development is discussed, and reports read first. Every fix still ships
+       to everyone at once, and every measurement still wins on being right.
+
+       IT IS NOT THE WEAPON QUEUE. Voting on intake order is a perk with an
+       expiry date — the roster fills — and a perk that quietly becomes
+       worthless is worse than none.
+
+       NO RESPONSE TIME IS PROMISED ANYWHERE, in any language. "Read first" is
+       an order; "within N hours" is an obligation that grows with every
+       subscriber, and that is the shape maintainers are buried by. -->
   <main id="support-page" class="support-page" hidden>
     <h1 class="hero-h" data-i18n>Support WFSim</h1>
     <!-- What this says nothing about is accounts, or anything else that does
-         not exist yet (owner, 2026-08-06, narrowed 2026-08-19). The promise is
+         not exist yet. The promise is
          about the THREE MODULES and about the LICENCE — the two things that
          are true today and can be checked by the reader today. -->
-    <p class="hero-sub" data-i18n>WFSim is free software, licensed AGPL-3.0. Building, simulating and optimizing are the whole of this site, and they are the same for everyone: no account, no payment, no part held back.</p>
-    <p class="hero-sub" data-i18n>The engine, the game data and the wasm it all runs on are public. If you ever stop recognising what this becomes, you can run your own — that is not my assurance, it is the licence.</p>
-    <p class="hero-sub" data-i18n>It does take money and time to run. If it has ever saved you a Forma, you can chip in.</p>
+    <p class="hero-sub" data-i18n>A Warframe calculator that matches in-game measurements, item by item. Building, simulating and optimizing are the whole of it, and they are the same for everyone: no account, no payment, no part held back.</p>
 
-    <div id="support-channels" class="sup-channels"></div>
+    <!-- THE FACTS STRIP. Filled by `projectFacts()` — the roster and the pools
+         from META, the tests, checks and measurements from the site build. It
+         is the first thing on the page because a reader deciding whether this
+         is worth anything is asking what is behind it, and this answers in the
+         only currency this project accepts. -->
+    <div id="support-facts" class="sup-facts"></div>
+    <p id="support-built" class="sup-note" hidden></p>
 
-    <!-- THE EVIDENCE, WHERE SOMEBODY READS IT (owner, 2026-08-19). This site's
+    <!-- THE EVIDENCE, WHERE SOMEBODY READS IT. This site's
          strongest property is that it says what it CANNOT do — a weapon
          banner, an evolution chip, a mod line, an arcane line, an enemy caveat
          (`check_disclosure.mjs` asserts all five). Every one of them lives
@@ -330,24 +367,43 @@
       </div>
     </section>
 
+    <!-- WHAT THE READER HAS ALREADY GOT OUT OF IT, counted on their own
+         machine. It is the last thing before the door because that is where a
+         reason to give is worth the most, and it is drawn only once there is
+         something to draw — a fresh visitor is told nothing about themselves. -->
+    <p id="support-usage" class="sup-usage" hidden></p>
+
+    <section class="block">
+      <div class="bh"><h2 data-i18n>Chip in</h2></div>
+      <div class="bb">
+        <div id="support-channels" class="sup-channels"></div>
+        <!-- LEGITIMISING THE SMALL GIFT, which is the one sentence on this page
+             with a replicated experiment behind it. It states a floor and
+             refuses to state a target: a target turns a thank-you into a
+             fundraiser, and there is nothing here that a sum unlocks. -->
+        <p class="sup-note" data-i18n>One coffee is enough, and it is not a smaller version of anything — there is no target here and no total to fill. Give once, or monthly if you would rather.</p>
+        <p id="support-count" class="sup-count" hidden></p>
+      </div>
+    </section>
+
     <section class="block">
       <div class="bh"><h2 data-i18n>Where it goes</h2></div>
       <div class="bb">
         <ul class="sup-costs">
           <li data-i18n>The wfsim.app domain, and its renewal.</li>
-          <li data-i18n>Cloudflare — the bandwidth and build minutes that serve the app and its art from one origin.</li>
-          <li data-i18n>Time: new weapons, new mechanics, and the in-game measurements every golden test is calibrated against.</li>
+          <li data-i18n>Cloudflare — the bandwidth and build minutes that serve the app and its art from one origin, so that nothing this page needs is fetched from somewhere that might be unreachable where you are.</li>
+          <li data-i18n>Time, which is most of it: new weapons, new mechanics, and the hours in the game that every calibrated number is measured against.</li>
         </ul>
-        <p class="sup-note" data-i18n>$5 to start, and after that whatever you think it is worth. There is no tier and no target — this is what the bill is, not a price list.</p>
       </div>
     </section>
 
     <section class="block">
-      <div class="bh"><h2 data-i18n>What a donation never buys</h2></div>
+      <div class="bh"><h2 data-i18n>What it never buys</h2></div>
       <div class="bb">
         <ul class="sup-costs">
-          <li data-i18n>A number. Nothing bought here moves a result by one decimal — an in-game measurement is the only thing that changes what the engine does.</li>
-          <li data-i18n>No tiers, no perks, no supporter badge. A donation is a thank-you, not a purchase.</li>
+          <li data-i18n>A number. Nothing bought here moves a result by one decimal — an in-game measurement is the only thing that changes what the engine does, and it wins whoever reports it.</li>
+          <li data-i18n>A feature. Building, simulating and optimizing stay the same for everyone, and the guarantor of that is not me: this is AGPL-3.0, so the engine, the game data and the wasm are public and you can run your own.</li>
+          <li data-i18n>A monthly subscription buys order and company, never product: a channel where the work is discussed, and your reports read before the rest of the queue. Every fix still ships to everyone at once.</li>
           <li data-i18n>No tracking beyond what Cloudflare counts to serve the page.</li>
         </ul>
       </div>
@@ -400,7 +456,7 @@
     <!-- QUICK CALC settings: what every "what would this slot be worth as X"
          answer below is measured with. Page level, above the mods, because it
          is one configuration for all of them — not a tool inside one slot's
-         picker (user, 2026-08-01). -->
+         picker. -->
     <div class="quick-calc" id="quick-calc"></div>
 
     <!-- Block: Mods -->
@@ -412,9 +468,8 @@
          through its cycle" is what a board ranks, and the mods hang off that.
          ALWAYS DRAWN. A weapon with one way to be fired is still being fired
          in it, and the panel should say so rather than stay silent — the same
-         rule the Form control carried before this replaced it (user,
-         2026-07-31, restated 2026-08-07). One mode is stated, not offered. -->
-    <!-- EVERY BLOCK DECLARES WHOSE IT IS (owner, 2026-08-24).
+         rule the Form control carried before this replaced it. One mode is stated, not offered. -->
+    <!-- EVERY BLOCK DECLARES WHOSE IT IS.
          `data-module` is the ONE statement of which of the three modules (or
          which editor) a block belongs to, and everything that used to name
          them by id now derives from it: the CSS that hides the other modules'
@@ -461,7 +516,7 @@
           <div class="exlabel" data-i18n>Exilus</div>
           <div id="exilus" class="slots"></div>
           <!-- THE LEAST-KNOWN RULE IN THE FORMA MODEL, and the owner did not
-               know it either (2026-08-16). Every capacity number on this page
+               know it either. Every capacity number on this page
                assumes it, so it is stated where the slot is rather than left in
                docs/INVESTMENT.md. -->
           <div class="exhint" data-i18n>A polarity can be swapped between this slot and a main one — the slot stays Exilus. So its polarity counts toward any build, even one that leaves it empty.</div>
@@ -492,8 +547,7 @@
     <!-- Block: VALENCE — an ADVERSARY weapon's bonus element and how big it
          is. A Kuva Lich's, a Sister's or a Coda's, and a property of the COPY
          a player owns rather than of the model, which is why it is a build
-         axis beside the evolutions and not a weapon field (owner,
-         2026-08-13). Hidden on every weapon that is not one — the same "no
+         axis beside the evolutions and not a weapon field. Hidden on every weapon that is not one — the same "no
          choice, no control" rule every axis here follows. -->
     <section class="block" data-module="builder" id="element-block" hidden>
       <div class="bh"><span class="n">5</span><h2 data-i18n>Valence</h2><span class="sub" id="valence-sub"></span></div>
@@ -558,7 +612,7 @@
              different squads are two different fights, the same rule the
              ability buffs follow. They are OFFERED rather than typed, because a
              named shard has a source that can be checked against the wiki and a
-             typed +45% has nothing (owner, 2026-08-21). -->
+             typed +45% has nothing. -->
         <div id="sim-squad" class="sub-block"></div>
         <!-- NOT a technique: nobody plays "infinite ammo". These say what the
              run does not model, which is a different kind of claim. -->
@@ -568,13 +622,13 @@
              worth: the fight goes on to grant and decay these on their own
              triggers. The old hint said "locked = 100% uptime", which reads as
              "this box decides how much of the buff you get" — the opposite of
-             what the sim does (user, 2026-08-03). -->
+             what the sim does. -->
         <h3 class="sim-h" data-i18n>4 · Buffs <span class="sim-hint" data-i18n>the stacks the run STARTS with — the fight still grants and decays them on their own triggers</span>
           <button id="sim-buffs-all" class="ghost-btn small"></button></h3>
         <div id="sim-buffs"></div>
         <!-- THE FIGHT'S OWN STAT BONUSES. Everything this weapon is handed by
              something that is not its build, expressed as what it is WORTH:
-             (owner, 2026-08-13). No trigger, no clock, no stack count — the
+. No trigger, no clock, no stack count — the
              thing with a duration is the block below, and this is the thing
              without one. It sits BEFORE the Warframe buffs because it is the
              simpler claim
@@ -582,7 +636,7 @@
         <h3 class="sim-h" data-i18n>5 · Extra stats <span class="sim-hint" data-i18n>anything this weapon is handed from outside its build — it lands in the same bucket a mod would</span></h3>
         <div id="sim-extra" class="field-grid"></div>
         <!-- WARFRAME ABILITY BUFFS — INSIDE the fight, and wrapped so it still
-             reads as its own thing (owner, 2026-08-09). It is a section of the
+             reads as its own thing. It is a section of the
              scenario because that is where it already lives — it saves with
              the fight, travels with the fight across weapons, and the
              optimizer reads it off the fight — and it sits last because it is
@@ -597,14 +651,13 @@
         <h3 class="sim-h" data-i18n>7 · Measure <span class="sim-hint" data-i18n>what to read off the run — the scenario's own term, so an official ruler pins it</span></h3>
         <div id="sim-run" class="field-grid"></div>
         <!-- THE RUN COUNT — ITS OWN DIV, and deliberately outside every block
-             above (owner, 2026-08-13). It is not part of the fight, so an
+             above. It is not part of the fight, so an
              OFFICIAL ruler does not pin it: reading the board's scenario still
              lets you decide how long you are willing to wait. That is also why
              it is not in `lockOfficialScenario`'s list — the
              lock is for the fight's terms, and this is not one. -->
         <div id="sim-runs-block" class="runs-row"></div>
-        <!-- THE WHOLE FIGHT, INCLUDING THE PART THIS WEAPON HIDES (owner,
-             2026-08-27). The blocks above show what applies to the weapon in
+        <!-- THE WHOLE FIGHT, INCLUDING THE PART THIS WEAPON HIDES. The blocks above show what applies to the weapon in
              front of you, which is the right default and leaves two things
              invisible: a field this weapon FORCES (a sentinel's headshot rate
              is 0 whatever the document says) and a field it merely does not
@@ -666,7 +719,7 @@
     <section class="block" data-module="optimizer" id="opt-block">
       <div class="bh"><span class="n">⚙</span><h2 data-i18n>Optimize</h2><span class="sub" id="opt-sub" data-i18n>what to search, and how hard — the fight is the simulator's</span></div>
       <div class="bb">
-        <!-- TWO HALVES, AND NOW TWO BOXES (owner, 2026-08-29). The split has
+        <!-- TWO HALVES, AND NOW TWO BOXES. The split has
              been this tab's rule since 2026-08-02 and only headings said so,
              which cannot tell a reader WHICH preset bar owns the thing they
              are editing. A container says it without a sentence: everything
@@ -680,7 +733,7 @@
           <!-- THE SCOPE, IN THE BUILDER'S OWN ORDER, UNDER THE BUILDER'S OWN
                NUMBERS. The optimizer is the builder in bulk — it binds a SET on
                every axis where the builder binds a value — so the two must read
-               as one page (owner, 2026-08-29). Nothing here declares that order:
+               as one page. Nothing here declares that order:
                `orderOptScope` walks the builder's blocks and appends each axis's
                section as it meets it, stamping the heading from that block's own
                `.n` and `<h2>`. Reorder or rename a builder block and this
@@ -715,7 +768,7 @@
               <div id="opt-mods-sel"></div>
               <div id="opt-mods" class="combo-menu opt-modlist"></div>
               <!-- HOW FULL A SEARCHED BUILD MUST BE, AFTER THE MARKING AND
-                   NOT BEFORE IT (owner, 2026-08-29). It is not a filter and it
+                   NOT BEFORE IT. It is not a filter and it
                    is not a summary: it is the CONCLUSION you reach once the
                    required and the pooled are chosen, so it closes the list
                    rather than sitting over it. It shared a flex row with the
@@ -768,7 +821,7 @@
           <div id="opt-search" class="field-grid">
             <label data-i18n>Finalists <input id="opt-finalists" type="number" min="1" max="100" value="10"></label>
           </div>
-          <!-- CPU THREADS IS GONE (owner, 2026-08-29). How much of the machine
+          <!-- CPU THREADS IS GONE. How much of the machine
                the page may use is ONE setting and it is in the topbar
                (`compute-select`, a share of the reported cores); a second box
                here was a per-search override of a global preference, which is
@@ -795,7 +848,7 @@
           <div id="opt-buffs"></div>
         </div>
 
-        <!-- IN NEITHER HALF, AND THAT IS THE POINT (owner, 2026-08-29). The
+        <!-- IN NEITHER HALF, AND THAT IS THE POINT. The
              final round's run count is not what to search and it is not the
              fight — the fight has never carried a run count either. It is how
              hard YOU want to measure right now, so it lives outside both boxes
@@ -824,7 +877,7 @@
   </div>
   <div id="slot-menu" class="popover menu" hidden></div>
   <!-- THE dropdown. Every choose-one control on the site opens this one node
-       (owner, 2026-08-06), so a dropdown cannot look like a different
+, so a dropdown cannot look like a different
        dropdown somewhere else — there is only one. -->
   <div id="dd-popover" class="popover" hidden>
     <div class="addbar" id="dd-addbar"><input id="dd-search" type="text" placeholder="Search…" data-i18n-ph autocomplete="off" /></div>
@@ -860,7 +913,7 @@
          page neither side of a bug report can tell them apart — "still broken"
          and "still on the old file" look identical (owner, 2026-08-18, after
          three rounds of exactly that). -->
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">86afdc14+ · 2026-08-29 10:56Z</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">78627adf+ · 2026-08-29 16:39Z</span>
     </div>
   </footer>
 
