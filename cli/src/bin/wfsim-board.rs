@@ -372,11 +372,11 @@ fn main() {
     // Time is not an input: an untouched score is valid forever, and a score
     // whose engine moved is wrong immediately, not in an hour.
     // WHAT `--engine` IS NOW: the CODE, and only the code (`engine`, `webapi`,
-    // `cli`). It used to hash `data/` in as well, which made adding a weapon —
-    // a file no existing row reads — invalidate all 967 stored scores and buy a
-    // full rescore: about an hour of wall clock and thirty of CPU to reproduce
-    // numbers that could not have moved. The data half is
-    // now asked PER ROW, from the files that row actually reads.
+    // `cli`). Hashing `data/` in as well makes adding a weapon — a file no
+    // existing row reads — invalidate every stored score and buy a full
+    // rescore: about an hour of wall clock and thirty of CPU to reproduce
+    // numbers that could not have moved. The data half is asked PER ROW, from
+    // the files that row actually reads.
     let engine_fp = flag("--engine").unwrap_or_default();
     let mut known = load_scores(flag("--scores"), &bench_id);
     let mut reused = 0usize;
@@ -547,9 +547,8 @@ fn main() {
         // THE MODE THIS ENTRY WAS SUBMITTED FOR, and the fight it implies.
         //
         // A submission with no mode is played the way the arsenal plays it,
-        // which is exactly what the benchmarks used to pin as `form: default`.
-        // So every row already on a board keeps its score to the last digit
-        // while gaining the dimension.
+        // so a row carrying no mode keeps its score to the last digit while
+        // gaining the dimension.
         let modes = wfsim_engine::weapons_data::play_modes(&v.weapon);
         let want = s.get("mode").and_then(Value::as_str);
         let played = match want {
@@ -619,8 +618,8 @@ fn main() {
             o.insert("form".into(), json!(played.form()));
         }
         // ONE ROW PER BUILD, and the identity is computed BEFORE the fight
-        // because it now decides whether there is one to run. It used to be
-        // computed after, since dedup was all it was for.
+        // because it decides whether there is one to run at all, rather than
+        // being computed afterwards for dedup alone.
         //
         // The endpoint stores what was submitted, verbatim — it has no mod pool
         // and cannot tell an elemental mod from any other — so two spellings of

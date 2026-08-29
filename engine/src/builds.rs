@@ -753,9 +753,9 @@ pub fn validate_for_board_with(
         }
     }
 
-    // NO VALENCE CLAUSE HERE. It used to ask, gated on `requires_full`, and a
-    // ruler has nothing to have an opinion about: an adversary weapon with no
-    // progenitor element is not a build this board declines, it is not a build.
+    // NO VALENCE CLAUSE HERE. A ruler has nothing to have an opinion about:
+    // an adversary weapon with no progenitor element is not a build this board
+    // declines, it is not a build.
     // `validate` refuses it for every caller, which is where a legality rule
     // belongs.
 
@@ -958,12 +958,11 @@ pub fn validate_with(
 
     // ARCANES: one per pool THIS WEAPON seats, and each from that pool.
     //
-    // The seats used to come from `arcanes_data::slots()` — every arcane
-    // DIRECTORY that exists, sorted — so seat 0 was "primary" on every weapon
-    // in the roster. A secondary weapon's arcane was therefore checked against
-    // the primary pool and refused: `secondary_deadhead is not an arcane Dual
-    // Toxocyst can seat`. Two real Dual Toxocyst submissions were thrown away
-    // by it before anyone noticed, and nothing noticed because the
+    // NOT `arcanes_data::slots()` — every arcane DIRECTORY that exists,
+    // sorted — which makes seat 0 "primary" on every weapon in the roster. A
+    // secondary weapon's arcane is then checked against the primary pool and
+    // refused (`secondary_deadhead is not an arcane Dual Toxocyst can seat`),
+    // and a submission is thrown away silently, because the
     // scorer counted refusals without printing them.
     //
     // `weapons_data::arcane_pools` is the same answer the page shows, which is
@@ -1000,10 +999,10 @@ pub fn validate_with(
                 // AND IT IS MANDATORY. Every copy of an
                 // adversary weapon comes out of a Lich carrying an element, so
                 // a build with none is not a weaker build of that weapon — it
-                // is a weapon nobody has. It used to be accepted here and
-                // refused one layer up, by the board and only when the ruler
-                // asked; there is nothing for the ruler to have an opinion
-                // about, so the rule moved down to where legality lives.
+                // is a weapon nobody has. Accepting it here and refusing it
+                // one layer up — by the board, and only when the ruler asks —
+                // puts a legality rule where an opinion belongs, so it lives
+                // here instead.
                 return Err(format!(
                     "{} has no Valence element, and every copy of it comes out of a Lich with one ({})",
                     spec.name,
@@ -1934,9 +1933,9 @@ mod tests {
     ///
     /// Every copy in the game comes out of a Lich carrying an element, so a
     /// build with none is not a weaker build of that weapon — it is a weapon
-    /// nobody has. It used to be accepted by `validate` and refused one layer
-    /// up, by `validate_for_board` and only when the ruler asked for it, which
-    /// left every other caller free to score a gun that does not exist.
+    /// nobody has. Accepting it in `validate` and refusing it one layer up, in
+    /// `validate_for_board` and only when the ruler asks, leaves every other
+    /// caller free to score a gun that does not exist.
     ///
     /// Both directions, because a rule that only ever refuses is a rule nobody
     /// can satisfy: an element the weapon rolls is admitted and survives into
@@ -1969,12 +1968,11 @@ mod tests {
     /// ...AND A FULL ONE IS ADMISSIBLE TO THE BOARD, which is the half a
     /// legality rule can quietly take away.
     ///
-    /// The ruler asks for `valence: full` and used to be the only thing that
-    /// asked; the clause moved into `validate` (above), so the requirement is
-    /// now met by a build being legal at all. That is a strictly stronger rule
-    /// and it would be worth nothing if the wrapper had stopped accepting the
-    /// builds it now guarantees — the Kuva Nukor is the roster's first
-    /// adversary weapon, so nothing else would notice.
+    /// The ruler asks for `valence: full`, and the clause lives in `validate`
+    /// (above), so the requirement is met by a build being legal at all. That
+    /// is a strictly stronger rule and it would be worth nothing if the wrapper
+    /// stopped accepting the builds it guarantees — the Kuva Nukor is the
+    /// roster's only adversary weapon, so nothing else would notice.
     #[test]
     fn a_full_adversary_build_is_admissible() {
         // Eight mods from eight different families — two of one family is its
@@ -2022,11 +2020,10 @@ mod tests {
         assert!(e.contains("unknown benchmark"), "{e}");
     }
 
-    /// A SECONDARY WEAPON'S ARCANE IS A SECONDARY ARCANE. The seats used to be
-    /// every arcane DIRECTORY that exists, sorted, so seat 0 was "primary" on
-    /// every weapon and a Dual Toxocyst build carrying `secondary_deadhead` was
-    /// refused for seating an arcane it seats. Two real submissions were thrown
-    /// away by it.
+    /// A SECONDARY WEAPON'S ARCANE IS A SECONDARY ARCANE. With the seats taken
+    /// from every arcane DIRECTORY that exists, sorted, seat 0 is "primary" on
+    /// every weapon and a Dual Toxocyst build carrying `secondary_deadhead` is
+    /// refused for seating an arcane it seats.
     #[test]
     fn a_weapon_seats_its_own_slots_arcanes() {
         // Eight mods from EIGHT DIFFERENT FAMILIES — two of one family is its

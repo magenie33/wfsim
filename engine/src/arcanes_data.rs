@@ -2061,9 +2061,8 @@ mod tests {
         // Overcharge reads the POOL, and the floor of that pool is ZERO: four
         // frames have no energy at all — Hildryn and Lavos pay for their
         // abilities out of shields and with cooldowns — so "the weakest frame in
-        // the game" has none of it. This used to assert
-        // +52.5% off a floor of 150, which was a floor no frame set: the first
-        // pass at these numbers read a zero as missing data rather than as the
+        // the game" has none of it. A floor of 150 is a floor no frame sets —
+        // it comes of reading a zero as missing data rather than as the
         // value.
         //
         // SILENT MEANS NO BUFF, not a buff worth zero — the same rule Bulwark

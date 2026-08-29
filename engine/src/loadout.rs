@@ -3609,11 +3609,10 @@ impl ResolvedPanel {
     /// (`infinite_ammo || !finite_reserve`). The simulator is the truth and the
     /// optimizer obeys it, so the optimizer must CALL this, not restate it.
     ///
-    /// IT TAKES THE FIGHT'S ANSWER, NOT THE READER'S BOX. The
-    /// resupply half of this used to live here as `&& !self.no_resupply`, and
-    /// by then the same rule was ALSO `scenario::Capability::CanResupply` —
-    /// two spellings of one sentence, which is the drift AGENTS.md warns about
-    /// in every other domain. `scenario::resolve` is the one that survives,
+    /// IT TAKES THE FIGHT'S ANSWER, NOT THE READER'S BOX. A resupply half
+    /// spelled here as `&& !self.no_resupply` is a second spelling of
+    /// `scenario::Capability::CanResupply` — the drift AGENTS.md warns about in
+    /// every other domain. `scenario::resolve` is the one that survives,
     /// because it is the only one that can also hear a SCENARIO argue with it:
     /// a fight may now declare "in here, Arch-Guns have infinite ammo", and a
     /// rule buried in this method could never have been told.

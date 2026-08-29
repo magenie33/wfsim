@@ -187,10 +187,9 @@ mod tests {
     /// MECHANICS §3 rule 2, and the doc's own worked example: Prova/Lecta
     /// (innate Electricity) + Cold(1) Toxin(2) Heat(3) -> Viral + Radiation.
     ///
-    /// Placing the innate FIRST instead — which is what the engine used to do
-    /// — gives Magnetic + Gas, a different build entirely. One mod element
-    /// cannot tell the two apart; two can, which is why this is the test that
-    /// matters.
+    /// Placing the innate FIRST gives Magnetic + Gas, a different build
+    /// entirely. One mod element cannot tell the two apart; two can, which is
+    /// why this is the test that matters.
     #[test]
     fn innate_elements_go_last_not_first() {
         let mut input = ElementalInput::default();

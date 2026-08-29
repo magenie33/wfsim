@@ -1,10 +1,10 @@
 //! The ARENA — a fight's two actors and how long they are at it.
 //!
-//! The sim modelled one actor for a long time: the target. Everything about
-//! the player was either absent or smuggled in as a loose parameter beside the
-//! weapon's numbers — an `aiming: bool` here, a Tenno the resolver reached for
-//! itself there. This is the other half, stated once: somebody is holding the
-//! weapon, somebody is being shot at, for this long.
+//! Modelling only the target leaves everything about the player absent or
+//! smuggled in as a loose parameter beside the weapon's numbers — an
+//! `aiming: bool` here, a Tenno the resolver reaches for itself there. This
+//! states both halves once: somebody is holding the weapon, somebody is being
+//! shot at, for this long.
 //!
 //! It is the SETUP, not the resolution. [`crate::dummy::DummyParams`] is what
 //! you get when a build is resolved against an arena — flat, because the hot

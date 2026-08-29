@@ -2279,12 +2279,11 @@ pub fn board_check_json(v: &Value) -> Value {
 /// of the formula, so a slider cannot drift from what the sim would build.
 /// EVERY TARGET'S POOLS AT THE FIGHT'S LEVEL — what the picker shows.
 ///
-/// The picker used to print each unit's stats at its OWN base level (a
-/// Corrupted Heavy Gunner as 700 health, 500 armor), which is the number
-/// nobody fights: the scenario runs at level 9999 Steel Path, where the same
-/// unit is four orders of magnitude bigger and its armor has stopped mattering
-/// the way the raw figure suggests. Choosing between two units on their base
-/// stats is choosing on the wrong axis.
+/// A unit's OWN base level (a Corrupted Heavy Gunner as 700 health, 500 armor)
+/// is the number nobody fights: the scenario runs at level 9999 Steel Path,
+/// where the same unit is four orders of magnitude bigger and its armor has
+/// stopped mattering the way the raw figure suggests. Choosing between two
+/// units on their base stats is choosing on the wrong axis.
 ///
 /// It is an ENDPOINT and not a formula in the page, because the level curves
 /// are the engine's and a second implementation in JavaScript is a second
@@ -3097,10 +3096,10 @@ fn display_number(x: f64) -> String {
 
 pub fn panel_json(v: &Value) -> Value {
     let info = weapon(get_str(v, "weapon", default_weapon_id()));
-    // THE PLAYER, RESOLVED ONCE AND FIRST. It used to be built after the mod
-    // loop, and the loop now needs it — a mod that scales off the Tenno has to
-    // say what THIS one is worth to it. One call rather than two, because two
-    // `tenno_from` in one function is two answers that can differ.
+    // THE PLAYER, RESOLVED ONCE AND FIRST, because the mod loop needs it: a
+    // mod that scales off the Tenno has to say what THIS one is worth to it.
+    // One call rather than two, because two `tenno_from` in one function is two
+    // answers that can differ.
     let panel_tenno = tenno_from(v, info);
     let policy = if info.sentinel {
         StackPolicy::BaseOnly
@@ -3143,8 +3142,7 @@ pub fn panel_json(v: &Value) -> Value {
     // tier-1 unlock is selected. `meta` states the trigger/shot mechanics
     // from the weapon data (data/weapons yamls).
     // Section titles come from the REGISTERED form (`data/weapons` `form:`),
-    // so a bow's section says "Charged Shot" instead of the "Base Form" every
-    // weapon's first section used to be called.
+    // so a bow's first section says "Charged Shot" rather than "Base Form".
     let mut forms_list: Vec<(&'static str, String, WeaponBase)> = Vec::new();
     for f in wfsim_engine::weapons_data::forms_of(&info.id) {
         // A gauge-switched form exists only while its tier-1 unlock is chosen.
@@ -4182,12 +4180,12 @@ pub fn panel_json(v: &Value) -> Value {
 
         // ALWAYS SHOWN, even with no source equipped.
         //
-        // The row used to appear only once a GunCO card was on the build, so
-        // the one thing a reader could check — WHICH RULE this weapon is being
-        // computed under — was invisible until they had already committed to
-        // the mod. The rules are per-weapon, they are transcribed by hand from
-        // a catalog, and the Burston Prime's was wrong for months. Putting the
-        // adopted rule on every weapon's panel is what lets that be caught by
+        // A row that appears only once a GunCO card is on the build hides the
+        // one thing a reader can check — WHICH RULE this weapon is computed
+        // under — until they have already committed to the mod. The rules are
+        // per weapon and transcribed by hand from a catalog, so a wrong one can
+        // stand for months. Putting the adopted rule on every weapon's panel is
+        // what lets that be caught by
         // someone who owns the gun rather than by someone re-reading the yaml.
         //
         // It is a STATEMENT OF METHOD, not an admission — `unmodeled:` and the
@@ -4875,11 +4873,11 @@ fn chosen_evolutions(v: &Value, info: &WeaponInfo) -> Result<Vec<String>, String
 
 /// THE FIGHT — parsed ONCE, for both modules.
 ///
-/// `simulate_json` used to parse this and `parse_optimize` parsed it again, and
-/// the two drifted three times in three days: the form-unlock fallback, a caller omitting `evolutions` getting the Incarnon cycle free
-/// while the search scored the base form, and the optimizer
-/// keeping a buff config of its own. Every one of them scored
-/// builds under a fight the replay would not run.
+/// Two parsers — one in `simulate_json`, one in `parse_optimize` — drift, and
+/// every way they can drift scores builds under a fight the replay will not
+/// run: a form-unlock fallback, a caller omitting `evolutions` getting the
+/// Incarnon cycle free while the search scores the base form, an optimizer
+/// keeping a buff config of its own.
 ///
 /// So this is not a helper both agree to call — it is the ONE parse, and the
 /// simulator is the truth. The optimizer adds only
@@ -5065,7 +5063,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         || incarnon_id(info).is_some_and(|i| wfsim_engine::weapons_data::has_perk(i, "frenzy"));
     // One value for all three forms: the weapon must OWN the passive, and
     // the request may still switch it off (or configure it via buff_cfg).
-    // The cycle used to ignore this entirely — its knob was dead.
+    // The cycle reads it too, or its knob is dead.
     let frenzy_single = frenzy_single && has_frenzy;
     // HOW THE WEAPON IS PLAYED, from the BUILD side of the request.
     //
@@ -5109,10 +5107,10 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     };
     // ASKING FOR A FORM IMPLIES THE EVOLUTION THAT IS THAT FORM.
     //
-    // This used to fall back to "base" when the tier-1 unlock was not among the
-    // chosen evolutions, which made the form control lie: with no evolutions
-    // picked — the state the page STARTS in — all three options produced the
-    // base form's number and nothing said why.
+    // Falling back to "base" when the tier-1 unlock is not among the chosen
+    // evolutions makes the form control lie: with no evolutions picked — the
+    // state the page STARTS in — all three options produce the base form's
+    // number and nothing says why.
     //
     // Implying it is the honest model, not a shortcut. Tier 1 is
     // `selection: fixed` on every Incarnon ladder: it is not a choice, it is
@@ -5132,19 +5130,19 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // ---- WHICH FORM (or the two-form CYCLE) this run simulates -------------
     // A cycle is a MODE over two forms, not a form, and it exists only where a
     // form must be TRANSFORMED into. Requiring that is a fix, not a tidy-up:
-    // the default used to fall through to the cycle for every weapon, so a
-    // weapon with no Incarnon form — a sentinel weapon, a bow — was simulated
-    // transforming on a borrowed gauge (9 weakpoint hits, 2.35 s + 1.0 s of
-    // animation), and the dead time came straight off its DPS.
+    // a default that falls through to the cycle for every weapon simulates a
+    // weapon with no Incarnon form — a sentinel weapon, a bow — transforming on
+    // a borrowed gauge (9 weakpoint hits, 2.35 s + 1.0 s of animation), and the
+    // dead time comes straight off its DPS.
     let registered = wfsim_engine::weapons_data::forms_of(&info.id);
     // `default` = however THIS weapon is played: the cycle where there is one
     // to run, its own default form where there is not. A weapon that
     // transforms is played transforming.
     let form = if form == "default" && info.has_cycle { "gauge_cycle" } else { form };
-    // Otherwise the cycle is asked for BY NAME. It used to be "any form
-    // string this weapon does not register", which made it the destination of
-    // every typo as well — a stale preset naming another weapon's form now
-    // falls back to a real form instead of transforming.
+    // Otherwise the cycle is asked for BY NAME, never as "any form string this
+    // weapon does not register" — that makes it the destination of every typo,
+    // so a stale preset naming another weapon's form transforms instead of
+    // falling back to a real form.
     // BOTH SPELLINGS. `incarnon_cycle` was the token until 2026-08-15 and was
     // never persisted anywhere, so this is belt-and-braces rather than a
     // migration — but a request is a request and refusing one costs a fight.
@@ -5166,8 +5164,8 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // picks its own targets and never aims for a head, so this is 0 whatever
     // the request says — the same shape as `tenno_from` forcing its stance.
     //
-    // It used to be only a DEFAULT, which was enough while no benchmark pinned
-    // the field; the aimed board pins 100 now, and without this a sentinel
+    // A DEFAULT is not enough once a benchmark pins the field: the aimed board
+    // pins 100, and without this a sentinel
     // would be ranked at a headshot rate it cannot reach. Two boards that
     // differ only in the player's aim therefore give a sentinel the same score
     // twice, which is the honest answer to "how much of this weapon is your
@@ -5183,8 +5181,8 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // so `AimsAtHead` is a GAME FACT and a scenario saying otherwise is refused
     // — the engine decides that, here and on the page, from the one table.
     //
-    // It used to be only a DEFAULT, which was enough while no benchmark pinned
-    // the field; the aimed board pins 100 now, and without this a sentinel
+    // A DEFAULT is not enough once a benchmark pins the field: the aimed board
+    // pins 100, and without this a sentinel
     // would be ranked at a headshot rate it cannot reach. Two boards that
     // differ only in the player's aim therefore give a sentinel the same score
     // twice, which is the honest answer to "how much of this weapon is your
@@ -6513,12 +6511,12 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // between seeds where the mean moves 6.2%, and the optimizer ranks the
         // mean anyway (`mean_kill_progress`).
         //
-        // The σ is reported because the caller cannot estimate it. The quick
-        // calc used to run the reference a SECOND time at another seed and call
-        // the gap its resolution — one sample of a spread, whose answer ranged
-        // 0.7%–11.2% on identical inputs, so the same scan suppressed every
-        // chip or none of them at random. The server has all N
-        // runs; it says the spread it already computed.
+        // The σ is reported because the caller cannot estimate it. Running the
+        // reference a SECOND time at another seed and calling the gap its
+        // resolution is one sample of a spread, and on identical inputs that
+        // answer ranges 0.7%–11.2% — the same scan would suppress every chip or
+        // none of them at random. The server has all N runs; it says the spread
+        // it already computed.
         "score_mean": s.mean_kill_progress,
         "score_se": s.std_kill_progress / f64::from(runs.max(1)).sqrt(),
         // …and the runs behind them, for a caller that will PAIR against
@@ -7363,10 +7361,10 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
 
     // ---- THE FIGHT: the simulator's, not a second reading of it ----------
     //
-    // Every field below used to be parsed again here, and the two readings
-    // drifted three times in three days (see `parse_fight`). The optimizer's
-    // winner is replayed under the simulator's fight, so the only safe number
-    // of places to decide what that fight IS, is one.
+    // Parsing every field below a second time here gives two readings that
+    // drift (see `parse_fight`). The optimizer's winner is replayed under the
+    // simulator's fight, so the only safe number of places to decide what that
+    // fight IS, is one.
     //
     // What stays here is what is genuinely the optimizer's: the scope to
     // search and the budget to spend.
@@ -8091,11 +8089,11 @@ pub fn run_optimize_resumable(
 
     // ---- ONE PATH, at every scope ----
     //
-    // There used to be two regimes with a 2,000,000-candidate threshold
-    // between them: materialize-then-funnel below it, walk-and-screen above.
-    // Both walked the space depth-first, so both left a lexicographic CORNER
-    // behind when they were cut short — and being cut short is the normal case
-    // (docs/OPTIMIZER.md). Two regimes also meant two sets of bugs; the
+    // NOT two regimes split by a candidate threshold — materialize-then-funnel
+    // below it, walk-and-screen above. Both walk the space depth-first, so both
+    // leave a lexicographic CORNER behind when they are cut short, and being
+    // cut short is the normal case (docs/OPTIMIZER.md). Two regimes are also
+    // two sets of bugs; the
     // tenno/policy leak of 2026-08-03 existed in exactly one of them.
     //
     // Now the subset space is an INDEX RANGE and the search walks a
@@ -8932,10 +8930,10 @@ mod optimizer_arcane_tests {
     ///
     /// An arcane slot costs nothing — no capacity, no Forma — so empty can
     /// never beat filled, and marking a candidate IS the statement that the
-    /// slot should be filled. Every slot used to carry an
-    /// implicit "none", so marking 3 primaries and 4 secondaries enumerated
-    /// 4 x 5 = 20 sets, eight of which had a hole in them and could only ever
-    /// tie the same build with the arcane in it.
+    /// slot should be filled. An implicit "none" on every slot turns 3 marked
+    /// primaries and 4 marked secondaries into 4 x 5 = 20 sets, eight of them
+    /// with a hole that can only ever tie the same build with the arcane in
+    /// it.
     #[test]
     fn a_slot_with_candidates_is_never_left_empty() {
         let s = sets(json!({
@@ -9183,9 +9181,9 @@ mod form_tests {
     /// ASKING FOR A FORM IS ENOUGH — the evolution that IS that form is
     /// implied, not demanded.
     ///
-    /// This is the state the page STARTS in: no evolutions chosen. It used to
-    /// fall back to the base form for every request, so all three options
-    /// produced one number and the control said otherwise. Three options, one outcome.
+    /// This is the state the page STARTS in: no evolutions chosen. Falling back
+    /// to the base form for every request gives all three options one number
+    /// while the control says otherwise.
     ///
     /// Implying it is exact rather than generous: tier 1 is `selection: fixed`
     /// on every Incarnon ladder — not a choice but what installing the Genesis
@@ -9611,7 +9609,7 @@ mod equip_rule_tests {
             parse_optimize(&req)
         };
         // Nothing marked, no `build_min` at all: the request an untouched
-        // optimizer tab sends, and it used to be refused.
+        // optimizer tab sends, and it is a legal scope.
         let bare = plan(json!({}), Value::Null).expect("an empty scope is a scope");
         assert_eq!(bare.min_slots, 0, "no floor of anyone's");
         // …and it is genuinely ONE candidate rather than none.
@@ -9728,10 +9726,10 @@ mod equip_rule_tests {
 }
 
 /// A weak-point bonus is conditional on WHERE THE BULLET LANDS, and no policy
-/// can turn a body shot into a head shot. The panel used to fold Acuity's crit
-/// half into the flat Crit Chance row (AssumedMax) while leaving its damage
-/// half conditional — one mod, two treatments — so the Burston Incarnon read
-/// 126% crit chance on every shot AND handed the same 126% to its explosion,
+/// can turn a body shot into a head shot. Folding Acuity's crit half into the
+/// flat Crit Chance row (AssumedMax) while leaving its damage half conditional
+/// is one mod under two treatments: the Burston Incarnon then reads 126% crit
+/// chance on every shot AND hands the same 126% to its explosion,
 /// which has no hit location at all.
 #[cfg(test)]
 mod weakpoint_panel_tests {

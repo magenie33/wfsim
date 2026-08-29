@@ -376,10 +376,10 @@ mod tests {
         // AND NO FORM. How a weapon is played belongs to the ENTRANT, not to
         // the ruler: a Torid through its Incarnon cycle and a Torid that never
         // transmutes are two rows here, and a benchmark that pinned one could
-        // rank only that one. `form: default` used to sit in the yaml and read
-        // as neutral — it resolved to the cycle on a weapon that has one, so
-        // the board ranked every Incarnon weapon at its ceiling and could not
-        // be asked for anything else.
+        // rank only that one. A `form: default` in the yaml reads as neutral
+        // and is not — it resolves to the cycle on a weapon that has one, so
+        // the board would rank every Incarnon weapon at its ceiling and could
+        // not be asked for anything else.
         assert_eq!(s("form"), None, "a ruler may not say how a weapon is played");
         // Pinned, not defaulted: a published number has to be reproducible by
         // whoever doubts it.
@@ -390,10 +390,10 @@ mod tests {
         // ruler rather than in a default. They are two different facts: the
         // stance gates mods like Argon Scope, the rate is where the shots land.
         //
-        // This was omitted for a long time on the argument that pinning it
-        // would rank a SENTINEL at a headshot rate it cannot reach. That is
-        // still true and it is now handled where it belongs: `parse_fight`
-        // pins a sentinel's rate at 0 whatever the request says, the same way
+        // Pinning it does risk ranking a SENTINEL at a headshot rate it
+        // cannot reach, and that is handled where it belongs rather than by
+        // omission: `parse_fight` pins a sentinel's rate at 0 whatever the
+        // request says, the same way
         // `tenno_from` pins its stance. A weapon fact is not a benchmark's to
         // state, and a benchmark's terms are not a default's to hide.
         assert_eq!(s("headshot_pct").and_then(|v| v.as_f64()), Some(100.0));

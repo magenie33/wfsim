@@ -101,10 +101,9 @@ pub struct LocaleSpec {
     /// Hand-transcribed rather than generated: evolutions are not items, so
     /// they are in neither DE's PublicExport nor WFCD's derivative of it (see
     /// `data/i18n/zh/evolutions.yaml` for what was checked). That makes them
-    /// the one card the phrase table used to mangle — "Increase Base Damage
-    /// by +60." came out as "Increase Base 伤害 by +60." — and the reason the
-    /// UI now shows a whole sentence or clean English, never a half-swapped
-    /// one.
+    /// the one card a phrase table mangles — "Increase Base Damage by +60."
+    /// comes out as "Increase Base 伤害 by +60." — and the reason the UI shows
+    /// a whole sentence or clean English, never a half-swapped one.
     #[serde(default)]
     pub evolution_descriptions: BTreeMap<String, String>,
 }

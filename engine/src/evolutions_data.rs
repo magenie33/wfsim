@@ -1058,10 +1058,8 @@ impl EvolutionDef {
     ///     M50 is `Adding`: the same two tier-2 perks, +51 and +31, and the CO
     ///     multiplier came back 1.40 and 1.80 under BOTH — identical, where a
     ///     term reading the unevolved base would have printed 1.265 under the
-    ///     +51 and 1.305 under the +31. The two answers are OPPOSITE, so the
-    ///     "may well be the same on both sides" this comment used to carry was
-    ///     wrong: which base the term reads is decided by the class, not
-    ///     upstream of it.
+    ///     +51 and 1.305 under the +31. The two answers are OPPOSITE: which
+    ///     base the term reads is decided by the CLASS, not upstream of it.
     ///
     /// So THE CLASS ANSWERS FIRST ON A `Multiplying` ENTRY, above the
     /// declaration. A perk reaches every form of its
@@ -1273,13 +1271,13 @@ impl EvolutionDef {
                     if *from_crit { "status chance" } else { "crit chance" },
                     cap * 100.0
                 ),
-                // ONE ARM PER BRACKET, and each says what the UNGATED spelling
-                // of the same grant says — because the brackets do not share
-                // units and the single line that used to be here multiplied
-                // every one of them by 100 and then printed the Rust
-                // identifier. Haven Foray's "+50 base damage with overshields"
-                // read `+5000% FlatBaseDamage with overshields`, and Paladin
-                // Virtue's +0.5x crit multiplier read `+50% BaseCritDamage` —
+                // ONE ARM PER BRACKET, and each says what the UNGATED
+                // spelling of the same grant says: the brackets do not share
+                // units, so a single line multiplies every one of them by 100
+                // and prints the Rust identifier. Haven Foray's "+50 base
+                // damage with overshields" then reads `+5000% FlatBaseDamage
+                // with overshields`, and Paladin Virtue's +0.5x crit multiplier
+                // reads `+50% BaseCritDamage` —
                 // wrong on twenty cards, on the one line a player can check. The `>= 1.0` special case was the shape of the
                 // bug: a unit chosen by the SIZE of the number rather than by
                 // the bracket it lands in.
@@ -3179,11 +3177,11 @@ use crate::loadout::WeaponBase;
     }
     /// An evolution's HANDLING stats reach the resolved panel.
     ///
-    /// They have no single-target damage payload, which is exactly why they
-    /// used to be dropped — and dropping them meant the evolution equipped and
-    /// its number vanished. This asserts the
-    /// whole path: yaml -> loader -> `WeaponBase.indirect` -> `resolve`'s
-    /// bucket, in the same place a mod's would land.
+    /// They have no single-target damage payload, which is what makes them
+    /// easy to drop — and dropping them means the evolution equips and its
+    /// number vanishes. This asserts the whole path: yaml -> loader ->
+    /// `WeaponBase.indirect` -> `resolve`'s bucket, in the same place a mod's
+    /// would land.
     #[test]
     fn an_evolutions_handling_stats_reach_the_panel() {
         use crate::loadout::{resolve, IndirectStat, StackPolicy};
@@ -3199,13 +3197,12 @@ use crate::loadout::WeaponBase;
         let grip = of("boar_prime", "boar_prime_practiced_grip");
         assert_eq!(find(&grip, IndirectStat::Accuracy), Some(0.50), "{grip:?}");
 
-        // FORTRESS SALVO IS NOT HERE, and that is the fix rather than a
-        // regression. Its card reads "With Armor Over 450:
-        // +4 Punch Through", and this assertion used to demand the 4 metres
-        // land in the unconditional bucket — codifying the very bug the owner
-        // reported, a perk requiring 450 armour paying out with none. It is a
-        // `GatedByTenno` grant now, so it reaches the panel only through the
-        // gate; `a_gated_perk_asks_the_frame_holding_the_gun` walks both sides.
+        // FORTRESS SALVO IS NOT HERE, deliberately. Its card reads "With
+        // Armor Over 450: +4 Punch Through", so demanding the 4 metres in the
+        // unconditional bucket would codify a perk requiring 450 armour paying
+        // out with none. It is a `GatedByTenno` grant and reaches the panel
+        // only through the gate;
+        // `a_gated_perk_asks_the_frame_holding_the_gun` walks both sides.
         let salvo = of("boar_prime", "boar_prime_fortress_salvo");
         assert_eq!(find(&salvo, IndirectStat::PunchThrough), None, "{salvo:?}");
 
