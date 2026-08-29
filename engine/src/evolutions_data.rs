@@ -7,8 +7,7 @@
 //! onto a weapon's raw [`WeaponBase`] — evolutions alter BASE stats before
 //! mods (flat base damage scales the vector pro-rata inside ModifiedBase;
 //! Commodore's Fortune adds into the BASE crit chance that crit mods then
-//! multiply). The engine previously hardcoded these numbers in the
-//! `DtEvo2` enum; the enum remains as a selector, the values live here.
+//! multiply). The `DtEvo2` enum is a selector only — every value lives here.
 
 use std::sync::OnceLock;
 
@@ -34,12 +33,11 @@ struct EvoFile {
     #[serde(default)]
     currently_broken: bool,
     /// Does THIS evolution's flat base damage stay out of the weapon's GunCO
-    /// term? **DEFAULT YES** since 2026-08-16 — an omitted field means
-    /// EXCLUDED, and `false` is the explicit opt-out nothing uses yet.
+    /// term? **DEFAULT YES** — an omitted field means EXCLUDED, and `false` is
+    /// the explicit opt-out nothing uses yet.
     ///
-    /// IT USED TO DEFAULT NO, on the reading that the CO catalog "lists only
-    /// discrepant attacks" so an unlisted perk feeds the term in full. The
-    /// evidence went 15 to 0 against that:
+    /// The other reading — that the CO catalog "lists only discrepant attacks",
+    /// so an unlisted perk feeds the term in full — loses 15 to 0:
     ///
     ///   · ELEVEN catalog rows print a DOUBLE value ("100 or 124") — the only
     ///     rows where anyone measured the weapon with its evolution installed.
@@ -61,11 +59,11 @@ struct EvoFile {
     /// evolution would have solved to 102 and 82 and would not have agreed
     /// with itself.
     ///
-    /// AND THE ERROR IS ASYMMETRIC. The old default OVERSTATES, which for a
+    /// AND THE ERROR IS ASYMMETRIC. Including it OVERSTATES, which for a
     /// calculator whose promise is matching in-game measurements is the worse
-    /// direction: it ranks weapons on damage the game does not deal. 186
-    /// weapon+perk pairs moved when this flipped, by 37% on average at two
-    /// Galvanized stacks against two status types.
+    /// direction: it ranks weapons on damage the game does not deal. It reaches
+    /// 186 weapon+perk pairs, by 37% on average at two Galvanized stacks
+    /// against two status types.
     ///
     /// THE FLAG IS STILL THE PERK's ON THE `Adding` SIDE, not the weapon's,
     /// because the catalog names perks and a perk reaches both forms of its
@@ -401,11 +399,11 @@ enum EvoEffect {
     /// READY RETALIATION — reload speed, armed by STARTING a reload from empty
     /// and lasting a while after.
     ///
-    /// THE TRIGGER IS THE RELOAD ACTION, NOT ITS COMPLETION, so the reload that armed it is the first thing it speeds
-    /// up. That one word is most of the perk's value: on a weapon that always
-    /// reloads from empty — which is every weapon in this sim — it behaves
-    /// like a permanent reload
-    /// mod rather than like a bonus that has to be caught in time.
+    /// THE TRIGGER IS THE RELOAD ACTION, NOT ITS COMPLETION, so the reload
+    /// that arms it is the first thing it speeds up. That one word is most of
+    /// the perk's value: on a weapon that always reloads from empty — which is
+    /// every weapon in this sim — it behaves like a permanent reload mod rather
+    /// than a bonus that has to be caught in time.
     ///
     /// The window still matters for what comes AFTER the reload: a transmute,
     /// or a second reload, inside the remaining seconds.

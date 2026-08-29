@@ -35,21 +35,19 @@ pub struct DeploymentSpec {
     /// ground Arch-Gun hits for twice what the same weapon does in an Archwing
     /// mission, and the two tabs of its infobox say so field for field.
     ///
-    /// THIS FIELD EXISTS BECAUSE ITS ABSENCE WAS A WRONG NUMBER ON THE BOARD.
-    /// The deployment axis was built as a SUSTAIN axis — reload, magazine,
-    /// reserve, resupply — on a reading of the two-column table that said "same
-    /// damage, same crit, same status, only the sustain differs". Crit,
-    /// multiplier, status, fire rate and magazine ARE identical; the damage is
-    /// not, and the Larkspur Prime was scored on the board at half its ground
-    /// damage from the day it was added until 2026-08-14.
+    /// THE DEPLOYMENT AXIS IS NOT ONLY A SUSTAIN AXIS. Crit, multiplier,
+    /// status, fire rate and magazine ARE identical between the two columns;
+    /// the DAMAGE is not, so reading the table as "same damage, only the
+    /// sustain differs" scores an Arch-Gun on the board at half its ground
+    /// damage.
     ///
-    /// BOTH COLUMNS ARE WRITTEN DOWN, and that is the point of stating a vector
-    /// here instead of the `x0.5` that would produce the same numbers. A multiplier is DERIVED: a reader of this file cannot see
-    /// what the other tab says and cannot check it against the page, which is
-    /// the one thing that would have caught the original error. The doubling is
-    /// "most", not all, so the ratio is an observation about a weapon and never
-    /// a rule to compute with — `deployment_tests` asserts which weapons
-    /// actually follow it and NAMES the ones that do not.
+    /// BOTH COLUMNS ARE WRITTEN DOWN, which is the point of stating a vector
+    /// here instead of the `x0.5` that would produce the same numbers: a
+    /// multiplier is DERIVED, and a reader of this file cannot check it against
+    /// the page. The doubling is "most", not all, so the ratio is an
+    /// observation about a weapon and never a rule to compute with —
+    /// `deployment_tests` asserts which weapons follow it and NAMES the ones
+    /// that do not.
     #[serde(default)]
     pub damage: Option<BTreeMap<String, f64>>,
     /// ...and the same tab's RADIAL, when the attack has one. Required
@@ -310,10 +308,10 @@ pub struct AttackSpec {
     pub trigger: String,
     /// Ammo spent per SHOT (per tick on a continuous weapon). Default 1.
     ///
-    /// Read at last. It sat in every weapon file unread while the
-    /// sim spent a flat 1.0, which was harmless only while no weapon disagreed
-    /// with it — the Larkspur Prime disagrees on BOTH of its modes: "Alt-fire
-    /// consumes 10 ammo per shot" against "0.5 per primary tick" (wiki).
+    /// READ, not assumed: a flat 1.0 is harmless only while no weapon
+    /// disagrees with it, and the Larkspur Prime disagrees on BOTH of its
+    /// modes — "Alt-fire consumes 10 ammo per shot" against "0.5 per primary
+    /// tick" (wiki).
     #[serde(default = "one")]
     pub ammo_cost: f64,
     #[serde(default)]
@@ -890,12 +888,10 @@ pub struct LingeringSpec {
     /// Damage types this field's tick applies regardless of status chance —
     /// its OWN, exactly as [`RadialSpec::forced_procs`] is the explosion's.
     ///
-    /// A cloud declares none, which is why this defaults to empty and why the
-    /// tick path passed a literal `&[]` before this existed. The Grimoire's
-    /// orb declares Electricity: the owner measured the pulses forcing it and
-    /// the final explosion NOT forcing it, which is one attack
-    /// answering the question both ways and the reason the two lists are
-    /// separate rather than shared.
+    /// A cloud declares none, which is why this defaults to empty. The
+    /// Grimoire's orb declares Electricity: measured, its pulses force it and
+    /// its final explosion does not — one attack answering the question both
+    /// ways, and the reason the two lists are separate rather than shared.
     #[serde(default)]
     pub forced_procs: Vec<String>,
     #[serde(default)]
@@ -1245,12 +1241,11 @@ pub struct RadialSpec {
     /// Multishot bonuses" — and what makes it exceptional is that its explosion
     /// counts PULLS: extra pellets ride along and add nothing to it.
     ///
-    /// HOW IT WAS FOUND: both Ogrises read `false` with no source behind it,
-    /// which cost a Split Chamber 43% of what it is worth on that weapon — the
-    /// second rocket arrived, left its napalm fire, and did no blast damage at
-    /// all. "Two warheads is two fields" was the reading that settled it: a
-    /// field is left by a rocket that LANDED, so two fields is two arrivals, and
-    /// an arrival detonates.
+    /// WHAT SETTLES A DOUBTFUL ENTRY: a field is left by a rocket that
+    /// LANDED, so two napalm fields is two arrivals, and an arrival detonates.
+    /// An Ogris reading `false` costs a Split Chamber 43% of what it is worth
+    /// on that weapon — the second rocket arrives, leaves its fire, and deals
+    /// no blast damage at all.
     ///
     /// **73 ENTRIES STILL DECLARE `false` AND ONLY TWO HAVE A SOURCE** — the two
     /// Burstons. The rest carry the shape of a bulk intake that applied it as a
@@ -1422,10 +1417,9 @@ pub struct InjectedElementSpec {
 /// one it is (`form:` in its yaml). Nothing may name a form the engine does
 /// not know: an unknown string is a hard error, not a silent fallback.
 ///
-/// Adding a kind is one arm here plus one in [`FormKind::parse`] — that is the
-/// whole extension point, and `alt_fire` went in the day the Scourge pair
-/// needed it rather than in advance, because a kind nothing registers is a kind
-/// nothing tests.
+/// Adding a kind is one arm here plus one in [`FormKind::parse`] — the whole
+/// extension point — and a kind is added when an entry registers it, never in
+/// advance: a kind nothing registers is a kind nothing tests.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FormKind {
     /// The ordinary attack — what almost every weapon has, and by definition
@@ -1442,10 +1436,9 @@ pub enum FormKind {
     /// throws the weapon itself, and its numbers, its element split and its
     /// explosion are all its own.
     ///
-    /// Its own kind rather than [`FormKind::Charged`], which was the only
-    /// non-gauge alternate the vocabulary had: a thrown spear is not a drawn
-    /// bow, the id is what a saved preset and a share link carry, and a wrong
-    /// word there is wrong forever.
+    /// Its own kind rather than [`FormKind::Charged`]: a thrown spear is not a
+    /// drawn bow, the id is what a saved preset and a share link carry, and a
+    /// wrong word there is wrong forever.
     AltFire,
     /// …AND THE THIRD ONE, for a weapon that CYCLES more than two triggers.
     ///
@@ -1627,14 +1620,13 @@ pub struct WeaponSpec {
     /// there, and only what actually DIFFERS is written down here.
     ///
     /// WHY IT EXISTS. 88 of the roster's entries are form siblings rather than
-    /// weapons, and before this they each restated their weapon's mastery
-    /// rank, disposition, polarities, riven family, internal name, magazine,
-    /// reload and the rest. An audit on 2026-08-15 counted 313 identical values
-    /// written twice and 1,004 (group, field) pairs where some siblings carried
-    /// a field and others did not — and it found a real error inside that
-    /// noise: the ordinary Larkspur's alt-fire carried its BASE form's
-    /// accuracy while its Prime's carried the alt-fire's. Nothing could catch
-    /// it, because nothing knew the two entries were the same weapon.
+    /// weapons. Restating each weapon's mastery rank, disposition, polarities,
+    /// riven family, internal name, magazine and reload on every sibling is 313
+    /// identical values written twice and 1,004 (group, field) pairs where some
+    /// siblings carry a field and others do not — and a real error hides in
+    /// that noise, as when one variant's alt-fire carries its BASE form's
+    /// accuracy and another's carries the alt-fire's. Nothing can catch it
+    /// unless something knows the two entries are the same weapon.
     ///
     /// With this, a difference is the only thing on the page.
     ///
@@ -1812,9 +1804,9 @@ pub struct WeaponSpec {
     /// **AN UNEXPLAINED, MEASURED COEFFICIENT ON SECONDARY IRRADIATE'S ECHO.**
     ///
     /// The arcane's echo is `1.8 × the hit` at max rank, and on a pure
-    /// single-target weapon that is exactly what it deals — the owner measured
-    /// several. On the LAETUM'S INCARNON FORM it deals **3.6×**, twice as much,
-    /// and nobody knows why:
+    /// single-target weapon that is exactly what it deals, measured on several.
+    /// On the LAETUM'S INCARNON FORM it deals **3.6×**, twice as much, and
+    /// nobody knows why:
     ///
     /// ```text
     /// base form      1536 direct  ->  2764.8 echo   = 1.80x   (ordinary)
@@ -1822,19 +1814,18 @@ pub struct WeaponSpec {
     ///                 960 direct  ->  3456   echo   = 3.60x
     /// ```
     ///
-    /// IT IS NOT THE AoE TRIGGERING IT A SECOND TIME. The same session
-    /// established that only a DIRECT hit ever triggers this echo and the
-    /// radial never does — which this engine already had right, since
-    /// `spread_from_echo` is called from the direct path alone. So the
-    /// explanation is not two triggers, and we do not have another.
+    /// IT IS NOT THE AoE TRIGGERING IT A SECOND TIME. Only a DIRECT hit ever
+    /// triggers this echo and the radial never does, which is measured and is
+    /// what `spread_from_echo` implements — it is called from the direct path
+    /// alone. So the explanation is not two triggers, and there is no other.
     ///
     /// WHAT IS SUSPECTED AND NOT ESTABLISHED: the two forms differ in that the
-    /// Incarnon one carries a radial, and the owner reports "other weapons with
-    /// an AoE seem to have a bit of this problem". That is a lead, not a rule —
-    /// so this is a per-ENTRY number rather than a rule about AoE weapons, and
-    /// it stays that way until somebody measures a second one. The same
-    /// discipline `docs/CATALOGS.md` states for Condition Overload: transcribe
-    /// the row for the entry it names, never generalise it to a class.
+    /// Incarnon one carries a radial, and other AoE weapons are reported to
+    /// show some of the same. That is a lead, not a rule — so this is a
+    /// per-ENTRY number rather than a rule about AoE weapons, until somebody
+    /// measures a second one. The same discipline `docs/CATALOGS.md` states for
+    /// Condition Overload: transcribe the row for the entry it names, never
+    /// generalise it to a class.
     ///
     /// NOT INHERITED (it is absent from `INHERITED`), because the base Laetum
     /// measures 1.8 and only its Incarnon form does not.
@@ -2326,12 +2317,11 @@ pub fn forms_of(weapon_id: &str) -> Vec<FormRef> {
 /// HOW A WEAPON IS PLAYED FOR A WHOLE ENGAGEMENT — a policy over its forms.
 ///
 /// A FORM is what the weapon is at an instant (base, charged, Incarnon); a MODE
-/// is what you do with those forms for three hundred seconds. They were one
-/// field for a long time and it could not express the questions worth asking:
-/// `form: incarnon_cycle` is a mode wearing a form's name, and `form: default`
-/// resolves to one or the other depending on a weapon flag, so a benchmark that
-/// may not name a form could only ever ask for "however it is normally played".
-/// "The Torid without ever transmuting" was unaskable.
+/// is what you do with those forms for three hundred seconds. One field cannot
+/// express both: `form: incarnon_cycle` is a mode wearing a form's name, and
+/// `form: default` resolves to one or the other depending on a weapon flag, so
+/// a benchmark that may not name a form could only ask for "however it is
+/// normally played" and never for "the Torid without ever transmuting".
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PlayMode {
     /// The arsenal's form, all engagement. Every weapon has this one.
@@ -2431,10 +2421,10 @@ impl WeaponPlayMode {
 /// [`MeterSpec`] is earned with SECONDS. A third will be earned with something
 /// else, and this is where it says so.
 ///
-/// It is a function rather than a line inside `play_modes` because the roster's
-/// own ratchet has to ask the same question — it derived its own copy of the
-/// gauge test and went red the day a second gate arrived, which is the
-/// definition drifting in exactly the place built to catch drift.
+/// It is a function rather than a line inside `play_modes` because the
+/// roster's own ratchet asks the same question: a second copy of the gauge test
+/// goes red the day a second gate arrives, which is the definition drifting in
+/// exactly the place built to catch drift.
 pub fn is_gauge_fed(weapon_id: &str) -> bool {
     spec(weapon_id).is_some_and(WeaponSpec::has_gauge)
 }
@@ -2526,9 +2516,9 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
 /// cycle to simulate — anything else is fired in one form at a time, whatever
 /// forms it registers.
 ///
-/// DECLARED, NOT INFERRED. This used to ask the form's KIND, which made "has a
-/// gauge" and "is the Incarnon form" the same sentence; the Mausolon's
-/// kill-fed alt-fire is the counter-example, and it is a `charged` form.
+/// DECLARED, NOT INFERRED. Asking the form's KIND makes "has a gauge" and "is
+/// the Incarnon form" the same sentence; the Mausolon's kill-fed alt-fire is
+/// the counter-example, and it is a `charged` form.
 pub fn has_gauge_switched_form(weapon_id: &str) -> bool {
     forms_of(weapon_id)
         .iter()
@@ -3254,13 +3244,13 @@ fn traits_for(s: &WeaponSpec) -> &'static [&'static str] {
     // `requires:` is an EQUIP rule, decided once for the weapon, and a mod the
     // weapon may legally wear has to keep working on every form of it.
     //
-    // It used to follow `transforms_from`, which reaches only GAUGE-FED forms
-    // (an entry may not carry that field without a gauge), so a free alternate
-    // fire reported its OWN trigger — and the Tenet Detron found the hole: its
-    // primary fire is Semi-Auto and its Mag Burst is not, so Semi-Pistol
-    // Cannonade was offered on the weapon, went inert on the alternate form,
-    // AND TOOK ITS FIRE-RATE LOCK WITH IT. A mod that locks a stat on one form
-    // and not the other is the worst of the three possible answers.
+    // NOT `transforms_from`, which reaches only GAUGE-FED forms (an entry may
+    // not carry that field without a gauge): under it a free alternate fire
+    // reports its OWN trigger. The Tenet Detron is the case — its primary fire
+    // is Semi-Auto and its Mag Burst is not — so Semi-Pistol Cannonade would be
+    // offered on the weapon, go inert on the alternate form, AND TAKE ITS
+    // FIRE-RATE LOCK WITH IT. A mod that locks a stat on one form and not the
+    // other is the worst of the three possible answers.
     //
     // The narrow blast radius is what makes this safe: three mods in the whole
     // data set gate on a trigger (the Cannonades, `semi_auto`), and the only
@@ -3445,12 +3435,11 @@ pub fn base_panel_assembled(
 
     // EVERY spelling is named, and anything else is a LOAD ERROR.
     //
-    // `_ => Independent` used to swallow both a typo and an omission, and it
-    // swallowed one: Boar Prime shipped `co_behavior: additive` — a spelling
-    // that exists nowhere — and silently became Independent, i.e. the wiki's
-    // "Multiplying", the EXCEPTION class, on a weapon the CO catalog does not
-    // list at all. `independent` itself was never matched
-    // either; it worked only because it fell through to the same arm.
+    // A `_ => Independent` arm swallows both a typo and an omission: a
+    // misspelled `co_behavior` silently becomes Independent — the wiki's
+    // "Multiplying", the EXCEPTION class — on a weapon the CO catalog does not
+    // list at all, and the correct spelling works only by falling through to
+    // the same arm.
     //
     // The default it implied is also backwards. The catalog "lists only
     // discrepant attacks. Anything not listed should be assumed to be Additive"

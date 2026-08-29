@@ -80,8 +80,8 @@ pub enum CondBucket {
 }
 
 impl CondBucket {
-    /// Printed on a card, so it is words and not the variant name — a
-    /// conditional fire-rate buff used to read "+50% FireRate".
+    /// Printed on a card, so it is words and not the variant name: a
+    /// conditional fire-rate buff must not read "+50% FireRate".
     pub fn label(&self) -> &'static str {
         match self {
             CondBucket::BaseDamage => "Base Damage",
@@ -243,11 +243,10 @@ pub enum ModEffect {
     /// A MOD THAT GRANTS A [`StackingBuff`] — the same shape a weapon perk
     /// grants, reaching the sim by the same path.
     ///
-    /// Every stacking buff in this engine used to come from an EVOLUTION or an
-    /// ARCANE, so `WeaponBase::stacking_buffs` was the only door and a mod that
-    /// stacked on a trigger had to invent a bespoke effect (`OnKillMultishot`,
-    /// `OnHeadshotKillCritChance`, `ConditionOverload` — three variants for one
-    /// idea). Split Flights is the mod that made the fourth one absurd: *"On
+    /// With `WeaponBase::stacking_buffs` as the only door, a mod that stacks on
+    /// a trigger has to invent a bespoke effect — `OnKillMultishot`,
+    /// `OnHeadshotKillCritChance`, `ConditionOverload` are three variants for
+    /// one idea. Split Flights is the case that makes a fourth absurd: *"On
     /// Hit: +100% Multishot … Stacks up to 4x"* is a trigger already in
     /// [`BuffTrigger`] feeding a grant already in [`BuffGrant`].
     ///
@@ -367,12 +366,12 @@ pub enum ModEffect {
     /// data: Galvanized Crosshairs / Scope, Argon Scope, Hydraulic Crosshairs,
     /// Sharpened Bullets, Bladed Rounds, Pressurized Magazine, the Catalyzers).
     ///
-    /// The sim used to satisfy this silently — every aim-gated buff fired
-    /// whether or not the scenario implied aiming, which flatters any build
-    /// carrying one. It is now a SCENARIO knob: resolve with
-    /// `aiming = false` and the wrapped effect contributes nothing at all.
-    /// Wrapping rather than adding a flag to each variant keeps every other
-    /// arm of the resolver unaware that aiming exists.
+    /// Satisfying this silently would fire every aim-gated buff whether or not
+    /// the scenario implies aiming, which flatters any build carrying one. It
+    /// is a SCENARIO knob: resolve with `aiming = false` and the wrapped effect
+    /// contributes nothing at all. Wrapping rather than adding a flag to each
+    /// variant keeps every other arm of the resolver unaware that aiming
+    /// exists.
     /// Gated on what the PLAYER is doing — "while aiming", "while Invisible",
     /// "while Airborne". Asked of [`crate::tenno_data::Tenno`], the fight's
     /// second actor, so a card's condition and the fight's state meet in one
@@ -578,9 +577,9 @@ pub enum ModEffect {
     OnReloadFireRate { bonus: f64, duration: f64 },
     /// Deadly Efficiency: "On Reload From Empty: +X% Damage for Xs" — a
     /// relative BASE-damage bonus whose window opens when the reload
-    /// COMPLETES, not when the magazine runs out. The
-    /// distinction is worth a modelled buff: at rank 10 it is +220% for 17 s,
-    /// and under Emergent it used to contribute nothing at all.
+    /// COMPLETES, not when the magazine runs out. The distinction is worth a
+    /// modelled buff: at rank 10 it is +220% for 17 s, which under Emergent
+    /// contributes nothing at all unless the window is modelled.
     OnReloadDamage { bonus: f64, duration: f64 },
     /// EXIMUS ADVANTAGE: a relative BASE-damage window opened by a weak-point
     /// hit on an EXIMUS, and by nothing else.
@@ -1261,12 +1260,10 @@ impl ModEffect {
 #[derive(Debug, Clone)]
 pub struct ModDef {
     pub id: &'static str,
-    /// DE's own name for the card. The yaml has always carried it and the
-    /// engine used to DROP it, leaving `webapi` to rebuild a display name from
-    /// the id — which is lossy in both directions: "Semi-Shotgun Cannonade"
-    /// came back as "Semi Shotgun Cannonade" (so its wiki link 404'd),
-    /// "Hell's Chamber" lost its apostrophe, and "Bane of Grineer" gained a
-    /// capital O.
+    /// DE's own name for the card, carried through rather than rebuilt from
+    /// the id, which is lossy in both directions: "Semi-Shotgun Cannonade"
+    /// comes back as "Semi Shotgun Cannonade" and its wiki link 404s, "Hell's
+    /// Chamber" loses its apostrophe, "Bane of Grineer" gains a capital O.
     pub name: &'static str,
     /// Drain at the EQUIPPED (max) rank.
     pub base_drain: u32,
@@ -1330,10 +1327,10 @@ pub struct ModDef {
     ///
     /// False for almost every mod. True means the CARD must say so — an
     /// `unmodeled` effect is DROPPED at load, so a mod carrying one loads as a
-    /// mod that does nothing and says nothing, which is exactly how it looks to
-    /// a player who equips it and sees no change (reported 2026-08-05 about
-    /// Primary Debilitate). The reason lives in the YAML comment beside the
-    /// effect, where a maintainer reads it — not in a field the app renders.
+    /// mod that does nothing and says nothing, which is exactly how it looks
+    /// to a player who equips it and sees no change. The reason lives in the
+    /// YAML comment beside the effect, where a maintainer reads it — not in a
+    /// field the app renders.
     pub unmodeled: bool,
     /// ...and does it act on something this simulator does not HAVE — Warframe
     /// energy, enemy behaviour, traversal, reviving? Never a todo: building it
@@ -1399,11 +1396,10 @@ pub enum StackPolicy {
 /// which is exactly what the label promises, expressed in the one place that
 /// can express it.
 ///
-/// The flag it replaces (`pinned` / `locked`) had to be honoured at every read
-/// site, and was missed at several across three buff families: the stacks
-/// decayed anyway and the trigger was skipped, so "no timeout" came to mean
-/// "decays to zero and can never come back". A duration cannot be forgotten —
-/// there is nothing left to thread.
+/// A FLAG (`pinned` / `locked`) would have to be honoured at every read site,
+/// and missing one lets the stacks decay and the trigger be skipped, so "no
+/// timeout" comes to mean "decays to zero and can never come back". A duration
+/// cannot be forgotten — there is nothing to thread.
 pub const NO_TIMEOUT: f64 = f64::INFINITY;
 
 /// A live on-kill stacking buff spec handed to the sim under
@@ -1508,8 +1504,8 @@ impl CritPerHit {
 
 /// A non-stacking timed buff (a single refreshable window) handed to the sim:
 /// Galvanized Crosshairs' on-headshot crit, Sharpened Bullets' on-kill crit
-/// damage, Pressurized Magazine's on-reload fire rate. Unifies what used to be
-/// three parallel `Option<(f64, f64)>` fields.
+/// damage, Pressurized Magazine's on-reload fire rate. One shape rather than a
+/// parallel `Option<(f64, f64)>` per card.
 /// EXECUTIONER'S FORTUNE: a headshot's chance to FILL THE MAGAZINE, no reload
 /// played and no time spent.
 ///
