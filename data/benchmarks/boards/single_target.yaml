@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 3755
-engine: 5e9c527bf71d3d342d6ed29497c6ca262bedd731
+submissions: 3764
+engine: 04d2bb4ea4ffc66c9ac19dfaed5a49ccd72c901f
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -10546,6 +10546,21 @@ entries:
     score: 1.3182330719970343
     fp: c3a2c0cce02c11a7
     mods: [galvanized_hell, magnetic_welt, semi_shotgun_cannonade, primed_charged_shell, contagious_spread, incendiary_coat, blaze, scattering_inferno]
+    arcanes: [primary_crux]
+    valence: heat
+  - weapon: tenet_arca_plasmor
+    mode: base
+    score: 1.2820506416105213
+    fp: d0820d2b61b5acac
+    exilus: galvanized_acceleration
+    mods: [galvanized_hell, magnetic_welt, shotgun_barrage, primed_charged_shell, contagious_spread, incendiary_coat, blaze, scattering_inferno]
+    arcanes: [primary_crux]
+    valence: heat
+  - weapon: tenet_arca_plasmor
+    mode: base
+    score: 1.2820506416105213
+    fp: 34ebf7d0822025ad
+    mods: [galvanized_hell, magnetic_welt, shotgun_barrage, primed_charged_shell, contagious_spread, incendiary_coat, blaze, scattering_inferno]
     arcanes: [primary_crux]
     valence: heat
   - weapon: tenet_arca_plasmor

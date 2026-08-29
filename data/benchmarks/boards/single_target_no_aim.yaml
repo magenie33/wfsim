@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target_no_aim
 source: submissions
-submissions: 3755
-engine: 5e9c527bf71d3d342d6ed29497c6ca262bedd731
+submissions: 3764
+engine: 04d2bb4ea4ffc66c9ac19dfaed5a49ccd72c901f
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -5859,6 +5859,17 @@ entries:
       rolls: [1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
+    score: 7.333620768122797
+    fp: 3996bb0fcf4e5d0a
+    mods: [galvanized_chamber, heavy_caliber, vital_sense, magnetic_capacity, riven, rime_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_debilitate]
+    riven:
+      bonuses: [critical_chance, multishot]
+      malus: magazine_capacity
+      rolls: [1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
     score: 7.273048102000007
     fp: 77fc6fc55fb1f06d
     mods: [galvanized_chamber, serration, vital_sense, magnetic_capacity, riven, rime_rounds, malignant_force, hellfire]
@@ -6281,6 +6292,17 @@ entries:
       bonuses: [critical_chance, critical_damage, fire_rate]
       malus: zoom
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: torid
+    mode: cycle
+    score: 4.01069808300435
+    fp: 0cb35d26e79311e3
+    mods: [galvanized_chamber, heavy_caliber, hammer_shot, vital_sense, riven, rime_rounds, malignant_force, thermite_rounds]
+    evolutions: [torid_evo1_incarnon_form, torid_plentiful_mayhem, torid_extended_volley, torid_survivors_edge]
+    arcanes: [primary_deadhead]
+    riven:
+      bonuses: [critical_chance, multishot]
+      malus: magazine_capacity
+      rolls: [1.1, 1.1, 0.9]
   - weapon: torid
     mode: cycle
     score: 4.007260776857454
