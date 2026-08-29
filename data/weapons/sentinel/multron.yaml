@@ -11,7 +11,7 @@ default_form: true
 # RIFLE MODS, and this one is quoted rather than read off a row: the page's own
 # opening sentence says "This weapon accepts [[Rifle Mods]]". The four MOA
 # weapons were held back a night because the infobox row would not extract and
-# guessing a mod pool is the one thing this class must not do (2026-08-15).
+# guessing a mod pool is the one thing this class must not do.
 mod_pools: [rifle]
 mastery_rank: 3
 max_rank: 30

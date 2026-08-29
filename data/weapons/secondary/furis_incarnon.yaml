@@ -116,8 +116,7 @@ attack:
   # RANGE FALLOFF, and the two sources disagree. The wiki: "linear Damage
   # Falloff from 100% to 80% from 10m to 16m", i.e. a 0.2 reduction. WFCD's
   # attack entry says 0.48 for this weapon and 0.2167 for the MK1 — which
-  # cannot both be a rounding of one rule. The English wiki takes it (owner,
-  # 2026-08-06), and NOTHING READS IT: this arena has no distance, so the
+  # cannot both be a rounding of one rule. The English wiki takes it, and NOTHING READS IT: this arena has no distance, so the
   # target is inside 10 m and takes 100% either way. Recorded so a spatial
   # model finds the disagreement rather than the winner.
   falloff_start_m: 10.0

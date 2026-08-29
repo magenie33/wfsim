@@ -3,7 +3,7 @@
 
 Evolution strings exist in NO export: DE ships none, WFCD has no entity for
 them (docs/DATA_SOURCES.md). The CN wiki is the only source, and the rule is
-absolute — "A STRING IS TRANSCRIBED, NEVER TRANSLATED" (owner, 2026-08-03).
+absolute — "A STRING IS TRANSCRIBED, NEVER TRANSLATED".
 DE's Chinese is routinely non-literal (Commodore's Fortune is 准将沐福), so a
 name derived from the English is wrong more often than not: five Boar Prime
 names were translated that way once and four of the five were wrong.
@@ -19,7 +19,7 @@ and a wrong name is an answer.
 
 FETCHING IS `curl`, DELIBERATELY. The wiki's Cloudflare reads the TLS
 fingerprint, not the User-Agent: the same request answers 200 to curl and 403
-to Python's urllib, from the same machine in the same minute (2026-08-07). A
+to Python's urllib, from the same machine in the same minute. A
 fetch written the obvious way concludes the wall is up and leaves names empty
 that could have been read.
 

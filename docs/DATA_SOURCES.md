@@ -4,7 +4,7 @@ How to get game data efficiently instead of transcribing pages by hand. The
 official wiki is backed by **structured Lua data modules**, and they are the
 authoritative datamined values (the same source WFCD tooling uses).
 
-## THE WIKI IS `wiki.warframe.com`, AND ONLY THAT (owner, 2026-08-21)
+## THE WIKI IS `wiki.warframe.com`, AND ONLY THAT
 
 `warframe.fandom.com` is the LEGACY mirror. It is not a second opinion and it
 is not a fallback — it is an older copy, and reading a number off it is reading
@@ -20,7 +20,7 @@ The one other host that is a source is `warframe.huijiwiki.com`, and only for
 one thing: DE's own CHINESE card text, which the English wiki does not carry.
 See the transcription rule in AGENTS.md.
 
-## THE WIKI WINS (owner, 2026-08-14)
+## THE WIKI WINS
 
 Use the wiki wherever it can answer. WFCD's `warframe-items` export is the
 CROSS-CHECK and the fallback — it is no longer a peer source, and it stopped
@@ -80,7 +80,7 @@ The **page infobox** (the `<div class="row"><div class="label left">…</div>
 <div class="value right">…</div></div>` rows) is the human-rendered view of the
 same data; parse label/value pairs if the module is unavailable.
 
-## `Weapon Comparison/CSV` — every gun in one fetch (owner, 2026-08-21)
+## `Weapon Comparison/CSV` — every gun in one fetch
 
 `https://wiki.warframe.com/w/Weapon_Comparison/CSV?action=raw` — 740 KB, **877
 gun-attack rows over 508 weapons**, one comma-separated line per ATTACK, with
@@ -131,7 +131,7 @@ threw away 211 of the 355 joins. What ambiguity means here is decided per FIELD:
 a weapon-level value is used when every attack row agrees and is counted as
 unchecked when they do not.
 
-### What it said the first time it ran (2026-08-21)
+### What it said the first time it ran
 
 **Coverage: nothing missing.** 355 of the 508 weapons are in the roster and the
 other 153 are out of scope by a decision with a document behind it — melee and
@@ -206,7 +206,7 @@ Our field names follow the wiki concept words (snake_case + unit suffixes):
 - Later: a small **importer** fetches these modules and emits our YAML directly,
   so bulk entry is automated. WFCD's `warframe-items` (JSON, same datamined
   source) is an alternative bulk feed to consider for the importer.
-- **No `verification` blocks, no `schema_version`** (decision 2026-07-24):
+- **No `verification` blocks, no `schema_version`**:
   whatever is written in the data IS the current belief, corrected in place
   as measurements land. Confidence lives in
   git history, not per-file status fields. Golden tests vs
@@ -216,7 +216,7 @@ Our field names follow the wiki concept words (snake_case + unit suffixes):
   [`../data/README.md`](../data/README.md)): fields are structured data a
   program consumes; human narrative is a `#` comment. No prose in fields.
 
-### The CN wiki is reachable through its API, not its pages (2026-08-03)
+### The CN wiki is reachable through its API, not its pages
 
 `warframe.huijiwiki.com` — the second source `data/README.md` names for display
 names, and the ONLY source for Incarnon evolution strings (DE exports none;
@@ -305,7 +305,7 @@ English wiki alone — 力量前奏 reads "暴击几率低于 40% 时，**基础
 A second source agreeing is not a measurement, but it is the cheapest check
 there is.
 
-### A card is TWO fields, and we were reading one (2026-08-03)
+### A card is TWO fields, and we were reading one
 
 WFCD's `i18n.json` carries a mod's localized card in two places, and DE decides
 which one a given sentence lands in:
@@ -331,11 +331,11 @@ DOUBLE printing — DE writes an augment's whole sentence in both fields with
 The generator is the only writer of `descriptions.yaml`; a gap like this is
 fixed there and regenerated, never patched into the file.
 
-## The wiki's own METHOD page, and where the mechanics pages are (2026-08-09)
+## The wiki's own METHOD page, and where the mechanics pages are
 
 Two links worth having in one place, because the answer to "where does this
 number come from" for a MECHANIC is not the same as for a data field, and this
-document was only about the second (owner, 2026-08-09).
+document was only about the second.
 
 ### [`WARFRAME_Wiki:Research`](https://wiki.warframe.com/w/WARFRAME_Wiki:Research)
 
@@ -372,7 +372,7 @@ unchanged. It is a list of instruments, and its place in this repo is that
 `docs/MEASUREMENTS.md` designs protocols and this is what they can be built out
 of.
 
-### THE PER-WEAPON CATALOGS ARE CACHED LOCALLY (2026-08-14)
+### THE PER-WEAPON CATALOGS ARE CACHED LOCALLY
 
 `node scripts/fetch_catalogs.mjs` writes both catalog pages' WIKITEXT to
 `vendor/wiki/`:
@@ -438,7 +438,7 @@ against what the rendered page had already given).
 This is the route to use. The two below are what happens without it, kept
 because the failure is not obvious.
 
-## "RANGE" ON A GUN MEANS TWO DIFFERENT THINGS (2026-08-19)
+## "RANGE" ON A GUN MEANS TWO DIFFERENT THINGS
 
 Transcribing the roster's ranges in bulk would have been wrong, and the wiki's
 own schema says why: on a gun entry `Range` is documented as *"the base radius
@@ -499,7 +499,7 @@ what the cross-check buys, and the table below is which source wins where.
 | --- | --- | --- |
 | `base_drain`, `max_rank` | **WFCD** (`vendor/warframe-items`) | `Module:Mods/data` is wrong for ~20 mods. Checked against the wiki PAGE rank tables as a third, independent data point (hand-maintained but per-rank, so hard to get wrong) — Point Strike, Split Chamber, Metal Auger, Barrel Diffusion, Convulsion, Deep Freeze, Gunslinger, Suppress — and the page agreed with WFCD **8/8** |
 | `polarity`, `rarity`, `exilus`, verbatim `description` | **wiki module** | unchanged; WFCD has no exilus flag and its display text is rounded |
-| `internal_name` | **WFCD**, when they split | it is the JOIN KEY, so it is decidable rather than a matter of taste. `Primed Deadly Efficiency` (2026-08-01): module `…PrimedArchwingDamageAfterReloadMod`, WFCD `…DamageOnReloadMod`. With the module's spelling it was the ONE Arch-Gun mod with no localized card text — the join silently found nothing. WFCD's joins and yields all 11 ranks, which the number-agreement test then validates against our own values. The module is hand-maintained; WFCD is generated from DE's export |
+| `internal_name` | **WFCD**, when they split | it is the JOIN KEY, so it is decidable rather than a matter of taste. `Primed Deadly Efficiency`: module `…PrimedArchwingDamageAfterReloadMod`, WFCD `…DamageOnReloadMod`. With the module's spelling it was the ONE Arch-Gun mod with no localized card text — the join silently found nothing. WFCD's joins and yields all 11 ranks, which the number-agreement test then validates against our own values. The module is hand-maintained; WFCD is generated from DE's export |
 | per-rank effect VALUES | **WFCD `levelStats`** | a full ramp, both ends checkable; the module gives max rank only |
 | everything mechanical | **cross-check both** | a disagreement is itself the finding — `crosscheck.py` reports SOURCE-SPLIT |
 
@@ -510,7 +510,7 @@ matches exactly one entry, none unmatched. A name-keyed lookup is what made an
 earlier pass "confirm" MaxRank 5 for Hawk Eye and Steady Hands from a
 collision duplicate, and record the wrong conclusion in both files.
 
-## WEAPONS: the wiki module, and never WFCD's `damage` dict (2026-08-04)
+## WEAPONS: the wiki module, and never WFCD's `damage` dict
 
 The "cross-check both" rule holds, but for a WEAPON the two sources are not
 peers and one WFCD field is simply unusable. Owner's call: **wiki first**.
@@ -573,7 +573,7 @@ Prime: 0 disagreements.
 The modules are cached under `private/scripts/.cache/` (~330 KB per slot);
 `--refresh` re-fetches.
 
-### Sources we do NOT use, and what each would be good for (2026-08-01)
+### Sources we do NOT use, and what each would be good for
 
 Found in wfhub.top's own credits page (Tenno Hub, a Chinese Warframe
 companion site) — its data sources barely overlap ours, and three are worth
@@ -592,7 +592,7 @@ The rest of Tenno Hub's list is worldstate and market data (`api.warframestat.us
 which is live-service state — nothing this project models. **One exception since
 2026-08-08**, and it is not price data: see below.
 
-### RIVEN POOLS: the only source is other people's cards (2026-08-08)
+### RIVEN POOLS: the only source is other people's cards
 
 Which stats a weapon's riven can roll is DE's own per-weapon table. It is in no
 export, the wiki states a rule and immediately disclaims it (*"usually…
@@ -664,7 +664,7 @@ and `1.0` matched via the "+1 multiplier" reading against the `2` in
 "(x2 for Bows)". A wrong value hiding behind a coincidence in the same string
 is exactly what a second, independent ramp rules out.
 
-### Second pass: rendered text vs `levelStats`, rank by rank (2026-07-31)
+### Second pass: rendered text vs `levelStats`, rank by rank
 
 The checks above compare stored VALUES. This one compares what the card
 SAYS — `desc_ranks` from `/api/meta` against WFCD's `levelStats`, every mod
@@ -691,7 +691,7 @@ sentence. What it caught:
 `desc_info_fills_every_x_across_the_pool` (now over EVERY class, not just the
 pistol pool it was written for) fails on any placeholder left unfilled.
 
-### Mod compatibility is a UNION of pools (2026-07-31)
+### Mod compatibility is a UNION of pools
 
 "Primary Mod" is not one pool. DE tags every mod, and WFCD carries the tag as
 `compatName`:
@@ -715,7 +715,7 @@ roster was a launcher. It fails in both directions the moment a second type
 arrives: an assault-rifle mod would be offered to a launcher, and a shotgun
 would draw nothing.
 
-All 10 `PRIMARY` mods are recorded (user, 2026-07-31: record the cards first).
+All 10 `PRIMARY` mods are recorded.
 **Hunter Munitions is modeled** — see MECHANICS §"Slash on critical". Four
 still carry `kind: unmodeled`, and none of them is costly the way that one
 would have been: corpse explosions (Combustion Beam) and status spread
@@ -727,7 +727,7 @@ yet and nothing in the roster can equip it anyway.
 
 `compatName` says WHICH POOL, not whether the weapon qualifies. Sinister Reach
 and Combustion Beam are both tagged `PRIMARY` and neither can go on the Torid
-(user, 2026-07-31) — they need a CONTINUOUS weapon, which DE's own internal
+ — they need a CONTINUOUS weapon, which DE's own internal
 names say plainly (`WeaponBeamDistanceMod`, `WeaponBeamExplodeOnDeath`).
 
 The Torid is the case that shows where the line falls: **its Incarnon form IS
@@ -797,7 +797,7 @@ this before "fixing" either (audited 2026-08-01):
   and settled the same way. All ten are `/Lotus/Upgrades/Mods/PvPMods/Shotgun/…`
   and `Shotgun_Mods` tags each "Exclusive to PvP"; the five that page leaves
   unmarked (Broad Eye, Double-Barrel Drift, Lock and Load, Snap Shot, Soft
-  Hands) DO ship and are in the engine allowlist (2026-08-03).
+  Hands) DO ship and are in the engine allowlist.
 - `--type Archgun` reports `zodiac_shred` exilus false != wiki true. Deliberate
   — `MEASUREMENTS.md` **M17** holds the reasoning and the measurement that
   would settle it.
@@ -808,7 +808,7 @@ this before "fixing" either (audited 2026-08-01):
 | `crosscheck.py --type <T>` / `--arcanes <S>` | DUAL VERIFICATION: ours vs wiki vs WFCD. Reports MISMATCH (ours disagrees with WFCD) and SOURCE-SPLIT (the two sources disagree with each other). Compares each number at the SOURCE's own precision, since WFCD's display rounds |
 | `reconcile_wfcd.py --type <T>` | rewrites `base_drain` / `max_rank` from WFCD. Only those two — matching an effect kind to a phrase in a stat string is guesswork, and a wrong guess there changes damage |
 | `reconcile_families.py --type <T>` | `family` / `incompatible_with` by union-find over the wiki's `Incompatible` lists — the mutual-exclusivity groups the optimizer enforces |
-| `gen_assets.py` | writes `data/assets.yaml`: our ids → WFCD `imageName`, which the UI serves from `cdn.warframestat.us`. **IT REWRITES THE WHOLE FILE AND DROPS WHAT IT CANNOT RESOLVE** (2026-08-20): a run for twenty new weapons removed all 69 hand-set FORM rows — every `_incarnon`, `_charged`, `_thrown`, `_uncharged` and alt-fire entry — because the API has no item for a form, and it reported them only as an `unresolved:` line at the end. It exits 0 while doing it, so `git diff --stat` is the check: **an assets run that DELETES lines has eaten something**. Adding a handful of weapons is safer done from the LOCAL export instead — `vendor/warframe-items` carries the same `imageName` field, so the mapping needs no network and touches nothing else. **Re-run whenever a weapon, mod or arcane is added** — a missing entry is a silently image-less card, which is how the Torid shipped with no picture and the whole rifle mod set with none either. Misses are written as commented lines for a human to fill; `<weapon>_incarnon` is always a miss worth fixing by hand, because the resolver finds the Genesis ADAPTER item rather than the gun |
+| `gen_assets.py` | writes `data/assets.yaml`: our ids → WFCD `imageName`, which the UI serves from `cdn.warframestat.us`. **IT REWRITES THE WHOLE FILE AND DROPS WHAT IT CANNOT RESOLVE**: a run for twenty new weapons removed all 69 hand-set FORM rows — every `_incarnon`, `_charged`, `_thrown`, `_uncharged` and alt-fire entry — because the API has no item for a form, and it reported them only as an `unresolved:` line at the end. It exits 0 while doing it, so `git diff --stat` is the check: **an assets run that DELETES lines has eaten something**. Adding a handful of weapons is safer done from the LOCAL export instead — `vendor/warframe-items` carries the same `imageName` field, so the mapping needs no network and touches nothing else. **Re-run whenever a weapon, mod or arcane is added** — a missing entry is a silently image-less card, which is how the Torid shipped with no picture and the whole rifle mod set with none either. Misses are written as commented lines for a human to fill; `<weapon>_incarnon` is always a miss worth fixing by hand, because the resolver finds the Genesis ADAPTER item rather than the gun |
 
 Two systematic failure modes these caught, worth knowing because they are
 INVISIBLE to a numbers-only check and both produce data that looks fine:
@@ -834,7 +834,7 @@ than silenced:
   rounds to 110% — an explicit allowlist entry with the wiki quote, not a
   tolerance that would hide the next real error.
 
-## Auditing the mod set (2026-08-02)
+## Auditing the mod set
 
 Three mechanical sweeps, run after M22 found Primary Acuity modelled as an
 unconditional +350%/+350%. Each compares `data/mods/` against a source that
@@ -860,7 +860,7 @@ Equippability beyond the pool (a mod a weapon may not take even though the
 pool offers it) is `excludes_weapon` / `requires_weapon`, and the export does
 not carry those tags — they come from the wiki page, one mod at a time.
 
-### The WEAPON-EXCLUSIVE sweep, and the two ways a mod is refused (2026-08-13)
+### The WEAPON-EXCLUSIVE sweep, and the two ways a mod is refused
 
 A mod that fits ONE weapon is invisible to every sweep above: the pools are
 built from what `data/mods/` holds, so a mod nobody transcribed is one the
@@ -899,7 +899,7 @@ its reason written into the survey:
 An exclusion costs a written reason, asserted by the same test — otherwise the
 cheapest way to close a ratchet is to declare everything out of scope.
 
-### The POOL-TAG sweep, and the pool that was a name and nothing else (2026-08-18)
+### The POOL-TAG sweep, and the pool that was a name and nothing else
 
 The sibling of the sweep above, and the half it never covered. That one joins
 `compatName` against WEAPON NAMES, which finds the mod written for one gun.
@@ -1032,7 +1032,7 @@ It had already happened. `hema` carried
 `/Lotus/Weapons/Infested/InfWFAccompanyingPri/InfestedBurstRifle` against DE's
 `/Lotus/Weapons/Infested/LongGuns/InfWFAccompanyingPri/InfestedBurstRifle` —
 ONE PATH SEGMENT SHORT — from the day it was written, and every sweep since had
-skipped it in silence (2026-08-20).
+skipped it in silence.
 
 `scripts/survey_internal_names.py` writes `data/surveys/internal_names.yaml`
 (213 rows, one per entry that STATES a key — a form inherits its weapon's and
@@ -1043,7 +1043,7 @@ not hold. Verified to bite — reinstating the Hema's missing segment fails the
 test naming the weapon and both paths, and makes the script exit non-zero
 rather than write.
 
-## Equippability: the wiki module is the only structured source (2026-08-02)
+## Equippability: the wiki module is the only structured source
 
 A mod's `excludes_weapon` mirrors DE's own incompatibility tags. The WFCD
 export does NOT carry them — it has `compatName` (which pool) and nothing
@@ -1068,7 +1068,7 @@ The page's own wikitext says nothing of the kind and the module gives the mod
 no tags at all. Both structured sources agreed and the sentence was invented.
 Use the module, or the raw `action=raw` wikitext — never a summary of either.
 
-## Enemies: art, and the Acolytes' three-way stat conflict (2026-08-03)
+## Enemies: art, and the Acolytes' three-way stat conflict
 
 Enemy portraits are **not** in `data/assets.yaml`. That file maps ids to WFCD
 `imageName`s, and WFCD has no enemy art we can use: `api.warframestat.us`
@@ -1118,7 +1118,7 @@ fraction would be a faithful-looking guess. The files instead declare
 `unmodeled: [damage attenuation]`, which the target card prints — a gap the
 reader can see is a limitation; a gap they cannot is a wrong number.
 
-## The faction vulnerability column, checked cell by cell (2026-08-03)
+## The faction vulnerability column, checked cell by cell
 
 `data/factions/damage_modifiers.yaml` was transcribed by hand from the wiki's
 **`Damage/Overview_Table`**. It has now been machine-compared against that
@@ -1163,7 +1163,7 @@ The enemy modules use 18 distinct `Faction` values; the damage table publishes
 
 **That is not a gap — it is the answer.** The fifteen are the whole system, so
 a faction the table leaves out is a unit the game gives no vulnerability or
-resistance to, and it takes every damage type as written (user, 2026-08-03).
+resistance to, and it takes every damage type as written.
 `factions_data::column()` returns the neutral column for an unlisted key
 rather than reporting an error, and the file holds exactly the fifteen — no
 hand-added neutral rows, with a test locking the set so "everything else is
@@ -1172,8 +1172,7 @@ column".
 
 ## Riven pools: the rules decide, the survey checks
 
-Three files, and which one DECIDES is the whole design (owner,
-2026-08-08):
+Three files, and which one DECIDES is the whole design:
 
 | file | role |
 |---|---|

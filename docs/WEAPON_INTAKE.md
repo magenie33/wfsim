@@ -3,12 +3,12 @@
 The wiki knows 353 ranged weapons. This is what one costs and how the next
 ones get in.
 
-**THE ORDER IS docs/INCARNON.md's** (owner, 2026-08-07): every Incarnon primary
+**THE ORDER IS docs/INCARNON.md's**: every Incarnon primary
 and secondary comes first. What one weapon costs, and the READ THE PAGE rule,
 apply to all of it; batches A and B below are the backlog behind that program,
 and batch C (sniper) is part of it (Vectis).
 
-## …AND IT IS CHECKED BY A TOOL NOW, not by a claim (2026-08-21)
+## …AND IT IS CHECKED BY A TOOL NOW, not by a claim
 
 `python scripts/wiki_weapon_csv.py coverage` answers "what does the game have
 that we do not" from the wiki's own `Weapon Comparison/CSV` — 508 weapons in one
@@ -21,7 +21,7 @@ true on its own — a weapon DE ships tomorrow makes it wrong, silently. Read
 pasted and lags the module, and it holds no Arch-Guns, so "nothing missing" is a
 claim about the slots the tool prints and no others.
 
-## DONE — every non-Exalted gun is in (2026-08-20)
+## DONE — every non-Exalted gun is in
 
 The backlog this file was written to plan is EMPTY. Every primary and secondary
 the wiki's weapon module holds is in `data/weapons/` except twelve EXALTED
@@ -68,7 +68,7 @@ with and what a build for one even means are the Warframe layer's questions,
 which docs/UNMODELLED.md already holds open.
 
 **SELF-MADE weapons — Kitguns — are OUT, and get their own treatment**
-(owner, 2026-08-20). A Kitgun is not a weapon this roster can hold: it is a
+. A Kitgun is not a weapon this roster can hold: it is a
 CHAMBER, a GRIP and a LOADER chosen independently, and the stat line is
 computed from the three rather than published for any one of them. So a Kitgun
 is not one entry, and it is not 60 entries either — it is a BUILDER, which is
@@ -78,7 +78,7 @@ chambers as weapons would ship one arbitrary grip's numbers under a name the
 player cannot reproduce, which is the opposite of "matches in-game
 measurements".
 
-**The design is `docs/KITGUNS.md`** (2026-08-21), and it changes the price
+**The design is `docs/KITGUNS.md`**, and it changes the price
 rather than the decision: the wiki generates those 1,200 stat rows from
 `Module:Modular/data`, a structured table of the same kind as
 `Module:Weapons/data`, so a Kitgun costs **42 part records and one exact
@@ -134,8 +134,7 @@ line; Prisma Grinlok's only one is "Innate Madurai polarity", which is data we
 already carry.
 
 **And `==Notes==` is the same trap one section further down.** The Phenmor was
-audited perk by perk, matched the infobox on every field, and shipped as done
-(2026-08-08). Its Notes carry *"Fire rate decreases from 100% to 60% over 51
+audited perk by perk, matched the infobox on every field, and shipped as done. Its Notes carry *"Fire rate decreases from 100% to 60% over 51
 shots as the trigger is held"* — a mechanic no evolution mentions, that the
 infobox contradicts, and that is worth more than any perk on the weapon: 51
 shots is 3.8 s of a 408-round magazine, so the Incarnon form ran **51% too
@@ -153,7 +152,7 @@ A weapon carried by a Kuva Lich (Grineer, 赤毒), a Sister of Parvos (Corpus,
 Tenet) or a Coda (Infested, 终幕) is not just another entry: it comes with a
 **VALENCE BONUS**, and that is a build axis nothing else in the roster has.
 
-**Kuva Nukor is the template** (owner, 2026-08-13).
+**Kuva Nukor is the template**.
 
 VERBATIM (wiki, Kuva Weapons §Elemental Bonus):
 
@@ -190,8 +189,7 @@ Three consequences, and each is why the axis exists rather than a field:
   **A weapon with no row is not blocked, it is unsubmitted.** The board is fed
   by submissions and the builder's official builds ARE its rows, so a weapon
   nobody has run under the official ruler has neither — 101 of 159 entries are
-  in that state today, the Kuva Nukor among them. Verified end to end
-  (2026-08-14): under the official ruler a full eight-mod, arcane-seated Kuva
+  in that state today, the Kuva Nukor among them. Verified end to end: under the official ruler a full eight-mod, arcane-seated Kuva
   Nukor passes every submission gate and its payload carries the element.
 
 **Rank 40, not 30.** "Polarizing the weapon increases its max rank by 2, capping
@@ -215,7 +213,7 @@ Every line below is a mistake somebody already made. Work it in order; each step
 names where the answer lives, so "I did not know where to look" is not one of
 the ways this goes wrong.
 
-**A PRIME AND ITS ORDINARY ARE ONE INTAKE** (owner, 2026-08-14). They share a
+**A PRIME AND ITS ORDINARY ARE ONE INTAKE**. They share a
 riven family, a CO row, a Primary Compression row, a mod pool, an art path and
 every sentence of prose — so doing them apart pays for the reading twice and
 gets one of them wrong, which is exactly how the Boar's row became the Boar
@@ -223,7 +221,7 @@ Prime's. Add both, or neither.
 
 ### 1. The sources, and which one wins
 
-**THE WIKI WINS, wherever it can answer** (owner, 2026-08-14). WFCD is the
+**THE WIKI WINS, wherever it can answer**. WFCD is the
 cross-check and the fallback, not a peer — see AGENTS.md for the evidence that
 demoted it, which came out of this very class.
 
@@ -237,7 +235,7 @@ demoted it, which came out of this very class.
 Disagreements are not rounding. Record which source you took and why, in the
 file — every existing weapon does.
 
-**THE INFOBOX AGREEING IS NOT THE INTAKE BEING DONE** (2026-08-15). The row
+**THE INFOBOX AGREEING IS NOT THE INTAKE BEING DONE**. The row
 above is not advice; it is the step that gets skipped, because a weapon whose
 every infobox field matches LOOKS finished. The Mausolon's did — both columns,
 both attacks, field for field — and its Characteristics carried the mechanic
@@ -258,7 +256,7 @@ line sits under *primary fire* and the guaranteed proc under *Alternate Fire* �
 one indent level apart, and swapping them would have modelled the synergy
 backwards.
 
-**AN ARCH-GUN HAS TWO COLUMNS AND WFCD ONLY HAS ONE** (2026-08-14). Its page's
+**AN ARCH-GUN HAS TWO COLUMNS AND WFCD ONLY HAS ONE**. Its page's
 infobox has an `Archwing` tab and an `Atmosphere` tab, and `warframe-items`
 carries the ARCHWING one — so the export is the wrong column for this repo,
 whose arena is the ground. What differs is not only the sustain:
@@ -362,7 +360,7 @@ the number is a faithful-looking implementation with nothing behind it.
 | checks | `check_parity`, `check_equip_rules`, `check_enemies` … | re-run; they are per-weapon by construction |
 | a measurement | docs/MEASUREMENTS.md | **only if the weapon exercises something not already pinned** |
 
-## THE ARCH-GUN CLASS — done (2026-08-15)
+## THE ARCH-GUN CLASS — done
 
 All twenty, as 29 entries. What the class taught is in §1 above (two columns,
 and WFCD carries the wrong one).

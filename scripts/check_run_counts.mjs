@@ -2,7 +2,7 @@
 //
 // A run count used to be three different kinds of thing: the simulator's own
 // setting, a constant the quick calc kept to itself, and a rule the optimizer
-// obeyed without a control. Two of those became settings (owner, 2026-08-11)
+// obeyed without a control. Two of those became settings
 // and the third moved, so this walks all three and asserts the number a reader
 // picks is the number the request carries.
 //
@@ -12,7 +12,7 @@
 //                   cheap; the floor is where a status mod stops being a coin
 //                   flip (M24)
 //   the OPTIMIZER   takes its own for the final round, TYPED, saved by no
-//                   preset and pinned by no ruler (owner, 2026-08-29)
+//                   preset and pinned by no ruler
 //
 // The last one is the reason this exists as a check rather than a comment. It
 // used to be a blank box meaning "the fight's own count" — one control with
@@ -35,7 +35,7 @@ const r = await evaluate(`(async () => {
   const out = {};
 
   // ---- the SIMULATOR's count is DECOUPLED from the fight ---------------
-  // It is a preference, not a scenario field (owner, 2026-08-13): 100 by
+  // It is a preference, not a scenario field: 100 by
   // default, and a scenario cannot carry one at all — which is what stops the
   // rulers' 1,000 from arriving as a local setting the moment you open one.
   out.simDefault = defaultScenario().runs;   // undefined: not a scenario field
@@ -63,9 +63,9 @@ const r = await evaluate(`(async () => {
   // and it was RIGHT for months while the box did nothing: the scan wrote its
   // count into that object and then spread the page's own fight payload over
   // the top, so every scan ran at the simulator's count and every chip's
-  // tooltip quoted a number that had never been sent (owner, 2026-08-17). A
+  // tooltip quoted a number that had never been sent. A
   // count is only decoupled if the REQUEST says so, so this intercepts the
-  // request (2026-08-17).
+  // request.
   gainPrefs = { ...gainPrefs, runs: 30 };
   const seen = [];
   const realApi = api;
@@ -103,7 +103,7 @@ const r = await evaluate(`(async () => {
   };
   const set = async (el,v) => { const n=document.getElementById(el); n.value=String(v); n.dispatchEvent(new Event('input',{bubbles:true})); await sleep(200); };
 
-  // IT IS A PREFERENCE, TYPED, AND IN NEITHER PRESET (owner, 2026-08-29).
+  // IT IS A PREFERENCE, TYPED, AND IN NEITHER PRESET.
   // It used to ride the search preset with a BLANK box meaning "the fight's
   // own count" — one control with two readings, and the wrong home for both:
   // a run count is not what to search and the fight has never carried one
@@ -143,7 +143,7 @@ const r = await evaluate(`(async () => {
   // fight is about a millisecond, a 361-body one is ~28, so the rulers' 1000
   // runs is half a minute. It runs on a WORKER, so the page was never frozen —
   // but a button reading Simulating... for half a minute is reported as a
-  // hang, and it should be (owner, 2026-08-18).
+  // hang, and it should be.
   {
     const ruler = scenarioList().find((p) => presetId(p) === 'group_clear');
     if (ruler) {
@@ -201,8 +201,7 @@ const r = await evaluate(`(async () => {
   // The wait is unbounded, so a reader who realises the fight is too big must
   // not have to reload the page. There is no yield point inside a wasm call to
   // check a flag at, so the worker is TERMINATED — instant, and costs nothing
-  // to recover from since a sim carries no state between calls (owner,
-  // 2026-08-18).
+  // to recover from since a sim carries no state between calls.
   {
     const ruler = scenarioList().find((p) => presetId(p) === 'group_clear');
     if (ruler) {
@@ -238,7 +237,7 @@ const r = await evaluate(`(async () => {
       // WIRE, where the engine's own test cannot reach: a shard crosses the
       // wasm boundary as JSON, and a JSON number in JavaScript is a double, so
       // the run's 64-bit RNG state came back ROUNDED and the merge replayed a
-      // fight that never happened (2026-08-18). Every mean matched; only the
+      // fight that never happened. Every mean matched; only the
       // median run's figures moved.
       const body = { ...buildPayload(), ...theFight({ runs: 40 }) };
       // THE PAGE'S ONE POOL. The simulator had a fleet of its own until
@@ -258,7 +257,7 @@ const r = await evaluate(`(async () => {
   return out;
 })()`);
 
-// HOW HARD YOU MEASURE IS NOT PART OF THE FIGHT (owner, 2026-08-13). Two
+// HOW HARD YOU MEASURE IS NOT PART OF THE FIGHT. Two
 // claims, and the second is the one that makes it true rather than merely
 // defaulted: a scenario cannot carry a run count at all, so opening an
 // official ruler — whose yaml says 1,000 — cannot silently make the page slow,

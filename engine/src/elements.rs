@@ -98,8 +98,7 @@ fn hcet(t: DamageType) -> u8 {
 /// It decides nothing about damage. It exists so a build that produces the same
 /// elements always PRINTS the same way: `builds::canonical_mods` orders its
 /// element pairs by what each one makes, so Blast comes before Corrosive
-/// because the table says so and not because of who submitted first (owner,
-/// 2026-08-06).
+/// because the table says so and not because of who submitted first.
 ///
 /// NOT `hcet`, which looks like the same question and is not: that one orders
 /// INNATE elements under rule 2 and changes what the weapon does.
@@ -218,8 +217,7 @@ mod tests {
         assert_eq!(out.get(Electricity), 0.0);
     }
 
-    /// THE WIKI'S OWN HCET TABLE, all forty-eight cells (owner,
-    /// 2026-08-13).
+    /// THE WIKI'S OWN HCET TABLE, all forty-eight cells.
     ///
     /// VERBATIM (Kuva_Nukor, transcluded from Adversary System/Progenitor):
     /// *"Weapons with an innate primary element and a different primary element
@@ -407,7 +405,7 @@ mod tests {
 /// damage last" — there the TOXIN combines with a mod higher up the hierarchy
 /// and the Electricity with one lower down.
 ///
-/// Reported as a wrong reading (owner, 2026-08-07) on a Phantasma Prime: the
+/// Reported as a wrong reading on a Phantasma Prime: the
 /// pairing came out one element off, because the riven's FIRST-listed stat was
 /// meeting the mod above it where the game gives that meeting to its last.
 ///

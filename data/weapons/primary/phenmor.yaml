@@ -11,7 +11,7 @@ grip_type: RIFLE
 mastery_rank: 14
 max_rank: 30
 
-# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are separate
+# TWO WEAPONS MODEL: base and Incarnon forms are separate
 # entries linked by a transform group. Zariman weapons carry the Incarnon
 # Genesis innately — there is no separate Genesis item to install, which is why
 # this file names its own form rather than an adapter's.
@@ -27,7 +27,7 @@ polarities: [madurai, naramon]
 exilus_polarity: madurai
 riven_family: Phenmor
 traits: [zariman, incarnon]
-introduced: "31.5"           # Update 31.5 "Angels of the Zariman" (2022-04-27)
+introduced: "31.5"           # Update 31.5 "Angels of the Zariman"
 internal_name: /Lotus/Weapons/Tenno/Zariman/LongGuns/SemiAutoRifle/ZarimanSemiAutoRifle
 noise: alarming
 ammo_type: primary

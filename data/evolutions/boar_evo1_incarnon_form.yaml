@@ -18,7 +18,7 @@ description: "Weakpoint hits charge Incarnon Transmutation; Alt Fire transmutes.
 # number the other one carries — and if DE ever splits them, the table grows a
 # real cell and the two files diverge there.
 #
-# NO OTHER VARIANT'S NUMBERS LIVE IN THIS FILE (owner, 2026-08-12). A file
+# NO OTHER VARIANT'S NUMBERS LIVE IN THIS FILE. A file
 # that states two weapons' values is a file where the reader has to work out
 # which one they are looking at, every time.
 selection: fixed                # tier 1 has no choice

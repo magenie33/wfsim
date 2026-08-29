@@ -88,7 +88,7 @@ const drawn = await evaluate(`(async () => {
     // on a working page by exactly the number of parts.
     //
     // READ OFF THE RENDERED LIST, not the registry: a gain chip is computed
-    // when the list DRAWS (2026-08-24), because the scan that fills it starts
+    // when the list DRAWS, because the scan that fills it starts
     // when the list is OPENED — baking it in at registration is what kept a
     // freshly opened list showing none at all. ddRender is the function the
     // popover itself calls.
@@ -123,22 +123,21 @@ check("...each showing exactly which part is installed",
     && drawn.selected.some(x => x.startsWith("grip:"))
     && drawn.selected.some(x => x.startsWith("loader:")),
   JSON.stringify(drawn.selected));
-// A PART IS RANKED LIKE EVERY OTHER AXIS (owner, 2026-08-23). A grip is worth
+// A PART IS RANKED LIKE EVERY OTHER AXIS. A grip is worth
 // a different amount on every build and no card states it, which is the same
 // argument the valence row and the evolution tiers are built on — so the parts
 // carry quick-calc chips rather than a dropdown that shuts over its own hints.
 check("...and every option that is a candidate is ranked, not just described",
   drawn.unranked.length === 0,
   `${drawn.unranked.length} of ${drawn.picks.length} unranked: ${drawn.unranked}`);
-// TWENTY LOADERS IS WHY THIS IS A LIST AND NOT A ROW OF CHIPS (owner,
-// 2026-08-24). Asserted so the shape cannot quietly go back to one that only
+// TWENTY LOADERS IS WHY THIS IS A LIST AND NOT A ROW OF CHIPS. Asserted so the shape cannot quietly go back to one that only
 // works for an axis with four options.
 check("...and the loader list is the long one, so it is searchable",
   drawn.picks.filter(x => x.startsWith("loader:")).length >= 20,
   JSON.stringify(drawn.picks.filter(x => x.startsWith("loader:")).length));
 // THE CHAMBER IS NOT DRAWN AT ALL. It used to be stated as a read-only value;
 // the chamber IS the weapon, whose name is already at the top of the page, so
-// the row said the same word twice (owner, 2026-08-23).
+// the row said the same word twice.
 check("...and the chamber is not drawn at all",
   !drawn.fixed.includes("Tombfinger") && !drawn.controls.includes("dd-chamber"),
   JSON.stringify({ fixed: drawn.fixed, controls: drawn.controls }));
@@ -157,7 +156,7 @@ check("...and the row offers exactly those five",
     && drawn.picks.filter(x => x.startsWith("grip:")).length === drawn.grips.length,
   JSON.stringify(drawn.picks));
 // EACH OPTION CARRIES ITS OWN NUMBERS. Twenty names say nothing about the
-// decision, which is the Mode control's own lesson (owner, 2026-08-15).
+// decision, which is the Mode control's own lesson.
 check("...and each part says what it is worth",
   /\d/.test(drawn.text), drawn.text.slice(0, 120));
 
@@ -248,7 +247,7 @@ check("the eight Kitgun arcanes are offered on a Kitgun",
 // class alone offers every one of them on an ordinary pistol.
 check("...and on nothing else",
   arcanes[PLAIN].kit.length === 0, JSON.stringify(arcanes[PLAIN]));
-// A SEAT OF THEIR OWN, AND IT IS NOT THE WEAPON'S (owner, 2026-08-23). The
+// A SEAT OF THEIR OWN, AND IT IS NOT THE WEAPON'S. The
 // wiki puts it as an "as well" rather than an "instead" — "These can be
 // installed simultaneously with Secondary/Primary arcanes" (`Kitgun` §Kitgun
 // Arcanes) — so filing them under the weapon's slot made the page ask the
@@ -370,7 +369,7 @@ check("...and restoring it puts them back",
 // A SHARE LINK CARRIES THEM. The tuple omits what the recipient would derive
 // anyway, so this uses a NON-default pair: a link that dropped them would land
 // on the default and claim a number for a build it does not carry, which is
-// exactly what happened to `mode` and `valence` (2026-08-15).
+// exactly what happened to `mode` and `valence`.
 const shared = await evaluate(`(async () => {
   ${open(KIT)}
   assembly = { grip: 'haymaker', loader: 'killstream' };

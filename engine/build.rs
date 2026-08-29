@@ -6,7 +6,7 @@
 //! from it, so native and wasm builds carry the identical data set and no
 //! binary depends on the current working directory.
 //!
-//! WHAT IS EMBEDDED IS THE DATA, NOT THE PROSE (2026-08-21). `data/` is
+//! WHAT IS EMBEDDED IS THE DATA, NOT THE PROSE. `data/` is
 //! **43% comments and blank lines** — 1.55 MB of 3.57 MB, and 55% of
 //! `weapons/`, 67% of `evolutions/`, 75% of `debuffs/` — because this repo
 //! makes every value cite its source, which is a rule about the REPO and not

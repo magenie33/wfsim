@@ -67,7 +67,7 @@ Everything that moves a number is content. So the path that runs weekly is a
 directory swap, and the path that means downloading 34 MB again runs almost
 never. **Keeping the shell thin is the update strategy**, not tidiness.
 
-**There is no installer** (owner, 2026-08-26). The whole app is an
+**There is no installer**. The whole app is an
 `include_bytes!` inside the executable, so the file cargo produces is the
 product: double-click to run, delete to uninstall, no registry, no
 administrator prompt. An NSIS bundle was worth 9 MB of compression and a Start
@@ -192,7 +192,7 @@ traffic anyway.
 
 ### What the home page offers, and what it says about it
 
-**Windows only, for now** (owner, 2026-08-29). The release workflow still cuts
+**Windows only, for now**. The release workflow still cuts
 `WFSim.AppImage` and the GitHub release page still lists it; the hero simply is
 not about it. The Linux row was built before anyone asked for it and it cost the
 offer its shape — a Windows button, a GitHub link beside it, then a second row

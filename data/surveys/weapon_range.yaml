@@ -4,7 +4,7 @@
 # yaml; this file records what the page said, so the next person does not have
 # to re-read 190 pages to know what has been checked and what has not.
 #
-# WHY THERE IS NO SHORTCUT (2026-08-19). The obvious one is a class rule, and
+# WHY THERE IS NO SHORTCUT. The obvious one is a class rule, and
 # it survives five samples and then dies:
 #
 #   Braton      rifle    Hit-Scan    300.0 m

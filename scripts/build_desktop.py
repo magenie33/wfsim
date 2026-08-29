@@ -11,7 +11,7 @@ WHAT LANDS IN `dist/`:
   使用说明.txt    which of those to download, and that the source is not
                  something a player needs.
 
-NO INSTALLER (owner, 2026-08-26). It was an NSIS bundle for a while, worth
+NO INSTALLER. It was an NSIS bundle for a while, worth
 9 MB of compression and a Start menu shortcut. Dropping it also drops the
 BUNDLER, which is where both of this project's "builds cleanly, ships the wrong
 thing" failures came from: it packaged the signing tool instead of the app, and
@@ -109,15 +109,14 @@ def main() -> None:
 
     DIST.mkdir(exist_ok=True)
 
-    # NO DATE, NO VERSION, IN THE FILENAME (owner, 2026-08-26). A network drive
+    # NO DATE, NO VERSION, IN THE FILENAME. A network drive
     # share link is tied to the file, so renaming the download invalidates every
     # link already posted — and this is the one artifact that almost never needs
     # replacing, since everything after it arrives through the update channel. A
     # stable name is worth more than being able to tell two downloads apart,
     # which the SHA-256 does anyway.
     #
-    # EACH PLATFORM'S OWN EXTENSION, and nothing else to tell them apart
-    # (owner, 2026-08-26): `.exe` and `.AppImage` both say what they are to the
+    # EACH PLATFORM'S OWN EXTENSION, and nothing else to tell them apart: `.exe` and `.AppImage` both say what they are to the
     # system and to the reader, where `WFSim-linux` was a label we invented.
     if windows:
         built = DESKTOP / "target" / "release" / "wfsim-desktop.exe"
@@ -153,13 +152,13 @@ def main() -> None:
     import release_desktop  # noqa: E402
     (DIST / "source.zip").write_bytes(release_desktop.source_zip())
 
-    # NO BUILD DATE IN THE NOTES (owner, 2026-08-26). It was there so a second
+    # NO BUILD DATE IN THE NOTES. It was there so a second
     # upload could be told from the first, which serves the person uploading and
     # costs the person downloading: a file stamped August, read in December,
     # looks stale — and it is not, because the client updates itself on its
     # first run whichever copy was downloaded. The date said something untrue.
     # The SHA-256 tells the two apart, and more precisely.
-    # THE WORDING IS THE OWNER'S (2026-08-26), edited by hand in `dist/` and
+    # THE WORDING IS THE OWNER'S, edited by hand in `dist/` and
     # brought back here so the next build does not overwrite it. Only the
     # SHA-256 is generated — everything else is his text, kept verbatim.
     # THE NOTES ARE FOR THE NETWORK DRIVE, which is a Windows audience: they

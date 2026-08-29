@@ -50,7 +50,7 @@ attack:
   # THE RANGE IS A WALL, NOT A RAMP: full damage to the end of it and
   # literally nothing past it. Transcribed from the wiki's Range stat; it
   # already sat in this file's `beam_range` note, which the engine could
-  # not read (2026-08-19).
+  # not read.
   range_m: 24.0
   damage: { cold: 26.0 }
 unmodeled:

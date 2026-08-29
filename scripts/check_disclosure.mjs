@@ -1,8 +1,7 @@
 // WHAT THE APP DOES NOT MODEL IS ON THE PAGE, in every family that has one.
 //
 // The owner debugs the way a player does — by reading the card — so a gap that
-// exists only in a yaml comment or a report script is a gap nobody can act on
-// (2026-08-08). Five families can admit something, each with its own
+// exists only in a yaml comment or a report script is a gap nobody can act on. Five families can admit something, each with its own
 // surface, and each has gone silent at least once:
 //
 //   · WEAPON      a banner over the stats panel, one line per gap
@@ -45,8 +44,7 @@ for (const lang of ["en", "zh"]) {
   const r = await evaluate(`(async () => {
     const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-    // WHERE AN EVOLUTION'S ADMISSIONS LIVE, now that a tier is a dropdown
-    // (2026-08-24). Two places, and both are the promise:
+    // WHERE AN EVOLUTION'S ADMISSIONS LIVE, now that a tier is a dropdown. Two places, and both are the promise:
     //
     //   * the ROWS you choose from, because that is where the choosing
     //     happens — rendered with ddRender, which is the same function the
@@ -97,7 +95,7 @@ for (const lang of ["en", "zh"]) {
     //     Irradiate's echo at 3.6x the hit while the arcane's own card, on the
     //     same screen, prints DE's 180%. The engine carried that as
     //     echo_multiplier and said so nowhere a reader could see, which is how
-    //     it was reported (owner, 2026-08-25).
+    //     it was reported.
     history.pushState({}, '', '/weapons/Laetum'); route(); await sleep(3200);
     const lb = document.getElementById('stats-livebug');
     out.bugShown = lb && !lb.hidden;
@@ -238,7 +236,7 @@ for (const lang of ["en", "zh"]) {
     // 7b. THE TODO CHIP, on a weapon that still has one.
     //
     // It used to be read off the Stug above, and that stopped working the day
-    // the Stug's last inert perk was modelled (2026-08-12) — which is the
+    // the Stug's last inert perk was modelled — which is the
     // check succeeding at its job and then failing for it. The assertion is
     // that the gold "not modelled YET" chip still RENDERS, so it has to be
     // asked of a weapon that has one; the Felarx does, and it also carries
@@ -320,7 +318,7 @@ for (const lang of ["en", "zh"]) {
     //    Incarnon beam). It briefly stopped being clean while the aim model
     //    read the weapon-level Accuracy stat, which no Incarnon form has —
     //    fixed by reading the per-ATTACK spread the wiki module publishes
-    //    instead (2026-08-15), which is the primary value anyway.
+    //    instead, which is the primary value anyway.
     //    (No backticks in here: this block lives inside a template literal.)
     history.pushState({}, '', '/weapons/Torid'); route(); await sleep(3200);
     out.cleanBanner = document.querySelector('.unmod-h') ? 'shown' : 'absent';

@@ -11,7 +11,7 @@ parsing, so this tool runs for anybody who has cloned the repo.
 WHAT IT IS FOR is the question `intake_report.py` cannot answer. That tool says
 what is IN the roster and what about it is unfinished; this one says what the
 GAME has that the roster does not, which is the whole of "which weapon next"
-(owner, 2026-08-21: "这里面有全部的武器").
+.
 
     python scripts/wiki_weapon_csv.py coverage        # what is missing, by class
     python scripts/wiki_weapon_csv.py coverage --all  # …and name every one

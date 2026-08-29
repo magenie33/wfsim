@@ -11,7 +11,7 @@ description: "Increase Base Damage by +34.\nWith Overshields: Increase Base Dama
 selection: choose_one
 
 # CONDITION OVERLOAD — NOT excluded here, and this is SETTLED rather than
-# inferred (owner, 2026-08-06). So this perk's +34 feeds the CO term
+# inferred. So this perk's +34 feeds the CO term
 # in full: the hit lands 94 and CO computes on 94.
 #
 # The catalog agreed already, by saying nothing: its row names "Furis" and
@@ -38,7 +38,7 @@ effects:
   # a kind the loader did NOT know, deliberately — the `flat_base_damage` arm
   # ignores `condition:`, so spelling it that way would have loaded a silent,
   # unconditional +30 — and the comment it carried said "a sim that ever models
-  # overshields starts here". It does now (2026-08-12): `TennoGate` has the
+  # overshields starts here". It does now: `TennoGate` has the
   # state, the player declares it in the Tenno panel, and the grant folds
   # through `WeaponBase::add_flat_base_damage` exactly as the flat half above.
   #

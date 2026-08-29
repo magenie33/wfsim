@@ -70,7 +70,7 @@ const r = await evaluate(`(async () => {
   // THE POINT OF THE FLEET: N workers over disjoint strides must cover N
   // times the ground of one. Same scope, same per-worker budget, one worker.
   //
-  // THE LANE COUNT COMES FROM THE TOPBAR NOW (owner, 2026-08-29): the search's
+  // THE LANE COUNT COMES FROM THE TOPBAR NOW: the search's
   // own CPU-threads box is gone, so one worker is asked for by shrinking the
   // page's compute share rather than by overriding it. Stubbing detectedCores
   // is what makes that exact — the share is a percentage of whatever THIS
@@ -106,7 +106,7 @@ check("a budgeted run still ranks", r.bigOk === true && r.bigResults > 0);
 check("...and does NOT claim to be exhaustive", r.bigExhaustive === false);
 check("...reporting a coverage below 1", r.bigCoverage > 0 && r.bigCoverage < 1, String(r.bigCoverage));
 check(`the fleet ran ${r.bigWorkers} workers`, r.bigWorkers > 1, String(r.bigWorkers));
-// …AND THE TOPBAR IS WHAT SET THAT (owner, 2026-08-29). The search's own CPU
+// …AND THE TOPBAR IS WHAT SET THAT. The search's own CPU
 // box is gone, so the only way a run can be made to use fewer lanes is the
 // page's compute share — and if that were ignored, the two runs below would
 // have covered the same ground and the next assertion would pass for the

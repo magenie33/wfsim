@@ -11,7 +11,7 @@ effects:
   # A CHARGE-rate bonus shortens the draw, and a charged form's cadence IS
   # its draw - so this is DPS, not an indirect stat. Its own bucket rather
   # than fire rate: the card says "Charge Rate", so it must not also speed
-  # up the Larkspur's uncharged hit-scan attack (2026-08-01).
+  # up the Larkspur's uncharged hit-scan attack.
   - kind: charge_rate_bonus
     rank0: 0.125
     rankMax: 0.5

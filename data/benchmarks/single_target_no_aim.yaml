@@ -13,7 +13,7 @@
 # gun to take when you are not playing at it.
 #
 # So this is the floor: nothing is aimed, no shot finds a head, and what is
-# left is the weapon (owner, 2026-08-07).
+# left is the weapon.
 #
 # The two together are the interesting reading. A weapon that ranks high on
 # both is strong; one that ranks high here and low there is being carried by
@@ -31,7 +31,7 @@ name: "Single Target · No Aim · Thrax Centurion Lv 9999 SP · 180 s · KPM"
 # Identical to the first board's, and deliberately so — the whole point is that
 # only the aim differs, so a weapon's two rows are comparable.
 rules:
-  # MECHANICAL LANGUAGE, AND NO WEAPON IN IT (owner, 2026-08-17). A rule that
+  # MECHANICAL LANGUAGE, AND NO WEAPON IN IT. A rule that
   # names a weapon is a rule that has to be edited when the roster grows, and
   # `benchmarks_data.rs` already refuses this file any weapon, mod, arcane or
   # evolution id. These lines are held to the same standard by hand: they say
@@ -73,7 +73,7 @@ scenario:
   infinite_ammo: true
 
   # THE TWO CHANGED TERMS, and they are two because "not aiming" and "hitting
-  # no heads" are different claims that both have to hold (owner, 2026-08-07).
+  # no heads" are different claims that both have to hold.
   #
   # `headshot_pct` — `single_target.yaml` OMITS it and lets it resolve per
   # weapon; here it is pinned to zero for everyone.
@@ -106,7 +106,7 @@ scenario:
   # they do above.
   #
   # THE NEUTRAL PLAYER IS THE WORST FRAME AT EVERYTHING, the same rule the
-  # aimed ruler states and for the same reason (owner, 2026-08-13): nobody knows
+  # aimed ruler states and for the same reason: nobody knows
   # which frame a reader runs, and some weapons get stronger in specific hands
   # purely through the frame's stats, so the board gives the weapon the least
   # help any frame could. Every field the parser reads is named here, including
@@ -119,7 +119,7 @@ scenario:
   channeling: false
   solo_weapon: false
   # THE WIELDER IS NOT NAMED HERE, and that is the exception this block states
-  # rather than hides (owner, 2026-08-27). Every other field is pinned so the
+  # rather than hides. Every other field is pinned so the
   # board cannot move when a default moves — but the wielder's five numbers are
   # pinned by a TEST now (`the_default_tenno_is_the_floor_of_every_released_frame`
   # asserts all five, naming the frame each floor belongs to), so the drift this

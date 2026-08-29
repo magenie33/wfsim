@@ -194,7 +194,7 @@ mod tests {
     /// is added without its overlay entry, the check_disclosure pass still
     /// goes green (it walks a fixed set of weapons), and a Chinese reader gets
     /// the English paragraph. Sixteen had built up that way before anybody
-    /// counted (2026-08-15).
+    /// counted.
     ///
     /// WHAT CHANGED THE SAME DAY: an audit found 116 distinct sentences over
     /// 248 uses, thirteen families of near-duplicates inside them — sixteen
@@ -224,7 +224,7 @@ mod tests {
                     // prose has em dashes in it, so a byte slice lands inside
                     // one and the test PANICS on the message rather than
                     // failing with it — which reads as a broken test on the
-                    // day somebody adds a weapon (2026-08-20).
+                    // day somebody adds a weapon.
                     missing.push(format!(
                         "[{code}] {wid}: {}",
                         line.chars().take(70).collect::<String>()
@@ -250,7 +250,7 @@ mod tests {
     /// "赋能形态" reads as "Arcane form" and means nothing; the Incarnon form is
     /// 灵化形态, which is what all 75 evolution names and every other line in
     /// the overlay already say. One line said otherwise for a day
-    /// (owner, 2026-08-10) — written by translating the English rather than
+    /// — written by translating the English rather than
     /// reaching for the term already in the file, which is the exact failure
     /// the transcribe-never-translate rule exists to stop.
     ///
@@ -304,8 +304,7 @@ mod tests {
     /// own string could not be reached", which is the documented way to say it
     /// (AGENTS: leave it empty and say so).
     ///
-    /// Written for a real failure and it is a structural one (2026-08-20 ->
-    /// 2026-08-22). A bulk-intake generator re-sorted `data/i18n/zh/ui.yaml`
+    /// Written for a real failure and it is a structural one. A bulk-intake generator re-sorted `data/i18n/zh/ui.yaml`
     /// LINE-WISE, which splits every two-line entry — the key stays where it
     /// sorts and its indented value line sorts away as if it were a record of
     /// its own. Twenty-nine translations were left empty, and the thirty-one
@@ -650,7 +649,7 @@ mod tests {
     /// and the fold — and the second is easy to forget: `abilities` was
     /// declared, filled with DE's own names, served by the api, read by the
     /// page, and dropped on the floor by `merge`, so the section rendered in
-    /// English on a Chinese page and nothing anywhere said why (2026-08-08).
+    /// English on a Chinese page and nothing anywhere said why.
     ///
     /// This asserts it the only way that survives the next table: every
     /// non-empty map in the file is non-empty after the merge that produced
@@ -667,7 +666,7 @@ mod tests {
         // (`auras`, `shards`), because a hand list cannot report what is not on
         // it. Serializing the merged spec asks the question of every field
         // there is, including one added tomorrow by somebody who never read
-        // this file (2026-08-21).
+        // this file.
         let v = serde_norway::to_value(zh).expect("the locale serializes");
         let serde_norway::Value::Mapping(m) = v else { panic!("a locale is a mapping") };
         let mut checked = 0;

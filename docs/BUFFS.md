@@ -39,7 +39,7 @@ distinct in speech and code.
 ## Debuffs: the same machinery, pointed at the target
 
 Status effects (procs) are **not** a separate system. Per the core
-philosophy (2026-07-24): *a proc is only a trigger event; the entity is a
+philosophy: *a proc is only a trigger event; the entity is a
 **debuff** applied onto the target*, symmetric to perks granting buffs:
 
 ```
@@ -47,12 +47,12 @@ player side:  Perk   --trigger-->  Buff    in the player's BuffBar
 enemy  side:  proc   --trigger-->  Debuff  in the target's DebuffBar
 ```
 
-The container on the target is named **`DebuffBar`** (decision 2026-07-24)
+The container on the target is named **`DebuffBar`**
 — same machinery as `BuffBar` (stack tracking, per-stack expiry,
 contribution snapshots), rendered in the arena UI as the enemy's status
 icon row.
 
-**Every actor carries both bars** (decision 2026-07-24) — the structure is
+**Every actor carries both bars** — the structure is
 symmetric across sides; only the contents differ:
 
 |            | BuffBar (gained boons)                          | DebuffBar (suffered afflictions) |
@@ -79,7 +79,7 @@ the attacker's `BuffBar` and the defender's `DebuffBar` (+ the defender's
 - **DoT debuffs** (Heat, Toxin, Slash, Gas, ...) are debuffs whose stacks
   emit damage events on the timeline (layer [8]) — each stack ticking on
   its own clock.
-- **The provenance principle** (2026-07-24): *every trigger has a
+- **The provenance principle**: *every trigger has a
   source, and every debuff instance records its full applier context.*
   A stack = `{ application timestamp (the FIFO key), applier context
   snapshot (the hit-formula inputs), expiry, payload values }`. This is
@@ -145,7 +145,7 @@ contribution(which bucket: flat crit chance / crit chance multiplier /
 scope      (Weapon / Warframe / Squad)
 ```
 
-**Where the data lives (decision 2026-07-27): INLINE at the source.** A
+**Where the data lives: INLINE at the source.** A
 perk+buff pair is written as ONE `kind: buff` block inside the yaml of the
 thing that grants it — the mod, the arcane, the weapon (its `passives:`).
 There are no standalone `data/perks/` / `data/buffs/` files: a triggered
@@ -205,7 +205,7 @@ the Galvanized rule while you keep hitting and four times harsher the moment you
 stop — a full pile drains over four windows there and vanishes in one here,
 which is why the choice has to be data rather than a default nobody re-read.
 
-### A MOD can grant one too (2026-08-18)
+### A MOD can grant one too
 
 Every stacking buff before Split Flights came from an EVOLUTION or an ARCANE,
 so `WeaponBase::stacking_buffs` was the only door and a mod that stacked on a
@@ -273,7 +273,7 @@ resolve to `ModEffect::WhileTenno(TennoCondition, …)`, which
 
 `while_aiming` is one of these rather than a case beside them: it was a bool
 threaded through the resolver while the other states lived on the Tenno, which
-is two homes for one kind of fact (user, 2026-08-02).
+is two homes for one kind of fact.
 
 The neutral Tenno is aiming and doing nothing else, so a while-Invisible mod
 contributes nothing until a scenario says otherwise — and the panel labels the
@@ -330,10 +330,10 @@ The buff card carries two knobs, and they answer different questions:
 - **stacks** — what the count is at t = 0;
 - **no timeout** — whether a stack can ever expire.
 
-Locking removes the **expiry and nothing else** (user, 2026-08-02). The count
+Locking removes the **expiry and nothing else**. The count
 still starts where the card sets it and still climbs on every trigger.
 
-**It is not a flag. It is the duration** (user, 2026-08-04). `apply_buff_config`
+**It is not a flag. It is the duration**. `apply_buff_config`
 writes `loadout::NO_TIMEOUT` (`f64::INFINITY`) into the buff's own `duration`,
 and that is the entire implementation — every clock in the sim is
 `expiry = now + duration`, so an infinite duration is a buff that earns
@@ -346,8 +346,7 @@ stack count was read, and it was missed at enough of them that "no timeout"
 came to mean its own opposite — the stacks decayed anyway while the trigger was
 skipped, so a locked buff decayed to zero and could never come back. It was
 wrong in three of the five families at once (Galvanized on-kill stacks, Lethal
-Rearmament, Overwhelming Attrition), and a player reported the worst of them
-(2026-08-03). A duration cannot be forgotten, because
+Rearmament, Overwhelming Attrition), and a player reported the worst of them. A duration cannot be forgotten, because
 it is the thing the clocks already read.
 
 Two consequences worth knowing:
@@ -411,7 +410,7 @@ else starts at 0.**
 - **timed** — it has a duration, so a lull empties it;
 - **consumable** — it is SPENT by being used, whatever its duration says. A
   "next shot deals X" buff is the clear case, and DEACTIVATION counts as
-  consumption (user, 2026-08-03). An infinite duration does not save it: the
+  consumption. An infinite duration does not save it: the
   question is whether the fight can hand it to you at t = 0, and a buff you
   have already spent is not one you are holding.
 
@@ -430,7 +429,7 @@ qualifies: **Fevered Frenzy** (the Dual Toxocyst evolution).
 
 The modelled fight is therefore: *you have been at it a while, but you have not
 been in contact for the last few seconds and are about to be.* Whatever
-survives a lull is up; whatever expires in one is not (user, 2026-08-02).
+survives a lull is up; whatever expires in one is not.
 
 This REPLACES the 2026-08-02 decision that every buff starts full. That one was
 made to keep the buff cards uniform, and uniform they stay — the number they
@@ -453,8 +452,7 @@ on-kill stacks never accumulate, and seeding them full handed the build a buff
 it can never earn and then held it there for five minutes. Zero-start is not a
 more pessimistic guess in that case; it is the correct one.
 
-Which buffs open full, in the whole data set — **three, and the list is closed**
-(owner, 2026-08-22):
+Which buffs open full, in the whole data set — **three, and the list is closed**:
 
 | buff | where | why it is on the list |
 |---|---|---|
@@ -479,7 +477,7 @@ is a static choice and there is nothing else it could open on. Fresh Havoc is
 earned by an empty reload the fight performs several times over — the sim can
 build it perfectly well. It opens full because keeping it up is not something a
 player has to think about, so a fight that opens without it is the less
-realistic of the two (owner, 2026-08-22).
+realistic of the two.
 
 **A CLOSED LIST, and the owner's own allowance.** `card_opens_full:` on the
 buff. It is a judgement about how the game is actually played, not a claim off
@@ -557,7 +555,7 @@ four sites loop over the vector. A perk added to `data/evolutions/` needs no
 line in any of them.
 
 **The mod-granted ones are not, and folding them in was tried and rejected
-(2026-08-07).** They do not share a scaling rule, and the differences are the
+.** They do not share a scaling rule, and the differences are the
 mechanics rather than an accident of where the code was written:
 
 - `cc_on_headshot` and `cc_stack` feed the RELATIVE crit bucket — a fraction of
@@ -637,7 +635,7 @@ Eclipse is applied once."* Getting that wrong is a factor of three on a DoT
 weapon, and `roar_is_used_twice_on_a_status_tick_and_eclipse_once` is the test.
 
 `add_element` is the one with a shape of its own. **It does not combine**
-(owner, 2026-08-08) — every one of the four augment pages says so — so it is
+ — every one of the four augment pages says so — so it is
 added AFTER `elements::combine` has run: a weapon whose mods make Radiation,
 under Volt, deals Radiation *and* pure Electricity. It is still **sized** like
 an elemental mod ("additive with elemental mods"): a percentage of that attack

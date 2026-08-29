@@ -13,8 +13,7 @@ engine, and on 2026-08-06 it failed three pushes running with
 code, and nothing said so; two Furis rows sat 22% and 13% low until somebody
 happened to look at them. The hourly schedule would have healed it within the
 hour, but "within the hour, if you notice" is not a guarantee, and a board that
-disagrees with the engine is the one thing this project cannot ship (owner,
-2026-08-06).
+disagrees with the engine is the one thing this project cannot ship.
 
 So this is the manual path, as one command:
 

@@ -7,7 +7,7 @@ description: "Increase Base Critical Chance by +20%."
 selection: choose_one
 
 effects:
-  - kind: flat_base_crit_chance # CONFIRMED (2026-07-24, user): adds into
+  - kind: flat_base_crit_chance # CONFIRMED: adds into
     value: 0.20                 # the BASE crit chance; crit-chance mods
                                 # multiply the new base (5% -> 25% base,
                                 # Point Strike gives 25% x 2.5 = 62.5%).

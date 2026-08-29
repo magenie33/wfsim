@@ -9,7 +9,7 @@
 // WHICH IS ALSO WHY IT IS THE EASIEST THING HERE TO FAKE. A layer that floated
 // plausible numbers over the bodies would look exactly right and mean nothing.
 //
-// SO THE PROPERTY IS ONE-TO-ONE, AND IT IS CHECKED BY NAME (owner, 2026-08-27).
+// SO THE PROPERTY IS ONE-TO-ONE, AND IT IS CHECKED BY NAME.
 // The engine used to carry a `Replay.pops` buffer beside the combat record —
 // the same nine damage sites written down twice, capped by two different rules
 // — so a number could float over a body with no row to explain it and a row
@@ -264,7 +264,7 @@ check("...and every number on the scene is a LINE in it, by id",
 // float in — was gated on there being more than one body, on the reasoning
 // that a one-row roll call is not worth a picture. So the one output that is a
 // discrete thing that happened at a place at a time was invisible in the
-// COMMONEST fight this app runs, and nothing said why (owner, 2026-08-24).
+// COMMONEST fight this app runs, and nothing said why.
 //
 // The special case was the mistake rather than the missing feature: a fight is
 // a scene with N bodies and N=1 is just N=1 — it has a shooter, a target, a

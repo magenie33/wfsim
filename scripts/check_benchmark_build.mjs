@@ -85,8 +85,7 @@ const cold = await evaluate(`(async () => {
   out.wouldSubmit = officialScenarioActive() && !officialBuildActive();
   // A WAY OUT YOU CAN CLICK. The note used to point at a ⧉ chip elsewhere on
   // the page; a reader who wants to change something needs a button, and a
-  // locked block has to say why rather than simply not reacting (owner,
-  // 2026-08-09).
+  // locked block has to say why rather than simply not reacting.
   out.copyBtn = !!document.getElementById('build-copy');
   out.lockedTitle = ((document.getElementById('mod-block')||{}).title || '').length;
   const btn = document.getElementById('build-copy');
@@ -113,8 +112,7 @@ check("the cold and warm plans agree", cold.pols === warm.pols, `cold ${cold.pol
 // with the build. While it did not, it was the one control on a board row that
 // still moved — and both of its consequences were silent: `markPresetDirty`
 // refuses to write an official build and `offerBoardSubmit` refuses to send
-// one, so a base-form test ran, saved nothing and entered nothing (owner,
-// 2026-08-09).
+// one, so a base-form test ran, saved nothing and entered nothing.
 check("every part of a benchmark build is read-only, mode included",
       cold.locked.every(Boolean), JSON.stringify(cold.locked));
 // …AND THE PAGE SAYS SO. The consent panel hides itself on a board row, so

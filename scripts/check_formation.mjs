@@ -2,7 +2,7 @@
 // gets simulated.
 //
 // The arena has drawn two bodies since 2026-08-15. This is the same claim for
-// fifty of them (owner, 2026-08-17): put enemies down, drag them anywhere, aim
+// fifty of them: put enemies down, drag them anywhere, aim
 // at a body or at bare floor, and the number that comes back is the fight on
 // screen. It is the check that would catch the most convincing possible bug —
 // a scene that looks like a formation and sends one target.
@@ -118,7 +118,7 @@ const r = await evaluate(`(async () => {
   out.sentMatches = JSON.stringify(theFight().formation.map(f => f.at))
     === JSON.stringify(sim.formation.map(f => f.at));
 
-  // 3b. THE BRUSH IS NOT A CONTROL OVER THE FLOOR (owner, 2026-08-18).
+  // 3b. THE BRUSH IS NOT A CONTROL OVER THE FLOOR.
   //
   // The card on the left says what you are ABOUT to place; it does not reach
   // back and rewrite what is already standing there. It used to, and silently:
@@ -173,8 +173,7 @@ const r = await evaluate(`(async () => {
   // Stamping at placement stops the growth; it does nothing for the bodies
   // already saved, which carry no unit and therefore still follow the card —
   // indistinguishable, from the reader's side, from the bug the rule was
-  // written to end, and reported again for exactly that reason (owner,
-  // 2026-08-18). applyScenario fills the blank in from the scenario's own
+  // written to end, and reported again for exactly that reason. applyScenario fills the blank in from the scenario's own
   // enemy, which writes down what those bodies already meant.
   {
     // The formation built above is still needed by everything after this, so
@@ -227,8 +226,7 @@ const r = await evaluate(`(async () => {
   // 4b. A DRAG NEVER SHOVES ANYBODY. A body is pushed out of the ONE body it
   //     is entering — which is what makes two circles touch at contact instead
   //     of passing through — and if that lands it in somebody else it does not
-  //     move at all. Nothing but the dragged body may change (owner,
-  //     2026-08-17): the settle used to project four passes over every body,
+  //     move at all. Nothing but the dragged body may change: the settle used to project four passes over every body,
   //     which in a crowd squeezed the dragged one through gaps until it found
   //     somewhere to sit, so a drag toward a packed rank ended somewhere the
   //     finger never went.
@@ -260,7 +258,7 @@ const r = await evaluate(`(async () => {
 
   // 5. THE CAP, at the api's own number — READ from /api/meta rather than
   //    written out here. This said 51 and asserted "at most 50", so it broke
-  //    the day the cap moved (2026-08-17) — the same two-declarations bug the
+  //    the day the cap moved — the same two-declarations bug the
   //    page's own ARENA_MAX_BODIES had. A check that hardcodes the number it is
   //    checking is not checking it.
   out.cap = ARENA_MAX_BODIES();
@@ -287,14 +285,14 @@ const r = await evaluate(`(async () => {
   // …AND THE SIGHT LINE STOPS WHERE THE SHOT STOPS. Aiming past a body draws
   // solid to the body it reaches and DASHED on to where you are pointing —
   // without it the scene showed a line running through a body it cannot pass.
-  // A STRAIGHT-LINE WEAPON DOES NOT STOP WHERE YOU POINT (owner, 2026-08-18),
+  // A STRAIGHT-LINE WEAPON DOES NOT STOP WHERE YOU POINT,
   // so the scene no longer draws a solid-then-dashed pair: it draws ONE line
   // through the marker and off the floor, and what the shot MEETS is reported
   // rather than drawn into it. What replaced the old assertion is the one that
   // matters - aiming past a body still resolves to the body in front.
   out.stopsShort = out.struck >= 0;
 
-  // …AND A BARE CLICK DOES NOT AIM (owner, 2026-08-18). It used to, on the
+  // …AND A BARE CLICK DOES NOT AIM. It used to, on the
   // reasoning that a body is dragged and a place has nothing to grab; the cost
   // was that every mis-click while selecting silently re-aimed the weapon, and
   // a fight that moves on a mis-click makes the result you were just looking at

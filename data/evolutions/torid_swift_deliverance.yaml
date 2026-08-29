@@ -27,8 +27,8 @@ effects:
   # shot_speed 40), so the new max range cannot be computed from data.
   #
   # THE NUMBER COUNTS. Projectile speed has an indirect bucket, the same one
-  # the mods feed (2026-08-01), so the value reaches the panel like any other
-  # handling stat (user, 2026-08-03).
+  # the mods feed, so the value reaches the panel like any other
+  # handling stat.
   #
   # What is still NOT derived is the RANGE it buys: max range = speed x
   # lifetime, and neither source gives the Torid's projectile lifetime (both

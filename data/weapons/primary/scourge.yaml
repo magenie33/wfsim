@@ -16,7 +16,7 @@ max_rank: 30
 transform_group: scourge
 transforms_to: scourge_thrown
 
-# STATS CROSS-CHECKED, both sources agreeing field for field (2026-08-14):
+# STATS CROSS-CHECKED, both sources agreeing field for field:
 # the rendered wiki infobox against WFCD `warframe-items`' `attacks` array,
 # joined on `internal_name` == `uniqueName`. Four attacks there — Projectile
 # Impact, Explosion, Spear Throw Impact, Spear Throw Explosion — and the first

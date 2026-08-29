@@ -10,8 +10,7 @@ form: alt_fire
 transform_group: ferrox
 
 introduced: "19.13"
-# ONE THROW IS ONE MAGAZINE — the same call the Scourge pair makes (owner,
-# 2026-08-14): the throw is wind-up, release, RELOAD, every time, so the
+# ONE THROW IS ONE MAGAZINE — the same call the Scourge pair makes: the throw is wind-up, release, RELOAD, every time, so the
 # magazine is 1 and the 10 rounds belong to the primary-fire entry. The module
 # gives this attack its own Reload of 2.0 s.
 magazine: 1

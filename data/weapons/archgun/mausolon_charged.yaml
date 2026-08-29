@@ -46,7 +46,7 @@ co_behavior: additive_with_base_damage
 # THE EXPLOSION LIFTS. An independent proc — it carries no damage and does not
 # compete in the type draw, so its whole payload is that Condition Overload
 # counts it for as long as it holds (data/debuffs/independent_procs.yaml).
-# 1 s, per the owner's own reading of the effect (2026-08-15); the engine owns
+# 1 s, per the owner's own reading of the effect; the engine owns
 # the number, the same way it owns every other proc's duration.
 independent_procs: [lifted]
 

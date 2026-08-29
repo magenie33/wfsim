@@ -16,8 +16,7 @@ effects:
   # spent shells). The notes win: they describe a counter you can only build by
   # reloading, which the card's reading would make unbuildable.
   #
-  # WHAT ENDS IT is an EMPTY MAGAZINE, immediately — not the reload that follows
-  # (owner, 2026-08-08). That is what the perk IS: firing a magazine dry and
+  # WHAT ENDS IT is an EMPTY MAGAZINE, immediately — not the reload that follows. That is what the perk IS: firing a magazine dry and
   # reloading it earns one magazine's worth and loses it again on the last
   # shot, so the 99-stack cap belongs to a player who tops up a magazine that
   # never empties. This sim
@@ -26,8 +25,7 @@ effects:
   # The count is one per SHELL, so it follows the magazine — and a magazine mod
   # therefore buys stacks and pays for them in the by-round reload it lengthens
   # (`reload_style: by_round` on the weapon). That trade is the perk.
-  # IT IS THE BASE FORM'S TOO, and it was worth nothing there until 2026-08-10
-  # (owner). Two bugs sat on top of each other:
+  # IT IS THE BASE FORM'S TOO, and it was worth nothing there until 2026-08-10. Two bugs sat on top of each other:
   #
   #   · the ReloadComplete trigger was nested INSIDE the tendril/refill block,
   #     so it only fired on a weapon carrying one of those — which the Felarx
@@ -45,7 +43,7 @@ effects:
   # one magazine's worth, cleared every time the magazine empties) and +52.4%
   # in the cycle, where the transmute's own shells push it to 8.
   #
-  # ✅ THE BONUS APPLIES IN THE INCARNON FORM (owner-confirmed, 2026-08-10).
+  # ✅ THE BONUS APPLIES IN THE INCARNON FORM.
   # Recorded because it is not the perk's own wording — it follows from two
   # other rules and it carries most of the weapon's score, so it was asked
   # rather than assumed.
@@ -67,7 +65,7 @@ effects:
   # THE INCARNON ROUTE, MODELLED 2026-08-09 — and it was never a second rule.
   # Entering the
   # form IS A RELOAD: the transmute animation is the weapon's reload time, which
-  # is how you can tell (owner, 2026-08-08), and the whole reload runs — one
+  # is how you can tell, and the whole reload runs — one
   # shell as you go in, the rest as you come out. So the only thing that ever
   # grants a stack is a shell being loaded, and every "special case" falls out
   # of that:
@@ -89,8 +87,7 @@ effects:
   # AND THE 99-STACK CAP IS NOT CHASED. Reaching it needs a magazine that never
   # empties, which is a play PATTERN — a firing-and-reloading policy, not a
   # property of this perk — and inventing a special path to it would be putting
-  # a thumb on the scale for one card. DECIDED against, twice (owner,
-  # 2026-08-08). The ordinary loop earns a magazine's worth and
+  # a thumb on the scale for one card. DECIDED against, twice. The ordinary loop earns a magazine's worth and
   # that is what the number reports; the edge case is not a target.
 
 source:

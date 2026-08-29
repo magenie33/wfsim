@@ -11,7 +11,7 @@ description: "On Headshot: +5% Fire Rate for 2s. Stacks up to 10x."
 selection: choose_one
 
 effects:
-  # MODELLED (2026-08-06), as a live stacking buff off the same trigger the
+  # MODELLED, as a live stacking buff off the same trigger the
   # engine already runs `on_headshot_reload_speed` from.
   #
   # THE 50% ROLL IS IN THE RAW WIKITEXT AND NOT IN THE RENDERED SUMMARY. The
@@ -32,7 +32,7 @@ effects:
     duration: 2
     chance: 0.50
     # FIFO, EACH STACK ON ITS OWN CLOCK — the same rule Stormburst carries, and
-    # observed the same way, in game (owner, 2026-08-13).
+    # observed the same way, in game.
     #
     # It was the Galvanized rule here, HARDCODED in the loader on the reading
     # that the card says nothing else. The difference is not cosmetic and it is

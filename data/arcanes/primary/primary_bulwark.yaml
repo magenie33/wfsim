@@ -10,7 +10,7 @@ effects:
   # a Tenno, and `data/tenno/` says how much armor it has. The neutral Tenno has
   # none, so this contributes nothing until a scenario says what frame is behind
   # the gun — which is the honest answer for "no frame chosen", not a zero
-  # invented to avoid the question (user, 2026-08-02).
+  # invented to avoid the question.
   #
   # ASSUMED BUCKET, pending measurement (M26): "+X% damage" on an arcane card is
   # additive with the base-damage mods everywhere else in this data set

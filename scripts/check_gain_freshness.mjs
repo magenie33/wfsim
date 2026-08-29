@@ -5,7 +5,7 @@
 // cache key used to name the scenario's fields ONE BY ONE and the list had
 // drifted: `buffs` was missing, so raising a buff's starting stacks changed
 // what the scan would measure without changing the key, and a stale ranking
-// stayed on screen looking current (user, 2026-08-03).
+// stayed on screen looking current.
 //
 // Asserts the two halves separately, because they fail separately: the key
 // must MOVE when the fight changes, and something must then RE-RUN.
@@ -24,7 +24,7 @@ const r = await evaluate(`(async () => {
   history.pushState({},'','/weapons/Torid'); route(); await sleep(3500);
   // The default scenario is the official one and it cannot be edited, so this
   // check — which is entirely about a scenario EDIT reaching the quick calc —
-  // takes an editable copy first. Same flow a player follows (2026-08-05).
+  // takes an editable copy first. Same flow a player follows.
   if (typeof officialScenarioActive === 'function' && officialScenarioActive()) {
     copyActiveScenario(); await sleep(1200);
   }
@@ -163,7 +163,7 @@ const r = await evaluate(`(async () => {
   // other way a fight moves and it never did: it is a REPLACEMENT rather than
   // an edit, so it goes nowhere near the auto-save debounce that triggers the
   // re-run. The box was redrawn under the new fight's name while every chip
-  // beside it still answered the old fight's question (owner, 2026-08-17).
+  // beside it still answered the old fight's question.
   //
   // ON THE EVOLUTION AXIS, THROUGH AN OPEN LIST. It used to rank without
   // anything being open, which is what made it the axis to test this on; since

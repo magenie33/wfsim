@@ -103,7 +103,7 @@ fn main() {
         println!("{s:<9.2}m{b:>8.2}{pf:>9.2}{:>10.2}x", pf / b);
     }
     // THE EDGES ARE THE REACH, NOT THE RADIUS. Any part of a body touching the
-    // sphere is caught (owner, 2026-08-17), so what a mod really covers is its
+    // sphere is caught, so what a mod really covers is its
     // radius plus a body radius — and that is the number every step above sits
     // on. Reading the radius alone put both edges one body too close in, and
     // said a mod was worth nothing that is worth four times the shot.

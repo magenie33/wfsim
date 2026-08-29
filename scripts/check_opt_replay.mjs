@@ -9,9 +9,8 @@
 // winner replayed under the fight it was scored in matches to 0.1%. What it
 // never covered was the PAGE, which kept its own hand-written translation of a
 // ranked row into a build and dropped an axis out of it four times: `mode` from
-// the board submission (2026-08-09), `valence` from the worker's table
-// (2026-08-14), both from the share tuple (2026-08-15), and `valence` from the
-// optimizer's "+ add" (2026-08-16) — the one a player measured, reporting 26
+// the board submission, `valence` from the worker's table, both from the share tuple, and `valence` from the
+// optimizer's "+ add" — the one a player measured, reporting 26
 // KPM on the ranking and 15 in the simulator for what he had been told was the
 // same build.
 //

@@ -6,11 +6,11 @@
 //     because the name lookup knew about mods and arcanes and nothing else;
 //   · the earned-from-zero default has to REACH the card, not just the server;
 //   · uptime was rounding 99.83% up to a flat "100%", which is the one number
-//     a reader will not believe (user, 2026-08-03);
+//     a reader will not believe;
 //   · a buff with no card at all: the Ocucor's TENDRILS, which are what its
 //     only augment scales with. A tendril costs a kill, so against a target
 //     that dies slowly the mod measured as nothing and there was no knob to
-//     say otherwise (player report, 2026-08-08).
+//     say otherwise.
 //
 //   node scripts/check_buff_cards.mjs
 //
@@ -133,8 +133,7 @@ const r = await evaluate(`(async () => {
   };
   // …AND OFF THE FLEET, which is what Run Sim uses now: a sharded simulation
   // never touches api at all, so an interception of it alone came back null
-  // and this file's whole point — that a card MOVES THE NUMBER — went untested
-  // (2026-08-18).
+  // and this file's whole point — that a card MOVES THE NUMBER — went untested.
   const realFleet = window.simulateFleet;
   window.simulateFleet = async (body, onProgress) => {
     const res = await realFleet(body, onProgress);
@@ -221,7 +220,7 @@ check("the coverage rows are Chinese too", r.rows.every(x => /[\u4e00-\u9fff]/.t
 // exactly that row, which is the case the card was added for.
 // …AGAINST A CEILING THAT MAY BE AN INFINITY. An uncapped row prints "0.20/∞"
 // and this demanded a digit after the slash, so it had been red since the
-// debuff table started drawing the uncapped DoT families (2026-08-19) — the
+// debuff table started drawing the uncapped DoT families — the
 // two-decimal property it exists for was holding the whole time.
 check("every figure carries two decimals",
   r.rows.every(x => /[\d]+\.\d\d\/(\d|∞)/.test(x.stat) && /\d+\.\d\d%/.test(x.stat)
@@ -270,7 +269,7 @@ check("...holding it at 405 multiplies the fight",
 check("a sniper fired from the HIP is offered no counter at all",
   !r.hipCombo, JSON.stringify(r.hipCombo));
 
-// A CEILING THAT IS A NUMBER IS DRAWN AS A NUMBER (owner, 2026-08-22).
+// A CEILING THAT IS A NUMBER IS DRAWN AS A NUMBER.
 // Hata-Satya publishes "capped at 500% at all mod ranks" and lets the counter
 // run, so a stack count charted against 417 would be a chart of a quantity DE
 // never printed — the row draws the per cent instead, and the ceiling it is
@@ -292,7 +291,7 @@ check("...while the card that seeds it counts HITS, to the 417th",
 check("...and an ordinary buff beside it still reads a count",
   (r.hsRows || []).some((x) => /^\d+\/\d+$/.test(x.now)), JSON.stringify(r.hsRows));
 
-// A BUFF THE MISSION NEVER TAKES OPENS FULL (owner, 2026-08-22) — and it is a
+// A BUFF THE MISSION NEVER TAKES OPENS FULL — and it is a
 // claim off DE's card, not a shape: twenty evolution buffs reach the engine with
 // no clock and nothing that clears them, and only Fresh Havoc says so.
 console.log("fresh havoc:", JSON.stringify(r.havoc));

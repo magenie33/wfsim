@@ -12,8 +12,7 @@ effects:
   - kind: noise_reduction
     # 25 / 50 / 75 / 100% over its four ranks — DE's own card line, in both
     # the English export and the zh client strings. rank0 read 0.4 here, which
-    # no source states; the i18n card-number cross-check found it
-    # (2026-08-03).
+    # no source states; the i18n card-number cross-check found it.
     rank0: 0.25
     rankMax: 1.0
 

@@ -8,7 +8,7 @@ selection: choose_one
 currently_broken: true          # wiki: "Currently does not work"
 
 effects:
-  # A "timed buff" is a STACKING buff with ONE stack (user, 2026-08-03) —
+  # A "timed buff" is a STACKING buff with ONE stack —
   # `stacking_buff` already carries trigger + per_stack + max_stacks +
   # duration, so there is no second vocabulary for it.
   #

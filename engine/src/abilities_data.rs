@@ -6,7 +6,7 @@
 //! comparison, one of them getting it is not — and the BOARD carries none of
 //! these, which is what keeps a board row a statement about the weapon.
 //!
-//! EARLY ACCESS (owner, 2026-08-08). When frames land, the Ability Strength
+//! EARLY ACCESS. When frames land, the Ability Strength
 //! comes from the frame and the duration from its Ability Duration; the buff
 //! DEFINITIONS here do not change, only where their two inputs come from. That
 //! is why [`resolve`] takes `strength` and a duration override as arguments
@@ -25,7 +25,7 @@
 //!   dips for status effects, the one from Eclipse is applied once."
 //! - [`AbilityEffect::AddElement`] (Nourish, Shock Trooper, Fireball Frenzy,
 //!   Freeze Force, Venom Dose) adds a percentage of ModifiedBase as its
-//!   element, and DOES NOT COMBINE (owner) — it lands on the finished
+//!   element, and DOES NOT COMBINE — it lands on the finished
 //!   vector, after the elemental hierarchy has run.
 //! - [`AbilityEffect::ExtraHit`] (Xata's Whisper) is the odd one out: it does
 //!   not scale the weapon's number at all, it fires a SECOND damage instance
@@ -65,8 +65,7 @@ pub enum AbilityEffect {
     /// hit that always procs can never be a hit that procs nothing, which is
     /// exactly the condition Overwhelming Attrition asks about ("On Hit that is
     /// neither Critical nor applies a Status Effect"). Reported from the game:
-    /// the two cannot be used together and the augment silently wins (owner,
-    /// 2026-08-25).
+    /// the two cannot be used together and the augment silently wins.
     AddElement(DamageType, f64, bool),
     /// An EXTRA HIT: a whole second damage instance, entirely of this element,
     /// worth this fraction of the instance that triggered it. Not a multiplier
@@ -138,7 +137,7 @@ pub struct AbilityDef {
     /// own words on the card. Same field name and same meaning as a mod's and
     /// an arcane's, so `/api/meta` publishes it under the same key and the page
     /// renders all three with one function — a gap that lives only in a yaml
-    /// comment is a gap nobody can act on (owner, 2026-08-08).
+    /// comment is a gap nobody can act on.
     pub unmodelled: Vec<&'static str>,
     /// …and the admission that is not a shortfall: this IS modelled, it matches
     /// the live game, and DE did not mean it to work this way. Xata's Whisper
@@ -219,7 +218,7 @@ struct AbilityFile {
     /// buff that ignores it says so on its own card rather than silently
     /// pocketing a multiplier it never gets in game.
     ///
-    /// **READ THE ICON, NEVER THE FAMILY** (owner, 2026-08-23). The answer is
+    /// **READ THE ICON, NEVER THE FAMILY**. The answer is
     /// in the mod's own stats table, per COLUMN: a heading carrying
     /// `{{Stat|<X>|icon=only}}` scales with X, and one that is merely
     /// underlined scales with nothing. The five element-adding augments are the
@@ -298,7 +297,7 @@ pub fn all() -> &'static [AbilityDef] {
                     // arm short of the rule. It cost the ONE ability that adds a
                     // COMBINED element: Lavos casts whichever mix he infused, so
                     // Valence Formation needs a picker without being an extra
-                    // hit, and could not be stated at all (2026-08-23).
+                    // hit, and could not be stated at all.
                     //
                     // The choice DEFAULTS to the first entry and is replaced by
                     // the pick at resolve; a fixed element is itself.
@@ -395,7 +394,7 @@ pub fn at_strength(v: f64, strength: f64) -> f64 {
 /// the frame is.
 ///
 /// THE FAMILY RULE IS APPLIED HERE, once, so no consumer can forget it: within
-/// a family only the strongest survives (owner, 2026-08-08). Comparing by
+/// a family only the strongest survives. Comparing by
 /// resolved VALUE rather than by whether one is subsumed is what makes the
 /// rule survive a buffed Helminth Roar beating an unbuffed Rhino's — which
 /// is the case the wiki's "highest Ability Strength will take effect" is
@@ -427,8 +426,7 @@ pub fn resolve(
         // THE PICK'S element wins wherever the ability offers a choice, and
         // "wherever" is the whole point: this was written into the `extra_hit`
         // arm alone, so an `add_element` with a gear wheel would have drawn the
-        // picker, taken the pick, and paid the FIRST entry whatever was chosen
-        // (2026-08-23). An ability offers at most one choice, so one reading of
+        // picker, taken the pick, and paid the FIRST entry whatever was chosen. An ability offers at most one choice, so one reading of
         // it serves every effect it has.
         let picked = |stated: DamageType| {
             p.element
@@ -691,8 +689,7 @@ mod tests {
     /// Every other Helminth variant here exists because the subsumed version is
     /// WEAKER — Roar loses 20 points, Eclipse 170. The wiki lists no reduced
     /// ladder for this one, so the two would have been the same 26% under two
-    /// names, and a family whose members are identical is one buff listed twice
-    /// (owner, 2026-08-09). Asserted from the other side: the pairs that DO
+    /// names, and a family whose members are identical is one buff listed twice. Asserted from the other side: the pairs that DO
     /// differ still differ, so deleting the duplicate cannot be mistaken for
     /// a licence to collapse the rest.
     #[test]
@@ -805,7 +802,7 @@ mod tests {
         // No pick is the first choice, the same stand-in the gear wheel uses.
         assert_eq!(pick(None), vec![(DamageType::Heat, 2.0)]);
 
-        // ABILITY STRENGTH DOES NOT MOVE IT (owner, 2026-08-23), and the mod's
+        // ABILITY STRENGTH DOES NOT MOVE IT, and the mod's
         // own stats table marks its two columns differently to say so: the
         // Duration column carries the Ability Duration stat icon and the
         // Elemental Damage column is underlined with no icon at all. A column
@@ -833,7 +830,7 @@ mod tests {
     /// lists no reduced ladder the ability is unchanged, and a second card
     /// carrying the same number is a choice nobody can make wrongly and nobody
     /// can make rightly: the family rule already runs whichever is stronger, so
-    /// ticking both is ticking one (owner, 2026-08-09).
+    /// ticking both is ticking one.
     #[test]
     fn no_two_abilities_of_a_family_are_the_same_buff() {
         for a in all() {

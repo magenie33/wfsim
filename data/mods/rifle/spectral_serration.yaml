@@ -17,7 +17,7 @@ effects:
   # `condition: while_invisible` is read against `data/tenno/`, whose neutral
   # entry is not invisible — so this contributes nothing, in the panel and in
   # the sim alike. Give the Tenno `state.invisible: true` and it pays, with no
-  # code change anywhere (user, 2026-08-02).
+  # code change anywhere.
   - kind: base_damage_bonus
     condition: while_invisible
     rank0: 0.3

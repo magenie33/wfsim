@@ -17,7 +17,7 @@ introduced: "Update 31.0"
 noise: silent               # the throw is SILENT where the primary fire is ALARMING
 # ONE THROW IS ONE MAGAZINE. The throw's cycle is WIND-UP → release → RELOAD,
 # every time — "Throwing the spear consumes 1 ammo, then reloads the weapon" is
-# unconditional, not a magazine running dry (owner, 2026-08-14). So this entry's
+# unconditional, not a magazine running dry. So this entry's
 # magazine is 1 and the 0.6 s lands after every throw, which is the same shape a
 # bow's nock has here (`cernos_prime.yaml`; dummy.rs: "the cycle is charge +
 # reload however the two are ordered"). The 40 rounds belong to the PRIMARY FIRE
@@ -75,7 +75,7 @@ attack:
   damage: { impact: 140, puncture: 30, slash: 30 }   # total 200
 
   # THE BULLET ATTRACTOR THE THROW PLANTS — "The Bullet Attractor stays on
-  # enemies for 4.7 seconds." It IS the Void effect (owner, 2026-08-14), which
+  # enemies for 4.7 seconds." It IS the Void effect, which
   # is the debuff the engine already has, so it counts one line in the
   # Condition Overload counter and nothing else.
   #

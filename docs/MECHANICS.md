@@ -268,8 +268,7 @@ The engine does not model per-shot ammo COST at all: `ammo_cost` sits in every
 `data/weapons/` entry and no Rust code reads it; the sim spends a flat 1.0
 (minus ammo efficiency) per shot, beam ticks included.
 
-**A charge pool is not ammo, and spends 1 per tick** (owner, 2026-08-01,
-measured in game). The Torid page had already put the Incarnon outside the
+**A charge pool is not ammo, and spends 1 per tick**. The Torid page had already put the Incarnon outside the
 ammo economy — "instead of drawing ammunition from its reserves, the Torid's
 Incarnon Form uses a separate 'magazine'", and it "is not affected by Ammo
 Efficiency" — and the 0.5 rule exists to help that economy, so it stops at the
@@ -281,7 +280,7 @@ a 60 s run took DPS 3634 → 3919 (**+7.8%**) and transforms 4 → 2, because a
 longer window spends proportionally less time in the two transitions. The
 number we ship is the measured one.
 
-**The ammo-pool half is now IMPLEMENTED** (2026-08-01). It stopped being
+**The ammo-pool half is now IMPLEMENTED**. It stopped being
 unreachable the moment the Larkspur Prime and Verglas Prime joined the roster:
 both are beams with real magazines, and the Larkspur page states its own
 numbers — "0.5 per primary tick" against "Alt-fire consumes 10 ammo per shot".
@@ -468,7 +467,7 @@ Order matters: **flat/absolute** CD bonuses (e.g. Incarnon "Critical Parallel"
 Vital Sense) multiply **after**. Required for shot-by-shot parity with in-game
 numbers.
 
-> **Decision (2026-07-24, final): quantization is ALIVE and implemented.**
+> **Decision: quantization is ALIVE and implemented.**
 > Reasoning: (a) `Damage/Calculation` §Quantization gives the engineering
 > rationale — it is a **network serialization scheme** (one total integer
 > + per-type 1/32 multiples), which does not obsolete with better tech;
@@ -554,7 +553,7 @@ Exceptions:
 
 **Where a pellet lands** is rolled **per pellet**, not per trigger pull: the
 sim's `headshot_pct` is a per-pellet aim weight, because aiming at the head
-does not put every pellet of a spread on it (decision 2026-07-29). It follows
+does not put every pellet of a spread on it. It follows
 that the Incarnon gauge charges per headshot *pellet* (multishot fills it
 faster), on-headshot buffs trigger from any one pellet of a pull, and the
 reported headshot rate is pellets/pellets. Mean headshot rate is identical
@@ -594,7 +593,7 @@ to say "Incarnon" for that, because every example was one — the data key was
 `incarnon:`, the request token was `incarnon_cycle`, and the engine decided
 "does this have a gauge" by asking whether the form was *named* `incarnon`.
 
-The **Mausolon** is the counter-example (owner, 2026-08-15). Its alt-fire is
+The **Mausolon** is the counter-example. Its alt-fire is
 bought with kills — *"Getting 5 kills with the Mausolon's primary fire will
 unlock an Alternate Fire that discharges a powerful laser that explodes on
 impact"*, and once spent *"additional kills are needed to recharge the laser"*
@@ -629,7 +628,7 @@ else's — and the ones flagged `counts_for_condition_overload` add a status
 A weapon declares them by id (`independent_procs: [lifted]`); the engine owns
 the duration, the same way it owns every other proc's. Implemented so far:
 
-- **Lifted**, 1 s (owner, 2026-08-15) — the Mausolon alt-fire's explosion. Its
+- **Lifted**, 1 s — the Mausolon alt-fire's explosion. Its
   crowd control (the target is suspended) is not modelled and cannot be: this
   arena has no movement. What is modelled is the count.
 
@@ -1163,11 +1162,10 @@ NEAREST body not yet hit.
   (1295 kpm against 131 with none), and only 30 of 361 bodies took any
   damage — the signature of six 4 m spheres landing on top of each other.
   Reflection would spread them along a line instead. **The owner's reading is
-  that a bounce should carry straight on in one direction** (2026-08-21),
+  that a bounce should carry straight on in one direction**,
   which is the wiki's rule; implementing it is a geometry decision that has
   not been taken.
-- **`headshot_chance` IS AN OWNER ASSUMPTION, NOT A TRANSCRIPTION** (owner,
-  2026-08-18, re-searched 2026-08-21). A rebound hit CAN headshot — it counts
+- **`headshot_chance` IS AN OWNER ASSUMPTION, NOT A TRANSCRIPTION**. A rebound hit CAN headshot — it counts
   as a MainPtr — but where it lands is geometry this arena does not model, and
   **no source states a rate**. The whole roster uses **0.5**. The one published
   remark anywhere near it is the Neutralizer's *"Ricochets prioritize Weak
@@ -1532,7 +1530,7 @@ states the (mod-scaled) radius so an equipped Firestorm is not invisible, and
 the rest is the multi-target model's input.
 
 **Source:** wiki Torid Incarnon Genesis (verbatim throughout) + user
-(2026-07-30) for `nodes_have_radius`. **Status:** geometry transcribed; the
+ for `nodes_have_radius`. **Status:** geometry transcribed; the
 node-sphere question is **unverified** (M15), and the 37 / 2.3 / 7 values
 themselves have a SOURCE-SPLIT recorded in DATA_SOURCES.
 
@@ -1548,7 +1546,7 @@ pull being the magazine's last round. On the base form's 5-round magazine that
 is one pull in five firing four grenades instead of one — roughly +60% average
 multishot, not a rounding error.
 
-**BASE FORM ONLY** (user, 2026-07-30): it does not fire in Incarnon Form, whose
+**BASE FORM ONLY**: it does not fire in Incarnon Form, whose
 magazine is the charge pool rather than a reloaded magazine, so there is no
 "last shot in magazine" to gate on. Both forms load the *same* evolution id, so
 the engine gates on the form's own charge-backed marker (`incarnon.is_some()`)
@@ -1607,7 +1605,7 @@ Wiki Notes, verbatim: *"Charging consumes ammo, up to a full magazine on full
 charge"*, *"Damage dealt by the plasma bomb is directly proportional to the
 amount of ammo consumed during the charge"*, and *"Charge rate consumes a set 11
 ammo per second. Modding to increase magazine capacity will allow a longer total
-charge, and thus more damage."* Confirmed in play (owner, 2026-08-09).
+charge, and thus more damage."* Confirmed in play.
 
 **This makes Magazine Capacity a DAMAGE stat, on the only weapon in the roster
 where it is one.** A magazine mod lengthens the charge, raises its price and
@@ -1641,13 +1639,12 @@ Four rules, all wiki, and the per-form split is the interesting one:
   a magazine-fed form, from the charge pool on a charge-backed one, which
   SHORTENS the Incarnon window. The magazine round itself is never part of this;
   it comes from the magazine and always takes ammo efficiency, perk or no. The
-  surcharge bills the RAW rolled multishot, not the 60%-scaled figure (user,
-  2026-07-30) — the bonus is paid in damage, not billed again in ammo. **Ammo
+  surcharge bills the RAW rolled multishot, not the 60%-scaled figure — the bonus is paid in damage, not billed again in ammo. **Ammo
   efficiency does not reach the surcharge at all** (✅ measured, user
   2026-07-30): the magazine round keeps its discount, every generated
   projectile pays full price, and even a 100% efficiency source does not make
   multishot free. The two ammo paths are genuinely separate systems.
-- **The extras can STARVE** (user, 2026-07-30). Projectiles are produced in
+- **The extras can STARVE**. Projectiles are produced in
   order, each paying its round as it goes, and one that cannot pay **is not
   fired at all** — the same rule as running dry normally. With 3 charges left
   and a 4-multishot pull: the round is spent, two extras fire, the third does
@@ -1673,12 +1670,11 @@ Identical. Note the identity **needs base multishot = 1.0** — both Torid forms
 are, but a weapon with innate multishot > 1 would split `1 + 1.6(M−1)` from
 `base_ms × (1 + 1.6·bonus)`, and this code would need the distinction.
 
-The +60% follows a generated grenade into the **cloud** it leaves (user,
-2026-07-30). That is where the perk's value is on this weapon: the cloud is most
+The +60% follows a generated grenade into the **cloud** it leaves. That is where the perk's value is on this weapon: the cloud is most
 of the Torid's damage, so a version that stopped at the impact would make
 Plentiful Mayhem near-worthless.
 
-**Source:** wiki Torid Incarnon Genesis + user (2026-07-30) for the two rules
+**Source:** wiki Torid Incarnon Genesis + user for the two rules
 the page does not state (the base-form gate, and the cloud inheriting the
 bonus). **Status:** implemented and unit-tested; the ammo-surcharge basis and
 the status-payload exclusion are recorded modeling choices.
@@ -2040,7 +2036,7 @@ from wiki; falloff/ballistics/AoE math need measurement). **High-risk**
 > `condition: while_aiming | while_invisible | while_airborne` in a mod file
 > resolves to `ModEffect::WhileTenno(TennoCondition, …)`, which
 > `loadout::resolve_for` asks of the fight's Tenno. All of them live there,
-> aiming included — one home for one kind of fact (user, 2026-08-02). A gated
+> aiming included — one home for one kind of fact. A gated
 > effect whose
 > condition is false is absent from the static buckets AND from the emergent
 > specs, so the buff never arms; the panel still lists the row, tagged with the
@@ -2076,7 +2072,7 @@ from wiki; falloff/ballistics/AoE math need measurement). **High-risk**
 > Tenno — it belongs to a companion standing beside them, and that distinction
 > is load-bearing for the Galvanized mods. Their trigger is the TENNO's: the
 > on-kill roll comes from the Tenno's own weapons. The buff it grants then
-> applies to the Tenno **and** the companion (user, 2026-07-31).
+> applies to the Tenno **and** the companion.
 >
 > So `StackPolicy::BaseOnly` is not "a companion is excluded". It is "this
 > arena fires ONE weapon, so when that weapon is the companion's there is
@@ -2106,13 +2102,13 @@ Full table in `data/factions/damage_modifiers.yaml` (e.g. Grineer: +Impact
 layers: **Object** health takes no crits/status/modifiers; **Overguard** is
 neutral except x1.5 Void, blocks status spillover, and grants CC immunity.
 
-*Engine (2026-08-03): modeled — `engine::factions_data` loads the table,
+*Engine: modeled — `engine::factions_data` loads the table,
 `EnemySpec::target_params` resolves the one column (`FactionDamageOverride ??
 Faction`) plus the Overguard column onto `TargetParams::type_mods`, and
 `TargetState::apply` scales each component by the column the POOL it lands in
 reads. A hit's per-type shape travels as `TypeShares` — the same value that
 answers Toxin's shield bypass. The table's **fifteen columns are the whole
-system** (user, 2026-08-03), so a faction it does not name — Stalker, Unknown,
+system**, so a faction it does not name — Stalker, Unknown,
 the wildlife — resolves to neutral and takes every type as written. Cinematic
 (bleed) is exempt everywhere, as the type's own definition says. Not modeled:
 the Object pool (no object target exists yet).*
@@ -2210,7 +2206,7 @@ component** of the hit vector:
     instance is **fully blocked** in-window;
   - **separate damage instances riding on an attack** (status-effect DoTs,
     Xata's Whisper) are not stopped by the gate.
-  **Model decision (2026-07-24, revised same day):** the gate is understood
+  **Model decision:** the gate is understood
   as the enemy analogue of the player's shield-gate invulnerability — a
   0.1 s protection window on the *unit*. Inside it, **all direct hit damage
   is reduced to 5%, including Toxin's shield-bypassing damage** (the window
@@ -2359,7 +2355,7 @@ up to `5 × Mastery Rank + 30` (+25 in some Simulacrum variants) — nowhere
 near 9999, so level-cap behavior is only verifiable in endless missions.
 The Simulacrum has **no** enemy-invincibility or instant-respawn toggle; the
 engine's `TargetMode::{InfiniteHealth, InstantRespawn}` are simulator
-conveniences (decision 2026-07-24), and **on-death transformations are
+conveniences, and **on-death transformations are
 not modeled** (a respawned Thrax is always the physical form — the spectral
 form is skipped).
 
@@ -2511,7 +2507,7 @@ Primary Crux) in `engine::dummy::ammo_efficiency` — correct for everything
 modelled, since Energized Munitions is a Warframe ability and out of scope. **If
 it is ever added it must multiply, not join the sum.**
 
-**100% is a real ceiling** (user, 2026-07-30): a shot can cost nothing, never
+**100% is a real ceiling**: a shot can cost nothing, never
 less. Stacking past the cap buys nothing, and in particular efficiency never
 starts *refunding* — the magazine cannot climb while the weapon fires. So the
 per-shot cost is `max(0, ammo_cost × (1 − min(1, Σ efficiency)))`, and "free" is
@@ -2548,7 +2544,7 @@ efficiency source, since a 1.0 cost lands the magazine exactly on 0.
 (`engine::dummy::can_fire`). Two rules meet there and each rules out the naive
 test in one direction: the magazine gate is *anything left* rather than *enough
 to pay* (M14 — a 0.25 remainder fires a full-cost shot), and a shot that costs
-**nothing** needs no round at all (user, 2026-07-30). The Dual Toxocyst hits the
+**nothing** needs no round at all. The Dual Toxocyst hits the
 second exactly: its last round headshots, the magazine lands on 0, and that same
 kill arms Frenzy's +100% efficiency — so the next shot is free and fires instead
 of forcing a reload. A charge-backed magazine can never take that branch, since
@@ -2670,7 +2666,7 @@ hand-derived except the two published ladder formulas.
 
 A weapon has an ORIGINAL BASE, and some things add to it while others only add
 to what its panel prints. `WeaponBase::co_base` is the first, `base_vector` is
-the second, and the GunCO term reads the first (owner, 2026-08-16).
+the second, and the GunCO term reads the first.
 
 ```
 gunco_bonus = rate x stacks x status_types x (co_base / panel)
@@ -2729,7 +2725,7 @@ out of three facts, and none of it is a special case.
 centre to centre, and two bodies of the same size touching at 0.4 m makes each
 of them 0.2 (MEASUREMENTS M47). One number, and nothing derives from it.
 
-**A SHOT LEAVES THE MUZZLE, not the centre** (owner, 2026-08-16). The muzzle is
+**A SHOT LEAVES THE MUZZLE, not the centre**. The muzzle is
 a point on the shooter's own circumference facing what they are aiming at. The
 facing is DERIVED rather than stored — you are looking at what you are shooting
 at — so aiming at a second target turns the shooter and there is no third piece
@@ -2803,7 +2799,7 @@ and clawed back by exactly the mods the source says cannot touch it.
 Nothing here is modelled yet: the arena holds one target, so every clause below
 resolves to zero. It is written down because the Torid Incarnon carries all
 THREE ways a shot reaches a second body at once, which makes it the weapon a
-multi-target model should be built against (owner, 2026-08-16).
+multi-target model should be built against.
 
 ### The three paths to a second target
 
@@ -2820,7 +2816,7 @@ chain independently to 5 additional enemies starting from EACH target hit by
 the initial damage radius. Each chain chooses targets independently, and an
 enemy can be struck by multiple chains."*
 
-**A PATH VISITS NOBODY TWICE** (owner, 2026-08-16). "Struck by multiple chains"
+**A PATH VISITS NOBODY TWICE**. "Struck by multiple chains"
 means the repeats come from DISTINCT paths — one per seed — rather than from a
 path looping back on itself. That reading is what makes the arithmetic
 well-defined, and it separates from the alternative at three targets:
@@ -2893,7 +2889,7 @@ approximating.
 ### A BLAST MEETS A BODY AT ITS NEAREST SURFACE
 
 Three rulings, and they are one idea: a body is a CIRCLE, so a blast touches it
-before it reaches its centre (owner, 2026-08-17). `engine::space` owns all three.
+before it reaches its centre. `engine::space` owns all three.
 
 | | rule |
 | --- | --- |
@@ -2985,7 +2981,7 @@ bucket is one multiplicative factor of `raw`, so `raw x share x bucket_here /
 bucket_there` is the whole correction), its own half-health term off its own
 health line, its own mitigation, its own procs and its own death.
 
-**WHERE THE LINE BETWEEN A SOURCE AND A BODY IS** (owner, 2026-08-17): a counter
+**WHERE THE LINE BETWEEN A SOURCE AND A BODY IS**: a counter
 belongs to whoever it counts on. The pools, the procs, the DoTs and the armour a
 hit strips are the BODY's. The buff bar, the Galvanized stacks, the arcane
 runtime and the damage-instance number are the SHOOTER's, shared by every body
@@ -3081,7 +3077,7 @@ instances to the ordinary pipeline — each body computing its own Condition
 Overload, its own half-health term, its own mitigation, its own procs and its
 own death.
 
-**SO A FULL INCARNON CYCLE IS SIMULABLE AGAINST A CROWD** (owner, 2026-08-17):
+**SO A FULL INCARNON CYCLE IS SIMULABLE AGAINST A CROWD**:
 the base form spreads through an AREA and the transformed form through a CHAIN,
 and both halves now have somewhere to go. A radius mod is worth something in
 both, by two different mechanisms — it widens the cloud in one and seeds more
@@ -3208,7 +3204,7 @@ On a chaining weapon the two mechanics compose, and the wiki is explicit:
 > damage output when fired into a crowd." — "The chain from the target hit after
 > the Punch Through can deal damage to the first target, and vice versa."
 
-That last clause is the owner's own rule for two chains meeting (2026-08-17): a
+That last clause is the owner's own rule for two chains meeting: a
 body takes a second instance only when a SECOND independent link reaches it.
 `chain::resolve` takes the struck bodies as its seed list and each seed keeps
 its own `seen` set, so this falls out rather than being arranged.
@@ -3279,7 +3275,7 @@ figure is the GEOMETRY column and the infinite one is bodies. Corvas Prime is
 1.4 m and unlimited; the Lanka is 5 m and unlimited. In this arena only the
 second half exists.
 
-**What the audit found** (2026-08-17, prompted by "can the Larkspur take it?"):
+**What the audit found**:
 the Fluctus read `999.0` under a comment calling it *"INFINITE"* and it is on
 NEITHER infinite list — the page gives it **275 m**, a published number rather
 than a word, and it reaches everything here either way, which is exactly why the
@@ -3346,7 +3342,7 @@ moves, so draining a moment later is exact rather than approximate.
 The copy is BODY-ONLY: `part_factor` comes back off, because an arc is not
 aimed at anything. Same rule every instance that lands on a neighbour follows.
 
-### What it cost, and what that cost was made of (2026-08-18)
+### What it cost, and what that cost was made of
 
 An area proc hands a `Dot` to every body within its radius, and on a 19x19 grid
 at 1.5 m spacing that is **29 bodies per proc**. The Phantasma Prime — six
@@ -3416,7 +3412,7 @@ one-tick DoT would have been both of those wrongly.
 
 ### A CLOUD IS A PLACE, AND IT OUTLIVES WHAT IT STUCK TO
 
-Asked of the gas proc (owner, 2026-08-17) and true of both clouds:
+Asked of the gas proc and true of both clouds:
 
 > **Gas** — "If the host target dies, Gas will continue to tick damage on all
 > enemies caught in the host's radius for its remaining duration."
@@ -3469,8 +3465,7 @@ AssumedMax only**, which has a consequence worth stating plainly:
   buffs), and `CondBuff` carries none.
 
 So a player equips one of these, sees the Stats panel change, runs the Sim,
-and sees nothing move — with no control that explains the difference (owner,
-2026-08-01, on Archgun Ace).
+and sees nothing move — with no control that explains the difference.
 
 **Scope: three mods**, all of them a trigger nothing else needs yet.
 

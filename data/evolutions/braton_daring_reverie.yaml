@@ -25,7 +25,7 @@ selection: choose_one
 # so, and it was not.
 #
 # NOT A GENERALISATION TO WEAPONS WITHOUT A ROW. The default stays what the
-# catalog says it is (owner, 2026-08-16): follow the wiki, and let a MEASUREMENT
+# catalog says it is: follow the wiki, and let a MEASUREMENT
 # re-certify an entry. Absence still means ordinary.
 co_base_excludes_this_evolution: true
 effects:

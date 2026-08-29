@@ -13,8 +13,7 @@
 // It opens the popover rather than reading `rivenPool()`, and it walks BOTH
 // SLOTS. The bonus list and the malus list are drawn from one pool through two
 // different filters (five stats are bonus-only), so "offered" is two claims:
-// the report that prompted this was about the NEGATIVE slot specifically
-// (owner, 2026-08-08).
+// the report that prompted this was about the NEGATIVE slot specifically.
 //
 //   node scripts/check_riven_pool.mjs
 //

@@ -11,7 +11,7 @@ description: "Increase Base Damage by +42.\n+5 Base Multishot on final magazine 
 # difference".
 selection: choose_one
 
-# CO'S BASE EXCLUDES THIS PERK'S +42 — MEASURED (owner, 2026-08-16).
+# CO'S BASE EXCLUDES THIS PERK'S +42 — MEASURED.
 #
 # Burston Prime, Incarnon form, this perk and Galvanized Aptitude and nothing
 # else, torso, unarmoured target, one status type on it:

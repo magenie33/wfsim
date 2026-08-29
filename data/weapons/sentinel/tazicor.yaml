@@ -11,7 +11,7 @@ default_form: true
 # RIFLE MODS, and this one is quoted rather than read off a row: the page's own
 # opening sentence says "This weapon accepts [[Rifle Mods]]". The four MOA
 # weapons were held back a night because the infobox row would not extract and
-# guessing a mod pool is the one thing this class must not do (2026-08-15).
+# guessing a mod pool is the one thing this class must not do.
 mod_pools: [rifle]
 mastery_rank: 3
 max_rank: 30
@@ -48,7 +48,7 @@ attack:
   # THE RANGE IS A WALL, NOT A RAMP: full damage to the end of it and
   # literally nothing past it. Transcribed from the wiki's Range stat; it
   # already sat in this file's `beam_range` note, which the engine could
-  # not read (2026-08-19).
+  # not read.
   range_m: 20.0
   damage: { electricity: 5.0 }
 unmodeled:

@@ -14,8 +14,7 @@
 //   * the quick calc resolved a scenario of its OWN, from a sticky persisted
 //     pointer that outlived the weapon, the scenario and the session — build a
 //     nine-body Ocucor fight, switch the simulator to it, and every mod was
-//     still ranked under whichever scenario that popover was last left on
-//     (owner, 2026-08-17: "算的收益好像不对，都不是群体的了");
+//     still ranked under whichever scenario that popover was last left on;
 //   * the optimizer's gain scan spread that scenario raw, without
 //     `custom_enemies`;
 //   * the optimizer itself sent the STORED shape of the fight rather than the
@@ -89,7 +88,7 @@ const r = await evaluate(`(async () => {
     if (p === '/api/optimize') return { ok: false, error: 'intercepted by check_one_fight' };
     return realApi(p, b);
   };
-  // THE FLEET IS A SIXTH WAY TO SEND THE FIGHT (2026-08-18), and this check
+  // THE FLEET IS A SIXTH WAY TO SEND THE FIGHT, and this check
   // exists to say they all send the same one — so it watches that path too.
   // Run Sim and the share card both go through it now, and a sharded
   // simulation never touches api at all.

@@ -35,7 +35,7 @@ for (const lang of ["en", "zh"]) {
   const r = await evaluate(`(async () => {
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     history.pushState({}, '', '/weapons/Torid/simulator'); route(); await sleep(2800);
-    // THE FIGHT IS READ-ONLY ON ARRIVAL (2026-08-05): the official benchmark is
+    // THE FIGHT IS READ-ONLY ON ARRIVAL: the official benchmark is
     // now the default scenario, and its controls are locked — so the enemy
     // picker's own button is disabled and cannot be opened. Copying it is the
     // real user flow for changing the target, and it is what this check needs
@@ -138,7 +138,7 @@ for (const lang of ["en", "zh"]) {
   check(`${tag} the gunner claims no caveat it does not have`, r.gunner.gap === "", r.gunner.gap);
   check(`${tag} the picker lists every target, each with its picture`,
     r.menu.rows === r.roster.length && r.menu.thumbs === r.menu.rows, JSON.stringify(r.menu));
-  // THE POOLS ARE THE FIGHT'S, NOT THE UNIT'S BASE (owner, 2026-08-05).
+  // THE POOLS ARE THE FIGHT'S, NOT THE UNIT'S BASE.
   // A Corrupted Heavy Gunner is 700 health in the data module and tens of
   // millions at the level this scenario runs at; printing the former is
   // answering a question nobody asked. The level has to be ON the line too —

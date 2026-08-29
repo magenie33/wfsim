@@ -405,7 +405,7 @@ pub struct ArcaneDef {
     /// Weapon CLASSES that may equip this arcane at all. Empty = any weapon
     /// whose slot seats the arcane, which is almost all of them.
     ///
-    /// An EQUIP rule, not a calc-layer gate (owner, 2026-08-05). `requires` is
+    /// An EQUIP rule, not a calc-layer gate. `requires` is
     /// the other thing — it lets the arcane equip and go inert, which is right
     /// for Akimbo Slip Shot and WRONG for these two: the game does not offer
     /// them at all. A picker that offers what the arsenal refuses is a worse
@@ -441,7 +441,7 @@ pub struct ArcaneDef {
     /// A FOURTH admission, and the only one that is not a shortfall: the sim
     /// computes this, it matches the game, and it is a bug — so a hotfix
     /// changes the answer and the number a player is reading today rests on
-    /// something that can be taken away (owner, 2026-08-08).
+    /// something that can be taken away.
     ///
     /// Text rather than a flag, and rendered rather than a comment, for the
     /// same reason a weapon's `unmodeled:` lines are: this is the sentence the
@@ -574,7 +574,7 @@ enum ArcEffect {
     /// has to render, or the config page shows a literal "X". The yaml `note`
     /// is what the panel says instead of a computed line.
     /// An effect the sim does not compute, and WHY IT DOES NOT is two very
-    /// different answers (2026-08-05):
+    /// different answers:
     ///
     /// - `Unmodeled` — real damage we have not built yet. A todo.
     /// - `OutOfScope` — it acts on something this simulator does not have:
@@ -585,7 +585,7 @@ enum ArcEffect {
     /// look unfinished when four of the seven cases are the model's own edge.
     ///
     /// Neither carries text: the explanation belongs in a YAML comment, where a
-    /// maintainer reads it, not in a field the app renders (owner). Primary
+    /// maintainer reads it, not in a field the app renders. Primary
     /// Debilitate: on a damage instance that lands a COMBINED status bringing
     /// the target TO [`DEBILITATE_STACKS`] of it — this stack counted, so at
     /// nine the shot that makes it ten fires (owner-measured, M34) — a
@@ -646,7 +646,7 @@ fn scale(v: &Value) -> Scale {
 /// since it had statuses at all — and the loader read neither, because it read
 /// `trigger`/`grants` and the per-rank numbers and nothing else. So Secondary
 /// Irradiate echoed off a target with no Radiation on it, which is what a
-/// player reported (2026-08-18).
+/// player reported.
 ///
 /// The fix is not "read this one string". It is that a condition the loader
 /// does not understand can no longer be dropped in silence: this returns
@@ -844,7 +844,7 @@ impl ArcaneDef {
     /// was invisible: `describe_at` prints nothing for it, `has_unmodeled`
     /// does not count it, and so Primary Deadhead's recoil reduction, Primary
     /// Dexterity's combo duration and Secondary Fortifier's overguard were
-    /// silently doing zero on a card that promised them (2026-08-08).
+    /// silently doing zero on a card that promised them.
     ///
     /// DERIVED, never listed — the same rule the mod side follows
     /// (`mods_data::unmodeled_effects`): it reads the effects the loader
@@ -1481,7 +1481,7 @@ pub fn secondary(id: &str) -> Option<&'static ArcaneDef> {
 /// questionable choice on this weapon: it cannot be equipped at all. Ids
 /// arrive from saved builds, shared URLs and preset imports, so the refusal
 /// lives here rather than in each caller's own filtering (a SECONDARY arcane
-/// was silently applying to the first primary weapon — user, 2026-07-30).
+/// was silently applying to the first primary weapon).
 pub fn for_slot(slot: &str, id: &str) -> Option<&'static ArcaneDef> {
     // EVERY POOL, filtered by the SEATS the arcane declares — the same rule
     // `pool_for_weapon` follows, and it has to be the same rule or an arcane
@@ -1583,13 +1583,13 @@ mod tests {
     /// The wiki types Shotgun Vendetta as `Shotgun` and Longbow Sharpshot as
     /// `Bow` rather than `Primary` — the only two class-typed arcanes in the
     /// game — so an import filtering on Type == "Primary" skips exactly them,
-    /// which is what happened until a player noticed (2026-08-05).
+    /// which is what happened until a player noticed.
     #[test]
     fn loads_all_16_primary_arcanes() {
         let pool = slot_pool("primary");
         assert_eq!(pool.len(), 16, "expected the full 16-arcane primary pool");
         // The two class-typed ones are an EQUIP rule, so they are gated by
-        // `equip_classes` and not offered elsewhere at all (2026-08-05).
+        // `equip_classes` and not offered elsewhere at all.
         for (id, class) in [("shotgun_vendetta", "shotgun"), ("longbow_sharpshot", "bow")] {
             let a = pool.iter().find(|a| a.id == id).expect(id);
             assert_eq!(a.equip_classes, vec![class], "{id} states which class equips it");
@@ -1791,7 +1791,7 @@ mod tests {
     /// from the day it was written, and the loader read `trigger`/`grants` and
     /// the per-rank values and nothing else — so the gate was dropped without a
     /// warning anywhere, the echo fired off targets with no Radiation on them,
-    /// and the only thing that caught it was a player noticing (2026-08-18).
+    /// and the only thing that caught it was a player noticing.
     ///
     /// A data file that states a rule the engine does not implement is worse
     /// than one that omits it: it reads, to anyone auditing, as if the rule
@@ -1853,8 +1853,7 @@ mod tests {
     ///
     /// The test this replaced named two arcanes by hand, which is why the third
     /// one's broken gate sat there for six months: a hand list cannot report
-    /// what is not on it (2026-08-18, and the repo's own rule — derive
-    /// triggers, do not list them).
+    /// what is not on it.
     #[test]
     fn every_condition_is_honoured_at_resolve_or_at_the_hit() {
         let tenno = crate::tenno_data::default_tenno();
@@ -2023,7 +2022,7 @@ mod tests {
     /// of". The fight now carries a Tenno, so it does: the arcane reads the
     /// stat off it, and the NEUTRAL Tenno — no frame, no pool — makes both
     /// resolve to nothing, which is the honest answer rather than a zero
-    /// invented to dodge the question (user, 2026-08-02).
+    /// invented to dodge the question.
     #[test]
     fn an_arcane_that_scales_off_a_warframe_reads_the_fights_tenno() {
         let bulwark = for_slot("primary", "primary_bulwark").expect("primary_bulwark");
@@ -2052,8 +2051,7 @@ mod tests {
                 .sum::<f64>()
         };
 
-        // THE NEUTRAL FRAME IS THE FLOOR OF EVERY RELEASED ONE, not a blank
-        // (owner, 2026-08-20), so these two arcanes now answer rather than
+        // THE NEUTRAL FRAME IS THE FLOOR OF EVERY RELEASED ONE, not a blank, so these two arcanes now answer rather than
         // abstaining — which is the point of pinning it.
         let neutral = crate::tenno_data::default_tenno();
         // Bulwark pays past 1,000 armor and the floor is 105, so it is still
@@ -2063,7 +2061,7 @@ mod tests {
         // Overcharge reads the POOL, and the floor of that pool is ZERO: four
         // frames have no energy at all — Hildryn and Lavos pay for their
         // abilities out of shields and with cooldowns — so "the weakest frame in
-        // the game" has none of it (owner, 2026-08-26). This used to assert
+        // the game" has none of it. This used to assert
         // +52.5% off a floor of 150, which was a floor no frame set: the first
         // pass at these numbers read a zero as missing data rather than as the
         // value.

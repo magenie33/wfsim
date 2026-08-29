@@ -10,14 +10,14 @@ weapons:
   # cannot resolve laetum_incarnon at all.
   # The base variant, whose art is its own file (the two weapons look
   # different; only the Genesis is shared).
-  # The Burston family (2026-08-05). Both variants ship an Incarnon art of
+  # The Burston family. Both variants ship an Incarnon art of
   # their own — `IncarnonImage` in the module — but a form is not a separate
   # ITEM on the page, so each form points at its weapon's picture the way
   # every other transform group here does.
-  # The three assault rifles (2026-08-05). Gotva Prime's file is named after
+  # The three assault rifles. Gotva Prime's file is named after
   # its internal path (GrnOrokinRifle), not its display name — the CDN keys on
   # DE's own asset name.
-  # The roster's first beam pistol (2026-08-05).
+  # The roster's first beam pistol.
   # CDN has no file for it, so the FETCHER takes it from the wiki; the cached
   # name and the page URL stay the bare name either way.
   # WFCD gives the MK1-Braton the plain Braton's `imageName`; the wiki has a
@@ -214,7 +214,7 @@ weapons:
   kulstar: Kulstar.png
   kunai: Kunai.png
   kunai_incarnon: Kunai.png
-  # THE KUVA BATCH (2026-08-19). The module's own `Image` field for each, which
+  # THE KUVA BATCH. The module's own `Image` field for each, which
   # is DE's asset name rather than the display name — the CDN keys on the former.
   kuva_bramma: wiki:KuvaBramma.png
   kuva_brakk: wiki:KuvaBrakk.png
@@ -256,7 +256,7 @@ weapons:
   larkspur: ShieldFrameArchGun.png
   larkspur_charged: ShieldFrameArchGun.png
   lenz: Lenz.png
-  # THE FIRST MELEE WEAPON (2026-08-28). All seven forms point at the one
+  # THE FIRST MELEE WEAPON. All seven forms point at the one
   # picture, the way every transform group here does — a form is not a
   # separate ITEM on the page, it is the same hammer swung differently.
   magistar: Magistar.png
@@ -389,7 +389,7 @@ weapons:
   # WFCD gives this weapon `PrimeLaserRifle.png`, which is the PRIME LASER
   # RIFLE's picture — a different sentinel weapon entirely. The CDN has no
   # file for the Burst Laser Prime under any spelling tried, so it comes
-  # from the wiki. Caught by `no_two_weapons_share_an_image` (2026-08-15).
+  # from the wiki. Caught by `no_two_weapons_share_an_image`.
   burst_laser_prime: wiki:BurstLaserPrime.png
   cryotra: Cryotra.png
   deth_machine_rifle: DethMachineRifle.png
@@ -523,7 +523,7 @@ weapons:
   zylok_prime: ZylokPrime.png
 
 
-  # THE TENET AND CODA BATCH (2026-08-20), resolved from WFCD's OWN EXPORT
+  # THE TENET AND CODA BATCH, resolved from WFCD's OWN EXPORT
   # (`vendor/warframe-items`, the `imageName` field) rather than by asking
   # api.warframestat.us item by item — same source, same answer, no network,
   # and it does not touch the 69 hand-set FORM rows the generator drops (see
@@ -559,7 +559,7 @@ weapons:
   tenet_tetra: CrpBETetra.png
   tenet_tetra_grenade: CrpBETetra.png
 
-  # THE NINETEEN BASE WEAPONS behind the adversary families (2026-08-20),
+  # THE NINETEEN BASE WEAPONS behind the adversary families,
   # resolved from WFCD's OWN EXPORT (`vendor/warframe-items`, the `imageName`
   # field) rather than by asking api.warframestat.us item by item — same source,
   # same answer, no network, and it does not touch the hand-set FORM rows the
@@ -598,7 +598,7 @@ mods:
   # has the card. `wiki:` says so explicitly — the old rule was "the name
   # contains a parenthesis", which is a property of some filenames and not a
   # statement about where the file lives.
-  # Assault-rifle-only pool (2026-08-05). Rifle Ammo Mutation and its Primed
+  # Assault-rifle-only pool. Rifle Ammo Mutation and its Primed
   # version share one card art, which is DE's own doing.
   # HAND-WRITTEN, and `wiki:` because the CDN has nothing: the mod was released
   # 2026-08-21 and WFCD's export has no entry for it yet, so gen_assets.py
@@ -609,7 +609,7 @@ mods:
   # that has looked different since 2013 — so the fetcher takes this one from
   # the wiki, where the mod's own page links it.
 
-  # THE MELEE POOL (2026-08-28). A Primed card shares its ordinary twin's
+  # THE MELEE POOL. A Primed card shares its ordinary twin's
   # image, which is this file's own convention — `primed_cryo_rounds` and
   # `cryo_rounds` have pointed at one file since the rifle pool landed.
   accelerated_blast: ShotgunAcceleratedBlast.jpg

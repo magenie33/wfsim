@@ -7,7 +7,7 @@ description: "On Reload from Empty: Lingering damage field duration doubles on f
 selection: choose_one
 
 effects:
-  # MECHANISM (user measurement, 2026-07-30 / MEASUREMENTS M13): reloading from
+  # MECHANISM: reloading from
   # empty arms a buff, and the NEXT shot's pod lives twice as long — measured as
   # "1 direct hit + 20 pod ticks" against the normal 10, which also pins the
   # tick rule (ticks = duration in seconds, the first landing WITH the impact).

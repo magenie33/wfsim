@@ -30,7 +30,7 @@ gauge_form:
     auto_transmute_out: on_incarnon_ammo_empty
     # switch_back_penalty: expends all remaining charge
   incarnon_magazine:
-    # CAUSAL MODEL (user, 2026-07-24): the Incarnon form's rounds are
+    # CAUSAL MODEL: the Incarnon form's rounds are
     # CHARGE-BACKED - a separate resource converted from weakpoint charges,
     # entirely outside the ammo economy. That is WHY ammo efficiency,
     # magazine mods, and ammo pickups are all inert here: they operate on
@@ -51,7 +51,7 @@ gauge_form:
   #                   0.91 s; precise re-measurement deferred)
   transmute_in_seconds: 2.35     # = base reload time, unmodded
 
-# SIM CONVENIENCE (user, 2026-07-24): with the gauge LOCKED full (analogous
+# SIM CONVENIENCE: with the gauge LOCKED full (analogous
 # to buff locks), the Incarnon combat cycle reduces to a standard
 # magazine/reload model - usable by the plain sim machinery long before the
 # full charge economy is cycled:
@@ -75,7 +75,7 @@ attack:
     min_deg: 0.5
     max_deg: 12
   trigger: auto
-  # DISPUTED (2026-07-24): the wiki data module and the Ricochet page
+  # DISPUTED: the wiki data module and the Ricochet page
   # (ricochet = hitscan-only, DT listed) imply hitscan, but the CO
   # mechanic catalog classifies DT Incarnon Mode as Projectile. Needs
   # an in-game check (travel time / falloff observation).
@@ -84,7 +84,7 @@ attack:
   # written. ONE bounce, within 5 m — this weapon's ricochet is a shorter
   # mechanic than the Latron family's five, which is why the shape is per entry.
   #
-  # HEADSHOT CHANCE 0.5 (owner, 2026-08-18), and this entry is where the note
+  # HEADSHOT CHANCE 0.5, and this entry is where the note
   # below said it should be: *"Ricochets can headshot"*. A bounce is not aimed,
   # so the scenario's headshot_pct is the wrong number for it and DE publishes
   # none — half is the flat rate, a decision rather than a transcription, and it
@@ -103,7 +103,7 @@ attack:
     # flat base damage.
   fire_rate: 4.5
   multishot: 1.0
-  # NOT READ by the engine (2026-07-31): nothing in engine/ references
+  # NOT READ by the engine: nothing in engine/ references
   # `ammo_cost` — the sim spends a flat 1.0 (minus ammo efficiency) per shot.
   # It matters for CONTINUOUS weapons, which the wiki says "consume 0.5 ammo
   # per trace - unless they are Flamethrowers", and the only beam in the
@@ -120,7 +120,7 @@ attack:
   spread_deg: { min: 0.50, max: 12.00 }
   damage: { impact: 15.0, puncture: 37.5, slash: 22.5 }   # total 75
 
-# CONFIRMED (user, 2026-07-24): the Frenzy passive EXISTS in the Incarnon
+# CONFIRMED: the Frenzy passive EXISTS in the Incarnon
 # Form too - the buff persists across transforms and headshots keep
 # triggering it while transformed (fire rate x2.5, ammo efficiency - inert
 # on the charge-backed magazine - and the +100% Toxin injection).

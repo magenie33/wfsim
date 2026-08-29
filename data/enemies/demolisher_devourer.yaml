@@ -22,7 +22,7 @@ introduced: "29.0"
 # range and on itself."
 #
 # Same shape as the Thrax's spectral form: written down, machinery ready,
-# deliberately not applied to this unit yet (owner, 2026-08-12).
+# deliberately not applied to this unit yet.
 #
 # THE MACHINERY IS BUILT AND TESTED, so turning it on is this one line:
 #   nullifies_warframe_abilities: true

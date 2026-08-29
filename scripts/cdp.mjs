@@ -102,8 +102,7 @@ async function debugPort(profile) {
 /// EVERY OLD PROFILE, ON THE WAY IN — the one cleanup that cannot be skipped.
 ///
 /// `finish()` removes its own directory, and that was the whole plan until a
-/// machine turned up with 644 of them and 17 GB of C: gone (owner,
-/// 2026-08-10). Two ways they survive and neither is exotic:
+/// machine turned up with 644 of them and 17 GB of C: gone. Two ways they survive and neither is exotic:
 ///
 /// - on Windows Chrome still holds handles for a moment after `kill()`, so the
 ///   `rmSync` in `finish` throws and the comment there says "it can stay" —
@@ -246,8 +245,7 @@ export async function openApp(o = {}) {
         // identifiers — ends the literal early and splices whatever follows
         // into the expression. The result usually still PARSES, so `node
         // --check` is clean and the only symptom is the page throwing about a
-        // method nothing calls. It has cost a full check cycle seven times
-        // (2026-08-18); the hint costs three lines and cannot false-positive,
+        // method nothing calls. It has cost a full check cycle seven times; the hint costs three lines and cannot false-positive,
         // because it only ever appends to a failure that already happened.
         throw new Error(`${msg}\n\n  hint: if that names something this check ` +
           `never wrote, look for a backtick or \${ inside the page-side body ` +
@@ -284,7 +282,7 @@ export async function openApp(o = {}) {
       // process and more, and on Windows `kill()` reaches only the one node
       // spawned here — the children go on holding the profile, which is why
       // eight headless Chromes were still alive with a directory open after a
-      // check had exited cleanly (2026-08-10). `taskkill /T` is the platform's
+      // check had exited cleanly. `taskkill /T` is the platform's
       // own answer; everywhere else the signal already reaches the group.
       try {
         if (process.platform === "win32") {

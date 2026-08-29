@@ -15,7 +15,7 @@
 # The second is not an optimisation of the first, it is the correctness rule:
 # a board whose rows were measured by different engine versions is not a board.
 #
-# IT IS SHARDED, and it had to be (2026-08-11). Measured on the run that raised
+# IT IS SHARDED, and it had to be. Measured on the run that raised
 # the rulers to 1000 runs: 24 s to build, 3m43s to read submissions out of KV,
 # **1h07m to score**, 2 s to commit. Meanwhile the schedule fires every twenty
 # minutes and `concurrency` keeps only ONE pending run — so every queued run was
@@ -31,7 +31,7 @@ name: board
 
 on:
   schedule:
-    # THREE TIMES AN HOUR, on the twenty (owner, 2026-08-09). It was hourly at
+    # THREE TIMES AN HOUR, on the twenty. It was hourly at
     # :17 — off the hour on the theory that :00 queues behind everyone else,
     # which is true and turns out not to be worth optimising for: this repo's
     # own history shows the :17 runs landing at :33–:35, so GitHub's scheduler
@@ -64,7 +64,7 @@ on:
 # concurrency group, so the cheap one queued behind the expensive one and was
 # then thrown away: GitHub keeps a single PENDING run per group, so each
 # scheduled trigger cancelled the one before it and the board moved about once
-# an hour instead of three times (owner, 2026-08-26).
+# an hour instead of three times.
 #
 # Splitting the group is safe because `publish` was already written for it — it
 # takes whatever `main` is now, writes the generated files on top and retries
@@ -80,7 +80,7 @@ env:
   # public repo, so the only cost of a wider fan-out is the fixed ~30 s each job
   # spends checking out and restoring the cache.
   #
-  # EIGHT STARVED THE BOARD AGAIN (2026-08-21), the same way and for a new
+  # EIGHT STARVED THE BOARD AGAIN, the same way and for a new
   # reason. Eight was measured when 67 minutes of scoring became ~9 a shard;
   # the roster then doubled — 556 entries, 773 stored rows — and shards came in
   # at 15 to 35 minutes with one at 55. The schedule fires every TWENTY, and a
@@ -97,7 +97,7 @@ env:
   # the fan-out puts the worst shard at ~14. The ceiling is GitHub's 256-job
   # matrix, so there is room to raise it again when the roster doubles again.
   #
-  # AND IT DID, THE SAME WAY, A THIRD TIME (2026-08-26). What doubled this time
+  # AND IT DID, THE SAME WAY, A THIRD TIME. What doubled this time
   # was not the roster but the STORE: the library model landed on 2026-08-25 and
   # every ruler now crosses the whole of it, so the boards went from ~900 rows to
   # 2,185 and the store to 2,447 builds. Measured on the last run that finished:
@@ -140,7 +140,7 @@ jobs:
       # [0..7], so raising one without the other tells eight jobs they are one
       # of thirty-two — and three quarters of the board is silently never
       # scored. Nothing would have failed; the rows would simply keep their old
-      # numbers (2026-08-21).
+      # numbers.
       - id: shards
         run: |
           python3 -c "import json;print('list='+json.dumps(list(range($SHARDS))))" >> "$GITHUB_OUTPUT"
@@ -151,7 +151,7 @@ jobs:
       # including them would move the fingerprint on every run and nothing would
       # ever be reused.
       #
-      # A COOLDOWN WOULD HAVE BEEN THE WRONG AXIS (owner asked, 2026-08-11):
+      # A COOLDOWN WOULD HAVE BEEN THE WRONG AXIS:
       # time is not an input to a score. Untouched, a row is valid forever;
       # moved, it is wrong immediately. This asks the only question that matters
       # — "is anything different" — and answers it exactly.
@@ -165,8 +165,7 @@ jobs:
           # and thirty of CPU to reproduce numbers that could not have moved.
           # The data half is asked PER ROW now, inside the scorer, from the
           # files that row actually reads (`engine::data_fingerprint`), so a
-          # mod correction costs the rows carrying that mod and nothing else
-          # (owner, 2026-08-25).
+          # mod correction costs the rows carrying that mod and nothing else.
           fp=$(git ls-files -s -- engine webapi cli | git hash-object --stdin)
           echo "engine=$fp" >> "$GITHUB_OUTPUT"
           echo "engine fingerprint: $fp"
@@ -227,7 +226,7 @@ jobs:
       # the site is generated, the code is in git, and what players sent lives in
       # exactly one KV namespace. Thirty days of rolling artifacts costs nothing
       # and is the difference between "restore yesterday's" and "ask everyone to
-      # submit again" (owner, 2026-08-26).
+      # submit again".
       - name: keep the list for the scorers
         if: steps.wired.outputs.yes == 'true'
         uses: actions/upload-artifact@v4
@@ -342,8 +341,7 @@ jobs:
             # state — the ruler exists before anyone has submitted to it. This
             # `cp` used to be unguarded, and under `set -e` a missing file
             # aborted the whole publish job, so ADDING A RULER would have
-            # broken the hourly board until somebody hand-wrote an empty yaml
-            # (2026-08-17). The scoring step above never had the problem: it
+            # broken the hourly board until somebody hand-wrote an empty yaml. The scoring step above never had the problem: it
             # passes the path straight to the binary, which treats an
             # unreadable prior as "full rescore" and carries on.
             if [ "${{ inputs.full }}" != "true" ]                && [ -f "data/benchmarks/boards/$id.yaml" ]; then

@@ -162,7 +162,7 @@ pub enum Shown {
     /// The raw number, with a sign. Punch Through is metres.
     Number,
     /// A MULTIPLIER off 1, no sign: the card reads "x0.59 Damage to Corpus"
-    /// where the stored value is -0.41 (user, 2026-07-31). Only the three
+    /// where the stored value is -0.41. Only the three
     /// faction stats print this way, and it is why their range runs 0.xx-1.xx
     /// instead of straddling zero.
     Multiplier,
@@ -200,7 +200,7 @@ impl RivenStat {
     }
 
     /// Decimals the CARD shows — and therefore all anyone can read off a
-    /// riven they own (user, 2026-07-31). A percentage shows ONE, so a box
+    /// riven they own. A percentage shows ONE, so a box
     /// offering two invites a precision the game never gave you.
     ///
     /// The full-precision value is still what the sim computes with: this is
@@ -235,7 +235,7 @@ impl RivenStat {
 /// with the stat, the weapon's disposition and the shape all divided out, so
 /// two stats on one card are comparable and so are two cards. 100 is the top
 /// of the band for a bonus AND for a malus — it is the size of the roll, not
-/// a judgement about it (user, 2026-07-31).
+/// a judgement about it.
 ///
 /// Uniform in the roll, because that is what the band is: the wiki gives a
 /// +/-10% randomisation and no shape to it.
@@ -290,8 +290,7 @@ struct PoolFile {
 /// a patch on a broken rule; it is the one place DE's actual table is recorded,
 /// and the rule is what fills in for a family nobody has a card from.
 ///
-/// THREE SOURCES, IN THIS ORDER, and the derivation is the LAST of them
-/// (2026-08-08). What a weapon can roll is DE's own per-weapon table, it is
+/// THREE SOURCES, IN THIS ORDER, and the derivation is the LAST of them. What a weapon can roll is DE's own per-weapon table, it is
 /// published nowhere, and a survey of ~12 000 live riven listings says it is
 /// not reliably derivable either: the Ocucor is 9% Puncture and 91% Radiation
 /// and rolls all three physical stats, while the Phenmor is 30% Puncture and
@@ -305,7 +304,7 @@ struct PoolFile {
 ///
 /// `data/rivens/pools.yaml` is NOT in that list. It is a count over live
 /// listings and it is EVIDENCE — read by `the_survey_still_agrees_with_the_
-/// rules` and by nothing in the calculation (owner, 2026-08-08).
+/// rules` and by nothing in the calculation.
 ///
 /// 1. **Physical damage** — wiki (`Riven_Mods`, attributes-table legend),
 ///    verbatim: *"Weapons without more than 25% of a physical damage type
@@ -333,12 +332,10 @@ struct PoolFile {
 /// have offered a stat no card in the sample carries.
 ///
 /// The MIRROR of that is why the exception list exists at all: the Furis is
-/// hit-scan in both forms and a player's card carries Projectile Speed anyway
-/// (owner, 2026-08-08).
+/// hit-scan in both forms and a player's card carries Projectile Speed anyway.
 pub fn derived_for(weapon_id: &str) -> Vec<&'static str> {
     let Some(s) = crate::weapons_data::spec(weapon_id) else { return Vec::new() };
-    // A RIVEN BELONGS TO A FAMILY, so the pool is the family's (owner,
-    // 2026-08-21). One card equips on every member — a Ballistica riven is a
+    // A RIVEN BELONGS TO A FAMILY, so the pool is the family's. One card equips on every member — a Ballistica riven is a
     // Ballistica Prime riven and a Rakta Ballistica riven — so a pool derived
     // from ONE member describes a card that does not exist. Fifteen families
     // disagreed with themselves before this: a real card carrying negative
@@ -347,7 +344,7 @@ pub fn derived_for(weapon_id: &str) -> Vec<&'static str> {
     //
     // The members, then each member's own free FORMS, and the shot rules read
     // the union of all of it — which is the same argument the alt-fire rule
-    // already makes (2026-08-07), one level up.
+    // already makes, one level up.
     let family: Vec<&'static crate::weapons_data::WeaponSpec> = match &s.riven_family {
         Some(f) => crate::weapons_data::all()
             .iter()
@@ -407,7 +404,7 @@ pub fn derived_for(weapon_id: &str) -> Vec<&'static str> {
     // So a falloff counts even with nothing in the air, which is why a shotgun
     // rolls the stat: the Boar keeps 50% past 25 m and the riven moves that
     // whole range. Reading only `shot_type` said no to every shotgun in the
-    // roster (owner, 2026-08-08, relaying a player's Furis card).
+    // roster.
     let flies = |f: &&'static crate::weapons_data::WeaponSpec| {
         f.attack.shot_type.is_some_and(|t| t.flies()) || f.attack.falloff.is_some()
     };
@@ -421,7 +418,7 @@ pub fn derived_for(weapon_id: &str) -> Vec<&'static str> {
 /// What this weapon's rivens can NOT roll: the derivation, with the
 /// hand-written per-family EXCEPTIONS applied over it.
 ///
-/// TWO LAYERS AND NOT THREE, and which two is the point (owner, 2026-08-08).
+/// TWO LAYERS AND NOT THREE, and which two is the point.
 /// The rules generate the pool; `data/rivens/exceptions.yaml` overrides them
 /// where somebody has looked; the SURVEY is neither of those and no longer
 /// appears here at all.
@@ -801,7 +798,7 @@ impl RivenSpec {
         //
         // TIES ARE THE NORM here rather than the exception, and more so than
         // when this ranked by value: in a CONSTRUCTOR every stat can sit at
-        // 1.1 at once, and then all three rolls are equal (user, 2026-07-31).
+        // 1.1 at once, and then all three rolls are equal.
         // The tiebreak is DE's own `upgradeEntries` index — explicit, because
         // a stable sort would have fallen back to the order the stats were
         // added, and a name must not depend on which one someone clicked
@@ -863,7 +860,7 @@ impl RivenSpec {
             polarity: self.polarity,
             rarity: Rarity::Legendary,
             exilus: false,
-            // A weapon takes ONE riven (user, 2026-07-31). Rivens all share
+            // A weapon takes ONE riven. Rivens all share
             // one family, which is the rule the pool already has for mutually
             // exclusive mods — so the picker greys the others out, the panel
             // refuses the pair, and the optimizer never enumerates a build
@@ -944,7 +941,7 @@ pub fn class_for_weapon(weapon: &str) -> Option<&'static str> {
 /// a statement anybody can act on: roll this weapon for these stats. What a
 /// particular copy landed on is luck, and the board has never ranked luck. It
 /// scores every row at full Forma, every mod at max rank and every valence at
-/// the roll's ceiling for the same reason (owner, 2026-08-22).
+/// the roll's ceiling for the same reason.
 ///
 /// So a shape is scored at ITS OWN ceiling, and [`perfect`] is what finds it.
 /// `Deserialize` so a BOARD row can carry one: `boards_data::BoardEntry` reads
@@ -1004,7 +1001,7 @@ impl RivenShape {
     /// A riven with an elemental stat PAIRS with the build's other elementals,
     /// so where it sits among the mods changes the combined element and
     /// therefore the fight — the same fact that makes `builds::canonical_mods`
-    /// keep mod order at all (owner, 2026-08-22). A shape that carries none is
+    /// keep mod order at all. A shape that carries none is
     /// position-independent like any other plain mod.
     ///
     /// A MALUS IS NEVER ONE. The five bonus-only stats aside, a negative
@@ -1064,7 +1061,7 @@ pub fn perfect(shape: &RivenShape, class: &str, mut score: impl FnMut(&RivenSpec
         let spec = shape.at(class, &rolls);
         let s = score(&spec);
         let p = preference(corner);
-        // **A TIE GOES TO THE PLAYER** (owner, 2026-08-24). A stat this fight
+        // **A TIE GOES TO THE PLAYER**. A stat this fight
         // cannot read — Zoom, Recoil, Ammo Maximum against one standing target
         // — scores the same at both ends, and the board is publishing a riven
         // somebody will go and try to obtain. It used to keep the FIRST corner,
@@ -1125,7 +1122,7 @@ fn perfect_searches_every_corner_and_takes_the_end_the_score_likes() {
     // BONUS landed at its minimum. Determinism was the right thing to want and
     // the wrong end to take it at — a board row is a riven somebody will go and
     // try to obtain, so a shape with one dead stat was published asking for a
-    // worse card than it needs (owner, 2026-08-24).
+    // worse card than it needs.
     let flat = perfect(&shape, "rifle", |_| 1.0);
     assert!(flat.bonuses.iter().all(|b| b.roll == ROLL_MAX));
     assert_eq!(flat.malus.as_ref().unwrap().roll, ROLL_MIN);
@@ -1460,7 +1457,7 @@ fn an_element_is_never_a_malus() {
 
     /// A weapon does not roll a stat it does not have.
     ///
-    /// Verglas Prime is the case that prompted this (user, 2026-08-01): a
+    /// Verglas Prime is the case that prompted this: a
     /// SENTINEL weapon the player never aims, hit-scan, "Ammo Max: ∞ / Ammo
     /// Type: None", 100% Cold. Its wiki table has no Zoom row and no Recoil
     /// row, so four stats plus all three physical ones are impossible on it —
@@ -1494,7 +1491,7 @@ fn an_element_is_never_a_malus() {
     /// The share is read on EVERY form the weapon fires for free, not on the
     /// one the arsenal happens to show.
     ///
-    /// Larkspur Prime, reported by a player through the owner (2026-08-07):
+    /// Larkspur Prime, reported by a player through the owner:
     /// his riven is Fire Rate / Heat with a NEGATIVE Impact, and the editor
     /// would not offer Impact at all. Its beam is 10 of 90 Impact — 11%, under
     /// the 25% line — but its alt-fire, one held button away and no gauge to
@@ -1505,7 +1502,7 @@ fn an_element_is_never_a_malus() {
         // BOTH ENTRIES, because the report came back on the OTHER one. This
         // asserted `larkspur_prime` alone — the card the owner relayed — and a
         // player reported the plain Larkspur refusing negative Impact a
-        // fortnight later (owner, 2026-08-21). It was already right, and a
+        // fortnight later. It was already right, and a
         // family where one member is pinned and its twin is not is precisely
         // how a fixed bug gets re-reported: there is nothing to point at.
         for id in ["larkspur", "larkspur_prime"] {
@@ -1548,7 +1545,7 @@ fn an_element_is_never_a_malus() {
     /// `Vadarya Prime`, `Coda Bassocyst`, `Dual Coda Torxica`, `EFV-5 Jupiter`.
     /// One of those is why `pools.yaml` records "Gotva: NOT SURVEYED (the API
     /// refused)" — the API did not refuse; it was asked about a weapon that
-    /// does not exist (2026-08-21).
+    /// does not exist.
     ///
     /// THE SNAPSHOT CONFIRMS AND NEVER REFUTES. `de_families.yaml` is one week
     /// of trades, so a family absent from it is a family nobody traded, not a
@@ -1608,7 +1605,7 @@ fn an_element_is_never_a_malus() {
     /// means and why the exception table and the survey are both keyed on it.
     /// So a pool derived from one member describes a card that cannot exist,
     /// and the app tells a player holding the real thing that it is "not a
-    /// legal riven" (owner, 2026-08-21, relaying a screenshot).
+    /// legal riven".
     ///
     /// FIFTEEN FAMILIES DISAGREED WITH THEMSELVES. The sharpest is the
     /// Ballistica: the Prime's charged shot is over the 25% Slash line and the
@@ -1772,7 +1769,7 @@ fn an_element_is_never_a_malus() {
     /// guarantee. An in-game card that contradicts a `never` here beats the
     /// file."* One real card carrying negative Slash on a Boltor settles this
     /// the other way, and the way to record it is an entry in
-    /// `exceptions.yaml` — the same route the Furis took (2026-08-08).
+    /// `exceptions.yaml` — the same route the Furis took.
     ///
     /// This test exists so that flipping the rule is a decision with a price
     /// tag on it rather than a one-line edit that quietly reddens nothing.
@@ -1817,8 +1814,7 @@ fn an_element_is_never_a_malus() {
 
     /// AN EXCEPTION OVERRIDES THE RULES, and only an exception does.
     ///
-    /// The survey used to sit in this path and does not any more (owner,
-    /// 2026-08-08). What survived the move is every answer it was giving —
+    /// The survey used to sit in this path and does not any more. What survived the move is every answer it was giving —
     /// because each one became an entry in `exceptions.yaml` carrying the
     /// count it came from — so this asserts the ANSWERS, which is what a
     /// player sees, rather than
@@ -1863,7 +1859,7 @@ fn an_element_is_never_a_malus() {
     /// used to outrank the derivation, so a re-run of the scrape that came back
     /// "nothing rolls anything" for all 26 families would have emptied every
     /// pool in the app, and the only thing that noticed was two tests about
-    /// something else (2026-08-08).
+    /// something else.
     ///
     /// Now a disagreement is a FAILURE that names the family and the stat, and
     /// the fix is a human one: promote it into `exceptions.yaml` with its count,
@@ -1919,8 +1915,7 @@ fn an_element_is_never_a_malus() {
     }
 
     /// Faction damage prints as a MULTIPLIER, because that is what the card
-    /// says: a malus the sim stores as -0.41 reads "x0.59 Damage to Corpus"
-    /// (user, 2026-07-31), so its range runs 0.xx-1.xx and never shows a
+    /// says: a malus the sim stores as -0.41 reads "x0.59 Damage to Corpus", so its range runs 0.xx-1.xx and never shows a
     /// minus sign. Everything else keeps its sign and its percent.
     #[test]
     fn a_faction_stat_prints_the_multiplier_the_card_shows() {
@@ -1950,7 +1945,7 @@ fn an_element_is_never_a_malus() {
     }
 
     /// The card shows ONE decimal on a percentage, so we show one: nobody can
-    /// read a second one off a riven they own (user, 2026-07-31). What is NOT
+    /// read a second one off a riven they own. What is NOT
     /// rounded is the arithmetic — the roll behind a displayed 144.8 is
     /// whatever 144.8 implies, exactly.
     #[test]
@@ -1998,8 +1993,7 @@ fn an_element_is_never_a_malus() {
     }
 
     /// A tie is the NORM in a constructor, because ranking is by ROLL and
-    /// every stat can sit at 1.1 at once (user, 2026-07-31: what if all three
-    /// roll 1.1?). The name must then still be one name, and must not depend
+    /// every stat can sit at 1.1 at once. The name must then still be one name, and must not depend
     /// on the order the stats were entered.
     #[test]
     fn a_tied_name_does_not_depend_on_the_order_the_stats_were_entered() {
@@ -2025,8 +2019,7 @@ fn an_element_is_never_a_malus() {
 
     /// Every stat rolls its band INDEPENDENTLY, so the corner where all three
     /// bonuses are maximal and the malus minimal is a legal riven — merely
-    /// astronomically unlikely (user, 2026-07-31: "can they all be max at
-    /// once?"). It has to be constructible, because it is the CEILING, which
+    /// astronomically unlikely. It has to be constructible, because it is the CEILING, which
     /// is exactly the riven an optimizer wants to know about.
     #[test]
     fn the_god_roll_corner_is_legal_and_is_the_ceiling() {

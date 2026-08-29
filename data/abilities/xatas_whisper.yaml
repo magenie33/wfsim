@@ -4,7 +4,7 @@
 # player's own frame) does to this weapon for a while. It belongs to the
 # SCENARIO — two builds compared under the same Roar is a comparison, one of
 # them getting it is not — and the BOARD carries none of these, which is what
-# keeps a board row a statement about the weapon (2026-08-08).
+# keeps a board row a statement about the weapon.
 #
 # EARLY ACCESS, AND SAID SO ON THE PAGE. The owner asked for it ahead of the
 # frame layer it will eventually live in, so the section is deliberately small:
@@ -37,7 +37,7 @@
 # Void damage is based on a percentage of the total weapon damage."
 
 # THE BLAST INTERACTION, which is the reason this ability is worth implementing
-# rather than approximating (owner, 2026-08-09).
+# rather than approximating.
 #
 # A Blast status detonation is a STATUS payload, and no extra hit fires off one
 # — the EN wiki files the exception under Bugs, in one line: "Only Xata's
@@ -60,8 +60,7 @@
 # bracket are visible in that one number, and the poster confirms the second by
 # adding an Electricity mod on camera and watching it move.
 
-# NO SEPARATE HELMINTH ENTRY, and that is a finding rather than an omission
-# (owner, 2026-08-09). Subsuming Xaku offers this ability unchanged — the wiki
+# NO SEPARATE HELMINTH ENTRY, and that is a finding rather than an omission. Subsuming Xaku offers this ability unchanged — the wiki
 # states the subsuming and lists no second set of numbers, unlike Roar (50% →
 # 30%), Eclipse (200% → 30%) and Nourish (75% → 45%), each of which prints its
 # reduced ladder. Two cards with

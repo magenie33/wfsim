@@ -44,8 +44,7 @@ pub struct DeploymentSpec {
     /// damage from the day it was added until 2026-08-14.
     ///
     /// BOTH COLUMNS ARE WRITTEN DOWN, and that is the point of stating a vector
-    /// here instead of the `x0.5` that would produce the same numbers (owner,
-    /// 2026-08-14). A multiplier is DERIVED: a reader of this file cannot see
+    /// here instead of the `x0.5` that would produce the same numbers. A multiplier is DERIVED: a reader of this file cannot see
     /// what the other tab says and cannot check it against the page, which is
     /// the one thing that would have caught the original error. The doubling is
     /// "most", not all, so the ratio is an observation about a weapon and never
@@ -276,7 +275,7 @@ impl ShotType {
 ///
 /// `range_m: 20.0` and `range_m: infinite` are both statements; leaving the
 /// field out is not one, and the difference is the whole reason this is not
-/// just an `f64` (owner, 2026-08-19: 无限射程应该是特殊的字段，这样才研究).
+/// just an `f64`.
 ///
 /// Absence has to keep meaning unlimited — 121 entries have never been
 /// transcribed and must go on working — but it now means "nobody has looked"
@@ -311,7 +310,7 @@ pub struct AttackSpec {
     pub trigger: String,
     /// Ammo spent per SHOT (per tick on a continuous weapon). Default 1.
     ///
-    /// Read at last (2026-08-01). It sat in every weapon file unread while the
+    /// Read at last. It sat in every weapon file unread while the
     /// sim spent a flat 1.0, which was harmless only while no weapon disagreed
     /// with it — the Larkspur Prime disagrees on BOTH of its modes: "Alt-fire
     /// consumes 10 ammo per shot" against "0.5 per primary tick" (wiki).
@@ -383,7 +382,7 @@ pub struct AttackSpec {
     /// IT IS READ BY EVERY INSTANCE THE ATTACK PRODUCES — the collision and the
     /// `lingering:` field's ticks alike — which is the point of declaring it on
     /// the attack. The orb's six strikes are one mechanic and the owner says so
-    /// outright (2026-08-28: the first is a field tick like the other five), so
+    /// outright, so
     /// a per-part spelling would be six chances to make them differ.
     ///
     /// Its value here is ASSUMED rather than measured (owner: 0.1) and the
@@ -403,8 +402,7 @@ pub struct AttackSpec {
     /// reload-triggered buff in the game therefore fired on EVERY SHOT and
     /// stayed up for the whole engagement — Pressurized Magazine took the
     /// Grimoire from 1,409 DPS to 2,699, on a weapon that never reloads, and
-    /// would have won every build search run on it (owner spotted it,
-    /// 2026-08-28).
+    /// would have won every build search run on it.
     ///
     /// Declaring it is what makes the loop skip the reload rather than perform
     /// a free one, and skipping the EVENT is what makes every effect keyed to
@@ -415,7 +413,7 @@ pub struct AttackSpec {
     /// SECONDS BETWEEN THE TRIGGER AND THE ROUND LEAVING.
     ///
     /// Zero on every gun in this roster and 0.1 s on the Grimoire's primary
-    /// fire (owner, 2026-08-28), which is what makes it a field rather than a
+    /// fire, which is what makes it a field rather than a
     /// constant: *"其他的枪械类武器都是0s子弹出膛，但是这个是0.1s"*.
     ///
     /// IT DOES NOT CHANGE THE CADENCE. The interval between shots is the fire
@@ -557,8 +555,7 @@ pub struct AttackSpec {
     /// modifications"*. So listing a falloff is precisely what gives the
     /// Projectile Speed stat something to act on when nothing flies — it is
     /// why a shotgun rolls it, and why the Furis does (its Incarnon form
-    /// falls off from 10 m to 16 m) while the Latron does not (owner,
-    /// 2026-08-08).
+    /// falls off from 10 m to 16 m) while the Latron does not.
     #[serde(default)]
     pub falloff: Option<FalloffSpec>,
     /// THE CONE THIS ATTACK FIRES INTO — see [`SpreadSpec`]. `None` = not
@@ -681,8 +678,7 @@ pub struct FalloffSpec {
 
 /// THE CONE AN ATTACK FIRES INTO — degrees from the reticle, per ATTACK.
 ///
-/// **THE PRIMARY VALUE, and `accuracy` is the derived one** (owner,
-/// 2026-08-15). The Arsenal prints an Accuracy that the wiki's own page defines
+/// **THE PRIMARY VALUE, and `accuracy` is the derived one**. The Arsenal prints an Accuracy that the wiki's own page defines
 /// as `100 / average spread in degrees` and then shows as a CATEGORY beside it
 /// ("Very High"); the thing the game has is this cone. Wiki `Accuracy` §Spread,
 /// verbatim: *"spread is internally represented as an angle in degrees from the
@@ -729,7 +725,7 @@ pub struct SpreadSpec {
 /// stay in the page's own units, since "one second per hit" is the sentence a
 /// reader will check.
 ///
-/// ITS OWN TYPE, DELIBERATELY (owner, 2026-08-28). It could be bent onto
+/// ITS OWN TYPE, DELIBERATELY. It could be bent onto
 /// [`GaugeSpec`] — both fill and both gate a form — and the mechanics differ in
 /// every particular that matters: that one counts weak-point hits and this one
 /// counts seconds, that one grants a magazine and this one grants a single
@@ -757,8 +753,7 @@ pub struct MeterSpec {
 /// A DEPLOYED ORB — an entity with a POSITION, a clock and a reach, which is
 /// none of the three things this engine had before it.
 ///
-/// IT IS NOT A FIELD, and the difference is the whole reason for the type
-/// (owner, 2026-08-28). A [`LingeringSpec`] is an AREA: everyone standing in it
+/// IT IS NOT A FIELD, and the difference is the whole reason for the type. A [`LingeringSpec`] is an AREA: everyone standing in it
 /// burns, at their own falloff distance. An orb strikes exactly ONE body inside
 /// its reach — *"Orb will shock 1 enemy within 6 meters of it every 1 second"*
 /// (wiki `Grimoire`) — every strike deals the same number, and it MOVES between
@@ -796,10 +791,10 @@ pub struct OrbSpec {
     pub strike_interval_seconds: f64,
     /// How far a strike reaches from the orb. Fulmination (Primed) enlarges it
     /// — the owner confirms the reach and the detonation radius both take the
-    /// blast-radius bucket (2026-08-28).
+    /// blast-radius bucket.
     pub strike_radius_m: f64,
     /// How fast it leaves the muzzle, and what it slows to once it has touched
-    /// a body — 6 m/s then 2 m/s (owner, 2026-08-28).
+    /// a body — 6 m/s then 2 m/s.
     ///
     /// The launch speed is HERE rather than read off the attack's
     /// `projectile_speed_mps`, which this engine has never modelled: that field
@@ -813,7 +808,7 @@ pub struct OrbSpec {
     /// BODIES ONE STRIKE REACHES PER POINT OF MULTISHOT — the struck one
     /// included. The whole count is `floor(this x multishot)`.
     ///
-    /// ✅ MEASURED (owner, 2026-08-28), by counting Invocation stacks: those
+    /// ✅ MEASURED, by counting Invocation stacks: those
     /// four mods gain a stack per hit, so a strike's body count is readable off
     /// the buff rather than guessed at. Six points, and the formula reproduces
     /// every one:
@@ -835,12 +830,11 @@ pub struct OrbSpec {
     /// distance on this attack that a RANGE MOD does not move.
     ///
     /// The orb's reach and its detonation radius both take the blast-radius
-    /// bucket; the jump between two bodies stays at what the page gives it
-    /// (owner, 2026-08-28). So the two sixes below are the same number by
+    /// bucket; the jump between two bodies stays at what the page gives it. So the two sixes below are the same number by
     /// coincidence rather than by construction, and only one of them grows.
     pub chain_range_m: f64,
     /// THE THROW ANIMATION, in seconds, before the orb leaves — a wind-up like
-    /// any thrown weapon's (owner, 2026-08-28: 0.15 s).
+    /// any thrown weapon's.
     ///
     /// BOTH HALVES ARE SHORTENED BY FIRE RATE, which is why they are here and
     /// not a constant: a fire-rate mod speeds the throw up exactly as it speeds
@@ -858,7 +852,7 @@ pub struct OrbSpec {
     /// What a hop deals relative to the hop before it.
     ///
     /// 1.0 — UNDILUTED — for the Grimoire: *"chain 起来没有衰减的 beam chain
-    /// 那种方式"* (owner, 2026-08-28), which is also what the page supports on
+    /// 那种方式"*, which is also what the page supports on
     /// its own (it names a count and no reduction). Per entry rather than a
     /// constant, because a chain's falloff is per weapon everywhere else in
     /// this roster — the Atomos compounds at 0.75 and the Kuva Nukor does not
@@ -890,7 +884,7 @@ pub struct LingeringSpec {
     /// The Grimoire's orb is the other shape. Its contact is a DIRECT hit —
     /// the attack's own damage part — and the pulses that follow are on a one
     /// second clock from there, so its field must not settle a second number
-    /// at the instant the collision already settled one (owner, 2026-08-28).
+    /// at the instant the collision already settled one.
     #[serde(default)]
     pub first_tick_delay_seconds: f64,
     /// Damage types this field's tick applies regardless of status chance —
@@ -899,7 +893,7 @@ pub struct LingeringSpec {
     /// A cloud declares none, which is why this defaults to empty and why the
     /// tick path passed a literal `&[]` before this existed. The Grimoire's
     /// orb declares Electricity: the owner measured the pulses forcing it and
-    /// the final explosion NOT forcing it (2026-08-28), which is one attack
+    /// the final explosion NOT forcing it, which is one attack
     /// answering the question both ways and the reason the two lists are
     /// separate rather than shared.
     #[serde(default)]
@@ -1025,7 +1019,7 @@ pub struct ChainSpec {
 /// WHERE AN EXPLOSION GOES OFF, which is the difference between a weapon that
 /// may be given punch through and one that may not.
 ///
-/// The owner named the problem (2026-08-20): a Burston Prime Incarnon carries a
+/// The owner named the problem: a Burston Prime Incarnon carries a
 /// blast on the card and *"actually punches through"* in game, its round going
 /// off BEHIND the enemy it passed — and its blast takes no multishot either, so
 /// he called it a FAKE AoE and asked for it to be a type rather than a pile of
@@ -1241,7 +1235,7 @@ pub struct RadialSpec {
     pub takes_condition_overload: bool,
     /// Does the explosion fire once PER PELLET, or once per trigger pull?
     ///
-    /// **MOST AoE TAKES MULTISHOT** (owner, 2026-08-23), and the reason is the
+    /// **MOST AoE TAKES MULTISHOT**, and the reason is the
     /// mechanism rather than a table: a pellet lands and detonates, so several
     /// pellets are several detonations. Default YES.
     ///
@@ -1320,7 +1314,7 @@ pub struct GaugeFormSpec {
     /// weapon has been measured, so restating it in sixty-nine weapon files
     /// dressed a house convention as sixty-nine facts. It lives here, once,
     /// and a weapon that is ever measured to differ says so by writing the
-    /// field (owner, 2026-08-08).
+    /// field.
     #[serde(default = "standard_transmute_out")]
     pub transmute_out_seconds: f64,
 }
@@ -1451,7 +1445,7 @@ pub enum FormKind {
     /// Its own kind rather than [`FormKind::Charged`], which was the only
     /// non-gauge alternate the vocabulary had: a thrown spear is not a drawn
     /// bow, the id is what a saved preset and a share link carry, and a wrong
-    /// word there is wrong forever (owner, 2026-08-14).
+    /// word there is wrong forever.
     AltFire,
     /// …AND THE THIRD ONE, for a weapon that CYCLES more than two triggers.
     ///
@@ -1473,7 +1467,7 @@ pub enum FormKind {
     /// See [`FormKind::SemiAuto`] — the fully automatic member of the same set.
     Auto,
     // ---- MELEE. Seven ways to swing one weapon, and each of them is a
-    // BUILD (owner, 2026-08-28) --------------------------------------------
+    // BUILD --------------------------------------------
     //
     // A melee player picks one loop and runs it for the whole fight, which is
     // the definition of a MODE in this file — so these are forms for exactly
@@ -1558,7 +1552,7 @@ impl FormKind {
     /// it until the unlock is in the build.
     ///
     /// IT IS NOT THE GAUGE QUESTION. Those were one method until the Mausolon
-    /// arrived (owner, 2026-08-15): its alt-fire is bought with five kills and
+    /// arrived: its alt-fire is bought with five kills and
     /// is a gauge-fed form of an ordinary Arch-Gun, with no adapter anywhere.
     /// "Does entering this cost a meter" is [`WeaponSpec::has_gauge`], which
     /// reads what the weapon DECLARES instead of inferring it from a name.
@@ -1693,7 +1687,7 @@ pub struct WeaponSpec {
     /// that expensive — a weapon whose base attack has parts this entry does not
     /// carry (a bow's uncharged shot, the Angstrum's explosion, the Stug's
     /// blobs) reads as a complete weapon, and its number is not the weapon's
-    /// number (owner, 2026-08-08).
+    /// number.
     ///
     /// Prose, deliberately, and the ONE place in a weapon file where prose is a
     /// value rather than a comment — the same exception `enemies/` already
@@ -1713,8 +1707,7 @@ pub struct WeaponSpec {
     /// Irradiate echo measures 3.6x the hit where the arcane's own card says
     /// 1.8x and every pure single-target weapon delivers 1.8x (MEASUREMENTS
     /// M59). The engine carries it as `echo_multiplier` and said so nowhere a
-    /// reader could see, while the arcane card beside it printed 180%
-    /// (owner asked where it was shown, 2026-08-25).
+    /// reader could see, while the arcane card beside it printed 180%.
     ///
     /// Prose, for the same reason `unmodeled:` is: it is shown verbatim.
     #[serde(default)]
@@ -1724,9 +1717,9 @@ pub struct WeaponSpec {
     ///
     /// The yaml has carried this on 144 entries since the intake and NOTHING
     /// deserialized it, so serde dropped every one of them: a number in the
-    /// repo that no code could see (2026-08-15).
+    /// repo that no code could see.
     ///
-    /// It is DERIVED and it is fuzzy (owner, 2026-08-15): the wiki defines it
+    /// It is DERIVED and it is fuzzy: the wiki defines it
     /// as `100 / (average spread in degrees)` and prints it as a CATEGORY
     /// ("Very High"), so it is one rounded scalar standing in for a window —
     /// and it is a WEAPON-level field, which cannot describe a form at all.
@@ -1743,7 +1736,7 @@ pub struct WeaponSpec {
     /// The OTHER deployments, by name, each stating only what it overrides.
     /// An Arch-Gun is the same weapon on the ground and in Archwing — same
     /// damage, same mods, same riven — and only its sustain differs, so this
-    /// is a SCENARIO axis rather than a second weapon (user, 2026-08-01).
+    /// is a SCENARIO axis rather than a second weapon.
     #[serde(default)]
     pub deployments: BTreeMap<String, DeploymentSpec>,
     /// An ADVERSARY weapon's valence bonus — what it CAN have. See
@@ -1762,7 +1755,7 @@ pub struct WeaponSpec {
     /// A LIST OF IDS, not a flag per effect. `applies_microwave` above is the
     /// older shape and the reason this one is not: an effect that arrives with
     /// the next weapon should cost a row in a table, not a field on every
-    /// weapon in the roster (owner, 2026-08-15). The engine implements the ids
+    /// weapon in the roster. The engine implements the ids
     /// it knows and panics on one it does not, which is the same contract
     /// `charge_on` has.
     ///
@@ -1821,7 +1814,7 @@ pub struct WeaponSpec {
     /// The arcane's echo is `1.8 × the hit` at max rank, and on a pure
     /// single-target weapon that is exactly what it deals — the owner measured
     /// several. On the LAETUM'S INCARNON FORM it deals **3.6×**, twice as much,
-    /// and nobody knows why (owner, 2026-08-24, M59):
+    /// and nobody knows why:
     ///
     /// ```text
     /// base form      1536 direct  ->  2764.8 echo   = 1.80x   (ordinary)
@@ -1897,7 +1890,7 @@ pub struct WeaponSpec {
     /// Reserve rounds outside the magazine — the wiki's "Ammo Max".
     ///
     /// Present on nearly every weapon and, until now, read by nobody: the sim
-    /// treats reserves as INFINITE by default (decision 2026-07-24) because it
+    /// treats reserves as INFINITE by default because it
     /// does not model ammo PICKUPS, and a weapon that can be resupplied mid
     /// fight would otherwise run dry for a reason the game does not have.
     #[serde(default)]
@@ -1912,7 +1905,7 @@ pub struct WeaponSpec {
     /// the two were one flag until 2026-08-04. Conflating them meant the
     /// Infinite-ammo box was ticked AND DISABLED on every weapon but one,
     /// because "cannot be resupplied" was being read as "has no reserve at
-    /// all" (owner). A Torid has 60 rounds behind its magazine;
+    /// all". A Torid has 60 rounds behind its magazine;
     /// what it also has is a way to get more.
     #[serde(default)]
     pub no_resupply: bool,
@@ -2308,7 +2301,7 @@ impl WeaponSpec {
 /// The forms a weapon REGISTERS, default first.
 ///
 /// A weapon's forms are the entries of its transform group: the two-weapons
-/// model (decision 2026-07-24) gives every form its own yaml entry, and this
+/// model gives every form its own yaml entry, and this
 /// is the view that reads them back as ONE weapon with several modes. A
 /// weapon with a single entry has exactly one form — that is the common case,
 /// and it is a real registration (`form: base`), not an absence.
@@ -2338,7 +2331,7 @@ pub fn forms_of(weapon_id: &str) -> Vec<FormRef> {
 /// `form: incarnon_cycle` is a mode wearing a form's name, and `form: default`
 /// resolves to one or the other depending on a weapon flag, so a benchmark that
 /// may not name a form could only ever ask for "however it is normally played".
-/// "The Torid without ever transmuting" was unaskable (owner, 2026-08-07).
+/// "The Torid without ever transmuting" was unaskable.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PlayMode {
     /// The arsenal's form, all engagement. Every weapon has this one.
@@ -2399,7 +2392,7 @@ pub struct WeaponPlayMode {
 /// than off the form's NAME, which is what keeps this true for the next
 /// gauge-switched weapon that is not an Incarnon — Mausolon's alt-fire is
 /// charged by kills, and it will get its cycle from declaring a gauge and
-/// nothing else (owner, 2026-08-07).
+/// nothing else.
 impl WeaponPlayMode {
     /// The `form` a fight request must carry to be played this way.
     ///
@@ -2414,7 +2407,7 @@ impl WeaponPlayMode {
             // NOT `incarnon_cycle`: the policy is "fill a gauge in one form,
             // spend it in the other, come back", and an Incarnon adapter is
             // one thing that produces it. The Mausolon earns its alt-fire with
-            // KILLS and has no adapter (owner, 2026-08-15). The old spelling is
+            // KILLS and has no adapter. The old spelling is
             // still ACCEPTED by the parser — it never reached a saved build or
             // a board row, but it costs one `||` to be sure.
             PlayMode::Cycle => "gauge_cycle",
@@ -2512,7 +2505,7 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
             // seven of them apart, and a mode id is what a board row carries.
             // The owner settled the question the count raises — seven rows per
             // weapon per ruler is not noise, because each one IS an
-            // independent build (2026-08-28).
+            // independent build.
             (false, k) if k.is_melee() => k.id(),
             (false, _) => PlayMode::Alternate.id(),
         };
@@ -2590,7 +2583,7 @@ pub fn polarity(name: &str) -> Polarity {
         // it: its EXILUS slot is Universal — the module says so and the page
         // does not mention the slot at all — and this roster had copied the
         // weapon's own Madurai into it, so the exilus mod was charged full
-        // drain unless it happened to be Madurai (2026-08-21).
+        // drain unless it happened to be Madurai.
         "zenurik" => Polarity::Zenurik,
         "unairu" => Polarity::Unairu,
         "penjaga" => Polarity::Penjaga,
@@ -2630,7 +2623,7 @@ pub struct SuperCritSpec {
 /// cannot be described as something it is not.
 ///
 /// This exists because a weapon whose passive is invisible reads as an ordinary
-/// weapon (owner, 2026-08-05): Gotva Prime's crit set and Dual Toxocyst's
+/// weapon: Gotva Prime's crit set and Dual Toxocyst's
 /// Frenzy are most of what those weapons ARE, and nothing on the page said so.
 pub fn passive_lines(weapon: &str) -> Vec<String> {
     let Some(s) = spec(weapon) else { return Vec::new() };
@@ -2706,7 +2699,7 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
         // THE SENTENCE NAMES WHAT THE SCOPE ACTUALLY PAYS. It printed
         // `headshot_damage` whatever the grant was, so eight of the ten scoped
         // weapons in the roster read "+0% headshot damage" on a scope granting
-        // +50% critical damage (2026-08-20). A scope grants exactly ONE of the
+        // +50% critical damage. A scope grants exactly ONE of the
         // four fields — that is why they are four fields — so the first
         // non-zero one is the grant.
         let (fraction, granted) = if z.headshot_damage != 0.0 {
@@ -2763,7 +2756,7 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
         });
     }
 
-    // NOT `no_resupply`. It was listed here and taken out (owner, 2026-08-05):
+    // NOT `no_resupply`. It was listed here and taken out:
     // every ground Arch-Gun is removed when its reserve runs out, so it says
     // nothing about THIS weapon. A line that is true of a whole class does not
     // belong on the entry for one member of it — it reads as a distinguishing
@@ -3166,7 +3159,7 @@ pub fn arcane_pools(weapon: &str) -> Vec<&'static str> {
     // Arcanes). Filing Pax and Residual under the weapon's own slot made the
     // two compete for one seat, so the page asked the reader to choose between
     // a Pax Charge and a Primary Merciless — a choice the game never puts to
-    // them (owner, 2026-08-23).
+    // them.
     //
     // FIRST, because it is the seat this weapon has that no other weapon does:
     // the ordinary one is the same seat every gun in the roster carries, and
@@ -3456,7 +3449,7 @@ pub fn base_panel_assembled(
     // swallowed one: Boar Prime shipped `co_behavior: additive` — a spelling
     // that exists nowhere — and silently became Independent, i.e. the wiki's
     // "Multiplying", the EXCEPTION class, on a weapon the CO catalog does not
-    // list at all (user, 2026-08-03). `independent` itself was never matched
+    // list at all. `independent` itself was never matched
     // either; it worked only because it fell through to the same arm.
     //
     // The default it implied is also backwards. The catalog "lists only
@@ -3675,8 +3668,7 @@ pub fn base_panel_assembled(
         // Does a FIRE-RATE bonus shorten the draw as well as the interval?
         //
         // The wiki's general charge formula says yes — "Charge Time = Base
-        // Charge Time / (1 + Mod Bonus)". An ARCH-GUN is the exception (owner,
-        // 2026-08-01): its fire rate governs only the interval between shots,
+        // Charge Time / (1 + Mod Bonus)". An ARCH-GUN is the exception: its fire rate governs only the interval between shots,
         // and the draw answers to a stat of its own. The mod cards are the
         // visible half of that split — Shell Rush is "+50% Charge Rate" where
         // Automatic Trigger is "+X% Fire Rate", and Archgun Ace grants
@@ -3700,7 +3692,7 @@ pub fn base_panel_assembled(
         // "Counts as a bow in regards to fire rate mods, doubling the fire rate
         // bonus" — so the match is a SET rather than an equality, and the rest
         // of what `class == "bow"` decides (the draw-only charge cadence) stays
-        // the bows' alone, since a crossbow does not charge (2026-08-20).
+        // the bows' alone, since a crossbow does not charge.
         independent_procs: independent_procs_for(s),
         fire_rate_mod_multiplier: match s.class.as_str() {
             "bow" | "crossbow" => 2.0,
@@ -3868,7 +3860,7 @@ mod inheritance_tests {
     /// Its alt-fire carried its BASE form's accuracy while its Prime's alt-fire
     /// carried the alt-fire's — one weapon, two entries, two answers, and no
     /// way to notice because nothing knew the two were the same gun. An audit
-    /// found it (2026-08-15) among 313 identical values written twice.
+    /// found it among 313 identical values written twice.
     ///
     /// The rule that closes it is not "inherit everything", which would be
     /// wrong — a form legitimately overrides its magazine (the Scourge's throw
@@ -4045,7 +4037,7 @@ mod deployment_tests {
     /// sustain differs". Crit, multiplier and status ARE identical in both
     /// columns, which is why the wrong half went unnoticed: three of the four
     /// stats checked out, and the Larkspur Prime posted 112 board rows at half
-    /// its ground damage (2026-08-14).
+    /// its ground damage.
     #[test]
     fn a_deployment_moves_the_damage_and_the_sustain() {
         let ground = |id: &str| crate::loadout::WeaponBase::from_data(id, false, &[]);
@@ -4125,7 +4117,7 @@ mod deployment_tests {
     /// the other two x2.020). The Prisma Dual Decurions is exactly x2 off the
     /// SAME Archwing vector its ordinary is x1.727 off. No single multiplier
     /// expresses this class, which is why both columns are transcribed per
-    /// entry (owner, 2026-08-14).
+    /// entry.
     ///
     /// What IS worth asserting is that a transcription slip cannot pass. A
     /// dropped digit, a factor of ten, a column pasted into the wrong file: all
@@ -4233,7 +4225,7 @@ mod sniper_tests {
         // is a leak. A `scope:` is keyed on the fight's AIMING state and on
         // nothing else, which is why the Vesper 77's laser sight (+40%
         // critical damage while aiming, no published magnification) is one on a
-        // pistol: same bucket, same gate, no scope on the gun (2026-08-20).
+        // pistol: same bucket, same gate, no scope on the gun.
         for w in all() {
             if w.sniper_combo.is_some() {
                 assert_eq!(w.class, "sniper", "{} is not a sniper rifle", w.id);
@@ -4285,7 +4277,7 @@ mod tests {
     /// `/Lotus/Weapons/Infested/InfWFAccompanyingPri/...` against DE's
     /// `/Lotus/Weapons/Infested/LongGuns/InfWFAccompanyingPri/...` — one path
     /// segment short — so every sweep since the roster began skipped that
-    /// weapon in silence (2026-08-20). No earlier check could see it, because
+    /// weapon in silence. No earlier check could see it, because
     /// each of them asked about the weapons it could FIND.
     ///
     /// The survey is generated by `scripts/survey_internal_names.py` and cannot
@@ -4395,7 +4387,7 @@ mod tests {
     /// EVERY CO ANOMALY IN THE ROSTER IS ON THIS LIST, and the list is the
     /// catalog. Nothing else may be anything but ordinary.
     ///
-    /// The rule (owner, 2026-08-12) Ordinary has a definition — direct
+    /// The rule Ordinary has a definition — direct
     /// hits only, 100% of the base, added to the base-damage bucket — and
     /// a shared Genesis does not make one weapon.
     ///
@@ -4435,7 +4427,7 @@ mod tests {
             ("paris_incarnon", "independent", 1.0),
             ("paris_prime", "additive_with_base_damage", 0.5),
             ("paris_prime_incarnon", "independent", 1.0),
-            // THE KUVA BATCH (2026-08-19). Four of the sixteen have a row and
+            // THE KUVA BATCH. Four of the sixteen have a row and
             // the rest are ordinary; each is transcribed for the entry the
             // catalog NAMES, never generalised to the family.
             //   Kuva Seer | Projectile Impact | Projectile | 131 | 131 | 100% | Multiplying
@@ -4447,7 +4439,7 @@ mod tests {
             //    catalog's own two damage columns are 460 and 230. The TAPPED
             //    shot has no row and stays ordinary.
             ("kuva_drakgoon", "additive_with_base_damage", 0.5),
-            // THE TENET AND CODA BATCH (2026-08-20). Twenty weapons, and the
+            // THE TENET AND CODA BATCH. Twenty weapons, and the
             // two catalog tables name SEVEN of their attacks between them —
             // five that are anomalies and reach this list, and two that the
             // catalog checked and called ordinary (both Tenet Detron rows,
@@ -4458,8 +4450,7 @@ mod tests {
             // "Does not apply"` — which would be `inert` and has no entry,
             // because that alt fire is a Mercy-finisher tool rather than a way
             // to fight and is recorded as a gap instead.
-            // THE NINETEEN BASE WEAPONS behind the adversary families
-            // (2026-08-20). Four of them have rows and the rest are ordinary,
+            // THE NINETEEN BASE WEAPONS behind the adversary families. Four of them have rows and the rest are ordinary,
             // and the pattern does NOT follow the family: on the Arca Plasmor
             // and the Hema both variants are named, on the Bubonico only the
             // BASE is, and on the Ferrox only the TENET. A row is transcribed
@@ -4631,7 +4622,7 @@ mod tests {
             //
             // The Grimoire's orb pulses are RANGE DIRECT HITS: each lands on
             // everything within six metres, which makes them an area attack
-            // wearing a direct hit's other properties (owner, 2026-08-28, M63).
+            // wearing a direct hit's other properties.
             // "AN AoE PART TAKES NO CO unless its own row says so" is therefore
             // the whole answer, and the wiki's catalog was re-read on the PAGE
             // the same day with no Grimoire row of any kind — absence meaning
@@ -4737,7 +4728,7 @@ mod tests {
     ///
     /// "On Reload From Empty" opens when the RELOAD COMPLETES.
     ///
-    /// Not when the magazine runs out (owner, 2026-08-01) — the difference is
+    /// Not when the magazine runs out — the difference is
     /// the reload itself, 2.5 s of a 17 s window on this weapon. The test that
     /// can see it is the FIRST magazine: nothing has reloaded yet, so Deadly
     /// Efficiency must be worth exactly nothing.
@@ -4792,7 +4783,7 @@ mod tests {
     /// entirely — Primary Crux's +60% did nothing at all. Nothing caught it
     /// because every test of the mechanic builds `DummyParams` by hand, where
     /// the field defaults to `true`; this one goes through the panel, which is
-    /// the path a request takes (2026-08-01).
+    /// the path a request takes.
     ///
     /// The flag is a real distinction, not a nuisance: a CHARGE-BACKED form is
     /// "not affected by Ammo Efficiency" (wiki, Torid Incarnon). So the test
@@ -4819,7 +4810,7 @@ mod tests {
     }
 
     /// EVERYTHING THE WEAPON CAN FIRE IS `magazine + reserve`, and the two
-    /// mods move different halves of it (owner, 2026-08-01).
+    /// mods move different halves of it.
     ///
     /// A magazine mod raises the TOTAL, not just how long between reloads:
     /// the loaded magazine is ammo you have, and nothing draws it out of the
@@ -4871,7 +4862,7 @@ mod tests {
 
     /// AN ARCH-GUN'S FIRE RATE DOES NOT SHORTEN ITS DRAW.
     ///
-    /// The two are separate stats on this weapon class (owner, 2026-08-01),
+    /// The two are separate stats on this weapon class,
     /// and the mod cards show the split: Shell Rush is "+50% Charge Rate"
     /// where Automatic Trigger is "+60% Fire Rate", and Archgun Ace grants
     /// "Fire/Charge Rate" — two names one card would not carry if they were
@@ -4979,7 +4970,7 @@ mod tests {
 
     /// HAVING A RESERVE AND BEING ABLE TO REFILL IT ARE TWO FACTS, and they
     /// were one field until 2026-08-04 — which is why the Infinite-ammo control
-    /// was disabled on every weapon but the Arch-Gun (owner). `has_reserve`
+    /// was disabled on every weapon but the Arch-Gun. `has_reserve`
     /// is derived from `ammo_max` and is what "truly infinite" means;
     /// `no_resupply` is the Arch-Gun's own problem.
     #[test]
@@ -5007,7 +4998,7 @@ mod tests {
     /// The scenario's setting stands in for PICKUPS, so it cannot give ammo to
     /// a weapon that can receive none.
     ///
-    /// IT ASSERTS THE WHOLE CHAIN, not the last method in it (2026-08-27). The
+    /// IT ASSERTS THE WHOLE CHAIN, not the last method in it. The
     /// resupply rule moved out of `reserve_is_infinite` and into
     /// `scenario::Capability::CanResupply`, where a scenario can also argue
     /// with it — so a test that called the method with a raw box value would
@@ -5067,7 +5058,7 @@ mod tests {
         use crate::loadout::{resolve, StackPolicy, WeaponBase};
         // 600 s, not 300: the fixture has to actually EXHAUST the reserve to
         // say anything, and after the transform stopped skipping the completing
-        // shot's interval (2026-08-10) a 300 s cycle no longer burned the Boar
+        // shot's interval a 300 s cycle no longer burned the Boar
         // Prime's supply — both runs fired 1951 shots and the assertion below
         // compared a number to itself.
         let arena = crate::arena::Arena::training(600.0);
@@ -5145,8 +5136,7 @@ mod tests {
         // Charge-backed magazine, so the pseudo-reload supplies the sim's.
         assert!((i.magazine_size - 170.0).abs() < 1e-9);
         assert!((i.base_reload - 2.7).abs() < 1e-9);
-        // CO class is per FORM, not per weapon — ✅ measured (user,
-        // 2026-07-30). The base form's two catalog rows are "Multiplying"
+        // CO class is per FORM, not per weapon — ✅ measured. The base form's two catalog rows are "Multiplying"
         // (asserted above); the Incarnon form is ordinary ADDITIVE. This used
         // to be inferred from those rows and the inference was wrong.
         assert_eq!(i.co_behavior, CoBehavior::AdditiveWithBaseDamage);
@@ -5166,7 +5156,7 @@ mod tests {
         // an explosion is a damage instance WITH FALLOFF, and the wiki denies
         // this sphere both ("not a separate damage instance from the beam").
         // A node sphere would need a falloff nothing documents. Flipped from
-        // the 2026-07-30 `true` on that argument (user, 2026-08-06); the Y=1
+        // the 2026-07-30 `true` on that argument; the Y=1
         // protocol in M15 is what would actually close it.
         assert!(!bm.chain_nodes_have_radius, "one sphere, at the beam's contact point");
         // The base form is not a beam.
@@ -5201,7 +5191,7 @@ mod tests {
             // AN IMPLICATION, NOT AN EQUIVALENCE. An adapter form is always
             // bought with a gauge, so one without the economy is a half-written
             // entry — but the converse stopped holding when the Mausolon landed
-            // a gauge on a `charged` form (owner, 2026-08-15), and asserting it
+            // a gauge on a `charged` form, and asserting it
             // both ways is what made a real weapon look like a data error.
             assert!(
                 !kind.is_adapter_form() || s.gauge_form.is_some(),
@@ -5569,7 +5559,7 @@ mod tests {
     /// does not claim mods DE tags PRIMARY.
     /// A compat tag is not the whole restriction. Sinister Reach and
     /// Combustion Beam are tagged PRIMARY and still cannot go on the Torid
-    /// (user, 2026-07-31) — they need a CONTINUOUS weapon, and the Torid is a
+    /// — they need a CONTINUOUS weapon, and the Torid is a
     /// semi-auto grenade launcher. Its INCARNON form is a beam and that
     /// changes nothing: modding is decided on the base form.
     #[test]
@@ -5644,7 +5634,7 @@ mod tests {
         assert!((b.base_crit_chance - 0.05).abs() < 1e-9);
         assert!((b.magazine_size - 12.0).abs() < 1e-9);
         assert_eq!(b.injected_elements, vec![(DamageType::Toxin, 1.0)]);
-        // TRIGGER *AND* CLASS (2026-08-05). The class half is what makes a
+        // TRIGGER *AND* CLASS. The class half is what makes a
         // `requires: dual_pistols` gate satisfiable at all — without it Akimbo
         // Slip Shot equipped and did nothing, on every dual pistol.
         assert_eq!(b.traits, &["semi_auto", "dual_pistols"]);
@@ -5790,7 +5780,7 @@ mod laetum_tests {
     }
 
     /// Two-stage damage: the direct hit lands first, then the explosion,
-    /// both on the SAME enemy (user, 2026-07-29). With Laetum's 100 Impact
+    /// both on the SAME enemy. With Laetum's 100 Impact
     /// direct and 300 Radiation radial, and no body-part multiplier on the
     /// explosion, a body-only engagement must settle at radial ~ 3x direct.
     #[test]
@@ -6021,7 +6011,7 @@ mod laetum_tests {
     }
 
     /// Rapid Wrath's +20% fire rate joins the ORDINARY fire-rate bucket —
-    /// the same additive one the mods feed (user, 2026-07-29). Additive with
+    /// the same additive one the mods feed. Additive with
     /// Gunslinger's +72%: 6.67 x (1 + 0.72 + 0.20) = 12.81, NOT the
     /// multiplicative 6.67 x 1.72 x 1.20 = 13.77.
     #[test]
@@ -6279,7 +6269,7 @@ mod burston_incarnon_radial_tests {
                 "{evo}: the explosion's CO base stays 13/55, got {}",
                 r.co_base_fraction()
             );
-            // …AND SO DOES THE DIRECT HIT — MEASURED (owner, 2026-08-16),
+            // …AND SO DOES THE DIRECT HIT — MEASURED,
             // which reversed this assertion. It read `co_base_fraction == 1.0`
             // on the reasoning that the catalog's row names the RADIAL and the
             // direct hit is therefore not discrepant. It is: at one and two
@@ -6463,7 +6453,7 @@ mod play_mode_tests {
             // THE SAME QUESTION `play_modes` ASKS, asked through the same
             // function. This used to derive its own copy and went red the day a
             // second kind of gate arrived — a ratchet drifting from the thing it
-            // ratchets is worse than no ratchet (2026-08-28).
+            // ratchets is worse than no ratchet.
             let gauged = |f: &FormRef| is_gauge_fed(f.weapon_id);
             let any_gauged = alts.iter().any(|f| gauged(f));
             let has = |m: PlayMode| multishot.iter().any(|x| x.mode == m);
@@ -6471,7 +6461,7 @@ mod play_mode_tests {
 
             // A METERED form contributes its CYCLE and no mode of its own —
             // there is no state to be in, so `Transformed` would be a mode
-            // describing nothing (2026-08-28).
+            // describing nothing.
             let metered = |f: &FormRef| {
                 spec(f.weapon_id).is_some_and(|s| s.attack.meter.is_some())
             };
@@ -6557,7 +6547,7 @@ mod play_mode_tests {
     /// the same POLICY as a Zariman weapon's and none of the same hardware:
     /// no Genesis, no tier-1 unlock, and a `charged` form rather than an
     /// `incarnon` one. Every one of those three used to be how the roster
-    /// recognised a gauge (owner, 2026-08-15).
+    /// recognised a gauge.
     ///
     /// Three claims, and each fails on a different half of that:
     ///   * the cycle EXISTS, and is sustainable — kills keep coming;
@@ -6633,7 +6623,7 @@ mod play_mode_tests {
             // `reduction` is the fraction KEPT, so a weapon that keeps all of
             // its damage has no falloff and should not be carrying the field.
             assert!(f.reduction < 1.0 && f.reduction > 0.0, "{}: keeps {}", w.id, f.reduction);
-            // …AND IT NO LONGER ADMITS ANYTHING (2026-08-15). This assertion
+            // …AND IT NO LONGER ADMITS ANYTHING. This assertion
             // used to read the other way round — every falloff weapon had to
             // SAY it was not modelled — and the direction flipped with the
             // arena's 2D layer. An admission that outlives the gap it names is
@@ -6662,7 +6652,7 @@ mod play_mode_tests {
     ///
     /// *"Explosion cannot benefit from Firestorm (Primed) despite being area of
     /// effect"* (wiki Shedu, verbatim) — the roster's only exception, and the
-    /// owner asked for it to be confirmed rather than assumed (2026-08-11).
+    /// owner asked for it to be confirmed rather than assumed.
     ///
     /// The same weapon's OTHER AoE goes the other way: its battery discharge
     /// *"is affected by base damage, Faction Damage Bonus, and Firestorm /
@@ -6765,7 +6755,7 @@ mod play_mode_tests {
             ("cortege_alt", 0.0),
             ("kuva_ayanga", 0.0),
             ("arbucep", 0.0),
-            // THE TENET AND CODA BATCH (2026-08-20). Six rows, and the last is
+            // THE TENET AND CODA BATCH. Six rows, and the last is
             // the third tested ZERO in the catalog.
             //   Tenet Envoy   | Primary Fire + AoE | 100% | Multiplies | 8.0 m | +640%
             //   Tenet Tetra   | Alt-Fire + AoE     | 100% | Multiplies | 8.0 m | +640%
@@ -6784,7 +6774,7 @@ mod play_mode_tests {
             ("tenet_quanta_cube", 0.40),
             ("coda_bubonico_burst", 5.60),
             ("tenet_ferrox_thrown", 0.0),
-            // THE NINETEEN BASE WEAPONS (2026-08-20). The Ferrox row is ONE row
+            // THE NINETEEN BASE WEAPONS. The Ferrox row is ONE row
             // covering both variants — its base-radius cell reads
             // "3.6 m (4.0 m)", the parenthetical being the Tenet's — which is
             // the opposite of the CO table's rule and safe only because the
@@ -6916,7 +6906,7 @@ mod play_mode_tests {
     /// A THROW PAYS FOR ITS OWN RELOAD, so the wind-up is not the cycle.
     ///
     /// The spearguns' alt-fire is wind-up → release → reload, every throw
-    /// (owner, 2026-08-14) — the reload is unconditional rather than a magazine
+    /// — the reload is unconditional rather than a magazine
     /// running dry. That is a `magazine: 1` weapon, the same shape as a bow's
     /// nock, and it is worth pinning because the entry carried the PRIMARY
     /// FIRE's 40 rounds for two days: the sim then threw 40 times between
@@ -6983,7 +6973,7 @@ mod play_mode_tests {
 
     /// THE THROW PLANTS A FIELD, and the field outlives the throw after it.
     ///
-    /// The Bullet Attractor is the Void effect (owner, 2026-08-14), so it is
+    /// The Bullet Attractor is the Void effect, so it is
     /// worth one line in the Condition Overload counter and nothing else here.
     /// What makes it worth a test is the ARITHMETIC of the two clocks: 4.7 s
     /// on the target against a 1.6 s throw cycle, so from the second throw on
@@ -7140,7 +7130,7 @@ mod play_mode_tests {
     /// THE TORID'S CO CATALOG ROWS, pinned — both of them, and both forms.
     ///
     /// The wiki's Condition Overload catalog gives this weapon TWO rows, and
-    /// the owner supplied them verbatim (2026-08-10):
+    /// the owner supplied them verbatim:
     ///
     /// > Torid | Main-fire | Projectile | 100 | 100 | 100% | Multiplying
     /// > Torid | Toxin AoE Cloud | AoE | 40 | 40 | 100% | Multiplying
@@ -7355,7 +7345,7 @@ mod condition_overload_catalog_tests {
     /// per projectile stays right, the panel stays plausible, and the weapon
     /// quietly deals a fraction of its shot.
     ///
-    /// That is exactly how the Bronco was found (2026-08-12). Both Incarnon
+    /// That is exactly how the Bronco was found. Both Incarnon
     /// entries had `multishot: 1.0` where the base forms had 7, so the Incarnon
     /// Bronco dealt ONE SEVENTH of its shot — 22 against 154, and 34 against
     /// 238 on the Prime.
@@ -7402,8 +7392,7 @@ mod condition_overload_catalog_tests {
             // page ("2 base Multishot"), and the fact that this catalog is
             // community-sourced by its own header, with the CLASS and the
             // RELATIVE column being what this repo transcribes from it.
-            // Doubled here rather than in the data, because the data is right
-            // (2026-08-21).
+            // Doubled here rather than in the data, because the data is right.
             ("mk1_kunai_incarnon", 48.0),
             ("mk1_paris", 230.0),
             ("paris", 320.0),
@@ -7459,8 +7448,7 @@ mod condition_overload_catalog_tests {
     /// damage does not match.
     ///
     /// That third failure is not hypothetical. This list is the group that has
-    /// gone wrong twice: eight weapons were missing the flag entirely
-    /// (2026-08-12), and the Vasto Prime was still missing it when the CO
+    /// gone wrong twice: eight weapons were missing the flag entirely, and the Vasto Prime was still missing it when the CO
     /// mechanism was audited later the same day.
     ///
     /// A row that names "Evolution II Perk 1" or "Perk 2" means ONLY that perk
@@ -7520,7 +7508,7 @@ mod condition_overload_catalog_tests {
         // THIS HALF IS THE ONE UNDER PRESSURE. The wiki's Math section lists
         // "Base Damage increases from Incarnon Genesis Evolutions" among the
         // things Adding CO ignores, with no "some" on it — and read as a law it
-        // would flip all 107 of these. It is not a law (owner, 2026-08-12), and
+        // would flip all 107 of these. It is not a law, and
         // the page argues that side itself: the same list's "Bow charging"
         // bullet is enumerated by ~15 catalog rows that disagree with each
         // other (50%, 40%, 38%, 57%, 65%, 25%) and contains outright
@@ -7539,7 +7527,7 @@ mod condition_overload_catalog_tests {
         // base in their own damage column, which is true by construction and
         // answers a different question. 15 to 0.
         //
-        // THE FLIP IS ADDING-ONLY (owner, 2026-08-16). Nothing has measured a
+        // THE FLIP IS ADDING-ONLY. Nothing has measured a
         // Multiplying entry's evolved CO base, so those are untouched and the
         // Torid's base form is the open experiment — its own test pins it at
         // 1.0. These five are kept, pointing the other way, because they are
@@ -7571,8 +7559,7 @@ mod condition_overload_catalog_tests {
     /// 1.40 and 1.80 under BOTH — so a `Multiplying` term reads the FULL
     /// evolved base and the two classes disagree.
     ///
-    /// GENERALISED TO ALL 26 ENTRIES ON ONE WEAPON'S READING (owner,
-    /// 2026-08-16), deliberately ahead of the catalog: the wiki prints a
+    /// GENERALISED TO ALL 26 ENTRIES ON ONE WEAPON'S READING, deliberately ahead of the catalog: the wiki prints a
     /// fraction for a minority of attacks, this rule beats that table, and a
     /// measurement that contradicts it edits ONE weapon's yaml rather than this.
     ///
@@ -7635,7 +7622,7 @@ mod condition_overload_catalog_tests {
 #[cfg(test)]
 mod echo_tests {
     /// **THE LAETUM'S INCARNON FORM DOUBLES SECONDARY IRRADIATE'S ECHO**, and
-    /// its base form does not (owner, 2026-08-24, M59). 1.8x on a pure
+    /// its base form does not. 1.8x on a pure
     /// single-target weapon, 3.6x here.
     ///
     /// The pair is the whole point: a test asserting only that the Incarnon
@@ -7692,7 +7679,7 @@ mod url_tests {
     /// other's, with its title, description, canonical and OG card.
     ///
     /// It was found by `check_pages`, which reports it as three `WRONG WEAPON`
-    /// lines after fifty-five minutes of browser sweep (2026-08-25). This says
+    /// lines after fifty-five minutes of browser sweep. This says
     /// the same thing in a millisecond, which is what makes it a check somebody
     /// runs.
     ///

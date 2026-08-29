@@ -8,11 +8,10 @@ number**. Everything else follows from it:
 - a forged score is impossible, because no score is ever accepted;
 - a change RE-SCORES stored builds instead of invalidating them, and nobody is
   ever asked to resubmit — a CODE change rescores everything, and a DATA change
-  rescores only the rows that READ the file that moved (2026-08-25). Adding a
+  rescores only the rows that READ the file that moved. Adding a
   weapon costs 0 of 885 rows; correcting one mod costs the rows carrying it.
   See `engine::data_fingerprint`;
-- **THE STORE IS A LIBRARY OF BUILDS AND EVERY RULER CROSSES THE WHOLE OF IT**
-  (2026-08-25). A submission carries no score, so the ruler it happened to be
+- **THE STORE IS A LIBRARY OF BUILDS AND EVERY RULER CROSSES THE WHOLE OF IT**. A submission carries no score, so the ruler it happened to be
   measured under was never a property of the record — it was a gate, and the
   gate was expensive: of 914 distinct builds players had sent, only 46 had ever
   been scored on more than one board. ANY fight can upload now, and a new ruler
@@ -37,10 +36,10 @@ number**. Everything else follows from it:
 | the endpoint | `worker/index.js` | the Cloudflare Worker, same origin |
 
 **THE ENDPOINT STORES THE WHOLE BUILD, and it has failed to twice.** `mode` was
-sent by the page and never written down (2026-08-09); `valence` was, and seven
+sent by the page and never written down; `valence` was, and seven
 Kuva Nukor submissions were refused on every scoring run since they arrived —
 "Kuva Nukor has no Valence element" — while the panel had told each submitter
-"sent" (owner, 2026-08-14). `/api/board/check` cannot catch this one: it
+"sent". `/api/board/check` cannot catch this one: it
 validates the payload the page is about to send, which DID carry the element,
 and the field was lost afterwards. Both times the identity hash was wrong the
 same way too, so two builds differing only in the dropped axis collapsed onto
@@ -111,7 +110,7 @@ correcting a number, changing the benchmark to 480 s — IS the trigger. There i
 no dependency analysis deciding which rows were affected, because that question
 can be answered wrong silently.
 
-### What decides "new" — the ENGINE FINGERPRINT (2026-08-11)
+### What decides "new" — the ENGINE FINGERPRINT
 
 A FULL rescore on both triggers is what the fingerprint exists to prevent. It
 is affordable at 100 runs a build and is not at 1000: scoring goes from ~7
@@ -152,7 +151,7 @@ carries no ruler, so two boards scoring one build produce the SAME key with
 different numbers — and the merge job is handed ONE directory holding every
 ruler's shards. Merging them published one ruler's score under the other's name:
 the Torid's aimed **28.44229348067104** kpm sat at the top of the NO-AIM board,
-digit for digit, where that build actually scores **0.170** (2026-08-12). Ten
+digit for digit, where that build actually scores **0.170**. Ten
 Torid rows and much of the no-aim top were the aimed board's numbers.
 
 It read as a scenario leak and was not one — every score was computed under its
@@ -184,7 +183,7 @@ leaves before consent and nothing leaves after declining.
 
 The endpoint stores no IP, no token and no timestamp finer than the day.
 
-## One representative per build (2026-08-04)
+## One representative per build
 
 A board row is keyed by what makes it a different FIGHT, and mod ORDER is part
 of that — mods combine ELEMENTS in the order they are listed. Measured on the
@@ -200,7 +199,7 @@ happened to reorder mods whose pairing did not change. Two different fights
 collapsed into one row, and the score published was whichever pairing the sort
 produced — belonging to neither submitter.
 
-**And the MODE is the other half of it** (2026-08-09). A Torid through its
+**And the MODE is the other half of it**. A Torid through its
 Incarnon cycle and a Torid that never transmutes are two entrants, so the key is
 `identity(build)#mode` — which the SCORER has always done and the ENDPOINT did
 not. The worker hashed weapon+mods+evolutions+arcanes and never stored `mode` at
@@ -223,7 +222,7 @@ reshuffled all score an identical 146,707.582. Only the elementals' order
 
 So `builds::canonical_mods` gives every build ONE representative: elementals
 LAST in the order they arrived, everything else ahead of them by biggest drain
-then by DE's own English name (owner, 2026-08-04). The endpoint stores what was
+then by DE's own English name. The endpoint stores what was
 submitted verbatim — it has no mod pool and cannot tell an elemental mod from
 any other — and the scorer collapses spellings after `validate` has canonicalised
 them.
@@ -233,7 +232,7 @@ endpoint SORTED on the way in, so the order those players actually built is
 gone. They re-score as "elements in alphabetical order", which is a legal build
 and probably not theirs. New submissions keep what was placed.
 
-## The pipeline, stated once (owner, 2026-08-04)
+## The pipeline, stated once
 
 Every step below is a rule, not a description — each one is somewhere a wrong
 answer could be published.
@@ -245,7 +244,7 @@ answer could be published.
    and none would be believed.
 3. **We validate legality ourselves**, including Forma: pool, families, eight
    slots, capacity.
-4. **Forma, in priority order** (owner, 2026-08-04). The order is the rule, not
+4. **Forma, in priority order**. The order is the rule, not
    a preference — 2 before 3 means the answer is never "spend one more Forma to
    leave more room":
 
@@ -268,7 +267,7 @@ answer could be published.
    the ruler ran at the time (found 2026-08-04; the ruler is 180 s now, which
    changes the multiplier and not the bug). Ranking never noticed — it is a linear rescale — but a
    ranking is not what people read.
-7. **Shown at four significant figures AND four decimals** (owner, 2026-08-04),
+7. **Shown at four significant figures AND four decimals**,
    by `boards_data::format_score`. Four decimals is where two builds a player is
    choosing between stop tying; four significant figures is what keeps a small
    metric from publishing as `0.0001`. The RECORD keeps full precision — the
@@ -298,13 +297,13 @@ on its real 400 rounds whatever the scenario says — it is "removed and can onl
 be called down again after a 5-minute cooldown" once they are gone. Ignoring
 that scored it as though it fired for the whole engagement when it has about a
 minute of ammo: 0.0436 against 0.0139 unmodded, a 3.1x overstatement measured on
-the 300 s ruler of the day (owner, 2026-08-04). Boar Prime scores identically either way, because it resupplies.
+the 300 s ruler of the day. Boar Prime scores identically either way, because it resupplies.
 
 One term, no weapon named, right for the whole roster.
 
 ## No version numbers
 
-A benchmark has an `id` and no `version` (owner, 2026-08-04). There is one board
+A benchmark has an `id` and no `version`. There is one board
 per benchmark, it is regenerated whole whenever anything upstream of it changes,
 and what is deployed is always the current answer — so a version would mark a
 distinction nobody could act on. Git holds the history of what the file said.
@@ -322,11 +321,10 @@ The bill still reports what is SPENT, not what earned room: a build with fewer
 mods than mastery has polarizations buys all five, and the last land on empty
 slots.
 
-## Rivens: a SHAPE, not an item (owner, 2026-08-22)
+## Rivens: a SHAPE, not an item
 
 A riven was off the board until now, and the reason still holds: *"they are
-personal random items, so a board that counted them would rank luck"* (user,
-2026-08-04). What is on the board is not the item.
+personal random items, so a board that counted them would rank luck"*. What is on the board is not the item.
 
 **A ROW HOLDS A SHAPE** — which stats it rolled, and which one is the malus.
 Nothing else. It is a statement anybody can act on ("roll this weapon for these
@@ -375,7 +373,7 @@ fingerprint, because they *are* its argmax.
 *(The exilus slot used to be here. It is on the board as of 2026-08-25 — see
 below.)*
 
-## The exilus slot is OPTIONAL (owner, 2026-08-25)
+## The exilus slot is OPTIONAL
 
 A row MAY wear an exilus mod, and a row without one is not a lesser build. Both
 sit on the same board and the better number wins.
@@ -403,7 +401,7 @@ in the board row, and in `builds::identity`: the last of those was found by
 scoring two Atomos builds differing only in `ruinous_extension` and getting ONE
 row back.
 
-## How deep a board goes — the floor (owner, 2026-08-20)
+## How deep a board goes — the floor
 
 A row is listed when it scores **at least half its group's leader**, where a
 group is one weapon, in one mode, under one ruler. There is no count limit; a
@@ -448,7 +446,7 @@ or an engine fix lowers it.
 **AND IT IS SAID OUT LOUD, on both sides.** A build below the line is stored,
 scored and then not listed, which from the submitter's side is indistinguishable
 from a submission that was LOST — the exact silence that cost this board `mode`
-(2026-08-09) and `valence` (2026-08-14). So `wfsim-board` reports how many fell
+ and `valence`. So `wfsim-board` reports how many fell
 below it on every run, and the submission panel states the RULE rather than a
 count of hidden rows: the rule is what makes an absence readable, and it is
 checkable against the board on screen.
@@ -532,7 +530,7 @@ Until step 1 is done the endpoint answers 503 and the page says "could not
 reach the board — nothing was sent", which is the honest state rather than a
 silent failure.
 
-## Sizing an AoE ruler — what was measured (2026-08-17)
+## Sizing an AoE ruler — what was measured
 
 A crowd ruler was proposed as an odd-sided grid, so it has an exact centre to
 aim at. `cargo run --release --bin formation_cost` answers what each size costs
@@ -588,7 +586,7 @@ Measured across four weapons, one per mechanism, 180 s, per 1000 runs:
 | 17x17 | 289 | **13** · 160.5 s | 75 · 2.7 s | **110** · 3.6 s | 17 · 6.4 s |
 | 19x19 | 361 | **13** · 188.1 s | 77 · 2.8 s | **110** · 3.7 s | 19 · 7.0 s |
 
-### …and then the size was made free (2026-08-17)
+### …and then the size was made free
 
 The table above is what a chain cost BEFORE `chain::Layout`. Nothing in this
 arena moves — the shooter stands still, the formation stands still, and a body
@@ -682,7 +680,7 @@ three** — 1.00x / 1.50x / 2.17x — and it is a round number rather than one
 fitted to the mod pair: 1.45 m gives the same three-way split, so the answer is
 a band and 1.5 sits in it.
 
-## The group-clear ruler (2026-08-17)
+## The group-clear ruler
 
 `data/benchmarks/group_clear.yaml` — the second ruler, and the first that is
 about a ROOM rather than a target. Its companion's name has said "Single
@@ -781,7 +779,7 @@ seen** is accepted, reaches storage under its own name, and sits BESIDE the same
 build's row on another ruler rather than on top of it — the identity key carries
 the benchmark, so two rulers scoring one build are two records.
 
-## The library has a copy, and the copy has a restore (2026-08-26)
+## The library has a copy, and the copy has a restore
 
 Until this, the one irreplaceable thing here lived in exactly one Cloudflare KV
 namespace. The boards are derived from it, the site is generated, the code is in
@@ -851,7 +849,7 @@ write of up to 10,000 pairs, so 2,474 records go back in one call.
   PUBLISHED row carries its build, which is 2,185 of 2,474. What it misses is
   the builds under the 50% floor.
 
-## What it costs as it grows, and where it moves next (2026-08-26)
+## What it costs as it grows, and where it moves next
 
 The board is the thing nothing else in this space has, so the question is not
 whether it survives more users but what it costs per user and which of those
@@ -860,7 +858,7 @@ costs are the wrong SHAPE. The rule the whole pipeline is measured against:
 > **Every step's cost should be proportional to what CHANGED, not to what
 > EXISTS.**
 
-Scoring has obeyed it since the per-row fingerprint (2026-08-25): a data change
+Scoring has obeyed it since the per-row fingerprint: a data change
 costs the rows that read the file that moved. Reading did not, and that is what
 made the board fall behind on 2026-08-26.
 
@@ -892,7 +890,7 @@ off a record that is not an identity axis (not `at`, not `benchmark`).
    change every number. 128 shards buys a constant factor; the ceiling is
    GitHub's 256-job matrix.
 
-### What this system actually is (owner asked for the principle, 2026-08-26)
+### What this system actually is
 
 Strip the implementation and the board is **a materialised ranking over an
 expensive pure function on a growing input set**:
@@ -1043,7 +1041,7 @@ discovered under pressure.
 - **The board stays a static file on the CDN.** It is committed to the repo and
   served from the edge, which is what makes it fast and unblockable. Moving it
   behind a service would trade the thing that makes it good for a slow path and
-  a second thing that can fail (owner, 2026-08-25).
+  a second thing that can fail.
 - **The store keeps nothing about submitters.** No IP, no token, no time finer
   than the day. Any service this moves to inherits that, and a queue or a
   database that would record more is the wrong service.

@@ -17,7 +17,7 @@ effects:
   # correct rather than convenient.
   #
   # IN GAME the bonus lands the MOMENT an empty reload BEGINS; it does not wait
-  # for the reload to finish (user, 2026-08-03). The wiki says the opposite
+  # for the reload to finish. The wiki says the opposite
   # — "applied after finishing a reload while the magazine is empty" — and a
   # measurement beats the wiki here, as everywhere.
   #
@@ -34,7 +34,7 @@ effects:
   # ("Reload From empty bonus is incorrectly listed as +10 in game"); the
   # effect is +14, which is what goes in.
   # THE EXCEPTION, not a pattern to copy: a reload-triggered effect fires on
-  # reload COMPLETION by default (user, 2026-08-03). This one needs the
+  # reload COMPLETION by default. This one needs the
   # magazine EMPTY and fires at the reload's FIRST FRAME. Only this evolution
   # is known to do it; the next one gets its own kind.
   - kind: flat_base_damage_on_empty_reload

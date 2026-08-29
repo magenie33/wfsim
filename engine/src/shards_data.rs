@@ -7,8 +7,7 @@
 //!
 //! It rides on the fight's [`Tenno`] for the same reason an aura does — it is
 //! the WARFRAME's and not the weapon's — so it reaches the simulator and the
-//! optimizer through `parse_fight` and neither module learns it exists
-//! (owner, 2026-08-21).
+//! optimizer through `parse_fight` and neither module learns it exists.
 //!
 //! EVERY EFFECT IS LISTED, INCLUDING THE ONES THAT PAY NOTHING HERE. A shard
 //! left out of the data reads exactly like one that does nothing, and the
@@ -150,7 +149,7 @@ impl ShardEffect {
     /// A page that read `OutOfScope` as the whole answer would have offered
     /// them as working, which is exactly the failure `arc_condition` was
     /// written to end: a rule stated and not applied reads, to anyone auditing,
-    /// as a rule being applied (2026-08-18).
+    /// as a rule being applied.
     pub fn unmodelled_reason(&self) -> Option<String> {
         match self {
             ShardEffect::OutOfScope(w) => Some(w.clone()),
@@ -237,7 +236,7 @@ mod tests {
                 // shard's "Gain 1 (2) Max Health per Blast kill" is the case:
                 // 1.5 health is not a thing, so DE prints 2. Asserting the bare
                 // ratio reddens on it, which is how the rounding was found
-                // (2026-08-21) — the exception is stated rather than the
+                // — the exception is stated rather than the
                 // assertion loosened.
                 let exact = o.value * 1.5;
                 assert!(

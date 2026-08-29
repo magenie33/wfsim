@@ -23,11 +23,9 @@ effects:
   #   * Increased Base Magazine Capacity does not affect Incarnon Form.
   #   * Base Damage increase is applied per pellet in Incarnon Form.
   #
-  # The standing ruling is that the Tenno walks in with a FULL LOADOUT (owner,
-  # 2026-08-12), so this clause reads FALSE by default and the perk is worth
+  # The standing ruling is that the Tenno walks in with a FULL LOADOUT, so this clause reads FALSE by default and the perk is worth
   # its +X alone. What changed is that the default is now a DEFAULT: the
-  # scenario carries `solo_weapon`, and ticking it makes the clause read TRUE
-  # (owner, 2026-08-13).
+  # scenario carries `solo_weapon`, and ticking it makes the clause read TRUE.
   #
   # It is the FIRST gate that asks about the loadout rather than about the frame
   # or what it is doing, and it is a different fact from the one this arena has

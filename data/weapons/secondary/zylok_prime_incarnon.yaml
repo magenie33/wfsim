@@ -7,10 +7,10 @@ form: incarnon
 transform_group: zylok_prime
 transforms_from: zylok_prime
 
-# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# BULK INTAKE. The STATS are exact: WFCD warframe-items' `attacks`
 # array, which is DE's own export and which agreed with the wiki infobox field
 # for field on every one of the eleven guns checked by hand first. The
-# EVOLUTIONS are the rough half (owner): transcribed from the wiki's table,
+# EVOLUTIONS are the rough half: transcribed from the wiki's table,
 # with every clause the intake's rule engine did not recognise loaded as a
 # NAMED INERT effect that the builder and the optimizer both print as "not
 # modelled yet". Nothing is dropped in silence — some perks do nothing
@@ -77,7 +77,7 @@ attack:
     crit_chance: 0.26
     crit_multiplier: 2.4
     status_chance: 0.4
-    # THERE IS A ROW, and it was filed as an absence (2026-08-11). The CO
+    # THERE IS A ROW, and it was filed as an absence. The CO
     # catalog keys this one under BOTH variants at once, which is why looking
     # for "Zylok Prime" alone missed it — verbatim wikitext:
     #

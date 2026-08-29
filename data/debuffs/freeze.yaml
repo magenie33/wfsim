@@ -22,7 +22,7 @@ max_stacks: 10                 # and the 10th ALSO trips Frozen (frozen.yaml)
 per_stack_duration: true
 stack_overflow: none
 
-# COLD IS ONE STATUS (owner, 2026-08-16). This ladder is its stacks and it is
+# COLD IS ONE STATUS. This ladder is its stacks and it is
 # what Condition Overload counts; Frozen is a STATE the tenth stack trips, it
 # is counted for nothing, and the two are LIVE AT THE SAME TIME — the chill
 # stays, pinned at ten, which is what the game displays.

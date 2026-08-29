@@ -107,7 +107,7 @@ const r = await evaluate(`(async () => {
   out.gateAgrees = items.every((i) => paid.has(i.value) === !i.hint);
 
   // ---- 5. THE OPTIMIZER SHOWS THE SAME FIGHT, READ-ONLY ------------------
-  // A preset is edited in exactly ONE place (user, 2026-08-02): the optimizer
+  // A preset is edited in exactly ONE place: the optimizer
   // runs the simulator's fight and does not own a second squad.
   history.pushState({}, '', '/weapons/Braton/optimizer'); route(); await sleep(1500);
   const ob = document.getElementById('opt-squad');

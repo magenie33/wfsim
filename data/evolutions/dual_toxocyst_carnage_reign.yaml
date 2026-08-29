@@ -18,7 +18,7 @@ selection: choose_one
 #
 # AND SO DOES THE SIBLING'S. The catalog "lists only discrepant attacks", so
 # Fevered Frenzy's +50 was read as feeding CO in full and this comment said so
-# — until it was measured and does not (owner, 2026-08-16; MEASUREMENTS M49).
+# — until it was measured and does not.
 # On this weapon the exclusion is the WEAPON's rather than this perk's: both
 # tier-2 options compute CO on the unevolved 75. The flag stays per PERK, which
 # is still the granularity the catalog names and the granularity the Despair
@@ -40,7 +40,7 @@ effects:
     # BEFORE mods - and therefore inside ModdedBase (DoT ticks scale too).      # adds to BASE damage before mods (the
     value: 60                   # Incarnon "Increase Base Damage" layer)
   # +33% DIRECT damage per status TYPE on the target — and it is CONDITIONAL,
-  # not broken (owner, 2026-08-26).
+  # not broken.
   #
   # IT WAS FILED AS A LIVE BUG, on two measurements that both said it pays
   # nothing (MEASUREMENTS M49): with Galvanized Shot equipped the 135 panel read

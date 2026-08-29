@@ -95,7 +95,7 @@ attack:
 # THE SAME ADMISSIONS AS THE ORDINARY LARKSPUR. This pair carried none at
 # all until the ordinary one joined the roster and the board check noticed
 # that the two halves of one weapon were admitting different things
-# (2026-08-15) — the Deployer cooldown, the ground range and Hildryn's
+# — the Deployer cooldown, the ground range and Hildryn's
 # reserve bonus are properties of the WEAPON and were always missing here.
 unmodeled:
   - reason: arch_gun_deployer_cooldown

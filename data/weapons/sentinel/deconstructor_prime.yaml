@@ -5,7 +5,7 @@ name: Deconstructor Prime
 # "bounce off walls like a normally thrown glaive" (wiki). A thrown melee
 # weapon is a ranged attack with a fire rate, a magazine and a reload, which is
 # a shape this engine already has — so it is recorded rather than left out,
-# with the two things it cannot do stated below (owner, 2026-08-15).
+# with the two things it cannot do stated below.
 slot: sentinel
 class: sentinel_weapon
 form: base

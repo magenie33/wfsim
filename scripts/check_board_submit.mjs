@@ -10,11 +10,10 @@
 //
 // TWICE, the same way. `mode` was sent by the page and never written down, so
 // the scorer took its migration fallback and every Incarnon weapon's row said
-// `cycle` (2026-08-09). Then `valence`: seven Kuva Nukor submissions refused on
+// `cycle`. Then `valence`: seven Kuva Nukor submissions refused on
 // every scoring run since they arrived — "Kuva Nukor has no Valence element" —
 // while the panel had told each submitter "sent", because the field was dropped
-// AFTER `/api/board/check` had approved the payload carrying it (owner,
-// 2026-08-14). The page could not see it and the engine could not see it.
+// AFTER `/api/board/check` had approved the payload carrying it. The page could not see it and the engine could not see it.
 //
 // So this asserts the property rather than the two fields: EVERY KEY THE PAGE
 // SENDS SURVIVES INTO STORAGE, and the key a record hashes to tells two builds
@@ -214,7 +213,7 @@ console.log("the board's submission endpoint\n");
 // ---- 5. A BENCHMARK THE WORKER HAS NEVER HEARD OF -------------------------
 //
 // THERE WILL BE MANY RULERS. `single_target` was alone for months, then a
-// companion, then `group_clear` (2026-08-17) — and the point of this block is
+// companion, then `group_clear` — and the point of this block is
 // that adding the FOURTH costs nothing here. The worker validates `benchmark`
 // as an ID and holds no LIST of them, which is what makes a ruler a data file
 // rather than a deploy; this asserts it stays that way.
@@ -230,8 +229,7 @@ console.log("the board's submission endpoint\n");
   check("...and reaches storage under its own name",
     rec && rec.benchmark === fresh.benchmark, JSON.stringify(rec && rec.benchmark));
 
-  // …AND ONE BUILD IS ONE RECORD, whichever ruler it arrived from (owner,
-  // 2026-08-25). This assertion used to be its opposite — two rulers scoring one
+  // …AND ONE BUILD IS ONE RECORD, whichever ruler it arrived from. This assertion used to be its opposite — two rulers scoring one
   // build were two records, because the identity key carried the benchmark — and
   // it was right while a submission was bound to the fight it was measured
   // under. It is not any more: the store is a LIBRARY OF BUILDS and every ruler

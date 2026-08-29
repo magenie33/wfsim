@@ -37,8 +37,7 @@ dot:
   dot_model: singleton_accumulator
   # Tick metronome is anchored at ENTITY CREATION (the first proc): ticks
   # at +1s, +2s, ... from then on. Refreshes extend the expiry and add
-  # value but never reset the beat - proven by contradiction (2026-07-24,
-  # user): if re-procs reset the 1 s delay, sub-second re-application
+  # value but never reset the beat - proven by contradiction: if re-procs reset the 1 s delay, sub-second re-application
   # would postpone the next tick forever, yet rapid Heat spam visibly
   # ticks every second in-game.
   tick_phase: anchored_to_first_proc
@@ -64,7 +63,7 @@ dot:
   #  PER CONTRIBUTION - each proc brings its own: ModdedBase_i, the
   #    (1 + status_damage_i) bracket (Rifle Elementalist WORKS regardless
   #    of the first proc), crit_mult_i, part_mult_i.
-  # MEASURED (2026-07-24, user): the context sync is BIDIRECTIONAL - a
+  # MEASURED: the context sync is BIDIRECTIONAL - a
   # modded first proc's Heat%/faction brackets also ELEVATE later unmodded
   # (ability) contributions. Strategy consequence: light the first proc
   # with the best-modded weapon, then any source can feed the ramp.

@@ -72,7 +72,7 @@ attack:
   # `trigger: charge`), so it takes 70; `corvas_prime_uncharged` takes 60.
   # Written the other way round first, with a comment claiming the opposite —
   # caught by reading which attack the entry actually models rather than the
-  # sentence about it (2026-08-19).
+  # sentence about it.
   range_m: 70.0
   damage: { impact: 430.0, heat: 530.0 }   # 960, and the same in Archwing
 

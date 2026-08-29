@@ -7,7 +7,7 @@ times from three directions before reading the page that names it:
 
 - **Primary Debilitate's split** — deduced from "the status it leaves carries
   the faction bonus three times", because three is only reachable through one
-  more link in the chain (owner, 2026-08-05);
+  more link in the chain;
 - **Cyte-09's Resupply** — the community formula that decodes MEASUREMENTS
   M33's 29551, which M33 filed as "the ABILITY case" and could not connect to
   the arcane;
@@ -40,7 +40,7 @@ already carried it, and once again outside. That is the whole reason
 > status effects created by an Extra Hit to 'triple-dip' on these bonuses."*
 
 MEASUREMENTS M33 held the exponent at 3 because the wiki stated it while the
-reasoning suggested 2 (owner). **The number was right and the
+reasoning suggested 2. **The number was right and the
 reasoning was incomplete** — this page supplies the missing rung.
 
 ## What a status left by an Extra Hit burns off
@@ -62,7 +62,7 @@ a guaranteed status effect"*. Read literally, the rule above gives a status base
 of zero — and the status plainly does damage, so the rule cannot be read
 literally at 0.
 
-**THE RULE (owner, 2026-08-09):**
+**THE RULE:**
 
 > An Extra Hit's status burns off the Extra Hit's damage. **A 0% Extra Hit
 > replaces nothing, so the base is the one it would have replaced — the

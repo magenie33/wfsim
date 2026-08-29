@@ -26,8 +26,7 @@ effects:
   #
   # AND IT DOES NOTHING IN THE INCARNON FORM. VERBATIM (wiki): "Does not affect
   # Incarnon Form" — and the reason is the same sentence read carefully: what it
-  # refills is a MAGAZINE, and the Incarnon form has max CHARGES instead (owner,
-  # 2026-08-10). Those are different pools — the gauge is converted from
+  # refills is a MAGAZINE, and the Incarnon form has max CHARGES instead. Those are different pools — the gauge is converted from
   # weakpoint hits and sits outside the ammo economy — so there is no reload
   # there to make instant. The sim does not even roll it in that form.
   - kind: instant_reload_on_headshot

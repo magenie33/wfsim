@@ -8,7 +8,7 @@ internal_name: /Lotus/Upgrades/Mods/Rifle/RifleSemiAutoFantasyMod
 # "Only compatible with Semi-Auto Trigger" — the card's own first sentence, and
 # it is an EQUIP rule, not a note. Unstated, this mod sat in every pool: Boar
 # Prime is full-auto (`trigger: auto`) and the optimizer could hand back a
-# winner carrying a mod the game will not let you slot (user, 2026-08-03).
+# winner carrying a mod the game will not let you slot.
 # Resolved on the weapon's OWN trigger, which for a transform group is the
 # base form's — the same line `continuous` falls on.
 requires_weapon: semi_auto

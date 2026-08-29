@@ -69,7 +69,7 @@ attack:
   crit_multiplier: 1.4
   status_chance: 0.50
   punch_through_m: 0.0
-  # THE CHAIN, and THE GROUND COLUMN of it (2026-08-17):
+  # THE CHAIN, and THE GROUND COLUMN of it:
   #
   #   "Primary fire releases a continuous beam that can chain to 3 enemies after
   #    hitting the initial target, with each chain doing 80% of the previous
@@ -85,7 +85,7 @@ attack:
     # 40 m is the ATMOSPHERE column; the Archwing one is 160 (wiki). This said
     # 20 and was read by nothing, while the weapon's own unmodelled note said
     # 40 — the two disagreed in the same file until the range was modelled and
-    # the field started deciding something (2026-08-19). Same two-column trap
+    # the field started deciding something. Same two-column trap
     # AGENTS.md was written about, caught this time by the file contradicting
     # itself.
     range_m: 40.0

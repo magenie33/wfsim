@@ -6,7 +6,7 @@
 //! stored score and bought a full rescore: 967 rows over 32 shards, about an
 //! hour of wall clock and thirty-odd of CPU, to reproduce numbers that could
 //! not have changed. Adding a weapon is one of the most common commits there
-//! is (owner, 2026-08-25).
+//! is.
 //!
 //! A ROW'S DATA DEPENDENCIES ARE ENUMERABLE FROM THE ROW. It names its weapon,
 //! its mods, its arcanes and its evolutions; the ruler names itself. Hash those

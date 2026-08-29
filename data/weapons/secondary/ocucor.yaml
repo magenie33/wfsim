@@ -74,8 +74,7 @@ co_behavior: additive_with_base_damage
 #  - their range is 20 m and Ruinous Extension extends it.
 tendrils:
   max: 4
-  # THE GEOMETRY, promoted from the prose above into fields the engine reads
-  # (2026-08-17). It was transcribed on the day the weapon landed and had
+  # THE GEOMETRY, promoted from the prose above into fields the engine reads. It was transcribed on the day the weapon landed and had
   # nowhere to go while the arena held one body: with one target every tendril
   # homes on it, and the wiki says those are cosmetic.
   #

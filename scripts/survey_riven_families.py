@@ -25,7 +25,7 @@ prefix is part of the name: `Kuva Ayanga`, `Gotva Prime`, `Vadarya Prime`,
 `Coda Bassocyst`, `Dual Coda Torxica`. Six of the roster's families had been
 stripped that way, and one of them is why `data/rivens/pools.yaml` records
 "Gotva: NOT SURVEYED (the API refused)" — the API did not refuse, it was asked
-about a weapon that does not exist (2026-08-21).
+about a weapon that does not exist.
 
 IT IS A WEEK, NOT A CATALOGUE. The dump lists only families TRADED that week
 (415 of them), so it can CONFIRM a name and can never refute one: a family that

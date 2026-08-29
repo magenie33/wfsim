@@ -3,7 +3,7 @@
 // The builder's Mode control was a dropdown of names and nothing else. That is
 // enough while every weapon's second mode is the same mechanic, and it stopped
 // being enough the day two weapons earned a form by KILLING rather than by
-// hitting (owner, 2026-08-15): "cycle" does not say what fills the gauge, how
+// hitting: "cycle" does not say what fills the gauge, how
 // many of them it takes, or what the earned form gets to fire — and those are
 // exactly the numbers that decide whether the mode is worth picking. A Torid
 // pays 5 direct hits for 170 rounds; a Mausolon pays 5 kills for ONE.
@@ -81,7 +81,7 @@ for (const lang of ["en", "zh"]) {
     const r = await evaluate(grab(w));
     check(`${w}/${lang}: the block is drawn`, r.present === true);
     check(`${w}/${lang}: ...and folds`, r.foldable === true);
-    // **THE MODE YOU ARE IN, AND NOT THE OTHER SIX** (owner, 2026-08-29). This
+    // **THE MODE YOU ARE IN, AND NOT THE OTHER SIX**. This
     // asserted one entry PER MODE while the block listed them all, which was
     // right for a weapon with two or three and became a wall at seven. The
     // block draws the picked one now, so the count is one — and the assertion
@@ -102,16 +102,15 @@ for (const lang of ["en", "zh"]) {
     // fell through to "the default form" for anything else — so a mode whose id
     // IS a form's id matched nothing and took the default form's name. The Kuva
     // Hind drew all three of its modes as "Base Form" from the day its third
-    // trigger landed (2026-08-14), and melee made it seven identical entries
-    // before anyone saw it (owner, 2026-08-29).
+    // trigger landed, and melee made it seven identical entries
+    // before anyone saw it.
     //
     // EVERY ASSERTION ABOVE PASSED THE WHOLE TIME. One entry per mode, a
     // sentence each, one marked, the right language — all true of a list that
     // says the same word three times. What none of them asked is whether the
     // names TELL THE MODES APART, which is the only thing a name is for.
     //
-    // IT MOVED TO THE CONTROL when the block stopped listing every mode
-    // (2026-08-29): one entry cannot repeat a name, so asking the block would
+    // IT MOVED TO THE CONTROL when the block stopped listing every mode: one entry cannot repeat a name, so asking the block would
     // have retired the assertion by making it vacuous. The dropdown is where
     // all seven names still appear, and it is the surface the bug was actually
     // about.

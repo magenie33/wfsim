@@ -44,8 +44,7 @@ const r = await evaluate(`(async () => {
   // A BUILD, and the check needs one. Every assertion below passed for a month
   // while the record was being computed for a BLANK build, because the fixture
   // was blank too and the two were indistinguishable — the panel sent the
-  // SCENARIO and not the mods, so it explained a fight nobody had run (owner,
-  // 2026-08-27). A damage mod makes the two tell apart.
+  // SCENARIO and not the mods, so it explained a fight nobody had run. A damage mod makes the two tell apart.
   slots[0] = { mod: 'hornet_strike', pol: slots[0] && slots[0].pol, rank: null };
   // …AND MULTISHOT, so 'own' and 'multishot' both exist and the filter has
   // something to remove.
@@ -92,7 +91,7 @@ const r = await evaluate(`(async () => {
   // wrongly fails here even when the end of the chain lands right. The shapes
   // are the mechanics — a bracket adds, a snap rounds, a mul multiplies — and
   // a quotient has no shape at all, which is what stops the panel printing
-  // x5.706 Condition Overload again (owner, 2026-08-28).
+  // x5.706 Condition Overload again.
   const num = (x) => Number(String(x).replace(/[^0-9.-]/g, '').replace(/-(?!^)/g, ''));
   const bad = [];
   let checked = 0;
@@ -153,7 +152,7 @@ const r = await evaluate(`(async () => {
   // reader could not check one row against the next. A row states what it put
   // on the target (procs) and what it set off on the shooter (triggered),
   // and both are deltas against the state column beside them: the next row's
-  // count for a buff this row triggered can never be LOWER (owner, 2026-08-28).
+  // count for a buff this row triggered can never be LOWER.
   //
   // It is one-directional on purpose. A buff can also expire between two rows,
   // so "went up by exactly one" is not the property — "never went down after
@@ -191,8 +190,7 @@ const r = await evaluate(`(async () => {
   // BY THE FACTOR'S OWN KEY, never by its label. The label is translated and
   // this page defaults to Chinese, so matching the English sentence passed
   // only for as long as the panel was untranslated — and then failed on the
-  // day it was translated, which is a check reporting the wrong thing twice
-  // (2026-08-27). data-factor is the engine's own spelling and does not move.
+  // day it was translated, which is a check reporting the wrong thing twice. data-factor is the engine's own spelling and does not move.
   const gated = rows.filter((tr) => tr.querySelector('.rec-calc [data-factor="shield gate"]'));
   out.gateRows = gated.length;
   out.gateFactor = gated.length
@@ -209,7 +207,7 @@ const r = await evaluate(`(async () => {
   // The one thing the ledger could not say. Three exits in the pellet loop
   // produce no damage at all, so "why did a three-pellet shot pop two numbers"
   // had no answer anywhere — and Kind::Miss sat declared and never emitted
-  // for months because of it (owner, 2026-08-27).
+  // for months because of it.
   const ev = recordState.events || [];
   const byId = new Map(ev.map((e) => [e.id, e]));
   const misses = ev.filter((e) => e.kind === 'miss');
@@ -362,8 +360,7 @@ check(`${tag} ...and "only the misses" is a view`,
 // The record is fetched by naming the run it explains, and a result SAVED
 // before that name existed has none to give. The block used to vanish, so a
 // reader coming back to a stored result found the feature absent with nothing
-// saying why — reported as "the combat record does not show" (owner, on a
-// phone, 2026-08-28). An unexplained absence reads as a missing feature, which
+// saying why — reported as "the combat record does not show". An unexplained absence reads as a missing feature, which
 // is the same rule this panel already follows about its own caps.
 const stale = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -399,7 +396,7 @@ check(`${tag} ...and running the fight again brings it back`, stale.backAgain ==
 // The two state columns said what was TRUE and never why it changed, so a
 // reader could not check one row against the next. A row states what it put on
 // the target and what it set off on the shooter, and both are deltas against
-// the state column beside them (owner, 2026-08-28).
+// the state column beside them.
 //
 // ITS OWN FIXTURE, because the bare one above has neither: no stacking buff to
 // set off and a level-1 target whose statuses are over before the next row.
@@ -474,7 +471,7 @@ check(`${tag} ...drawn as a countdown beside the count`,
 // The record covers the whole fight, and the fights people argue about are tens
 // of thousands of rows — which the browser lays out again on every repaint of
 // the result panel, so picking an enemy or scrubbing the replay froze the page
-// for seconds (owner, 2026-08-28). Two answers, and this asserts both on the
+// for seconds. Two answers, and this asserts both on the
 // SAME fixture as above, which is a real board build and long enough to reach
 // them: the table draws one screenful, and the whole thing can be moved into a
 // window of its own.

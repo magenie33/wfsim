@@ -12,7 +12,7 @@ effects:
   # Self-stagger is a survivability/handling concern; the sim never shoots
   # itself.
   # "+100% chance to reduce the Stagger effect from self-imposed Radial Attacks"
-  # 2D groundwork (2026-08-01): a real stat with no SINGLE-TARGET damage
+  # 2D groundwork: a real stat with no SINGLE-TARGET damage
   # payload. It used to be `kind: unmodeled`, which threw the number away.
   - kind: self_stagger_reduction
     rank0: 0.0909

@@ -11,8 +11,7 @@
 // plausible: a Mac reader shown `WFSim.exe`, a phone reader shown a 34 MB
 // download. Each looks like a working page.
 //
-// IT PINS THE SOURCE BADGE, which is the offer's other half (owner,
-// 2026-08-29). This site does not host the executable — it lives on a Quark
+// IT PINS THE SOURCE BADGE, which is the offer's other half. This site does not host the executable — it lives on a Quark
 // network drive — and a reader about to run a downloaded binary is entitled to
 // see whose drive it is on BEFORE they click. A badge that drew an icon and no
 // NAME would look finished and identify nothing, which is why the name is

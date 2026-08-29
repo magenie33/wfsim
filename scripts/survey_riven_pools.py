@@ -23,7 +23,7 @@ family that may have thousands, which is not a sample of anything. It reported
 2 Boar cards with Projectile Speed. Asking the server directly — `Boar rivens
 whose positive stat is projectile_speed`, then the negative — finds 31 and 50,
 because the filter runs over every listing instead of over the cheap tail.
-Same weapon, same day, 40x apart (owner, 2026-08-08).
+Same weapon, same day, 40x apart.
 
 THE VERDICT IS THREE-WAY. Counts are compared to the family's own MEDIAN stat
 count rather than to a fixed number, because market depth varies twenty-fold

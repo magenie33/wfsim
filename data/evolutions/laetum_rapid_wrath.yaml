@@ -6,7 +6,7 @@ description: "+20% Fire Rate."
 selection: choose_one
 
 effects:
-  # BRACKET (user, 2026-07-29): the ordinary fire-rate bucket — the same
+  # BRACKET: the ordinary fire-rate bucket — the same
   # additive one the mods feed, so it sums with Gunslinger rather than
   # multiplying after it.
   - kind: fire_rate_bonus

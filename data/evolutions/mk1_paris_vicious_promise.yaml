@@ -12,8 +12,7 @@ effects:
   # NOTE: the intake split each bullet at its "+40%"/"+2x" and filed the two
   # halves as UNCONDITIONAL flat grants beside the conditional effect below, so
   # the perk paid twice — once forever and once on an undamaged target. Both
-  # bullets carry "on undamaged enemies"; there is no unconditional half
-  # (2026-08-12).
+  # bullets carry "on undamaged enemies"; there is no unconditional half.
   # BOTH HALVES ARE ONE PERK and one condition, so they are one effect. VERBATIM
   # (wiki notes): "Enemies are undamaged as long as their health and shield have
   # not been damaged. Damaging Overguard is not taken into account." — so the

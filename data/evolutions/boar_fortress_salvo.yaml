@@ -13,7 +13,7 @@ With Armor Over 450: +4 Punch Through"
 # number the other one carries — and if DE ever splits them, the table grows a
 # real cell and the two files diverge there.
 #
-# NO OTHER VARIANT'S NUMBERS LIVE IN THIS FILE (owner, 2026-08-12). A file
+# NO OTHER VARIANT'S NUMBERS LIVE IN THIS FILE. A file
 # that states two weapons' values is a file where the reader has to work out
 # which one they are looking at, every time.
 selection: choose_one
@@ -21,7 +21,7 @@ selection: choose_one
 effects:
   - kind: flat_base_damage
     value: 16.0
-  # GATED ON THE WARFRAME'S ARMOUR, and the gate is real (2026-08-20). This
+  # GATED ON THE WARFRAME'S ARMOUR, and the gate is real. This
   # arm read `value` and ignored `condition:` for as long as it existed, so the
   # +4 paid out to every frame in the game — reported by the owner, who noticed
   # a perk requiring 450 armour working with none. The neutral Tenno is the

@@ -4,8 +4,7 @@
 // The TWENTY-SEVENTH check, and the first about a build axis that is a property
 // of the COPY a player owns rather than of the model. A Kuva Lich hands out
 // 25–60% of base damage as one of seven elements, so two Kuva Nukors are two
-// different weapons and neither is "the" Kuva Nukor (owner,
-// 2026-08-13).
+// different weapons and neither is "the" Kuva Nukor.
 //
 // It is checked on the NUMBER rather than on the control, for the reason every
 // axis here is: a dropdown that stores a value nobody reads looks exactly like
@@ -95,7 +94,7 @@ check("it opens on 60% Impact, not on a weapon nobody has",
   r.opened.element === "impact" && r.opened.bonus === 0.6
     && Math.abs(r.openedBase - 33.6) < 1e-6,
   JSON.stringify({ ...r.opened, base: r.openedBase }));
-// …AND THERE IS NO WAY BACK TO A WEAPON NOBODY HAS (owner, 2026-08-14). Seven
+// …AND THERE IS NO WAY BACK TO A WEAPON NOBODY HAS. Seven
 // picks, all of them elements, and the roll never greys out.
 check("...and the element is mandatory: seven picks, no `none`",
   r.offered.length === 7 && r.offered.every(Boolean) && !r.rollDisabled,
@@ -114,8 +113,7 @@ check("an ordinary weapon has no such axis, and inherits no choice",
   r.otherShown === false && r.otherValence.element === "",
   JSON.stringify({ shown: r.otherShown, carried: r.otherValence }));
 
-// …AND THE QUICK CALC RANKS IT, the same way it ranks a tier of evolutions
-// (owner, 2026-08-13). It is the axis a scan is worth the most on: a
+// …AND THE QUICK CALC RANKS IT, the same way it ranks a tier of evolutions. It is the axis a scan is worth the most on: a
 // progenitor element is a whole element entering the hierarchy, so which one
 // wins depends on the mods around it and on the target — not a question anyone
 // answers by reading cards.
@@ -154,7 +152,7 @@ const gain = await evaluate(`(async () => {
   const chips = document.querySelectorAll('#dd-menu .opt .gainchip').length;
   const picks = document.querySelectorAll('#dd-menu .opt').length;
   // …AND THE AXIS HAS NO REMOVE, because it can never be empty — one menu item
-  // is the whole of the difference from an evolution tier (owner, 2026-08-24).
+  // is the whole of the difference from an evolution tier.
   const removable = !!document.querySelector('#slot-menu [data-a="remove"]');
   closePopovers();
   return { kind: gainScan.axis && gainScan.axis.kind,
@@ -179,7 +177,7 @@ check("...with the gain on the pick, not in a tooltip",
 // one menu item — an evolution tier has Remove and this does not.
 check("...and the card offers no Remove, because there is no empty state",
   gain.removable === false, String(gain.removable));
-// THE STEP NUMBERS ARE DERIVED, not written into the markup (owner). This
+// THE STEP NUMBERS ARE DERIVED, not written into the markup. This
 // weapon has no evolutions, so its Valence block is step 4 — there is no 5
 // with nothing at 4.
 //
@@ -187,7 +185,7 @@ check("...and the card offers no Remove, because there is no empty state",
 // its `Σ`: the numbering walks `builderSteps()`, whose rule is that a step's
 // badge is a NUMBER. That rule was in the doc from the start and lived in a
 // hand LIST that simply left the read-outs out, so the first version of the
-// derived query renumbered `Σ` to "5" — caught here (2026-08-24).
+// derived query renumbered `Σ` to "5" — caught here.
 check("...and the builder numbers its steps from the blocks it actually has",
   gain.steps.join(" ") === "mode-block:1 mod-block:2 arcane-block:3 element-block:4 stats-block:Σ",
   gain.steps.join(" "));
@@ -291,7 +289,7 @@ check("...and pooling two doubles the candidate count",
 // indistinguishable from one that means "the default". A player measured the
 // consequence: 22.34 KPM on the ranking against 17.44 for the same eight cards
 // re-run in the simulator, which reads as the optimizer lying about its own
-// number (owner, 2026-08-16).
+// number.
 //
 // So this asserts the PROPERTY rather than the field, twice over. Structurally:
 // the state a row becomes NAMES every axis in `BUILD_AXES`, which is the one
@@ -544,7 +542,7 @@ check("...and one it would refuse never leaves the page",
 // A submission carries NO polarities — the server plans the cheapest layout
 // itself — so the page's capacity floor is measured FULLY FORMA'D. Judging the
 // live layout instead would refuse exactly the people who had not got round to
-// it, which is the shape of every bug on this path (owner, 2026-08-14).
+// it, which is the shape of every bug on this path.
 const forma = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();

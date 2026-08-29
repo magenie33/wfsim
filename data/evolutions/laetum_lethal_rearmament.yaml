@@ -8,7 +8,7 @@ selection: choose_one
 effects:
   # Reload speed shortens the Incarnon transmute animations too, so this
   # touches the WHOLE cycle, not just magazine reloads - the sim applies it
-  # to both (2026-07-30).
+  # to both.
   - kind: on_headshot_reload_speed
     per_stack: 0.30
     max_stacks: 3

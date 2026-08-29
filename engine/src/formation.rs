@@ -33,14 +33,14 @@
 
 use crate::space::Vec2;
 
-/// HOW MANY BODIES A FORMATION MAY HOLD — fifty (owner, 2026-08-17).
+/// HOW MANY BODIES A FORMATION MAY HOLD — fifty.
 ///
 /// DECLARED HERE and read by everyone: the api refuses a longer list and
 /// `RunResult::damage_by_body` is sized off it. It is the SIM that pays, which
 /// is why the number belongs to the engine rather than to the page — every
 /// body is a full target with its own pools, procs and DoTs, and a chain
 /// resolves against all of them on every shot.
-/// FOUR HUNDRED, and the number is MEASURED rather than chosen (2026-08-17).
+/// FOUR HUNDRED, and the number is MEASURED rather than chosen.
 ///
 /// It was 50 while the arena was learning to hold more than two bodies, which
 /// was the right number for "some, not unbounded" and the wrong one the moment
@@ -73,8 +73,7 @@ pub struct FoeSpec {
     /// and always will — and not enough for anything that has to talk ABOUT
     /// one. Every debuff, every pool and every DoT is already this body's own
     /// (`dummy::SpreadFoe`); what was missing was a way to say WHOSE, so a
-    /// damage figure, a canvas label and a replay could name the same enemy
-    /// (owner, 2026-08-17).
+    /// damage figure, a canvas label and a replay could name the same enemy.
     ///
     /// STABLE ACROSS EDITS: it travels in the scenario, so deleting the body in
     /// front does not rename the one behind. A blank id is filled in by
@@ -141,7 +140,7 @@ impl Formation {
     ///
     /// The front row's MIDDLE body is the one aimed at, because that is the one
     /// a player can actually put a beam on: the centre of a formation is behind
-    /// it (owner, 2026-08-17). It is the fixture MECHANICS §12's numbers are
+    /// it. It is the fixture MECHANICS §12's numbers are
     /// computed against.
     /// THE POSITIONS OF A GRID BUILT AROUND THE BODY BEING AIMED AT, index 0
     /// being that body — the shape a SCENARIO describes.
@@ -156,7 +155,7 @@ impl Formation {
     ///
     /// It exists so a benchmark can state a crowd in THREE NUMBERS. 361 bodies
     /// written out is 360 lines nobody can check by reading, and a ruler whose
-    /// terms cannot be argued with is not a ruler (owner, 2026-08-17).
+    /// terms cannot be argued with is not a ruler.
     pub fn grid_around(front_middle: Vec2, forward: Vec2, cols: usize, rows: usize, spacing: f64)
         -> Vec<Vec2>
     {

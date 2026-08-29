@@ -2,7 +2,7 @@
 //
 // The optimizer's axes are all one shape — N slots, an option set, and a range
 // saying how many of the slots a searched build must fill — and the page said
-// it three different ways (owner, 2026-08-29):
+// it three different ways:
 //
 //   mods              a numeric range, 0–8, on screen
 //   exilus            0–1 reachable, but only by pooling a hidden `none` row
@@ -131,7 +131,7 @@ const r = await evaluate(`(async () => {
   // progenitor element, so mode and valence are 1–1 and cannot be anything
   // else. They carry the row anyway, read-only: an axis that simply omitted it
   // would be the axis the rule forgot, which is the shape this whole change is
-  // about (owner, 2026-08-29).
+  // about.
   const readonlyRow = (key) => {
     const row = document.querySelector('[data-range-row="' + key + '"]');
     if (!row) return null;

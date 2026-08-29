@@ -11,7 +11,7 @@
 //! - Above level **150**: window shrinks **1% per 5 levels**, floor **10%**.
 //!
 //! Hard gates (both required before any window math):
-//! - **Shields must be fully depleted** — MEASURED (2026-07-24, user):
+//! - **Shields must be fully depleted** — MEASURED:
 //!   1 HP with 10k shields shows no prompt. The "60% on Corpus with all
 //!   their shields removed" wording is a gate, not a bonus condition.
 //! - **Overguard must be gone** — wiki Overguard patch history states you
@@ -118,7 +118,7 @@ mod tests {
 
     #[test]
     fn shields_and_overguard_are_hard_gates() {
-        // MEASURED (2026-07-24, user): 1 HP behind any shields -> no Mercy.
+        // MEASURED: 1 HP behind any shields -> no Mercy.
         let shielded = MercyContext {
             corpus: true,
             shields: 10_000.0,

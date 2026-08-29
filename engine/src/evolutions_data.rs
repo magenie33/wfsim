@@ -177,11 +177,11 @@ enum EvoEffect {
     /// Flat BASE damage that an empty reload turns on and nothing turns off —
     /// Boar's Reified Bane, "On Reload From Empty: Increase Base Damage by
     /// +14". It is applied UNCONDITIONALLY, i.e. the run is modelled as
-    /// holding it from t = 0 (user, 2026-08-03).
+    /// holding it from t = 0.
     ///
     /// Held is EXACT here, not an approximation, and the timing is why: the
     /// bonus lands the moment an empty reload BEGINS and does not wait for it
-    /// to finish (measured in game — user, 2026-08-03; the wiki claims the
+    /// to finish (measured in game; the wiki claims the
     /// opposite and loses, as it does to every measurement). So there is no
     /// gap: the magazine empties, the reload starts, the buff is already back,
     /// and it "lasts indefinitely until a manual reload is initiated while the
@@ -189,7 +189,7 @@ enum EvoEffect {
     /// reading the buff would instead be DOWN for one reload every cycle, and
     /// holding it would overstate the build.
     ///
-    /// **THIS IS THE EXCEPTION, AND THE NAME SAYS SO** (user, 2026-08-03).
+    /// **THIS IS THE EXCEPTION, AND THE NAME SAYS SO**.
     /// The DEFAULT for a reload-triggered effect is that it fires when the
     /// reload COMPLETES; a new one gets its own variant and that default,
     /// rather than reusing this. Two conditions have to hold together here
@@ -211,7 +211,7 @@ enum EvoEffect {
     /// A handling / mobility / multi-target stat with no single-target damage
     /// payload — recoil, accuracy, punch through, projectile speed, holstered
     /// reload. It COUNTS: the value lands in the panel's `indirect` bucket
-    /// beside the mods' (user, 2026-08-03). Mods were given this treatment
+    /// beside the mods'. Mods were given this treatment
     /// on 2026-08-01; evolutions were still dropping the number on the
     /// floor.
     Indirect(crate::loadout::IndirectStat, f64),
@@ -239,7 +239,7 @@ enum EvoEffect {
     /// uses (the panel brings the metres, the arena brings the answer).
     MultishotBeyondRange { value: f64, metres: f64 },
     /// Final Fusillade: a FLAT multishot add on the last round of the magazine,
-    /// BASE FORM ONLY (user, 2026-07-30) — a charge-backed Incarnon magazine
+    /// BASE FORM ONLY — a charge-backed Incarnon magazine
     /// has no "last shot in magazine" to gate on, so `apply` drops it there.
     /// A flat multishot add on the magazine's last round, and WHICH BRACKET it
     /// lands in — the `bool` is the card's own word "Base".
@@ -401,8 +401,7 @@ enum EvoEffect {
     /// READY RETALIATION — reload speed, armed by STARTING a reload from empty
     /// and lasting a while after.
     ///
-    /// THE TRIGGER IS THE RELOAD ACTION, NOT ITS COMPLETION (owner,
-    /// 2026-08-10), so the reload that armed it is the first thing it speeds
+    /// THE TRIGGER IS THE RELOAD ACTION, NOT ITS COMPLETION, so the reload that armed it is the first thing it speeds
     /// up. That one word is most of the perk's value: on a weapon that always
     /// reloads from empty — which is every weapon in this sim — it behaves
     /// like a permanent reload
@@ -419,7 +418,7 @@ enum EvoEffect {
     /// knows which direction an animation is going, so the revert takes it too.
     /// Ready Retaliation. NO DURATION: the buff is scoped to the reload
     /// action — it arrives when the reload starts and is gone when it ends
-    /// (owner, 2026-08-11) — so there is no window to state and nothing that
+    /// — so there is no window to state and nothing that
     /// can lapse halfway through.
     ReloadSpeedOnEmptyReload { value: f64 },
     /// Prelude of Might: "With Critical Chance below 40%: Increase Base
@@ -545,8 +544,7 @@ enum EvoEffect {
     /// floor, which left "which evolution unlocks the form" to be guessed from
     /// LADDER POSITION ("tier 1's first option"). Reading it is what lets the
     /// form and the evolution stop being two controls for one fact — asking to
-    /// fire the Incarnon form implies the evolution that IS firing it (user,
-    /// 2026-08-04).
+    /// fire the Incarnon form implies the evolution that IS firing it.
     UnlocksForm(String),
     Inert(String),
     /// NOT A TODO — AN EDGE. The clause is understood and cannot pay out in
@@ -641,8 +639,7 @@ pub struct EvolutionDef {
 mod opens_full_tests {
     use super::*;
 
-    /// EXACTLY THREE BUFFS OPEN FULL, and the list is closed (owner,
-    /// 2026-08-22).
+    /// EXACTLY THREE BUFFS OPEN FULL, and the list is closed.
     ///
     /// Every buff in this app opens EARNED at zero (docs/BUFFS.md). Three are
     /// exempt because keeping them up is not something a player has to think
@@ -786,8 +783,7 @@ pub struct EvoBuffCard {
     ///
     /// A third briefly existed — "one reload's worth", for Mounting Momentum —
     /// and it was wrong twice over. Nothing a player sets should depend on the
-    /// weapon's stats when the ceiling is the same 99 for every weapon (owner,
-    /// 2026-08-08), and it contradicted the sim, which opens that buff at zero
+    /// weapon's stats when the ceiling is the same 99 for every weapon, and it contradicted the sim, which opens that buff at zero
     /// because an empty magazine takes the pile. A card that defaults to six
     /// while the fight starts at none is the plainest kind of lie a panel can
     /// tell.
@@ -846,8 +842,7 @@ impl EvolutionDef {
                     opens_at: CardOpens::Zero,
                 }),
                 // A BUFF, not a silent stat: the run holds it from t = 0, but
-                // it is earned by an empty reload and the bar has to say so
-                // (user, 2026-08-03). Permanent — nothing decays it — and one
+                // it is earned by an empty reload and the bar has to say so. Permanent — nothing decays it — and one
                 // stack, which is what "on/off" is in this vocabulary.
                 EvoEffect::FlatBaseDamageOnEmptyReload(_) => Some(EvoBuffCard {
                     id: "evo_reload_damage",
@@ -862,7 +857,7 @@ impl EvolutionDef {
                     opens_at: CardOpens::Zero,
                 }),
                 // OPENS FULL WHERE THE CARD SAYS A MISSION NEVER TAKES IT
-                // (owner, 2026-08-22) — a buff you are already carrying rather
+                // — a buff you are already carrying rather
                 // than one you keep up. NOT `permanent`, which means something
                 // narrower here: no trigger the sim can fire, so the count is a
                 // static choice. This one is earned by an event the fight
@@ -1045,8 +1040,7 @@ impl EvolutionDef {
     /// to the default below rather than answering for it.
     ///
     /// **AN UNDECLARED PERK IS ANSWERED BY THE ENTRY'S CO CLASS**, and the two
-    /// halves have very different amounts of evidence behind them (owner,
-    /// 2026-08-16 — he drew the line here himself, twice):
+    /// halves have very different amounts of evidence behind them:
     ///
     ///   · `Adding` — EXCLUDED. Fifteen to zero. Eleven catalog rows print a
     ///     DOUBLE damage value ("100 or 124 (with Evolution II)") and are the
@@ -1072,7 +1066,7 @@ impl EvolutionDef {
     ///     upstream of it.
     ///
     /// So THE CLASS ANSWERS FIRST ON A `Multiplying` ENTRY, above the
-    /// declaration (owner, 2026-08-16). A perk reaches every form of its
+    /// declaration. A perk reaches every form of its
     /// transform group and only one of them was ever the measured one, so a
     /// reading off an `Adding` form must not be able to reach across and dilute
     /// a `Multiplying` one — which the Torid's pair would do today without
@@ -1080,7 +1074,7 @@ impl EvolutionDef {
     /// generalisation is deliberate and runs ahead of the catalog: the wiki
     /// lists a fraction for a minority of entries, and the owner's call is that
     /// this rule beats that table, to be revisited PER WEAPON if a measurement
-    /// ever contradicts it (2026-08-16).
+    /// ever contradicts it.
     ///
     /// THE RESERVED SLOT is the per-entry `co_base_fraction:` in the weapon
     /// yaml, which is 1.0 on all 26 `Multiplying` entries and is where a future
@@ -1288,8 +1282,7 @@ impl EvolutionDef {
                 // identifier. Haven Foray's "+50 base damage with overshields"
                 // read `+5000% FlatBaseDamage with overshields`, and Paladin
                 // Virtue's +0.5x crit multiplier read `+50% BaseCritDamage` —
-                // wrong on twenty cards, on the one line a player can check
-                // (2026-08-13). The `>= 1.0` special case was the shape of the
+                // wrong on twenty cards, on the one line a player can check. The `>= 1.0` special case was the shape of the
                 // bug: a unit chosen by the SIZE of the number rather than by
                 // the bracket it lands in.
                 EvoEffect::GatedByTenno { gate, grant, value } => {
@@ -1549,7 +1542,7 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         // A CONDITION IS NEVER IGNORED. This arm read `value` and nothing else
         // for as long as it existed, so Fortress Salvo's "With Armor Over 450"
         // paid out to everybody — the exact failure `gated_by_tenno` was written
-        // to prevent, on a kind that predates it (owner, 2026-08-20). The
+        // to prevent, on a kind that predates it. The
         // conditional form is a GATE now, so the neutral frame's 105 armor
         // shuts it and a real frame opens it with no code change.
         "punch_through_bonus" if v.get("condition").is_some() => {
@@ -1705,7 +1698,7 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         // THE CONDITION IS READ NOW, and it is a question about the PLAYER
         // rather than about this weapon: "With Sprint Speed 1.2 or Higher".
         // Unread, the perk paid out on every build including the ones that
-        // cannot reach the threshold (2026-08-12).
+        // cannot reach the threshold.
         "condition_overload" => EvoEffect::ConditionOverload {
             per_type: f(v, "value").unwrap_or(0.0),
             min_sprint: sprint_condition(v),
@@ -1869,7 +1862,7 @@ fn effect(v: &Value) -> Option<EvoEffect> {
         // spelling at a time. This arm was hardcoded to Electricity for the
         // Furis's Stormburst, so the Latron family's Riddled Target — the same
         // mechanic, triggered by PUNCTURE — sat inert beside machinery that
-        // already did everything it needed (2026-08-12).
+        // already did everything it needed.
         k if k.starts_with("stacking_multishot_on_") && k.ends_with("_status") => {
             let name = &k["stacking_multishot_on_".len()..k.len() - "_status".len()];
             let Some(status) = crate::damage::DamageType::from_name(name) else {
@@ -2124,7 +2117,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // rounds), so an ungated `+=` handed Extended Volley's +9 to
                 // the 170-round gauge as well — "Does not apply to Incarnon
                 // Form's Magazine" (wiki), and that magazine is outside the
-                // ammo system entirely (user, 2026-07-30: it uses max charges).
+                // ammo system entirely.
                 EvoEffect::FlatBaseMagazine(v) => {
                     if base.gauge_form.is_none() {
                         base.magazine_size += v;
@@ -2329,7 +2322,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         trigger: crate::loadout::BuffTrigger::HitEnemyWithStatus(*status),
                         grant: crate::loadout::BuffGrant::Multishot,
                         // FIFO, each stack on its own 2 s clock — owner
-                        // observed in game (2026-08-07). Harsher than the
+                        // observed in game. Harsher than the
                         // Galvanized family: holding 3 needs 3 hits per
                         // window, not one.
                         decay: crate::loadout::BuffDecay::PerStackExpiry,
@@ -2731,7 +2724,7 @@ mod tests {
     /// NOTHING IN THE ROSTER RESIZES AN INCARNON CHARGE POOL — no evolution,
     /// under any combination.
     ///
-    /// A roster-wide invariant, stated by the owner (2026-08-10): there is no
+    /// A roster-wide invariant, stated by the owner: there is no
     /// mechanism anywhere that restores charges in an Incarnon form or spends
     /// extra ones. The pool is filled by the GAUGE and emptied by firing, and
     /// that is the whole of it — which is why the magazine family of effects is
@@ -2797,8 +2790,7 @@ mod tests {
         let ca = get("dual_toxocyst_carnage_reign").unwrap();
         assert!(ca.effects.contains(&EvoEffect::FlatBaseDamage(60.0)));
         // …AND ITS SECOND CLAUSE IS GATED, NOT DEAD. "+33% Direct Damage per
-        // Status Type" carries an UNLISTED "With Energy Max >= 200" (owner,
-        // 2026-08-26), which is what MEASUREMENTS M49 was actually measuring:
+        // Status Type" carries an UNLISTED "With Energy Max >= 200", which is what MEASUREMENTS M49 was actually measuring:
         // both runs found it paying nothing, and both were made on the neutral
         // Tenno this repo ships, whose max energy is 150. The gate explains
         // those numbers rather than contradicting them.
@@ -2861,7 +2853,7 @@ mod tests {
     /// through, so the guard is on the filter itself rather than on today's
     /// data — including the two write paths added on 2026-08-03
     /// (`Indirect` and `AmmoMaxSet`), which reach fields the old test never
-    /// looked at (user).
+    /// looked at.
     #[test]
     fn a_broken_evolution_changes_nothing_whatever_it_grants() {
         use crate::loadout::{IndirectStat, WeaponBase};
@@ -2917,7 +2909,7 @@ mod tests {
         assert_eq!(live.indirect, vec![(IndirectStat::Accuracy, 0.5)]);
     }
 
-    /// Final Fusillade is BASE FORM ONLY (user, 2026-07-30). Both forms load
+    /// Final Fusillade is BASE FORM ONLY. Both forms load
     /// the SAME evolution id — the gate has to be the form, not the id, so this
     /// pins that the charge-backed form comes out with nothing.
     #[test]
@@ -2943,7 +2935,7 @@ use crate::loadout::WeaponBase;
     }
 
     /// Extended Volley: "Does not apply to Incarnon Form's Magazine", and that
-    /// form uses max charges rather than a magazine (user, 2026-07-30). The
+    /// form uses max charges rather than a magazine. The
     /// gate is load-bearing because an Incarnon form's `magazine_size` IS its
     /// charge pool — an ungated `+=` quietly made it 179 rounds.
     #[test]
@@ -2990,7 +2982,7 @@ use crate::loadout::WeaponBase;
             // its own stats — but they are no longer INERT: `UnlocksForm`
             // carries the form's id, and reading it is what lets a form
             // request imply the evolution that IS that form instead of
-            // silently falling back to base (2026-08-04). Inert meant the
+            // silently falling back to base. Inert meant the
             // target was dropped at parse time and "which evolution unlocks
             // the form" had to be guessed from ladder position.)
             // (RELOAD CADENCE used to keep five Ready Retaliations here, on
@@ -3001,7 +2993,7 @@ use crate::loadout::WeaponBase;
             //
             // There was nothing to borrow. The buff is scoped to the RELOAD
             // ACTION — it arrives when the reload starts and is gone when it
-            // ends (owner, 2026-08-11) — so the silence was not missing data,
+            // ends — so the silence was not missing data,
             // it was the absence of a thing to say. All twelve work now, the
             // Phenmor's 6 s is the buff icon's life rather than the bonus's,
             // and the loader no longer demands a window it should never have
@@ -3072,7 +3064,7 @@ use crate::loadout::WeaponBase;
             // Every one of them now says so on its own tile — `unmodeled_effects`
             // is derived from these same variants, so this list and the UI
             // cannot disagree.
-            // THE PHENMOR (2026-08-08), the first natural Incarnon after the
+            // THE PHENMOR, the first natural Incarnon after the
             // Laetum and the first weapon to bring FOUR inert perks at once.
             // Two are the family's and already argued above — an instant reload
             // the sim cannot end, and Ready Retaliation's reload-speed kind
@@ -3094,7 +3086,7 @@ use crate::loadout::WeaponBase;
             // official ruler, which puts every shot into a head, it would arm
             // on the second shot and never lapse: a flat +50% headshot damage
             // for the whole engagement, and the largest thing on this list.
-            // THE BRATON FAMILY (2026-08-08) — one adapter, four weapons, so
+            // THE BRATON FAMILY — one adapter, four weapons, so
             // every gap below is four rows of the same fact. THREE kinds:
             //
             // DARING REVERIE's larger half needs a CHANNELED ABILITY, a
@@ -3111,7 +3103,7 @@ use crate::loadout::WeaponBase;
             //
             // GUNSMOKE PICK UP is out of reach twice — no ammo-restore kind, and
             // a PUNCH THROUGH trigger needs a second body behind the first.
-            // THE LATRON FAMILY (2026-08-08) — three weapons, four kinds, and
+            // THE LATRON FAMILY — three weapons, four kinds, and
             // two of them are near-misses rather than absences.
             //
             // RIDDLED TARGET wants the live stacking-multishot buff the engine
@@ -3132,7 +3124,7 @@ use crate::loadout::WeaponBase;
             // many weapons — but carries none on this one. Marksman's Hand is
             // recoil and IS loaded, into the indirect bucket, like every other
             // handling stat here.
-            // THE BOLTOR FAMILY (2026-08-08) — three weapons, three kinds.
+            // THE BOLTOR FAMILY — three weapons, three kinds.
             //
             // CRIMSON OVERTURE is an on-kill stacking buff on the BASE damage,
             // and it would be the first: the engine's on-kill stacks (Galvanized
@@ -3156,7 +3148,7 @@ use crate::loadout::WeaponBase;
         // an inert entry is a decision somebody made and wrote a reason for, and
         // where a NEW one appearing is a mistake until argued.
         //
-        // The bulk Incarnon intake (2026-08-08) produces the other population.
+        // The bulk Incarnon intake produces the other population.
         // Its rule engine turns a clause it does not recognise into a kind NAMED
         // `unmodelled_<the clause's own words>` — self-declaring by construction,
         // and there are hundreds of them, one per unrecognised clause per weapon.
@@ -3191,7 +3183,7 @@ use crate::loadout::WeaponBase;
     ///
     /// They have no single-target damage payload, which is exactly why they
     /// used to be dropped — and dropping them meant the evolution equipped and
-    /// its number vanished (user, 2026-08-03). This asserts the
+    /// its number vanished. This asserts the
     /// whole path: yaml -> loader -> `WeaponBase.indirect` -> `resolve`'s
     /// bucket, in the same place a mod's would land.
     #[test]
@@ -3210,7 +3202,7 @@ use crate::loadout::WeaponBase;
         assert_eq!(find(&grip, IndirectStat::Accuracy), Some(0.50), "{grip:?}");
 
         // FORTRESS SALVO IS NOT HERE, and that is the fix rather than a
-        // regression (owner, 2026-08-20). Its card reads "With Armor Over 450:
+        // regression. Its card reads "With Armor Over 450:
         // +4 Punch Through", and this assertion used to demand the 4 metres
         // land in the unconditional bucket — codifying the very bug the owner
         // reported, a perk requiring 450 armour paying out with none. It is a
@@ -3343,7 +3335,7 @@ mod furis_co_split_tests {
     /// row and no MK1 Furis row — so the pair differed on nothing but whether
     /// somebody had written them down. That is a description of a survey's
     /// coverage, not of a game mechanic, and an Adding entry no longer reads it
-    /// as one (2026-08-16). MULTIPLYING entries still do, and deliberately: see
+    /// as one. MULTIPLYING entries still do, and deliberately: see
     /// `excludes_co_base`.
     #[test]
     fn the_mk1_tier2_pair_excludes_it_too() {
@@ -3406,7 +3398,7 @@ mod furis_co_split_tests {
             // "On Punch Through Hit: +10% Critical Chance for 3s. Stacks up to
             // 8x" is not orphaned because the clause it caps became an EDGE
             // rather than a todo — the perk still does nothing and still says
-            // so, which is all this test is protecting (2026-08-12).
+            // so, which is all this test is protecting.
             let gaps = def.unmodeled_effects().len() + def.out_of_scope_effects().len();
             if gaps == 0 {
                 alone.push(def.id.clone());
@@ -3415,7 +3407,7 @@ mod furis_co_split_tests {
         // A FLOOR, not a count. This number FALLS as cards get modelled — a
         // modelled stacking card carries its own `max_stacks:` and needs no
         // orphaned "Stacks up to Nx" beside it, which is what took it from 21
-        // to 16 when the five Resonant Restores landed (2026-08-12). The
+        // to 16 when the five Resonant Restores landed. The
         // assertion only ever protected against the loader dropping the shape
         // entirely, so the floor is set well below the live count and lowered
         // when it is genuinely passed rather than raised to meet it.
@@ -3495,7 +3487,7 @@ mod furis_co_split_tests {
 mod headcracker_decay_tests {
     /// HEADCRACKER'S TEN STACKS EACH CARRY THEIR OWN CLOCK.
     ///
-    /// Owner observed it in game (2026-08-13), which is the same rule
+    /// Owner observed it in game, which is the same rule
     /// Stormburst carries and the same way it was found. The loader HARDCODED
     /// the Galvanized rule here, on the reading that the card says nothing
     /// else — and the two are not close: under Galvanized decay one headshot
@@ -3712,7 +3704,7 @@ mod after_mods_layer_tests {
     /// falls to Inert rather than paying out unconditionally") and one arm had
     /// never obeyed it: `punch_through_bonus` read `value` and nothing else, so
     /// Fortress Salvo's "With Armor Over 450: +4 Punch Through" paid out to
-    /// every frame in the game. It was reported by the owner (2026-08-20), and
+    /// every frame in the game. It was reported by the owner, and
     /// nothing here could have caught it — so this is that thing.
     ///
     /// IT WALKS THE DATA rather than a list of kinds. Every effect in every

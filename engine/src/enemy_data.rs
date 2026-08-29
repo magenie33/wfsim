@@ -167,7 +167,7 @@ pub struct EnemySpec {
     #[serde(default)]
     pub damage_modifiers: Option<std::collections::BTreeMap<String, f64>>,
     /// STATUS IMMUNITY, which is a DIFFERENT MECHANIC from taking no damage of
-    /// a type, and the difference is not a detail (owner, 2026-08-11).
+    /// a type, and the difference is not a detail.
     ///
     /// The wiki states both halves in one paragraph (`Status_Effect` §Status
     /// Immunity Interactions): *"Proc type chances are not altered by enemy
@@ -199,7 +199,7 @@ pub struct EnemySpec {
     /// others renormalise onto the roll and each becomes MORE likely. A
     /// nullified effect does not: the type still takes its share of the rolls,
     /// the status is still applied and still counts as a type for Condition
-    /// Overload — only what it DOES is gone (owner, 2026-08-12).
+    /// Overload — only what it DOES is gone.
     ///
     /// The wiki says which is which by how it words them. A Demolisher's codex
     /// lists "Proc Immunity: Radiation" — that one cannot land. The Demolisher
@@ -211,7 +211,7 @@ pub struct EnemySpec {
     /// It cannot be FROZEN. Cold's ladder keeps climbing and never converts, so
     /// the stacks sit at their cap instead of being consumed every tenth proc —
     /// which means the Cold bonus is up for the WHOLE fight rather than in
-    /// bursts around a 3-second Frozen window (owner, 2026-08-12).
+    /// bursts around a 3-second Frozen window.
     ///
     /// It is the same kind of fact as `nullified_status_effects` — the proc
     /// lands, one part of what it does is missing — but Frozen is a STATE
@@ -487,8 +487,7 @@ source: { url: "synthetic" }
             .expect("the roster carries it");
 
         // THE PULSE IS NOT TURNED ON, and that is a CHOICE rather than a gap in
-        // what the sim can do — the same shape as the Thrax's spectral form
-        // (owner, 2026-08-12). The machinery is built and covered by the test
+        // what the sim can do — the same shape as the Thrax's spectral form. The machinery is built and covered by the test
         // below; the unit says so where a player reads it.
         assert!(!d.nullifies_warframe_abilities, "not applied to this unit");
         assert!(

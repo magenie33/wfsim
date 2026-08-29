@@ -50,7 +50,7 @@ effects:
   # Incarnon Form counts as reloading the Soma Prime and will therefore end the
   # bonus".
   #
-  # …AND SO DOES COMING BACK OUT (owner measured 2026-08-22), which the engine
+  # …AND SO DOES COMING BACK OUT, which the engine
   # keys on the MAGAZINE REFILL — the rule it already held about the cycle from
   # the other side: swapping either way fully reloads the base form's magazine,
   # so the buff is spent by whatever refills it. Before that, reading THIS page
@@ -73,7 +73,7 @@ effects:
   # form BUILD the pile: "Soma Prime's Incarnon Form fire now triggers the
   # 'Hata-Satya' Augment Mod's Critical Chance buff."
   #
-  # THE CEILING IS ON THE BONUS, NOT ON THE STACK COUNT (owner, 2026-08-22),
+  # THE CEILING IS ON THE BONUS, NOT ON THE STACK COUNT,
   # and this card is the first member of a CLASS: one where DE publishes a
   # NUMBER the effect stops at and lets the rank move what a stack is worth. The
   # pile keeps taking hits — 417 stacks and 4,000 stacks are both ordinary — and

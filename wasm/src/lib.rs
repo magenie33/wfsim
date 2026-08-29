@@ -45,7 +45,7 @@ pub fn api(endpoint: &str, body: &str) -> String {
 /// endpoint whose cost is unbounded: a single-target fight is a millisecond a
 /// run and a 361-body one is tens of them, so the rulers' 1000 runs is a minute
 /// in the browser. A button that says "Simulating…" for a minute reads as a
-/// hang, which is what it was reported as (owner, 2026-08-18).
+/// hang, which is what it was reported as.
 ///
 /// `on_progress` is handed `(done, total)`. THROTTLED HERE rather than in the
 /// engine: a postMessage per run would be 1000 of them and the reporting would
@@ -154,7 +154,7 @@ fn status_json(state: &FunnelState, phase: &str, counts: Option<(usize, usize)>,
 ///
 /// `on_board` receives a RESULT-shaped best-so-far during the search. Cancel
 /// in the browser is a worker kill, so a leaderboard that has not already left
-/// the worker dies with it (user 2026-07-30: 20 minutes, cancelled, nothing).
+/// the worker dies with it.
 #[wasm_bindgen]
 pub fn optimize(
     body: &str,

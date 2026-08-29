@@ -12,7 +12,7 @@ effects:
   # from: "Increase Base Damage by +150"
   - kind: flat_base_damage
     value: 150.0
-  # IT PAYS NOW (2026-08-15). It was filed as an EDGE — a clause nothing about
+  # IT PAYS NOW. It was filed as an EDGE — a clause nothing about
   # this engine would ever close — and the arena gaining a range closed it: with
   # one enemy, "no enemies within 5m" is exactly "the target is standing further
   # away than 5 m", which the fight can now answer. Worth nothing at point

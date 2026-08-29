@@ -39,8 +39,7 @@ scenario:
   level: 9999
   steel_path: true
 
-  # THE SHOOTER AT CONTACT WITH THE MIDDLE OF THE FRONT RANK (owner,
-  # 2026-08-17). 0.4 m is twice the MEASURED 0.2 m body radius (M46,
+  # THE SHOOTER AT CONTACT WITH THE MIDDLE OF THE FRONT RANK. 0.4 m is twice the MEASURED 0.2 m body radius (M46,
   # `engine::space`) — as close as two circles go, and the same distance the
   # single-target ruler pins.
   player_at: [0, 0]
@@ -65,8 +64,7 @@ scenario:
   # resolves against a precomputed neighbour list, so 361 bodies cost 21.2 s per
   # 1000 runs against 19.5 s for 49. The size is settled by saturation alone.
   #
-  # 3 m SPACING, and it is the single most consequential number in this file
-  # (owner, 2026-08-22). It decides the whole splash-versus-single-target
+  # 3 m SPACING, and it is the single most consequential number in this file. It decides the whole splash-versus-single-target
   # ordering, because a 5 m Blast sphere holds `pi * 25 / spacing^2` bodies —
   # 35 at 1.5 m, 13 at 2.5 m, 5 at 4 m. Measured on the Larkspur Prime with one
   # build per element and everything else pinned:
@@ -123,7 +121,7 @@ scenario:
   channeling: false
   solo_weapon: false
   # THE WIELDER IS NOT NAMED HERE, and that is the exception this block states
-  # rather than hides (owner, 2026-08-27). Every other field is pinned so the
+  # rather than hides. Every other field is pinned so the
   # board cannot move when a default moves — but the wielder's five numbers are
   # pinned by a TEST now (`the_default_tenno_is_the_floor_of_every_released_frame`
   # asserts all five, naming the frame each floor belongs to), so the drift this

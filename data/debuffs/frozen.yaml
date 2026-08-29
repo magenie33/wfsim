@@ -29,7 +29,7 @@ effects:
     value: 1.00                # +1.0x flat, supersedes Freeze's table value
     condition: weapon_direct_damage_only
 
-# INTERACTION WITH THE CHILL LADDER (owner, 2026-08-16).
+# INTERACTION WITH THE CHILL LADDER.
 #
 # COEXISTENT, not mutually exclusive: the 10th chill stack is BOTH the tenth
 # stack and the trigger for this state. The ladder stays at 10 for the whole 3

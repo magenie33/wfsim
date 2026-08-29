@@ -2,7 +2,7 @@
 
 > A name may be LONG, but it must have STRUCTURE and LOGIC. Never trade
 > information away for brevity — that is what makes a codebase unmaintainable.
-> — owner, 2026-08-20
+>
 
 This file is DERIVED, not invented. Every rule below was read off the code that
 already existed, and the counts are the evidence for which spelling won. The

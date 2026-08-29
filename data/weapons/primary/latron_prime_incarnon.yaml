@@ -98,7 +98,7 @@ attack:
   # attenuation per bounce; what it names is *"Each ricochet will cause the
   # projectile to slow down"*.
   #
-  # HEADSHOT CHANCE 0.5 (owner, 2026-08-18). A bounce is not aimed, so the
+  # HEADSHOT CHANCE 0.5. A bounce is not aimed, so the
   # scenario's headshot_pct — which states how well the PLAYER aims — is the
   # wrong number for it, and DE publishes none. Half is the flat rate, and it is
   # a decision rather than a transcription.

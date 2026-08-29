@@ -7,10 +7,10 @@ form: incarnon
 transform_group: felarx
 transforms_from: felarx
 
-# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# BULK INTAKE. The STATS are exact: WFCD warframe-items' `attacks`
 # array, which is DE's own export and which agreed with the wiki infobox field
 # for field on every one of the eleven guns checked by hand first. The
-# EVOLUTIONS are the rough half (owner): transcribed from the wiki's table,
+# EVOLUTIONS are the rough half: transcribed from the wiki's table,
 # with every clause the intake's rule engine did not recognise loaded as a
 # NAMED INERT effect that the builder and the optimizer both print as "not
 # modelled yet". Nothing is dropped in silence — some perks do nothing
@@ -33,8 +33,7 @@ gauge_form:
   # "Mode switching is not instantaneous and has an animation equal to the
   # weapon's reload speed" (wiki). For a BY-ROUND reloader that stat is the
   # whole magazine — 0.8 + 6 x 0.4 + 0.5 — and it IS the full 3.7 s, not the
-  # 1.3 s of start-and-end that the by-round shape made worth asking about
-  # (owner, 2026-08-08). A bigger magazine therefore lengthens the transmute
+  # 1.3 s of start-and-end that the by-round shape made worth asking about. A bigger magazine therefore lengthens the transmute
   # too, the same way it lengthens the reload.
   transmute_in_seconds: 3.7      # = base reload time, unmodded
 
@@ -42,8 +41,7 @@ pseudo_reload:
   magazine: 60
   reload_seconds: 4.7
 
-# CONDITION OVERLOAD IS MULTIPLYING ON BOTH OF THIS WEAPON'S MODES (owner,
-# 2026-08-08). The wiki's CO catalog lists the Felarx among the Multiplying
+# CONDITION OVERLOAD IS MULTIPLYING ON BOTH OF THIS WEAPON'S MODES. The wiki's CO catalog lists the Felarx among the Multiplying
 # entries and names one attack; the answer is the same for the other, so this
 # is not read off a form — it is the weapon's.
 #

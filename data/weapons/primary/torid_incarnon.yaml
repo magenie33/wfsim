@@ -47,8 +47,7 @@ gauge_form:
   transmute_in_seconds: 1.7      # = the base form's reload time, unmodded
 
 # SIM CONVENIENCE: with the gauge LOCKED full, the cycle reduces to a
-# magazine/reload model. 170 rounds at 1 per tick — ✅ measured (user,
-# 2026-08-01): the beam "0.5 ammo per trace" rule does NOT reach a charge
+# magazine/reload model. 170 rounds at 1 per tick — ✅ measured: the beam "0.5 ammo per trace" rule does NOT reach a charge
 # pool, so a full gauge is 170 ticks, not 340 (MECHANICS "Continuous ammo
 # cost"; the difference is worth 7.8% DPS, so it is not a rounding choice).
 # Plus 1.0 + 1.7 s of transitions (both scale with reload speed).
@@ -56,7 +55,7 @@ pseudo_reload:
   magazine: 170
   reload_seconds: 2.7
 
-# CO behavior: ADDITIVE — ✅ measured (user, 2026-07-30). The catalog has no row
+# CO behavior: ADDITIVE — ✅ measured. The catalog has no row
 # for this form, and `independent` used to be INFERRED here from the weapon's
 # other two rows (Main-fire and Toxin AoE Cloud, both "Multiplying"). The
 # inference was wrong: the Incarnon form takes the ordinary additive class,
@@ -97,7 +96,7 @@ attack:
   shot_type: beam
   fire_rate: 8.0
   multishot: 1.0
-  # NOT READ by the engine (2026-07-31): nothing in engine/ references
+  # NOT READ by the engine: nothing in engine/ references
   # `ammo_cost` — the sim spends a flat 1.0 (minus ammo efficiency) per shot.
   # It matters for CONTINUOUS weapons, which the wiki says "consume 0.5 ammo
   # per trace - unless they are Flamethrowers", and the only beam in the
@@ -166,7 +165,7 @@ attack:
       #
       # A PATH VISITS NOBODY TWICE, and that is what "struck by multiple
       # chains" means — the repeats come from DISTINCT paths, not from one path
-      # looping back (owner, 2026-08-16). The distinction is not cosmetic: it
+      # looping back. The distinction is not cosmetic: it
       # decides the number from three targets on, because the 75% compounds
       # ALONG a path. Three seeds mutually in range give each of them
       # 100% + 0.75 + 0.75^2 = 231%, where "each seed links every other at a
@@ -191,7 +190,7 @@ attack:
       # Does each chain NODE also carry a damage_radius_m sphere, or is there
       # only the one at the beam's contact point?
       #
-      # FLIPPED to false 2026-08-06 (user), retracting the `true` this line
+      # FLIPPED to false 2026-08-06, retracting the `true` this line
       # carried since 2026-07-30. The reason is FALLOFF, and it is structural
       # rather than circumstantial: an explosion in this engine is a separate
       # damage instance with linear falloff from epicentre to edge (MECHANICS

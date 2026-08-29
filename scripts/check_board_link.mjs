@@ -4,7 +4,7 @@
 // main way anybody arrives at a build. What arrives has to be the build that
 // line is about — under the ruler that line is on.
 //
-// The failure it exists for (owner, 2026-08-08). The link carried the weapon
+// The failure it exists for. The link carried the weapon
 // and the mode and NOT the ruler, and both boards call their leader "#1 ·
 // Incarnon cycle" — so the no-aim leader opened the aimed board's leader,
 // under the aimed board's fight, and re-running it produced a number that
@@ -97,8 +97,7 @@ const r = await evaluate(`(async () => {
   // no submission has ever named a second mode. So the half of a board row's
   // identity that says HOW the weapon was played has never been told apart
   // from the other row of the same weapon — which is exactly the shape of the
-  // bug that made this check exist, one level down (owner, 2026-08-09: 排查一下
-  // 很多武器的其他形态是否可以正确上传显示).
+  // bug that made this check exist, one level down.
   //
   // Synthetic, because waiting for a player to submit a base-form Torid is not
   // a test plan. The row is a real row: same benchmark, a real mode this
@@ -123,7 +122,7 @@ const r = await evaluate(`(async () => {
   // under single_target, so a synthetic second-mode row landed beside it, the
   // rendered mode= link resolved to the REAL leader, and the check compared
   // that leader's build against the base row it had copied. It reported a
-  // one-mod difference and blamed the link (2026-08-18).
+  // one-mod difference and blamed the link.
   //
   // A fixture that duplicates something the live data already has is a fixture
   // that will collide with it. So the live rows are preferred and the
@@ -208,7 +207,7 @@ for (const e of r.each.filter((x) => x.href)) {
     `${e.mode} vs ${e.wantMode}`);
   // AND CARRYING A RIVEN IF THE ROW DID. The build that lands has to be the one
   // the link named on BOTH halves of a weapon's board — the empty riven slot
-  // the owner reported (2026-08-24) was this: a riven row's link opened the
+  // the owner reported was this: a riven row's link opened the
   // plain leader, so the slot the row needed had nothing in it.
   check(`${tag} ...and the link says which of the two leaders it is`,
     e.hrefRiven === '0' || e.hrefRiven === '1', String(e.hrefRiven));
@@ -249,7 +248,7 @@ check("...carrying that row's build",
 // modes drew one of them TWICE with the other wedged inside it, and the ranks
 // restarted mid-list.
 //
-// Live on nine weapons when it was found (owner, 2026-08-20): the Burston
+// Live on nine weapons when it was found: the Burston
 // Prime's two `base` rows sat at positions 93 and 94 of its 100 `cycle` rows,
 // so the picker read "Incarnon cycle #1..#92, base #1 #2, Incarnon cycle
 // #93..#100".
@@ -357,7 +356,7 @@ check(`[${pick.drawn}] ...drawing each mode's header exactly once`,
 // takes you; this asks what you see when you get there. `pushState` does not
 // touch the scroll position, so a click from halfway down a 500-row board
 // landed on a weapon page already scrolled into the middle of a panel nobody
-// chose — every in-app link had it (owner, 2026-08-25).
+// chose — every in-app link had it.
 //
 // A REAL CLICK, not `pushState`: the fix lives in `nav()`, which is what a link
 // click goes through and what the rest of this file deliberately bypasses.

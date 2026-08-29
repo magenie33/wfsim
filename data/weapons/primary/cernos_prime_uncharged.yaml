@@ -25,7 +25,7 @@ introduced: "19.0.7"
 # headshot bonus is the weapon's, not the charged shot's.
 headshot_damage_bonus: 0.5
 # ...and it does NOT join that bracket after all — ANSWERED by the wiki's own
-# notes (2026-08-01), which is the measurement the paragraph above asked for:
+# notes, which is the measurement the paragraph above asked for:
 # "Cernos Prime's headshot bonus is unique and stacks multiplicatively with
 # Primary Deadhead's headshot bonus." A PER-WEAPON anomaly, not a class rule —
 # the same note lists innate bonuses on weapons like Kuva Chakkhurr among the
@@ -60,8 +60,7 @@ attack:
   # ⚠ NOT MEASURED. This is the wiki formula taken at its word, and the reading
   # it rules out — a semi-auto cap of 1/`fire_rate` on top of the nock — would
   # make the tap 0.61 shots/s and therefore strictly worse than charging, which
-  # is not how the weapon is played (user, 2026-07-31: tapping is a real
-  # pattern). MEASUREMENTS M16 settles it; one number changes here.
+  # is not how the weapon is played. MEASUREMENTS M16 settles it; one number changes here.
   charge_seconds: 0.0
   shot_type: projectile
   projectile_speed_mps: 70      # 95 charged — the draw speeds the arrow up

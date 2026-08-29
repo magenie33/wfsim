@@ -14,9 +14,9 @@
 //! and its siblings do not, and the game shows them side by side. That 1:1 with
 //! the screen is what makes this the only output of this app that can be laid
 //! beside a recording and checked — which for a product whose promise is
-//! "matches in-game measurements" is the final arbiter (owner, 2026-08-27).
+//! "matches in-game measurements" is the final arbiter.
 //!
-//! **EVERYTHING IS AN EVENT, not just damage** (owner, 2026-08-27). A reload, a
+//! **EVERYTHING IS AN EVENT, not just damage**. A reload, a
 //! transmute into an Incarnon form, a pellet that missed, a status running out
 //! — none of them pop a number and all of them explain the stream around them.
 //! A Warframe casting an ability and a body moving are the same shape and are
@@ -76,7 +76,7 @@ pub struct WeaponAt {
     /// magazine behind the scenes — "swapping either way fully reloads the base
     /// form's magazine" — and a column that showed only the firing one made
     /// that free reload invisible. A reader auditing a cycle wants to see it
-    /// happen (owner, 2026-08-27).
+    /// happen.
     pub idle_magazine: Option<(u32, u32)>,
     /// THE INCARNON GAUGE, and how much of it fills the form — `None` on a
     /// weapon that has no cycle.
@@ -84,14 +84,14 @@ pub struct WeaponAt {
     /// WHAT IS LEFT IN RESERVE, or `None` where the fight grants infinite ammo
     /// (which every ruler does). Beside the magazine because they are one
     /// question — "can this weapon keep firing" — and a reader asking it should
-    /// not have to hold two columns in their head (owner, 2026-08-27).
+    /// not have to hold two columns in their head.
     pub reserve: Option<f64>,
     /// A fight STARTS WITH AN EMPTY ONE, which is a real property of the model
     /// and was invisible: the record showed a base form firing and then, with
     /// no warning, a transform. What charges it is the weapon's own rule —
     /// weak-point hits, direct hits, or kills — so a reader watching this
     /// number climb is watching the thing that decides when the earned form
-    /// arrives (owner, 2026-08-27).
+    /// arrives.
     pub gauge: Option<(u32, u32)>,
 }
 
@@ -181,8 +181,7 @@ impl Origin {
 /// half authoritative about WHY: nothing tied the word "critical" to the 4.4
 /// beside it, a typo was a new factor nobody would notice, and two different
 /// things were both called "shield gate" — the 0.1 s window and the 5% leak
-/// past a broken shield (owner asked for this to be the type it should have
-/// been, 2026-08-28).
+/// past a broken shield.
 ///
 /// IT ALSO PAYS FOR ITSELF ON THE WIRE. A row carries the factors that did
 /// nothing by NAME, thirteen of them on an ordinary rifle hit, and the same
@@ -376,7 +375,7 @@ pub type Step = (Factor, f64);
 /// pools minus what the `n−1`-th took out of them, so a damage instance that
 /// was counted twice, or one that moved a pool and was never recorded, breaks
 /// the chain at the row where it happened rather than showing up as a total
-/// that is a bit too big (owner, 2026-08-27).
+/// that is a bit too big.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct TargetAt {
     pub overguard: f64,
@@ -390,8 +389,7 @@ pub struct TargetAt {
     ///
     /// Carried and drawn even though NOTHING THIS ENGINE FIRES TAKES IT: the
     /// window is the target's state, it is set correctly, and the only attack
-    /// measured to read it is a melee GROUND SLAM, which is not modelled
-    /// (owner, 2026-08-27 — MEASUREMENTS M61). Showing it is what makes the day
+    /// measured to read it is a melee GROUND SLAM, which is not modelled. Showing it is what makes the day
     /// melee lands a matter of one attack reading a field that is already
     /// right, and it is the only way to check that claim before then.
     pub shield_gate_until: Option<f64>,
@@ -408,8 +406,7 @@ pub struct Term {
     /// to look for a card that matches it and there is none, which is worse
     /// than a bare number: the point of this panel is that everything on it can
     /// be checked, and a name that cannot be is the one thing that breaks that.
-    /// So it is the number alone until the resolver can name the card (owner,
-    /// 2026-08-28).
+    /// So it is the number alone until the resolver can name the card.
     pub factor: Option<Factor>,
     /// The term's own value, signed. `-0.15` for Anemic Agility.
     pub value: f64,
@@ -440,7 +437,7 @@ pub struct Snap {
 /// (1 + base)` — and print the quotient with a `x` in front of it. Quantization
 /// is a per-component snap to a grid, so the only way to fit THAT into a chain
 /// was the ratio of the totals. Two invented numbers, both looking exactly like
-/// a game multiplier (owner, 2026-08-28).
+/// a game multiplier.
 ///
 /// So a layer is one of three shapes, and the shape is the information:
 /// a BRACKET lists its terms and adds them, QUANTIZE shows the grid, and only a
@@ -499,8 +496,7 @@ pub struct Damage {
     /// produces TWO rows and they are the SAME pellet: the Laetum's Incarnon
     /// form fires three, so a shot is six numbers, and reading them as
     /// "pellet 1 direct, pellet 1 radial, pellet 2 direct, …" is the only
-    /// arrangement in which the six add up to something a reader recognises
-    /// (owner, 2026-08-27). The engine already settles them in that order — the
+    /// arrangement in which the six add up to something a reader recognises. The engine already settles them in that order — the
     /// stage loop is inside the pellet loop — so what was missing was the
     /// label, and a radial row could not say which pellet threw it.
     pub pellet: Option<u32>,
@@ -555,7 +551,7 @@ pub struct Damage {
     ///
     /// A row's factors say what was multiplied in; this says what the build had
     /// UP at that instant, which is the question a reader asks when a factor is
-    /// smaller than they expected (owner, 2026-08-27).
+    /// smaller than they expected.
     pub buffs: Vec<(u16, f64)>,
     /// What this instance APPLIED, which is a different question from what it
     /// was: a Corrosive hit can proc nothing.
@@ -566,7 +562,7 @@ pub struct Damage {
     /// was up BEFORE it and what it set off, so the next row's state is the
     /// previous row's state plus this. That is a property a reader can check
     /// with their eyes, and it is what the two state columns were missing —
-    /// they said what was true and never why it changed (owner, 2026-08-28).
+    /// they said what was true and never why it changed.
     pub triggered: Vec<u16>,
     /// Did the target die to this one.
     pub killed: bool,
@@ -593,7 +589,7 @@ pub enum Kind {
     },
     ReloadEnd,
     /// Into a transmuted form and out of it — the two ends of the same window,
-    /// which is all a reader needs (owner, 2026-08-27).
+    /// which is all a reader needs.
     TransformStart {
         seconds: f64,
         into_transmuted: bool,
@@ -604,7 +600,7 @@ pub enum Kind {
     /// A status ran out. It explains a tick that got smaller with nothing else
     /// on screen having changed.
     ///
-    /// DECLARED, NOT YET EMITTED (2026-08-27) — expiry is a `ticks_left` running
+    /// DECLARED, NOT YET EMITTED — expiry is a `ticks_left` running
     /// to zero inside `process_ticks` rather than an event anything announces.
     StatusExpired {
         dtype: DamageType,
@@ -614,7 +610,7 @@ pub enum Kind {
     /// which is the scenario and not a bug — the pools jumping back up in the
     /// next row is what that looks like.
     ///
-    /// DECLARED, NOT YET EMITTED as a row of its own (2026-08-27): the damage
+    /// DECLARED, NOT YET EMITTED as a row of its own: the damage
     /// event that finished the body already carries `killed`, so the fact is in
     /// the stream and does not yet have a line to itself.
     Killed,
@@ -644,7 +640,7 @@ pub struct Event {
 ///
 /// A window rather than the whole fight because the whole fight is usually
 /// small and occasionally enormous — 5,016 events on a Braton Prime and 408,817
-/// on a Phantasma Prime over a 19x19 formation (measured 2026-08-27). Bounding
+/// on a Phantasma Prime over a 19x19 formation. Bounding
 /// the reader's request rather than the engine's output is what lets the common
 /// case be answered entire and the extreme case be answered at all.
 #[derive(Debug, Clone, Default)]
@@ -704,8 +700,7 @@ impl Record {
     /// paging by OFFSET is what lets several reads cover a stream no single one
     /// can hold, and it is offset rather than time because a page boundary can
     /// fall in the middle of an instant — several numbers share a timestamp, so
-    /// "continue from t" either loses them or repeats them (owner: read it all,
-    /// however many runs it takes, 2026-08-28).
+    /// "continue from t" either loses them or repeats them.
     ///
     /// IT ALSO MAKES AN ID MEAN SOMETHING. An event's id is its place in the
     /// FIGHT, counted before the skip, so pages concatenate into one stream and
@@ -807,8 +802,7 @@ impl Record {
     /// short-circuiting here meant a damage row past the limit never reached
     /// it: on a 180 s fight cut off at 146 s, the panel reported **542** left
     /// out when the truth was tens of thousands, because the only events still
-    /// calling `push` were the shots and reloads (owner spotted the number,
-    /// 2026-08-28). A cap that under-reports itself is worse than one that says
+    /// calling `push` were the shots and reloads. A cap that under-reports itself is worse than one that says
     /// nothing.
     ///
     /// ONE PER INSTANCE, not per number: a hit on a shielded body is two rows

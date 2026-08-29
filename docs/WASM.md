@@ -1,6 +1,6 @@
 # WASM plan: run the engine in the player's browser
 
-**Status (2026-07-28): phases 1–4 implemented.** `scripts/build_site_app.py`
+**Status: phases 1–4 implemented.** `scripts/build_site_app.py`
 rebuilds `site/app/` (needs `rustup target add wasm32-unknown-unknown` +
 `cargo install wasm-bindgen-cli` at the Cargo.lock version); wrangler deploys
 `site/` as before. Phase 5 (worker pool over all cores) remains open.
@@ -10,7 +10,7 @@ run executes on the visitor's own CPU, inside the browser, via WebAssembly.
 No server compute, no install. The native local server stays fully working —
 it is the dev harness and shares all code with the wasm build.
 
-**Verified (2026-07-28).** `cargo check -p wfsim-engine --target
+**Verified.** `cargo check -p wfsim-engine --target
 wasm32-unknown-unknown` passes as-is — every dependency (serde, serde_norway,
 …) is wasm-compatible. The architecture was designed for this seam: the
 frontend talks to the engine exclusively through a handful of JSON endpoints

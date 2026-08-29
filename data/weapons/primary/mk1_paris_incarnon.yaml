@@ -7,10 +7,10 @@ form: incarnon
 transform_group: mk1_paris
 transforms_from: mk1_paris
 
-# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# BULK INTAKE. The STATS are exact: WFCD warframe-items' `attacks`
 # array, which is DE's own export and which agreed with the wiki infobox field
 # for field on every one of the eleven guns checked by hand first. The
-# EVOLUTIONS are the rough half (owner): transcribed from the wiki's table,
+# EVOLUTIONS are the rough half: transcribed from the wiki's table,
 # with every clause the intake's rule engine did not recognise loaded as a
 # NAMED INERT effect that the builder and the optimizer both print as "not
 # modelled yet". Nothing is dropped in silence — some perks do nothing
@@ -42,7 +42,7 @@ pseudo_reload:
 #
 # and the row names the Paris and the Paris Prime, not the Mk1. A shared Genesis does not make one weapon: an
 # Incarnon form is still that WEAPON's form, so a row is transcribed for the
-# entries it names and no others (owner, 2026-08-12).
+# entries it names and no others.
 co_behavior: additive_with_base_damage
 
 attack:

@@ -104,8 +104,7 @@ pub struct EnumStats {
 /// model) and the resolve() so any modeled effect applies. Today's exilus
 /// mods are damage no-ops, so same-mods candidates differing only in exilus
 /// tie on score and differ in Forma/drain — still distinct builds. The
-/// exilus dimension is NEVER special-cased out of the search (user,
-/// 2026-07-29): an exilus mod may affect the final outcome, so it stays a
+/// exilus dimension is NEVER special-cased out of the search: an exilus mod may affect the final outcome, so it stays a
 /// full search dimension like any other slot. Pass `&[None]` (or `&[]`,
 /// treated the same) for a plain 8-slot search.
 #[allow(clippy::too_many_arguments)] // search-config surface; a params struct isn't warranted yet
@@ -154,7 +153,7 @@ pub fn enumerate_candidates(
 /// `tenno` and `policy` are the FIGHT's, exactly as [`enumerate_candidates_each`]
 /// takes them: a candidate's panel is resolved against them, so hardcoding a
 /// neutral player and `Emergent` here scored every materialized scope under
-/// buffs the replay may refuse — a SENTINEL resolves `BaseOnly` (2026-08-03).
+/// buffs the replay may refuse — a SENTINEL resolves `BaseOnly`.
 #[allow(clippy::too_many_arguments)]
 pub fn enumerate_candidates_observed(
     pool: &[ModDef],
@@ -638,14 +637,14 @@ fn permutations(rest: &[DamageType], acc: &mut Vec<DamageType>, out: &mut Vec<Ve
 }
 
 /// The benchmark engagement: an [`Arena`] plus what the SEARCH needs on top of
-/// it. The arcane is a SEARCH DIMENSION (user, 2026-07-25) — passed per
+/// it. The arcane is a SEARCH DIMENSION — passed per
 /// evaluation job, not fixed here.
 #[derive(Clone)]
 pub struct Scenario {
     /// The fight itself — both actors and how long they are at it. EMBEDDED,
     /// not restated: the optimizer scores a build under the same arena the
     /// simulator will replay it in, and a lookalike of the four fields is how
-    /// the two drift a field at a time (user, 2026-08-02).
+    /// the two drift a field at a time.
     pub arena: Arena,
     /// Run the REAL Incarnon two-form cycle (full gauge start → dump →
     /// revert → rebuild 9 weakpoint charges → transmute → …) instead of
@@ -669,7 +668,7 @@ pub struct Scenario {
     /// optimizer used to ignore. A weapon with a finite reserve (Larkspur
     /// Prime) was therefore SEARCHED running dry while the simulator replayed
     /// it resupplied, and the search reported half the number for the same
-    /// build (user, 2026-08-03).
+    /// build.
     pub infinite_ammo: bool,
     /// How conditional buffs are valued. NOT a constant: a SENTINEL weapon
     /// resolves under `BaseOnly` — this arena fires one weapon, so nothing on
@@ -838,8 +837,7 @@ pub fn schedule(n_jobs: usize) -> Vec<(u32, usize, bool)> {
     schedule_to(n_jobs, 1024, 24)
 }
 
-/// Successive-halving schedule honoring the user's FINAL-ROUND CONTRACT
-/// (2026-07-28): the last round is guaranteed to evaluate EXACTLY
+/// Successive-halving schedule honoring the user's FINAL-ROUND CONTRACT: the last round is guaranteed to evaluate EXACTLY
 /// `finalists` candidates at `final_runs` runs each — everything before it
 /// only whittles the field down to that size.
 ///
@@ -945,7 +943,7 @@ pub fn deprioritize_current_thread() {
 // ---- wasm busy-loop progress hook --------------------------------------
 // A single-threaded Web Worker cannot be polled while it computes — before
 // this hook, the whole enumeration/screen phase was SILENT and a big scope
-// looked dead (user, 2026-07-29: "it just doesn't compute"). The hot loops
+// looked dead. The hot loops
 // call `tick()`; the wasm host installs a throttled hook that posts live
 // status out of the worker. Native builds compile `tick()` to a no-op —
 // the status endpoint polls `FunnelState` instead.
@@ -1178,7 +1176,7 @@ pub type ScreenBoardFn<'a> = dyn Fn(&[ScreenedJob]) + 'a;
 /// A round is ONE blocking `evaluate_batch` call, and round 1 is by far the
 /// longest — it is the whole field, before any culling. Nothing left the
 /// worker between its start and its end, so a cancel inside it had nothing to
-/// show (user, 2026-07-30: still nothing after cancelling). That holds in both
+/// show. That holds in both
 /// regimes: round 1 is the materialized field, or the screen's survivors.
 /// Round boundaries alone are not a fine enough heartbeat to answer a cancel.
 pub type RoundBoardFn<'a> = dyn Fn(&[(Job, Summary)]) + 'a;
@@ -1308,7 +1306,7 @@ pub fn run_funnel(
             // Cancelled mid-round. The previous COMPLETED round's leaderboard
             // is preferred (uniform estimates) — but when no round ever
             // finished (a huge round 1), rank whatever DID evaluate: a rough
-            // best-so-far beats returning nothing (user, 2026-07-28).
+            // best-so-far beats returning nothing.
             if last.is_empty() {
                 let mut partial: Vec<(Job, Summary)> = alive
                     .iter()
@@ -1343,7 +1341,7 @@ pub fn run_funnel(
             };
             kb.total_cmp(&ka)
         });
-        // SOFT cut line (user, 2026-07-28: "can the fixed 1/8 be dynamic?"):
+        // SOFT cut line:
         // the planned 1/8 keep stays as the BUDGET SKELETON — predictable
         // cost, guaranteed progress — but the line itself is statistical,
         // not a hard rank. Candidates below the line whose score still TIES
@@ -1831,7 +1829,7 @@ mod tests {
     #[test]
     #[ignore = "enumerates the FULL pool; explodes now that the pistol pool grew \
                 to ~80 mods (C(73,7)). The optimizer is being re-planned around a \
-                UI-selected scoped subset (2026-07-26) — re-enable against a scope."]
+                UI-selected scoped subset — re-enable against a scope."]
     fn constraints_filter_the_space() {
         let p = pool();
         let base = WeaponBase::from_data(

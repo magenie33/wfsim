@@ -3,7 +3,7 @@
 # The boards are derived from it, the site is generated, the code is in git —
 # the library is what players sent, and until this workflow it lived in exactly
 # one Cloudflare KV namespace plus whatever `submissions` artifact had not
-# expired yet (owner, 2026-08-26).
+# expired yet.
 #
 # WHAT THIS IS NOT: it is not the tripwire. `guard_shrink` in
 # `scripts/fetch_submissions.sh` refuses to publish a board from a short list,
@@ -43,7 +43,7 @@ name: backup
 
 on:
   schedule:
-    # MIDNIGHT UTC, so a snapshot is one calendar day (owner, 2026-08-26). The
+    # MIDNIGHT UTC, so a snapshot is one calendar day. The
     # records carry `at` as a DATE and nothing finer, so a run at the day
     # boundary is the one time that makes "yesterday's library" an exact
     # statement rather than an approximate one.

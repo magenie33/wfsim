@@ -13,8 +13,7 @@ form: alt_fire
 transform_group: tenet_ferrox
 
 introduced: "32.2"
-# ONE THROW IS ONE MAGAZINE — the same call the Scourge pair makes (owner,
-# 2026-08-14): the throw is wind-up, release, RELOAD, every time, so the
+# ONE THROW IS ONE MAGAZINE — the same call the Scourge pair makes: the throw is wind-up, release, RELOAD, every time, so the
 # magazine is 1 and the 20 rounds belong to the primary-fire entry. The module
 # gives this attack its own Reload of 2.0 s.
 magazine: 1

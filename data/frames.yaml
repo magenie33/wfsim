@@ -18,8 +18,7 @@
 #   energy  +50    on both frames checked — and NOT on a frame with no pool
 #
 # THE +50 IS NOT UNIVERSAL, and generalising it from two samples wrote a number
-# into five entries that no frame has (owner pointed at the wiki's comparison
-# table, 2026-08-26). Hildryn, Hildryn Prime, Lavos, Lavos Prime and Helminth
+# into five entries that no frame has. Hildryn, Hildryn Prime, Lavos, Lavos Prime and Helminth
 # have NO energy pool — their abilities are paid for out of shields or with
 # cooldowns — so 0 + 50 made up 50 for each of them. The wiki's own infobox is
 # unambiguous: "Energy 0 (0 at Rank 30)", and its data block carries
@@ -38,7 +37,7 @@
 # a frame's real health and be wrong by a hundred. They get sourced properly the
 # day something needs them.
 #
-# THAT DAY HAS COME FOR HEALTH (2026-08-26). The Basmu's Dreadful Killshot pays
+# THAT DAY HAS COME FOR HEALTH. The Basmu's Dreadful Killshot pays
 # "+20% Damage and Status Chance for every 75 Warframe Health, capped at 360%",
 # so health stopped being a number nothing reads. `wf_health` is typed on the
 # fight now and the panel states the resolved player — but PICKING A FRAME

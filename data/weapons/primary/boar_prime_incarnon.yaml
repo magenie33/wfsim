@@ -110,7 +110,7 @@ attack:
   status_chance: 0.24
   punch_through_m: 0.0
   # PURE HEAT — the form drops the base weapon's IPS entirely.
-  # THE CHAIN, from the Genesis page (2026-08-17):
+  # THE CHAIN, from the Genesis page:
   #
   #   "each beam chaining up to 2 nearby enemies within 10 meters of the initial
   #    target and subsequent targets struck by punch through"

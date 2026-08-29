@@ -149,7 +149,7 @@ check("...without closing the picker it belongs to",
 // kitgun-part and valence slots passed the whole CARD, and `place` puts a
 // popover under its anchor's bottom-LEFT. Same control, same gesture, and the
 // menu appeared under the ⋯ on one and at the card's BOTTOM-LEFT on the other
-// four (owner, 2026-08-26). Measured on an evolution row: the fix moves it
+// four. Measured on an evolution row: the fix moves it
 // 152px right and 46px up.
 //
 // ASSERTED AS A RELATION, not as coordinates. Where the menu lands depends on

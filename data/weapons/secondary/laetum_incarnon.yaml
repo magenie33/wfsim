@@ -4,8 +4,7 @@ slot: secondary
 class: pistol
 form: incarnon
 
-# **SECONDARY IRRADIATE'S ECHO IS DOUBLE HERE**, measured (owner, 2026-08-24,
-# M59). The arcane deals `1.8 x the hit` at max rank and that is exactly what a
+# **SECONDARY IRRADIATE'S ECHO IS DOUBLE HERE**, measured. The arcane deals `1.8 x the hit` at max rank and that is exactly what a
 # pure single-target weapon deals — the owner measured several. This form deals
 # 3.6x, and the BASE Laetum deals the ordinary 1.8x, which is why the field is
 # on this entry and not on the weapon:
@@ -30,8 +29,7 @@ echo_multiplier: 2.0
 
 # …AND THE READER IS TOLD, because the arcane's own card beside it prints DE's
 # 180% and this entry pays 360%. A number that departs from the card it sits
-# next to and says so nowhere is the shape of a bug report, and it was one
-# (owner asked where the doubling was shown, 2026-08-25). Not an `unmodeled:`
+# next to and says so nowhere is the shape of a bug report, and it was one. Not an `unmodeled:`
 # line: that banner says the number below is a FLOOR, and this says the number
 # is RIGHT and the reason is unknown.
 live_bugs:
@@ -111,7 +109,7 @@ attack:
   projectile_speed_mps: 40
   fire_rate: 6.67
   multishot: 1.0
-  # NOT READ by the engine (2026-07-31): nothing in engine/ references
+  # NOT READ by the engine: nothing in engine/ references
   # `ammo_cost` — the sim spends a flat 1.0 (minus ammo efficiency) per shot.
   # It matters for CONTINUOUS weapons, which the wiki says "consume 0.5 ammo
   # per trace - unless they are Flamethrowers", and the only beam in the

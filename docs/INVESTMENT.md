@@ -1,6 +1,6 @@
 # Investment: what has been installed on this weapon
 
-**Status (2026-08-14): CAPACITY IS REAL; THE ADAPTERS ARE STILL ASSUMED.**
+**Status: CAPACITY IS REAL; THE ADAPTERS ARE STILL ASSUMED.**
 Phases 1 and 2 are done — capacity depends on rank, rank depends on Forma, and
 the client asks the server for both instead of carrying a literal 60. Phases 3
 and 4 (the three choices on screen, and carrying them in a share link) are not.
@@ -10,7 +10,7 @@ adapter, silently. What it no longer assumes is the number those produce: an
 adversary weapon ranks to 40 and finishes at 80, and every surface that prints
 a capacity says so.
 
-## A POLARITY BELONGS TO THE WEAPON, NOT TO THE SLOT (owner, 2026-08-16)
+## A POLARITY BELONGS TO THE WEAPON, NOT TO THE SLOT
 
 Two slots' polarities can be SWAPPED without changing what either slot IS — the
 exilus slot stays exilus, it just carries a different polarity afterwards. It is
@@ -72,7 +72,7 @@ On a rank-40 weapon every Forma does two things: it polarises a slot AND adds
 2 to the max rank. So "how many Forma does this build need" has a moving
 target — more Forma means more capacity means possibly fewer polarised slots.
 
-**The default is to polarise the full 5 times** (owner, 2026-08-04), because
+**The default is to polarise the full 5 times**, because
 that is what full mastery affinity requires whether or not the build needs it.
 That fixes capacity at 80 before planning starts, so the default path needs no
 solver at all. Only the opt-out — "I do not want to spend 5" — reintroduces the
@@ -80,7 +80,7 @@ fixed point, which iterates and converges in at most 5 steps.
 
 ## The interaction: investment is DERIVED, not configured
 
-The instinct to model this as a row of toggles was wrong (owner, 2026-08-04).
+The instinct to model this as a row of toggles was wrong.
 The right shape:
 
 1. **Every slot is open.** Place mods, arcanes, evolutions freely — the builder
@@ -101,7 +101,7 @@ the player's and not the build's:
 | choice | default | why it is a choice |
 | --- | --- | --- |
 | use Omni Forma | off | it matches any mod except Umbra mods, so it removes the colour puzzle — but it is a different, costlier item |
-| use Umbra Forma | **off** | precious (owner). With it off the planner may not use Umbra polarity, so an Umbra mod pays full or mismatched drain |
+| use Umbra Forma | **off** | precious. With it off the planner may not use Umbra polarity, so an Umbra mod pays full or mismatched drain |
 | polarise to max | **on** | 5 polarisations is what full mastery needs, even when the build would fit with 3 |
 
 ## Where the truth has to live
@@ -144,7 +144,7 @@ Each one is independently shippable and independently verifiable.
    you actually set costs, as against what the cheapest would be — which until
    now existed only as `formaCount()` in the client.
 
-   **The literal 60 is gone (2026-08-14).** `/api/meta` states `max_rank`,
+   **The literal 60 is gone.** `/api/meta` states `max_rank`,
    `capacity` and `forma_min` per weapon — the ANSWER, not the ladder — so the
    client holds no capacity arithmetic of its own: `capOf(id)` and
    `formaMin(id)` read what the server computed with `mods::capacity` /

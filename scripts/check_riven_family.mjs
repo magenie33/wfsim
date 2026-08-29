@@ -5,7 +5,7 @@
 // Vandal, Wraith, Dex, Prisma, Mara, and Syndicate variants"* (wiki `Riven
 // Mods`). The app filed them per WEAPON, so a card built on the Burston was
 // invisible on the Burston Prime and a player had to build it twice — two
-// cards for one riven, free to drift apart (owner, 2026-08-25).
+// cards for one riven, free to drift apart.
 //
 // THE NUMBERS FOLLOW BY THEMSELVES, which is why the fix is a storage scope
 // rather than a feature: a saved riven holds ROLLS, and the shown value is the
@@ -168,7 +168,7 @@ const r = await evaluate(`(async () => {
   // The opposite of a delete, and the distinction is the whole point of a
   // riven being a REFERENCE. Editing one is the game's own reroll: the same
   // card, new numbers, everywhere it is equipped. Asked for as "deleted OR
-  // CHANGED should remove it from the build" (owner, 2026-08-25) and declined
+  // CHANGED should remove it from the build" and declined
   // with this measurement, because removal here would drop a slot every time
   // somebody nudged the rank slider. Pinned so nobody 'fixes' it later.
   localStorage.clear();
@@ -300,7 +300,7 @@ check(`editing the card on one variant changes it in the other's build `
 // card with new numbers — so a build keeps it. Dropping it on every edit would
 // take a slot off the build each time somebody moved the rank slider, which is
 // why "deleted or changed should remove it" was answered with only the first
-// half (owner, 2026-08-25).
+// half.
 check("...and the build still has it, because an edit is not a delete",
   r.stillEquipped === true);
 

@@ -5,7 +5,7 @@
 // true of a board row opened from the picker and false of the same build
 // reached any other way. So a player who copied a board build into a preset of
 // their own — the ⧉ the picker offers on every benchmark row — was told their
-// run was being uploaded to a board that already holds it (owner, 2026-08-28).
+// run was being uploaded to a board that already holds it.
 //
 // THE ANSWER IS THE ENGINE'S, and that is the whole point of the endpoint this
 // asserts. A build is not its spelling: `builds::canonical_mods` sorts the

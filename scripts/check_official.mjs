@@ -55,7 +55,7 @@ const PROBE = (lang) => `(async () => {
 
   // 3. OPEN IT — by id, which is what a stored pointer holds.
   // THE BENCHMARK BAR, not the player's. Official entries were split out of
-  // the preset bar into a bar of their own (owner, 2026-08-04) — so this also
+  // the preset bar into a bar of their own — so this also
   // asserts the split: finding the official chip in the preset bar would mean
   // it leaked back into the collection that is supposed to be yours.
   const bar = $('bench-bar-simulator-scenarios');
@@ -170,7 +170,7 @@ const BUILDS_PROBE = `(async () => {
   // chips, which is right rather than a bug to work around.
   //
   // CONSTRUCTED, not borrowed. This used to read the live board and rely on
-  // Torid having no rows; players submitted some (2026-08-05) and the check
+  // Torid having no rows; players submitted some and the check
   // started failing on the board WORKING. What it means to assert is "empty
   // board -> no chips", so it empties the board and asks.
   BOARD = {};
@@ -345,7 +345,7 @@ const CONSENT_PROBE = `(async () => {
 
   // AN EXILUS MOD ON TOP. The build is complete at 8 main slots; filling the
   // exilus slot must not make it "9 mods" — the most thoroughly built players
-  // were the ones that refused (2026-08-05) — and as of 2026-08-25 it TRAVELS,
+  // were the ones that refused — and as of 2026-08-25 it TRAVELS,
   // in a field of its own, because the rulers stopped excluding the slot.
   //
   // ITS OWN FIELD, not a ninth entry in mods: an exilus-eligible mod is legal
@@ -401,7 +401,7 @@ const c = await evaluate(CONSENT_PROBE);
 console.log("");
 console.log("[consent]");
 if (!c.hasNo) console.log("      [diag] " + JSON.stringify({ chipSeen: c.chipSeen, asked: c.askedOnOfficial, html: c.boxHtml }));
-// ONE STORY FOR EVERY FIGHT (owner, 2026-08-25). This assertion used to be its
+// ONE STORY FOR EVERY FIGHT. This assertion used to be its
 // opposite — the notice was absent under an ordinary scenario, because only the
 // official ruler fed the board. Any fight can contribute now, so the notice is
 // present everywhere and says the same thing: what leaves is the BUILD, and the
@@ -413,7 +413,7 @@ check("...and it is the SAME notice, not a second policy",
   JSON.stringify(c.offOfficialText));
 check("...and present under the official one", c.askedOnOfficial === true);
 check("it says what would be sent", c.saysWhatIsSent === true);
-// THE CONTRACT CHANGED (2026-08-05): submission is default-ON, so the property
+// THE CONTRACT CHANGED: submission is default-ON, so the property
 // worth asserting is no longer "nothing leaves" — it is that nothing leaves
 // UNSAID. The notice states the default and carries a working opt-out, both
 // visible before any run.
@@ -495,8 +495,7 @@ for (const id of qc.ids || []) {
 // the two rulers that existed when it was written and stopped being one the day
 // a third arrived: group_clear differs from single_target by its FORMATION —
 // 361 bodies against one — and matches it on both of the fields this named, so
-// the check failed for a ruler that is as distinct as a ruler can be
-// (2026-08-18). The expected value is now the fight ITSELF, which is the same
+// the check failed for a ruler that is as distinct as a ruler can be. The expected value is now the fight ITSELF, which is the same
 // rule check_one_fight rests on: a check about "the fight" that holds a list of
 // the fight's fields goes stale the next time the fight gains one.
 {

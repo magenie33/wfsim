@@ -3,7 +3,7 @@ name: Incarnon Form
 weapon: magistar
 tier: 1
 description: "Reach 6x Combo and then Heavy Attack to activate Incarnon Form for 180 seconds. +100% Melee Damage, +30 Initial Combo, +50% Heavy Attack Wind Up Speed, +10% Sprint Speed, +10% Bullet Jump."
-# A MELEE INCARNON IS NOT A FORM (owner, confirmed in game 2026-08-29): it does
+# A MELEE INCARNON IS NOT A FORM: it does
 # not change the attack animations, it only changes numbers. So this grants no
 # `unlocks_weapon` — there is no second weapon entry to unlock — and the whole
 # Genesis is stat changes on the seven ways the Magistar is already swung.

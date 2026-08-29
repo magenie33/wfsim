@@ -43,7 +43,7 @@ gauge_form:
   # it to every weapon is the assumption, and it is deliberately uniform — no
   # weapon is special-cased until one is measured.
   #
-  # AND THE SENTENCE ABOVE DOES NOT CONTRADICT IT (owner, 2026-08-10). The
+  # AND THE SENTENCE ABOVE DOES NOT CONTRADICT IT. The
   # page's "animation equal to the weapon's reload speed" is about ENTERING the
   # Incarnon form and nothing else — which is why `transmute_in_seconds` IS the
   # 2.8 s reload. There is NO official figure for the way back, on this weapon

@@ -16,7 +16,7 @@
 # WHY THE TWO SLOTS ARE TWO ENTRIES AND NOT TWO MODES. The chamber is the
 # WEAPON — one mastery track, one riven, one wiki page, and both entries point
 # at `Tombfinger` — but a mode is HOW A WEAPON IS PLAYED and the slot is not
-# that (owner, 2026-08-18). The slot decides which mods it may hold, which
+# that. The slot decides which mods it may hold, which
 # aura pays it, which archon shard names it and which board column it lands in,
 # and every one of those is a question with a static answer that `mode` would
 # have made dynamic for the whole roster. DE's own module agrees: `KitgunPrimary`

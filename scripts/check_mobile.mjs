@@ -1,6 +1,6 @@
 // The FIFTEENTH check: the page FITS THE SCREEN IT IS ON.
 //
-// The failure it exists for, reported on a phone (owner, 2026-08-05): the mod
+// The failure it exists for, reported on a phone: the mod
 // grid was two columns at every width, and `grid-template-columns:repeat(2,1fr)`
 // floors each track at its MIN-CONTENT. A slot's min-content is 198px, so two
 // of them plus the gap is 404px inside a 326px column — the right-hand slots
@@ -40,7 +40,7 @@ for (const [label, w, h, mobile] of SCREENS) {
     { width: w, height: h, deviceScaleFactor: mobile ? 2 : 1, mobile });
   // A PHONE HAS A FINGER, and `mobile: true` alone does not give it one:
   // `navigator.maxTouchPoints` stays 0 and every touch-only behaviour goes
-  // untested. This check is the one that is about phones (2026-08-18).
+  // untested. This check is the one that is about phones.
   await send("Emulation.setTouchEmulationEnabled",
     { enabled: mobile, maxTouchPoints: mobile ? 5 : 1 });
   await send("Page.navigate", { url: BASE });
@@ -70,7 +70,7 @@ for (const [label, w, h, mobile] of SCREENS) {
   // can no longer scroll. A 19x19 formation covers the canvas in bodies, so on
   // a phone almost every scroll past the arena dragged an enemy instead — the
   // fight moved silently and the result it had just produced was for a fight
-  // nobody was in any more (owner, 2026-08-18).
+  // nobody was in any more.
   //
   // Only on the touch screens, because a mouse has no scroll to lose.
   if (navigator.maxTouchPoints > 0) {
@@ -178,7 +178,7 @@ for (const [label, w, h, mobile] of SCREENS) {
       // WHICH SLOT IS WHICH, read in DOM order. The grid is two tracks wide,
       // so nothing on screen said whether "slot 5" was the third row's left
       // cell or the first column's fifth — and slot order is not cosmetic,
-      // elements combine in it (player report, 2026-08-10).
+      // elements combine in it.
       slotNos: [...document.querySelectorAll('#mod-slots .slot .slotno')]
         .map((e) => e.textContent.trim()).join(','),
       // THE TOPBAR'S BUDGET, and it is geometry rather than a style opinion:
@@ -186,15 +186,14 @@ for (const [label, w, h, mobile] of SCREENS) {
       // SEARCH — the site's own navigation — to 29px, which is what the phone
       // menu exists to fix. So this measures the two halves of that claim.
       //
-      // ONE: nothing was DELETED to make the bar fit (owner, 2026-08-07).
+      // ONE: nothing was DELETED to make the bar fit.
       // Every destination and every control is REACHABLE at every width — on a
       // desktop straight off the bar, on a phone after one tap on the
       // hamburger. Reachable is measured, not asserted from a display rule: a
       // real box on screen, inside the viewport on both sides.
       // (No backticks in here: this comment lives inside a template literal.)
       ...(() => {
-        // THE BAR CARRIES WHAT A READER ACTS ON; THE REST IS ONE CLICK AWAY
-        // (owner, 2026-08-19). Until then all eight sat on the desktop bar with
+        // THE BAR CARRIES WHAT A READER ACTS ON; THE REST IS ONE CLICK AWAY. Until then all eight sat on the desktop bar with
         // equal weight, which is three unrelated categories in one costume —
         // so this check asserted that all eight were visible with nothing
         // opened, and that assertion WAS the old design. Two sets now.
@@ -318,7 +317,7 @@ for (const [label, w, h, mobile] of SCREENS) {
 // fitted that into 360, every page shrank to 76% and the right quarter went
 // off the edge. That is where a mod card keeps its ⋯, which is why it was
 // reported as "the mod area is too big" — the exilus slot sitting beside it
-// looked fine only because its right-hand side is empty (owner, 2026-08-26).
+// looked fine only because its right-hand side is empty.
 //
 // So the one check that is about phones was structurally blind to the whole
 // English UI, while `check_disclosure`, `check_enemies` and `check_mode_def`
@@ -370,7 +369,7 @@ for (const lang of ["en", "zh"]) {
     // the card's minimum width all along: measured on a real card, 198px
     // normally and 528px with a long name in it. A `1fr` track floors at
     // min-content, so the grid was as wide as its longest name wanted and the
-    // card ran off a 360px screen (owner, 2026-08-26).
+    // card ran off a 360px screen.
     //
     // The name is INJECTED rather than hunted for in the roster: what breaks it
     // is a length, the roster's longest name today is not the longest one
@@ -410,7 +409,7 @@ for (const lang of ["en", "zh"]) {
 // It was technically there and effectively not: a ten-column ledger with a
 // 1080px minimum, scrolling sideways inside a 326px window, with the column the
 // whole panel exists for — where the number came from — furthest off the right
-// edge (owner, 2026-08-27). Everything else this file measures is a page AT
+// edge. Everything else this file measures is a page AT
 // REST; this is the one block that is deliberately WIDER than any phone, so it
 // is the one that has to be asked whether it changed shape.
 //
@@ -460,7 +459,7 @@ for (const lang of ["en", "zh"]) {
     // …AND A STACKED CELL SAYS WHAT IT IS, or it is a number with no name.
     // DIRECT CHILDREN ONLY. The calculation cell now contains a nested table —
     // quantization's own grid — and a descendant selector counted its cells as
-    // unlabelled row cells (2026-08-28).
+    // unlabelled row cells.
     const cells = [...tbl.querySelectorAll('tr.rec-dmg > td')];
     o.cells = cells.length;
     o.labelled = cells.filter((el) => el.dataset.label).length;

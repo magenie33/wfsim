@@ -12,7 +12,7 @@ grip_type: PISTOL
 mastery_rank: 14
 max_rank: 30
 
-# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# TWO WEAPONS MODEL: base and Incarnon forms are
 # separate entries linked by a transform group. Zariman weapons carry the
 # Incarnon Genesis innately — there is no separate Genesis item to install.
 transform_group: laetum
@@ -25,7 +25,7 @@ polarities: [madurai]
 exilus_polarity: naramon
 riven_family: Laetum
 traits: [zariman, incarnon]
-introduced: "31.5"           # Update 31.5 "Angels of the Zariman" (2022-04-27)
+introduced: "31.5"           # Update 31.5 "Angels of the Zariman"
 internal_name: /Lotus/Weapons/Tenno/Zariman/Pistols/HeavyPistol/ZarimanHeavyPistol
 noise: alarming
 ammo_type: secondary
@@ -57,7 +57,7 @@ attack:
   projectile_speed_mps: 100
   fire_rate: 2.5
   multishot: 1.0
-  # NOT READ by the engine (2026-07-31): nothing in engine/ references
+  # NOT READ by the engine: nothing in engine/ references
   # `ammo_cost` — the sim spends a flat 1.0 (minus ammo efficiency) per shot.
   # It matters for CONTINUOUS weapons, which the wiki says "consume 0.5 ammo
   # per trace - unless they are Flamethrowers", and the only beam in the

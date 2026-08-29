@@ -1,7 +1,7 @@
 //! HOW MANY STACKS DOES THE PANEL ACTUALLY REPORT?
 //!
 //! A player asks why Heat, Toxin and Electricity show one stack when they
-//! visibly pile up (owner relaying, 2026-08-21). The debuff table is fed by
+//! visibly pile up. The debuff table is fed by
 //! `DebuffState::sample`, so this runs a real engagement and prints the PEAK of
 //! every roster row — which is the number that reaches the chart.
 //!

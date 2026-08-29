@@ -10,8 +10,7 @@
 //! becomes true: nobody's number is trusted because nobody's number is asked
 //! for. A row's score is produced HERE, by this engine, under the benchmark's
 //! own pinned seed — so anyone with the repo can reproduce any row exactly, in
-//! a browser as well as natively (measured 2026-08-04: wasm and native agree to
-//! the last digit). A forged submission cannot forge a rank; the worst it can
+//! a browser as well as natively. A forged submission cannot forge a rank; the worst it can
 //! do is submit a build that scores badly.
 //!
 //! It also means an engine change re-scores everything instead of migrating
@@ -98,8 +97,7 @@ struct RowRiven {
 /// `riven` was never one of them, so a riven row reached the yaml and never
 /// reached the page. Three separate reports came out of that single missing key
 /// — the board's "riven only" view listed nothing, the builder could not group
-/// riven builds apart, and TAKING one left an empty mod slot (owner,
-/// 2026-08-24).
+/// riven builds apart, and TAKING one left an empty mod slot.
 ///
 /// BYTE FOR BYTE WITH `build_site_app.py`, which is what makes a local site
 /// build a no-op against the scorer's own output. That is why the riven key is
@@ -140,8 +138,7 @@ fn page_row(bench_id: &str, r: &Row) -> Value {
     row
 }
 
-/// THE FLOOR: a row must score at least half its group's leader to be listed
-/// (owner, 2026-08-20). It replaces a COUNT — the top hundred per ruler and
+/// THE FLOOR: a row must score at least half its group's leader to be listed. It replaces a COUNT — the top hundred per ruler and
 /// mode, itself raised from ten on 2026-08-08.
 ///
 /// A COUNT AND A FLOOR BOUND DIFFERENT THINGS. The count bounded how LONG the
@@ -206,7 +203,7 @@ fn keep_above_floor(mut rows: Vec<Row>) -> (Vec<Row>, usize) {
         //
         // THE RANKING IS STILL ONE LIST. Only the floor partitions: a riven
         // build does not always beat a plain one, so ranking them apart would
-        // publish a comparison the fight does not make (owner, 2026-08-22).
+        // publish a comparison the fight does not make.
         let top = *leader
             .entry((r.weapon.clone(), r.mode.clone(), r.riven.is_some()))
             .or_insert(r.score);
@@ -226,7 +223,7 @@ fn flag(name: &str) -> Option<String> {
 }
 
 /// SCORING IS THE WHOLE COST — 67 minutes of a 71-minute run at the rulers'
-/// 1000 runs (measured 2026-08-11) — and it is embarrassingly parallel: every
+/// 1000 runs — and it is embarrassingly parallel: every
 /// row is an independent fight. So the job splits N ways and the scores are
 /// carried between processes as a plain map.
 ///
@@ -259,7 +256,7 @@ fn load_scores(spec: Option<String>, bench_id: &str) -> std::collections::HashMa
         // numbers — and the publish step is handed one directory holding every
         // benchmark's shards. Merging them silently published one ruler's score
         // under the other's name: the Torid's aimed 28.44 kpm sat at the top of
-        // the NO-AIM board, where that build actually scores 0.5 (2026-08-12).
+        // the NO-AIM board, where that build actually scores 0.5.
         if file.get("benchmark").and_then(Value::as_str) != Some(bench_id) {
             continue;
         }
@@ -289,7 +286,7 @@ struct Prior {
     /// which nothing noticed while the fingerprint was coarse enough to make
     /// almost every run a full rescore. The moment reuse became the common
     /// case, a reused riven row would have come back with no rolls — and a
-    /// riven row with no rolls loses its whole riven block (2026-08-25).
+    /// riven row with no rolls loses its whole riven block.
     rolls: std::collections::HashMap<String, Vec<f64>>,
     /// Rows whose OWN data moved. Printed rather than counted silently: it is
     /// the number that says how much a change actually cost.
@@ -371,14 +368,14 @@ fn main() {
     // still right — it is the same number this run would compute, and running
     // the fight again would be spending an hour to reproduce it.
     //
-    // A COOLDOWN WOULD BE THE WRONG AXIS (owner asked about one, 2026-08-11).
+    // A COOLDOWN WOULD BE THE WRONG AXIS.
     // Time is not an input: an untouched score is valid forever, and a score
     // whose engine moved is wrong immediately, not in an hour.
     // WHAT `--engine` IS NOW: the CODE, and only the code (`engine`, `webapi`,
     // `cli`). It used to hash `data/` in as well, which made adding a weapon —
     // a file no existing row reads — invalidate all 967 stored scores and buy a
     // full rescore: about an hour of wall clock and thirty of CPU to reproduce
-    // numbers that could not have moved (owner, 2026-08-25). The data half is
+    // numbers that could not have moved. The data half is
     // now asked PER ROW, from the files that row actually reads.
     let engine_fp = flag("--engine").unwrap_or_default();
     let mut known = load_scores(flag("--scores"), &bench_id);
@@ -453,7 +450,7 @@ fn main() {
     let (mut seen, mut refused) = (0usize, 0usize);
     let mut seen_ids: std::collections::HashSet<String> = Default::default();
     for (idx, s) in subs.iter().enumerate() {
-        // EVERY SUBMISSION IS A CANDIDATE FOR EVERY RULER (owner, 2026-08-25).
+        // EVERY SUBMISSION IS A CANDIDATE FOR EVERY RULER.
         //
         // A submission has never carried a score — it carries a BUILD, and the
         // number is produced here. So the ruler it happened to be measured
@@ -486,12 +483,12 @@ fn main() {
         // asked here rather than assumed — and it NORMALISES first, so what
         // gets scored and what gets published are the same object.
         // THE BOARD'S door, not the legality one: a row must be a COMPLETE
-        // build (2026-08-05). A submission that is merely legal is refused
+        // build. A submission that is merely legal is refused
         // here and simply never scored.
         // THE REASON IS PRINTED, not counted. "2 refused" is a number that
         // tells nobody anything — including me, on the day two complete-looking
         // Dual Toxocyst builds were turned away and the log said only that they
-        // were (2026-08-05). A board that refuses in silence cannot be debugged
+        // were. A board that refuses in silence cannot be debugged
         // by the person whose build it refused, either.
         // AN ADVERSARY WEAPON'S PROGENITOR ELEMENT is part of the submission,
         // like its mods and its evolutions — a different element is a different
@@ -531,7 +528,7 @@ fn main() {
                 // needs 64 of 60" says a build was turned away and leaves
                 // "which one, and was it really impossible?" unanswerable —
                 // which is the question asked of this log the first time
-                // somebody's submission went missing (owner, 2026-08-14). The
+                // somebody's submission went missing. The
                 // whole row is what makes a refusal checkable by hand.
                 eprintln!(
                     "refused {weapon}: {e}
@@ -733,8 +730,7 @@ fn main() {
                 // depleted — over the whole engagement. The benchmark says
                 // `metric: kpm`, so publishing the raw figure labelled "kill
                 // rate" overstated every row by the length of the fight: 55.26
-                // on screen for a build that kills 11.05 a minute over 300 s
-                // (user, 2026-08-04). Ranking is unaffected either way — this
+                // on screen for a build that kills 11.05 a minute over 300 s. Ranking is unaffected either way — this
                 // is a linear rescale — but the number people read is not a
                 // ranking.
                 let s = match metric.as_str() {
@@ -978,7 +974,7 @@ fn load_rolls(
 /// published number does, and paying for it sixteen times would make a riven
 /// row cost sixteen plain ones on a board that already takes an hour.
 ///
-/// A HUNDRED, not sixty (owner, 2026-08-24): the board is the reference and a
+/// A HUNDRED, not sixty: the board is the reference and a
 /// corner search that decides which card to tell people to go and get should
 /// read like one. It is still a fraction of the ruler's own 1000, and the
 /// sixteen probes are what the two-decision structure buys — the CHOICE is made
@@ -1125,8 +1121,7 @@ mod tests {
     /// shards (`.github/workflows/board.yml`: eight shards x every ruler ->
     /// `scores/`, then `--scores scores` once per ruler). Merging them published
     /// one ruler's score under the other's name: the Torid's aimed 28.442 kpm
-    /// sat at the top of the NO-AIM board, where that build scores 0.170
-    /// (measured 2026-08-12, digit for digit on both boards).
+    /// sat at the top of the NO-AIM board, where that build scores 0.170.
     ///
     /// The merged number also WINS over the board's own correct history, since
     /// `--reuse` only fills where `--scores` left a hole — which is why only the

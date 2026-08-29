@@ -74,7 +74,7 @@ use wfsim_engine::loadout::{resolve, StackPolicy, WeaponBase};
 /// of the five damaging burns. For as long as this tool existed the suite
 /// therefore ticked NO status DoT at all, and nothing said so: a change to DoT
 /// tick damage left all three shapes unmoved to fifteen digits, and so did the
-/// same change scaled by a thousand (2026-08-23).
+/// same change scaled by a thousand.
 ///
 /// The mod list is NOT the fix and is deliberately unchanged — it is what every
 /// saved baseline was measured under, and moving it makes this tool's whole
@@ -560,7 +560,7 @@ fn main() -> std::process::ExitCode {
     }
 
     println!();
-    // COVERAGE, AND IT IS DERIVED RATHER THAN REMEMBERED (2026-08-23).
+    // COVERAGE, AND IT IS DERIVED RATHER THAN REMEMBERED.
     //
     // The answer column can only catch a change in something the suite
     // actually does. For as long as this tool existed the suite burned

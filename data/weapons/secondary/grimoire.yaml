@@ -40,7 +40,7 @@ ammo_pickup: 10
 # sim cannot fire a magazine of zero, so this states ONE: every attack is
 # its own 'magazine' and the reload below is the cadence the module gives.
 # Written down because it is the only number in this entry that is not the
-# module's own (2026-08-20).
+# module's own.
 magazine: 1
 reload_seconds: 0
 
@@ -56,7 +56,7 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 0.0
-  # A ROUND LEAVES 0.1 s AFTER THE TRIGGER (owner, 2026-08-28), where every
+  # A ROUND LEAVES 0.1 s AFTER THE TRIGGER, where every
   # other gun in this roster fires at zero. The interval between shots is still
   # exactly the fire rate's, so this costs a sustained engagement nothing — what
   # it moves is WHEN each number lands, which is what the combat record is
@@ -68,7 +68,7 @@ attack:
   # for zero seconds after every shot. A reload that costs no time is still an
   # EVENT: every reload-triggered buff fired on every shot and stayed up all
   # engagement. Pressurized Magazine was worth +92% DPS on a weapon that does
-  # not reload (owner spotted it, 2026-08-28).
+  # not reload.
   no_magazine: true
   trigger: auto
   shot_type: projectile

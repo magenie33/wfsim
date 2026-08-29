@@ -27,7 +27,7 @@ exilus_polarity: madurai
 riven_family: Boar           # module `Family` — SHARED with the Boar Prime, so
                              # one riven fits both
 traits: [tenno]
-introduced: "Vanilla"        # in the game at launch (2012-10-25)
+introduced: "Vanilla"        # in the game at launch
 internal_name: /Lotus/Weapons/Tenno/Shotgun/FullAutoShotgun
 noise: alarming              # IsSilent false
 ammo_type: primary
@@ -39,8 +39,7 @@ reload_seconds: 2.7
 # Condition Overload: NO row in the wiki's CO catalog for this weapon, and the
 # catalog's own header makes absence a POSITIVE statement — it lists "only
 # discrepant attacks. Anything not listed should be assumed to be Additive with
-# +100% bonus". Checked for BOTH forms and for the Prime at the same time
-# (2026-08-05): the only Boar-family row in the whole table is none.
+# +100% bonus". Checked for BOTH forms and for the Prime at the same time: the only Boar-family row in the whole table is none.
 co_behavior: additive_with_base_damage
 
 # ONE attack part. The Incarnon form is its own weapon entry (boar_incarnon),

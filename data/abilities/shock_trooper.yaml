@@ -4,7 +4,7 @@
 # player's own frame) does to this weapon for a while. It belongs to the
 # SCENARIO — two builds compared under the same Roar is a comparison, one of
 # them getting it is not — and the BOARD carries none of these, which is what
-# keeps a board row a statement about the weapon (2026-08-08).
+# keeps a board row a statement about the weapon.
 #
 # EARLY ACCESS, AND SAID SO ON THE PAGE. The owner asked for it ahead of the
 # frame layer it will eventually live in, so the section is deliberately small:
@@ -12,7 +12,7 @@
 # strength comes from the frame and the duration from Ability Duration, and
 # these files stay as they are.
 
-# IT DOES NOT COMBINE, and that is the point of it (owner, 2026-08-08). The
+# IT DOES NOT COMBINE, and that is the point of it. The
 # wiki: "Adds Electricity damage to weapon attacks. This damage bonus does
 # not combine with other elements, and is additive with elemental mods."
 #

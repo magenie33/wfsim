@@ -6,7 +6,7 @@ base_drain: 4                 # max drain 7 at rank 3
 max_rank: 3
 # The wiki module gives this one a `/Lotus/Language/…` key — a localisation
 # entry, not the item — so it joined to NOTHING in the WFCD export and its
-# image went missing (2026-08-03). The item's real `uniqueName` is below. It is
+# image went missing. The item's real `uniqueName` is below. It is
 # the only mod in `data/` this happened to, and its drain/rank/polarity/rarity
 # happen to match anyway; the join being broken is the bug, not the numbers.
 internal_name: /Lotus/Upgrades/Mods/Shotgun/DualStat/MagneticFireRateShotgunMod

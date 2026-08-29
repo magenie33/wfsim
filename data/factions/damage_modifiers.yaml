@@ -35,7 +35,7 @@ factions:
   infested_deimos:
     blast: 1.5
     gas: 1.5
-    # RESOLVED (2026-07-24): 0.5 confirmed by the user against
+    # RESOLVED: 0.5 confirmed by the user against
     # wiki Damage_Type_Modifier (their earlier +50% was a typo).
     viral: 0.5
   orokin:                       # the Corrupted + Warframe Specters
@@ -78,7 +78,7 @@ factions:
   # cell by cell against it (docs/DATA_SOURCES.md, 2026-08-03). The list is
   # COMPLETE, so a faction not named here is not a gap — it is a faction the
   # game gives no vulnerability or resistance to, and it takes every damage
-  # type as written (user, 2026-08-03).
+  # type as written.
   #
   # The enemy modules use 18 distinct `Faction` values against these 15
   # columns: Stalker (the Acolytes, "neutral to every element" as of U36),
@@ -102,7 +102,7 @@ special:
     # to Overguard.
     #
     # DAMAGING STATUS EFFECTS DO APPLY while it is up, and their ticks land
-    # ON IT (owner-confirmed in game, 2026-08-09). What Overguard blocks is
+    # ON IT. What Overguard blocks is
     # CROWD CONTROL, not damage — so a Slash or Heat DoT applied to an
     # Eximus with a full Overguard bar shows its numbers, and they come off
     # the Overguard.

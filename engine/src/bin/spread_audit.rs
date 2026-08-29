@@ -44,7 +44,7 @@ fn main() {
         // PUNCH THROUGH is the sixth way and the only one that is not a spread
         // at all: the same shot, still travelling (MECHANICS §13). It reaches a
         // formation with no radius, no chain and no tendril, which is why the
-        // tally under-reported by 29 entries until it was listed (2026-08-17).
+        // tally under-reported by 29 entries until it was listed.
         if a.punch_through_m > 0.0 {
             how.push(if a.punch_through_m >= 999.0 {
                 "punches through bodies without limit".to_string()

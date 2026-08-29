@@ -1,6 +1,6 @@
 // A TARGET YOU MADE IS A TARGET LIKE ANY OTHER.
 //
-// The second CUSTOM (owner, 2026-08-11), and AGENTS.md named it before it
+// The second CUSTOM, and AGENTS.md named it before it
 // existed: "custom enemies will become entries in the scenario's enemy list".
 // That sentence is the whole test — if it is true, the simulator, the optimizer
 // and the target card need no code of their own for it, because they all read

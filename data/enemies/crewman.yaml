@@ -12,7 +12,7 @@ image: CrewmanNormal.png
 # Corpus half of the mitigation model was unreachable, and it was WRONG: the
 # enemy shield gate reached the engine as a 0.1 s window and nothing else, so a
 # hit that broke a shield had its whole excess thrown away and health took
-# nothing (owner measured it, 2026-08-27 — MEASUREMENTS M61).
+# nothing.
 #
 # The plainest Corpus unit there is: no armour, no overguard, no boss mechanic,
 # no attenuation. Everything that happens to a shot fired at it is the shield.
@@ -58,7 +58,7 @@ body_parts:
 
 unmodeled:
   # THE HELMET, and it is the reason a headshot measurement on this unit does
-  # not reproduce (owner, 2026-08-27). A Crewman wears one, it is its own
+  # not reproduce. A Crewman wears one, it is its own
   # destructible hitbox, and while it is on it takes MORE than the head under
   # it; destroy it and headshots read the ordinary `Head: 3.0x`. This sim has
   # one head per body and no way for a part to be destroyed and reveal another,
@@ -82,7 +82,7 @@ source:
   #
   # WFCD's Enemy.json carries 60 health / 150 shield for a Crewman, against the
   # wiki's 90 / 120. The vendored export was refreshed to v1.1275.74, built the
-  # same day (2026-08-27), and it still says 60 / 150 — so this is a standing
+  # same day, and it still says 60 / 150 — so this is a standing
   # disagreement rather than a lag.
   #
   # IT IS A DIFFERENT ENTITY. The wiki module's entry is

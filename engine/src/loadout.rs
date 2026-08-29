@@ -101,8 +101,7 @@ impl CondBucket {
 ///
 /// `Aiming` is in here rather than beside it: it was a bool threaded through
 /// `resolve` while the other states lived on the Tenno, which is two homes for
-/// one kind of fact and two places to remember when the third state lands
-/// (user, 2026-08-02). A card says "while X"; the fight says who is doing what;
+/// one kind of fact and two places to remember when the third state lands. A card says "while X"; the fight says who is doing what;
 /// one enum joins them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TennoCondition {
@@ -370,14 +369,14 @@ pub enum ModEffect {
     ///
     /// The sim used to satisfy this silently — every aim-gated buff fired
     /// whether or not the scenario implied aiming, which flatters any build
-    /// carrying one (user, 2026-07-30). It is now a SCENARIO knob: resolve with
+    /// carrying one. It is now a SCENARIO knob: resolve with
     /// `aiming = false` and the wrapped effect contributes nothing at all.
     /// Wrapping rather than adding a flag to each variant keeps every other
     /// arm of the resolver unaware that aiming exists.
     /// Gated on what the PLAYER is doing — "while aiming", "while Invisible",
     /// "while Airborne". Asked of [`crate::tenno_data::Tenno`], the fight's
     /// second actor, so a card's condition and the fight's state meet in one
-    /// place instead of aiming having its own parameter (user, 2026-08-02).
+    /// place instead of aiming having its own parameter.
     WhileTenno(TennoCondition, Box<ModEffect>),
     /// Faction damage bonus (Bane/Expel/Cleanse/Smite): +v total damage vs a
     /// MATCHING enemy faction. Its own multiplicative bucket, ADDITIVE with
@@ -393,7 +392,7 @@ pub enum ModEffect {
     /// every AoE weapon.
     ///
     /// It scales every part that HAS a radius: the radial explosion and the
-    /// lingering field. The field is measured (2026-07-30) and the wiki says so
+    /// lingering field. The field is measured and the wiki says so
     /// too ("Firestorm mods will now affect Torid gas clouds"). No single-target
     /// damage consequence — the target stands at the epicentre either way — but
     /// it is what the panel states, and Primary Compression reads the MODDED
@@ -430,7 +429,7 @@ pub enum ModEffect {
     /// cleared by a magazine event, capped) with the event swapped: a hit
     /// instead of a kill.
     ///
-    /// THE CAP IS ON THE BONUS, NOT ON THE STACK COUNT (owner, 2026-08-22).
+    /// THE CAP IS ON THE BONUS, NOT ON THE STACK COUNT.
     /// "The critical chance bonus is capped at 500% at all mod ranks" is a
     /// ceiling on a NUMBER, so the 417th hit at max rank happens like any
     /// other and the bonus it would carry to 500.4% simply reads 500% —
@@ -579,7 +578,7 @@ pub enum ModEffect {
     OnReloadFireRate { bonus: f64, duration: f64 },
     /// Deadly Efficiency: "On Reload From Empty: +X% Damage for Xs" — a
     /// relative BASE-damage bonus whose window opens when the reload
-    /// COMPLETES, not when the magazine runs out (owner, 2026-08-01). The
+    /// COMPLETES, not when the magazine runs out. The
     /// distinction is worth a modelled buff: at rank 10 it is +220% for 17 s,
     /// and under Emergent it used to contribute nothing at all.
     OnReloadDamage { bonus: f64, duration: f64 },
@@ -689,7 +688,7 @@ pub enum IndirectStat {
     /// Aim zoom (FOV) — pistol zoom carries no damage bonus (unlike snipers).
     Zoom,
 
-    // ---- 2D groundwork (2026-08-01) ------------------------------------
+    // ---- 2D groundwork ------------------------------------
     // Everything below was `kind: unmodeled` — LOADED AS NOTHING, so the mod
     // equipped and the number vanished. They are real stats with no
     // SINGLE-TARGET damage payload, which is what this bucket is for: the
@@ -733,7 +732,7 @@ pub enum IndirectStat {
     /// only exists so the card's number has somewhere to print.
     SyndicateRadial,
 
-    // ---- TOME MODS (2026-08-25) ----------------------------------------
+    // ---- TOME MODS ----------------------------------------
     // A Tome equips Pistol mods AND eight of its own (wiki `Tome`), and not one
     // of the eight buys anything this arena has. They are here rather than
     // absent because a card a player owns and cannot find in the builder is
@@ -1267,7 +1266,7 @@ pub struct ModDef {
     /// the id — which is lossy in both directions: "Semi-Shotgun Cannonade"
     /// came back as "Semi Shotgun Cannonade" (so its wiki link 404'd),
     /// "Hell's Chamber" lost its apostrophe, and "Bane of Grineer" gained a
-    /// capital O (user, 2026-08-03).
+    /// capital O.
     pub name: &'static str,
     /// Drain at the EQUIPPED (max) rank.
     pub base_drain: u32,
@@ -1340,7 +1339,7 @@ pub struct ModDef {
     /// energy, enemy behaviour, traversal, reviving? Never a todo: building it
     /// would not move a damage figure. Told apart from `unmodeled` because
     /// saying "not modelled" for both makes the model's own edge look like
-    /// unfinished work (2026-08-05).
+    /// unfinished work.
     pub out_of_scope: bool,
 }
 
@@ -1380,7 +1379,7 @@ pub enum StackPolicy {
     /// The reason is not that a companion is excluded from the buff — it is
     /// not. The TRIGGER belongs to the Tenno: the on-kill roll comes from the
     /// Tenno's own weapons, and the stacks it grants then apply to the Tenno
-    /// AND the companion (user, 2026-07-31). What this arena cannot do is
+    /// AND the companion. What this arena cannot do is
     /// simulate the two together — it fires ONE weapon — so when that weapon
     /// is the companion's, nothing on the field can generate the stacks and
     /// only the base is honest.
@@ -1394,7 +1393,7 @@ pub enum StackPolicy {
 /// "No timeout": the duration a LOCKED buff card runs on.
 ///
 /// Locking is not a flag the engine has to remember to consult — it OVERWRITES
-/// the buff's duration (user, 2026-08-04). Every clock in the sim is
+/// the buff's duration. Every clock in the sim is
 /// `expiry = now + duration`, so an infinite duration gives a buff that starts
 /// where its card says, still climbs on every trigger, and never expires —
 /// which is exactly what the label promises, expressed in the one place that
@@ -1426,8 +1425,7 @@ pub struct StackSpec {
 
 /// WHAT A STANCE PUBLISHES: `(form id, its swings)`.
 ///
-/// NO NAME, and that is a decision rather than an omission (owner,
-/// 2026-08-29). A MODE'S NAME IS FIXED and the stance changes what it is WORTH:
+/// NO NAME, and that is a decision rather than an omission. A MODE'S NAME IS FIXED and the stance changes what it is WORTH:
 /// swapping this card moves the numbers behind `neutral` and never what
 /// `neutral` is called, which is the only way "which stance is best for the
 /// neutral combo" can be asked at all. It was briefly a triple carrying the
@@ -1459,7 +1457,7 @@ pub struct Tennokai {
 /// publishes a number instead — "The critical chance bonus is capped at 500% at
 /// all mod ranks" — and ranks only the rate under it. So the pile is not 416
 /// stacks of 1.2%: it is however many hits have landed, worth 500% once they
-/// pass the ceiling (owner, 2026-08-22). The two readings differ by 0.8
+/// pass the ceiling. The two readings differ by 0.8
 /// percentage points at max rank and by a factor of six at rank 0, where 500%
 /// is 2,500 hits away rather than 417.
 ///
@@ -1495,7 +1493,7 @@ impl CritPerHit {
     /// 416th is worth 499.2% and the 417th is worth 500%.
     ///
     /// It is NOT where the fight's counter stops: the pile takes every hit and
-    /// the CEILING is what clamps (owner, 2026-08-22). This is a UI number —
+    /// the CEILING is what clamps. This is a UI number —
     /// the maximum the card's "stacks the run starts with" stepper offers,
     /// since a higher one buys nothing — and the answer to "how long is the
     /// ramp", which is the fact the card never states and the one that moves
@@ -1599,7 +1597,7 @@ pub enum TennoGate {
     /// `energy_max > x`
     EnergyMaxOver(f64),
     /// `energy_max >= x` — the Dual Toxocyst's Carnage Reign, whose per-status
-    /// clause carries an UNLISTED "With Energy Max >= 200" (owner, 2026-08-26).
+    /// clause carries an UNLISTED "With Energy Max >= 200".
     ///
     /// A separate variant rather than `EnergyMaxOver(199)`: the card says >=,
     /// and a threshold written one off so the operator comes out right is a
@@ -2004,7 +2002,7 @@ pub struct WeaponBase {
     /// and is not once a MOD grants an attack part. Nightwatch Napalm's fire is
     /// the first: it arrives during `resolve_for`, long after the valence was
     /// applied, and its base is "increased by Kuva weapon's bonus damage stat"
-    /// (wiki) — measured at 150 to 240 on a 60% roll (owner, 2026-08-23).
+    /// (wiki) — measured at 150 to 240 on a 60% roll.
     ///
     /// Zero on every weapon that is not an adversary weapon, and on one whose
     /// element was never named.
@@ -2018,7 +2016,7 @@ pub struct WeaponBase {
     /// THE ORIGINAL BASE — the damage the GunCO term computes on, in the same
     /// units as `base_vector.total()`.
     ///
-    /// AN ABSOLUTE, NOT A FRACTION (owner, 2026-08-16). It was
+    /// AN ABSOLUTE, NOT A FRACTION. It was
     /// `co_base_fraction`, a ratio recomputed as `original / evolved` wherever
     /// something raised the panel, and the ratio was the wrong noun: it
     /// described the ARITHMETIC of one particular loadout instead of the FACT
@@ -2050,8 +2048,7 @@ pub struct WeaponBase {
     pub traits: &'static [&'static str],
     /// THE WEAPON'S CLASS — `rifle`, `pistol`, `shotgun`, `sniper`. A trait
     /// answers "how does it fire"; this answers "what IS it", and the Amp auras
-    /// are the first thing to ask: Rifle Amp pays a rifle and nothing else
-    /// (2026-08-21).
+    /// are the first thing to ask: Rifle Amp pays a rifle and nothing else.
     pub class: &'static str,
     /// …AND THE POOLS IT DRAWS, because three of the four amps ask THAT
     /// rather than the class: Rifle Amp "also affects bows, sniper rifles
@@ -2105,7 +2102,7 @@ pub struct WeaponBase {
     /// plain bonus rather than a timed buff.
     ///
     /// IT IS SCOPED TO THE RELOAD ACTION — it arrives when the reload starts
-    /// and is gone when the reload ends (owner, 2026-08-11). So it cannot
+    /// and is gone when the reload ends. So it cannot
     /// lapse halfway through, and it cannot spill onto anything that is
     /// not that reload.
     ///
@@ -2382,7 +2379,7 @@ impl BuffGrant {
     /// without answering this is a compile error, which is the point — the
     /// FireRate arm was once the only one that knew about locks, and Stormburst
     /// went on paying +1.2 multishot under Secondary Acuity because Multishot
-    /// had simply never been added beside it (owner, 2026-08-11).
+    /// had simply never been added beside it.
     pub fn locked_stat(self) -> &'static str {
         match self {
             BuffGrant::BaseDamage | BuffGrant::FlatBaseDamage => "base_damage",
@@ -2447,7 +2444,7 @@ pub enum BuffDecay {
     LoseOneAndReset,
     /// Each stack carries its OWN clock and expires on it, oldest first —
     /// FIFO. Strictly harsher: holding N stacks needs N hits per window, not
-    /// one. Stormburst is the roster's first (owner, 2026-08-07).
+    /// one. Stormburst is the roster's first.
     PerStackExpiry,
     /// THE WHOLE PILE GOES AT ONCE. Split Flights is the roster's first, and
     /// its page states both halves of the rule in consecutive lines:
@@ -2524,8 +2521,7 @@ pub struct StackingBuff {
     /// AN EVENT THAT TAKES THE WHOLE PILE, for a buff that has no clock.
     ///
     /// Mounting Momentum is cleared the instant the magazine reaches zero —
-    /// not when the reload finishes, and not on a timer (owner,
-    /// 2026-08-08). It changes what the perk IS: firing a magazine dry and
+    /// not when the reload finishes, and not on a timer. It changes what the perk IS: firing a magazine dry and
     /// reloading it earns one magazine's worth and no more, and the only
     /// way to the 99-stack cap is to keep topping up a magazine that never
     /// empties.
@@ -2537,8 +2533,7 @@ pub struct StackingBuff {
     /// last few seconds (docs/BUFFS.md). A short, CLOSED list is exempted
     /// because keeping it up is not something a player has to think about, so
     /// a fight that opens without it is the less realistic of the two — the
-    /// owner's own allowance, granted per buff and named in BUFFS.md
-    /// (2026-08-22).
+    /// owner's own allowance, granted per buff and named in BUFFS.md.
     ///
     /// IT IS A JUDGEMENT ABOUT PLAYING, NOT A CLAIM OFF THE CARD, and the two
     /// diverge: a card can say "lasts the mission" for a pile that takes a
@@ -2672,7 +2667,7 @@ pub struct ResolvedOrb {
     pub fuse_seconds: f64,
     pub strike_interval_seconds: f64,
     /// Reach, AFTER the blast-radius bucket — Fulmination (Primed) enlarges
-    /// what an orb can touch, which the owner confirms (2026-08-28).
+    /// what an orb can touch, which the owner confirms.
     pub strike_radius_m: f64,
     pub launch_speed_mps: f64,
     pub speed_after_contact_mps: f64,
@@ -2682,8 +2677,7 @@ pub struct ResolvedOrb {
     pub chain_bodies: u32,
     /// A hop's reach — UNMODDED, and the one distance here that is. A range
     /// mod widens what the orb can touch and what its detonation covers, and
-    /// leaves the jump between two bodies at the six metres the page states
-    /// (owner, 2026-08-28).
+    /// leaves the jump between two bodies at the six metres the page states.
     pub chain_range_m: f64,
     pub chain_damage_per_hop: f64,
     /// THE THROW AND ITS RECOVERY, already divided by the fire-rate bucket —
@@ -2915,7 +2909,7 @@ impl Spread {
     ///
     /// Drawing across `[min, max]` instead was tried first and is refutable
     /// from the data: it makes a Rubico — pinpoint on its first shot, in a
-    /// weapon class defined by that — miss about half of them (2026-08-15).
+    /// weapon class defined by that — miss about half of them.
     pub fn draw(&self, u: f64) -> f64 {
         self.min_deg * u
     }
@@ -2968,7 +2962,7 @@ pub struct Ricochet {
     /// page gives *"exploding up to 6 times"*.
     pub bounces: u32,
     /// The chance a bounce lands on a head. A bounce is not aimed, so the
-    /// scenario's `headshot_pct` does not decide it (owner, 2026-08-18: 0.5).
+    /// scenario's `headshot_pct` does not decide it.
     pub headshot_chance: f64,
     /// How far a bounce may reach. `f64::INFINITY` when the data states none —
     /// the count is then the only limit, which is the only limit the page has.
@@ -3047,7 +3041,7 @@ pub enum ChargeOn {
     Kills,
 }
 
-/// The Evolution II choice — a SEARCH DIMENSION (user, 2026-07-25). A
+/// The Evolution II choice — a SEARCH DIMENSION. A
 impl WeaponBase {
     /// Apply an arbitrary equipped-evolution set (data ids) from
     /// data/evolutions/*.yaml onto the raw base. An EMPTY list = nothing
@@ -3332,7 +3326,7 @@ pub struct ResolvedPanel {
     /// it read `WeaponBase::lingering` — which is `None` when a mod granted the
     /// field, so Nightwatch Napalm's fire was resolved, simulated, and drawn
     /// nowhere at all. A part that pays most of a build's damage and appears on
-    /// no card is the worst kind of invisible (owner, 2026-08-23).
+    /// no card is the worst kind of invisible.
     pub lingering_base: Option<LingeringBase>,
     pub battery: Option<crate::weapons_data::Battery>,
     /// ROUNDS A SECOND under Pax Charge — carried from the weapon so
@@ -3564,7 +3558,7 @@ pub struct ResolvedPanel {
     /// Incarnon transform completing, takes it down — because all three refill
     /// the magazine. Nothing ASKS whether the moment is a reload: the value is
     /// summed into the live reload-speed total wherever that total is needed,
-    /// and only the removal events are reasoned about (owner, 2026-08-11).
+    /// and only the removal events are reasoned about.
     pub rs_on_reload: f64,
     /// Flensing Spikes' rate — see [`WeaponBase::armor_strip_per_puncture`].
     pub armor_strip_per_puncture: f64,
@@ -3619,7 +3613,7 @@ impl ResolvedPanel {
     /// (`infinite_ammo || !finite_reserve`). The simulator is the truth and the
     /// optimizer obeys it, so the optimizer must CALL this, not restate it.
     ///
-    /// IT TAKES THE FIGHT'S ANSWER, NOT THE READER'S BOX (2026-08-27). The
+    /// IT TAKES THE FIGHT'S ANSWER, NOT THE READER'S BOX. The
     /// resupply half of this used to live here as `&& !self.no_resupply`, and
     /// by then the same rule was ALSO `scenario::Capability::CanResupply` —
     /// two spellings of one sentence, which is the drift AGENTS.md warns about
@@ -3806,7 +3800,7 @@ pub fn resolve_for(
     };
     // THE FIGHT'S OWN BONUSES SEED THE BUCKETS, before a single mod is read —
     // which is the whole of what "the effect equals stuffing in another mod"
-    // means (owner, 2026-08-13). They are ADDITIVE with the mods by
+    // means. They are ADDITIVE with the mods by
     // construction, because they are in the same variable, so nothing
     // downstream had to learn the concept: every bucket's arithmetic, every
     // lock, every panel row and the optimizer's own scoring treat them as one
@@ -3829,7 +3823,7 @@ pub fn resolve_for(
         // `Base x (1 + Serration + Heavy Caliber + Rifle Amp)`. So the amps are
         // worth LESS the more Serration is already in the sum, which is the
         // whole reason a reader wants to see them in it rather than as a final
-        // multiplier (2026-08-21).
+        // multiplier.
         // …AND A MELEE GENESIS, for the same reason and in the same bucket: the
         // Magistar Incarnon Form's `+100% Melee Damage` is a bracket term
         // beside Pressure Point, so it is worth less the more Pressure Point is
@@ -4230,14 +4224,13 @@ pub fn resolve_for(
                             // PAYLOAD as a buff earned on a kill, and routing
                             // melee's through that made it pay nothing at all —
                             // it waited for a trigger it does not have, in all
-                            // seven modes (2026-08-29).
+                            // seven modes.
                             //
                             // NOT DERIVED FROM `duration == NO_TIMEOUT`, which
                             // would have been the cheap test and is wrong:
                             // LOCKING a buff card writes exactly that duration,
                             // and locking "removes the expiry and nothing else
-                            // — the count still starts where the card sets it"
-                            // (user, 2026-08-02).
+                            // — the count still starts where the card sets it".
                             initial_stacks: if starts_full { max_stacks } else { 0 },
                         })
                     }
@@ -4441,8 +4434,7 @@ pub fn resolve_for(
     // even negative effects" (Primary/Pistol Acuity). "Its default" is the
     // WEAPON'S value, so a source that never passed through the mod bucket —
     // an evolution's permanent bonus, an arcane's live stacks, the weapon's own
-    // Frenzy passive — is not exempt just because the loop above cannot see it
-    // (user, 2026-08-04). The out-of-bucket layers are shadowed here, and
+    // Frenzy passive — is not exempt just because the loop above cannot see it. The out-of-bucket layers are shadowed here, and
     // `locked` carries the fact to the SIM, which owns the live ones.
     let locked_stat = |s: &str| disabled.contains(&s);
     let evo_ms_bonus = if locked_stat("multishot") {
@@ -4650,7 +4642,7 @@ pub fn resolve_for(
             // for rivens because the rule is about a mod's stat list, and a
             // riven is a mod here by construction.
             //
-            // Reported as wrong output (owner, 2026-08-07): a Phantasma Prime
+            // Reported as wrong output: a Phantasma Prime
             // with Magnetic / Cold / riven(Toxin, Electricity) / Electricity
             // reads Magnetic + Toxin in game; listed-order pairing gave
             // Viral + Electricity instead, because Cold met the riven's Toxin
@@ -4774,7 +4766,7 @@ pub fn resolve_for(
         // base-damage bucket. Nightwatch Napalm on a Kuva Ogris: 150 a tick
         // becomes 240 on a 60% roll, and 612 with +155% base damage — which is
         // `240 x 2.55` and not `150 x 3.15`, so the two orders are told apart
-        // by the measurement rather than assumed (owner, 2026-08-23).
+        // by the measurement rather than assumed.
         //
         // A GRANTED part cannot be reached by `apply_valence`: the mod is
         // resolved here, long after the weapon's own vectors were scaled. This
@@ -5089,8 +5081,7 @@ pub fn resolve_for(
         //
         // The orb's REACH and its detonation RADIUS take the blast-radius
         // bucket; a chain HOP does not, and stays at the six metres the page
-        // gives it however much Fulmination is on the build (owner,
-        // 2026-08-28). That asymmetry is the whole reason the hop's range is
+        // gives it however much Fulmination is on the build. That asymmetry is the whole reason the hop's range is
         // carried as its own field rather than read off the reach: the two are
         // the same number today and only one of them moves.
         //
@@ -5113,7 +5104,7 @@ pub fn resolve_for(
                 .max(1.0) as u32,
             chain_range_m: o.chain_range_m,
             chain_damage_per_hop: o.chain_damage_per_hop,
-            // A FIRE-RATE MOD SPEEDS THE THROW UP (owner, 2026-08-28), which is
+            // A FIRE-RATE MOD SPEEDS THE THROW UP, which is
             // the same bucket and the same reciprocal application a charge
             // draw gets: the animation is divided by what the bucket did.
             throw_seconds: o.throw_seconds / (1.0 + fr).max(1e-9),
@@ -5275,8 +5266,7 @@ pub fn resolve_for(
                 // at zero: this is a pile you can be caught without, and the
                 // fight is what earns it. An empty magazine takes the whole
                 // thing, so "how many you walk in with" is not a state the
-                // weapon has — it is a state the last few seconds decided
-                // (owner, 2026-08-08).
+                // weapon has — it is a state the last few seconds decided.
                 initial_stacks: b.initial_stacks,
                 ..*b
             })
@@ -5822,8 +5812,7 @@ mod tests {
     }
 
     /// A PUNCH-THROUGH MOD REACHES THE RESOLVED PANEL — reported by a player
-    /// who asked whether Metal Auger does anything on a Burston Prime
-    /// (2026-08-19). The stats panel says "+2.1m" and the simulation behaved as
+    /// who asked whether Metal Auger does anything on a Burston Prime. The stats panel says "+2.1m" and the simulation behaved as
     /// though it were zero, so the question is which of the two is lying.
     #[test]
     fn a_punch_through_mod_reaches_the_panel() {
@@ -5958,7 +5947,7 @@ mod tests {
     ///
     /// That last half is the point of the seam. Nothing in the engine, the
     /// data, or the UI has to learn about invisibility again when a real frame
-    /// arrives — it arrives as a `Tenno` (user, 2026-08-02).
+    /// arrives — it arrives as a `Tenno`.
     #[test]
     fn a_player_state_condition_is_asked_of_the_tenno() {
         let base = verglas_prime();
@@ -6044,7 +6033,7 @@ mod tests {
 
         // THE CARD IS ONE SENTENCE. It was split into a flat "+25% base crit
         // chance" and an inert "of current Status Chance", so modelling the real
-        // clause would have paid the perk twice (2026-08-12).
+        // clause would have paid the perk twice.
         assert!(
             (a - resolve(&base, &[&cm], StackPolicy::AssumedMax).crit_chance).abs() > 1e-9,
             "sanity: the perk must do something"
@@ -6072,8 +6061,7 @@ mod tests {
     /// the number means: a Paris Prime holding overshields must be exactly the
     /// weapon a plain "+74" perk would make, down to the base vector's
     /// composition and the explosion's Condition Overload fraction. Both routes
-    /// THE ORIGINAL BASE IS AN ABSOLUTE, and this is the case that made it one
-    /// (owner, 2026-08-16): TWO FLAT-DAMAGE SOURCES THAT DISAGREE.
+    /// THE ORIGINAL BASE IS AN ABSOLUTE, and this is the case that made it one: TWO FLAT-DAMAGE SOURCES THAT DISAGREE.
     ///
     /// The engine held `co_base_fraction`, a ratio recomputed as
     /// `original / evolved` wherever something raised the panel. One ratio can
@@ -6244,7 +6232,7 @@ mod tests {
     ///
     /// The clause used to be `out_of_scope`, on the ruling that the Tenno walks
     /// in with a full loadout. That ruling is still the DEFAULT and now only the
-    /// default (owner, 2026-08-13): the scenario says which, and a shut gate
+    /// default: the scenario says which, and a shut gate
     /// costs exactly nothing, which is what keeps every board row meaning what
     /// it meant.
     #[test]
@@ -6311,8 +6299,7 @@ mod tests {
             "cards asking about the loadout: {asking:?}");
     }
 
-    /// A FIGHT BONUS IS ONE MORE MOD, and that is the whole claim (owner,
-    /// 2026-08-13).
+    /// A FIGHT BONUS IS ONE MORE MOD, and that is the whole claim.
     ///
     /// Asserted as an EQUALITY against the real card rather than as a
     /// direction: a scenario's +165% base damage has to resolve to the same
@@ -6623,8 +6610,7 @@ mod tests {
     }
 
     /// The sim used to satisfy `while_aiming` silently, so every aim-gated
-    /// buff fired whether or not the scenario implied aiming (user,
-    /// 2026-07-30). `resolve_with(.., aiming)` is the knob; `resolve` keeps
+    /// buff fired whether or not the scenario implied aiming. `resolve_with(.., aiming)` is the knob; `resolve` keeps
     /// assuming aim.
     #[test]
     fn aiming_gates_the_while_aiming_effects_and_only_those() {
@@ -6682,7 +6668,7 @@ mod tests {
         // effects" (wiki, Primary/Pistol Acuity), and this base carries Fevered
         // Frenzy, whose permanent stacked multishot never passed through the mod
         // bucket. It used to survive the lock, so an Acuity build on Dual
-        // Toxocyst kept the evolution's pellets (user, 2026-08-04).
+        // Toxocyst kept the evolution's pellets.
         let lock = m_req("acuity", None, vec!["multishot"], vec![]);
         let ms_mod = m("multishot", vec![ModEffect::Multishot(1.0)]);
         let locked = resolve(&base, &[&ms_mod, &lock], StackPolicy::AssumedMax);
@@ -6788,7 +6774,7 @@ mod tests {
     /// Acuity "set[s] weapon's Multishot to its default ignoring other bonuses,
     /// even negative effects" — and a buff earned DURING the fight is a bonus
     /// like any other, so Stormburst's "+0.4 Multishot for 2s, stacks 3x" is
-    /// worth nothing under one (owner, 2026-08-11). It was worth +1.2: the
+    /// worth nothing under one. It was worth +1.2: the
     /// resolver knew about locks in exactly one arm, `BuffGrant::FireRate`, and
     /// a buff that fed any other stat walked straight past it.
     ///
@@ -7128,7 +7114,7 @@ mod tests {
     /// The Felarx loads a shell at a time — 0.8 s to start, 0.4 s a shell,
     /// 0.5 s to end — so Ammo Stock buys capacity and pays for it in downtime.
     /// Modelled as one flat block, the mod read as pure profit on exactly the
-    /// weapons the game charges for it (owner, 2026-08-08). The other half of
+    /// weapons the game charges for it. The other half of
     /// the claim matters as much: an ordinary reloader must NOT pay, or the
     /// fix would have made every magazine mod worse.
     #[test]
@@ -7178,8 +7164,7 @@ mod tests {
     /// reload cost without the stacks is a mod that only ever hurts.
     ///
     /// It also OPENS at one reload's worth: a per-shell counter at zero
-    /// describes a weapon just holstered, which is not a fight anyone measures
-    /// (owner, 2026-08-08).
+    /// describes a weapon just holstered, which is not a fight anyone measures.
     #[test]
     fn mounting_momentum_is_worth_a_magazine_and_grows_with_it() {
         let evo = ["felarx_mounting_momentum".to_string()];
@@ -7226,7 +7211,7 @@ mod tests {
     /// cap — because the buff was first implemented as "a reload grants stacks
     /// and nothing takes them". The mechanic is stricter: the pile is cleared
     /// the INSTANT the magazine reaches zero, not by the reload and not by a
-    /// clock (owner, 2026-08-08). So the loop this sim runs — fire dry,
+    /// clock. So the loop this sim runs — fire dry,
     /// reload, fire dry — holds a magazine's worth through each magazine and
     /// loses every stack on its last shot.
     ///
@@ -7260,8 +7245,7 @@ mod tests {
         assert!(d30 < d300 * 0.95, "the opening magazine is unbuffed: {d30:.0} vs {d300:.0}");
     }
 
-/// NIGHTWATCH NAPALM'S FIELD, and the two things a measurement settled about it
-/// (owner, 2026-08-23).
+/// NIGHTWATCH NAPALM'S FIELD, and the two things a measurement settled about it.
 #[cfg(test)]
 mod napalm_tests {
     /// The resolved field on a Kuva Ogris wearing the augment.
@@ -7341,7 +7325,7 @@ mod napalm_tests {
     /// proportional to the amount of ammo consumed during the charge"*, and
     /// *"Charge rate consumes a set 11 ammo per second. Modding to increase
     /// magazine capacity will allow a longer total charge, and thus more
-    /// damage."* Confirmed in play (owner, 2026-08-09).
+    /// damage."* Confirmed in play.
     ///
     /// Three things move together and this asserts all three, because any one
     /// of them alone would be a different weapon: the TIME (magazine / 11), the

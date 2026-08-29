@@ -10,7 +10,7 @@ description: "Remove 20% of enemy Armor per Puncture Status."
 selection: choose_one
 
 effects:
-  # MODELLED (2026-08-12). A THIRD ARMOUR-STRIP SOURCE: the engine had Corrosive
+  # MODELLED. A THIRD ARMOUR-STRIP SOURCE: the engine had Corrosive
   # and Heat, the two the game strips with, and this is a weapon PERK stripping
   # off a status that removes no armour by itself. It multiplies with the other
   # two the way those two already multiply with each other — each removes a

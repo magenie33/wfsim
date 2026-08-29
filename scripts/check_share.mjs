@@ -17,7 +17,7 @@ const { evaluate, check, sleep, send, BASE } = app;
 // SHARING CAN BE SWITCHED OFF, and while it is, THIS is what has to hold: no
 // way to make a new link, and every link already posted still opens a page.
 // A blank is the one outcome a posted URL must never reach — it is what got the
-// feature switched off (owner, 2026-08-07).
+// feature switched off.
 //
 // The round trip below runs again the moment the flag goes back to true, so
 // this file is the check for both states rather than a file to remember to
@@ -90,7 +90,7 @@ check("the share panel offers the BUILD first", sent.shownIsBuildOnly === true,
 check("...and it is a real build, not an empty one", sent.shownHasMods === true);
 check("a link is produced", !!sent.url, sent.url);
 check("the link is under 600 characters", sent.url.length < 600, `${sent.url.length} chars`);
-// **THERE IS NO CLAIM LINK ANY MORE** (owner, 2026-08-26). A share link is a
+// **THERE IS NO CLAIM LINK ANY MORE**. A share link is a
 // build and nothing else: fields 7 and 8 — the fight and the measurement — are
 // always 0, so the two paths through the panel produce the SAME url. This used
 // to assert that the build link was strictly shorter than the claim, which is
@@ -140,7 +140,7 @@ check("the panel reproduces the sender's exactly", got.panel === sent.panel,
 
 // ---- ACT THREE: a BUILD is not a CLAIM, and it moves nobody's fight -------
 //
-// The sharp case, and the reason the split exists (owner, 2026-08-19). A build
+// The sharp case, and the reason the split exists. A build
 // link posted into a chat is clicked by people who are in the middle of their
 // own measurement; landing a scenario preset in their collection and switching
 // them onto it is not a thing a build is allowed to do. `importShare` skips
@@ -215,8 +215,7 @@ check("...and they are still on their own", bo.active === mine.active,
 // ---- v3: THE IDS TRAVEL AS INDICES, AND NOTHING ELSE CHANGES ---------------
 //
 // A link used to spell its ids out and deflate them; v3 sends each one's place
-// in a frozen manifest and puts the text in the URL raw (owner asked for a
-// shorter link, 2026-08-25). That is a renumbering of every id in the payload,
+// in a frozen manifest and puts the text in the URL raw. That is a renumbering of every id in the payload,
 // laid on top of a format that has ALREADY silently dropped an axis once
 // (2026-08-15: `mode` and `valence` were in the state and not in the tuple, so
 // a shared Kuva Nukor reopened on the default element).

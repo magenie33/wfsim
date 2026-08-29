@@ -38,8 +38,7 @@ fn main() {
     // anything. A full status build generates several times the procs, DoTs and
     // ticks a bare one does, and an arcane that fires an EXTRA HIT doubles the
     // instances every one of those is counted from — which is the shape the
-    // owner reported as unusable on a phone (2026-08-18: the Phantasma Prime
-    // with Primary Debilitate). `k=v` anywhere in the arguments, like one_fight.
+    // owner reported as unusable on a phone. `k=v` anywhere in the arguments, like one_fight.
     let kv = |k: &str| {
         a.iter()
             .find_map(|s| s.strip_prefix(&format!("{k}=")))

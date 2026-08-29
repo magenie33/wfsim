@@ -55,8 +55,7 @@ const PROBE = `(async () => {
 // THE PAGE SAYS WHICH WEAPON IT HAS APPLIED, so the check asks instead of
 // betting on a duration. A fixed sleep after a navigation lost the same bet
 // twice: four weapons of 355 answered with the PREVIOUS page's blocks still up
-// and reported a visibility mismatch that no product change could cause or fix
-// (2026-08-21). Deterministic, because those four are simply the ones whose
+// and reported a visibility mismatch that no product change could cause or fix. Deterministic, because those four are simply the ones whose
 // apply happens to straddle the window on this machine — which is exactly the
 // kind of failure that gets read as a real one.
 const applied = (id) => `(() => {
@@ -117,7 +116,7 @@ const app = await openApp({ base: process.argv[2] });
 // THAT IS THIS CHECK'S OWN INTERMITTENT FAILURE, demonstrated rather than
 // guessed at: "the builder shows an evolution block for a weapon with none",
 // four times over eight runs, never the same weapon twice, always a weapon
-// with NO evolutions (2026-08-24). Reproducing it by re-running the 219-weapon
+// with NO evolutions. Reproducing it by re-running the 219-weapon
 // sweep is a coin flip that costs seven minutes; this states the PROPERTY, so
 // it is deterministic and costs nothing.
 const CROSSED = `(() => {
@@ -200,8 +199,7 @@ const settled = async (id) => {
 // every effect the engine has no rule for — was marked in the OPTIMIZER's
 // evolution list and not on the BUILDER's tile, so the surface where the choice
 // is actually made showed it as an ordinary pick. Invisible until the roster
-// grew: eleven Incarnon weapons landed on 2026-08-08 carrying 31 such perks
-// (owner).
+// grew: eleven Incarnon weapons landed on 2026-08-08 carrying 31 such perks.
 //
 // Asserted on the SCREEN rather than on the data, because the data was right
 // the whole time — both modules read the same `unmodeled` array off `/api/meta`
@@ -246,7 +244,7 @@ app.check(`every unmodelled evolution is marked on the BUILDER's tile too (${VIS
 // builder at 19:13 on 2026-08-13 and `boardPayload` at 22:25 — three hours in
 // which wfsim.app let you pick an element and dropped it on the way out, so
 // every Nukor build tested in that window is stored with no element and refused
-// on every scoring run since (owner, 2026-08-14: "我都选了元素的").
+// on every scoring run since.
 //
 // DERIVED FROM THE BUILD, not from a list of axes somebody remembered to
 // update: `snapshotState()` IS the build, so every key in it must either travel
@@ -304,7 +302,7 @@ app.check("...and nothing is named here that the build no longer has",
 // of as a value — so a reader must be able to move between the two tabs
 // without re-learning where anything is. It could not: the optimizer opened on
 // Mods and put Mode fourth, called the builder's "Arcane" block "Arcanes" and
-// its "Evolution" block "Evolutions", and numbered nothing (owner, 2026-08-29).
+// its "Evolution" block "Evolutions", and numbered nothing.
 //
 // `orderOptScope` reads the ORDER, the NUMBER and the NAME off the builder's
 // own blocks, so this asserts one property rather than a list: reorder,

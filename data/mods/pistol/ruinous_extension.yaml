@@ -31,7 +31,7 @@ exclusive_to: [atomos, catabolyst, coda_catabolyst, cycron, tenet_cycron,
                spectra, spectra_vandal, tenet_spirex]
 
 effects:
-  # THE METRES ARE REAL NOW (2026-08-22). Beam range became a WALL on
+  # THE METRES ARE REAL NOW. Beam range became a WALL on
   # 2026-08-19 (`gap_m <= ap.range_m`), and this mod moves it — measured on an
   # Ocucor at the time: 0 damage at 25 m with the mod and 0 without, because
   # the mod did nothing. What was missing was never the metres, it was the

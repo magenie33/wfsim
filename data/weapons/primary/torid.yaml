@@ -20,7 +20,7 @@ grip_type: ""                  # the data module records an empty GripType
 mastery_rank: 4
 max_rank: 30
 
-# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are separate
+# TWO WEAPONS MODEL: base and Incarnon forms are separate
 # entries linked by a transform group. Unlike the Zariman weapons the Torid's
 # Genesis is an INSTALLED item (20 Pathos Clamps, 60 Rune Marrow, 20 Maw Fangs
 # from Cavalero) — irrelevant to the calc, recorded so the acquisition
@@ -90,7 +90,7 @@ attack:
   projectile_speed_mps: 40      # slow, heavy arc
   fire_rate: 1.5
   multishot: 1.0
-  # NOT READ by the engine (2026-07-31): nothing in engine/ references
+  # NOT READ by the engine: nothing in engine/ references
   # `ammo_cost` — the sim spends a flat 1.0 (minus ammo efficiency) per shot.
   # It matters for CONTINUOUS weapons, which the wiki says "consume 0.5 ammo
   # per trace - unless they are Flamethrowers", and the only beam in the
@@ -141,7 +141,7 @@ attack:
     # This cloud takes Condition Overload — an ANOMALY, and it needs declaring
     # because the default is NO. What the mods say is that CO boosts DIRECT
     # hits, so an AoE part should get nothing at all; in theory this cloud would
-    # not (user, 2026-07-30) and DE let it anyway. The CO catalog records the
+    # not and DE let it anyway. The CO catalog records the
     # exception with a row of its own:
     #   Torid | Toxin AoE Cloud | AoE | 40 | 40 | 100% | Multiplying
     # which is doubly discrepant: an AoE part receiving CO, and receiving it as

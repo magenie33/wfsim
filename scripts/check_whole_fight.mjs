@@ -20,7 +20,7 @@
 // `/api/meta` states the consequence per weapon; the page reads it. The three
 // forcing rules used to be re-derived in `app.js` from weapon flags — two
 // implementations of one rule, drifting in silence, because a forced field
-// looks identical whoever forced it (owner, 2026-08-27).
+// looks identical whoever forced it.
 //
 // AND WHAT THE FIGHT ITSELF RULES, per weapon class (§5-6). A scenario carries
 // the rules for classes it is not pointed at, which is what makes it one
@@ -129,13 +129,13 @@ check("...and says why in a sentence rather than a word",
 // ---- 4. THE THREE-STATE AMMO BOX, WHICH IS WHY THE RULE IS DATA ------------
 //
 // One flag read as the wrong one of two facts left the only adjustable weapon
-// being the one weapon the game gives no way to adjust (2026-08-04). The two
+// being the one weapon the game gives no way to adjust. The two
 // forced states are OPPOSITE values from OPPOSITE facts, so a weapon of each is
 // the only way to hold it.
 // THE VALUE THAT RUNS IS THE FIRST THING IN THE CELL, and these anchor on it.
 // A settled row prints BOTH numbers — what runs, then what the document holds —
 // so a loose `/true/` finds the "true" in "document says true" and passes while
-// the row reports `false`. It did, for one revision (2026-08-27).
+// the row reports `false`. It did, for one revision.
 const runs = (r) => (r ? String(r.val).split(/\s+/)[0] : "(none)");
 const ammoOn = artax.forced.find(f => f.id === "infinite_ammo");
 check("a weapon with no reserve forces infinite ammo ON", runs(ammoOn) === "true", runs(ammoOn));
@@ -151,7 +151,7 @@ check("...which is the opposite value from the opposite fact",
 // A scenario is one document that ANY weapon can be measured against, so it
 // carries rules for the classes it is not pointed at — which is what makes
 // "in my fight, Arch-Guns have infinite ammo" something you write on a
-// Burston's page (owner, 2026-08-27).
+// Burston's page.
 check("every weapon class gets a column, on a weapon in none of the others",
   laetum.house.length === 4, JSON.stringify(laetum.house.map(h => h.head)));
 check("...and the one you are standing on is marked",

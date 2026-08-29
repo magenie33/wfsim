@@ -30,8 +30,7 @@
 //!
 //! There is one board per benchmark, it is regenerated WHOLE whenever this file
 //! or the engine changes, and what is deployed is always the current answer —
-//! so a version number would mark a distinction nobody could act on (owner,
-//! 2026-08-04). What this file said last week is git's business.
+//! so a version number would mark a distinction nobody could act on. What this file said last week is git's business.
 //!
 //! CHANGING A TERM HERE RE-SCORES; it does not discard. A build submitted when
 //! the fight was 300 s is still a build when it becomes 400 s — the standard
@@ -53,7 +52,7 @@ use serde::Deserialize;
 /// agree about whether two builds are the same build, or dedup and displacement
 /// stop working. Admission is per-benchmark, and that split is exactly what
 /// lets a future ruler demand a weapon class or a required mod without touching
-/// how any build is identified (owner, 2026-08-05).
+/// how any build is identified.
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq, Default)]
 pub struct BuildRequirement {
     /// `full` = every main slot. Absent = no requirement.
@@ -139,7 +138,7 @@ pub struct Benchmark {
     ///
     /// The rulers were in PATH ORDER and that was the same thing as "the
     /// primary one" while `single_target.yaml` sorted first. Adding
-    /// `group_clear.yaml` broke it in two places at once (2026-08-17): the
+    /// `group_clear.yaml` broke it in two places at once: the
     /// board page opened on a brand-new EMPTY ranking, and — worse — every
     /// first-time visitor's default SCENARIO became a 361-body fight, because
     /// the app seeds the active scenario from the first builtin.
@@ -165,7 +164,7 @@ pub struct Benchmark {
 ///
 /// WHY THE SHORTHAND EXISTS: 361 bodies written out is 360 lines nobody can
 /// check by reading, and a ruler whose terms cannot be argued with is not a
-/// ruler (owner, 2026-08-17).
+/// ruler.
 ///
 /// WHY IT IS EXPANDED HERE: because the PAGE has to draw the crowd. The arena
 /// is the source — what you see is what gets simulated — and it reads
@@ -363,7 +362,7 @@ mod tests {
         // pricing a build's ramp and starts paying for it twice). The pin moved
         // WITH the change, which is what it is for.
         assert_eq!(s("duration").and_then(|v| v.as_u64()), Some(180));
-        // 1000 since 2026-08-11, up from 100 (owner). The board's noise floor
+        // 1000 since 2026-08-11, up from 100. The board's noise floor
         // is the one term of a public claim nobody can improve by trying
         // harder, and it is the cheapest thing here to spend on: paid once per
         // rescore rather than per player. The SIMULATOR's default stays 100 —

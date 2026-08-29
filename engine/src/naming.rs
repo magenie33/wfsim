@@ -1,6 +1,6 @@
 //! THE NAMING CONVENTION, enforced — see `docs/NAMING.md`.
 //!
-//! The owner's rule (2026-08-20): a name may be LONG, but it must have
+//! The owner's rule: a name may be LONG, but it must have
 //! STRUCTURE and LOGIC, and information is never traded away for brevity.
 //!
 //! A document alone would not have held. The survey that produced the
@@ -36,7 +36,7 @@ const FORBIDDEN: &[(&str, &str)] = &[
 ];
 
 /// AN ABBREVIATED SUBJECT, anywhere in a name — the class the owner asked about
-/// second (2026-08-20), and a worse one than a mis-spelled unit: a reader of
+/// second, and a worse one than a mis-spelled unit: a reader of
 /// `bd_eximus_expiry` has to ALREADY KNOW that `bd` is base damage before the
 /// name tells them anything at all.
 ///
@@ -48,7 +48,7 @@ const FORBIDDEN: &[(&str, &str)] = &[
 /// `multishot` IS THE ONE THAT PROVES THE RULE. It meant MULTISHOT in the engine and
 /// MILLISECONDS in `one_fight` — one two-letter name, two units, in one
 /// codebase. Neither use survives.
-/// A BULK RENAME ONCE ATE THIS TABLE (2026-08-20): a sweep that expanded `ms`
+/// A BULK RENAME ONCE ATE THIS TABLE: a sweep that expanded `ms`
 /// everywhere rewrote the LEFT column too, turning `("ms", "multishot")` into
 /// `("multishot", "multishot")` — after which every name containing `multishot`
 /// was reported as needing to become `multishot`. `the_table_is_not_a_fixed_point`
@@ -247,7 +247,7 @@ mod tests {
                     // A TYPE, and PRIMITIVES COUNT. Requiring an uppercase
                     // initial skipped every `f64` field in the crate, which is
                     // most of them — the check ran green over `crit_mult: f64`
-                    // and was caught only by sabotaging it (2026-08-20). A
+                    // and was caught only by sabotaging it. A
                     // ratchet that cannot fail is not a ratchet.
                     let ty = rest.trim_start();
                     let primitive = ["f64", "f32", "u8", "u16", "u32", "u64", "usize", "i8",

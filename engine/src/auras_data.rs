@@ -3,7 +3,7 @@
 //!
 //! An aura sits on the WARFRAME, so it is read into the fight's [`Tenno`] beside
 //! armour and energy — the block that becomes a real frame when frames are
-//! built (owner, 2026-08-21). That placement is the whole design: everything on
+//! built. That placement is the whole design: everything on
 //! the Tenno already travels through `parse_fight` into the simulator AND the
 //! optimizer, so neither module learns that auras exist.
 //!
@@ -20,7 +20,7 @@ use serde::Deserialize;
 ///
 /// The lesson is `arcanes_data::arc_condition`'s: a data file stating a rule the
 /// engine does not apply is worse than one that omits it, because to anyone
-/// auditing it reads as if the rule were being applied (2026-08-18).
+/// auditing it reads as if the rule were being applied.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AuraEffect {
     /// Corrosive Projection. A MULTIPLIER on the target's armour, negative.

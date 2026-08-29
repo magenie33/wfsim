@@ -57,8 +57,7 @@ impl Rng {
 /// Cold — which deals no damage, and slows a target this arena does not model
 /// as moving — adding status chance moved the reported DPS by +0.73%, while
 /// the same build re-seeded eight times spread 2.16%. The number was noise, and
-/// it read as a recommendation (owner, 2026-08-07: 理论上不影响 dps，要影响也
-/// 应该是增益影响).
+/// it read as a recommendation.
 ///
 /// So the streams are split by WHAT IS BEING DECIDED, and each is derived from
 /// the run's own seed:

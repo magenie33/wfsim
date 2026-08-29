@@ -1,7 +1,7 @@
 // HOW A WEAPON IS PLAYED IS A SEARCH DIMENSION, and it is the BUILDER's control
 // everywhere else.
 //
-// The report (owner, 2026-08-11): pick the Phantasma's charged mode on the
+// The report: pick the Phantasma's charged mode on the
 // optimizer tab, run it, and the winner is a base-form build. Two faults in
 // one, and they pull in opposite directions — the control on that tab was the
 // BUILDER's Mode block, drawn there because nothing hid it, and the optimize
@@ -97,7 +97,7 @@ const r = await evaluate(`(async () => {
   // row must come back in that mode, and it must be the one that was pinned
   // rather than the weapon's default — which is exactly what the report was.
   opt.mods = {}; picks.forEach(i=>{opt.mods[i]='search';});
-  // The final-round count is a PREFERENCE now (owner, 2026-08-29), not a
+  // The final-round count is a PREFERENCE now, not a
   // field on optRun — set it where it lives. (No backticks: this whole body
   // is a template literal.)
   opt.size = 2; opt.min = 2; setFinalRuns(12); optRun.finalists = 6;

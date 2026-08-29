@@ -4,7 +4,7 @@ A mod that only fits one weapon is invisible to every other check we have: the
 mod pools are built from what `data/mods/` contains, so a mod nobody has
 transcribed is a mod the builder cannot offer and nothing notices. The Dread's
 Unseen Dread and the Latron's Double Tap sat missing that way until someone
-looked at a wiki page (owner, 2026-08-13).
+looked at a wiki page.
 
 THE JOIN IS `compatName` x our weapon names, minus what we already carry by
 `internal_name` — never by display name, which WFCD duplicates (AGENTS.md).
@@ -149,7 +149,7 @@ def main():
         '# and "0 still to transcribe" while the real answer grew to 197 and 103,',
         '# and the ratchet reading it passed the whole way — a weapon added after',
         '# the last run can only ever be absent from a generated file, which is',
-        '# the lesson docs/CATALOGS.md already records in another domain (2026-08-26).',
+        '# the lesson docs/CATALOGS.md already records in another domain.',
         '#',
         '# The test compares this to the live roster, so ADDING A WEAPON makes it',
         '# stale and RED. Only this script can clear it, and only on a machine',

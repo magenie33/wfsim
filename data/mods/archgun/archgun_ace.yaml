@@ -20,7 +20,7 @@ effects:
     duration_rank0: 2
     duration: 9
   # The same TRIGGER, granting reload speed. `CondBucket::ReloadSpeed` exists
-  # for this (2026-08-01): it contributes under AssumedMax, and under Emergent
+  # for this: it contributes under AssumedMax, and under Emergent
   # it is an honest no-op, because a live reload-speed timer is machinery
   # nothing else in the sim needs yet.
   - kind: buff

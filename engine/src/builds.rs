@@ -31,7 +31,7 @@
 //! true of that build and not of builds. Mods combine ELEMENTS in listed order:
 //! Heat, Cold, Toxin, Electric is Blast + Corrosive; Heat, Toxin, Cold,
 //! Electric is Gas + Magnetic, and on the Torid that is 12,424 DPS against
-//! 46,583 (measured 2026-08-04). A sorted identity collapsed those into one row
+//! 46,583. A sorted identity collapsed those into one row
 //! and scored whichever the sort happened to produce.
 //!
 //! ...but what counts is the PAIRING, not the positions. `elements::combine`
@@ -42,8 +42,7 @@
 //! and which one trails.
 //!
 //! Both of those were treated as significant, and it put the Ocucor on the
-//! board twice at the same score with Frostbite and Pistol Pestilence swapped
-//! (owner, 2026-08-06). The rule was right and one notch too fine.
+//! board twice at the same score with Frostbite and Pistol Pestilence swapped. The rule was right and one notch too fine.
 //!
 //! CANONICALISE ON THE POOLED SEQUENCE, never on mod slots. Two mods of one
 //! element are ONE entry to the engine, so every position after them shifts —
@@ -55,7 +54,7 @@
 //! So the identity is the weapon, the mod sequence CANONICALISED to one
 //! representative per PAIRING, the evolution set, and the arcanes.
 //!
-//! Rivens are absent on purpose (user, 2026-08-04): they are personal random
+//! Rivens are absent on purpose: they are personal random
 //! items, so a board that counted them would rank luck. That also removes the
 //! one free-text field a player authors — a riven's name — from anything that
 //! would ever be uploaded.
@@ -100,8 +99,7 @@ pub struct BuildAxis {
     pub on_board: bool,
 }
 
-/// WHAT A BUILD CONSISTS OF, declared once for the whole product (owner,
-/// 2026-08-16).
+/// WHAT A BUILD CONSISTS OF, declared once for the whole product.
 ///
 /// A build travels through eight representations — the page's live state, a
 /// stored preset, a simulate request, an optimize scope, a ranked row, a board
@@ -111,9 +109,8 @@ pub struct BuildAxis {
 /// in silence, because a missing axis and a defaulted axis are the same absence
 /// on the wire.
 ///
-/// It happened four times: `mode` lost from the board submission (2026-08-09),
-/// `valence` from the worker's table (2026-08-14), both from the share tuple
-/// (2026-08-15), and `valence` from the optimizer's "+ add" (2026-08-16) — the
+/// It happened four times: `mode` lost from the board submission,
+/// `valence` from the worker's table, both from the share tuple, and `valence` from the optimizer's "+ add" — the
 /// last one measured by a player, who was shown 26 KPM on a ranking and 15 in
 /// the simulator for what he had been told was the same build.
 ///
@@ -170,8 +167,7 @@ pub struct ValidBuild {
     /// An ADVERSARY weapon's VALENCE ELEMENT — the progenitor bonus this copy
     /// came out of its Lich with. Empty on every weapon that has no valence.
     ///
-    /// Part of the build for the same reason an evolution is (owner,
-    /// 2026-08-13): a different element is a different weapon, not a
+    /// Part of the build for the same reason an evolution is: a different element is a different weapon, not a
     /// weaker one. The PERCENTAGE is not here — the board scores every
     /// row at the roll's maximum, which every player can reach.
     pub valence: String,
@@ -181,7 +177,7 @@ pub struct ValidBuild {
     /// downstream could tell which entry it was: an exilus-eligible mod is
     /// legal in a MAIN slot too, so the list alone cannot say whether one was
     /// spent on it. Only the slot it came out of knows, and this is where that
-    /// fact is kept (owner, 2026-08-25).
+    /// fact is kept.
     pub exilus: Option<String>,
     /// THE RIVEN THIS BUILD CARRIES, as a SHAPE — which stats, and which is the
     /// malus. `None` on a build with no riven, which is almost all of them.
@@ -207,8 +203,7 @@ pub struct ValidBuild {
 /// everything else ahead of them, ordered by a rule rather than by chance.
 ///
 /// Raw order is too fine and sorted order is too coarse, and both were wrong
-/// here in the same day. What actually matters is measured (2026-08-04, Torid,
-/// six mods): moving three elementals from slots 1-3 to 4-6, interleaving them
+/// here in the same day. What actually matters is measured: moving three elementals from slots 1-3 to 4-6, interleaving them
 /// with the rest, and reshuffling the non-elementals all give the IDENTICAL
 /// 146,707.582 DPS — while swapping two elementals with each other gives
 /// 12,424 against 46,583, because it pairs Blast + Corrosive instead of Gas +
@@ -220,7 +215,7 @@ pub struct ValidBuild {
 /// walk the hierarchy, so this cannot drift from what the sim does.
 ///
 /// The rest are ordered biggest-drain first, then by DE's own English name
-/// (owner, 2026-08-04) — a rule chosen so the representative is stable and
+/// — a rule chosen so the representative is stable and
 /// readable, not because the engine cares.
 pub fn canonical_mods(weapon: &str, mods: &[String]) -> Vec<String> {
     canonical_mods_with(weapon, mods, None)
@@ -316,8 +311,7 @@ pub fn canonical_mods_with(
     for p in &mut pairs {
         p.sort_by_key(|&t| crate::elements::wiki_order(t));
     }
-    // By the element each pair MAKES, in the wiki's own table order (owner,
-    // 2026-08-06). Pooling guarantees the two are distinct, so `combined_of`
+    // By the element each pair MAKES, in the wiki's own table order. Pooling guarantees the two are distinct, so `combined_of`
     // always answers here — unlike the reverted version, which asked it about
     // two mods rather than two elements and had to invent a fallback.
     pairs.sort_by_key(|p| {
@@ -633,7 +627,7 @@ fn normalize_with(
 /// belongs on a particular leaderboard, and those are different questions — four
 /// mods is a perfectly legal build and a meaningless board row.
 ///
-/// THE RULE IS THE BENCHMARK'S, not a global constant (owner, 2026-08-05). A
+/// THE RULE IS THE BENCHMARK'S, not a global constant. A
 /// benchmark owns its fight; it owns what it admits for the same reason, and a
 /// second ruler may reasonably want something else entirely. What it must NOT
 /// own is identity — `canonical_mods` is universal, because two boards that
@@ -765,7 +759,7 @@ pub fn validate_for_board_with(
     // ruler has nothing to have an opinion about: an adversary weapon with no
     // progenitor element is not a build this board declines, it is not a build.
     // `validate` refuses it for every caller, which is where a legality rule
-    // belongs (owner, 2026-08-14).
+    // belongs.
 
     Ok(b)
 }
@@ -858,8 +852,7 @@ pub fn validate_with(
     // RANGE is exilus (`sinister_reach`, `ruinous_extension`,
     // `galvanized_acceleration`), and beam range decides how many bodies a beam
     // reaches — which on a 19x19 group ruler is most of the damage. Excluding
-    // the slot put those mods out of reach of every board row (owner,
-    // 2026-08-25).
+    // the slot put those mods out of reach of every board row.
     //
     // THE SLOT ONLY TAKES AN EXILUS MOD, which is the one rule the game
     // enforces here that a main slot does not.
@@ -892,8 +885,7 @@ pub fn validate_with(
         }
     }
 
-    // EIGHT SLOTS. The exilus slot is OUT OF SCOPE for a benchmark build
-    // (user, 2026-08-04), and the reason is that it does not measure
+    // EIGHT SLOTS. The exilus slot is OUT OF SCOPE for a benchmark build, and the reason is that it does not measure
     // anything: exilus mods are handling and mobility, with no single-target
     // damage model — the optimizer already excludes them from its pool for
     // exactly that reason. It also costs a separate adapter, so
@@ -910,7 +902,7 @@ pub fn validate_with(
     // it — eight main, one exilus, one STANCE — and a stance mod is legal in
     // that slot and NOWHERE else, so a flat list can say which entry it is by
     // looking at it. That is exactly what the exilus slot could not do, which
-    // is why THAT one travels in a field of its own (2026-08-25) and this one
+    // is why THAT one travels in a field of its own and this one
     // does not need to.
     //
     // AT MOST ONE, because there is one slot: two stances in a list is a build
@@ -933,8 +925,7 @@ pub fn validate_with(
     // NINE POLARITIES FOR EIGHT SLOTS, and the exilus one is in the pool even
     // though the exilus SLOT is out of scope.
     //
-    // A POLARITY BELONGS TO THE WEAPON, NOT TO THE SLOT IT SITS ON (owner,
-    // 2026-08-16). It can be swapped with another slot's without changing what
+    // A POLARITY BELONGS TO THE WEAPON, NOT TO THE SLOT IT SITS ON. It can be swapped with another slot's without changing what
     // either slot IS — the exilus slot stays exilus — so a build with no exilus
     // mod at all can still spend that polarity: swap it onto a main slot, and
     // the exilus slot carries whatever came back and sits empty.
@@ -974,7 +965,7 @@ pub fn validate_with(
     // in the roster. A secondary weapon's arcane was therefore checked against
     // the primary pool and refused: `secondary_deadhead is not an arcane Dual
     // Toxocyst can seat`. Two real Dual Toxocyst submissions were thrown away
-    // by it before anyone noticed (2026-08-05), and nothing noticed because the
+    // by it before anyone noticed, and nothing noticed because the
     // scorer counted refusals without printing them.
     //
     // `weapons_data::arcane_pools` is the same answer the page shows, which is
@@ -1008,7 +999,7 @@ pub fn validate_with(
     let val = match crate::weapons_data::valence_of(weapon) {
         Some(s) => {
             if valence.is_empty() {
-                // AND IT IS MANDATORY (owner, 2026-08-14). Every copy of an
+                // AND IT IS MANDATORY. Every copy of an
                 // adversary weapon comes out of a Lich carrying an element, so
                 // a build with none is not a weaker build of that weapon — it
                 // is a weapon nobody has. It used to be accepted here and
@@ -1079,7 +1070,7 @@ fn check_riven_shape(
         return Err(bad.join("; "));
     }
     // **WHAT THE EDITOR OFFERS IS WHAT THE BOARD MUST ACCEPT**, and the two
-    // disagreed completely (owner, 2026-08-24): the class pool MINUS what this
+    // disagreed completely: the class pool MINUS what this
     // weapon cannot roll, which is exactly `rivenPool()` on the page —
     // `rivenPoolAll()` filtered by the `riven_excludes` this same engine
     // serves.
@@ -1120,7 +1111,7 @@ fn check_riven_shape(
 /// collapsing them would keep whichever arrived first. It is here rather than
 /// at the scorer's two call sites because the PAGE asks the same question now
 /// ("is what I am looking at already a row?") and a second spelling of a key is
-/// how one side quietly stops matching the other (owner, 2026-08-28).
+/// how one side quietly stops matching the other.
 pub fn board_key(b: &ValidBuild, mode: &str) -> String {
     let mode = if mode.is_empty() { "base" } else { mode };
     format!("{}#{}", identity(b), mode)
@@ -1309,7 +1300,7 @@ mod tests {
     /// `derived_for` as a whitelist when it is the exclusion list, so every
     /// legal riven was refused with "a X riven does not roll Y" and only
     /// illegal ones could have passed. The board has never carried a riven
-    /// build, and this is why (owner, 2026-08-24).
+    /// build, and this is why.
     ///
     /// It is asserted as the PROPERTY over the whole roster, because a test
     /// naming one weapon and one stat is the same shape as the bug: a hand
@@ -1532,7 +1523,7 @@ mod tests {
 
     /// A POLARITY BELONGS TO THE WEAPON, NOT TO THE SLOT — so a benchmark
     /// build spends the EXILUS slot's polarity even though the exilus SLOT is
-    /// out of scope (owner, 2026-08-16).
+    /// out of scope.
     ///
     /// Two slots' polarities swap without changing what either slot IS, so the
     /// exilus one can be moved onto a main slot and the exilus slot left
@@ -1673,7 +1664,7 @@ mod tests {
 
     /// THE REPRESENTATIVE: what differs is kept, what does not is not.
     ///
-    /// Measured on the Torid (2026-08-04, six mods): three elementals in slots
+    /// Measured on the Torid: three elementals in slots
     /// 1-3, the same three in 4-6, and the same three interleaved with the
     /// non-elementals all score an IDENTICAL 146,707.582 DPS, as does
     /// reshuffling the non-elementals among themselves. So position is not the
@@ -1761,8 +1752,7 @@ mod tests {
     /// construction.
     ///
     /// It reached the board: the Ocucor carried two rows differing only in
-    /// Frostbite and Pistol Pestilence being swapped, both scoring 6.0779
-    /// (owner, 2026-08-06).
+    /// Frostbite and Pistol Pestilence being swapped, both scoring 6.0779.
     #[test]
     fn swapping_two_elementals_inside_a_pair_is_one_build() {
         let one = validate("ocucor", &v(&["frostbite", "pistol_pestilence"]), &[], &[], "").unwrap();
@@ -1832,8 +1822,7 @@ mod tests {
         }
     }
 
-    /// ALL THREE AXES REACH THE BUILD — mods, evolutions AND arcanes (user,
-    /// 2026-08-04).
+    /// ALL THREE AXES REACH THE BUILD — mods, evolutions AND arcanes.
     ///
     /// Asserted through the IDENTITY rather than by reading fields back,
     /// because identity is what a board row is keyed on: if an axis did not
@@ -1943,7 +1932,7 @@ mod tests {
     }
 
     /// AN ADVERSARY WEAPON'S VALENCE IS MANDATORY, and it is a LEGALITY rule
-    /// rather than a board one (owner, 2026-08-14).
+    /// rather than a board one.
     ///
     /// Every copy in the game comes out of a Lich carrying an element, so a
     /// build with none is not a weaker build of that weapon — it is a weapon
@@ -2039,7 +2028,7 @@ mod tests {
     /// every arcane DIRECTORY that exists, sorted, so seat 0 was "primary" on
     /// every weapon and a Dual Toxocyst build carrying `secondary_deadhead` was
     /// refused for seating an arcane it seats. Two real submissions were thrown
-    /// away by it (2026-08-05).
+    /// away by it.
     #[test]
     fn a_weapon_seats_its_own_slots_arcanes() {
         // Eight mods from EIGHT DIFFERENT FAMILIES — two of one family is its

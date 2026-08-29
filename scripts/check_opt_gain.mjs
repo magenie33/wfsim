@@ -45,7 +45,7 @@ const script = [
   "    return row ? { gain: (row.querySelector('.gainchip')||{}).innerText || null,",
   "                   note: (row.querySelector('.pairnote')||{}).innerText || null } : null; };",
   // The other two axes are marked the same way and asked the same question,
-  // so they have to answer it too (user, 2026-08-06: "mod/arcane/evo").
+  // so they have to answer it too.
   //
   // BY ID, never by the name on screen. This matched `.mn` text against
   // "Forceful Finality" and passed only because that evolution had no Chinese

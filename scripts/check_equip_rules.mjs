@@ -7,8 +7,7 @@
 // "Weapons with an Incarnon mode must have Semi-Auto trigger type for both
 // firing modes in order to equip this mod" (wiki, Semi-Pistol_Cannonade). Dual
 // Toxocyst is semi-auto and transforms into a full-auto form, so the mod fits
-// while the Genesis is not installed and does not the moment tier 1 is (user,
-// 2026-08-04).
+// while the Genesis is not installed and does not the moment tier 1 is.
 //
 // The engine decides (`pool_for_build`) and the page is TOLD the consequence
 // (`evo_forbids` in /api/meta) — this asserts the page acts on it, on SCREEN:
@@ -53,7 +52,7 @@ const r = await evaluate(`(async () => {
     closePopovers();
     return ids;
   };
-  // A TIER IS A DROPDOWN (2026-08-24), so installing and removing a perk is
+  // A TIER IS A DROPDOWN, so installing and removing a perk is
   // the control own path rather than a click on a tile, and pickEvolution is
   // that path — the one the onPick handler calls.
   const evoTierOf = (id) => (weaponEvos().find(t => (t.options || []).some(o => o.id === id)) || {}).tier;
@@ -101,7 +100,7 @@ const r = await evaluate(`(async () => {
   // "a form control" and held only while this block had no dropdowns of its
   // own. The Warframe picker became a dropdown on 2026-08-18 and this check
   // read it as a form. A proxy that names the wrong thing passes for months and
-  // then fails for a reason unrelated to what it is about (2026-08-18).
+  // then fails for a reason unrelated to what it is about.
   const formish = (el) => /form|mode/i.test(
     (el.dataset.k || '') + ' ' + (el.dataset.dd || '') + ' ' + (el.id || ''));
   out.fightOffersForm = [...document.querySelectorAll('#sim-technique [data-k], #sim-technique [data-dd]')]

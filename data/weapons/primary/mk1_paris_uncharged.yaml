@@ -9,7 +9,7 @@ form: base
 # A FORM, NOT A TRANSFORMATION: releasing early costs nothing — no gauge,
 # no transmute animation, just a shorter press — which is why this entry
 # carries no `transforms_from`. See docs/GLOSSARY.md "FORMS".
-# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# TWO WEAPONS MODEL: base and Incarnon forms are
 # separate entries linked by a transform group.
 transform_group: mk1_paris
 

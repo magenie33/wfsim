@@ -10,10 +10,10 @@ mod_pools: [melee, hammer]
 mastery_rank: 1
 max_rank: 30
 
-# THE FIRST MELEE WEAPON IN THE ROSTER (2026-08-28). Seven entries, one per way
+# THE FIRST MELEE WEAPON IN THE ROSTER. Seven entries, one per way
 # to swing it, because a melee player picks ONE loop and runs it for the whole
 # engagement — which is the definition of a mode in this repo, and why each of
-# the seven is an independent board row rather than an animation (owner).
+# the seven is an independent board row rather than an animation.
 #
 # TWO CROSS-CHECK FINDINGS, both recorded because they cost nothing to write and
 # would cost an evening to re-derive:

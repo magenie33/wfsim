@@ -20,7 +20,7 @@ effects:
   # "On Kill:"
   - kind: out_of_scope
   # "Refresh Double Jump up to 6x while Airborne." Mobility: no damage payload
-  # on any target count, but the number is real and now survives (2026-08-01).
+  # on any target count, but the number is real and now survives.
   # `audit_mod_effects` flags this CONDITIONAL-AS-FLAT, correctly: the refresh
   # is granted on kill. It stays flat anyway, because `kind: buff` resolves
   # through `CondBucket`, every arm of which is a DAMAGE bucket — a triggered

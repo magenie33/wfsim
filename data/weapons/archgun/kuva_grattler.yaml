@@ -44,7 +44,7 @@ no_resupply: true
 
 # THE PROGENITOR ELEMENT — MANDATORY on an adversary weapon: every copy comes
 # out of a Lich with one, so there is no "none" to pick. It is part of the
-# BUILD and travels with it (owner, 2026-08-13). The board scores every row at
+# BUILD and travels with it. The board scores every row at
 # the roll's maximum, which is why the percentage is not a row's to state.
 valence:
   elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]

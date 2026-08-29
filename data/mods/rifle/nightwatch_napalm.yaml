@@ -44,8 +44,7 @@ effects:
   # fire. `elemental_mods_apply: false` is that sentence.
   #
   # THE KUVA BONUS RAISES ITS BASE, and the ORDER is what was measured: 150 a
-  # tick becomes 240 on a 60% roll, and 612 with +155% base damage (owner,
-  # 2026-08-23). That is `240 x 2.55` — the valence lands on the BASE and the
+  # tick becomes 240 on a 60% roll, and 612 with +155% base damage. That is `240 x 2.55` — the valence lands on the BASE and the
   # bucket multiplies it afterwards — and not `150 x 3.15`, which is what the
   # valence joining the base-damage bucket would have given. Two orders, 30%
   # apart, told apart by one reading.
@@ -58,14 +57,14 @@ effects:
   # anything but Heat is the reading that would tell them apart.
   #
   # ECLIPSE REACHES IT, and that is not a hole in the closed list above —
-  # measured (owner, 2026-08-23). The wiki's sentence is about MODS ("can only
+  # measured. The wiki's sentence is about MODS ("can only
   # be increased by base damage mods and faction mods"), and an ability's FINAL
   # multiplier is a different bracket that no mod lives in. It already worked:
   # `field_tick` multiplies by `ability_final_at`, so the fire triples under
   # Eclipse exactly as the rocket does.
   #
   # IT TAKES NO GUN CONDITION OVERLOAD — "it is area damage, modelled the
-  # ordinary way" (owner, 2026-08-23), which is where it parts company with the
+  # ordinary way", which is where it parts company with the
   # Torid's cloud. That is already the default for an AoE part here
   # (`takes_condition_overload` is NO unless the CO catalog lists a row), so
   # nothing is set below; this line is the measurement saying the default is
@@ -91,7 +90,7 @@ effects:
     rank0: 0.05
     rankMax: 0.30
     damage: { heat: 150.0 }
-    # ONE TICK A SECOND, MEASURED (owner, 2026-08-23) — and it is FIXED: "the
+    # ONE TICK A SECOND, MEASURED — and it is FIXED: "the
     # interval is always 1 s, and fire-rate mods do not affect it". It was an
     # assumption here for a day, on the two things the page states (the card
     # pays "over 6s" and the next sentence measures the Heat proc "per second"),
@@ -106,7 +105,7 @@ effects:
     tick_rate: 1.0
     duration_rank0: 1.0
     duration_seconds: 6.0
-    # IT CANNOT CRIT "VIA ANY MEANS" — MEASURED (owner, 2026-08-23), and
+    # IT CANNOT CRIT "VIA ANY MEANS" — MEASURED, and
     # measured on the path that matters: no crit appeared even with a source
     # that adds critical chance DIRECTLY, which is the one way a zero could have
     # been lifted. So the chance is not merely zero, it is unreachable, and the
@@ -123,7 +122,7 @@ effects:
     elemental_mods_apply: false
     status_mods_apply: false
     # MULTISHOT MULTIPLIES THE NUMBER OF FIELDS, not the damage of one: "however
-    # much multishot, that many napalms" (owner, 2026-08-23). `stack` is that —
+    # much multishot, that many napalms". `stack` is that —
     # the sim spawns one field per grenade that lands, which is what it already
     # does for the Torid's clouds and needed no rule of its own.
     stacking: stack

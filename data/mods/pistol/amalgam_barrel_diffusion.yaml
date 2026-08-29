@@ -26,7 +26,7 @@ utility_scope: universal_while_carried
 # — "Cannot be equipped on Sentinel weapons". Same reason as Amalgam Serration:
 # the utility half above is a WARFRAME buff, and a companion is not the
 # Warframe. This replaces a `restrictions: [not_on_sentinel_weapons]` note that
-# stated the same fact in a spelling nothing read (2026-08-01); one vocabulary,
+# stated the same fact in a spelling nothing read; one vocabulary,
 # and it is the mirror of `requires_weapon`.
 excludes_weapon: [sentinel_weapon, power_weapon]
 

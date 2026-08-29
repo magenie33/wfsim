@@ -13,7 +13,7 @@ Increase Base Status Chance by +96% for Incarnon Form."
 # number the other one carries — and if DE ever splits them, the table grows a
 # real cell and the two files diverge there.
 #
-# NO OTHER VARIANT'S NUMBERS LIVE IN THIS FILE (owner, 2026-08-12). A file
+# NO OTHER VARIANT'S NUMBERS LIVE IN THIS FILE. A file
 # that states two weapons' values is a file where the reader has to work out
 # which one they are looking at, every time.
 selection: choose_one
@@ -26,8 +26,7 @@ effects:
   #
   # BOTH ARE THIS WEAPON'S. The pair used to carry the other variant's weapon
   # status chances in a parenthetical, which was two mistakes at once: they are
-  # not this evolution's numbers at all, and they are not this file's weapon
-  # (owner, 2026-08-12).
+  # not this evolution's numbers at all, and they are not this file's weapon.
   # `flat_base_status_chance_by_form` picks by whether the entry carries an
   # `incarnon:` block, the same gate the magazine evolutions use.
   - kind: flat_base_status_chance_by_form

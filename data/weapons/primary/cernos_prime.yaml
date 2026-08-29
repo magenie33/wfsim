@@ -32,7 +32,7 @@ exilus_polarity: naramon
 # ordinary Cernos, and DE lists all three as their own compatibility names.
 riven_family: Cernos
 traits: [prime, never_vaulted]
-introduced: "19.0.7"         # Hotfix 19.0.7 (2016-11-22)
+introduced: "19.0.7"         # Hotfix 19.0.7
 internal_name: /Lotus/Weapons/Tenno/Bows/PrimeCernos/PrimeCernos
 noise: silent                # IsSilent on both attacks — it never alerts
 ammo_type: primary
@@ -52,7 +52,7 @@ reload_seconds: 0.65
 # (stack it with Primary Deadhead and read the number) would settle it.
 headshot_damage_bonus: 0.5
 # ...and it does NOT join that bracket after all — ANSWERED by the wiki's own
-# notes (2026-08-01), which is the measurement the paragraph above asked for:
+# notes, which is the measurement the paragraph above asked for:
 # "Cernos Prime's headshot bonus is unique and stacks multiplicatively with
 # Primary Deadhead's headshot bonus." A PER-WEAPON anomaly, not a class rule —
 # the same note lists innate bonuses on weapons like Kuva Chakkhurr among the
@@ -105,7 +105,7 @@ attack:
   # the count). Base damage below is PER ARROW; 3 x 184 = the 552 the wiki
   # and the CO catalog quote for the whole shot.
   multishot: 3.0
-  # NOT READ by the engine (2026-07-31): nothing in engine/ references
+  # NOT READ by the engine: nothing in engine/ references
   # `ammo_cost` — the sim spends a flat 1.0 (minus ammo efficiency) per shot.
   ammo_cost: 1
   crit_chance: 0.35

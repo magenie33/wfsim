@@ -7,7 +7,7 @@ description: "Increase Base Damage by +31.
 Multishot consumes ammo directly from Capacity and increases Damage by +60%."
 selection: choose_one
 
-# MEASURED ON THE INCARNON FORM (owner, 2026-08-16; MEASUREMENTS M50): this
+# MEASURED ON THE INCARNON FORM: this
 # perk's flat base damage does NOT feed the GunCO term.
 #
 #   1 stack .. 318   2 stacks .. 381   (bare crit 254 = 82 x 3.1)
@@ -46,7 +46,7 @@ effects:
   #    comes from the magazine and always takes ammo efficiency, perk or no —
   #    while the SURCHARGE takes no efficiency at all (measured, user
   #    2026-07-30), so even a 100% source does not make multishot free;
-  #  - and the extras can STARVE (user, 2026-07-30). The projectiles are
+  #  - and the extras can STARVE. The projectiles are
   #    produced in order, each paying its round as it goes, and one that cannot
   #    pay is not fired at all — same rule as running dry normally. With 3
   #    charges left and a 4-multishot pull: the round is spent, two extras fire,
@@ -67,8 +67,7 @@ effects:
   # Identical. Note this relies on base multishot being 1.0, which both Torid
   # forms are; a weapon with innate multishot > 1 would split the two readings.
   #
-  # The +60% follows a generated grenade into the CLOUD it leaves (user,
-  # 2026-07-30) — which is what makes the perk worth anything on this weapon,
+  # The +60% follows a generated grenade into the CLOUD it leaves — which is what makes the perk worth anything on this weapon,
   # since the cloud is most of its damage.
   - kind: multishot_consumes_ammo
     value: 0.6

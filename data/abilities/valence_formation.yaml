@@ -9,7 +9,7 @@
 # abilities and casts the mix, so this one can add GAS — literally, as its own
 # element — which nothing in a mod list can do.
 #
-# WHY THAT MATTERS, measured (owner, 2026-08-23). A DoT tick reads `1 + Σ THAT
+# WHY THAT MATTERS, measured. A DoT tick reads `1 + Σ THAT
 # ELEMENT's own bonuses`, and only literal same-element sources count. So on a
 # Braton Prime:
 #
@@ -36,7 +36,7 @@ helminth: false
 # imbued element to all of Lavos's weapons"*.
 value: 2.0
 
-# ABILITY STRENGTH DOES NOT MOVE IT; ABILITY DURATION DOES (owner, 2026-08-23).
+# ABILITY STRENGTH DOES NOT MOVE IT; ABILITY DURATION DOES.
 #
 # The mod's own stats table says both, in the wiki's own notation, and the two
 # columns are marked DIFFERENTLY — which is the whole tell:
@@ -64,7 +64,7 @@ effect:
   # to your weapons with guaranteed Status for 20s"* (wiki).
   #
   # It was missed when this file was written, and a player found it from the
-  # other side (owner, 2026-08-25): the Laetum's Overwhelming Attrition asks for
+  # other side: the Laetum's Overwhelming Attrition asks for
   # a hit that "is neither Critical nor applies a Status Effect", and a hit that
   # always procs can never be one — so the two cannot be run together and the
   # augment silently wins. The engine had the Attrition condition right and had

@@ -1,6 +1,6 @@
 # Incarnon guns — the whole roster, what covers what, and what is done
 
-Plan of record, 2026-08-07 (owner): **before any other weapon, do every
+Plan of record, 2026-08-07: **before any other weapon, do every
 Incarnon primary and secondary.** This file is the checklist. docs/WEAPON_INTAKE.md
 still holds what one weapon costs and the non-Incarnon backlog behind it.
 
@@ -88,7 +88,7 @@ mined for its numbers, because reading "On Kill: +30 damage" as an unconditional
   does not do it. A Chinese session shows English perk names on a bulk weapon
   until its family is transcribed.
 - ~~**CO catalog rows.**~~ **READ AND APPLIED, 2026-08-08.** The whole catalog
-  was pulled for every weapon in the program (owner). What it
+  was pulled for every weapon in the program. What it
   changed and what it exposed:
 
   | weapon | row | what it means here |
@@ -99,7 +99,7 @@ mined for its numbers, because reading "On Kill: +30 damage" as an unconditional
   | Braton family | Incarnon Form Radial, Adding, 95% | already applied. |
   | Burston family | Incarnon Form Radial, Adding, **24%** | both halves modelled: the class by `takes_condition_overload`, the 24% by the radial's OWN derived `co_base_fraction` (13 + 42 = 55, 13/55). |
   | Zylok family | Incarnon Form Radial, Adding, 90% | derived per variant. The row mixes them — 700 is the Prime's radial, the +76 is the base Zylok's perk — so its 90% is the one catalog figure not reproduced, deliberately. CATALOGS.md. |
-  | Torid, Felarx, Angstrum, Ballistica Prime, Dread, Paris, Miter | Multiplying on the named attack | applied as each lands. **Felarx is Multiplying on BOTH modes** — asked directly (owner, 2026-08-08), so for that weapon the row is not about one attack. The Angstrum's other form is left ordinary with the question written at the site: one weapon is not a rule. |
+  | Torid, Felarx, Angstrum, Ballistica Prime, Dread, Paris, Miter | Multiplying on the named attack | applied as each lands. **Felarx is Multiplying on BOTH modes** — asked directly, so for that weapon the row is not about one attack. The Angstrum's other form is left ordinary with the question written at the site: one weapon is not a rule. |
   | Cestra, Despair, Atomos, Bronco Prime, Vasto Prime, Lato Vandal, Lex Prime, Dual Toxocyst, Furis | Adding + "CO-bonus does not use base damage increase Evolution" | `co_base_excludes_this_evolution: true` on the perk each row NAMES. Including an evolution's flat damage is the engine's default, so a row here that is not flagged computes CO on a base the game does not use. Every row and its perk: CATALOGS.md §"CO-bonus does not use base damage increase Evolution". |
   | **Kunai** | "CO-bonus **DOES** use base damage increase Evolution" | the one weapon where the engine's blanket exclusion is WRONG. No way to express it today; noted at the site. |
   | Stug | Blob Impact, **0%, "Does not apply"** | `co_behavior: inert` when the Stug lands. |
@@ -119,7 +119,7 @@ Predicted "4 new perks, no new mechanic". Actual: **no engine work at all**, and
 four perks that load as INERT rather than as new kinds — two of them already
 inert on the Furis, two genuinely new shapes.
 
-**Three of the four are implemented now (2026-08-10), and the two shared with the
+**Three of the four are implemented now, and the two shared with the
 Furis were never the hard ones.** Both had been filed under "the engine cannot",
 and in both cases the sentence describing why was about the wrong mechanism:
 
@@ -141,7 +141,7 @@ own comments: a note saying "the engine cannot do X" is a claim with a shelf
 life, and both of these were describing a mechanism the perk does not use.
 
 The last two were genuinely new shapes, and both landed the same day once their
-exact wording arrived (owner, 2026-08-10). **All 13 Phenmor perks are modelled.**
+exact wording arrived. **All 13 Phenmor perks are modelled.**
 
 - **Spiteful Defilement** — +100% crit damage while the target carries fewer
   than three status TYPES. Two clauses decided it and both were the card's:
@@ -327,7 +327,7 @@ Torid, Angstrum, Stug** (wiki, Incarnon — verbatim in `torid_incarnon.yaml`).
 
 ### A CHARGE POOL IS NOT A MAGAZINE, and nothing in the game treats it as one
 
-Roster-wide invariant, stated by the owner (2026-08-10): **no mechanism anywhere
+Roster-wide invariant, stated by the owner: **no mechanism anywhere
 restores charges in an Incarnon form, and none spends extra ones.** The pool is
 filled by the gauge — weakpoint or direct hits, converted at
 `rounds_per_charge` — and emptied by firing at the form's own `ammo_cost`. That

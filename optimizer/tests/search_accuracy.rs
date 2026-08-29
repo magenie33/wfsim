@@ -227,8 +227,7 @@ fn run_pipeline(
     // Both sides build candidates through `expand_one` from an ascending
     // subset, so this is exact — and it is also the assertion that caught a
     // real bug: a climbed subset that was not in canonical order gave the same
-    // build a SECOND identity, and 361 of 3,086 results matched nothing
-    // (2026-08-03).
+    // build a SECOND identity, and 361 of 3,086 results matched nothing.
     let ix_of: std::collections::HashMap<(Vec<usize>, u32, u32, usize), usize> = jobs
         .iter()
         .enumerate()

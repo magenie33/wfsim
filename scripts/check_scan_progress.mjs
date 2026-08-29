@@ -3,7 +3,7 @@
 // The quick calc counted itself in exactly one place: the panel at the top of
 // the page. The LIST it was ranking — ninety mods, tens of seconds at a real
 // run count — said nothing at all, and a list that does not move is read as
-// broken rather than as busy (owner, 2026-08-22).
+// broken rather than as busy.
 //
 // The per-row "…" chip was already there and is not the same claim: it says
 // THIS row has no answer yet, and says nothing about whether anything is still
@@ -203,7 +203,7 @@ check("the run edits a fight of its own, not the pinned official ruler",
 
 // ---- the ranked slots carry the same component, and count their own list ----
 //
-// ONE CONTROL, ONE COMPONENT (owner, 2026-08-25). The reader is told these are
+// ONE CONTROL, ONE COMPONENT. The reader is told these are
 // all quantifiable the same way, so a strip on the mod picker and silence on
 // the evolution tiers is the page contradicting its own claim.
 for (const [name, k, want] of [["evolution tier", "evo", "evo"],

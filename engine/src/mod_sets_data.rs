@@ -6,7 +6,7 @@
 //! `data/README.md` states for perks.
 //!
 //! Bonuses scale PER EQUIPPED MEMBER, with no threshold: one member already
-//! grants its share (user, 2026-07-31). The wiki states the Vigilante set that
+//! grants its share. The wiki states the Vigilante set that
 //! way — 5% per mod up to 30% at six — and it is why a set can be worth
 //! carrying before it is complete.
 
@@ -128,7 +128,7 @@ mod tests {
     /// list.
     ///
     /// It exists because the pool had SEVEN set members with no `set:` line and
-    /// SIX set families with no file at all (2026-08-10). Carnis Stinger,
+    /// SIX set families with no file at all. Carnis Stinger,
     /// Jugulus Spines and Saxum Spittle each grant a real set bonus in game and
     /// the app said nothing about any of it — while three other sets were
     /// declared `unmodeled` precisely so it could. `augur_seeker` was the sharp

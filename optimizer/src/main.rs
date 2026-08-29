@@ -1,6 +1,6 @@
 //! wfsim-optimizer: the full search flow against the ULTIMATE STRESS TEST.
 //!
-//! Scenario (user, 2026-07-24): Dual Toxocyst Incarnon Form (fixed evolution
+//! Scenario: Dual Toxocyst Incarnon Form (fixed evolution
 //! build; no arcanes), 8 mods from the full pistol pool, vs Thrax Centurion
 //! @9999 STEEL PATH, instant respawn, 100% headshots, 60 s engagements.
 //! Objective: mean KILLS over 1000 runs (screening rounds rank by mean
@@ -19,7 +19,7 @@ fn main() {
     let mut flat = false;
     let mut target_file = "thrax_centurion";
     let mut evo2_both = false;
-    // Official default: 120 s (user, 2026-07-25) — long windows measure
+    // Official default: 120 s — long windows measure
     // steady-state sustain instead of window-phase burst artifacts.
     let mut duration_seconds = 120.0f64;
     let mut final_runs: Option<u32> = None;
@@ -71,8 +71,7 @@ fn main() {
             .join(format!("{target_file}.yaml")),
     )
     .expect("enemy spec");
-    // Dominance pruning: same-effect lower tiers can never win (user
-    // directive 2026-07-24). Printed, never silent.
+    // Dominance pruning: same-effect lower tiers can never win. Printed, never silent.
     for (id, why) in dominated_mods() {
         if !constraints.forbid.iter().any(|f| f == id) {
             println!("[prune] {id}: {why}");
@@ -146,12 +145,11 @@ fn main() {
 
     let p = pool();
     let t0 = Instant::now();
-    // The Evolution II choice is a SEARCH DIMENSION (user, 2026-07-25):
+    // The Evolution II choice is a SEARCH DIMENSION:
     // the whole canonical space is enumerated against BOTH weapon
     // configs (both forms resolved with Frenzy's Toxin injection).
     let mut cands = Vec::new();
-    // Fevered Frenzy is the LOCKED official Evolution II (user,
-    // 2026-07-25: it swept all three benchmark scenarios); `evo2=both`
+    // Fevered Frenzy is the LOCKED official Evolution II; `evo2=both`
     // re-opens the comparison. Evolution ids are DATA — the engine's
     // from_data builds either form from them.
     let evo2s: &[(&'static str, &'static str)] = if evo2_both {
@@ -197,8 +195,7 @@ fn main() {
         t0.elapsed()
     );
 
-    // The arcane is a SEARCH DIMENSION like the mod choice (user,
-    // 2026-07-25): every candidate is evaluated under each arcane,
+    // The arcane is a SEARCH DIMENSION like the mod choice: every candidate is evaluated under each arcane,
     // resolved at MAX RANK from data/arcanes/secondary under the Emergent
     // policy (non-simmable triggers are honest no-ops there).
     use wfsim_engine::arcanes_data::{self, ArcaneFx};
@@ -235,8 +232,7 @@ fn main() {
         cands.len(),
         arcanes.len()
     );
-    // Self-scaling successive halving derived from the job count (user,
-    // 2026-07-25); `flat` bypasses the funnel for validation runs.
+    // Self-scaling successive halving derived from the job count; `flat` bypasses the funnel for validation runs.
     let mut rounds: Vec<(u32, usize, bool)> = if let Some(r) = final_runs {
         vec![(r, 24, true)]
     } else if flat {

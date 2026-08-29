@@ -54,7 +54,7 @@ delayed_burst:
       # either the weapon reaches 10 stacks / a kill within the 1.5 s
       # fuse window, or Blast is a weak 30% single-target trickle.
       per_stack_coefficient: 3.0
-      damage_type: blast         # CONFIRMED (user): radial is Blast-typed,
+      damage_type: blast         # CONFIRMED: radial is Blast-typed,
                                  # each bystander applies their own faction
                                  # column to it
       falloff: none              # explicitly no falloff
@@ -67,7 +67,7 @@ delayed_burst:
   # EXCEPTION to the negative-status-duration rule: Detonate always deals
   # its damage even when total Status Duration is below 0%.
   fires_at_negative_status_duration: true
-  # CONFIRMED (user, 2026-07-24): a detonation CONSUMES all stacks - the
+  # CONFIRMED: a detonation CONSUMES all stacks - the
   # count resets to 0 and the cycle restarts.
   detonation_consumes_all_stacks: true
 

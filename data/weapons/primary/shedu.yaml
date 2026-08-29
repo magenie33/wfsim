@@ -26,7 +26,7 @@ polarities: [madurai, madurai]
 # one would silently make every capacity plan wrong.
 riven_family: Shedu
 traits: [sentient]
-introduced: "27.0"           # Empyrean (2019-12-13); the blueprint comes from Erra
+introduced: "27.0"           # Empyrean; the blueprint comes from Erra
 internal_name: /Lotus/Weapons/Sentients/Shedu/SheduHeavyWeapon
 noise: alarming
 
@@ -59,7 +59,7 @@ reload_seconds: 1.25         # the EMPTY case: 1.0 s delay + 7/28 s refill
 # listed 2.50. Above that it drains and reloads; below it every gap returns more
 # than a whole round and the battery never empties.
 #
-# ✅ MEASURED on the official ruler (2026-08-10, 180 s): stock fires 297 rounds
+# ✅ MEASURED on the official ruler: stock fires 297 rounds
 # and reloads 49 times; the same build with Vile Precision (-15% fire rate)
 # fires 288 and reloads ZERO — 3% fewer shots, no downtime at all, and slightly
 # more damage for it. A fire-rate PENALTY making this weapon better is the
@@ -71,8 +71,7 @@ battery:
   delay_partial_seconds: 0.4
 
 # CO IS MULTIPLYING, and the catalog says so in its own row — which I had
-# claimed it did not (2026-08-10, corrected the same day by actually opening the
-# page instead of assuming absence):
+# claimed it did not:
 #
 #   Shedu | Normal Attack | Projectile | 71 | 71 | 100% | Multiplying
 #
@@ -123,7 +122,7 @@ attack:
   # Corrosive with only a Toxin damage mod, or a combination of Blast and
   # Magnetic with only a Cold mod."
   #
-  # ✅ Both of those reproduce exactly (2026-08-10), and they are pinned by
+  # ✅ Both of those reproduce exactly, and they are pinned by
   # `one_elemental_mod_makes_two_combinations_on_a_two_element_weapon`: one
   # Toxin mod gives Gas + Corrosive, one Cold mod gives Blast + Magnetic. It
   # needed no engine work — a radial has carried its own vector since the
@@ -160,8 +159,7 @@ attack:
     # explosion in as many words: "Explosion cannot benefit from Firestorm
     # (Primed) despite being area of effect."
     #
-    # THE PULSE IS THE OPPOSITE, which is the pair worth holding in one hand
-    # (owner asked it be confirmed, 2026-08-11, and it is): the battery
+    # THE PULSE IS THE OPPOSITE, which is the pair worth holding in one hand: the battery
     # discharge "is affected by base damage, Faction Damage Bonus, and Firestorm
     # / Primed Firestorm". So one weapon has two AoEs and the blast-radius
     # bucket reaches exactly the one Primary Compression cannot use ("cannot use

@@ -8,7 +8,7 @@
 //!
 //! Field names are the wiki's own (`Module:Warframes/data`: Armor, Health,
 //! Shield, Energy, Sprint), so the day a frame is transcribed it fills these in
-//! rather than needing a second vocabulary invented for it (user, 2026-08-02).
+//! rather than needing a second vocabulary invented for it.
 //!
 //! `data/tenno/default.yaml` is the NEUTRAL Tenno — no frame chosen, no
 //! abilities running, aiming down sights. A scenario starts from it and
@@ -49,8 +49,7 @@ pub struct Tenno {
     /// PLAYER stat a weapon perk reads: the Latron family's Swift Punishment is
     /// "With Sprint Speed 1.2 or Higher: +30% Direct Damage per Status Type".
     ///
-    /// The neutral player's is 0.9, the SLOWEST a frame has (owner,
-    /// 2026-08-12). Same rule as every other field here: with no frame chosen
+    /// The neutral player's is 0.9, the SLOWEST a frame has. Same rule as every other field here: with no frame chosen
     /// the wielder claims nothing, so a perk gated on speed is OFF until
     /// someone says who is carrying the gun. A default of 1.0 would have been
     /// a frame nobody named, and it would have
@@ -69,8 +68,7 @@ pub struct Tenno {
     /// THE SQUAD'S AURAS. On the Tenno rather than the build, because an aura
     /// is the WARFRAME's: two players with the same gun and different squads
     /// are two fights, which is the rule `data/abilities/` already follows —
-    /// and it is why an aura can no more reach the BOARD than Roar can
-    /// (owner, 2026-08-21).
+    /// and it is why an aura can no more reach the BOARD than Roar can.
     #[serde(default)]
     pub auras: Vec<crate::auras_data::AuraPick>,
     /// …AND THE FRAME'S ARCHON SHARDS, up to five sockets. Same placement and
@@ -236,8 +234,7 @@ fn yes() -> bool {
 
 /// The player STATES a card can be conditional on. One home for all of them:
 /// `aiming` used to be a bool threaded through `loadout::resolve` beside a
-/// separate Tenno holding the rest, which is two places for one kind of fact
-/// (user, 2026-08-02).
+/// separate Tenno holding the rest, which is two places for one kind of fact.
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct TennoState {
     /// Holding aim. Gates every `while_aiming` mod (Galvanized Crosshairs /
@@ -284,9 +281,8 @@ pub struct TennoState {
     /// It is the LOADOUT, which is a different fact from what the fight does
     /// with it. The arena has always fired one weapon for the whole engagement,
     /// and that never answered "what else are you carrying": the standing
-    /// ruling is that the Tenno walks in with a full loadout (owner,
-    /// 2026-08-12), so every clause about the other slots reads FALSE. This
-    /// is the knob that says otherwise (owner, 2026-08-13).
+    /// ruling is that the Tenno walks in with a full loadout, so every clause about the other slots reads FALSE. This
+    /// is the knob that says otherwise.
     ///
     /// Defaults FALSE, which keeps the full loadout as the fight everyone has
     /// been measuring under — every stored scenario and every board row means
@@ -312,8 +308,7 @@ fn full() -> f64 {
     1.0
 }
 
-/// THE FIGHT'S OWN STAT BONUSES — "the effect equals stuffing in another mod"
-/// (owner, 2026-08-13).
+/// THE FIGHT'S OWN STAT BONUSES — "the effect equals stuffing in another mod".
 ///
 /// Everything a weapon is handed by something that is not its build: a squad
 /// buff, a Warframe ability, an arcane on another weapon, a Helminth this app
@@ -356,8 +351,7 @@ pub struct StatBonuses {
     /// Speed Trigger's. A weapon whose fire rate is LOCKED ignores it, the same
     /// way it ignores a fire-rate mod.
     pub fire_rate: f64,
-    /// AMMO EFFICIENCY, and it was the one bucket the panel had no box for
-    /// (owner, 2026-08-21). The engine has always had the quantity — several
+    /// AMMO EFFICIENCY, and it was the one bucket the panel had no box for. The engine has always had the quantity — several
     /// arcanes grant it — so this is the reader finally being able to say it.
     pub ammo_efficiency: f64,
     /// Fast Hands' — `time = base / (1 + bucket)`.
@@ -407,7 +401,7 @@ pub fn default_tenno() -> &'static Tenno {
 
 /// THE WIELDER OF A COMPANION WEAPON — a Sentinel, not a Warframe.
 ///
-/// TWO ACTORS, ONE OF WHICH HOLDS THE GUN (owner, 2026-08-26). A robotic weapon
+/// TWO ACTORS, ONE OF WHICH HOLDS THE GUN. A robotic weapon
 /// is carried by a companion while the WARFRAME is still in the fight behind it,
 /// bringing the aura and the archon shards — so only the wielder's own STAT
 /// BLOCK comes from here and everything else stays the Warframe's. The auras a
@@ -527,7 +521,7 @@ mod tests {
     /// field with no runtime reader yet. If a future change starts feeding the
     /// Tenno into the sim, THIS test is what makes the placeholder values
     /// **A COMPANION WEAPON IS HELD BY A SENTINEL**, and the two wielders have
-    /// different floors (owner, 2026-08-26).
+    /// different floors.
     ///
     /// Read off the wiki's own infoboxes across all 17 Sentinels, which agree
     /// with DE's export digit for digit — sentinel stats do not scale with rank,
@@ -563,14 +557,13 @@ mod tests {
     fn the_default_tenno_is_the_floor_of_every_released_frame() {
         let t = default_tenno();
         assert_eq!(t.id, "tenno");
-        // THE LOWEST ANY RELEASED FRAME HAS AT RANK 30, stat by stat (owner,
-        // 2026-08-20) — so this is not a frame, it is the floor of all of them,
+        // THE LOWEST ANY RELEASED FRAME HAS AT RANK 30, stat by stat — so this is not a frame, it is the floor of all of them,
         // and a gate that opens here opens for everybody.
         assert_eq!(t.health, 250.0, "Nokko — the wiki's \"150 (250 at Rank 30)\"");
         // ZERO, AND ZERO IS A VALUE. Six frames have no shields and four have no
         // energy pool, and the first pass at these floors read those zeros as
         // MISSING DATA — leaving Grendel's 95 and a guessed 150 standing as the
-        // floors of stats whose real floor is nothing (owner, 2026-08-26). It
+        // floors of stats whose real floor is nothing. It
         // errs in the direction that costs a player: a floor that is too high
         // makes the neutral Tenno pay a bonus some frames cannot, which is the
         // one thing this file exists to prevent.
@@ -705,7 +698,7 @@ mod tests {
         // …AND EVERY OTHER EFFECT SAYS WHY IT PAYS NOTHING. Derived from the
         // roster rather than from a list of ids: an effect added tomorrow that
         // is neither applied nor explained fails here, which a hand list could
-        // never report (2026-08-18).
+        // never report.
         for d in crate::shards_data::all() {
             for o in &d.options {
                 let paid = !matches!(

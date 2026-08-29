@@ -13,7 +13,7 @@ effects:
   #
   # VERBATIM (wiki notes):
   #  - "All stacks are lost when the buff's duration expires" -> all_drop, and
-  #    confirmed in game (user, 2026-07-30): the timer runs out and the whole
+  #    confirmed in game: the timer runs out and the whole
   #    pile goes at once, not one stack at a time. The sim tells the two
   #    families apart in `arcane_stacks_all_drop_on_timeout_or_bleed_off_one_at_a_time`.
   #  - "Status Chance bonus is additive to mods like Rifle Aptitude" -> it

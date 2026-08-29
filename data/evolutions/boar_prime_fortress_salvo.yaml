@@ -10,7 +10,7 @@ selection: choose_one
 effects:
   - kind: flat_base_damage
     value: 16.0
-  # GATED ON THE WARFRAME'S ARMOUR, and the gate is real (2026-08-20). This
+  # GATED ON THE WARFRAME'S ARMOUR, and the gate is real. This
   # arm read `value` and ignored `condition:` for as long as it existed, so the
   # +4 paid out to every frame in the game — reported by the owner, who noticed
   # a perk requiring 450 armour working with none. The neutral Tenno is the

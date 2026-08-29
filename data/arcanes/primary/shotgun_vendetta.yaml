@@ -3,8 +3,7 @@
 # (reported 2026-08-05): a filter on Type == "Primary" skips it. It and Longbow
 # Sharpshot are the only two class-typed arcanes in the game.
 #
-# SHOTGUNS ONLY, and that is an EQUIP rule rather than a calc-layer one (owner,
-# 2026-08-05). It first shipped here with `requires:`, which lets the arcane
+# SHOTGUNS ONLY, and that is an EQUIP rule rather than a calc-layer one. It first shipped here with `requires:`, which lets the arcane
 # equip and sit inert — right for Akimbo Slip Shot, wrong for this: the arsenal
 # does not offer it on a non-shotgun at all.
 #

@@ -6,8 +6,7 @@ icon: IncreasedFireRateOnAbilityUseStacks(xWhite).png   # wiki File: name (Dual_
 description: "Increase Base Damage by +50.\nOn Ability Cast: +5% Multishot. Stacks up to 20x."
 selection: choose_one
 
-# THIS perk's +50 base damage does not feed the GunCO term either — MEASURED
-# (owner, 2026-08-16; MEASUREMENTS M49). At the 125 panel this perk produces,
+# THIS perk's +50 base damage does not feed the GunCO term either — MEASURED. At the 125 panel this perk produces,
 # Galvanized Shot at 3 stacks against 2 status types reads 305, and a CO term
 # computed on 125 would read `125 + 125 x 2.4 = 425`. A flat 75 gives
 # `125 + 75 x 2.4 = 305` exactly.
@@ -38,7 +37,7 @@ effects:
     # the permanence — a buff with no timer and no in-sim trigger is a static
     # choice, full by default — so the two keys are the written record of why,
     # not an input (data/README.md).
-    duration: permanent          # MEASURED (2026-07-24, user): stacks have
+    duration: permanent          # MEASURED: stacks have
     cleared_on: [death]          # no timer; only player death clears them
 
 source:

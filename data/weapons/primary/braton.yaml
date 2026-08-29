@@ -10,7 +10,7 @@ grip_type: RIFLE
 mastery_rank: 0
 max_rank: 30
 
-# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are separate
+# TWO WEAPONS MODEL: base and Incarnon forms are separate
 # entries linked by a transform group. The Incarnon form exists only once the
 # Braton Incarnon Genesis is installed and its tier-1 evolution taken.
 transform_group: braton

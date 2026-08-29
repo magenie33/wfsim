@@ -6,7 +6,7 @@ icon: DamageXMultishotOnLastShotInMag(xWhite).png
 description: "Increase Base Damage by +51.\n+3 Multishot on last shot in magazine."
 selection: choose_one
 
-# MEASURED ON THE INCARNON FORM (owner, 2026-08-16; MEASUREMENTS M50): this
+# MEASURED ON THE INCARNON FORM: this
 # perk's flat base damage does NOT feed the GunCO term.
 #
 #   1 stack, 1 status .... 380   (bare crit 316 = 102 x 3.1)
@@ -42,7 +42,7 @@ effects:
   # the magazine. On the base form's 5-round magazine that is one shot in five,
   # worth roughly +60% average multishot — not a rounding error.
   #
-  # BASE FORM ONLY (user, 2026-07-30): it does not fire in Incarnon Form. That
+  # BASE FORM ONLY: it does not fire in Incarnon Form. That
   # form's magazine is the charge pool (170 rounds, "not affected by mods") fed
   # by the gauge rather than a reloaded magazine, so "last shot in magazine"
   # has nothing to gate on. The engine reads the gate off the form's own

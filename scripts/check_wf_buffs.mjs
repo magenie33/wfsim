@@ -15,7 +15,7 @@
 //   · ticking one MOVES THE SIM — asserted against a real /api/simulate in the
 //     shipping wasm build, not against the state object;
 //   · two of a FAMILY do not stack and the page SAYS which one lost. This is
-// the rule the owner asked for by name (2026-08-08) and it is the one a
+// the rule the owner asked for by name and it is the one a
 // player cannot verify by eye — the difference between +50% and +80% is a
 // number you have to be told; · the OPTIMIZER shows the same buffs,
 // read-only, because it runs the
@@ -59,8 +59,7 @@ for (const lang of ["en", "zh"]) {
     out.names = cards().map(c => (c.querySelector('.wfb-n') || {}).textContent || '');
     out.values = cards().map(c => (c.querySelector('.wfb-v') || {}).textContent || '');
     out.effects = cards().map(c => (c.querySelector('.wfb-e') || {}).textContent || '');
-    // A SECTION OF THE FIGHT, and WRAPPED so it still reads as its own thing
-    // (owner, 2026-08-09). It saves with the scenario, travels with it
+    // A SECTION OF THE FIGHT, and WRAPPED so it still reads as its own thing. It saves with the scenario, travels with it
     // across weapons and is what the optimizer reads off the fight, so
     // inside is where it belongs.
     out.insideFight = !!document.querySelector('#sim-block #wfbuff-block #sim-wfbuffs');
@@ -139,7 +138,7 @@ for (const lang of ["en", "zh"]) {
     // this picker actually broke: converted from a native select to the page's
     // own dropdown, it opened, listed the elements, showed the picked one on
     // its face — and dispatched nothing, because the component announced itself
-    // only for a data-k caller (2026-08-18). A check that drives the binding
+    // only for a data-k caller. A check that drives the binding
     // directly passes on a control that is wired to nothing.
     const pop = () => document.getElementById('dd-popover');
     sel().click(); await sleep(300);
@@ -154,7 +153,7 @@ for (const lang of ["en", "zh"]) {
     await tick('resupply', false);
 
     // 4b. THE QUICK CALC MEASURES UNDER THEM. It reads the scenario, and a
-    //     Warframe buff is part of the scenario (owner, 2026-08-08) — so this
+    //     Warframe buff is part of the scenario — so this
     //     needs no plumbing of its own and that is exactly why it is asserted:
     //     gainKey is DERIVED from the fight the scan will run, so a field
     //     nobody had invented when it was written still reaches it.
@@ -177,7 +176,7 @@ for (const lang of ["en", "zh"]) {
     //
     // THROUGH THE REAL PATH, because there is no second pointer to fake it
     // with any more: the quick calc measures the fight you are IN, so this
-    // SWITCHES to the ruler and asks what is on the fight then (2026-08-17).
+    // SWITCHES to the ruler and asks what is on the fight then.
     // Stronger than what it replaced — it now also proves that switching
     // scenarios drops the abilities rather than only that a reader pointed
     // elsewhere would not have seen them.
@@ -191,7 +190,7 @@ for (const lang of ["en", "zh"]) {
 
     // 4c. IT IS THE SIMULATOR'S BLOCK, AND ONLY THE SIMULATOR'S. A Warframe
     //     buff is not part of the weapon — the builder answers "what is this
-    //     gun" and a Roar belongs to no gun (owner, 2026-08-09). Checked by
+    //     gun" and a Roar belongs to no gun. Checked by
     //     GEOMETRY, not by the class list: hiding is a CSS id list, which is
     //     exactly the kind of thing a new block silently falls out of.
     // BY GEOMETRY, not by the element's own style. It is nested inside
@@ -309,7 +308,7 @@ for (const lang of ["en", "zh"]) {
   check(`[${lang}] ticking a buff moves the SIM`,
     r.dpsPlain > 0 && r.dpsRoar > r.dpsPlain * 1.2,
     `${r.dpsPlain} -> ${r.dpsRoar}`);
-  // WHOLE FIGHT, ALWAYS, for now (owner, 2026-08-08) — `secs: null` is
+  // WHOLE FIGHT, ALWAYS, for now — `secs: null` is
   // that, and the engine's per-buff end time is still there under it for
   // the day Ability Duration supplies one.
   check(`[${lang}] …sent as the fight's own field, running the whole fight`,

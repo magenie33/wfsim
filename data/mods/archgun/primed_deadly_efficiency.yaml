@@ -9,7 +9,7 @@ max_rank: 10
 # The internal name is the JOIN KEY to DE's export, so it is decidable rather
 # than a matter of taste — with the wiki's spelling this mod was the ONE
 # archgun mod with no localized card text, because the join silently found
-# nothing. WFCD's spelling joins and yields all 11 ranks (2026-08-01). The
+# nothing. WFCD's spelling joins and yields all 11 ranks. The
 # wiki module is hand-maintained; WFCD is generated from DE's own export, so
 # it is authoritative for this field the same way it already is for
 # `base_drain` / `max_rank` (AGENTS.md).

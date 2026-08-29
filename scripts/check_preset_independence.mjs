@@ -91,7 +91,7 @@ const r = await evaluate(`(async () => {
   // ---- WHAT CROSSES BETWEEN WEAPONS, and what must not.
   //
   // A BUILD, a SEARCH and a RIVEN are statements about one weapon and may never
-  // cross. A FIGHT is not — it is shared across the roster (owner, 2026-08-09),
+  // cross. A FIGHT is not — it is shared across the roster,
   // because comparing two guns under one fight is what a scenario is FOR, and
   // the official rulers were always like this.
   $$('#opt-results').innerHTML = '<div id="stale-marker">last weapon ranking</div>';
@@ -132,7 +132,7 @@ check("...and its finalists", r.fin === 13, String(r.fin));
 check("the optimizer keeps no buff state of its own", !r.optOwnsBuffs);
 check("it shows the scenario's buff value", r.mirroredValue === "3", `${r.buffId} = ${r.mirroredValue}`);
 check("...and offers no way to change it", r.mirroredLocked === true, String(r.mirroredLocked));
-// THE FIGHT FOLLOWS YOU, and that is the point of it (owner, 2026-08-09).
+// THE FIGHT FOLLOWS YOU, and that is the point of it.
 // Measuring your own roster under your own fight is the thing a
 // per-weapon scenario made impossible — you had to rebuild it on every
 // gun.
@@ -159,8 +159,7 @@ check("coming back finds the fight where you left it",
 // this through: a benchmark yaml states only what it has an opinion about, so a
 // field it OMITS used to keep the outgoing scenario's value. Ticking Eximus on
 // a copy of the official ruler and switching back left the official fight
-// against an Eximus — `single_target.yaml` never says `eximus:` (owner,
-// 2026-08-07). `invisible` survived the same test only because that yaml
+// against an Eximus — `single_target.yaml` never says `eximus:`. `invisible` survived the same test only because that yaml
 // happens to state it, which is why one field is checked and the other is the
 // control.
 const leak = await evaluate(`(async () => {
@@ -259,7 +258,7 @@ check("...and does not offer to change", md.simCanEdit === false);
 // A scenario written while the mode lived in the fight still holds a `form`,
 // and applying it would put that back on the live fight, where the next
 // auto-save would write it out again and keep writing it forever. A fight has
-// no opinion about how the weapon is fired (owner, 2026-08-07).
+// no opinion about how the weapon is fired.
 const clean = await evaluate(`(async () => {
   const s = (ms) => new Promise(r => setTimeout(r, ms));
   history.pushState({}, '', '/weapons/Torid/simulator'); route(); await s(2200);
@@ -295,7 +294,7 @@ check("...and nothing writes one back out", clean.snapshotHasForm === false);
 // weapon you just left; mods survived that only because `restoreState` prunes
 // them against the new pool, and an arcane has no such prune when it fits. So a
 // Primary Crux picked up from a board build followed you onto every primary you
-// opened afterwards (owner, 2026-08-08).
+// opened afterwards.
 //
 // Driven through a BOARD ROW because that is where a loaded arcane comes from
 // without anyone choosing one, and it is how the report was produced.
@@ -329,7 +328,7 @@ check("...not even into what gets written as that weapon's first build",
   ((cross.stored || {}).arcane || ["none"]).every((a) => a === "none"),
   JSON.stringify((cross.stored || {}).arcane));
 
-// THE SIMULATOR PICKS A BUILD; IT DOES NOT EDIT ONE (owner, 2026-08-07).
+// THE SIMULATOR PICKS A BUILD; IT DOES NOT EDIT ONE.
 // The mode is part of the build, so the builder's control for it must not
 // be on this tab — and the read-only Build card must state it instead, or
 // the tab has simply lost a field. Both halves, because hiding the control

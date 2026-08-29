@@ -22,7 +22,7 @@ name: Grimoire
 #   * the strike's reach and the blast's radius are both 6 m and both take
 #     Fulmination (Primed)
 #
-# IT IS NOT A LINGERING FIELD, and that distinction is the owner's (2026-08-28).
+# IT IS NOT A LINGERING FIELD, and that distinction is the owner's.
 # A field is an AREA: everyone standing in it burns, at their own falloff
 # distance. This is an ENTITY with a position — it moves, and each strike
 # reaches exactly ONE body, all six for the same number. `orb:` below is the
@@ -97,7 +97,7 @@ attack:
   # A GUARANTEED ELECTRICITY PROC — the module's ForcedProcs.
   forced_procs: [electricity]
   # HOW FAR A STRIKE REACHES — "1 enemy within 6 meters of it". The module's
-  # "Range: 6.0 m" is that reach, confirmed by the owner (2026-08-28), and NOT
+  # "Range: 6.0 m" is that reach, confirmed by the owner, and NOT
   # a flight distance: the orb travels 6 m/s for 6 s and covers far more ground
   # than six metres.
   range_m: 6.0
@@ -120,7 +120,7 @@ attack:
   # off the form's name, so this stops being a sustainable `alternate` a ruler
   # may rank and becomes a `transformed` mode showing the form's own numbers,
   # plus a `cycle` that is how a Tome is actually played. That was written for
-  # the Mausolon (owner, 2026-08-07) and this is the second weapon to use it.
+  # the Mausolon and this is the second weapon to use it.
   #
   # WHAT COUNTS AS A HIT needs no field: "Multishot will count as an additional
   # hit" makes it per landing PELLET and "Radial damage does not count an
@@ -138,20 +138,20 @@ attack:
     # bucket reaches it.
     strike_interval_seconds: 1.0
     # HOW FAR A STRIKE REACHES. The module's "Range: 6.0 m" is this, confirmed
-    # by the owner (2026-08-28), and NOT a flight distance — the orb covers
+    # by the owner, and NOT a flight distance — the orb covers
     # 6 m/s x 6 s of ground. Fulmination (Primed) enlarges it.
     strike_radius_m: 6.0
     speed_mps: 6.0
     speed_after_contact_mps: 2.0
     # THE THROW ANIMATION — 0.15 s of wind-up before the orb leaves and 0.85 s
-    # of recovery before the weapon can do anything else (owner, 2026-08-28).
+    # of recovery before the weapon can do anything else.
     # A fire-rate mod shortens both.
     #
     # THEIR SUM IS THIS FORM'S LISTED FIRE RATE, which is not a coincidence: a
     # second per throw IS the animation, and the `fire_rate: 1` above is the
     # same fact said twice. The PRIMARY fire's own 0.1 s wind-up is not modelled
     # and does not need to be — its interval "corresponds exactly to the fire
-    # rate" (owner), so the wind-up is latency at the start of holding the
+    # rate", so the wind-up is latency at the start of holding the
     # trigger and costs a sustained engagement nothing.
     throw_seconds: 0.15
     recovery_seconds: 0.85
@@ -169,7 +169,7 @@ attack:
     # says 6. This entry carried the sum until the measurement separated them.
     chain_bodies_per_multishot: 3.0
     chain_range_m: 6.0
-    # UNDILUTED — ✅ confirmed (owner, 2026-08-28): a beam chain with no
+    # UNDILUTED — ✅ confirmed: a beam chain with no
     # falloff, so the second and third body take the strike in full. His
     # earlier note that the chain is "不受增益" meant the RANGE bucket and not
     # the damage one: a hop is always six metres, and everything else about it
@@ -192,8 +192,7 @@ attack:
     takes_multishot: false
     takes_blast_radius_mods: true
     # NO `forced_procs:` — and it is an ABSENCE THAT WAS MEASURED rather than
-    # one nobody asked about: the pulses force Electricity and this does not
-    # (owner, 2026-08-28).
+    # one nobody asked about: the pulses force Electricity and this does not.
     damage: { electricity: 200 }   # total 200 (module 250 x0.8)
 
 unmodeled:
@@ -215,7 +214,7 @@ unmodeled:
     where you can line them up beats this number and one against a single tall
     target may not reach it"
   # WHAT THE POSITION MODEL FOUND, and the answer turned out to be the arena
-  # rather than any of this entry's numbers (owner, 2026-08-28): the orb bounces
+  # rather than any of this entry's numbers: the orb bounces
   # off walls, and this arena has none. Everything here is right and the fight
   # it is fired in is an open field.
   - reason: orb_bounces_off_walls

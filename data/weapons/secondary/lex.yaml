@@ -8,15 +8,15 @@ mod_pools: [pistol]
 mastery_rank: 3
 max_rank: 30
 
-# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are
+# TWO WEAPONS MODEL: base and Incarnon forms are
 # separate entries linked by a transform group.
 transform_group: lex
 transforms_to: lex_incarnon
 
-# BULK INTAKE (2026-08-08). The STATS are exact: WFCD warframe-items' `attacks`
+# BULK INTAKE. The STATS are exact: WFCD warframe-items' `attacks`
 # array, which is DE's own export and which agreed with the wiki infobox field
 # for field on every one of the eleven guns checked by hand first. The
-# EVOLUTIONS are the rough half (owner): transcribed from the wiki's table,
+# EVOLUTIONS are the rough half: transcribed from the wiki's table,
 # with every clause the intake's rule engine did not recognise loaded as a
 # NAMED INERT effect that the builder and the optimizer both print as "not
 # modelled yet". Nothing is dropped in silence — some perks do nothing

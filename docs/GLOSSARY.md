@@ -46,7 +46,7 @@ itself carries a wiki banner asking "Stagger or Knockback?"). Convention:
 ## Weapon modes ("two stat rows")
 
 Wiki stat tables show multiple rows for three DIFFERENT reasons — never
-conflate them (decision 2026-07-24):
+conflate them:
 
 - **attack_parts** — one attack producing multiple damage instances
   (direct + aoe_radial explosion). One weapon profile; the parts carry
@@ -60,7 +60,7 @@ conflate them (decision 2026-07-24):
   identifies such weapons). Each entry simulates standalone; the live
   weapon-1→weapon-2 transformation cycle is future work.
 
-### FORMS: the closed vocabulary a weapon registers (2026-07-31)
+### FORMS: the closed vocabulary a weapon registers
 
 The last two rows above are both **forms** — an attack profile with its own
 weapon entry — and every entry **registers** which one it is with a required

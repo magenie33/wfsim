@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """SPREAD, per attack, straight out of the wiki's own weapon module.
 
-WHY SPREAD AND NOT ACCURACY (owner, 2026-08-15). The Arsenal's `Accuracy` is a
+WHY SPREAD AND NOT ACCURACY. The Arsenal's `Accuracy` is a
 DERIVED, fuzzy number — the wiki's own page defines it as `100 / average spread
 in degrees` and then prints a CATEGORY ("Very High") beside it. The thing the
 game actually has is the cone: `Module:Weapons/data/<slot>` carries `MinSpread`

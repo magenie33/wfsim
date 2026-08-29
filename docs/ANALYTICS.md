@@ -1,13 +1,12 @@
 # Analytics plan: how many people use WFSim, and how well
 
-**Status (2026-08-02): NOT implemented. Phase 0 is zero-code and available
+**Status: NOT implemented. Phase 0 is zero-code and available
 today; phases 1–4 are unwritten.** Nothing here blocks the UI rework or the
 mechanics work — it is scheduled around them, not against them.
 
 **Goal.** Answer two questions with numbers instead of guesses: *how many
 people use wfsim.app*, and *how well do they use it*. Not marketing
-attribution — where visitors come from is explicitly out of scope (owner,
-2026-08-02). The output is roadmap fuel: which module and which weapons are
+attribution — where visitors come from is explicitly out of scope. The output is roadmap fuel: which module and which weapons are
 actually exercised, and whether a visit produces a RESULT or nothing.
 
 ## The problem this exists to solve
@@ -27,7 +26,7 @@ is no zero-cost option for it.
 ## Rules this plan is bound by
 
 - **Same-origin, first-party.** The beacon posts to wfsim.app itself, for
-  the same reason the art moved in-repo (rule 2026-07-31): a third-party
+  the same reason the art moved in-repo: a third-party
   script host that mainland China blocks would under-count precisely the
   players WFSim is for. This rules out Google Analytics
   (`googletagmanager.com`) and makes Cloudflare Web Analytics

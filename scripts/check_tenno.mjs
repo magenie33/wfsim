@@ -15,7 +15,7 @@ const r = await evaluate(`(async () => {
   // whose fields are locked — so every field this check sets was being set on a
   // control a player cannot touch, and it only appeared to work because setting
   // .value and dispatching by hand goes around the disabled attribute. Same
-  // fault check_arena found in itself (2026-08-18).
+  // fault check_arena found in itself.
   document.querySelector('#preset-bar-simulator-scenarios .pchip.add').click();
   await sleep(1500);
   const editable = typeof officialScenarioActive === 'function' && !officialScenarioActive();
@@ -95,7 +95,7 @@ const r = await evaluate(`(async () => {
   // typed above with Valkyr Prime's own 1000 — which is the control working —
   // so the number that must travel is one typed AFTER the pick. A frame's own
   // armor proves nothing about the payload: the recipient derives it from
-  // the frame field either way (2026-08-20).
+  // the frame field either way.
   await typeIn('wf_armor', 1500);
 
   return { keys, editable, nFrames, picked, overridden: sim.wf_energy,
@@ -131,7 +131,7 @@ check("...and they stay editable — no frame reaches the 700-energy gate",
 // returned, so it compared 1500 to 1500 and could not fail; the assertion above
 // is what actually covers a frame pick overwriting it (owner rule: prove it
 // bites). 2026-08-20.
-// AN OVERRIDE IS A TICK AND A NUMBER (owner, 2026-08-26). Four assertions,
+// AN OVERRIDE IS A TICK AND A NUMBER. Four assertions,
 // and the first two are the ones the design exists for.
 //
 // The field used to be a bare number whose tooltip said "0 = no frame", and the
@@ -140,8 +140,7 @@ check("...and they stay editable — no frame reaches the 700-energy gate",
 // armor" was true of the data and false of what the simulator ran. It could not
 // say the other thing either: four frames genuinely have no energy pool, so 0
 // is a real value and a control where 0 means "unset" cannot express it.
-// AND A COMPANION WEAPON SHOWS THE SENTINEL'S FLOOR, not a Warframe's (owner,
-// 2026-08-26). Two actors on the player's side: a Sentinel holds the 21
+// AND A COMPANION WEAPON SHOWS THE SENTINEL'S FLOOR, not a Warframe's. Two actors on the player's side: a Sentinel holds the 21
 // companion weapons while the WARFRAME stays in the fight behind it, bringing
 // the aura and the shards — so only the wielder's stat block swaps. Asserted on
 // the two rosters DIFFERING rather than on five literals, because a test that
@@ -250,8 +249,7 @@ check("...and overshields pay its +74, exactly",
 //
 // Checked on BOTH halves and on exact numbers, because this control exists to
 // make a clause reachable that the app spent a week answering "no" to — a
-// checkbox that stores a flag nobody reads looks exactly like one that works
-// (owner, 2026-08-13).
+// checkbox that stores a flag nobody reads looks exactly like one that works.
 const solo = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
@@ -330,7 +328,7 @@ check("...and Deathtrap Trigger is unmoved by it — no primary to equip from",
   solo.trapSolo.base === solo.trapFull.base && solo.trapSolo.mag === solo.trapFull.mag,
   `${solo.trapFull.base}/${solo.trapFull.mag} -> ${solo.trapSolo.base}/${solo.trapSolo.mag}`);
 
-// THE FIGHT'S OWN STAT BONUSES — a panel, not a buff (owner, 2026-08-13).
+// THE FIGHT'S OWN STAT BONUSES — a panel, not a buff.
 // Three claims, and the third is the one a screenshot cannot show: it is the
 // SCENARIO's, so it saves with the fight, travels to the optimizer read-only,
 // and no ruler carries one.
@@ -362,7 +360,7 @@ const extra = await evaluate(`(async () => {
   // …AND IT IS PART OF THE FIGHT'S DOCUMENT. snapshotScenario() is what a
   // scenario preset stores and snapshotState() is what a build preset does,
   // so asking both is the claim itself: this saves with the fight and is not
-  // the build's (owner).
+  // the build's.
   //
   // Asserted on the DOCUMENTS rather than on a stored preset, because the
   // scenario a fresh page opens on is the OFFICIAL ruler — which is read-only
@@ -404,7 +402,7 @@ check("...and clearing a box drops the key entirely",
   !("base_damage" in extra.cleared) && extra.cleared.multishot === 0.9,
   JSON.stringify(extra.cleared));
 
-// ...AND IT DOES **NOT** TRAVEL IN A SHARE LINK (owner, 2026-08-26). The
+// ...AND IT DOES **NOT** TRAVEL IN A SHARE LINK. The
 // wielder is part of the FIGHT, and a share link is a build and nothing else —
 // so a recipient keeps their own floor rather than inheriting the sender's
 // frame. This used to assert the opposite, which was right while a link could

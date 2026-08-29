@@ -63,13 +63,13 @@ why they live here and not in code.
 When positions become real they belong ON `arena::Arena`, beside the actors
 that would have them, not in a parallel module.
 
-## Replay (2026-08-02)
+## Replay
 
 The Simulator's result carries the MEDIAN engagement, frame by frame: the
 target's pools, every counter the panel reports, the damage meter's own
 composition, and **live stacks per buff**.
 
-**It sits at the TOP and drives the whole panel** (user, 2026-08-03).
+**It sits at the TOP and drives the whole panel**.
 The panel renders once at its finished state — hero, KPIs, damage meter, DPS
 curve, detail — and the replay re-reads all of it at whatever instant the
 cursor stops on: the headline recounts, the KPIs recount, the meter
@@ -118,8 +118,7 @@ curve that climbs 0 → 40 over sixty seconds and answers itself.
 
 ## Planned
 
-- **Surface each attack part's CO anomalies in the builder panel** (user,
-  2026-07-30). Condition Overload is full of per-entry quirks that no rule
+- **Surface each attack part's CO anomalies in the builder panel**. Condition Overload is full of per-entry quirks that no rule
   predicts — the CO catalog lists them one attack at a time, and weapon families
   split down the middle (Lato Vandal has a row, Lato Prime does not; Zylok Prime
   is docked to 94%, the plain Zylok is not). MECHANICS §6 has the evidence.

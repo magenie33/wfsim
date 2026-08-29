@@ -4,7 +4,7 @@
 //! picks one binary out of the crate to package, and with two to choose from it
 //! picked this one: it took `updatekit`, renamed it to `wfsim-desktop` and
 //! shipped a 288 KB installer that installs cleanly and contains the signing
-//! tool instead of the app (2026-08-26). `mainBinaryName` renames the choice,
+//! tool instead of the app. `mainBinaryName` renames the choice,
 //! it does not make it — setting it produced the same wrong binary under the
 //! right name. An example is invisible to `cargo build --bins`, so the crate
 //! has exactly one binary and the bundler cannot get it wrong.

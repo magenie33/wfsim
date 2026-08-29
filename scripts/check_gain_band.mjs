@@ -3,7 +3,7 @@
 // "≈0%" was one string for two different findings — a mod that does nothing,
 // and a mod nobody measured hard enough — and only the difference between them
 // is actionable: the first says pick something else, the second says raise the
-// runs (owner, 2026-08-12). So a chip either states a number it is
+// runs. So a chip either states a number it is
 // sure of, or states the number AND its width.
 //
 // It also asserts the two properties that make the width trustworthy, because
@@ -122,7 +122,7 @@ check("...a measured zero says so in words instead", noEffect.length > 0,
 // exact — and on the Kuva Nukor all seven progenitor elements report the same
 // count while their fights differ by up to 30%, so seven chips claimed an
 // exactness none of them had and the order between two of them was a coin flip
-// printed as a fact (owner, 2026-08-14).
+// printed as a fact.
 //
 // So a bare number now means ONE thing: the runs were identical, which under
 // the kill-rate metric is the same finding as "no effect here". The two sets
@@ -175,7 +175,7 @@ check("...and the gap is exactly what the two cards differ by",
 // The mean is the unbiased estimate of what an option is worth; the spread is a
 // property of the measurement, not of the option — run it long enough and the
 // spread goes to zero while the mean stays put. A lower-bound sort was tried
-// (2026-08-13) and reverted: it demotes whatever is merely hard to measure, and
+// and reverted: it demotes whatever is merely hard to measure, and
 // a status mod is hard to measure by nature, so the list ends up describing the
 // simulator rather than the build.
 //
@@ -240,7 +240,7 @@ check("a finished option shows its NUMBER, never the marker",
 // and it answers by sorting, which produces an order even where there is none.
 // Two gains that differ by less than the two bands together are one answer, and
 // the reader acts on the order — picked the top one, measured worse than the
-// one under it (owner, 2026-08-14).
+// one under it.
 //
 // Driven as state for the same reason the four above are: it is a rule about
 // two numbers, so it is asserted on two numbers.
@@ -264,7 +264,7 @@ check("an option clear of the leader is not marked tied",
   !/gtie/.test(ties.clear.other), ties.clear.other.slice(0, 90));
 // …NOR IS THE LEADER ITSELF, which shipped marked on every ranking there is:
 // "tied" printed on the first row of a list with a clear winner is a caveat
-// where there is nothing to caveat (owner, 2026-08-14).
+// where there is nothing to caveat.
 check("...and neither is the leader, when nothing is near it",
   !/gtie/.test(ties.clear.lead), ties.clear.lead.slice(0, 90));
 check("...and one inside its width is",

@@ -12,7 +12,7 @@ effects:
   # Stealth, not damage — out of the sim's world, and `noise_reduction` already
   # had a bucket; this mod simply had no way into it.
   # "Reduces the chance an enemy will hear gunfire by 100%."
-  # 2D groundwork (2026-08-01): a real stat with no SINGLE-TARGET damage
+  # 2D groundwork: a real stat with no SINGLE-TARGET damage
   # payload. It used to be `kind: unmodeled`, which threw the number away.
   - kind: noise_reduction
     rank0: 0.25

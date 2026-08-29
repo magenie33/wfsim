@@ -13,7 +13,7 @@ Increase Base Critical Damage Multiplier by +0.5x."
 # number the other one carries — and if DE ever splits them, the table grows a
 # real cell and the two files diverge there.
 #
-# NO OTHER VARIANT'S NUMBERS LIVE IN THIS FILE (owner, 2026-08-12). A file
+# NO OTHER VARIANT'S NUMBERS LIVE IN THIS FILE. A file
 # that states two weapons' values is a file where the reader has to work out
 # which one they are looking at, every time.
 selection: choose_one

@@ -17,7 +17,7 @@ introduced: "Update 21.0"
 noise: silent               # the throw is SILENT where the primary fire is ALARMING
 # ONE THROW IS ONE MAGAZINE — see scourge_prime_thrown.yaml for the cycle. The
 # throw is WIND-UP → release → RELOAD every time, so the magazine is 1 and the
-# 40 rounds belong to the primary-fire entry (owner, 2026-08-14).
+# 40 rounds belong to the primary-fire entry.
 magazine: 1
 reload_seconds: 0.6
 

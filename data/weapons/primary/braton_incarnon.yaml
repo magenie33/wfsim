@@ -75,7 +75,7 @@ attack:
     # A TERMINAL BLAST. This form carries an explosion AND an evolution that
     # rewards punch-through hits ("Gunsmoke Pick Up — On Punch Through Hit: 20%
     # chance for 10% Ammo restored"), so it cannot be a weapon that refuses
-    # punch through. DEFAULTED to the Burston's answer (owner, 2026-08-20)
+    # punch through. DEFAULTED to the Burston's answer
     # rather than measured: one shot at one enemy would confirm whether the
     # blast lands on it or behind it. See `weapons_data::BlastKind` and
     # MEASUREMENTS M53.

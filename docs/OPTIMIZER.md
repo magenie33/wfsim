@@ -102,7 +102,7 @@ optimizer never reimplements damage math). Results are cached by
 (canonical form, scenario, policy); equivalent combinations are never
 re-simulated.
 
-## 5. Implementation status (2026-07-24)
+## 5. Implementation status
 
 Implemented in `optimizer/` (`wfsim-optimizer` binary):
 
@@ -138,13 +138,13 @@ Implemented in `optimizer/` (`wfsim-optimizer` binary):
   that has not already left it cannot be recovered — this is what makes a
   cancelled run show its ranking instead of an empty page.
 
-## The optimizer tab is TWO HALVES (2026-08-02, drawn as two boxes 2026-08-29)
+## The optimizer tab is TWO HALVES
 
 Two preset bars, and the page is cut cleanly between them — nothing on it
 belongs to neither, which is what makes the two domains legible instead of a
-rule to remember (user).
+rule to remember.
 
-**AND NOW THEY ARE TWO CONTAINERS** (owner, 2026-08-29). The split was the rule
+**AND NOW THEY ARE TWO CONTAINERS**. The split was the rule
 for four weeks and only headings said so, which cannot tell a reader WHICH
 preset bar owns the thing they are editing. A box says it without a sentence.
 
@@ -177,7 +177,7 @@ preset bar owns the thing they are editing. A box says it without a sentence.
 | the final round's run count | **neither** — `OPT_RUNS_KEY`, a preference | how hard you want to measure right now is a fact about the person, not about the search and not about the fight |
 | how many cores to use | **neither** — the topbar's compute share | one setting for the whole page; a per-search override is two controls for one fact |
 
-The BUFFS were the last thing to move (2026-08-02). The optimizer kept its own
+The BUFFS were the last thing to move. The optimizer kept its own
 scope-wide config — a union over everything searchable, with its own stack
 settings — on the reasonable ground that a candidate carries mods the current
 build does not. That bought one real thing and cost a worse one: the two
@@ -189,7 +189,7 @@ this weapon could produce, which is what the scenario's "all potential buffs"
 view is for — because a search does cover builds you are not holding; a buff
 nobody set simply falls to its own default, which for anything timed is now 0.
 
-### The run count left the preset (owner, 2026-08-29)
+### The run count left the preset
 
 It rode the search preset with a BLANK box meaning *"the fight's own count"*.
 That is one control with two readings, and the wrong home for both. A run count
@@ -231,7 +231,7 @@ the threads box is gone and that no `threads` reaches the request;
 asserts the share actually moved the lane count — otherwise its "a fleet covers
 more ground than one worker" assertion would pass for the wrong reason.
 
-## The optimizer is the BUILDER, in bulk (owner, 2026-08-29)
+## The optimizer is the BUILDER, in bulk
 
 Every axis on this tab is a question the builder already asks. The only
 difference is what gets bound: the builder binds a **value**, the optimizer
@@ -277,7 +277,7 @@ treatment the exilus slot has, in `optimizer/` as well as on the page. Today
 the builder has the slot and the optimizer has nothing, which is the one place
 these two tabs still disagree about what a build is.
 
-## The search and the replay must be the SAME fight (2026-08-03)
+## The search and the replay must be the SAME fight
 
 Three ways they were not, all found by running one build through both:
 
@@ -300,7 +300,7 @@ unlock, no transformation, whoever is asking.
 simulator applies has a field the optimizer applies it from — the two cannot
 drift by omission again.
 
-## …AND SO MUST THE BUILD (2026-08-16)
+## …AND SO MUST THE BUILD
 
 The section above is about the FIGHT, and it fixed the fight. The build had the
 same disease one layer out, and it took three years of calendar and four
@@ -312,9 +312,9 @@ submission, a board record, a share link — and each held a hand-written answer
 to "which axes are there". A missing axis and a defaulted axis are the same
 absence on the wire, so a producer that had never heard of an axis was
 indistinguishable from one that meant the default, and no consumer could
-complain. `mode` was lost from the board submission (2026-08-09), `valence` from
-the worker's table (2026-08-14), both from the share tuple (2026-08-15), and
-`valence` from the optimizer's "+ add" (2026-08-16).
+complain. `mode` was lost from the board submission, `valence` from
+the worker's table, both from the share tuple, and
+`valence` from the optimizer's "+ add".
 
 The last one is the one that mattered, because it is the one a player could
 see. A search won on Magnetic became a build fired on Impact — `defaultValence`
@@ -358,7 +358,7 @@ reinstating the bug moves the Nukor from 0.6514 to 0.2118.
 answer cannot reach: a share link nobody has clicked, a board record nobody has
 submitted.
 
-## ACCURACY IS MEASURED, NOT ASSERTED (2026-08-03)
+## ACCURACY IS MEASURED, NOT ASSERTED
 
 A search strategy cannot vouch for itself. "The funnel kept the best build" is
 a claim about an answer nobody computed, and the failure mode it hides has no
@@ -400,7 +400,7 @@ settled ⇒ raise the run count; every verdict under it is noise.
   (see "The search and the replay must be the SAME fight"). It REFUSES a scope
   it cannot exhaust: a reference that samples is not a reference.
 
-**Baseline (2026-08-03).** Verglas Prime, 10 pooled rifle mods, Thrax Centurion
+**Baseline.** Verglas Prime, 10 pooled rifle mods, Thrax Centurion
 Lv 1000 SP, 60 s, `truth_runs=200`:
 
 | | |
@@ -415,7 +415,7 @@ The reference's own #1 is Viral+Heat (`cryo_rounds, malignant_force, hellfire`
 under MECHANICS §3 rule 3 — the innate is pulled forward onto the Cold mod's
 position, leaving Heat unpaired.
 
-## The RANKING statistic needs its own σ (2026-08-03, finished 2026-08-14)
+## The RANKING statistic needs its own σ
 
 The funnel ranks by `mean_kill_progress` but took its spread from `std_kills` —
 a different statistic that merely looks like it. Whole kills have no partial
@@ -447,7 +447,7 @@ The rule generalises past this one field: **every statistical decision is sized
 by the spread of the statistic it decides about.** A σ that merely looks like
 the right one is not a cheaper approximation, it is a different question.
 
-## Exhaustive enumeration does not survive a real scope (2026-08-03)
+## Exhaustive enumeration does not survive a real scope
 
 Measured on Verglas Prime's rifle pool, min 1 / max 8 slots:
 
@@ -478,7 +478,7 @@ The old answer was `ENUM_BUDGET_MS` in `wasm/src/lib.rs`: stop walking after
    `malignant_force`(26) + `hellfire`(20) together with `serration`(50) and
    `split_chamber`(54) — a subset that appears astronomically late in DFS order.
    This is why the optimizer could return a build with no Heat on a weapon where
-   Heat is worth 4.5× (user, 2026-08-03).
+   Heat is worth 4.5×.
 3. **It did not say so.** `stream_screen` treats only `cancel` as "did not
    finish"; a walk stopped by the budget returns `complete = true` and renders
    as a completed search.
@@ -489,7 +489,7 @@ The fix is to stop substituting exhaustive enumeration for search — ONE path a
 every scope, graded by the harness above (user, 2026-08-03: rigour over
 convenience; a user who wants less work should pool fewer mods).
 
-## EVERY AXIS SAYS HOW MANY OF ITS SLOTS A BUILD FILLS (owner, 2026-08-29)
+## EVERY AXIS SAYS HOW MANY OF ITS SLOTS A BUILD FILLS
 
 Every axis of a search is one shape: **N slots, an option set, and a range**
 saying how many of the slots a searched build must fill. The mods axis is 8
@@ -519,8 +519,7 @@ existed — nothing marked is 0–0, a mark is 1–1 — so **no existing scope 
 That matters most on the arcane seats, where the empty seat was ruled out on
 evidence: *"an arcane slot costs nothing — no capacity, no Forma — so leaving
 it empty can never beat filling it with something that helps, and marking a
-candidate IS the statement that the slot should be filled"* (user,
-2026-08-01). That decision was against the empty seat being a **default**;
+candidate IS the statement that the slot should be filled"*. That decision was against the empty seat being a **default**;
 asking for it out loud is a different thing, and the exilus slot could always
 do it. `an_arcane_seat_marked_none_is_not_a_default` is that decision, kept as
 an assertion.
@@ -557,7 +556,7 @@ asserts them ON THE WIRE, because a range that draws correctly and sends
 nothing looks exactly like a working control. Verified to bite: a `setSlotRange`
 that returns early reddens 8 of its 18.
 
-### All six axes, and what the count comes to (owner, 2026-08-29)
+### All six axes, and what the count comes to
 
 | axis | slots | range | adjustable |
 |---|---|---|---|
@@ -603,7 +602,7 @@ them, because there they are different numbers in a 0..8 space and both matter:
 a derived floor of 2 does not stop you wanting 3. Stating it beside the boxes
 is the resolution, not a second control.
 
-## How full a build must be is a RANGE (2026-08-03)
+## How full a build must be is a RANGE
 
 The scope had a ceiling (`build_size`, "max mods / build") and a derived floor:
 `required + 1 if anything is pooled`. So "search only full 8-mod builds" was
@@ -612,8 +611,7 @@ ceiling — on a 14-mod pool that is more than half the space, spent on builds
 that leave slots empty for no reason.
 
 `build_min` is its own request field now, and the UI is one control with two
-ends: **exactly 8** is 8–8, **up to 8** is 1–8, **up to 7** is 1–7 (user,
-2026-08-03). Three settings, not three behaviours.
+ends: **exactly 8** is 8–8, **up to 8** is 1–8, **up to 7** is 1–7. Three settings, not three behaviours.
 
 The derived floor stays a FLOOR rather than being replaced: pooling mods is the
 statement that they should be used, so every searched build carries at least one
@@ -622,7 +620,7 @@ it — it asks for builds the scope has already ruled out — while one above it
 wins. `scripts/check_build_size.mjs` asserts both ends on screen, in the preset
 and in the request.
 
-### The floor starts at 0, and it closes the list (owner, 2026-08-29)
+### The floor starts at 0, and it closes the list
 
 **IT IS A CONCLUSION, NOT A FILTER AND NOT A SUMMARY**, and that is what
 decides where it goes: how full a build must be only means anything once the
@@ -679,7 +677,7 @@ the scope reported itself impossible ("more required (0) than slots (8)") and
 Run stayed disabled until some control was touched. `check_build_size` could
 not see it, because its first act was to type a floor.
 
-## The search (2026-08-03)
+## The search
 
 Candidate GENERATION and candidate RANKING are different problems, and only
 the second was ever solved here. The funnel culls 22,316 jobs to 10 for 1.5%
@@ -738,7 +736,7 @@ depth-first walk plus the survivors at that cut, and a position in a shuffled
 range with an elite pool behind it is not the same thing. Restoring it means
 checkpointing the elites by identity and re-screening them on resume.
 
-### A batch must not overrun its phase (2026-08-03)
+### A batch must not overrun its phase
 
 Batches are wide — 4 proposals per worker — so every core stays fed. That made
 the explore/exploit split meaningless at small budgets: with 120 evaluations
@@ -765,7 +763,7 @@ Two per cent of the space buys the optimum; one per cent does not. The
 depth-first walk had no coverage at which it did — its sample was a corner, not
 a sample.
 
-### The browser runs a FLEET (2026-08-03)
+### The browser runs a FLEET
 
 The browser is where coverage is scarcest and compute is smallest: one thread
 at ~150 simulated engagements per second, against ~5,100 on a 26-thread
@@ -782,8 +780,7 @@ Each shard also CLIMBS on its own. That is a feature rather than a compromise:
 N independent hill-climbs from N independent samples is exactly the basin
 diversity one best-first climb lacks.
 
-The count is the **topbar's compute share** and nothing else (owner,
-2026-08-29): `woptWorkerCount()` is `poolSize()`, a percentage of the cores the
+The count is the **topbar's compute share** and nothing else: `woptWorkerCount()` is `poolSize()`, a percentage of the cores the
 machine reports. It used to be the search preset's own `CPU threads` box with
 that share as its default — see §"…and so did CPU threads" for why a
 per-search override of a global setting was the wrong shape, particularly on
@@ -805,7 +802,7 @@ second is that message.
 **Resume is unsharded.** A checkpoint is one worker's field, so resuming a run
 starts a single worker rather than a fraction of a fleet.
 
-## FILLING A SCOPE IS THE UNSOLVED HALF (2026-08-29, not built)
+## FILLING A SCOPE IS THE UNSOLVED HALF
 
 A search preset is a **way of looking for a build on this weapon** — the
 pool/req marks on every axis plus the funnel that spends them — and it is per
@@ -816,7 +813,7 @@ What is wrong is that the only ways to fill one are the mod list's sort, its
 polarity filter and its search box, all of which are *"let me scroll less"*.
 Marking a scope is still one click per card, and **a new weapon starts from
 nothing** — which is exactly the moment a player has the least idea what to
-mark. Two ways in, and each has a trap that is not obvious (owner, 2026-08-29).
+mark. Two ways in, and each has a trap that is not obvious.
 
 ### ① Import a ranked build's cards into the pool
 

@@ -21,8 +21,7 @@ effects:
   #
   # THIS FILE HAD X AS THE PER-STACK VALUE. The Boltor's card read "On Kill:
   # Increase Base Damage by +12 … Stacks up to 4x", which is its X of 12 in the
-  # place of the bullet's +2, and its unconditional +12 was missing entirely
-  # (2026-08-12). The other two were right by luck — their X is 0.
+  # place of the bullet's +2, and its unconditional +12 was missing entirely. The other two were right by luck — their X is 0.
   # from: "Increase Base Damage by +12"
   - kind: flat_base_damage
     value: 12.0

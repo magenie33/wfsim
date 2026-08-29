@@ -23,7 +23,7 @@ transform_group: larkspur_prime
 #   |            |        |        |          | when empty, 5 min cooldown  |
 #   | Archwing   |   90   | 4.50 s | 0        | regenerating = unlimited    |
 #
-# THE DAMAGE COLUMN WAS READ AS "SAME" AND IT IS DOUBLE (2026-08-14). VERBATIM
+# THE DAMAGE COLUMN WAS READ AS "SAME" AND IT IS DOUBLE. VERBATIM
 # (wiki `Archgun`): "most Heavy Weapons (a.k.a. Archguns when used via the
 # Archgun Deployer) have had their damage doubled". This file has said
 # `deployment: atmosphere` since it was written and carried the ARCHWING
@@ -33,7 +33,7 @@ transform_group: larkspur_prime
 # survive: three of the four stats checked out.
 #
 # So it is a SCENARIO axis, not an identity: one weapon, one mod pool, one
-# riven, and the environment chooses the column (user, 2026-08-01). The
+# riven, and the environment chooses the column. The
 # fields on this file are the ATMOSPHERE column, because the arena is ground;
 # the block below is what the other column overrides, and nothing else moves.
 deployment: atmosphere
@@ -44,8 +44,7 @@ deployments:
     # THE OTHER TAB'S DAMAGE, transcribed rather than halved. Both columns are
     # written down so either can be checked against the page without doing
     # arithmetic — which is the one thing that would have caught this file
-    # carrying the Archwing numbers under `deployment: atmosphere` (owner,
-    # 2026-08-14).
+    # carrying the Archwing numbers under `deployment: atmosphere`.
     damage: { impact: 10.0, radiation: 80.0 }   # 90 total
 mod_pools: [archgun]
 mastery_rank: 8
@@ -114,7 +113,7 @@ attack:
   # THE ATMOSPHERE COLUMN: 20 Impact + 160 Radiation = 180, against the
   # Archwing column's 10 + 80 = 90. Still 89% Radiation, so nothing about the
   # element hierarchy below changes.
-  # THE CHAIN, and THE GROUND COLUMN of it (2026-08-17):
+  # THE CHAIN, and THE GROUND COLUMN of it:
   #
   #   "Primary fire releases a continuous beam that can chain to 3 enemies after
   #    hitting the initial target, with each chain doing 80% of the previous
@@ -130,7 +129,7 @@ attack:
     # 40 m is the ATMOSPHERE column; the Archwing one is 160 (wiki). This said
     # 20 and was read by nothing, while the weapon's own unmodelled note said
     # 40 — the two disagreed in the same file until the range was modelled and
-    # the field started deciding something (2026-08-19). Same two-column trap
+    # the field started deciding something. Same two-column trap
     # AGENTS.md was written about, caught this time by the file contradicting
     # itself.
     range_m: 40.0
@@ -146,7 +145,7 @@ attack:
 # THE SAME ADMISSIONS AS THE ORDINARY LARKSPUR. This pair carried none at
 # all until the ordinary one joined the roster and the board check noticed
 # that the two halves of one weapon were admitting different things
-# (2026-08-15) — the Deployer cooldown, the ground range and Hildryn's
+# — the Deployer cooldown, the ground range and Hildryn's
 # reserve bonus are properties of the WEAPON and were always missing here.
 unmodeled:
   - reason: arch_gun_deployer_cooldown

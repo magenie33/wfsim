@@ -19,9 +19,8 @@
 // Each of those had, at some point, an axis the others had — and the one that
 // did not dropped it in silence, because a missing field and a defaulted field
 // are the same absence on the wire. Four times: `mode` from the board
-// submission (2026-08-09), `valence` from the worker's table (2026-08-14), both
-// from the share tuple (2026-08-15), `valence` from the optimizer's "+ add"
-// (2026-08-16).
+// submission, `valence` from the worker's table, both
+// from the share tuple, `valence` from the optimizer's "+ add".
 //
 // So the assertion is COVERAGE, in one direction only: every axis the engine
 // declares must be claimed by every surface that is supposed to carry it. It
@@ -123,7 +122,7 @@ if (axesBlock) {
   // ASSERTED AS A PROPERTY, NOT AS A SPELLING. This used to require the literal
   // `AXES.map((a) =>`, and the day `benchmark` became provenance rather than
   // identity — `AXES.filter((a) => a.identity !== false).map(…)` — the check
-  // went red on code that was still entirely derived (2026-08-25). A check that
+  // went red on code that was still entirely derived. A check that
   // fails on a refactor it should not care about is a check people learn to
   // edit rather than to read.
   //

@@ -10,7 +10,7 @@ sentence, from a comparison that never ran.
 It happened: `hema` shipped `/Lotus/Weapons/Infested/InfWFAccompanyingPri/...`
 against DE's `/Lotus/Weapons/Infested/LongGuns/InfWFAccompanyingPri/...` —
 one path segment short — and every sweep since has silently skipped that weapon
-(2026-08-20). Nothing could see it, because every sweep asked about the weapons
+. Nothing could see it, because every sweep asked about the weapons
 it could FIND.
 
 So the survey records, per entry id, the `uniqueName` the export actually

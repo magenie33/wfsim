@@ -14,7 +14,7 @@ effects:
   # A WARFRAME stat the weapon carries — which is exactly why this mod cannot
   # go on a companion weapon (see `excludes_weapon` below).
   # "+25% Sprint Speed"
-  # 2D groundwork (2026-08-01): a real stat with no SINGLE-TARGET damage
+  # 2D groundwork: a real stat with no SINGLE-TARGET damage
   # payload. It used to be `kind: unmodeled`, which threw the number away.
   - kind: sprint_speed_bonus
     rank0: 0.0227
@@ -27,8 +27,7 @@ incompatible_with: [serration, spectral_serration]
 # weapons". The reason is the second half: "+25% Sprint Speed" is a WARFRAME
 # buff that "always applies, regardless of whether or not you are holding the
 # weapon it is equipped to", and a companion is not the Warframe. This is why
-# plain Serration goes on Verglas Prime and this one does not (user,
-# 2026-08-01). `power_weapon` (Exalted) is carried unused — we model none.
+# plain Serration goes on Verglas Prime and this one does not. `power_weapon` (Exalted) is carried unused — we model none.
 excludes_weapon: [sentinel_weapon, power_weapon]
 
 source:

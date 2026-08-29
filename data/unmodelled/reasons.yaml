@@ -29,21 +29,21 @@ reasons:
     text: "the companion FIRES THIS WEAPON, not the player — it picks its own targets, fires when it decides to, and stops while the companion is reviving or out of range; this arena fires it continuously at one target, which is the ceiling rather than the average"
   zoom_steps:
     text: "the LOWER zoom levels are not modelled — this arena has no field of view to trade for magnification, so the scope always sits at its top level and its best buff"
-  # NO `damage_falloff` — IT IS MODELLED (2026-08-15). The arena has a range
+  # NO `damage_falloff` — IT IS MODELLED. The arena has a range
   # now (`engine::space`), the direct hit takes its published window, and the
   # twenty-three weapons that carried this line say nothing because there is
   # nothing left to admit. Kept as a note rather than silently deleted: this
   # file is where a reader looks to find out whether a gap is still a gap.
   spread_not_transcribed:
     text: "this attack's SPREAD is not in the data, so none of its shots can miss — the wiki's weapon module publishes a cone for it and the intake could not identify which of that weapon's attacks this entry is, so it took nothing rather than the wrong one. At a range every pellet lands here, which is the ceiling; at point blank it costs nothing, because nothing misses there anyway"
-  # NO `innate_punch_through` — IT IS MODELLED (2026-08-17). `punch_through_m`
+  # NO `innate_punch_through` — IT IS MODELLED. `punch_through_m`
   # sat in all 224 entries unread for as long as the arena held one body; a
   # formation is what gave it something to reach, and `space::struck_along`
   # spends it at `space::BODY_MATERIAL_M` per body crossed. The 22 weapons that
   # carried this admission carry none now.
   sniper_combo_miss:
     text: "a MISSED shot drops the combo counter and this entry cannot miss — the only thing that misses here is SPREAD, and this one lands on the reticle, so nothing but its {seconds} s timer ever takes a stack off. A player who pulls the shot loses the combo and this sim never pulls one"
-  # NO `radial_falloff` — IT IS MODELLED (2026-08-15). The explosion reads the
+  # NO `radial_falloff` — IT IS MODELLED. The explosion reads the
   # distance from its own epicentre, which is where the projectile actually
   # landed, so a pellet that missed detonates beside the target and the target
   # takes the rim. An entry that cannot miss (accuracy 100, or an accuracy
@@ -68,14 +68,14 @@ reasons:
   # folding in here next time one of them is touched.
   projectile_must_be_led:
     text: "the projectile has TRAVEL TIME and has to be led — 'hitting a target at range requires leading the target before firing'. Every shot here connects the instant it is fired, so this weapon's real hit rate against anything that moves is worse than the numbers below"
-  # NO `tome_meter` — IT IS MODELLED (2026-08-28). The 45 second recharge, the
+  # NO `tome_meter` — IT IS MODELLED. The 45 second recharge, the
   # second a landing pellet takes off it and the ten seconds an ammo pickup is
   # worth are `meter:` on the Grimoire's alt fire, and the mode it produces is a
   # CYCLE: fire the primary, throw an orb when the clock says so. What used to
   # be the loudest admission in the roster — "everything below is the ceiling
   # rather than the average, and by a wide margin" — is a number now.
   # NO `orb_shocks_over_time`, AND NO `orb_strikes_do_not_travel` — the orb is
-  # MODELLED (2026-08-28, M63), as an entity with a position that flies, slows
+  # MODELLED, as an entity with a position that flies, slows
   # on contact, strikes one body inside its reach six times and detonates where
   # it got to. Its movement is not a gap any more; it is the model. What is left
   # is the chain, which is a damage source this engine has no shape for.
@@ -96,19 +96,19 @@ reasons:
     text: "the shot also throws {n} bomblets that explode again for {damage} between them, and this engine gives an attack ONE explosion — so everything below is the main blast alone and this weapon is understated by roughly {share} of its damage. The wiki's Condition Overload catalog gives those bomblets a rule of their own (their CO term reads the PARENT projectile's damage), which consequently does not apply here either"
   auto_spool_ramp:
     text: "the AUTO-SPOOL ramp is not modelled — the page gives this trigger as Auto-Spool and the fire rate here is the spooled-up {rate}/s from the first shot, so a short burst is faster in this sim than in game"
-  # THE RICOCHET ITSELF IS MODELLED (2026-08-18) — `ricochet:` on the three
+  # THE RICOCHET ITSELF IS MODELLED — `ricochet:` on the three
   # Latron Incarnon entries, five bounces each dealing the collision and the
   # explosion in full. This is what is LEFT of it: the page says enemies *and
   # terrain*, and this arena has no walls.
   # TWO ASSUMPTIONS IN THE BOUNCE MODEL, both on the page rather than only in a
   # comment, because a player deciding whether to trust this weapon's number
-  # cannot read a yaml (2026-08-21).
+  # cannot read a yaml.
   bounce_headshot_assumed:
     text: "how often a bounce lands on a weak point is ASSUMED — a flat 50%. It can headshot (the wiki's Hit Mechanic page counts a rebound as a main hit), but where it lands is geometry this arena does not model and DE publishes no rate"
   ricochet_terrain:
     text: "a bounce here reflects off ENEMIES only — in game a wall or the floor is a surface too, so with cover this number is a FLOOR"
   reload_never_interrupted:
-    text: "this run never INTERRUPTS a reload — in game you can fire mid-reload and keep the shells already loaded, and a player who does is trading stacks and a full magazine for uptime. Decided rather than missing (2026-08-10): a listed reload is a whole reload, and the alternative is not a more accurate model, it is a different player"
+    text: "this run never INTERRUPTS a reload — in game you can fire mid-reload and keep the shells already loaded, and a player who does is trading stacks and a full magazine for uptime. Decided rather than missing: a listed reload is a whole reload, and the alternative is not a more accurate model, it is a different player"
   # THREE USES ON THE DAY IT WAS WRITTEN (Tenet Envoy, Tenet Diplos, Tenet
   # Ferrox) and three different percentages, which is both halves of what earns
   # a reason its place.

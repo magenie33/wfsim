@@ -31,7 +31,7 @@ effects:
     duration: 4.0
     chance: 0.5
     # FIFO, EACH STACK ON ITS OWN CLOCK — the same rule Stormburst carries, and
-    # observed the same way, in game (owner, 2026-08-13).
+    # observed the same way, in game.
     #
     # It was the Galvanized rule here, HARDCODED in the loader on the reading
     # that the card says nothing else. The difference is not cosmetic and it is

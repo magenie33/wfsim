@@ -24,7 +24,7 @@ effects:
   # THE PLAYER IS AN ALLY, so this DOES land on the wielder — which is the
   # opposite of what stood here. It was filed out of scope on the reading that
   # "Allies in Affinity Range" means other people and this arena has none; its
-  # sibling Lohk Canticle pays the player (owner, 2026-08-28) and so does this.
+  # sibling Lohk Canticle pays the player and so does this.
   #
   # WHAT STOPS IT IS THE OTHER HALF OF THE FIGHT. Nobody shoots back here
   # (docs/UNMODELLED.md), so the player's shields never fall and there is

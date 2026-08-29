@@ -94,7 +94,7 @@ MOD.update(_aw)
 
 # A CASE DIFFERENCE IS NOT A DIFFERENT WEAPON, and one silently excluded a whole
 # family: this roster writes "MK1-Braton" and the module writes "Mk1-Braton", so
-# every MK1 entry was reported UNCHECKED and nobody read the word (2026-08-21).
+# every MK1 entry was reported UNCHECKED and nobody read the word.
 # It hid a real error — the MK1-Kunai's Incarnon multishot.
 MOD_CI = {k.casefold(): k for k in MOD}
 # …AND THE JOIN KEY THE REPO ACTUALLY MANDATES. data/README.md: join the two by

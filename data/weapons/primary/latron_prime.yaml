@@ -9,7 +9,7 @@ grip_type: RIFLE
 mastery_rank: 10
 max_rank: 30
 
-# TWO WEAPONS MODEL (decision 2026-07-24): base and Incarnon forms are separate
+# TWO WEAPONS MODEL: base and Incarnon forms are separate
 # entries linked by a transform group.
 transform_group: latron_prime
 transforms_to: latron_prime_incarnon

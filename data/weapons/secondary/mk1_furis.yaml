@@ -35,7 +35,7 @@ exilus_polarity: naramon     # NOT the Furis's Madurai — the one metadata fiel
 riven_family: Furis          # module `Family` — SHARED with the Furis, so one
                              # riven fits both despite the split dispositions.
 traits: [tenno]
-introduced: "14.0"           # Update 14.0 (2014-07-18) — the MK1 line arrived
+introduced: "14.0"           # Update 14.0 — the MK1 line arrived
                              # long after the weapon it downgrades.
 internal_name: /Lotus/Weapons/MK1Series/MK1Furis
 noise: alarming

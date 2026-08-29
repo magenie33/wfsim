@@ -7,8 +7,7 @@ description: "If an enemy has 10 stacks of a combined Status Effect, inflicting 
 
 # WHAT THIS DOES IN THE LIVE GAME THAT DE DID NOT MEAN IT TO. Rendered on the
 # card: the sim computes it, it matches the game, and a hotfix takes it away —
-# so a player reading the number is entitled to know which of those it is
-# (owner, 2026-08-08). The mechanism is in MEASUREMENTS M37; this is
+# so a player reading the number is entitled to know which of those it is. The mechanism is in MEASUREMENTS M37; this is
 # the sentence.
 live_bugs:
   - "the split fires a damage instance of ZERO, and the zero still takes that instance's own multipliers — when the DoT replaces it with the parent hit's damage, they stay behind. Faction bonuses were meant to carry down the chain and do; a per-instance bonus like Devouring Attrition's +2000% was not, and does anyway (x21 twice = x441). Modelled as it behaves today; a fix removes it"
@@ -26,8 +25,7 @@ effects:
   # the two components.
   #
   # THE CARD ABOVE IS DE'S OWN TEXT AND IT READS ONE STEP LATE — "if an enemy
-  # HAS 10 stacks, inflicting the same Status Effect AGAIN". Measured otherwise
-  # (owner, 2026-08-10): at nine, the shot that makes it ten fires it. The
+  # HAS 10 stacks, inflicting the same Status Effect AGAIN". Measured otherwise: at nine, the shot that makes it ten fires it. The
   # description field stays verbatim, because it is DE's string and not ours
   # to correct — the behaviour is in the engine and in MEASUREMENTS M34.
   #
@@ -37,7 +35,7 @@ effects:
   # not exist. Under the measured rule Blast is an ordinary member.
   #
   # IT DEALS NO DAMAGE — it applies a status, and that is all the target ever
-  # feels from it (owner, 2026-08-08). The Electricity tick that lands the same
+  # feels from it. The Electricity tick that lands the same
   # instant is the DoT's OWN first tick, which is delay-0 for Electricity and
   # Gas; nothing here calls `target.apply`.
   #
@@ -45,7 +43,7 @@ effects:
   # reading: the wiki says the status it leaves carries the faction bonus THREE
   # times, a status always carries it one time more than whatever caused it, and
   # a hit carries it once — so three is only reachable through one more link in
-  # the chain (owner, 2026-08-05). That instance is a SCALE, not a damage
+  # the chain. That instance is a SCALE, not a damage
   # number. The two sentences used to be one, and it read as if the arcane
   # hit you twice.
   #
@@ -53,7 +51,7 @@ effects:
   # rolls crit against a zero. The two readings deal the same nothing and differ
   # in eligibility: a chance-on-non-crit perk (Devouring / Devastating Attrition)
   # stays live on the split under the first and dies under the second. ✅
-  # Measured (owner, 2026-08-10): Phenmor with crit chance pushed to guaranteed,
+  # Measured: Phenmor with crit chance pushed to guaranteed,
   # every hit orange, and the split's DoT still comes out ×21 some of the time.
   # This is why a critting build's Debilitate DoT is 1×21 rather than 1, and why
   # `noncrit_mult` is called with a literal tier 0 at the split's own
@@ -71,8 +69,7 @@ effects:
   # board rows by up to +112%. M33 has the two-mod experiment that separates all
   # three.
   #
-  # THE SPLIT PROC IS AN ORDINARY PROC, not a Melee-Influence-style spread
-  # (owner, 2026-08-05). It runs the normal DoT/debuff path and picks up its own
+  # THE SPLIT PROC IS AN ORDINARY PROC, not a Melee-Influence-style spread. It runs the normal DoT/debuff path and picks up its own
   # element bracket, so a Corrosive splitting into Toxin scales by the TOXIN mod
   # bonus — and by 1.0 where the build carries no Toxin mod, which is what
   # "otherwise you only get the base portion" means. The wiki's "separate damage

@@ -8,7 +8,7 @@ entries. This is what melee is, what it cost, and what is still owed.
 ## 1. THE ONE DECISION EVERYTHING ELSE FOLLOWS FROM
 
 > **Each way of swinging a melee weapon is an independent BUILD, and therefore
-> an independent board row** (owner, 2026-08-28).
+> an independent board row**.
 
 A melee player picks one loop and runs it for the whole engagement. That is the
 definition of a MODE in this repo — `WeaponPlayMode::sustainable` asks exactly
@@ -34,7 +34,7 @@ seven different builds being ranked, which is what the board is for.
 | `slide` | slide | Hell's Wave | 200% (360deg, forced Impact) |
 | `heavy_slam` | heavy, airborne | — | 630 Blast, 10 m sphere |
 
-**A MODE'S NAME IS FIXED AND ITS STRENGTH IS NOT** (owner, 2026-08-29). The id
+**A MODE'S NAME IS FIXED AND ITS STRENGTH IS NOT**. The id
 is the INPUT — `neutral`, `block_forward` — and so is what a reader sees;
 swapping the stance changes what `neutral` is WORTH and never what it is called.
 
@@ -151,7 +151,7 @@ one rides `mods`, appended. Nothing about the share link, the board record, the
 worker's table or `builds::identity` had to change.
 
 **A TENNOKAI HEAVY BREAKS THE CHAIN**, so the next light swing starts the combo
-over (owner, 2026-08-29). The wiki says nothing about a stance chain's position
+over. The wiki says nothing about a stance chain's position
 — asked directly, and the page is silent on what advances it and what resets it
 — so this is his answer and is recorded as one rather than derived.
 
@@ -340,12 +340,12 @@ Seven modes broke the mode-def block twice on the same day, in opposite
 directions.
 
 **It listed them all, and that was a wall.** The block was written to explain
-every mode a weapon has (owner, 2026-08-15), which was right at two or three
+every mode a weapon has, which was right at two or three
 and is seven paragraphs above the build at seven — six of them about something
 the reader did not pick. It draws the PICKED one now; comparison is what the
 board does, one row per mode.
 
-**Every line had to earn its place** (owner, 2026-08-29). Three of the four
+**Every line had to earn its place**. Three of the four
 sentences a melee mode printed said nothing:
 
 | line | why it went |

@@ -3,8 +3,7 @@
 //   node scripts/check_storage.mjs
 //
 // The THIRTY-FOURTH check, and the only one about how much room the app takes
-// on a reader's own machine. It exists because the answer was "all of it"
-// (owner, 2026-08-18: "why is storage full").
+// on a reader's own machine. It exists because the answer was "all of it".
 //
 // A REPLAY IS 41x THE RESULT IT BELONGS TO — measured here, not estimated:
 // 66 KB of frames, debuff series and hit accounts against a 1.6 KB summary of
@@ -47,7 +46,7 @@ const r = await evaluate(`(async () => {
   // the cheapest case rather than the representative one.
   // A BUILD OF OUR OWN, FIRST. This check is about what a saved result COSTS,
   // and nothing is saved without something to save it into: since
-  // "nothing is owned until it is made" (2026-08-19) a first-time visitor has
+  // "nothing is owned until it is made" a first-time visitor has
   // NO build, activePreset is blank, and saveSimResult returns having written
   // neither disk nor resultMem. That state is real and has its own check
   // (check_zero_presets.mjs); it is simply not the one this file is about, and
@@ -113,7 +112,7 @@ const r = await evaluate(`(async () => {
   localStorage.setItem(k2, JSON.stringify(
     // GUARDED, so a missing precondition FAILS the assertion above instead of
     // throwing an unread TypeError out of the page-side body. A check that
-    // crashes says less than one that fails (2026-08-20).
+    // crashes says less than one that fails.
     [{ name: 'b1', state: {}, lastResult: { at: 1, key: 'x', r: { ...((mem && mem.r) || {}) } } }]));
   out.beforeReclaim = localStorage.getItem(k2).length;
   out.freed = reclaimStoredReplays();

@@ -1,4 +1,4 @@
-# THE WIELDER, not necessarily a Tenno (2026-08-04). This file is named for the
+# THE WIELDER, not necessarily a Tenno. This file is named for the
 # commonest case and the UI is not: a ROBOTIC weapon is carried by a companion,
 # and the wiki is explicit — MOAs "share Robotic weapons with Sentinels and
 # equip their weapons" (MOA (Companion)), so Verglas Prime's wielder is a
@@ -28,7 +28,7 @@
 # and it deliberately does NOT participate in any calculation yet: no damage
 # number moves because this file exists. Introducing it now, rather than with
 # the first mechanic that needs it, is the point — the next change configures a
-# Tenno instead of also having to invent one (user, 2026-07-30).
+# Tenno instead of also having to invent one.
 #
 # `health` and `shield` are PLACEHOLDERS at 1: present and non-zero so that a
 # future consumer reading them cannot silently divide by zero or read "dead",
@@ -38,7 +38,7 @@
 id: tenno
 name: Tenno
 
-# THE WORST MAX-RANK FRAME THAT DOES NOT EXIST (owner, 2026-08-20). Every
+# THE WORST MAX-RANK FRAME THAT DOES NOT EXIST. Every
 # field is the LOWEST value any released Warframe has at rank 30, taken stat by
 # stat — so this is not a frame, it is the floor of all of them.
 #
@@ -53,7 +53,7 @@ name: Tenno
 # answer rather than an admission. Give the fight a frame and the same gate
 # opens with no code change, which is the whole point of this file.
 #
-# ALL FIVE ARE CONFIRMED NOW, and two of them MOVED (owner, 2026-08-26). Every
+# ALL FIVE ARE CONFIRMED NOW, and two of them MOVED. Every
 # figure below is read off the wiki's own rendered infobox, which states the
 # rank-30 value beside the base one — "Health 150 (250 at Rank 30)" — so nothing
 # here is derived any more:
@@ -94,7 +94,7 @@ energy: 0
 # Swift Punishment is "With Sprint Speed 1.2 or Higher: +30% Direct Damage per
 # Status Type".
 #
-# 0.9 IS THE SLOWEST A FRAME HAS (owner, 2026-08-12) — Atlas and Qorvex, and
+# 0.9 IS THE SLOWEST A FRAME HAS — Atlas and Qorvex, and
 # sprint does not scale with rank so the listed figure is the rank-30 one. This
 # was the FIRST field to take the floor rule and for two years the only one;
 # the block above now applies it to the other four. 1.0 would have been a frame

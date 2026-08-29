@@ -144,12 +144,11 @@ check("one row per buff, drawn and open by default",
 // the bar has no ramp to state, and the header says so in words instead
 // ("not full"). Asserting a ramp time unconditionally made this a test of the
 // median run's LUCK — it passed for months and moved the day the seed scheme
-// did, with nothing about the header changed (2026-08-18).
+// did, with nothing about the header changed.
 check("the header states average, uptime and either the ramp or why there is none",
   /[\d.]+\/40/.test(r.rows[0].stat) && /\d+%/.test(r.rows[0].stat) &&
   (/[\d.]+s/.test(r.rows[0].stat) || /full|满层/.test(r.rows[0].stat)), r.rows[0].stat);
-// THE METER IS COLOURED BY DAMAGE TYPE, NOT BY ROW POSITION (owner,
-// 2026-08-06). It used to take its colour from `(i % 8) + 1`, so the same
+// THE METER IS COLOURED BY DAMAGE TYPE, NOT BY ROW POSITION. It used to take its colour from `(i % 8) + 1`, so the same
 // element was one colour under a direct hit and another under a lingering
 // field — and neither was the element's. DE publishes a colour per type
 // (`Module:DamageTypes/data`), and the point of using it is that it is
@@ -179,7 +178,7 @@ check("the header states average, uptime and either the ramp or why there is non
     JSON.stringify(Object.entries(byType).map(([k, v]) => [k, v.every((x) => x.icon)])));
 }
 
-// EXPANDING A SOURCE ACTUALLY SHOWS AND HIDES IT (owner, 2026-08-06). The
+// EXPANDING A SOURCE ACTUALLY SHOWS AND HIDES IT. The
 // handler was always correct — it toggled the attribute and flipped the
 // caret — and nothing happened, because `.mrow` is `display:grid` and an
 // author rule beats the UA's `[hidden]{display:none}`. So the rows were
@@ -192,8 +191,7 @@ check("a meter source expands and collapses for real",
   r.collapse.start === "none" && r.collapse.toggled === "grid" && r.collapse.back === "none",
   JSON.stringify(r.collapse));
 
-// THE COMPOSITION BAR — the same damage counted a second way (owner,
-// 2026-08-06). The meter answers where damage came FROM; this answers what
+// THE COMPOSITION BAR — the same damage counted a second way. The meter answers where damage came FROM; this answers what
 // it was MADE OF, and the two are the same total, so the shares must come to
 // one and cover the same types the meter listed.
 //

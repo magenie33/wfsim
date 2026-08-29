@@ -15,7 +15,7 @@
 /// not, and nothing here could see it: the value was right from both ends while
 /// the control stayed a bare editable number, so a reader could type 100 on a
 /// Verglas, watch the page take it, and get a run computed at 0 with nothing on
-/// screen saying why (owner, 2026-08-19). A column that is shown and not
+/// screen saying why. A column that is shown and not
 /// applied looks exactly like one that works.
 ///
 /// TWO THINGS ARE ASSERTED OF EACH, because either alone passes on a broken

@@ -107,7 +107,7 @@ attack:
   punch_through_m: 0.0
   # PURE HEAT — the form drops the base weapon's IPS entirely. 20 against the
   # Prime's 30, at 7.5 ticks per second against 8.0.
-  # THE CHAIN, from the Genesis page (2026-08-17):
+  # THE CHAIN, from the Genesis page:
   #
   #   "each beam chaining up to 2 nearby enemies within 10 meters of the initial
   #    target and subsequent targets struck by punch through"

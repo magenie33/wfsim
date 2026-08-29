@@ -16,7 +16,7 @@ selection: choose_one
 effects:
   # THE BONUS IS ADDITIVE WITH PRIMARY DEADHEAD'S. VERBATIM (wiki): "Headshot
   # damage bonus stacks additively with Primary Deadhead's headshot damage
-  # bonus" (owner, 2026-08-10) — so it joins the same bracket the arcane feeds
+  # bonus" — so it joins the same bracket the arcane feeds
   # rather than multiplying it, and a build already carrying Deadhead gets far
   # less out of it than +50% reads: on a 2x head it is x1.385, not x1.5.
   #

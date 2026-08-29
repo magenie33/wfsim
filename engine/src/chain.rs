@@ -7,7 +7,7 @@
 //! instance, at what share of the direct hit, and under which rules. What each
 //! instance then DOES is the ordinary damage pipeline's business, because a
 //! chain hop is not a special kind of hit: it is *"a beam with a smaller base
-//! damage"* (owner, 2026-08-17), so its crit, its status, its procs and their
+//! damage"*, so its crit, its status, its procs and their
 //! DoTs all fall out of the share and need no rule of their own.
 //!
 //! # The mechanic
@@ -24,13 +24,13 @@
 //! chains, not one — and that, rather than the splash damage itself, is what a
 //! radius mod is buying (see the numbers in docs/MECHANICS.md §12).
 //!
-//! **A PATH VISITS NOBODY TWICE** (owner, 2026-08-16). "Struck by multiple
+//! **A PATH VISITS NOBODY TWICE**. "Struck by multiple
 //! chains" means the repeats come from DISTINCT paths rather than from a path
 //! looping back on itself. It is what makes the arithmetic well-defined, and it
 //! separates from the alternative at three targets, because the falloff
 //! compounds ALONG a path.
 //!
-//! **THE NEXT HOP IS THE NEAREST VIABLE TARGET** (owner, 2026-08-17), and this
+//! **THE NEXT HOP IS THE NEAREST VIABLE TARGET**, and this
 //! is the one clause with a MEASUREMENT behind it: ten hops read off two paths
 //! in the Simulacrum went to an orthogonal neighbour every time, never to a
 //! diagonal and never past a nearer body (MEASUREMENTS M52).
@@ -49,7 +49,7 @@
 //! in world-space broadphase order — which depends on which cell each body
 //! falls into, and is not a function of the formation at all.
 //!
-//! WHAT IS GUARANTEED HERE INSTEAD (owner, 2026-08-17): *"if the enemies never
+//! WHAT IS GUARANTEED HERE INSTEAD: *"if the enemies never
 //! move, the chain path is always fixed"*. That is the property [`resolve`]
 //! has — ties go to the lowest body index, so one formation always produces one
 //! path. It is arbitrary and it is stable, which is the honest pair when the
@@ -58,10 +58,10 @@
 //! part nobody can know moves damage between bodies without changing how much
 //! the formation took.
 //!
-//! **NO LINE OF SIGHT** (owner, 2026-08-17) — a hop is a distance test and
+//! **NO LINE OF SIGHT** — a hop is a distance test and
 //! nothing else, so a body behind another is as reachable as one beside it.
 //!
-//! **ONLY THE DIRECTLY STRUCK TARGET CAN BE HEADSHOT** (owner, 2026-08-17).
+//! **ONLY THE DIRECTLY STRUCK TARGET CAN BE HEADSHOT**.
 //! Everything the splash catches and everything a chain reaches lands on the
 //! body. It is the clause with the most consequence for build ranking: in a
 //! 3 x 3 formation at 3 m under Primed Firestorm, one of TWENTY-FOUR instances
@@ -79,8 +79,7 @@
 //!
 //! # What this module does NOT decide
 //!
-//! Whether a radius mod widens the CHAIN range. It does not here (owner,
-//! 2026-08-17): [`Splash::radius_m`] is the modded value and [`Spec::range_m`]
+//! Whether a radius mod widens the CHAIN range. It does not here: [`Splash::radius_m`] is the modded value and [`Spec::range_m`]
 //! is not touched by it. Two wiki pages disagree about this and the weapon's
 //! own page is the one followed — see docs/MECHANICS.md §12.
 
@@ -325,7 +324,7 @@ pub fn resolve_with(
         return out;
     }
     // A SHOT THAT STRUCK NOBODY STILL SPLASHES. Aim is a direction and the
-    // place it lands may be bare floor (owner, 2026-08-17) — *"a 2.3 meter
+    // place it lands may be bare floor — *"a 2.3 meter
     // damage radius from the point of impact against a SURFACE"*, and a floor
     // is a surface. Every body the sphere catches is then an ordinary seed:
     // none was directly struck, so none may headshot and none carries
@@ -343,7 +342,7 @@ pub fn resolve_with(
     // …and the paths really are independent rather than one longer path:
     // "The chain from the target hit after the Punch Through can deal damage to
     // the first target, and vice versa." Which is the same rule the owner gave
-    // for two chains meeting (2026-08-17): a body takes a second instance only
+    // for two chains meeting: a body takes a second instance only
     // when a SECOND independent link reaches it. `seen` is per seed, so that
     // falls out rather than being arranged.
     let struck: Vec<usize> = struck.iter().copied().filter(|&i| i < bodies.len()).collect();
@@ -369,7 +368,7 @@ pub fn resolve_with(
         // full-share instance whether the beam or the radius reached it.
         // A STRUCK BODY IS A DIRECT HIT: every pellet that punches through
         // reaches it, so it carries multishot, and it may HEADSHOT — punch
-        // through does not stop a shot being aimed (owner, 2026-08-17). A body
+        // through does not stop a shot being aimed. A body
         // the sphere merely caught does neither.
         let direct = struck.contains(&s);
         out.push(Instance {
@@ -463,7 +462,7 @@ mod tests {
     /// docs/MECHANICS.md §12 was computed against.
     const TORID: Spec = Spec { hops: 5, range_m: 7.0, falloff: 0.75, compounds: true };
 
-    /// A 3 x 3 formation at 3 m, the fixture the owner chose (2026-08-17): the
+    /// A 3 x 3 formation at 3 m, the fixture the owner chose: the
     /// smallest arrangement dense enough that a five-hop path never runs out of
     /// targets, and sparse enough that the damage radius is the thing deciding
     /// how many chains start.
@@ -473,8 +472,7 @@ mod tests {
             .collect()
     }
     /// The front row's middle body — the one a player can actually put a beam
-    /// on. The centre of the formation is BEHIND it and cannot be aimed at
-    /// (owner, 2026-08-17).
+    /// on. The centre of the formation is BEHIND it and cannot be aimed at.
     const FRONT_MIDDLE: usize = 1;
 
     fn total(v: &[Instance]) -> f64 {

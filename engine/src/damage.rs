@@ -274,7 +274,7 @@ impl DamageVector {
     /// test on this function could not distinguish the two readings. A Braton
     /// Prime with Infected Clip and Hellfire could: base 35, Gas 63, and the
     /// wrong denominator snaps the four components to 33 units instead of 32,
-    /// for **101.06 against a measured 98** (owner, 2026-08-23, M57). Four
+    /// for **101.06 against a measured 98**. Four
     /// builds were measured and the right denominator reproduces all four to
     /// the digit.
     ///
@@ -390,8 +390,7 @@ mod tests {
         assert_eq!(DamageVector::new().quantized_against(0.0).total(), 0.0);
     }
 
-    /// **THE CASE THE WIKI'S OWN EXAMPLE CANNOT DECIDE**, measured four ways
-    /// (owner, 2026-08-23, M57).
+    /// **THE CASE THE WIKI'S OWN EXAMPLE CANNOT DECIDE**, measured four ways.
     ///
     /// A Braton Prime, base 35 split 1.75/12.25/21, with the element bonus
     /// stated per build. Against the vector's TOTAL the four components snap to

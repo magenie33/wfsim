@@ -2,7 +2,7 @@
 //
 // The optimizer used to offer only a ceiling ("max mods / build"), so
 // "search only full 8-mod builds" was not a thing you could ask for — and
-// every search paid for the sizes below it (user, 2026-08-03). The
+// every search paid for the sizes below it. The
 // floor is its own control now.
 //
 // Asserts what is on SCREEN and in the REQUEST, not what is in a variable:
@@ -25,7 +25,7 @@ const r = await evaluate(`(async () => {
   const out = {};
   const set = async (el, v) => { const n=document.getElementById(el); n.value=String(v); n.dispatchEvent(new Event('input',{bubbles:true})); await sleep(200); };
   out.present = !!document.getElementById('opt-min') && !!document.getElementById('opt-size');
-  // …AND IT COMES AFTER THE MARKING (owner, 2026-08-29). How full a build must
+  // …AND IT COMES AFTER THE MARKING. How full a build must
   // be is the CONCLUSION you reach once the required and the pooled are
   // chosen, so it closes the mod list rather than sitting over it — it was on
   // the search box's own flex row first, then above the list with the marks

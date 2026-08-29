@@ -1,7 +1,7 @@
 // THE ARENA IS A PLACE YOU CAN DRAG, and what you drag is what gets simulated.
 //
 // A fight is two bodies on a floor, so the panel draws two bodies on a floor
-// and you move them with your finger (owner, 2026-08-15). The picture is not a
+// and you move them with your finger. The picture is not a
 // decoration and that is the whole reason this check exists: a scene that
 // looked right and did not reach `/api/simulate` would be the most convincing
 // wrong thing on the page.
@@ -17,7 +17,7 @@
 //   · BODIES DO NOT PASS THROUGH EACH OTHER, and CONTACT READS ZERO. Dragging
 //     the enemy onto the player leaves their CENTRES 0.4 m apart — twice the
 //     measured 0.2 m radius (M47) — and the number on screen is the GAP between
-//     their surfaces, which is 0 (owner, 2026-08-16). What a player calls point
+//     their surfaces, which is 0. What a player calls point
 //     blank is zero; the 0.4 m is the model's business.
 //   · …AND AT CONTACT NOTHING MISSES. The shot leaves the muzzle, one radius
 //     forward, so its closest approach to the target's centre is `r·sin(θ) ≤ r`
@@ -27,7 +27,7 @@
 //     distance, so the scene refuses the gesture there — and it has to refuse
 //     it ITSELF, because the official lock disables inputs and the bodies are
 //     SVG circles that sweep never reaches.
-//   · THE CANVAS IS THE ONLY PLACE A POSITION IS SET (owner, 2026-08-16). The
+//   · THE CANVAS IS THE ONLY PLACE A POSITION IS SET. The
 //     typed Distance box is gone; the shortcuts that replaced it live INSIDE
 //     the scene, and a quick-set moves the target ALONG the line it already
 //     stands on rather than snapping it to an axis — same rule the drag obeys,
@@ -105,7 +105,7 @@ const r = await evaluate(`(async () => {
   // map and the debuff table call this body, so the header says it too or they
   // are about different enemies — but a name is not an IDENTITY, and a reader
   // looking at fifty bodies had no other way to find out which unit was
-  // standing there or at what level (owner, 2026-08-18). Three separate facts,
+  // standing there or at what level. Three separate facts,
   // because a panel that named the unit and dropped the level would read as
   // working.
   {
@@ -301,7 +301,7 @@ check("...and at contact nothing misses", r.nearHitRate > 0.99,
   `${(r.nearHitRate * 100).toFixed(0)}%`);
 check("there is no second control for a position — the canvas is the only one",
   r.noTypedBox === true);
-// THE QUICK SETS ARE GONE (owner, 2026-08-18), and so is the row they lived in:
+// THE QUICK SETS ARE GONE, and so is the row they lived in:
 // they existed because the old scene could not be dragged to a distance, and it
 // can. What replaced the assertion is the property that made them worth having
 // and the drag has to keep — the target moves where you put it rather than

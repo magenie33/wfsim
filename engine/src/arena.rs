@@ -12,7 +12,7 @@
 //! builds one from the scenario JSON, the optimizer's `Scenario` embeds one so
 //! its winner is scored under the fight the replay will run, and both hand the
 //! same value to the same constructor. Two modules reading one scenario into
-//! two lookalike shapes is how they drift a field at a time (user, 2026-08-02).
+//! two lookalike shapes is how they drift a field at a time.
 
 use crate::dummy::{BodyPart, TargetParams};
 use crate::space::Vec2;
@@ -67,7 +67,7 @@ pub struct Arena {
     /// WHERE THE WEAPON POINTS. `None` means "at the target", which is the
     /// fight every golden value and both boards rest on.
     ///
-    /// A PLACE, not a body (owner, 2026-08-17): it may be bare floor, and then
+    /// A PLACE, not a body: it may be bare floor, and then
     /// the shot simply crosses nobody and deals nothing — the engine fires
     /// along the line it is given and what it meets is what it meets. The
     /// splash still goes off where the round lands, which is what makes aiming
@@ -175,8 +175,7 @@ mod tests {
     use super::*;
 
     /// The fixture is the NEUTRAL player: aiming, nothing running, and the
-    /// FLOOR of every released frame rather than a blank one (owner,
-    /// 2026-08-20). A test that measures a weapon must not be measuring an
+    /// FLOOR of every released frame rather than a blank one. A test that measures a weapon must not be measuring an
     /// invisible Tenno with 1,200 armor by accident — and the floor is the one
     /// frame that cannot be doing that, since nothing in the game is weaker.
     #[test]

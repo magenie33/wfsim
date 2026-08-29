@@ -16,7 +16,7 @@ description: "+Xm Beam Range"
 #
 # THAT PROPERTY TEST WAS WRONG IN BOTH DIRECTIONS, which is why it is gone. The
 # Torid's Incarnon form is a continuous beam and cannot take it (modding is
-# decided on the BASE form, which is a grenade launcher — user, 2026-07-31), and
+# decided on the BASE form, which is a grenade launcher), and
 # the page names the other end of the same error: "Does not currently work with
 # continuous Robotic beam weapons like: Artax, Tazicor, Verglas".
 #
@@ -35,7 +35,7 @@ exclusive_to: [amprex, convectrix, flux_rifle, glaxion, glaxion_vandal,
                phantasma, phantasma_prime]
 
 effects:
-  # THE METRES ARE REAL NOW (2026-08-22). Beam range became a WALL on
+  # THE METRES ARE REAL NOW. Beam range became a WALL on
   # 2026-08-19 (`gap_m <= ap.range_m`), and this mod moves it. What was missing
   # was never the metres, it was the BRACKET — and the wiki does state it, on
   # Galvanized Acceleration's page rather than on this one: "Sinister Reach will

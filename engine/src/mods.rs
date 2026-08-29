@@ -27,7 +27,7 @@ pub enum Polarity {
     /// Weapons really do ship one. The Vinquibus is *"Innate one Madurai and
     /// one Aura polarities"* (its page), and this roster had recorded only the
     /// Madurai — which reads as one polarised slot where the truth is two, one
-    /// of them a penalty (2026-08-21).
+    /// of them a penalty.
     Aura,
     /// OMNI FORMA's universal polarity — a SLOT polarity only; no mod has it.
     /// "Matches any mod except Umbra mods" (wiki `Omni Forma`), which is why
@@ -85,8 +85,7 @@ pub fn rank_after(base_max_rank: u32, forma: u32) -> u32 {
 /// weapon, none for anyone else.
 ///
 /// Worth its own name because it is a MASTERY figure, not a capacity one: a
-/// build may fit in three, and the fifth is still what full affinity requires
-/// (owner, 2026-08-04). It is why `polarize_to_max` is the default and why the
+/// build may fit in three, and the fifth is still what full affinity requires. It is why `polarize_to_max` is the default and why the
 /// default path never has to solve for its own capacity.
 pub fn forma_to_max_rank(base_max_rank: u32) -> u32 {
     base_max_rank.saturating_sub(30).div_ceil(2)
@@ -106,8 +105,7 @@ pub struct Investment {
     pub use_omni: bool,
     /// May the planner spend an UMBRA Forma?
     ///
-    /// The rule is "as little as possible, but use it rather than fail"
-    /// (owner, 2026-08-04), and [`fit`] implements exactly that: it plans
+    /// The rule is "as little as possible, but use it rather than fail", and [`fit`] implements exactly that: it plans
     /// without, and only retries with when without is impossible. So this flag
     /// is the FIRST attempt's answer, not a veto — a build that genuinely
     /// needs an Umbra Forma still gets one.
@@ -208,8 +206,7 @@ pub fn plan_forma(
 ///   except Umbra mods"). So with `use_umbra` off it is never matched, and it
 ///   pays full drain rather than blocking the build.
 /// - anything else takes a **regular** Forma, or an **Omni** one when the
-///   player has chosen Omni — the owner's rule is all-or-nothing
-///   (2026-08-04).
+///   player has chosen Omni — the owner's rule is all-or-nothing.
 pub fn plan_forma_with(
     cap: u32,
     innate_slots: &[Option<Polarity>],
@@ -226,8 +223,7 @@ pub fn plan_forma_with(
 /// full affinity takes on a rank-40 weapon whether or not the build needs them.
 /// Spending them and then not USING them was leaving capacity on the table —
 /// the same five Forma, placed on the five biggest mods instead of the two the
-/// build strictly needed, leave more room for whatever comes next.
-/// (owner, 2026-08-04).
+/// build strictly needed, leave more room for whatever comes next..
 fn plan_forma_spending(
     cap: u32,
     innate_slots: &[Option<Polarity>],
@@ -373,7 +369,7 @@ pub fn cost_of(innate_slots: &[Option<Polarity>], slots: &[Placement]) -> (u32, 
     }
     // AN INNATE UMBRA IS NOT A PURCHASE. Some weapons are born with one, and
     // keeping it costs nothing — billing for it charged the player for a slot
-    // the game gave them (owner, 2026-08-04). Only what is used BEYOND the
+    // the game gave them. Only what is used BEYOND the
     // innate ones is bought. Omni is netted the same way for symmetry; no
     // weapon is born with one today, and if one ever is, this already says the
     // right thing.
@@ -420,7 +416,7 @@ pub struct Fitted {
 
 /// THE question the builder asks: what would it take to own this build?
 ///
-/// # The strategy, in priority order (owner, 2026-08-04)
+/// # The strategy, in priority order
 ///
 /// 1. **Reach max rank first.** Five polarizations on a rank-40 weapon, because
 ///    that is what full mastery affinity takes. It is a floor, not a budget.
@@ -456,7 +452,7 @@ pub fn fit(
     // AS LITTLE UMBRA AS POSSIBLE, BUT NEVER FAIL FOR WANT OF IT. Umbra Forma
     // is the scarce item, so the first attempt does without — and if the build
     // is impossible without it, refusing would be inventing a rule the game
-    // does not have (owner, 2026-08-04).
+    // does not have.
     //
     // The two attempts call `fit_exactly`, not each other: a version of this
     // that recursed into `fit` re-entered the same branch and never bottomed
@@ -692,8 +688,7 @@ mod tests {
         assert_eq!(cost.umbra, 1);
     }
 
-    /// UMBRA IS SPENT ONLY WHEN REFUSING WOULD BE WRONG (owner,
-    /// 2026-08-04). Not a veto — a first answer.
+    /// UMBRA IS SPENT ONLY WHEN REFUSING WOULD BE WRONG. Not a veto — a first answer.
     #[test]
     fn umbra_forma_is_a_last_resort_rather_than_a_refusal() {
         let innate = [None; 8];
@@ -727,7 +722,7 @@ mod tests {
         // The five are spent for mastery either way, so they are PUT TO WORK:
         // all three mods halved (48 -> 24) rather than left at full drain
         // because the build "did not need it". Same Forma, 56 spare instead of
-        // 32 — which is the point of spending them (owner, 2026-08-04).
+        // 32 — which is the point of spending them.
         assert_eq!(f.drain, 24, "every polarization that is bought is used");
         assert_eq!(f.cost.total(), 5, "five polarizations for full affinity");
         assert_eq!(f.cost, FormaCost { regular: 5, omni: 0, umbra: 0 });
@@ -786,7 +781,7 @@ mod tests {
         );
         assert_eq!(slot_drain(9, Polarity::Umbra, Some(Polarity::Madurai)), 11);
         // 11.25
-        // MEASURED (2026-07-24, user): the half case rounds UP.
+        // MEASURED: the half case rounds UP.
         assert_eq!(
             slot_drain(10, Polarity::Madurai, Some(Polarity::Naramon)),
             13

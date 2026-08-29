@@ -3,7 +3,7 @@
 //! The arena had two actors and no geometry between them: every shot landed at
 //! point blank, so a weapon that falls off with distance was simulated at its
 //! best case and said so. This is the missing half, and it is COORDINATES
-//! rather than a scalar "engagement distance" on purpose (owner, 2026-08-15).
+//! rather than a scalar "engagement distance" on purpose.
 //!
 //! For one target the two are the same number — a player and an enemy are two
 //! points, and the only degree of freedom between them is how far apart they
@@ -51,7 +51,7 @@ impl Vec2 {
 }
 
 /// WHERE A SHOT LEAVES — a point on the shooter's own circumference, facing
-/// what they are aiming at (owner, 2026-08-16).
+/// what they are aiming at.
 ///
 /// A body with a size fires from its FRONT, not from its centre, which is the
 /// only place a muzzle can be once the shooter is a circle rather than a dot.
@@ -66,7 +66,7 @@ pub fn muzzle(shooter: Vec2, aim_at: Vec2) -> Vec2 {
 /// and NOT how far a shot flies.
 ///
 /// The two were one function called `shot_travel` for a few hours, and the name
-/// was the error (owner, 2026-08-16): a bullet vanishes when it reaches the
+/// was the error: a bullet vanishes when it reaches the
 /// target's SURFACE, so what it flies is the [`gap`], and this is one radius
 /// longer than that. It appears in [`miss_distance`] because the perpendicular
 /// distance from a circle's CENTRE to a ray is what decides whether the ray
@@ -80,7 +80,7 @@ pub fn range_to_centre(shooter: Vec2, target: Vec2) -> f64 {
 /// distance a shot actually FLIES.
 ///
 /// This is what "how far apart are we" means once bodies have a size, so it is
-/// the number the arena SHOWS and the quick sets set (owner, 2026-08-16).
+/// the number the arena SHOWS and the quick sets set.
 /// Standing on someone reads 0 m, which is what point blank has always meant
 /// to a player; the 0.4 m between the two centres is a fact about the model
 /// and not something a reader should have to subtract.
@@ -141,7 +141,7 @@ pub fn miss_distance(range_m: f64, deviation_deg: f64) -> f64 {
 /// HOW FAR OFF THE AIM LINE A BODY SITS, in degrees, seen from the muzzle.
 ///
 /// ZERO when the weapon is pointed straight at it, which is the fight this
-/// engine ran until aim became a place you choose (owner, 2026-08-17). Every
+/// engine ran until aim became a place you choose. Every
 /// deviation the spread cone rolls is measured from the AIM line, and this is
 /// how far the body already is from it before a single degree of spread is
 /// added.
@@ -185,7 +185,7 @@ pub fn miss_distance_off_axis(range_m: f64, off_axis_deg: f64, deviation_deg: f6
 /// is how far over or under the shot went, which is a real distance to every
 /// body on the floor and belongs in the range rather than being thrown away.
 ///
-/// WHY IT EXISTS (owner, 2026-08-19). [`miss_distance_off_axis`] answers "how
+/// WHY IT EXISTS. [`miss_distance_off_axis`] answers "how
 /// far did it pass the aimed body", which was the whole question while a fight
 /// held ONE body — its own doc says so: *"the model has never drawn which side
 /// — only the magnitude decides anything against one body"*. With a crowd, the
@@ -272,7 +272,7 @@ pub fn detonation_of_miss(
 }
 
 /// WHERE AN EXPLOSION GOES OFF ON A BODY — the point on its circumference
-/// FACING THE SHOOTER, not its centre (owner, 2026-08-17).
+/// FACING THE SHOOTER, not its centre.
 ///
 /// A round detonates where it touches, and once a body is a circle rather than
 /// a dot that is a real place one body-radius nearer the muzzle. Using the
@@ -283,8 +283,7 @@ pub fn detonation_point(body: Vec2, shooter: Vec2) -> Vec2 {
     body.toward(shooter, BODY_RADIUS_M)
 }
 
-/// IS THIS BODY IN THE BLAST? **ANY PART OF IT TOUCHING IS ENOUGH** (owner,
-/// 2026-08-17) — a corner clipped by the edge takes damage.
+/// IS THIS BODY IN THE BLAST? **ANY PART OF IT TOUCHING IS ENOUGH** — a corner clipped by the edge takes damage.
 ///
 /// So the radius a blast really covers is its own plus a body radius, and the
 /// test is on the distance between CENTRES, which is the only distance the
@@ -296,7 +295,7 @@ pub fn caught_by_blast(centre_distance_m: f64, blast_radius_m: f64) -> bool {
 /// HOW FAR INTO A BODY THE BLAST HAS TO REACH — the distance to its NEAREST
 /// point, which is what falloff reads.
 ///
-/// **THE BEST POINT ON THE BODY WINS** (owner, 2026-08-17). A body standing
+/// **THE BEST POINT ON THE BODY WINS**. A body standing
 /// across a falloff gradient has a different number at every point of it, and
 /// the model takes the largest — which is the point nearest the epicentre while
 /// no weapon in the game falls off the other way. It is a rule rather than an
@@ -317,7 +316,7 @@ pub fn blast_reach(centre_distance_m: f64) -> f64 {
 /// ([`miss_distance`]), and of the ones it does, the nearest along the ray is
 /// the one that stops it.
 ///
-/// AIM IS A DIRECTION, NOT A TARGET (owner, 2026-08-17). A player points the
+/// AIM IS A DIRECTION, NOT A TARGET. A player points the
 /// weapon at a place — which may be a body, or the floor beside one — and
 /// whatever the line runs through is what gets hit. Aiming a little short of an
 /// enemy still hits it, because the enemy's circle is still on the line; that
@@ -361,8 +360,7 @@ pub fn first_hit(muzzle: Vec2, dir: Vec2, bodies: &[Vec2]) -> Option<(usize, f64
 /// The radius of a body, in metres — every actor is a circle, and that is the
 /// WHOLE model of how big a body is.
 ///
-/// **THE PLANE IS THE MODEL, NOT AN APPROXIMATION OF A SOLID** (owner,
-/// 2026-08-15). This number was briefly split in two: a footprint for spacing
+/// **THE PLANE IS THE MODEL, NOT AN APPROXIMATION OF A SOLID**. This number was briefly split in two: a footprint for spacing
 /// and a bigger "effective" radius for the hit test, on the reasoning that a
 /// real spread cone spends half its deviation vertically where a humanoid is
 /// three times its own width, and a plane has nowhere to put that. The split
@@ -381,7 +379,7 @@ pub fn first_hit(muzzle: Vec2, dir: Vec2, bodies: &[Vec2]) -> Option<(usize, f64
 /// from it, and no data file restates it — a measurement replaces this line and
 /// the whole model moves with it.
 ///
-/// **MEASURED (owner, 2026-08-16).** Walking into an enemy stops at **0.4 m**
+/// **MEASURED.** Walking into an enemy stops at **0.4 m**
 /// centre to centre, and two bodies of the same size touching at 0.4 m makes
 /// each of them **0.2 m**. That is the whole derivation and it needs nothing
 /// else: the closest approach IS twice the radius, so the one quantity a
@@ -415,7 +413,7 @@ pub const BODY_RADIUS_M: f64 = 0.25;
 
 /// A WHOLE BODY'S WORTH OF MATERIAL — the DIAMETER, because a body is a circle.
 ///
-/// DERIVED, NOT DECLARED (owner, 2026-08-20). This was its own constant at
+/// DERIVED, NOT DECLARED. This was its own constant at
 /// 0.5 m with its own source, sitting beside a radius of 0.2 m, and this file
 /// argued at length that the two were different quantities that must not be
 /// confused. They are the same quantity — how much of a body a shot goes
@@ -451,7 +449,7 @@ pub const AREA_MAX_M: f64 = 6.0 + BODY_RADIUS_M;
 /// body within a radius of the one that produced it. Asked directly that is
 /// `O(bodies)` per proc, and a dense grid produces thousands of procs a second:
 /// the Phantasma Prime on a 19x19 ruler went from 88 multishot a run to 9,551 —
-/// 108x — entirely on that scan (measured 2026-08-18).
+/// 108x — entirely on that scan.
 ///
 /// The question is a CONSTANT. This answers it once per run: per body, its
 /// neighbours within [`AREA_MAX_M`], NEAREST FIRST, so a lookup at any smaller
@@ -524,8 +522,7 @@ impl Neighbours {
 /// [`BODY_MATERIAL_M`] — so the published penetration table and this formula are
 /// the same statement, which is why there is one constant here and not two.
 ///
-/// IT TAKES THE RADIUS AS AN ARGUMENT because bodies will not all be one size
-/// (owner, 2026-08-20). Whatever a Bombard or an Eximus turns out to measure, it
+/// IT TAKES THE RADIUS AS AN ARGUMENT because bodies will not all be one size. Whatever a Bombard or an Eximus turns out to measure, it
 /// is still a circle and this is still the formula; only the number changes, and
 /// it changes in one place.
 pub fn material_through(radius: f64, perp: f64) -> f64 {
@@ -672,7 +669,7 @@ pub fn dissipation_point(
 }
 
 /// THE CLOSEST TWO BODIES CAN STAND — twice a radius, because circles do not
-/// overlap (owner, 2026-08-15).
+/// overlap.
 ///
 /// So the two CENTRES never come closer than 0.4 m: a zero would put the two of
 /// them in the same place, which is the one arrangement the plane cannot hold.
@@ -681,8 +678,7 @@ pub fn dissipation_point(
 /// ENEMIES when there is more than one of them.
 ///
 /// "Point blank" is still ZERO, because what a reader is shown is the [`gap`]
-/// between the two surfaces and that is what this arrangement leaves (owner,
-/// 2026-08-16). The 0.4 m lives between the centres, where the model needs it
+/// between the two surfaces and that is what this arrangement leaves. The 0.4 m lives between the centres, where the model needs it
 /// and nobody has to subtract it.
 pub const CONTACT_RANGE_M: f64 = 2.0 * BODY_RADIUS_M;
 
@@ -849,7 +845,7 @@ mod tests {
     ///
     /// The bounce COUNT is a ceiling and not a promise — the old nearest-first
     /// walk spent every bounce however far away the next body was, which is
-    /// what let six explosions land on one cluster (2026-08-21).
+    /// what let six explosions land on one cluster.
     #[test]
     fn a_bounce_that_finds_nothing_spends_no_more() {
         let bodies = [Vec2::new(0.0, 5.0)];
@@ -942,7 +938,7 @@ mod tests {
         assert_eq!(struck_along(muzzle, dir, &bodies, 99.0), vec![0]);
     }
 
-    /// A GRAZE COSTS A SLIVER, NOT A WHOLE BODY (owner, 2026-08-20).
+    /// A GRAZE COSTS A SLIVER, NOT A WHOLE BODY.
     ///
     /// Punch through buys MATERIAL, so what a body costs depends on where the
     /// ray crossed it. It used to be a flat [`BODY_MATERIAL_M`] however the
@@ -1069,7 +1065,7 @@ mod tests {
     }
 
     /// THE THREE BLAST RULES, which are one idea: a body is a CIRCLE and a
-    /// blast meets it at its nearest surface (owner, 2026-08-17).
+    /// blast meets it at its nearest surface.
     /// THE DETONATION AND THE SCALAR ARE ONE MODEL, and this is the property
     /// that says so: however wide the shot and whichever way it went, the
     /// distance from the epicentre to the AIMED body is the miss distance the
@@ -1172,7 +1168,7 @@ mod tests {
 
     /// AIM IS A DIRECTION, so a shot pointed at the FLOOR beside a body still
     /// hits it — the body's circle is on the line, which is the whole of what a
-    /// radius means (owner, 2026-08-17).
+    /// radius means.
     #[test]
     fn a_shot_aimed_short_of_a_body_still_crosses_it() {
         let foe = Vec2::new(0.0, 10.0);

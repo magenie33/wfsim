@@ -23,7 +23,7 @@ effects:
   # THE SECOND NOTE CORRECTS WHAT THIS FILE USED TO SAY. It read that the
   # trigger "needs a second body behind the first, and the arena has one
   # target" — the wiki says the opposite in as many words, so the TRIGGER is
-  # perfectly reachable here and `one_target` was the wrong reason (2026-08-12).
+  # perfectly reachable here and `one_target` was the wrong reason.
   # What it cannot pay out is the payload: this arena runs on infinite ammo, so
   # a restored round buys nothing.
   - kind: out_of_scope

@@ -10,7 +10,7 @@ missing pool is: nine bows have declared `mod_pools: [primary, rifle, bow]`
 since the roster began and `data/mods/bow/` did not exist, so the pool resolved
 to an empty list and Split Flights, the only multishot mod a bow can hold, was
 not offered. Fifteen snipers drew `[primary, rifle]` and no `sniper` at all, so
-both Chambers were unreachable (owner, 2026-08-18).
+both Chambers were unreachable.
 
 THE POOL SET COMES FROM THE ROSTER, not from a list here: every distinct tag in
 every weapon's `mod_pools:` must be a value of `POOL_TAG` below, and the script
@@ -57,9 +57,9 @@ POOL_TAG = {
     # A TOME'S OWN EIGHT, which sit BESIDE `pistol` rather than replacing it:
     # *"Tomes can equip Pistol Mods but also have access to unique Tome Mods"*
     # (wiki `Tome`). The export files them as a Secondary Mod, which is why the
-    # Grimoire carries both tags (2026-08-25).
+    # Grimoire carries both tags.
     ('Secondary Mod', 'Tome'): 'tome',
-    # MELEE (2026-08-29). `Melee Mod`/`Melee` is the general pool every melee
+    # MELEE. `Melee Mod`/`Melee` is the general pool every melee
     # weapon draws; the per-class tag beside it holds the STANCES, which are the
     # only cards DE files that narrowly for a hammer.
     ('Melee Mod', 'Melee'): 'melee',
@@ -103,7 +103,7 @@ def rule_out(uniq, name, carried_names):
     # rank-10 `WeaponMeleeDamageOnHeavyKillMod` reading +200%), and only the
     # bare path is the one the wiki's own rank table describes. Verified by
     # hand against the wiki for Pressure Point, True Steel and Berserker Fury,
-    # all three of which matched the BARE path row for row (2026-08-29).
+    # all three of which matched the BARE path row for row.
     #
     # THIS IS THE `internal_name` RULE MADE EXECUTABLE. Joining by NAME put a
     # phantom +200% Pressure Point in front of the melee intake for an hour;

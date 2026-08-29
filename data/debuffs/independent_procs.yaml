@@ -27,7 +27,7 @@ entries:
       # IMPLEMENTED, and the first entry in this file that is: a weapon
       # declares `independent_procs: [lifted]` and `dummy::DebuffState::lifted`
       # holds it (`LIFTED_SECONDS`). The Mausolon's alt-fire explosion is the
-      # only one so far. DE publishes no duration; 1 s is the owner's (2026-08-15).
+      # only one so far. DE publishes no duration; 1 s is the owner's.
       # Its CC half — the target is suspended — is not modelled and cannot be:
       # this arena has no movement (docs/UNMODELLED.md).
   - { name: Microwave, internal_name: PT_MICROWAVE_BURN,

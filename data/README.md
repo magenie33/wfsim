@@ -150,7 +150,7 @@ family (checked). Do not confuse it with `excludes_weapon`.
 
 ## Conventions
 
-- **Field discipline (2026-07-28): a field is structured data that a program
+- **Field discipline: a field is structured data that a program
   consumes; human narrative is a comment.** Every field must have a consumer —
   the engine, the UI, a script, or a code==data pin test (e.g. Secondary
   Enervate's ramp constants, pinned by
@@ -182,7 +182,7 @@ family (checked). Do not confuse it with `excludes_weapon`.
   (DE's uniqueName — the join key to external datasets/importers).
 - Every entry's `id` matches its filename. The directory IS the table: no
   `kind`/type tags duplicating what the path already says.
-- No `schema_version`, no `verification` blocks (decision 2026-07-24): the
+- No `schema_version`, no `verification` blocks: the
   data is the current belief, corrected in place; confidence lives in git
   history and golden tests.
 - Names can collide across kinds by design (a *Frenzy* perk grants a *Frenzy*

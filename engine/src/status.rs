@@ -182,7 +182,7 @@ mod tests {
     ///
     /// Valence Formation forces a Radiation proc on every hit. Against a
     /// Radiation-immune unit the game still draws the proc icon beside the
-    /// damage number and the status never lands (owner, 2026-08-12) — so the
+    /// damage number and the status never lands — so the
     /// forced list is filtered by the same immunity the draw already obeys.
     ///
     /// The second half is the one worth pinning: the ordinary rolls behave

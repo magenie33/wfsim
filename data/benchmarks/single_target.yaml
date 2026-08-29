@@ -34,7 +34,7 @@ id: single_target
 # THE RULER A READER MEETS FIRST — the board opens on it and a first-time
 # visitor's default scenario is its fight. Declared because the rulers used to
 # be in path order and that stopped being the same thing the moment a second
-# one arrived (2026-08-17).
+# one arrived.
 primary: true
 
 # The name states the whole definition, because a benchmark whose terms are
@@ -44,7 +44,7 @@ primary: true
 # terms. Truncation therefore eats the least identifying part.
 name: "Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM"
 
-# NO VERSION NUMBER (owner, 2026-08-04). There is one board, it is regenerated
+# NO VERSION NUMBER. There is one board, it is regenerated
 # whole whenever this file or the engine changes, and what is deployed is always
 # the current answer — so a version marks a distinction nobody can act on. The
 # history of what this file said is git's, which is where a history belongs.
@@ -52,7 +52,7 @@ name: "Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM"
 # Changing a parameter here therefore does not retire anything: every stored
 # build is re-scored under the new terms and keeps competing. That is what
 # storing BUILDS rather than scores was for.
-# WHAT COUNTS AS AN ENTRANT (owner, 2026-08-05). A benchmark owns the fight;
+# WHAT COUNTS AS AN ENTRANT. A benchmark owns the fight;
 # it owns its admission rule for the same reason — both are terms of the claim
 # a published number makes, and a reader should find the whole standard in one
 # file rather than half of it in the validator.
@@ -70,7 +70,7 @@ name: "Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM"
 # THE RULES IN PROSE, for the page that publishes them. The name above states
 # the same standard in one line so a rank stays quotable; this is it at length.
 rules:
-  # MECHANICAL LANGUAGE, AND NO WEAPON IN IT (owner, 2026-08-17). A rule that
+  # MECHANICAL LANGUAGE, AND NO WEAPON IN IT. A rule that
   # names a weapon is a rule that has to be edited when the roster grows, and
   # `benchmarks_data.rs` already refuses this file any weapon, mod, arcane or
   # evolution id. These lines are held to the same standard by hand: they say
@@ -112,7 +112,7 @@ scenario:
   level: 9999
   steel_path: true
 
-  # POINT BLANK, STATED (owner, 2026-08-15). The arena gained a range on
+  # POINT BLANK, STATED. The arena gained a range on
   # 2026-08-15 and the direct hit now takes its published damage falloff, so
   # "how far away the target stands" became a term of this claim — and this
   # board's answer is 0, which is the distance every row on it was ever scored
@@ -136,7 +136,7 @@ scenario:
   player_at: [0, 0]
   target_at: [0, 0.4]
 
-  # 180 SECONDS (owner, 2026-08-10, down from 300). Load-bearing rather than a
+  # 180 SECONDS. Load-bearing rather than a
   # round number, and the argument cuts BOTH ways — which is why it moved rather
   # than being picked once and left.
   #
@@ -165,7 +165,7 @@ scenario:
   # of recomputing the board (builds x runs), so it belongs to the benchmark
   # and not to whoever submits.
   #
-  # 1000 (owner, 2026-08-11), up from 100. A board row is a PUBLIC CLAIM that
+  # 1000, up from 100. A board row is a PUBLIC CLAIM that
   # gets re-scored rather than re-measured, so its noise floor is the one number
   # here that nobody can improve by trying harder — and the cheapest way to
   # spend more is the one the board can afford: the cost is paid once per
@@ -198,7 +198,7 @@ scenario:
   # is "removed and can only be called down again after a 5-minute cooldown"
   # once its 400 rounds are gone, and `reserve_is_infinite` reads the weapon's
   # `no_resupply` before this setting — so its 400 rounds are the whole
-  # engagement whatever this says (owner, 2026-08-04).
+  # engagement whatever this says.
   #
   # Measured, unmodded, on this fight: 0.0436 with the reserve ignored against
   # 0.0139 with it — a 3.1x overstatement, which is most of what an Arch-Gun's
@@ -210,7 +210,7 @@ scenario:
 
   # AIMED, AND EVERY SHOT ON THE WEAK POINT. Both pinned rather than left to
   # resolve, because they are terms of the claim this board makes and a reader
-  # should find them here rather than in a default (owner, 2026-08-07).
+  # should find them here rather than in a default.
   #
   # `aiming` is the STANCE, which gates mods like Argon Scope; `headshot_pct`
   # is where the shots land. They are different facts and a board that means
@@ -231,7 +231,7 @@ scenario:
   # `form: default` used to sit here and it read as neutral. It was not: it
   # resolved to the cycle on a weapon that has one and to the arsenal form on a
   # weapon that does not, so the board silently ranked Incarnon weapons at their
-  # ceiling and had no way to ask for anything else (owner, 2026-08-07).
+  # ceiling and had no way to ask for anything else.
 
   # THE TENNO, pinned rather than defaulted. Two arcanes read Warframe armor
   # and energy directly (Primary Bulwark, Primary Overcharge) and several mods
@@ -241,7 +241,7 @@ scenario:
   # chosen, no ability running, feet on the ground.
   #
   # THE NEUTRAL PLAYER IS THE WORST FRAME AT EVERYTHING, and that is the whole
-  # point of it (owner, 2026-08-13). Nobody knows which frame a reader runs,
+  # point of it. Nobody knows which frame a reader runs,
   # and some weapons get stronger in specific hands purely through the
   # frame's stats — so the board measures the WEAPON by giving it the least
   # help any frame could: 0 armor, 0 energy, the slowest sprint in the game,
@@ -261,12 +261,12 @@ scenario:
   airborne: false
   overshields: false
   channeling: false
-  # THE LOADOUT (2026-08-13). False = carrying a full one, which is the fight
+  # THE LOADOUT. False = carrying a full one, which is the fight
   # every row on this board was scored under; the Vasto's Lone Gun is the one
   # card that would notice.
   solo_weapon: false
   # THE WIELDER IS NOT NAMED HERE, and that is the exception this block states
-  # rather than hides (owner, 2026-08-27). Every other field is pinned so the
+  # rather than hides. Every other field is pinned so the
   # board cannot move when a default moves — but the wielder's five numbers are
   # pinned by a TEST now (`the_default_tenno_is_the_floor_of_every_released_frame`
   # asserts all five, naming the frame each floor belongs to), so the drift this

@@ -10,7 +10,7 @@
 // builder's, drawn on the optimizer tab "only because nothing hid it"
 // (check_opt_modes, 2026-08-11) — the page offered a choice it never sent. Then
 // the Parts block, added 2026-08-23, drew on the Simulator and the Optimizer
-// and was numbered nowhere (owner, 2026-08-24).
+// and was numbered nowhere.
 //
 // Both times the mechanism was a LIST. There were four of them naming the
 // builder's blocks by id — two CSS rules, the step numbering, and the

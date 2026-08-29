@@ -1,2341 +1,1403 @@
 # WFSim — agent guide
 
 The ultimate Warframe **calculator** — builder, simulator, optimizer.
-Core promise: **matches in-game measurements**. Rust workspace + YAML game
-data + a dependency-free web UI, deployed as WASM on Cloudflare
-(wfsim.app).
+Core promise: **matches in-game measurements**. Rust workspace + YAML game data
++ a dependency-free web UI, deployed as WASM on Cloudflare (wfsim.app).
 
-Those three are `docs/CORE.md`'s own sentence — "given weapon + mods +
-target + scenario, output damage matching in-game measurements item by
-item, and search backwards for the optimal build" — as three verbs: BUILD,
-SIMULATE, SOLVE. Nothing else is a peer of them; anything new either feeds
-one or reports from one. "fight simulator" and "Monte-Carlo optimizer"
-named the implementation, which is not what the product is organised
-around (decision 2026-07-31).
+`docs/CORE.md`: "given weapon + mods + target + scenario, output damage matching
+in-game measurements item by item, and search backwards for the optimal build" —
+three verbs: **BUILD, SIMULATE, SOLVE**. Nothing else is a peer of them; anything
+new either feeds one or reports from one.
+
+## How this file is written
+
+State the current rule and nothing else. Git holds what the rule used to be, who
+asked for it and how it was found — a doc that retells that buries the one thing
+a reader needs.
+
+Four kinds of comment, and the test for any sentence is **"if I delete this,
+what does the next agent get wrong?"**. Answer "nothing" → delete it.
+
+| kind | contains | length |
+|---|---|---|
+| **constraint** | an imperative plus the consequence of breaking it | ≤3 lines |
+| **evidence** | the value plus its source (wiki page, datamine, measurement id); verbatim quote when the wording is load-bearing | as long as it needs |
+| **design** | the rule plus the one sentence that makes the wrong alternative visibly wrong | as long as it needs |
+| **everything else** | — | delete |
+
+Where each lives: **this file** carries constraints, one entry each, and points
+at `docs/` for the rest. **`docs/`** carries evidence and design, organised by
+topic. **Code comments** carry design at the decision and evidence beside the
+constant. **Commit messages** carry history.
+
+No attributions. A rule in a public repository has no author and no date; a
+measurement has a source, never a person. `docs/MEASUREMENTS.md` is the one
+exception — there the provenance is the data. `scripts/check_comment_style.mjs`
+enforces this.
 
 ## Map
 
 - `engine/` — all game mechanics. A fight has TWO actors and
-  `engine::arena::Arena` is both of them (a `Tenno` from `data/tenno/`, a
-  target with its hitboxes, a duration): the web api and the optimizer each
-  build one from the same scenario and hand it to the same constructor, which
-  is what makes a search's winner scored under the fight the replay runs.
-  Every `condition:` on a mod card and every `kind: tenno_scaled` arcane is a
-  question about that Tenno — see MECHANICS §8. Every formula carries a comment citing
-  its source (wiki page / datamine / measurement). The engine knows NO
-  weapon names: weapons/mods/etc. are loaded from `data/` YAML.
-- `optimizer/` — build search (successive-halving funnel). It only ever
-  calls the engine — never add a simplified damage formula here.
+  `engine::arena::Arena` is both of them (a `Tenno` from `data/tenno/`, a target
+  with its hitboxes, a duration): the web api and the optimizer each build one
+  from the same scenario and hand it to the same constructor, which is what
+  makes a search's winner scored under the fight the replay runs. Every
+  `condition:` on a mod card and every `kind: tenno_scaled` arcane is a question
+  about that Tenno — MECHANICS §8. Every formula carries a comment citing its
+  source. The engine knows NO weapon names: weapons/mods/etc. load from `data/`.
+- `optimizer/` — build search (successive-halving funnel). It only ever calls
+  the engine — never add a simplified damage formula here.
 - `web/` — the native dev server (`cargo run -p wfsim-web`, port 8787).
   `web/src/static/` holds the UI (vanilla JS/CSS, no framework, no deps).
 - `webapi/` — endpoint logic shared by `web/` (native) and `wasm/`.
 - `wasm/` + `site/` — the static deployment. `site/` is **generated** by
   `scripts/build_site_app.py` — never hand-edit it.
-- `desktop/` — WFSim as a WINDOWS APP, and an INDEPENDENT cargo workspace: it
+- `desktop/` — WFSim as a Windows app, and an INDEPENDENT cargo workspace: it
   depends on nothing in `engine/`, because every simulation already runs in the
-  wasm module the page carries. So the main CI never compiles Tauri, and the
-  shell has no reason to change when the engine does — which IS the update
-  strategy rather than a tidiness argument (owner asked for a self-updating
-  client for the Quark network drive, 2026-08-26). Two layers with very
-  different costs: CONTENT (`app.js`, `pkg/*.wasm`, `img/`, `board.json`)
-  changes every push and ships as FILES swapped by two renames — no installer,
-  no UAC, no antivirus watching a program rewrite itself; the SHELL changes
-  rarely and ships as an NSIS installer. Keeping the shell thin is what keeps
-  the weekly path quiet.
+  wasm module the page carries. The main CI never compiles Tauri and the shell
+  has no reason to change when the engine does, which IS the update strategy.
+  Two layers with different costs: CONTENT (`app.js`, `pkg/*.wasm`, `img/`,
+  `board.json`) changes every push and ships as FILES swapped by two renames —
+  no installer, no UAC, no antivirus watching a program rewrite itself; the
+  SHELL changes rarely and ships as an NSIS installer.
   It exists because Cloudflare from mainland China is the least reliable thing
-  on the page, which is where the players are: MEASURED from Shanghai
-  2026-08-26, the 5.43 MB wasm module downloads at **2.11 MB/s** from wfsim.app
-  and **9.73 MB/s** from a Tencent COS bucket, and locally it is not a download
-  at all — **~200 ms** to instantiate, times however many compute lanes.
+  on the page, which is where the players are: measured from Shanghai, the
+  5.43 MB wasm downloads at **2.11 MB/s** from wfsim.app and **9.73 MB/s** from
+  a Tencent COS bucket; locally it is not a download at all — **~200 ms** to
+  instantiate, times however many compute lanes.
   THE UPDATER LIVES IN `app.js`, not in the shell's injected script, and that is
   the one placement decision the whole thing rests on: an updater compiled into
   the shell cannot fix its own bugs, and every reader would be frozen on the
-  broken version with no way out but a manual download — the exact outcome the
-  client exists to avoid. `app.js` is the thing updates replace.
+  broken version with no way out but a manual download. `app.js` is the thing
+  updates replace.
   The channel is a SIGNED manifest over CONTENT-ADDRESSED blobs
   (`blob/<sha256>`), so a release uploads only what is new and a client fetches
-  only what it lacks — measured at **0.8 KB, 1 of 764 files** for a one-file
+  only what it lacks — measured at 0.8 KB, 1 of 764 files, for a one-file
   release. `private/wfsim_update_key` is the one unrecoverable thing in this
   project. See `docs/DESKTOP.md`.
-- `data/` — versioned game data. `data/README.md` explains the reference
-  graph; `docs/DATA_SOURCES.md` the sourcing rules. **THE WIKI WINS. Use it
-  wherever it can answer** (owner, 2026-08-14) — WFCD's export (`vendor/`) is
-  the CROSS-CHECK and the fallback, not a peer. It stopped being a peer on
-  evidence: its Arch-Gun entries carry the ARCHWING column of a two-column
+- `data/` — versioned game data. `data/README.md` explains the reference graph;
+  `docs/DATA_SOURCES.md` the sourcing rules. **THE WIKI WINS. Use it wherever it
+  can answer** — WFCD's export (`vendor/`) is the CROSS-CHECK and the fallback,
+  not a peer: its Arch-Gun entries carry the ARCHWING column of a two-column
   infobox, which is the wrong column for an arena on the ground, and it agrees
-  with the wiki on every OTHER field of those weapons — so a cross-check that
-  did not name the damage row passed, and the Larkspur Prime posted 112 board
-  rows at half its damage. An export cannot say "there are two of these and you
-  want the other one"; a page can, and does.
+  with the wiki on every OTHER field of those weapons. An export cannot say
+  "there are two of these and you want the other one"; a page can.
   **The ONE standing exception is `base_drain`/`max_rank` on MODS**, where the
-  wiki is wrong for ~20 of them and WFCD is right — an exception held up by its
-  own evidence, not by symmetry.
-  Still cross-check, and still join the two by `internal_name` == `uniqueName`,
+  wiki is wrong for ~20 of them and WFCD is right.
+  Still cross-check, and join the two by `internal_name` == `uniqueName`,
   **never by name** (WFCD has stale duplicates sharing a display name).
-- `data/abilities/` — WARFRAME ABILITY BUFFS, and the one data family that
-  describes neither a weapon nor a build: a thing done TO this weapon for a
-  while. It rides on the `Arena`, so `parse_fight` alone carries it into both
-  the simulator and the search, and no board ruler sends one. Early access by
-  the owner's own framing (2026-08-08) — the strength and duration are typed in
-  today and come from the frame later, which is why `resolve` takes both as
-  arguments. Four effect kinds, and the split is THREE MULTIPLIERS AND ONE
-  INSTANCE: Roar/Eclipse/Nourish scale a number someone else computes, while
-  `extra_hit` (Xata's Whisper) FIRES a second damage instance and therefore has
-  to be told what triggered it — MECHANICS §7 §"Extra Hit" is the formula and
-  MEASUREMENTS M40 the capture it decodes. See BUFFS.md §"A WARFRAME ABILITY".
+- `data/abilities/` — WARFRAME ABILITY BUFFS, the one data family that describes
+  neither a weapon nor a build: a thing done TO this weapon for a while. It
+  rides on the `Arena`, so `parse_fight` alone carries it into both the
+  simulator and the search, and no board ruler sends one. The strength and
+  duration are typed in today and come from the frame later, which is why
+  `resolve` takes both as arguments. Four effect kinds, and the split is THREE
+  MULTIPLIERS AND ONE INSTANCE: Roar/Eclipse/Nourish scale a number someone else
+  computes, while `extra_hit` (Xata's Whisper) FIRES a second damage instance
+  and therefore has to be told what triggered it — MECHANICS §7 §"Extra Hit" is
+  the formula, MEASUREMENTS M40 the capture it decodes. See BUFFS.md.
 - `docs/EXTRA_HIT.md` — ONE LAW behind four things built separately: a second
   damage instance beside a hit, worth a percentage of it, rolling its own
   status. Primary Debilitate's split, Cyte-09's Resupply, Xata's Whisper and
-  Toxic Lash are members, and each supplies only a percentage and an element.
-  It is where the `f³` triple dip comes from, and where the 0% rule lives —
-  an Extra Hit REPLACES the base its status burns off, so one that deals
-  nothing leaves the level above standing (owner, 2026-08-09).
-- `docs/MELEE.md` — THE FIRST WEAPON FAMILY THAT IS NOT A GUN (2026-08-28), and
-  the one decision the rest of it follows from: **each way of swinging a melee
-  weapon is an independent BUILD** (owner). A melee player picks one loop and
-  runs it for the whole engagement, which is what `WeaponPlayMode::sustainable`
-  already asks — so the four stance combos, the heavy attack, the slide and the
-  heavy slam are seven `FormKind`s and seven MODES, and melee needed no new
-  build axis at all. Seven rows per weapon per ruler is seven builds being
-  ranked, which is what the board is for.
+  Toxic Lash are members, each supplying only a percentage and an element. It is
+  where the `f³` triple dip comes from, and where the 0% rule lives — an Extra
+  Hit REPLACES the base its status burns off, so one that deals nothing leaves
+  the level above standing.
+- `docs/MELEE.md` — the first weapon family that is not a gun. **Each way of
+  swinging a melee weapon is an independent BUILD**: a melee player picks one
+  loop and runs it for the whole engagement, which is what
+  `WeaponPlayMode::sustainable` already asks — so the four stance combos, the
+  heavy attack, the slide and the heavy slam are seven `FormKind`s and seven
+  MODES, and melee needs no new build axis.
   A MODE ID IS THE INPUT, NEVER THE COMBO'S NAME — a stance names its own combos
   and a different stance names them differently, so a name here would bake one
   stance into a durable id that every preset, share link and board row carries.
-  THE COUNTER DOES NOT MULTIPLY A NORMAL SWING, which is the most
-  counter-intuitive fact in melee and is verbatim: *"Melee Combo Multiplier does
-  not multiply the damage of your normal attacks. Instead, you can spend Melee
-  Combo Count to perform Heavy Attacks, which deals between 2x and 12x damage."*
-  So a combo mode's counter pays only through Blood Rush and Weeping Wounds —
-  which read it and never spend it — and a heavy mode's is emptied by the swing
-  that read it, leaving INITIAL COMBO (a floor refilling at 40 points a second)
-  as that build's whole engine. Both cards land in brackets this engine already
-  had, with one `(combo - 1)` term each.
-  A MODE'S NAME IS FIXED AND ITS STRENGTH IS NOT (owner, 2026-08-29). The id is
-  the INPUT — `neutral`, `block_forward` — and so is what a reader sees; the
-  stance changes what `neutral` is WORTH and never what it is called. Derived
-  from the equipped stance first ("Raging Whirlwind" under one, "Falling Rock"
-  under the other) and that is worse: the one question a stance slot exists to
-  answer — which stance is best for the neutral combo — cannot be asked if the
-  two builds call that mode different things.
-  A MODE ID CAN BE A FORM ID, and `modeLabel` did not know it — a bug it shipped
-  with from the day a THIRD firing mode arrived (2026-08-14): it branched on
-  `cycle`, `alternate` and `transformed` and fell through to "the default form"
-  for everything else, so the Kuva Hind drew all three of its modes as "Base
-  Form" and the Magistar all seven as "Neutral Combo". `check_mode_def` passed
-  the whole time — one entry per mode, a sentence each, one marked, the right
-  language, all true of a list that says the same word three times. What none of
-  its assertions asked was whether the names TELL THE MODES APART, which is the
-  only thing a name is for; it asks now, over the Kuva Hind and the Magistar.
+  A MODE'S NAME IS FIXED AND ITS STRENGTH IS NOT: the id is the input —
+  `neutral`, `block_forward` — and so is what a reader sees; the stance changes
+  what `neutral` is WORTH and never what it is called. The one question a stance
+  slot exists to answer, which stance is best for the neutral combo, cannot be
+  asked if the two builds call that mode different things.
+  THE COUNTER DOES NOT MULTIPLY A NORMAL SWING, verbatim: *"Melee Combo
+  Multiplier does not multiply the damage of your normal attacks. Instead, you
+  can spend Melee Combo Count to perform Heavy Attacks, which deals between 2x
+  and 12x damage."* So a combo mode's counter pays only through Blood Rush and
+  Weeping Wounds — which read it and never spend it — and a heavy mode's is
+  emptied by the swing that read it, leaving INITIAL COMBO (a floor refilling at
+  40 points a second) as that build's whole engine.
   A TENNOKAI HEAVY BREAKS THE STANCE CHAIN, so the next light swing starts the
-  combo over (owner, 2026-08-29 — the wiki is silent on what advances a chain
-  and what resets it, so this is his answer rather than a derivation). It
-  decides which swings ever happen: Raging Whirlwind is `400/200/300/500`, and
-  Discipline's Merit opens the window every FOUR hits, which is exactly that
-  combo's length — so under a restarting chain the 500% finisher is never
-  reached at all.
-  A STANCE IS THE FIRST MOD THAT CHANGES WHAT A WEAPON FIRES (2026-08-29) rather
-  than what it fires with: it publishes a combo per FORM and installing one
-  replaces the entry's own script, so the same Magistar in the same mode is a
-  different sequence of swings under Crushing Ruin and under Shattering Storm
-  (measured 1,275 against 1,162 DPS in the shipping build).
-  IT NEEDS NO FIELD OF ITS OWN ON THE WIRE, which is what made the slot cheap: a
-  stance mod is legal in the stance slot and NOWHERE else, so a flat mod list
-  can say which entry is the stance by looking at it. That is exactly what the
-  EXILUS slot could not do — an exilus-eligible mod is legal in a main slot too
-  — so that one travels in a field of its own and this one rides `mods`,
-  appended. Nothing about the share link, the board record, the worker's table
-  or `builds::identity` had to change.
-  THE COMBOS COME FROM `Module:Stances/data`, the wiki's own Lua table, and
-  finding it corrected a first transcription that had been read off the rendered
-  page: a swing that lands TWICE, a bonus to the Impact component ALONE
-  (different from the forced Knockback proc several of the same swings also
-  carry), and the SLAM three of four combos end on. It also confirmed the
-  DERIVED durations exactly — 3.00 / 2.60 / 2.25 / 4.25 from the rendered
-  table's two columns — which is what makes that derivation trustworthy for the
-  stances past the point a module fetch truncates at.
-  CONDITION OVERLOAD PAID EXACTLY ZERO IN ALL SEVEN MELEE MODES until the audit
-  caught it, and the cause is worth keeping: melee's Condition Overload is the
-  ORIGINAL one and is unconditional — no kill, no stacks, no clock — and it was
-  routed through the GALVANIZED family's path, which earns the same PAYLOAD on a
-  kill and therefore opens at zero. It waited for a trigger it does not have, on
-  the single most important card in the melee pool. `starts_full` is the fix and
-  it is NOT derived from `duration == NO_TIMEOUT`, which would have been the
-  cheap test and is wrong: LOCKING a buff card writes exactly that duration, and
-  locking "removes the expiry and nothing else — the count still starts where
-  the card sets it" (user, 2026-08-02). Two cards sharing a payload are still
-  two cards.
+  combo over. It decides which swings ever happen: Raging Whirlwind is
+  `400/200/300/500` and Discipline's Merit opens the window every FOUR hits,
+  which is that combo's length — so under a restarting chain the 500% finisher
+  is never reached.
+  A STANCE IS THE FIRST MOD THAT CHANGES WHAT A WEAPON FIRES rather than what it
+  fires with: it publishes a combo per FORM and installing one replaces the
+  entry's own script, so the same Magistar in the same mode is a different
+  sequence of swings under Crushing Ruin and under Shattering Storm (1,275
+  against 1,162 DPS). IT NEEDS NO FIELD OF ITS OWN ON THE WIRE: a stance mod is
+  legal in the stance slot and NOWHERE else, so a flat mod list can say which
+  entry is the stance by looking at it. That is what the EXILUS slot cannot do —
+  an exilus-eligible mod is legal in a main slot too — so that one travels in a
+  field of its own and this one rides `mods`, appended.
+  THE COMBOS COME FROM `Module:Stances/data`, the wiki's own Lua table: a swing
+  that lands TWICE, a bonus to the Impact component ALONE (distinct from the
+  forced Knockback proc several of the same swings carry), and the SLAM three of
+  four combos end on. It confirms the DERIVED durations exactly — 3.00 / 2.60 /
+  2.25 / 4.25 from the rendered table's two columns.
+  MELEE'S CONDITION OVERLOAD IS THE ORIGINAL ONE AND IS UNCONDITIONAL — no kill,
+  no stacks, no clock — so it carries `starts_full` and is NOT routed through
+  the GALVANIZED family's path, which earns its payload on a kill and opens at
+  zero. `starts_full` is NOT derived from `duration == NO_TIMEOUT`: LOCKING a
+  buff card writes exactly that duration, and locking removes the expiry and
+  nothing else — the count still starts where the card sets it. Two cards
+  sharing a payload are still two cards.
   A CRIT CARD THAT SAYS `(x2 for Heavy Attacks)` CARRIES THE RULE ITSELF, not
   the bucket: True Steel, Sacrificial Steel and Galvanized Steel all print it
   and Blood Rush sits in the same bracket and does not. Same for the three cards
   that NAME an attack — Killing Blow on a heavy, Seismic Wave on a slam, Maiming
-  Strike on a slide — and the seven modes are what make each one checkable in
-  both directions.
-  TENNOKAI IS THE ONE MELEE MECHANIC THAT CHANGES WHAT THE LOOP DOES rather
-  than what a number is, and it is what makes the melee exilus slot a decision:
-  when its window is open, the next swing of a light combo becomes a HEAVY
-  ATTACK — the class's multiplier in place of the stance's, times a combo
-  multiplier it reads AND DOES NOT SPEND. That last clause is the mechanic: a
-  combo build climbs the counter to 12x with its swings and fires FREE 12x heavy
-  attacks between them, which is why a 15% chance is worth nearly three times
-  the build. The owner settled what to do with the window in one clause — use it
-  the moment it fires — so there was no play pattern to invent.
-  ALL SEVEN CARDS ENABLE IT, and the test asserting otherwise was written first:
-  every one of them opens with the same three words on its own card, and only
-  then says what else it does. The negative control is a build carrying NONE of
-  them, which is where the mechanic genuinely does not exist. The other four
-  exilus cards are blocking and movement, which this arena has neither of.
+  Strike on a slide.
+  TENNOKAI is the one melee mechanic that changes what the LOOP does rather than
+  what a number is, and it is what makes the melee exilus slot a decision: when
+  its window is open the next swing of a light combo becomes a HEAVY ATTACK —
+  the class's multiplier in place of the stance's, times a combo multiplier it
+  reads AND DOES NOT SPEND. A combo build climbs the counter to 12x with its
+  swings and fires FREE 12x heavy attacks between them, which is why a 15%
+  chance is worth nearly three times the build. Use the window the moment it
+  fires. ALL SEVEN TENNOKAI CARDS ENABLE IT — every one opens with the same
+  three words on its own card and only then says what else it does. The negative
+  control is a build carrying none of them. The other four exilus cards are
+  blocking and movement, which this arena has neither of.
 - `docs/CATALOGS.md` — THE PER-WEAPON TABLES, in one place. Some mechanics are a
   formula plus a published table with one ROW PER WEAPON, and the row says what
-  the weapon's own stats never would — this one multiplies where everyone else
-  adds, this attack part is exempt, this one does not work at all. Condition
-  Overload and Primary Compression are both that shape. The rule is the CO
-  rule generalised (owner, 2026-07-30): **the catalog is authoritative and
-  absence means ORDINARY, not unknown**, and a row is transcribed for the entry
-  it names rather than generalised to a class. Each section carries the columns
-  verbatim, the rows the roster holds, and where it has already gone wrong —
-  the Shedu was filed as `Adding` on the reasoning that it had no row, and it
-  has one saying Multiplying (2026-08-10).
-  **"ABSENCE" MEANS ABSENT FROM THE WIKI, NOT FROM THIS FILE** (2026-08-20).
-  Every weapon added in August opened with "no row in the CO catalog", and that
-  check had been run against `docs/CATALOGS.md` — which by construction carries
-  only "the rows the roster already holds", so asking it about a NEW weapon can
-  only ever answer no. Reading the PAGE found **forty-six** CO entries and
-  **fifty-nine** Primary Compression attacks the catalogs name and the roster
-  contradicted, a third of them weapons that had been here for months (the Lanka
-  at 38%, both Laser Rifles, the whole Cernos family, the Castanas pair taking a
-  term the catalog says does not apply). Both mechanics are on most builds, so
-  each was a wrong DAMAGE NUMBER rather than a wrong comment.
+  the weapon's own stats never would. Condition Overload and Primary Compression
+  are both that shape. **The catalog is authoritative and absence means
+  ORDINARY, not unknown**, and a row is transcribed for the entry it names
+  rather than generalised to a class.
+  **"ABSENCE" MEANS ABSENT FROM THE WIKI, NOT FROM THIS FILE.**
+  `docs/CATALOGS.md` carries only the rows the roster already holds, so asking
+  it about a NEW weapon can only ever answer no. Read the PAGE.
   `scripts/audit_condition_overload.py` is that check, executed; the compression
   half is `the_roster_reproduces_primary_compressions_published_column`, which
-  re-derives the wiki's own bonus column from each entry's radius. And the tool
-  REPORTS a row it cannot place rather than skipping it — the first pass matched
-  rows to forms through a short list of attack names and under-reported nine in
-  silence, because the catalog names an attack the way that WEAPON's page does.
+  re-derives the wiki's own bonus column from each entry's radius. The tool
+  REPORTS a row it cannot place rather than skipping it, because the catalog
+  names an attack the way that WEAPON's page does.
 - `docs/UNMODELLED.md` — the EDGES, by reason rather than by perk: one target,
   no distance, no movement, no holster, infinite ammo, nobody shoots back, and
-  the Warframe layer. Written so "why is this perk worth nothing" is a lookup
-  (owner, 2026-08-09). It also holds the OPEN DECISIONS — things the engine
-  could do today and does not because doing them means inventing a play pattern,
-  which is the owner's call and not the model's (reload interruption is the live
-  one). `python scripts/intake_report.py --full` prints the per-weapon list; this
-  is the six reasons behind it.
+  the Warframe layer. It also holds the OPEN DECISIONS — things the engine could
+  do today and does not because doing them means inventing a play pattern, which
+  is the owner's call and not the model's (reload interruption is the live one).
+  `python scripts/intake_report.py --full` prints the per-weapon list.
 - `docs/` — CORE (design), MECHANICS (formulas), MEASUREMENTS (protocol +
-  baselines), BUFFS, BOARD (the official leaderboard), OPTIMIZER, UI, WASM,
-  GLOSSARY, DEVELOPMENT (setup), INVESTMENT (capacity/Forma), WEAPON_INTAKE
-  (which weapons next, and what each costs), INCARNON (the Incarnon gun
-  roster — every adapter, what it covers, and what is done).
+  baselines), BUFFS, BOARD, OPTIMIZER, UI, WASM, GLOSSARY, DEVELOPMENT (setup),
+  INVESTMENT (capacity/Forma), WEAPON_INTAKE, INCARNON, NAMING, DESKTOP.
 - `tests/golden/` — golden tests calibrated against in-game measurements.
 - `private/` — gitignored (devlogs, drafts, local assets, the `data/`
   verification scripts). **`git add -A` silently skips it**, so never report a
   change under `private/` as shipped, and never let something the repo needs
   live only there — put it in `docs/` (verification tooling is catalogued in
-  `docs/DATA_SOURCES.md`). Single-machine development (2026-07-30): local-only
-  is fine, invisible is not.
+  `docs/DATA_SOURCES.md`).
 
 ## Build, test, verify
 
-- Toolchain via mise (`mise install`); on this repo plain `cargo` works
-  once installed. CI = `cargo clippy --workspace --all-targets --
-  -D warnings` + `cargo test --workspace` — run both before pushing.
-- **Static files are `include_str!`'d into `wfsim-web.exe`**: after ANY
-  edit under `web/src/static/`, stop the running server (it holds the
-  exe), `cargo build -p wfsim-web`, restart. `cargo test` does NOT
-  refresh the exe.
-- **`data/` (weapons, mods, i18n, …) is embedded at COMPILE TIME too**
-  (`engine::data::files_under`): a YAML edit — including
-  `data/i18n/zh/` translations — needs the same rebuild + restart,
-  and a site regeneration to reach wfsim.app. **This catches TESTS too**: cargo
-  does not treat a yaml as a source dependency, so a test run right after a
-  yaml edit reads the data compiled into the previous binary. It matters most
-  when PROVING a check bites — revert the data, `touch` any `.rs` in that
-  crate, then run. Without the touch the test passes and the check looks
-  useless when it is fine (2026-08-07).
+- Toolchain via mise (`mise install`); plain `cargo` works once installed.
+  CI = `cargo clippy --workspace --all-targets -- -D warnings` +
+  `cargo test --workspace` — run both before pushing.
+- **Static files are `include_str!`'d into `wfsim-web.exe`**: after ANY edit
+  under `web/src/static/`, stop the running server (it holds the exe),
+  `cargo build -p wfsim-web`, restart. `cargo test` does NOT refresh the exe.
+- **`data/` is embedded at COMPILE TIME too** (`engine::data::files_under`): a
+  yaml edit — including `data/i18n/zh/` — needs the same rebuild + restart, and
+  a site regeneration to reach wfsim.app. **This catches TESTS too**: cargo does
+  not treat a yaml as a source dependency, so a test run right after a yaml edit
+  reads the data compiled into the previous binary. When PROVING a check bites,
+  revert the data, `touch` any `.rs` in that crate, then run.
 - After frontend or engine changes, regenerate the static site:
   `python scripts/build_site_app.py` (wasm-bindgen-cli version must match
   Cargo.lock). Commit the regenerated `site/`. It also PRERENDERS one
   `site/weapons/<Wiki_Name>/index.html` per roster weapon (own
-  title/description/canonical/OG + a crawler-visible summary the app
-  removes on boot), plus `sitemap.xml` and `robots.txt` — without them
-  every URL answered with the same contentless shell, which is a soft 404
-  to a crawler and an empty preview to a chat app.
-- **Images are SAME-ORIGIN, and the art ships with the site** (rule
-  2026-07-31, replacing "DE art stays out of the repo"). `site/img/` holds
+  title/description/canonical/OG + a crawler-visible summary the app removes on
+  boot), plus `sitemap.xml` and `robots.txt` — without them every URL answers
+  with the same contentless shell, which is a soft 404 to a crawler.
+- **Images are SAME-ORIGIN, and the art ships with the site.** `site/img/` holds
   every file `data/assets.yaml` references (`scripts/fetch_images.py` fills
   `web/cache/img/`, `build_site_app.py` copies it and FAILS the build on a
-  missing one). Why it changed: the static build used to hotlink
-  `cdn.warframestat.us/img/…`, which answers **301 → raw.githubusercontent.com**
-  — unreliable to blocked from mainland China, i.e. precisely where the
-  players are, so the app's own art was the least reliable thing on the page.
-  Same-origin ends the question: if wfsim.app loads, its art loads. The cost
-  is 22 MB write-once over 730 files, against a 4.3 MB wasm this build rewrites
-  EVERY TIME — the shape of the trade, not its size, is what settles it, and
-  both figures had drifted 3-5x from the ones written here in July (re-measured
-  2026-08-20).
-  **A SIZE CLAIM IS MADE ON THE WIRE, NOT ON DISK** (2026-08-21). Cloudflare
-  answers this file `Content-Encoding: br`, so the raw byte count is not a
-  number about any reader: a 6.7 MB wasm was **1,336 KB** downloaded, and the
-  first version of this paragraph said the opposite. Judge a change by
-  compressing both sides with the same brotli. `wasm-opt -Oz` is the lesson —
-  it takes 6.74 MB to 5.89 MB, which reads as 13% and is **-0.3% on the wire**,
-  because it shrinks CODE and 59% of this binary is DATA. What actually moved
-  it was not shipping the 43% of `data/` that is comments (`engine/build.rs`):
-  1,192 KB to 927 KB, **-22%**. wasm-opt is installed now and runs; it is worth
-  keeping for the 1.5 MB it takes off the blob this repo COMMITS every build,
-  which is a real cost and a different one.
+  missing one). Hotlinking `cdn.warframestat.us/img/…` answers **301 →
+  raw.githubusercontent.com**, which is unreliable to blocked from mainland
+  China. If wfsim.app loads, its art loads.
+  **A SIZE CLAIM IS MADE ON THE WIRE, NOT ON DISK.** Cloudflare answers `br`, so
+  the raw byte count is not a number about any reader: a 6.7 MB wasm is
+  **1,336 KB** downloaded. Judge a change by compressing both sides with the
+  same brotli. `wasm-opt -Oz` takes 6.74 MB to 5.89 MB, which reads as 13% and
+  is **-0.3% on the wire**, because it shrinks CODE and 59% of this binary is
+  DATA. Not shipping the 43% of `data/` that is comments (`engine/build.rs`)
+  moves it: 1,192 KB to 927 KB, **-22%**. wasm-opt runs anyway, for the 1.5 MB
+  it takes off the blob this repo COMMITS every build.
   DE permits this: their Content Policy requires only that use of Warframe
-  assets be non-commercial, and the wiki hosts the same files on the same
-  basis — what it forbids is their LOGOS, so the only mark here stays ours.
-  A `wiki:` prefix in `assets.yaml` means the CDN lacks that file and the
-  FETCHER takes it from the wiki; the cached name and the page's URL are the
-  bare name either way.
-- Deploy = push to `main`: Cloudflare picks up `site/` automatically
-  (takes ~1–2 min). There is no deploy step in CI.
-- **THE STORE IS A LIBRARY OF BUILDS, AND EVERY RULER CROSSES THE WHOLE OF IT**
-  (owner, 2026-08-25). A submission has never carried a score — it carries a
-  BUILD, and the number is produced by the scorer under the ruler's own pinned
-  seed. So the ruler a build happened to be measured under was never a property
-  of the record; it was a GATE. Of 914 distinct builds players had sent, only 46
-  had ever been scored on more than one board: 95% of every contribution was
-  read once and held back from the two boards it could also have answered.
-  ANY FIGHT CAN UPLOAD, so the consent notice is ONE story everywhere and says
-  what actually leaves — the BUILD, not the fight you ran it under, and nothing
-  about you. That last part is a statement of an existing property rather than a
-  new promise: the worker stores no IP, no token, and no time finer than the day
-  (and a record already expired after a year before any of this). From a fight
-  of your own the page asks the door about EVERY ruler and reports "2 of 3
-  boards will take it"; it never predicts a SCORE, which is the scorer's.
-  A new ruler now costs no community effort — it is scored from the library the
-  day it lands.
-- **A RESCORE COSTS THE ROWS THAT READ WHAT CHANGED** (owner, 2026-08-25). The
-  trigger was one fingerprint over `engine` + `webapi` + `cli` + all of `data`,
-  so adding a WEAPON — a file no existing row reads — invalidated every stored
-  score and bought a full rescore. `engine::data_fingerprint` hashes what a row
-  actually reads (its ruler, its weapon and every form it fires, each mod,
-  arcane and evolution, plus everything no entity owns), the board stores it per
-  row, and `--engine` is now the CODE alone.
-  THIS STATES THE BOARD'S INVARIANT RATHER THAN WEAKENING IT: "different engine
-  versions" was a conservative proxy for "the number this engine would compute",
-  and a row that reads none of the changed files already stores that number.
-  Measured on 24 real rows: 26.0 s full, **0.075 s** when nothing changed
-  (byte-identical board), 2 of 24 rescored for a Heavy Caliber edit, **0 of 24**
-  for a whole new weapon. The one hand list (`AFFECTS_NO_NUMBER`) can only cost
-  TIME — anything unclassified falls into the global bucket every row carries.
-  Comments are free, since `build.rs` embeds each file with them stripped.
-- **THE EXILUS SLOT IS OPTIONAL** (owner, 2026-08-25). It was excluded on the
-  reasoning that exilus mods are handling and mobility with no damage model,
-  which is true of most of the pool and false of the part that decides a fight:
-  `vile_precision` is −36% fire rate and takes an Ignis Wraith from 11.9694 to
-  9.3737 on the group ruler. Beam range is exilus too and IS modelled, but
-  measurement found it does not bind on the current rulers — a FINDING, and now
-  one the board can answer instead of one the rules assumed. NOT `full`:
+  assets be non-commercial, and the wiki hosts the same files on the same basis.
+  What it forbids is their LOGOS, so the only mark here stays ours.
+  A `wiki:` prefix in `assets.yaml` means the CDN lacks that file and the FETCHER
+  takes it from the wiki; the cached name and the page's URL are the bare name.
+- Deploy = push to `main`: Cloudflare picks up `site/` automatically (~1–2 min).
+  There is no deploy step in CI.
+- **THE STORE IS A LIBRARY OF BUILDS, AND EVERY RULER CROSSES THE WHOLE OF IT.**
+  A submission carries a BUILD and never a score; the number is produced by the
+  scorer under the ruler's own pinned seed. So the ruler a build was measured
+  under is provenance, not a gate. ANY FIGHT CAN UPLOAD, and the consent notice
+  is ONE story everywhere: what leaves is the BUILD, not the fight, and nothing
+  about you — the worker stores no IP, no token, and no time finer than the day,
+  and a record expires after a year. From a fight of your own the page asks the
+  door about EVERY ruler and reports "2 of 3 boards will take it"; it never
+  predicts a SCORE. A new ruler costs no community effort — it is scored from
+  the library the day it lands.
+- **A RESCORE COSTS THE ROWS THAT READ WHAT CHANGED.**
+  `engine::data_fingerprint` hashes what a row actually reads (its ruler, its
+  weapon and every form it fires, each mod, arcane and evolution, plus
+  everything no entity owns), the board stores it per row, and `--engine` is the
+  CODE alone. Measured on 24 real rows: 26.0 s full, **0.075 s** when nothing
+  changed, 2 of 24 for a Heavy Caliber edit, **0 of 24** for a whole new weapon.
+  The one hand list (`AFFECTS_NO_NUMBER`) can only cost TIME — anything
+  unclassified falls into the global bucket every row carries. Comments are
+  free, since `build.rs` embeds each file with them stripped.
+- **THE EXILUS SLOT IS OPTIONAL.** Beam range is exilus and IS modelled, but
+  does not bind on the current rulers; `vile_precision` is −36% fire rate and
+  takes an Ignis Wraith from 11.9694 to 9.3737 on the group ruler. NOT `full`:
   requiring one would publish whichever mod the dice favoured. IT TRAVELS IN A
   FIELD OF ITS OWN everywhere (wire, worker `AXES`, board row, fingerprint,
   `builds::identity`) because an exilus-eligible mod is legal in a MAIN slot, so
-  a flat `mods` list cannot say which entry came out of the exilus slot — only
-  the page has the slots. The `identity` half was found rather than reasoned:
-  two Atomos builds differing only in `ruinous_extension` came back as ONE row.
-- **THE BOARD STAYS A STATIC FILE, AND SAYS HOW FAR BEHIND IT IS** (owner asked
-  for a live board, 2026-08-25). Moving it behind a service would trade the
-  thing that makes it good — committed to the repo, served from the CDN, fast
-  and unblockable — for a slow path and a second thing that can fail. So the
-  file stays and `GET /api/board/pending` answers the one fact it cannot carry
-  about itself: how many builds the library holds. A COUNT and nothing else,
-  which is also the most a store that keeps nothing about submitters can report.
-  The scorer writes `submissions:` per board and the difference is a footnote —
-  SILENT when the board is current, which it is almost all the time.
-- **NEVER RESCORE THE BOARD LOCALLY.** `.github/workflows/board.yml` already
-  rescores every stored row on any push touching `engine/`, `data/`, `webapi/`
-  or the scorer — which is precisely every change that moves a score — and the
-  bot commits the result. Running `scripts/rescore_board.py --write` by hand
-  buys nothing the push already bought, and it costs: it holds the board yaml
-  TRUNCATED while it runs, so the board tests go red and `site/` cannot be
-  regenerated until it finishes. At the rulers' 1000 runs that is an hour of
-  blocking on work a runner was doing anyway (owner, 2026-08-11). Use it
-  WITHOUT `--write` when you want to know whether a change moved anything;
-  let the workflow write.
+  a flat `mods` list cannot say which entry came out of the exilus slot.
+- **THE BOARD STAYS A STATIC FILE, AND SAYS HOW FAR BEHIND IT IS.** Committed to
+  the repo and served from the CDN, which is what makes it fast and unblockable.
+  `GET /api/board/pending` answers the one fact the file cannot carry about
+  itself: how many builds the library holds. A COUNT and nothing else. The
+  scorer writes `submissions:` per board and the difference is a footnote,
+  SILENT when the board is current.
+- **NEVER RESCORE THE BOARD LOCALLY.** `.github/workflows/board.yml` rescores
+  every stored row on any push touching `engine/`, `data/`, `webapi/` or the
+  scorer, and the bot commits the result. `scripts/rescore_board.py --write` by
+  hand holds the board yaml TRUNCATED while it runs, so the board tests go red
+  and `site/` cannot be regenerated until it finishes — an hour of blocking at
+  the rulers' 1000 runs. Use it WITHOUT `--write` to see whether a change moved
+  anything; let the workflow write.
 - **Engine COST: `cargo run --release --bin one_fight`**, and `-- save` first.
-  The accuracy half is graded (`wfsim-truth` below); this is the other half, and
-  without both "it feels faster" and "it got dumber" are the same sentence. It
-  diffs a saved baseline and says whether the ANSWER moved — a moved answer is a
-  non-zero exit, because an optimisation that changes a number is a bug. Read
-  its table ACROSS: the default is four shapes, and a change to the inner loop
-  rarely moves them together (`target-cpu=native` is −23% / −36% / **+31%**
-  across the first three). IT GRADES ITS OWN COVERAGE, because an answer column
-  can only catch a change in something the suite actually does: for as long as
-  the tool existed the default build combined every element into Blast or
-  Corrosive, so the suite ticked NO status DoT and a DoT change came back
-  "3 of 3 unchanged" — even scaled by a thousand (2026-08-23). The fourth shape
-  is a Braton Prime, whose 60% SLASH is the one thing an elemental mod cannot
-  combine away, and the tool now FAILS when the whole suite burns nothing so
-  the next edit cannot silently undo it. docs/DEVELOPMENT.md §5 lists what has already been tried and
-  what it was worth, so nobody spends a day on it twice.
+  It diffs a saved baseline and says whether the ANSWER moved — a moved answer
+  is a non-zero exit, because an optimisation that changes a number is a bug.
+  Read its table ACROSS: the default is four shapes and a change to the inner
+  loop rarely moves them together (`target-cpu=native` is −23% / −36% / **+31%**).
+  IT GRADES ITS OWN COVERAGE — the fourth shape is a Braton Prime, whose 60%
+  SLASH is the one thing an elemental mod cannot combine away, and the tool
+  FAILS when the whole suite burns nothing. `docs/DEVELOPMENT.md` §5 lists what
+  has been tried and what it was worth.
+- **`one_fight` COMPARES TWO BINARIES, NOT TWO MOMENTS.** Its baseline is a
+  property of the machine on the day, and a day of driving headless browsers
+  moves that machine. When a delta matters: `cargo build --release --bin
+  one_fight`, copy the exe, `git stash`, build again, run them alternately
+  against one baseline. The tool's noise column is measured in seconds and
+  cannot see hours.
 - **Optimizer verification: `cargo run --release --bin wfsim-truth -- pool=<ids>
-  …`**. A search cannot vouch for itself, so it is GRADED: the tool exhausts the
-  scope, evaluates every job flat, and reports where the production search
-  landed in that reference ranking (rank / regret / recall / cost, and whether
-  the reference reproduces itself under a second seed). It goes through
-  `parse_optimize`, so it grades the app's own fight, and it REFUSES a scope it
-  cannot exhaust. Run it after ANY change to enumeration, scheduling or
-  scoring. The cheap CI form is `optimizer/tests/search_accuracy.rs`. See
-  docs/OPTIMIZER.md §Accuracy.
-- **A CHECK CLEANS UP AFTER ITSELF** (2026-08-10). Each `openApp` runs Chrome in
-  its own throwaway profile under `%TEMP%`, and for a long time none of them
-  were ever removed: `finish()` called `proc.kill()` and `rmSync` on the next
-  line, which on Windows always failed because Chrome's CHILD processes still
-  held the directory — `kill()` reaches only the node that was spawned. 644
-  directories and 17 GB of C: later (owner), `finish` kills the whole tree
-  (`taskkill /T` on win32), waits for it, and retries the removal — and
-  `sweepStaleProfiles` deletes any `wfsim-*` older than an hour ON THE WAY
-  IN, which is the only cleanup a run that throws, is
-  interrupted, or never calls `finish()` can still get.
+  …`**. A search cannot vouch for itself: the tool exhausts the scope, evaluates
+  every job flat, and reports where the production search landed in that
+  reference ranking (rank / regret / recall / cost, and whether the reference
+  reproduces itself under a second seed). It goes through `parse_optimize`, so
+  it grades the app's own fight, and REFUSES a scope it cannot exhaust. Run it
+  after ANY change to enumeration, scheduling or scoring. The cheap CI form is
+  `optimizer/tests/search_accuracy.rs`. See `docs/OPTIMIZER.md` §Accuracy.
+- **A CHECK CLEANS UP AFTER ITSELF.** Each `openApp` runs Chrome in its own
+  throwaway profile under `%TEMP%`. `finish` kills the whole process tree
+  (`taskkill /T` on win32), waits for it, and retries the removal; on Windows
+  `kill()` reaches only the node that was spawned and Chrome's children hold the
+  directory. `sweepStaleProfiles` deletes any `wfsim-*` older than an hour ON
+  THE WAY IN, which is the only cleanup a run that throws, is interrupted, or
+  never calls `finish()` can get.
 - UI verification: drive headless Chrome over CDP (Node ≥22 has a global
-  WebSocket; Chrome is at the default install path). Assert real DOM
-  state; screenshots for layout review. `node scripts/check_parity.mjs`
-  is the committed one — the builder and the optimizer must offer the
-  same options and the same visibility on every axis, and it exits
-  non-zero when they do not. Run it after adding a weapon or anything a
-  weapon can carry.
-  AND IN THE SAME ORDER, UNDER THE SAME NUMBERS AND NAMES (2026-08-29) — see
-  the hard rule below. It asserts the property rather than a list, because
-  `orderOptScope` READS the order off the builder's own blocks; and it
-  SCRAMBLES the sections first, since the markup is authored in the right order
-  and reading it as it stands would pass just as well on a page where nothing
-  orders anything. Verified to bite: an `orderOptScope` that returns early
-  reddens it, reporting the scrambled sequence with every heading empty.
-  `node scripts/check_mobile.mjs` is the FIFTEENTH and the only
-  one that looks at GEOMETRY rather than at what the DOM says: the page must fit
-  the screen it is on, at 360-1280px, with nothing past the viewport and no
-  sideways scroll. It exists because horizontal overflow is invisible on the
-  machine it is written on — the mod grid was `repeat(2,1fr)` at every width, a
-  bare `1fr` floors its track at MIN-CONTENT (198px a slot), and on a phone the
-  right-hand slots hung 55px off-screen with their ⋯ button unreachable (owner,
-  2026-08-05). It also asserts a mod NAME keeps room to be one, because the
-  cheapest way to stop an overflow is to squeeze a column to nothing.
-  AND IT MEASURES THE PAGE WITH A POPOVER OPEN, which was its own blind spot
-  until 2026-08-25: everything else it looks at is a page AT REST, and a
-  popover is PLACED rather than laid out — the one thing that can leave the
-  viewport with no container noticing. `place` put a popover's left edge at its
-  anchor's and stopped, which is right on a desktop and is overflow on a phone:
-  a mod slot's ⋯ sits at x=295 of a 360px screen, so its 200px menu ran to 495,
-  the DOCUMENT became 495 wide, the browser fit that into 360, the whole page
-  shrank, and the Swap/Remove the reader was reaching for sat off the right
-  edge. Reported as two bugs — "the card is too long to reach its top right"
-  and "the menu makes the page smaller" — and it was ONE, so the fix is in
-  `place` and all six popovers inherit it. The width is capped BEFORE the
-  clamp, because a popover wider than the screen cannot be clamped into it.
-  Verified to bite: the old two-line version reddens ten, naming
-  `295..495 vs viewport 360`.
-  `node scripts/check_equip_rules.mjs` is the TWELFTH — what a
-  mod's CARD says the weapon may do, in both directions. An
-  equip rule is asked of EVERY firing mode, and installing a form ADDS one — so
-  Dual Toxocyst wears Semi-Pistol Cannonade until tier 1 goes in and not after
-  (wiki: "must have Semi-Auto trigger type for both firing modes"). The engine
-  decides (`pool_for_build`) and `/api/meta` states the CONSEQUENCE per
-  evolution (`evo_forbids`); the check asserts the page acts on it — the picker
-  stops offering it, installing the form UNEQUIPS it and says so, the Form
-  control greys the Incarnon options with the reason on screen without moving
-  the scenario's own selection, and the sim refuses the pair. It also covers the
-  LOCK the same families carry ("set to its default ignoring other bonuses, even
-  negative effects"): the panel pins the stat and NAMES what pinned it, and a
-  buff whose only grant is that stat is not offered — a lock reaches the
-  evolution, arcane and passive layers too, not just the mod bucket
-  (MEASUREMENTS M30).
-  `node scripts/check_board_link.mjs` is the SIXTEENTH: a board
-  row opens THAT row — the build it names AND the ruler it is on. The link
-  carried the weapon and the mode and not the ruler, and both boards call their
-  leader "#1 · Incarnon cycle", so the no-aim leader opened the aimed board's
-  leader under the aimed board's fight and re-running it matched no line on
-  either board (owner, 2026-08-08). It walks every ruler, because the bug was
-  that one of them was reachable and the rest resolved to it, and asserts
-  against `BOARD` itself so it keeps holding as the board moves. It also holds a
-  case the LIVE board has never had: ONE WEAPON, TWO MODES. The board has always
-  LISTED every weapon in every mode it can be played in (`benchEntries` walks
-  `w.modes`, and only the SUSTAINABLE ones reach the page), and the scorer draws
-  its floor per weapon AND mode — but no submission has ever named a
-  second mode, so the half of a row's identity that says HOW it was played had
-  never been told apart from the same weapon's other row. The check injects a
-  synthetic second-mode row and asserts both are listed, both measured, and that
-  the second one's link opens ITS mode, ITS ruler and ITS build (2026-08-09).
-  IT ALSO WATCHES THE ORDER, one level down. The board page lists a weapon's
-  best row per mode; the DEEPER ranks live in the builder's picker, which groups
-  them by mode and numbers each one inside its group. Both halves were right and
-  the order was not — `builtinBuilds` sorted by ruler only and inherited
-  board.json's order inside it, which is by SCORE and knows nothing about modes,
-  so two interleaved modes drew one header TWICE with the other wedged inside
-  it: the Burston Prime's two `base` rows sat at positions 93 and 94 of its 100
-  `cycle` rows, live on nine weapons (owner, 2026-08-20). The property is
-  asserted over EVERY weapon the board holds in more than one mode rather than
-  over a named one, and the DOM half picks the WORST-INTERLEAVED weapon rather
-  than the deepest — picking by depth chose the Torid, whose modes happen to be
-  contiguous anyway, so that half passed on the broken build while nine weapons
-  failed beside it. The rank assertion beside it says #1 is that mode's LEADER,
-  because counting positions is vacuous here: `builtinBuilds` numbers rows as it
-  walks them, so a position counter and its rank agree however the list is
-  ordered. Verified to bite: the old sort reddens ten, naming each weapon and
-  its block count.
-  `node scripts/check_disclosure.mjs` is the EIGHTEENTH: what the app does NOT
-  model is ON THE PAGE, in every family that has one — a weapon banner, an
-  evolution chip, a mod line, an arcane line, an enemy caveat. The owner debugs
-  by reading the card, so a gap that lives only in a yaml comment or a report
-  script is a gap nobody can act on (2026-08-08). Each surface has gone silent
-  at least once: an arcane effect the loader had no arm for went to `Inert`,
-  which printed NOTHING, so both Deadheads promised a recoil reduction they did
-  not apply. It also covers the FOURTH kind of admission, which is the only one
-  that is not a shortfall: a LIVE BUG (`live_bugs:` on an arcane) says the
-  number is RIGHT, the game is wrong, and a hotfix changes it — Primary
-  Debilitate's split leaks its zero-damage instance's multipliers into the DoT
-  it leaves (MEASUREMENTS M37), so a player building around x441 is told what it
-  rests on (owner, 2026-08-08). It reaches EVOLUTIONS as of 2026-08-16, where a
-  live bug is declared beside the effect it kills rather than on the perk —
-  Carnage Reign's +60 base damage works and its "+33% per Status Type" did not,
-  so a card that condemned the whole option would be as wrong as one that stayed
-  quiet.
-  THAT PERK IS ALSO WHERE A LIVE BUG TURNED OUT TO BE A GATE (owner, 2026-08-26).
-  The clause carries an UNLISTED "With Energy Max >= 200", and the two
-  measurements that filed it as broken were both made on the neutral Tenno, whose
-  max energy is 150 — so the gate explains them exactly rather than contradicting
-  them, and the yaml had recorded it as an unverified candidate cause all along
-  (MEASUREMENTS M49). It is `gated_by_tenno` now, and 150/199/200/300 max energy
-  measures 33,384/33,384/53,383/53,383 DPS: the step is AT 200, which is why the
-  engine gained `EnergyMaxAtLeast` rather than reusing `EnergyMaxOver(199)`.
-  The difference is the reader's: `live_bug` says do not pick this perk for that
-  half, a gate says it pays on the right frame — and saying the first when the
-  second is true costs a player 60% of the weapon.
-  IT WAS THE ROSTER'S ONLY EVOLUTION LIVE BUG, so removing it emptied the arm
-  `check_disclosure` was asserting over: one assertion would have failed on
-  correct data and the two beside it would have passed VACUOUSLY on an empty
-  list. The live bug is INJECTED there now, with the flag's removal as the
-  negative control — the claim is that the machinery can SAY it, which must not
-  depend on which perks happen to be broken this patch.
-  It carries a NEGATIVE CONTROL — a weapon with
-  nothing to admit shows no banner — because a check that only asserts presence
-  passes just as well on a page that shouts "not modelled" at everything, and
-  it runs the whole pass in BOTH languages,
-  since the banner's lines were rendered raw for a day and a Chinese page
-  carried its one important paragraph in English. It also walks the BOARD,
-  which is where weapons are compared and therefore the one place a weapon
-  with unmodelled parts must not look like one without them.
-  `node scripts/check_wf_buffs.mjs` is the NINETEENTH: a WARFRAME ABILITY buff
-  is the FIGHT's, and it reaches the number. Roar, Eclipse, Nourish and the four
-  elemental augments (`data/abilities/`) belong to neither the build nor the
-  weapon — they ride on the Arena, which is what gives the optimizer them for
-  free and keeps them off the board. It asserts the section draws in both
-  languages under DE's OWN names (战吼, 黯然失色 — transcribed, never
-  translated), that the card's value follows Ability Strength, that ticking one
-  moves a real `/api/simulate` in the shipping wasm build, that two of a FAMILY
-  do not stack AND the page says which one lost (owner, 2026-08-08 — the
-  difference between
-  +50% and +80% is a number you have to be told), that the optimizer shows the
-  same buffs read-only, and — the negative control — that no RULER carries one.
-  `node scripts/check_pace_and_hits.mjs` is the TWENTY-FIFTH: what a ROOM-CLEAR
-  is paced by, where an IMPOSSIBLE NUMBER hides, and the fact that every block
-  FOLDS. `dps` is the whole engagement with its reloads in it — the honest
-  number for a long fight and the wrong one for a room — so burst DPS is the
-  same damage over the time the trigger was actually down, and the check
-  RECOMPUTES it rather than trusting it. Beside it: time to the first kill with
-  its spread (a mean alone reads as a promise), the opening magazine, the
-  biggest single instance, damage per shot and per pellet. Its HISTOGRAM half was retired on
-  2026-08-27 when the combat record landed — six means of something a reader can
-  now read row by row. And every block
-  folds and REMEMBERS across a re-render and a reload (owner, 2026-08-11) — a
-  panel that re-opens everything on every Run Sim is a panel you re-close on
-  every Run Sim, so the state lives outside the markup. It caught a real one on
-  the way in: the opening window never closed on a weapon that TRANSMUTES
-  instead of reloading, because it was recorded at the
-  reload rather than at the refill.
-  `node scripts/check_combat_record.mjs` is the FORTIETH, and it REPLACED the
-  account-of-one-hit check that stood here (2026-08-27). The property is the
-  same and the scope is not: a ledger has to multiply out, asked of EVERY row of
-  the fight instead of two. `engine::record` is one ordered stream of everything
-  that happened — damage, shots, reloads, transmutes — where **a row is one
-  number the game POPS**, not one hit. That 1:1 with the screen is the whole
-  point: it is the only output of this app that can be laid beside a recording
-  and checked number for number, which for a product promising "matches in-game
-  measurements" is the final arbiter. A pellet landing on a shielded body pops
-  TWO numbers, because Toxin bypasses a shield and the rest does not.
-  IT IS THE WRITE PATH, NOT A REPORT. The stream is filled by the same call that
-  moves the target's pools, from the same numbers, which makes "the sum of the
-  record is the damage total" true by construction rather than by assertion.
+  WebSocket; Chrome is at the default install path). Assert real DOM state;
+  screenshots for layout review. `scripts/cdp.mjs` is the shared harness — a
+  static server for `site/`, the Chrome launch, `evaluate`, `check`, `finish`.
+  A check's page-side body is a TEMPLATE LITERAL: an unescaped backtick in it,
+  including in a comment, ends the literal early.
+
+### The checks
+
+Each asserts a property of the shipping build. Run the ones a change touches.
+
+- `check_page_bodies` — `node --check` over every check script. No browser; runs
+  first in CI.
+- `check_parity` — the builder and the optimizer offer the same options, the
+  same visibility, the same ORDER, under the same numbers and names, on every
+  axis. It asserts the property rather than a list (`orderOptScope` reads the
+  order off the builder's own blocks) and SCRAMBLES the sections first, since
+  markup authored in the right order would pass on a page where nothing orders
+  anything. Run it after adding a weapon or anything a weapon can carry.
+- `check_board_submit` — plain node against a KV stub, no browser. Every key
+  `boardPayload()` emits, read out of `app.js`, is a key the worker's `AXES`
+  table knows how to keep; every key survives into storage; two builds differing
+  in any one axis are two records.
+- `check_mobile` — GEOMETRY, not DOM: the page fits the screen at 360–1280px,
+  nothing past the viewport, no sideways scroll, and a mod NAME keeps room to be
+  one. It measures the page WITH A POPOVER OPEN, which is the one thing that can
+  leave the viewport with no container noticing — `place` caps the width BEFORE
+  the clamp, because a popover wider than the screen cannot be clamped into it.
+  It sets `maxTouchPoints` itself, since `mobile: true` on
+  `setDeviceMetricsOverride` leaves it at 0 and every touch-only behaviour would
+  go untested.
+- `check_equip_rules` — what a mod's CARD says the weapon may do, in both
+  directions. An equip rule is asked of EVERY firing mode and installing a form
+  ADDS one. The engine decides (`pool_for_build`), `/api/meta` states the
+  consequence per evolution (`evo_forbids`), and the page acts on it: the picker
+  stops offering it, installing the form unequips it and says so, the Form
+  control greys the options with the reason on screen without moving the
+  scenario's own selection, and the sim refuses the pair. It covers the LOCK the
+  same families carry ("set to its default ignoring other bonuses, even negative
+  effects"): the panel pins the stat and NAMES what pinned it, and a buff whose
+  only grant is that stat is not offered — a lock reaches evolutions, arcanes
+  and passives, not just mods (MEASUREMENTS M30).
+- `check_board_link` — a board row opens THAT row: the build it names AND the
+  ruler it is on. It walks every ruler and asserts against `BOARD` itself. It
+  holds a case the live board has never had — ONE WEAPON, TWO MODES — by
+  injecting a synthetic second-mode row. IT ALSO WATCHES THE ORDER one level
+  down: the builder's picker groups a weapon's deeper ranks by mode and numbers
+  each inside its group, asserted over EVERY weapon the board holds in more than
+  one mode, picking the WORST-INTERLEAVED one for the DOM half. The rank
+  assertion beside it says #1 is that mode's LEADER, because a position counter
+  and its rank agree however the list is ordered.
+- `check_disclosure` — what the app does NOT model is ON THE PAGE, in every
+  family that has one: a weapon banner, an evolution chip, a mod line, an arcane
+  line, an enemy caveat. It covers the fourth kind of admission, which is not a
+  shortfall: a LIVE BUG (`live_bugs:` on an arcane, or beside the effect it
+  kills on an evolution) says the number is RIGHT, the game is wrong, and a
+  hotfix changes it. The live bug is INJECTED, with the flag's removal as the
+  negative control, so the claim is that the machinery can SAY it rather than
+  that some perk happens to be broken. It carries a NEGATIVE CONTROL — a weapon
+  with nothing to admit shows no banner — runs in BOTH languages, and walks the
+  BOARD, where weapons are compared and a weapon with unmodelled parts must not
+  look like one without them.
+- `check_wf_buffs` — a Warframe ability buff is the FIGHT's and reaches the
+  number: the section draws in both languages under DE's OWN names (战吼,
+  黯然失色), the card's value follows Ability Strength, ticking one moves a real
+  `/api/simulate`, two of a FAMILY do not stack AND the page says which one
+  lost, the optimizer shows the same buffs read-only, and — the negative control
+  — no RULER carries one.
+- `check_pace_and_hits` — what a room-clear is paced by, and where an impossible
+  number hides. `dps` is the whole engagement with its reloads in it; burst DPS
+  is the same damage over the time the trigger was down, RECOMPUTED rather than
+  trusted. Beside it: time to the first kill with its spread, the opening
+  magazine, the biggest single instance, damage per shot and per pellet. Every
+  block folds and REMEMBERS across a re-render and a reload, so the state lives
+  outside the markup.
+- `check_combat_record` — a ledger has to multiply out, asked of EVERY row.
+  `engine::record` is one ordered stream of everything that happened where **a
+  row is one number the game POPS**, not one hit — the only output of this app
+  that can be laid beside a recording and checked number for number. A pellet
+  landing on a shielded body pops TWO numbers, because Toxin bypasses a shield
+  and the rest does not. IT IS THE WRITE PATH, NOT A REPORT: the stream is
+  filled by the same call that moves the target's pools, from the same numbers.
   What it is authoritative about is bounded and the bounds are in
-  `engine/src/record.rs`: WHAT happened by construction, WHY only half (a factor
-  NAME is a hand-written string and nothing ties `"critical"` to the 4.4 beside
-  it), and ONE engagement rather than a score.
-  THE CHECK DOES THE ARITHMETIC OFF THE SCREEN — it reads the factors as DRAWN,
-  multiplies them, and compares with the two totals the same row prints. It
-  found three real faults in the ledger it was written to check, all the same
-  shape: a factor applied and not named. The shield pool running out
-  mid-instance, the share of the instance that got past the shield at all, and
-  the Disrupt amp — which lives in the overflow because the overflow is measured
-  against amplified shield damage, and which also proved that Toxin's bypass and
-  a broken shield's leak cannot share one row: they both land in health and got
-  there by different chains. Verified to bite: dropping one factor from the wire
-  reddens three assertions.
-  A QUERY, NOT A PAYLOAD. `/api/log` is deliberately not a field on
-  `/api/simulate`. Measured 2026-08-27: an ordinary fight deals **2,000–5,000**
-  damage instances over 180 s and the densest build measured deals **408,817**,
-  so a log that rode along would be free on most builds and megabytes on exactly
-  the ones a player is most likely to be arguing about. Asking separately costs
-  ONE re-run of the engagement — about a millisecond single-target — and keeps
-  "A MEASUREMENT COSTS ITS SUMMARY" intact, because a record is never part of
-  the thing that gets saved. `/api/simulate` answers with the median run's RNG
-  state as two u32 halves, which is the handle that makes the log the report's
-  own fight rather than a similar one.
-  WHAT IT RETIRED. "Every hit, sorted" — six buckets of mean damage by crit tier
-  and body part — existed because the individual hits were not available, and
-  once every hit is a row with its own ledger, six means summarise something the
-  reader can simply read. It and `HitAccount` are gone from the engine, so
-  nothing is computed for a panel that no longer draws it.
-  `node scripts/check_debuff_coverage.mjs` is the TWENTY-THIRD: the DEBUFF table
-  is the BUFF table, read from the other side. The replay had always shown what
-  the BUILD had up — live stacks, uptime, dead bands, the ramp — and said nothing
-  about what was on the TARGET, which is the other half of the same fight and
-  the half that explains the number (owner, 2026-08-11). It is one component
-  fed from both sides: `DEBUFF_ROSTER` is the mirror of `buff_roster`,
-  `Frame.debuffs` of `Frame.stacks`, and the page draws the second table with
-  the same renderer. The check asserts the SYMMETRY rather than the numbers —
-  same roster shape, one series per entry, each as long as
-  the clock, the cursor reading its own side — plus the one thing that is not
-  symmetric and has to be: A RESPAWN IS THE SAME TARGET, so its stacks drop to
-  zero and climb again INSIDE one series rather than starting a new row, and
-  that gap counts against uptime. Rows the run never touched are dropped, since
-  thirteen flat charts would bury the three that moved. Verified to bite —
-  short-circuiting the second table away fails five of them.
-  `node scripts/check_custom_enemies.mjs` is the TWENTY-SECOND: a target you
-  MADE is a target like any other. It is the second custom, and the test of the
-  claim above — if a custom enemy really is an `EnemySpec` in the scenario's
-  list, then the simulator, the optimizer and the target card need no code of
-  their own for it. Two of its assertions are the sharp ones. The IMMUNITY is
-  MEASURED rather than read back off the card: a Toxin-immune target must take
-  literally nothing from a Torid and the same target at x1 must take something,
-  because a column that is shown and not applied looks exactly like one that
-  works. And DELETING a custom must repoint the fight — a custom is the kind of
-  collection whose deletion breaks references elsewhere, which is the whole
-  difference between it and a preset. Verified to bite: dropping the inline
-  travel gives `unknown enemy: custom:target 1`, because the server has never
-  heard of it and never will.
-  `node scripts/check_opt_modes.mjs` is the TWENTY-FIRST: HOW A WEAPON IS PLAYED
-  is the BUILDER's control and the OPTIMIZER's dimension. The report was one
-  screen doing neither (owner, 2026-08-11): the Phantasma's charged mode picked
-  on the optimizer tab searched its base form, because the control there was the
-  BUILDER's Mode block — drawn on that tab only because nothing hid it — and the
-  optimize request carried no mode at all. So the page offered a choice it never
-  sent. Both halves moved: the block is the builder's alone (mode is part of a
-  build and saves in a build preset — 2026-08-07), and the optimizer got a real
-  AXIS with pool/req marks, because it binds a SET where the builder binds a
-  value. Server-side a VARIANT is now a (mode, evolution set) pair, which is why
-  nothing downstream had to learn about modes — every consumer already read a
-  variant as "the forms this candidate fires". The check pins the sharp case:
-  PINNING a mode makes every ranked row come back in it, pooling both DOUBLES
-  the candidate count, and each row carries the mode it was scored in into the
-  build it becomes. Verified to bite — dropping `modes`/`mode` from the request
-  reproduces the report exactly, every row `base`.
-  `node scripts/check_run_counts.mjs` is the TWENTIETH: HOW HARD YOU MEASURE is
-  a number someone can set, in all three modules, and it walks all three because
-  the answer differs in each. The simulator defaults to the rulers' 1000 (owner,
-  2026-08-11) so a first number is comparable with the board without touching a
-  box — measured at 1.3 s a run in the shipping wasm build, against 0.14 s at
-  100. The quick calc takes its own count with a FLOOR of 10, which is where a
-  status mod stops being a coin flip (M24: one run swings it ±39 points), and a
-  number under it is raised rather than obeyed. The optimizer's final round
-  takes its own too, and it is a PREFERENCE as of 2026-08-29 — typed, never
-  blank, in NEITHER half of the tab and in NEITHER preset. The blank box that
-  used to mean "the fight's own count" is what this check existed for, and it
-  is what the check now asserts is gone: a control with two readings either
-  reads as broken and works, or reads as fine and sends 0. It asserts the
-  number on screen is the number sent, that the box is drawn outside both
-  halves, that `snapshotOpt` does not carry it, that restoring a scope leaves
-  it where the reader put it — and, its own negative control, that the CPU
-  threads box is gone and no `threads` reaches the request.
-  `node scripts/check_arena.mjs` is the TWENTY-EIGHTH: THE ARENA IS A PLACE YOU
-  CAN DRAG, and what you drag is what gets simulated. A fight is two bodies on a
-  floor, so the panel draws two bodies on a floor and you move them with your
-  finger (owner, 2026-08-15) — and the picture is not a decoration, which is the
-  whole reason the check exists: a scene that looked right and did not reach
-  `/api/simulate` would be the most convincing wrong thing on the page. The
-  bodies are drawn at their REAL radius (`space::BODY_RADIUS_M`, 0.25 m), so
-  "as close as they go" is visible rather than a rule you are told: they touch
-  at CONTACT (0.5 m) and will not pass through each other, which the engine
-  clamps to as well. It caught two real faults on the way in, both invisible to
-  a reader: the scene laid itself out in the host's pixel width, which is ZERO
-  while the panel is on another tab, so one drag wrote `[null, null]` into the
-  fight (fixed with a viewBox — a fixed coordinate space has no such moment);
-  and `paint()` replaces the markup on every move, so listeners bound to the
-  circles died with the first repaint and the scene was draggable exactly once.
-  A SHOT LEAVES THE MUZZLE and a distance is the GAP (owner, 2026-08-16). The
-  shooter fires from a point on its own circumference facing the target — drawn,
-  with the arrow that says which way it faces — and hitting the circle is a hit,
-  which makes the test ray-versus-circle (`range · sin θ ≤ r`, the range being
-  muzzle to the target's CENTRE) rather than the `centre · tan θ` it was. That
-  range is NOT a flight, and calling it one was worth an inconsistency the owner
-  caught on sight: a bullet vanishes at the SURFACE it hits, so what it flies is
-  the GAP between the two bodies — one radius shorter, ZERO AT CONTACT, the
-  number a reader is shown, and what damage falloff reads. One quantity wearing
-  three hats rather than three that have to be argued into agreement. CONTACT IS
-  THEN UNMISSABLE AT ANY CONE WIDTH twice over — a flight of zero leaves a cone
-  no distance to widen over, and the ray-circle test agrees from the other side
-  — where the old formula dropped more than half a 60 degree cone's pellets
-  pressed against an enemy. MECHANICS §11 is the whole geometry.
-  THE CANVAS IS THE ONLY PLACE A POSITION IS SET (owner, 2026-08-16). The typed
-  Distance box is gone: two controls for one fact is how one of them silently
-  undoes the other's other axis, and the scene is the SOURCE — the target's
-  place, and every enemy's place when there is more than one. The shortcuts
-  that replaced the box live INSIDE it (contact / 5 / 10 / 20 / 40 m), each one
-  moving the target ALONG the line it already stands on, which is the same rule
-  the drag obeys because they move the same body; the chip for the distance you
-  are at is marked. A BENCHMARK'S FIGHT IS NOT DRAGGABLE — the rulers pin their
-  distance, and the scene refuses the gesture ITSELF because
-  `lockOfficialScenario` sweeps `input,select,button,textarea` and these bodies
-  are SVG circles that sweep never reached. Adding that assertion exposed that
-  the check had been testing the wrong thing all along: the app lands a
-  first-time visitor ON the official ruler, so every drag assertion here had
-  been running against a fight that should never have been draggable, and the
-  check now opens a scenario of its own first and asserts that it did. The
-  OPTIMIZER draws the same scene read-only, because a fight is edited in one
-  place.
-  `node scripts/check_formation.mjs` is the THIRTY-SECOND: A FORMATION IS
-  SOMETHING YOU BUILD ON THE FLOOR, and what you build is what gets simulated.
-  The arena has drawn two bodies since 2026-08-15; this is the same claim for
-  fifty (owner, 2026-08-17). It would catch the most convincing possible bug —
-  a scene that looks like a formation and sends one target — so it asserts the
-  whole chain: bodies draw without standing on each other, any one drags, the
-  payload matches the scene body for body, and a real `/api/simulate` in the
-  shipping wasm build answers HIGHER for a crowd than for one body, because the
-  chain has somewhere to go. AIM IS A PLACE rather than a target: the marker
-  rides the target until dragged, and once dragged the beam is on whichever body
-  the LINE crosses — asserted with two bodies on one line where the nearest to
-  the cursor is the FAR one. Two negative controls: a formation of one is the
-  fight this app has always run (zero sent, aim null), and an official ruler
-  refuses a crowd both by disabling the control and by not moving when it is
-  clicked anyway.
-  `node scripts/check_gunco_stated.mjs` is the TWENTY-NINTH: EVERY WEAPON SAYS
-  WHICH CONDITION OVERLOAD RULE IT IS COMPUTED UNDER, with nothing equipped.
-  The rules are PER WEAPON and hand-transcribed from a catalog — Adding or
-  Multiplying, which attack parts take it, what fraction of the base the term
-  reads — and the Burston Prime's fraction was wrong for months, caught only
-  because a player measured it (MEASUREMENTS M48). The row used to appear only
-  once a CO card was on the build, so the one thing a reader could check was
-  invisible until they had already committed to the mod; it is unconditional
-  now and says "no source equipped" plus how one WOULD be computed (owner,
-  2026-08-16). It is a STATEMENT OF METHOD rather than an admission — the
-  disclosure banner is for what the sim cannot do, this is what it does, said
-  out loud so it can be argued with. The check walks all three behaviours from
-  three weapons the catalog classifies differently and asserts they are three
-  different sentences, so a page printing one of them for everything fails.
-  `node scripts/check_opt_replay.mjs` is the THIRTIETH, and the only one written
-  so that it CANNOT GO STALE. Every other check about a build names the axes it
-  is about; this one asserts the ANSWER — it runs a real search, applies the
-  winner through the button's own path, runs the simulator, and asserts the two
-  numbers agree inside 4σ of their two standard errors. It does not know what an
-  axis is, so a fifth one is covered on the day it is added, by nobody. Its
-  rotation of NEGATIVE CONTROLS is discovered from the row's own `replay` keys:
-  each is deleted in turn, the ones the engine notices are named in the
-  assertion's own title (a check that quietly exercised one axis of five reads
-  exactly like one that exercised all five), and a degenerate axis is REPORTED
-  rather than failed — the Kuva Nukor's single firing mode is not a wiring
-  fault. The sharp one is last: a build assembled from a replay with a LIVE axis
-  removed must fail the very assertion that otherwise passes, which is what
-  proves the assertion can fail at all. Two weapons, because no single one has
-  every axis live — the Nukor for the progenitor element, the Torid for modes
-  and evolution tiers. Verified to bite: reinstating the "+ add" bug takes the
-  Nukor from 0.6514 to 0.2118.
-  `node scripts/check_build_axes.mjs` is the THIRTY-FIRST and the cheap half of
-  that pair: `engine::builds::BUILD_AXES` is the one declaration, served at
-  `/api/meta.build_axes`, and the three JS surfaces that carry their own
-  spellings of it — the page's build state, the share tuple, the worker's board
-  record — each declare which axis their fields cover. It asserts the coverage
-  both ways (an id the engine never heard of is a rename that happened on one
-  side, which reads as coverage and is not) and that the worker's record and
-  identity key are still DERIVED from its table rather than re-grown as hand
-  lists. Plain node against the served meta and two source files, so it costs no
-  browser beyond the meta fetch. It exists for the surfaces an answer cannot
-  reach — a share link nobody has clicked, a board record nobody has submitted —
-  and says in its own text that it is the weaker half. Verified to bite: a fake
-  axis added in Rust reddens all three surfaces, each naming it.
-  `node scripts/check_page_bodies.mjs` is the THIRTY-NINTH and the cheapest: `node --check` over every script here, because a page-side body is a TEMPLATE LITERAL and an unescaped backtick in a COMMENT closes it — which has happened in seven checks, each costing a full browser run to find, since the parser reports it from inside `node:internal` naming the line the literal starts on. A scanner that hunted the backtick itself was written first and was wrong both ways: an escaped one in prose is legal, and the first unescaped one IS the terminator. The parser was always the authority; what was missing was running it unasked. Milliseconds, no browser, so it runs first in CI.
-  `node scripts/check_melee_slots.mjs` is the FORTY-SECOND: a melee weapon has
-  TWO slots a gun does not, and one of them decides what it swings. Every
-  assertion is on the WIRE or on a real `/api/simulate` in the shipping build,
-  because a slot that drew correctly and sent nothing would look exactly like a
-  working feature. Its sharpest pair is the ROUND TRIP — `buildPayload` into
-  `stateFromBuild` has to put the stance back in the STANCE slot rather than in
-  slot 9, which is the one thing a flat mod list makes easy to get wrong — and
-  the FALLBACK: an empty slot must fire the entry's own script, which happens to
-  be Crushing Ruin's, so a stance that failed to apply would otherwise read as a
-  pass. Verified to bite: emptying the stance pool reddens two.
-  `node scripts/check_riven_pool.mjs` is the SEVENTEENTH: the riven editor
-  offers the stats that weapon's rivens actually roll, in BOTH slots. What a
-  riven can roll is DE's per-weapon table, published nowhere, and the wiki's
-  25%-of-a-physical-type rule disclaims itself. THE RULES DECIDE AND THE SURVEY
-  CHECKS (owner, 2026-08-08): `rivens_data::derived_for` is the model,
-  `data/rivens/exceptions.yaml` overrides it per riven FAMILY with the evidence
-  written into each entry, and `data/rivens/pools.yaml` (from
-  `scripts/survey_riven_pools.py`) is read by a TEST and by nothing else. It
-  was the other way round for a day and a re-run of
-  the scrape came back "nothing rolls anything" for all 26 families, wrote itself
-  to disk, and was caught by two unrelated tests — see DATA_SOURCES §"Riven
-  pools" (MEASUREMENTS M35). It walks the NEGATIVE slot too, because
-  that is where the report came from — a player's Furis riven carries Projectile
-  Speed and the editor would not offer it (owner, 2026-08-08).
-  `node scripts/check_enemies.mjs` is the ELEVENTH: every
-  TARGET in the roster shows a picture that loads, a wiki link built from its
-  ENGLISH name (it runs the whole pass twice, in both languages — a localized
-  name in a wiki URL lands on garbage), its VULNERABILITY COLUMN (the Thrax's
-  Void ×1.5 reaches the card only through `faction_damage_override:`, which
-  serde was discarding until the column was implemented), and a statement of
-  what the sim does not model about it. Enemy art is declared in the enemy's own YAML
-  (`image:`, wiki-hosted), NOT in `data/assets.yaml` — WFCD has no usable
-  enemy art — so it reaches `site/img/` by a different path than a mod card
-  and needs its own check. `node scripts/check_search.mjs` is the TENTH and the
-  end-to-end one: it runs a real optimize in the shipping wasm build and
-  asserts the claims the search makes — a scope it finished reports
-  `exhaustive` and says so on screen, a budgeted one reports its COVERAGE and
-  does not pretend, and the WORKER FLEET covers more ground than one worker
-  would (the browser shards the shuffled index range across Web Workers). `node scripts/check_gain_band.mjs` is the TWENTY-SIXTH: a
-  quick-calc chip says HOW WELL IT KNOWS its own number, and never prints a
-  zero. "≈0%" was one string for two different findings — a mod that does
-  nothing, and a mod nobody measured hard enough — and only the difference
-  between them is actionable: the first says pick something else, the second
-  says raise the runs (owner, 2026-08-12). Both halves of the machinery behind
-  it were wrong, and either one alone brings the symptom back. The scan read
-  `score`/`dps`, which are the MEDIAN RUN — one engagement however many were
-  paid for, moving 9.8% between seeds at 10 runs
-  where the mean of the same runs moves 5.9%, and not even the statistic the
-  optimizer ranks (`mean_kill_progress`). And it estimated its own resolution by
-  running the reference a SECOND time at another seed: one sample of a spread,
-  which on identical inputs answered anywhere from 0.7% to 11.2% — so the same
-  scan censored every chip or none of them, at random. The server has all N
-  runs and now reports what it already computed (`score_mean`/`score_se`,
-  `dps_mean`/`dps_se`), which is one fewer simulation per scan and an answer
-  that does not depend on a coin flip. THE WIDTH IS THE COMPARISON'S OWN, and
-  it is DERIVED: `/api/simulate` returns the per-run series when the caller says
-  it will pair with it (`run_series`), and the chip's band is the spread of
-  `c_i - ratio*b_i` over those runs. It used to be a PROXY — had the MEDIAN
-  run's proc count changed? — because two `mean ± sigma/sqrt(n)` summaries
-  describe each build alone and cannot answer it; the proxy fails in the
-  direction that matters, saying "same fight" whenever the count coincides. All
-  seven of the Kuva Nukor's progenitor elements report 6079 while their fights
-  differ by up to 30%, so seven chips claimed an exactness none had (owner,
-  2026-08-14). A chip therefore has three shapes and the check asserts all three
-  OCCUR, so no branch is dead: an exact one (`+165%` — every paired difference
-  zero, so the candidate scaled the same engagement run for run), a banded one
-  (`≈+3.1% ±7.2%`), and a measured zero, which says "no effect here" in words
-  and points at the row's own disclosure line — a third of a rifle pool lands
-  there against one standing target (ammo and magazine mods, Firestorm,
-  punch-through, recoil and zoom, Cautious Shot, a Bane of the wrong faction),
-  and printing "+0.00%" 38 times reads as a broken scan rather than as
-  UNMODELLED.md. AND A COIN FLIP LOOKS LIKE ONE: the chip answers "what is this
-  worth", the LIST answers "which do I pick" by sorting, and a sort produces an
-  order where there is none — so an option not SEPARATED from the leader (the
-  gap under the two bands combined) is marked `tied`, on the leader too, since
-  neither is above the other. Its NEGATIVE CONTROL is the pair the bug came in
-  on: Serration and Amalgam Serration differ only in base damage, so run for run
-  they scale this fight by a constant, both band to exactly zero, and the order
-  is the one the cards state — measured 0.9623 = 2.55/2.65 at every build
-  strength and run count. The 3.8% gap between them is far inside the ±13% raw
-  spread at 10 runs, so that ordering survives ONLY because the two are paired
-  against the same luck, which is the thing that must not silently regress.
-  `node scripts/check_board_submit.mjs` is the TWENTY-SEVENTH, and the only one
-  that tests the WORKER: a build reaches the board through the page, the worker
-  and the scorer, and the middle hop had no test at all — which is where builds
-  were being lost, TWICE, the same way. `mode` was sent and never written down,
-  so every Incarnon weapon's row said `cycle` (2026-08-09); then `valence`, and
-  seven Kuva Nukor submissions were refused on every scoring run since they
-  arrived while the panel had told each submitter "sent" (owner, 2026-08-14).
-  The second one is the sharper case: `/api/board/check` had already approved a
-  payload CARRYING the element, and the field was dropped after the verdict, in
-  the one hop neither the engine nor the page can inspect. So the check asserts
-  the PROPERTY rather than the two fields — every key the page sends survives
-  into storage, and two builds differing in any one axis are two records rather
-  than a silent overwrite. It runs in plain node against a KV stub, so it costs
-  no browser — which is why it is the second check in CI beside the parity one,
-  rather than something to remember to run. Its FIRST assertion is a CROSS-FILE
-  one and is what would have caught both losses on the day they happened: the
-  axes `boardPayload()` actually emits, read out of `app.js`, must be exactly
-  the axes the worker's own `AXES` table knows how to keep. That table is the
-  other half — validation, storage and the identity key are all DERIVED from it
-  now, so an axis can no longer be added to two of the three, which is what
-  happened both times. Verified to bite: removing `valence` from the table
-  fails four assertions, naming the axis.
-  `node scripts/check_mode_def.mjs` is the TWENTY-EIGHTH: a MODE is EXPLAINED,
-  not just named, and its name is DERIVED. The Mode control was a dropdown of
-  names, which is enough while every weapon's second mode is the same mechanic
-  and stopped being enough the day two weapons earned a form by KILLING rather
-  than by hitting (owner, 2026-08-15) — "cycle" does not say what fills the
-  gauge, how many it takes, or what the earned form gets to fire, and those are
-  the numbers that decide whether to pick it: a Torid pays 5 direct hits for 170
-  rounds, a Mausolon pays 5 KILLS for one. Each sentence is a TEMPLATE with
-  `{named}` holes filled from `/api/meta`'s forms, so a weapon that arrives
-  tomorrow explains itself and costs no translation. The other half is the NAME,
-  and the check carries a MATCHED PAIR because neither direction passes alone:
-  the Mausolon and the Cortege must not be told they have an Incarnon anything,
-  and the Torid and the Lex, which do, must still say so — a check asserting
-  only the first passes just as well on a page that dropped the word entirely.
-  It runs in BOTH languages, since a hole filled into an untranslated template
-  is invisible in English and is half an English sentence on a Chinese page.
-  Verified to bite: restoring the hardcoded `tr("Incarnon cycle")` fails four
-  assertions, naming the weapon and the language.
-  IT EXPLAINS THE MODE YOU ARE IN, AND NOT THE OTHER SIX (owner, 2026-08-29),
-  which reverses the 2026-08-15 decision above on the evidence melee supplied.
-  Listing every mode was right while a weapon had two or three; seven is seven
-  blocks of three lines above the build, six of them about something the reader
-  did not pick, and the one that IS theirs is no longer findable in the wall.
-  The reason to list them all was COMPARISON, and comparison is what the BOARD
-  does — it ranks every mode of every weapon as its own row, which is a better
-  answer than seven paragraphs. So the check moved with it: "one entry per mode"
-  became "exactly one entry, and it is the one you are in" — the second clause
-  being the half that carries the meaning, since a count of one passes just as
-  well on a block permanently stuck on `base`.
-  AND "THE NAMES TELL THE MODES APART" MOVED TO THE CONTROL. One entry cannot
-  repeat a name, so asking the BLOCK would have retired the assertion by making
-  it vacuous — and it is the assertion that caught the real bug (`modeLabel`
-  fell through to the default form, so the Kuva Hind drew three modes as "Base
-  Form" for two weeks). The dropdown is where all seven names still appear, read
-  from `modeOpts` rather than from a popover that is shut.
-  EVERY LINE HAS TO EARN ITS PLACE, which is the rule the rewrite came from
-  (owner, 2026-08-29). "Nothing is spent to be in it, so it can be held forever
-  — a ruler ranks it" was true of the mode it was printed under AND of every
-  mode beside it; "swung as its neutral combo for the whole engagement" restated
-  a heading already reading "Neutral Combo". A sentence true of everything on
-  the list distinguishes nothing on it. What is left either carries a NUMBER or
-  names something this mode does and its neighbours do not: how many of its
-  swings are spins that reach the whole room, whether it spends the combo
-  counter (which is what makes it a different BUILD — Blood Rush reads the
-  counter this mode empties), whether its damage is a slam the weapon's reach
-  does not bound, and what it forces on the target whatever the roll says.
-  THE THREE NUMBERS ARE IN ONE UNIT, and getting there takes two conversions
-  that were both missing. A combo script's multipliers are relative to the
-  ENTRY they are written in and the explosion is not in the script at all — so
-  the Magistar's heavy slam, whose entry states `damage: { impact: 0.0 }`
-  because the whole attack is its 630 Blast `radial:`, reported **100% of base**
-  for an attack that deals **300%**. `swing_share` and `radial_share` ride the
-  FORM rather than the summary, because `stance_combos` has no weapon entry
-  behind it and anything read off the entry would be erased the moment a stance
-  went in the slot.
-  A NAME THAT ALREADY SAYS THE TRIGGER DOES NOT SAY IT TWICE: the Hind's
-  Semi-Auto mode read "Semi-Auto (semi-auto)". The comparison is on the SOURCE
-  strings, since a form name is the one half that may still be DE's English
-  while the trigger word is translated — and both sides are checked non-empty,
-  because stripping a Chinese string to its ASCII leaves nothing and
-  `"".includes("")` is true, which swallowed the parenthetical on every
-  translated form name.
-  `node scripts/check_gain_freshness.mjs` is the ninth: a
-  scenario edit reaches the quick calc immediately, including a field nobody
-  has invented yet — the scan's cache key is DERIVED from the fight it will
-  run, never a hand-listed copy of it. `node scripts/check_build_size.mjs` is the eighth: how full
-  a searched build must be is a RANGE (`build_min`–`build_size`), so "exactly 8
-  mods" is a setting rather than something the scope cannot express — both ends
-  push each other, both ride the search preset, and both reach the request.
-  AND EVERY AXIS SAYS IT, IN ONE SHAPE (owner, 2026-08-29). A search axis is
-  N slots, an option set, and a range of how many slots a candidate fills: the
-  mods axis is 8 and a number 0–8, every other axis is ONE slot and 0–0 / 0–1 /
-  1–1. It was three ways of saying one thing — mods had the numeric range,
-  the exilus slot could reach 0–1 only by pooling a `none` row nothing pointed
-  at, and the ARCANE SEATS and EVOLUTION TIERS could not reach it at all, so
-  which of 0–0 and 1–1 you got was decided by whether you had marked anything.
-  `node scripts/check_slot_ranges.mjs` is the FORTY-THIRD and walks all three
-  states on all four axes ON THE WIRE — a range that draws correctly and sends
-  nothing looks exactly like a working control. Verified to bite: a
-  `setSlotRange` that returns early reddens 8 of its 18.
-  IT IS DERIVED FIRST AND ADJUSTED SECOND, which is what makes it safe: the
-  derived answer is what the scope did before the control existed, so NO
-  existing scope grows. That matters on the arcane seats, where the empty seat
-  was ruled out on evidence — an arcane costs no capacity and no Forma, so an
-  empty seat can only tie the same build with the arcane in it (user,
-  2026-08-01). That decision was against the empty seat being a DEFAULT, and it
-  is kept as `an_arcane_seat_marked_none_is_not_a_default`.
-  THE EMPTY CHOICE IS A MARK LIKE ANY OTHER — `none`, or `none:<pool>` on an
-  arcane seat, which names its seat because a weapon can hold two and the marks
-  are one flat map — so the range is a VIEW over the option set and needs no
-  field of its own in the preset, the request or the round trip.
-  A PIN IS NOT A RANGE: a pinned candidate settles its slot at 1–1 with the
-  inputs disabled, and `slotRange` asks for a real pin FIRST so a stale empty
-  mark cannot outrank one. AND 0–0 KEEPS THE CANDIDATES, which forced the
-  evolution LADDER to key on the RANGE rather than on the marks — a 0–0 tier
-  still has marks, and counting them opened the tier above over sets whose
-  every rung `ladder_prefix` then truncates (`evoFillsRung`).
-  MODE AND VALENCE CARRY THE ROW TOO, read-only at 1–1: a build is played
-  exactly one way and an adversary weapon has exactly one progenitor element,
-  and an axis that simply omitted the row would be the axis the rule forgot.
-  THE COUNT IS THE PRODUCT OF ALL SIX, and completing the model found the
-  estimate wrong in BOTH directions: `arcaneOptionsIn` counted `marked + 1`
-  while `parse_optimize` has dropped the empty seat since 2026-08-01
-  (over-reported per arcane seat), and `modes`/`valence` were not factors at
-  all though the server's variant table is `modes × evo_sets × valences`
-  (under-reported — the same blind spot as the missing rows, from the other
-  side). AND THE MODS CEILING MAY BE 0, which every other axis could already
-  say: reaching the bare weapon by unmarking everything costs the reader what
-  0–0 exists to protect. A 0 ceiling OUTRANKS the derived floor in three places
-  that all had to agree — `min_slots`, the guard refusing pooled mods with no
-  slot to reserve, and the page's `poolStarved` — or the marks and the ceiling
-  contradict and `SubsetSpace::new(1, 0)` reports a legal request as "no legal
-  builds in this scope".
-  THE FLOOR STARTS AT 0 AND CLOSES THE LIST (owner, 2026-08-29). How full a
-  build must be is a CONCLUSION, not a filter and not a summary — it means
-  nothing until the required and the pooled are chosen — so it is drawn AFTER
-  the mod list and before the Exilus block, whose +1 slot it does not count.
-  It sat on the search box's own flex row first and then above the list with
-  the marks summary; both were ahead of the act it concludes. "Nothing
-  marked" is the EMPTY option on every other axis — an unmarked exilus slot
-  stays empty, an unmarked arcane seat searches no arcane — and the mods axis
-  alone answered it with "no legal builds in this scope", though
-  `updateOptEstimate` had carried "an empty scope = the bare weapon, still a
-  legal search" since it was written. It costs nothing elsewhere: once anything
-  is marked the DERIVED floor (every required mod, plus one pooled) is at least
-  1 and wins, so 0 and 1 differ in exactly that case. The other axes get no 0–1
-  box of their own — they are 0–1 by nature and their marks already say which,
-  so a control there would be a second control for one fact.
-  AND THE ROW SAYS WHAT THE MARKS RAISED IT TO, because the box could read 0
-  over a search that never looks below 3 — stated only when the two DIFFER,
-  since a line repeating the two numbers beside it distinguishes nothing.
-  It surfaced a bug older than itself: `switchWeapon` reset the scope without
-  `min`, so `Math.max(derived, undefined)` was NaN and every weapon with no
-  saved search reported its scope impossible until a control was touched. The
-  check could not see it, because its first act was to type a floor.
-  `node scripts/check_buff_cards.mjs` is the seventh: buff
-  cards are named in the display language (an EVOLUTION's buff was the last one
-  left in English), open at the stack count the rule says, and report a
-  coverage that is never rounded up to a flat 100%. It also walks the one buff
-  that is a WEAPON PASSIVE — the Ocucor's tendrils, which its only augment
-  scales with — because a stack count nobody can set is a mod nobody can
-  measure: a tendril costs a kill, so against a target that dies slowly the
-  card is the whole measurement (player report, 2026-08-08). See BUFFS.md
-  §"A buff whose end is an EVENT".
-  `node scripts/check_gain_axes.mjs` is the sixth: the
-  quick-calc gain scan obeys the evolution TIER LADDER, so it never ranks a
-  perk the builder will not let you click. `node scripts/check_replay.mjs` is the fifth: the
-  median engagement plays back on screen — the buff curves draw, scrubbing
-  drains the pools, and play advances the clock at the chosen multiplier.
-  `node scripts/check_preset_independence.mjs` is the
-  fourth: it asserts no collection's state is written from outside it —
-  switching a build must not move the fight, and editing the fight must not
-  touch a build. `node scripts/check_share.mjs` is the second: it opens a
-  share link in a browser that has never seen the build and asserts what is on
-  SCREEN, not what is in the variables — that distinction is the whole reason
-  it exists, since the path has twice landed the data correctly and shown an
-  empty page. `node scripts/check_tenno.mjs` is the third: the fight's PLAYER
-  reaches the panel, the sim and a share link, so an arcane that scales off a
-  Warframe is worth nothing with no frame and +500% with one.
+  `engine/src/record.rs`. THE CHECK DOES THE ARITHMETIC OFF THE SCREEN — it
+  reads the factors as DRAWN, multiplies them, and compares with the two totals
+  the same row prints. It pins the KIND list so a fifth thing cannot arrive
+  unnoticed, and MAKES a miss happen (the target pushed to 40 m) because every
+  claim about misses passes perfectly on a fight that has none.
+- `check_damage_pops` — every drawn number NAMES the record row it is (the id
+  resolves, that row's damage is the text on screen, the row belongs to the
+  frame being shown), and every row in that frame is drawn, up to the cap. The
+  second half is not decoration: "every number on screen is a row" is satisfied
+  perfectly by drawing ONE of them.
+- `check_debuff_coverage` — the DEBUFF table is the BUFF table read from the
+  other side, one component fed from both: `DEBUFF_ROSTER` mirrors
+  `buff_roster`, `Frame.debuffs` mirrors `Frame.stacks`, one renderer. It
+  asserts the SYMMETRY rather than the numbers, plus the one thing that is not
+  symmetric: A RESPAWN IS THE SAME TARGET, so its stacks drop to zero and climb
+  again INSIDE one series and that gap counts against uptime. Rows the run never
+  touched are dropped.
+- `check_custom_enemies` — a target you MADE is a target like any other, which
+  is the test of the claim: a custom enemy is an `EnemySpec` in the scenario's
+  list, so the simulator, the optimizer and the target card need no code for it.
+  The IMMUNITY is MEASURED rather than read off the card (a Toxin-immune target
+  takes literally nothing from a Torid; the same target at x1 takes something),
+  and DELETING a custom must repoint the fight.
+- `check_opt_modes` — mode is the BUILDER's control and the OPTIMIZER's
+  dimension. Pinning a mode makes every ranked row come back in it, pooling both
+  DOUBLES the candidate count, and each row carries the mode it was scored in
+  into the build it becomes. Server-side a VARIANT is a (mode, evolution set)
+  pair, which is why nothing downstream had to learn about modes.
+- `check_run_counts` — how hard you measure is a number someone can set, in all
+  three modules, and the answer differs in each. The simulator defaults to the
+  rulers' 1000 so a first number is comparable with the board without touching a
+  box (1.3 s a run in the shipping build, against 0.14 s at 100). The quick calc
+  takes its own with a FLOOR of 10, where a status mod stops being a coin flip
+  (M24: one run swings it ±39 points), and a number under it is raised rather
+  than obeyed. The optimizer's final round takes its own too, and it is a
+  PREFERENCE: typed, never blank, in NEITHER half of the tab and in NEITHER
+  preset. It asserts the number on screen is the number sent, that the box is
+  drawn outside both halves, that `snapshotOpt` does not carry it, that
+  restoring a scope leaves it where the reader put it — and, its negative
+  control, that the CPU threads box is gone and no `threads` reaches the request.
+- `check_arena` — the arena is a place you can DRAG, and what you drag is what
+  gets simulated. Bodies are drawn at their REAL radius (`space::BODY_RADIUS_M`,
+  0.25 m), so "as close as they go" is visible: they touch at CONTACT (0.5 m)
+  and will not pass through each other, which the engine clamps to as well. The
+  scene uses a viewBox, because a host has zero pixel width while its panel is
+  on another tab and one drag would write `[null, null]` into the fight;
+  `paint()` replaces the markup, so listeners are delegated rather than bound to
+  circles. A BENCHMARK'S FIGHT IS NOT DRAGGABLE and the scene refuses the
+  gesture ITSELF, because `lockOfficialScenario` sweeps
+  `input,select,button,textarea` and these bodies are SVG circles. The check
+  opens a scenario of its own first and asserts that it did, since the app lands
+  a first-time visitor ON the official ruler. The OPTIMIZER draws the same scene
+  read-only.
+- `check_formation` — a formation is something you build on the floor, and what
+  you build is what gets simulated: bodies draw without standing on each other,
+  any one drags, the payload matches the scene body for body, and a real
+  `/api/simulate` answers HIGHER for a crowd than for one body. AIM IS A PLACE
+  rather than a target: the marker rides the target until dragged, and once
+  dragged the beam is on whichever body the LINE crosses — asserted with two
+  bodies on one line where the nearest to the cursor is the FAR one. Two
+  negative controls: a formation of one sends zero and a null aim, and an
+  official ruler refuses a crowd both by disabling the control and by not moving
+  when it is clicked anyway. It asserts the per-body unit stamp ON THE WIRE.
+- `check_gunco_stated` — every weapon says which Condition Overload rule it is
+  computed under, with nothing equipped. The rules are per weapon and
+  hand-transcribed: Adding or Multiplying, which attack parts take it, what
+  fraction of the base the term reads. It is unconditional and says "no source
+  equipped" plus how one WOULD be computed. The check walks all three behaviours
+  from three weapons the catalog classifies differently and asserts they are
+  three different sentences.
+- `check_opt_replay` — the only check about a build that CANNOT go stale: it
+  runs a real search, applies the winner through the button's own path, runs the
+  simulator, and asserts the two numbers agree inside 4σ of their two standard
+  errors. It does not know what an axis is, so a fifth one is covered on the day
+  it is added. Its rotation of NEGATIVE CONTROLS is discovered from the row's
+  own `replay` keys: each is deleted in turn, the ones the engine notices are
+  named in the assertion's own title, and a degenerate axis is REPORTED rather
+  than failed. The sharp one is last: a build assembled from a replay with a
+  LIVE axis removed must fail the assertion that otherwise passes. Two weapons,
+  because no single one has every axis live.
+- `check_build_axes` — the cheap half of that pair, and the file says so.
+  `engine::builds::BUILD_AXES` is the one declaration, served at
+  `/api/meta.build_axes`; the three JS surfaces that carry their own spellings —
+  the page's build state, the share tuple, the worker's board record — each
+  declare which axis their fields cover. It asserts coverage BOTH ways and that
+  the worker's record and identity key are still DERIVED from its table. Plain
+  node against the served meta and two source files.
+- `check_melee_slots` — a melee weapon has TWO slots a gun does not, and one
+  decides what it swings. Every assertion is on the WIRE or on a real
+  `/api/simulate`. Its sharpest pair is the ROUND TRIP — `buildPayload` into
+  `stateFromBuild` must put the stance back in the STANCE slot rather than in
+  slot 9 — and the FALLBACK: an empty slot fires the entry's own script, which
+  happens to be Crushing Ruin's, so a stance that failed to apply would read as
+  a pass.
+- `check_slot_ranges` — every axis says how many of its slots a candidate fills,
+  in one shape: the mods axis is 8 slots and a number 0–8, every other axis is
+  ONE slot and 0–0 / 0–1 / 1–1. It walks all three states on all four axes ON
+  THE WIRE. The range is DERIVED first and adjusted second, so no existing scope
+  grows; a PIN is not a range (a pinned candidate settles at 1–1 with the inputs
+  disabled); and 0–0 KEEPS THE CANDIDATES, which is why the evolution ladder
+  keys on the RANGE rather than the marks. Mode and valence carry the row
+  read-only at 1–1. The empty choice is a mark like any other — `none`, or
+  `none:<pool>` on an arcane seat — so the range is a VIEW over the option set
+  and needs no field in the preset, the request or the round trip. An arcane
+  costs no capacity and no Forma, so an empty seat can only tie the same build
+  with the arcane in it: `an_arcane_seat_marked_none_is_not_a_default`.
+- `check_build_size` — how full a searched build must be is a RANGE
+  (`build_min`–`build_size`): both ends push each other, both ride the search
+  preset, both reach the request. The floor starts at 0 and is drawn AFTER the
+  mod list, because how full a build must be is a CONCLUSION and means nothing
+  until the required and the pooled are chosen. "Nothing marked" is the empty
+  option, as on every other axis; once anything is marked the DERIVED floor is
+  at least 1 and wins. A 0 ceiling OUTRANKS the derived floor in three places
+  that must agree — `min_slots`, the guard refusing pooled mods with no slot to
+  reserve, and the page's `poolStarved` — or `SubsetSpace::new(1, 0)` reports a
+  legal request as "no legal builds in this scope". The row says what the marks
+  raised the floor to, stated only when the two DIFFER. The count is the product
+  of all six axes.
+- `check_riven_pool` — the riven editor offers the stats that weapon's rivens
+  actually roll, in BOTH slots. THE RULES DECIDE AND THE SURVEY CHECKS:
+  `rivens_data::derived_for` is the model, `data/rivens/exceptions.yaml`
+  overrides it per riven FAMILY with the evidence in each entry, and
+  `data/rivens/pools.yaml` (from `scripts/survey_riven_pools.py`) is read by a
+  TEST and by nothing else. See DATA_SOURCES §"Riven pools" (MEASUREMENTS M35).
+- `check_riven_family` — a riven is a card for a weapon FAMILY, not an entry:
+  *"Riven mods can be used on variants of a particular weapon, including MK1,
+  Prime, Vandal, Wraith, Dex, Prisma, Mara, and Syndicate variants"*. The scope
+  is (FAMILY, RIVEN CLASS) rather than the family, because a KITGUN chamber
+  built as a primary takes a RIFLE riven and as a secondary a PISTOL one. A
+  saved riven holds ROLLS and the shown value is that roll against THIS weapon's
+  disposition, recomputed by `/api/riven` on every render, so one card reads
+  1.45's worth on a Burston and 1.35's on its Prime. It holds the shared list,
+  the disposition RATIO (2.243 → 2.088 = 1.35/1.45), three negative controls,
+  the migration, and the rename/delete sweep with a same-named card in another
+  family as its control. A RENAME AND A DELETE REACH EVERY BUILD THAT NAMES THE
+  CARD (`repointRivenInBuilds`, whose SCOPE IS PASSED IN because rename and
+  delete pass the family's members while the migration passes one weapon). AN
+  EDIT IS NOT A DELETE: editing a riven is the game's own reroll, so a build
+  KEEPS it and picks the new values up — dropping the rank from 8 to 0 on the
+  Burston takes the Burston Prime's build from 18 drain / +208.8% to 2 /
+  +23.2%, slot intact.
+- `check_enemies` — every TARGET shows a picture that loads, a wiki link built
+  from its ENGLISH name (the whole pass runs in both languages, because a
+  localized name in a wiki URL lands on garbage), its VULNERABILITY COLUMN, and
+  a statement of what the sim does not model about it. Enemy art is declared in
+  the enemy's own YAML (`image:`, wiki-hosted), NOT in `data/assets.yaml`.
+- `check_search` — a real optimize in the shipping build: a scope it finished
+  reports `exhaustive` and says so on screen, a budgeted one reports its
+  COVERAGE and does not pretend, and the WORKER FLEET covers more ground than
+  one worker would.
+- `check_gain_band` — a quick-calc chip says HOW WELL IT KNOWS its own number
+  and never prints a zero. The scan reads `score_mean`/`score_se` and
+  `dps_mean`/`dps_se`, which the server already computes, rather than the MEDIAN
+  run. THE WIDTH IS THE COMPARISON'S OWN and it is DERIVED: `/api/simulate`
+  returns the per-run series when the caller says it will pair with it
+  (`run_series`), and the chip's band is the spread of `c_i - ratio*b_i` over
+  those runs. A chip therefore has three shapes and the check asserts all three
+  OCCUR: exact (`+165%`), banded (`≈+3.1% ±7.2%`), and a measured zero that says
+  "no effect here" in words and points at the row's own disclosure line. An
+  option not SEPARATED from the leader is marked `tied`, on the leader too. Its
+  NEGATIVE CONTROL is Serration against Amalgam Serration: they differ only in
+  base damage, band to exactly zero, and order as the cards state — measured
+  0.9623 = 2.55/2.65 at every build strength and run count, which survives only
+  because the two are paired against the same luck.
+- `check_mode_def` — a mode is EXPLAINED, not just named, and its name is
+  DERIVED. Each sentence is a TEMPLATE with `{named}` holes filled from
+  `/api/meta`'s forms, so a weapon that arrives tomorrow explains itself and
+  costs no translation. It explains THE MODE YOU ARE IN and not the other six —
+  exactly one entry, and it is the one you are in, the second clause carrying
+  the meaning; comparison across modes is the BOARD's job, which ranks every
+  mode of every weapon as its own row. The names appear in the DROPDOWN, read
+  from `modeOpts`, and must TELL THE MODES APART (a mode id can be a form id).
+  Every line either carries a NUMBER or names something this mode does and its
+  neighbours do not: how many of its swings reach the whole room, whether it
+  spends the combo counter, whether its damage is a slam the weapon's reach does
+  not bound, what it forces on the target. THE THREE NUMBERS ARE IN ONE UNIT:
+  `swing_share` and `radial_share` ride the FORM, because a combo script's
+  multipliers are relative to the ENTRY they are written in and the explosion is
+  not in the script at all. A NAME THAT ALREADY SAYS THE TRIGGER DOES NOT SAY IT
+  TWICE, compared on the SOURCE strings with both sides checked non-empty.
+  Carries a MATCHED PAIR (the Mausolon and Cortege must not be told they have an
+  Incarnon anything; the Torid and Lex must still say so) and runs in both
+  languages.
+- `check_gain_freshness` — a scenario edit reaches the quick calc immediately,
+  including a field nobody has invented yet: the scan's cache key is DERIVED
+  from the fight it will run. It asserts the EVOLUTION axis (which ranks with no
+  picker open, so it tests the re-ask and not a repaint) and probes the scan's
+  own BASELINE rather than a candidate's gain.
+- `check_buff_cards` — buff cards are named in the display language, open at the
+  stack count the rule says, and report a coverage never rounded up to a flat
+  100%. It walks the one buff that is a WEAPON PASSIVE — the Ocucor's tendrils —
+  because a stack count nobody can set is a mod nobody can measure. See BUFFS.md.
+- `check_gain_axes` — the quick-calc gain scan obeys the evolution TIER LADDER,
+  so it never ranks a perk the builder will not let you click.
+- `check_replay` — the median engagement plays back on screen: the buff curves
+  draw, scrubbing drains the pools, and play advances the clock at the chosen
+  multiplier.
+- `check_preset_independence` — no collection's state is written from outside
+  it: switching a build must not move the fight, and editing the fight must not
+  touch a build.
+- `check_share` — it opens a share link in a browser that has never seen the
+  build and asserts what is on SCREEN, not what is in the variables.
+- `check_tenno` — the fight's PLAYER reaches the panel, the sim and a share
+  link, so an arcane that scales off a Warframe is worth nothing with no frame
+  and +500% with one.
+- `check_squad` — a squad AURA and an ARCHON SHARD ride on the fight's `Tenno`.
+  Every assertion is on the wire or on a real `/api/simulate`. Its damage
+  assertion needs a fight where ARMOUR is the binding constraint: at the default
+  level an unmodded rifle never gets a target off its shields, the armour term
+  is never read, and the two runs come back byte-identical. It measures kill
+  PROGRESS, because dps is what the weapon puts out and armour decides what
+  arrives.
+- `check_storage` — how much room the app takes on the reader's machine. It
+  measures the RATIO rather than asserting a constant, fills the disk from OTHER
+  weapons' keys to prove the shed sweeps the origin, and plants a replay written
+  under the old rule to prove the boot takes it back. Its second assertion keeps
+  the fix honest: the panel must STILL DRAW a replay.
+- `check_one_fight` — holds no list of fields: it asserts every module's
+  outgoing request against `theFight()` ITSELF, so a field invented tomorrow is
+  covered by nobody.
+- `check_scan_progress` — a scan says how far along it is where the work is
+  being READ, mounted in all five places a scan ranks something. AN AXIS ONLY
+  SHOWS ITS OWN, since two lists can be open at once. It draws NOTHING when
+  nothing runs and the check asserts the ABSENCE as well as the presence. Its
+  evolution half needs a CROWD: a one-body Torid ranks its dozen evolutions
+  faster than the 250 ms repaint throttle, so nothing is ever drawn.
+- `check_board_dedup` — a build the board already holds is not sent to it again,
+  and the page asks the ENGINE which (`/api/build/keys` → `builds::board_key`).
+  A build is not its spelling: `canonical_mods` sorts the non-elementals by
+  drain and leaves the elementals in the order that PAIRS them, evolutions are a
+  set, a riven is a shape and not its rolls, and the mod POOL is what tells an
+  elemental mod from any other — which only the engine has. A MATCH IS PROOF AND
+  AN ABSENCE IS NOT: the board LISTS only builds scoring at least half their
+  weapon's leading row, so the page only ever suppresses an upload it can prove
+  is redundant. Its NEGATIVE CONTROL is the half that matters — a build the
+  board does not hold must still be offered.
+- `check_support` — the page that ASKS for something makes its case in numbers
+  it COUNTED. A drawn figure and a counted one look identical, so each is
+  compared against the source it claims: the weapons tile against
+  `META.weapons`, the mods tile against the union of `META.mod_pools`, the built
+  line against the injected `PROJECT_FACTS`. The other half is the one line
+  about the READER — how much they have run here — asserted absent on a browser
+  that has run nothing, correct after a real run at a run count the check chose,
+  and absent from the request that run sent. Its negative controls are the
+  channels (an entry with no url draws nothing) and the supporter line (silent
+  while its store is unconfigured). It FORCES English rather than inheriting it,
+  since the app boots into the browser's language.
+- `check_comment_style` — no attribution and no dated decision survives in the
+  repo's prose, and the narrative phrases that mark a history being retold are
+  ratcheted: the count may fall and never rise. `docs/MEASUREMENTS.md` is exempt.
 
 ## Hard rules
 
-- **THE SIMULATOR IS THE TRUTH; THE OPTIMIZER OBEYS IT** (user, 2026-08-04).
-  A search's winner is replayed under the simulator's fight, so any rule the
-  optimizer applies that the simulator does not — or omits that the simulator
-  applies — scores builds nobody can reproduce. The two must not be two
-  implementations that agree;
-  the optimizer must CALL the simulator's, and add only its own scope and
-  budget.
-  DONE 2026-08-04 (`parse_fight`): the fight is parsed once and the optimizer
-  calls it. `simulate_json` reads `replay` and nothing else; `parse_optimize`
-  reads `build_size`, `build_min`, `finalists`, `final_runs`, `deployment` and
-  nothing else. Neither builds a second Tenno. Anything that is a property of
-  the FIGHT goes in `parse_fight` — adding a scenario field to one module and
-  not the other is no longer possible, because there is only one module that
-  reads them.
-  Measured before that: the two parsers read **9 of the same request fields**
-  and call **10 of the same 11 helpers**. The optimizer's extra five are all
-  scope (`build_size`, `build_min`, `finalists`, `final_runs`, `deployment`) —
-  and the ONE helper it did not share, `chosen_evolutions`, is where the
-  divergence bit. Three times, all the same shape: the form-unlock fallback
-  (2026-08-04), a caller that omitted `evolutions` getting the Incarnon cycle
-  free while the optimizer scored the base form (2026-08-03), and the
-  optimizer keeping a buff config of its own (2026-08-02). A shared helper is
-  not enough — the DECISIONS around it have to be shared too.
-- **THE OPTIMIZER IS THE BUILDER, IN BULK** (owner, 2026-08-29). The rule above
-  is about the ENGINE; this is the same claim on the PAGE. Every axis on the
-  optimizer tab is a question the builder already asks, and the only difference
-  is what gets bound — the builder binds a VALUE, the optimizer binds a SET. So
-  the two must read as one page: the same axes, in the same order, under the
-  same numbers and the same names, with the exilus slot INSIDE Mods because
-  that is where the builder's exilus slot sits. They did not — the optimizer
-  opened on Mods and put Mode fourth, said "Arcanes" where the builder says
-  "Arcane" and "Evolutions" where it says "Evolution", and numbered nothing:
-  three chances for a reader crossing between the tabs to conclude they are
-  about different things.
-  NOTHING DECLARES THAT ORDER TWICE. `orderOptScope` walks the builder's own
-  blocks in DOM order and appends each axis's section as it meets one, stamping
-  the heading from that block's `.n` and `<h2>` — already translated, so the
-  label is the builder's word in the reader's language rather than a second
-  string to keep in step. Reorder a builder block, renumber one, rename one,
-  and the optimizer follows with NO edit; `OPT_SCOPE_OF` is the only
-  hand-written half and is touched only when an axis is added or removed.
-  THE SAME ARGUMENT ONE LEVEL DOWN, and it is where the cost had already been
-  paid. The `.opt` row is ONE function (`modRow`) with the trailing control as
-  its parameter — the drain for the builder, the pool/req segs for the
-  optimizer — and those segs are one function (`oseg`) that six lists call. It
-  was two copies of the row with `// The picker's .opt row markup verbatim`
-  written over the second, which is a comment that stops being true in silence:
-  the optimizer's copy never grew the builder's STANCE FILTER, so every melee
-  weapon offered its stances as MAIN-slot marks, which is a build nobody can
-  hold. Searching the stance SLOT is a real axis and is still missing — it
+- **THE SIMULATOR IS THE TRUTH; THE OPTIMIZER OBEYS IT.** A search's winner is
+  replayed under the simulator's fight, so any rule the optimizer applies that
+  the simulator does not — or omits that the simulator applies — scores builds
+  nobody can reproduce. The optimizer must CALL the simulator's code and add
+  only its own scope and budget. `parse_fight` is that shared parse:
+  `simulate_json` reads `replay` and nothing else; `parse_optimize` reads
+  `build_size`, `build_min`, `finalists`, `final_runs`, `deployment` and nothing
+  else. Neither builds a second Tenno. Anything that is a property of the FIGHT
+  goes in `parse_fight`. A shared helper is not enough — the DECISIONS around it
+  have to be shared too.
+- **THE OPTIMIZER IS THE BUILDER, IN BULK.** The same claim on the PAGE: every
+  axis on the optimizer tab is a question the builder already asks, and the only
+  difference is what gets bound — the builder binds a VALUE, the optimizer binds
+  a SET. Same axes, same order, same numbers, same names, with the exilus slot
+  INSIDE Mods because that is where the builder's exilus slot sits.
+  NOTHING DECLARES THAT ORDER TWICE: `orderOptScope` walks the builder's own
+  blocks in DOM order and stamps each heading from that block's `.n` and `<h2>`
+  — already translated. `OPT_SCOPE_OF` is the only hand-written half and is
+  touched only when an axis is added or removed.
+  THE SAME ARGUMENT ONE LEVEL DOWN: the `.opt` row is ONE function (`modRow`)
+  with the trailing control as its parameter, and those segs are one function
+  (`oseg`) that six lists call. A copied row is a comment that stops being true
+  in silence. Searching the stance SLOT is a real axis and is still missing; it
   wants the treatment the exilus slot has, in `optimizer/` as well as on the
-  page (docs/OPTIMIZER.md §"The optimizer is the BUILDER, in bulk").
-- **A FINGER SCROLLS; IT DOES NOT DRAG THE FIGHT** (owner, 2026-08-18).
-  A browser decides who owns a gesture at `pointerdown` and never gives it back,
-  so a body that drags on touch means the finger that started on it can no
-  longer SCROLL. A 19x19 formation covers the canvas in bodies, so on a phone
-  almost every scroll past the arena dragged an enemy instead — the fight moved
-  silently and the result it had just produced was for a fight nobody was in any
-  more, which reads as "I tapped and it made me simulate again".
-  A LONG PRESS CANNOT FIX IT: once the gesture is the browser's it is gone, so
-  claiming it later is not something a page can do. The answer is a MODE the
-  reader turns on — a ✥ chip in the scene's own control row, off by default,
-  drawn only where `navigator.maxTouchPoints > 0` (a touchscreen laptop reports
-  a FINE pointer and has the same problem, so a `pointer: coarse` query is the
-  wrong test). `touch-action` follows it: `pan-y` off, `none` on. A MOUSE is
-  unaffected — it has no scroll to lose.
-  `check_mobile.mjs` asserts it at every phone width, and it had to be taught to
-  have a finger first: `mobile: true` on `setDeviceMetricsOverride` leaves
-  `maxTouchPoints` at 0, so every touch-only behaviour was going untested on the
-  one check that is about phones.
-- **A SIMULATION RUNS ON A WORKER FLEET** (owner, 2026-08-18). The runs are
-  INDEPENDENT given their index, so the page shards them across one worker per
-  core (capped at eight, the quick calc's rule) and the shards merge back into
-  exactly what one worker would have produced. Measured on the group-clear
-  ruler with the board's own #1 Phantasma Prime build: **85.7 s -> 18.3 s**.
-  THE ENABLER IS THE SEED. Each run's dice are now a pure function of
-  `(seed, index)` rather than one Rng chain threaded through every run — which
-  is what made a run impossible to start without replaying everything before it.
-  Still reproducible; what moved ONCE is the SAMPLE, measured at 0.001% to
-  0.09% across `one_fight`'s three shapes against a Monte-Carlo standard error
-  of about 0.3% at a thousand runs.
-  THE MERGE IS IN RUST, so there is one implementation of the arithmetic: the
-  page schedules and collects, `simulate_merged` computes every field. A
-  `Shard` carries SUMS rather than runs — 24 KB at a thousand runs against 8 MB
-  — plus one `(effective, rng_state)` per run, because the MEDIAN engagement is
-  what the panel shows and finding it means ranking every run. The merge ranks
-  those and REPLAYS the winner.
-  **A JSON NUMBER IN JAVASCRIPT IS A DOUBLE**, and that cost an evening: the
-  64-bit RNG state came back ROUNDED across the wasm boundary, so the merge
-  replayed a fight that never happened. Every mean matched to the last bit and
-  only `score` disagreed, because `score` is the one figure taken from the
-  median run. It travels as two `u32` halves now (`RunKey`).
-  Asserted three times: on the summary (`eight_shards_are_one_run`, 23 fields
-  plus the median), on the whole response (`a_fleet_of_shards_reports_what_one
-  _worker_reports`), and ON THE WIRE in `check_run_counts` — which is the only
-  one that could have caught the rounding.
-  A COMPARISON IS TO A PART IN 10^12, not bit for bit: adding in eight groups
-  and combining differs from one sequence in the last bit, because
-  floating-point addition is not associative.
-- **A LONG SIM SAYS HOW FAR IT HAS GOT** (owner, 2026-08-18). The run count is
-  unbounded and so is the cost per run: a single-target fight is about a
-  millisecond, a 361-body one is ~28 ms, so the rulers' 1000 runs is half a
-  minute. It has always run on a WORKER, so the page was never frozen — but a
-  button reading "Simulating…" for half a minute is reported as a hang, and it
-  should be. `simulate_progress` is the wasm entry (its own, not a flag on
-  `api`, because `/api/simulate` is the one endpoint whose cost is unbounded),
-  the worker forwards `{done, total}`, and the panel draws a bar, THE COUNT and
-  a time remaining. The count because "412 / 1000" is a number a reader can act
-  on where a bar alone is only a feeling; the time because that is the number
-  they actually want. THE ANSWER IS UNCHANGED — the callback observes and never
-  steers — and the throttle is in the WASM layer at one message per percent,
-  because a postMessage per run would cost more than the fight.
-  The remaining time is hidden below a second and before 5%: an estimate off
-  one or two runs extrapolated a hundredfold reads as a wild guess and is one.
-- **EVERY ENEMY HAS A NAME, AND THE PAGE CAN ASK ABOUT ONE** (owner,
-  2026-08-17). Debuffs have been per enemy since the formation landed —
-  `SpreadFoe` is `{state, debuffs}` per body, with its own pools, armour, stack
-  counts and DoT list. What no part of the model could do was say WHOSE: a body
-  was identified by its INDEX in a request, so deleting the body in front
-  renumbered everything behind it. `formation::FoeSpec::id` is that name, stable
-  across edits because it travels in the scenario and filled in BY POSITION when
-  blank, which is what every scenario written before ids existed means. The
-  aimed body is `e1` and lives on the `Arena` — it is not in the formation list,
-  it is the fight's own target — so the crowd reads as one list however it was
-  assembled.
+  page (`docs/OPTIMIZER.md`).
+- **A FINGER SCROLLS; IT DOES NOT DRAG THE FIGHT.** A browser decides who owns a
+  gesture at `pointerdown` and never gives it back, so a body that drags on
+  touch means the finger that started on it can no longer SCROLL — and a 19x19
+  formation covers the canvas in bodies. A LONG PRESS CANNOT FIX IT: once the
+  gesture is the browser's it is gone. The answer is a MODE the reader turns on
+  — a ✥ chip in the scene's own control row, off by default, drawn only where
+  `navigator.maxTouchPoints > 0` (a touchscreen laptop reports a FINE pointer,
+  so a `pointer: coarse` query is the wrong test). `touch-action` follows it:
+  `pan-y` off, `none` on. A mouse is unaffected.
+- **A SIMULATION RUNS ON A WORKER FLEET.** The runs are INDEPENDENT given their
+  index, so the page shards them across one worker per core (capped at eight)
+  and the shards merge back into exactly what one worker would have produced.
+  Measured on the group-clear ruler with the board's #1 Phantasma Prime build:
+  **85.7 s → 18.3 s**. THE ENABLER IS THE SEED — each run's dice are a pure
+  function of `(seed, index)`. THE MERGE IS IN RUST, so there is one
+  implementation of the arithmetic: the page schedules and collects,
+  `simulate_merged` computes every field. A `Shard` carries SUMS rather than
+  runs — 24 KB at a thousand runs against 8 MB — plus one
+  `(effective, rng_state)` per run, because the MEDIAN engagement is what the
+  panel shows; the merge ranks those and REPLAYS the winner.
+  **A JSON NUMBER IN JAVASCRIPT IS A DOUBLE**: the 64-bit RNG state travels as
+  two `u32` halves (`RunKey`), or it comes back ROUNDED and the merge replays a
+  fight that never happened — every mean matching to the last bit while `score`,
+  the one figure taken from the median run, disagrees. Asserted three times: on
+  the summary (`eight_shards_are_one_run`), on the whole response
+  (`a_fleet_of_shards_reports_what_one_worker_reports`), and ON THE WIRE in
+  `check_run_counts`, the only one that could catch the rounding.
+  A COMPARISON IS TO A PART IN 10^12, not bit for bit: floating-point addition
+  is not associative.
+- **A LONG SIM SAYS HOW FAR IT HAS GOT.** The run count is unbounded and so is
+  the cost per run: single-target is about a millisecond, a 361-body fight
+  ~28 ms. `simulate_progress` is the wasm entry (its own, not a flag on `api`,
+  because `/api/simulate` is the one endpoint whose cost is unbounded), the
+  worker forwards `{done, total}`, and the panel draws a bar, THE COUNT and a
+  time remaining. The count, because "412 / 1000" is a number a reader can act
+  on. THE ANSWER IS UNCHANGED — the callback observes and never steers — and the
+  throttle is in the WASM layer at one message per percent. The remaining time
+  is hidden below a second and before 5%.
+- **EVERY ENEMY HAS A NAME, AND THE PAGE CAN ASK ABOUT ONE.** `SpreadFoe` is
+  `{state, debuffs}` per body; `formation::FoeSpec::id` names it, stable across
+  edits because it travels in the scenario and is filled in BY POSITION when
+  blank. The aimed body is `e1` and lives on the `Arena` — it is not in the
+  formation list, it is the fight's own target — so the crowd reads as one list.
   `/api/simulate` returns a ROLL CALL (`bodies: [{id, aimed, at, damage}]`) of
-  the ones that took something, because a 19x19 ruler is 361 bodies and a
-  chaining beam reaches thirteen — and because a per-BODY figure is the only
-  thing that can say a crowd was REACHED rather than a big number produced.
-  SETTING UP A FIGHT AND READING ONE ARE TWO THINGS (owner, 2026-08-17), so
-  the RESULT panel draws its OWN copy of the scene. The scenario's canvas is
-  where a body is PLACED — draggable, with its distance shortcuts and its
-  +1/+8; the result's is read-only, shaded by what each body TOOK, marks the one
-  being examined and PICKS rather than drags. Neither is the other's control and
-  neither can be mistaken for it. `mountArena` takes `heat`/`selected`/`onPick`
-  for the second kind and draws no editing controls at all for it.
+  the ones that took something, because a per-BODY figure is the only thing that
+  can say a crowd was REACHED rather than a big number produced.
+  SETTING UP A FIGHT AND READING ONE ARE TWO THINGS, so the RESULT panel draws
+  its OWN copy of the scene: the scenario's canvas is where a body is PLACED —
+  draggable, with distance shortcuts and +1/+8; the result's is read-only,
+  shaded by what each body TOOK, marks the one being examined and PICKS rather
+  than drags. `mountArena` takes `heat`/`selected`/`onPick` for the second kind.
   A BODY IS NAMED WHERE IT IS CREATED (`nextFoeId`), one past the highest ever
-  used rather than one past the count — so deleting a body never hands its name
-  to the next one, and a roll call, a heat map and a debuff table cannot end up
-  about different enemies.
-  THE DEBUFF TABLE HAS A SUBJECT. `Replay::tracked` names the bodies it
-  followed, the panel draws a chip per body and picking one redraws the table
+  used rather than one past the count, so deleting a body never hands its name
+  to the next one.
+  THE DEBUFF TABLE HAS A SUBJECT: `Replay::tracked` names the bodies it
+  followed, the panel draws a chip per body, and picking one redraws the table
   from the stored result at no simulation cost. It follows the aimed body plus
-  the hardest-hit few (`REPLAY_TRACKED = 8`) because a series is 600 frames x 15
-  debuffs = 18 KB a body, so a 19x19 would be 6.5 MB — larger than the whole
-  wasm — and the cap is SAID ON SCREEN ("+N more took damage and are not
-  followed"), never applied silently: an absence would read as "that is
-  everyone". One body draws no chips at all, so the fight this app ran until now
-  looks exactly as it did.
-- **A FIGHT IS ONE DOCUMENT, AND A SCENARIO'S OVERRIDES SIT BEHIND LEGALITY**
-  (owner, 2026-08-27). A scenario holds everything a measurement needs — the
-  target, the buffs, the wielder — AND what it rules for each weapon CLASS, so
-  any weapon can be tested against the one file and the official rulers are
-  written in the same language a player's own fight is.
-  THE ENGINE DECIDES WHAT MAY BE RULED ON, and it is derived rather than listed.
+  the hardest-hit few (`REPLAY_TRACKED = 8`), because a series is 600 frames ×
+  15 debuffs = 18 KB a body and a 19x19 would be 6.5 MB. The cap is SAID ON
+  SCREEN ("+N more took damage and are not followed"), never applied silently.
+  One body draws no chips at all.
+- **A FIGHT IS ONE DOCUMENT, AND A SCENARIO'S OVERRIDES SIT BEHIND LEGALITY.** A
+  scenario holds everything a measurement needs — the target, the buffs, the
+  wielder — AND what it rules for each weapon CLASS, so any weapon can be tested
+  against one file and the official rulers are written in the same language a
+  player's own fight is.
+  THE ENGINE DECIDES WHAT MAY BE RULED ON, derived rather than listed.
   `scenario::Capability::absence()` sorts every capability into two kinds and
   that is the whole guard: a GAME FACT is the game's own rule — a Sentinel
-  cannot put a shot on a head — and a HOUSE RULE is OURS. "Infinite ammo" was
-  always a stand-in for ammo PICKUPS the sim has no entities for, so which half
-  of that mechanic a fight is scored under is a RULER'S CHOICE, and the group
-  ruler already made it in PROSE ("an entry that cannot be resupplied runs on
-  its own reserve"). A scenario may therefore say *"in my fight, Arch-Guns have
-  infinite ammo"* and may not say *"in my fight, Sentinels land headshots"* —
-  the second would publish a number nobody can reproduce in game, which is the
-  opposite of what this product promises.
-  EXACTLY ONE OF THE FOUR CAPABILITIES IS A HOUSE RULE TODAY, and it is the one
-  the owner reached for first when asking for the feature — a sign the
-  distinction was already there and merely unwritten. `overridable_pairs()`
-  derives the legal (class, axis) set from the two tables, `/api/meta` serves
-  it, and the page draws exactly what is listed, so a capability reclassified in
-  Rust moves the editor by itself. It is pinned as an EXACT set by a test,
-  because the failure to guard against is the list GROWING without anyone
-  deciding it.
-  THE RESUPPLY RULE MOVED OUT OF `reserve_is_infinite`, which had been "the one
-  place the rule is written" while the same sentence was also
-  `Capability::CanResupply` — two spellings, and only one of them could ever
-  hear a scenario argue. It takes the RESOLVED answer now; nothing moved,
-  because `parse_fight` applies the same `!no_resupply` through the capability.
-  THE DEFAULT IS STILL THE WEAPON IN FRONT OF YOU. The scenario blocks show what
-  applies here, which is the right thing for reading a build; the whole-fight
-  panel is where the other classes are edited, and an absent rule is the
-  mechanism — a rule that merely AGREES with the capability is pruned rather
-  than stored, so a scenario's rules say what it actually decided.
-  AND A RULER REFUSES ONE, like every other edit. Adding this exposed that
-  `sim-whole-fight-body` had never been in `lockOfficialScenario`'s sweep, so
-  the panel had been a second editor that outranked the pin for EVERY editable
-  axis — auto-save refused to write them, which hides the fault rather than
-  preventing it, since `sim` still moved and Run Sim reported a modified ruler
-  under the ruler's own name.
-- **THERE IS ONE FIGHT, AND EVERY MODULE SENDS IT** (owner, 2026-08-17). The
-  PAGE's half of the rule above. The server's half has held since `parse_fight`;
-  the page had none, and grew FIVE spellings of "the fight" — Run Sim's, the
-  share card's, the quick calc's, the optimizer gain scan's, and the
-  optimizer's. Each was right when written and none was right by the end,
-  because a fight keeps GAINING fields (`custom_enemies`, a formation, an aim
-  point) and each one reached whichever spellings somebody remembered.
-  `theFight()` is now the only one, and THE LIVE `sim` IS THE FIGHT — not the
-  preset behind it, which is a saved COPY that `applyScenario` seeds `sim` from
-  and the auto-save writes back, so reading it over the top can only hand back
-  something staler.
-  The quick calc had a SECOND SCENARIO POINTER of its own, persisted and sticky
-  across weapons, scenarios and sessions. Build a nine-body Ocucor fight, switch
-  the simulator to it, and every mod was still ranked under whatever that
-  popover was last left on — an official single-target ruler, most likely, since
-  that is where a first-time visitor lands. The mods that only pay in a crowd
-  read as worth nothing and nothing on screen said why. Two controls for one
-  fact, which is the arena's own rule (2026-08-16) in another module: the
-  control that replaced it STATES the fight and cannot be picked from.
+  cannot put a shot on a head — and a HOUSE RULE is ours. A scenario may say
+  *"in my fight, Arch-Guns have infinite ammo"* and may not say *"in my fight,
+  Sentinels land headshots"*. Exactly one of the four capabilities is a house
+  rule today. `overridable_pairs()` derives the legal (class, axis) set from the
+  two tables, `/api/meta` serves it, and the page draws exactly what is listed.
+  It is pinned as an EXACT set by a test, because the failure to guard against
+  is the list GROWING without anyone deciding it.
+  The resupply rule lives in the capability, not in `reserve_is_infinite`, which
+  takes the RESOLVED answer.
+  THE DEFAULT IS THE WEAPON IN FRONT OF YOU: the scenario blocks show what
+  applies here; the whole-fight panel is where the other classes are edited, and
+  a rule that merely AGREES with the capability is pruned rather than stored. A
+  RULER REFUSES ONE, like every other edit — `sim-whole-fight-body` is in
+  `lockOfficialScenario`'s sweep.
+- **THERE IS ONE FIGHT, AND EVERY MODULE SENDS IT.** `theFight()` is the only
+  spelling, and THE LIVE `sim` IS THE FIGHT — not the preset behind it, which is
+  a saved COPY that `applyScenario` seeds `sim` from and the auto-save writes
+  back.
   THE ONLY THING A CALLER OWNS is `replay`, a `seed`, `run_series` and the quick
-  calc's RUN COUNT — the reader's precision, not an edit to the fight, and the
-  one axis deliberately decoupled. It lands LAST in the spread, which is the
-  whole of that decoupling: it used to be written into the scenario object
-  BEFORE the page's own count was spread over it, so the box silently did
-  nothing while every chip's tooltip quoted it.
+  calc's RUN COUNT — the reader's precision, not an edit to the fight. It lands
+  LAST in the spread, or the box silently does nothing while every chip's
+  tooltip quotes it.
   THE BUFF MAP TRAVELS WHOLE, because buff settings are the FIGHT's and it is
   the BUILD that decides which have a source (the server's `BuffCfg` is a
   lookup, so an entry nothing grants is never read). Pruning it to the current
-  build made the quick calc a different fight the moment a candidate granted a
-  buff the current build lacked — which is every candidate worth ranking.
+  build makes the quick calc a different fight the moment a candidate grants a
+  buff the current build lacks — which is every candidate worth ranking.
   A SWITCH IS THE OTHER WAY A FIGHT MOVES, and it has to RE-ASK rather than
-  repaint. An EDIT re-ran the scan through `markScenarioDirty`'s debounce; a
-  switch is a REPLACEMENT and goes nowhere near it, so the box was redrawn under
-  the new fight's name while every chip beside it still answered the old one's
-  question. `scenariosChanged` calls `refreshGains()` — that hook rather than
-  the call sites, because it is already "the only thing every scenario mutation
-  goes through", which makes it the one place a mutation added later cannot
-  forget. `check_gain_freshness.mjs` asserts it on the EVOLUTION axis (the one
-  that ranks with no picker open, so it tests the re-ask and not a repaint) and
-  probes the scan's own BASELINE rather than a candidate's gain: a perk worth
-  nothing under both fights is worth nothing under both fights, which is true
-  and is no evidence anything was re-measured. Verified to bite — the baseline
-  comes back byte-identical.
-  `node scripts/check_storage.mjs` is the THIRTY-FOURTH and the only one about
-  how much room the app takes on the READER's machine — see the hard rule
-  "A MEASUREMENT COSTS ITS SUMMARY, NOT ITS REPLAY". It measures the ratio
-  rather than asserting a constant, fills the disk from OTHER weapons' keys to
-  prove the shed sweeps the origin, and plants a replay written under the old
-  rule to prove the boot takes it back. Its second assertion is the one that
-  keeps the fix honest: the panel must STILL DRAW a replay, because removing
-  the feature would pass the first assertion perfectly.
-  `scripts/check_one_fight.mjs` is the THIRTY-THIRD check and HOLDS NO LIST OF
-  FIELDS: it asserts every module's outgoing request against `theFight()`
-  ITSELF, so a field invented tomorrow is covered by nobody. Verified to bite —
-  reinstating either old bug reddens it naming the field. Its weaker partner is
-  `check_run_counts.mjs`, which reads the box; this one reads the wire.
-- **A MOD POOL A WEAPON CLAIMS MUST HOLD SOMETHING** (2026-08-18). DE tags a mod
-  PRIMARY, Rifle, or narrower still — Assault Rifle, Bow, Sniper — and a weapon
-  draws every tag that applies to it, which is why `mod_pools:` is a LIST. The
-  failure mode is silent in a way a missing mod is not: a pool a weapon
+  repaint: an EDIT re-runs the scan through `markScenarioDirty`'s debounce, a
+  switch goes nowhere near it. `scenariosChanged` calls `refreshGains()` — that
+  hook rather than the call sites, because it is already the only thing every
+  scenario mutation goes through.
+- **A MOD POOL A WEAPON CLAIMS MUST HOLD SOMETHING.** DE tags a mod PRIMARY,
+  Rifle, or narrower — Assault Rifle, Bow, Sniper — and a weapon draws every tag
+  that applies to it, which is why `mod_pools:` is a LIST. A pool a weapon
   DECLARES and no `data/mods/<pool>/` holds resolves to an empty list, with no
-  error anywhere. Nine bows carried `[primary, rifle, bow]` from the day the
-  roster began and `data/mods/bow/` did not exist, so Split Flights — the only
-  multishot mod a bow can hold — was unreachable; fifteen snipers carried no
-  `sniper` tag at all, so both Chambers were. No earlier sweep could see it,
-  because every one of them asked about mods we HAVE.
-  `scripts/survey_pool_mods.py` is the answer and it works from the ROSTER: every
-  tag any weapon claims must map to an export `compatName`, and the script
-  REFUSES to run when one does not. Its `data/surveys/pool_mods.yaml` is read by
-  a ratchet test that also asserts, per weapon, that each claimed pool holds at
-  least one mod — verified to bite. It is the sibling of
-  `survey_weapon_mods.py`, which joins the same field against WEAPON NAMES;
-  between them the export's compatibility column is fully swept. Adding a mod
-  starts there: run the survey, take a row, transcribe it from the WIKI, lower
-  the ceiling.
-- **A CONDITION ABOUT THE TARGET IS SIMULATED; ONE ABOUT THE TENNO IS ASSUMED**
-  (2026-08-18). `data/arcanes/` carries four `condition:` strings and the
-  loader read NONE of them — it took `trigger`/`grants` and the per-rank values
-  and stopped. Three of the four are Tenno states this sim does not model
-  (sliding or aim-gliding, overshields up, buffing an ally), where assumed-max
-  is the documented house reading, so nothing looked wrong. The fourth is
-  Secondary Irradiate's *"On hitting enemies afflicted by 10 stacks of
-  Radiation"* — a state of the TARGET, tracked as `debuffs.confusion` since the
-  engine had statuses at all — so its echo fired off enemies with no Radiation
-  on them. A PLAYER reported it; no check we had could.
-  The fix is `arc_condition`, which returns a TYPED condition and `Unknown` for
-  anything it has not been taught, plus a test that walks every arcane yaml and
-  refuses an unknown one. A data file stating a rule the engine does not apply
-  is worse than one that omits it: to anyone auditing, it reads as if the rule
-  were being applied. Adding a condition now means deciding on purpose which of
-  the two kinds it is.
-  A CONDITION IS HONOURED AT RESOLVE OR AT THE HIT, and the test that says so
-  is DERIVED from the yaml rather than naming arcanes. The one it replaced
-  named two by hand, which is precisely why the third one's broken gate sat
-  there: a hand list cannot report what is not on it. A Tenno state pays
-  NOTHING under `Emergent`, the app's default policy — asserted against
+  error anywhere. `scripts/survey_pool_mods.py` works from the ROSTER: every tag
+  any weapon claims must map to an export `compatName`, and the script REFUSES
+  to run when one does not. Its `data/surveys/pool_mods.yaml` is read by a
+  ratchet test that also asserts, per weapon, that each claimed pool holds at
+  least one mod. It is the sibling of `survey_weapon_mods.py`, which joins the
+  same field against WEAPON NAMES. Adding a mod starts there: run the survey,
+  take a row, transcribe it from the WIKI, lower the ceiling.
+- **A CONDITION ABOUT THE TARGET IS SIMULATED; ONE ABOUT THE TENNO IS ASSUMED.**
+  `arc_condition` returns a TYPED condition and `Unknown` for anything it has
+  not been taught, and a test walks every arcane yaml and refuses an unknown
+  one. A data file stating a rule the engine does not apply is worse than one
+  that omits it: to anyone auditing, it reads as if the rule were being applied.
+  A CONDITION IS HONOURED AT RESOLVE OR AT THE HIT, and the test that says so is
+  DERIVED from the yaml rather than naming arcanes. A Tenno state pays NOTHING
+  under `Emergent`, the app's default policy — asserted against
   `ArcaneFx::none()`, not against another policy of the same code, because
-  comparing `Emergent` to `BaseOnly` cannot see a guard removed from BOTH and
-  the first version of that assertion passed on a sabotaged build. A target
-  state sets the gate the sim reads. Both arms are verified to bite. The audit
-  it forced found the other three clean and found one real subtlety worth
-  recording: Secondary Kinship pays zero under BOTH policies, because a solo
-  fight has no allies to buff — the honest answer rather than a broken gate,
-  and the reason the claim is "never pays under Emergent" rather than "the two
-  policies differ".
-
-- **AIM IS DRAGGED, AND A PICK READS NOTHING** (owner, 2026-08-18). Two
-  gestures on the result and the scene that were doing more than they were
-  asked to.
-  A BARE CLICK NO LONGER AIMS. It did, on the reasoning that a body is dragged
-  and a place has nothing to grab — the cost was that every mis-click while
-  selecting silently re-aimed the weapon, and a fight that moves on a mis-click
-  makes the result on screen a result for a fight nobody was in. It clears the
-  selection now. That leaves a fight whose aim has never moved with nothing to
-  pick up, since the marker rides the target and the body wins the grab, so the
-  rail got an AIM TOOL: an explicit verb, after which the marker drags in Select
-  like anything else with a position.
-  AND PICKING AN ENEMY IN THE RESULT READS NO STORAGE. It called
-  `renderStoredSimResult`, which looks the run up in a preset collection — so a
-  pick was a bet that the SAVE had worked, and every way it could not have took
-  the result off screen. Fixing storage fixed one of those and the report came
-  back unchanged: an active preset that is not in the list is another, and
-  `saveSimResult` returns early on it having stored nothing anywhere. `renderResults`
-  records `shownResult` and a pick redraws THAT. Storage is what survives a
-  reload or a preset switch, and nothing else asks it a question.
-  HARDEST HIT FIRST, in both views. `tracked` came back in the engine's
-  slot order, which answers "who got followed" rather than the reader's "who
-  took the most". The display order is sorted; `data-rpfoe` stays the index into
-  `tracked`, because `dstacks[k]` is that body's series. Each chip carries the
-  number it is sorted by, since an order nobody can check is an order nobody
-  trusts.
-  A UNIT IS A COLOUR, derived and never declared: `unitHue` hashes the id (FNV-1a)
-  into a hue, so a formation of several units reads without clicking through it,
-  a unit that arrives tomorrow already has one, and it is the same colour on
-  every machine. The same hue is a swatch wherever a unit is NAMED — a key with
-  nothing to read it against is decoration.
-- **A BODY IS THE UNIT IT WAS PLACED WITH** (owner, 2026-08-18). The card on
-  the left of the arena says what you are ABOUT to place; it is not a control
-  over the floor. It was one, silently: a placed body carried no unit of its
-  own and the server reads a blank one as "the aimed body's" — the right
-  default for a scenario written before formations and the wrong one for a
-  formation being built unit by unit — so reaching for a second enemy to place
-  turned every enemy already down into it. Placing a Gunner line and then
-  picking a Thrax destroyed the Gunner line, on the wire, with nothing on
-  screen saying so.
-  The unit is STAMPED at the moment of placement (`placeAt`, `arenaAddFoe`) and
-  nothing afterwards moves it. `FoeSpec` has carried a per-body `enemy`,
-  `level` and `eximus` since the formation landed; the page simply never filled
-  them. The LEVEL deliberately stays the FIGHT's — it is one dial for every
-  body on the floor and a ruler pins one number — so a body leaves it blank and
-  follows.
-  The AIMED body still follows the card, because that card IS the fight's
-  target and the aimed body is the thing a placement copies. That split is
-  invisible until somebody switches and watches nothing change, so the panel
-  states it and counts what is holding a different unit.
-  AND EVERY FORMATION SAVED BEFORE THE RULE PINS ITSELF ON LOAD. Stamping at
-  placement stops the growth and does nothing for the bodies already saved,
-  which carry no unit and therefore still follow the card — indistinguishable,
-  from the reader's side, from the bug the rule was written to end, and
-  reported AGAIN for exactly that reason. `applyScenario` fills the blank in
-  from the scenario's own enemy, which writes down what those bodies already
-  meant. Same lesson as `reclaimStoredReplays`, missed the same way: growth
-  stopping is not the same as what is already there being fixed.
-  `check_formation.mjs` asserts every half ON THE WIRE rather than on page
-  state, and bites: reinstating the blank reddens three, one reading
-  `kept false`; removing the load-time pin reddens two more.
-- **THE PAGE SAYS WHICH BUILD IT IS** (2026-08-18). A fix that is deployed and
-  a fix that is on the reader's screen are two different things, and without a
-  version on the page neither side of a bug report can tell them apart —
-  "still broken" and "still holding the old file" read identically, which cost
-  three rounds on one bug. `build_site_app.py` stamps the footer with the
-  commit, a `+` for a dirty tree, and the UTC minute it generated `site/`; the
-  commit alone is not enough because `site/` is built from a WORKING TREE. The
-  dev server ships the `dev` placeholder, which is the right answer there.
-- **A MEASUREMENT COSTS ITS SUMMARY, NOT ITS REPLAY** (owner, 2026-08-18).
-  Storage is the reader's machine and the app had no budget for it: a REPLAY is
-  600 frames of debuff series per followed body plus a hit account per attack
-  part — **65 KB against the 1.6 KB summary of every number a card, a share or
-  the board ever reads, 42x** — and one was stored per WEAPON. About seventy-five
-  weapons fill a 5 MB origin and the roster is 136.
-  Past that the failure is not "storage is full". `setItem` THROWS, the throw
-  lands in the save path of the run that just finished, and the reader is told
-  **"sim failed: QuotaExceededError"** for a simulation that worked perfectly —
-  or, from the other side, picks an enemy in the result and watches the result
-  vanish, because the panel re-reads a collection the save never wrote.
-  So a replay NEVER reaches the disk. Not "is shed under pressure" — never
-  reaches it: `stripReplays` takes it out on the way to `localStorage` and
-  `resultMem` (keyed by weapon AND preset) keeps it for the session, which is
-  what makes the stored cost of a measurement bounded by its summary rather
-  than by how hard it was measured.
-  A SHED SWEEPS THE ORIGIN, not the list. A quota belongs to the origin and the
-  first shed belonged to the collection being written, so a save for one weapon
-  failed on space held by ANOTHER weapon's key, shed its own list to nothing,
-  and still failed — while the room it needed sat in a key nothing would ever
-  look at again. `shedOtherResults` walks every `wfsim-presets-*`, oldest result
-  first, and the list being written is the LAST thing it may touch.
-  AND WHAT IS ALREADY THERE COMES BACK: growth stopping is not space returning,
-  and a reader at their quota fails the NEXT write rather than the one that
-  filled it, so `reclaimStoredReplays` strips every replay written under the old
-  rule on the way in. `scripts/check_storage.mjs` holds all four and bites —
-  making `stripReplays` a no-op reddens two of them.
-- **WHAT THE WARFRAME BRINGS IS THE FIGHT'S** (owner, 2026-08-21). A squad AURA
-  (`data/auras/`) and an ARCHON SHARD (`data/shards/`) belong to neither the
-  weapon nor the build, so they ride on the fight's `Tenno` exactly as
-  `data/abilities/` does — which is what carries them into the simulator AND the
-  optimizer through `parse_fight` alone, and what keeps them off the BOARD,
+  comparing `Emergent` to `BaseOnly` cannot see a guard removed from BOTH. A
+  target state sets the gate the sim reads. Both arms are verified to bite.
+  Secondary Kinship pays zero under BOTH policies, because a solo fight has no
+  allies to buff — the honest answer rather than a broken gate.
+- **AIM IS DRAGGED, AND A PICK READS NOTHING.** A bare click clears the
+  selection and does not aim; the rail carries an explicit AIM TOOL, after which
+  the marker drags in Select like anything else with a position. A fight that
+  moves on a mis-click makes the result on screen a result for a fight nobody
+  was in.
+  PICKING AN ENEMY IN THE RESULT READS NO STORAGE: `renderResults` records
+  `shownResult` and a pick redraws THAT. Storage is what survives a reload or a
+  preset switch, and nothing else asks it a question.
+  HARDEST HIT FIRST, in both views. `tracked` comes back in the engine's slot
+  order, which answers "who got followed" rather than "who took the most", so
+  the display order is sorted; `data-rpfoe` stays the index into `tracked`,
+  because `dstacks[k]` is that body's series. Each chip carries the number it is
+  sorted by.
+  A UNIT IS A COLOUR, derived and never declared: `unitHue` hashes the id
+  (FNV-1a) into a hue, so a unit that arrives tomorrow already has one and it is
+  the same colour on every machine. The same hue is a swatch wherever a unit is
+  NAMED.
+- **A BODY IS THE UNIT IT WAS PLACED WITH.** The card on the left of the arena
+  says what you are ABOUT to place; it is not a control over the floor. The unit
+  is STAMPED at placement (`placeAt`, `arenaAddFoe`) and nothing afterwards
+  moves it — the server reads a blank unit as "the aimed body's", so an
+  unstamped body changes species when the card does. `FoeSpec` carries a
+  per-body `enemy`, `level` and `eximus`; the LEVEL deliberately stays the
+  FIGHT's, one dial for every body, so a body leaves it blank and follows.
+  The AIMED body still follows the card, because that card IS the fight's target
+  and the aimed body is what a placement copies. That split is invisible until
+  somebody switches and watches nothing change, so the panel states it and
+  counts what is holding a different unit.
+  EVERY FORMATION SAVED BEFORE THE RULE PINS ITSELF ON LOAD: `applyScenario`
+  fills the blank in from the scenario's own enemy. Growth stopping is not the
+  same as what is already there being fixed.
+- **THE PAGE SAYS WHICH BUILD IT IS.** A fix that is deployed and a fix that is
+  on the reader's screen are two different things, and without a version on the
+  page neither side of a bug report can tell "still broken" from "still holding
+  the old file". `build_site_app.py` stamps the footer with the commit, a `+`
+  for a dirty tree, and the UTC minute it generated `site/` — the commit alone
+  is not enough, because `site/` is built from a WORKING TREE. The dev server
+  ships the `dev` placeholder. The same stamp goes into `app.js` as `BUILD_ID`,
+  so a browser holding an old page with a new script can say so
+  (`checkBuildMatches`).
+- **A MEASUREMENT COSTS ITS SUMMARY, NOT ITS REPLAY.** A REPLAY is 600 frames of
+  debuff series per followed body plus a hit account per attack part — **65 KB
+  against the 1.6 KB summary** of every number a card, a share or the board ever
+  reads, 42x — and one would be stored per WEAPON. About seventy-five weapons
+  fill a 5 MB origin. Past that `setItem` THROWS in the save path of the run
+  that just finished, and the reader is told "sim failed: QuotaExceededError"
+  for a simulation that worked.
+  So a replay NEVER reaches the disk: `stripReplays` takes it out on the way to
+  `localStorage` and `resultMem` (keyed by weapon AND preset) keeps it for the
+  session. A SHED SWEEPS THE ORIGIN, not the list — a quota belongs to the
+  origin, so `shedOtherResults` walks every `wfsim-presets-*`, oldest result
+  first, and the list being written is the LAST thing it may touch. AND WHAT IS
+  ALREADY THERE COMES BACK: `reclaimStoredReplays` strips every replay written
+  under the old rule on the way in.
+- **WHAT THE WARFRAME BRINGS IS THE FIGHT'S.** A squad AURA (`data/auras/`) and
+  an ARCHON SHARD (`data/shards/`) belong to neither the weapon nor the build,
+  so they ride on the fight's `Tenno` exactly as `data/abilities/` does —
+  carried into both modules through `parse_fight` alone, and kept off the BOARD,
   scored under the neutral player.
-  THEY ARE OFFERED, NEVER TYPED. The Extra stats grid already accepts any number
-  into any bucket; what it cannot do is say WHERE the number came from. A named
-  shard has a source that can be checked against the wiki and updated when DE
-  moves it; a typed +45% has nothing behind it.
-  THE AMP FAMILY DOES NOT SHARE ONE GATE, and that is the whole reason
-  `AuraDef::pays` is a function rather than a field comparison. Rifle Amp asks a
-  MOD POOL — *"also affects bows, sniper rifles and launchers"*, which is the
-  `rifle` pool and reaches no shotgun — while Dead Eye asks a CLASS and is
-  narrower than any pool: *"only affects actual sniper rifles … even though bows
-  and launchers draw from the sniper ammo pool, they are not affected"*. The
-  ENGINE decides and `/api/meta` states the CONSEQUENCE per weapon (`auras: [id]`
-  on the weapon), which is `evo_forbids`' own pattern — a page that re-derived
-  the rule would go stale the first time an aura arrived with a third gate.
-  THE AMPS LAND IN SERRATION'S BUCKET, which is where their own page puts them:
-  *"adds to the base damage as Serration and Heavy Caliber do"*, formula spelled
-  out. So an amp is worth LESS the more Serration is already in the sum, and a
-  reader wants to see it in there rather than as a final multiplier.
+  THEY ARE OFFERED, NEVER TYPED. The Extra stats grid accepts any number into
+  any bucket; what it cannot do is say WHERE the number came from. A named shard
+  has a source that can be checked against the wiki; a typed +45% has nothing
+  behind it.
+  THE AMP FAMILY DOES NOT SHARE ONE GATE, which is why `AuraDef::pays` is a
+  function: Rifle Amp asks a MOD POOL — *"also affects bows, sniper rifles and
+  launchers"* — while Dead Eye asks a CLASS and is narrower than any pool:
+  *"only affects actual sniper rifles … even though bows and launchers draw from
+  the sniper ammo pool, they are not affected"*. The ENGINE decides and
+  `/api/meta` states the CONSEQUENCE per weapon (`auras: [id]`), which is
+  `evo_forbids`' own pattern.
+  THE AMPS LAND IN SERRATION'S BUCKET, where their own page puts them: *"adds to
+  the base damage as Serration and Heavy Caliber do"*. So an amp is worth LESS
+  the more Serration is already in the sum, and a reader wants to see it in
+  there.
   AN EFFECT IS APPLIED OR IT SAYS WHY NOT, never neither and never both. Twenty
-  of the twenty-seven shard effects pay nothing in this arena, and THREE of those
-  are real weapon-damage quantities transcribed correctly and still not paid —
-  each because the bucket they need is narrower than any this engine has (status
-  damage for ONE element, damage for ONE element, a crit stack earned per kill).
-  `OutOfScope` alone could not tell those from the ones that work, so
-  `ShardEffect::unmodelled_reason` is the one answer and the page prints it. The
-  test that holds it is DERIVED from the roster, so an effect added tomorrow that
-  is neither applied nor explained fails on the day it lands.
-  `node scripts/check_squad.mjs` is the THIRTY-FIFTH check and every assertion in
-  it is either ON THE WIRE or on a real `/api/simulate` in the shipping wasm
-  build — a panel that drew every card correctly and sent nothing would read as a
-  working feature, which is `check_opt_modes`' own lesson. Its damage assertion
-  had to learn one thing the hard way: THE FIGHT HAS TO MAKE ARMOUR THE BINDING
-  CONSTRAINT. At the default level an unmodded rifle never gets a target off its
-  shields, so the armour term is never read and the two runs come back
-  byte-identical — a working engine and a failing assertion. It measures kill
-  PROGRESS, because dps is what the weapon puts out and armour decides what
-  arrives. Verified to bite: dropping `auras` from `theFight()` reddens it.
-  A LOCALE'S TABLES ARE NO LONGER A HAND LIST. Adding these two families broke
-  `LocaleSpec::merge` the way it had been broken before — a table declared and
-  never folded in — and the test that exists to catch exactly that was itself a
-  hand list, so it passed. It serializes the merged spec now and asks the
-  question of every field there is, including one added tomorrow by somebody who
-  never read the file. Verified to bite in both directions.
-- **A STATUS HAS THREE MODELS, NOT TWO** (owner, 2026-08-22). Slash and Toxin are
-  PER INSTANCE — each stack its own clock, its own timer, its own number. Heat is
-  a SINGLETON that every proc refreshes and that pays one consolidated tick.
-  Electricity and Gas are the third and the engine did not have it: *"multiple
-  procs on an enemy no longer deal their respective damage separately, like
-  current Slash statuses, but once per second, similar to Heat status. However,
-  they still maintain each own timer and will not refresh, unlike Heat"* (wiki
-  `Damage/Electricity Damage`, **Update 33.6**), and Gas is the same shape,
-  confirmed in game where the wiki does not say. `push_dot_capped` moves a
-  joining instance onto its family's clock and `Ev::Dot` pays every live one of
-  them as ONE instance.
-  THE CLOCK ALONE IS HALF THE RULE. Sharing the clock and still settling ten
-  stacks separately gives the right total and the wrong fight: an instance is the
-  unit attenuation clamps, a shield gate multiplies by 5%, and overkill is
-  measured against, so ten small ones and one large one differ on any target that
-  has those. The merge is tick-count neutral by arithmetic — an instance with `k`
-  ticks joining a clock `φ < 1` ahead fires `ceil(k − φ) = k` times — so it is
-  fidelity rather than a rebalance.
-  THE HEAP GOES STALE AND THE SCAN CANNOT. `process_ticks` picks its path by live
-  DoT count, and advancing a whole family leaves heap keys for ticks already
-  paid; the scan reads `next_tick` live and never produces one. Without the guard
-  a stale key advances its Dot again and BURNS a tick, so the damage comes out
-  LOW rather than double. The fixture that proves it had to be made dense enough
-  to leave the scan path at all — the first version forced one proc a shot, never
-  crossed `TICK_QUEUE_MIN`, and passed identically with the guard removed.
+  of the twenty-seven shard effects pay nothing in this arena, and THREE of
+  those are real weapon-damage quantities transcribed correctly and still not
+  paid, because the bucket they need is narrower than any this engine has.
+  `ShardEffect::unmodelled_reason` is the one answer and the page prints it; the
+  test that holds it is DERIVED from the roster.
+  A LOCALE'S TABLES ARE NO LONGER A HAND LIST: `LocaleSpec::merge` is tested by
+  serializing the merged spec and asking the question of every field there is.
+- **A STATUS HAS THREE MODELS, NOT TWO.** Slash and Toxin are PER INSTANCE —
+  each stack its own clock, timer and number. Heat is a SINGLETON that every
+  proc refreshes and that pays one consolidated tick. Electricity and Gas are
+  the third: *"multiple procs on an enemy no longer deal their respective damage
+  separately, like current Slash statuses, but once per second, similar to Heat
+  status. However, they still maintain each own timer and will not refresh,
+  unlike Heat"* (wiki `Damage/Electricity Damage`, **Update 33.6**); Gas is the
+  same shape, confirmed in game where the wiki does not say. `push_dot_capped`
+  moves a joining instance onto its family's clock and `Ev::Dot` pays every live
+  one as ONE instance.
+  THE CLOCK ALONE IS HALF THE RULE: an instance is the unit attenuation clamps,
+  a shield gate multiplies by 5%, and overkill is measured against, so ten small
+  ones and one large one differ on any target that has those. The merge is
+  tick-count neutral by arithmetic — an instance with `k` ticks joining a clock
+  `φ < 1` ahead fires `ceil(k − φ) = k` times.
+  THE HEAP GOES STALE AND THE SCAN CANNOT: `process_ticks` picks its path by
+  live DoT count, and advancing a whole family leaves heap keys for ticks
+  already paid. Without the guard a stale key advances its Dot again and BURNS a
+  tick, so the damage comes out LOW. A fixture proving it must be dense enough
+  to leave the scan path (`TICK_QUEUE_MIN`).
 - **A DoT'S WEAK-POINT RULE IS PER STATUS, AND A BLAST IS NOT A DoT**
-  (owner, 2026-08-22, MEASUREMENTS M54). A Toxin tick does NOT inherit the weak
-  point of the hit that applied it — measured in game, against a wiki page that
-  says it does — so `dot_takes_weakpoint` names Toxin and nothing else. Every
-  other DoT is UNMEASURED and keeps the wiki's answer rather than inheriting a
-  rule from one case.
-  A BLAST GOES THE OTHER WAY AND IT WAS MEASURED EXACTLY: ten stacks applied by
-  BODY hits reach a neighbour for 1050, by HEAD hits for 3150, **3.000** with no
-  remainder, and `1050 / 10.5 = 100` confirms the published 10× between the
-  radial and single-target halves. The engine was already right; the group
-  ruler's own rule TEXT said "nothing a chain, a blast or a cloud reaches can be
-  a weak point hit" and was wrong about the blast, worth 14.8× on that board row.
-  The lesson is the one `docs/CATALOGS.md` keeps teaching in another domain: four
-  mechanics that sound like one family do not share a rule, and the only way to
-  know is to measure each.
-- **THE SPACING IS THE GROUP RULER'S ANSWER, NOT ITS ARRANGEMENT** (owner,
-  2026-08-22). A 5 m Blast sphere holds `π·25/spacing²` bodies — 35 at 1.5 m, 5
-  at 4 m — so the grid's spacing decides the whole splash-versus-single-target
-  ordering before a weapon is read. Measured on one weapon with one build per
-  element and everything else pinned, Blast swings **71×** across 1.5–6 m while
-  Heat is FLAT (58–72), because Heat is a DoT on one body and does not care how
-  close the crowd stands. At 1.5 m the board said Blast beat Heat 4.7×; in game
-  at level 200 Heat killed visibly faster. It stands at **3 m**, the near edge of
-  the crossover band.
-  IT COSTS SOMETHING REAL AND IT IS PAID ON PURPOSE: 1.5 m was the only spacing
-  that separated all three steps of a radius mod (6/9/13 bodies) and 3 m does
-  not. A ruler that ranks a radius mod's steps but ranks the wrong ELEMENT is
-  measuring the wrong thing.
-  AND 3 IS FITTED, NOT MEASURED. It was chosen to make the ORDERING match the
-  owner's play, which is weaker evidence than measuring the parameter — the file
-  says so. The quantity to measure is not the spacing but what it sets: **how
-  many enemies one blast detonation actually reaches in a real fight** (~9 at 3 m,
-  ~20 at 2 m, ~5 at 4 m), because real enemies are not on a grid at all and the
-  grid is a stand-in either way.
+  (MEASUREMENTS M54). A Toxin tick does NOT inherit the weak point of the hit
+  that applied it — measured in game, against a wiki page that says it does — so
+  `dot_takes_weakpoint` names Toxin and nothing else. Every other DoT is
+  UNMEASURED and keeps the wiki's answer. A BLAST goes the other way and was
+  measured exactly: ten stacks applied by BODY hits reach a neighbour for 1050,
+  by HEAD hits for 3150, **3.000** with no remainder, and `1050 / 10.5 = 100`
+  confirms the published 10× between the radial and single-target halves. Four
+  mechanics that sound like one family do not share a rule; the only way to know
+  is to measure each.
+- **THE SPACING IS THE GROUP RULER'S ANSWER, NOT ITS ARRANGEMENT.** A 5 m Blast
+  sphere holds `π·25/spacing²` bodies — 35 at 1.5 m, 5 at 4 m — so the grid's
+  spacing decides the whole splash-versus-single-target ordering before a weapon
+  is read. Measured on one weapon with one build per element and everything else
+  pinned, Blast swings **71×** across 1.5–6 m while Heat is FLAT (58–72),
+  because Heat is a DoT on one body. It stands at **3 m**, the near edge of the
+  crossover band. IT COSTS SOMETHING REAL: 1.5 m was the only spacing that
+  separated all three steps of a radius mod (6/9/13 bodies) and 3 m does not.
+  AND 3 IS FITTED, NOT MEASURED — it was chosen to make the ORDERING match play,
+  which is weaker evidence than measuring the parameter. The quantity to measure
+  is not the spacing but what it sets: how many enemies one blast detonation
+  actually reaches in a real fight (~9 at 3 m, ~20 at 2 m, ~5 at 4 m).
   A RULER'S PROSE QUOTES ITS OWN NUMBERS. The spacing is written three times —
-  the field, the ruler's NAME, and the rule sentence — and the first change moved
-  one of them, so the board said "19x19 at 1.5 m" over a 3 m fight. Every number
-  on the page was right and the page said something else produced them. A test
-  reads the RAW yaml (the grid is expanded into 361 positions at load) and
-  asserts the prose quotes the field.
-- **A FIGHT POPS NUMBERS, THEY ARE EVENTS, AND THERE IS ONE LIST OF THEM**
-  (owner, 2026-08-22; amended 2026-08-27). Everything else a replay carries is a
-  CURVE — a pool falling, a stack count, a running total — and an aggregate
-  cannot tell one hit for 400,000 from twenty for 20,000. A floating number is
-  the one output that is a discrete thing that happened at a place at a time,
-  which is why it is carried rather than derived.
-  IT IS THE COMBAT RECORD, REPLAYED. For five days it was a SECOND account of
-  it: `Replay.pops` beside `engine::record`, the same nine damage sites written
-  down twice, into two structures, shipped on two endpoints, capped by two
-  different rules. Both were filled by one `log_damage` call from one
-  `Breakdown`, so they could not disagree about a number they BOTH held — and
-  they held different SETS, because the overlay kept the twelve biggest of each
-  frame and the table kept the first N of the fight. So a number could float
-  over a body with no row to explain it, and a row could name a number that
-  never appeared. For a panel whose whole claim is "this is what happened",
-  ONE-TO-ONE IS THE CLAIM, and two lists cannot make it however carefully they
-  are filled from one place. It was asked for on day one — the floating numbers
-  replayed FROM the record, one thing serving two purposes — and built beside
-  the answer instead of as it.
-  THE CAP MOVED WITH IT AND IS NOW A DISPLAY DECISION, made in `popsDraw` where
-  the numbers are actually drawn: twelve a frame, biggest kept, the rest
-  counted. DE caps its own display the same way ("a maximum of 10 tick numbers
-  are shown at once"), so it is faithful rather than a shortcut, and it is
-  unavoidable besides — a dense fight deals ~320,000 instances against 600
-  frames. Keeping the FIRST twelve would be arbitrary; the dropped count is on
-  screen because a cap nobody is told about reads as "that is everyone".
-  IT COST NOTHING AND PAID FOR SOMETHING. Deleting `Pop`, `PopBuf`, `pops_on`,
-  `pop_from` and `pop_settled` took the per-instance write down to one, which
-  is what funded reading the target's amps ONCE PER INSTANCE below: the two
-  together measure **-1.5%** against the same `one_fight` baseline.
-  THE TWO VIEWS MEET ON AN ID. A drawn number carries `data-rpevent` and a table
-  line carries `data-recevent`, both the event's own place in the stream, so
-  "the same event" is a name rather than a coincidence of two numbers matching.
+  the field, the ruler's NAME, and the rule sentence — and a test reads the RAW
+  yaml (the grid is expanded into 361 positions at load) and asserts the prose
+  quotes the field.
+- **A FIGHT POPS NUMBERS, THEY ARE EVENTS, AND THERE IS ONE LIST OF THEM.**
+  Everything else a replay carries is a CURVE, and an aggregate cannot tell one
+  hit for 400,000 from twenty for 20,000. IT IS THE COMBAT RECORD, REPLAYED —
+  one stream, not two: two lists filled from one place still hold different
+  SETS, so a number could float over a body with no row to explain it. For a
+  panel whose claim is "this is what happened", ONE-TO-ONE IS THE CLAIM.
+  THE CAP IS A DISPLAY DECISION, made in `popsDraw`: twelve a frame, biggest
+  kept, the rest counted. DE caps its own display the same way ("a maximum of 10
+  tick numbers are shown at once"), and it is unavoidable besides — a dense
+  fight deals ~320,000 instances against 600 frames. The dropped count is on
+  screen.
+  THE TWO VIEWS MEET ON AN ID: a drawn number carries `data-rpevent` and a table
+  line `data-recevent`, both the event's own place in the stream.
   ON THE PAGE it is a DOM overlay appended AFTER `mountArena`, never before —
-  the mount takes the host over and rewrites it, so a layer created first is
-  wiped by the scene it was meant to sit on. The analysis mount publishes
-  `host.__arena` the way the canvas one always has, and the overlay puts that
-  viewBox through the svg's own fit: ONE geometry, whatever the map says is where
-  the body was drawn.
-  IT IS FETCHED ON A GESTURE. Pressing play or scrubbing is what asks for the
-  record; it does NOT ride along with the result, for the reason `/api/log` is a
-  query in the first place — a dense build's stream is megabytes and most runs
-  are never replayed.
-  `node scripts/check_damage_pops.mjs` is the THIRTY-SIXTH check and it is
-  written against the one thing that makes this feature easy to fake: a layer
-  floating plausible numbers would look exactly right and mean nothing. Every
-  drawn number must NAME the record row it is — the id resolves, that row's
-  damage is the text on screen, and the row belongs to the frame being shown —
-  and every row in that frame must be drawn, up to the cap. The second half is
-  not decoration: "every number on screen is a row" is satisfied perfectly by
-  drawing ONE of them, which is the exact shape of the bug this replaced.
-  Verified to bite in both directions — offsetting the id by one reddens the
-  first, truncating a frame's list reddens the second.
-- **A FACTOR IS A TYPE, AND THE WIRE SENDS ITS INDEX** (owner, 2026-08-28).
-  `record::Factor` replaced the `&'static str` written at each call site, which
-  is what made the record only half authoritative about WHY: nothing tied the
-  word "critical" to the 4.4 beside it, a typo was a new factor nobody would
-  notice, and TWO different things were both called "shield gate" — the 0.1 s
-  window and the 5% leak past a broken shield. The type told them apart on the
-  first compile.
-  IT PAID FOR THE PANEL'S ONE REAL PERFORMANCE PROBLEM. A record window was
-  measured at **859 bytes an event, 17.2 MB and 1,811 ms** for 20,000 rows, and
-  the engine was **45 ms** of that — the rest was JSON. The largest single share
-  was the factors that did NOTHING, carried by name, thirteen of them on an
-  ordinary rifle hit and the same thirteen strings on every row of the fight.
-  The table is sent once and a row names its factors by index; the weapon state
-  and the two stack lists are omitted when unchanged from the row before and
-  filled forward on arrival. Together: **481 bytes an event, 9.6 MB, 546 ms** —
-  the same rows, 3.3x faster.
-  AND `Record::wants(t)` IS THE OTHER HALF. A row's arguments cost a `TargetAt`
-  snapshot, three Vecs and a String, and they were being built for the whole
-  fight and thrown away by `push` for anything outside the window — which on a
-  dense build is most of it.
-  ONE PAGE-SIDE TRAP CAME WITH IT: `const F` declared beside the other helpers
-  at the bottom of `recordRow` while the factor lookups sit above it is a
-  temporal dead zone, and it throws from inside an async paint — which surfaces
-  as the panel sitting on "reading…" for ever with nothing in the console.
+  the mount takes the host over and rewrites it. The analysis mount publishes
+  `host.__arena` and the overlay puts that viewBox through the svg's own fit:
+  ONE geometry.
+  IT IS FETCHED ON A GESTURE. Pressing play or scrubbing asks for the record; it
+  does NOT ride along with the result.
+- **A MEASUREMENT'S RECORD IS A QUERY, NOT A PAYLOAD.** `/api/log` is
+  deliberately not a field on `/api/simulate`: an ordinary fight deals
+  **2,000–5,000** damage instances over 180 s and the densest build measured
+  deals **408,817**, so a log that rode along would be free on most builds and
+  megabytes on exactly the ones a player is most likely to be arguing about.
+  Asking separately costs ONE re-run — about a millisecond single-target — and
+  keeps "a measurement costs its summary" intact. `/api/simulate` answers with
+  the median run's RNG state as two u32 halves, which is the handle that makes
+  the log the report's own fight.
+- **A FACTOR IS A TYPE, AND THE WIRE SENDS ITS INDEX.** `record::Factor` replaces
+  a `&'static str` written at each call site: nothing tied the word "critical" to
+  the 4.4 beside it, a typo was a new factor nobody would notice, and TWO
+  different things were both called "shield gate" (the 0.1 s window and the 5%
+  leak past a broken shield). The table is sent once and a row names its factors
+  by index; the weapon state and the two stack lists are omitted when unchanged
+  from the row before and filled forward on arrival. Measured: **859 → 481 bytes
+  an event, 17.2 → 9.6 MB, 1,811 → 546 ms** for 20,000 rows.
+  `Record::wants(t)` is the other half: a row's arguments cost a `TargetAt`
+  snapshot, three Vecs and a String, which on a dense build are built for the
+  whole fight and thrown away by `push`.
+  One page-side trap: `const F` declared beside the other helpers at the bottom
+  of `recordRow` while the factor lookups sit above it is a temporal dead zone,
+  and it throws from inside an async paint — which surfaces as the panel sitting
+  on "reading…" for ever with nothing in the console.
 - **A BUILD THE BOARD ALREADY HOLDS IS NOT SENT TO IT AGAIN, AND THE PAGE ASKS
-  THE ENGINE WHICH** (owner, 2026-08-28). The page answered "is this already a
-  row?" with a POINTER: `officialBuildActive()` says whether the ACTIVE PRESET
+  THE ENGINE WHICH.** `officialBuildActive()` answers whether the ACTIVE PRESET
   is a builtin, which is true of a board row opened from the picker and false of
-  the same build reached any other way. So the ⧉ the picker offers on every
-  benchmark row produced a build the panel then announced it was uploading to a
-  board that already holds it — reported from the owner's own session.
-  A BUILD IS NOT ITS SPELLING, which is why this could never be a comparison on
-  the page. `builds::canonical_mods` sorts the non-elementals by drain and
-  leaves the elementals in the order that PAIRS them, evolutions are a set, a
-  riven is a shape and not its rolls — and the mod POOL is what tells an
-  elemental mod from any other, which only the engine has (`META.mods` carries
-  no element, deliberately). `/api/build/keys` keys a LIST of builds through
-  `builds::board_key`, so the build on screen and every row its weapon holds are
-  keyed by one engine in one pass, and there is no second answer to grow apart
-  from the scorer's.
-  `builds::board_key` IS THAT ONE SPELLING, and it moved out of the scorer to
-  become it: `format!("{}#{}", identity(&v), mode)` was written at two call
-  sites in `wfsim-board` and is now written once, defaulting a blank mode to
-  `base` where both callers can see it. THE MODE IS PART OF THE KEY because one
-  build played two ways is two entrants.
-  A MATCH IS PROOF AND AN ABSENCE IS NOT. The board LISTS only builds scoring at
-  least half their weapon's leading row, so a build the store already holds can
-  be missing from `board.json` — the page therefore only ever suppresses an
-  upload it can prove is redundant, and never claims the reverse.
-  SWAPPING A MOD WAS ALREADY THE SAME BUILD and needed no change: it was the
-  only one of the three things reported that the engine had right, because
-  `canonical_mods` has normalised it since the board began. The one order that
-  IS the identity is the elemental one, and it is a different fight — Torid
+  the same build reached any other way. `/api/build/keys` keys a LIST of builds
+  through `builds::board_key`, so the build on screen and every row its weapon
+  holds are keyed by one engine in one pass. `builds::board_key` is that one
+  spelling — `format!("{}#{}", identity(&v), mode)`, defaulting a blank mode to
+  `base` — and THE MODE IS PART OF THE KEY, because one build played two ways is
+  two entrants. The one order that IS the identity is the elemental one: Torid
   Heat/Cold/Toxin/Electric is Blast+Corrosive at 12,424 DPS against
   Heat/Toxin/Cold/Electric's Gas+Magnetic at 46,583.
-  `node scripts/check_board_dedup.mjs` is the FORTY-FIRST check and its NEGATIVE
-  CONTROL is the half that matters: "nothing is uploaded" passes perfectly on a
-  page that has stopped uploading altogether, which would be a far worse bug
-  than the one this fixes, so a build the board does not hold must still be
-  offered. Verified to bite: restoring the pointer answer reddens two, one
-  reading the reported sentence verbatim.
-- **A LONG RECORD IS PAGED, AND IT CAN LEAVE THIS WINDOW** (owner, 2026-08-28).
-  Paging the FETCH made the record cover the whole fight, which made the VIEW
-  the problem: the densest build measured is 24,652 events, a table of 24,652
-  rows is ~250,000 cells, and the browser lays every one of them out again on
-  every repaint of the result panel — so picking an enemy in the roll call or
-  scrubbing the replay froze the page for seconds.
-  THE FETCH AND THE VIEW ARE PAGED SEPARATELY, and that split is the fix. The
-  stream in memory is still the entire fight — `Copy as text` writes all of it
-  and a floating number can still name its row across a page boundary — and only
-  what is on SCREEN is bounded (`REC_PAGE`, 500). A reader looks at one
-  screenful either way, and the pager is drawn above the table AND below it,
-  because a reader who has scrolled five hundred rows is exactly the one who
-  wants the next five hundred.
-  AND IT OPENS IN A WINDOW OF ITS OWN, which is what was asked for. The parent
-  keeps the state and calls the same `recordBody`/`wireRecord` against the
-  child's host, so there is ONE implementation of the table and the window is
-  only where it is drawn — every control is found inside the HOST rather than in
-  `document`, because the two are different documents and a `$("rec-copy")`
-  would reach the wrong one. The child is WRITTEN rather than navigated to: a
-  real navigation would boot a second copy of the whole SPA — a second wasm
-  module, a second worker fleet — to display a table the parent already holds.
-  A BLOCKED POPUP IS NOT A SILENCE (the table stays where it is), and closing
-  the window hands it back.
-  `recordMarkup` now emits an EMPTY host and `paintRecord` fills it, which also
-  fixed something older: the table was being built twice on every result, once
-  into the markup and once by the paint.
-  Its assertions live in `check_combat_record.mjs`, on a fixture that had to be
-  lengthened to 60 s to reach them — every paging claim passes VACUOUSLY on a
-  record that fits on one page. The popup half needs `evaluate(…, { userGesture:
-  true })`: `window.open` outside a gesture is blocked, so a check that clicks
-  the button without one watches the feature fail for a reason no reader would
-  ever hit. Verified to bite: removing the pager and the window reddens five.
-- **`one_fight` COMPARES TWO BINARIES, NOT TWO MOMENTS** (2026-08-28). Its
-  baseline is a property of the machine on the day, and a day of driving
-  headless browsers moves that machine: three changes measured at +2.3%, +4.9%
-  and +11.8% against a morning baseline turned out to cost NOTHING — building
-  the pre-change binary and running the two alternately gave **+11.5 / +11.0**
-  against **+11.6 / +10.1**, which is the same number twice. Every attribution
-  in between was drift.
-  So when a delta matters: `cargo build --release --bin one_fight`, copy the
-  exe, `git stash`, build again, and run them alternately against one baseline.
-  The tool's own noise column is measured in seconds and cannot see hours.
-- **DAMAGE COMES THROUGH ONE DOOR, AND THE COMPILER HOLDS IT** (owner,
-  2026-08-27). `engine::dummy::ledger` owns the run's totals and the DPS curve
-  in types whose fields are PRIVATE TO IT, so the only thing in this crate that
-  can move them is `ledger::settle` — which books the number and writes the row
-  that explains it in the same call. A damage site that moves every curve on
-  the page and appears in no ledger is no longer something a person has to
-  remember not to write; it does not compile.
-  IT WAS NINE SITES AND A CONVENTION. Each one had `total_damage += x`,
-  `effective_damage += y`, `timeline.add(t, y)` and then, separately, a
-  `log_damage` call behind an `if recording(rec)` gate — five things to
-  remember, kept in step by whoever was editing, with a test comparing the sum
-  against the meter as the only guard. The owner named it: a guard rather than
-  a guarantee. Asked whether the architecture was elegant, the honest answer
-  was "the write path is one function and nine call sites are trusted to call
-  it", and he asked for the other half.
-  THE RAW TRAVELS ON `Settled`. Every site used to add its own local to
-  `total_damage` — nine spellings of "the number I just handed over", with
-  nothing tying it to what `apply` actually settled. `apply` carries it back
-  now, so a site cannot book one figure and settle another.
-  THE ARGUMENTS ARE A CLOSURE, which is what let the per-site gate go. An
-  `Instance` is a dozen locals, three Vecs and a String, and a `TargetAt`
-  re-runs the armour scaling curve — +4.0% on `one_fight` if the 999 runs
-  nobody reads pay for it. `settle` takes `impl FnOnce() -> Instance` and calls
-  it only when the record is on, so the gate is one place and forgetting it is
-  not something the language allows.
-  AND THE GENERIC HALF IS TINY, measured. With the whole body inside the
-  closure-generic function it is stamped out once per damage site and cost
-  **+2.7%**; splitting the cold half into a non-generic `write_row` put it
-  back. `Curve` is its own type rather than a third field on `Meter` for the
-  same kind of reason: it is a 600-slot array, `RunResult` is `Copy`, and
-  grouping 4.8 KB with the two hot scalars cost **2.4%**.
-  IT COSTS NOTHING, measured the only way that survives a busy machine — the
-  before and after binaries run alternately against one baseline (see the rule
-  above). Every answer unchanged on all four shapes.
-  VERIFIED TO BITE, which for a compile-time guard means the sabotage must fail
-  to COMPILE: a would-be tenth site writing `r.meter.raw += 1.0` is rejected
-  with "field `raw` of struct `Meter` is private".
-- **THE STREAM IS THE FOUR THINGS A FIGHT DOES, PLUS A MISS** (owner,
-  2026-08-27). A shot, a reload's two ends, a transmute's two ends, and the
-  numbers the enemy takes. That list is the owner's, and it is shorter than the
-  one tried first.
-  AN ARRIVAL WAS A ROW FOR AN AFTERNOON. `Kind::Hit` sat between the trigger
-  pull and the numbers, carrying the flight — how far the round went, what was
-  left of the reach, what was left of the punch-through budget after crossing
-  this body. The reasoning was sound and the result was not: against a target
-  at CONTACT, which is every official ruler, it is one row per pellet reading
-  "it arrived, 0.00 m" — measured at 6,192 arrivals against 12,404 damage rows
-  on the board's leading Laetum, half the stream to say nothing. It was taken
-  back out the same day. What it was going to answer, which numbers are one
-  arrival, is still answerable from the shot they share; what is genuinely lost
-  is the flight, and no scenario this app ships makes that worth a row per
-  pellet.
-  THE MISS STAYED, and it is the half that was actually missing. Three exits in
-  the pellet loop produce no damage at all — outside the cone, out of the
-  weapon's range, an explosion that reached nobody — so "why did a three-pellet
-  shot pop two numbers" had no answer anywhere in the ledger, and `Kind::Miss`
-  sat declared-and-never-emitted for months because there was nothing to hang
-  it on. It is NOT a per-pellet row: on every official ruler the target is at
-  contact and it never fires at all, which is the difference between it and the
-  arrival.
-  `check_combat_record` pins the KIND LIST so a fifth thing cannot arrive
-  unnoticed, and it MAKES a miss happen — the target pushed out to 40 m, where
-  the cone is wider than a body — because every claim about misses passes
-  perfectly on a fight that has none.
+- **A LONG RECORD IS PAGED, AND IT CAN LEAVE THIS WINDOW.** The densest build
+  measured is 24,652 events; a table of that many rows is ~250,000 cells, laid
+  out again on every repaint of the result panel. THE FETCH AND THE VIEW ARE
+  PAGED SEPARATELY: the stream in memory is the entire fight — `Copy as text`
+  writes all of it and a floating number can name its row across a page boundary
+  — and only what is on SCREEN is bounded (`REC_PAGE`, 500). The pager is drawn
+  above the table AND below it.
+  IT OPENS IN A WINDOW OF ITS OWN: the parent keeps the state and calls the same
+  `recordBody`/`wireRecord` against the child's host, so there is ONE
+  implementation and the window is only where it is drawn. Every control is
+  found inside the HOST rather than in `document`, because the two are different
+  documents. The child is WRITTEN rather than navigated to — a real navigation
+  would boot a second copy of the whole SPA to display a table the parent
+  already holds. A BLOCKED POPUP IS NOT A SILENCE, and closing the window hands
+  it back. `recordMarkup` emits an EMPTY host and `paintRecord` fills it.
+  The popup half of the check needs `evaluate(…, { userGesture: true })`.
+- **DAMAGE COMES THROUGH ONE DOOR, AND THE COMPILER HOLDS IT.**
+  `engine::dummy::ledger` owns the run's totals and the DPS curve in types whose
+  fields are PRIVATE TO IT, so the only thing in this crate that can move them
+  is `ledger::settle` — which books the number and writes the row that explains
+  it in the same call. A damage site that moves every curve on the page and
+  appears in no ledger does not compile.
+  THE RAW TRAVELS ON `Settled`: `apply` carries it back, so a site cannot book
+  one figure and settle another.
+  THE ARGUMENTS ARE A CLOSURE, which is what lets the per-site gate go: an
+  `Instance` is a dozen locals, three Vecs and a String, and a `TargetAt` re-runs
+  the armour scaling curve — +4.0% on `one_fight` if the 999 runs nobody reads
+  pay for it. `settle` takes `impl FnOnce() -> Instance` and calls it only when
+  the record is on.
+  THE GENERIC HALF IS TINY, measured: the whole body inside the closure-generic
+  function is stamped out per damage site and costs **+2.7%**; splitting the
+  cold half into a non-generic `write_row` puts it back. `Curve` is its own type
+  rather than a third field on `Meter` for the same reason: it is a 600-slot
+  array, `RunResult` is `Copy`, and grouping 4.8 KB with the two hot scalars
+  costs **2.4%**.
+  Verified to bite means the sabotage must fail to COMPILE: a tenth site writing
+  `r.meter.raw += 1.0` is rejected with "field `raw` of struct `Meter` is
+  private".
+- **THE STREAM IS THE FOUR THINGS A FIGHT DOES, PLUS A MISS.** A shot, a
+  reload's two ends, a transmute's two ends, and the numbers the enemy takes.
+  There is no ARRIVAL row. Against a target at CONTACT, which is every official
+  ruler, it is one row per pellet reading "it arrived, 0.00 m" — 6,192 arrivals
+  against 12,404 damage rows on the board's leading Laetum, half the stream
+  saying nothing. Which numbers are one arrival is still answerable from the
+  shot they share.
+  THE MISS IS REAL: three exits in the pellet loop produce no damage at all —
+  outside the cone, out of the weapon's range, an explosion that reached nobody
+  — so "why did a three-pellet shot pop two numbers" has an answer. It is NOT a
+  per-pellet row: on every official ruler the target is at contact and it never
+  fires.
 - **A ROW'S STATE COLUMNS ARE THE INSTANCE'S, AND ITS LABELS ARE NOT ITS
-  IDENTITY** (owner, 2026-08-27). Two things the combat record got wrong the
-  moment anyone read it closely, and they are the same mistake in two places.
-  THE BUFF COLUMN WAS SAMPLED AT THE SHOT. Every pellet, explosion and status of
-  a trigger pull carried one snapshot, while the FACTORS beside them were read
-  per instance — so two rows one pellet apart showed the same buffs and the same
-  stacks on the target, and one carried a Condition Overload bracket the other
-  did not. Every state column on a row now belongs to that row: `set_stacks` is
+  IDENTITY.** Every state column on a row belongs to that row: `set_stacks` is
   called in the stage loop beside `DebuffState::amps`, the roster is built once
   per run because `buff_roster` allocates, and it costs nothing measurable
-  because it only ever runs while a record is being taken. A state column that
-  does not match the number beside it is worse than no column — it is the panel
-  telling a reader their own arithmetic is wrong.
-  A LABEL IS TRANSLATED; A KEY IS NOT. `check_combat_record` matched the English
-  words "shield gate", "health" and "multishot" in the rendered page, which
-  passed for as long as the panel was untranslated and went red the day it was
-  translated — a check that reported the wrong thing twice, once by passing and
-  once by failing. Every factor chip carries `data-factor`, every pool in the
-  state column `data-pool`, every origin chip `data-origin`, all in the ENGINE's
-  own spelling, and the check asks those. It is `data-rpevent`'s rule for a
-  floating number applied to the rest of the row: the DOM carries the identity,
-  the text carries the language.
-  AND THE RECORD IS A WINDOW THE PLAYHEAD SETS. The 20,000-event cap bites on
+  because it only runs while a record is being taken. A state column that does
+  not match the number beside it is the panel telling a reader their own
+  arithmetic is wrong.
+  A LABEL IS TRANSLATED; A KEY IS NOT. Every factor chip carries `data-factor`,
+  every pool `data-pool`, every origin chip `data-origin`, all in the ENGINE's
+  own spelling, and the checks ask those: the DOM carries the identity, the text
+  carries the language.
+  THE RECORD IS A WINDOW THE PLAYHEAD SETS. The 20,000-event cap bites on
   exactly the builds people argue about — the board's leading Laetum deals
-  ~230,000 damage instances over 180 s, so a stream asked for from zero runs out
-  after 14 seconds, and the replay's numbers went dark for the other 92% with
-  nothing saying why. Scrubbing or playing past the end of the window fetches
-  the next one, the panel states the slice it is showing, and how many did not
-  fit is counted in the chip already beside them.
-- **A VOLLEY HAS AN ORDER, AND EVERY INSTANCE RE-READS THE TARGET** (owner,
-  2026-08-27, MEASUREMENTS M62). Pellets leave the muzzle at one instant and
-  they do NOT settle at one instant: a pellet resolves its own explosion before
-  the next pellet's collision, and each of those four instances reads the target
-  as the one before it left it. A Laetum forcing a Viral proc on both halves
-  pops `200 / 1,200 / 450 / 1,500` — the Viral ladder read at 0 / 1 / 2 / 3
-  stacks — and no other assignment of those numbers to those instances survives
-  the arithmetic, which is what makes an ORDER measurable at all.
-  THE ENGINE READ IT ONCE PER PELLET and produced `200 / 600 / 450 / 1,350`:
-  the right order, with every explosion a step behind, sharing its collision's
-  snapshot. `DebuffState::amps` is read inside the STAGE loop now; `prune` stays
-  once per pellet, because the whole volley is at one instant `t` and pruning
-  again could only be a no-op — which is what makes the fix free (measured
-  **-1.5%** on `one_fight` alongside the `Replay.pops` deletion, every answer
-  unchanged on all four shapes).
-  AN INSTANCE DOES NOT AMPLIFY ITSELF: the first collision reads x1.00 because
-  its own forced proc lands after it has been settled.
-  IT WAS THE COMBAT RECORD THAT FOUND IT, and nothing else could have. Summed,
-  the four numbers are a 1.5% difference in a mean whose own standard error is
-  larger; a record ROW states the stacks it READ beside the number they
-  produced, so "600 at 0 stacks" and "1,200 at 1 stack" are two different
-  sentences rather than one average. This is the first bug the panel caught that
-  no aggregate in this app could express.
-  The golden test is
-  `a_volley_settles_pellet_by_pellet_and_each_instance_re_reads_the_target` and
-  it pins the four NUMBERS rather than the rule, so any of the three properties
-  regressing reddens it.
-- **PROGRESS BELONGS WHERE THE WORK IS BEING READ** (owner, 2026-08-22). The
-  quick calc counted itself in exactly one place — the panel at the top of the
-  page — and the LIST it was ranking said nothing. A pool of ninety mods at a
+  ~230,000 damage instances over 180 s — so scrubbing or playing past the end of
+  the window fetches the next one, the panel states the slice it is showing, and
+  how many did not fit is counted in the chip beside them.
+- **A VOLLEY HAS AN ORDER, AND EVERY INSTANCE RE-READS THE TARGET**
+  (MEASUREMENTS M62). Pellets leave the muzzle at one instant and do NOT settle
+  at one instant: a pellet resolves its own explosion before the next pellet's
+  collision, and each of those four instances reads the target as the one before
+  it left it. A Laetum forcing a Viral proc on both halves pops
+  `200 / 1,200 / 450 / 1,500` — the Viral ladder read at 0 / 1 / 2 / 3 stacks —
+  and no other assignment of those numbers to those instances survives the
+  arithmetic. `DebuffState::amps` is read inside the STAGE loop; `prune` stays
+  once per pellet, because the whole volley is at one instant `t`. AN INSTANCE
+  DOES NOT AMPLIFY ITSELF: the first collision reads x1.00 because its own
+  forced proc lands after it has been settled. The golden test
+  `a_volley_settles_pellet_by_pellet_and_each_instance_re_reads_the_target` pins
+  the four NUMBERS rather than the rule.
+- **PROGRESS BELONGS WHERE THE WORK IS BEING READ.** A pool of ninety mods at a
   real run count is tens of seconds of a list that does not move, and a list
-  that does not move is read as broken rather than as busy.
-  THE PER-ROW "…" CHIP WAS ALREADY THERE AND IS A DIFFERENT CLAIM: it says THIS
-  row has no answer yet and says nothing about whether anything is still
-  happening. `scanStrip` is the strip — a bar, a count, sticky at the top of the
-  list — and it is ONE component fed from whichever scan state that list reads,
-  because "how far along is it" is one question. It is mounted in all five
-  places a scan ranks something: the mod picker, the arcane picker, the
-  evolution tiers, the valence row, and the optimizer's own list.
-  AN AXIS ONLY SHOWS ITS OWN. Two lists can be open at once — a picker over the
-  evolution rows — and the scan belongs to exactly one of them; drawing it on
-  both would tell the reader the other one is being measured when it is queued.
-  IT DRAWS NOTHING WHEN NOTHING RUNS, and the check asserts the ABSENCE as well
-  as the presence: a bar that is always there is furniture, one that appears
-  with the work and leaves with it is information, and only the second half
-  catches a strip that never goes away.
-  `node scripts/check_scan_progress.mjs` is the THIRTY-SEVENTH check. Its
-  evolution half had to be given a CROWD to be worth anything: a one-body Torid
-  ranks its dozen evolutions in ~360 ms, faster than the 250 ms repaint
-  throttle, so nothing is ever drawn and the assertion passed on a page that
-  never drew the strip at all. The expensive fight is also the one the report
-  was about — a cheap scan never needed a bar. Verified to bite: stubbing
-  `scanStrip` to return nothing reddens seven of its ten.
-- **Golden values only change with an in-game measurement** justifying
-  it. New mechanics need golden tests; a faithful-looking implementation
-  without a measurement is not correct.
+  that does not move is read as broken rather than as busy. The per-row "…" chip
+  is a different claim: it says THIS row has no answer yet. `scanStrip` is one
+  component — a bar, a count, sticky at the top of the list — fed from whichever
+  scan state that list reads, mounted in all five places a scan ranks something.
+- **Golden values only change with an in-game measurement** justifying it. New
+  mechanics need golden tests; a faithful-looking implementation without a
+  measurement is not correct.
 - **A RANKED ROW IS A BUILD YOU CAN RE-RUN, AND THE NUMBER ON IT IS THE
-  SIMULATOR'S** (owner, 2026-08-16). The corollary of the rule above, and the
-  half it never covered.
-  "The simulator is the truth" was a statement about the ENGINE, and the engine
-  holds: `parse_fight` sees to it, and a winner replayed under the fight it was
-  scored in matches its row to 0.1%. The PAGE was not covered. It kept its own
-  hand-written translation of a ranked row into a build, and dropped an axis out
-  of it — a search won on Magnetic became a build fired on Impact, because
-  `defaultValence` opens on the spec's first element. A player measured it: 26
-  KPM on the ranking, 15 in the simulator, told it was the same build. For a
-  product whose promise is "matches in-game measurements", a search that cannot
-  reproduce its own answer is worse than a slow one.
-  So the row stops DESCRIBING a build and starts CARRYING one. `entry()` emits
-  `replay`: a complete simulate request, written by the same code that built the
-  candidate, from the optimize request itself — so every field that reaches the
-  optimizer rides along, including ones nobody has invented yet, and only the
-  ranged axes are overwritten. POST it and you get the row's number, with no
-  assembly anywhere. "+ add" applies it through `stateFromBuild`, the inverse of
-  `buildPayload` and now the ONLY translation between a request and the page;
-  the pair round-trips, which is a property one check asserts over every axis at
-  once.
+  SIMULATOR'S.** The row CARRIES a build rather than describing one: `entry()`
+  emits `replay`, a complete simulate request written by the same code that
+  built the candidate, from the optimize request itself — so every field that
+  reaches the optimizer rides along, including ones nobody has invented yet, and
+  only the ranged axes are overwritten. POST it and you get the row's number.
+  "+ add" applies it through `stateFromBuild`, the inverse of `buildPayload` and
+  the ONLY translation between a request and the page; the pair round-trips.
   AND THE RANKING REPORTS THE SIMULATOR. Each row is re-run through
-  `/api/simulate` and the KPM on screen is what came back, with a ✓. The search's
-  own figure keeps one job — ORDERING the list, since re-measuring cannot reorder
-  a ranking without making the ranking meaningless — and the two are compared:
-  4σ of the two standard errors combined, both of which the server reports, so
-  "they disagree" is arithmetic rather than a tolerance somebody picked. A row
-  that fails it is marked `≠` on screen. Any axis lost anywhere on the chain
-  moves the number and trips it, which is the point of checking the ANSWER
-  instead of counting the fields: it cannot go stale when an axis is added.
-- **A BUILD'S AXES ARE DECLARED ONCE — IN THE ENGINE** (2026-08-16).
+  `/api/simulate` and the KPM on screen is what came back, with a ✓. The
+  search's own figure keeps one job — ORDERING the list — and the two are
+  compared at 4σ of the two standard errors, both of which the server reports,
+  so "they disagree" is arithmetic rather than a tolerance somebody picked. A
+  row that fails it is marked `≠`.
+- **A BUILD'S AXES ARE DECLARED ONCE — IN THE ENGINE.**
   `engine::builds::BUILD_AXES` is the list, served at `/api/meta.build_axes`.
   The SPELLINGS stay per-protocol (`arcane` on a request, `arcanes` on a board
   record, `arcaneRank` in page state) because renaming them would migrate every
   stored preset; what is shared is the list, and each surface declares which
   axis its own fields carry — `BUILD_STATE_KEYS` and `SHARE_AXES` in `app.js`,
-  `axis:` per row in the worker's `AXES`. `check_build_axes.mjs` asserts the
-  coverage in both directions, and bites: adding a fake axis in Rust reddens all
-  three surfaces by name.
-  Beside it, `buildState()` REQUIRES a value for every state key, so the five
-  producers of a build state — the live page, "+ new", a board row, a share
-  link, an optimizer result — must each name every axis. `undefined` stays a
-  legal value meaning "the weapon's own default", because a blank build and a
-  preset written before an axis existed both mean exactly that; what is no
-  longer legal is not MENTIONING one.
-  That distinction is the whole reason the bug was invisible. `restoreState`
-  fills a missing axis with the weapon's default, which is RIGHT — and is why a
-  producer that meant the default and one that never heard of the axis hand over
-  the same object, with no consumer able to tell them apart. It happened four
-  times, patched four times where it was found: `mode` missing from the board
-  submission (2026-08-09), `valence` from the worker's table (2026-08-14), both
-  from the share tuple (2026-08-15), `valence` from the optimizer's "+ add"
-  (2026-08-16).
-  A LIST IS THE WEAKER HALF and the file says so. It covers the surfaces an
-  answer cannot reach — a share link nobody has clicked, a board record nobody
-  has submitted — while the guarantee rests on `check_opt_replay.mjs`, which
-  holds no list at all.
-- **PUNCH THROUGH IS METRES OF MATERIAL, NOT FREE FLIGHT** (2026-08-17).
-  *"The total distance of material (object or enemy) that a weapon's projectile,
-  bullet or beam can pass through before dissipating"* — so `space::traverse`
-  walks the aim ray spending it, body by body.
-  …AND WHAT A BODY COSTS IS WHAT THE RAY ACTUALLY CROSSED (owner, 2026-08-20).
-  It was a flat `space::BODY_MATERIAL_M` however the round went through, so a
-  body clipped at the very edge ate as much budget as one shot through the
-  middle — and the walk even computed the half-chord to place the entry point
-  and then threw it away. `space::material_at` scales the cost by the chord,
-  `BODY_MATERIAL_M · sqrt(r² − perp²) / r`: the published figure at dead centre,
-  nothing at the rim. NO EXISTING NUMBER MOVED, because every scenario aims at a
-  body's CENTRE and that case is the calibration; what changed is the body
-  BEHIND, and it changes a lot — a Burston Incarnon with 2.1 m reaches 5 of six
-  bodies down their centres and all 7 when it clips them at 0.9 of a radius,
-  53,619 DPS against 72,311. `traverse` is ONE walk with two readers
-  (`struck_along` and `dissipation_point`) so they cannot disagree about where a
-  round stopped. THERE IS ONE NUMBER, AND IT IS THE RADIUS (owner, 2026-08-20).
-  `BODY_RADIUS_M = 0.25` for a Tenno and for an enemy alike, and
-  `BODY_MATERIAL_M` is DERIVED from it — `2r`, the diameter, because a body is a
-  circle and the material a shot crosses through the middle of one IS its width.
-  This file used to argue the opposite at length: that the two were different
-  quantities with different sources, a measured 0.2 m radius beside a published
-  0.5 m of material. They are the same quantity, and what made them look
-  different was the radius.
-  THE PUBLISHED TABLE WAS ALWAYS A MEASUREMENT OF THE RADIUS. The wiki's
-  "Minimum Mod Ranks for Penetration" brackets a humanoid to `(0.4, 0.5]` — 0.4
-  fails on three independent mods, 0.5 works on Vigilante Offense — which is
-  thirteen cells with no exceptions, asserted by
+  `axis:` per row in the worker's `AXES`.
+  `buildState()` REQUIRES a value for every state key, so the five producers of
+  a build state — the live page, "+ new", a board row, a share link, an
+  optimizer result — must each name every axis. `undefined` stays a legal value
+  meaning "the weapon's own default"; what is not legal is not MENTIONING one.
+  `restoreState` fills a missing axis with the weapon's default, which is RIGHT
+  — and is why a producer that meant the default and one that never heard of the
+  axis hand over the same object.
+- **PUNCH THROUGH IS METRES OF MATERIAL, NOT FREE FLIGHT.** *"The total distance
+  of material (object or enemy) that a weapon's projectile, bullet or beam can
+  pass through before dissipating"* — so `space::traverse` walks the aim ray
+  spending it, body by body, and what a body costs is what the ray actually
+  CROSSED: `space::material_at` scales the cost by the chord,
+  `BODY_MATERIAL_M · sqrt(r² − perp²) / r` — the published figure at dead
+  centre, nothing at the rim. Every scenario aims at a body's CENTRE and that
+  case is the calibration; what changes is the body BEHIND, and it changes a lot
+  — a Burston Incarnon with 2.1 m reaches 5 of six bodies down their centres and
+  all 7 when it clips them at 0.9 of a radius, 53,619 DPS against 72,311.
+  `traverse` is ONE walk with two readers (`struck_along` and
+  `dissipation_point`).
+  THERE IS ONE NUMBER, AND IT IS THE RADIUS. `BODY_RADIUS_M = 0.25` for a Tenno
+  and an enemy alike, and `BODY_MATERIAL_M` is DERIVED from it — `2r`, because a
+  body is a circle and the material a shot crosses through the middle of one IS
+  its width. The wiki's "Minimum Mod Ranks for Penetration" brackets a humanoid
+  to `(0.4, 0.5]` — 0.4 fails on three independent mods, 0.5 works on Vigilante
+  Offense — thirteen cells with no exceptions, asserted by
   `a_body_costs_what_the_wiki_table_says`. A radius of 0.2 gives a diameter of
-  0.4 and is EXCLUDED by that table; 0.25 gives exactly 0.5. The table was being
-  read as evidence about a second constant when it is evidence about the first.
-  It AMENDS M47, which derived 0.2 from walking into an enemy and stopping at
-  0.4 m centre to centre — a step that assumes the stop distance is exactly two
-  radii with no push-out margin between the capsules, which nothing measured.
-  NOTHING MOVED: `one_fight` reports every answer unchanged on all three shapes,
-  and every golden value holds, because the hit test at contact is `r / 2r` for
-  ANY radius. What changes is only past contact, where a body is now the easier
-  target M47's own arithmetic describes — a 2 degree cone reaches one to about
-  7 m rather than 5.7 m.
-  AND THE FORMULA TAKES A RADIUS, so this survives bodies of other sizes:
-  `space::material_through(r, perp)` is `2·sqrt(r² − perp²)` and nothing else.
-  When a Bombard turns out to measure something different it is still a circle,
-  and only the number changes.
-    A PUNCHED BODY IS A DIRECT HIT — full damage, multishot, and it may HEADSHOT
-  (owner, 2026-08-17) — and on a chaining weapon it STARTS ITS OWN CHAIN, which
-  is the wiki's own rule: *"Each enemy hit by the main beam from Punch Through
-  can generate a new set of 3 chains"*, independently, and *"the chain from the
-  target hit after the Punch Through can deal damage to the first target, and
-  vice versa"*. `chain::resolve` takes the struck bodies as its seeds and each
-  keeps its own `seen`, so that falls out rather than being arranged.
-  AN AoE ATTACK TAKES NONE OF IT, from its weapon or from a mod — both halves
-  are on the page, and it means a Shred on a grenade launcher is worth literally
-  nothing. "An area of effect component" is BOTH shapes the engine models,
-  `radial` and `lingering`: the Torid is the second and carries no `radial:`, so
-  a rule naming only radials would have let it take Primed Shred. THE SHAPE IS
-  ONLY THE FALLBACK, though — `punch_through_mods:` on an attack overrules it,
-  and the Torid's INCARNON form is why the field exists: a beam with a damage
-  radius, so neither `radial:` nor `lingering:`, whose own page says *"Punch
-  Through mods have no effect on the behavior of the beam"*. The family does not
-  settle it either, which is the sharp part — the wiki sentence that groups this
-  weapon with the IGNIS for Primary Compression groups it with a weapon on the
-  punch-through page's EXCEPTION list. Two weapons in one group for one
-  mechanic, opposite sides of another; so it is transcribed per ENTRY.
-  `punch_through_m` had sat in all 224 entries unread since the roster began —
-  the honest place for it while the arena had one body — and the 22 weapons that
-  admitted it as a gap admit nothing now. MECHANICS §13 is the whole of it.
-  …AND "AN AoE ATTACK" IS TWO KINDS OF ATTACK (owner, 2026-08-20). The class
-  rule's own sentence opens *"With a very few exceptions"* and never says which,
-  so being in the exception set is precisely what it cannot tell you. A Burston
-  Prime Incarnon carries a `radial:` and PUNCHES THROUGH ANYWAY — measured in
-  game, MEASUREMENTS M53 — its round boring on and detonating BEHIND what it
-  hit. The owner named the smell before the mechanic: its blast takes no
-  multishot either, so he called it a FAKE AoE and asked for a TYPE rather than
-  a pile of per-weapon exceptions.
-  `weapons_data::BlastKind` is that type. A `contact` blast goes off on the
-  first thing it touches and is the true area-of-effect attack the rule means; a
+  0.4 and is EXCLUDED by that table; 0.25 gives exactly 0.5. This AMENDS M47,
+  which derived 0.2 from walking into an enemy and stopping at 0.4 m centre to
+  centre — a step that assumes the stop distance is exactly two radii with no
+  push-out margin, which nothing measured. The hit test at contact is `r / 2r`
+  for ANY radius, so nothing moved; what changes is past contact, where a 2
+  degree cone reaches one body to about 7 m rather than 5.7 m.
+  AND THE FORMULA TAKES A RADIUS: `space::material_through(r, perp)` is
+  `2·sqrt(r² − perp²)` and nothing else.
+  A PUNCHED BODY IS A DIRECT HIT — full damage, multishot, and it may HEADSHOT —
+  and on a chaining weapon it STARTS ITS OWN CHAIN: *"Each enemy hit by the main
+  beam from Punch Through can generate a new set of 3 chains"*, independently,
+  and *"the chain from the target hit after the Punch Through can deal damage to
+  the first target, and vice versa"*. `chain::resolve` takes the struck bodies
+  as its seeds and each keeps its own `seen`.
+  AN AoE ATTACK TAKES NONE OF IT, from its weapon or from a mod, and both halves
+  are on the page. "An area of effect component" is BOTH shapes the engine
+  models, `radial` and `lingering`. THE SHAPE IS ONLY THE FALLBACK:
+  `punch_through_mods:` on an attack overrules it — a beam with a damage radius
+  is neither, and its own page says *"Punch Through mods have no effect on the
+  behavior of the beam"*. The family does not settle it either: the wiki
+  sentence that groups the Torid with the IGNIS for Primary Compression groups
+  it with a weapon on the punch-through page's EXCEPTION list. So it is
+  transcribed per ENTRY. MECHANICS §13.
+  AND "AN AoE ATTACK" IS TWO KINDS OF ATTACK. The class rule's own sentence
+  opens *"With a very few exceptions"* and never says which.
+  `weapons_data::BlastKind` is the type: a `contact` blast goes off on the first
+  thing it touches and is the true area-of-effect attack the rule means; a
   `terminal` one goes off where the round DISSIPATES and takes punch-through
-  mods normally. THE BUDGET BUYS MATERIAL, which is the mechanic's own
-  definition and the owner's own description (2026-08-20): the round crosses
+  mods normally (MEASUREMENTS M53). THE BUDGET BUYS MATERIAL: the round crosses
   `space::BODY_MATERIAL_M` per body and detonates in whichever one it cannot get
   out of, so in a crowd the blast lands DEEPER in the line — a Burston Incarnon
   with 2.1 m strikes `1 + floor(2.1/0.5)` = 5 bodies and detonates on the fifth,
-  measured at 16,566 to 53,619 DPS on a line of seven. What is left over when it
-  clears them all is spent as flight, because this arena has no wall to stop it;
-  that is the one stand-in in the model and it is bounded by the weapon's own
-  punch through. Against a LONE enemy the blast therefore moves back and the
-  damage drops (16,584 to 16,358, about 4σ), which is what was measured. With no
-  budget the epicentre is the contact point, which is why every existing number
-  is unmoved. Two other readings were tried and both broke something — see
-  MEASUREMENTS M53, which records them so nobody re-derives them.
-    Tenet Ferrox had stated the whole mechanic in words the day before — *"Shots
-  explode in a 4 meter radius after reaching maximum punch through distance"* —
-  and nothing connected the two until a player shot one.
-- **A GAP THAT REPEATS IS A REASON, NOT A SENTENCE** (2026-08-15).
+  16,566 against 53,619 DPS on a line of seven. What is left over when it clears
+  them all is spent as flight, because this arena has no wall; that is the one
+  stand-in in the model and it is bounded by the weapon's own punch through.
+  Against a LONE enemy the blast moves back and the damage drops (16,584 to
+  16,358, about 4σ). With no budget the epicentre is the contact point.
+- **A SHOT LEAVES THE MUZZLE AND A DISTANCE IS THE GAP.** The shooter fires from
+  a point on its own circumference facing the target — drawn, with the arrow
+  that says which way it faces — and hitting the circle is a hit, which makes
+  the test ray-versus-circle (`range · sin θ ≤ r`, the range being muzzle to the
+  target's CENTRE). That range is NOT a flight: a bullet vanishes at the SURFACE
+  it hits, so what it flies is the GAP between the two bodies — one radius
+  shorter, ZERO AT CONTACT, the number a reader is shown, and what damage
+  falloff reads. One quantity wearing three hats rather than three that have to
+  be argued into agreement. CONTACT IS UNMISSABLE AT ANY CONE WIDTH twice over —
+  a flight of zero leaves a cone no distance to widen over, and the ray-circle
+  test agrees from the other side. MECHANICS §11.
+  THE CANVAS IS THE ONLY PLACE A POSITION IS SET. There is no typed Distance
+  box: two controls for one fact is how one silently undoes the other's other
+  axis, and the scene is the SOURCE. The shortcuts live INSIDE it (contact / 5 /
+  10 / 20 / 40 m), each moving the target ALONG the line it already stands on,
+  and the chip for the distance you are at is marked.
+- **A GAP THAT REPEATS IS A REASON, NOT A SENTENCE.**
   `data/unmodelled/reasons.yaml` holds each one once, with `{named}` holes, and
-  a weapon references it: `- reason: innate_punch_through` / `m: 1.2`. The
-  audit that produced this counted 116 distinct admission sentences over 248
-  uses with thirteen families of near-duplicates inside — SIXTEEN spellings of
-  the damage-falloff line differing only in three numbers, ten of the
-  punch-through line differing in one. The cost was not the bytes: every new
-  spelling was a new string somebody had to translate, so the zh overlay grew
-  with the ROSTER rather than with the ideas in it. Eleven reasons now cover
-  155 of the 248 uses; a weapon whose falloff starts at a new distance costs
-  ZERO translation. PROSE IS STILL RIGHT for a gap that happens once and needs
-  a paragraph — 61 of them still are — and a free-text parameter is not allowed
-  (it would carry English into every translation; the Cortege's "a grenade"
-  line stayed prose for exactly that reason). The i18n counter asks for the
-  TEMPLATE, and `trGap` in the page fills the same holes into whichever
-  language the reader is in.
-- **A FORM INHERITS ITS WEAPON** (2026-08-15). 88 of the roster's entries are
-  form siblings rather than weapons, and a form states its ATTACK plus only the
-  weapon-level fields that actually DIFFER — `inherits: <parent_id>` fills in
-  the rest (`weapons_data::INHERITED`). It is not tidiness: before it, 313
-  identical values were written twice and a real error was hiding in the noise
-  — the ordinary Larkspur's alt-fire carried its BASE form's accuracy while its
-  Prime's carried the alt-fire's, and nothing could catch it because nothing
-  knew the two entries were one gun. Two guards hold it: a form may not restate
-  a value identical to its weapon's (a restatement carries no information and is
+  a weapon references it: `- reason: innate_punch_through` / `m: 1.2`. Eleven
+  reasons cover 155 of 248 uses; a weapon whose falloff starts at a new distance
+  costs ZERO translation. PROSE IS STILL RIGHT for a gap that happens once and
+  needs a paragraph — 61 of them are — and a free-text parameter is not allowed,
+  since it would carry English into every translation. The i18n counter asks for
+  the TEMPLATE, and `trGap` fills the same holes into whichever language the
+  reader is in.
+- **A FORM INHERITS ITS WEAPON.** 88 of the roster's entries are form siblings
+  rather than weapons, and a form states its ATTACK plus only the weapon-level
+  fields that actually DIFFER — `inherits: <parent_id>` fills in the rest
+  (`weapons_data::INHERITED`). Two guards hold it: a form may not restate a
+  value identical to its weapon's (a restatement carries no information and is
   the only way the two can drift), and a form that copies six or more of its
   weapon's fields must declare the inheritance instead. The ATTACK is never
   inherited, and neither is `co_behavior` (the catalog gives it per ATTACK — the
   Mandonel's two forms take different classes from two different rows) or
-  `unmodeled:` (a form's gaps are its own; the Lanka's "the partial charge is a
-  separate entry" is nonsense printed on the partial charge).
-- **Data discipline** (`data/`): define once, reference by `id` (stable
-  English slugs, never translated). YAML fields are consumed data;
-  narrative/prose belongs in comments. Perks: define-once /
-  reference-anywhere (see `data/README.md`); violations fail the build.
-- **i18n is an overlay**: English is the source everywhere (code,
-  comments, data, UI strings). A locale is a DIRECTORY of merged files
+  `unmodeled:` (a form's gaps are its own).
+- **Data discipline** (`data/`): define once, reference by `id` (stable English
+  slugs, never translated). YAML fields are consumed data; narrative belongs in
+  comments. Perks: define-once / reference-anywhere (see `data/README.md`);
+  violations fail the build.
+- **i18n is an overlay.** English is the source everywhere (code, comments,
+  data, UI strings). A locale is a DIRECTORY of merged files
   (`data/i18n/<locale>/`: hand-written `names.yaml` + `ui.yaml`, generated
-  `descriptions.yaml`); ids are never translated. Mod and arcane CARD TEXT
-  is DE's own localized sentence per rank, never a phrase-substituted
-  English line — substitution is the fallback for what DE never wrote.
-  **A STRING IS TRANSCRIBED, NEVER TRANSLATED** (user, 2026-08-03). DE's
-  Chinese is routinely non-literal — Commodore's Fortune is 准将沐福 — so a name
-  derived from the English is wrong more often than not (five Boar Prime
-  evolution names were translated this way and four were wrong). If a source
-  cannot be reached, LEAVE IT
-  EMPTY AND SAY SO. `python scripts/wfcd_i18n.py check` reports every
-  unnamed id in every family and where its name comes from; `fill` only ever
-  ADDS, so a deliberate divergence and the comment explaining it survive.
-  Wiki URLs are ALWAYS built from the English name (`x.name_en || x.name`)
-  — a localized name in a wiki URL lands on garbage.
-- **No native dialogs in the UI** — `prompt`/`alert`/`confirm` are
-  blocked in the owner's browser. Use inline inputs/feedback.
-- **Absolute asset paths in the UI** (`/img/…`, `/pol/…`, `/logo.svg`):
-  the SPA also loads at `/weapons/<Wiki_Name>`, where relative paths
-  resolve into the SPA fallback's HTML.
-- The page is THREE MODULES — Builder | Simulator | Optimizer — with one
-  tab/view each, plus EDITORS that feed them. An editor is not a fourth
-  module: it produces something the three consume, and it earns a tab only
-  because it is too big to live inside one of them. Rivens is the first
-  (`/weapons/<Name>/rivens`, decision 2026-07-31) — what it produces is a
-  MOD, which is why a riven equips, searches, and gets optimized through
-  the ordinary pool with no riven-specific code in any of the three. A new
-  tab has to pass that test: name what the three do with its output, or it
-  belongs inside one of them. Preset collections are domain-named
-  `<owner>-<collection>`, where the owner is a module — or an editor, and an
-  editor whose ENTIRE content is one collection is its own domain (`rivens`),
-  because there is no second collection to tell it apart from. Every durable
-  name (localStorage key, DOM id, label) derives from the domain. A preset
-  belongs to ONE WEAPON, so the storage key also carries it
-  (`wfsim-presets-<weapon>-<domain>`) — DOM ids and labels stay weapon-free,
-  and copying a preset across weapons is the explicit "⇤ import" action, which
-  drops per axis what the target cannot hold. URLs mirror English wiki page
-  names (spaces → `_`); internal ids never appear in URLs.
+  `descriptions.yaml`); ids are never translated. Mod and arcane CARD TEXT is
+  DE's own localized sentence per rank, never a phrase-substituted English line
+  — substitution is the fallback for what DE never wrote.
+  **A STRING IS TRANSCRIBED, NEVER TRANSLATED.** DE's Chinese is routinely
+  non-literal — Commodore's Fortune is 准将沐福 — so a name derived from the
+  English is wrong more often than not. If a source cannot be reached, LEAVE IT
+  EMPTY AND SAY SO. `python scripts/wfcd_i18n.py check` reports every unnamed id
+  in every family and where its name comes from; `fill` only ever ADDS, so a
+  deliberate divergence and the comment explaining it survive.
+  Wiki URLs are ALWAYS built from the English name (`x.name_en || x.name`).
+- **No native dialogs in the UI** — `prompt`/`alert`/`confirm` are blocked in
+  the owner's browser. Use inline inputs/feedback.
+- **Absolute asset paths in the UI** (`/img/…`, `/pol/…`, `/logo.svg`): the SPA
+  also loads at `/weapons/<Wiki_Name>`, where relative paths resolve into the
+  SPA fallback's HTML.
+- **THE PAGE IS THREE MODULES — Builder | Simulator | Optimizer** — with one
+  tab/view each, plus EDITORS that feed them. An editor is not a fourth module:
+  it produces something the three consume, and it earns a tab only because it is
+  too big to live inside one of them. Rivens is the first
+  (`/weapons/<Name>/rivens`) — what it produces is a MOD, which is why a riven
+  equips, searches and gets optimized through the ordinary pool with no
+  riven-specific code in any of the three. A new tab has to pass that test: name
+  what the three do with its output, or it belongs inside one of them.
+  Preset collections are domain-named `<owner>-<collection>`, where the owner is
+  a module — or an editor, and an editor whose ENTIRE content is one collection
+  is its own domain (`rivens`). Every durable name (localStorage key, DOM id,
+  label) derives from the domain. A preset belongs to ONE WEAPON, so the storage
+  key also carries it (`wfsim-presets-<weapon>-<domain>`) — DOM ids and labels
+  stay weapon-free, and copying a preset across weapons is the explicit "⇤
+  import" action, which drops per axis what the target cannot hold. URLs mirror
+  English wiki page names (spaces → `_`); internal ids never appear in URLs.
 - **PRESETS vs CUSTOMS** — two kinds of collection, and the difference is who
-  CONSUMES them (2026-08-02). "Preset" is the CATEGORY and never the name of a
-  collection or of an item in one: a build is a build, a scenario a scenario, a
-  search a search, a riven a riven. Each bar declares its `noun`, which names
-  new items ("build 2") and every tooltip that refers to one. A **preset** is a saved state of something that
-  always exists, read only by its own module: `builder-builds` (a build),
-  `simulator-scenarios` (a fight, buff settings included), `optimizer` (a
-  search: the SCOPE and `finalists`, and nothing else — never buffs, and as of
-  2026-08-29 never a run count or a thread count either).
-  THE OPTIMIZER TAB IS TWO HALVES AND NOW TWO BOXES (owner, 2026-08-29): the
-  split has been the rule since 2026-08-02 and only headings said so, which
-  cannot tell a reader which preset bar owns the thing they are editing. One
-  box is the SEARCH and is exactly what a search preset saves; the next is the
-  SIMULATOR's fight, read-only, edited there. What sits OUTSIDE both boxes is
-  in neither preset, and that is one thing.
-  THE FINAL ROUND'S RUN COUNT IS THAT THING. It used to ride the search preset
-  with a blank box meaning "the fight's own count" (owner, 2026-08-11) — one
-  control with two readings, and the wrong home for both: a run count is not
-  what to search, and the fight has never carried one either (`sim.runs` does
-  not exist, because "how hard do I want to measure right now" is a fact about
-  the person). So it is a PREFERENCE with a key of its own, TYPED rather than
-  defaulted from elsewhere, saved by no preset and pinned by no ruler — the
-  same shape as the simulator's Runs, which is the same question asked in the
-  other module. The cost is stated rather than hidden: the two counts can now
-  differ, so a winner may be crowned at a precision the replay will not use.
-  That was already possible (a typed number overrode the fight's), and the
-  ranking already reports it — every row is re-run through `/api/simulate` and
-  marked `≠` when the two disagree by more than 4σ.
-  CPU THREADS IS GONE for the same reason in the other direction: how much of
-  this machine the page may use is ONE setting and it is in the TOPBAR
-  (`compute-select`, a share of the reported cores). A per-search override of a
-  global preference is two controls for one fact, and it put that override on
-  the one thing most able to cook a phone. `woptWorkerCount()` is `poolSize()`
-  now; an older preset's `threads` and `runs` are read by nothing and are
-  dropped the next time the scope is saved.
-  There is always ≥1,
-  "active" means the state you are in, and the key is
-  `wfsim-presets-<weapon>-<domain>`. A **custom** is a thing you MADE that the
-  OTHER modules consume — `rivens` becomes a mod in the pool, `enemies` becomes
-  an entry in the scenario's target list (owner, 2026-08-11; it was written here
-  as a promise before it existed). A custom enemy is the SAME TYPE as a
-  published unit (`EnemySpec`), which is what keeps the rest of the app
-  ignorant of it: level scaling, the vulnerability column, body parts, Eximus
-  legality and the target card all read the one shape they already read. Three
-  things are its own: an inline `damage_modifiers` column, because a target
-  nobody published may want a vulnerability no faction has; a
-  `status_immunities` list, which is a DIFFERENT MECHANIC and not that column
-  reading 0 (owner, 2026-08-11 — I had conflated them); and the fact that it is
-  NOT weapon-scoped, for the same reason a fight is not.
+  CONSUMES them. "Preset" is the CATEGORY and never the name of a collection or
+  of an item in one: a build is a build, a scenario a scenario, a search a
+  search, a riven a riven. Each bar declares its `noun`, which names new items
+  ("build 2") and every tooltip that refers to one.
+  A **preset** is a saved state of something that always exists, read only by
+  its own module: `builder-builds` (a build), `simulator-scenarios` (a fight,
+  buff settings included), `optimizer` (a search: the SCOPE and `finalists`, and
+  nothing else — never buffs, never a run count, never a thread count). There is
+  always ≥1, "active" means the state you are in.
+  THE OPTIMIZER TAB IS TWO HALVES AND TWO BOXES: one box is the SEARCH and is
+  exactly what a search preset saves; the next is the SIMULATOR's fight,
+  read-only, edited there. What sits OUTSIDE both boxes is in neither preset —
+  the final round's run count is that thing. It is a PREFERENCE with a key of
+  its own, TYPED rather than defaulted from elsewhere, saved by no preset and
+  pinned by no ruler. The cost is stated rather than hidden: the two counts can
+  differ, so a winner may be crowned at a precision the replay will not use —
+  and the ranking already reports it, marking a row `≠` when the two disagree by
+  more than 4σ.
+  CPU THREADS IS GONE: how much of this machine the page may use is ONE setting,
+  in the TOPBAR (`compute-select`). `woptWorkerCount()` is `poolSize()`; an
+  older preset's `threads` and `runs` are read by nothing and dropped on the
+  next save.
+  A **custom** is a thing you MADE that the OTHER modules consume — `rivens`
+  becomes a mod in the pool, `enemies` becomes an entry in the scenario's target
+  list. A custom enemy is the SAME TYPE as a published unit (`EnemySpec`), which
+  is what keeps the rest of the app ignorant of it. Three things are its own: an
+  inline `damage_modifiers` column, because a target nobody published may want a
+  vulnerability no faction has; a `status_immunities` list, which is a DIFFERENT
+  MECHANIC and not that column reading 0; and the fact that it is NOT
+  weapon-scoped. Owning none is ordinary, each carries its own identity rather
+  than a label you invented, and deleting one breaks references elsewhere (a
+  riven delete clears the slot that equipped it — a preset delete can never do
+  that). The mental model is a FILE: a list you pick from, one open at a time,
+  none open being a real state — so the UI is a list + editor, NOT the preset
+  chip bar, and the key is `wfsim-customs-<weapon>-<domain>` /
+  `wfsim-custom-open-…`. Everything below the key is shared: storage, undo,
+  per-weapon scoping, ⇤ import.
   **DAMAGE IMMUNITY AND STATUS IMMUNITY ARE TWO MECHANICS**, and the wiki puts
   both halves in one paragraph (`Status_Effect` §Status Immunity Interactions):
   *"Proc type chances are not altered by enemy resistances or weaknesses to the
   damage components used in their computation; however, they are modified by
   enemy status immunities. When an attack procs a status effect on an enemy
   which is immune to a particular proc type, the respective damage type is
-  excluded from proc type chance calculations for that enemy"* — and they are
-  independent, "regardless of whether that enemy is also immune to Corrosive
-  damage". So a x0 column changes what a hit DEALS and leaves the proc draw
-  alone; a status immunity changes what it PROCS, by leaving the denominator so
-  the other types RENORMALIZE onto the roll (the wiki's own example moves the
-  other four from 18/5/9/23% to 33/8/17/42% when Corrosive drops out). The
-  engine has done the renormalisation since `status::draw_proc_type` was
-  written and cites the same section; what it had no way to hear was an enemy
-  DECLARING one. Owning none is ordinary,
-  each carries its own identity rather than a label you invented, and deleting
-  one breaks references elsewhere (a riven delete clears the slot that equipped
-  it — a preset delete can never do that). The mental model is a FILE: a list
-  you pick from, one open at a time, none open being a real state — so the UI
-  is a list + editor, NOT the preset chip bar, and the key is
-  `wfsim-customs-<weapon>-<domain>` / `wfsim-custom-open-…`. Everything below
-  the key is shared: storage, undo, per-weapon scoping, ⇤ import. The optimizer owns no scenario — it RUNS the
-  simulator's, drawn by the same renderer over the same state, so the winner
-  is scored under the fight the replay will run — READ-ONLY there, with a link
-  to the simulator: a preset is edited in exactly one place, because two
-  editors over one document is how it gets edited twice and saved once. That
-  includes the BUFFS (user, 2026-08-02): the optimizer kept a scope-wide buff
-  config of its own, so the two modules scored the same fight under different
-  buffs and "add this winner, then Run Sim" only agreed because adding a winner
-  silently copied the search's config into your scenario. The chain is
-  builder → simulator → optimizer, each reading upstream and writing nothing. Its three old collections
-  (`optimizer-mods` / `-arcanes` / `-evolutions`) merged into one: they were
-  split for cross-weapon reuse, which is the import's job.
+  excluded from proc type chance calculations for that enemy"* — independently,
+  "regardless of whether that enemy is also immune to Corrosive damage". So a x0
+  column changes what a hit DEALS and leaves the proc draw alone; a status
+  immunity changes what it PROCS, by leaving the denominator so the other types
+  RENORMALIZE onto the roll (the wiki's own example moves the other four from
+  18/5/9/23% to 33/8/17/42%).
+  The optimizer owns no scenario — it RUNS the simulator's, drawn by the same
+  renderer over the same state, READ-ONLY there, with a link to the simulator: a
+  preset is edited in exactly one place. That includes the BUFFS. The chain is
+  builder → simulator → optimizer, each reading upstream and writing nothing.
   **NOTHING CROSSES BETWEEN WEAPONS — EXCEPT THE FIGHT, AND A RIVEN WITHIN ITS
-  FAMILY** (user, 2026-08-02; amended 2026-08-09 and 2026-08-25). A BUILD and a
-  SEARCH are statements about ONE weapon and are never born from each other: a
-  weapon opened for the first time gets a blank build, the search's
-  `finalists`/`threads` reset, and the previous weapon's optimizer RANKING is
-  cleared rather than left on screen under the new weapon's name.
-  A RIVEN LEFT THAT LIST ON 2026-08-25, and it left it the way the scenario did
-  — because the claim it was making stopped being true, not because the rule
-  weakened. A riven is not a statement about an ENTRY; it is a card for a
-  weapon FAMILY: *"Riven mods can be used on variants of a particular weapon,
-  including MK1, Prime, Vandal, Wraith, Dex, Prisma, Mara, and Syndicate
-  variants"* (wiki `Riven Mods`). Filing it per weapon made a player build the
-  same card twice and gave them two cards free to drift apart.
-  THE NUMBERS FOLLOW BY THEMSELVES, which is why this is a STORAGE SCOPE and
-  not a conversion: a saved riven holds ROLLS — where each stat landed inside
-  its own range — and the shown value is that roll against THIS weapon's
-  disposition, recomputed by `/api/riven` on every render. So one card reads
-  1.45's worth on a Burston and 1.35's on its Prime with nothing converted,
-  which is the game's own behaviour: *"the cycling screen allows players to
-  view the Riven stats on every owned variant of said weapon"*.
-  THE SCOPE IS (FAMILY, RIVEN CLASS) RATHER THAN THE FAMILY, and a KITGUN is
-  why. `tombfinger_primary` and `tombfinger_secondary` are one family and two
-  cards — built as a primary the chamber takes a RIFLE riven, as a secondary a
-  PISTOL one — so a family-only key would put a rifle riven in a pistol's list,
-  offered by the editor and refused by the board. It was not reasoned out: the
-  engine test written for this (`every_member_of_a_riven_family_rolls_the_same
-  _pool`, derived from the roster) failed on exactly that pair and on nothing
-  else.
-  THE MIGRATION IS THE PART THAT CAN LOSE WORK. A riven is identified by its
-  NAME and a build references it as `riven:<name>`, so two variants each
-  carrying a "riven 1" cannot simply be merged: the surviving name is the one a
-  build still points at, and that build would come back equipping the OTHER
-  variant's card with nothing on screen saying so. `mergeRivenFamilyLists`
-  renames the collision and rewrites that weapon's builds in the same pass, and
-  it runs after `META` rather than beside the other migrations because a family
-  is something only the roster knows.
-  A RENAME AND A DELETE REACH EVERY BUILD THAT NAMES THE CARD, which the scope
-  change made worse rather than introduced. A riven's id IS its name, so both
-  are the same operation seen from a build — and both touched the LIVE build
-  only, leaving a weapon's OTHER saved builds holding an id nothing resolves.
-  Filing by family widened that across weapons: rename a card on the Burston
-  and the Burston Prime's saved builds lose it silently. `repointRivenInBuilds`
-  is the one place, and its SCOPE IS PASSED IN because the callers mean
-  different things by it and both are right — rename and delete pass the
-  family's members, the migration passes the ONE weapon whose list it is
-  moving, since before it a riven was per weapon and the other variant's builds
-  point at their own card of the same name. It was found by asking why the
-  collision was not simply a name-uniqueness rule: it already IS one
-  (`freeName` at every creation path, and rename refuses a duplicate), which is
-  exactly why the answer had to be elsewhere — the hard part is never DETECTING
-  a collision, it is that a build already points at the surviving name, which a
-  rule about names cannot see.
-  AN EDIT IS NOT A DELETE, and that is the whole point of a riven being a
-  REFERENCE. Editing one is the game's own reroll — the same card, new numbers,
-  everywhere it is equipped — so a build KEEPS it and picks the values up:
-  dropping the rank from 8 to 0 on the Burston takes the Burston Prime's build
-  from 18 drain / +208.8% to 2 / +23.2%, slot intact. Asked for as "deleted or
-  CHANGED should remove it from the build" (owner, 2026-08-25) and answered
-  with only the first half, because removal on an edit would take a slot off
-  the build every time somebody moved the rank slider. The measurement is an
-  assertion, so the behaviour cannot be "fixed" later by mistake.
-  `scripts/check_riven_family.mjs` is the
-  THIRTY-EIGHTH check and holds all of it — the shared list, the disposition
-  RATIO (2.243 -> 2.088 = 1.35/1.45), three negative controls, the migration,
-  and the rename/delete sweep with a same-named card in another family as its
-  control. Verified to bite: scoping by weapon again reddens three, one reading
-  `[] vs made ["riven 1"]`; dropping the two sweep calls reddens two more.
+  FAMILY.** A BUILD and a SEARCH are statements about ONE weapon and are never
+  born from each other: a weapon opened for the first time gets a blank build,
+  the search's `finalists` resets, and the previous weapon's optimizer RANKING
+  is cleared rather than left on screen under the new weapon's name.
   A SCENARIO is not a statement about a weapon, so it is SHARED across the
   roster — one list, key `wfsim-presets-simulator-scenarios` with no weapon in
   it (`SHARED_DOMAINS`), and switching weapons keeps the fight you are measuring
-  under. The amendment narrows the rule rather than weakening it, and it became
-  true rather than being decided: the last weapon-shaped thing a scenario
-  carried was `mode`, and mode left the fight and joined the build on
-  2026-08-07. The OFFICIAL rulers were always shared — one `single_target`
-  applies to every weapon on the board, which is the point of a ruler — so a
-  player wanting to measure their own roster under their OWN fight was the only
-  one made to re-create it per weapon, which is the opposite of what a scenario
-  is for (owner, 2026-08-09). The one weapon-scoped knob it still holds is
-  headshot %, handled the way the rulers handle it: the SERVER forces 0 on a
-  weapon that cannot headshot. A shared bar offers no "⇤ import" — there is no
-  other weapon to import from.
-
-  **NOTHING OUTSIDE A COLLECTION WRITES ITS STATE** (user, 2026-08-02). A build
-  used to carry a `sim` snapshot that loading it then APPLIED, so picking a
-  build silently rewrote the fight you were working in — and the scenario bar,
-  whose whole job is to be the one place a fight is edited, moved under you.
-  The field is gone: a build is a build, and the live scenario is seeded from
-  the active `simulator-scenarios` entry and from nowhere else. Nothing is
-  lost — "what this build was last measured under" was never that field's job;
-  `lastResult.key` is that record, it lives outside `state`, and it is what
-  makes a stale result show as stale. `scripts/check_preset_independence.mjs`
-  asserts it in both directions.
-  Every collection writes through `storePresetList`, which is what makes one
-  Ctrl+Z stack cover all four — presets auto-save, so the way back is not
-  optional.
+  under. The one weapon-scoped knob it holds is headshot %, handled the way the
+  rulers handle it: the SERVER forces 0 on a weapon that cannot headshot. A
+  shared bar offers no "⇤ import" — there is no other weapon to import from.
+  **NOTHING OUTSIDE A COLLECTION WRITES ITS STATE.** A build carries no `sim`
+  snapshot: a build is a build, and the live scenario is seeded from the active
+  `simulator-scenarios` entry and from nowhere else. "What this build was last
+  measured under" is `lastResult.key`, which lives outside `state` and is what
+  makes a stale result show as stale. Every collection writes through
+  `storePresetList`, which is what makes one Ctrl+Z stack cover all four.
   Customs are OPTIONAL by nature: nothing is auto-created, the last one can be
   deleted, and the editor stands down instead of showing a document that is not
-  there. Presets are not — the modules behind them always have a state, and
-  "no build" is not something the builder can show.
-- **A SHARE LINK reproduces the whole thing** (2026-08-02):
-  `/weapons/<Wiki_Name>?b=<code>` carries the build, the RIVENS it equips
-  (a custom exists only on the machine that made it, so it must travel
-  inline), the scenario it was measured in, and the measurement itself as the
-  sharer's claim. Opening one creates a NEW copy of each — never a merge, never
-  an overwrite — repoints the build's riven ids at the copies, strips the query
-  so a refresh cannot import twice, and says what it dropped. The payload is
-  JSON → `deflate-raw` → base64url behind a one-character version. The payload
-  is POSITIONAL and omits everything derivable (defaults, max ranks, a buff
-  left at its own default, the shape drafts a riven regenerates), which took a
-  full share from ~865 characters to ~425. The card carries a QR of the same
-  link — `qrMatrix` is a from-scratch encoder (byte mode, ECC L, mask 0),
-  VERIFIED against a reference encoder's matrices and decoded back out of the
-  rendered PNG by an independent decoder; three bugs in it (a reversed
-  generator polynomial, transposed format bits, alignment patterns skipped
-  where they cross the timing line) only showed up under that check. It is
-  drawn at a FIXED 8 device pixels per module — measured, not chosen: at 4 the
-  card only scans at full size, at 6 it survives a 0.66x shrink, at 8 it still
-  reads at 1080px wide after JPEG 60, which is what a chat app hands back.
-  The code's size is therefore an input to the layout, not an output of it. IDs USED TO TRAVEL AS THEIR OWN STABLE SLUGS, on the reasoning that
-  "a table would have to stay append-only forever or silently reinterpret every
-  link already posted". **THAT PRICE IS NOW PAID** (owner asked for a shorter
-  link, 2026-08-25): a v3 link names an id by its place in
-  `data/share_order.yaml`, which is APPEND-ONLY and held there by a ratchet —
-  `engine::share_order` recomputes the generator's digest over the whole list
-  and fails on anything that is not an append, so a reorder is a red test rather
-  than a link that quietly opens somebody else's build. The rule NAMED the cost
-  before it was paid, and the cost turned out to be one generator, one file and
-  one test.
-  IT IS WORTH 3.4x. The same Laetum is 279 characters as slugs and 79 as
-  indices; a board build carrying a riven, 383 and 117. Nothing else changed:
-  the v2 array is still the one internal representation, so `importShare` and
-  every consumer below it are untouched — only the framing is new, and v1 and
+  there. Presets are not — the modules behind them always have a state, and "no
+  build" is not something the builder can show.
+- **A SHARE LINK reproduces the whole thing**: `/weapons/<Wiki_Name>?b=<code>`
+  carries the build, the RIVENS it equips (a custom exists only on the machine
+  that made it, so it must travel inline), the scenario it was measured in, and
+  the measurement itself as the sharer's claim. Opening one creates a NEW copy
+  of each — never a merge, never an overwrite — repoints the build's riven ids
+  at the copies, strips the query so a refresh cannot import twice, and says
+  what it dropped. The payload is POSITIONAL and omits everything derivable
+  (defaults, max ranks, a buff left at its own default, the shape drafts a riven
+  regenerates).
+  A v3 link names an id by its place in `data/share_order.yaml`, which is
+  APPEND-ONLY and held there by a ratchet — `engine::share_order` recomputes the
+  generator's digest over the whole list and fails on anything that is not an
+  append, so a reorder is a red test rather than a link that quietly opens
+  somebody else's build. It is worth 3.4x: the same Laetum is 279 characters as
+  slugs and 79 as indices. The v2 array is still the one internal
+  representation, so `importShare` and everything below it are untouched; v1 and
   v2 links still open.
   AND v3 IS PLAIN TEXT IN THE URL. At 79 characters deflate makes the payload
-  BIGGER (its own header outweighs what it finds), so the text goes in raw; the
-  separators are RFC 3986 unreserved characters and sub-delims a query accepts
-  unescaped. A payload it cannot express — a CLAIM, or a name in a script the
-  URL would escape — falls back to the deflate+base64 form, which is why the
-  encoder measures all three and takes the shortest rather than following a
-  rule.
+  BIGGER, so the text goes in raw; the separators are RFC 3986 unreserved
+  characters and sub-delims a query accepts unescaped. A payload it cannot
+  express — a CLAIM, or a name in a script the URL would escape — falls back to
+  the deflate+base64 form, so the encoder measures all three and takes the
+  shortest.
   A NAME THE SHAPE IMPLIES DOES NOT TRAVEL: a board riven's local name is
-  `boardRivenName(shape)` and nothing else, and it is the one string in the
-  payload that is NOT url-safe (it is localized). Deriving it on arrival is
-  shorter AND names it in the reader's own language. It rides the QUERY, not the fragment — a fragment
-  never reaches a crawler and these links are meant to be posted. The card
-  (`drawShareCard`, a canvas PNG to paste into chat) always carries the
-  wordmark and the site's host.
-- `api()` transport: `/api/meta` and `/api/i18n` are GET, everything
-  else is POST — the native server matches on exact (method, path).
+  `boardRivenName(shape)`, derived on arrival, which is shorter AND names it in
+  the reader's own language.
+  It rides the QUERY, not the fragment — a fragment never reaches a crawler and
+  these links are meant to be posted. The card (`drawShareCard`, a canvas PNG to
+  paste into chat) always carries the wordmark and the site's host, and a QR of
+  the same link. `qrMatrix` is a from-scratch encoder (byte mode, ECC L, mask
+  0), VERIFIED against a reference encoder's matrices and decoded back out of
+  the rendered PNG by an independent decoder. It is drawn at a FIXED 8 device
+  pixels per module — measured: at 4 the card only scans at full size, at 6 it
+  survives a 0.66x shrink, at 8 it still reads at 1080px wide after JPEG 60,
+  which is what a chat app hands back. The code's size is therefore an input to
+  the layout, not an output.
+- **THE PAGE THAT ASKS FOR SOMETHING ARGUES THE WAY THE REST OF THE SITE DOES.**
+  Every figure on `/support` is COUNTED, never typed: `PROJECT_FACTS` is written
+  into `app.js` by `build_site_app.py` (engine tests, browser checks, commits,
+  the first commit's day) and everything the page can count for itself comes
+  from `META` and `BOARD`.
+  A FIGURE IS CLAIMED ONLY IF A READER CAN CHECK IT against the public
+  repository. A count of in-game measurements cannot be, so it is not on the
+  page.
+  THE ORDER IS THE ARGUMENT: what this is and what it holds, why it can be
+  checked, what the reader has already got out of it, then the door. The
+  evidence behind that shape and behind the $3 floor is NextAfter's
+  donation-page experiments (a stated value proposition; video loses),
+  Wikimedia's banner testing (a facts appeal over a personal one, and a low
+  suggested amount), Cialdini & Schroeder 1976 (legitimising a small gift raises
+  participation without lowering the mean gift) and Adena/Huck/Rasul (a higher
+  suggestion buys a higher mean at the cost of participation).
+  TWO CHANNELS, TWO JOBS: Ko-fi is the one-off, Patreon the month. THE ACCOUNT
+  IS THE PROJECT (`ko-fi.com/wfsim`) and the first-person half lives in the
+  platform's own bio.
+  A SUBSCRIPTION BUYS ORDER AND COMPANY, NEVER PRODUCT — a channel where the
+  work is discussed, and reports read first. DE's Content Policy forbids
+  charging for access to what is made with Warframe assets and permits passive
+  advertising instead; this project's own promise is that nothing bought moves a
+  result. NO RESPONSE TIME IS PROMISED IN ANY LANGUAGE: "read first" is an
+  order, "within N hours" is an obligation that grows with every subscriber.
+  THE SUPPORTER COUNT IS THE ONLY MONEY FIGURE PUBLISHED, and the store cannot
+  hold more: `SUPPORT` is one empty KV key per Ko-fi message id with the DAY as
+  metadata — no amount, no name, no email. A namespace of its OWN, because
+  `/api/board/pending` counts every key in `SUBMISSIONS`.
+  WHAT THE READER HAS RUN NEVER LEAVES THE BROWSER. `wfsim-use` is two integers
+  written by `runSim` and read by `/support` alone; the page says so where it
+  prints them.
+- `api()` transport: `/api/meta` and `/api/i18n` are GET, everything else is
+  POST — the native server matches on exact (method, path).
 
 ## Style
 
-- **A NAME MAY BE LONG; IT MAY NOT BE VAGUE** (owner, 2026-08-20).
-  `docs/NAMING.md` is the convention and `engine::naming` enforces it. The shape
-  is `[scope_]<subject>_<aspect>[_<unit>]` — `falloff_start_m` reads as "the
-  falloff's start, in metres" to someone who has never opened the file, and that
-  is the bar. Never trade information away for brevity.
+- **A NAME MAY BE LONG; IT MAY NOT BE VAGUE.** `docs/NAMING.md` is the
+  convention and `engine::naming` enforces it. The shape is
+  `[scope_]<subject>_<aspect>[_<unit>]` — `falloff_start_m` reads as "the
+  falloff's start, in metres" to someone who has never opened the file. Never
+  trade information away for brevity.
   A UNIT IS PART OF THE NAME and has ONE spelling: `_m`, `_seconds`, `_deg`,
   `_mps`, `_pct`. A dimensionless number declares its ROLE instead — `_chance`,
   `_multiplier`, `_bonus`, `_rate`. Words are not abbreviated (`damage` not
-  `dmg`, `multiplier` not `mult`) except where DE abbreviates them on a card
-  (`crit`, `co`, `aoe`, `dps`).
-  THE CONVENTION WAS DERIVED, NOT INVENTED. `_m` was already perfect — 13 data
-  keys and 15 engine fields, zero exceptions — and is the model the rest were
-  made to match. Seconds was the opposite: four spellings, and three of them
-  (`duration_s`, `duration_secs`, `duration_seconds`) for ONE concept in ONE
-  crate. 465 occurrences across 51 files were renamed the day the rule landed,
-  and `one_fight` reported every answer unchanged.
+  `dmg`) except where DE abbreviates them on a card (`crit`, `co`, `aoe`, `dps`).
   WHAT IS FROZEN IS THE WIRE. A field inside a saved preset, a share link or a
   board record is a durable name and stays as it is — `wf_armor`,
   `wf_energy_pct`, `headshot_pct`, `no_resupply` — the same rule
-  `builds::BUILD_AXES` states for axes: the LIST is shared, the SPELLINGS are
-  per-protocol. `naming::FROZEN` is that list and it may only SHRINK.
+  `builds::BUILD_AXES` states for axes. `naming::FROZEN` is that list and it may
+  only SHRINK.
   The ratchet walks every yaml key and every engine field rather than a list of
-  names. It was itself broken on the day it was written — the field detector
-  required an uppercase type initial, so it skipped every `f64` in the crate and
-  ran green over `crit_mult` — and was caught only by sabotaging it. A ratchet
-  that cannot fail is not a ratchet; prove it bites.
-- English everywhere in the repo; all-lowercase commit subjects in the
-  form `area: what changed and why it is right`, no AI attribution, no
-  marketing copy — **with ONE exception: the home hero** (`.hero-h` /
-  `.hero-sub`), which is allowed to make a bold claim (decision
-  2026-07-31). It stays a CHECKABLE one: "true to in-game numbers, down
-  to the last proc" and "Theorycrafting, solved" are the golden tests and
-  the optimizer, stated. Adjectives that nothing backs are still out —
-  bold here means specific, not loud. Everywhere else, still no
-  marketing copy.
-- The product name is **WFSim** (repo slug stays `wfsim`). The wordmark
-  is two-tone: "WF" + gold "Sim". Logo: `web/src/static/logo.svg`. In
-  Chinese PROSE the product is **WF模拟** (user, 2026-07-31) — the
-  wordmark itself is never translated, so the topbar and `<title>` stay
-  WFSim while the zh footer says WF模拟. 沃肥模拟 — the phonetic reading of
-  WF — is the COMMUNITY NICKNAME and stays out of the product entirely
-  (reaffirmed 2026-08-21): it belongs in Bilibili titles and the QQ group,
-  where being sayable and being a joke are both assets, and nowhere under
-  `data/i18n/zh/`, where the claim being made is accuracy.
+  names. A ratchet that cannot fail is not a ratchet; prove it bites.
+- English everywhere in the repo; all-lowercase commit subjects in the form
+  `area: what changed and why it is right`, no AI attribution, no marketing copy
+  — **with ONE exception: the home hero** (`.hero-h` / `.hero-sub`), which is
+  allowed to make a bold claim. It stays a CHECKABLE one: "true to in-game
+  numbers, down to the last proc" and "Theorycrafting, solved" are the golden
+  tests and the optimizer, stated. Adjectives that nothing backs are still out —
+  bold here means specific, not loud.
+- The product name is **WFSim** (repo slug stays `wfsim`). The wordmark is
+  two-tone: "WF" + gold "Sim". Logo: `web/src/static/logo.svg`. In Chinese PROSE
+  the product is **WF模拟** — the wordmark itself is never translated, so the
+  topbar and `<title>` stay WFSim while the zh footer says WF模拟. 沃肥模拟 —
+  the phonetic reading of WF — is the COMMUNITY NICKNAME and stays out of the
+  product entirely: it belongs in Bilibili titles and the QQ group, where being
+  sayable and being a joke are both assets, and nowhere under `data/i18n/zh/`,
+  where the claim being made is accuracy.
 - Match the surrounding code's comment density and idiom; comments state
-  constraints/sources, not narration.
-- **A COMMENT NEVER QUOTES THE OWNER** (owner, 2026-08-13). A decision is
-  recorded as the RULE plus who decided it and when — `(owner, 2026-08-11)` —
-  never as the sentence he typed, and never in Chinese. The comment has to be
-  readable by someone who was not in the conversation, and a pasted chat line
-  is not. What a quote is FOR still has a home: an in-game report is a
-  MEASUREMENT and goes verbatim into `docs/MEASUREMENTS.md`, which is the one
-  file where the original words are the record rather than a remark about it.
-  A Chinese string that survives anywhere else is a SOURCE — DE's own card
-  text, a CN wiki line, a name — and those stay, transcribed and attributed.
+  constraints and sources, not narration.

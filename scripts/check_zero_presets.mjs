@@ -6,7 +6,7 @@
 /// That is invisible while the only place a preset is listed is the bar of the
 /// weapon you are standing on, and it stops being invisible the moment one page
 /// lists everything you own — there, the answer would be "everything", which is
-/// the same as no answer (owner, 2026-08-19).
+/// the same as no answer.
 ///
 /// THE RULE THIS LOOKS LIKE IT BREAKS, AND DOES NOT: "the modules always have a
 /// state, and 'no build' is not something the builder can show". Still true. It

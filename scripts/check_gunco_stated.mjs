@@ -5,8 +5,7 @@
 // term reads (docs/CATALOGS.md). The Burston Prime's fraction was wrong for
 // months and was only caught because a player measured it — so the adopted
 // rule belongs on the panel of every weapon that could ever take a GunCO
-// source, not only on the ones where a source is already equipped (owner,
-// 2026-08-16). Someone who owns the gun can then argue with it.
+// source, not only on the ones where a source is already equipped. Someone who owns the gun can then argue with it.
 //
 //   node scripts/check_gunco_stated.mjs
 //

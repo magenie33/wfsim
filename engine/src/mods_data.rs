@@ -168,7 +168,7 @@ fn indirect_grant(grants: &str) -> Option<IndirectStat> {
 /// [`TennoCondition`], which resolve asks of the fight's Tenno — so the mod
 /// pays exactly when the player is doing the thing. `while_aiming` is one of
 /// these, not a case beside them: a card gates on aim the same way it gates on
-/// invisibility, and there is one place to look for either (user, 2026-08-02).
+/// invisibility, and there is one place to look for either.
 ///
 /// An unrecognised string gates nothing, which the mod-condition test catches
 /// as "the card states a condition, the model has none".
@@ -329,7 +329,7 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
             duration: crate::loadout::NO_TIMEOUT,
             // NOTHING TO EARN, so it opens full. Routing it through the
             // Galvanized family's earned-on-a-kill path made it pay zero in all
-            // seven melee modes (2026-08-29).
+            // seven melee modes.
             starts_full: true,
         },
         "melee_combo_duration_bonus" => ModEffect::MeleeComboDuration(max("rankMax")),
@@ -616,7 +616,7 @@ fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         "orb_drop_chance" => ModEffect::Indirect(IndirectStat::OrbDrop, max("rankMax")),
         "zoom_bonus" => ModEffect::Indirect(IndirectStat::Zoom, max("rankMax")),
         "accuracy_bonus" => ModEffect::Indirect(IndirectStat::Accuracy, max("rankMax")),
-        // 2D groundwork (2026-08-01): these were `kind: unmodeled`, i.e. the
+        // 2D groundwork: these were `kind: unmodeled`, i.e. the
         // mod equipped and the number was thrown away. They carry no
         // SINGLE-TARGET damage, which is what `Indirect` is for.
         "range_bonus" => ModEffect::Indirect(IndirectStat::Range, max("rankMax")),
@@ -865,7 +865,7 @@ pub fn pool_union(pools: &[String]) -> Vec<ModDef> {
 /// the same rule once evolutions are chosen.
 ///
 /// The compat tag is not the whole rule. Sinister Reach and Combustion Beam
-/// are tagged PRIMARY and still cannot go on the Torid (user, 2026-07-31):
+/// are tagged PRIMARY and still cannot go on the Torid:
 /// they need a CONTINUOUS weapon. The Torid is the case that shows where the
 /// line falls — its Incarnon form IS a continuous beam and it still cannot
 /// take them, because its OTHER firing mode is a semi-auto grenade launcher
@@ -882,7 +882,7 @@ pub fn pool_for_weapon(weapon_id: &str) -> Vec<ModDef> {
 /// type for both firing modes in order to equip this mod" (wiki,
 /// Semi-Pistol_Cannonade). So Dual Toxocyst — semi-auto, with a full-auto
 /// Incarnon form — takes a Cannonade while the Genesis is not installed and
-/// refuses it the moment tier 1 is (user, 2026-08-04).
+/// refuses it the moment tier 1 is.
 ///
 /// A CHARGED form is NOT a second firing mode: charged vs uncharged is chosen
 /// freely on every trigger pull and the weapon comparison lists ONE trigger for
@@ -987,7 +987,7 @@ pub fn pool_for_build(weapon_id: &str, evolutions: &[&str]) -> Vec<ModDef> {
         .filter(|m| !(no_ammo_pool && only_ammo_max(m)))
         // DE's INCOMPATIBILITY tags — the mirror of `requires_weapon`, and the
         // reason plain Serration goes on a sentinel weapon while Amalgam
-        // Serration does not (user, 2026-08-01). An Amalgam mod's second half
+        // Serration does not. An Amalgam mod's second half
         // buffs the WARFRAME ("+25% Sprint Speed... always applies, regardless
         // of whether or not you are holding the weapon"), and a companion is
         // not the Warframe, so the wiki states it outright: "This mod cannot be
@@ -1367,7 +1367,7 @@ mod tests {
         // with an empty list — and that is the honest state rather than the
         // fault this test is about, which is an effect being silently dropped.
         //
-        // MELEE IS WHERE THAT FIRST HAPPENED (2026-08-29). Its exilus pool is
+        // MELEE IS WHERE THAT FIRST HAPPENED. Its exilus pool is
         // eleven cards and every one of them is either Tennokai (a window this
         // engine does not model) or blocking and movement (which this arena has
         // neither of), so eleven mods equip, pay nothing, and each says which of
@@ -1501,7 +1501,7 @@ mod tests {
     /// "Only compatible with Semi-Auto Trigger" is an EQUIP rule, and the pool
     /// is where an equip rule has to bite: the optimizer searches this list,
     /// so a mod left in it is a mod a winning build can carry to a slot the
-    /// game refuses (user, 2026-08-03).
+    /// game refuses.
     #[test]
     fn the_cannonades_need_a_semi_auto_trigger() {
         let has = |w: &str, m: &str| pool_for_weapon(w).iter().any(|x| x.id == m);
@@ -1653,7 +1653,7 @@ mod tests {
     /// ignoring other bonuses, EVEN NEGATIVE EFFECTS" — the case that made the
     /// question worth asking is the negative one, since a build pairs a
     /// Cannonade with a fire-rate-for-crit trade precisely to be handed the
-    /// trade for free (owner, 2026-08-08). Same sentence, same test, for the
+    /// trade for free. Same sentence, same test, for the
     /// Acuity twins' Multishot.
     ///
     /// DERIVED: it finds the locking mods by their `disables`, the offending
@@ -1734,8 +1734,7 @@ mod tests {
         );
     }
 
-    /// INSTALLING THE GENESIS IS WHAT TAKES THE CANNONADE OFF (user,
-    /// 2026-08-04). "Weapons with an Incarnon mode must have Semi-Auto trigger
+    /// INSTALLING THE GENESIS IS WHAT TAKES THE CANNONADE OFF. "Weapons with an Incarnon mode must have Semi-Auto trigger
     /// type for both firing modes in order to equip this mod" (wiki,
     /// Semi-Pistol_Cannonade), and the roster's three semi-auto Incarnon
     /// weapons all transform into something that is not: Dual Toxocyst and
@@ -1803,7 +1802,7 @@ mod tests {
     /// so neither mistake can be made silently: a new PvP-path mod fails until
     /// someone checks that table.
     ///
-    /// The SHOTGUN import (2026-08-03) is what this test was written for. The
+    /// The SHOTGUN import is what this test was written for. The
     /// generator brought 15 mods in under that path; `Shotgun_Mods` tags ten
     /// of them "Exclusive to PvP" — Bounty Hunter, Crash Shot, Flak Shot,
     /// Hydraulic Chamber, Kill Switch, Loaded Capacity, Loose Chamber,
@@ -1813,9 +1812,9 @@ mod tests {
     fn only_pve_legal_conclave_mods_are_in_the_pools() {
         const PVE_LEGAL: [&str; 13] = [
             "agile_aim", "twitch", "eject_magazine", "reflex_draw",
-            // Shotgun, from `Shotgun_Mods` (2026-08-03).
+            // Shotgun, from `Shotgun_Mods`.
             "broad_eye", "double_barrel_drift", "lock_and_load", "snap_shot", "soft_hands",
-            // ASSAULT RIFLE, from `Rifle_Mods` (2026-08-05). The RENDERED page
+            // ASSAULT RIFLE, from `Rifle_Mods`. The RENDERED page
             // is what carries the tags — the raw wikitext is template
             // transclusions and names none of these mods, so a check against
             // `?action=raw` would have found nothing and concluded nothing.
@@ -1987,8 +1986,7 @@ Refresh Double Jump up to 6x while Airborne."
         // that existed when it was written, so a guard that NAMES a pool stops
         // guarding the moment a second appears — the rifle pool then shipped
         // descriptions whose X count exceeded their values, and Vile
-        // Acceleration showed its damage downside as a bare placeholder (user,
-        // 2026-07-30). It reads the class registry now.
+        // Acceleration showed its damage downside as a bare placeholder. It reads the class registry now.
         //
         // (X count <= varying-effect count; hidden tail stats — Amalgam's
         // acrobatic speed — are legitimately unconsumed.)
@@ -2047,7 +2045,7 @@ mod class_tests {
     /// Primary Acuity read "+350% Weak Point Damage / +350% Weak Point
     /// Critical Chance" and was modelled as plain `base_damage_bonus` +
     /// `crit_chance_bonus` — every shot collected all of it, whether or not
-    /// anything was hit in the head (user, 2026-08-02). Its own pistol twin
+    /// anything was hit in the head. Its own pistol twin
     /// had been right the whole time, which is what made one wrong file easy
     /// to miss among a hundred right ones.
     ///
@@ -2099,8 +2097,7 @@ mod class_tests {
             // ANY "while/when <state>" clause, not the two phrases that
             // happened to be known. Spectral Serration reads "+330% Damage
             // while Invisible" and was a flat bonus every build collected —
-            // the check knew about aiming and weak points, so it walked past
-            // (user, 2026-08-02). A conditional is satisfied by a `condition:`,
+            // the check knew about aiming and weak points, so it walked past. A conditional is satisfied by a `condition:`,
             // by a `trigger:` the sim can evaluate, or by resolving to a
             // CondBuff — all three leave the word in the effects block.
             let conditional = effects.contains("condition:") || effects.contains("trigger:");
@@ -2357,7 +2354,7 @@ mod weapon_exclusive_survey {
     /// the pools are built from what `data/mods/` holds, so a mod nobody
     /// transcribed is a mod the builder cannot offer and nothing notices. The
     /// Dread's Unseen Dread and the Latron's Double Tap sat missing that way
-    /// until someone read a wiki page (owner, 2026-08-13).
+    /// until someone read a wiki page.
     ///
     /// `data/surveys/weapon_exclusive_mods.yaml` is the survey — generated by
     /// `scripts/survey_weapon_mods.py` from WFCD's export, joined on
@@ -2373,7 +2370,7 @@ mod weapon_exclusive_survey {
     /// option.
     ///
     /// IT WAS AT ZERO FOR THIRTEEN DAYS AND THE ZERO WAS THE FILE'S, NOT THE
-    /// GAME'S (owner reported the Basmu's Dreadful Killshot missing, 2026-08-26).
+    /// GAME'S.
     ///
     /// The survey is GENERATED, and nobody had regenerated it since the roster
     /// was 20 rows wide. It has been answering "0 still to transcribe" about a
@@ -2564,7 +2561,7 @@ mod synth_charge_tests {
     ///
     /// It shipped as a plain `base_damage_bonus` — +200% on EVERY shot, in the
     /// bucket Hornet Strike is in — which is wrong twice and wrong upward both
-    /// times (owner, 2026-08-13).
+    /// times.
     #[test]
     fn synth_charge_is_the_last_round_only_and_only_where_it_can_be() {
         use crate::loadout::{resolve, ModEffect, StackPolicy, WeaponBase};
@@ -2694,7 +2691,7 @@ mod pool_survey {
     /// no error anywhere. Nine bows had claimed `bow` since the roster began
     /// and `data/mods/bow/` did not exist, so Split Flights — the only
     /// multishot mod a bow can hold — was unreachable; fifteen snipers claimed
-    /// no `sniper` pool at all, so both Chambers were (owner, 2026-08-18).
+    /// no `sniper` pool at all, so both Chambers were.
     ///
     /// `scripts/survey_pool_mods.py` refuses to run when a weapon claims a pool
     /// no export tag maps to, which is the check that catches the NEXT one at

@@ -142,7 +142,7 @@ this tool existed its default build combined every element away — Hellfire +
 Cryo Rounds is Blast, Infected Clip + Stormbringer is Corrosive — so the suite
 ticked **no status DoT at all**, and nothing said so: a change to DoT tick
 damage left all three shapes unmoved to fifteen digits, and so did the same
-change scaled by a thousand (2026-08-23). A broken burn would have been
+change scaled by a thousand. A broken burn would have been
 reported as "3 of 3 answers unchanged, 40% faster: ship it", which is the exact
 failure this tool exists to catch arriving through the one door it was not
 watching.
@@ -209,7 +209,7 @@ machine, 2026-08-14; per-run cost 0.4–1.2 ms for a 180 s fight, repeat spread
 | `-C target-cpu=native` (auto-vectorisation) | −23% / −36% / **+31%** — a lottery |
 | removing ALL 943 status procs from a run | 13% |
 
-**What DID work, as a worked example of the loop** (2026-08-14):
+**What DID work, as a worked example of the loop**:
 `DebuffState::distinct_statuses` — Condition Overload's input, asked once per
 damage INSTANCE — built a `Vec<DamageType>` and scanned it linearly per entry:
 a heap allocation and an O(n²) pass, thousands of times a run on a launcher.

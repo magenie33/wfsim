@@ -2,8 +2,7 @@
 //
 // The replay has always shown what the BUILD had up — live stacks, uptime, dead
 // bands, the ramp. It said nothing about what was on the TARGET, which is the
-// other half of the same fight and the half that explains the number (owner,
-// 2026-08-11).
+// other half of the same fight and the half that explains the number.
 //
 // Symmetric on purpose, so this checks the symmetry rather than the numbers:
 // same rows, same uptime arithmetic, same cursor. And one thing that is NOT
@@ -33,7 +32,7 @@ const r = await evaluate(`(async () => {
   // an unmodded gun kills nothing at 9999 Steel Path.
   // LEVEL 5, not 30. The point of this fight is the RESPAWN, so the gun has to
   // kill; it inherited the official group scenario's grid, and when that grid's
-  // spacing went from 1.5 m to 3 m (2026-08-22) an unmodded Torid's blast
+  // spacing went from 1.5 m to 3 m an unmodded Torid's blast
   // stopped reaching a second body and the kill count fell to one. The bodies
   // are left alone — the assertions below are about WHICH body a row belongs
   // to — and the target is softened instead.
@@ -71,7 +70,7 @@ const r = await evaluate(`(async () => {
   out.sameFrames = rp ? ds.every((s) => s.length === rp.t.length) : false;
   // The SHAPE is the buff table's: (id, max, value) per entry, indexed by the
   // series. The value field is null on all but the rows whose ceiling is a
-  // NUMBER rather than a stack count (2026-08-22) — it is a key on BOTH
+  // NUMBER rather than a stack count — it is a key on BOTH
   // rosters precisely so this assertion keeps holding.
   out.rosterShape = rp && rp.debuffs[0] ? Object.keys(rp.debuffs[0]).sort().join(",") : "";
   // The buff roster of an unmodded build is EMPTY, so the shape is compared
@@ -133,7 +132,7 @@ const r = await evaluate(`(async () => {
   // The table answered "what was on the target" and the fight had one target.
   // With a formation every body carries its own debuffs — it always did, the
   // model was per body from the day a formation existed — and what was missing
-  // was a way to ASK for one (owner, 2026-08-17). The replay follows the aimed
+  // was a way to ASK for one. The replay follows the aimed
   // body plus the hardest-hit few and the page picks between them.
   {
     document.querySelector('#preset-bar-simulator-scenarios .pchip.add').click();
@@ -163,7 +162,7 @@ const r = await evaluate(`(async () => {
 
     // ---- SETTING UP A FIGHT AND READING ONE ARE TWO THINGS --------------
     //
-    // The result panel draws its OWN copy of the scene (owner, 2026-08-17):
+    // The result panel draws its OWN copy of the scene:
     // read-only, shaded by what each body took, and clicking a body picks it.
     // The scenario's canvas keeps the dragging and the quick sets. Neither is
     // the other's control, and the assertion is in BOTH directions — a
@@ -203,7 +202,7 @@ const r = await evaluate(`(async () => {
       out.mapPickedRow = [...document.querySelectorAll('.rp-rollrow.sel .nm')]
         .map((x) => x.textContent.trim());
       // THE ID, which is the first token: a chip also carries the damage it is
-      // sorted by (2026-08-18), and the claim here is about WHICH BODY.
+      // sorted by, and the claim here is about WHICH BODY.
       out.mapPickedChip = [...document.querySelectorAll('.rp-foe.sel')]
         .map((x) => x.textContent.trim().split(' ')[0]);
       out.mapMarked = document.querySelectorAll('#rp-scene .ar-sel').length;
@@ -232,7 +231,7 @@ const r = await evaluate(`(async () => {
     // THE SHARP CASE: the save DID NOT HAPPEN, and picking must not care.
     //
     // Storing was only ever one way this failed and fixing storage only fixed
-    // that one — the report came back unchanged (owner, 2026-08-18). A pick was
+    // that one — the report came back unchanged. A pick was
     // re-reading a preset collection, so it was a bet that the save had worked,
     // and every way it could not have took the result off screen: a full disk,
     // and an active preset that is not in the list, on which saveSimResult
@@ -252,7 +251,7 @@ const r = await evaluate(`(async () => {
     out.blockStillShown = !document.getElementById('sim-results-block').hidden;
     saved.forEach(([k, v]) => localStorage.setItem(k, v));
     // …and the ORDER of the chips is the reader's question, not the engine's
-    // slot order: hardest hit first (owner, 2026-08-18).
+    // slot order: hardest hit first.
     const dmg = Object.fromEntries((window.__lastBodies || []).map((b) => [b.id, b.damage]));
     out.chipOrder = [...document.querySelectorAll('.rp-foe[data-rpfoe]')]
       .map((c) => c.textContent.trim().split(' ')[0]);

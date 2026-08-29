@@ -10,13 +10,13 @@ selection: choose_one
 
 effects:
   # ARMED BY THE EMPTY MAGAZINE, SPENT BY THE NEXT REFILL. No duration, and that
-  # is not an omission — there is nothing to time (owner, 2026-08-11). The buff
+  # is not an omission — there is nothing to time. The buff
   # is on the weapon the moment the magazine runs out, which is why transforming
   # right then is faster too, and it is gone when a reload or either Incarnon
   # transform completes, because all three refill the magazine.
   #
   # THIS FILE SPELLED IT `unmodelled_*` and so stayed inert when the perk was
-  # implemented (2026-08-11): six of the twelve weapons carrying it were written
+  # implemented: six of the twelve weapons carrying it were written
   # this way and the other six as `reload_speed_bonus`, so a fix to the loader
   # reached half of them. The spelling is the data's, not the mechanic's.
   - kind: reload_speed_bonus

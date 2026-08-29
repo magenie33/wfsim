@@ -16,7 +16,7 @@
 //!
 //! A board entry's OUTPUT is a build, and the builder is what consumes a build
 //! — the same relationship the riven editor has with mods. So it earns a place
-//! in the build bar rather than a tab (user, 2026-08-04), as a chip you
+//! in the build bar rather than a tab, as a chip you
 //! can select and copy but not edit, exactly like the official scenario
 //! in the scenario bar.
 
@@ -38,8 +38,7 @@ pub struct BoardEntry {
     pub mode: String,
     /// The benchmark's metric, as this engine computed it. Deterministic —
     /// re-running the same build under the same benchmark reproduces it to the
-    /// last digit, in the browser as well as natively (measured 2026-08-04:
-    /// wasm and native both give 0.9647804061510868 for the same payload).
+    /// last digit, in the browser as well as natively.
     pub score: f64,
     // NO `forma`/`drain` FIELD. Both are DERIVED from the build by
     // `builds::validate`, and a file that also stated them would be a second
@@ -69,7 +68,7 @@ pub struct BoardEntry {
     /// serde dropped it — and `every_published_row_is_a_legal_build` then
     /// validated a build with a `riven` in its mods and no riven to put there,
     /// which passed for as long as the board held none and failed the hour the
-    /// first one landed (2026-08-24).
+    /// first one landed.
     /// THE EXILUS SLOT'S MOD, when the row wears one. Its own field for the
     /// reason `builds::ValidBuild::exilus` is: an exilus-eligible mod is legal
     /// in a MAIN slot, so `mods` alone cannot say which entry came out of it.
@@ -98,7 +97,7 @@ pub struct BoardEntry {
 /// never read back, which nothing noticed because the board's coarse
 /// fingerprint made almost every run a full rescore; the moment reuse became
 /// the common case a reused riven row would have lost its rolls, and with them
-/// its whole riven block (2026-08-25).
+/// its whole riven block.
 #[derive(Debug, Clone, Deserialize, PartialEq, Default)]
 pub struct BoardRiven {
     pub bonuses: Vec<String>,
@@ -154,7 +153,7 @@ pub struct Board {
 }
 
 /// A score as it is PUBLISHED: at least four significant figures and at least
-/// four decimal places (owner, 2026-08-04).
+/// four decimal places.
 ///
 /// One rule for both, because a board figure is read two ways. `11.0522` is
 /// the KPM case — four decimals already carry six significant figures, and the
@@ -241,8 +240,7 @@ mod tests {
                 //
                 // An empty build is a LEGAL build — and not a publishable one.
                 // This asserted `drain > 0`, then nothing, and now the rule is
-                // in `validate_for_board`: the board takes complete builds only
-                // (2026-08-05). Ranking a bad build last only works when there
+                // in `validate_for_board`: the board takes complete builds only. Ranking a bad build last only works when there
                 // is something else to rank it against. Nothing here decides
                 // what is worth submitting.
                 assert_eq!(v.mods.len(), e.mods.len(), "{} lost a mod", e.weapon);

@@ -13,7 +13,7 @@ mastery_rank: 13
 # is the whole reason these builds look the way they do. See docs/INVESTMENT.md.
 max_rank: 40
 
-# THE FIRST ADVERSARY WEAPON in the roster (owner, 2026-08-13). Kuva is the
+# THE FIRST ADVERSARY WEAPON in the roster. Kuva is the
 # Grineer family; Tenet (Corpus) and Coda (Infested) are the other two and
 # share this shape, which is why the VALENCE block below is a weapon field
 # rather than something written into this file's prose.
@@ -105,7 +105,7 @@ attack:
   crit_multiplier: 5.0
   status_chance: 0.50
   punch_through_m: 0.0
-  # THE CHAIN, and it is the one that does NOT compound (2026-08-17):
+  # THE CHAIN, and it is the one that does NOT compound:
   #
   #   "Beam can chain up to 2 nearby enemies within 9 meters from the initial
   #    target, each doing 50% of the main beam's damage"

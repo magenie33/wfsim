@@ -44,7 +44,7 @@ reload_seconds: 2.75
 #
 # This read `additive`, a spelling that exists nowhere, and the loader's old
 # `_ =>` arm turned it into Independent — the wiki's "Multiplying", i.e. the
-# EXCEPTION class, on a weapon the catalog does not list (user, 2026-08-03).
+# EXCEPTION class, on a weapon the catalog does not list.
 co_behavior: additive_with_base_damage
 
 # ONE attack part. The Incarnon form is its own weapon entry

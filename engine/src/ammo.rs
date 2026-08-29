@@ -5,7 +5,7 @@
 //! whether the last enemy dropped any is a term in that weapon's fire rate.
 //!
 //! IT NEEDS NO PER-ENEMY DROP TABLE, which is the finding that made it
-//! tractable at all (2026-08-28). Ammo is not on an enemy's own table the way
+//! tractable at all. Ammo is not on an enemy's own table the way
 //! a resource is — the chance is a property of the SQUAD and the place:
 //!
 //! > *"Chance to drop Primary or Secondary Ammo scales with squad size"* —

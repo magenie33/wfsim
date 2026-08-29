@@ -6,8 +6,7 @@ internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/SecondaryDamageOnNoMe
 description: "On Precision Headshot Kill:\n+X% Damage for 24s. Stacks up to 3x.\n+30% to Headshot Multiplier\n-50% Weapon Recoil"
 
 effects:
-  # PRECISION headshot kill - NOT the same boundary as a plain "headshot kill"
-  # (user, 2026-07-25). Wiki verbatim: "'Precision' refers to direct hit
+  # PRECISION headshot kill - NOT the same boundary as a plain "headshot kill". Wiki verbatim: "'Precision' refers to direct hit
   # headshots (not AoE)". Excluded: AoE/explosion damage and most status-proc
   # kills on the head. Included: direct hits; Electricity/Gas proc kills aimed
   # at the head (those procs land their own headshots).

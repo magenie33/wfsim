@@ -12,7 +12,7 @@ internal_name: /Lotus/Upgrades/Mods/Shotgun/WeaponMagneticOnImpactShotgunMod
 description: "Impact Status Effects have X% chance to apply a Magnetic Status Effect (x2 when Fire Rate is below 2.5)"
 
 # WHAT THE CARD'S NOTES ADD, all four checked against the engine 2026-08-10
-# (owner) and pinned by `proc_conversion_obeys_its_three_notes`:
+# and pinned by `proc_conversion_obeys_its_three_notes`:
 #
 #   · "If the weapon's fire rate is exactly 2.5, it will not receive the 2x
 #     bonus" — a STRICT `<`, and not a corner case: Strun, Strun Wraith and the

@@ -58,7 +58,7 @@ effects:
   # /6.67 = 0.200, /5.34 = 0.250, /4.45 = 0.300. `data/weapons/` was written
   # from the weapon pages and carries exactly those four.
   #
-  # ARCANE CRIT COUNTS, AND IT COUNTS LIVE (owner, 2026-08-13). The four
+  # ARCANE CRIT COUNTS, AND IT COUNTS LIVE. The four
   # sources the row names — both parts of Galvanized Crosshairs, Secondary
   # Outburst, Cascadia Overcharge, Secondary Enervate — are all live and none
   # is on the panel, and three of them RAMP, so a number resolved once could
@@ -82,7 +82,7 @@ effects:
   # recorded and left alone.
   #
   # HOW THIS DIFFERS FROM THE FURIS'S PRELUDE OF MIGHT — two perks that both
-  # say "Critical Chance" and read two different numbers (owner, 2026-08-13).
+  # say "Critical Chance" and read two different numbers.
   #
   #                          Wiseman's Regard        Prelude of Might
   #   when                   resolved ONCE, off      re-checked AT EVERY SHOT

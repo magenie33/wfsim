@@ -1,5 +1,4 @@
-//! **WHAT A FIGHT CONSISTS OF, declared once for the whole product** (owner,
-//! 2026-08-27) — [`BUILD_AXES`](crate::builds::BUILD_AXES)'s sibling, for the
+//! **WHAT A FIGHT CONSISTS OF, declared once for the whole product** — [`BUILD_AXES`](crate::builds::BUILD_AXES)'s sibling, for the
 //! other half of a simulation.
 //!
 //! A BUILD is what you are carrying; a FIGHT is everything else, and until this
@@ -51,7 +50,7 @@
 //! means pickups it cannot get (off). One flag read as the wrong one of those
 //! two facts ticked-and-disabled the box on the whole roster, so the only
 //! weapon whose ammo you could adjust was the one weapon the game gives no way
-//! to adjust (2026-08-04). Two capabilities cannot make that mistake; one flag
+//! to adjust. Two capabilities cannot make that mistake; one flag
 //! could not avoid it.
 //!
 //! **AND IT IS WHAT MELEE WILL NEED.** The same `aiming` axis wants OPPOSITE
@@ -86,7 +85,7 @@ pub enum AxisValue {
 /// needed its own data field would be a taxonomy inventing facts, not reading
 /// them.
 /// **WHY A WEAPON LACKS A CAPABILITY — and therefore whether a SCENARIO may
-/// argue with it** (owner, 2026-08-27).
+/// argue with it**.
 ///
 /// The four capabilities are not the same kind of thing, and the difference
 /// decides what a scenario file is allowed to CLAIM:
@@ -119,8 +118,7 @@ pub enum Absence {
 pub enum Capability {
     /// The wielder decides whether to aim.
     ///
-    /// A companion weapon is fired by the Sentinel and is ALWAYS aiming (user,
-    /// 2026-08-01, settling M18a) — the mechanism is there, the choice is not.
+    /// A companion weapon is fired by the Sentinel and is ALWAYS aiming — the mechanism is there, the choice is not.
     ChoosesAim,
     /// A shot can land on a weak point.
     ///
@@ -185,7 +183,7 @@ impl Capability {
     /// which was true while a companion was the only thing that could not aim.
     /// A melee weapon cannot either, for a completely different reason, and
     /// "a sentinel weapon is fired by the companion" printed under a hammer is
-    /// worse than no sentence at all (2026-08-28).
+    /// worse than no sentence at all.
     ///
     /// So it takes the spec. It still states a fact about the WEAPON rather
     /// than about the field, which is what makes it correct in the panel, in
@@ -289,7 +287,7 @@ pub const SCENARIO_AXES: &[ScenarioAxis] = &[
     ScenarioAxis { id: "level", kind: AxisKind::Number { min: 1.0, max: 9999.0 }, group: Group::Target, requires: FREE },
     // THE SCENARIO'S OWN HOUSE RULES, per weapon class — the field that makes a
     // fight a complete document rather than one that describes the weapon in
-    // front of you (owner, 2026-08-27). It is FREE because it is about the
+    // front of you. It is FREE because it is about the
     // OTHER classes: a rule for Arch-Guns is legible, editable and travels on a
     // Burston's page, which is the whole point of it.
     ScenarioAxis { id: "class_rules", kind: AxisKind::Structured, group: Group::Engagement, requires: FREE },
@@ -383,8 +381,7 @@ pub fn axis(id: &str) -> Option<&'static ScenarioAxis> {
     SCENARIO_AXES.iter().find(|a| a.id == id)
 }
 
-/// **THE WEAPON CLASSES A SCENARIO RECORDS ITS RULES AGAINST** (owner,
-/// 2026-08-27), in the order a panel lists them.
+/// **THE WEAPON CLASSES A SCENARIO RECORDS ITS RULES AGAINST**, in the order a panel lists them.
 ///
 /// The SLOT, and nothing invented beside it: a house rule is about a family of
 /// weapons that share a capability, and the slot is already the field that
@@ -649,7 +646,7 @@ mod tests {
 
         // AN ARCH-GUN. It HAS a reserve and cannot refill it, so the same box
         // is settled to the OPPOSITE value from the opposite fact — the case
-        // one flag could not tell apart (2026-08-04).
+        // one flag could not tell apart.
         assert_eq!(v(ammo, "larkspur"), Some(AxisValue::Flag(false)));
         // …and its aim is entirely the reader's, which is what makes the line
         // above about ammo and not about being unusual.

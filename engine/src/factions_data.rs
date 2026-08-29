@@ -17,7 +17,7 @@
 //!   Overguard reads the Overguard column (neutral but ×1.5 Void), never the
 //!   enemy's own — which is why [`Columns`] carries both and the pool decides.
 //! - **The table is COMPLETE at fifteen columns, and everything else is
-//!   neutral** (user, 2026-08-03). The wiki's `Damage/Overview_Table` publishes
+//!   neutral**. The wiki's `Damage/Overview_Table` publishes
 //!   exactly those fifteen; the enemy modules key eighteen faction values
 //!   against them, and the ones with no column (Stalker, Unknown, Duviri,
 //!   Neutral, Objects, Predator, Prey) are units the game gives no
@@ -228,8 +228,7 @@ mod tests {
     }
 
     /// A faction the table leaves out is not a gap and not a typo to catch —
-    /// it is a unit the game gives no vulnerability or resistance to (user,
-    /// 2026-08-03). The Acolytes ("Stalker") and the Thrax ("Unknown") are the
+    /// it is a unit the game gives no vulnerability or resistance to. The Acolytes ("Stalker") and the Thrax ("Unknown") are the
     /// two we ship, and `Tenno` is the one such column the table does print.
     #[test]
     fn a_faction_with_no_column_takes_every_type_as_written() {

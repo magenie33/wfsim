@@ -14,7 +14,7 @@ effects:
   # the head became this effect and the tail, two words with no verb in them,
   # became an `unmodelled_transmutation_charge` sitting underneath. So a perk
   # that is fully modelled printed "partly modelled" on its own card, about the
-  # second half of the sentence the first half already implements (2026-08-09).
+  # second half of the sentence the first half already implements.
   - kind: incarnon_charge_rate
     value: 0.5
 

@@ -18,7 +18,7 @@ description: "+X% Movement Speed when Aiming"
 effects:
   # Movement speed is not a damage stat and the arena has no traversal.
   # "+20% Movement Speed when Aiming"
-  # 2D groundwork (2026-08-01): a real stat with no SINGLE-TARGET damage
+  # 2D groundwork: a real stat with no SINGLE-TARGET damage
   # payload. It used to be `kind: unmodeled`, which threw the number away.
   - kind: movement_speed_bonus
     rank0: 0.05

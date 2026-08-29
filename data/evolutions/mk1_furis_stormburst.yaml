@@ -11,7 +11,7 @@ description: "Increase Base Damage by +34.\nOn hitting an enemy affected by Elec
 selection: choose_one
 
 # CONDITION OVERLOAD — NOT excluded here, and this is SETTLED rather than
-# inferred (owner, 2026-08-06). So this perk's +34 feeds the CO term
+# inferred. So this perk's +34 feeds the CO term
 # in full: the hit lands 94 and CO computes on 94.
 #
 # The catalog agreed already, by saying nothing: its row names "Furis" and
@@ -31,7 +31,7 @@ effects:
   # second line — the same shape the Burston's tier 2 has.
   - kind: flat_base_damage
     value: 34.0
-  # MODELLED (2026-08-07), as a LIVE stacking buff. It could not be a
+  # MODELLED, as a LIVE stacking buff. It could not be a
   # `stacking_buff` with a multishot payload: that loads as
   # `AssumedMaxMultishot` — a total and a cap and NO trigger — so it would have
   # granted +1.2 multishot to a build carrying no Electricity at all. A live
@@ -49,8 +49,7 @@ effects:
   # and the Incarnon half then finds it there. Measured: 657 pellets / 657
   # shots with no Electricity, 668 / 659 with Primed Convulsion.
   #
-  # FIFO, EACH STACK ON ITS OWN 2 s CLOCK — owner observed it in game
-  # (2026-08-07). Not the Galvanized rule every other stacking buff here uses,
+  # FIFO, EACH STACK ON ITS OWN 2 s CLOCK — owner observed it in game. Not the Galvanized rule every other stacking buff here uses,
   # and the difference is not cosmetic: under that rule ONE hit inside the
   # window holds all three stacks, under this one it holds exactly one. At the
   # cap a new stack evicts the oldest rather than being dropped.

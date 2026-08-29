@@ -1,7 +1,7 @@
 # What is not modelled, and what would have to exist first
 
 A catalogue of the EDGES, so that "why is this perk worth nothing" is a lookup
-rather than an investigation (owner, 2026-08-09).
+rather than an investigation.
 
 It is deliberately not a list of perks — `python scripts/intake_report.py --full`
 prints that, per weapon, derived from the data and therefore never stale. This
@@ -101,7 +101,7 @@ What is still open here:
   entries is exactly the kind of thing this file exists to refuse;
 - **the model's one free parameter**, `space::BODY_RADIUS_M` — 0.2 m, a guess
   and stated as one. THE PLANE IS THE MODEL rather than an approximation of a
-  solid to be corrected (owner, 2026-08-15): the geometry answers only "did the
+  solid to be corrected: the geometry answers only "did the
   pellet reach the target", and where a landed pellet went is `headshot_pct`'s
   question, already pinned per pellet. So there is one circle and one number,
   and one Simulacrum measurement settles it — a counted number of pellets, a
@@ -165,7 +165,7 @@ One weapon FIRES for the whole engagement.
 **What would have to exist first:** a loadout and a swap policy. The policy is
 the hard half — see §"Open decisions" below, it is the same problem.
 
-**THE OTHER SLOTS ARE OCCUPIED** (owner, 2026-08-12). What the Tenno FIRES and
+**THE OTHER SLOTS ARE OCCUPIED**. What the Tenno FIRES and
 what the Tenno CARRIES are two different facts, and only the first is "one
 weapon". The ruling answers every clause about the other slots at once, in both
 directions:
@@ -179,7 +179,7 @@ directions:
 That makes Lone Gun's condition ANSWERED rather than unreadable, which is worth
 the distinction: the sim is not declining to evaluate it, it evaluates to false.
 
-**…AND THE ANSWER IS NOW A SETTING** (owner, 2026-08-13). The scenario carries
+**…AND THE ANSWER IS NOW A SETTING**. The scenario carries
 `solo_weapon` — *Only this weapon* on the Technique block, off by default — and
 the table above is what OFF means. It is a `TennoGate` like `overshields` and
 `channeling`, so it is asked of the fight's Tenno and travels with the
@@ -209,7 +209,7 @@ rather than paying nothing in silence.
 
 ### 5. AMMO IS INFINITE BY DEFAULT
 
-`infinite_ammo` defaults on (user, 2026-08-01) because the sim models no
+`infinite_ammo` defaults on because the sim models no
 pickups, so a finite reserve is the pessimistic half of a mechanic we only half
 have. Ammo economy perks are therefore worth ~0 in the headline number even
 though the machinery for them exists and works when the setting is off.
@@ -219,7 +219,7 @@ though the machinery for them exists and works when the setting is off.
 
 **What would have to exist first:** ammo pickups, or a scenario that means to
 run the reserve dry. The reserve itself IS modelled — every draw inside the
-Incarnon cycle was made to bill it (2026-08-04).
+Incarnon cycle was made to bill it.
 
 ### 6. NOBODY SHOOTS BACK
 
@@ -253,7 +253,7 @@ When it lands, `abilities_data::resolve`'s two inputs (strength, duration) come
 from the frame and nothing about the buff definitions changes — that is why they
 are arguments.
 
-## What the ratchet has left (2026-08-12)
+## What the ratchet has left
 
 **Five inert evolution clauses**, down from 226 in early August and 51 at the
 start of this pass, and none of them is waiting on the evolution layer:
@@ -285,8 +285,7 @@ rather than observed, because this arena fires one weapon and casts nothing:
 ## A SHOT THAT CROSSES NOBODY LEAVES NO SPHERE
 
 Aim is a place (MECHANICS §11), and pointing at bare floor is a legal shot that
-deals ZERO — *"if it hits, it hits, and if it does not, it is zero"* (owner,
-2026-08-17). That much is modelled, and the api stopped refusing such a shot on
+deals ZERO — *"if it hits, it hits, and if it does not, it is zero"*. That much is modelled, and the api stopped refusing such a shot on
 the same day.
 
 **WHAT IS NOT** is the sphere it should leave where it landed. A weapon with a
@@ -322,7 +321,7 @@ headshots."*
 **The CO half is DONE (M42): the throw plants the debuff.** `attractor_seconds:
 4.7` on both thrown entries, feeding `DebuffState::attractor` — the same debuff
 Xata's Whisper's Void instance lands, which is not an analogy but the same
-effect (owner, 2026-08-14). It is worth exactly one line in the Condition
+effect. It is worth exactly one line in the Condition
 Overload counter, and 4.7 s against a ≤1.6 s throw cycle means it is up
 continuously.
 
@@ -365,7 +364,7 @@ where it changes a pool. A perk that is half an edge is not an edge.
 What is needed is a ruling, not machinery: "which side is the build in", or "it
 alternates and the sim should model both halves of the cycle".
 
-### Reload interruption — DECIDED: never interrupt (owner, 2026-08-10)
+### Reload interruption — DECIDED: never interrupt
 
 **The Felarx, and every by-round reloader.** In game you can fire mid-reload and
 keep the shells already loaded; here a reload runs to the end. The machinery was
@@ -436,7 +435,7 @@ something real.
 
 A reload does not finish when its animation does. The magazine is actually full
 at somewhere around **80–90% of the way through**, and what is left is a
-recovery the player sits through (owner, 2026-08-22). This engine models the
+recovery the player sits through. This engine models the
 reload as one block of dead time with the magazine arriving at the END.
 
 **Nothing computed today is wrong because of it.** The total is the same number
@@ -458,7 +457,7 @@ docs/MEASUREMENTS.md when it is answered).
 ### The 99-stack Mounting Momentum edge
 
 Reaching the cap needs a magazine that never empties, which is a firing pattern
-rather than a property of the perk. DECIDED against, twice (2026-08-08). Written
+rather than a property of the perk. DECIDED against, twice. Written
 here so it is not re-proposed.
 
 ---
@@ -478,11 +477,11 @@ this file was written:
   the tail as unmodelled, so a fully-modelled perk printed "partly modelled"
   about its own second clause.
 
-## The SPATIAL audit (2026-08-17)
+## The SPATIAL audit
 
 Every effect in `data/` whose payload is about REACH, checked against whether
 the engine reads it. Prompted by "review what is missing now that a formation
-exists" (owner), and done by walking the data's own `kind:` vocabulary rather
+exists", and done by walking the data's own `kind:` vocabulary rather
 than from memory — 22 spatial kinds across mods, arcanes and evolutions.
 
 ### Reaching the sim
@@ -542,7 +541,7 @@ share of what the beam delivered rather than a shot of its own.
 
 ## A BUFF CAN DEPEND ON THE WEAPON BEING IN YOUR HANDS
 
-**Open decision** (owner, 2026-08-28). Reported off the Grimoire's Invocations:
+**Open decision**. Reported off the Grimoire's Invocations:
 
 > 次要射击的时候，如果我装了一个vome的，是不是理论上每次攻击都会叠层，但是如果我
 > 期间切换武器，整个叠层就不会生效，但是我切回去，叠层又可以了。那就说明有些东西

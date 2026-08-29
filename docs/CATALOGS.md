@@ -7,7 +7,7 @@ everyone else's adds, that this attack part is exempt, that this one does not
 work at all.
 
 Those rows are DATA, and the rule for them is the one the roster already
-follows for Condition Overload (owner, 2026-07-30): **the catalog is
+follows for Condition Overload: **the catalog is
 authoritative, and absence from it means ordinary — not unknown.** A row is
 never generalised to a weapon, a form, or a class of behaviour; it is
 transcribed for the entry it names.
@@ -32,7 +32,7 @@ Columns, verbatim:
 | Adding | `additive_with_base_damage` | joins the base-damage bucket, diluted by Serration |
 | (no row) | the ordinary case, i.e. `additive_with_base_damage` | |
 
-### THE RULE, stated once (owner, 2026-08-12)
+### THE RULE, stated once
 
 > A shared Incarnon Genesis does not make one weapon: a variant is still its
 > own entry. Anything not on the CO table is ordinary — direct hits only,
@@ -50,7 +50,7 @@ Four things, and the last two are the ones that keep being got wrong:
 3. **THE PAGE'S PROSE DOES NOT OVERRIDE THE TABLE.** Its Math section lists
    "Base Damage increases from Incarnon Genesis Evolutions" among the things
    Adding CO ignores, which read as a law would move 107 (entry, perk) pairs
-   here. It is not a law (owner, 2026-08-12) — see the section below for why
+   here. It is not a law — see the section below for why
    the page argues that side itself. Rule 2 already covered this; it is spelled
    out because the prose is what tempts you to break it.
 4. **A SHARED GENESIS DOES NOT MAKE ONE WEAPON.** An Incarnon form is still that
@@ -250,8 +250,7 @@ Every row, with the perk the printed number identifies:
 | Bronco Prime | 238 or 448 (Evolution II **Perk 1**) | Speeding Bullet, +30 a pellet x7 = the 210 printed | 0.5312 (catalog 53%) |
 | Zylok Prime | 500 or 530 (Evolution II) | both, each +30 | 0.9434 (catalog 94%) |
 
-**EXCLUDING AN EVOLUTION'S FLAT DAMAGE IS NOW THE DEFAULT** (owner, 2026-08-16;
-MEASUREMENTS M49 and M50). This section used to say the opposite, and the
+**EXCLUDING AN EVOLUTION'S FLAT DAMAGE IS NOW THE DEFAULT**. This section used to say the opposite, and the
 paragraph below is what it said. The reason it turned around is in the table's
 own columns rather than in any one measurement:
 
@@ -274,7 +273,7 @@ On the question actually asked the score is **15 to 0**:
 Three of the four owner measurements are on perks the catalog does not list, so
 its silence has been tested three times and meant "unmeasured" every time.
 
-**SO THE DEFAULT FLIPPED — FOR `Adding` ENTRIES ONLY** (owner, 2026-08-16). An
+**SO THE DEFAULT FLIPPED — FOR `Adding` ENTRIES ONLY**. An
 undeclared perk on an Adding entry keeps its flat damage out of the CO term. 238
 weapon+perk pairs moved, by 37% on average at two Galvanized stacks against two
 status types.
@@ -294,8 +293,7 @@ wrong. **The class decides which base the term reads.**
 | `Adding` | the UNEVOLVED base | 11 catalog rows + 4 owner readings, 15 to 0 |
 | `Multiplying` | the FULL evolved base | M51, two attack parts x two perks |
 
-**AND IT IS GENERALISED TO ALL 26 ENTRIES ON THAT ONE WEAPON'S READING** (owner,
-2026-08-16), deliberately ahead of this table: the wiki prints a fraction for a
+**AND IT IS GENERALISED TO ALL 26 ENTRIES ON THAT ONE WEAPON'S READING**, deliberately ahead of this table: the wiki prints a fraction for a
 minority of attacks, the rule beats the table, and a measurement that
 contradicts it edits ONE weapon's yaml rather than the rule. The class now
 answers BEFORE a perk's declaration on a `Multiplying` entry, which is what stops
@@ -317,11 +315,10 @@ holds five unlisted perks asserting the new default, and that is the loop such a
 measurement would edit. Until then the old paragraph stands as the record of
 what was believed and why:
 
-**INCLUDING an evolution's flat damage is the DEFAULT** (owner, 2026-07-30);
+**INCLUDING an evolution's flat damage is the DEFAULT**;
 the exclusion is opt-in per perk.
 
-**AND THE DEFAULT FOLLOWS THE WIKI; A MEASUREMENT RE-CERTIFIES** (owner,
-2026-08-16). Flipping that default the other way was considered and refused:
+**AND THE DEFAULT FOLLOWS THE WIKI; A MEASUREMENT RE-CERTIFIES**. Flipping that default the other way was considered and refused:
 it would have touched 107 perks across 65 weapons on the strength of ONE
 measured weapon, and the repo's own rule forbids exactly that ("the catalog is
 authoritative and absence means ORDINARY", "a row is transcribed for the entry
@@ -357,7 +354,7 @@ The first is the ordinary default here, so it needs nothing. The second does not
 fit any bracket the engine has: Swift Conclusion's +200% below half health joins
 the base-damage bucket, and under `Multiplying` the engine hands CO a base that
 includes it — where the row says the two should ADD. Live since the perk was
-implemented (2026-08-12).
+implemented.
 
 ### A radial's fraction is DERIVED, not declared
 
@@ -460,8 +457,7 @@ yaml carries the per-projectile damage and the pellet count separately. So
 roster carries, with `every_catalog_radial_row_reproduces_our_explosion` for the
 four radial ones.
 
-That is not a CO check and it found a CO-unrelated bug on the first run
-(2026-08-12): **both Bronco Incarnon entries had `multishot: 1.0` where the base
+That is not a CO check and it found a CO-unrelated bug on the first run: **both Bronco Incarnon entries had `multishot: 1.0` where the base
 forms had 7**, so the Incarnon Bronco dealt ONE SEVENTH of its shot — 22 against
 154, and 34 against 238 on the Prime. A lost pellet count is invisible
 everywhere else: the damage per projectile stays right and the panel stays
@@ -482,7 +478,7 @@ the flag is missing, on the wrong perk, or on a perk whose flat damage does not
 match. Six negative controls assert the unnamed tier-mates still feed CO in
 full.
 
-It found the **Vasto Prime** still missing its flag (2026-08-12), which the
+It found the **Vasto Prime** still missing its flag, which the
 earlier sweep of eight had left behind.
 
 ### The Vasto Prime row: the damage column cannot pick the perk, and the row still can
@@ -528,7 +524,7 @@ Read as a law, the Incarnon bullet would mean every Adding weapon with a
 flat-damage evolution excludes it — **107** (entry, perk) pairs in this roster,
 against the eleven the catalog actually names.
 
-**It is not a law** (owner, 2026-08-12). Same ruling as the one this file
+**It is not a law**. Same ruling as the one this file
 already states: the catalog is authoritative and absence means ORDINARY.
 
 **And the page argues the owner's side.** Two of the four bullets are hedged
@@ -736,7 +732,7 @@ nothing.
 
 It is not an equip rule and there is nothing to implement: the engine already
 answers it by construction, because a shotgun's pools are `[primary, shotgun]`
-and the mod is in neither. Verified against `/api/meta` (2026-08-11):
+and the mod is in neither. Verified against `/api/meta`:
 
 | weapon | class | blast-radius mods offered |
 | --- | --- | --- |
@@ -876,7 +872,7 @@ between "checked" and "nobody looked".
 | `zarr` | 100% | 4.9 m | +392% | Multiplies | snapshot |
 | `zhuge_prime` | 100% | 2.6 m | +208% | Multiplies | snapshot |
 
-### Status — MODELLED (2026-08-11)
+### Status — MODELLED
 
 The arcane brings two ramps PER METRE; the weapon brings the metres and the
 bracket. They meet in one place and it is not the one you would guess:

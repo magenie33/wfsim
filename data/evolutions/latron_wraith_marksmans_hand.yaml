@@ -12,7 +12,7 @@ selection: choose_one
 
 effects:
   # LOADED, into the indirect bucket the handling stats share — so the number
-  # reaches the panel rather than vanishing (user, 2026-08-03).
+  # reaches the panel rather than vanishing.
   # It changes no shot: recoil is spatial and the arena has no geometry, so
   # every round lands here regardless.
   - kind: recoil_reduction

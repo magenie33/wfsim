@@ -17,7 +17,7 @@ effects:
   # TYPES, NOT STACKS, and the card says so with its own example: "Multiple
   # instances of the same status effect are not counted separately, e.g. having
   # 5 corrosive and 5 radiation status effects on a target will not disable this
-  # buff" (owner, 2026-08-10). That counter already existed — Condition
+  # buff". That counter already existed — Condition
   # Overload's bucket IS the distinct-type count — so the two read the same
   # number and cannot drift apart.
   #

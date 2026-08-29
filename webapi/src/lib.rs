@@ -184,7 +184,7 @@ fn attack_desc(s: &wfsim_engine::weapons_data::WeaponSpec) -> String {
 /// the same rule `unmodeled` follows. This was the base entry's lines alone, so
 /// a passive belonging to an Incarnon form had nowhere to appear: the Phenmor's
 /// spool-down is declared on `phenmor_incarnon` and the page said nothing about
-/// it (2026-08-10). Deduped, because a group's forms can carry the same perk.
+/// it. Deduped, because a group's forms can carry the same perk.
 fn passives_of(id: &str) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for f in wfsim_engine::weapons_data::forms_of(id) {
@@ -339,18 +339,16 @@ fn form_unlock_evo(info: &WeaponInfo) -> Option<&'static str> {
 /// The headshot rate a weapon is played at when nothing says otherwise.
 ///
 /// A SENTINEL weapon is fired by the companion, which picks its own targets
-/// and does not aim for the head — so 0, not the player's 100 (user,
-/// 2026-07-31). It stays a knob: this is the default, not a ceiling.
+/// and does not aim for the head — so 0, not the player's 100. It stays a knob: this is the default, not a ceiling.
 /// The fight's TENNO — who is holding this weapon, and what they are doing.
 ///
 /// ONE builder for both the simulator and the optimizer, on purpose: the
 /// optimizer must score builds under the player the sim will replay them with,
-/// and two readers of the same JSON is how that drifts a field at a time
-/// (user, 2026-08-02). The neutral entry in `data/tenno/` is the starting
+/// and two readers of the same JSON is how that drifts a field at a time. The neutral entry in `data/tenno/` is the starting
 /// point and the request overrides what it knows, so a field nobody sent keeps
 /// its documented default instead of a zero invented here.
 ///
-/// A SENTINEL WEAPON IS ALWAYS AIMING (user, 2026-08-01, settling M18a). What
+/// A SENTINEL WEAPON IS ALWAYS AIMING. What
 /// it cannot do is trigger the on-HEADSHOT half of an aiming mod, because it
 /// never aims at the head — which the sim already gets right from the other
 /// end: `default_headshot_pct` is 0 for a sentinel, so no headshot lands and
@@ -360,7 +358,7 @@ fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
     // WHOEVER IS HOLDING THIS GUN. A companion weapon is carried by a SENTINEL
     // and the two rosters have different floors — 450/130/80 against a
     // Warframe's 250/0/105 — so starting from the Warframe told a reader that
-    // their Artax had a Warframe's armor (owner, 2026-08-26).
+    // their Artax had a Warframe's armor.
     //
     // ONLY THE STAT BLOCK SWAPS. The Warframe is still in the fight behind the
     // companion, bringing the aura and the archon shards, and the auras a
@@ -388,7 +386,7 @@ fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
     // companion about its other slots, so it takes the same field.
     t.state.solo_weapon = get_bool(v, "solo_weapon", t.state.solo_weapon);
     // THE FIGHT'S OWN STAT BONUSES — "the effect equals stuffing in another
-    // mod" (owner, 2026-08-13). One flat object, every key a bucket the mods
+    // mod". One flat object, every key a bucket the mods
     // already feed, and every key optional: a fight that says nothing gets the
     // neutral player's zeroes, which is what the board is scored under.
     //
@@ -409,7 +407,7 @@ fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
             magazine: g("magazine"),
             // THE BUCKET THE PANEL HAD NO BOX FOR. The engine has always had
             // the quantity — several arcanes grant it — so this is the reader
-            // finally able to say it (owner, 2026-08-21).
+            // finally able to say it.
             ammo_efficiency: g("ammo_efficiency"),
         };
     }
@@ -453,7 +451,7 @@ fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::tenno_data::Tenno {
     {
         t = t.with_frame(f);
     }
-    // HEALTH JOINS ARMOR AND ENERGY (owner, 2026-08-26). It was the one base
+    // HEALTH JOINS ARMOR AND ENERGY. It was the one base
     // stat the roster carried and the wire could not set, which was invisible
     // until a mod read it: the Basmu's Dreadful Killshot pays "+20% Damage and
     // Status Chance for every 75 Warframe Health", so without this the mod has
@@ -608,7 +606,7 @@ fn intern(s: String) -> &'static str {
 ///
 /// An INCOMPLETE riven is fine and resolves to whatever it does say. A card
 /// with no stats is a mod that does nothing, which is a perfectly ordinary
-/// thing for a build to contain (user, 2026-07-31).
+/// thing for a build to contain.
 ///
 /// An UNKNOWN stat id is not that, and it is an ERROR. `resolved_slots` drops
 /// a stat it cannot find, so a typo used to equip a riven that occupied a
@@ -650,7 +648,7 @@ fn mod_not_here(id: &str, weapon: &WeaponInfo, evos: &[&str]) -> String {
 ///
 /// Where an Arch-Gun is fired changes its sustain and nothing else — same
 /// damage, same mods, same riven — so the environment is a scenario knob and
-/// not a second weapon (user, 2026-08-01). Absent or unknown leaves the
+/// not a second weapon. Absent or unknown leaves the
 /// weapon on its own column, which is the one its fields state.
 fn base_for(v: &Value, id: &str, evos: &[&str]) -> WeaponBase {
     let asm = assembly_of(v, id);
@@ -746,7 +744,7 @@ pub(crate) fn apply_valence_from(v: &Value, id: &str, b: &mut WeaponBase) {
 
 /// The progenitor element a request is for.
 ///
-/// AN ADVERSARY WEAPON ALWAYS HAS ONE (owner, 2026-08-14). Every copy in the
+/// AN ADVERSARY WEAPON ALWAYS HAS ONE. Every copy in the
 /// game comes out of a Lich carrying an element, so "no element" is not a
 /// weaker build of that weapon — it is a weapon nobody has, and the printed
 /// panel the wiki's infobox shows is a number no player can reproduce. A
@@ -1077,7 +1075,7 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
                 // DE's own name, straight from the yaml. This used to be
                 // `prettify(m.id)` — a title-cased id, which is not the same
                 // string: "Semi-Shotgun Cannonade" came back without its
-                // hyphen, so the card's wiki link 404'd (user, 2026-08-03).
+                // hyphen, so the card's wiki link 404'd.
                 "name": m.name,
                 "drain": m.base_drain,
                 "max_rank": m.max_rank,
@@ -1091,7 +1089,7 @@ fn mods_json(p: &[ModDef]) -> Vec<Value> {
                 "stance": m.stance.is_some(),
                 // …AND WHAT EACH OF ITS COMBOS COMES TO, keyed by the form it
                 // is. NOT the combo's NAME — a mode's name is fixed and its
-                // STRENGTH is not (owner, 2026-08-29), and these three numbers
+                // STRENGTH is not, and these three numbers
                 // are the strength: swapping this card is what moves them.
                 "stance_combos": m.stance.map(|c| {
                     c.iter()
@@ -1246,7 +1244,7 @@ pub fn meta_json() -> Value {
                 // decides rather than the reader — derived from the
                 // capabilities it lacks, never written down — as
                 // `{ "<axis>": [value, "why", overridable] }`, absent when the
-                // choice is the reader's (owner, 2026-08-27).
+                // choice is the reader's.
                 //
                 // The VALUE keeps its json type: a flag arrives as a bool and a
                 // number as a number, so a control can be drawn from it without
@@ -1291,7 +1289,7 @@ pub fn meta_json() -> Value {
                 // both halves. It was the base entry's alone, so a passive that
                 // belongs to an Incarnon form had nowhere to appear — the
                 // Phenmor's spool-down is declared on `phenmor_incarnon` and
-                // the page said nothing about it (2026-08-10). Deduped, since
+                // the page said nothing about it. Deduped, since
                 // a group's forms can carry the same perk.
                 "passives": passives_of(&w.id),
                 // WHAT THIS ENTRY DOES NOT MODEL, verbatim from the weapon file
@@ -1412,7 +1410,7 @@ pub fn meta_json() -> Value {
                 // it there is nothing to transform into, and the sim already
                 // falls back to the base form — but the client was offering
                 // "Incarnon cycle" anyway, so the panel said one thing and the
-                // run did another (user, 2026-08-01). Now it can ask.
+                // run did another. Now it can ask.
                 "unlock_evo": form_unlock_evo(w),
                 // A sentinel weapon has no arcane slot. This was hardcoded to
                 // 1 while every weapon in the roster had one.
@@ -1455,8 +1453,7 @@ pub fn meta_json() -> Value {
                         // A SLAM'S DAMAGE IS NOT IN ITS SWING AT ALL: the entry
                         // states a zero direct vector and 630 Blast in
                         // `radial:`, so a summary counting swing multipliers
-                        // reported "100% of base" for an attack that deals 300%
-                        // (owner spotted it on the page, 2026-08-29). The share
+                        // reported "100% of base" for an attack that deals 300%. The share
                         // is stated separately rather than folded into `total`
                         // because it is also the thing that frees the mode from
                         // the weapon's reach, which is worth a sentence of its
@@ -1504,7 +1501,7 @@ pub fn meta_json() -> Value {
                         // HOW THIS FORM IS FIRED, and what a gauge costs to
                         // reach it. Sent so the builder can STATE what a mode
                         // is instead of naming it and leaving the reader to
-                        // guess (owner, 2026-08-15) — and sent as the DATA
+                        // guess — and sent as the DATA
                         // rather than as a sentence, because the sentence has
                         // to be written once per language and not once per
                         // weapon.
@@ -1743,7 +1740,7 @@ pub fn meta_json() -> Value {
         // the reader type a number. That is the whole argument for naming these
         // instead of folding them into the custom bonuses: a named shard has a
         // source that can be checked and updated with the wiki; a typed +45%
-        // has nothing (owner, 2026-08-21).
+        // has nothing.
         "auras": wfsim_engine::auras_data::all().iter().map(|a| json!({
             "id": a.id,
             "name": a.name,
@@ -1792,15 +1789,14 @@ pub fn meta_json() -> Value {
         // TWO FLOORS, because there are two kinds of wielder: a Warframe holds
         // most of the roster and a SENTINEL holds the 21 companion weapons, and
         // their rosters have different lowest values — 450/130/80 against
-        // 250/0/105 (owner, 2026-08-26). The page picks by the weapon.
+        // 250/0/105. The page picks by the weapon.
         // **WHAT A FIGHT CONSISTS OF**, and which of it this weapon takes away.
         //
         // `engine::scenario::SCENARIO_AXES` is the one declaration; this states
         // its CONSEQUENCE per weapon, which is `evo_forbids`' and `auras:`' own
         // pattern. The page used to re-derive the three forcing rules from
         // weapon flags — two implementations of one rule, and a forced field
-        // looks identical whoever forced it, so they could drift in silence
-        // (owner, 2026-08-27).
+        // looks identical whoever forced it, so they could drift in silence.
         //
         // The FORCED map is per weapon and only carries what is actually
         // forced: `{ "<weapon id>": { "<axis>": [value, "why"] } }`. Absent
@@ -1825,7 +1821,7 @@ pub fn meta_json() -> Value {
             })
         }).collect::<Vec<_>>(),
         // **WHAT A SCENARIO IS ALLOWED TO SAY ABOUT A CLASS IT IS NOT POINTED
-        // AT** (owner, 2026-08-27) — the "global edit" the whole-fight panel
+        // AT** — the "global edit" the whole-fight panel
         // draws, served rather than derived.
         //
         // `classes` is the order to list them in; `overridable` is the legal
@@ -2059,7 +2055,7 @@ pub fn meta_json() -> Value {
             // the sim's behaviour before the knob existed, so no stored preset
             // silently changes meaning; the rest are false/0 because "some
             // max-rank neutral Warframe" is doing none of them and wearing
-            // nothing (user, 2026-08-02).
+            // nothing.
             "aiming": true,
             "invisible": false,
             "airborne": false,
@@ -2073,7 +2069,7 @@ pub fn meta_json() -> Value {
             // hands it nothing, which is every ruler and every stored scenario.
             "extra_stats": {},
             // NO WARFRAME FIELDS AT ALL, which is what makes the floor reach a
-            // fight (owner, 2026-08-26). These were `0.0`, and 0 is an
+            // fight. These were `0.0`, and 0 is an
             // OVERRIDE — the page carried them into every request, so the
             // neutral wielder in `data/tenno/default.yaml` was overwritten with
             // zero before anything could read it. "The neutral Tenno has 105
@@ -2084,12 +2080,12 @@ pub fn meta_json() -> Value {
             // floor unless told otherwise" and never got the chance.
             // INFINITE AMMO by default — see `simulate_json` for why.
             "infinite_ammo": true,
-            // Test precision (user, 2026-08-01), and the optimizer's last
+            // Test precision, and the optimizer's last
             // round is the run count on the top 10. Kept in step with
             // `simulate_json` / `parse_optimize`, whose own fallbacks are what
             // an API caller naming none of these gets.
             //
-            // 100 RUNS, and DECOUPLED FROM THE SCENARIO (owner, 2026-08-13).
+            // 100 RUNS, and DECOUPLED FROM THE SCENARIO.
             // It briefly matched the rulers' 1,000 so a first number would be
             // comparable with the board — but that made one field answer two
             // questions, and only one of them is the fight's. The RULERS
@@ -2101,10 +2097,9 @@ pub fn meta_json() -> Value {
             // what a build is for; DPS is the other honest answer and some
             // targets cannot be killed at all. The scenario carries it, so
             // whatever ranks — the headline number, the picker's gain scan —
-            // ranks by the same thing (user, 2026-08-01).
+            // ranks by the same thing.
             "metric": "kpm",
-            // 180 s, the same length as the official rulers (owner,
-            // 2026-08-10). A default that disagreed with the board made every
+            // 180 s, the same length as the official rulers. A default that disagreed with the board made every
             // first comparison a puzzle, and on a build that compounds the gap
             // is not small — the Felarx's board score moved 30% on this number
             // alone. Only the DEFAULT moves: a saved scenario carries its own
@@ -2114,7 +2109,7 @@ pub fn meta_json() -> Value {
             // The final-round contract, for an API caller. The WEB does not
             // read these: `final_runs` is the scenario's `runs` and
             // `finalists` is a fixed 10, because neither is a setting the
-            // optimizer tab offers any more (user, 2026-08-02).
+            // optimizer tab offers any more.
             "final_runs": 1000,
             "finalists": 10,
             "mods": [],
@@ -2171,7 +2166,7 @@ pub(crate) fn riven_shape_from(v: &Value) -> Option<wfsim_engine::rivens_data::R
 /// says only whether the ACTIVE PRESET is a builtin, so a board build copied
 /// into a preset of your own, or arrived at independently, or reached by moving
 /// one mod between two slots, was offered for upload as if it were new — which
-/// is what a player reported (owner, 2026-08-28).
+/// is what a player reported.
 ///
 /// IT IS THE ENGINE'S ANSWER, and that is the whole point of the endpoint. The
 /// normalisation behind it is not something a page can reproduce: a mod list is
@@ -2231,7 +2226,7 @@ fn combo_summary(script: &[wfsim_engine::weapons_data::ComboHit]) -> Value {
         .sum();
     // WHAT ACTUALLY TELLS THE MODES APART, beside the three numbers. Every melee
     // mode is free to hold and every one of them is ranked, so a line saying
-    // either is a line that distinguishes nothing (owner, 2026-08-29). What a
+    // either is a line that distinguishes nothing. What a
     // reader is choosing between is how much of the room a swing reaches and
     // what it forces on whatever it lands on.
     let spins = script.iter().filter(|h| h.all_around).count();
@@ -2301,7 +2296,7 @@ pub fn board_check_json(v: &Value) -> Value {
 /// nobody fights: the scenario runs at level 9999 Steel Path, where the same
 /// unit is four orders of magnitude bigger and its armor has stopped mattering
 /// the way the raw figure suggests. Choosing between two units on their base
-/// stats is choosing on the wrong axis (owner, 2026-08-05).
+/// stats is choosing on the wrong axis.
 ///
 /// It is an ENDPOINT and not a formula in the page, because the level curves
 /// are the engine's and a second implementation in JavaScript is a second
@@ -2517,7 +2512,7 @@ struct BuffMeta {
     permanent: bool,
     /// NO CEILING. Secondary Enervate gains a stack per hit until a big crit
     /// wipes the pile, so `max_stacks` has nothing honest to hold — the card
-    /// shows `∞` and the input takes no maximum (user, 2026-08-03).
+    /// shows `∞` and the input takes no maximum.
     uncapped: bool,
 }
 
@@ -2567,7 +2562,7 @@ fn enumerate_buffs(
         }
     };
     // Weapon passive: Frenzy (Dual Toxocyst); a single on/off "stack".
-    // EARNED like every other timed buff (user, 2026-08-02): it lasts 3 s off
+    // EARNED like every other timed buff: it lasts 3 s off
     // a headshot, so a fight that has not started has not got it. Cheap to
     // earn — the first headshot turns it on — which is exactly why seeding it
     // bought nothing and cost the truth.
@@ -2631,7 +2626,7 @@ fn enumerate_buffs(
             // unconditionally then made the opposite mistake — a card for a
             // buff that cannot arm, in a fight where the player is not aiming.
             // The resolver already drops it; this is the same question, asked
-            // of the same Tenno (user, 2026-08-02).
+            // of the same Tenno.
             let e = match e {
                 WhileTenno(c, inner) if c.holds(tenno) => &**inner,
                 WhileTenno(..) => continue,
@@ -2656,7 +2651,7 @@ fn enumerate_buffs(
                     //
                     // …UNLESS THE CARD SAYS A MISSION NEVER TAKES IT, which is
                     // a different thing from a buff that merely happens to have
-                    // no clock (owner, 2026-08-22): one you are already
+                    // no clock: one you are already
                     // carrying when the fight starts and do not have to keep
                     // up. It still HAS a trigger, so it is not `permanent` —
                     // set the card to zero and the run earns it back.
@@ -2821,8 +2816,7 @@ fn enumerate_buffs(
     // Secondary Enervate is a PERK, not an `ArcBuffSpec`, so the arcane loop
     // below never saw it and the one arcane whose whole point is a stack count
     // had no card. Untimed, UNCAPPED, and consumed by a big crit — which is
-    // why it starts at 0 like everything else that can be spent (user,
-    // 2026-08-03).
+    // why it starts at 0 like everything else that can be spent.
     if arcane.enervate_rank.is_some() {
         push(BuffMeta {
             id: "arcane:secondary_enervate".into(),
@@ -2838,7 +2832,7 @@ fn enumerate_buffs(
             uncapped: true,
         });
     }
-    // Arcane buffs — ONE CARD PER ARCANE, not per grant (user, 2026-08-02).
+    // Arcane buffs — ONE CARD PER ARCANE, not per grant.
     //
     // Frostbite grants crit damage AND multishot off the same Cold proc, and
     // they are the same stack count by construction: there is no state of the
@@ -2849,7 +2843,7 @@ fn enumerate_buffs(
         // that seats two folds them into one `ArcaneFx` whose id is
         // "primary_deadhead+secondary_deadhead", and every card read that —
         // two identically-named cards the player could not tell apart, which
-        // is the whole reason `ArcBuffSpec::owner` exists (2026-08-01).
+        // is the whole reason `ArcBuffSpec::owner` exists.
         let named = |id: &str| {
             wfsim_engine::arcanes_data::secondary(id)
                 .map(|d| d.name.clone())
@@ -2861,8 +2855,7 @@ fn enumerate_buffs(
             // is a WARFRAME STAT — not a stack anybody earns or loses — and a
             // "0/1" knob for it would invite switching off a number the frame
             // simply has. It rides the buff machinery to reach its bucket;
-            // that is an implementation detail and it stops here (user,
-            // 2026-08-02). Its own control is WF Armor, in the Tenno block.
+            // that is an implementation detail and it stops here. Its own control is WF Armor, in the Tenno block.
             if b.trigger == wfsim_engine::arcanes_data::ArcTrigger::Passive {
                 continue;
             }
@@ -3012,7 +3005,7 @@ fn arcane_in_pools(
 /// pre-data short name ("deadhead"). Both are rewritten ONCE, in the client's
 /// storage (`migrateArcaneShape`), so nothing here has to know there was ever
 /// another shape — the alternative is two ways of saying the same thing, kept
-/// alive forever by the code that reads both (user, 2026-08-01).
+/// alive forever by the code that reads both.
 ///
 /// Entries past the weapon's pool count are dropped: what a weapon can seat is
 /// the weapon's business, not the caller's.
@@ -3092,8 +3085,7 @@ fn frenzy_lock_mode(cfg: Option<&(u32, bool)>) -> LockMode {
 /// same number, which is exactly right for a RECORD and exactly wrong for a
 /// card: `1.0 - 0.7` is `0.30000000000000004`, and the falloff row printed
 /// **"30.000000000000004% at 6.2 m"** on 27 of the roster's 141 falloff
-/// entries — every weapon whose reduction is 0.7, 0.8 or 0.9 (owner,
-/// 2026-08-23).
+/// entries — every weapon whose reduction is 0.7, 0.8 or 0.9.
 ///
 /// Three decimals is past anything this data carries — the finest real figure
 /// on these rows is a tenth of a metre — so the trim can never eat a digit
@@ -3106,7 +3098,7 @@ fn display_number(x: f64) -> String {
     // otherwise safe by an invariant of the line above it: on a string with no
     // decimal point, `trim_end_matches('0')` turns 30 into 3. Sabotaging the
     // format specifier to prove this function's own test bites printed exactly
-    // that (2026-08-23).
+    // that.
     let s = match s.split_once('.') {
         Some(_) => s.trim_end_matches('0').trim_end_matches('.'),
         None => s.as_str(),
@@ -3690,7 +3682,7 @@ pub fn panel_json(v: &Value) -> Value {
     // attribute it to. It gets a conditional line — the one channel for "this
     // pays, and here is what decides it" — because a contribution the sim
     // applies and the panel never mentions is exactly the disagreement the
-    // rest of this function exists to prevent (user, 2026-08-02).
+    // rest of this function exists to prevent.
     {
         let arc = arcane_fx_for(v, info, &forms_list[0].2, policy);
         let t = tenno_from(v, info);
@@ -3921,7 +3913,7 @@ pub fn panel_json(v: &Value) -> Value {
                 // with Critical Deceleration under a Cannonade read "3.3/s ·
                 // locked · −20% Critical Deceleration" — a pinned number and a
                 // contribution to it, on the same row, with nothing saying
-                // which one won (owner, 2026-08-08). The number was always
+                // which one won. The number was always
                 // right; the row argued with itself about it. Marking them is
                 // better than dropping them: "this mod does nothing here" is
                 // exactly what the reader came for, and a missing line says it
@@ -4055,7 +4047,7 @@ pub fn panel_json(v: &Value) -> Value {
         // damage` and nothing about the cost. The cost is real on a Braton and
         // exactly ZERO on a launcher, and the difference decides whether that
         // mod belongs in the build — so a panel that shows neither is hiding
-        // the more interesting half (owner, 2026-08-23).
+        // the more interesting half.
         //
         // ACCURACY IS NOT THE STAT. The weapon-level `accuracy` field is
         // derived and fuzzy — the wiki prints it as a CATEGORY — and this
@@ -4146,7 +4138,7 @@ pub fn panel_json(v: &Value) -> Value {
         // Incarnon makes false: its explosion takes CO.
         let radial_co = base.radial.as_ref().is_some_and(|r| r.takes_condition_overload);
         let field_co = base.lingering.as_ref().is_some_and(|f| f.takes_condition_overload);
-        // A FIXED FORMAT, NOT A SENTENCE (owner, 2026-08-16). The rule is
+        // A FIXED FORMAT, NOT A SENTENCE. The rule is
         // three slots — BEHAVIOUR, the BASE the term reads, and which PARTS
         // take it — so a reader can compare two weapons by looking at the same
         // position twice instead of parsing two paragraphs. Anything genuinely
@@ -4167,8 +4159,7 @@ pub fn panel_json(v: &Value) -> Value {
             wfsim_engine::loadout::CoBehavior::Inert => "inert",
         };
         let excluded = (panel.co_base_fraction - 1.0).abs() > 1e-9;
-        // THE PERCENTAGE IS ALWAYS PRINTED, including the ordinary 100%
-        // (owner, 2026-08-16). A slot that is blank when nothing is odd cannot
+        // THE PERCENTAGE IS ALWAYS PRINTED, including the ordinary 100%. A slot that is blank when nothing is odd cannot
         // be told apart from a slot nobody filled in, and "100%" is the claim
         // being made — that this weapon reads its WHOLE base — which is worth
         // as much scrutiny as a 52%. ORIGINAL of EVOLVED: `raw_bd` is the
@@ -4201,7 +4192,7 @@ pub fn panel_json(v: &Value) -> Value {
             notes.push("multiplying stands OUTSIDE the base-damage bracket, so Serration does not dilute it; additive joins that bracket and is diluted".into());
         }
 
-        // ALWAYS SHOWN, even with no source equipped (owner, 2026-08-16).
+        // ALWAYS SHOWN, even with no source equipped.
         //
         // The row used to appear only once a GunCO card was on the build, so
         // the one thing a reader could check — WHICH RULE this weapon is being
@@ -4360,8 +4351,7 @@ pub fn panel_json(v: &Value) -> Value {
             }
         }
 
-        // A weapon is the GUN plus the PROJECTILE(s) it launches (user,
-        // 2026-07-29): the gun carries cadence and capacity, each projectile
+        // A weapon is the GUN plus the PROJECTILE(s) it launches: the gun carries cadence and capacity, each projectile
         // carries its own damage, crit, status — and, when it is a radial,
         // its blast geometry. Split the flat row list along that line
         // instead of stating a single "base attack" that belongs to neither.
@@ -4465,7 +4455,7 @@ pub fn panel_json(v: &Value) -> Value {
             // about the weapon, not about what is currently equipped.
                 // THE SAME THREE SLOTS as the direct hit's, so a reader
                 // comparing the two parts of one weapon compares positions
-                // rather than paragraphs (owner, 2026-08-16). This part has
+                // rather than paragraphs. This part has
                 // its own base and its own eligibility, so both are printed
                 // here rather than inherited from the row above.
                 let (value, rule, note) = if rr.takes_condition_overload {
@@ -4515,8 +4505,7 @@ pub fn panel_json(v: &Value) -> Value {
         // FROM THE PANEL, not from the weapon. A field a MOD granted — Nightwatch
         // Napalm's fire — has no `base.lingering` at all, so reading the weapon
         // here drew nothing: the part was resolved, simulated, and appeared on
-        // no card, which on an Ogris is most of the build's damage (owner,
-        // 2026-08-23). `ResolvedPanel::lingering_base` is whichever one the
+        // no card, which on an Ogris is most of the build's damage. `ResolvedPanel::lingering_base` is whichever one the
         // field actually resolved from.
         if let (Some(fb), Some(fr)) = (panel.lingering_base.as_ref(), panel.lingering.as_ref()) {
             let fsrc = |key: &'static str| sources(key, None);
@@ -4647,7 +4636,7 @@ parts.push(json!({
         })
     };
 
-    // ONE PLAYER, BOTH ANSWERS (user, 2026-08-02). These rows resolved against
+    // ONE PLAYER, BOTH ANSWERS. These rows resolved against
     // the NEUTRAL Tenno while the sim resolved against the fight's, so every
     // player-gated grant in the roster was paid by the sim and absent from the
     // panel: Haven Foray's "+50 with Overshields", Guardian's Might's +74, the
@@ -4656,7 +4645,7 @@ parts.push(json!({
     // not, which is why it stayed invisible — the numbers it hid were on
     // exactly the cards nobody had a control for yet.
     //
-    // Found by the loadout knob (2026-08-13): Lone Gun's "+14 Base Magazine
+    // Found by the loadout knob: Lone Gun's "+14 Base Magazine
     // Capacity" moved the sim's magazine to 20 and the Magazine row still read
     // 6.
     let forms: Vec<Value> = forms_list
@@ -4752,8 +4741,7 @@ parts.push(json!({
         "policy": if info.sentinel { "base only (sentinel)" } else { "conditionals at max stacks" },
         "forms": forms,
         "conditionals": conditionals,
-        // WHO IS HOLDING THE GUN, as numbers rather than as an assumption
-        // (owner, 2026-08-26). Several perks and mods read the player and the
+        // WHO IS HOLDING THE GUN, as numbers rather than as an assumption. Several perks and mods read the player and the
         // panel showed none of it: "0 = no frame" is what the FIELDS say, and a
         // reader had no way to see what the fight actually resolved to once a
         // frame, an aura or an archon shard had moved it.
@@ -4900,14 +4888,13 @@ fn chosen_evolutions(v: &Value, info: &WeaponInfo) -> Result<Vec<String>, String
 /// THE FIGHT — parsed ONCE, for both modules.
 ///
 /// `simulate_json` used to parse this and `parse_optimize` parsed it again, and
-/// the two drifted three times in three days: the form-unlock fallback
-/// (2026-08-04), a caller omitting `evolutions` getting the Incarnon cycle free
-/// while the search scored the base form (2026-08-03), and the optimizer
-/// keeping a buff config of its own (2026-08-02). Every one of them scored
+/// the two drifted three times in three days: the form-unlock fallback, a caller omitting `evolutions` getting the Incarnon cycle free
+/// while the search scored the base form, and the optimizer
+/// keeping a buff config of its own. Every one of them scored
 /// builds under a fight the replay would not run.
 ///
 /// So this is not a helper both agree to call — it is the ONE parse, and the
-/// simulator is the truth (user, 2026-08-04). The optimizer adds only
+/// simulator is the truth. The optimizer adds only
 /// what is its own: the scope to search and the budget to spend.
 ///
 /// Measured when it was written: the two parsers read 9 of the same request
@@ -5137,7 +5124,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // This used to fall back to "base" when the tier-1 unlock was not among the
     // chosen evolutions, which made the form control lie: with no evolutions
     // picked — the state the page STARTS in — all three options produced the
-    // base form's number and nothing said why (user, 2026-08-04).
+    // base form's number and nothing said why.
     //
     // Implying it is the honest model, not a shortcut. Tier 1 is
     // `selection: fixed` on every Incarnon ladder: it is not a choice, it is
@@ -5164,7 +5151,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     let registered = wfsim_engine::weapons_data::forms_of(&info.id);
     // `default` = however THIS weapon is played: the cycle where there is one
     // to run, its own default form where there is not. A weapon that
-    // transforms is played transforming (user, 2026-07-31).
+    // transforms is played transforming.
     let form = if form == "default" && info.has_cycle { "gauge_cycle" } else { form };
     // Otherwise the cycle is asked for BY NAME. It used to be "any form
     // string this weapon does not register", which made it the destination of
@@ -5197,7 +5184,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // differ only in the player's aim therefore give a sentinel the same score
     // twice, which is the honest answer to "how much of this weapon is your
     // aim": none of it.
-    // THE SCENARIO'S OWN HOUSE RULES, per weapon class (owner, 2026-08-27). A
+    // THE SCENARIO'S OWN HOUSE RULES, per weapon class. A
     // fight is ONE DOCUMENT that any weapon can be tested against, so the rules
     // it holds for the classes it is not currently pointed at travel with it and
     // are legible on any weapon's page. Looked up once here and handed to
@@ -5221,7 +5208,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         get_f64(v, "headshot_pct", default_headshot_pct(info)),
     );
     let tenno = tenno_from(v, info);
-    // INFINITE AMMO, and it is the DEFAULT for every weapon (user, 2026-08-01).
+    // INFINITE AMMO, and it is the DEFAULT for every weapon.
     // The sim models no ammo PICKUPS, so a finite reserve is the pessimistic
     // half of a mechanic we only half have — and the headline number people
     // compare across weapons is the one where ammo is not the limit. A weapon
@@ -5233,7 +5220,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     // reload cadence — and `ammo_cost` — still bite.
     //
     // THE RESUPPLY HALF IS RESOLVED HERE rather than inside
-    // `reserve_is_infinite` (2026-08-27): it is `Capability::CanResupply`, and
+    // `reserve_is_infinite`: it is `Capability::CanResupply`, and
     // it is the one capability whose absence is OURS rather than the game's, so
     // it is also the one a scenario may argue with. `false` for a ground
     // Arch-Gun as it always was — unless this fight's class rules say Arch-Guns
@@ -5349,8 +5336,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     let Some(spec) = specs.iter().find(|e| e.id == enemy_id) else {
         return Err(err_json(format!("unknown enemy: {enemy_id}")));
     };
-    // ELITE VARIANT, and it DEFAULTS ON wherever the unit has one (owner,
-    // 2026-08-05). The Eximus is what a Steel Path player actually meets —
+    // ELITE VARIANT, and it DEFAULTS ON wherever the unit has one. The Eximus is what a Steel Path player actually meets —
     // extra health and a pool of Overguard in front of it — so the ordinary
     // unit is the special case to ask for, not the elite one.
     //
@@ -5371,7 +5357,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
 
     // ---- THE FORMATION: every OTHER body on the floor.
     //
-    // Each entry is wholly its own (owner, 2026-08-17): its own unit, its own
+    // Each entry is wholly its own: its own unit, its own
     // level, its own Eximus answer, its own place. Nothing about one reaches
     // another — which is why this loop is the same six lines the single target
     // above runs, repeated, rather than a variation on it.
@@ -5397,7 +5383,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
             // `""` for "same as the target", which is the common case and what
             // every body a formation is built from carries — so reading it as a
             // name looked the id up, failed, and refused the whole fight with
-            // `unknown enemy: ` and nothing after the colon (owner, 2026-08-17).
+            // `unknown enemy: ` and nothing after the colon.
             //
             // The same applies to a LEVEL of null and an EXIMUS of null: absent
             // and blank are one state here, and it means "the aimed body's".
@@ -5457,7 +5443,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
 
     // ---- WHICH BODY THE BEAM IS ON.
     //
-    // AIM IS A DIRECTION (owner, 2026-08-17): the request names a PLACE, and
+    // AIM IS A DIRECTION: the request names a PLACE, and
     // whatever the line from the muzzle runs through is what gets hit —
     // `space::first_hit`. Aiming at the floor two metres short of a body still
     // hits it, because the body's circle is still on the line.
@@ -5478,7 +5464,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         });
     let (target, body_parts, target_at, others, aimed_id) = if let Some(aim) = aim_at {
         // WHICHEVER BODY THE LINE CROSSES FIRST — and a shot that crosses
-        // NOBODY is a legal shot (owner, 2026-08-17): *"the engine mechanically
+        // NOBODY is a legal shot: *"the engine mechanically
         // fires toward the aim point; if it hits, it hits, and if it does not,
         // it is zero"*. Refusing it was wrong twice over — a miss is an answer,
         // and aiming BESIDE a crowd so the splash catches more of it is a real
@@ -5632,7 +5618,7 @@ pub fn simulate_json(v: &Value) -> Value {
 /// A single-target fight is about a millisecond a run and nobody needs this. A
 /// 361-body one is tens of milliseconds, so the rulers' 1000 runs is a minute
 /// in the browser — and a button that says "Simulating…" for a minute reads as
-/// a hang, which is what it was reported as (owner, 2026-08-18).
+/// a hang, which is what it was reported as.
 ///
 /// THE ANSWER IS UNCHANGED. The callback observes and never steers.
 pub fn simulate_json_reporting(v: &Value, on_run: &mut impl FnMut(u32, u32)) -> Value {
@@ -5758,8 +5744,7 @@ fn sim_params(
         let panel = panel_of(single_form);
         let mut d = DummyParams::from_panel(&panel, arena, &arcane_fx);
         d.infinite_reserve = panel.reserve_is_infinite(infinite_ammo);
-        // Frenzy is the WEAPON's passive: it persists across its forms
-        // (user-confirmed 2026-07-24), so it rides whichever one is fired.
+        // Frenzy is the WEAPON's passive: it persists across its forms, so it rides whichever one is fired.
         d.frenzy = frenzy_single;
         d.locked_buffs = frenzy_locks.to_vec();
         (panel, d)
@@ -5830,20 +5815,19 @@ pub fn log_json(v: &Value) -> Value {
     let limit = get_f64(v, "limit", 60_000.0).clamp(1.0, 200_000.0) as usize;
     // WHERE THIS PAGE STARTS. A window bounds one read; the skip is what lets
     // several reads cover a stream no single one can hold, and the whole fight
-    // is then a matter of asking again (owner, 2026-08-28).
+    // is then a matter of asking again.
     let skip = get_f64(v, "skip", 0.0).max(0.0) as usize;
     let rec = wfsim_engine::dummy::record(&params, state, from, to, limit, skip);
 
     // ONE BODY'S VIEW IS A FILTER, never a different query: a weapon event
-    // belongs to nobody, so it belongs in every body's timeline (owner,
-    // 2026-08-27).
+    // belongs to nobody, so it belongs in every body's timeline.
     let only = v.get("body").and_then(Value::as_u64).map(|b| b as u16);
     // WHAT REPEATS IS SENT ONCE. The weapon's state is identical on every row
     // of a trigger pull and usually across several; the two stack lists change
     // only when something is applied or expires. A row that OMITS one means
     // "the same as the row before", and the page fills it forward — which is
     // the other half of the 17.2 MB above, and is exact rather than lossy
-    // because the previous value is on the wire either way (2026-08-28).
+    // because the previous value is on the wire either way.
     let mut carry = Carry::default();
     let events: Vec<Value> = rec
         .events()
@@ -5867,7 +5851,7 @@ pub fn log_json(v: &Value) -> Value {
         // their INDEX here, because a row carries the ones that did nothing by
         // name too — thirteen of them on an ordinary rifle hit, the same
         // thirteen strings on every row of the fight. Measured before this: 859
-        // bytes an event, 17.2 MB for a 20,000-row window (2026-08-28).
+        // bytes an event, 17.2 MB for a 20,000-row window.
         "factors": wfsim_engine::record::Factor::ALL
             .iter().map(|f| f.name()).collect::<Vec<_>>(),
         "buffs": rec.buffs(),
@@ -6133,7 +6117,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         })
         .unwrap_or_default();
 
-    // No count validation here (user, 2026-07-28): the sim runs whatever it
+    // No count validation here: the sim runs whatever it
     // is given — slot legality (8 main + 1 exilus) is the UI's job, and the
     // engine resolves any mod list honestly.
 
@@ -6375,7 +6359,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     // OPT-IN, and that is not a micro-optimisation: the marginal-gain scan
     // calls this endpoint once per CANDIDATE — seventy mods on an axis — and
     // shows none of it. Only the Simulator's own Run asks for it, and pays one
-    // extra engagement plus the frames on the wire (user, 2026-08-02).
+    // extra engagement plus the frames on the wire.
     let replay = if get_bool(v, "replay", false) {
         let rep = wfsim_engine::dummy::replay(
             &params,
@@ -6421,7 +6405,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
                     // Tau and Cinematic — could never appear in a replay's
                     // per-type breakdown however much of them a weapon dealt.
                     // Same fault class as the `[f64; 15]` arrays in `dummy`,
-                    // found the same way: by counting (2026-08-21).
+                    // found the same way: by counting.
                     (0..wfsim_engine::damage::DamageType::ALL.len())
                         .filter(|&i| pick(&last, name).1[i] > 0.0)
                         .map(|i| {
@@ -6490,7 +6474,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
                 // SAME SHAPE, which is the property `check_debuff_coverage`
                 // asserts and the whole reason one component draws both.
                 // Adding an `uncapped` field here instead broke that symmetry
-                // on the first run (2026-08-21).
+                // on the first run.
                 .map(|(id, cap)| json!({ "id": id, "max": cap.unwrap_or(0), "value": Value::Null }))
                 .collect::<Vec<_>>(),
             // ONE TABLE PER BODY THE REPLAY FOLLOWED, and the first is the
@@ -6529,7 +6513,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // what makes the log the report's OWN fight rather than a similar one.
         // Two halves because a JSON number in JavaScript is a double and a
         // 64-bit state comes back ROUNDED — the same lesson `dummy::RunKey`
-        // records, learnt the same way (2026-08-18).
+        // records, learnt the same way.
         "run": [(m.rng_state >> 32) as u32, (m.rng_state & 0xffff_ffff) as u32],
         "score": m.kill_progress,
         "kills": m.kills,
@@ -6545,7 +6529,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // calc used to run the reference a SECOND time at another seed and call
         // the gap its resolution — one sample of a spread, whose answer ranged
         // 0.7%–11.2% on identical inputs, so the same scan suppressed every
-        // chip or none of them at random (2026-08-12). The server has all N
+        // chip or none of them at random. The server has all N
         // runs; it says the spread it already computed.
         "score_mean": s.mean_kill_progress,
         "score_se": s.std_kill_progress / f64::from(runs.max(1)).sqrt(),
@@ -6578,7 +6562,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // MEDIAN ENGAGEMENT — one fight, so a proc count out of it is a sample
         // of size `pellets` however many runs were paid for, and raising the run
         // count adds not one trial to it. That is the trap `score_mean` was
-        // added for (2026-08-12) in the other direction: a caller measuring a
+        // added for in the other direction: a caller measuring a
         // RATE needs the pooled counts, not one run's.
         //
         // `check_custom_enemies` is the caller, and it asserts the wiki's rule
@@ -6623,7 +6607,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // WHO TOOK WHAT, by NAME. `damage_by_body` has been per body since the
         // formation landed and had no way to say WHOSE — the index into a list
         // is not a name, and a reader deleting the body in front would renumber
-        // everything behind it (owner, 2026-08-17).
+        // everything behind it.
         //
         // ONLY THE ONES THAT TOOK SOMETHING. A 19x19 ruler is 361 bodies and a
         // chaining beam reaches thirteen; listing 348 zeroes would bury the
@@ -6856,7 +6840,7 @@ pub struct OptimizePlan {
     /// THE VALENCE ELEMENTS this scope searches, and the roll they are all
     /// built at. A SET, because the progenitor element is a dimension like the
     /// mode: a different element is a different build, so a scope may ask which
-    /// of them wins (owner, 2026-08-13).
+    /// of them wins.
     ///
     /// One entry is the ordinary case and reproduces exactly what a pinned
     /// element did; an empty list is a weapon with no valence at all, and the
@@ -6877,7 +6861,7 @@ pub struct OptimizePlan {
     /// EVERY WAY THE SEARCH MAY PLAY IT, one entry per mode in the scope.
     ///
     /// Mode is a search dimension like the mods, the arcane and the evolution
-    /// set (owner, 2026-08-11) — "which of these is the better Phantasma, the
+    /// set — "which of these is the better Phantasma, the
     /// charged one or the plain one" is the same question as "which of these is
     /// the better mod", and it is the one axis the builder had and the search
     /// did not. Before this the whole plan fired ONE mode, taken from the
@@ -6902,7 +6886,7 @@ pub struct OptimizePlan {
     shard: u32,
     shards: u32,
     /// THE REQUEST THIS PLAN CAME FROM, so every ranked row can carry a
-    /// simulate request that reproduces it (owner, 2026-08-16).
+    /// simulate request that reproduces it.
     ///
     /// THE SIMULATOR IS THE TRUTH, and a search's number is only worth
     /// something if the simulator will say it back. That was a claim about the
@@ -7032,7 +7016,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // +1 on top). Slots may stay empty — sizes 0..=build_size all enumerate,
     // so a scope smaller than the cap is legal.
     //
-    // ZERO IS ONE OF THEM (owner, 2026-08-29). Every other axis can be set to
+    // ZERO IS ONE OF THEM. Every other axis can be set to
     // "search this slot empty, and keep the marks"; this one was clamped to 1,
     // so the only way to reach the bare weapon was to unmark everything —
     // which costs the reader exactly what 0–0 exists to protect. It also makes
@@ -7063,7 +7047,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             fixed_ids.len()
         )));
     }
-    // How FULL a build must be, as its own axis (user, 2026-08-03).
+    // How FULL a build must be, as its own axis.
     // `build_size` is the ceiling and `build_min` the floor, so "exactly 8" is
     // (8, 8), "up to 8" is (1, 8) and "up to 7" is (1, 7) — three settings
     // rather than three behaviours.
@@ -7074,7 +7058,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // raised to it rather than rejected — it asks for builds the scope itself
     // has already ruled out.
     //
-    // THE FLOOR STARTS AT 0, AND 0 IS THE DEFAULT (owner, 2026-08-29). Every
+    // THE FLOOR STARTS AT 0, AND 0 IS THE DEFAULT. Every
     // other axis of a search reads "nothing marked" as the EMPTY option — an
     // unmarked exilus slot stays empty (see `exilus_ids` above), an unmarked
     // arcane seat searches no arcane — and the mods axis alone answered it with
@@ -7116,7 +7100,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         wspec(&info.id).transform_group.as_deref().unwrap_or(&info.id),
     );
     for tier in 1u32..=evo_tiers {
-        // `"none"` IS AN OPTION THE LIST MAY NAME (owner, 2026-08-29), which is
+        // `"none"` IS AN OPTION THE LIST MAY NAME, which is
         // how a tier says "0–1": search this tier both unfilled and filled.
         // Unambiguous here where it is not for arcanes, because the wire is
         // already one array PER TIER. An array holding only "none" is "0–0" —
@@ -7236,7 +7220,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // The FIGHT's player, not a second one built the same way. Identical today
     // — same function, same request — which is exactly why it was easy to leave
     // and exactly why it should not be: two constructions of one fact is how
-    // they come to differ (user, 2026-08-04).
+    // they come to differ.
     let tenno = &fight.tenno;
     // ONE AXIS PER SLOT, then their CROSS PRODUCT — a weapon that seats two
     // arcanes is searched over pairs, because "the best Primary" and "the
@@ -7258,7 +7242,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         .iter()
         .map(|pool| {
             // THE EMPTY CHOICE IS AN OPTION LIKE ANY OTHER, and it is marked
-            // like any other — `none:<pool>` (owner, 2026-08-29). The id names
+            // like any other — `none:<pool>`. The id names
             // its POOL because a weapon can seat two arcanes and the marks are
             // one flat map: a bare "none" could not say which seat it is about.
             // It is the exilus slot's own `none` mechanism, made per seat.
@@ -7292,13 +7276,12 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             // EMPTY IS NOT ADDED BY ITSELF, and that has not changed: an arcane
             // slot costs nothing — no capacity, no Forma — so leaving it empty
             // can never beat filling it with something that helps, and marking
-            // a candidate IS the statement that the seat should be filled
-            // (user, 2026-08-01). Keeping `none` alongside doubled the space
+            // a candidate IS the statement that the seat should be filled. Keeping `none` alongside doubled the space
             // per slot and put builds with a hole in them on the results
             // board, where they can only ever tie the same build with the
             // arcane in it.
             //
-            // WHAT CHANGED IS THAT IT CAN BE ASKED FOR (owner, 2026-08-29).
+            // WHAT CHANGED IS THAT IT CAN BE ASKED FOR.
             // That decision was against the empty seat being a DEFAULT, and a
             // scope is now allowed to say "0–1" out loud — which is the same
             // thing the exilus slot has always been able to say, and the page
@@ -7375,11 +7358,11 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // No cap (user: allow spending local resources). The funnel handles large
     // spaces by culling obviously-bad combos in cheap early rounds.
 
-    // ---- final-round contract (user, 2026-07-28): the last round is
+    // ---- final-round contract: the last round is
     // guaranteed `finalists` candidates × `final_runs` runs; everything
     // before only whittles the field down (schedule + adaptive racing).
     //
-    // `final_runs` FALLS BACK TO THE SCENARIO'S `runs` (user, 2026-08-02).
+    // `final_runs` FALLS BACK TO THE SCENARIO'S `runs`.
     // How hard you measure is the scenario's question and it is already
     // answered there — a second default here is how a winner gets crowned at a
     // precision the replay never used. The web client stops sending its own
@@ -8130,8 +8113,7 @@ pub fn run_optimize_resumable(
     // Now the subset space is an INDEX RANGE and the search walks a
     // pseudorandom bijection over it: run it to the end and it is an
     // exhaustive enumeration, stop it early and what it has is a uniform
-    // sample. Same loop, same code, no threshold (user, 2026-08-03: 不要搞
-    // 大小区分 — 严谨性大于便利性).
+    // sample. Same loop, same code, no threshold.
     let usable: Vec<usize> = (0..pool.len())
         .filter(|&i| !constraints.forbid.iter().any(|f| f == pool[i].id))
         .collect();
@@ -8467,8 +8449,7 @@ mod asset_tests {
     /// here is one command away from fixed, and this is what makes anyone
     /// run it.
     /// Every weapon can be given a riven, so every weapon must reach a stat
-    /// A FORMATION REACHES THE SIM, and each body in it is wholly its own
-    /// (owner, 2026-08-17). The request path for the multi-enemy arena, end to
+    /// A FORMATION REACHES THE SIM, and each body in it is wholly its own. The request path for the multi-enemy arena, end to
     /// end: nine bodies at 3 m, the chain spreading into them, and a Primed
     /// Firestorm radius worth four times as much there as it is worth nothing
     /// against one.
@@ -8527,7 +8508,7 @@ mod asset_tests {
         // …AND THE CAP IS REFUSED RATHER THAN TRUNCATED. Derived from the
         // constant, not written out: this test said "at most 50" and broke the
         // day the cap moved, which is the same two-declarations bug the error
-        // message itself is now careful to avoid (2026-08-17).
+        // message itself is now careful to avoid.
         let cap = wfsim_engine::formation::MAX_BODIES;
         let too_many = simulate_json(&req((0..=cap)
             .map(|i| serde_json::json!({ "at": [i as f64 * 3.0, 5.0] }))
@@ -8759,8 +8740,7 @@ mod asset_tests {
     /// A BODY THE PAGE BUILT IS A BODY THE FIGHT ACCEPTS — the shape the canvas
     /// actually sends, blanks and all.
     ///
-    /// It failed with `unknown enemy: ` and nothing after the colon (owner,
-    /// 2026-08-17): the page stores a body's unit as `""` for "same as the
+    /// It failed with `unknown enemy: ` and nothing after the colon: the page stores a body's unit as `""` for "same as the
     /// target", which is what EVERY body a formation is built from carries, and
     /// the parser read the empty string as a name. Absent and blank are one
     /// state, and it means the aimed body's.
@@ -8811,8 +8791,7 @@ mod asset_tests {
         // 20, so it is the one the beam is on.
         let near = run([0.0, 30.0]);
         assert!(near.get("error").is_none(), "{near}");
-        // …AND AIMED AT BARE FLOOR IT IS A LEGAL SHOT THAT MISSES (owner,
-        // 2026-08-17). It was refused for a day, which was wrong twice over: a
+        // …AND AIMED AT BARE FLOOR IT IS A LEGAL SHOT THAT MISSES. It was refused for a day, which was wrong twice over: a
         // miss is an answer, and aiming BESIDE a crowd so the splash catches
         // more of it is a tactic rather than a mistake.
         let miss = run([40.0, 0.1]);
@@ -8830,16 +8809,14 @@ mod asset_tests {
     /// pool. `riven_class` walks outward from the narrowest mod pool and stops
     /// at the first one that has stats — with none, it returns "" and the
     /// editor renders a riven with NOTHING to roll, which is how the Larkspur
-    /// Prime shipped until `data/rivens/archgun.yaml` existed (user,
-    /// 2026-08-01). The next class added lands here instead of in the UI.
+    /// Prime shipped until `data/rivens/archgun.yaml` existed. The next class added lands here instead of in the UI.
     ///
     /// EXCEPT A WEAPON THIS APP CANNOT MOD AT ALL. The Deconstructor pair takes
     /// MELEE and thrown-melee mods, and a melee riven rolls melee stats — so a
     /// weapon with no mod pool here has no riven pool here either, and both
     /// absences are the same fact rather than two bugs. The exemption is keyed
     /// on the empty pool rather than on the two ids, so it covers the next
-    /// melee weapon and stops covering these two the day a melee pool exists
-    /// (2026-08-15).
+    /// melee weapon and stops covering these two the day a melee pool exists.
     #[test]
     fn every_weapon_reaches_a_riven_stat_pool() {
         let mut orphans: Vec<String> = Vec::new();
@@ -8860,7 +8837,7 @@ mod asset_tests {
             // a whole family of stats nobody has surveyed — a card rolls Range,
             // Attack Speed, Combo Duration and Heavy Attack Efficiency, none of
             // which any existing pool contains — so an empty answer here is the
-            // truth rather than a wiring fault (2026-08-28).
+            // truth rather than a wiring fault.
             //
             // IT IS SAID ON THE PAGE, not only here: every melee entry carries
             // "melee RIVENS are not modelled" in its `unmodeled:` list, so a
@@ -8967,7 +8944,7 @@ mod optimizer_arcane_tests {
     ///
     /// An arcane slot costs nothing — no capacity, no Forma — so empty can
     /// never beat filled, and marking a candidate IS the statement that the
-    /// slot should be filled (user, 2026-08-01). Every slot used to carry an
+    /// slot should be filled. Every slot used to carry an
     /// implicit "none", so marking 3 primaries and 4 secondaries enumerated
     /// 4 x 5 = 20 sets, eight of which had a hole in them and could only ever
     /// tie the same build with the arcane in it.
@@ -9220,8 +9197,7 @@ mod form_tests {
     ///
     /// This is the state the page STARTS in: no evolutions chosen. It used to
     /// fall back to the base form for every request, so all three options
-    /// produced one number and the control said otherwise (user,
-    /// 2026-08-04). Three options, one outcome.
+    /// produced one number and the control said otherwise. Three options, one outcome.
     ///
     /// Implying it is exact rather than generous: tier 1 is `selection: fixed`
     /// on every Incarnon ladder — not a choice but what installing the Genesis
@@ -9277,8 +9253,7 @@ mod form_tests {
         // never wired to its Incarnon entry. Boar Prime shipped that way for
         // an afternoon: the second weapon file existed, the evolutions
         // existed, and `transforms_to` did not — so the cycle silently ran the
-        // base form and reported a number that looked fine on its own
-        // (2026-08-03).
+        // base form and reported a number that looked fine on its own.
         let cycled = simulate_json(&json!({
             "weapon": "boar_prime", "form": "incarnon_cycle", "mods": [],
             "evolutions": ["boar_prime_evo1_incarnon_form"],
@@ -9426,8 +9401,7 @@ mod optimizer_evolution_tests {
 /// firing modes in order to equip this mod" (wiki, Semi-Pistol_Cannonade), and
 /// Dual Toxocyst transforms into a full-auto one. So the pool is a question
 /// about the BUILD: with tier 1 unpicked the weapon is still pure semi-auto and
-/// the mod fits; with it picked the weapon has two firing modes and it does not
-/// (user, 2026-08-04).
+/// the mod fits; with it picked the weapon has two firing modes and it does not.
 ///
 /// Both modules are pinned here, and that is the point — the optimizer obeys
 /// the simulator's rule by CALLING it (`pool_for_build`), so the two cannot
@@ -9505,7 +9479,7 @@ mod equip_rule_tests {
     }
 
     /// EVERY SLOT AXIS SAYS HOW MANY OF ITS SLOTS TO FILL, and the empty
-    /// choice is an option marked like any other (owner, 2026-08-29).
+    /// choice is an option marked like any other.
     ///
     /// A single-slot axis has three answers and every one of them is now
     /// reachable — 0–0 (search it unfilled, candidates kept for later), 0–1
@@ -9633,7 +9607,7 @@ mod equip_rule_tests {
     /// Every other axis reads "nothing marked" as the EMPTY option — an
     /// unmarked exilus slot stays empty, an unmarked arcane seat searches no
     /// arcane — and the mods axis alone answered it with "no legal builds in
-    /// this scope", because `build_min` was clamped to 1 (owner, 2026-08-29).
+    /// this scope", because `build_min` was clamped to 1.
     ///
     /// The other half is the one that must not regress: 0 is now the DEFAULT,
     /// so this also asserts that the derived floor still wins the moment
@@ -9671,7 +9645,7 @@ mod equip_rule_tests {
     }
 
     /// A CEILING OF 0 IS "SEARCH IT EMPTY, AND KEEP THE MARKS" — the same thing
-    /// 0–0 means on every other axis (owner, 2026-08-29).
+    /// 0–0 means on every other axis.
     ///
     /// It has to outrank the DERIVED floor, which is the sharp part: the marks
     /// say "use these" and a 0 ceiling says "not this time", and without a rule
@@ -10037,14 +10011,13 @@ mod card_and_sim_agree {
                     &fx,
                 );
                 // A `tenno_scaled` arcane ARMS THE SIM AND DRAWS NO CARD, on
-                // purpose (user, 2026-08-02): its value is a Warframe STAT
+                // purpose: its value is a Warframe STAT
                 // rather than a stack anybody earns, so a "0/1" knob for it
                 // would invite switching off a number the frame simply has. Its
                 // control is the Tenno block. So it is excluded from this
                 // direction of the check rather than being a violation of it.
                 //
-                // IT ONLY SURFACED WHEN THE NEUTRAL FRAME GOT REAL STATS
-                // (owner, 2026-08-20). While the default Tenno had 0 armor and
+                // IT ONLY SURFACED WHEN THE NEUTRAL FRAME GOT REAL STATS. While the default Tenno had 0 armor and
                 // 0 energy, every passive arcane scaled to nothing and armed
                 // nothing, so the two sides agreed by both being empty.
                 let passive: Vec<String> = a
@@ -10225,7 +10198,7 @@ mod one_picture_one_weapon {
 /// `Valence_Formation`); the Laetum's Overwhelming Attrition pays *"On Hit that
 /// is neither Critical nor applies a Status Effect"*. A hit that always procs
 /// can never be such a hit, so the two cannot be played together and the
-/// augment silently wins — reported from the game (owner, 2026-08-25).
+/// augment silently wins — reported from the game.
 ///
 /// The engine had the Attrition condition right (`tier == 0 && procs.is_empty()`)
 /// and no way to know a status was being forced: this file's `add_element` read

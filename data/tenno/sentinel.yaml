@@ -1,7 +1,7 @@
 # THE WIELDER OF A COMPANION WEAPON — a Sentinel, not a Warframe.
 #
 # THERE ARE TWO ACTORS ON THE PLAYER'S SIDE and until now there was one entry
-# for both (owner, 2026-08-26). A robotic weapon is carried by a companion —
+# for both. A robotic weapon is carried by a companion —
 # the wiki is explicit that MOAs "share Robotic weapons with Sentinels and equip
 # their weapons" — while the WARFRAME is still in the fight behind it, bringing
 # the aura and the archon shards. `data/tenno/default.yaml` was doing both jobs,

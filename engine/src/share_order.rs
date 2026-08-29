@@ -4,8 +4,7 @@
 //! A share link used to spell its ids out (`galvanized_diffusion`), which is
 //! why a build cost about 280 characters even after deflate: the payload is
 //! mostly identifiers, and deflate cannot know the ones the payload does NOT
-//! contain. Sending an INDEX instead takes the same build to about 76 (owner
-//! asked for a shorter link, 2026-08-25).
+//! contain. Sending an INDEX instead takes the same build to about 76.
 //!
 //! **THE PRICE IS THIS FILE, and the repo's own rule named it before it was
 //! paid**: *"IDs travel as their own stable slugs, never as indices into a
