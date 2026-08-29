@@ -489,6 +489,74 @@ The fix is to stop substituting exhaustive enumeration for search — ONE path a
 every scope, graded by the harness above (user, 2026-08-03: rigour over
 convenience; a user who wants less work should pool fewer mods).
 
+## EVERY AXIS SAYS HOW MANY OF ITS SLOTS A BUILD FILLS (owner, 2026-08-29)
+
+Every axis of a search is one shape: **N slots, an option set, and a range**
+saying how many of the slots a searched build must fill. The mods axis is 8
+slots and the range is a number 0–8; every other axis is ONE slot and the range
+is 0–0, 0–1 or 1–1. They are the same question, so the page asks it the same
+way — one row, after each axis's list, because a range is a **conclusion** of
+the marking and means nothing before it.
+
+It was three different ways of saying one thing:
+
+| axis | slots | how it said it, before |
+|---|---|---|
+| mode | 1 | fixed at 1–1 — a build is played exactly one way |
+| mods | 8 | a numeric range on screen (`build_min`/`build_size`) |
+| exilus | 1 | 0–1 reachable, but only by pooling a `none` row nothing pointed at |
+| arcane seat | 1 each | **0–1 not reachable at all** |
+| evolution tier | 1 each | **0–1 not reachable at all** |
+| valence | 1 | fixed at 1–1 |
+
+…so on three of the four adjustable axes, which of 0–0 / 1–1 you got was
+decided by whether you had marked anything, and the middle answer did not
+exist.
+
+**IT IS DERIVED FIRST AND ADJUSTED SECOND**, which is the whole of what makes
+this safe. The derived answer is exactly what the scope did before the control
+existed — nothing marked is 0–0, a mark is 1–1 — so **no existing scope grows**.
+That matters most on the arcane seats, where the empty seat was ruled out on
+evidence: *"an arcane slot costs nothing — no capacity, no Forma — so leaving
+it empty can never beat filling it with something that helps, and marking a
+candidate IS the statement that the slot should be filled"* (user,
+2026-08-01). That decision was against the empty seat being a **default**;
+asking for it out loud is a different thing, and the exilus slot could always
+do it. `an_arcane_seat_marked_none_is_not_a_default` is that decision, kept as
+an assertion.
+
+**THE EMPTY CHOICE IS A MARK LIKE ANY OTHER** — `none` on the exilus slot and
+on an evolution tier, `none:<pool>` on an arcane seat, which names its seat
+because a weapon can hold two and the marks are one flat map. So the range is a
+**view over the option set** rather than a second thing to store: it travels in
+the search preset, in the request and through the round trip with no field of
+its own anywhere, and the server reads it as one more option in the list.
+
+**A PIN IS NOT A RANGE.** A pinned candidate settles its slot at 1–1 and the
+row says so with its inputs disabled, rather than showing a number the search
+will not honour. `slotRange` asks for a real pin FIRST so a stale empty mark
+cannot outrank one.
+
+**AND 0–0 KEEPS THE CANDIDATES.** Going down to "searched empty" and back must
+not cost the reader what they marked. That is what forced the evolution
+LADDER to key on the range rather than on the marks: a 0–0 tier still has
+marks, and counting them opened the tier above over sets whose every rung
+`ladder_prefix` then truncates — the marks up there would price nothing while
+the scope said otherwise. `evoFillsRung` is the question the ladder actually
+means. 0–1 **does** open the tier above: half its sets carry the rung, and the
+other half being truncated is the ladder working.
+
+**IT FOUND A DISAGREEMENT BETWEEN THE ESTIMATE AND THE SEARCH.**
+`arcaneOptionsIn` counted `marked + 1` — the empty seat, always — while
+`parse_optimize` has dropped it beside marked candidates since 2026-08-01. So
+the candidate count over-reported by one factor per arcane seat on every scope
+with an arcane in it. Both sides read the range now.
+
+`scripts/check_slot_ranges.mjs` walks all three states on all four axes and
+asserts them ON THE WIRE, because a range that draws correctly and sends
+nothing looks exactly like a working control. Verified to bite: a `setSlotRange`
+that returns early reddens 8 of its 18.
+
 ## How full a build must be is a RANGE (2026-08-03)
 
 The scope had a ceiling (`build_size`, "max mods / build") and a derived floor:

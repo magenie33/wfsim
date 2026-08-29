@@ -16363,7 +16363,10 @@ function clearFamMarks(id) {
   }));
 }
 const reqCountMain = () => Object.values(opt.mods).filter((s) => s === "fixed").length;
-const exilusPinned = () => Object.keys(opt.exilus).find((id) => opt.exilus[id] === "fixed") || null;
+// `none` IS NOT A PIN ON A MOD — it is this slot's range saying "searched
+// empty" (see `slotRange`), so nothing may draw it as the pinned option.
+const exilusPinned = () =>
+  Object.keys(opt.exilus).find((id) => id !== "none" && opt.exilus[id] === "fixed") || null;
 // The arcane pinned in a given POOL. A weapon with two slots has two
 // independent pins — one Primary and one Secondary — so the question only
 // means something with a pool attached.
@@ -16371,17 +16374,128 @@ const arcanePinnedIn = (pool) =>
   Object.keys(opt.arcanes).find(
     (id) => opt.arcanes[id] === "fixed" && arcaneSeats(arcaneById(id)).includes(pool),
   ) || null;
-/// Options this pool contributes to the search: a pin is one, otherwise the
-/// marked ones PLUS the empty choice — "no arcane in this slot" is always
-/// reachable, so a scope never forces a slot to be filled.
+/// Options this seat contributes to the search.
+///
+/// IT READS THE SEAT'S RANGE, which is the same rule the server applies —
+/// and it did not: this counted `marked + 1`, on the belief that the empty
+/// choice is always reachable, while `parse_optimize` has dropped it beside
+/// marked candidates since 2026-08-01. So the estimate over-counted by one per
+/// seat on every scope with an arcane in it (found 2026-08-29, while making
+/// the range a control).
 const arcaneOptionsIn = (pool) => {
   if (arcanePinnedIn(pool)) return 1;
   const marked = Object.keys(opt.arcanes).filter(
     (id) => opt.arcanes[id] === "search" && arcaneSeats(arcaneById(id)).includes(pool),
   ).length;
-  return marked + 1;
+  if (!marked) return 1;                                   // the empty seat, alone
+  return marked + (opt.arcanes[arcaneEmptyId(pool)] === "fixed" ? -marked + 1
+    : opt.arcanes[arcaneEmptyId(pool)] === "search" ? 1 : 0);
 };
-const evoPinned = (tier) => { const m = opt.evos[tier] || {}; return Object.keys(m).find((id) => m[id] === "fixed") || null; };
+// `none` IS NOT A PIN ON AN OPTION. It is this tier's range saying "searched
+// empty" (see `slotRange`), so a row must not draw itself as the pinned one.
+const evoPinned = (tier) => {
+  const m = opt.evos[tier] || {};
+  return Object.keys(m).find((id) => id !== "none" && m[id] === "fixed") || null;
+};
+/// The REAL marks of a tier — its range's `none` is not one of them.
+const evoRealMarks = (tier) => Object.keys(opt.evos[tier] || {}).filter((id) => id !== "none");
+
+/// Does ANY set this tier produces install a rung here?
+///
+/// THE LADDER KEYS ON THE RANGE, NOT ON THE MARKS, and it has to: a tier set
+/// to 0–0 keeps its candidates — going down and back up must not cost the
+/// reader what they marked — so "it has marks" is no longer the same question
+/// as "it fills the rung". Count the marks instead and a 0–0 tier opens the
+/// one above it, whose every set `ladder_prefix` then truncates back: the
+/// marks up there would price nothing and the scope would say otherwise.
+/// 0–1 DOES open it — half of its sets carry the rung, and the other half
+/// being truncated is the ladder working rather than a scope nobody can ask
+/// for (owner, 2026-08-29).
+const evoFillsRung = (tier) =>
+  evoRealMarks(tier).length > 0 && (opt.evos[tier] || {}).none !== "fixed";
+
+// ---- HOW MANY OF AN AXIS'S SLOTS A CANDIDATE FILLS ----------------------
+//
+// EVERY AXIS IS THE SAME SHAPE (owner, 2026-08-29): N slots, an option set,
+// and a range saying how many of the slots a searched build must fill. The
+// mods axis is 8 slots and the range is a number 0–8; every other axis is ONE
+// slot and the range is 0–0, 0–1 or 1–1. The page draws all of them the same
+// way, because they are the same question.
+//
+// IT IS DERIVED FIRST AND ADJUSTED SECOND, which is what keeps this safe. The
+// derived answer is exactly what the scope did before this existed — nothing
+// marked is 0–0, a mark is 1–1 — so no search grows unless somebody widens it
+// on purpose. That matters most on the ARCANE seats, where 0–1 was ruled out
+// on evidence (user, 2026-08-01: an arcane costs no capacity, so an empty seat
+// can only ever tie the same build with the arcane in it). That decision was
+// against the empty seat being a DEFAULT; asking for it out loud is a
+// different thing, and the exilus slot has always been able to.
+//
+// THE EMPTY CHOICE IS A MARK LIKE ANY OTHER — `none` on the exilus slot and on
+// an evolution tier, `none:<pool>` on an arcane seat, which names its seat
+// because a weapon can hold two and the marks are one flat map. So the range
+// is a VIEW over the option set rather than a second thing to store, and it
+// travels in the search preset, the request and the round trip with no field
+// of its own anywhere.
+const arcaneEmptyId = (pool) => `none:${pool}`;
+
+/// The range a single-slot axis is currently set to, read off its marks.
+///
+/// `locked` is a range that cannot be adjusted rather than one nobody has: a
+/// pinned candidate settles the slot at 1–1, and a slot with no candidates at
+/// all is 0–0 with nothing to widen to.
+function slotRange(marks, emptyId, ids) {
+  const real = [...ids].filter((id) => id !== emptyId && marks[id]);
+  const realPinned = real.find((id) => marks[id] === "fixed") || null;
+  const realPooled = real.filter((id) => marks[id] === "search");
+  // A REAL PIN IS ASKED FIRST, so a stale empty mark cannot outrank it. On the
+  // exilus slot and the evolution tiers `setSingleSlotMark` clears the empty
+  // mark on the way to a pin, because they share one map; the arcane seats
+  // clear it by hand (their group is per seat and excludes it).
+  if (realPinned) return { lo: 1, hi: 1, locked: true, why: "pinned" };
+  if (marks[emptyId] === "fixed") return { lo: 0, hi: 0, locked: false };
+  if (!realPooled.length) return { lo: 0, hi: 0, locked: true, why: "empty" };
+  return marks[emptyId] === "search" ? { lo: 0, hi: 1, locked: false } : { lo: 1, hi: 1, locked: false };
+}
+
+/// Write a range back onto the marks. The candidates are never touched: going
+/// down to 0–0 and back up must not cost the reader what they marked.
+function setSlotRange(marks, emptyId, lo, hi) {
+  if (hi === 0) marks[emptyId] = "fixed";       // search it unfilled, marks kept
+  else if (lo === 0) marks[emptyId] = "search"; // both
+  else delete marks[emptyId];                   // always filled
+}
+
+/// The row itself. One renderer for four axes, so a change to how a range is
+/// stated reaches all of them.
+///
+/// `max` is the slot count — 8 for the mods axis, 1 for every other — which is
+/// the only thing that differs between them on screen.
+function slotRangeHtml(key, { label, lo, hi, max = 1, locked = false, note = "" }) {
+  const box = (which, v) =>
+    `<input type="number" min="0" max="${max}" value="${v}" data-range="${key}" data-end="${which}"${
+      locked ? " disabled" : ""}>`;
+  return `<div class="oselrow slot-range${locked ? " locked" : ""}" data-range-row="${key}">
+    <span class="osellbl">${escHtml(label)}</span>${box("lo", lo)}<span class="osdash">–</span>${box("hi", hi)}
+    ${note ? `<span class="opt-size-eff">${escHtml(note)}</span>` : ""}
+  </div>`;
+}
+
+/// …and its wiring, given the host that was just re-rendered. `onSet` takes a
+/// NORMALISED pair: an end pushes the other rather than allowing lo > hi,
+/// which is the rule the mods axis has had since the range landed.
+function wireSlotRange(host, max, onSet) {
+  host.querySelectorAll("input[data-range]").forEach((el) =>
+    el.addEventListener("change", () => {
+      const row = el.closest("[data-range-row]");
+      const get = (w) => Number(row.querySelector(`input[data-end="${w}"]`).value) || 0;
+      let lo = Math.max(0, Math.min(max, get("lo")));
+      let hi = Math.max(0, Math.min(max, get("hi")));
+      if (el.dataset.end === "lo" && lo > hi) hi = lo;
+      if (el.dataset.end === "hi" && hi < lo) lo = hi;
+      onSet(el.dataset.range, lo, hi);
+    }));
+}
 
 /// WHICH BUILDER BLOCK EACH SCOPE SECTION IS THE BULK FORM OF.
 ///
@@ -16609,8 +16723,31 @@ function renderOptExilus() {
       }),
     });
   };
-  $("opt-exilus").innerHTML = weaponAxes().exilus.map(row).join("")
-    || `<div class="opt dis">no exilus mods in this pool</div>`;
+  const ax = weaponAxes().exilus;
+  // …AND THE SLOT'S OWN RANGE, the same control the arcane seats and the
+  // evolution tiers carry. This axis could always say 0–1 — `exilus_ids` has
+  // taken a pooled `none` since it was written — and nothing on the page ever
+  // said so, which is half of why the four axes looked like four rules
+  // (owner, 2026-08-29).
+  const r = slotRange(opt.exilus, "none", new Set([...ax.map((m) => m.id), "none"]));
+  const note = r.locked
+    ? (r.why === "pinned" ? tr("pinned — this slot is settled")
+      : tr("nothing marked, so the slot is searched empty"))
+    : r.hi === 0 ? tr("searched empty — the marks are kept")
+      : r.lo === 0 ? tr("empty is searched beside them")
+        : tr("every searched build fills it");
+  $("opt-exilus").innerHTML = (ax.map(row).join("")
+    || `<div class="opt dis">${escHtml(tr("no exilus mods in this pool"))}</div>`);
+  const rangeHost = $("opt-exilus-range");
+  if (rangeHost) {
+    rangeHost.innerHTML = ax.length ? slotRangeHtml("exilus", {
+      label: tr("This slot holds"), lo: r.lo, hi: r.hi, locked: r.locked, note,
+    }) : "";
+    wireSlotRange(rangeHost, 1, (_k, lo, hi) => {
+      setSlotRange(opt.exilus, "none", lo, hi);
+      renderOptMods(); renderOptExilus(); updateOptEstimate();
+    });
+  }
   $("opt-exilus").querySelectorAll(".seg:not(.dis)").forEach((el) =>
     el.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -16781,9 +16918,25 @@ function renderOptArcanes() {
         : "";
       const rows = inPool.map((a) => row(a, pinned, hasPool)).join("")
         || `<div class="opt dis">${escHtml(tr("no matches"))}</div>`;
-      return `<div class="menu-sect">${head}${rows}</div>`;
+      // …AND HOW MANY OF THIS SEAT TO FILL, after the list, for the reason
+      // the mods axis states its range after its list: it is a conclusion of
+      // the marking and means nothing before it (owner, 2026-08-29).
+      const r = slotRange(opt.arcanes, arcaneEmptyId(pool), ids.add(arcaneEmptyId(pool)));
+      const note = r.locked
+        ? (r.why === "pinned" ? tr("pinned — this seat is settled")
+          : tr("nothing marked, so the seat is searched empty"))
+        : r.hi === 0 ? tr("searched unworn — the marks are kept")
+          : r.lo === 0 ? tr("unworn is searched beside them")
+            : tr("an empty seat can only tie, so it is not searched unless you ask");
+      return `<div class="menu-sect">${head}${rows}${slotRangeHtml(`arc:${pool}`, {
+        label: tr("This seat holds"), lo: r.lo, hi: r.hi, locked: r.locked, note,
+      })}</div>`;
     })
     .join("");
+  wireSlotRange($("opt-arcanes"), 1, (key, lo, hi) => {
+    setSlotRange(opt.arcanes, arcaneEmptyId(key.slice(4)), lo, hi);
+    renderOptArcanes(); updateOptEstimate();
+  });
   $("opt-arcanes").querySelectorAll(".seg:not(.dis)").forEach((el) =>
     el.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -16799,6 +16952,12 @@ function renderOptArcanes() {
         if (sameArcaneSeat(arcaneById(id), own)) delete opt.arcanes[id];
       });
       Object.assign(opt.arcanes, group);
+      // A PIN SETTLES THE SEAT, so its range goes with it. The group above is
+      // built from `sameArcaneSeat`, which `none:<pool>` is not a member of —
+      // it is the seat's range rather than an arcane — so it is cleared here.
+      if (el.dataset.s === "fixed") {
+        arcaneSeats(own).forEach((pool) => { delete opt.arcanes[arcaneEmptyId(pool)]; });
+      }
       renderOptArcanes(); updateOptEstimate();
     }));
 }
@@ -16814,7 +16973,13 @@ function renderOptEvos() {
   // then refuse to price.
   const optOpenTo = (() => {
     let n = 0;
-    for (const t of tiers) { if (!Object.keys(opt.evos[t.tier] || {}).length) break; n = t.tier; }
+    // A TIER SET TO 0–0 OPENS NOTHING. Its `none` is a mark, and counting it
+    // would open the tier above over sets that reach it through a rung the
+    // search never installs — `ladder_prefix` would then truncate every one of
+    // them and the marks above would price nothing. 0–1 DOES open it: half of
+    // its sets carry the rung, and the other half are truncated, which is the
+    // ladder working rather than a scope that cannot be expressed.
+    for (const t of tiers) { if (!evoFillsRung(t.tier)) break; n = t.tier; }
     return n + 1;
   })();
   // A scope preset saved before the rule existed can still carry marks above
@@ -16842,10 +17007,26 @@ function renderOptEvos() {
         })}
       </div>`;
     }).join("");
+    const r = slotRange(sel, "none", new Set([...t.options.map((o) => o.id), "none"]));
+    const note = r.locked
+      ? (r.why === "pinned" ? tr("pinned — this tier is settled")
+        : tr("nothing marked, so this tier is searched empty"))
+      : r.hi === 0 ? tr("searched empty — the marks are kept")
+        : r.lo === 0 ? tr("empty is searched beside them")
+          : tr("every searched build installs one of them");
+    const range = locked ? "" : slotRangeHtml(`evo:${t.tier}`, {
+      label: tr("This tier installs"), lo: r.lo, hi: r.hi, locked: r.locked, note,
+    });
     return `<div class="opt-tier-block${locked ? " locked" : ""}" ${locked
       ? `title="${escHtml(tr("install the previous tier first"))}"` : ""
-    }><div class="opt-tier-h">EVO ${ROMAN(t.tier)}</div><div class="combo-menu opt-evolist">${rows}</div></div>`;
+    }><div class="opt-tier-h">EVO ${ROMAN(t.tier)}</div><div class="combo-menu opt-evolist">${rows}</div>${range}</div>`;
   }).join("");
+  wireSlotRange($("opt-evos"), 1, (key, lo, hi) => {
+    const t = key.slice(4);
+    opt.evos[t] = opt.evos[t] || {};
+    setSlotRange(opt.evos[t], "none", lo, hi);
+    renderOptEvos(); updateOptEstimate();
+  });
   $("opt-evos").querySelectorAll(".seg:not(.dis):not(.tlocked)").forEach((el) =>
     el.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -16854,7 +17035,7 @@ function renderOptEvos() {
       setSingleSlotMark(opt.evos[t], id, want);
       // Clearing a tier shuts every tier above it, marks and all — the same
       // cascade the builder does, for the same reason.
-      if (!Object.keys(opt.evos[t]).length) {
+      if (!evoRealMarks(t).length) {
         tiers.forEach((x) => { if (x.tier > Number(t)) delete opt.evos[x.tier]; });
       }
       renderOptEvos(); updateOptEstimate();
@@ -16989,8 +17170,13 @@ function applyOptState(st) {
   // Mods: ids missing from this weapon's pool drop out.
   opt.mods = {}; opt.exilus = {};
   Object.entries(st.mods || {}).forEach(([id, s]) => { if (modById(id)) opt.mods[id] = norm(s); });
-  Object.entries(st.exilus || {}).forEach(([id, s]) => { const m = modById(id); if (m && m.exilus) opt.exilus[id] = norm(s); });
-  delete opt.exilus["none"]; // brief None-row era
+  // `none` IS THE SLOT'S RANGE and survives, on every axis (owner,
+  // 2026-08-29). It used to be deleted here as the residue of a brief
+  // None-row era; it is the axis's "searched empty" mark now, so dropping it
+  // would silently widen a scope back to 1–1 on every preset load.
+  Object.entries(st.exilus || {}).forEach(([id, s]) => {
+    if (id === "none" || (modById(id) || {}).exilus) opt.exilus[id] = norm(s);
+  });
   if (st.size) opt.size = st.size;
   // Presets written before the range existed carry no min, and `?? 0` is what
   // they meant: with marks in them the DERIVED floor is at least 1 anyway, so
@@ -17004,8 +17190,15 @@ function applyOptState(st) {
   const w = $("weapon").value;
   Object.entries(st.arcanes || {}).forEach(([id, s]) => {
     // ANY of the weapon's pools, not just the first — see arcaneFitsWeapon.
-    // (A stored "none" fails this too, which is what we want.)
-    if (arcaneFitsWeapon(w, id)) opt.arcanes[ARCANE_RENAMED[id] || id] = norm(s);
+    // A `none:<pool>` mark is the SEAT'S RANGE rather than an arcane, and it
+    // is kept when this weapon actually has that seat — so a scope imported
+    // from a weapon with a Primary seat does not leave a range behind on one
+    // that has none.
+    if (id.startsWith("none:")) {
+      if ((weaponInfo(w) || {}).arcane_pools?.includes(id.slice(5))) opt.arcanes[id] = norm(s);
+    } else if (arcaneFitsWeapon(w, id)) {
+      opt.arcanes[ARCANE_RENAMED[id] || id] = norm(s);
+    }
   });
   // Modes: a scope carried over from another weapon names modes this one does
   // not have, and a search over none of them is not a scope — so what does not
@@ -17026,7 +17219,8 @@ function applyOptState(st) {
     if (!tier) return;
     const valid = {};
     Object.entries(m || {}).forEach(([id, s]) => {
-      if (tier.options.some((o) => o.id === id)) valid[id] = norm(s);
+      // `none` is the tier's RANGE, not one of its perks — see `slotRange`.
+      if (id === "none" || tier.options.some((o) => o.id === id)) valid[id] = norm(s);
     });
     if (Object.keys(valid).length) opt.evos[t] = valid;
   });
@@ -17255,21 +17449,28 @@ function updateOptEstimate() {
   const fixed = Object.values(opt.mods).filter((s) => s === "fixed").length;
   const search = Object.values(opt.mods).filter((s) => s === "search").length;
   const exFixed = exilusPinned();
-  const exSearch = Object.values(opt.exilus).filter((s) => s === "search").length;
-  // Pooled exilus marks ARE the option set; nothing marked = the slot
-  // stays empty (one option).
-  const exOptions = exFixed ? 1 : Math.max(1, exSearch);
+  const exSearch = Object.keys(opt.exilus)
+    .filter((id) => id !== "none" && opt.exilus[id] === "search").length;
+  // Pooled exilus marks ARE the option set, and the slot's RANGE says whether
+  // the empty choice sits beside them: nothing marked, or 0–0, is one option.
+  const exOptions = exFixed ? 1
+    : opt.exilus.none === "fixed" || !exSearch ? 1
+      : exSearch + (opt.exilus.none === "search" ? 1 : 0);
   // Required in BOTH blocks = impossible (a mod equips once).
   const dupReq = exFixed && opt.mods[exFixed] === "fixed" ? exFixed : null;
   // Slots MULTIPLY: a weapon that seats two arcanes is searched over pairs,
   // because the best Primary and the best Secondary are not independent
   // questions.
   const arcCount = arcanePools().reduce((n, p) => n * arcaneOptionsIn(p), 1);
+  // ONE FACTOR PER TIER, from the tier's own RANGE — a pin is one option, an
+  // empty tier is one option, and 0–1 is the marked ones plus that empty.
   let evoProduct = 1;
   (weaponEvos()).forEach((t) => {
     const m = opt.evos[t.tier] || {};
-    evoProduct *= evoPinned(t.tier) ? 1
-      : Math.max(1, Object.values(m).filter((s) => s === "search").length);
+    if (evoPinned(t.tier)) { return; }                       // settled: one option
+    const pooled = evoRealMarks(t.tier).filter((id) => m[id] === "search").length;
+    if (m.none === "fixed" || !pooled) return;               // the empty tier, alone
+    evoProduct *= pooled + (m.none === "search" ? 1 : 0);
   });
   const size = opt.size;
   // The pool group occupies ≥1 slot: with pools marked, every build carries
@@ -17401,10 +17602,16 @@ async function runOptimize() {
   try {
     // pool/req collapse to effective option lists: a req pins its slot/tier
     // (single option), pools are the searched set.
+    // A tier collapses to its effective option list, and `none` is one of the
+    // options — it is this tier's range saying "searched empty" (owner,
+    // 2026-08-29). A REAL pin is looked for first, for the reason `slotRange`
+    // asks in that order: a settled tier outranks a stale range mark.
     const evolutions = {};
     Object.entries(opt.evos).forEach(([t, m]) => {
-      const f = Object.keys(m).find((id) => m[id] === "fixed");
-      const ids = f ? [f] : Object.keys(m).filter((id) => m[id] === "search");
+      const keys = Object.keys(m);
+      const f = keys.find((id) => id !== "none" && m[id] === "fixed")
+        || keys.find((id) => m[id] === "fixed");
+      const ids = f ? [f] : keys.filter((id) => m[id] === "search");
       if (ids.length) evolutions[t] = ids;
     });
     // The MARKS, like `mods` and `exilus` — a pin means "this slot is

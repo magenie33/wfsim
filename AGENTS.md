@@ -925,6 +925,37 @@ around (decision 2026-07-31).
   a searched build must be is a RANGE (`build_min`–`build_size`), so "exactly 8
   mods" is a setting rather than something the scope cannot express — both ends
   push each other, both ride the search preset, and both reach the request.
+  AND EVERY AXIS SAYS IT, IN ONE SHAPE (owner, 2026-08-29). A search axis is
+  N slots, an option set, and a range of how many slots a candidate fills: the
+  mods axis is 8 and a number 0–8, every other axis is ONE slot and 0–0 / 0–1 /
+  1–1. It was three ways of saying one thing — mods had the numeric range,
+  the exilus slot could reach 0–1 only by pooling a `none` row nothing pointed
+  at, and the ARCANE SEATS and EVOLUTION TIERS could not reach it at all, so
+  which of 0–0 and 1–1 you got was decided by whether you had marked anything.
+  `node scripts/check_slot_ranges.mjs` is the FORTY-THIRD and walks all three
+  states on all four axes ON THE WIRE — a range that draws correctly and sends
+  nothing looks exactly like a working control. Verified to bite: a
+  `setSlotRange` that returns early reddens 8 of its 18.
+  IT IS DERIVED FIRST AND ADJUSTED SECOND, which is what makes it safe: the
+  derived answer is what the scope did before the control existed, so NO
+  existing scope grows. That matters on the arcane seats, where the empty seat
+  was ruled out on evidence — an arcane costs no capacity and no Forma, so an
+  empty seat can only tie the same build with the arcane in it (user,
+  2026-08-01). That decision was against the empty seat being a DEFAULT, and it
+  is kept as `an_arcane_seat_marked_none_is_not_a_default`.
+  THE EMPTY CHOICE IS A MARK LIKE ANY OTHER — `none`, or `none:<pool>` on an
+  arcane seat, which names its seat because a weapon can hold two and the marks
+  are one flat map — so the range is a VIEW over the option set and needs no
+  field of its own in the preset, the request or the round trip.
+  A PIN IS NOT A RANGE: a pinned candidate settles its slot at 1–1 with the
+  inputs disabled, and `slotRange` asks for a real pin FIRST so a stale empty
+  mark cannot outrank one. AND 0–0 KEEPS THE CANDIDATES, which forced the
+  evolution LADDER to key on the RANGE rather than on the marks — a 0–0 tier
+  still has marks, and counting them opened the tier above over sets whose
+  every rung `ladder_prefix` then truncates (`evoFillsRung`). It also found the
+  ESTIMATE disagreeing with the search: `arcaneOptionsIn` counted `marked + 1`
+  while `parse_optimize` has dropped the empty seat since 2026-08-01, so the
+  candidate count over-reported by a factor per arcane seat.
   THE FLOOR STARTS AT 0 AND CLOSES THE LIST (owner, 2026-08-29). How full a
   build must be is a CONCLUSION, not a filter and not a summary — it means
   nothing until the required and the pooled are chosen — so it is drawn AFTER

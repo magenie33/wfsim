@@ -694,10 +694,22 @@ label.check input{width:auto}
    not a summary: it only means anything once the required and the pooled have
    been chosen, so it reads after them. It borrows `.oselrow`'s flex layout for
    the label + inputs and adds the closing rule of its own. */
-#opt-size-row{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
-#opt-size-row input[type=number]{width:52px;padding:2px 6px;font-size:12px}
-#opt-size-row .osdash{color:var(--muted)}
+/* EVERY AXIS SAYS HOW MANY OF ITS SLOTS A BUILD FILLS, in one shape (owner,
+   2026-08-29): the mods axis over 8 slots, the exilus slot, each arcane seat
+   and each evolution tier over 1. Same row, same rule, so a reader learns it
+   once. `#opt-size-row` is the mods one and keeps its id because `init` wires
+   those two inputs by name. */
+#opt-size-row,.slot-range{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+#opt-size-row input[type=number],.slot-range input[type=number]{width:52px;padding:2px 6px;font-size:12px}
+#opt-size-row .osdash,.slot-range .osdash{color:var(--muted)}
 .opt-size-eff{font-size:11px;color:var(--muted);margin-left:4px}
+/* A range nobody can move — a pinned option settles its slot, and a slot with
+   no candidates has nothing to widen to. Stated rather than hidden: the row is
+   how this axis says what it will search. */
+.slot-range.locked{opacity:.7}
+.slot-range.locked input[type=number]{background:transparent;border-style:dashed}
+/* Inside a tier block the range is the closing line of that tier's own list. */
+.opt-tier-block .slot-range{margin:0 9px 9px}
 /* Every optimizer list reuses the picker's `.combo-menu .opt` rows verbatim
    (mod/arcane image, polarity icon, effect lines); only the trailing control
    differs (pool/req for mods, include/search for arcanes & evolutions). */

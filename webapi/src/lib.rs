@@ -7098,16 +7098,22 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         wspec(&info.id).transform_group.as_deref().unwrap_or(&info.id),
     );
     for tier in 1u32..=evo_tiers {
+        // `"none"` IS AN OPTION THE LIST MAY NAME (owner, 2026-08-29), which is
+        // how a tier says "0–1": search this tier both unfilled and filled.
+        // Unambiguous here where it is not for arcanes, because the wire is
+        // already one array PER TIER. An array holding only "none" is "0–0" —
+        // search this tier empty while its candidates stay marked for later.
         let opts: Vec<Option<String>> = evo_req
             .and_then(|o| o.get(&tier.to_string()))
             .and_then(|a| a.as_array())
             .map(|a| {
                 a.iter()
-                    .filter_map(|x| x.as_str().map(|s| Some(s.to_string())))
+                    .filter_map(|x| x.as_str())
+                    .map(|s| if s == "none" { None } else { Some(s.to_string()) })
                     .collect()
             })
             .unwrap_or_default();
-        let picks = if opts.is_empty() { vec![None] } else { opts }; // empty = nothing at this tier
+        let picks = if opts.is_empty() { vec![None] } else { opts }; // unmarked = nothing at this tier
         let mut next = Vec::new();
         for base in &evo_sets {
             for pick in &picks {
@@ -7233,6 +7239,16 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         .arcane_pools
         .iter()
         .map(|pool| {
+            // THE EMPTY CHOICE IS AN OPTION LIKE ANY OTHER, and it is marked
+            // like any other — `none:<pool>` (owner, 2026-08-29). The id names
+            // its POOL because a weapon can seat two arcanes and the marks are
+            // one flat map: a bare "none" could not say which seat it is about.
+            // It is the exilus slot's own `none` mechanism, made per seat.
+            let empty_id = format!("none:{pool}");
+            let empty_mark = arc_marks
+                .iter()
+                .find(|(id, _)| *id == empty_id || (info.arcane_pools.len() == 1 && id == "none"))
+                .map(|(_, m)| m.as_str());
             let mine: Vec<(&String, &String)> = arc_marks
                 .iter()
                 .filter(|(id, _)| wfsim_engine::arcanes_data::for_slot(pool, id).is_some())
@@ -7243,27 +7259,44 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
                     .map(|d| d.fx(d.max_rank, StackPolicy::Emergent, arc_base.traits, tenno))
                     .unwrap_or_else(wfsim_engine::arcanes_data::ArcaneFx::none)
             };
-            // A PIN settles the slot: one option, and no empty choice.
+            let empty = || {
+                ("none".to_string(), wfsim_engine::arcanes_data::ArcaneFx::none())
+            };
+            // A PIN settles the slot: one option, and no other choice —
+            // including a pinned EMPTY, which is "search this seat unworn"
+            // while the candidates stay marked for later.
+            if empty_mark == Some("fixed") {
+                return vec![empty()];
+            }
             if let Some((id, _)) = mine.iter().find(|(_, m)| m.as_str() == "fixed") {
                 return vec![((*id).clone(), fx(id))];
             }
-            // EMPTY is an option only when the slot has no candidates.
+            // EMPTY IS NOT ADDED BY ITSELF, and that has not changed: an arcane
+            // slot costs nothing — no capacity, no Forma — so leaving it empty
+            // can never beat filling it with something that helps, and marking
+            // a candidate IS the statement that the seat should be filled
+            // (user, 2026-08-01). Keeping `none` alongside doubled the space
+            // per slot and put builds with a hole in them on the results
+            // board, where they can only ever tie the same build with the
+            // arcane in it.
             //
-            // An arcane slot costs nothing — no capacity, no Forma — so
-            // leaving it empty can never beat filling it with something that
-            // helps, and marking a candidate IS the statement that the slot
-            // should be filled (user, 2026-08-01). Keeping `none` alongside
-            // doubled the space per slot and put builds with a hole in them
-            // on the results board, where they can only ever tie the same
-            // build with the arcane in it.
+            // WHAT CHANGED IS THAT IT CAN BE ASKED FOR (owner, 2026-08-29).
+            // That decision was against the empty seat being a DEFAULT, and a
+            // scope is now allowed to say "0–1" out loud — which is the same
+            // thing the exilus slot has always been able to say, and the page
+            // draws all four axes as one range control. The derived answer is
+            // untouched, so no search grows unless somebody widens it.
             //
             // A slot with nothing marked still resolves to `none`, which is
             // what an empty slot IS — that case is the `else` below.
             let marked: Vec<_> = mine.iter().filter(|(_, m)| m.as_str() == "search").collect();
             if marked.is_empty() {
-                return vec![("none".to_string(), wfsim_engine::arcanes_data::ArcaneFx::none())];
+                return vec![empty()];
             }
-            marked.into_iter().map(|(id, _)| ((*id).clone(), fx(id))).collect()
+            let mut opts: Vec<(String, wfsim_engine::arcanes_data::ArcaneFx)> =
+                if empty_mark == Some("search") { vec![empty()] } else { Vec::new() };
+            opts.extend(marked.into_iter().map(|(id, _)| ((*id).clone(), fx(id))));
+            opts
         })
         .collect();
     // The product, in pool order: `arcane_sets[i]` names what `arcanes[i]` is.
@@ -9451,6 +9484,94 @@ mod equip_rule_tests {
         assert!(inc.evo_sets.iter().all(|s| s.iter().any(|e| e == EVO1)));
         assert!(forbids(&inc, CANNON).iter().all(|&f| f), "the pair is illegal");
         assert!(forbids(&inc, "hornet_strike").iter().all(|&f| !f), "the pool is not");
+    }
+
+    /// EVERY SLOT AXIS SAYS HOW MANY OF ITS SLOTS TO FILL, and the empty
+    /// choice is an option marked like any other (owner, 2026-08-29).
+    ///
+    /// A single-slot axis has three answers and every one of them is now
+    /// reachable — 0–0 (search it unfilled, candidates kept for later), 0–1
+    /// (both), 1–1 (always filled, the derived answer and the old one). The
+    /// exilus slot has been able to say all three since it was written; the
+    /// arcane seats and the evolution tiers could say only 0–0 and 1–1, and
+    /// which of those you got was decided by whether you had marked anything.
+    ///
+    /// THE DERIVED ANSWER IS UNTOUCHED, which is the half that must not
+    /// regress: marking candidates and saying nothing else still means 1–1, so
+    /// no existing scope grows. `an_arcane_seat_marked_none_is_not_a_default`
+    /// is that assertion, and it is the 2026-08-01 decision restated.
+    #[test]
+    fn a_slot_axis_can_be_asked_to_search_itself_empty() {
+        // The Laetum: one arcane seat, five evolution tiers.
+        let plan = |arcanes: Value, evolutions: Value| {
+            parse_optimize(&json!({
+                "weapon": "laetum",
+                "build_size": 1,
+                "mods": { "hornet_strike": "search" },
+                "arcanes": arcanes,
+                "evolutions": evolutions,
+            }))
+            .expect("a plan")
+        };
+        let seat = |p: &OptimizePlan| -> Vec<String> {
+            p.arcane_sets.iter().map(|s| s[0].clone()).collect()
+        };
+
+        // 1–1, the derived answer: a marked seat is a filled seat.
+        let filled = plan(json!({ "secondary_deadhead": "search" }), json!({}));
+        assert_eq!(seat(&filled), vec!["secondary_deadhead"]);
+
+        // 0–1: the empty choice asked for by name, beside the candidate.
+        let both = plan(
+            json!({ "secondary_deadhead": "search", "none:secondary": "search" }),
+            json!({}),
+        );
+        let mut got = seat(&both);
+        got.sort();
+        assert_eq!(got, vec!["none", "secondary_deadhead"]);
+
+        // 0–0: pinned empty. The candidate stays marked and is not searched —
+        // widening the range back must not cost the reader their marks.
+        let unworn = plan(
+            json!({ "secondary_deadhead": "search", "none:secondary": "fixed" }),
+            json!({}),
+        );
+        assert_eq!(seat(&unworn), vec!["none"]);
+
+        // AND THE SAME THREE ON AN EVOLUTION TIER, where the wire is an array
+        // per tier and "none" is simply one of its entries.
+        let one_tier = |ids: Value| {
+            let p = plan(json!({}), json!({ "1": ids }));
+            let mut n: Vec<usize> = p.evo_sets.iter().map(|s| s.len()).collect();
+            n.sort();
+            n
+        };
+        assert_eq!(one_tier(json!(["laetum_evo1_incarnon_form"])), vec![1], "1–1");
+        assert_eq!(
+            one_tier(json!(["laetum_evo1_incarnon_form", "none"])),
+            vec![0, 1],
+            "0–1"
+        );
+        assert_eq!(one_tier(json!(["none"])), vec![0], "0–0");
+    }
+
+    /// …AND IT IS NEVER ADDED BY ITSELF. The 2026-08-01 decision, restated as
+    /// an assertion: an arcane seat costs no capacity and no Forma, so an empty
+    /// one can only ever tie the same build with the arcane in it. Marking a
+    /// candidate is the statement that the seat should be filled, and widening
+    /// to 0–1 has to be asked for.
+    #[test]
+    fn an_arcane_seat_marked_none_is_not_a_default() {
+        let plan = parse_optimize(&json!({
+            "weapon": "laetum",
+            "build_size": 1,
+            "mods": { "hornet_strike": "search" },
+            "arcanes": { "secondary_deadhead": "search", "secondary_merciless": "search" },
+        }))
+        .expect("a plan");
+        let seats: Vec<String> = plan.arcane_sets.iter().map(|s| s[0].clone()).collect();
+        assert!(!seats.iter().any(|s| s == "none"), "{seats:?}");
+        assert_eq!(seats.len(), 2, "two candidates, no hole beside them");
     }
 
     /// AN EMPTY SCOPE IS THE BARE WEAPON, and it is a legal search.

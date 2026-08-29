@@ -1320,6 +1320,23 @@ ui:
   "click to find it in the list below": "点一下在下面的列表里找到它"
   "remove": "移除"
   "the fewest a searched build may carry — 0 imposes no floor of your own, and the marks below still impose theirs; set both ends to 8 to search only full builds": "一套被搜索的配装最少装几张 —— 0 表示你不加下限，下面的标记仍然有它们自己的下限；两端都设成 8 就只搜满配装"
+  "This seat holds": "该赋能位装"
+  "This slot holds": "该槽装"
+  "This tier installs": "该阶装"
+  "pinned — this seat is settled": "已钉死 —— 这个位子定了"
+  "pinned — this slot is settled": "已钉死 —— 这个槽定了"
+  "pinned — this tier is settled": "已钉死 —— 这一阶定了"
+  "nothing marked, so the seat is searched empty": "什么都没标，所以这个位子按空的搜"
+  "nothing marked, so the slot is searched empty": "什么都没标，所以这个槽按空的搜"
+  "nothing marked, so this tier is searched empty": "什么都没标，所以这一阶按空的搜"
+  "searched unworn — the marks are kept": "按不带来搜 —— 已标的留着"
+  "searched empty — the marks are kept": "按空的来搜 —— 已标的留着"
+  "unworn is searched beside them": "「不带」也会和它们一起搜"
+  "empty is searched beside them": "「留空」也会和它们一起搜"
+  "an empty seat can only tie, so it is not searched unless you ask": "空着的赋能位最多只能打平，所以不主动要求就不搜它"
+  "every searched build fills it": "每一套被搜索的配装都会填上它"
+  "every searched build installs one of them": "每一套被搜索的配装都会装其中一个"
+  "no exilus mods in this pool": "这个池子里没有专用 MOD"
 
 # Effect-line phrase substitutions for mod/arcane/evolution descriptions
 # ("+X% Critical Chance" → "+X% 暴击几率"). ORDERED — longest phrases first
