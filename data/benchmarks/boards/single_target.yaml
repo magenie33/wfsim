@@ -9,8 +9,8 @@
 # migrating anything, because the builds are still builds.
 benchmark: single_target
 source: submissions
-submissions: 3618
-engine: 553aae3cb1da2b327d9a56c7c4a7586fd3a704f5
+submissions: 3632
+engine: 6d0994a29af5fd9d965ff5fe09afcbcad16be506
 entries:
   - weapon: acceltra_prime
     mode: base
@@ -31,6 +31,12 @@ entries:
     fp: 78c1673435d3c450
     mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, hellfire]
     arcanes: [primary_deadhead]
+  - weapon: aeolak
+    mode: base
+    score: 6.980380915757307
+    fp: 412996be811a5669
+    mods: [heavy_caliber, primary_acuity, serration, galvanized_aptitude, speed_trigger, vital_sense, magnetic_capacity, hellfire]
+    arcanes: [primary_crux]
   - weapon: aeolak
     mode: base
     score: 4.953398188542898
@@ -1012,6 +1018,28 @@ entries:
       rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: cycle
+    score: 15.875661025966297
+    fp: 238014ae900fa04e
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_barrage, shotgun_elementalist, incendiary_coat, riven]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_chance, heat, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: cycle
+    score: 15.846749590341476
+    fp: 706ef68c48e109a4
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_barrage, riven, incendiary_coat, scattering_inferno]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: cycle
     score: 15.541163922376937
     fp: f737813f7ab1f629
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, incendiary_coat, riven]
@@ -1145,6 +1173,39 @@ entries:
       bonuses: [critical_chance, heat, multishot]
       malus: ammo_maximum
       rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: cycle
+    score: 13
+    fp: 822a7e743acbbde7
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, shotgun_barrage, riven, chilling_reload, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: cycle
+    score: 12.754727548344825
+    fp: 78a4d1f0d1b6848f
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_elementalist, incendiary_coat, scattering_inferno, riven]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_chance, heat, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 0.9, 0.9]
+  - weapon: boar_prime
+    mode: cycle
+    score: 12.751997947987128
+    fp: 4d0e60071007cd4a
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_elementalist, scattering_inferno, riven]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
+    arcanes: [primary_crux]
+    riven:
+      bonuses: [critical_chance, heat, multishot]
+      malus: ammo_maximum
+      rolls: [0.9, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: cycle
     score: 12.704335638151848
@@ -1349,6 +1410,17 @@ entries:
     arcanes: [primary_deadhead]
   - weapon: boar_prime
     mode: cycle
+    score: 10.334627470157564
+    fp: 58672ad95e2e0ce1
+    mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, shotgun_barrage, chilling_reload, toxic_barrage, riven]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_survivors_edge]
+    arcanes: [primary_overcharge]
+    riven:
+      bonuses: [critical_chance, heat, multishot]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: cycle
     score: 10.209141114073416
     fp: ce81881cd9aa5d72
     mods: [galvanized_hell, primed_point_blank, primed_ravage, critical_deceleration, vigilante_armaments, magnetic_strafe, blaze, scattering_inferno]
@@ -1383,6 +1455,28 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, shotgun_barrage, blaze, scattering_inferno]
     evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
     arcanes: [primary_crux]
+  - weapon: boar_prime
+    mode: cycle
+    score: 9.026326640388664
+    fp: 93b04cc66fd23511
+    mods: [galvanized_hell, primed_point_blank, critical_deceleration, shotgun_barrage, riven, chilling_reload, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
+    arcanes: [primary_overcharge]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
+  - weapon: boar_prime
+    mode: cycle
+    score: 9.004975801394325
+    fp: c039f2d992e2ec95
+    mods: [galvanized_hell, primed_ravage, critical_deceleration, shotgun_barrage, riven, chilling_reload, toxic_barrage, incendiary_coat]
+    evolutions: [boar_prime_evo1_incarnon_form, boar_prime_reified_bane, boar_prime_ready_retaliation, boar_prime_elemental_balance]
+    arcanes: [primary_overcharge]
+    riven:
+      bonuses: [critical_chance, critical_damage, damage]
+      malus: ammo_maximum
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: boar_prime
     mode: cycle
     score: 8.863707487423126
@@ -2475,6 +2569,13 @@ entries:
     score: 41.33347021020058
     fp: aeef7ec1145fd8c7
     mods: [heavy_caliber, primary_acuity, galvanized_aptitude, vile_acceleration, vital_sense, magnetic_capacity, primed_cryo_rounds, infected_clip]
+    evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
+    arcanes: [primary_deadhead]
+  - weapon: burston_prime
+    mode: cycle
+    score: 41.0932612963956
+    fp: cc038294519ceee2
+    mods: [amalgam_serration, primary_acuity, critical_delay, hammer_shot, vital_sense, gilded_truth, primed_cryo_rounds, infected_clip]
     evolutions: [burston_prime_evo1_incarnon_form, burston_prime_forceful_finality, burston_prime_ready_retaliation, burston_prime_absolute_valor]
     arcanes: [primary_deadhead]
   - weapon: burston_prime
@@ -6012,6 +6113,18 @@ entries:
     mods: [galvanized_hell, primed_point_blank, primed_ravage, galvanized_savvy, critical_deceleration, primed_charged_shell, contagious_spread, incendiary_coat]
     arcanes: [shotgun_vendetta]
     valence: toxin
+  - weapon: kuva_sobek
+    mode: base
+    score: 0.5574481219391639
+    fp: b671da6e8d2d67b7
+    exilus: galvanized_acceleration
+    mods: [galvanized_hell, primed_cleanse_corpus, primed_point_blank, acid_shells, shotgun_barrage, shotgun_elementalist, primed_charged_shell, riven]
+    arcanes: [primary_bulwark]
+    valence: electricity
+    riven:
+      bonuses: [electricity, fire_rate, multishot]
+      malus: status_duration
+      rolls: [1.1, 1.1, 1.1, 0.9]
   - weapon: kuva_tonkor
     mode: base
     score: 2.941015171128446
