@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 // WHICH BUILD THIS FILE IS. `scripts/build_site_app.py` replaces the literal;
 // the dev server ships `dev`, which is the right answer there.
-const BUILD_ID = "d698efff+ · 2026-08-29 00:25Z";
+const BUILD_ID = "8dadd720+ · 2026-08-29 01:06Z";
 /// THE HTML AND THIS FILE MUST BE THE SAME BUILD.
 ///
 /// They are deployed as separate files and cached separately, so a browser can
@@ -11365,6 +11365,16 @@ const ROMAN = (n) => {
 /// HOW A FORM IS FIRED, in one word. The trigger is weapon data; this is the
 /// English for it, and a trigger with no entry simply contributes nothing
 /// rather than printing its yaml token at a reader.
+// WHAT A FORCED PROC IS CALLED. Two of them are not damage types at all —
+// Lifted and Knockdown are their own procs — and a reader should not have to
+// know which of the two machines carries which.
+const PROC_WORD = {
+  impact: "Impact", puncture: "Puncture", slash: "Slash",
+  heat: "Heat", cold: "Cold", electricity: "Electricity", toxin: "Toxin",
+  blast: "Blast", corrosive: "Corrosive", gas: "Gas", magnetic: "Magnetic",
+  radiation: "Radiation", viral: "Viral",
+  lifted: "Lifted", knockdown: "Knockdown",
+};
 const TRIGGER_WORD = {
   auto: "fully automatic", semi_auto: "semi-auto", burst: "burst",
   charge: "charged", held: "held", projectile: "projectile",
@@ -11413,29 +11423,100 @@ function modeExplain(w, id) {
     const word = f && TRIGGER_WORD[f.trigger];
     const nm = tr((f || {}).name || "");
     if (!word) return nm;
-    return f.charge_seconds
-      ? trF("{form} ({secs}s charge)", { form: nm, secs: (+f.charge_seconds).toFixed(2) })
-      : trF("{form} ({how})", { form: nm, how: tr(word) });
+    if (f.charge_seconds) {
+      return trF("{form} ({secs}s charge)", { form: nm, secs: (+f.charge_seconds).toFixed(2) });
+    }
+    // A FORM NAMED AFTER ITS TRIGGER DOES NOT NEED IT TWICE. The Kuva Hind's
+    // two extra modes are called Semi-Auto and Full-Auto, so the parenthetical
+    // read "Semi-Auto (semi-auto)" — the same word restated in the same
+    // sentence, which is the filler rule one level down (owner, 2026-08-29).
+    //
+    // ASKED IN ENGLISH, because a form name is the one half that may not be
+    // translated yet: the Hind's two are still DE's English, so comparing the
+    // rendered pair ("Semi-Auto" against "半自动") finds no overlap and prints
+    // both anyway. The SOURCE strings are the reliable comparison, and it is
+    // the same restatement in either language.
+    // BOTH SIDES HAVE TO BE NON-EMPTY. Stripping a Chinese string to its ASCII
+    // leaves nothing, and `"".includes("")` is true — which swallowed the
+    // parenthetical on every translated form name.
+    const flat = (x) => String(x || "").toLowerCase().replace(/[^a-z]/g, "");
+    const said = (a, b) => !!flat(a) && !!flat(b) && flat(a).includes(flat(b));
+    const how = tr(word);
+    return said(f.name, word) || said(nm, how)
+      ? nm
+      : trF("{form} ({how})", { form: nm, how });
+  };
+  // EVERY LINE HAS TO EARN ITS PLACE (owner, 2026-08-29). "Nothing is spent to
+  // be in it, so it can be held forever — a ruler ranks it" was true of the
+  // mode it was printed under AND of every mode beside it, which is the
+  // definition of a sentence that distinguishes nothing; the same goes for
+  // "swung as its neutral combo for the whole engagement" under a heading that
+  // already reads "Neutral Combo". What is left either carries a NUMBER or
+  // names something this mode does and its neighbours do not.
+  const swung = (f) => {
+    const c = comboOf(w, f.id);
+    if (!c) return [];
+    const out = [];
+    // THE THREE NUMBERS, all in ONE unit — a share of the WEAPON's base, which
+    // is what makes the seven modes comparable at a glance.
+    //
+    // TWO CONVERSIONS GET THEM THERE. A script's multipliers are relative to
+    // the ENTRY they are written in (`swing_share` carries it back, and it is
+    // 1.0 on every entry but the slam, whose vector is zero because the whole
+    // attack is its explosion), and the explosion is not in the script at all.
+    // Without both the heavy slam read 100% for an attack that deals 300%
+    // (owner spotted it on the page, 2026-08-29).
+    const share = f.swing_share === undefined ? 1 : f.swing_share;
+    out.push(trF("{n} swings coming to {total}% of base, over {secs}s at 1.0x attack speed.", {
+      n: c.swings, secs: (+c.seconds).toFixed(2),
+      total: Math.round((c.total * share + (f.radial_share || 0)) * 100),
+    }));
+    // A SPIN REACHES THE WHOLE ROOM and an ordinary sweep reaches one body —
+    // the one spatial fact separating two combos of the same weapon.
+    if (c.spins > 0) {
+      out.push(c.spins === c.swings
+        ? tr("Every swing is a spin, reaching everything within the weapon's range.")
+        : trF("{n} of them are spins, reaching everything within the weapon's range.",
+          { n: c.spins }));
+    }
+    // A SLAM IS NOT BOUNDED BY REACH, which is what makes it the melee mode
+    // that answers a crowd.
+    if (f.slam) {
+      out.push(tr("Its damage is an explosion centred on your own feet, so the weapon's reach does not bound it."));
+    }
+    // THE COUNTER IS SPENT HERE, and that makes this mode a different BUILD:
+    // Blood Rush and Weeping Wounds read the counter this one empties.
+    if (f.spends_combo) {
+      out.push(tr("It spends the combo counter and is multiplied by it, so the cards that read that counter are worth far less here."));
+    }
+    if ((c.procs || []).length) {
+      out.push(trF("Forces {procs}, whatever the status roll says.",
+        { procs: c.procs.map((x) => tr(PROC_WORD[x] || x)).join(tr(", ")) }));
+    }
+    return out;
   };
   const out = [];
   if (id === "base") {
-    out.push(def.trigger === "melee"
-      ? trF("Swung as its {form} for the whole engagement.", { form: tr(def.name || "") })
-      : trF("Fired in its {form} for the whole engagement — it never transforms.",
-        { form: fired(def) }));
     // …AND A MELEE WEAPON'S `base` IS A COMBO, whose FORM id is `neutral` and
-    // therefore never equals the mode id. Same three numbers as its siblings.
-    const c = comboOf(w, def.id);
-    if (c) {
-      out.push(trF("{n} swings coming to {total}% of base, over {secs}s at 1.0x attack speed.",
-        { n: c.swings, total: Math.round(c.total * 100), secs: (+c.seconds).toFixed(2) }));
+    // therefore never equals the mode id.
+    const lines = swung(def);
+    if (lines.length) {
+      out.push(...lines);
+    } else {
+      // "IT NEVER TRANSFORMS" IS ONLY WORTH SAYING WHERE IT COULD BE.
+      out.push(forms.some((x) => x.gauge_switched)
+        ? trF("Fired in its {form} for the whole engagement — it never transforms.",
+          { form: fired(def) })
+        : trF("Fired in its {form} for the whole engagement.", { form: fired(def) }));
     }
   } else if (id === "alternate") {
     out.push(trF("Fired in its {form} for the whole engagement.", { form: fired(alt) }));
-    out.push(tr("Nothing is spent to be in it, so it can be held forever — a ruler ranks it."));
   } else if (id === "transformed") {
-    out.push(trF("Its {form} alone, from the first second.", { form: fired(earned) }));
-    out.push(tr("It is NOT a way to play a whole engagement — the form has to be bought and runs out, so no ruler ranks it. It is here so you can read the form's own numbers."));
+    // THE ONE CONSTRAINT THAT IS NOT TRUE OF ITS NEIGHBOURS stays, because it
+    // is the only mode here you cannot actually play: it exists so a form's own
+    // numbers can be read.
+    out.push(trF("Its {form} alone, from the first second — a form that has to be bought and runs out, so this is here to read its numbers rather than to play.",
+      { form: fired(earned) }));
   } else if (forms.some((x) => x.id === id)) {
     // **A MODE WHOSE ID IS A FORM'S ID**, which is every melee mode and the
     // Kuva Hind's two extra triggers. There was no arm for it: `modeExplain`
@@ -11444,28 +11525,12 @@ function modeExplain(w, id) {
     // so the block drew one row for the Hind's three modes and one for the
     // Magistar's seven (owner, 2026-08-29).
     const f = forms.find((x) => x.id === id) || {};
-    const c = comboOf(w, id);
-    // A SWING IS NOT A SHOT, and the verb is the only word in this sentence
-    // that says which. `fired` is right for the Kuva Hind's two extra triggers
-    // and reads as nonsense over a hammer.
-    out.push(f.trigger === "melee"
-      ? trF("Swung as its {form} for the whole engagement.", { form: tr(f.name || "") })
-      : trF("Fired in its {form} for the whole engagement.", { form: fired(f) }));
-    // THE THREE NUMBERS THAT DECIDE BETWEEN THE SEVEN, which is what this
-    // block exists for: a name says which mode, these say why you would pick
-    // it. They come from the STANCE when one is equipped, because that is the
-    // card that moves them — the mode's name is fixed and its strength is not.
-    //
-    // OPTIONAL, because this arm is not melee's alone: the Kuva Hind's two
-    // extra triggers take their form's id as their mode id too, and a gun has
-    // no combo to state. That is what the arm was missing when it first landed
-    // — it required one, so the Hind fell through it and kept drawing a single
-    // row for three modes.
-    if (c) {
-      out.push(trF("{n} swings coming to {total}% of base, over {secs}s at 1.0x attack speed.",
-        { n: c.swings, total: Math.round(c.total * 100), secs: (+c.seconds).toFixed(2) }));
-    }
-    out.push(tr("Nothing is spent to be in it, so it can be held forever — a ruler ranks it."));
+    const lines = swung(f);
+    // A GUN WHOSE MODE IS A FORM has no combo to state, so its trigger is what
+    // there is to say. That is what this arm was missing when it first landed
+    // — it REQUIRED a combo, so the Hind fell straight through it.
+    out.push(...(lines.length ? lines
+      : [trF("Fired in its {form} for the whole engagement.", { form: fired(f) })]));
   } else if (id === "cycle" && earned) {
     const g = earned.gauge || {};
     out.push(trF(
@@ -11783,19 +11848,30 @@ function renderMode() {
   // fills the gauge, how much of it there is, what the earned form gets to
   // fire) were on no screen at all. It FOLDS, and remembers, because a reader
   // who has learned this weapon does not need it again.
-  const explain = (ids) => {
-    const rows = ids.map((id) => {
-      const lines = modeExplain(w, id);
-      if (!lines.length) return "";
-      return `<div class="modedef${id === mode ? " on" : ""}">
-        <div class="modedef-n">${escHtml(modeLabel(w, id))}${
-          id === mode ? ` <span class="modedef-on">${escHtml(tr("picked"))}</span>` : ""}</div>
+  // **THE MODE YOU ARE IN, and not the other six** (owner, 2026-08-29). This
+  // listed EVERY mode when it landed, and that was right while a weapon had two
+  // or three: the dropdown named the choices and said nothing about them, and
+  // the numbers that decide between them were on no screen at all
+  // (owner, 2026-08-15).
+  //
+  // MELEE MADE IT A WALL. Seven modes is seven blocks of three lines above the
+  // build, six of which are about something the reader did not pick — and the
+  // one that IS theirs is no longer easy to find in it, which is the opposite
+  // of what the block was for. The reason to list them all was comparison, and
+  // comparison is what the BOARD does: it ranks every mode of every weapon as
+  // its own row, which is a better answer than seven paragraphs.
+  //
+  // So the picked one gets its sentences and switching the control switches
+  // them. Nothing else moved: `modeExplain` still answers for any mode, and the
+  // control beside it still names all seven.
+  const explain = (id) => {
+    const lines = modeExplain(w, id);
+    if (!lines.length) return "";
+    return foldBlock("mode-def", tr("What this mode is"), "",
+      `<div class="modedef on">
+        <div class="modedef-n">${escHtml(modeLabel(w, id))}</div>
         ${lines.map((s) => `<div class="modedef-l">${escHtml(s)}</div>`).join("")}
-      </div>`;
-    }).join("");
-    return rows
-      ? foldBlock("mode-def", tr("What each mode is"), "", rows)
-      : "";
+      </div>`);
   };
 
   if (!opts.length) {
@@ -11805,7 +11881,7 @@ function renderMode() {
     // not merely the absence of a choice.
     const only = (w.modes || ["base"])[0];
     box.innerHTML = `<label>${escHtml(tr("Mode"))} <span class="fixed-val">${
-      escHtml(modeLabel(w, only))}</span></label>${explain([only])}`;
+      escHtml(modeLabel(w, only))}</span></label>${explain(only)}`;
     if (sub) sub.textContent = tr("one firing mode");
     wireFolds(box);
     return;
@@ -11833,7 +11909,7 @@ function renderMode() {
       markPresetDirty(); renderMode(); refreshPanel();
     },
   })}</label>${why ? `<span class="warn">⊘ ${escHtml(why)}</span>` : ""}${
-    explain(opts.map(([id]) => id))}`;
+    explain(mode)}`;
   wireFolds(box);
 }
 

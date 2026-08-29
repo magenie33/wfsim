@@ -863,6 +863,50 @@ around (decision 2026-07-31).
   is invisible in English and is half an English sentence on a Chinese page.
   Verified to bite: restoring the hardcoded `tr("Incarnon cycle")` fails four
   assertions, naming the weapon and the language.
+  IT EXPLAINS THE MODE YOU ARE IN, AND NOT THE OTHER SIX (owner, 2026-08-29),
+  which reverses the 2026-08-15 decision above on the evidence melee supplied.
+  Listing every mode was right while a weapon had two or three; seven is seven
+  blocks of three lines above the build, six of them about something the reader
+  did not pick, and the one that IS theirs is no longer findable in the wall.
+  The reason to list them all was COMPARISON, and comparison is what the BOARD
+  does — it ranks every mode of every weapon as its own row, which is a better
+  answer than seven paragraphs. So the check moved with it: "one entry per mode"
+  became "exactly one entry, and it is the one you are in" — the second clause
+  being the half that carries the meaning, since a count of one passes just as
+  well on a block permanently stuck on `base`.
+  AND "THE NAMES TELL THE MODES APART" MOVED TO THE CONTROL. One entry cannot
+  repeat a name, so asking the BLOCK would have retired the assertion by making
+  it vacuous — and it is the assertion that caught the real bug (`modeLabel`
+  fell through to the default form, so the Kuva Hind drew three modes as "Base
+  Form" for two weeks). The dropdown is where all seven names still appear, read
+  from `modeOpts` rather than from a popover that is shut.
+  EVERY LINE HAS TO EARN ITS PLACE, which is the rule the rewrite came from
+  (owner, 2026-08-29). "Nothing is spent to be in it, so it can be held forever
+  — a ruler ranks it" was true of the mode it was printed under AND of every
+  mode beside it; "swung as its neutral combo for the whole engagement" restated
+  a heading already reading "Neutral Combo". A sentence true of everything on
+  the list distinguishes nothing on it. What is left either carries a NUMBER or
+  names something this mode does and its neighbours do not: how many of its
+  swings are spins that reach the whole room, whether it spends the combo
+  counter (which is what makes it a different BUILD — Blood Rush reads the
+  counter this mode empties), whether its damage is a slam the weapon's reach
+  does not bound, and what it forces on the target whatever the roll says.
+  THE THREE NUMBERS ARE IN ONE UNIT, and getting there takes two conversions
+  that were both missing. A combo script's multipliers are relative to the
+  ENTRY they are written in and the explosion is not in the script at all — so
+  the Magistar's heavy slam, whose entry states `damage: { impact: 0.0 }`
+  because the whole attack is its 630 Blast `radial:`, reported **100% of base**
+  for an attack that deals **300%**. `swing_share` and `radial_share` ride the
+  FORM rather than the summary, because `stance_combos` has no weapon entry
+  behind it and anything read off the entry would be erased the moment a stance
+  went in the slot.
+  A NAME THAT ALREADY SAYS THE TRIGGER DOES NOT SAY IT TWICE: the Hind's
+  Semi-Auto mode read "Semi-Auto (semi-auto)". The comparison is on the SOURCE
+  strings, since a form name is the one half that may still be DE's English
+  while the trigger word is translated — and both sides are checked non-empty,
+  because stripping a Chinese string to its ASCII leaves nothing and
+  `"".includes("")` is true, which swallowed the parenthetical on every
+  translated form name.
   `node scripts/check_gain_freshness.mjs` is the ninth: a
   scenario edit reaches the quick calc immediately, including a field nobody
   has invented yet — the scan's cache key is DERIVED from the fight it will

@@ -370,7 +370,6 @@ ui:
   Finalists: 优胜名额
   "Fire Rate": 射速
   "Fire {base} until the gauge fills, spend it in {other}, come back — and again.": 用{base}打到充能条满，切到{other}把它花掉，再切回来 —— 如此往复。
-  "Fired in its {form} for the whole engagement — it never transforms.": 整场交战都用{form}射击 —— 它从不变身。
   "Fired in its {form} for the whole engagement.": 整场交战都用{form}射击。
   "First magazine": 第一个弹匣
   "Flux Overdrive, the Flux Rifle family's exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Flux Overdrive」，Flux Rifle 家族的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
@@ -399,7 +398,6 @@ ui:
   "Infinite ammo": 无限弹药
   "It does take money and time to run. If it has ever saved you a Forma, you can chip in.":
     它确实要花钱和时间来维持。如果它替你省下过一根 Forma，可以来投喂一下。
-  "It is NOT a way to play a whole engagement — the form has to be bought and runs out, so no ruler ranks it. It is here so you can read the form's own numbers.": 这并不是一种能打满整场交战的玩法 —— 这个形态要花代价换取，而且会耗尽，所以没有标尺给它排名。它在这里是为了让你看到这个形态自己的数值。
   "the record is open in its own window": 战斗记录已在它自己的窗口里打开。
   "Bring it back here": 收回本页
   "Open in its own window": 在新窗口打开
@@ -414,7 +412,6 @@ ui:
   "Condition Overload does not apply to slams, heavy slams or radial attacks (the mod's own words), and this entry does not yet exempt it — a build carrying Condition Overload therefore reads HIGH in this mode": 异常状态过载不作用于捶地、重击捶地和径向攻击（mod 卡面原话），而本条目尚未做这个豁免——所以带异常状态过载的配装在这个模式下读数偏高
   "melee CRITICAL CHANCE mods read x2 on a heavy attack — True Steel, Sacrificial Steel and Galvanized Steel all say so on their own cards — and this entry does not double them, so a crit build reads LOW in this mode": 近战**暴击率** mod 在重击上读作 x2——斩铁、牺牲之钢、镀锌之钢的卡面都这么写——而本条目没有做这个翻倍，所以暴击流派在这个模式下读数偏低
   "{n} swings coming to {total}% of base, over {secs}s at 1.0x attack speed.": 共 {n} 击，合计基伤的 {total}%，在 1.0x 攻速下耗时 {secs} 秒。
-  "Swung as its {form} for the whole engagement.": 整场交战都用{form}挥击。
   "Neutral Combo": 中立连段
   "Forward Combo": 前冲连段
   "Block Combo": 格挡连段
@@ -435,7 +432,6 @@ ui:
   "Its innate headshot bonus MULTIPLIES the headshot bracket instead of joining it, so it compounds with Deadhead and Target Acquired rather than adding to them.": 它自带的爆头加成是乘在爆头加算区上，而不是并入其中——所以它与首领终结、锁定目标是相乘而非相加。
   "Its scope's top zoom (4.5x) grants +50% headshot damage while aiming, additive with headshot mods. This arena has no field of view to trade for magnification, so the scope is always at that level.": 它瞄准镜的最高倍率（4.5x）在瞄准时提供 +50% 爆头伤害，与爆头 MOD 加算。这个战场没有视野概念，倍率不需要用视野去换，所以瞄准镜始终停在这一档。
   "Its scope's top zoom (6.0x) grants +60% headshot damage while aiming, additive with headshot mods. This arena has no field of view to trade for magnification, so the scope is always at that level.": 它瞄准镜的最高倍率（6.0x）在瞄准时提供 +60% 爆头伤害，与爆头 MOD 加算。这个战场没有视野概念，倍率不需要用视野去换，所以瞄准镜始终停在这一档。
-  "Its {form} alone, from the first second.": 从第一秒起就只用{form}。
   "Join the Discord": 加入官方 Discord
   "Join the QQ group — 995078378": 加入 QQ 群 —— 995078378
   "KPM": KPM
@@ -485,7 +481,6 @@ ui:
   "Not aiming, and no shot finds a head. Two terms, because the stance and where the shots land are different facts — the stance is what gates mods like Argon Scope.": 不瞄准，且没有一枪打中头部。这是两个条件，因为“姿势”和“子弹落点”是两件不同的事——像氩晶瞄具这类 mod 卡的是姿势。
   "Not firing": 未开火
   "Not now": 暂不
-  "Nothing is spent to be in it, so it can be held forever — a ruler ranks it.": 待在这个形态不需要付出任何代价，所以可以一直保持 —— 官方标尺会给它排名。
   "ON KILL THE BODY FOLLOWS THE BOLT, damaging anyone in its path and pinning the corpse to walls (wiki). It is a second damage source that only exists once something has died, and this engine has no ragdoll and no wall for it to pin against — so a bolt weapon fighting a crowd is understated by however much that corpse would have hit on the way past": "击杀时尸体会跟着钉住它的螺钉飞出去，沿途对挡路的敌人造成伤害，并把尸体钉在墙上（维基）。这是一个「必须先死一个」才存在的第二伤害来源，而本引擎既没有布娃娃物理，也没有可以钉的墙 —— 所以一把螺钉武器在人堆里被低估的量，正好是那具尸体在飞行途中本该打出的伤害"
   "ORBS MERGE, and a fully stacked set collapses into a SINGULARITY that deals damage over time in five metres (module: two further attacks). This engine resolves each shot on its own, so neither the merge nor the singularity is counted — which is most of what this weapon is for": "球会合并，而叠满之后会坍缩成一个奇点，在五米内持续造成伤害（模块里另外两次攻击）。本引擎逐发独立结算，所以合并和奇点都没有被计入 —— 而那正是这把武器的主要用途"
   "ORBS MERGE. The module gives this weapon a second AoE — 'Orb Merging Damage' in four metres — that fires when a new orb joins one already in the air, and the explosion grows with the number merged (wiki). This engine resolves each shot on its own, so the merge is not counted at all and a player laying orbs on one spot is well ahead of this number": "球会合并。模块给这把武器第二个范围攻击 ——「Orb Merging Damage」，四米范围 ——它在新的球并入已经在空中的球时触发，而且爆炸会随合并数量增长（维基）。本引擎逐发独立结算，所以合并完全没有被计入，一个把球都堆在同一个点上的玩家远高于这个数字"
@@ -1599,6 +1594,29 @@ ui:
   "blast_area": "爆炸范围"
   "extra": "额外伤害"
   "more numbers than fit here — the biggest are drawn": "这里放不下这么多数字 —— 只画最大的那些"
+  "Every swing is a spin, reaching everything within the weapon's range.": 每一击都是旋击，触及范围内的敌人全部命中。
+  "{n} of them are spins, reaching everything within the weapon's range.": 其中 {n} 击是旋击，触及范围内的敌人全部命中。
+  "Its damage is an explosion centred on your own feet, so the weapon's reach does not bound it.": 它的伤害是以自身脚下为中心的爆炸，武器触及距离不构成限制。
+  "It spends the combo counter and is multiplied by it, so the cards that read that counter are worth far less here.": 它消耗连击计数器并按其倍率结算，所以读取该计数器的卡在这里价值大打折扣。
+  "Forces {procs}, whatever the status roll says.": 强制触发{procs}，与触发几率无关。
+  "Fired in its {form} for the whole engagement — it never transforms.": 整场交战都用{form}射击 —— 它不会变形。
+  "Its {form} alone, from the first second — a form that has to be bought and runs out, so this is here to read its numbers rather than to play.": 从第一秒起就只用{form}。这个形态需要换取且会耗尽，所以这一项是用来读它自己的数值的，而不是一种打法。
+  "Lifted": 浮空
+  "Knockdown": 击倒
+  "Impact": 冲击
+  "Puncture": 穿刺
+  "Slash": 切割
+  "Heat": 火焰
+  "Cold": 冰冻
+  "Electricity": 电击
+  "Toxin": 毒素
+  "Blast": 爆炸
+  "Corrosive": 腐蚀
+  "Gas": 毒气
+  "Magnetic": 磁力
+  "Radiation": 辐射
+  "Viral": 病毒
+  "What this mode is": 这个模式是什么
 
 effect_phrases:
   - ['Ammo Pickup Conversion', '弹药拾取转换']

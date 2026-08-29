@@ -45,6 +45,15 @@ const grab = (weapon) => `(async () => {
     marked: document.querySelectorAll('.modedef.on').length,
     modes: (weaponInfo('${weapon}'.toLowerCase()) || {}).modes || [],
     picked: mode,
+    // WHAT THE CONTROL OFFERS, which is where every mode of this weapon is
+    // still named. The dropdown is a popover, so its labels are read from the
+    // source renderMode builds them from rather than from a menu that is
+    // shut — the same list, one step earlier. (No backticks in here: this whole
+    // body is a template literal.)
+    offered: modeOpts(weaponInfo('${weapon}'.toLowerCase()) || {}).map(o => o[1]),
+    // The picked mode's own name, so the one entry drawn can be checked to BE
+    // it rather than merely to exist.
+    label: modeLabel(weaponInfo('${weapon}'.toLowerCase()) || {}, mode),
   };
 })()`;
 
@@ -70,14 +79,21 @@ for (const lang of ["en", "zh"]) {
 
   for (const w of WEAPONS) {
     const r = await evaluate(grab(w));
-    const names = r.names.join(" | ");
     check(`${w}/${lang}: the block is drawn`, r.present === true);
     check(`${w}/${lang}: ...and folds`, r.foldable === true);
-    check(`${w}/${lang}: one entry per mode`, r.names.length === r.modes.length,
-      `${r.names.length} entries for ${r.modes.length} modes`);
-    check(`${w}/${lang}: every entry got a sentence`, r.lines.length >= r.names.length,
-      `${r.lines.length} lines for ${r.names.length} entries`);
-    check(`${w}/${lang}: the one you are in is marked, once`, r.marked === 1, `${r.marked}`);
+    // **THE MODE YOU ARE IN, AND NOT THE OTHER SIX** (owner, 2026-08-29). This
+    // asserted one entry PER MODE while the block listed them all, which was
+    // right for a weapon with two or three and became a wall at seven. The
+    // block draws the picked one now, so the count is one — and the assertion
+    // that it is the RIGHT one is the half that carries the meaning, since
+    // "exactly one entry" passes just as well on a block permanently showing
+    // `base`.
+    check(`${w}/${lang}: exactly one entry, and it is the one you are in`,
+      r.names.length === 1 && r.marked === 1, `${r.names.length} entries, ${r.marked} marked`);
+    check(`${w}/${lang}: ...and it names the picked mode`,
+      r.names[0] === r.label, `${r.names[0]} vs ${r.label}`);
+    check(`${w}/${lang}: it got a sentence`, r.lines.length >= 1,
+      `${r.lines.length} lines`);
 
     // **NO TWO MODES OF ONE WEAPON SHARE A NAME**, which is the assertion this
     // check was missing and the reason a real bug shipped for two weeks.
@@ -93,9 +109,19 @@ for (const lang of ["en", "zh"]) {
     // sentence each, one marked, the right language — all true of a list that
     // says the same word three times. What none of them asked is whether the
     // names TELL THE MODES APART, which is the only thing a name is for.
-    const dupes = r.names.filter((n, i) => r.names.indexOf(n) !== i);
-    check(`${w}/${lang}: the names tell the modes apart`,
-      dupes.length === 0, `${dupes.length} repeated of ${r.names.length}: ${names}`);
+    //
+    // IT MOVED TO THE CONTROL when the block stopped listing every mode
+    // (2026-08-29): one entry cannot repeat a name, so asking the block would
+    // have retired the assertion by making it vacuous. The dropdown is where
+    // all seven names still appear, and it is the surface the bug was actually
+    // about.
+    const dupes = r.offered.filter((n, i) => r.offered.indexOf(n) !== i);
+    check(`${w}/${lang}: the mode control's names tell the modes apart`,
+      dupes.length === 0,
+      `${dupes.length} repeated of ${r.offered.length}: ${r.offered.join(" | ")}`);
+    check(`${w}/${lang}: ...one option per mode`,
+      r.offered.length === r.modes.length || r.modes.length <= 1,
+      `${r.offered.length} options for ${r.modes.length} modes`);
 
     // THE NUMBERS ARE ON SCREEN. A cycle whose text carries no digits is the
     // old dropdown with more words: this is the assertion that the gauge
@@ -106,13 +132,14 @@ for (const lang of ["en", "zh"]) {
     }
 
     // THE MATCHED PAIR. Both directions, because either alone passes on a bug.
-    const saysIncarnon = /incarnon/i.test(names) || names.includes("灵化");
+    const offered = r.offered.join(" | ");
+    const saysIncarnon = /incarnon/i.test(offered) || offered.includes("灵化");
     if (w === "Mausolon" || w === "Cortege") {
       check(`${w}/${lang}: a weapon with no adapter is not told it has one`,
-        !saysIncarnon, names);
+        !saysIncarnon, offered);
     }
     if (w === "Torid" || w === "Lex") {
-      check(`${w}/${lang}: ...and a weapon that HAS one still says so`, saysIncarnon, names);
+      check(`${w}/${lang}: ...and a weapon that HAS one still says so`, saysIncarnon, offered);
     }
 
     // THE DISPLAY LANGUAGE, both ways. A template that was never translated

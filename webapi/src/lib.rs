@@ -1448,6 +1448,53 @@ pub fn meta_json() -> Value {
                         json!({
                         "id": id, "name": name, "is_default": def,
                         "combo": combo,
+                        // THE TWO FACTS THE SCRIPT CANNOT CARRY, both the
+                        // ENTRY's rather than the stance's, and both the reason
+                        // a reader would pick this mode over the one beside it.
+                        //
+                        // A SLAM'S DAMAGE IS NOT IN ITS SWING AT ALL: the entry
+                        // states a zero direct vector and 630 Blast in
+                        // `radial:`, so a summary counting swing multipliers
+                        // reported "100% of base" for an attack that deals 300%
+                        // (owner spotted it on the page, 2026-08-29). The share
+                        // is stated separately rather than folded into `total`
+                        // because it is also the thing that frees the mode from
+                        // the weapon's reach, which is worth a sentence of its
+                        // own.
+                        "slam": s.and_then(|s| s.attack.radial.as_ref())
+                            .is_some_and(|r| r.blast_kind
+                                == wfsim_engine::weapons_data::BlastKind::Slam),
+                        // THE DENOMINATOR IS THE WEAPON'S BASE, not this
+                        // form's. A heavy slam states a ZERO direct vector —
+                        // all of it is in `radial:` — so dividing by the form's
+                        // own damage divides by nothing and the share came back
+                        // absent, leaving the line reading 100% again. Every
+                        // other number on this line is already a share of the
+                        // weapon's base, which is what makes them addable.
+                        // WHAT A SWING MULTIPLIER OF 1.0 IS WORTH, as a share
+                        // of the weapon's base. A combo script's multipliers
+                        // are relative to the ENTRY they are written in, and a
+                        // heavy slam's entry states `damage: { impact: 0.0 }`
+                        // — the whole attack is its explosion — so its 1.0
+                        // swing is 100% of nothing and adding it to the
+                        // explosion's 300% reported 400%. Every other melee
+                        // entry carries the weapon's own vector, where this is
+                        // 1.0 and nothing moves.
+                        "swing_share": s.and_then(|f| {
+                            let base: f64 = wfsim_engine::weapons_data::spec(&w.id)
+                                .map(|b| b.attack.damage.values().sum())
+                                .unwrap_or(0.0);
+                            (base > 0.0)
+                                .then(|| r3(f.attack.damage.values().sum::<f64>() / base))
+                        }),
+                        "radial_share": s.and_then(|f| {
+                            let base: f64 = wfsim_engine::weapons_data::spec(&w.id)
+                                .map(|b| b.attack.damage.values().sum())
+                                .unwrap_or(0.0);
+                            let r = f.attack.radial.as_ref()?;
+                            (base > 0.0).then(|| r3(r.damage.values().sum::<f64>() / base))
+                        }),
+                        "spends_combo": s.is_some_and(|s| s.attack.spends_combo),
                         // Is this the form the GAUGE switches into? Then it
                         // exists only while its unlock is installed — and a mod
                         // that cannot be worn beside that unlock (`evo_forbids`)
@@ -2182,8 +2229,33 @@ fn combo_summary(script: &[wfsim_engine::weapons_data::ComboHit]) -> Value {
         .iter()
         .map(|h| (h.multiplier + h.slam_multiplier.unwrap_or(0.0)) * f64::from(h.hits))
         .sum();
-    let seconds: f64 = script.iter().map(|h| h.windup_seconds + h.delay_seconds).sum();
-    json!({ "swings": swings, "total": r3(total), "seconds": r3(seconds) })
+    // WHAT ACTUALLY TELLS THE MODES APART, beside the three numbers. Every melee
+    // mode is free to hold and every one of them is ranked, so a line saying
+    // either is a line that distinguishes nothing (owner, 2026-08-29). What a
+    // reader is choosing between is how much of the room a swing reaches and
+    // what it forces on whatever it lands on.
+    let spins = script.iter().filter(|h| h.all_around).count();
+    let mut procs: Vec<&str> = Vec::new();
+    for h in script {
+        for p in &h.forced_procs {
+            if !procs.contains(&p.as_str()) {
+                procs.push(p.as_str());
+            }
+        }
+    }
+    // A SCRIPT AND NOTHING ELSE, which is what lets a STANCE send the same
+    // shape: `stance_combos` has no weapon entry behind it, so anything read
+    // off the entry (the explosion's share, whether the counter is spent)
+    // belongs on the FORM instead — otherwise equipping a stance would erase
+    // exactly the facts this block exists to state.
+    json!({
+        "swings": swings, "total": r3(total), "seconds": r3(seconds_of(script)),
+        "spins": spins, "procs": procs,
+    })
+}
+
+fn seconds_of(script: &[wfsim_engine::weapons_data::ComboHit]) -> f64 {
+    script.iter().map(|h| h.windup_seconds + h.delay_seconds).sum()
 }
 
 pub fn board_check_json(v: &Value) -> Value {

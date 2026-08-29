@@ -334,6 +334,46 @@ numbers rather than swapping in a new set of attacks.
 
 ---
 
+## 7b. HOW A MODE EXPLAINS ITSELF, AND WHY IT GOT SHORTER
+
+Seven modes broke the mode-def block twice on the same day, in opposite
+directions.
+
+**It listed them all, and that was a wall.** The block was written to explain
+every mode a weapon has (owner, 2026-08-15), which was right at two or three
+and is seven paragraphs above the build at seven — six of them about something
+the reader did not pick. It draws the PICKED one now; comparison is what the
+board does, one row per mode.
+
+**Every line had to earn its place** (owner, 2026-08-29). Three of the four
+sentences a melee mode printed said nothing:
+
+| line | why it went |
+| --- | --- |
+| "Swung as its Neutral Combo for the whole engagement." | restates the heading, which already reads *Neutral Combo* |
+| "Nothing is spent to be in it, so it can be held forever." | true of all seven |
+| "— a ruler ranks it." | true of all seven |
+
+What replaced them is per-mode by construction: how many of its swings are
+**spins** (a spin reaches the whole room and a sweep reaches one body — the one
+spatial fact separating two combos of the same weapon), whether it **spends the
+combo counter** (which makes it a different BUILD, since Blood Rush and Weeping
+Wounds read the counter it empties), whether its damage is a **slam** the
+weapon's reach does not bound, and what it **forces** whatever the roll says.
+
+**The three numbers are in one unit, and two conversions get them there.** A
+combo script's multipliers are relative to the ENTRY they are written in, and
+the explosion is not in the script at all. `magistar_heavy_slam` states
+`damage: { impact: 0.0 }` — the whole attack is its 630 Blast `radial:` — so a
+summary counting swing multipliers reported **100% of base** for an attack that
+deals **300%**, and naively adding the radial gave 400%. `swing_share`
+(this entry's vector over the weapon's, 1.0 everywhere but the slam) and
+`radial_share` are both on the FORM rather than in `combo_summary`, because
+`stance_combos` has no weapon entry behind it: anything read off the entry would
+vanish the moment a stance went in the slot.
+
+---
+
 ## 8. WHAT MELEE COSTS FROM HERE
 
 The Magistar paid for nearly all of the machinery. The second melee weapon is a
