@@ -21,7 +21,7 @@
 # while `mods`/`arcanes` below are filled by the script.
 weapons:
   # (BurstRifle -> 伯斯顿, PrimeBurston -> 伯斯顿 Prime, FullAutoShotgun ->
-  # Arch-Gun (2026-08-01). Both entries are the same weapon; the FORM is
+  # Arch-Gun. Both entries are the same weapon; the FORM is
   # DE own strings (WFCD i18n.json, joined on internal name).
   # DE 的中文是意译：Latin "furis" 的贼盗之意，不是音译。
   # DE's own string (WFCD i18n.json, CrpSentExperimentPistol).
@@ -874,7 +874,7 @@ mods:
   deadly_sequence: 致命数列
   dizzying_rounds: 晕眩弹药
   double_tap: 双重连击
-  dreadful_killshot: 恐怖杀戮   # DE's own name, from the game (owner, 2026-08-26)
+  dreadful_killshot: 恐怖杀戮   # DE's own name, from the game
   metamorphic_magazine: 异变弹匣
   neutralizing_justice: 抵消正义
   stockpiled_blight: 积存毁坏

@@ -34,7 +34,21 @@
   // token, and Cloudflare's own docs commit it. Named for what it holds, which
   // is not the board: the board is the generated yaml in
   // `data/benchmarks/boards/`, and this is the builds waiting to be scored.
+  //
+  // SUPPORT is the second one and it is NOT a prefix inside the first: the
+  // pending count lists every key in SUBMISSIONS, so a supporter stored there
+  // would be reported to the board page as a build waiting to be scored. It
+  // holds one empty key per Ko-fi message id and nothing else — see
+  // `supporters` in worker/index.js. Until the namespace exists the two
+  // /api/support/* endpoints answer 503 and the page draws no supporter line,
+  // which is the same shape a channel with no url has.
+  //
+  //   npx wrangler kv namespace create SUPPORT
+  //   npx wrangler secret put KOFI_TOKEN     (from the Ko-fi webhook page)
+  //
+  // …then uncomment the second line below with the id it prints.
   "kv_namespaces": [
     { "binding": "SUBMISSIONS", "id": "967ea857dfee4e6290daa2a6cd720889" }
+    // { "binding": "SUPPORT", "id": "<paste the id here>" }
   ]
 }

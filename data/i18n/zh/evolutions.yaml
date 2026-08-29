@@ -11,7 +11,7 @@
 #     text. The evolution strings live in the client's localization tables,
 #     which are not exported.
 #
-# HOW TO READ IT (2026-08-03). The wiki's PAGES sit behind a Cloudflare
+# HOW TO READ IT. The wiki's PAGES sit behind a Cloudflare
 # challenge that neither curl nor a fetch tool can pass — every `?action=raw`
 # and every plain page URL answers 403 "Just a moment...". Its MediaWiki API
 # does NOT:
@@ -609,7 +609,7 @@ evolutions:
   furis_elemental_balance: 元素平衡
   mk1_furis_elemental_balance: 元素平衡
 
-  # Phenmor (2026-08-08), read through the API from 凤殁. THE CN CLIENT WORDS
+  # Phenmor, read through the API from 凤殁. THE CN CLIENT WORDS
   # ONE OF THESE DIFFERENTLY: Lingering Judgement is "On 2 headshots within 2
   # seconds" in English and 在2秒内爆头击杀两次 — two headshot KILLS — in
   # Chinese. Transcribed as each client says it rather than reconciled: a card
@@ -628,7 +628,7 @@ evolutions:
   phenmor_devouring_attrition: 压制损耗
   phenmor_spiteful_defilement: 怨之亵渎
   phenmor_lingering_judgement: 恒久审判
-  # The Braton family (2026-08-08), read through the API from 布莱顿灵化之源.
+  # The Braton family, read through the API from 布莱顿灵化之源.
   # One page, four variants: every per-variant value is printed inline as
   # '''X''' （原版）/ '''Y''' （MK1） / … and is resolved down to the weapon
   # being written, the way our English `description` fields already are.
@@ -671,7 +671,7 @@ evolutions:
   braton_prime_critical_parallel: 临界平行
   braton_prime_prelude_of_might: 力量前奏
   braton_prime_survivors_edge: 生还占优
-  # The Latron family (2026-08-08), read through the API from 拉特昂灵化之源.
+  # The Latron family, read through the API from 拉特昂灵化之源.
   # ZERO disagreements with the EN table on all 27 values, unlike the Braton's
   # two — which is the point of checking both rather than one.
   latron_evo1_incarnon_form: 灵化形态
@@ -701,7 +701,7 @@ evolutions:
   latron_prime_flensing_spikes: 剥肤利钉
   latron_prime_deadhead: 死亡头颅
   latron_prime_critical_parallel: 临界平行
-  # The Boltor family (2026-08-08), read through the API from 螺钉步枪灵化之源.
+  # The Boltor family, read through the API from 螺钉步枪灵化之源.
   # 准将沐福 is the name AGENTS.md cites as the proof that a DE name is never
   # derivable from its English (Commodore's Fortune), and it comes back the
   # same here as on the Dual Toxocyst — which is the check that this is a
@@ -1338,7 +1338,7 @@ evolution_descriptions:
     身上受到少于3个异常状态的敌人将遭受：+100%暴击伤害
   phenmor_lingering_judgement: |-
     在2秒内爆头击杀两次：+50%爆头伤害，持续8秒
-  # The Braton family (2026-08-08), read through the API from 布莱顿灵化之源.
+  # The Braton family, read through the API from 布莱顿灵化之源.
   # One page, four variants: every per-variant value is printed inline as
   # '''X''' （原版）/ '''Y''' （MK1） / … and is resolved down to the weapon
   # being written, the way our English `description` fields already are.
@@ -1421,7 +1421,7 @@ evolution_descriptions:
     暴击几率低于50%时：基础暴击伤害增加+3x
   braton_prime_survivors_edge: |-
     基础暴击几率增加+10%，基础触发几率增加+14%
-  # The Latron family (2026-08-08), read through the API from 拉特昂灵化之源.
+  # The Latron family, read through the API from 拉特昂灵化之源.
   # ZERO disagreements with the EN table on all 27 values, unlike the Braton's
   # two — which is the point of checking both rather than one.
   latron_evo1_incarnon_form: |-
@@ -1490,7 +1490,7 @@ evolution_descriptions:
     +100%爆头倍率
   latron_prime_critical_parallel: |-
     基础暴击几率增加+24%，基础暴击伤害增加+0.2x
-  # The Boltor family (2026-08-08), read through the API from 螺钉步枪灵化之源.
+  # The Boltor family, read through the API from 螺钉步枪灵化之源.
   # 准将沐福 is the name AGENTS.md cites as the proof that a DE name is never
   # derivable from its English (Commodore's Fortune), and it comes back the
   # same here as on the Dual Toxocyst — which is the check that this is a
@@ -1559,7 +1559,7 @@ evolution_descriptions:
   boltor_prime_commodores_fortune: |-
     基础暴击几率增加+14%。
 
-  # ---- 执法者灵化之源 (2026-08-29) — DELIBERATELY UNNAMED --------------------
+  # ---- 执法者灵化之源 — DELIBERATELY UNNAMED --------------------
   #
   # The Magistar's nine perks have NO Chinese name here, and that is a decision
   # rather than an omission. DE's own strings for evolutions are not in any
@@ -1569,7 +1569,7 @@ evolution_descriptions:
   # name for a card it is not.
   #
   # "A STRING IS TRANSCRIBED, NEVER TRANSLATED. If a source cannot be reached,
-  # LEAVE IT EMPTY AND SAY SO" (owner, 2026-08-03). Five Boar Prime evolution
+  # LEAVE IT EMPTY AND SAY SO". Five Boar Prime evolution
   # names were translated once and four of them were wrong.
   #
   # WHAT TO DO: read them off the card in the Chinese client and paste them in.

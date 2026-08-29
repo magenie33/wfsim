@@ -11,17 +11,14 @@ ui:
   #
   #
   #
-  # "2 · The wielder" (2026-08-04): a ROBOTIC weapon is held by a Sentinel or a
+  # "2 · The wielder": a ROBOTIC weapon is held by a Sentinel or a
   # "Airborne" above, "Only this weapon" is OUR OWN wording rather than a phrase
   # "Element" is already in the roster below and "Bonus" is already there
   # "Theorycrafting, solved." is a NOUN, a comma, and a verdict — two words,
   # "set to its default ignoring other bonuses, even negative effects" — the
   # "solved" are things the golden tests and the optimizer actually do.
   # "全部潜在增益", the riven card's 增益/减益). 提升 is what this column
-  # "支持一下" reads as a request.
-  # (2026-08-01), which is what a player reading the panel will expect.
-  # (user, 2026-07-31), which is why the disclaimer below reads WF模拟 while
-  # (user, 2026-07-31). "fight simulator" and "Monte-Carlo optimizer"
+  # "支持一下" reads as a request., which is what a player reading the panel will expect., which is why the disclaimer below reads WF模拟 while. "fight simulator" and "Monte-Carlo optimizer"
   # ---- /support: running costs, and where to chip in. -------------------
   # ...and the bonuses that lock is throwing away, still listed and marked.
   # ...and what a stack IS, where the mod's name does not say it: a stack of
@@ -47,7 +44,7 @@ ui:
   # Indirect stat labels (panel rows go through tr(), exact match). The ten
   # MOA, not by a Tenno, so naming the section after the commonest case said
   # NARROW AND ABSOLUTE rather than broad and hedged — the three modules and
-  # NOT a picker any more (2026-08-17): the quick calc measures the fight the
+  # NOT a picker any more: the quick calc measures the fight the
   # NOT 增益 — that word is BUFF everywhere else on this page ("3 · 增益",
   # One NOUN for what the whole thing is — a calculator — and the three
   # QUOTED: the value opens with a placeholder, and an unquoted `{` is a
@@ -57,7 +54,7 @@ ui:
   # THE ASK BENEATH A FINISHED RESULT. It states the work first, and both
   # THE BOARD'S OWN REFUSAL, on screen. The reason itself is the scorer's
   # THE EVIDENCE, on the page rather than buried in a weapon card.
-  # THE GROUP-CLEAR RULER (2026-08-17). Its name and its twelve rules — the
+  # THE GROUP-CLEAR RULER. Its name and its twelve rules — the
   # THE LOADOUT, and BOTH halves are translated — unlike "Overshields" and
   # THE ONE ABILITY LINE THAT IS NOT ABOUT DAMAGE. It has to say where to look
   # THE PHENMOR'S SPOOL-DOWN. Both halves are the point: the panel above prints
@@ -95,14 +92,14 @@ ui:
   # WF模拟 in prose, WFSim as the mark (the page's own <h1> keeps the
   # WHAT A WEAPON DOES NOT MODEL — the banner on its stats panel. These
   # WHAT A WEAPON DOES NOT MODEL — the banner on its stats panel. These
-  # WHAT EACH MODE IS — the builder's mode block (2026-08-15). Templates with
+  # WHAT EACH MODE IS — the builder's mode block. Templates with
   # WHEN a run reaches the board, not just whether it was sent — the two are
   # WHERE the weapon is fired. DE's own words for the two Arch-Gun columns:
-  # WHICH ENEMY the debuff table is about (2026-08-17).
+  # WHICH ENEMY the debuff table is about.
   # a donation cannot buy. "支持一下" with nothing behind it is the version
   # a half-translated reason is worse than a whole one in one language.
   # able to read the standard they are being compared under.
-  # actually is: how much better the build gets (user, 2026-08-01).
+  # actually is: how much better the build gets.
   # always the unit's English name.
   # and gets a key of its own rather than borrowing a word that means the other
   # and the server plans them, so this is never about what you have set.
@@ -115,7 +112,7 @@ ui:
   # board is where weapons are compared, so a reader on a Chinese page must be
   # by checking their own scenario bar is that nothing moved there.
   # card states a clause and the game does not pay it (MEASUREMENTS M49).
-  # category description with nobody behind it (user, 2026-07-31).
+  # category description with nobody behind it.
   # charity word and 赞助 implies something is handed back.
   # client's own word is 效价 — Valence Fusion is 效价融合 — so the block is
   # clipped, final. "配装不靠猜，是算出来的" explained it instead of landing
@@ -677,7 +674,7 @@ ui:
   "add arcane": 添加赋能
   # THE SHARED SLOT MENU's two verbs. They were hardcoded English inside
   # `openArcaneMenu` — not even wrapped in tr() — so the arcane card's menu was
-  # the one control on a Chinese page that never spoke Chinese (2026-08-24).
+  # the one control on a Chinese page that never spoke Chinese.
   "Swap": 更换
   "Remove": 移除
   "options": 选项
@@ -1242,7 +1239,7 @@ ui:
   "this option did not re-roll the fight — run for run it scaled the same engagement, so this comparison is exact": 这个选项没有让战斗重新掷骰——每一次运行它都是把同一场战斗按同一个倍数放大，所以这次比较是精确的
   "this option re-rolls the fight, so its answer is only good to ±{x} — raise the run count to narrow it": 这个选项会让这场战斗重新掷骰，所以它的答案只精确到 ±{x} —— 提高运行次数可以收窄它
   "this ranking predates the simulator re-run": 这份排名早于"模拟器重跑"这个功能
-  "this run never INTERRUPTS a reload — in game you can fire mid-reload and keep the shells already loaded, and a player who does is trading stacks and a full magazine for uptime. Decided rather than missing (2026-08-10): a listed reload is a whole reload, and the alternative is not a more accurate model, it is a different player": "这次运行从不打断装填 —— 游戏里你可以在装填途中开火并保留已经压进去的子弹，这么做的玩家是在用层数和满弹匣换取输出时间。这是一个决定而不是遗漏（2026-08-10）：标称的装填就是一次完整装填，另一种做法不是更精确的模型，而是另一个玩家"
+  "this run never INTERRUPTS a reload — in game you can fire mid-reload and keep the shells already loaded, and a player who does is trading stacks and a full magazine for uptime. Decided rather than missing: a listed reload is a whole reload, and the alternative is not a more accurate model, it is a different player": "这次运行从不打断装填 —— 游戏里你可以在装填途中开火并保留已经压进去的子弹，这么做的玩家是在用层数和满弹匣换取输出时间。这是一个决定而不是遗漏（2026-08-10）：标称的装填就是一次完整装填，另一种做法不是更精确的模型，而是另一个玩家"
   "this target dispels it — nothing ticked here is running against it": 这个目标会把它驱散 —— 对它而言这里勾选的都没有生效
   "this target nullifies Warframe abilities — it pulses every 5 seconds and dispels everything in range, so none of these are running and the sim scores it that way": 这个目标会驱散战甲技能 —— 它每 5 秒脉冲一次、清除范围内的一切,所以下面勾选的都没有生效,模拟也是按没有生效来算的
   "this unit's faction takes more or less of these damage types, whatever its armor and shields do": 这个单位所属阵营对这些伤害类型更脆弱或更抗性，与它的护甲和护盾无关
@@ -1362,7 +1359,7 @@ ui:
   #
   # It was 组装枪 for a day, with no source behind it — the CN wiki's article
   # says 组合枪 in its title and in every sentence of its body, and a name that
-  # can be read is never derived (2026-08-23).
+  # can be read is never derived.
   "Kitguns": "组合枪"
   "Kitgun": "组合枪"
   # The three components, from the same article's own headings: 组合枪由三种不同的
@@ -1425,9 +1422,9 @@ ui:
   "Search arcane / effect…": 搜索赋能 / 效果…
   "search mods by name or effect…": 按名称或效果搜索 MOD…
   "search arcanes by name or effect…": 按名称或效果搜索赋能…
-  # THE HEADSHOT SHARE BELONGS TO THE BODY THE SHOT STRUCK (owner, 2026-08-17).
+  # THE HEADSHOT SHARE BELONGS TO THE BODY THE SHOT STRUCK.
   "a per-PELLET aim weight on the body the shot STRUCK, not a whole-spread promise — the landing spot is rolled for each pellet, and nothing a blast or a chain reaches can be a headshot": 这是对「被射中的那个目标」的逐弹丸落点权重，不是对整发弹幕的承诺 —— 每颗弹丸各自掷一次落点，而爆炸和链打到的任何目标都不可能爆头。
-  # THE BOARD'S RULES (owner, 2026-08-17): mechanical, and naming no weapon.
+  # THE BOARD'S RULES: mechanical, and naming no weapon.
   "The target is one Thrax Centurion at level 9999 on Steel Path. The fight lasts 180 seconds.": 目标是一只 9999 级钢铁之路的 Thrax Centurion。战斗持续 180 秒。
   "One target, so nothing here rewards clearing a room.": 只有一个目标，所以这里的任何东西都不因清场而得分。
   "Every shot is aimed and lands on the weak point. The companion board removes the aim; between them they are the ceiling and the floor.": 每一发都瞄准并命中弱点。姊妹榜取消瞄准；两者一个是上限、一个是下限。
@@ -1439,10 +1436,10 @@ ui:
   "An entry that can be played more than one way is ranked once per way, and the way it was played is part of the row.": 一个可以有多种打法的条目，每种打法各排一次，而用哪种打法本身就是这一行的一部分。
   "A buff starts the fight FULL only if it is permanent — no timer, and not spent by being used. Such a buff can be held for the whole engagement by anyone, so scoring it at anything less would rank how long ago the entrant last topped it up. Every other buff starts at zero and is earned in the fight. Two buffs in the data qualify today.": 一个 buff 只有在它是永久的时候才以满层开局 —— 没有计时，也不会因使用而消耗。这样的 buff 任何人都能全程保持，所以按低于满层计分，等于在排「投稿者上次补层是多久以前」。其余所有 buff 从零开始，在战斗中挣得。目前数据中有两个 buff 符合。
   "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above, so any row can be reproduced exactly by anyone with the repo.": 没有人提交数字。提交的是一套配装，分数由本引擎在上面钉死的种子下算出，所以任何一行都能被拿到仓库的人精确复现。
-  # THE FORMATION'S OWN CONTROLS (owner, 2026-08-17).
+  # THE FORMATION'S OWN CONTROLS.
   "one enemy": 只留一个
   "aim at the target": 瞄回目标
-  # THE LEAST-KNOWN RULE IN THE FORMA MODEL (owner, 2026-08-16), stated beside
+  # THE LEAST-KNOWN RULE IN THE FORMA MODEL, stated beside
   # the exilus slot because every capacity number on the page assumes it.
   "A polarity can be swapped between this slot and a main one — the slot stays Exilus. So its polarity counts toward any build, even one that leaves it empty.": 极性可以在这个槽和主槽之间对调 —— 槽位本身仍然是 Exilus。所以它的极性对任何配装都算数，哪怕这个槽空着。
   "how often a bounce lands on a weak point is ASSUMED — a flat 50%. It can headshot (the wiki's Hit Mechanic page counts a rebound as a main hit), but where it lands is geometry this arena does not model and DE publishes no rate": "弹跳落点打中弱点的比例是**假设**——统一取 50%。它确实可以爆头（wiki 的 Hit Mechanic 页把弹跳算作主命中），但落在哪个部位是本战场不建模的几何，而 DE 没有公布任何比例"
@@ -1495,7 +1492,7 @@ ui:
   #
   # The panel a reader opens to argue with a number, so every column heading
   # and every factor NAME in it has to be readable — an all-English ledger on
-  # a Chinese page is a ledger nobody here can check (2026-08-27).
+  # a Chinese page is a ledger nobody here can check.
   #
   # THE FACTOR NAMES COME FROM THE ENGINE as `&'static str`, the same strings
   # the ledger multiplies, so they are keyed here exactly as the engine writes
@@ -1651,6 +1648,45 @@ ui:
   "Radiation": 辐射
   "Viral": 病毒
   "What this mode is": 这个模式是什么
+
+  "A Warframe calculator that matches in-game measurements, item by item. Building, simulating and optimizing are the whole of it, and they are the same for everyone: no account, no payment, no part held back.":
+    "一个能对上游戏内实测数字的 Warframe 计算器，一项一项对得上。构建、模拟、优化——这三件事就是它的全部，而且对所有人完全一致：不需要账号，不需要付费，没有哪一部分是留着不给的。"
+  "weapons modelled":
+    "把武器已建模"
+  "mods and rivens":
+    "张 MOD 与紫卡词条"
+  "in-game measurements":
+    "次游戏内实测"
+  "tests on the engine":
+    "个引擎测试"
+  "checks on the page":
+    "个页面检查"
+  "Built in the open since {day} — {n} commits, every one of them public.":
+    "自 {day} 起全程公开开发，{n} 次提交，每一次都是公开的。"
+  "You have run {n} simulations on this machine — {e} engagements. That number is in this browser and has never been sent anywhere.":
+    "你在这台机器上跑过 {n} 次模拟，合计 {e} 场战斗。这个数字存在你自己的浏览器里，从未被发送到任何地方。"
+  "Chip in":
+    "投喂一下"
+  "One coffee is enough, and it is not a smaller version of anything — there is no target here and no total to fill. Give once, or monthly if you would rather.":
+    "一杯咖啡就够了，它不是任何东西的缩水版——这里没有目标金额，也没有要填满的进度条。你可以只给一次，也可以按月。"
+  "{n} people have chipped in so far.":
+    "目前已经有 {n} 个人投喂过。"
+  "One-off, in USD, from $3. Card or PayPal, no account needed.":
+    "一次性，美元结算，$3 起。信用卡或 PayPal，不用注册账号。"
+  "Monthly, in USD, from $5. The channel where the work is discussed, and your reports read first.":
+    "按月，美元结算，$5 起。可以进讨论开发的频道，你的报告会被优先阅读。"
+  "What it never buys":
+    "它永远买不到什么"
+  "A number. Nothing bought here moves a result by one decimal — an in-game measurement is the only thing that changes what the engine does, and it wins whoever reports it.":
+    "买不到一个数字。这里花的钱不会让任何结果动一位小数——能改变这个引擎的只有游戏内实测，而且不管是谁报上来的，实测都赢。"
+  "A feature. Building, simulating and optimizing stay the same for everyone, and the guarantor of that is not me: this is AGPL-3.0, so the engine, the game data and the wasm are public and you can run your own.":
+    "买不到一个功能。构建、模拟、优化对所有人都一样，而担保这件事的不是我：本项目采用 AGPL-3.0，引擎、游戏数据和 wasm 全部公开，你随时可以自己跑一份。"
+  "A monthly subscription buys order and company, never product: a channel where the work is discussed, and your reports read before the rest of the queue. Every fix still ships to everyone at once.":
+    "按月订阅买到的是顺序和陪伴，不是产品：一个讨论开发的频道，以及你的报告排在队列前面被读到。每一个修复仍然是同时发给所有人的。"
+  "Cloudflare — the bandwidth and build minutes that serve the app and its art from one origin, so that nothing this page needs is fetched from somewhere that might be unreachable where you are.":
+    "Cloudflare —— 让应用和它的美术资源从同一个源站发出来所需的带宽和构建时长，这样这个页面需要的东西就不会来自一个在你那边可能连不上的地方。"
+  "Time, which is most of it: new weapons, new mechanics, and the hours in the game that every calibrated number is measured against.":
+    "时间，而且这是大头：新武器、新机制，以及每一个校准过的数字背后那些泡在游戏里的小时数。"
 
 effect_phrases:
   - ['Ammo Pickup Conversion', '弹药拾取转换']

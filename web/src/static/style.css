@@ -44,7 +44,7 @@
    with a `display:` of its own ignored the attribute completely. The damage
    meter's rows are `display:grid`, so a collapsed source stayed on screen with
    only its caret flipped: the control looked like it worked and never did
-   (owner, 2026-08-06). 31 places in app.js set `.hidden`; nothing in this
+. 31 places in app.js set `.hidden`; nothing in this
    sheet made any of them mean anything.
    `!important` is the HTML spec's own recommendation for exactly this, and is
    what keeps the fix from being one `display:` rule behind forever. */
@@ -75,8 +75,7 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
    474px, every page shrank to 76%, and the right quarter — which is where a
    mod card keeps its ⋯ — went off the edge. It reads as "the mod area is too
    big", because the mod cards are the widest thing being cut; the exilus slot
-   looks fine beside them only because its right-hand side is empty (owner,
-   2026-08-26).
+   looks fine beside them only because its right-hand side is empty.
    ONLY ENGLISH SHOWED IT. The Chinese labels are short enough to fit at every
    phone width, which is why eight weapons swept clean in zh and every one of
    them overflowed in en. `wrap` is the GUARANTEE — a sixth tab, a longer
@@ -92,7 +91,7 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 @media(max-width:520px){.mtab{padding:8px 9px;font-size:12.5px}.module-tabs{gap:2px}}
 
 /* EVERY BLOCK DECLARES WHOSE IT IS, and the rules below are DERIVED from that
-   declaration rather than from a list of ids (owner, 2026-08-24).
+   declaration rather than from a list of ids.
 
    A block belongs to exactly one module (`data-module` in the HTML), and a
    module's blocks show only on that module's tab. That is one rule per module
@@ -113,13 +112,12 @@ body.on-simulator [data-module="builder"],
 body.on-rivens [data-module="builder"],
 body.on-enemies [data-module="builder"]{display:none}
 /* THE SIMULATOR'S BLOCKS, and `#wfbuff-block` is one of them: a Warframe buff
-   is not part of the weapon (owner, 2026-08-09). It is something done TO this
+   is not part of the weapon. It is something done TO this
    weapon for a while, which is the fight's business — the builder answers
    "what is this gun", and a Roar belongs to no gun. The optimizer shows its
    own read-only copy inside `#opt-block`, so it needs no entry here. */
 /* (the simulator's own rule is in the derived block above) */
-/* A SECTION OF THE FIGHT THAT STILL READS AS ITS OWN THING (owner,
-   2026-08-09). Wrapped rather than merely headed: it saves with the scenario,
+/* A SECTION OF THE FIGHT THAT STILL READS AS ITS OWN THING. Wrapped rather than merely headed: it saves with the scenario,
    travels with it across weapons and is what the optimizer reads off the
    fight, so it belongs INSIDE — and it is a layer nobody else in this panel
    is, so it gets an edge. It needs no hiding rule of
@@ -165,7 +163,7 @@ body.on-enemies [data-module="builder"]{display:none}
    `#build-official` are the benchmark half of the build collection, so any view
    that hides the build bar hides them too — listing only the bar put a
    read-only build chip and its note at the top of the optimizer, which owns no
-   build (owner, 2026-08-04). */
+   build. */
 /* …and the builder's furniture that is not a `.block`: its preset bars and the
    quick calc. Named here because they carry no block of their own; the BLOCKS
    are covered by the derived rule above. */
@@ -249,8 +247,7 @@ body.on-enemies [data-module="builder"]{display:none}
    content — the auto-saving preset bar must stay reachable) but hides
    builder's editing blocks. */
 /* `#mode-block` is on this list because the MODE is part of the build, and the
-   simulator does not edit builds — it picks one and measures it (owner,
-   2026-08-07). It was the one editing control left on this tab, sitting above
+   simulator does not edit builds — it picks one and measures it. It was the one editing control left on this tab, sitting above
    a read-only Build card that already stated the same fact; two places to read
    one field, one of them writable, is how a build gets edited somewhere that
    is not the builder.
@@ -364,7 +361,7 @@ body.on-enemies [data-module="builder"]{display:none}
    34px card, a 24px menu button and the gaps). Two of those plus the gap is
    404px inside a 326px column, so on a phone the right-hand slots — 2, 4, 6,
    8 — hung ~55px past the screen and you had to pan sideways to reach their
-   ⋯ button (owner, 2026-08-05). `minmax(0,1fr)` lets the track shrink below
+   ⋯ button. `minmax(0,1fr)` lets the track shrink below
    its content and the ellipsis do its job. */
 .slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .slots.one{grid-template-columns:minmax(0,1fr)}
@@ -379,7 +376,7 @@ body.on-enemies [data-module="builder"]{display:none}
    its track at MIN-CONTENT, so ONE column is only as narrow as the widest card
    is willing to be. Two columns had been fixed and one column had not, which
    is why the report was "only the main 8 mods run off the screen — the arcanes
-   and the evolutions are fine, and so is the exilus" (owner, 2026-08-26): the
+   and the evolutions are fine, and so is the exilus": the
    exilus grid is the SAME class with ONE usually-empty card in it, so its
    min-content is a stub and its track never hits the floor. Eight filled cards
    is the only place on the page where that floor can bind. */
@@ -415,8 +412,7 @@ body.on-enemies [data-module="builder"]{display:none}
 /* THE DRAIN AND THE RANK ARE ONE LINE. They were two — a block `.dr` above an
    inline-flex `.rank` — which is a whole row per card for two short facts, and
    a card is eight rows deep on a phone before the eighth one is reached: the
-   grid measured 763-956px, nearly two screens of nothing but slots (owner,
-   2026-08-26). Side by side costs one line each and reads better everywhere,
+   grid measured 763-956px, nearly two screens of nothing but slots. Side by side costs one line each and reads better everywhere,
    so it is not a phone-only rule. It WRAPS, because a lowered rank draws a
    filled pill and a long drain string ("15 drain (base 7)") can want the
    width. */
@@ -518,7 +514,7 @@ body.on-enemies [data-module="builder"]{display:none}
    news: `sent` is a fact, `refused` and `failed` are things to act on, `short`
    is a build that is not finished, and `none`/`pending` are neither good nor
    bad. Muted by default, so a run nobody is submitting does not shout. */
-/* ITS OWN BLOCK, ABOVE THE RESULT AND OUTSIDE IT (owner, 2026-08-25). It used
+/* ITS OWN BLOCK, ABOVE THE RESULT AND OUTSIDE IT. It used
    to sit under the headline inside `.results`, where it read as a footnote to
    the damage number — and it is not about the damage, it is about the RUN. */
 .board-outcome{font-size:12px;color:var(--text-2);line-height:1.55;
@@ -534,7 +530,7 @@ body.on-enemies [data-module="builder"]{display:none}
 .board-outcome.refused,.board-outcome.failed{border-left-color:#e0a052}
 .board-outcome.refused .bo-h,.board-outcome.failed .bo-h{color:#e0a052}
 .board-outcome .board-state{color:var(--muted)}
-/* ONE CONTROL FOR EVERY QUANTIFIABLE AXIS (owner, 2026-08-24): a CARD saying
+/* ONE CONTROL FOR EVERY QUANTIFIABLE AXIS: a CARD saying
    what is installed, with a ⋯ that opens the ranked list. It borrows `.slot`
    wholesale — the arcane slot has been this shape all along and is the model —
    and adds only the AXIS LABEL down its left edge, because these cards sit in
@@ -690,12 +686,11 @@ label.check input{width:auto}
 .opt-mods-head{display:flex;gap:10px;align-items:flex-end;margin-bottom:8px}
 .opt-mods-head #opt-mod-filter{flex:1 1 auto}
 /* HOW FULL A BUILD MUST BE — the line that CLOSES the mod list rather than one
-   that sits over it (owner, 2026-08-29). It is a conclusion, not a filter and
+   that sits over it. It is a conclusion, not a filter and
    not a summary: it only means anything once the required and the pooled have
    been chosen, so it reads after them. It borrows `.oselrow`'s flex layout for
    the label + inputs and adds the closing rule of its own. */
-/* EVERY AXIS SAYS HOW MANY OF ITS SLOTS A BUILD FILLS, in one shape (owner,
-   2026-08-29): the mods axis over 8 slots, the exilus slot, each arcane seat
+/* EVERY AXIS SAYS HOW MANY OF ITS SLOTS A BUILD FILLS, in one shape: the mods axis over 8 slots, the exilus slot, each arcane seat
    and each evolution tier over 1. Same row, same rule, so a reader learns it
    once. `#opt-size-row` is the mods one and keeps its id because `init` wires
    those two inputs by name. */
@@ -783,6 +778,19 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .sup-name{font-size:17px;font-weight:700}
 .sup-what{font-size:12px;color:var(--text-2);margin-top:4px}
 .sup-card .run-btn{display:block;text-align:center;font-size:13px;padding:8px}
+/* THE FACTS STRIP — what this repository holds, counted rather than claimed.
+   auto-fit for the same reason the channel grid uses it: the number of figures
+   is decided by what could be counted, not by a layout. */
+.sup-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));
+  gap:10px;margin:18px 0 8px}
+.sup-fact{border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:12px 14px}
+.sup-fact b{display:block;font-size:22px;font-variant-numeric:tabular-nums;line-height:1.2}
+.sup-fact span{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+/* What the reader has already run here. Gold, because it is the one line on
+   the page that is about them. */
+.sup-usage{font-size:13px;color:var(--gold);border-left:2px solid var(--gold);
+  padding:2px 0 2px 12px;margin:22px 0 0;max-width:760px;line-height:1.6}
+.sup-count{font-size:12px;color:var(--text-2);margin:10px 0 0}
 .sup-costs{list-style:none;margin:0;padding:0;font-size:13px}
 .sup-costs li{padding:7px 0;color:var(--text-2)}
 .sup-costs li+li{border-top:1px solid var(--line)}
@@ -936,7 +944,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    than a placeholder so the box reads as "10 runs" at a glance, and the pair
    wraps as one on a narrow screen. */
 /* WHICH FIGHT the chips were measured in. A STATEMENT, not a control — it
-   replaced a dropdown that could disagree with the simulator (2026-08-17), so
+   replaced a dropdown that could disagree with the simulator, so
    it must not look clickable. Truncates rather than wrapping: a scenario name
    is a name the reader chose and can be arbitrarily long. */
 /* THE SIM'S PROGRESS. Unbounded wait, so it gets a bar and a COUNT — "412 /
@@ -950,7 +958,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .simrun-n{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
 
 /* WHERE THE DAMAGE WENT — the RESULT's own copy of the scene, and its roll
-   call. Setting up a fight and reading one are two things (2026-08-17): this
+   call. Setting up a fight and reading one are two things: this
    block is read-only and lives in the result panel, while the scenario's canvas
    keeps the dragging and the +1/+8. */
 .rp-scene{margin:0 0 10px}
@@ -997,7 +1005,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .runs-row .sim-hint{margin:0}
 @media(max-width:520px){.runs-row{flex-wrap:wrap;gap:6px}}
 
-/* THE OPTIMIZER'S TWO HALVES, MADE VISIBLE (owner, 2026-08-29). The split has
+/* THE OPTIMIZER'S TWO HALVES, MADE VISIBLE. The split has
    been the tab's rule since 2026-08-02 and only headings said so, which cannot
    tell a reader WHICH preset bar owns the thing they are editing. A box says
    it without a sentence: one holds the search, the other holds the fight the
@@ -1100,7 +1108,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 /* ---- REPLAY: the median engagement, scrubbable ------------------------
    One row per buff, deliberately short (28px of curve): five of them have to
    read as a group at a glance, which a stack of full-height charts cannot do
-   (user, 2026-08-02). */
+. */
 .rp-bar{display:flex;align-items:center;gap:10px;margin:6px 0 10px}
 .rp-play{min-width:64px}
 .rp-scrub{flex:1;accent-color:var(--accent)}
@@ -1139,7 +1147,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .rp-off{color:var(--muted)}
 /* THE AVERAGE, drawn. "avg 17.50/40" is a number you have to hold in your
    head while reading the curve; a line at that height is the same fact you
-   can see against it (user, 2026-08-03). */
+   can see against it. */
 .rp-mean{stroke:var(--accent);stroke-width:1;stroke-dasharray:4 3;opacity:.75;vector-effect:non-scaling-stroke}
 
 /* THE OFFICIAL SCENARIO. A ruler, not a preset: marked on its chip, explained
@@ -1190,7 +1198,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 /* A LOCKED BLOCK SAYS WHY, instead of just not reacting. `pointer-events` moves
    onto the CHILDREN so the block itself still takes hover and a click: a slot
    you cannot fill is silent otherwise, and silence is what sent a player back
-   to the board four times (owner, 2026-08-09). */
+   to the board four times. */
 .locked-hard{opacity:.72;cursor:not-allowed}
 .locked-hard *{pointer-events:none}
 .official-seed{color:var(--muted);font-style:italic}
@@ -1207,7 +1215,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    THEY BELONG TO THE TYPE, NOT TO THE ROW. The damage meter used to colour by
    POSITION (`(i % 8) + 1`), so Heat was one colour under a direct hit and
    another under a field, and two runs of the same build could disagree about
-   what colour Heat was (owner, 2026-08-06). A colour keyed on the type cannot
+   what colour Heat was. A colour keyed on the type cannot
    do that, and it is the same colour the wiki and the game use. */
 :root{
   --dt-impact: #3d5e5e;
@@ -1286,7 +1294,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .pk-gain{display:inline-flex;gap:6px;align-items:center;margin-left:auto}
 
 /* ---- THE dropdown ---------------------------------------------------- */
-/* One trigger shape for every choose-one control (owner, 2026-08-06). It
+/* One trigger shape for every choose-one control. It
    deliberately matches the native `select` rule above —
    same border, radius, caret position — so replacing a select moves nothing
    on the page; only what OPENS from it changes. */
@@ -1363,7 +1371,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 
 /* ---- the topbar overflow: `⋯` -----------------------------------------
    The bar carries what a reader ACTS on; everything else is one click away
-   (owner, 2026-08-19). Below 700px this whole thing is `display:contents` and
+. Below 700px this whole thing is `display:contents` and
    its children flatten into the phone menu — one copy of every control at both
    widths, which is the same trick `.topmenu` plays one level up. */
 .tbmore{position:relative}
@@ -1450,7 +1458,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    Muted, static, below the last fold — it states the work in numbers the
    reader can check against the Detail table above it, and only then asks.
    Never a modal, never a banner, and it does not move: the topbar being
-   chrome was always the rule, and it still is (owner, 2026-08-19). */
+   chrome was always the rule, and it still is. */
 .sim-ask{margin:16px 0 0;padding-top:12px;border-top:1px solid var(--line);
   color:var(--muted);font-size:12px;line-height:1.6}
 .sim-ask a{color:var(--gold);text-decoration:none;white-space:nowrap}
@@ -1587,7 +1595,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
   border:1px solid color-mix(in srgb,var(--critical) 45%,transparent);
   color:var(--text); font-size:13px; box-shadow:0 6px 24px rgba(0,0,0,.28)}
 
-/* ---- THE ARENA AS AN EDITOR (2026-08-18) -------------------------------
+/* ---- THE ARENA AS AN EDITOR -------------------------------
    A canvas you pan and zoom, with its chrome floating on it.
 
    ONE LOGIC LINE: the LEFT column is what you are about to DO (the tools, the
@@ -1602,8 +1610,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    THE BLOCK BREAKS OUT, NOT THE ARENA. Widening the arena alone put it outside
    its own section, and `.block` is `overflow:hidden` so that its rounded
    corners clip the header's background — so the floor's left and right edges,
-   which is exactly where its two panels live, were cut off (owner, 2026-08-18:
-   两边完全截掉了). Moving the breakout up one level keeps the clip doing its
+   which is exactly where its two panels live, were cut off. Moving the breakout up one level keeps the clip doing its
    job at the section's own, wider bounds.
    `:has()` rather than an id, so a block that gains a floor tomorrow gets the
    room without anybody remembering to grant it. The parent is centred, so 50%
@@ -1743,7 +1750,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
    A LIST of rows rather than a field grid, because each row is a control with
    its own count, its own Tauforged flag and its own remove; a `1fr` grid would
    floor every track at min-content and hang the removes off a phone, which is
-   `check_mobile.mjs`'s own lesson (2026-08-05). */
+   `check_mobile.mjs`'s own lesson. */
 .sq-h{font-size:12px; letter-spacing:.04em; text-transform:uppercase;
   color:var(--dim); margin-top:4px}
 .sq-h .sim-hint{text-transform:none; letter-spacing:0}
@@ -1790,7 +1797,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 /* PARKED ON A FRAME, A NUMBER STAYS. Scrubbing is READING — you stopped on this
    instant to see what happened in it — so the numbers rise once and hold. Only
    PLAYBACK floats them away, which is the behaviour that makes a fight look
-   like a fight (owner, 2026-08-22). */
+   like a fight. */
 .rp-pop{animation:pop-rise .28s ease-out forwards}
 .rp-pops.live .rp-pop{animation:pop-float 1.1s ease-out forwards}
 @keyframes pop-rise{
@@ -1823,8 +1830,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 
 /* PROGRESS WHERE THE WORK IS BEING READ. The quick calc counted itself at the
    top of the page and the LIST it was ranking said nothing — and a list that
-   does not move for thirty seconds is read as broken, not as busy (owner,
-   2026-08-22). Same strip in every list a scan ranks. */
+   does not move for thirty seconds is read as broken, not as busy. Same strip in every list a scan ranks. */
 .scan-strip{
   position:sticky; top:0; z-index:3;
   display:flex; align-items:center; gap:8px;
@@ -1986,8 +1992,7 @@ tr.rec-transform_start td,tr.rec-transform_end td{background:color-mix(in srgb,v
    window. It was technically there — the block drew, the button worked, the
    table scrolled sideways — and the column the whole panel exists for, the one
    that says where the number came from, sat furthest off the right edge, so a
-   reader on a phone could see a damage figure and never its arithmetic (owner
-   reported it as not being there at all, 2026-08-27).
+   reader on a phone could see a damage figure and never its arithmetic.
 
    So on a narrow screen a ROW BECOMES A CARD: the header row goes away, each
    cell stacks with its own heading (`data-label`, filled by `recordRow`), and
@@ -2033,7 +2038,7 @@ tr.rec-miss td.rec-t{border-left-color:var(--critical)}
    Three shapes, and the shape is the information: a BRACKET lists its terms, a
    SNAP shows its grid, and only a MUL gets a multiplication sign. A quotient
    has no shape here, which is what stops `×5.706 Condition Overload` — the
-   base bracket divided by itself — from coming back (owner, 2026-08-28). */
+   base bracket divided by itself — from coming back. */
 /* TWO COLUMNS, NOT THREE. The running total used to have a lane of its own on
    the right, which is the edge a 1080px table is cut off at — the one number a
    reader checks against the next layer's start, off screen. It rides in the
@@ -2123,7 +2128,7 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
 /* THE WEAPON COLUMN SETS THE ROW HEIGHT, so it decides how much of the ledger
    fits on a screen. Five facts stacked one per line made every row 129px tall
    for 40px of content — a 20,000-row stream is then two million pixels of
-   scroll (measured 2026-08-27). They are short, so they flow. */
+   scroll. They are short, so they flow. */
 .rec-wep{width:168px}
 .rec-mag{display:inline-block;margin:0 6px 0 0}
 .rec-gauge{width:56px;vertical-align:middle;display:inline-block;margin:0 6px 1px 0}
@@ -2131,7 +2136,7 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
   background:color-mix(in srgb,var(--critical) 9%,transparent)}
 /* THE FACTORS THAT DID NOTHING, as a count you can hover. They are noise on a
    row and their NAMES are a clue — "the Bane is there and it paid ×1.00" is
-   why a build is not working (owner, 2026-08-27). */
+   why a build is not working. */
 .rec-inert{display:inline-block;font-size:10px;color:var(--muted);border-bottom:1px dotted var(--muted);
   cursor:help;margin-left:2px}
 .rec-form{display:inline-flex;align-items:center;height:15px;padding:0 5px;border-radius:3px;
@@ -2150,7 +2155,7 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
    so every row with no proc drew an empty coloured 16px box where its procs
    would have been, and every row with one drew the chip inside a second box
    the same colour. The chip is `.rec-p`; the CELL is this, and it is a width
-   and nothing else (2026-08-27). */
+   and nothing else. */
 .rec-org{display:inline-flex;align-items:center;height:17px;padding:0 6px;border-radius:4px;
   font-size:10.5px;font-weight:700;line-height:1;white-space:nowrap;
   background:color-mix(in srgb,var(--text-2) 13%,transparent);color:var(--text-2)}

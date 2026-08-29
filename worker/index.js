@@ -39,10 +39,10 @@ const ID = /^[a-z0-9_]{1,64}$/;
 /// That is the defect generator: adding an axis meant remembering all three,
 /// and TWICE an axis was added to some of them and not the others. `mode` was
 /// validated and neither stored nor keyed, so the scorer took its migration
-/// fallback and every Incarnon weapon's row said `cycle` (2026-08-09). Then
+/// fallback and every Incarnon weapon's row said `cycle`. Then
 /// `valence` was neither stored nor keyed, so seven Kuva Nukor submissions were
 /// refused on every scoring run — "has no Valence element" — while the panel
-/// had told each submitter "sent" (owner, 2026-08-14).
+/// had told each submitter "sent".
 ///
 /// Neither was a hard bug to fix and both were invisible for weeks, because a
 /// dropped field does not throw: it produces a record that is merely INCOMPLETE
@@ -59,7 +59,7 @@ const ID = /^[a-z0-9_]{1,64}$/;
 /// Evolutions are a set (one per tier, the tier decides where each sits). Mods
 /// are NOT: they combine elements in the order they are listed, and on the
 /// Torid Heat/Cold/Toxin/Electric against Heat/Toxin/Cold/Electric is 12,424
-/// DPS against 46,583 (measured 2026-08-04).
+/// DPS against 46,583.
 ///
 /// SHAPE ONLY, throughout. Whether these ids exist, whether the mods are
 /// compatible, whether the build fits 60 capacity and whether THIS weapon has
@@ -82,7 +82,7 @@ const ID = /^[a-z0-9_]{1,64}$/;
 // claimed by a row here. A worker with no game data cannot look that up at
 // request time, so the check does it once, on the ground.
 export const AXES = [
-  // THE RULER IS NOT PART OF WHAT THIS IS (owner, 2026-08-25). A submission has
+  // THE RULER IS NOT PART OF WHAT THIS IS. A submission has
   // never carried a score — it carries a BUILD, and the number is produced by
   // the scorer. So the ruler a build happened to be measured under was never a
   // property of the record; it was a GATE, and the gate was expensive: of 914
@@ -262,7 +262,7 @@ async function mirror(env, key, rec) {
 }
 
 /// HOW MANY BUILDS THE LIBRARY HOLDS — the one number that says whether the
-/// board on screen is current (owner asked for a live board, 2026-08-25).
+/// board on screen is current.
 ///
 /// THE BOARD IS A STATIC FILE, committed to the repo and served from the CDN,
 /// which is what makes it fast and free — and what makes it only as fresh as
@@ -302,9 +302,97 @@ async function pending(env) {
   });
 }
 
+/// HOW MANY PEOPLE HAVE CHIPPED IN — a COUNT, and nothing else.
+///
+/// Social proof is the one lever on `/support` with a replicated experiment
+/// behind it: a request that legitimises a small gift performs best beside a
+/// statement that others have given (Cialdini & Schroeder 1976, and its 2007
+/// replication). It is also the only figure about this project's funding that
+/// can be published without publishing the author's finances.
+///
+/// SO THE STORE HOLDS A COUNT AND CANNOT HOLD MORE. One key per Ko-fi message
+/// id, an empty value, and the DAY as metadata — no amount, no name, no email,
+/// no message. That is a property of the schema rather than a promise about the
+/// endpoint: asked for a total, this worker could not produce one.
+///
+/// A NAMESPACE OF ITS OWN, not a prefix inside `SUBMISSIONS`: the pending count
+/// above is `SUBMISSIONS.list()` — every key in it — so a supporter stored
+/// there would be counted as a build waiting to be scored.
+///
+/// SILENT UNTIL IT IS CONFIGURED. Without the binding this answers 503 and the
+/// page draws no line at all, which is the same rule a channel with no url
+/// follows: an option that does not work yet is worse than one not offered.
+const SUPPORTER = "kofi:";
+
+async function supporters(env) {
+  if (!env.SUPPORT) return bad("supporter storage is not configured", 503);
+  let count = 0;
+  let cursor;
+  for (let page = 0; page < 20; page++) {
+    const r = await env.SUPPORT.list({ prefix: SUPPORTER, limit: 1000, cursor });
+    count += (r.keys || []).length;
+    if (r.list_complete) break;
+    cursor = r.cursor;
+  }
+  return new Response(JSON.stringify({ ok: true, count }), {
+    headers: {
+      "content-type": "application/json",
+      // An hour. This changes a handful of times a week at best, and the line
+      // it feeds is a footnote beside the channels rather than a live figure.
+      "cache-control": "public, max-age=3600",
+    },
+  });
+}
+
+/// KO-FI'S WEBHOOK, which is what makes the count above automatic.
+///
+/// Ko-fi POSTs `application/x-www-form-urlencoded` with a single `data` field
+/// carrying json, and the json carries a `verification_token` that only the
+/// account owner can read off their own dashboard. That token is the whole of
+/// the authentication and it is a SECRET (`wrangler secret put KOFI_TOKEN`) —
+/// without it configured this refuses everything, because an endpoint that
+/// counts anonymous POSTs is a counter anybody can drive.
+///
+/// IDEMPOTENT ON THE MESSAGE ID. Ko-fi retries a delivery it did not see
+/// acknowledged, and a retry must not be a second supporter — the id is the
+/// key, so a replay writes the same key again and the count does not move.
+///
+/// WHAT IS DROPPED, before anything is written: the amount, the supporter's
+/// name and email, the message they typed, and the timestamp's time. What is
+/// kept is that a payment happened, on a day.
+async function kofi(request, env) {
+  if (!env.SUPPORT) return bad("supporter storage is not configured", 503);
+  if (!env.KOFI_TOKEN) return bad("supporter webhook is not configured", 503);
+  let msg;
+  try {
+    const form = await request.formData();
+    msg = JSON.parse(form.get("data") || "null");
+  } catch (_) {
+    return bad("not a Ko-fi payload");
+  }
+  if (!msg || typeof msg !== "object") return bad("not a Ko-fi payload");
+  if (msg.verification_token !== env.KOFI_TOKEN) return bad("bad token", 403);
+  const id = String(msg.message_id || "");
+  // A plain id, because it becomes a key: Ko-fi sends a uuid, and anything
+  // else is a payload this was not written for.
+  if (!/^[A-Za-z0-9-]{8,64}$/.test(id)) return bad("bad message id");
+  await env.SUPPORT.put(SUPPORTER + id, "", {
+    metadata: { at: new Date().toISOString().slice(0, 10) },
+  });
+  return new Response(JSON.stringify({ ok: true }), {
+    headers: { "content-type": "application/json" },
+  });
+}
+
 export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
+    if (path === "/api/support/count") {
+      return request.method === "GET" ? supporters(env) : bad("GET only", 405);
+    }
+    if (path === "/api/support/kofi") {
+      return request.method === "POST" ? kofi(request, env) : bad("POST only", 405);
+    }
     if (path === "/api/board/pending") {
       return request.method === "GET" ? pending(env) : bad("GET only", 405);
     }

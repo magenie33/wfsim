@@ -52,7 +52,7 @@ def roster() -> list[dict]:
     # weapon (`weapons_data::INHERITED`). The Nataruk is the case: its arsenal
     # shows the PERFECT shot, so `default_form` sits on an entry that inherits
     # its class, slot and mastery rank — and this loader read the yaml raw and
-    # died on the missing `class` (2026-08-20). The engine merges before it
+    # died on the missing `class`. The engine merges before it
     # reads; so does this now.
     inherited = (
         "slot", "class", "mod_pools", "mastery_rank", "max_rank", "accuracy",
@@ -307,7 +307,7 @@ def write_board() -> None:
             # IT HAS NOW HAPPENED TWICE. `valence` went first, and a local site
             # build stripped it from all 118 rows; the comment written then said
             # what this function is for and left the list in place. `riven` went
-            # second (owner, 2026-08-24) and cost three symptoms at once — the
+            # second and cost three symptoms at once — the
             # benchmark's "riven only" view showed nothing, the builder could
             # not group riven rows, and TAKING one left an empty slot, because
             # `row.riven` never reached the page so the bare `riven` id resolved
@@ -320,8 +320,7 @@ def write_board() -> None:
             # neither, and the two have to agree byte for byte or every local
             # build leaves board.json dirty.
             #
-            # `weapon` was leaking, and it cost more than a churned file
-            # (2026-08-27). `_ident` is "every field but score/shown/source", so
+            # `weapon` was leaking, and it cost more than a churned file. `_ident` is "every field but score/shown/source", so
             # a row carrying an extra key had a DIFFERENT identity from the same
             # row in the file already on disk — `prior` never matched, `shown`
             # was dropped from all 118 rows, and the page fell back to rounding
@@ -347,7 +346,7 @@ def write_board() -> None:
             # Eight rows churned on every local build because of it, and they
             # lost their `shown` string with it: `_ident` is the whole row bar
             # three fields, so a riven that is a key short is a DIFFERENT build
-            # as far as the carry-over lookup is concerned (2026-08-27).
+            # as far as the carry-over lookup is concerned.
             if isinstance(row.get("riven"), dict):
                 row["riven"].setdefault("malus", None)
             # THE ELEMENT AN ADVERSARY WEAPON WAS SCORED ON, and part of the
@@ -614,6 +613,54 @@ def build_stamp() -> str:
     return f"{sha}{dirty} · {when}Z"
 
 
+def project_facts() -> dict:
+    """What this repository holds, counted at build time.
+
+    `/support` states counts rather than adjectives, and a figure somebody has
+    to remember to update is a figure that is wrong within a week.
+
+    Only what the page cannot count for itself is here: the roster is `META`,
+    the pools are `META.mod_pools`, the board is `BOARD`. What is left is the
+    repository around the shipped data — its tests, its browser checks, and how
+    long this has been going.
+
+    Every figure is one a reader can check against the public repository. A
+    count of in-game measurements is not, so it is not claimed. A count that
+    cannot be taken is omitted rather than guessed, and the page drops any
+    figure that is missing.
+    """
+
+    def git(*a: str) -> str:
+        try:
+            return subprocess.run(
+                ("git", *a), capture_output=True, text=True, check=True
+            ).stdout.strip()
+        except Exception:
+            return ""
+
+    facts: dict = {}
+    # Tracked files only: `target/` carries vendored sources whose tests are
+    # not this project's.
+    tests = 0
+    for rel in git("ls-files", "*.rs").splitlines():
+        try:
+            tests += (ROOT / rel).read_text(encoding="utf-8", errors="ignore").count("#[test]")
+        except OSError:
+            pass
+    if tests:
+        facts["rust_tests"] = tests
+    checks = len(list((ROOT / "scripts").glob("check_*.mjs")))
+    if checks:
+        facts["browser_checks"] = checks
+    commits = git("rev-list", "--count", "HEAD")
+    if commits.isdigit():
+        facts["commits"] = int(commits)
+    first = git("log", "--reverse", "--format=%ad", "--date=short")
+    if first:
+        facts["first_commit_day"] = first.splitlines()[0]
+    return facts
+
+
 def main() -> None:
     check_data_parses()
     run("cargo", "build", "--release", "-p", "wfsim-wasm", "--target", "wasm32-unknown-unknown")
@@ -668,7 +715,14 @@ def main() -> None:
                             f'const BUILD_ID = "{build_stamp()}";', 1)
     if marked == app_js:
         sys.exit("app.js: BUILD_ID placeholder not found")
-    (APP / "app.js").write_text(marked, encoding="utf-8", newline=chr(10))
+    # …AND WHAT THE REPOSITORY HOLDS, for the one page that asks for something.
+    # Same rule as the stamp: the dev server keeps the placeholder, because a
+    # page that was not generated from a working tree has nothing to count.
+    counted = marked.replace("const PROJECT_FACTS = null;",
+                             f"const PROJECT_FACTS = {json.dumps(project_facts())};", 1)
+    if counted == marked:
+        sys.exit("app.js: PROJECT_FACTS placeholder not found")
+    (APP / "app.js").write_text(counted, encoding="utf-8", newline=chr(10))
     (APP / "index.html").write_text(flagged, encoding="utf-8", newline="\n")
     ship_art()
     write_board()
